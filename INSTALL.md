@@ -47,7 +47,7 @@ you must register the CudaControl.dll (run '<b><i>regsvr32 CudaControl.dll</i></
 </br>c.) nccl64_133.dll - If you plan on running multi-GPU training sessions, you will need the <b><i>nccl64_133.dll</i></b>, which must be placed
 in a directory that is visible by your executable files.  This library can be built from the MyCaffe\NCCL repository.  Alternatively, it is installed
 by the <b>CudaControl</b> NuGet package and placed in the <i>packages\CudaControl.1.0.0.271\lib\Net40</i> directory.  You should copy the library into
-a directory that is visible by your executable files.
+a directory that is visible by your executable files.  NOTE: The automated multi-GPU tests use GPU's 1-4 where the monitor is plugged into GPU 0.
 </br>
 
 <H2>Test Installation Instructions</H2>
