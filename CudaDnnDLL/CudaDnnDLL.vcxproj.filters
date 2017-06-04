@@ -1,0 +1,123 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="Cuda Files">
+      <UniqueIdentifier>{0e801246-938f-40a8-9dda-dd4368a0b996}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CudaDnnDLL.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\main.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\device.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\handlecol.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\math.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\memory.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\memorycol.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\util.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\pca.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\tsne_gp.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\tsne_g.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\memtest.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\nccl.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="Cuda Files\main.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\device.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\math.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\memory.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\util.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\memorycol.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\pca.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\tsne_gp.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\tsne_g.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\memtest.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\nccl.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="CudaDnnDLL.def">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

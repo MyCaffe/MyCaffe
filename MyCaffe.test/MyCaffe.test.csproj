@@ -1,0 +1,204 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>
+    </ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{FDBAF1BB-FC96-4D73-BA1A-A2B0CEA75DA1}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>MyCaffe.test</RootNamespace>
+    <AssemblyName>MyCaffe.test</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{3AC096D0-A1C2-E12C-1390-A8335801FDAB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>MainIcon.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.1.3\lib\net45\EntityFramework.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.1.3\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="HDF5DotNet, Version=1.8.9.0, Culture=neutral, PublicKeyToken=a4952c8df86d6e8c, processorArchitecture=AMD64">
+      <HintPath>..\packages\HDF5DotNet.x64.1.8.9\lib\Net40\HDF5DotNet.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.SqlServer.Types, Version=11.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Microsoft.SqlServer.Types.11.0.2\lib\net20\Microsoft.SqlServer.Types.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Drawing" />
+  </ItemGroup>
+  <ItemGroup>
+    <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
+      <Visible>False</Visible>
+    </CodeAnalysisDependentAssemblyPaths>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="TestCropLayer.cs" />
+    <Compile Include="TestDebugLayer.cs" />
+    <Compile Include="TestPersistCaffe.cs" />
+    <Compile Include="TestProjectEx.cs" />
+    <Compile Include="TestMemoryDataLayer.cs" />
+    <Compile Include="TestTripletDataLayer.cs" />
+    <Compile Include="TestKnnLayer.cs" />
+    <Compile Include="TestTripletSelectLayer.cs" />
+    <Compile Include="TestTripletLossLayer.cs" />
+    <Compile Include="TestSimpleTripletLossLayer.cs" />
+    <Compile Include="TestNormalizationLayer.cs" />
+    <Compile Include="TestGradientBasedSolver.cs" />
+    <Compile Include="TestNCCL.cs" />
+    <Compile Include="TestRandomNumberGenerator.cs" />
+    <Compile Include="TestMathFunctions.cs" />
+    <Compile Include="TestFiller.cs" />
+    <Compile Include="TestMaxPoolDropoutLayer.cs" />
+    <Compile Include="TestSPPLayer.cs" />
+    <Compile Include="TestContrastiveLossLayer.cs" />
+    <Compile Include="TestEmbedLayer.cs" />
+    <Compile Include="TestBatchReindexLayer.cs" />
+    <Compile Include="TestTileLayer.cs" />
+    <Compile Include="TestThresholdLayer.cs" />
+    <Compile Include="TestReshapeLayer.cs" />
+    <Compile Include="TestMultinomialLogisticLossLayer.cs" />
+    <Compile Include="TestInfogainLossLayer.cs" />
+    <Compile Include="TestDataTransformer.cs" />
+    <Compile Include="TestFilterLayer.cs" />
+    <Compile Include="TestFlattenLayer.cs" />
+    <Compile Include="TestBatchNormLayer.cs" />
+    <Compile Include="TestBatchDataLayer.cs" />
+    <Compile Include="TestMVNLayer.cs" />
+    <Compile Include="TestHingeLossLayer.cs" />
+    <Compile Include="TestUnPoolingLayer.cs" />
+    <Compile Include="TestReductionLayer.cs" />
+    <Compile Include="TestLSTMLayer.cs" />
+    <Compile Include="TestRNNLayer.cs" />
+    <Compile Include="TestPCA.cs" />
+    <Compile Include="TestAccuracyLayer.cs" />
+    <Compile Include="GradientChecker.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestArgMaxLayer.cs" />
+    <Compile Include="TestBase.cs" />
+    <Compile Include="TestBiasLayer.cs" />
+    <Compile Include="TestBlob.cs" />
+    <Compile Include="TestCaffeControl.cs" />
+    <Compile Include="TestCaffeImageDatabase.cs" />
+    <Compile Include="TestConcatLayer.cs" />
+    <Compile Include="TestConvolutionLayer.cs" />
+    <Compile Include="TestCudaDnn.cs" />
+    <Compile Include="TestDataLayer.cs" />
+    <Compile Include="TestDeconvolutionLayer.cs" />
+    <Compile Include="TestDummyDataLayer.cs" />
+    <Compile Include="TestEltwiseLayer.cs" />
+    <Compile Include="TestEuclideanLossLayer.cs" />
+    <Compile Include="TestIm2Col.cs" />
+    <Compile Include="TestIm2ColLayer.cs" />
+    <Compile Include="TestInnerProductLayer.cs" />
+    <Compile Include="TestLRNLayer.cs" />
+    <Compile Include="TestLSTMSimpleLayer.cs" />
+    <Compile Include="TestNet.cs" />
+    <Compile Include="TestParameters.cs" />
+    <Compile Include="TestPoolingLayer.cs" />
+    <Compile Include="TestPowerLayer.cs" />
+    <Compile Include="TestRawProto.cs" />
+    <Compile Include="TestRawProtoFile.cs" />
+    <Compile Include="TestScaleLayer.cs" />
+    <Compile Include="TestSigmoidCrossEntropyLossLayer.cs" />
+    <Compile Include="TestSliceLayer.cs" />
+    <Compile Include="TestSoftmaxLayer.cs" />
+    <Compile Include="TestReinforcementLossLayer.cs" />
+    <Compile Include="TestSoftmaxLossLayer.cs" />
+    <Compile Include="TestSolver.cs" />
+    <Compile Include="TestSplitLayer.cs" />
+    <Compile Include="TestStochasticPoolingLayer.cs" />
+    <Compile Include="TestSyncedMem.cs" />
+    <Compile Include="TestNeuronLayer.cs" />
+    <Compile Include="TestTanhLayer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="packages.config" />
+    <None Include="test_data\solver_data.h5" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="MainIcon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MyCaffe.basecode\MyCaffe.basecode.csproj">
+      <Project>{d168418c-cdcc-4f5b-bf55-292a38cc2429}</Project>
+      <Name>MyCaffe.basecode</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.imagedb\MyCaffe.imagedb.csproj">
+      <Project>{642ba581-59cb-445e-8d7d-81e67b748d77}</Project>
+      <Name>MyCaffe.imagedb</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe\MyCaffe.csproj">
+      <Project>{28e430dd-bd6c-4a4c-9454-1eeb4ad63a5c}</Project>
+      <Name>MyCaffe</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

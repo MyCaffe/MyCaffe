@@ -1,0 +1,132 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+    <Schema Namespace="TestingModel.Store" Alias="Self" Provider="System.Data.SqlClient" ProviderManifestToken="2008" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityContainer Name="TestingModelStoreContainer">
+          <EntitySet Name="Sessions" EntityType="TestingModel.Store.Sessions" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+          <EntitySet Name="Tests" EntityType="TestingModel.Store.Tests" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
+        </EntityContainer>
+        <EntityType Name="Sessions">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="TimeStamp" Type="datetime" />
+          <Property Name="Session" Type="varchar" MaxLength="256" />
+          <Property Name="TotalTestsRun" Type="int" />
+          <Property Name="TotalTestFailures" Type="int" />
+          <Property Name="TestFailureRate" Type="numeric" Precision="12" Scale="5" />
+          <Property Name="TotalTestTiming" Type="numeric" Precision="12" Scale="5" />
+          <Property Name="Path" Type="varchar" MaxLength="1024" />
+        </EntityType>
+        <EntityType Name="Tests">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="TestGroup" Type="varchar" MaxLength="128" />
+          <Property Name="TestMethod" Type="varchar" MaxLength="128" />
+          <Property Name="Success" Type="bit" />
+          <Property Name="ErrorString" Type="varchar" MaxLength="1024" />
+          <Property Name="ErrorLocation" Type="varchar" MaxLength="1024" />
+          <Property Name="TestTiming" Type="numeric" Precision="12" Scale="5" />
+          <Property Name="SessionID" Type="int" />
+        </EntityType>
+      </Schema></edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="TestingModel" Alias="Self" xmlns="http://schemas.microsoft.com/ado/2009/11/edm" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation">
+        <EntityContainer Name="TestingEntities" annotation:LazyLoadingEnabled="true" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation">
+          <EntitySet Name="Sessions" EntityType="TestingModel.Session" />
+          <EntitySet Name="Tests" EntityType="TestingModel.Test" />
+        </EntityContainer>
+        <EntityType Name="Session">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Name="TimeStamp" Type="DateTime" />
+          <Property Name="Session1" Type="String" MaxLength="256" Unicode="false" FixedLength="false" />
+          <Property Name="TotalTestsRun" Type="Int32" />
+          <Property Name="TotalTestFailures" Type="Int32" />
+          <Property Name="TestFailureRate" Type="Decimal" Precision="12" Scale="5" />
+          <Property Name="TotalTestTiming" Type="Decimal" Precision="12" Scale="5" />
+          <Property Type="String" Name="Path" MaxLength="1024" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <EntityType Name="Test">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
+          <Property Name="TestGroup" Type="String" MaxLength="128" Unicode="false" FixedLength="false" />
+          <Property Name="TestMethod" Type="String" MaxLength="128" Unicode="false" FixedLength="false" />
+          <Property Name="Success" Type="Boolean" />
+          <Property Name="ErrorString" Type="String" MaxLength="1024" Unicode="false" FixedLength="false" />
+          <Property Name="ErrorLocation" Type="String" MaxLength="1024" Unicode="false" FixedLength="false" />
+          <Property Name="TestTiming" Type="Decimal" Precision="12" Scale="5" />
+          <Property Name="SessionID" Type="Int32" />
+        </EntityType>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="TestingModelStoreContainer" CdmEntityContainer="TestingEntities">
+          <EntitySetMapping Name="Sessions">
+            <EntityTypeMapping TypeName="TestingModel.Session">
+              <MappingFragment StoreEntitySet="Sessions">
+                <ScalarProperty Name="Path" ColumnName="Path" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+                <ScalarProperty Name="TimeStamp" ColumnName="TimeStamp" />
+                <ScalarProperty Name="Session1" ColumnName="Session" />
+                <ScalarProperty Name="TotalTestsRun" ColumnName="TotalTestsRun" />
+                <ScalarProperty Name="TotalTestFailures" ColumnName="TotalTestFailures" />
+                <ScalarProperty Name="TestFailureRate" ColumnName="TestFailureRate" />
+                <ScalarProperty Name="TotalTestTiming" ColumnName="TotalTestTiming" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Tests">
+            <EntityTypeMapping TypeName="TestingModel.Test">
+              <MappingFragment StoreEntitySet="Tests">
+                <ScalarProperty Name="ID" ColumnName="ID" />
+                <ScalarProperty Name="TestGroup" ColumnName="TestGroup" />
+                <ScalarProperty Name="TestMethod" ColumnName="TestMethod" />
+                <ScalarProperty Name="Success" ColumnName="Success" />
+                <ScalarProperty Name="ErrorString" ColumnName="ErrorString" />
+                <ScalarProperty Name="ErrorLocation" ColumnName="ErrorLocation" />
+                <ScalarProperty Name="TestTiming" ColumnName="TestTiming" />
+                <ScalarProperty Name="SessionID" ColumnName="SessionID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="True" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="True" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams>
+      <Diagram Name="TestingModel">
+        <EntityTypeShape EntityType="TestingModel.Session" Width="1.5" PointX="0.75" PointY="0.75" Height="2.3648893229166665" IsExpanded="true" />
+        <EntityTypeShape EntityType="TestingModel.Test" Width="1.5" PointX="2.75" PointY="0.75" Height="2.5571907552083326" IsExpanded="true" />
+      </Diagram>
+    </Diagrams>
+  </Designer>
+</edmx:Edmx>

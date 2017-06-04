@@ -1,0 +1,342 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.IO;
+using MyCaffe.basecode;
+using MyCaffe.imagedb;
+using MyCaffe.common;
+using MyCaffe.param;
+
+namespace MyCaffe.solvers
+{
+    /// <summary>
+    /// Use Stochastic Gradient Descent solver with momentum updates weights by a linear combination of the negative gradient and the previous weight update.
+    /// </summary>
+    /// <remarks>
+    /// @see [Stochastic Gradient Descent](https://en.wikipedia.org/wiki/Stochastic_gradient_descent) Wikipedia.
+    /// </remarks>
+    /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
+    public class SGDSolver<T> : Solver<T>
+    {
+        /// <summary>
+        /// History maintains the historical momentum data.
+        /// </summary>
+        protected BlobCollection<T> m_colHistory = new BlobCollection<T>();
+        
+        /// <summary>
+        /// Update maintains update related data and is not needed in snapshots.
+        /// </summary>
+        //  protected BlobCollection<T> m_colUpdate = new BlobCollection<T>();  // not used in GPU version
+
+        /// <summary>
+        /// Temp maintains other information that might be needed in computation
+        /// of gradients/updates and is not needed in snapshots.
+        /// </summary>
+        protected BlobCollection<T> m_colTemp = new BlobCollection<T>();
+
+        /// <summary>
+        /// The SGDSolver constructor.
+        /// </summary>
+        /// <param name="cuda">Specifies the instance of CudaDnn to use.</param>
+        /// <param name="log">Specifies the Log for output.</param>
+        /// <param name="p">Specifies teh SolverParameter.</param>
+        /// <param name="evtCancel">Specifies a CancelEvent used to cancel the current operation (e.g. training, testing) for which the Solver is performing.</param>
+        /// <param name="evtForceSnapshot">Specifies an automatic reset event that causes the Solver to perform a Snapshot when set.</param>
+        /// <param name="evtForceTest">Specifies an automatic reset event that causes teh Solver to run a testing cycle when set.</param>
+        /// <param name="imgDb">Specifies the CaffeImageDatabase.</param>
+        /// <param name="persist">Specifies the peristence used for loading and saving weights.</param>
+        /// <param name="nSolverCount">Specifies the number of Solvers participating in a multi-GPU session.</param>
+        /// <param name="nSolverRank">Specifies the rank of this Solver in a multi-GPU session.</param>
+        public SGDSolver(CudaDnn<T> cuda, Log log, SolverParameter p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0)
+            : base(cuda, log, p, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank)
+        {
+            PreSolve();
+        }
+
+        /// <summary>
+        /// Releases all resources (GPU and Host) used by the Solver.
+        /// </summary>
+        protected override void dispose()
+        {
+            if (m_colHistory != null)
+            {
+                m_colHistory.Dispose();
+                m_colHistory = null;
+            }
+
+            if (m_colTemp != null)
+            {
+                m_colTemp.Dispose();
+                m_colTemp = null;
+            }
+
+            base.dispose();
+        }
+
+        /// <summary>
+        /// Returns the history BlobCollection containing historical momentum data.
+        /// </summary>
+        public BlobCollection<T> history
+        {
+            get { return m_colHistory; }
+        }
+
+        /// <summary>
+        /// Runs the pre-solve which parpares the Solver to start Solving.
+        /// </summary>
+        public void PreSolve()
+        {
+            BlobCollection<T> colNetParams = m_net.learnable_parameters;
+            m_colHistory.Clear(true);
+//            m_colUpdate.Clear(true);
+            m_colTemp.Clear(true);
+
+            for (int i = 0; i < colNetParams.Count; i++)
+            {
+                List<int> rgShape = colNetParams[i].shape();
+
+                m_colHistory.Add(new Blob<T>(m_cuda, m_log, rgShape, false));   // diff never used
+//                m_colUpdate.Add(new Blob<T>(m_cuda, m_log, rgShape, false));
+                m_colTemp.Add(new Blob<T>(m_cuda, m_log, rgShape, false));      // diff never used
+            }
+        }
+
+        /// <summary>
+        /// Return the current learning rate. 
+        /// </summary>
+        /// <remarks>
+        /// The currently implemented learning rate policies are as follows:
+        ///    - fixed: always return @f$ base_lr @f$.
+        ///    - step: return @f$ base_lr * gamma ^ {floor{iter / step}} @f$
+        ///    - exp: return @f$ base_lr * gamma ^ iter @f$
+        ///    - inv: return @f$ base_lr * {1 + gamma * iter} ^ {-power} @f$
+        ///    - multistep: similar to step but it allows non-uniform steps defined by stepvalue.
+        ///    - poly: the effective learning rate follows a polynomial decay, to be
+        ///            zero by the max_iter.  return @f$ base_lr * {1 - iter/max_iter} ^ {power} @f$
+        ///    - sigmoid: the effective learning rate follows a sigmoid decay.
+        ///            return @f$ base_lr * {1/{1 + exp{-gamma * {iter - stepsize}}}} @f$
+        ///            
+        /// where base_lr, max_iter, gamma, step, stepvalue and power are defined int the
+        /// solver protocol buffer, and iter is the current iteration.
+        /// </remarks>
+        /// <returns>The learning rate value.</returns>
+        public double GetLearningRate()
+        {
+            double dfRate = 0;
+
+            switch (m_param.lr_policy)
+            {
+                case "fixed":
+                    dfRate = m_param.base_lr;
+                    break;
+
+                case "step":
+                    m_nCurrentStep = m_nIter / m_param.stepsize;
+                    dfRate = m_param.base_lr * Math.Pow(m_param.gamma, m_nCurrentStep);
+                    break;
+
+                case "exp":
+                    dfRate = m_param.base_lr * Math.Pow(m_param.gamma, m_nIter);
+                    break;
+
+                case "inv":
+                    dfRate = m_param.base_lr * Math.Pow(1.0 + m_param.gamma * m_nIter, -1.0 * m_param.power);
+                    break;
+
+                case "multistep":
+                    if (m_nCurrentStep < m_param.stepvalue.Count && m_nIter >= m_param.stepvalue[m_nCurrentStep])
+                    {
+                        m_nCurrentStep++;
+                        m_log.WriteLine("MultiStep Status: Iteration " + m_nIter.ToString() + ", step = " + m_nCurrentStep.ToString());
+                    }
+                    dfRate = m_param.base_lr * Math.Pow(m_param.gamma, m_nCurrentStep);
+                    break;
+
+                case "poly":
+                    dfRate = m_param.base_lr * Math.Pow(1.0 - ((double)m_nIter / (double)m_param.max_iter), m_param.power);
+                    break;
+
+                case "sigmoid":
+                    dfRate = m_param.base_lr * (1.0 / (1.0 + Math.Exp(-1.0 * m_param.gamma * m_nIter - m_param.stepsize)));
+                    break;
+
+                default:
+                    m_log.FAIL("Unknown learning rate policy: " + m_param.lr_policy);
+                    break;
+            }
+
+            return dfRate;
+        }
+
+        /// <summary>
+        /// Compute the update values and apply them to the training Net.
+        /// </summary>
+        /// <returns>The learning rate used is returned.</returns>
+        protected override double ApplyUpdate()
+        {
+            double dfRate = GetLearningRate();
+
+            if (m_param.display > 0 && (m_nIter % m_param.display) == 0)
+                m_log.WriteLine("Iteration " + m_nIter.ToString() + ", lr = " + dfRate.ToString());
+
+            ClipGradients();
+
+            for (int i = 0; i < m_net.learnable_parameters.Count; i++)
+            {
+                Normalize(i);
+                Regularize(i);
+                ComputeUpdateValue(i, dfRate);
+            }
+
+            m_net.Update();
+
+            return dfRate;
+        }
+
+        /// <summary>
+        /// Restore the state of the Solver.
+        /// </summary>
+        /// <param name="rgState">Specifies the state of the Solver.</param>
+        protected override void RestoreSolverState(byte[] rgState)
+        {
+            MemoryStream ms = new MemoryStream(rgState);
+
+            using (BinaryReader br = new BinaryReader(ms))
+            {
+                SolverState state = SolverState.Load(br);
+
+                m_nIter = state.iter;
+                m_nCurrentStep = state.current_step;
+
+                m_log.CHECK_EQ(state.history.Count, m_colHistory.Count, "Incorrect length of history blobs.");
+                m_log.WriteLine("SGDSolver: restoring history.");
+
+                for (int i = 0; i < m_colHistory.Count; i++)
+                {
+                    m_colHistory[i].FromProto(state.history[i]);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Take a snapshot of the Solver state.
+        /// </summary>
+        /// <returns>The Solver state snapshot is returned.</returns>
+        protected override byte[] SnapshotSolverState()
+        {
+            SolverState state = new SolverState();
+            state.iter = m_nIter;
+            state.current_step = m_nCurrentStep;
+            state.history = new List<BlobProto>();
+
+            for (int i = 0; i < m_colHistory.Count; i++)
+            {
+                // Add history.
+                state.history.Add(m_colHistory[i].ToProto());
+            }
+
+            MemoryStream ms = new MemoryStream();
+
+            using (BinaryWriter bw = new BinaryWriter(ms))
+            {
+                state.Save(bw);
+            }
+
+            return ms.ToArray();
+        }
+
+        /// <summary>
+        /// Normalize a learnable Blob of the training Net.
+        /// </summary>
+        /// <param name="param_id">Specifies the id of the Blob.</param>
+        public virtual void Normalize(int param_id)
+        {
+            if (m_param.iter_size == 1)
+                return;
+
+            // Scale gradient to counterbalance accumulation.
+            BlobCollection<T> colNetParams = m_net.learnable_parameters;
+            double dfAccumNormalization = 1.0 / m_param.iter_size;
+            m_cuda.scal(colNetParams[param_id].count(), dfAccumNormalization, colNetParams[param_id].mutable_gpu_diff);
+        }
+
+        /// <summary>
+        /// Regularize a learnable Blob of the training net.
+        /// </summary>
+        /// <param name="param_id">Specifies the id of the Blob.</param>
+        public virtual void Regularize(int param_id)
+        {
+            BlobCollection<T> colNetParams = m_net.learnable_parameters;
+            List<double?> rgNetParamWeightDecay = m_net.params_weight_decay;
+            double dfWeightDecay = m_param.weight_decay;
+            double dfLocalDecay = dfWeightDecay * rgNetParamWeightDecay[param_id].GetValueOrDefault(0);
+
+            if (dfLocalDecay > 0)
+            {
+                switch (m_param.regularization_type)
+                {
+                    case "L2":
+                        // add weight decay
+                        m_cuda.axpy(colNetParams[param_id].count(), dfLocalDecay, colNetParams[param_id].gpu_data, colNetParams[param_id].mutable_gpu_diff);
+                        break;
+
+                    case "L1":
+                        m_cuda.sign(colNetParams[param_id].count(), colNetParams[param_id].gpu_data, m_colTemp[param_id].mutable_gpu_data);
+                        m_cuda.axpy(colNetParams[param_id].count(), dfLocalDecay, m_colTemp[param_id].gpu_data, colNetParams[param_id].mutable_gpu_diff);
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Compute the SGD update value that will be applied to a learnable blobs in the training Net.
+        /// </summary>
+        /// <param name="param_id">Specifies the id of the Blob.</param>
+        /// <param name="dfRate">Specifies the learning rate.</param>
+        public virtual void ComputeUpdateValue(int param_id, double dfRate)
+        {
+            BlobCollection<T> colNetParams = m_net.learnable_parameters;
+            List<double?> net_params_lr = m_net.params_lr;
+            T fMomentum = Utility.ConvertVal<T>(m_param.momentum);
+            T fLocalRate = Utility.ConvertVal<T>(dfRate * net_params_lr[param_id].GetValueOrDefault(0));
+
+            // Compute the update to history, then copy it to the parameter diff.
+            m_cuda.sgd_update(colNetParams[param_id].count(), colNetParams[param_id].mutable_gpu_diff, m_colHistory[param_id].mutable_gpu_data, fMomentum, fLocalRate);
+        }
+
+        /// <summary>
+        /// Clip the gradients of all learnable blobs in the training Net.
+        /// </summary>
+        public virtual void ClipGradients()
+        {
+            double dfClipGradients = m_param.clip_gradients;
+
+            if (dfClipGradients < 0)
+                return;
+
+            BlobCollection<T> colNetParams = m_net.learnable_parameters;
+            double dfSumsqDiff = 0;
+
+            for (int i = 0; i < colNetParams.Count; i++)
+            {
+                dfSumsqDiff += Utility.ConvertVal<T>(colNetParams[i].sumsq_diff());
+            }
+
+            double dfL2NormDiff = Math.Sqrt(dfSumsqDiff);
+
+            if (dfL2NormDiff > dfClipGradients)
+            {
+                double dfScaleFactor = dfClipGradients / dfL2NormDiff;
+
+                m_log.WriteLine("Gradient clipping: scaling down gradients (L2 norm " + dfL2NormDiff.ToString() + " > " + dfClipGradients.ToString() + ") by scale factor " + dfScaleFactor.ToString());
+
+                for (int i = 0; i < colNetParams.Count; i++)
+                {
+                    colNetParams[i].scale_diff(Utility.ConvertVal<T>(dfScaleFactor));
+                }
+            }
+        }
+    }
+}

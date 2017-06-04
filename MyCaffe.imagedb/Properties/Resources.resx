@@ -1,0 +1,387 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="CreateDatabase" xml:space="preserve">
+    <value>USE [master]
+
+CREATE DATABASE [%DBNAME%] ON  PRIMARY 
+( NAME = N'%DBNAME%', FILENAME = N'%PATH%\%DBNAME%.mdf' , MAXSIZE = UNLIMITED, FILEGROWTH = 1024KB )
+ LOG ON 
+( NAME = N'%DBNAME%_log', FILENAME = N'%PATH%\%DBNAME%_log.ldf' , MAXSIZE = 2048GB , FILEGROWTH = 10%)
+
+ALTER DATABASE [%DBNAME%] SET COMPATIBILITY_LEVEL = 100
+
+ALTER DATABASE [%DBNAME%] SET ANSI_NULL_DEFAULT OFF 
+ALTER DATABASE [%DBNAME%] SET ANSI_NULLS OFF 
+ALTER DATABASE [%DBNAME%] SET ANSI_PADDING OFF 
+ALTER DATABASE [%DBNAME%] SET ANSI_WARNINGS OFF 
+ALTER DATABASE [%DBNAME%] SET ARITHABORT OFF 
+ALTER DATABASE [%DBNAME%] SET AUTO_CLOSE OFF 
+ALTER DATABASE [%DBNAME%] SET AUTO_CREATE_STATISTICS ON 
+ALTER DATABASE [%DBNAME%] SET AUTO_SHRINK OFF 
+ALTER DATABASE [%DBNAME%] SET AUTO_UPDATE_STATISTICS ON 
+ALTER DATABASE [%DBNAME%] SET CURSOR_CLOSE_ON_COMMIT OFF 
+ALTER DATABASE [%DBNAME%] SET CURSOR_DEFAULT  GLOBAL 
+ALTER DATABASE [%DBNAME%] SET CONCAT_NULL_YIELDS_NULL OFF 
+ALTER DATABASE [%DBNAME%] SET NUMERIC_ROUNDABORT OFF 
+ALTER DATABASE [%DBNAME%] SET QUOTED_IDENTIFIER OFF 
+ALTER DATABASE [%DBNAME%] SET RECURSIVE_TRIGGERS OFF 
+ALTER DATABASE [%DBNAME%] SET  ENABLE_BROKER 
+ALTER DATABASE [%DBNAME%] SET AUTO_UPDATE_STATISTICS_ASYNC OFF 
+ALTER DATABASE [%DBNAME%] SET DATE_CORRELATION_OPTIMIZATION OFF 
+ALTER DATABASE [%DBNAME%] SET TRUSTWORTHY OFF 
+ALTER DATABASE [%DBNAME%] SET ALLOW_SNAPSHOT_ISOLATION OFF 
+ALTER DATABASE [%DBNAME%] SET PARAMETERIZATION SIMPLE 
+ALTER DATABASE [%DBNAME%] SET READ_COMMITTED_SNAPSHOT OFF 
+ALTER DATABASE [%DBNAME%] SET HONOR_BROKER_PRIORITY OFF 
+ALTER DATABASE [%DBNAME%] SET  READ_WRITE 
+ALTER DATABASE [%DBNAME%] SET RECOVERY SIMPLE 
+ALTER DATABASE [%DBNAME%] SET  MULTI_USER 
+ALTER DATABASE [%DBNAME%] SET PAGE_VERIFY CHECKSUM  
+ALTER DATABASE [%DBNAME%] SET DB_CHAINING OFF</value>
+  </data>
+  <data name="CreateDatasetCreatorsTable" xml:space="preserve">
+    <value>CREATE TABLE [dbo].[DatasetCreators](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[Name] [varchar](256) NULL,
+	[Path] [varchar](1024) NULL,
+ CONSTRAINT [PK_DatasetCreators] PRIMARY KEY CLUSTERED 
+(
+	[ID] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY]</value>
+  </data>
+  <data name="CreateDatasetGroupsTable" xml:space="preserve">
+    <value>CREATE TABLE [dbo].[DatasetGroups](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[Name] [varchar](128) NULL,
+	[DatasetCreatorID] [int] NULL,
+	[OwnerID] [nvarchar](60) NULL,
+ CONSTRAINT [PK_DatasetGroups] PRIMARY KEY CLUSTERED 
+(
+	[ID] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY]</value>
+  </data>
+  <data name="CreateDatasetParametersTable" xml:space="preserve">
+    <value>CREATE TABLE [dbo].[DatasetParameters](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[Name] [nvarchar](256) NULL,
+	[Value] [nvarchar](1024) NULL,
+	[DatasetID] [int] NULL,
+ CONSTRAINT [PK_DatasetParameters] PRIMARY KEY CLUSTERED 
+(
+	[ID] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY]</value>
+  </data>
+  <data name="CreateDatasetsTable" xml:space="preserve">
+    <value>CREATE TABLE [dbo].[Datasets](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[Name] [nvarchar](512) NULL,
+	[TrainingSourceID] [int] NULL,
+	[TestingSourceID] [int] NULL,
+	[DatasetGroupID] [int] NULL,
+	[DatasetCreatorID] [int] NULL,
+	[ModelGroupID] [int] NULL,
+	[ImageHeight] [int] NULL,
+	[ImageWidth] [int] NULL,
+	[ImageChannels] [int] NULL,
+	[ImageEncoded] [bit] NULL,
+	[TrainingTotal] [int] NULL,
+	[TestingTotal] [int] NULL,
+	[TestingPercent] [numeric](12, 5) NULL,
+	[Relabeled] [bit] NULL,
+	[OwnerID] [nvarchar](60) NULL,
+ CONSTRAINT [PK_Datasets] PRIMARY KEY CLUSTERED 
+(
+	[ID] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY]</value>
+  </data>
+  <data name="CreateLabelBoostsTable" xml:space="preserve">
+    <value>CREATE TABLE [dbo].[LabelBoosts](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[ProjectID] [int] NULL,
+	[ActiveLabel] [int] NULL,
+	[Boost] [numeric](12, 5) NULL,
+	[SourceID] [int] NULL,
+ CONSTRAINT [PK_LabelBoosts] PRIMARY KEY CLUSTERED 
+(
+	[ID] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY]</value>
+  </data>
+  <data name="CreateLabelsTable" xml:space="preserve">
+    <value>CREATE TABLE [dbo].[Labels](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[Label] [int] NULL,
+	[Name] [nvarchar](128) NULL,
+	[SourceID] [int] NULL,
+	[ImageCount] [int] NULL,
+	[ActiveLabel] [int] NULL,
+ CONSTRAINT [PK_Labels] PRIMARY KEY CLUSTERED 
+(
+	[ID] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY]</value>
+  </data>
+  <data name="CreateModelGroupsTable" xml:space="preserve">
+    <value>CREATE TABLE [dbo].[ModelGroups](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[Name] [varchar](512) NULL,
+	[OwnerID] [nvarchar](60) NULL,
+ CONSTRAINT [PK_ModelGroups_1] PRIMARY KEY CLUSTERED 
+(
+	[ID] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY]</value>
+  </data>
+  <data name="CreateRawImageGroupsTable" xml:space="preserve">
+    <value>CREATE TABLE [dbo].[RawImageGroups](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[Idx] [int] NULL,
+	[StartDate] [smalldatetime] NULL,
+	[EndDate] [smalldatetime] NULL,
+	[Property1] [numeric](12, 5) NULL,
+	[Property2] [numeric](12, 5) NULL,
+	[Property3] [numeric](12, 5) NULL,
+	[Property4] [numeric](12, 5) NULL,
+	[Property5] [numeric](12, 5) NULL,
+	[Rating] [numeric](12, 5) NULL,
+	[RawData] [image] NULL,
+ CONSTRAINT [PK_LevelDBGroups] PRIMARY KEY CLUSTERED 
+(
+	[ID] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]</value>
+  </data>
+  <data name="CreateRawImageMeansTable" xml:space="preserve">
+    <value>CREATE TABLE [dbo].[RawImageMeans](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[Height] [int] NULL,
+	[Width] [int] NULL,
+	[Channels] [int] NULL,
+	[Data] [image] NULL,
+	[Encoded] [bit] NULL,
+	[SourceID] [int] NULL,
+ CONSTRAINT [PK_ImageMeans] PRIMARY KEY CLUSTERED 
+(
+	[ID] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]</value>
+  </data>
+  <data name="CreateRawImageParametersTable" xml:space="preserve">
+    <value>CREATE TABLE [dbo].[RawImageParameters](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[Name] [nvarchar](256) NULL,
+	[Value] [image] NULL,
+	[SourceID] [int] NULL,
+	[RawImageID] [int] NULL,
+	[TextValue] [nvarchar](1024) NULL,
+ CONSTRAINT [PK_RawImageParameters] PRIMARY KEY CLUSTERED 
+(
+	[ID] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]</value>
+  </data>
+  <data name="CreateRawImageResultsTable" xml:space="preserve">
+    <value>CREATE TABLE [dbo].[RawImageResults](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[Idx] [int] NULL,
+	[Label] [int] NULL,
+	[ResultCount] [int] NULL,
+	[Results] [image] NULL,
+	[SourceID] [int] NULL,
+	[TimeStamp] [datetime] NULL,
+ CONSTRAINT [PK_RawImageResults] PRIMARY KEY CLUSTERED 
+(
+	[ID] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]</value>
+  </data>
+  <data name="CreateRawImagesTable" xml:space="preserve">
+    <value>CREATE TABLE [dbo].[RawImages](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[Height] [int] NULL,
+	[Width] [int] NULL,
+	[Channels] [int] NULL,
+	[Data] [image] NULL,
+	[DebugData] [image] NULL,
+	[TimeStamp] [datetime] NULL,
+	[Encoded] [bit] NULL,
+	[SourceID] [int] NULL,
+	[Idx] [int] NULL,
+	[GroupID] [int] NULL,
+	[OriginalBoost] [int] NULL,
+	[ActiveBoost] [int] NULL,
+	[AutoLabel] [bit] NULL,
+	[VirtualID] [int] NULL,
+	[RawData] [image] NULL,
+	[DataCriteria] [image] NULL,
+	[OriginalLabel] [int] NULL,
+	[ActiveLabel] [int] NULL,
+	[Active] [bit] NULL,
+	[Description] [nvarchar](64) NULL,
+	[DebugDataFormatID] [int] NULL,
+	[DataCriteriaFormatID] [int] NULL,
+ CONSTRAINT [PK_Images] PRIMARY KEY CLUSTERED 
+(
+	[ID] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]</value>
+  </data>
+  <data name="CreateSourceParametersTable" xml:space="preserve">
+    <value>CREATE TABLE [dbo].[SourceParameters](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[Name] [nvarchar](256) NULL,
+	[Value] [nvarchar](1024) NULL,
+	[SourceID] [int] NULL,
+ CONSTRAINT [PK_SourceParameters] PRIMARY KEY CLUSTERED 
+(
+	[ID] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY]</value>
+  </data>
+  <data name="CreateSourcesTable" xml:space="preserve">
+    <value>CREATE TABLE [dbo].[Sources](
+	[ID] [int] IDENTITY(1,1) NOT NULL,
+	[Name] [nvarchar](512) NULL,
+	[ImageHeight] [int] NULL,
+	[ImageWidth] [int] NULL,
+	[ImageChannels] [int] NULL,
+	[ImageEncoded] [bit] NULL,
+	[ImageCount] [int] NULL,
+	[OwnerID] [nvarchar](60) NULL,
+ CONSTRAINT [PK_Sources] PRIMARY KEY CLUSTERED 
+(
+	[ID] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY]</value>
+  </data>
+  <data name="QueryDatabaseExists" xml:space="preserve">
+    <value>IF (EXISTS (SELECT name 
+FROM master.dbo.sysdatabases 
+WHERE ('[' + name + ']' = '%DBNAME%' 
+OR name = '%DBNAME%')))
+SELECT(1)
+ELSE
+SELECT(0)</value>
+  </data>
+</root>

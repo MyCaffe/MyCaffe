@@ -1,0 +1,295 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{28E430DD-BD6C-4A4C-9454-1EEB4AD63A5C}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>MyCaffe</RootNamespace>
+    <AssemblyName>MyCaffe</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>MainIcon.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="CudaControlLib">
+      <HintPath>..\packages\CudaControl.1.0.0.271\lib\Net40\CudaControlLib.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Google.Protobuf, Version=3.3.0.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
+      <HintPath>..\packages\Google.Protobuf.3.3.0\lib\net45\Google.Protobuf.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data.Entity" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="common\BatchInput.cs" />
+    <Compile Include="common\Blob.cs" />
+    <Compile Include="common\BlobCollection.cs" />
+    <Compile Include="common\BlockingQueue.cs" />
+    <Compile Include="common\CudaDnn.cs" />
+    <Compile Include="common\CudaDnnMemoryTracker.cs" />
+    <Compile Include="common\DebugInformation.cs" />
+    <Compile Include="common\DictionaryEx.cs" />
+    <Compile Include="common\DictionaryMap.cs" />
+    <Compile Include="common\EventArgs.cs" />
+    <Compile Include="common\Interfaces.cs" />
+    <Compile Include="common\InternalThread.cs" />
+    <Compile Include="common\Net.cs" />
+    <Compile Include="common\PersistCaffe.cs" />
+    <Compile Include="common\ResultCollection.cs" />
+    <Compile Include="common\SyncedMemory.cs" />
+    <Compile Include="common\TransferInput.cs" />
+    <Compile Include="common\Utility.cs" />
+    <Compile Include="data\DataTransformer.cs" />
+    <Compile Include="data\DB.cs" />
+    <Compile Include="fillers\BilinearFiller.cs" />
+    <Compile Include="fillers\ConstantFiller.cs" />
+    <Compile Include="fillers\Filler.cs" />
+    <Compile Include="fillers\GaussianFiller.cs" />
+    <Compile Include="fillers\MsraFiller.cs" />
+    <Compile Include="fillers\PositiveUnitballFiller.cs" />
+    <Compile Include="fillers\UniformFiller.cs" />
+    <Compile Include="fillers\XavierFiller.cs" />
+    <Compile Include="layers\CropLayer.cs" />
+    <Compile Include="layers\MemoryDataLayer.cs" />
+    <Compile Include="layers\DebugLayer.cs" />
+    <Compile Include="layers_alpha\TripletDataLayer.cs" />
+    <Compile Include="layers_alpha\KnnLayer.cs" />
+    <Compile Include="layers_alpha\TripletSelectLayer.cs" />
+    <Compile Include="layers_alpha\TripletLossLayer.cs" />
+    <Compile Include="layers_alpha\TripletLossSimpleLayer.cs" />
+    <Compile Include="layers_alpha\NormalizationLayer.cs" />
+    <Compile Include="layers\SPPLayer.cs" />
+    <Compile Include="layers\BatchReindexLayer.cs" />
+    <Compile Include="layers\EmbedLayer.cs" />
+    <Compile Include="layers\TileLayer.cs" />
+    <Compile Include="layers\ThresholdLayer.cs" />
+    <Compile Include="layers\ReshapeLayer.cs" />
+    <Compile Include="layers\FilterLayer.cs" />
+    <Compile Include="layers\FlattenLayer.cs" />
+    <Compile Include="layers\ELULayer.cs" />
+    <Compile Include="layers\ContrastiveLossLayer.cs" />
+    <Compile Include="layers\MultinomialLogisticLossLayer.cs" />
+    <Compile Include="layers\InfogainLossLayer.cs" />
+    <Compile Include="layers\MVNLayer.cs" />
+    <Compile Include="layers\AbsValLayer.cs" />
+    <Compile Include="layers\BatchNormLayer.cs" />
+    <Compile Include="layers\AccuracyLayer.cs" />
+    <Compile Include="layers_alpha\BatchDataLayer.cs" />
+    <Compile Include="layers\LSTMUnitLayer.cs" />
+    <Compile Include="layers\ArgMaxLayer.cs" />
+    <Compile Include="layers\BaseConvolutionLayer.cs" />
+    <Compile Include="layers\BaseDataLayer.cs" />
+    <Compile Include="layers\BasePrefetchingDataLayer.cs" />
+    <Compile Include="layers\BiasLayer.cs" />
+    <Compile Include="layers\BNLLLayer.cs" />
+    <Compile Include="layers\ConcatLayer.cs" />
+    <Compile Include="layers\ConvolutionLayer.cs" />
+    <Compile Include="layers\InputLayer.cs" />
+    <Compile Include="layers\LabelMappingLayer.cs" />
+    <Compile Include="layers\DataLayer.cs" />
+    <Compile Include="layers\DeconvolutionLayer.cs" />
+    <Compile Include="layers\DropoutLayer.cs" />
+    <Compile Include="layers\DummyDataLayer.cs" />
+    <Compile Include="layers\EltwiseLayer.cs" />
+    <Compile Include="layers\EuclideanLossLayer.cs" />
+    <Compile Include="layers\ExpLayer.cs" />
+    <Compile Include="layers\Im2colLayer.cs" />
+    <Compile Include="layers\InnerProductLayer.cs" />
+    <Compile Include="layers\Layer.cs" />
+    <Compile Include="layers\LogLayer.cs" />
+    <Compile Include="layers\LossLayer.cs" />
+    <Compile Include="layers\LRNLayer.cs" />
+    <Compile Include="layers\LSTMSimpleLayer.cs" />
+    <Compile Include="layers\NeuronLayer.cs" />
+    <Compile Include="layers\HingeLossLayer.cs" />
+    <Compile Include="layers\UnPoolingLayer.cs" />
+    <Compile Include="layers\PoolingLayer.cs" />
+    <Compile Include="layers\PowerLayer.cs" />
+    <Compile Include="layers\PReLULayer.cs" />
+    <Compile Include="layers\ReductionLayer.cs" />
+    <Compile Include="layers\ReLULayer.cs" />
+    <Compile Include="layers\RecurrentLayer.cs" />
+    <Compile Include="layers\LSTMLayer.cs" />
+    <Compile Include="layers\RNNLayer.cs" />
+    <Compile Include="layers\ScaleLayer.cs" />
+    <Compile Include="layers\SigmoidCrossEntropyLossLayer.cs" />
+    <Compile Include="layers\SigmoidLayer.cs" />
+    <Compile Include="layers\SilenceLayer.cs" />
+    <Compile Include="layers\SliceLayer.cs" />
+    <Compile Include="layers\SoftmaxLayer.cs" />
+    <Compile Include="layers_alpha\ReinforcementLossLayer.cs" />
+    <Compile Include="layers\SoftmaxLossLayer.cs" />
+    <Compile Include="layers\SplitLayer.cs" />
+    <Compile Include="layers\TanhLayer.cs" />
+    <Compile Include="MyCaffeControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="MyCaffeControl.Designer.cs">
+      <DependentUpon>MyCaffeControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="param\CropParameter.cs" />
+    <Compile Include="param\MemoryDataParameter.cs" />
+    <Compile Include="param\DebugParameter.cs" />
+    <Compile Include="param\KnnParameter.cs" />
+    <Compile Include="param\TripletLossParameter.cs" />
+    <Compile Include="param\TripletLossSimpleParameter.cs" />
+    <Compile Include="param\NormalizationParameter.cs" />
+    <Compile Include="param\AccuracyParameter.cs" />
+    <Compile Include="param\ArgMaxParameter.cs" />
+    <Compile Include="param\BaseParameter.cs" />
+    <Compile Include="param\BatchNormParameter.cs" />
+    <Compile Include="param\BiasParameter.cs" />
+    <Compile Include="param\BlobProtoCollection.cs" />
+    <Compile Include="param\BlobProto.cs" />
+    <Compile Include="param\BlobShape.cs" />
+    <Compile Include="param\ConcatParameter.cs" />
+    <Compile Include="param\ContrastiveLossParameter.cs" />
+    <Compile Include="param\ConvolutionParameter.cs" />
+    <Compile Include="param\BatchDataParameter.cs" />
+    <Compile Include="param\InputParameter.cs" />
+    <Compile Include="param\LabelMappingParameter.cs" />
+    <Compile Include="param\DataParameter.cs" />
+    <Compile Include="param\DropoutParameter.cs" />
+    <Compile Include="param\DummyDataParameter.cs" />
+    <Compile Include="param\EltwiseParameter.cs" />
+    <Compile Include="param\EluParameter.cs" />
+    <Compile Include="param\EmbedParameter.cs" />
+    <Compile Include="param\EngineParameter.cs" />
+    <Compile Include="param\ExpParameter.cs" />
+    <Compile Include="param\FillerParameter.cs" />
+    <Compile Include="param\FlattenParameter.cs" />
+    <Compile Include="param\HingeLossParameter.cs" />
+    <Compile Include="param\InfogainLossParameter.cs" />
+    <Compile Include="param\InnerProductParameter.cs" />
+    <Compile Include="param\KernelParameter.cs" />
+    <Compile Include="param\LayerParameter.cs" />
+    <Compile Include="param\LayerParameterBase.cs" />
+    <Compile Include="param\LogParameter.cs" />
+    <Compile Include="param\LossParameter.cs" />
+    <Compile Include="param\LRNParameter.cs" />
+    <Compile Include="param\LSTMSimpleParameter.cs" />
+    <Compile Include="param\MVNParameter.cs" />
+    <Compile Include="param\NetParameter.cs" />
+    <Compile Include="param\NetState.cs" />
+    <Compile Include="param\NetStateRule.cs" />
+    <Compile Include="param\ParamSpec.cs" />
+    <Compile Include="param\PoolingParameter.cs" />
+    <Compile Include="param\PowerParameter.cs" />
+    <Compile Include="param\PReLUParameter.cs" />
+    <Compile Include="param\RecurrentParameter.cs" />
+    <Compile Include="param\ReductionParameter.cs" />
+    <Compile Include="param\ReLUParameter.cs" />
+    <Compile Include="param\ReshapeParameter.cs" />
+    <Compile Include="param\ScaleParameter.cs" />
+    <Compile Include="param\SigmoidParameter.cs" />
+    <Compile Include="param\SliceParameter.cs" />
+    <Compile Include="param\ReinforcementLossParameter.cs" />
+    <Compile Include="param\SoftmaxParameter.cs" />
+    <Compile Include="param\SolverParameter.cs" />
+    <Compile Include="param\SolverState.cs" />
+    <Compile Include="param\SPPParameter.cs" />
+    <Compile Include="param\TanhParameter.cs" />
+    <Compile Include="param\ThresholdParameter.cs" />
+    <Compile Include="param\TileParameter.cs" />
+    <Compile Include="param\TransformationParameter.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="solvers\AdaGradSolver.cs" />
+    <Compile Include="solvers\AdamSolver.cs" />
+    <Compile Include="common\Parallel.cs" />
+    <Compile Include="solvers\RmsPropSolver.cs" />
+    <Compile Include="solvers\AdaDeltaSolver.cs" />
+    <Compile Include="solvers\NesterovSolver.cs" />
+    <Compile Include="solvers\SGDSolver.cs" />
+    <Compile Include="solvers\Solver.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="MyCaffeControl.resx">
+      <DependentUpon>MyCaffeControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="MainIcon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MyCaffe.basecode\MyCaffe.basecode.csproj">
+      <Project>{d168418c-cdcc-4f5b-bf55-292a38cc2429}</Project>
+      <Name>MyCaffe.basecode</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.imagedb\MyCaffe.imagedb.csproj">
+      <Project>{642ba581-59cb-445e-8d7d-81e67b748d77}</Project>
+      <Name>MyCaffe.imagedb</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent>"%25ProgramFiles(x86)%25\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6 Tools\tlbimp" $(SolutionDir)packages\CudaControl.1.0.0.271\lib\Net40\CudaControl.tlb /keyfile:$(SolutionDir)packages\CudaControl.1.0.0.271\lib\Net40\CudaControl.pfx /primary /machine:Agnostic /out:$(SolutionDir)packages\CudaControl.1.0.0.271\lib\Net40\CudaControlLib.dll
+</PreBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
