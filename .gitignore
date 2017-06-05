@@ -11,6 +11,7 @@
 # Private Files
 **/_private/*
 **/_build/*
+**/bin/*
 *.pro.*
 
 # Build results
