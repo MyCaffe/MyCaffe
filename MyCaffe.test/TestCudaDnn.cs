@@ -1459,6 +1459,7 @@ namespace MyCaffe.test
             double[] result_2 = new double[] { 14, 32 };
             double[] result_3 = new double[] { 9, 12, 15 };
 
+            m_temp.Reshape(new List<int>() { rgData.Length, 1, 1, 1 });
             m_temp.mutable_cpu_data = convert(rgData);
             m_cuda.copy(6, m_temp.gpu_data, m_A.mutable_gpu_data);
             m_cuda.copy(3, m_temp.gpu_data, m_x.mutable_gpu_data);
