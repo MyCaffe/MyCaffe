@@ -11,6 +11,8 @@ using MyCaffe.fillers;
 using System.IO;
 using MyCaffe.imagedb;
 using System.Diagnostics;
+using MyCaffe.basecode.descriptors;
+using System.Drawing;
 
 namespace MyCaffe.test
 {
@@ -131,6 +133,48 @@ namespace MyCaffe.test
             base.dispose();
         }
 
+        private void createPascalSbdDatasetShell(string strDs)
+        {
+            DatasetFactory factory = new DatasetFactory();
+
+            DatasetDescriptor dsd = factory.LoadDataset(strDs);
+            if (dsd != null)
+                return;
+
+            SourceDescriptor srcTrain = new SourceDescriptor(0, strDs + ".training", 500, 500, 3, false);
+            SourceDescriptor srcTest = new SourceDescriptor(0, strDs + ".testing", 500, 500, 3, false);
+            DatasetDescriptor ds = new DatasetDescriptor(0, strDs, null, null, srcTrain, srcTest, "");
+
+            factory.AddDataset(ds);
+
+            Bitmap bmp = new Bitmap(500, 500);
+            SimpleDatum sd = ImageData.GetImageData(bmp, 3, false, 0);
+            int nLen = 500 * 500;
+            int nItemCount = 1;
+            int nWid = 500;
+            int nHt = 500;
+            byte[] rgData = new byte[nLen];
+
+            List<byte> rgDataFinal = new List<byte>(rgData);
+            rgDataFinal.AddRange(BitConverter.GetBytes(nLen));
+            rgDataFinal.AddRange(BitConverter.GetBytes(nItemCount));
+            rgDataFinal.AddRange(BitConverter.GetBytes(nWid));
+            rgDataFinal.AddRange(BitConverter.GetBytes(nHt));
+
+            sd.DataCriteria = rgDataFinal.ToArray();
+            sd.DataCriteriaFormat = SimpleDatum.DATA_FORMAT.SEGMENTATION;
+
+            factory.Open(ds.TrainingSource.ID);
+            factory.PutRawImage(0, sd);
+            factory.Close();
+
+            factory.Open(ds.TestingSource.ID);
+            factory.PutRawImage(0, sd);
+            factory.Close();
+
+            factory.UpdateDatasetCounts(ds.ID);
+        }
+
         public void TestImport()
         {
             PersistCaffe<T> persist = new PersistCaffe<T>(m_log, true);
@@ -151,6 +195,8 @@ namespace MyCaffe.test
             {
                 strModelDesc = sr.ReadToEnd();
             }
+
+            createPascalSbdDatasetShell("PASCAL_SBD");
 
             MyCaffeImageDatabase db = new MyCaffeImageDatabase();
             db.Initialize(new SettingsCaffe(), "PASCAL_SBD");
@@ -186,6 +232,8 @@ namespace MyCaffe.test
             {
                 strModelDesc = sr.ReadToEnd();
             }
+
+            createPascalSbdDatasetShell("PASCAL_SBD");
 
             MyCaffeImageDatabase db = new MyCaffeImageDatabase();
             db.Initialize(new SettingsCaffe(), "PASCAL_SBD");

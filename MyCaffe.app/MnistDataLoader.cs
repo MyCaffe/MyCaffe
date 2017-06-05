@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MyCaffe.basecode;
 using MyCaffe.imagedb;
+using MyCaffe.basecode.descriptors;
 
 namespace MyCaffe.app
 {
@@ -39,6 +40,13 @@ namespace MyCaffe.app
 
             loadFile(strTrainImagesBin, strTrainLabelsBin, "MNIST.training");
             loadFile(strTestImagesBin, strTestLabelsBin, "MNIST.testing");
+
+            DatasetFactory factory = new DatasetFactory();
+            SourceDescriptor srcTrain = factory.LoadSource("MNIST.training");
+            SourceDescriptor srcTest = factory.LoadSource("MNIST.testing");
+            DatasetDescriptor ds = new DatasetDescriptor(0, "MNIST", null, null, srcTrain, srcTest, "MNIST");
+            factory.AddDataset(ds);
+            factory.UpdateDatasetCounts(ds.ID);
         }
 
         private void loadFile(string strImagesFile, string strLabelsFile, string strSourceName)
@@ -98,7 +106,7 @@ namespace MyCaffe.app
 
                     if (sw.Elapsed.TotalMilliseconds > 1000)
                     {
-                        reportProgress(i, (int)num_items, " loading data..");
+                        reportProgress(i, (int)num_items, " loading data...");
                         sw.Restart();
                     }
 

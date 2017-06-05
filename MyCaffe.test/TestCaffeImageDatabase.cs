@@ -72,12 +72,6 @@ namespace MyCaffe.test
             TestInitialization(SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
         }
 
-        [TestMethod]
-        public void TestInitializationLoadLimitOnDemand()
-        {
-            TestInitialization(SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 10);
-        }
-
         public void TestQueryRandom(SettingsCaffe.IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
@@ -159,12 +153,6 @@ namespace MyCaffe.test
         public void TestQueryRandomLoadLimit()
         {
             TestQueryRandom(SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
-        }
-
-        [TestMethod]
-        public void TestQueryRandomLoadLimitOnDemand()
-        {
-            TestQueryRandom(SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 10);
         }
 
         public void TestQueryRandom2(SettingsCaffe.IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
@@ -320,12 +308,6 @@ namespace MyCaffe.test
             TestQueryRandom2(SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
         }
 
-        [TestMethod]
-        public void TestQueryRandom2LoadLimitOnDemand()
-        {
-            TestQueryRandom2(SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 10);
-        }
-
         public void TestQuerySequential(SettingsCaffe.IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
@@ -398,12 +380,6 @@ namespace MyCaffe.test
         public void TestQuerySequentialLoadLimit()
         {
             TestQuerySequential(SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
-        }
-
-        [TestMethod]
-        public void TestQuerySequentialLoadLimitOnDemand()
-        {
-            TestQuerySequential(SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 10);
         }
 
         public void TestQuerySequential2(SettingsCaffe.IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
@@ -484,12 +460,6 @@ namespace MyCaffe.test
             TestQuerySequential2(SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
         }
 
-        [TestMethod]
-        public void TestQuerySequential2LoadLimitOnDemand()
-        {
-            TestQuerySequential2(SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 10);
-        }
-
         public void TestQuerySequential3(SettingsCaffe.IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
@@ -564,12 +534,6 @@ namespace MyCaffe.test
         public void TestQuerySequential3LoadLimit()
         {
             TestQuerySequential3(SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
-        }
-
-        [TestMethod]
-        public void TestQuerySequential3LoadLimitOnDemand()
-        {
-            TestQuerySequential3(SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 10);
         }
 
         public void TestQuerySequential4(SettingsCaffe.IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
@@ -650,12 +614,6 @@ namespace MyCaffe.test
         public void TestQuerySequential4LoadLimit()
         {
             TestQuerySequential4(SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
-        }
-
-        [TestMethod]
-        public void TestQuerySequential4LoadLimitOnDemand()
-        {
-            TestQuerySequential4(SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 10);
         }
 
         public void TestQueryPair(SettingsCaffe.IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)

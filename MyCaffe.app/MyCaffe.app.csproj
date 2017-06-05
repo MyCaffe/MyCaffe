@@ -77,13 +77,21 @@
     <Compile Include="FormMain.Designer.cs">
       <DependentUpon>FormMain.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormCifar10.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormCifar10.Designer.cs">
+      <DependentUpon>FormCifar10.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormMnist.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FormMnist.Designer.cs">
       <DependentUpon>FormMnist.cs</DependentUpon>
     </Compile>
+    <Compile Include="CiFar10DataLoader.cs" />
     <Compile Include="MnistDataLoader.cs" />
+    <Compile Include="CiFar10DataParameters.cs" />
     <Compile Include="MnistDataParameters.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProgressInfo.cs" />
@@ -96,6 +104,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormMain.resx">
       <DependentUpon>FormMain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormCifar10.resx">
+      <DependentUpon>FormCifar10.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormMnist.resx">
       <DependentUpon>FormMnist.cs</DependentUpon>

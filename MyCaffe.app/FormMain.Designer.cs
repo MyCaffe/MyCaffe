@@ -35,11 +35,12 @@
             this.databaseToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.createDatabaseToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loadMNISTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.loadCIFAR10ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.testToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.runAutotestsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
-            this.deviceInformationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.createMyCaffeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.deviceInformationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.destroyMyCaffeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.trainMNISTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.testMNISTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -48,8 +49,9 @@
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialogAutoTests = new System.Windows.Forms.OpenFileDialog();
             this.edtStatus = new System.Windows.Forms.TextBox();
-            this.m_bwLoadDatabase = new System.ComponentModel.BackgroundWorker();
+            this.m_bwLoadMnistDatabase = new System.ComponentModel.BackgroundWorker();
             this.m_bwProcess = new System.ComponentModel.BackgroundWorker();
+            this.m_bwLoadCiFar10Database = new System.ComponentModel.BackgroundWorker();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -85,7 +87,8 @@
             // 
             this.databaseToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.createDatabaseToolStripMenuItem,
-            this.loadMNISTToolStripMenuItem});
+            this.loadMNISTToolStripMenuItem,
+            this.loadCIFAR10ToolStripMenuItem});
             this.databaseToolStripMenuItem.Name = "databaseToolStripMenuItem";
             this.databaseToolStripMenuItem.Size = new System.Drawing.Size(67, 20);
             this.databaseToolStripMenuItem.Text = "&Database";
@@ -93,16 +96,23 @@
             // createDatabaseToolStripMenuItem
             // 
             this.createDatabaseToolStripMenuItem.Name = "createDatabaseToolStripMenuItem";
-            this.createDatabaseToolStripMenuItem.Size = new System.Drawing.Size(159, 22);
+            this.createDatabaseToolStripMenuItem.Size = new System.Drawing.Size(161, 22);
             this.createDatabaseToolStripMenuItem.Text = "&Create Database";
             this.createDatabaseToolStripMenuItem.Click += new System.EventHandler(this.createDatabaseToolStripMenuItem_Click);
             // 
             // loadMNISTToolStripMenuItem
             // 
             this.loadMNISTToolStripMenuItem.Name = "loadMNISTToolStripMenuItem";
-            this.loadMNISTToolStripMenuItem.Size = new System.Drawing.Size(159, 22);
+            this.loadMNISTToolStripMenuItem.Size = new System.Drawing.Size(161, 22);
             this.loadMNISTToolStripMenuItem.Text = "Load MNIST...";
             this.loadMNISTToolStripMenuItem.Click += new System.EventHandler(this.loadMNISTToolStripMenuItem_Click);
+            // 
+            // loadCIFAR10ToolStripMenuItem
+            // 
+            this.loadCIFAR10ToolStripMenuItem.Name = "loadCIFAR10ToolStripMenuItem";
+            this.loadCIFAR10ToolStripMenuItem.Size = new System.Drawing.Size(161, 22);
+            this.loadCIFAR10ToolStripMenuItem.Text = "Load CIFAR-10...";
+            this.loadCIFAR10ToolStripMenuItem.Click += new System.EventHandler(this.loadCIFAR10ToolStripMenuItem_Click);
             // 
             // testToolStripMenuItem
             // 
@@ -131,6 +141,13 @@
             this.toolStripSeparator2.Name = "toolStripSeparator2";
             this.toolStripSeparator2.Size = new System.Drawing.Size(172, 6);
             // 
+            // createMyCaffeToolStripMenuItem
+            // 
+            this.createMyCaffeToolStripMenuItem.Name = "createMyCaffeToolStripMenuItem";
+            this.createMyCaffeToolStripMenuItem.Size = new System.Drawing.Size(175, 22);
+            this.createMyCaffeToolStripMenuItem.Text = "Create MyCaffe";
+            this.createMyCaffeToolStripMenuItem.Click += new System.EventHandler(this.createMyCaffeToolStripMenuItem_Click);
+            // 
             // deviceInformationToolStripMenuItem
             // 
             this.deviceInformationToolStripMenuItem.Enabled = false;
@@ -138,13 +155,6 @@
             this.deviceInformationToolStripMenuItem.Size = new System.Drawing.Size(175, 22);
             this.deviceInformationToolStripMenuItem.Text = "Device Information";
             this.deviceInformationToolStripMenuItem.Click += new System.EventHandler(this.deviceInformationToolStripMenuItem_Click);
-            // 
-            // createMyCaffeToolStripMenuItem
-            // 
-            this.createMyCaffeToolStripMenuItem.Name = "createMyCaffeToolStripMenuItem";
-            this.createMyCaffeToolStripMenuItem.Size = new System.Drawing.Size(175, 22);
-            this.createMyCaffeToolStripMenuItem.Text = "Create MyCaffe";
-            this.createMyCaffeToolStripMenuItem.Click += new System.EventHandler(this.createMyCaffeToolStripMenuItem_Click);
             // 
             // destroyMyCaffeToolStripMenuItem
             // 
@@ -210,13 +220,13 @@
             this.edtStatus.Size = new System.Drawing.Size(588, 428);
             this.edtStatus.TabIndex = 1;
             // 
-            // m_bwLoadDatabase
+            // m_bwLoadMnistDatabase
             // 
-            this.m_bwLoadDatabase.WorkerReportsProgress = true;
-            this.m_bwLoadDatabase.WorkerSupportsCancellation = true;
-            this.m_bwLoadDatabase.DoWork += new System.ComponentModel.DoWorkEventHandler(this.m_bwLoadDatabase_DoWork);
-            this.m_bwLoadDatabase.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
-            this.m_bwLoadDatabase.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
+            this.m_bwLoadMnistDatabase.WorkerReportsProgress = true;
+            this.m_bwLoadMnistDatabase.WorkerSupportsCancellation = true;
+            this.m_bwLoadMnistDatabase.DoWork += new System.ComponentModel.DoWorkEventHandler(this.m_bwLoadDatabase_DoWork);
+            this.m_bwLoadMnistDatabase.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
+            this.m_bwLoadMnistDatabase.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
             // 
             // m_bwProcess
             // 
@@ -225,6 +235,14 @@
             this.m_bwProcess.DoWork += new System.ComponentModel.DoWorkEventHandler(this.m_bwProcess_DoWork);
             this.m_bwProcess.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
             this.m_bwProcess.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
+            // 
+            // m_bwLoadCiFar10Database
+            // 
+            this.m_bwLoadCiFar10Database.WorkerReportsProgress = true;
+            this.m_bwLoadCiFar10Database.WorkerSupportsCancellation = true;
+            this.m_bwLoadCiFar10Database.DoWork += new System.ComponentModel.DoWorkEventHandler(this.m_bwLoadCiFar10Database_DoWork);
+            this.m_bwLoadCiFar10Database.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
+            this.m_bwLoadCiFar10Database.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
             // 
             // FormMain
             // 
@@ -260,7 +278,7 @@
         private System.Windows.Forms.TextBox edtStatus;
         private System.Windows.Forms.ToolStripMenuItem deviceInformationToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem loadMNISTToolStripMenuItem;
-        private System.ComponentModel.BackgroundWorker m_bwLoadDatabase;
+        private System.ComponentModel.BackgroundWorker m_bwLoadMnistDatabase;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripMenuItem trainMNISTToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem testMNISTToolStripMenuItem;
@@ -268,6 +286,8 @@
         private System.ComponentModel.BackgroundWorker m_bwProcess;
         private System.Windows.Forms.ToolStripMenuItem createMyCaffeToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem destroyMyCaffeToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem loadCIFAR10ToolStripMenuItem;
+        private System.ComponentModel.BackgroundWorker m_bwLoadCiFar10Database;
     }
 }
 

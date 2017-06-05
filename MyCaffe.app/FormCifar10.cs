@@ -12,34 +12,37 @@ using System.Windows.Forms;
 
 namespace MyCaffe.app
 {
-    public partial class FormMnist : Form
+    public partial class FormCifar10 : Form
     {
         Dictionary<Button, TextBox> m_rgItems = new Dictionary<Button, TextBox>();
-        MnistDataParameters m_param = null;
+        CiFar10DataParameters m_param = null;
 
-        public FormMnist()
+        public FormCifar10()
         {
             InitializeComponent();
 
-            edtTrainImagesFile.Tag = "train-images-idx3-ubyte";
-            edtTrainLabelsFile.Tag = "train-labels-idx1-ubyte";
-            edtTestImagesFile.Tag = "t10k-images-idx3-ubyte";
-            edtTestLabelsFile.Tag = "t10k-labels-idx1-ubyte";
+            edtCifarDataFile1.Tag = "data_batch_1.bin";
+            edtCifarDataFile2.Tag = "data_batch_2.bin";
+            edtCifarDataFile3.Tag = "data_batch_3.bin";
+            edtCifarDataFile4.Tag = "data_batch_4.bin";
+            edtCifarDataFile5.Tag = "data_batch_5.bin";
+            edtCifarDataFile6.Tag = "test_batch.bin";
 
-            m_rgItems.Add(btnBrowseGz1, edtTrainImagesFile);
-            m_rgItems.Add(btnBrowseGz2, edtTrainLabelsFile);
-            m_rgItems.Add(btnBrowseGz3, edtTestImagesFile);
-            m_rgItems.Add(btnBrowseGz4, edtTestLabelsFile);
+            m_rgItems.Add(btnBrowseBin1, edtCifarDataFile1);
+            m_rgItems.Add(btnBrowseBin2, edtCifarDataFile2);
+            m_rgItems.Add(btnBrowseBin3, edtCifarDataFile3);
+            m_rgItems.Add(btnBrowseBin4, edtCifarDataFile4);
+            m_rgItems.Add(btnBrowseBin5, edtCifarDataFile5);
+            m_rgItems.Add(btnBrowseBin6, edtCifarDataFile6);
         }
 
-        public MnistDataParameters Parameters
+        public CiFar10DataParameters Parameters
         {
             get { return m_param; }
         }
 
-        private void FormMnist_Load(object sender, EventArgs e)
+        private void FormCiFar10_Load(object sender, EventArgs e)
         {
-
         }
 
         private void lblDownloadSite_MouseHover(object sender, EventArgs e)
@@ -61,16 +64,16 @@ namespace MyCaffe.app
             p.Start();
         }
 
-        private void btnBrowseGz_Click(object sender, EventArgs e)
+        private void btnBrowseBin_Click(object sender, EventArgs e)
         {
             TextBox edt = m_rgItems[(Button)sender];
 
-            openFileDialogGz.FileName = edt.Tag.ToString();
-            openFileDialogGz.Title = "Select the " + edt.Tag.ToString() + " GZ file.";
+            openFileDialogBin.FileName = edt.Tag.ToString();
+            openFileDialogBin.Title = "Select the " + edt.Tag.ToString() + " BIN file.";
 
-            if (openFileDialogGz.ShowDialog() == DialogResult.OK)
+            if (openFileDialogBin.ShowDialog() == DialogResult.OK)
             {
-                edt.Text = openFileDialogGz.FileName;
+                edt.Text = openFileDialogBin.FileName;
             }
         }
 
@@ -100,7 +103,7 @@ namespace MyCaffe.app
 
         private void btnOK_Click(object sender, EventArgs e)
         {
-            m_param = new MnistDataParameters(edtTrainImagesFile.Text, edtTrainLabelsFile.Text, edtTestImagesFile.Text, edtTestLabelsFile.Text);
+            m_param = new app.CiFar10DataParameters(edtCifarDataFile1.Text, edtCifarDataFile2.Text, edtCifarDataFile3.Text, edtCifarDataFile4.Text, edtCifarDataFile5.Text, edtCifarDataFile6.Text);
         }
     }
 }

@@ -777,7 +777,8 @@ namespace MyCaffe.imagedb
             if (ds.CreatorName != null)
                 nDsCreatorID = m_db.GetDatasetCreatorID(ds.CreatorName);
 
-            return m_db.AddDataset(nDsCreatorID, ds.Name, ds.TestingSource.ID, ds.TrainingSource.ID, ds.DatasetGroup.ID, ds.ModelGroup.ID);
+            ds.ID = m_db.AddDataset(nDsCreatorID, ds.Name, ds.TestingSource.ID, ds.TrainingSource.ID, ds.DatasetGroup.ID, ds.ModelGroup.ID);
+            return ds.ID;
         }
 
         /// <summary>

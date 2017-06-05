@@ -101,7 +101,7 @@ namespace MyCaffe.test
             m_blobTopLabels = new Blob<T>(m_cuda, m_log);
             m_db = new MyCaffeImageDatabase();
             m_evtCancel = new CancelEvent();
-
+           
             DatasetFactory factory = new DatasetFactory();
             m_ds = factory.LoadDataset("MNIST");
 

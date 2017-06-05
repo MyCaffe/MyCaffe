@@ -1,6 +1,7 @@
 <H2>Installation Instructions</H2>
 To install and run <b>MyCaffe</b> you will need to do the following steps.
 </br>
+<H3>I. Install NVIDIA CUDA and cuDNN Libraries</H3>
 </br>1.) Install the NVIDIA CUDA 8.0 Toolkit for Windows from https://developer.nvidia.com/cuda-downloads. 
 </br>2.) Install the NVIDIA cuDNN Accelerated Libraries for CUDA 8.0 from https://developer.nvidia.com/cuDNN.
 </br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V8_0)</i></b> installation location named <b><i>cudann_8.0-win-v6.0</i></b> and copy
@@ -9,7 +10,7 @@ To install and run <b>MyCaffe</b> you will need to do the following steps.
 </br>
 NOTE: The CudaDnnDLL project points to the file directories noted above for the cuDNN include and library files.  
 
-<H3>Strong Names and Signing</H3>
+<H3>II. Setup Strong Names and Signing</H3>
 The <b><i>MyCaffe</i></b> project, uses a temporary strong name key file called <b><i>CudaControl.pfx</i></b> located in the
 <b><i>packages\CudaControl.1.0.0.271\lib\Net40\</i></b> directory.  If you download, build the <b>CudaControl</b> repository and create a new
 <b><i>CudaControl.pfx</i></b> file, you should copy it into the <b><i>packages\CudaControl.1.0.0.271\lib\Net40\</i></b> directory, replacing
@@ -18,7 +19,7 @@ the pfx file there.  Alternatively, you can just install the <b>CudaControl</b> 
 You may want to provide strong names for each of the other <b>MyCaffe</b> projects.  To do this just select the project <i>Properties | Signing</i> tab and
 then <i>Sign the assembly</i> with a strong name keyfile.  You can also use this method to create the <b><i>CudaControl.pfx</i></b> file mentioned above.
 
-<H3>NuGet Packages Used</H3>
+<H3>III. Restore NuGet Packages Used</H3>
 The <b>MyCaffe</b> projects use several NuGet Packages. You will need to restore these packages before building.  To restore the NuGet Packages, 
 right click the <b><i>MyCaffe</i></b> solution and select the '<i>Restore NuGet Packages</i>' menu item.
 </br>
@@ -37,7 +38,7 @@ you must register the CudaControl.dll (run '<b><i>regsvr32 CudaControl.dll</i></
 </br>The <b><i>MyCaffe.test</i></b> project uses the following NuGet Packages:
   </br>a.) <b>EntityFramework</b> by Microsoft, version 6.1.3  
   </br>b.) <b>HDF5DotNet.x64</b> by The HDF Group, version 1.8.9
-<H3>Required Software</H3>
+<H3>IV. Required Software</H3>
 <b>MyCaffe</b> requires the following software.
 </br>
 </br>a.) Microsoft Visual Studio 2015 (2017 should work for most projects, but as of this writing is not yet supported for CUDA 8.0)
@@ -49,7 +50,13 @@ in a directory that is visible by your executable files.  This library can be bu
 by the <b>CudaControl</b> NuGet package and placed in the <i>packages\CudaControl.1.0.0.271\lib\Net40</i> directory.  You should copy the library into
 a directory that is visible by your executable files.  NOTE: The automated multi-GPU tests use GPU's 1-4 where the monitor is plugged into GPU 0.
 </br>
-
+<H3>V. Create The Database</H3>
+<b>MyCaffe</b> uses Microsoft SQL (or Microsoft SQL Express) as its underlying database.  You will need to create the database with the following steps:
+</br>1.) Run the <b>MyCaffe.app.exe</b> test application and select the '<i>Database | Create Database</i>' menu item.
+</br>2.) From the <i>Create Database</i> dialog, selecd the location where you want to create the database and select the <i>OK</i> button.
+</br>3.) Next, load the <b>MNIST</b> data by selecting the '<i>Database | Load MNIST...'</i> menu item and follow the steps to get the data files.
+</br>4.) Next, load the <b>CIFAR-10</b> data by selecting the '<i>Database | Load CIFAR-10...'</i> menu item and follow the steps to get the data files.
+</br>NOTE: The automated tests expect that both the MNIST and CIFAR-10 datasets have already been loaded into the database.
 <H2>Test Installation Instructions</H2>
 To install data used by the Automated Tests, you will need to install the following files:
 </br>

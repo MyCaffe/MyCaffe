@@ -133,12 +133,30 @@ namespace MyCaffe.app
             {
                 m_evtCancel.Set();
                 loadMNISTToolStripMenuItem.Enabled = false;
+                loadCIFAR10ToolStripMenuItem.Enabled = false;
                 trainMNISTToolStripMenuItem.Enabled = false;
                 testMNISTToolStripMenuItem.Enabled = false;
                 createMyCaffeToolStripMenuItem.Enabled = false;
                 destroyMyCaffeToolStripMenuItem.Enabled = false;
                 deviceInformationToolStripMenuItem.Enabled = false;
-                m_bwLoadDatabase.RunWorkerAsync(dlg.Parameters);
+                m_bwLoadMnistDatabase.RunWorkerAsync(dlg.Parameters);
+            }
+        }
+
+        private void loadCIFAR10ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            FormCifar10 dlg = new app.FormCifar10();
+
+            if (dlg.ShowDialog() == DialogResult.OK)
+            {
+                loadMNISTToolStripMenuItem.Enabled = false;
+                loadCIFAR10ToolStripMenuItem.Enabled = false;
+                trainMNISTToolStripMenuItem.Enabled = false;
+                testMNISTToolStripMenuItem.Enabled = false;
+                createMyCaffeToolStripMenuItem.Enabled = false;
+                destroyMyCaffeToolStripMenuItem.Enabled = false;
+                deviceInformationToolStripMenuItem.Enabled = false;
+                m_bwLoadCiFar10Database.RunWorkerAsync(dlg.Parameters);
             }
         }
 
@@ -157,6 +175,7 @@ namespace MyCaffe.app
             deviceInformationToolStripMenuItem.Enabled = false;
             createMyCaffeToolStripMenuItem.Enabled = true;
             loadMNISTToolStripMenuItem.Enabled = true;
+            loadCIFAR10ToolStripMenuItem.Enabled = true;
         }
 
         private void m_bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -168,6 +187,7 @@ namespace MyCaffe.app
                 if (pi.Alive.Value == true)
                 {
                     loadMNISTToolStripMenuItem.Enabled = true;
+                    loadCIFAR10ToolStripMenuItem.Enabled = true;
                     destroyMyCaffeToolStripMenuItem.Enabled = true;
                     trainMNISTToolStripMenuItem.Enabled = true;
                     testMNISTToolStripMenuItem.Enabled = true;
@@ -176,6 +196,7 @@ namespace MyCaffe.app
                 else
                 {
                     loadMNISTToolStripMenuItem.Enabled = true;
+                    loadCIFAR10ToolStripMenuItem.Enabled = true;
                     createMyCaffeToolStripMenuItem.Enabled = true;
                 }
 
@@ -197,14 +218,30 @@ namespace MyCaffe.app
             loader.LoadDatabase();            
         }
 
+        private void m_bwLoadCiFar10Database_DoWork(object sender, DoWorkEventArgs e)
+        {
+            CiFar10DataLoader loader = new CiFar10DataLoader(e.Argument as CiFar10DataParameters);
+
+            loader.OnProgress += loader_OnProgress;
+            loader.OnError += loader_OnError;
+
+            loader.LoadDatabase();
+        }
+
         private void loader_OnError(object sender, ProgressArgs e)
         {
-            m_bwLoadDatabase.ReportProgress((int)e.Progress.Percentage, e.Progress);
+            if (sender.GetType() == typeof(MnistDataLoader))
+                m_bwLoadMnistDatabase.ReportProgress((int)e.Progress.Percentage, e.Progress);
+            else
+                m_bwLoadCiFar10Database.ReportProgress((int)e.Progress.Percentage, e.Progress);
         }
 
         private void loader_OnProgress(object sender, ProgressArgs e)
         {
-            m_bwLoadDatabase.ReportProgress((int)e.Progress.Percentage, e.Progress);
+            if (sender.GetType() == typeof(MnistDataLoader))
+                m_bwLoadMnistDatabase.ReportProgress((int)e.Progress.Percentage, e.Progress);
+            else
+                m_bwLoadCiFar10Database.ReportProgress((int)e.Progress.Percentage, e.Progress);
         }
 
         private void createMyCaffeToolStripMenuItem_Click(object sender, EventArgs e)
