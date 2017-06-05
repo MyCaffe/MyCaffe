@@ -11,13 +11,19 @@ To install and run <b>MyCaffe</b> you will need to do the following steps.
 NOTE: The CudaDnnDLL project points to the file directories noted above for the cuDNN include and library files.  
 
 <H3>II. Setup Strong Names and Signing</H3>
-The <b><i>MyCaffe</i></b> project, uses a temporary strong name key file called <b><i>CudaControl.pfx</i></b> located in the
-<b><i>packages\CudaControl.1.0.0.271\lib\Net40\</i></b> directory.  If you download, build the <b>CudaControl</b> repository and create a new
-<b><i>CudaControl.pfx</i></b> file, you should copy it into the <b><i>packages\CudaControl.1.0.0.271\lib\Net40\</i></b> directory, replacing
-the pfx file there.  Alternatively, you can just install the <b>CudaControl</b> package from NuGet.
+The <b><i>MyCaffe</i></b> project, uses the following strong name key files:
+</br>The <b>CudaControl</b> uses the <b><i>CudaControl.pfx</i></b> located in the <b><i>packages\CudaControl.1.0.0.271\lib\Net40\</i></b> directory.  
+If you download, build the <b>CudaControl</b> repository and create a new <b><i>CudaControl.pfx</i></b> file, you should also copy it into the 
+<b><i>packages\CudaControl.1.0.0.271\lib\Net40\</i></b> directory, replacing the pfx file there.  Alternatively, you can just install 
+the <b>CudaControl</b> package from NuGet.
 </p>
-You may want to provide strong names for each of the other <b>MyCaffe</b> projects.  To do this just select the project <i>Properties | Signing</i> tab and
+The <b><i>MyCaffe</i></b> uses the <b><i>mycaffe.sn.pfx</i></b> key file for string name signing.
+</br>The <b><i>MyCaffe.basecode</i></b> uses the <b><i>mycaffe.basecode.sn.pfx</i></b> key file for string name signing.
+</br>The <b><i>MyCaffe.imagedb</i></b> uses the <b><i>mycaffe.imagedb.sn.pfx</i></b> key file for string name signing.
+</p>
+You may want to provide your own strong names for each of the other <b>MyCaffe</b> projects.  To do this just select the project <i>Properties | Signing</i> tab and
 then <i>Sign the assembly</i> with a strong name keyfile.  You can also use this method to create the <b><i>CudaControl.pfx</i></b> file mentioned above.
+</br>If you change these, please do not check them in.  NOTE: The current .gitignore file ignores pfx files.
 
 <H3>III. Restore NuGet Packages Used</H3>
 The <b>MyCaffe</b> projects use several NuGet Packages. You will need to restore these packages before building.  To restore the NuGet Packages, 
