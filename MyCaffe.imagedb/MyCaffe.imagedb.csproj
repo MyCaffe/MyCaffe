@@ -37,8 +37,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>
-    </AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>mycaffe.imagedb.sn.pfx</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>MainIcon.ico</ApplicationIcon>
@@ -159,6 +158,7 @@
     <None Include="DNNModel.edmx.diagram">
       <DependentUpon>DNNModel.edmx</DependentUpon>
     </None>
+    <None Include="mycaffe.imagedb.sn.pfx" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
