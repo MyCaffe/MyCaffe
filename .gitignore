@@ -8,6 +8,11 @@
 *.user
 *.sln.docstates
 
+# Private Files
+**/_private/*
+**/_build/*
+*.pro.*
+
 # Build results
 
 [Dd]ebug/
