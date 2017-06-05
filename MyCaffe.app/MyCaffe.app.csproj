@@ -152,9 +152,9 @@
       <Project>{642ba581-59cb-445e-8d7d-81e67b748d77}</Project>
       <Name>MyCaffe.imagedb</Name>
     </ProjectReference>
-    <ProjectReference Include="..\MyCaffe.test.automated\MyCaffe.net.test.automated.csproj">
+    <ProjectReference Include="..\MyCaffe.test.automated\MyCaffe.test.automated.csproj">
       <Project>{d0da9b0f-9a50-496e-b6e9-cac5786bbed8}</Project>
-      <Name>MyCaffe.net.test.automated</Name>
+      <Name>MyCaffe.test.automated</Name>
     </ProjectReference>
     <ProjectReference Include="..\MyCaffe\MyCaffe.csproj">
       <Project>{28e430dd-bd6c-4a4c-9454-1eeb4ad63a5c}</Project>

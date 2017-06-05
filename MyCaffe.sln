@@ -13,7 +13,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CudaDnnDLL", "CudaDnnDLL\Cu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyCaffe.app", "MyCaffe.app\MyCaffe.app.csproj", "{6A464F09-774E-4E57-8738-1BB6DD9F8770}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyCaffe.net.test.automated", "MyCaffe.test.automated\MyCaffe.net.test.automated.csproj", "{D0DA9B0F-9A50-496E-B6E9-CAC5786BBED8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyCaffe.test.automated", "MyCaffe.test.automated\MyCaffe.test.automated.csproj", "{D0DA9B0F-9A50-496E-B6E9-CAC5786BBED8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyCaffe.test", "MyCaffe.test\MyCaffe.test.csproj", "{FDBAF1BB-FC96-4D73-BA1A-A2B0CEA75DA1}"
 EndProject
