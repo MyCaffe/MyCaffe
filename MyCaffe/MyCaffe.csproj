@@ -282,7 +282,7 @@
     </PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PreBuildEvent>"%25ProgramFiles(x86)%25\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6 Tools\tlbimp" $(SolutionDir)packages\CudaControl.1.0.0.271\lib\Net40\CudaControl.tlb /keyfile:$(SolutionDir)packages\CudaControl.1.0.0.271\lib\Net40\CudaControl.pfx /primary /machine:Agnostic /out:$(SolutionDir)packages\CudaControl.1.0.0.271\lib\Net40\CudaControlLib.dll
+    <PreBuildEvent>"%25ProgramFiles(x86)%25\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6 Tools\tlbimp" $(SolutionDir)packages\CudaControl.1.0.0.271\lib\Net40\CudaControl.tlb /keyfile:$(SolutionDir)packages\CudaControl.1.0.0.271\lib\Net40\CudaControl.pfx /primary /machine:x64 /out:$(SolutionDir)packages\CudaControl.1.0.0.271\lib\Net40\CudaControlLib.dll
 </PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
