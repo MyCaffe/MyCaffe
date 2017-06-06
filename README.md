@@ -1,6 +1,8 @@
 <H2>Welcome to MyCaffe!</H2>
 
-<b><a href="http://mycaffe.ai">MyCaffe</a></b> is a complete C# re-write of the <b>C</b>onvolutional <b>A</b>rchitecture for <b>F</b>ast <b>F</b>eature <b>E</b>ncoding (CAFFE[1]), an <a href="http://caffe.berkeleyvision.org/">open-source C++ Caffe</a> project from <a href="http://bair.berkeley.edu/">Berkeley AI Research</a>.
+<b><a href="http://mycaffe.ai">MyCaffe</a></b> is a complete C# re-write of the <b>C</b>onvolutional <b>A</b>rchitecture for <b>F</b>ast <b>F</b>eature <b>E</b>ncoding (CAFFE[1]), 
+an <a href="http://caffe.berkeleyvision.org/">open-source C++ Caffe</a> project, orginally created by Yangquing Jia, and currently maintained by <a href="http://bair.berkeley.edu/">Berkeley AI Research</a> 
+with Evan Shelhamer as Lead Developer.
 
 MyCaffe allows Windows C# software developers to use and expand deep learning solutions in their native C# language.  All layers except for a few, and nearly every unit test are now provided in C#.  Windows programmers can now write their own custom layers in the C# langauge, yet still enjoy the benefit of an efficient deep learning architecture that supports multi-GPU training on up to 8 GPU's using <a href="https://devblogs.nvidia.com/parallelforall/fast-multi-gpu-collectives-nccl/">NVIDIA's NCCL ('Nickel')</a>.  
 
