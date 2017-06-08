@@ -247,6 +247,27 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Returns all raw image IDs for a given data source.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <returns>The list of raw image ID's is returned.</returns>
+        public List<int> QueryRawImageIDs(int nSrcId = 0)
+        {
+            return m_db.QueryAllRawImageIDs(nSrcId);
+        }
+
+        /// <summary>
+        /// Returns the raw image ID for the image mean associated with a data source.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <returns>The raw image ID is returned.</returns>
+        public int GetRawImageMeanID(int nSrcId = 0)
+        {
+            RawImageMean img = m_db.GetRawImageMean(nSrcId);
+            return (img == null) ? 0 : img.ID;
+        }
+
+        /// <summary>
         /// Returns the RawImage ID for the image with the given time-stamp. 
         /// </summary>
         /// <param name="dt">Specifies the image time-stamp.</param>
@@ -1065,6 +1086,16 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Returns the image mean for a give data source.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the source data ID.</param>
+        /// <returns>The image mean is returned in a SimpleDatum.</returns>
+        public SimpleDatum LoadImageMean(int nSrcId)
+        {
+            return LoadDatum(m_db.GetRawImageMean(nSrcId));
+        }
+
+        /// <summary>
         /// Load an image at a given index.
         /// </summary>
         /// <param name="nIdx">Specifies the image index.</param>
@@ -1276,7 +1307,27 @@ namespace MyCaffe.imagedb
             GroupDescriptor mdlGroup = LoadModelGroup(ds.ModelGroupID.GetValueOrDefault());
             DatasetDescriptor dsDesc = new DatasetDescriptor(ds.ID, ds.Name, mdlGroup, dsGroup, srcTrain, srcTest, m_db.GetDatasetCreatorName(ds.DatasetCreatorID.GetValueOrDefault()), ds.OwnerID);
 
+            dsDesc.Parameters = LoadDatasetParameters(ds.ID);
+
             return dsDesc;
+        }
+
+        /// <summary>
+        /// Loads the dataset parameters for a given dataset.
+        /// </summary>
+        /// <param name="nDsId">Specifies the ID of the dataset.</param>
+        /// <returns>The collection of dataset parameters is returned.</returns>
+        public ParameterDescriptorCollection LoadDatasetParameters(int nDsId)
+        {
+            ParameterDescriptorCollection col = new ParameterDescriptorCollection();
+
+            Dictionary<string, string> rgParam = m_db.GetDatasetParameters(nDsId);
+            foreach (KeyValuePair<string, string> kv in rgParam)
+            {
+                col.Add(new ParameterDescriptor(0, kv.Key, kv.Value));
+            }
+
+            return col;
         }
 
         /// <summary>
