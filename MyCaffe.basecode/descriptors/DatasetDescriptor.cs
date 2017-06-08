@@ -18,6 +18,7 @@ namespace MyCaffe.basecode.descriptors
         SourceDescriptor m_srcTrain;
         GroupDescriptor m_groupDataset;
         GroupDescriptor m_groupModel;
+        ParameterDescriptorCollection m_colParameters = new ParameterDescriptorCollection();
         string m_strCreatorName;
 
         /// <summary>
@@ -99,6 +100,12 @@ namespace MyCaffe.basecode.descriptors
             else
                 m_groupModel = null;
 
+            m_colParameters = new descriptors.ParameterDescriptorCollection();
+            foreach (ParameterDescriptor p in ds.m_colParameters)
+            {
+                m_colParameters.Add(new ParameterDescriptor(p));
+            }
+
             m_strCreatorName = ds.m_strCreatorName;
         }
 
@@ -166,6 +173,16 @@ namespace MyCaffe.basecode.descriptors
         public string CreatorName
         {
             get { return m_strCreatorName; }
+        }
+
+        /// <summary>
+        /// Get/set the dataset parameters (if any).
+        /// </summary>
+        [Description("Specifies the parameters of the data set (if any).")]
+        public ParameterDescriptorCollection Parameters
+        {
+            get { return m_colParameters; }
+            set { m_colParameters = value; }
         }
     }
 }
