@@ -2593,6 +2593,27 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Returns all dataset parameters for a given dataset.
+        /// </summary>
+        /// <param name="nDsId">Specifies the ID of the dataset.</param>
+        /// <returns>A dictionary of the dataset parameters is returned.</returns>
+        public Dictionary<string, string> GetDatasetParameters(int nDsId)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<DatasetParameter> rgP = entities.DatasetParameters.Where(p => p.DatasetID == nDsId).ToList();
+                Dictionary<string, string> rgDsP = new Dictionary<string, string>();
+
+                foreach (DatasetParameter p in rgP)
+                {
+                    rgDsP.Add(p.Name, p.Value);
+                }
+
+                return rgDsP;
+            }
+        }
+
+        /// <summary>
         /// Returns the value of a dataset parameter as a string.
         /// </summary>
         /// <param name="nDsId">Specifies the ID of the dataset.</param>
