@@ -999,7 +999,11 @@ namespace MyCaffe.imagedb
         /// <returns>A new SimpleDatum is returned containing the image.</returns>
         public SimpleDatum LoadDatum(RawImage img, int nPadW = 0, int nPadH = 0)
         {
-            byte[] rgData = m_db.GetRawImageData(img);
+            byte[] rgDataCriteria = null;
+            int? nDataCriteriaFormatId = null;
+            byte[] rgDebugData = null;
+            int? nDebugDataFormatId = null;
+            byte[] rgData = m_db.GetRawImageData(img, out rgDataCriteria, out nDataCriteriaFormatId, out rgDebugData, out nDebugDataFormatId);
             List<byte> rgDataBytes = null;
             List<double> rgDataDouble = null;
             int nHeight = img.Height.GetValueOrDefault();
@@ -1029,10 +1033,10 @@ namespace MyCaffe.imagedb
             sd.OriginalLabel = img.OriginalLabel.GetValueOrDefault();
             sd.Description = img.Description;
             sd.GroupID = img.GroupID.GetValueOrDefault();
-            sd.DataCriteria = img.DataCriteria;
-            sd.DataCriteriaFormat = (SimpleDatum.DATA_FORMAT)img.DataCriteriaFormatID.GetValueOrDefault(0);
-            sd.DebugData = img.DebugData;
-            sd.DebugDataFormat = (SimpleDatum.DATA_FORMAT)img.DebugDataFormatID.GetValueOrDefault(0);
+            sd.DataCriteria = rgDataCriteria;
+            sd.DataCriteriaFormat = (SimpleDatum.DATA_FORMAT)nDataCriteriaFormatId.GetValueOrDefault(0);
+            sd.DebugData = rgDebugData;
+            sd.DebugDataFormat = (SimpleDatum.DATA_FORMAT)nDebugDataFormatId.GetValueOrDefault(0);
 
             return sd;
         }

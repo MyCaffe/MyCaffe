@@ -825,18 +825,39 @@ namespace MyCaffe.imagedb
         /// If the RawImage uses its Virtual ID, the RawImage with that ID is queried from the database and its raw data is returned.
         /// </remarks>
         /// <param name="img">Specifies the RawImage to use.</param>
+        /// <param name="rgDataCriteria">Returns the image data criteria (if any).</param>
+        /// <param name="nDataCriteriaFmtId">Returns the image data criteria format (if any).</param>
+        /// <param name="rgDebugData">Returns the image debug data (if any).</param>
+        /// <param name="nDebugDataFmtId">Returns the debug data format (if any).</param>
         /// <returns>The raw data is returned as a array of <i>byte</i> values.</returns>
-        public byte[] GetRawImageData(RawImage img)
+        public byte[] GetRawImageData(RawImage img, out byte[] rgDataCriteria, out int? nDataCriteriaFmtId, out byte[] rgDebugData, out int? nDebugDataFmtId)
         {
             if (img.VirtualID == 0)
+            {
+                rgDataCriteria = img.DataCriteria;
+                nDataCriteriaFmtId = img.DataCriteriaFormatID;
+                rgDebugData = img.DebugData;
+                nDebugDataFmtId = img.DebugDataFormatID;
                 return img.Data;
+            }
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
                 List<RawImage> rgImg = entities.RawImages.Where(p => p.ID == img.VirtualID).ToList();
 
                 if (rgImg.Count == 0)
+                {
+                    rgDataCriteria = null;
+                    nDataCriteriaFmtId = null;
+                    rgDebugData = null;
+                    nDebugDataFmtId = null;
                     return null;
+                }
+
+                rgDataCriteria = rgImg[0].DataCriteria;
+                nDataCriteriaFmtId = rgImg[0].DataCriteriaFormatID;
+                rgDebugData = rgImg[0].DebugData;
+                nDebugDataFmtId = rgImg[0].DebugDataFormatID;
 
                 return rgImg[0].Data;
             }
