@@ -222,12 +222,14 @@ namespace MyCaffe.basecode
         /// Sets the <i>byte</i> data of the SimpleDatum and its Label.
         /// </summary>
         /// <param name="rgByteData">Specifies the <i>byte</i> data.</param>
+        /// <param name="bAllowVirtualOverride">Optionally, allow virtual ID override.  When <i>true</i> the data can be set on a virtual SimpleDatum, otherwise it cannot.</param>
         /// <param name="nLabel">Specifies the label.</param>
-        public void SetData(List<byte> rgByteData, int nLabel)
+        public void SetData(List<byte> rgByteData, int nLabel, bool bAllowVirtualOverride = false)
         {
-            if (m_nVirtualID != 0)
+            if (!bAllowVirtualOverride && m_nVirtualID != 0)
                 throw new Exception("Cannot set the data of a virtual item!");
 
+            m_nVirtualID = 0;
             m_bIsRealData = false;
             m_rgByteData = rgByteData.ToArray();
             m_rgRealData = null;
@@ -239,11 +241,13 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="rgRealData">Specifies the <i>double</i> data.</param>
         /// <param name="nLabel">Specifies the label.</param>
-        public void SetData(List<double> rgRealData, int nLabel)
+        /// <param name="bAllowVirtualOverride">Optionally, allow virtual ID override.  When <i>true</i> the data can be set on a virtual SimpleDatum, otherwise it cannot.</param>
+        public void SetData(List<double> rgRealData, int nLabel, bool bAllowVirtualOverride = false)
         {
-            if (m_nVirtualID != 0)
+            if (!bAllowVirtualOverride && m_nVirtualID != 0)
                 throw new Exception("Cannot set the data of a virtual item!");
 
+            m_nVirtualID = 0;
             m_bIsRealData = true;
             m_rgByteData = null;
             m_rgRealData = rgRealData.ToArray();
@@ -859,9 +863,9 @@ namespace MyCaffe.basecode
                 SimpleDatum d = new SimpleDatum(rgImg[0]);
 
                 if (rgImg[0].ByteData != null)
-                    d.SetData(new List<byte>(rgbData), -1);
+                    d.SetData(new List<byte>(rgbData), -1, true);
                 else
-                    d.SetData(new List<double>(rgdfData), -1);
+                    d.SetData(new List<double>(rgdfData), -1, true);
 
                 return d;
             }
