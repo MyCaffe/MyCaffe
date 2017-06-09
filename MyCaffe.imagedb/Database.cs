@@ -410,7 +410,7 @@ namespace MyCaffe.imagedb
 
                 foreach (Label l in rgLabels)
                 {
-                    int nCount = entities.RawImages.Where(p => p.SourceID == nSrcId && p.ActiveLabel == l.ActiveLabel).Count();
+                    int nCount = entities.RawImages.Where(p => p.SourceID == nSrcId && p.ActiveLabel == l.ActiveLabel && p.Active == true).Count();
                     l.ImageCount = nCount;
 
                     if (nProjectId > 0)
@@ -1934,7 +1934,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         public void UpdateSourceCounts()
         {
-            string strCmd = "SELECT COUNT(ID) FROM RawImages WHERE (SourceID = " + m_src.ID.ToString() + ")";
+            string strCmd = "SELECT COUNT(ID) FROM RawImages WHERE (SourceID = " + m_src.ID.ToString() + " AND Active=1)";
             DbRawSqlQuery<int> result = m_entities.Database.SqlQuery<int>(strCmd);
             List<int> rgResult = result.ToList();
             int nCount = 0;
