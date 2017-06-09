@@ -58,6 +58,14 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Save the changes on the open data source.
+        /// </summary>
+        public void SaveChanges()
+        {
+            m_db.SaveChanges();
+        }
+
+        /// <summary>
         /// Open a given data source.
         /// </summary>
         /// <param name="src">Specifies the data source.</param>
@@ -373,6 +381,19 @@ namespace MyCaffe.imagedb
             return m_db.GetRawImageParameterExist(strName, nSrcId, strType);
         }
 
+        /// <summary>
+        /// Update the active label on a given raw image.
+        /// </summary>
+        /// <param name="nImageID">Specifies the raw image ID.</param>
+        /// <param name="nNewActiveLabel">Specifies the new active label.</param>
+        /// <param name="bActivate">Optionally, specifies whether or not to activate/deactivate the image.</param>
+        /// <param name="bSaveChanges">Optionally, save the changes if any.</param>
+        /// <returns>If the image is updated this function returns <i>true</i>, otherwise it returns <i>false</i>.</returns>
+        public bool UpdateActiveLabel(int nImageID, int nNewActiveLabel, bool bActivate = true, bool bSaveChanges = true)
+        {
+            return m_db.UpdateActiveLabel(nImageID, nNewActiveLabel, bActivate, bSaveChanges);
+        }
+
         #endregion
 
 
@@ -547,17 +568,6 @@ namespace MyCaffe.imagedb
         public void DeleteLabels(int nSrcId = 0)
         {
             m_db.DeleteLabels(nSrcId);
-        }
-
-        /// <summary>
-        /// Update the label value of a label.
-        /// </summary>
-        /// <param name="nId">Specifies the ID of the label.</param>
-        /// <param name="nLabel">Specifies the new label value.</param>
-        /// <returns>If the Label is found and set, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
-        public bool UpdateLabel(int nId, int nLabel)
-        {
-            return m_db.UpdateLabel(nId, nLabel);
         }
 
         #endregion

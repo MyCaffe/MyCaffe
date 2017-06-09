@@ -31,6 +31,15 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Saves any changes on the open satabase.
+        /// </summary>
+        public void SaveChanges()
+        {
+            if (m_entities != null)
+                m_entities.SaveChanges();
+        }
+
+        /// <summary>
         /// Returns the current entity framwork Source object set during the previous call to Open().
         /// </summary>
         public Source CurrentSource
@@ -868,8 +877,10 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nID">Specifies the ID of the label.</param>
         /// <param name="nLabel">Specifies the new label value.</param>
+        /// <param name="bActivate">Specifies whether or not to activate the image, the default = <i>true</i>.</param>
+        /// <param name="bSaveChanges">Specifies whether or not to save the changes, the default = <i>true</i>.</param>
         /// <returns>If the Label is found and set, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
-        public bool UpdateLabel(int nID, int nLabel)
+        public bool UpdateActiveLabel(int nID, int nLabel, bool bActivate = true, bool bSaveChanges = true)
         {
             List<RawImage> rg = m_entities.RawImages.Where(p => p.ID == nID).ToList();
 
@@ -877,7 +888,10 @@ namespace MyCaffe.imagedb
                 return false;
 
             rg[0].ActiveLabel = nLabel;
-            m_entities.SaveChanges();
+            rg[0].Active = bActivate;
+
+            if (bSaveChanges)
+                m_entities.SaveChanges();
 
             return true;
         }
@@ -1305,7 +1319,7 @@ namespace MyCaffe.imagedb
                 {
                     rgImg[i].Idx = i;
 
-                    if (i % 100 == 0)
+                    if (i % 1000 == 0)
                         entities.SaveChanges();
 
                     if (sw.Elapsed.TotalMilliseconds > 1000)
