@@ -74,7 +74,7 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// Copy another SourceDesciptor into this one.
         /// </summary>
-        /// <param name="ds">Specifies the SourceDesciptor to copy.</param>
+        /// <param name="sd">Specifies the SourceDesciptor to copy.</param>
         public void Copy(SourceDescriptor sd)
         {
             base.Copy(sd);
