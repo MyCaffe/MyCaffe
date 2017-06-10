@@ -11,6 +11,7 @@ namespace MyCaffe.basecode
     /// </summary>
     public class Log
     {
+        string m_strPreText = "";
         string m_strSource;
         double m_dfProgress = 0;
         bool m_bEnable = true;
@@ -51,6 +52,15 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Get/set the pre-text prepended to each output line when set.
+        /// </summary>
+        public string PreText
+        {
+            get { return m_strPreText; }
+            set { m_strPreText = value; }
+        }
+
+        /// <summary>
         /// Enables/disables the Trace.  When enabled, the .Net Trace.WriteLine is called in addition to the normal Log output.  This is primarily used when debugging.
         /// </summary>
         public bool EnableTrace
@@ -71,15 +81,22 @@ namespace MyCaffe.basecode
             if (!m_bEnable && !bOverrideEnabled)
                 return;
 
+            string strLine;
+
+            if (!bHeader && m_strPreText != null && m_strPreText.Length > 0)
+                strLine = m_strPreText + str;
+            else
+                strLine = str;
+
             if (OnWriteLine != null)
-                OnWriteLine(this, new LogArg(m_strSource, str, m_dfProgress, bError));
+                OnWriteLine(this, new LogArg(m_strSource, strLine, m_dfProgress, bError));
 
             if (m_bEnableTrace)
             {
                 if (bHeader)
-                    Trace.WriteLine(str);
+                    Trace.WriteLine(strLine);
                 else
-                    Trace.WriteLine(m_dfProgress.ToString("P") + "   " + str);
+                    Trace.WriteLine(m_dfProgress.ToString("P") + "   " + strLine);
             }
         }
 
