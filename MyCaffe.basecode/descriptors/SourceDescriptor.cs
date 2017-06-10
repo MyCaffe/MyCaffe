@@ -20,6 +20,7 @@ namespace MyCaffe.basecode.descriptors
         bool m_bIsRealData;
         int m_nImageCount;
         List<LabelDescriptor> m_rgLabels = new List<LabelDescriptor>();
+        ParameterDescriptorCollection m_colParameters = new ParameterDescriptorCollection();
         string m_strLabelCounts;
 
         /// <summary>
@@ -63,6 +64,40 @@ namespace MyCaffe.basecode.descriptors
         public SourceDescriptor(SourceDescriptor s)
             : this(s.ID, s.Name, s.ImageWidth, s.ImageHeight, s.ImageChannels, s.IsRealData, s.Owner, s.ImageCount, s.Labels, s.LabelCountsAsText)
         {
+            m_colParameters = new descriptors.ParameterDescriptorCollection();
+            foreach (ParameterDescriptor p in s.m_colParameters)
+            {
+                m_colParameters.Add(new ParameterDescriptor(p));
+            }
+        }
+
+        /// <summary>
+        /// Copy another SourceDesciptor into this one.
+        /// </summary>
+        /// <param name="ds">Specifies the SourceDesciptor to copy.</param>
+        public void Copy(SourceDescriptor sd)
+        {
+            base.Copy(sd);
+
+            m_nImageCh = sd.m_nImageCh;
+            m_nImageHt = sd.m_nImageHt;
+            m_nImageWd = sd.m_nImageWd;
+            m_bIsRealData = sd.m_bIsRealData;
+            m_nImageCount = sd.m_nImageCount;
+
+            m_rgLabels = new List<descriptors.LabelDescriptor>();
+            foreach (LabelDescriptor ld in sd.m_rgLabels)
+            {
+                m_rgLabels.Add(new descriptors.LabelDescriptor(ld));
+            }
+
+            m_colParameters = new descriptors.ParameterDescriptorCollection();
+            foreach (ParameterDescriptor p in sd.m_colParameters)
+            {
+                m_colParameters.Add(new ParameterDescriptor(p));
+            }
+
+            m_strLabelCounts = sd.m_strLabelCounts;
         }
 
         /// <summary>
@@ -138,6 +173,16 @@ namespace MyCaffe.basecode.descriptors
         public override string ToString()
         {
             return "Source Description " + Name;
+        }
+
+        /// <summary>
+        /// Get/set the source parameters (if any).
+        /// </summary>
+        [Description("Specifies the parameters of the data source (if any).")]
+        public ParameterDescriptorCollection Parameters
+        {
+            get { return m_colParameters; }
+            set { m_colParameters = value; }
         }
     }
 }

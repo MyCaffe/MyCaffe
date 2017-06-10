@@ -2141,6 +2141,30 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Returns a dictionary of the data source parameters.
+        /// </summary>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <returns>The dictionary of source parameter values is returned.</returns>
+        public Dictionary<string, string> GetSourceParameters(int nSrcId = 0)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<SourceParameter> rgP = entities.SourceParameters.Where(p => p.SourceID == nSrcId).ToList();
+                Dictionary<string, string> rgPval = new Dictionary<string, string>();
+
+                foreach (SourceParameter p in rgP)
+                {
+                    rgPval.Add(p.Name, p.Value);
+                }
+
+                return rgPval;
+            }
+        }
+
+        /// <summary>
         /// Return the data source parameter as a string.
         /// </summary>
         /// <param name="strName">Specifies the parameter name.</param>

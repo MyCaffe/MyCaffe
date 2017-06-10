@@ -1180,7 +1180,27 @@ namespace MyCaffe.imagedb
             srcDesc.Labels = LoadLabels(nSrcId);
             srcDesc.LabelCountsAsText = m_db.GetLabelCountsAsText(nSrcId);
 
+            srcDesc.Parameters = LoadSourceParameters(srcDesc.ID);
+
             return srcDesc;
+        }
+
+        /// <summary>
+        /// Loads the data source parameters for a given source.
+        /// </summary>
+        /// <param name="nDsId">Specifies the ID of the data source.</param>
+        /// <returns>The collection of data source parameters is returned.</returns>
+        public ParameterDescriptorCollection LoadSourceParameters(int nSrcId)
+        {
+            ParameterDescriptorCollection col = new ParameterDescriptorCollection();
+
+            Dictionary<string, string> rgParam = m_db.GetSourceParameters(nSrcId);
+            foreach (KeyValuePair<string, string> kv in rgParam)
+            {
+                col.Add(new ParameterDescriptor(0, kv.Key, kv.Value));
+            }
+
+            return col;
         }
 
         /// <summary>
