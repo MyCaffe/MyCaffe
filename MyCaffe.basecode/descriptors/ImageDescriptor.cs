@@ -22,6 +22,7 @@ namespace MyCaffe.basecode.descriptors
         int m_nActiveLabel;
         bool m_bActive;
         string m_strDescription;
+        DateTime m_dt;
 
         /// <summary>
         /// The ImageDescriptor constructor.
@@ -36,7 +37,8 @@ namespace MyCaffe.basecode.descriptors
         /// <param name="nActiveLabel">Specifies the active label of the image.</param>
         /// <param name="bActive">Specifies whether or not the image is active.</param>
         /// <param name="strDesc">Specifies the description of the image.</param>
-        public ImageDescriptor(int nID, int nH, int nW, int nC, bool bEncoded, int nSrcID, int nIdx, int nActiveLabel, bool bActive, string strDesc)
+        /// <param name="dt">Specifies the time-stamp of the image.</param>
+        public ImageDescriptor(int nID, int nH, int nW, int nC, bool bEncoded, int nSrcID, int nIdx, int nActiveLabel, bool bActive, string strDesc, DateTime dt)
         {
             m_nID = nID;
             m_nHeight = nH;
@@ -48,6 +50,7 @@ namespace MyCaffe.basecode.descriptors
             m_nActiveLabel = nActiveLabel;
             m_bActive = bActive;
             m_strDescription = strDesc;
+            m_dt = dt;
         }
 
         /// <summary>
@@ -55,7 +58,7 @@ namespace MyCaffe.basecode.descriptors
         /// </summary>
         /// <param name="id">Specifies another ImageDescriptor to copy.</param>
         public ImageDescriptor(ImageDescriptor id)
-            : this(id.ID, id.Height, id.Width, id.Channels, id.Encoded, id.SourceID, id.Index, id.ActiveLabel, id.Active, id.Description)
+            : this(id.ID, id.Height, id.Width, id.Channels, id.Encoded, id.SourceID, id.Index, id.ActiveLabel, id.Active, id.Description, id.TimeStamp)
         {
         }
 
@@ -137,6 +140,14 @@ namespace MyCaffe.basecode.descriptors
         public string Description
         {
             get { return m_strDescription; }
+        }
+
+        /// <summary>
+        /// Specifies the time-stamp of the image (if any).
+        /// </summary>
+        public DateTime TimeStamp
+        {
+            get { return m_dt; }
         }
     }
 }
