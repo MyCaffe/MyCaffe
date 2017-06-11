@@ -998,6 +998,12 @@ namespace MyCaffe.imagedb
         //---------------------------------------------------------------------
         #region Loading Descriptors
 
+        /// <summary>
+        /// Load the image descriptors for a set of given source ID's.
+        /// </summary>
+        /// <param name="evtCancel">Optionally specifies to cancel the load, when <i>null</i> this parameter is ignored.</param>
+        /// <param name="rgSrcId">Specifies the source ID's to load.</param>
+        /// <returns>A list of image descriptors for each image is returned.</returns>
         public List<ImageDescriptor> LoadImages(ManualResetEvent evtCancel, params int[] rgSrcId)
         {
             if (rgSrcId.Length == 0)
