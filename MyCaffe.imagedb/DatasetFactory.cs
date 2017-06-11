@@ -394,6 +394,36 @@ namespace MyCaffe.imagedb
             return m_db.UpdateActiveLabel(nImageID, nNewActiveLabel, bActivate, bSaveChanges);
         }
 
+        /// <summary>
+        /// Change the source ID on an image to another source ID.
+        /// </summary>
+        /// <param name="nImageID">Specifies the ID of the image to update.</param>
+        /// <param name="nSrcID">Specifies the new source ID.</param>
+        public void UpdateRawImageSourceID(int nImageID, int nSrcID)
+        {
+            m_db.UpdateRawImageSourceID(nImageID, nSrcID);
+        }
+
+        /// <summary>
+        /// Activate/Deactivate a given image.
+        /// </summary>
+        /// <param name="nImageID">Specifies the ID of the image to activate/deactivate.</param>
+        /// <param name="bActive">Specifies whether to activate (<i>true</i>) or deactivate (<i>false</i>) the image.</param>
+        /// <returns>If the active state is changed, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public bool ActivateRawImage(int nImageID, bool bActive)
+        {
+            return m_db.ActivateRawImage(nImageID, bActive);
+        }
+
+        /// <summary>
+        /// Activates all images with the given source ID's.
+        /// </summary>
+        /// <param name="rgSrcId">Specifies the source ID's who's images are to be activated.</param>
+        public void ActivateAllRawImages(params int[] rgSrcId)
+        {
+            m_db.ActivateAllRawImages(rgSrcId);
+        }
+
         #endregion
 
 
@@ -990,7 +1020,8 @@ namespace MyCaffe.imagedb
                                                   img.Idx.GetValueOrDefault(0),
                                                   img.ActiveLabel.GetValueOrDefault(0),
                                                   img.Active.GetValueOrDefault(false),
-                                                  img.Description));
+                                                  img.Description,
+                                                  img.TimeStamp.GetValueOrDefault(DateTime.MinValue)));
             }
 
             return rgImgDesc;

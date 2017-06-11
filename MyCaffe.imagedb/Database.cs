@@ -1359,6 +1359,82 @@ namespace MyCaffe.imagedb
             }
         }
 
+        /// <summary>
+        /// Updates a given image's source ID.
+        /// </summary>
+        /// <param name="nImageID">Specifies the ID of the image to update.</param>
+        /// <param name="nSrcID">Specifies the new source ID.</param>
+        /// <returns>If the source ID is updated, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public bool UpdateRawImageSourceID(int nImageID, int nSrcID)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<RawImage> rgImg = entities.RawImages.Where(p => p.ID == nImageID).ToList();
+                if (rgImg.Count > 0)
+                {
+                    if (rgImg[0].SourceID != nSrcID)
+                    {
+                        rgImg[0].SourceID = nSrcID;
+                        entities.SaveChanges();
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Activate/Deactivate a given image.
+        /// </summary>
+        /// <param name="nImageID">Specifies the ID of the image to activate/deactivate.</param>
+        /// <param name="bActivate">Specifies whether to activate (<i>true</i>) or deactivate (<i>false</i>) the image.</param>
+        /// <returns>If the active state is changed, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public bool ActivateRawImage(int nImageID, bool bActivate)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<RawImage> rgImg = entities.RawImages.Where(p => p.ID == nImageID).ToList();
+                if (rgImg.Count == 0)
+                    return false;
+
+                if (rgImg[0].Active == bActivate)
+                    return false;
+
+                rgImg[0].Active = bActivate;
+                entities.SaveChanges();
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Activate all raw images associated with a set of source ID's.
+        /// </summary>
+        /// <param name="rgSrcId">Specifies the source ID's.</param>
+        public void ActivateAllRawImages(params int[] rgSrcId)
+        {
+            if (rgSrcId.Length == 0)
+                throw new Exception("You must specify at least one source iD.");
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                string strCmd = "UPDATE RawImages SET [Active] = 1 WHERE (";
+
+                for (int i=0; i<rgSrcId.Length; i++)
+                {
+                    strCmd += "SourceID = " + rgSrcId[i].ToString();
+
+                    if (i < rgSrcId.Length - 1)
+                        strCmd += " OR ";
+                }
+
+                strCmd += ")";
+
+                entities.Database.ExecuteSqlCommand(strCmd);
+            }
+        }
+
         #endregion
 
 
@@ -1368,15 +1444,15 @@ namespace MyCaffe.imagedb
         #region RawImage Results
 
         /// <summary>
-        /// Save the results of a Run as a RawImageResult.
-        /// </summary>
-        /// <param name="nSrcId">Specifies the ID of the data source.</param>
-        /// <param name="nIdx">Specifies the index of the result.</param>
-        /// <param name="nLabel">Specifies the expected label of the result.</param>
-        /// <param name="dt">Specifies the time-stamp of the result.</param>
-        /// <param name="rgResults">Specifies the results of the run as a list of (int nLabel, double dfReult) values.</param>
-        /// <param name="bInvert">Specifies whether or not the results are inverted.</param>
-        /// <returns></returns>
+            /// Save the results of a Run as a RawImageResult.
+            /// </summary>
+            /// <param name="nSrcId">Specifies the ID of the data source.</param>
+            /// <param name="nIdx">Specifies the index of the result.</param>
+            /// <param name="nLabel">Specifies the expected label of the result.</param>
+            /// <param name="dt">Specifies the time-stamp of the result.</param>
+            /// <param name="rgResults">Specifies the results of the run as a list of (int nLabel, double dfReult) values.</param>
+            /// <param name="bInvert">Specifies whether or not the results are inverted.</param>
+            /// <returns></returns>
         public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<KeyValuePair<int, double>> rgResults, bool bInvert)
         {
             if (rgResults.Count == 0)
