@@ -1188,7 +1188,7 @@ namespace MyCaffe.imagedb
         /// <summary>
         /// Loads the data source parameters for a given source.
         /// </summary>
-        /// <param name="nDsId">Specifies the ID of the data source.</param>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <returns>The collection of data source parameters is returned.</returns>
         public ParameterDescriptorCollection LoadSourceParameters(int nSrcId)
         {
