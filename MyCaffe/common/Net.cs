@@ -2247,5 +2247,24 @@ namespace MyCaffe.common
 
             return null;
         }
+
+        /// <summary>
+        /// Returns the data source used by the network.
+        /// </summary>
+        /// <returns>The data source name is returned.</returns>
+        public string GetDataSource()
+        {
+            foreach (LayerParameter lp in m_param.layer)
+            {
+                if (lp.type == LayerParameter.LayerType.DATA ||
+                    lp.type == LayerParameter.LayerType.TRIPLET_DATA)
+                    return lp.data_param.source;
+
+                if (lp.type == LayerParameter.LayerType.BATCHDATA)
+                    return lp.batch_data_param.source;
+            }
+
+            return null;
+        }
     }
 }
