@@ -44,6 +44,7 @@
             this.destroyMyCaffeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.trainMNISTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.testMNISTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.runTestImageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.abortToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -124,6 +125,7 @@
             this.destroyMyCaffeToolStripMenuItem,
             this.trainMNISTToolStripMenuItem,
             this.testMNISTToolStripMenuItem,
+            this.runTestImageToolStripMenuItem,
             this.abortToolStripMenuItem});
             this.testToolStripMenuItem.Name = "testToolStripMenuItem";
             this.testToolStripMenuItem.Size = new System.Drawing.Size(41, 20);
@@ -179,6 +181,14 @@
             this.testMNISTToolStripMenuItem.Size = new System.Drawing.Size(175, 22);
             this.testMNISTToolStripMenuItem.Text = "Test MNIST";
             this.testMNISTToolStripMenuItem.Click += new System.EventHandler(this.testMNISTToolStripMenuItem_Click);
+            // 
+            // runTestImageToolStripMenuItem
+            // 
+            this.runTestImageToolStripMenuItem.Enabled = false;
+            this.runTestImageToolStripMenuItem.Name = "runTestImageToolStripMenuItem";
+            this.runTestImageToolStripMenuItem.Size = new System.Drawing.Size(175, 22);
+            this.runTestImageToolStripMenuItem.Text = "Run Test Image";
+            this.runTestImageToolStripMenuItem.Click += new System.EventHandler(this.runTestImageToolStripMenuItem_Click);
             // 
             // abortToolStripMenuItem
             // 
@@ -255,6 +265,7 @@
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "FormMain";
             this.Text = "MyCaffe";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormMain_FormClosing);
             this.Load += new System.EventHandler(this.FormMain_Load);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
@@ -288,6 +299,7 @@
         private System.Windows.Forms.ToolStripMenuItem destroyMyCaffeToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem loadCIFAR10ToolStripMenuItem;
         private System.ComponentModel.BackgroundWorker m_bwLoadCiFar10Database;
+        private System.Windows.Forms.ToolStripMenuItem runTestImageToolStripMenuItem;
     }
 }
 

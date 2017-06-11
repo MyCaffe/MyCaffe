@@ -97,6 +97,12 @@
       <DependentUpon>FormMnist.cs</DependentUpon>
     </Compile>
     <Compile Include="CiFar10DataLoader.cs" />
+    <Compile Include="FormTestImage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormTestImage.Designer.cs">
+      <DependentUpon>FormTestImage.cs</DependentUpon>
+    </Compile>
     <Compile Include="MnistDataLoader.cs" />
     <Compile Include="CiFar10DataParameters.cs" />
     <Compile Include="MnistDataParameters.cs" />
@@ -117,6 +123,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormMnist.resx">
       <DependentUpon>FormMnist.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormTestImage.resx">
+      <DependentUpon>FormTestImage.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

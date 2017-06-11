@@ -11,6 +11,9 @@ using System.Windows.Forms;
 using MyCaffe.basecode;
 using MyCaffe.imagedb;
 using MyCaffe.test.automated;
+using MyCaffe.common;
+using System.Diagnostics;
+using MyCaffe.basecode.descriptors;
 
 namespace MyCaffe.app
 {
@@ -19,7 +22,11 @@ namespace MyCaffe.app
         CancelEvent m_evtCancel = new CancelEvent();
         AutoResetEvent m_evtCommandRead = new AutoResetEvent(false);
         AutoResetEvent m_evtThreadDone = new AutoResetEvent(false);
+        MyCaffeControl<float> m_caffeRun;
         COMMAND m_Cmd = COMMAND.NONE;
+        byte[] m_rgTrainedWeights = null;
+        SimpleDatum m_sdImageMean = null;
+        DatasetDescriptor m_ds = null;
 
         enum COMMAND
         {
@@ -34,6 +41,10 @@ namespace MyCaffe.app
         public FormMain()
         {
             InitializeComponent();
+
+            Log log = new Log("Test Run");
+            log.OnWriteLine += Log_OnWriteLine;
+            m_caffeRun = new MyCaffeControl<float>(new SettingsCaffe(), log, m_evtCancel);
         }
 
         private void FormMain_Load(object sender, EventArgs e)
@@ -163,11 +174,19 @@ namespace MyCaffe.app
         private void m_bw_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             if (e.Error != null)
+            {
                 setStatus("ERROR: " + e.Error.Message);
+                runTestImageToolStripMenuItem.Enabled = false;
+            }
             else if (e.Cancelled)
+            {
                 setStatus("ABORTED!");
+                runTestImageToolStripMenuItem.Enabled = false;
+            }
             else
+            {
                 setStatus("COMPLETED.");
+            }
 
             trainMNISTToolStripMenuItem.Enabled = false;
             testMNISTToolStripMenuItem.Enabled = false;
@@ -201,6 +220,20 @@ namespace MyCaffe.app
                 }
 
                 setStatus(pi.Message);
+
+                if (pi.Message == "MyCaffe Traning completed.")
+                {
+                    if (m_rgTrainedWeights != null)
+                    {
+                        string strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.lenet_train_test);
+                        m_caffeRun.LoadToRun(strModel, m_rgTrainedWeights, m_ds, m_sdImageMean);
+                        runTestImageToolStripMenuItem.Enabled = true;
+                    }
+                    else
+                    {
+                        runTestImageToolStripMenuItem.Enabled = false;
+                    }
+                }
             }
             else
             {
@@ -305,6 +338,32 @@ namespace MyCaffe.app
             m_evtCommandRead.Set();
         }
 
+        private void runTestImageToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            FormTestImage dlg = new app.FormTestImage();
+
+            dlg.ShowDialog();
+
+            if (dlg.Image != null && m_caffeRun != null && m_rgTrainedWeights != null)
+            {
+                Bitmap bmp = ImageTools.ResizeImage(dlg.Image, 28, 28);
+                Stopwatch sw = new Stopwatch();
+
+                sw.Start();
+                ResultCollection res = m_caffeRun.Run(bmp);
+                sw.Stop();
+
+                setStatus("====================================");
+                setStatus("Detected Label = " + res.DetectedLabel.ToString() + " in " + sw.Elapsed.TotalMilliseconds.ToString("N4") + " ms.");
+                setStatus("--Results--");
+
+                foreach (KeyValuePair<int, double> kv in res.ResultsSorted)
+                {
+                    setStatus("Label " + kv.Key.ToString() + " -> " + kv.Value.ToString());
+                }
+            }
+        }
+
         private void deviceInformationToolStripMenuItem_Click(object sender, EventArgs e)
         {
             createMyCaffeToolStripMenuItem.Enabled = false;
@@ -366,7 +425,10 @@ namespace MyCaffe.app
                             break;
 
                         case COMMAND.TRAIN:
-                            caffe.Train();
+                            caffe.Train(5000);
+                            m_rgTrainedWeights = caffe.GetWeights();
+                            m_sdImageMean = caffe.GetImageMean();
+                            m_ds = caffe.GetDataset();
                             bw.ReportProgress(0, new ProgressInfo(0, 0, "MyCaffe Traning completed.", null, true));
                             break;
 
@@ -402,6 +464,15 @@ namespace MyCaffe.app
             ProgressInfo pi = new ProgressInfo((int)(nTotal * e.Progress), nTotal, e.Message, err);
 
             m_bwProcess.ReportProgress((int)pi.Percentage, pi);
+        }
+
+        private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (m_caffeRun != null)
+            {
+                m_caffeRun.Dispose();
+                m_caffeRun = null;
+            }
         }
     }
 }
