@@ -65,6 +65,7 @@
     <Compile Include="ColorMapper.cs" />
     <Compile Include="CryptoRandom.cs" />
     <Compile Include="descriptors\DatasetDescriptor.cs" />
+    <Compile Include="descriptors\ImageDescriptor.cs" />
     <Compile Include="descriptors\ResultDescriptor.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="descriptors\GroupDescriptor.cs" />

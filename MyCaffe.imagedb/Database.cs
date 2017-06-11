@@ -763,6 +763,26 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Returns the list of raw images that have a source ID from a selected list.
+        /// </summary>
+        /// <param name="rgSrcId">Specifies the list of source ID.</param>
+        /// <returns>The list of RawImage's is returned.</returns>
+        public List<RawImage> QueryRawImages(params int[] rgSrcId)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<int?> rgSrcId1 = new List<int?>();
+
+                foreach (int id in rgSrcId)
+                {
+                    rgSrcId1.Add(id);
+                }
+
+                return entities.RawImages.Where(p => rgSrcId1.Contains(p.SourceID)).ToList();   
+            }
+        }
+
+        /// <summary>
         /// Returns a list of RawImages from the database for a data source.
         /// </summary>
         /// <param name="nIdx">Specifies the starting image index.</param>

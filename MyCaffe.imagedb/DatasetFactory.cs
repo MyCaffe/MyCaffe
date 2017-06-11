@@ -968,6 +968,34 @@ namespace MyCaffe.imagedb
         //---------------------------------------------------------------------
         #region Loading Descriptors
 
+        public List<ImageDescriptor> LoadImages(ManualResetEvent evtCancel, params int[] rgSrcId)
+        {
+            if (rgSrcId.Length == 0)
+                throw new Exception("You must specify at least one source ID.");
+
+            List<ImageDescriptor> rgImgDesc = new List<ImageDescriptor>();
+            List<RawImage> rgImg = m_db.QueryRawImages(rgSrcId);
+
+            foreach (RawImage img in rgImg)
+            {
+                if (evtCancel != null && evtCancel.WaitOne(0))
+                    return null;
+
+                rgImgDesc.Add(new ImageDescriptor(img.ID,
+                                                  img.Height.GetValueOrDefault(0),
+                                                  img.Width.GetValueOrDefault(0),
+                                                  img.Channels.GetValueOrDefault(0),
+                                                  img.Encoded.GetValueOrDefault(false),
+                                                  img.SourceID.GetValueOrDefault(0),
+                                                  img.Idx.GetValueOrDefault(0),
+                                                  img.ActiveLabel.GetValueOrDefault(0),
+                                                  img.Active.GetValueOrDefault(false),
+                                                  img.Description));
+            }
+
+            return rgImgDesc;
+        }
+
         /// <summary>
         /// Loads a new SimpleDataum from a RawImage ID.
         /// </summary>
