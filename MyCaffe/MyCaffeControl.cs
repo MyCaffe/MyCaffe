@@ -554,7 +554,6 @@ namespace MyCaffe
             }
         }
 
-
         /// <summary>
         /// Load a project and optionally the CaffeImageDatabase.
         /// </summary>
@@ -644,6 +643,75 @@ namespace MyCaffe
             {
                 m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb, Phase.RUN, null, m_solver.TrainingNet);
             }
+        }
+
+        public void LoadToRun(string strModel, byte[] rgWeights, DatasetDescriptor ds = null, SimpleDatum sdMean = null)
+        {
+            m_dataSet = ds;
+            m_project = null;
+
+            if (m_cuda != null)
+                m_cuda.Dispose();
+
+            m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath);
+
+            TransformationParameter tp = null;
+            NetParameter netParam = createNetParameterForRunning(m_dataSet, strModel, out tp);
+
+            if (ds == null)
+                ds = findDataset(netParam);
+
+            if (sdMean == null)
+                sdMean = getMeanImage(netParam);
+
+            if (tp != null)
+                m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, sdMean);
+            else
+                m_dataTransformer = null;
+
+            m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null);
+            loadWeights(m_net, rgWeights);
+        }
+
+        private SimpleDatum getMeanImage(NetParameter p)
+        {
+            string strSrc = null;
+
+            foreach (LayerParameter lp in p.layer)
+            {
+                if (lp.type == LayerParameter.LayerType.TRANSFORM)
+                {
+                    if (!lp.transform_param.use_image_mean)
+                        return null;
+                }
+                else if (lp.type == LayerParameter.LayerType.DATA ||
+                         lp.type == LayerParameter.LayerType.TRIPLET_DATA ||
+                         lp.type == LayerParameter.LayerType.BATCHDATA)
+                {
+                    switch (lp.type)
+                    {
+                        case LayerParameter.LayerType.DATA:
+                        case LayerParameter.LayerType.TRIPLET_DATA:
+                            strSrc = lp.data_param.source;
+                            break;
+
+                        case LayerParameter.LayerType.BATCHDATA:
+                            strSrc = lp.batch_data_param.source;
+                            break;
+                    }
+                }
+            }
+
+            if (strSrc == null)
+                throw new Exception("Could not find the data source in the model!");
+
+            DatasetFactory factory = new DatasetFactory();
+            SourceDescriptor sd = factory.LoadSource(strSrc);
+
+            if (sd == null)
+                throw new Exception("Could not find the data source '" + strSrc + "' in the database.");
+
+            return factory.QueryImageMean(0, sd.ID);
         }
 
         private DatasetDescriptor findDataset(NetParameter p)
@@ -1044,7 +1112,9 @@ namespace MyCaffe
             blob.Dispose();
 
             ResultCollection result = new ResultCollection(rgResults);
-            result.SetLabels(m_imgDb.GetLabels(m_dataSet.TrainingSource.ID));
+
+            if (m_imgDb != null)
+                result.SetLabels(m_imgDb.GetLabels(m_dataSet.TrainingSource.ID));
 
             return result;
         }
@@ -1180,6 +1250,36 @@ namespace MyCaffe
                 strLabel = nLabel.ToString();
 
             return new Bitmap(ImageData.GetImage(new Datum(d), null));
+        }
+
+        /// <summary>
+        /// Returns the image mean used by the solver network used during training.
+        /// </summary>
+        /// <returns>The image mean is returned as a SimpleDatum.</returns>
+        public SimpleDatum GetImageMean()
+        {
+            if (m_imgDb == null)
+                throw new Exception("The image database is null!");
+
+            if (m_solver == null)
+                throw new Exception("The solver is null - make sure that you are loaded for training.");
+
+            if (m_solver.net == null)
+                throw new Exception("The solver net is null - make sure that you are loaded for training.");
+
+            string strSrc = m_solver.net.GetDataSource();
+            int nSrcId = m_imgDb.GetSourceID(strSrc);
+
+            return m_imgDb.GetImageMean(nSrcId);
+        }
+
+        /// <summary>
+        /// Returns the current dataset used when training and testing.
+        /// </summary>
+        /// <returns>The DatasetDescriptor is returned.</returns>
+        public DatasetDescriptor GetDataset()
+        {
+            return m_dataSet;
         }
 
         /// <summary>
