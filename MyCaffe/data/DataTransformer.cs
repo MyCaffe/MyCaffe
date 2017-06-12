@@ -89,6 +89,14 @@ namespace MyCaffe.data
             }
         }
 
+        /// <summary>
+        /// Returns the TransformationParameter used.
+        /// </summary>
+        public TransformationParameter param
+        {
+            get { return m_param; }
+        }
+
         private BlobProto loadProtoMean(string strFile)
         {
             try
