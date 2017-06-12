@@ -27,10 +27,6 @@ namespace MyCaffe.basecode
         /// </summary>
         RUN = 3,
         /// <summary>
-        /// Run on an image given to the Net without loading the in-memory database.
-        /// </summary>
-        RUN_NODB = 4,
-        /// <summary>
         /// Applies to all phases.
         /// </summary>
         ALL = 5
