@@ -25,6 +25,18 @@ namespace MyCaffe.param
         /// <summary>
         /// The BlobShape constructor.
         /// </summary>
+        /// <param name="nNum">Specifies the number of data items.</param>
+        /// <param name="nC">Specifies the data channels.</param>
+        /// <param name="nH">Specifies the data height.</param>
+        /// <param name="nW">Specifies the data width.</param>
+        public BlobShape(int nNum, int nC, int nH, int nW)
+        {
+            m_rgDim = new List<int>() { nNum, nC, nH, nW };
+        }
+
+        /// <summary>
+        /// The BlobShape constructor.
+        /// </summary>
         /// <param name="rgShape">Specifies the shape of a blob.</param>
         public BlobShape(List<int> rgShape)
         {
