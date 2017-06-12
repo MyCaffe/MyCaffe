@@ -14,6 +14,7 @@ using MyCaffe.test.automated;
 using MyCaffe.common;
 using System.Diagnostics;
 using MyCaffe.basecode.descriptors;
+using MyCaffe.param;
 
 namespace MyCaffe.app
 {
@@ -26,7 +27,6 @@ namespace MyCaffe.app
         COMMAND m_Cmd = COMMAND.NONE;
         byte[] m_rgTrainedWeights = null;
         SimpleDatum m_sdImageMean = null;
-        DatasetDescriptor m_ds = null;
 
         enum COMMAND
         {
@@ -226,7 +226,7 @@ namespace MyCaffe.app
                     if (m_rgTrainedWeights != null)
                     {
                         string strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.lenet_train_test);
-                        m_caffeRun.LoadToRun(strModel, m_rgTrainedWeights, m_ds, m_sdImageMean);
+                        m_caffeRun.LoadToRun(strModel, m_rgTrainedWeights, new BlobShape(1, 1, 28, 28), m_sdImageMean);
                         runTestImageToolStripMenuItem.Enabled = true;
                     }
                     else
@@ -359,7 +359,7 @@ namespace MyCaffe.app
 
                 foreach (KeyValuePair<int, double> kv in res.ResultsSorted)
                 {
-                    setStatus("Label " + kv.Key.ToString() + " -> " + kv.Value.ToString());
+                    setStatus("Label " + kv.Key.ToString() + " -> " + kv.Value.ToString("N5"));
                 }
             }
         }
@@ -428,7 +428,6 @@ namespace MyCaffe.app
                             caffe.Train(5000);
                             m_rgTrainedWeights = caffe.GetWeights();
                             m_sdImageMean = caffe.GetImageMean();
-                            m_ds = caffe.GetDataset();
                             bw.ReportProgress(0, new ProgressInfo(0, 0, "MyCaffe Traning completed.", null, true));
                             break;
 

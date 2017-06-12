@@ -87,6 +87,8 @@ namespace MyCaffe
         MemoryStream m_msWeights = new MemoryStream();
         Guid m_guidUser;
         PersistCaffe<T> m_persist;
+        BlobShape m_inputShape = null;
+
 
         /// <summary>
         /// The OnSnapshot event fires each time a snap-shot is taken.
@@ -438,9 +440,26 @@ namespace MyCaffe
         /// <returns>The new NetParameter suitable for the RUN phase is returned.</returns>
         protected NetParameter createNetParameterForRunning(DatasetDescriptor ds, string strModel, out TransformationParameter transform_param)
         {
-            int nImageChannels = ds.TestingSource.ImageChannels;
-            int nImageHeight = ds.TestingSource.ImageHeight;
-            int nImageWidth = ds.TestingSource.ImageWidth;
+            return createNetParameterForRunning(datasetToShape(ds), strModel, out transform_param);
+        }
+
+        /// <summary>
+        /// Creates a net parameter for the RUN phase.
+        /// </summary>
+        /// <remarks>
+        /// This function transforms the training net parameter into a new net parameter suitable to run in the RUN phase.
+        /// </remarks>
+        /// <param name="shape">Specifies the shape of the images that will be used.</param>
+        /// <param name="strModel">Specifies the model descriptor.</param>
+        /// <param name="transform_param">Specifies the TransformationParameter to use.</param>
+        /// <returns>The new NetParameter suitable for the RUN phase is returned.</returns>
+        protected NetParameter createNetParameterForRunning(BlobShape shape, string strModel, out TransformationParameter transform_param)
+        {
+            int nImageChannels = shape.dim[1];
+            int nImageHeight = shape.dim[2];
+            int nImageWidth = shape.dim[3];
+
+            m_inputShape = shape;
 
             RawProto protoTransform = null;
             RawProto protoModel = ProjectEx.CreateModelForRunning(strModel, "data", 1, nImageChannels, nImageHeight, nImageWidth, out protoTransform);
@@ -458,6 +477,15 @@ namespace MyCaffe
             return np;
         }
 
+        private BlobShape datasetToShape(DatasetDescriptor ds)
+        {
+            int nH = ds.TestingSource.ImageHeight;
+            int nW = ds.TestingSource.ImageWidth;
+            int nC = ds.TestingSource.ImageChannels;
+            List<int> rgShape = new List<int>() { 1, nC, nH, nW };
+            return new BlobShape(rgShape);
+        }
+
         /// <summary>
         /// Load a project and optionally the CaffeImageDatabase.
         /// </summary>
@@ -472,7 +500,7 @@ namespace MyCaffe
             m_imgDb = imgdb;
             m_bImgDbOwner = false;
 
-            if (m_imgDb == null && phase != Phase.RUN_NODB)
+            if (m_imgDb == null)
             {
                 m_imgDb = new MyCaffeImageDatabase(m_log);
                 m_bImgDbOwner = true;
@@ -541,7 +569,7 @@ namespace MyCaffe
             else
                 m_dataTransformer = null;
 
-            if (phase == Phase.RUN || phase == Phase.RUN_NODB)
+            if (phase == Phase.RUN)
             {
                 m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb);
 
@@ -632,7 +660,7 @@ namespace MyCaffe
             else
                 m_dataTransformer = null;
 
-            if (phase == Phase.RUN || phase == Phase.RUN_NODB)
+            if (phase == Phase.RUN)
             {
                 m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb);
 
@@ -645,29 +673,45 @@ namespace MyCaffe
             }
         }
 
-        public void LoadToRun(string strModel, byte[] rgWeights, DatasetDescriptor ds = null, SimpleDatum sdMean = null)
+        /// <summary>
+        /// The LoadToRun method loads the MyCaffeControl for running only (e.g. deployment).
+        /// </summary>
+        /// <remarks>
+        /// This method can be used without the MyCaffeImageDatabase.
+        /// </remarks>
+        /// <param name="strModel">Specifies the model description to load.</param>
+        /// <param name="rgWeights">Specifies the trained weights to load.</param>
+        /// <param name="shape">Specifies the expected shape to run on.</param>
+        /// <param name="sdMean">Optionally, specifies the simple datum mean to subtract from input images that are run.</param>
+        /// <param name="transParam">Optionally, specifies the TransformationParameter to use.  When using a 'deployment' model that has no data layers, you should supply a transformation parameter
+        /// that matches the transformation used during training.</param>
+        public void LoadToRun(string strModel, byte[] rgWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null)
         {
-            m_dataSet = ds;
+            m_dataSet = null;
             m_project = null;
 
             if (m_cuda != null)
                 m_cuda.Dispose();
 
             m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath);
-
+           
             TransformationParameter tp = null;
-            NetParameter netParam = createNetParameterForRunning(m_dataSet, strModel, out tp);
+            NetParameter netParam = createNetParameterForRunning(shape, strModel, out tp);
 
-            if (ds == null)
-                ds = findDataset(netParam);
-
-            if (sdMean == null)
-                sdMean = getMeanImage(netParam);
+            if (tp == null)
+                tp = transParam;
 
             if (tp != null)
+            {
+                if (tp.use_image_mean && sdMean == null)
+                    throw new Exception("The transformer expects an image mean, yet the sdMean parameter is null!");
+
                 m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, sdMean);
+            }
             else
+            {
                 m_dataTransformer = null;
+            }
 
             m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null);
             loadWeights(m_net, rgWeights);
@@ -1190,10 +1234,12 @@ namespace MyCaffe
         /// Run on a given bitmap image.
         /// </summary>
         /// <param name="img">Specifies the input image.</param>
+        /// <param name="nChannels">Specifies the number of channels in the image.</param>
         /// <returns>The results of the run are returned.</returns>
         public ResultCollection Run(Bitmap img)
         {
-            return Run(ImageData.GetImageData(img, m_dataSet.TestingSource.ImageChannels, m_dataSet.TestingSource.IsRealData, -1));
+            int nChannels = m_inputShape.dim[1];
+            return Run(ImageData.GetImageData(img, nChannels, false, -1));
         }
 
         /// <summary>
