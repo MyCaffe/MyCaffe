@@ -60,7 +60,7 @@ namespace MyCaffe.app
         {
             this.lblProduct.Text = AssemblyProduct;
             this.lblVersion.Text = String.Format("Version {0}", AssemblyVersion);
-            edtLicense.Text = MyCaffeControl<float>.GetLicenseText(" ");
+            edtLicense.Text = MyCaffeControl<float>.GetLicenseTextEx(" ");
             edtLicense.SelectionLength = 0;
             edtLicense.SelectionStart = 0;
             edtLicense.ScrollToCaret();
