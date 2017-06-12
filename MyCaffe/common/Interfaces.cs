@@ -1,8 +1,14 @@
-﻿using System;
+﻿using MyCaffe.basecode;
+using MyCaffe.basecode.descriptors;
+using MyCaffe.imagedb;
+using MyCaffe.param;
+using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MyCaffe.common
@@ -70,5 +76,258 @@ namespace MyCaffe.common
         /// <param name="bLoadedDiffs">Returns whether or not the diffs were loaded.</param>
         /// <returns>The collection of Blobs with newly loaded weights is returned.</returns>
         BlobCollection<T> LoadWeights(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, out bool bLoadedDiffs);
+    }
+
+    /// <summary>
+    /// The IXMyCaffeState interface contains functions related to the MyCaffeComponent state.
+    /// </summary>
+    /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
+    public interface IXMyCaffeState<T>
+    {
+        /// <summary>
+        /// Sets the root solver's onTest event function.
+        /// </summary>
+        /// <param name="onTest">Specifies the event handler called when testing.</param>
+        void SetOnTestOverride(EventHandler<TestArgs> onTest);
+        /// <summary>
+        /// Sets the cance override.
+        /// </summary>
+        /// <param name="evtCancel">Specifies the new cancel event to use.</param>
+        void SetCancelOverride(ManualResetEvent evtCancel);
+
+        /// <summary>
+        /// Enable/disable blob debugging.
+        /// </summary>
+        /// <remarks>
+        /// Note, when enabled, training will dramatically slow down.
+        /// </remarks>
+        bool EnableBlobDebugging { get; set; }
+        /// <summary>
+        /// Enable/disable break training after first detecting a NaN.
+        /// </summary>
+        /// <remarks>
+        /// This option requires that EnableBlobDebugging == <i>true</i>.
+        /// </remarks>
+        bool EnableBreakOnFirstNaN { get; set; }
+        /// <summary>
+        /// When enabled (requires EnableBlobDebugging = <i>true</i>), the detailed Nan (and Infinity) detection is perofmed on each blob when training Net.
+        /// </summary>
+        bool EnableDetailedNanDetection { get; set; }
+        /// <summary>
+        /// Enable/disable single step training.
+        /// </summary>
+        /// <remarks>
+        /// This option requires that EnableBlobDebugging == true.
+        /// </remarks>
+        bool EnableSingleStep { get; set; }
+
+        /// <summary>
+        /// Returns the persist used to load and save weights.
+        /// </summary>
+        IXPersist<T> Persist { get; }
+        /// <summary>
+        /// Returns the CaffeImageDatabase used.
+        /// </summary>
+        IXImageDatabase ImageDatabase { get; }
+
+        /// <summary>
+        /// Returns the CancelEvent used.
+        /// </summary>
+        CancelEvent CancelEvent { get; }
+        /// <summary>
+        /// Returns a list of Active GPU's used by the control.
+        /// </summary>
+        List<int> ActiveGpus { get; }
+        /// <summary>
+        /// Returns a string describing the active label counts observed during training.
+        /// </summary>
+        /// <remarks>
+        /// This string can help diagnos label balancing issue.
+        /// </remarks>
+        string ActiveLabelCounts { get; }
+        /// <summary>
+        /// Returns the name of the current device used.
+        /// </summary>
+        string CurrentDevice { get; }
+        /// <summary>
+        /// Returns the name of the currently loaded project.
+        /// </summary>
+        ProjectEx CurrentProject { get; }
+        /// <summary>
+        /// Returns the current iteration.
+        /// </summary>
+        int CurrentIteration { get; }
+        /// <summary>
+        /// Returns the maximum iteration.
+        /// </summary>
+        int MaximumIteration { get; }
+        /// <summary>
+        /// Returns the total number of devices installed on this computer.
+        /// </summary>
+        /// <returns></returns>
+        int GetDeviceCount();
+        /// <summary>
+        /// Returns the device name of a given device ID.
+        /// </summary>
+        /// <param name="nDeviceID">Specifies the device ID.</param>
+        /// <returns></returns>
+        string GetDeviceName(int nDeviceID);
+    }
+
+    /// <summary>
+    /// The IXMyCaffe interface contains functions used to perform MyCaffe operations that work with the MyCaffeImageDatabase.
+    /// </summary>
+    /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
+    public interface IXMyCaffe<T>
+    {
+        /// <summary>
+        /// Load a project and optionally the MyCaffeImageDatabase.
+        /// </summary>
+        /// <remarks>
+        /// This load function uses the MyCaffeImageDatabase.
+        /// </remarks>
+        /// <param name="phase">Specifies the Phase for which the load should focus.</param>
+        /// <param name="p">Specifies the Project to load.</param>
+        /// <param name="labelSelectionOverride">Optionally, specifies the label selection override (overides the label selection in SettingsCaffe).  The label selection dictates how the label sets are selected.</param>
+        /// <param name="imageSelectionOverride">Optionally, specifies the image selection override (overides the image selection in SettingsCaffe).  The image selection dictates how the images are selected from each label set.</param>
+        /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
+        /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
+        void Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null);
+        /// <summary>
+        /// Load a project and optionally the MyCaffeImageDatabase.
+        /// </summary>
+        /// <remarks>
+        /// This load function uses the MyCaffeImageDatabase.
+        /// </remarks>
+        /// <param name="phase">Specifies the Phase for which the load should focus.</param>
+        /// <param name="strSolver">Specifies the solver descriptor.</param>
+        /// <param name="strModel">Specifies the model desciptor.</param>
+        /// <param name="rgWeights">Optionally, specifies the weights to load, or <i>null</i> to ignore.</param>
+        /// <param name="labelSelectionOverride">Optionally, specifies the label selection override (overides the label selection in SettingsCaffe).  The label selection dictates how the label sets are selected.</param>
+        /// <param name="imageSelectionOverride">Optionally, specifies the image selection override (overides the image selection in SettingsCaffe).  The image selection dictates how the images are selected from each label set.</param>
+        /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
+        /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
+        void Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null);
+        /// <summary>
+        /// Train the network a set number of iterations.
+        /// </summary>
+        /// <param name="nIterationOverride">Optionally, specifies number of iterations to run that override the iterations specified in the solver desctiptor.</param>
+        void Train(int nIterationOverride = -1);
+        /// <summary>
+        /// Test the network a given number of iterations.
+        /// </summary>
+        /// <param name="nIterationOverride">Optionally, specifies number of iterations to run that override the iterations specified in the solver desctiptor.</param>
+        /// <returns>The accuracy value from the test is returned.</returns>
+        double Test(int nIterationOverride = -1);
+        /// <summary>
+        /// Test on a number of images by selecting random images from the database, running them through the Run network, and then comparing the results with the 
+        /// expected results.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of cycles to run.</param>
+        /// <param name="bOnTrainingSet">Specifies on whether to select images from the training set, or when <i>false</i> the testing set of data.</param>
+        void TestMany(int nCount, bool bOnTrainingSet);
+        /// <summary>
+        /// Run on a given image in the MyCaffeImageDatabase based on its image index.
+        /// </summary>
+        /// <param name="nImageIdx">Specifies the image index.</param>
+        /// <returns>The result of the run is returned.</returns>
+        ResultCollection Run(int nImageIdx);
+        /// <summary>
+        /// Run on a set of images in the MyCaffeImageDatabase based on their image indexes.
+        /// </summary>
+        /// <param name="rgImageIdx">Specifies a list of image indexes.</param>
+        /// <returns>A list of results from the run is returned - one result per image.</returns>
+        List<ResultCollection> Run(List<int> rgImageIdx);
+        /// <summary>
+        /// Run on a given Datum. 
+        /// </summary>
+        /// <param name="d">Specifies the Datum to run.</param>
+        /// <param name="bSort">Optionally, specifies whether or not to sor the results.</param>
+        /// <param name="bUseSolverNet">Optionally, specifies whether or not to use the training net vs. the run net.</param>
+        /// <returns>The results of the run are returned.</returns>
+        ResultCollection Run(SimpleDatum d, bool bSort = true, bool bUseSolverNet = false);
+        /// <summary>
+        /// Retrieves a random image from either the training or test set depending on the Phase specified.
+        /// </summary>
+        /// <param name="phase">Specifies whether to select images from the training set or testing set.</param>
+        /// <param name="nLabel">Returns the expected label for the image.</param>
+        /// <param name="strLabel">Returns the expected label name for the image.</param>
+        /// <returns>The image queried is returned.</returns>
+        Bitmap GetTestImage(Phase phase, out int nLabel, out string strLabel);
+        /// <summary>
+        /// Retrieves a random image from either the training or test set depending on the Phase specified.
+        /// </summary>
+        /// <param name="phase">Specifies whether to select images from the training set or testing set.</param>
+        /// <param name="nLabel">Returns the expected label for the image.</param>
+        /// <returns>The image queried is returned.</returns>
+        Bitmap GetTestImage(Phase phase, int nLabel);
+        /// <summary>
+        /// Returns the image mean used by the solver network used during training.
+        /// </summary>
+        /// <returns>The image mean is returned as a SimpleDatum.</returns>
+        SimpleDatum GetImageMean();
+        /// <summary>
+        /// Returns the current dataset used when training and testing.
+        /// </summary>
+        /// <returns>The DatasetDescriptor is returned.</returns>
+        DatasetDescriptor GetDataset();
+        /// <summary>
+        /// Retrieves the weights of the training network.
+        /// </summary>
+        /// <returns>The weights are returned.</returns>
+        byte[] GetWeights();
+        /// <summary>
+        /// Loads the weights from the training net into the Net used for running.
+        /// </summary>
+        void UpdateRunWeights();
+        /// <summary>
+        /// Loads the training Net with new weights.
+        /// </summary>
+        /// <param name="rgWeights">Specifies the weights to load.</param>
+        void UpdateWeights(byte[] rgWeights);
+        /// <summary>
+        /// Returns the license text for MyCaffe.
+        /// </summary>
+        /// <param name="strOtherLicenses">Specifies other licenses to append to the license text.</param>
+        /// <returns></returns>
+        string GetLicenseText(string strOtherLicenses);
+    }
+
+    /// <summary>
+    /// The IXMyCaffe interface contains functions used to perform MyCaffe operations that run in a light-weight manner without the MyCaffeImageDatabase.
+    /// </summary>
+    /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
+    public interface IXMyCaffeNoDb<T>
+    {
+        /// <summary>
+        /// The LoadToRun method loads the MyCaffeControl for running only (e.g. deployment).
+        /// </summary>
+        /// <remarks>
+        /// This method does not use the MyCaffeImageDatabase.
+        /// </remarks>
+        /// <param name="strModel">Specifies the model description to load.</param>
+        /// <param name="rgWeights">Specifies the trained weights to load.</param>
+        /// <param name="shape">Specifies the expected shape to run on.</param>
+        /// <param name="sdMean">Optionally, specifies the simple datum mean to subtract from input images that are run.</param>
+        /// <param name="transParam">Optionally, specifies the TransformationParameter to use.  When using a 'deployment' model that has no data layers, you should supply a transformation parameter
+        /// that matches the transformation used during training.</param>
+        void LoadToRun(string strModel, byte[] rgWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null);
+        /// <summary>
+        /// Run on a given bitmap image.
+        /// </summary>
+        /// <remarks>
+        /// This method does not use the MyCaffeImageDatabase.
+        /// </remarks>
+        /// <param name="img">Specifies the input image.</param>
+        /// <param name="bSort">Specifies whether or not to sor the results.</param>
+        /// <returns>The results of the run are returned.</returns>
+        ResultCollection Run(Bitmap img, bool bSort = true);
+        /// <summary>
+        /// Run on a given Datum. 
+        /// </summary>
+        /// <param name="d">Specifies the Datum to run.</param>
+        /// <param name="bSort">Optionally, specifies whether or not to sor the results.</param>
+        /// <returns>The results of the run are returned.</returns>
+        ResultCollection Run(SimpleDatum d, bool bSort = true);
     }
 }

@@ -26,7 +26,7 @@ namespace MyCaffe
     /// The MyCaffeControl is the main object used to manage all training, testing and running of the MyCaffe system.
     /// </summary>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public partial class MyCaffeControl<T> : Component
+    public partial class MyCaffeControl<T> : Component, IXMyCaffeState<T>, IXMyCaffe<T>, IXMyCaffeNoDb<T>, IDisposable
     {
         /// <summary>
         /// The settings used to configure the control.
@@ -216,10 +216,19 @@ namespace MyCaffe
         /// <summary>
         /// Sets the root solver's onTest event function.
         /// </summary>
-        /// <param name="onTest"></param>
+        /// <param name="onTest">Specifies the event handler called when testing.</param>
         public void SetOnTestOverride(EventHandler<TestArgs> onTest)
         {
             m_solver.OnTest += onTest;
+        }
+
+        /// <summary>
+        /// Sets the cance override.
+        /// </summary>
+        /// <param name="evtCancel">Specifies the new cancel event to use.</param>
+        public void SetCancelOverride(ManualResetEvent evtCancel)
+        {
+            m_evtCancel.SetCancelOverride(evtCancel);
         }
 
         /// <summary>
@@ -242,7 +251,7 @@ namespace MyCaffe
         /// Enable/disable break training after first detecting a NaN.
         /// </summary>
         /// <remarks>
-        /// This option requires that EnableBlobDebugging == true.
+        /// This option requires that EnableBlobDebugging == <i>true</i>.
         /// </remarks>
         public bool EnableBreakOnFirstNaN
         {
@@ -316,6 +325,14 @@ namespace MyCaffe
         }
 
         /// <summary>
+        /// Returns the CaffeImageDatabase used.
+        /// </summary>
+        public IXImageDatabase ImageDatabase
+        {
+            get { return m_imgDb; }
+        }
+
+        /// <summary>
         /// Returns the CancelEvent used.
         /// </summary>
         public CancelEvent CancelEvent
@@ -340,23 +357,6 @@ namespace MyCaffe
         public string ActiveLabelCounts
         {
             get { return m_solver.ActiveLabelCounts; }
-        }
-
-        /// <summary>
-        /// Sets the cance override.
-        /// </summary>
-        /// <param name="evtCancel">Specifies the new cancel event to use.</param>
-        public void SetCancelOverride(ManualResetEvent evtCancel)
-        {
-            m_evtCancel.SetCancelOverride(evtCancel);
-        }
-
-        /// <summary>
-        /// Returns the CaffeImageDatabase used.
-        /// </summary>
-        public IXImageDatabase ImageDatabase
-        {
-            get { return m_imgDb; }
         }
 
         /// <summary>
@@ -487,14 +487,17 @@ namespace MyCaffe
         }
 
         /// <summary>
-        /// Load a project and optionally the CaffeImageDatabase.
+        /// Load a project and optionally the MyCaffeImageDatabase.
         /// </summary>
+        /// <remarks>
+        /// This load function uses the MyCaffeImageDatabase.
+        /// </remarks>
         /// <param name="phase">Specifies the Phase for which the load should focus.</param>
         /// <param name="p">Specifies the Project to load.</param>
         /// <param name="labelSelectionOverride">Optionally, specifies the label selection override (overides the label selection in SettingsCaffe).  The label selection dictates how the label sets are selected.</param>
         /// <param name="imageSelectionOverride">Optionally, specifies the image selection override (overides the image selection in SettingsCaffe).  The image selection dictates how the images are selected from each label set.</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
-        /// <param name="imgdb">Optionally, specifies the CaffeImageDatabase to use.</param>
+        /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
         public void Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null)
         {
             m_imgDb = imgdb;
@@ -583,8 +586,11 @@ namespace MyCaffe
         }
 
         /// <summary>
-        /// Load a project and optionally the CaffeImageDatabase.
+        /// Load a project and optionally the MyCaffeImageDatabase.
         /// </summary>
+        /// <remarks>
+        /// This load function uses the MyCaffeImageDatabase.
+        /// </remarks>
         /// <param name="phase">Specifies the Phase for which the load should focus.</param>
         /// <param name="strSolver">Specifies the solver descriptor.</param>
         /// <param name="strModel">Specifies the model desciptor.</param>
@@ -592,7 +598,7 @@ namespace MyCaffe
         /// <param name="labelSelectionOverride">Optionally, specifies the label selection override (overides the label selection in SettingsCaffe).  The label selection dictates how the label sets are selected.</param>
         /// <param name="imageSelectionOverride">Optionally, specifies the image selection override (overides the image selection in SettingsCaffe).  The image selection dictates how the images are selected from each label set.</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
-        /// <param name="imgdb">Optionally, specifies the CaffeImageDatabase to use.</param>
+        /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
         public void Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null)
         {
             m_imgDb = imgdb;
@@ -677,7 +683,7 @@ namespace MyCaffe
         /// The LoadToRun method loads the MyCaffeControl for running only (e.g. deployment).
         /// </summary>
         /// <remarks>
-        /// This method can be used without the MyCaffeImageDatabase.
+        /// This method does not use the MyCaffeImageDatabase.
         /// </remarks>
         /// <param name="strModel">Specifies the model description to load.</param>
         /// <param name="rgWeights">Specifies the trained weights to load.</param>
@@ -854,7 +860,7 @@ namespace MyCaffe
         /// Test the network a given number of iterations.
         /// </summary>
         /// <param name="nIterationOverride">Optionally, specifies number of iterations to run that override the iterations specified in the solver desctiptor.</param>
-        /// <returns></returns>
+        /// <returns>The accuracy value from the test is returned.</returns>
         public double Test(int nIterationOverride = -1)
         {
             if (nIterationOverride == -1)
@@ -1081,7 +1087,7 @@ namespace MyCaffe
         }
 
         /// <summary>
-        /// Run on a given image in the CaffeImageDatabase based on its image index.
+        /// Run on a given image in the MyCaffeImageDatabase based on its image index.
         /// </summary>
         /// <param name="nImageIdx">Specifies the image index.</param>
         /// <returns>The result of the run is returned.</returns>
@@ -1092,7 +1098,7 @@ namespace MyCaffe
         }
 
         /// <summary>
-        /// Run on a set of images in the CaffeImageDatabase based on their image indexes.
+        /// Run on a set of images in the MyCaffeImageDatabase based on their image indexes.
         /// </summary>
         /// <param name="rgImageIdx">Specifies a list of image indexes.</param>
         /// <returns>A list of results from the run is returned - one result per image.</returns>
@@ -1113,10 +1119,10 @@ namespace MyCaffe
         /// Run on a given Datum. 
         /// </summary>
         /// <param name="d">Specifies the Datum to run.</param>
-        /// <param name="bSort">Optionally, specifies whether or not to sor the results.</param>
+        /// <param name="bSort">Specifies whether or not to sor the results.</param>
         /// <param name="bUseSolverNet">Optionally, specifies whether or not to use the training net vs. the run net.</param>
         /// <returns>The results of the run are returned.</returns>
-        public ResultCollection Run(SimpleDatum d, bool bSort = true, bool bUseSolverNet = false)
+        public ResultCollection Run(SimpleDatum d, bool bSort, bool bUseSolverNet)
         {
             Blob<T> blob = null;
 
@@ -1233,13 +1239,27 @@ namespace MyCaffe
         /// <summary>
         /// Run on a given bitmap image.
         /// </summary>
+        /// <remarks>
+        /// This method does not use the MyCaffeImageDatabase.
+        /// </remarks>
         /// <param name="img">Specifies the input image.</param>
-        /// <param name="nChannels">Specifies the number of channels in the image.</param>
+        /// <param name="bSort">Specifies whether or not to sor the results.</param>
         /// <returns>The results of the run are returned.</returns>
-        public ResultCollection Run(Bitmap img)
+        public ResultCollection Run(Bitmap img, bool bSort = true)
         {
             int nChannels = m_inputShape.dim[1];
-            return Run(ImageData.GetImageData(img, nChannels, false, -1));
+            return Run(ImageData.GetImageData(img, nChannels, false, -1), bSort, false);
+        }
+
+        /// <summary>
+        /// Run on a given Datum. 
+        /// </summary>
+        /// <param name="d">Specifies the Datum to run.</param>
+        /// <param name="bSort">Specifies whether or not to sor the results.</param>
+        /// <returns>The results of the run are returned.</returns>
+        public ResultCollection Run(SimpleDatum d, bool bSort = true)
+        {
+            return Run(d, bSort, false);
         }
 
         /// <summary>
@@ -1346,6 +1366,30 @@ namespace MyCaffe
         }
 
         /// <summary>
+        /// Loads the training Net with new weights.
+        /// </summary>
+        /// <param name="rgWeights">Specifies the weights to load.</param>
+        public void UpdateWeights(byte[] rgWeights)
+        {
+            loadWeights(m_net, rgWeights);
+
+            m_log.WriteLine("Updating weights in solver.");
+
+            List<string> rgExpectedShapes = new List<string>();
+
+            foreach (Blob<T> b in m_solver.TrainingNet.learnable_parameters)
+            {
+                rgExpectedShapes.Add(b.shape_string);
+            }
+
+            bool bLoadDiffs;
+            m_persist.LoadWeights(rgWeights, rgExpectedShapes, m_solver.TrainingNet.learnable_parameters, out bLoadDiffs);
+
+            m_solver.WeightsUpdated = true;
+            m_log.WriteLine("Solver weights updated.");
+        }
+
+        /// <summary>
         /// Creates a new Net, loads the weights specified into it and returns it.
         /// </summary>
         /// <param name="rgWeights">Specifies the weights to load.</param>
@@ -1375,30 +1419,6 @@ namespace MyCaffe
         }
 
         /// <summary>
-        /// Loads the training Net with new weights.
-        /// </summary>
-        /// <param name="rgWeights">Specifies the weights to load.</param>
-        public void UpdateWeights(byte[] rgWeights)
-        {
-            loadWeights(m_net, rgWeights);
-
-            m_log.WriteLine("Updating weights in solver.");
-
-            List<string> rgExpectedShapes = new List<string>();
-
-            foreach (Blob<T> b in m_solver.TrainingNet.learnable_parameters)
-            {
-                rgExpectedShapes.Add(b.shape_string);
-            }
-
-            bool bLoadDiffs;
-            m_persist.LoadWeights(rgWeights, rgExpectedShapes, m_solver.TrainingNet.learnable_parameters, out bLoadDiffs);
-
-            m_solver.WeightsUpdated = true;
-            m_log.WriteLine("Solver weights updated.");
-        }
-
-        /// <summary>
         /// Reset the device at the given device ID.
         /// </summary>
         /// <remarks>
@@ -1415,7 +1435,7 @@ namespace MyCaffe
         /// </summary>
         /// <param name="strOtherLicenses">Specifies other licenses to append to the license text.</param>
         /// <returns></returns>
-        public static string GetLicenseText(string strOtherLicenses)
+        public static string GetLicenseTextEx(string strOtherLicenses)
         {
             string str = Properties.Resources.LICENSETXT;
             int nYear = DateTime.Now.Year;
@@ -1429,6 +1449,16 @@ namespace MyCaffe
                 str = replaceMacro(str, "$$OTHERLICENSES$$", strOtherLicenses);
 
             return fixupReturns(str);
+        }
+
+        /// <summary>
+        /// Returns the license text for MyCaffe.
+        /// </summary>
+        /// <param name="strOtherLicenses">Specifies other licenses to append to the license text.</param>
+        /// <returns></returns>
+        public string GetLicenseText(string strOtherLicenses)
+        {
+            return GetLicenseTextEx(strOtherLicenses);
         }
 
         private static string replaceMacro(string str, string strMacro, string strReplacement)
