@@ -1243,7 +1243,7 @@ namespace MyCaffe
         /// This method does not use the MyCaffeImageDatabase.
         /// </remarks>
         /// <param name="img">Specifies the input image.</param>
-        /// <param name="bSort">Specifies whether or not to sor the results.</param>
+        /// <param name="bSort">Specifies whether or not to sort the results.</param>
         /// <returns>The results of the run are returned.</returns>
         public ResultCollection Run(Bitmap img, bool bSort = true)
         {
@@ -1255,7 +1255,7 @@ namespace MyCaffe
         /// Run on a given Datum. 
         /// </summary>
         /// <param name="d">Specifies the Datum to run.</param>
-        /// <param name="bSort">Specifies whether or not to sor the results.</param>
+        /// <param name="bSort">Specifies whether or not to sort the results.</param>
         /// <returns>The results of the run are returned.</returns>
         public ResultCollection Run(SimpleDatum d, bool bSort = true)
         {
