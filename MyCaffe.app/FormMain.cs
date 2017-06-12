@@ -23,7 +23,7 @@ namespace MyCaffe.app
         CancelEvent m_evtCancel = new CancelEvent();
         AutoResetEvent m_evtCommandRead = new AutoResetEvent(false);
         AutoResetEvent m_evtThreadDone = new AutoResetEvent(false);
-        MyCaffeControl<float> m_caffeRun;
+        IXMyCaffeNoDb<float> m_caffeRun;
         COMMAND m_Cmd = COMMAND.NONE;
         byte[] m_rgTrainedWeights = null;
         SimpleDatum m_sdImageMean = null;
@@ -469,7 +469,7 @@ namespace MyCaffe.app
         {
             if (m_caffeRun != null)
             {
-                m_caffeRun.Dispose();
+                ((IDisposable)m_caffeRun).Dispose();
                 m_caffeRun = null;
             }
         }
