@@ -2174,9 +2174,6 @@ namespace MyCaffe.param
                 case "RUN":
                     return Phase.RUN;
 
-                case "RUN_NODB":
-                    return Phase.RUN_NODB;
-
                 case "NONE":
                     return Phase.NONE;
 

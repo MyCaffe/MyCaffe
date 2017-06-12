@@ -215,10 +215,6 @@ namespace MyCaffe.param
                         p.phase = Phase.RUN;
                         break;
 
-                    case "RUN_NODB":
-                        p.phase = Phase.RUN_NODB;
-                        break;
-
                     case "NONE":
                         p.phase = Phase.NONE;
                         break;
