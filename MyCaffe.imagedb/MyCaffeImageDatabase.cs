@@ -42,7 +42,7 @@ namespace MyCaffe.imagedb
         IMGDB_IMAGE_SELECTION_METHOD m_imageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM;
         IMGDB_LABEL_SELECTION_METHOD m_labelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.RANDOM;
         Log m_log;
-        SettingsCaffe.IMAGEDB_LOAD_METHOD m_loadMethod = SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
+        IMAGEDB_LOAD_METHOD m_loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
         int m_nLoadLimit = 0;
         int m_nPadW = 0;
         int m_nPadH = 0;
@@ -564,7 +564,7 @@ namespace MyCaffe.imagedb
                 sd = lblSet.GetImage(0, imageSelectionMethod);
             }
 
-            if (m_loadMethod == SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND && (imageSelectionMethod & IMGDB_IMAGE_SELECTION_METHOD.PAIR) == IMGDB_IMAGE_SELECTION_METHOD.PAIR)
+            if (m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND && (imageSelectionMethod & IMGDB_IMAGE_SELECTION_METHOD.PAIR) == IMGDB_IMAGE_SELECTION_METHOD.PAIR)
                 throw new Exception("PAIR selection is not supported whith the LOAD_ON_DEMAND loading method.");
 
             if (sd == null)

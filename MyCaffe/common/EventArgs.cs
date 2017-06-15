@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using MyCaffe.param;
+using MyCaffe.basecode;
 
 namespace MyCaffe.common
 {
@@ -274,11 +275,12 @@ namespace MyCaffe.common
         double m_dfAccuracy = 0;
         double m_dfError = 0;
         int m_nIteration = 0;
-        bool m_bFavorError = false;
+        SNAPSHOT_UPDATE_METHOD m_favor = SNAPSHOT_UPDATE_METHOD.FAVOR_ACCURACY;
         bool m_bIncludeWeights = true;
         bool m_bIncludeState = false;
         bool m_bSingleStep = false;
         bool m_bForced = false;
+
 
         /// <summary>
         /// Specifies the OnGetWeights event which fires when the SnapshotArgs::UpdateWeights method is called.
@@ -303,15 +305,15 @@ namespace MyCaffe.common
         /// <param name="dfAccuracy">Specifies the last accuracy observed in the training Net.</param>
         /// <param name="dfError">Specifies the last error observed in the training Net.</param>
         /// <param name="nIteration">Specifies the current iteration of training.</param>
-        /// <param name="bFavorError">Specifies whether to favor the error value or the accuracy value when deciding whether or not a snapshot should take place.</param>
-        public SnapshotArgs(byte[] rgState, byte[] rgWeights, double dfAccuracy, double dfError, int nIteration, bool bFavorError = false)
+        /// <param name="favor">Specifies whether to favor the error value or the accuracy value when deciding whether or not a snapshot should take place.</param>
+        public SnapshotArgs(byte[] rgState, byte[] rgWeights, double dfAccuracy, double dfError, int nIteration, SNAPSHOT_UPDATE_METHOD favor)
         {
             m_rgState = rgState;
             m_rgWeights = rgWeights;
             m_dfAccuracy = dfAccuracy;
             m_dfError = dfError;
             m_nIteration = nIteration;
-            m_bFavorError = bFavorError;
+            m_favor = favor;
         }
 
         /// <summary>
@@ -391,11 +393,11 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Specifies whether to favor the error (<i>true</i>), or accurach (<i>false</i>) when deciding whether a snapshot should take place.
+        /// Specifies whether to favor the error, the accuracy or both when deciding whether a snapshot should take place.
         /// </summary>
-        public bool FavorError
+        public SNAPSHOT_UPDATE_METHOD Favor
         {
-            get { return m_bFavorError; }
+            get { return m_favor; }
         }
 
         /// <summary>

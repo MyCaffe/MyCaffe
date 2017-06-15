@@ -259,7 +259,7 @@ namespace MyCaffe.test
         {
             m_engine = engine;
             m_rgevtCancel = new WaitHandle[] { m_evtCancel.Handle };
-            m_settings.ImageDbLoadMethod = SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ALL;
+            m_settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
         }
 
         protected override void dispose()

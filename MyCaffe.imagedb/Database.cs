@@ -1334,10 +1334,19 @@ namespace MyCaffe.imagedb
                 List<RawImage> rgImg = entities.RawImages.Where(p => p.SourceID == nSrcId).OrderBy(p => p.TimeStamp).ThenBy(p => p.ID).ToList();
 
                 sw.Start();
+                int nIdx = 0;
 
                 for (int i = 0; i < rgImg.Count; i++)
                 {
-                    rgImg[i].Idx = i;
+                    if (rgImg[i].Active.GetValueOrDefault(false))
+                    {
+                        rgImg[i].Idx = nIdx;
+                        nIdx++;
+                    }
+                    else
+                    {
+                        rgImg[i].Idx = -1;
+                    }
 
                     if (i % 1000 == 0)
                         entities.SaveChanges();

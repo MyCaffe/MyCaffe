@@ -106,7 +106,7 @@ namespace MyCaffe.test
             m_ds = factory.LoadDataset("MNIST");
 
             SettingsCaffe s = new SettingsCaffe();
-            s.ImageDbLoadMethod = SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ALL;
+            s.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
             m_db.Initialize(s, m_ds);
 
             BottomVec.Clear();

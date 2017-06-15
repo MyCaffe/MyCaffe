@@ -27,7 +27,7 @@ namespace MyCaffe.imagedb
         int m_nFixedIndex = -1;
         object m_syncObj = new object();
         int m_nLoadLimit = 0;
-        SettingsCaffe.IMAGEDB_LOAD_METHOD m_loadMethod;
+        IMAGEDB_LOAD_METHOD m_loadMethod;
         Dictionary<int, double> m_rgLabelBoosts = new Dictionary<int, double>();
         double m_dfLabelBoostTotal = 0;
         DatasetFactory m_factory;
@@ -45,7 +45,7 @@ namespace MyCaffe.imagedb
         /// <param name="src">Specifies the data source.</param>
         /// <param name="loadMethod">Specifies the method to use when loading the images.</param>
         /// <param name="nLoadLimit">Specifies the image load limit.</param>
-        public ImageSet(DatasetFactory factory, SourceDescriptor src, SettingsCaffe.IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
+        public ImageSet(DatasetFactory factory, SourceDescriptor src, IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
             m_factory = new DatasetFactory(factory);
             m_factory.Open(src.ID);
@@ -517,7 +517,7 @@ namespace MyCaffe.imagedb
             if (m_rgImages.Length == 0)
                 throw new Exception("Cannot create image mean with no images!");
 
-            if (m_loadMethod != SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ALL)
+            if (m_loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ALL)
                 throw new Exception("Can only create image mean when using LOAD_ALL.");
 
             if (m_nLoadLimit != 0)

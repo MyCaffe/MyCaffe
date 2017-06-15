@@ -25,21 +25,8 @@ namespace MyCaffe.basecode
         string m_strGpuIds = "1";
         IMAGEDB_LOAD_METHOD m_imageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
         int m_nImageDbLoadLimit = 0;
-
-        /// <summary>
-        /// Defines how to laod the images into the image database.
-        /// </summary>
-        public enum IMAGEDB_LOAD_METHOD
-        {
-            /// <summary>
-            /// Load all of the images into memory.
-            /// </summary>
-            LOAD_ALL,
-            /// <summary>
-            /// Load the images as they are queried.
-            /// </summary>
-            LOAD_ON_DEMAND
-        }
+        SNAPSHOT_UPDATE_METHOD m_snapshotUpdateMethod = SNAPSHOT_UPDATE_METHOD.FAVOR_ACCURACY;
+        SNAPSHOT_LOAD_METHOD m_snapshotLoadMethod = SNAPSHOT_LOAD_METHOD.BEST_ACCURACY;
 
         /// <summary>
         /// The SettingsCaffe constructor.
@@ -68,6 +55,8 @@ namespace MyCaffe.basecode
             m_nMaskAllButLastColumns = info.GetInt32("nMaskAllButLastColumns");
             m_imageDbLoadMethod = (IMAGEDB_LOAD_METHOD)info.GetInt32("ImageDbLoadMethod");
             m_nImageDbLoadLimit = info.GetInt32("ImageDbLoadLimit");
+            m_snapshotUpdateMethod = (SNAPSHOT_UPDATE_METHOD)info.GetInt32("SnapshotUpdateMethod");
+            m_snapshotLoadMethod = (SNAPSHOT_LOAD_METHOD)info.GetInt32("SnapshotLoadMethod");
         }
 
         /// <summary>
@@ -90,6 +79,8 @@ namespace MyCaffe.basecode
             info.AddValue("nMaskAllButLastColumns", m_nMaskAllButLastColumns);
             info.AddValue("ImageDbLoadMethod", (int)m_imageDbLoadMethod);
             info.AddValue("ImageDbLoadLimit", m_nImageDbLoadLimit);
+            info.AddValue("SnapshotUpdateMethod", (int)m_snapshotUpdateMethod);
+            info.AddValue("SnapshotLoadMethod", (int)m_snapshotLoadMethod);
         }
 
         /// <summary>
@@ -113,6 +104,8 @@ namespace MyCaffe.basecode
             s.m_nMaskAllButLastColumns = m_nMaskAllButLastColumns;
             s.m_imageDbLoadMethod = m_imageDbLoadMethod;
             s.m_nImageDbLoadLimit = m_nImageDbLoadLimit;
+            s.m_snapshotUpdateMethod = m_snapshotUpdateMethod;
+            s.m_snapshotLoadMethod = m_snapshotLoadMethod;
 
             return s;
         }
@@ -241,6 +234,24 @@ namespace MyCaffe.basecode
         {
             get { return m_nImageDbLoadLimit; }
             set { m_nImageDbLoadLimit = value; }
+        }
+
+        /// <summary>
+        /// Get/set the snapshot update method.
+        /// </summary>
+        public SNAPSHOT_UPDATE_METHOD SnapshotUpdateMethod
+        {
+            get { return m_snapshotUpdateMethod; }
+            set { m_snapshotUpdateMethod = value; }
+        }
+
+        /// <summary>
+        /// Get/set the snapshot load method.
+        /// </summary>
+        public SNAPSHOT_LOAD_METHOD SnapshotLoadMethod
+        {
+            get { return m_snapshotLoadMethod; }
+            set { m_snapshotLoadMethod = value; }
         }
     }
 }

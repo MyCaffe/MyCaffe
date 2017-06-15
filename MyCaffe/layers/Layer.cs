@@ -80,6 +80,7 @@ namespace MyCaffe.layers
         private double m_dfBackwardAverageTiming = 0;
         private double m_dfAverageInterval = 20.0;
         private Stopwatch m_swTiming = new Stopwatch();
+        private WorkspaceArgs m_argsWs = new WorkspaceArgs(0, 0);
 
         /// <summary>
         /// Specifies the OnGetWorkspace event that fires when the getWorkspace() function is called by a layer to get a shareable workspace to conserve GPU memory.
@@ -619,10 +620,9 @@ namespace MyCaffe.layers
             if (OnGetWorkspace == null)
                 return null;
 
-            WorkspaceArgs args = new WorkspaceArgs(0, 0);
-            OnGetWorkspace(this, args);
+            OnGetWorkspace(this, m_argsWs);
 
-            return args;
+            return m_argsWs;
         }
 
         /// <summary>

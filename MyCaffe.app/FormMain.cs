@@ -401,7 +401,7 @@ namespace MyCaffe.app
                     {
                         case COMMAND.CREATE:
                             SettingsCaffe settings = new SettingsCaffe();
-                            settings.ImageDbLoadMethod = SettingsCaffe.IMAGEDB_LOAD_METHOD.LOAD_ALL;
+                            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
                             settings.EnableRandomInputSelection = true;
 
                             log = new Log("MyCaffe");

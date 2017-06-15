@@ -371,9 +371,9 @@ namespace MyCaffe.basecode
         /// Returns the method used to load the images into memory.  Loading all images into memory has the highest training performance for 
         /// memory access is much faster than disk acces (even with an SSD).
         /// </summary>
-        public SettingsCaffe.IMAGEDB_LOAD_METHOD ImageLoadMethod
+        public IMAGEDB_LOAD_METHOD ImageLoadMethod
         {
-            get { return (SettingsCaffe.IMAGEDB_LOAD_METHOD)m_project.Settings.ImageDbLoadMethod; }
+            get { return m_project.Settings.ImageDbLoadMethod; }
         }
 
         /// <summary>
@@ -382,6 +382,22 @@ namespace MyCaffe.basecode
         public int ImageLoadLimit
         {
             get { return m_project.Settings.ImageDbLoadLimit; }
+        }
+
+        /// <summary>
+        /// Returns the snapshot update favor.  The snapshot can favor an improving accuracy, decreasing error, or both.
+        /// </summary>
+        public SNAPSHOT_UPDATE_METHOD SnapshotUpdateMethod
+        {
+            get { return m_project.Settings.SnapshotUpdateMethod; }
+        }
+
+        /// <summary>
+        /// Returns the snapshot load method.  When loading the best error or accuracy, the snapshot loaded may not be the last one taken.
+        /// </summary>
+        public SNAPSHOT_LOAD_METHOD SnapshotLoadMethod
+        {
+            get { return m_project.Settings.SnapshotLoadMethod; }
         }
 
         /// <summary>

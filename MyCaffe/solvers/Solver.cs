@@ -94,6 +94,7 @@ namespace MyCaffe.solvers
         MemoryStream m_msState = new MemoryStream();
         object m_syncMsState = new object();
         IXPersist<T> m_persist;
+        SNAPSHOT_UPDATE_METHOD m_snapshotUpdatemMethod = SNAPSHOT_UPDATE_METHOD.FAVOR_ACCURACY;
 
         /// <summary>
         /// The OnStart event fires at the start of each training iteration.
@@ -159,6 +160,15 @@ namespace MyCaffe.solvers
         public void Dispose()
         {
             dispose();
+        }
+
+        /// <summary>
+        /// Get/set the snapshot update method.
+        /// </summary>
+        public SNAPSHOT_UPDATE_METHOD SnapshotUpdateMethod
+        {
+            get { return m_snapshotUpdatemMethod; }
+            set { m_snapshotUpdatemMethod = value; }
         }
 
         /// <summary>
@@ -767,7 +777,7 @@ namespace MyCaffe.solvers
                     if (is_root_solver && bFwdPassNanFree &&
                         (bForceSnapshot ||
                          (m_param.snapshot > 0 && (m_nIter % m_param.snapshot) == 0) ||
-                         m_dfLastAccuracy > m_dfBestAccuracy))  // only snapshow when accuraccy improves.
+                         (m_dfLastAccuracy > m_dfBestAccuracy)))
                     {
                         bSnapshotTaken = true;
                         Snapshot(bForceSnapshot);
@@ -883,7 +893,8 @@ namespace MyCaffe.solvers
         /// The snapshot function implements the basic snapshotting utility that stores the
         /// learned net.  This method calls the SnapshotSolverState method of the inherited class.
         /// </summary>
-        public void Snapshot(bool bForced, bool bFavorError = false)
+        /// <param name="bForced">Specifies whehter or not to force the snapshot.</param>
+        public void Snapshot(bool bForced)
         {
             m_log.WriteLine("Starting snap shot...");
             m_log.CHECK(is_root_solver, "Snapshot only supported on the root solver.");
@@ -891,7 +902,7 @@ namespace MyCaffe.solvers
             if (OnSnapshot == null)
                 return;
 
-            SnapshotArgs args = new common.SnapshotArgs(null, null, m_dfLastAccuracy, m_dfLastError, m_nIter, bFavorError);
+            SnapshotArgs args = new common.SnapshotArgs(null, null, m_dfLastAccuracy, m_dfLastError, m_nIter, m_snapshotUpdatemMethod);
             args.IncludeState = m_param.snapshot_include_state;
             args.IncludeWeights = m_param.snapshot_include_weights;
             args.SingleStep = m_bEnableSingleStep;

@@ -546,6 +546,7 @@ namespace MyCaffe
                 m_log.WriteLine("Creating solver...");
 
                 m_solver = Solver<T>.Create(m_cuda, m_log, p, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_imgDb, m_persist, m_rgGpu.Count, 0);
+                m_solver.SnapshotUpdateMethod = m_settings.SnapshotUpdateMethod;
                 if (p.WeightsState != null)
                     m_solver.Restore(p.WeightsState, null);
 
