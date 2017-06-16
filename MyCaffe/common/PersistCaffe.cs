@@ -67,6 +67,72 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Save the solver state to a byte array.
+        /// </summary>
+        /// <param name="state">Specifies the solver state to save.</param>
+        /// <returns>A byte array containing the solver state is returned.</returns>
+        public byte[] SaveSolverState(SolverState state)
+        {
+            FieldDescriptor fd = FieldDescriptor.CreateSolverStateFieldDesc();
+            ProtoBufWriter writer = new ProtoBufWriter(m_log);
+
+            m_log.WriteLine("Saving state...");
+
+            writer.WriteField(fd, "iter", new int[] { state.iter });
+            writer.WriteField(fd, "current_step", new int[] { state.current_step });
+
+            for (int i = 0; i < state.history.Count; i++)
+            {
+                writer.WriteField(fd, "history", saveBlobProto(fd.FindFirstChild("history"), state.history[i]));
+            }
+
+            return writer.GetBytes(true);
+        }
+
+        /// <summary>
+        /// Load the solver state from a byte array.
+        /// </summary>
+        /// <param name="rgState">Specifies the byte array containing the solver state.</param>
+        /// <returns>The SolverState loaded is returned.</returns>
+        public SolverState LoadSolverState(byte[] rgState)
+        {
+            SolverState state = new SolverState();
+            FieldDescriptor fd = FieldDescriptor.CreateSolverStateFieldDesc();
+            ProtoBufReader reader = new ProtoBufReader(rgState);
+            ProtoBufFieldCollection fields = reader.ReadFields(fd, false);
+            Stopwatch sw = new Stopwatch();
+
+            m_log.WriteLine("Attampting to load the Solver state...");
+
+            if (fields == null || fields.Count == 0)
+                return null;
+
+
+            //---------------------------------------------
+            //  Load the state.
+            //---------------------------------------------
+
+            ProtoBufField pbIter = fields.FindFirstChild("iter");
+            state.iter = (pbIter == null || pbIter.IntValues == null || pbIter.IntValues.Length == 0) ? 0 : pbIter.IntValues[0];
+
+            ProtoBufField pbCurStep = fields.FindFirstChild("current_step");
+            state.current_step = (pbCurStep == null || pbCurStep.IntValues == null || pbCurStep.IntValues.Length == 0) ? 1 : pbCurStep.IntValues[0];
+
+            ProtoBufFieldCollection col = fields.FindAllChildren("history");
+            if (col != null && col.Count > 0)
+            {
+                FieldDescriptor fdHist = fd.FindFirstChild("history");
+
+                for (int i = 0; i < col.Count; i++)
+                {
+                    state.history.Add(LoadBlobProto(col[i].Bytes, fdHist.FieldId));
+                }
+            }
+
+            return state;
+        }
+
+        /// <summary>
         /// Loads new weights into a BlobCollection
         /// </summary>
         /// <remarks>
@@ -198,6 +264,12 @@ namespace MyCaffe.common
             if (fields == null || fields.Count == 0)
                 return null;
 
+            for (int i = 0; i < fields.Count; i++)
+            {
+                ProtoBufField field = fields[i];
+                field.LoadSubFields(0, 4);
+            }
+
             List<int> rgShape = new List<int>();
 
             ProtoBufField pbShape = fields.FindFirstChild("shape");
@@ -306,6 +378,20 @@ namespace MyCaffe.common
                 writer.WriteField(fd, "blobs", saveBlobProto(fd.FindFirstChild("blobs"), blob));
                 m_log.WriteLine("  - saved blob '" + blob.Name + "'");
             }
+
+            return writer.GetBytes();
+        }
+
+        private byte[] saveBlobProto(FieldDescriptor fd, BlobProto bp)
+        {
+            ProtoBufWriter writer = new ProtoBufWriter(m_log);
+
+            writer.WriteField(fd, "shape", saveBlobShape(fd.FindFirstChild("shape"), bp.shape.dim));
+
+            if (bp.double_data != null && bp.double_data.Count > 0)
+                writer.WriteField(fd, "double_data", bp.double_data.ToArray());
+            else
+                writer.WriteField(fd, "data", bp.data.ToArray());
 
             return writer.GetBytes();
         }
@@ -1188,8 +1274,8 @@ namespace MyCaffe.common
 
         private double[] readDoubleArray(byte[] rgBytes)
         {
-            int nCount = rgBytes.Length / sizeof(float);
-            int nErr = rgBytes.Length % sizeof(float);
+            int nCount = rgBytes.Length / sizeof(double);
+            int nErr = rgBytes.Length % sizeof(double);
 
             if (nErr != 0)
                 throw new Exception("Invalid " + m_fd.Type.ToString() + " data - not aligned.");
@@ -1469,6 +1555,11 @@ namespace MyCaffe.common
             return m_strName + " (" + m_nFieldID.ToString() + ") - " + m_type.ToString();
         }
 
+        public static FieldDescriptor CreateSolverStateFieldDesc()
+        {
+            return new common.FieldDescriptor(0, "SolverState", TYPE.FIELDDESC, loadSolverState());
+        }
+
         public static FieldDescriptor CreateNetworkParamFieldDesc()
         {
             return new common.FieldDescriptor(0, "NetParameter", TYPE.FIELDDESC, loadNetParameter());
@@ -1479,11 +1570,20 @@ namespace MyCaffe.common
             return new FieldDescriptor(nFieldId, "BlobProto", TYPE.FIELDDESC, loadBlobProto());
         }
 
+        private static List<FieldDescriptor> loadSolverState()
+        {
+            List<FieldDescriptor> rgF = new List<common.FieldDescriptor>();
+            rgF.Add(new FieldDescriptor(1, "iter", TYPE.INT));
+            rgF.Add(new FieldDescriptor(3, "history", TYPE.FIELDDESC, loadBlobProto()));
+            rgF.Add(new FieldDescriptor(4, "current_step", TYPE.INT));
+            return rgF;
+        }
+
         private static List<FieldDescriptor> loadNetParameter()
         {
             List<FieldDescriptor> rgF = new List<common.FieldDescriptor>();
-            rgF.Add(new FieldDescriptor(1, "name", FieldDescriptor.TYPE.STRING));
-            rgF.Add(new FieldDescriptor(100, "LayerParameter", FieldDescriptor.TYPE.FIELDDESC, loadLayerParameter()));
+            rgF.Add(new FieldDescriptor(1, "name", TYPE.STRING));
+            rgF.Add(new FieldDescriptor(100, "LayerParameter", TYPE.FIELDDESC, loadLayerParameter()));
             rgF.Add(new FieldDescriptor(2, "V1LayerParameter", TYPE.FIELDDESC, loadV1LayerParameter()));
             return rgF;
         }

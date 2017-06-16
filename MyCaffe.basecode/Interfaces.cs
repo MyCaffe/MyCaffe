@@ -48,20 +48,20 @@ namespace MyCaffe.basecode
     }
 
     /// <summary>
-    /// Defines the snapshot update method.
+    /// Defines the snapshot weight update method.
     /// </summary>
-    public enum SNAPSHOT_UPDATE_METHOD
+    public enum SNAPSHOT_WEIGHT_UPDATE_METHOD
     {
         /// <summary>
-        /// Update the snapshot when the accuracy increases.
+        /// Update the snapshot weights when the accuracy increases.
         /// </summary>
         FAVOR_ACCURACY,
         /// <summary>
-        /// Update the snapshot when the error decreases.
+        /// Update the snapshot weights when the error decreases.
         /// </summary>
         FAVOR_ERROR,
         /// <summary>
-        /// Update the snapshot when the accuracy increases or the error decreases.
+        /// Update the snapshot weights when the accuracy increases or the error decreases.
         /// </summary>
         FAVOR_BOTH
     }
@@ -72,20 +72,16 @@ namespace MyCaffe.basecode
     public enum SNAPSHOT_LOAD_METHOD
     {
         /// <summary>
-        /// Load the last snapshot taken.
+        /// Load the weights with the best accuracy (which may not be the last).
         /// </summary>
-        LAST,
+        WEIGHTS_BEST_ACCURACY,
         /// <summary>
-        /// Load the snapshot with the best accuracy (which may not be the last).
+        /// Load the weights with the best error (which may not be the last).
         /// </summary>
-        BEST_ACCURACY,
+        WEIGHTS_BEST_ERROR,
         /// <summary>
-        /// Load the snapshot with the best error (which may not be the last).
+        /// Load the last solver state snapshotted.
         /// </summary>
-        BEST_ERROR,
-        /// <summary>
-        /// Load the last snapshot state.
-        /// </summary>
-        STATE
+        LAST_STATE
     }
 }

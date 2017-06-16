@@ -76,6 +76,20 @@ namespace MyCaffe.common
         /// <param name="bLoadedDiffs">Returns whether or not the diffs were loaded.</param>
         /// <returns>The collection of Blobs with newly loaded weights is returned.</returns>
         BlobCollection<T> LoadWeights(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, out bool bLoadedDiffs);
+
+        /// <summary>
+        /// Save the solver state to a byte array.
+        /// </summary>
+        /// <param name="state">Specifies the solver state to save.</param>
+        /// <returns>A byte array containing the solver state is returned.</returns>
+        byte[] SaveSolverState(SolverState state);
+
+        /// <summary>
+        /// Load the solver state from a byte array.
+        /// </summary>
+        /// <param name="rgState">Specifies the byte array containing the solver state.</param>
+        /// <returns>The SolverState loaded is returned.</returns>
+        SolverState LoadSolverState(byte[] rgState);
     }
 
     /// <summary>

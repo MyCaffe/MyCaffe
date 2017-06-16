@@ -93,6 +93,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestSolverState()
+        {
+            PersistCaffeTest test = new PersistCaffeTest();
+
+            try
+            {
+                foreach (IPersistCaffeTest t in test.Tests)
+                {
+                    t.TestSolverState();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -102,6 +120,7 @@ namespace MyCaffe.test
         void TestImportExport();
         void TestImportExportV1();
         void TestReadBlobProto();
+        void TestSolverState();
     }
 
     class PersistCaffeTest : TestBase
@@ -388,6 +407,57 @@ namespace MyCaffe.test
             {
                 double[] rg = new double[proto.data.Count];
                 Array.Copy(proto.data.ToArray(), rg, rg.Length);
+            }
+        }
+
+        public void TestSolverState()
+        {
+            PersistCaffe<T> persist = new PersistCaffe<T>(m_log, true);
+            Random rand = new Random();
+            SolverState state1 = new SolverState();
+
+            state1.iter = 33;
+            state1.current_step = 2;
+
+            // Load the initial data
+            for (int i = 0; i < 10; i++)
+            {
+                BlobProto bp = new BlobProto(new List<int>() { 1, i + 1, i + 1 + i + 1 });
+                int nCount = 1 * (i + 1) * ((i + 1) + (i + 1));
+
+                if (DataType == DataType.DOUBLE)
+                {
+                    for (int j = 0; j < nCount; j++)
+                    {
+                        bp.double_data.Add(rand.NextDouble());
+                    }
+                }
+                else
+                {
+                    for (int j = 0; j < nCount; j++)
+                    {
+                        bp.data.Add((float)rand.NextDouble());
+                    }
+                }
+
+                state1.history.Add(bp);
+            }
+
+            // Save the proto
+            byte[] rgData = persist.SaveSolverState(state1);
+
+            // Load the new state.
+            SolverState state2 = persist.LoadSolverState(rgData);
+
+            // Verify the data;
+
+            m_log.CHECK_EQ(state1.iter, state2.iter, "The iterations are different.");
+            m_log.CHECK_EQ(state1.current_step, state2.current_step, "The current steps are different");
+            m_log.CHECK_EQ(state1.history.Count, state2.history.Count, "The history counts are different.");
+
+            for (int i = 0; i < state1.history.Count; i++)
+            {
+                m_log.CHECK(state1.history[i].Compare(state2.history[i]), "The histories at " + i.ToString() + " are different!");
             }
         }
     }

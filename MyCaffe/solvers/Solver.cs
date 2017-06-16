@@ -77,6 +77,10 @@ namespace MyCaffe.solvers
         /// Specifies the Solver rank of this solver, where rank == 0 is the root Solver.
         /// </summary>
         protected int m_nSolverRank = 0;
+        /// <summary>
+        /// Specifies the persistance object used to save weight and solver states.
+        /// </summary>
+        protected IXPersist<T> m_persist;
         double m_dfLastAccuracy = 0;
         double m_dfLastError = double.MaxValue;
         double m_dfBestAccuracy = 0;
@@ -89,12 +93,7 @@ namespace MyCaffe.solvers
         static object m_syncGetRi = new object();
         Blob<T> m_blobBatchInputData = null;
         double m_dfAverageTestTime = 0;
-        MemoryStream m_msWeights = new MemoryStream();
-        object m_syncMsWeights = new object();
-        MemoryStream m_msState = new MemoryStream();
-        object m_syncMsState = new object();
-        IXPersist<T> m_persist;
-        SNAPSHOT_UPDATE_METHOD m_snapshotUpdatemMethod = SNAPSHOT_UPDATE_METHOD.FAVOR_ACCURACY;
+        SNAPSHOT_WEIGHT_UPDATE_METHOD m_snapshotWeightUpdatemMethod = SNAPSHOT_WEIGHT_UPDATE_METHOD.FAVOR_ACCURACY;
 
         /// <summary>
         /// The OnStart event fires at the start of each training iteration.
@@ -163,12 +162,12 @@ namespace MyCaffe.solvers
         }
 
         /// <summary>
-        /// Get/set the snapshot update method.
+        /// Get/set the snapshot weight update method.
         /// </summary>
-        public SNAPSHOT_UPDATE_METHOD SnapshotUpdateMethod
+        public SNAPSHOT_WEIGHT_UPDATE_METHOD SnapshotWeightUpdateMethod
         {
-            get { return m_snapshotUpdatemMethod; }
-            set { m_snapshotUpdatemMethod = value; }
+            get { return m_snapshotWeightUpdatemMethod; }
+            set { m_snapshotWeightUpdatemMethod = value; }
         }
 
         /// <summary>
@@ -201,12 +200,6 @@ namespace MyCaffe.solvers
             {
                 m_blobBatchInputData.Dispose();
                 m_blobBatchInputData = null;
-            }
-
-            if (m_msWeights != null)
-            {
-                m_msWeights.Dispose();
-                m_msWeights = null;
             }
         }
 
@@ -564,7 +557,7 @@ namespace MyCaffe.solvers
             // If we haven't already, save a snapshot after optimization, unless
             // overriden by setting snapshot_after_train = false.
             if (m_param.snapshot_after_train && (m_param.snapshot == 0 || (m_nIter % m_param.snapshot) != 0))
-                Snapshot(false);
+                Snapshot(false, true);
 
             if (m_evtCancel.WaitOne(0))
             {
@@ -780,7 +773,7 @@ namespace MyCaffe.solvers
                          (m_dfLastAccuracy > m_dfBestAccuracy)))
                     {
                         bSnapshotTaken = true;
-                        Snapshot(bForceSnapshot);
+                        Snapshot(bForceSnapshot, ((m_param.snapshot > 0 && (m_nIter % m_param.snapshot) == 0)) ? true : false);
 
                         if (m_dfLastAccuracy > m_dfBestAccuracy)
                             m_dfBestAccuracy = m_dfLastAccuracy;
@@ -842,7 +835,7 @@ namespace MyCaffe.solvers
                         // When single stepping, force the snapshot so as to allow
                         //  debugging the net visually.
                         if (!bSnapshotTaken)
-                            Snapshot(false);
+                            Snapshot(true, false);
                         break;
                     }
                 }
@@ -874,18 +867,7 @@ namespace MyCaffe.solvers
             if (rgState != null)
             {
                 m_log.WriteLine("Restoring previous solver state from restore state...");
-
-                lock (m_syncMsState)
-                {
-                    m_msState.SetLength(0);
-                    m_msState.Write(rgState, 0, rgState.Length);
-                    m_msState.Seek(0, SeekOrigin.Begin);
-
-                    BinaryReader br = new BinaryReader(m_msState);
-                    int nLength = br.ReadInt32();
-                    byte[] rgStateData = br.ReadBytes(nLength);
-                    RestoreSolverState(rgStateData);
-                }
+                RestoreSolverState(rgState);
             }
         }
 
@@ -894,7 +876,7 @@ namespace MyCaffe.solvers
         /// learned net.  This method calls the SnapshotSolverState method of the inherited class.
         /// </summary>
         /// <param name="bForced">Specifies whehter or not to force the snapshot.</param>
-        public void Snapshot(bool bForced)
+        public void Snapshot(bool bForced, bool bScheduled)
         {
             m_log.WriteLine("Starting snap shot...");
             m_log.CHECK(is_root_solver, "Snapshot only supported on the root solver.");
@@ -902,11 +884,12 @@ namespace MyCaffe.solvers
             if (OnSnapshot == null)
                 return;
 
-            SnapshotArgs args = new common.SnapshotArgs(null, null, m_dfLastAccuracy, m_dfLastError, m_nIter, m_snapshotUpdatemMethod);
+            SnapshotArgs args = new common.SnapshotArgs(null, null, m_dfLastAccuracy, m_dfLastError, m_nIter, m_snapshotWeightUpdatemMethod);
             args.IncludeState = m_param.snapshot_include_state;
             args.IncludeWeights = m_param.snapshot_include_weights;
             args.SingleStep = m_bEnableSingleStep;
             args.Forced = bForced;
+            args.Scheduled = bScheduled;
             args.OnGetState += args_OnGetState;
             args.OnGetWeights += args_OnGetWeights;
 
@@ -921,15 +904,7 @@ namespace MyCaffe.solvers
 
         private void args_OnGetState(object sender, GetBytesArgs e)
         {
-            lock (m_syncMsState)
-            {
-                BinaryWriter bw = new BinaryWriter(m_msState);
-                byte[] rgSolverState = SnapshotSolverState();
-                bw.Write(rgSolverState.Length);
-                bw.Write(rgSolverState);
-
-                e.Data = m_msState.ToArray();
-            }
+            e.Data = SnapshotSolverState();
         }
 
         /// <summary>

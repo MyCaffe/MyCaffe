@@ -275,11 +275,12 @@ namespace MyCaffe.common
         double m_dfAccuracy = 0;
         double m_dfError = 0;
         int m_nIteration = 0;
-        SNAPSHOT_UPDATE_METHOD m_favor = SNAPSHOT_UPDATE_METHOD.FAVOR_ACCURACY;
+        SNAPSHOT_WEIGHT_UPDATE_METHOD m_favor = SNAPSHOT_WEIGHT_UPDATE_METHOD.FAVOR_ACCURACY;
         bool m_bIncludeWeights = true;
         bool m_bIncludeState = false;
         bool m_bSingleStep = false;
         bool m_bForced = false;
+        bool m_bScheduled = true;
 
 
         /// <summary>
@@ -306,7 +307,7 @@ namespace MyCaffe.common
         /// <param name="dfError">Specifies the last error observed in the training Net.</param>
         /// <param name="nIteration">Specifies the current iteration of training.</param>
         /// <param name="favor">Specifies whether to favor the error value or the accuracy value when deciding whether or not a snapshot should take place.</param>
-        public SnapshotArgs(byte[] rgState, byte[] rgWeights, double dfAccuracy, double dfError, int nIteration, SNAPSHOT_UPDATE_METHOD favor)
+        public SnapshotArgs(byte[] rgState, byte[] rgWeights, double dfAccuracy, double dfError, int nIteration, SNAPSHOT_WEIGHT_UPDATE_METHOD favor)
         {
             m_rgState = rgState;
             m_rgWeights = rgWeights;
@@ -395,7 +396,7 @@ namespace MyCaffe.common
         /// <summary>
         /// Specifies whether to favor the error, the accuracy or both when deciding whether a snapshot should take place.
         /// </summary>
-        public SNAPSHOT_UPDATE_METHOD Favor
+        public SNAPSHOT_WEIGHT_UPDATE_METHOD Favor
         {
             get { return m_favor; }
         }
@@ -434,6 +435,15 @@ namespace MyCaffe.common
         {
             get { return m_bForced; }
             set { m_bForced = value; }
+        }
+
+        /// <summary>
+        /// Get/set whether or not the snapshot is a regular scheduled snapshot (e.g. not an improved accuracy or forced snapshot)
+        /// </summary>
+        public bool Scheduled
+        {
+            get { return m_bScheduled; }
+            set { m_bScheduled = value; }
         }
     }
 

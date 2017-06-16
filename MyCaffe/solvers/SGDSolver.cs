@@ -201,22 +201,17 @@ namespace MyCaffe.solvers
         /// <param name="rgState">Specifies the state of the Solver.</param>
         protected override void RestoreSolverState(byte[] rgState)
         {
-            MemoryStream ms = new MemoryStream(rgState);
+            SolverState state = m_persist.LoadSolverState(rgState);
 
-            using (BinaryReader br = new BinaryReader(ms))
+            m_nIter = state.iter;
+            m_nCurrentStep = state.current_step;
+
+            m_log.CHECK_EQ(state.history.Count, m_colHistory.Count, "Incorrect length of history blobs.");
+            m_log.WriteLine("SGDSolver: restoring history.");
+
+            for (int i = 0; i < m_colHistory.Count; i++)
             {
-                SolverState state = SolverState.Load(br);
-
-                m_nIter = state.iter;
-                m_nCurrentStep = state.current_step;
-
-                m_log.CHECK_EQ(state.history.Count, m_colHistory.Count, "Incorrect length of history blobs.");
-                m_log.WriteLine("SGDSolver: restoring history.");
-
-                for (int i = 0; i < m_colHistory.Count; i++)
-                {
-                    m_colHistory[i].FromProto(state.history[i]);
-                }
+                m_colHistory[i].FromProto(state.history[i]);
             }
         }
 
@@ -229,22 +224,13 @@ namespace MyCaffe.solvers
             SolverState state = new SolverState();
             state.iter = m_nIter;
             state.current_step = m_nCurrentStep;
-            state.history = new List<BlobProto>();
 
-            for (int i = 0; i < m_colHistory.Count; i++)
+            foreach (Blob<T> blob in m_colHistory)
             {
-                // Add history.
-                state.history.Add(m_colHistory[i].ToProto());
+                state.history.Add(blob.ToProto());
             }
 
-            MemoryStream ms = new MemoryStream();
-
-            using (BinaryWriter bw = new BinaryWriter(ms))
-            {
-                state.Save(bw);
-            }
-
-            return ms.ToArray();
+            return m_persist.SaveSolverState(state);
         }
 
         /// <summary>
