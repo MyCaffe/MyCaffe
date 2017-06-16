@@ -65,7 +65,7 @@ namespace MyCaffe.param
         string m_strCustomTrainer = null;
         bool m_bOutputAverageResults = false;
         bool m_bSnapshotIncludeWeights = true;
-        bool m_bSnapshotIncludeState = false;
+        bool m_bSnapshotIncludeState = true;
 
         /// <summary>
         /// Defines the format of each snapshot.
