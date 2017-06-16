@@ -996,48 +996,38 @@ namespace MyCaffe.common
             }
 
             // Copy the data.
-            List<T> rgData = new List<T>();
+            T[] rgData = null;
 
             if (bp.double_data.Count > 0)
             {
                 m_log.CHECK_EQ(m_nCount, bp.double_data.Count, "The double data count is not the same as the blob data count!");
-                for (int i = 0; i < m_nCount; i++)
-                {
-                    rgData.Add((T)Convert.ChangeType(bp.double_data[i], typeof(T)));
-                }
+                rgData = Utility.ConvertVec<T>(bp.double_data.ToArray());
             }
             else if (bp.data.Count > 0)
             {
                 m_log.CHECK_EQ(m_nCount, bp.data.Count, "The double data count is not the same as the blob data count!");
-                for (int i = 0; i < m_nCount; i++)
-                {
-                    rgData.Add((T)Convert.ChangeType(bp.data[i], typeof(T)));
-                }
+                rgData = Utility.ConvertVec<T>(bp.data.ToArray());
             }
 
-            mutable_cpu_data = rgData.ToArray();
+            if (rgData != null)
+                mutable_cpu_data = rgData;
 
             // Copy the diff.
-            List<T> rgDiff = new List<T>();
+            T[] rgDiff = null;
 
             if (bp.double_diff.Count > 0)
             {
                 m_log.CHECK_EQ(m_nCount, bp.double_diff.Count, "The double diff count is not the same as the blob data count!");
-                for (int i = 0; i < m_nCount; i++)
-                {
-                    rgDiff.Add((T)Convert.ChangeType(bp.double_diff[i], typeof(T)));
-                }
+                rgDiff = Utility.ConvertVec<T>(bp.double_diff.ToArray());
             }
             else if (bp.diff.Count > 0)
             {
                 m_log.CHECK_EQ(m_nCount, bp.diff.Count, "The double data count is not the same as the blob data count!");
-                for (int i = 0; i < m_nCount; i++)
-                {
-                    rgDiff.Add((T)Convert.ChangeType(bp.diff[i], typeof(T)));
-                }
+                rgDiff = Utility.ConvertVec<T>(bp.diff.ToArray());
             }
 
-            mutable_cpu_diff = rgData.ToArray();
+            if (rgDiff != null)
+                mutable_cpu_diff = rgDiff;
         }
 
         /// <summary>
@@ -1056,44 +1046,28 @@ namespace MyCaffe.common
             {
                 if (rgData != null)
                 {
-                    bp.double_data = new List<double>();
-
-                    for (int i = 0; i < m_nCount; i++)
-                    {
-                        bp.double_data.Add((double)Convert.ChangeType(rgData[i], typeof(double)));
-                    }
+                    double[] rgDataD = Utility.ConvertVec<T>(rgData);
+                    bp.double_data = new List<double>(rgDataD);
                 }
 
                 if (rgDiff != null)
                 {
-                    bp.double_diff = new List<double>();
-
-                    for (int i = 0; i < m_nCount; i++)
-                    {
-                        bp.double_diff.Add((double)Convert.ChangeType(rgDiff[i], typeof(double)));
-                    }
+                    double[] rgDiffD = Utility.ConvertVec<T>(rgData);
+                    bp.double_diff = new List<double>(rgDiffD);
                 }
             }
             else
             {
                 if (rgData != null)
                 {
-                    bp.data = new List<float>();
-
-                    for (int i = 0; i < m_nCount; i++)
-                    {
-                        bp.data.Add((float)Convert.ChangeType(rgData[i], typeof(float)));
-                    }
+                    float[] rgDataF = Utility.ConvertVecF<T>(rgData);
+                    bp.data = new List<float>(rgDataF);
                 }
 
                 if (rgDiff != null)
                 {
-                    bp.diff = new List<float>();
-
-                    for (int i = 0; i < m_nCount; i++)
-                    {
-                        bp.diff.Add((float)Convert.ChangeType(rgDiff[i], typeof(float)));
-                    }
+                    float[] rgDiffF = Utility.ConvertVecF<T>(rgDiff);
+                    bp.diff = new List<float>(rgDiffF);
                 }
             }
 
