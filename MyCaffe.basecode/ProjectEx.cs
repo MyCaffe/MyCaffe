@@ -385,11 +385,14 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Returns the snapshot update favor.  The snapshot can favor an improving accuracy, decreasing error, or both.
+        /// Returns the snapshot weight update favor.  The snapshot can favor an improving accuracy, decreasing error, or both when saving weights.
         /// </summary>
-        public SNAPSHOT_UPDATE_METHOD SnapshotUpdateMethod
+        /// <remarks>
+        /// Note, weights updates are saved separately from the entire solver state that is snapshot on regular intervals.
+        /// </remarks>
+        public SNAPSHOT_WEIGHT_UPDATE_METHOD SnapshotWeightUpdateMethod
         {
-            get { return m_project.Settings.SnapshotUpdateMethod; }
+            get { return m_project.Settings.SnapshotWeightUpdateMethod; }
         }
 
         /// <summary>

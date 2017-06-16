@@ -22,11 +22,11 @@ namespace MyCaffe.basecode
         int m_nMaximumIterationOverride = -1;
         int m_nTestingIterationOverride = -1;
         string m_strDefaultModelGroup = "";
-        string m_strGpuIds = "1";
+        string m_strGpuIds = "0";
         IMAGEDB_LOAD_METHOD m_imageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
         int m_nImageDbLoadLimit = 0;
-        SNAPSHOT_UPDATE_METHOD m_snapshotUpdateMethod = SNAPSHOT_UPDATE_METHOD.FAVOR_ACCURACY;
-        SNAPSHOT_LOAD_METHOD m_snapshotLoadMethod = SNAPSHOT_LOAD_METHOD.BEST_ACCURACY;
+        SNAPSHOT_WEIGHT_UPDATE_METHOD m_snapshotWeightUpdateMethod = SNAPSHOT_WEIGHT_UPDATE_METHOD.FAVOR_ACCURACY;
+        SNAPSHOT_LOAD_METHOD m_snapshotLoadMethod = SNAPSHOT_LOAD_METHOD.LAST_STATE;
 
         /// <summary>
         /// The SettingsCaffe constructor.
@@ -42,21 +42,69 @@ namespace MyCaffe.basecode
         /// <param name="context">Specifies the serialization context.</param>
         public SettingsCaffe(SerializationInfo info, StreamingContext context)
         {
-            m_bEnableLabelBalancing = info.GetBoolean("bEnableLabelBalancing");
-            m_bEnableLabelBoosting = info.GetBoolean("bEnableLabelBoosting");
-            m_bEnableRandomInputSelection = info.GetBoolean("bEnableRandomInputSelection");
-            m_bEnablePairInputSelection = info.GetBoolean("bEnablePairInputSelection");
-            m_bUseTrainingSourceForTesting = info.GetBoolean("bUseTrainingSourceForTesting");
-            m_dfSuperBoostProbability = info.GetDouble("dfSuperBoostProbability");
-            m_nMaximumIterationOverride = info.GetInt32("nMaximumIterationOverride");
-            m_nTestingIterationOverride = info.GetInt32("nTestingIterationOverride");
+            m_bEnableLabelBalancing = getBool(info, "bEnableLabelBalancing", m_bEnableLabelBalancing);
+            m_bEnableLabelBoosting = getBool(info, "bEnableLabelBoosting", m_bEnableLabelBoosting);
+            m_bEnableRandomInputSelection = getBool(info, "bEnableRandomInputSelection", m_bEnableRandomInputSelection);
+            m_bEnablePairInputSelection = getBool(info, "bEnablePairInputSelection", m_bEnablePairInputSelection);
+            m_bUseTrainingSourceForTesting = getBool(info, "bUseTrainingSourceForTesting", m_bUseTrainingSourceForTesting);
+            m_dfSuperBoostProbability = getDouble(info, "dfSuperBoostProbability", m_dfSuperBoostProbability);
+            m_nMaximumIterationOverride = getInt(info, "nMaximumIterationOverride", m_nMaximumIterationOverride);
+            m_nTestingIterationOverride = getInt(info, "nTestingIterationOverride", m_nTestingIterationOverride);
             m_strDefaultModelGroup = info.GetString("strDefaultModelGroup");
-            m_strGpuIds = info.GetString("strGpuIds");
-            m_nMaskAllButLastColumns = info.GetInt32("nMaskAllButLastColumns");
-            m_imageDbLoadMethod = (IMAGEDB_LOAD_METHOD)info.GetInt32("ImageDbLoadMethod");
-            m_nImageDbLoadLimit = info.GetInt32("ImageDbLoadLimit");
-            m_snapshotUpdateMethod = (SNAPSHOT_UPDATE_METHOD)info.GetInt32("SnapshotUpdateMethod");
-            m_snapshotLoadMethod = (SNAPSHOT_LOAD_METHOD)info.GetInt32("SnapshotLoadMethod");
+            m_strGpuIds = getString(info, "strGpuIds", m_strGpuIds);
+            m_nMaskAllButLastColumns = getInt(info, "nMaskAllButLastColumns", m_nMaskAllButLastColumns);
+            m_imageDbLoadMethod = (IMAGEDB_LOAD_METHOD)getInt(info, "ImageDbLoadMethod", (int)m_imageDbLoadMethod);
+            m_nImageDbLoadLimit = getInt(info, "ImageDbLoadLimit", m_nImageDbLoadLimit);
+            m_snapshotWeightUpdateMethod = (SNAPSHOT_WEIGHT_UPDATE_METHOD)getInt(info, "SnapshotWeightUpdateMethod", (int)m_snapshotWeightUpdateMethod);
+            m_snapshotLoadMethod = (SNAPSHOT_LOAD_METHOD)getInt(info, "SnapshotLoadMethod", (int)m_snapshotLoadMethod);
+        }
+
+        private bool getBool(SerializationInfo info, string str, bool bDefault)
+        {
+            try
+            {
+                return info.GetBoolean(str);
+            }
+            catch
+            {
+                return bDefault;
+            }
+        }
+
+        private double getDouble(SerializationInfo info, string str, double dfDefault)
+        {
+            try
+            {
+                return info.GetDouble(str);
+            }
+            catch
+            {
+                return dfDefault;
+            }
+        }
+
+        private string getString(SerializationInfo info, string str, string strDefault)
+        {
+            try
+            {
+                return info.GetString(str);
+            }
+            catch
+            {
+                return strDefault;
+            }
+        }
+
+        private int getInt(SerializationInfo info, string str, int nDefault)
+        {
+            try
+            {
+                return info.GetInt32(str);
+            }
+            catch
+            {
+                return nDefault;
+            }
         }
 
         /// <summary>
@@ -79,7 +127,7 @@ namespace MyCaffe.basecode
             info.AddValue("nMaskAllButLastColumns", m_nMaskAllButLastColumns);
             info.AddValue("ImageDbLoadMethod", (int)m_imageDbLoadMethod);
             info.AddValue("ImageDbLoadLimit", m_nImageDbLoadLimit);
-            info.AddValue("SnapshotUpdateMethod", (int)m_snapshotUpdateMethod);
+            info.AddValue("SnapshotWeightUpdateMethod", (int)m_snapshotWeightUpdateMethod);
             info.AddValue("SnapshotLoadMethod", (int)m_snapshotLoadMethod);
         }
 
@@ -104,7 +152,7 @@ namespace MyCaffe.basecode
             s.m_nMaskAllButLastColumns = m_nMaskAllButLastColumns;
             s.m_imageDbLoadMethod = m_imageDbLoadMethod;
             s.m_nImageDbLoadLimit = m_nImageDbLoadLimit;
-            s.m_snapshotUpdateMethod = m_snapshotUpdateMethod;
+            s.m_snapshotWeightUpdateMethod = m_snapshotWeightUpdateMethod;
             s.m_snapshotLoadMethod = m_snapshotLoadMethod;
 
             return s;
@@ -239,10 +287,10 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Get/set the snapshot update method.
         /// </summary>
-        public SNAPSHOT_UPDATE_METHOD SnapshotUpdateMethod
+        public SNAPSHOT_WEIGHT_UPDATE_METHOD SnapshotWeightUpdateMethod
         {
-            get { return m_snapshotUpdateMethod; }
-            set { m_snapshotUpdateMethod = value; }
+            get { return m_snapshotWeightUpdateMethod; }
+            set { m_snapshotWeightUpdateMethod = value; }
         }
 
         /// <summary>
