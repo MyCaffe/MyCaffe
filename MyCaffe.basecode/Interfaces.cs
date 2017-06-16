@@ -82,6 +82,10 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Load the snapshot with the best error (which may not be the last).
         /// </summary>
-        BEST_ERROR
+        BEST_ERROR,
+        /// <summary>
+        /// Load the last snapshot state.
+        /// </summary>
+        STATE
     }
 }
