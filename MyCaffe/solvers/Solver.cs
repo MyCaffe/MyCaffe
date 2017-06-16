@@ -1213,7 +1213,10 @@ namespace MyCaffe.solvers
                     double dfPct = (double)i / (double)nIter;
 
                     if (is_root_solver)
+                    {
+                        m_log.Progress = dfPct;
                         m_log.WriteLine("Testing '" + test_net.name + "' at " + dfPct.ToString("P"));
+                    }
 
                     sw.Restart();
                 }
