@@ -389,7 +389,27 @@ namespace MyCaffe.common
         /// <returns>The array of <i>double</i> is returned.</returns>
         public static double[] ConvertVec<T>(T[] rg)
         {
+            if (typeof(T) == typeof(double))
+                return (double[])Convert.ChangeType(rg, typeof(double[]));
+
             double[] rgdf = new double[rg.Length];
+            Array.Copy(rg, rgdf, rg.Length);
+
+            return rgdf;
+        }
+
+        /// <summary>
+        /// Convert an array of generics to an array of <i>float</i>.
+        /// </summary>
+        /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
+        /// <param name="rg">Specifies the array of generics.</param>
+        /// <returns>The array of <i>float</i> is returned.</returns>
+        public static float[] ConvertVecF<T>(T[] rg)
+        {
+            if (typeof(T) == typeof(float))
+                return (float[])Convert.ChangeType(rg, typeof(float[]));
+
+            float[] rgdf = new float[rg.Length];
             Array.Copy(rg, rgdf, rg.Length);
 
             return rgdf;
@@ -403,6 +423,9 @@ namespace MyCaffe.common
         /// <returns>The array of generics is returned.</returns>
         public static T[] ConvertVec<T>(double[] rgdf)
         {
+            if (typeof(T) == typeof(double))
+                return (T[])Convert.ChangeType(rgdf, typeof(T[]));
+
             T[] rgt = new T[rgdf.Length];
 
             if (typeof(T) == typeof(float))
@@ -421,6 +444,9 @@ namespace MyCaffe.common
         /// <returns>The array of generics is returned.</returns>
         public static T[] ConvertVec<T>(float[] rgf)
         {
+            if (typeof(T) == typeof(float))
+                return (T[])Convert.ChangeType(rgf, typeof(T[]));
+
             T[] rgt = new T[rgf.Length];
             Array.Copy(rgf, rgt, rgf.Length);
 
