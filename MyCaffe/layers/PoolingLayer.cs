@@ -119,8 +119,11 @@ namespace MyCaffe.layers
             {
                 BlobCollection<T> col = new BlobCollection<T>();
 
-                col.Add(m_blobRandIdx);
-                col.Add(m_blobMaxIdx);
+                if (!m_param.pooling_param.useCudnn())
+                {
+                    col.Add(m_blobRandIdx);
+                    col.Add(m_blobMaxIdx);
+                }
 
                 return col;
             }
@@ -321,16 +324,18 @@ namespace MyCaffe.layers
             if (colTop.Count > 1)
                 colTop[1].ReshapeLike(colTop[0]);
 
-            // If max pooling, we will initialize the vector index part.
-            if (m_param.pooling_param.pool == PoolingParameter.PoolingMethod.MAX && colTop.Count == 1)
-                m_blobMaxIdx.Reshape(colBottom[0].num, m_nChannels, m_nPooledHeight, m_nPooledWidth);
-
-            // If stochastic pooling, we will initialize the random index part.
-            if (m_param.pooling_param.pool == PoolingParameter.PoolingMethod.STOCHASTIC)
-                m_blobRandIdx.Reshape(colBottom[0].num, m_nChannels, m_nPooledHeight, m_nPooledWidth);
-
             if (!m_param.pooling_param.useCudnn())
+            {
+                // If max pooling, we will initialize the vector index part.
+                if (m_param.pooling_param.pool == PoolingParameter.PoolingMethod.MAX && colTop.Count == 1)
+                    m_blobMaxIdx.Reshape(colBottom[0].num, m_nChannels, m_nPooledHeight, m_nPooledWidth);
+
+                // If stochastic pooling, we will initialize the random index part.
+                if (m_param.pooling_param.pool == PoolingParameter.PoolingMethod.STOCHASTIC)
+                    m_blobRandIdx.Reshape(colBottom[0].num, m_nChannels, m_nPooledHeight, m_nPooledWidth);
+
                 return;
+            }
 
             //---------------------------------------------
             //  cuDnn specific pooling.

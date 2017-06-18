@@ -313,7 +313,8 @@ namespace MyCaffe.layers
             {
                 case LRNParameter.NormRegion.ACROSS_CHANNELS:
                     colTop[0].Reshape(m_nNum, m_nChannels, m_nHeight, m_nWidth);
-                    m_blobScale.Reshape(m_nNum, m_nChannels, m_nHeight, m_nWidth);
+                    if (!m_param.lrn_param.useCudnn())
+                        m_blobScale.Reshape(m_nNum, m_nChannels, m_nHeight, m_nWidth);
                     break;
 
                 case LRNParameter.NormRegion.WITHIN_CHANNEL:
