@@ -794,8 +794,7 @@ namespace MyCaffe.imagedb
                 return sd;
 
             sd = GetImageMean(nSrcId);
-
-            SaveImageMean(nSrcId, sd);
+            SaveImageMean(nSrcId, sd, false);
 
             return sd;
         }
@@ -805,9 +804,10 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <param name="d">Specifies a SimpleDatum containing the image mean.</param>
-        public void SaveImageMean(int nSrcId, SimpleDatum d)
+        /// <param name="bUpdate">Specifies whether or not to update the mean image.</param>
+        public void SaveImageMean(int nSrcId, SimpleDatum d, bool bUpdate)
         {
-            m_colDatasets[m_nStrIDHashCode].SaveImageMean(nSrcId, d);
+            m_colDatasets[m_nStrIDHashCode].SaveImageMean(nSrcId, d, bUpdate);
         }
 
         /// <summary>

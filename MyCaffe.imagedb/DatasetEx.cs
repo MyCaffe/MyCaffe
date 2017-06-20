@@ -272,7 +272,7 @@ namespace MyCaffe.imagedb
                             log.WriteLine("Calculating mean...");
 
                         imgMean = imgset.GetImageMean(log, rgAbort);
-                        m_factory.PutRawImageMean(imgMean);
+                        m_factory.PutRawImageMean(imgMean, true);
                     }
                 }
 
@@ -306,14 +306,15 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source to use.</param>
         /// <param name="sd">Specifies the image mean data.</param>
+        /// <param name="bUpdate">Specifies whether or not to update the mean image.</param>
         /// <returns>If saved successfully, this method returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool SaveImageMean(int nSrcId, SimpleDatum sd)
+        public bool SaveImageMean(int nSrcId, SimpleDatum sd, bool bUpdate)
         {
             if (m_TestingImages.SourceID != nSrcId &&
                 m_TrainingImages.SourceID != nSrcId)
                 return false;
 
-            return m_factory.SaveImageMean(sd, nSrcId);
+            return m_factory.SaveImageMean(sd, bUpdate, nSrcId);
         }
 
         /// <summary>

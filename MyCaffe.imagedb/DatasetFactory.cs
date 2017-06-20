@@ -213,21 +213,23 @@ namespace MyCaffe.imagedb
         /// Save the SimpleDatum as a RawImageMean in the database for the open data source.
         /// </summary>
         /// <param name="sd">Specifies the data.</param>
+        /// <param name="bUpdate">Specifies whether or not to update the mean image.</param>
         /// <returns>The ID of the RawImageMean is returned.</returns>
-        public int PutRawImageMean(SimpleDatum sd)
+        public int PutRawImageMean(SimpleDatum sd, bool bUpdate)
         {
-            return m_db.PutRawImageMean(sd);
+            return m_db.PutRawImageMean(sd, bUpdate);
         }
 
         /// <summary>
         /// Save the SimpleDatum as a RawImageMean in the database.
         /// </summary>
         /// <param name="sd">Specifies the data.</param>
+        /// <param name="bUpdate">Specifies whether or not to update the mean image.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <returns>The ID of the RawImageMean is returned.</returns>
-        public bool SaveImageMean(SimpleDatum sd, int nSrcId = 0)
+        public bool SaveImageMean(SimpleDatum sd, bool bUpdate, int nSrcId = 0)
         {
-            if (m_db.PutRawImageMean(sd, nSrcId) != 0)
+            if (m_db.PutRawImageMean(sd, bUpdate, nSrcId) != 0)
                 return true;
 
             return false;

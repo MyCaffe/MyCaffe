@@ -45,12 +45,13 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nSrcID">Specifies the ID of the data source.</param>
         /// <param name="sd">Specifies the image mean data.</param>
+        /// <param name="bUpdate">Specifies whether or not to update the mean image.</param>
         /// <returns>Returns <i>true</i> after a successful save, <i>false</i> otherwise.</returns>
-        public bool SaveImageMean(int nSrcID, SimpleDatum sd)
+        public bool SaveImageMean(int nSrcID, SimpleDatum sd, bool bUpdate)
         {
             foreach (DatasetEx ds in m_rgDatasets)
             {
-                if (ds.SaveImageMean(nSrcID, sd))
+                if (ds.SaveImageMean(nSrcID, sd, bUpdate))
                     return true;
             }
 

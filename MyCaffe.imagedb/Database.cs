@@ -1212,9 +1212,10 @@ namespace MyCaffe.imagedb
         /// Save the SimpleDatum as a RawImageMean in the database.
         /// </summary>
         /// <param name="sd">Specifies the data.</param>
+        /// <param name="bUpdate">Specifies whether or not to update the mean image.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <returns>The ID of the RawImageMean is returned.</returns>
-        public int PutRawImageMean(SimpleDatum sd, int nSrcId = 0)
+        public int PutRawImageMean(SimpleDatum sd, bool bUpdate, int nSrcId = 0)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
@@ -1225,26 +1226,31 @@ namespace MyCaffe.imagedb
                 if (iQuery != null)
                 {
                     List<RawImageMean> rgMean = iQuery.ToList();
+                    RawImageMean im = null;
 
                     if (rgMean.Count == 0)
+                        im = new RawImageMean();
+                    else
+                        im = rgMean[0];
+
+                    if (bUpdate || rgMean.Count == 0)
                     {
                         bool bEncoded = false;
-                        RawImageMean im = new RawImageMean();
-
                         im.Channels = sd.Channels;
                         im.Height = sd.Height;
                         im.Width = sd.Width;
                         im.SourceID = nSrcId;
                         im.Data = sd.GetByteData(out bEncoded);
                         im.Encoded = sd.IsRealData;
-
-                        entities.RawImageMeans.Add(im);
-                        entities.SaveChanges();
-
-                        return im.ID;
                     }
 
-                    return rgMean[0].ID;
+                    if (rgMean.Count == 0)
+                        entities.RawImageMeans.Add(im);
+
+                    if (rgMean.Count == 0 || bUpdate)
+                        entities.SaveChanges();
+
+                    return im.ID;
                 }
 
                 return 0;
