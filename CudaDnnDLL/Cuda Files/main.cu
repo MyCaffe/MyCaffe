@@ -423,6 +423,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_CHANNEL_DIV:
 			return m_device.cuda_channel_div(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_CHANNEL_MUL:
+			return m_device.cuda_channel_mul(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_CHANNEL_DOT:
 			return m_device.cuda_channel_dot(lCount, pfInput, plCount, ppfOutput);
 

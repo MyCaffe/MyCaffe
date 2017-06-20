@@ -140,7 +140,8 @@ class Math
 		long channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
-		long channel_div(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+		long channel_div(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod = 1);
+		long channel_mul(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod = 1);
 		long channel_dot(int n, int nOutNum, int nChannels, int nInNum, long hX, long hA, long hY);
 
 		long im2col(long hDataIm, int nDataImOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataCol, int nDataColOffset);

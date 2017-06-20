@@ -180,6 +180,7 @@ const int CUDA_FN_CHANNEL_SUB       = 291;
 const int CUDA_FN_CHANNEL_SUM       = 292;
 const int CUDA_FN_CHANNEL_DIV       = 293;
 const int CUDA_FN_CHANNEL_DOT       = 294;
+const int CUDA_FN_CHANNEL_MUL		= 295;
 
 const int CUDA_RNG_SETSEED			= 349;
 const int CUDA_RNG_UNIFORM			= 350;

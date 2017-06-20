@@ -2613,8 +2613,23 @@ __global__ void channel_div_kernel(const int count, const int num, const int cha
 	}
 }
 
+template <typename T>
+__global__ void channel_div2_kernel(const int count, const int num, const int channels, const int spatial_dim, const T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<count; i += blockDim.x * gridDim.x)
+	{
+		int n = i / spatial_dim;
+		int s = i % spatial_dim;
+
+		for (int c = 0; c<channels; c++)
+		{
+			y[(n * channels + c) * spatial_dim + s] /= x[i];
+		}
+	}
+}
+
 template <typename T> 
-long Math<T>::channel_div(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY)
+long Math<T>::channel_div(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod)
 {
 	LONG lErr;
 	MemoryItem* pX;
@@ -2626,13 +2641,67 @@ long Math<T>::channel_div(int n, int nOutNum, int nChannels, int nInNum, long hX
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	channel_div_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	if (nMethod == 2)
+		channel_div2_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> >(n, nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	else
+		channel_div_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
 
 	return cudaGetLastError();
 }
 
-template long Math<double>::channel_div(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
-template long Math<float>::channel_div(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+template long Math<double>::channel_div(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod);
+template long Math<float>::channel_div(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod);
+
+
+template <typename T>
+__global__ void channel_mul_kernel(const int count, const int num, const int channels, const int spatial_dim, const T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<count; i += blockDim.x * gridDim.x)
+	{
+		int n = i / channels / spatial_dim;
+		int s = i % spatial_dim;
+		y[i] *= x[n * spatial_dim + s];
+	}
+}
+
+template <typename T>
+__global__ void channel_mul2_kernel(const int count, const int num, const int channels, const int spatial_dim, const T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<count; i += blockDim.x * gridDim.x)
+	{
+		int n = i / spatial_dim;
+		int s = i % spatial_dim;
+
+		for (int c = 0; c<channels; c++)
+		{
+			y[(n * channels + c) * spatial_dim + s] *= x[i];
+		}
+	}
+}
+
+template <typename T>
+long Math<T>::channel_mul(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	if (nMethod == 2)
+		channel_mul2_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> >(n, nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	else
+		channel_mul_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> >(n, nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+
+	return cudaGetLastError();
+}
+
+template long Math<double>::channel_mul(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod);
+template long Math<float>::channel_mul(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod);
 
 
 template <typename T>
