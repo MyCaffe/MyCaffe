@@ -26,12 +26,24 @@ namespace MyCaffe.param
         string m_strMeanFile = null;
         COLOR_ORDER m_colorOrder = COLOR_ORDER.RGB;
 
+        /// <summary>
+        /// Defines the color ordering used to tranform the input data.
+        /// </summary>
         public enum COLOR_ORDER
         {
+            /// <summary>
+            /// Orders the channels by 'R'ed, 'G'reen, then 'B'lue.
+            /// </summary>
             RGB = 0,
+            /// <summary>
+            /// Orders the channels by 'B'lue, 'G'reen, then 'R'ed.  This ordering is typically used by Native C++ Caffe.
+            /// </summary>
             BGR = 1
         }
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
         public TransformationParameter()
         {
         }
