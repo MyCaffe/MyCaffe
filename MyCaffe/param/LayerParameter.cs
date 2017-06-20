@@ -159,6 +159,10 @@ namespace MyCaffe.param
             /// </summary>
             FLATTEN,
             /// <summary>
+            /// Initializes a parameter for the GRNLayer (global response normalization L2)
+            /// </summary>
+            GRN,
+            /// <summary>
             /// Initializes a parameter for the HingeLossLayer.
             /// </summary>
             HINGE_LOSS,
@@ -735,6 +739,12 @@ namespace MyCaffe.param
                     expected_bottom.Add("x_1");
                     expected_bottom.Add("x_2");
                     expected_top.Add("flatten");
+                    m_rgLayerParameters[lt] = new FlattenParameter();
+                    break;
+
+                case LayerType.GRN:
+                    expected_bottom.Add("input");
+                    expected_top.Add("grn");
                     m_rgLayerParameters[lt] = new FlattenParameter();
                     break;
 
@@ -1709,6 +1719,9 @@ namespace MyCaffe.param
                 case LayerType.FLATTEN:
                     return "Flatten";
 
+                case LayerType.GRN:
+                    return "GRN";
+
                 case LayerType.HINGE_LOSS:
                     return "HingeLoss";
 
@@ -2261,6 +2274,9 @@ namespace MyCaffe.param
 
                 case "flatten":
                     return LayerType.FLATTEN;
+
+                case "grn":
+                    return LayerType.GRN;
 
 //                case "hdf5data":
 //                    return LayerType.HDF5DATA;

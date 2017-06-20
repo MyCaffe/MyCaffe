@@ -96,6 +96,7 @@
     <Compile Include="layers\CropLayer.cs" />
     <Compile Include="layers\MemoryDataLayer.cs" />
     <Compile Include="layers\DebugLayer.cs" />
+    <Compile Include="layers_alpha\GRNLayer.cs" />
     <Compile Include="layers_alpha\TripletDataLayer.cs" />
     <Compile Include="layers_alpha\KnnLayer.cs" />
     <Compile Include="layers_alpha\TripletSelectLayer.cs" />

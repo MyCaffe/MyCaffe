@@ -867,6 +867,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.FLATTEN:
                     return new FlattenLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.GRN:
+                    return new GRNLayer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.HINGE_LOSS:
                     return new HingeLossLayer<T>(cuda, log, p);
 
