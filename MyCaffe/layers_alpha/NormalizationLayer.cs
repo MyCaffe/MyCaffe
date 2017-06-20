@@ -25,15 +25,6 @@ namespace MyCaffe.layers.alpha
         Blob<T> m_blobSquared;
 
         /// <summary>
-        /// Constructor.
-        /// </summary>
-        /// <param name="cuda">Cuda engine.</param>
-        /// <param name="log">General log.</param>
-        /// <param name="p">provides NormalizationParameter normalization_param,
-        /// with NormalizationLayer options:
-        ///  - norm (optional, default L2)
-        ///          Sets the normalization method.</param>
-        /// <summary>
         /// The NormalizationLayer constructor.
         /// </summary>
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
