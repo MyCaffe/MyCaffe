@@ -357,9 +357,15 @@ namespace MyCaffe.data
             double[] rgRealData = d.RealData;
             byte[] rgByteData = d.ByteData;
             float[] rgTransformedData = new float[nLen];
+            int[] rgChannelSwap = null;
 
-            for (int c = 0; c < nDatumChannels; c++)
+            if (nDatumChannels == 3 && param.color_order == TransformationParameter.COLOR_ORDER.BGR)
+                rgChannelSwap = new int[] { 2, 1, 0 };
+
+            for (int c1 = 0; c1 < nDatumChannels; c1++)
             {
+                int c = (rgChannelSwap == null) ? c1 : rgChannelSwap[c1];
+
                 for (int h = 0; h < nHeight; h++)
                 {
                     for (int w = 0; w < nWidth; w++)

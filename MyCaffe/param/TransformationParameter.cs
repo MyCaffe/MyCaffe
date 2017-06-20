@@ -24,6 +24,13 @@ namespace MyCaffe.param
         double m_dfForcedPositiveRangeMax = 0.0;
         int? m_nRandomSeed = null;
         string m_strMeanFile = null;
+        COLOR_ORDER m_colorOrder = COLOR_ORDER.RGB;
+
+        public enum COLOR_ORDER
+        {
+            RGB = 0,
+            BGR = 1
+        }
 
         public TransformationParameter()
         {
@@ -142,6 +149,16 @@ namespace MyCaffe.param
             set { m_strMeanFile = value; }
         }
 
+        /// <summary>
+        /// Specifies the color ordering to use.  Native Caffe models often uses COLOR_ORDER.BGR, whereas MyCaffe datasets often
+        /// uses the COLOR_ORDER.RGB ordering.
+        /// </summary>
+        public COLOR_ORDER color_order
+        {
+            get { return m_colorOrder; }
+            set { m_colorOrder = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -169,6 +186,7 @@ namespace MyCaffe.param
             m_dfForcedPositiveRangeMax = p.m_dfForcedPositiveRangeMax;
             m_nRandomSeed = p.m_nRandomSeed;
             m_strMeanFile = p.m_strMeanFile;
+            m_colorOrder = p.m_colorOrder;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -209,6 +227,8 @@ namespace MyCaffe.param
 
             if (mean_file != null && mean_file.Length > 0)
                 rgChildren.Add("mean_file", mean_file);
+
+            rgChildren.Add("color_order", m_colorOrder.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -251,6 +271,14 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("mean_file")) != null)
                 p.mean_file = strVal;
+
+            if ((strVal = rp.FindValue("color_order")) != null)
+            {
+                if (strVal == COLOR_ORDER.BGR.ToString())
+                    p.color_order = COLOR_ORDER.BGR;
+                else
+                    p.color_order = COLOR_ORDER.RGB;
+            }
 
             return p;
         }
