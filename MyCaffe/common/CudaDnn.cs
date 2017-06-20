@@ -634,6 +634,7 @@ namespace MyCaffe.common
             CUDA_CHANNEL_SUM = 292,
             CUDA_CHANNEL_DIV = 293,
             CUDA_CHANNEL_DOT = 294,
+            CUDA_CHANNEL_MUL = 295,
 
             CUDA_RNG_SETSEED = 349,
             CUDA_RNG_UNIFORM = 350,
@@ -4681,12 +4682,31 @@ namespace MyCaffe.common
         /// <param name="nInnerNum">Specifies the dimension of each image in X.</param>
         /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
-        public void channel_div(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
+        /// <param name="nMethod">Specifies the method of traversing the channel, <i>nMethod</i> = 1 (the default) is used by the SoftmaxLayer and <i>nMethod</i> = 2 is used by the GRNLayer.</param>
+        public void channel_div(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, int nMethod = 1)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DIV, new double[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DIV, new double[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nMethod });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DIV, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DIV, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nMethod });
+        }
+
+        /// <summary>
+        /// Multiplies the values of the channels from Y and places the result in Y.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of elements in X.</param>
+        /// <param name="nOuterNum">Specifies the number of images within X.</param>
+        /// <param name="nChannels">Specifies the number of channels per image of X.</param>
+        /// <param name="nInnerNum">Specifies the dimension of each image in X.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        /// <param name="nMethod">Specifies the method of traversing the channel, <i>nMethod</i> = 1 (the default) is used by the SoftmaxLayer and <i>nMethod</i> = 2 is used by the GRNLayer.</param>
+        public void channel_mul(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY, int nMethod = 1)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MUL, new double[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nMethod });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MUL, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY, nMethod });
         }
 
         /// <summary>
