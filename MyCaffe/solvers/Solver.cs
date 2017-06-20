@@ -876,6 +876,7 @@ namespace MyCaffe.solvers
         /// learned net.  This method calls the SnapshotSolverState method of the inherited class.
         /// </summary>
         /// <param name="bForced">Specifies whehter or not to force the snapshot.</param>
+        /// <param name="bScheduled">Specifies whether or not the snapshot is a scheduled snapshot that occurs at regular intervals, or a snapshot based on an improving accuracy.</param>
         public void Snapshot(bool bForced, bool bScheduled)
         {
             m_log.WriteLine("Starting snap shot...");
