@@ -171,7 +171,7 @@ namespace MyCaffe.layers
             {
                 BlobCollection<T> col = new BlobCollection<T>();
 
-                if (!m_param.convolution_param.useCudnn(m_nNumSpatialAxes))
+                if (!m_param.convolution_param.useCudnn(m_nNumSpatialAxes) || reverse_dimensions())
                 {
                     col.Add(m_blobColBuffer);
                     col.Add(m_blobBiasMultiplier);
@@ -532,7 +532,7 @@ namespace MyCaffe.layers
             m_nColOffset = m_nKernelDim * m_nConvOutSpatialDim;
             m_nOutputOffset = m_nConvOutChannels * m_nConvOutSpatialDim / m_nGroup;
 
-            if (!m_param.convolution_param.useCudnn(m_nNumSpatialAxes))
+            if (!m_param.convolution_param.useCudnn(m_nNumSpatialAxes) || reverse_dimensions())
             {
                 // Setup input dimensions (blobConvInputShape)
                 List<int> rgBottomDimBlobShape = new List<int>() { m_nNumSpatialAxes + 1 };
@@ -596,7 +596,7 @@ namespace MyCaffe.layers
 
             if (m_bBiasTerm)
             {
-                if (!m_param.convolution_param.useCudnn(m_nNumSpatialAxes))
+                if (!m_param.convolution_param.useCudnn(m_nNumSpatialAxes) || reverse_dimensions())
                 {
                     List<int> rgBiasMultShape = new List<int>() { m_nOutSpatialDim };
                     shareLayerBlob(m_blobBiasMultiplier, rgBiasMultShape);
