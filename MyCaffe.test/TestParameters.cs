@@ -1012,7 +1012,7 @@ namespace MyCaffe.test
             Assert.AreEqual(p.scale, 0.5);
             Assert.AreEqual(p.mirror, true);
             Assert.AreEqual(p.crop_size, (uint)3);
-            Assert.AreEqual(p.use_image_mean, true);
+            Assert.AreEqual(p.use_imagedb_mean, true);
             Assert.AreEqual(p.mean_value.Count, 0);
             Assert.AreEqual(p.force_color, true);
             Assert.AreEqual(p.force_gray, false);
@@ -1034,7 +1034,7 @@ namespace MyCaffe.test
             Assert.AreEqual(p.scale, 3.5);
             Assert.AreEqual(p.mirror, true);
             Assert.AreEqual(p.crop_size, (uint)3);
-            Assert.AreEqual(p.use_image_mean, false);
+            Assert.AreEqual(p.use_imagedb_mean, false);
             Assert.AreEqual(p.mean_value.Count, 3);
             Assert.AreEqual(p.mean_value[0], 2);
             Assert.AreEqual(p.mean_value[1], 3);
@@ -1147,7 +1147,7 @@ namespace MyCaffe.test
             Assert.AreNotEqual(p.transform_param, null);
             Assert.AreEqual(p.transform_param.mirror, true);
             Assert.AreEqual(p.transform_param.crop_size, (uint)227);
-            Assert.AreEqual(p.transform_param.use_image_mean, true);
+            Assert.AreEqual(p.transform_param.use_imagedb_mean, true);
 
             Assert.AreNotEqual(p.data_param, null);
             Assert.AreEqual(p.data_param.source, "examples/imagenet/ilsvrc12_train_lmdb");
@@ -1193,7 +1193,7 @@ namespace MyCaffe.test
             Assert.AreNotEqual(p.transform_param, null);
             Assert.AreEqual(p.transform_param.mirror, false);
             Assert.AreEqual(p.transform_param.crop_size, (uint)224);
-            Assert.AreEqual(p.transform_param.use_image_mean, false);
+            Assert.AreEqual(p.transform_param.use_imagedb_mean, false);
             Assert.AreEqual(p.transform_param.mean_value.Count, 3);
             Assert.AreEqual(p.transform_param.mean_value[0], 104);
             Assert.AreEqual(p.transform_param.mean_value[1], 117);

@@ -58,7 +58,7 @@ namespace MyCaffe.layers
                 else if (p.type == LayerParameter.LayerType.BATCHDATA)
                     m_src = m_imgdb.GetSource(p.batch_data_param.source);
 
-                if (p.transform_param.use_image_mean)
+                if (p.transform_param.use_imagedb_mean)
                 {
                     if (db != null)
                         m_imgMean = db.GetImageMean(m_src.ID);

@@ -57,7 +57,7 @@ namespace MyCaffe.data
 
             InitRand();
 
-            if (p.use_image_mean)
+            if (p.use_imagedb_mean)
             {
                 if (m_protoMean == null)
                 {
@@ -80,7 +80,7 @@ namespace MyCaffe.data
 
             if (p.mean_value.Count > 0)
             {
-                m_log.CHECK(p.use_image_mean == false, "Cannot specify use_image_mean and mean_value at the same time.");
+                m_log.CHECK(p.use_imagedb_mean == false, "Cannot specify use_image_mean and mean_value at the same time.");
 
                 for (int c = 0; c < p.mean_value.Count; c++)
                 {
@@ -290,7 +290,7 @@ namespace MyCaffe.data
 
             double dfScale = m_param.scale;
             bool bDoMirror = m_param.mirror && (Rand(2) == 1) ? true : false;
-            bool bUseMeanImage = m_param.use_image_mean;
+            bool bUseMeanImage = m_param.use_imagedb_mean;
             List<double> rgMeanValues = null;
             double[] rgMean = null;
             bool bUseReal = d.IsRealData;

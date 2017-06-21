@@ -710,7 +710,7 @@ namespace MyCaffe
 
             if (tp != null)
             {
-                if (tp.use_image_mean && sdMean == null)
+                if (tp.use_imagedb_mean && sdMean == null)
                     throw new Exception("The transformer expects an image mean, yet the sdMean parameter is null!");
 
                 m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, sdMean);
@@ -732,7 +732,7 @@ namespace MyCaffe
             {
                 if (lp.type == LayerParameter.LayerType.TRANSFORM)
                 {
-                    if (!lp.transform_param.use_image_mean)
+                    if (!lp.transform_param.use_imagedb_mean)
                         return null;
                 }
                 else if (lp.type == LayerParameter.LayerType.DATA ||

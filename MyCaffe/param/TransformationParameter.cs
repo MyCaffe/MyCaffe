@@ -17,7 +17,7 @@ namespace MyCaffe.param
         double m_dfScale = 1;
         bool m_bMirror = false;
         uint m_nCropSize = 0;
-        bool m_bUseImageMean = false;
+        bool m_bUseImageDbMean = false;
         List<double> m_rgMeanValue = new List<double>();
         bool m_bForceColor = false;
         bool m_bForceGray = false;
@@ -96,10 +96,10 @@ namespace MyCaffe.param
         /// subtract the mean values, or neither and do no mean subtraction.
         /// </summary>
         [Category("Data Mean"), Description("Specifies whether or not to use the image mean for the data source from the image database.  When true, the mean image is subtracted from the current image.")]
-        public bool use_image_mean
+        public bool use_imagedb_mean
         {
-            get { return m_bUseImageMean; }
-            set { m_bUseImageMean = value; }
+            get { return m_bUseImageDbMean; }
+            set { m_bUseImageDbMean = value; }
         }
 
         /// <summary>
@@ -188,7 +188,7 @@ namespace MyCaffe.param
         {
             TransformationParameter p = (TransformationParameter)src;
             
-            m_bUseImageMean = p.m_bUseImageMean;
+            m_bUseImageDbMean = p.m_bUseImageDbMean;
             m_bForceColor = p.m_bForceColor;
             m_bForceGray = p.m_bForceGray;
             m_bMirror = p.m_bMirror;
@@ -223,8 +223,8 @@ namespace MyCaffe.param
             if (crop_size != 0)
                 rgChildren.Add("crop_size", crop_size.ToString());
 
-            if (use_image_mean != false)
-                rgChildren.Add("use_image_mean", use_image_mean.ToString());
+            if (use_imagedb_mean != false)
+                rgChildren.Add("use_imagedb_mean", use_imagedb_mean.ToString());
 
             rgChildren.Add<double>("mean_value", mean_value);
 
@@ -264,11 +264,12 @@ namespace MyCaffe.param
             if ((strVal = rp.FindValue("crop_size")) != null)
                 p.crop_size = uint.Parse(strVal);
 
-            if ((strVal = rp.FindValue("use_image_mean")) != null)
-                p.use_image_mean = bool.Parse(strVal);
+            if ((strVal = rp.FindValue("use_image_mean")) != null ||
+                (strVal = rp.FindValue("use_imagedb_mean")) != null)
+                p.use_imagedb_mean = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("mean_file")) != null)
-                p.use_image_mean = true;
+                p.use_imagedb_mean = true;
 
             p.mean_value = rp.FindArray<double>("mean_value");
 
