@@ -1748,6 +1748,15 @@ namespace MyCaffe.common
             }
         }
 
+        /// <summary>
+        /// The Resize method resizes the 3rd and 4th axes of the blob.
+        /// </summary>
+        /// <remarks>
+        /// Currently, the Resize method only works on 4 axis blobs.  Resize is different from Reshape in that Resize
+        /// actually averages the data when resizing the blob.
+        /// </remarks>
+        /// <param name="rgShape">Specifies the new shape to resize to.</param>
+        /// <returns>A newly re-sized Blob is returned.</returns>
         public Blob<T> Resize(List<int> rgShape)
         {
             m_log.CHECK_EQ(num_axes, rgShape.Count, "When resizing, the new shape must have the same number of axes as the blob to be resized.");
