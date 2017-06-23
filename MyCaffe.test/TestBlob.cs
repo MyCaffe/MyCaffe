@@ -6,6 +6,9 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.fillers;
+using MyCaffe.basecode;
+using System.Drawing;
+using System.IO;
 
 namespace MyCaffe.test
 {
@@ -155,6 +158,60 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestResize1()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestResize1();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestResize2()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestResize2();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestResize3()
+        {
+            BlobSimpleTest test = new BlobSimpleTest();
+
+            try
+            {
+                foreach (IBlobSimpleTest t in test.Tests)
+                {
+                    t.TestResize3();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     class BlobSimpleTest : TestBase
@@ -183,6 +240,9 @@ namespace MyCaffe.test
         void TestMath_SumOfSquares();
         void TestMath_Asum();
         void TestMath_Scale();
+        void TestResize1();
+        void TestResize2();
+        void TestResize3();
     }
 
     class BlobSimpleTest<T> : Test<T>, IBlobSimpleTest 
@@ -540,7 +600,6 @@ namespace MyCaffe.test
             m_log.EXPECT_NEAR(dfExpectedAsumDiff, dfAsumDiff, m_fEpsilon * dfExpectedAsumDiff);
         }
 
-
         public void TestMath_Scale()
         {
             double fVal;
@@ -616,6 +675,145 @@ namespace MyCaffe.test
 
             m_log.EXPECT_NEAR(dfExpectedAsumData, dfAsumData2, m_fEpsilon * dfExpectedAsumData);
             m_log.EXPECT_NEAR(dfExpectedAsumDiff, dfAsumDiff2, m_fEpsilon * dfExpectedAsumDiff);
+        }
+
+        private void Fill1(Blob<T> b)
+        {
+            double[] rgData = Utility.ConvertVec<T>(b.mutable_cpu_data);
+
+            for (int n = 0; n < b.num; n++)
+            {
+                for (int c = 0; c < b.channels; c++)
+                {
+                    for (int h = 0; h < b.height; h++)
+                    {
+                        for (int w = 0; w < b.width; w++)
+                        {
+                            int nIdx = (n * b.channels * b.height * b.width) + (c * b.height * b.width) + (h * b.width) + w;
+                            float fVal = (w - 0) / (float)b.width * 255.0f;
+                            rgData[nIdx] = fVal;
+                        }
+                    }
+                }
+            }
+
+            b.mutable_cpu_data = Utility.ConvertVec<T>(rgData);
+        }
+
+        private void Fill2(Blob<T> b)
+        {
+            double[] rgData = Utility.ConvertVec<T>(b.mutable_cpu_data);
+
+            for (int n = 0; n < b.num; n++)
+            {
+                for (int c = 0; c < b.channels; c++)
+                {
+                    for (int h = 0; h < b.height; h++)
+                    {
+                        for (int w = 0; w < b.width; w++)
+                        {
+                            int nIdx = (n * b.channels * b.height * b.width) + (c * b.height * b.width) + (h * b.width) + w;
+                            float fVal = (h - 0) / (float)b.width * 255.0f;
+                            rgData[nIdx] = fVal;
+                        }
+                    }
+                }
+            }
+
+            b.mutable_cpu_data = Utility.ConvertVec<T>(rgData);
+        }
+
+        private void Fill3(Blob<T> b)
+        {
+            double[] rgData = Utility.ConvertVec<T>(b.mutable_cpu_data);
+
+            for (int n = 0; n < b.num; n++)
+            {
+                for (int c = 0; c < b.channels; c++)
+                {
+                    for (int h = 0; h < b.height; h++)
+                    {
+                        for (int w = 0; w < b.width; w++)
+                        {
+                            int nIdx = (n * b.channels * b.height * b.width) + (c * b.height * b.width) + (h * b.width) + w;
+                            int nVal = Math.Max(h, w);
+                            float fVal = (nVal - 0) / (float)b.width * 255.0f;
+                            rgData[nIdx] = fVal;
+                        }
+                    }
+                }
+            }
+
+            b.mutable_cpu_data = Utility.ConvertVec<T>(rgData);
+        }
+
+        private void SaveImage(Blob<T> b, string strFile)
+        {
+            Datum d = ImageData.GetImageData(b.mutable_cpu_data, b.channels, b.height, b.width, false);
+            Image img = ImageData.GetImage(d);
+            img.Save(strFile);
+            img.Dispose();
+            return;
+        }
+
+        public void TestResize1()
+        {
+            m_blob_preshaped.Reshape(2, 3, 28, 28);
+            Fill1(m_blob_preshaped);
+
+            string strTemp = Path.GetTempPath();
+
+            SaveImage(m_blob_preshaped, strTemp + "test1_preshaped.png");
+
+            m_blob.Dispose();
+            m_blob = m_blob_preshaped.Resize(new List<int>() { 2, 3, 14, 14 });
+
+            SaveImage(m_blob, strTemp + "test1_14x14.png");
+
+            m_blob.Dispose();
+            m_blob = m_blob_preshaped.Resize(new List<int>() { 2, 3, 56, 56 });
+
+            SaveImage(m_blob, strTemp + "test1_56x56.png");
+        }
+
+        public void TestResize2()
+        {
+            m_blob_preshaped.Reshape(2, 3, 28, 28);
+            Fill2(m_blob_preshaped);
+
+            string strTemp = Path.GetTempPath();
+
+            SaveImage(m_blob_preshaped, strTemp + "test2_preshaped.png");
+
+            m_blob.Dispose();
+            m_blob = m_blob_preshaped.Resize(new List<int>() { 2, 3, 14, 14 });
+
+            SaveImage(m_blob, strTemp + "test2_14x14.png");
+
+            m_blob.Dispose();
+            m_blob = m_blob_preshaped.Resize(new List<int>() { 2, 3, 56, 56 });
+
+            SaveImage(m_blob, strTemp + "test2_56x56.png");
+        }
+
+        public void TestResize3()
+        {
+            m_blob_preshaped.Reshape(2, 3, 28, 28);
+            Fill3(m_blob_preshaped);
+
+            string strTemp = Path.GetTempPath();
+
+            SaveImage(m_blob_preshaped, strTemp + "test3_preshaped.png");
+
+            m_blob.Dispose();
+            m_blob = m_blob_preshaped.Resize(new List<int>() { 2, 3, 14, 14 });
+
+            SaveImage(m_blob, strTemp + "test3_14x14.png");
+
+            m_blob.Dispose();
+            m_blob = m_blob_preshaped.Resize(new List<int>() { 2, 3, 56, 56 });
+
+            SaveImage(m_blob, strTemp + "test3_56x56.png");
         }
     }
 }
