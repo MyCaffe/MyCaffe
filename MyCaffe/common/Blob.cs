@@ -1747,5 +1747,90 @@ namespace MyCaffe.common
                 img.Dispose();
             }
         }
+
+        public Blob<T> Resize(List<int> rgShape)
+        {
+            m_log.CHECK_EQ(num_axes, rgShape.Count, "When resizing, the new shape must have the same number of axes as the blob to be resized.");
+            m_log.CHECK_EQ(num_axes, 4, "Resizing only allowed on 4 axis blobs.");
+            m_log.CHECK_EQ(num, rgShape[0], "Resizing only allowed on the last two axes.");
+            m_log.CHECK_EQ(channels, rgShape[1], "Resizing only allowed on the last two axes.");
+
+            T[] rgData = mutable_cpu_data;
+            float[] rgDataF = Utility.ConvertVecF<T>(rgData);
+
+            Blob<T> newBlob = Clone();
+            newBlob.Reshape(rgShape);
+
+            T[] rgDataNew = newBlob.mutable_cpu_data;
+            float[] rgDataNewF = Utility.ConvertVecF<T>(rgDataNew);
+
+            Bitmap bmp = new Bitmap(width, height);
+
+            for (int n = 0; n < num; n++)
+            {
+                for (int c = 0; c < channels; c++)
+                {
+                    float fMin = float.MaxValue;
+                    float fMax = -float.MaxValue;
+                    int nH = height;
+                    int nW = width;
+                    int nSize = nH * nW;
+
+                    for (int y = 0; y < nH; y++)
+                    {
+                        for (int x = 0; x < nW; x++)
+                        {
+                            int nIdx = n * (channels * nSize) + c * nSize + y * nW + x;
+                            float fVal = rgDataF[nIdx];
+
+                            if (fVal < fMin)
+                                fMin = fVal;
+
+                            if (fVal > fMax)
+                                fMax = fVal;
+                        }
+                    }
+
+                    for (int y = 0; y < nH; y++)
+                    {
+                        for (int x = 0; x < nW; x++)
+                        {
+                            int nIdx = n * (channels * nSize) + c * nSize + y * nW + x;
+                            float fVal = rgDataF[nIdx];
+
+                            fVal = ((fVal - fMin) / (fMax - fMin)) * 255.0f;    // move into range 0,255
+
+                            bmp.SetPixel(x, y, Color.FromArgb((int)fVal, (int)fVal, (int)fVal));
+                        }
+                    }
+
+                    Bitmap bmpNew = ImageTools.ResizeImage(bmp, newBlob.width, newBlob.height);
+
+                    nH = newBlob.height;
+                    nW = newBlob.width;
+                    nSize = nH * nW;
+
+                    for (int y = 0; y < nH; y++)
+                    {
+                        for (int x = 0; x < nW; x++)
+                        {
+                            int nIdx = n * (channels * nSize) + c * nSize + y * nW + x;
+
+                            Color clr = bmpNew.GetPixel(x, y);
+                            float fVal = ((clr.R / 255.0f) * (fMax - fMin)) + fMin; // move back to original range.
+
+                            rgDataNewF[nIdx] = fVal;
+                        }
+                    }
+
+                    bmpNew.Dispose();
+                }
+            }
+
+            bmp.Dispose();
+            newBlob.mutable_cpu_data = Utility.ConvertVec<T>(rgDataNewF);
+
+            return newBlob;
+        }
     }
 }
