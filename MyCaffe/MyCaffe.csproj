@@ -83,6 +83,7 @@
     <Compile Include="common\SyncedMemory.cs" />
     <Compile Include="common\TransferInput.cs" />
     <Compile Include="common\Utility.cs" />
+    <Compile Include="common\WeightInfo.cs" />
     <Compile Include="data\DataTransformer.cs" />
     <Compile Include="data\DB.cs" />
     <Compile Include="fillers\BilinearFiller.cs" />
