@@ -2129,7 +2129,9 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="rgWeights">Specifies the weights themselves.</param>
         /// <param name="persist">Specifies an interface to the persistance object used to load the weights.</param>
-        public void LoadWeights(byte[] rgWeights, IXPersist<T> persist)
+        /// <param name="inputWtInfo">Optionally, specifies the input blobs to import.  Note, when set, the <i>targetWtInfo</i> must also be specified.  When <i>null</i>, this parameter is ignored.</param>
+        /// <param name="targetWtInfo">Optionally, specifies the target blobs to import into.  Note, when set, the <i>inputWtInfo</i> must also be specified.  When <i>null</i>, this parameter is ignored.</param>
+        public void LoadWeights(byte[] rgWeights, IXPersist<T> persist, List<string> inputWtInfo = null, List<string> targetWtInfo = null)
         {
             if (rgWeights == null)
                 return;
@@ -2142,7 +2144,15 @@ namespace MyCaffe.common
                 rgExpectedShapes.Add(b.shape_string);
             }
 
-            persist.LoadWeights(rgWeights, rgExpectedShapes, m_colLearnableParams, out bLoadedDiffs);
+            if (inputWtInfo != null && inputWtInfo.Count == 0)
+                inputWtInfo = null;
+
+            if (targetWtInfo != null && targetWtInfo.Count == 0)
+                targetWtInfo = null;
+
+            bool bSizeToFit = (inputWtInfo != null && targetWtInfo != null) ? true : false;
+
+            persist.LoadWeights(rgWeights, rgExpectedShapes, m_colLearnableParams, bSizeToFit, out bLoadedDiffs, inputWtInfo, targetWtInfo);
         }
 
         /// <summary>

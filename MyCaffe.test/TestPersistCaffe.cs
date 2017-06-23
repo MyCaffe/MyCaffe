@@ -111,6 +111,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestReadWeightInfo()
+        {
+            PersistCaffeTest test = new PersistCaffeTest();
+
+            try
+            {
+                foreach (IPersistCaffeTest t in test.Tests)
+                {
+                    t.TestReadWeightInfo();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -121,6 +139,7 @@ namespace MyCaffe.test
         void TestImportExportV1();
         void TestReadBlobProto();
         void TestSolverState();
+        void TestReadWeightInfo();
     }
 
     class PersistCaffeTest : TestBase
@@ -459,6 +478,76 @@ namespace MyCaffe.test
             {
                 m_log.CHECK(state1.history[i].Compare(state2.history[i]), "The histories at " + i.ToString() + " are different!");
             }
+        }
+
+        public void TestReadWeightInfo()
+        {
+            PersistCaffe<T> persist = new PersistCaffe<T>(m_log, true);
+            string strModelFile = getTestPath("\\test_data\\models\\voc_fcns32\\train_val.prototxt");
+            string strFile = getTestPath("\\test_data\\models\\voc_fcns32\\fcn32s-heavy-pascal.caffemodel");
+            byte[] rgWeights = null;
+            string strModelDesc = "";
+
+            using (FileStream fs = new FileStream(strFile, FileMode.Open))
+            {
+                using (BinaryReader br = new BinaryReader(fs))
+                {
+                    rgWeights = br.ReadBytes((int)fs.Length);
+                }
+            }
+
+            using (StreamReader sr = new StreamReader(strModelFile))
+            {
+                strModelDesc = sr.ReadToEnd();
+            }
+
+            createPascalSbdDatasetShell("PASCAL_SBD");
+
+            MyCaffeImageDatabase db = new MyCaffeImageDatabase();
+            db.Initialize(new SettingsCaffe(), "PASCAL_SBD");
+
+            RawProto proto = RawProto.Parse(strModelDesc);
+            NetParameter net_param = NetParameter.FromProto(proto);
+            m_log.Enable = false;
+            Net<T> net = new common.Net<T>(m_cuda, m_log, net_param, new CancelEvent(), db, Phase.TRAIN);
+            m_log.Enable = true;
+
+            // Load Caffe weight format.
+            net.LoadWeights(rgWeights, persist);
+            WeightInfo<T> wi1 = persist.LoadWeightInfo(rgWeights);
+            WeightInfo<T> wi2 = persist.LoadWeightInfo(net.learnable_parameters);
+
+            m_log.CHECK_EQ(wi1.Blobs.Count, wi2.Blobs.Count, "The blob counts are not equal!");
+
+            List<string> rgstrNames1 = new List<string>();
+            List<List<int>> rgrgShape1 = new List<List<int>>();
+            foreach (KeyValuePair<string, List<int>> kv in wi1.Blobs)
+            {
+                rgstrNames1.Add(kv.Key);
+                rgrgShape1.Add(kv.Value);
+            }
+
+            List<string> rgstrNames2 = new List<string>();
+            List<List<int>> rgrgShape2 = new List<List<int>>();
+            foreach (KeyValuePair<string, List<int>> kv in wi2.Blobs)
+            {
+                rgstrNames2.Add(kv.Key);
+                rgrgShape2.Add(kv.Value);
+            }
+
+            m_log.CHECK_EQ(rgstrNames1.Count, rgstrNames2.Count, "The names have a different count.");
+
+            for (int i = 0; i < rgrgShape1.Count; i++)
+            {
+                m_log.CHECK_EQ(rgrgShape1[i].Count, rgrgShape2[i].Count, "The shape arrays at " + i.ToString() + " have different sizes.");
+
+                for (int j = 0; j < rgrgShape1[i].Count; j++)
+                {
+                    m_log.CHECK_EQ(rgrgShape1[i][j], rgrgShape2[i][j], "The shape array element at " + j.ToString() + " in array " + i.ToString() + " doesn't match.");
+                }
+            }
+
+            net.Dispose();
         }
     }
 }

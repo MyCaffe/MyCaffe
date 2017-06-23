@@ -73,9 +73,12 @@ namespace MyCaffe.common
         /// <param name="rgWeights">Specifies the weights themselves.</param>
         /// <param name="rgExpectedShapes">Specifies a list of expected shapes for each Blob where the weights are to be loaded.</param>
         /// <param name="colBlobs">Specifies the Blobs to load with the weights.</param>
+        /// <param name="bSizeToFit">Optionally, specifies wether or not the weights should be re-sized.  Note: resizing can render the weights useless, especially in deeper, layers.</param>
         /// <param name="bLoadedDiffs">Returns whether or not the diffs were loaded.</param>
+        /// <param name="inputWtInfo">Optionally, specifies the weight info describing the input weight blobs to import by name.  Note when used the number of blobs must match the number of <i>targetWtInfo</i> blobs.  Otherwise, when <i>null</i> this parameter is ignored.</param>
+        /// <param name="targetWtInfo">Optionally, specifies the weight info describing the target weight blobs to import by name.  Note when used the number of blobs must match the number of <i>inputWtInfo</i> blobs.  Otherwise, when <i>null</i> this parameter is ignored.</param>
         /// <returns>The collection of Blobs with newly loaded weights is returned.</returns>
-        BlobCollection<T> LoadWeights(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, out bool bLoadedDiffs);
+        BlobCollection<T> LoadWeights(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, bool bSizeToFit, out bool bLoadedDiffs, List<string> inputWtInfo = null, List<string> targetWtInfo = null);
 
         /// <summary>
         /// Save the solver state to a byte array.
@@ -90,6 +93,20 @@ namespace MyCaffe.common
         /// <param name="rgState">Specifies the byte array containing the solver state.</param>
         /// <returns>The SolverState loaded is returned.</returns>
         SolverState LoadSolverState(byte[] rgState);
+
+        /// <summary>
+        /// Returns the weight information describing the weights containined within the weight bytes.
+        /// </summary>
+        /// <param name="rgWeights">Specifies the bytes containing the weights.</param>
+        /// <returns>The weight information is returned.</returns>
+        WeightInfo<T> LoadWeightInfo(byte[] rgWeights);
+
+        /// <summary>
+        /// Returns the weight information describing the weights containined within the Blob collection.
+        /// </summary>
+        /// <param name="colBlobs">Specifies the Blob collection containing the weights.</param>
+        /// <returns>The weight information is returned.</returns>
+        WeightInfo<T> LoadWeightInfo(BlobCollection<T> colBlobs);
     }
 
     /// <summary>

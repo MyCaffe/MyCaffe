@@ -15,7 +15,7 @@ namespace MyCaffe.common
     /// <summary>
     /// The PersistCaffe class is used to load and save weight files in the .caffemodel format.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class PersistCaffe<T> : IXPersist<T>
     {
         Log m_log;
@@ -144,9 +144,12 @@ namespace MyCaffe.common
         /// <param name="rgWeights">Specifies the weights themselves.</param>
         /// <param name="rgExpectedShapes">Specifies a list of expected shapes for each Blob where the weights are to be loaded.</param>
         /// <param name="colBlobs">Specifies the Blobs to load with the weights.</param>
+        /// <param name="bSizeToFit">Specifies wether or not the weights should be re-sized.  Note: resizing can render the weights useless, especially in deeper, layers.</param>
         /// <param name="bLoadedDiffs">Returns whether or not the diffs were loaded.</param>
+        /// <param name="inputWtInfo">Optionally, specifies the weight info describing the input weight blobs to import by name.  Note when used the number of blobs must match the number of <i>targetWtInfo</i> blobs.  Otherwise, when <i>null</i> this parameter is ignored.</param>
+        /// <param name="targetWtInfo">Optionally, specifies the weight info describing the target weight blobs to import by name.  Note when used the number of blobs must match the number of <i>inputWtInfo</i> blobs.  Otherwise, when <i>null</i> this parameter is ignored.</param>
         /// <returns>The collection of Blobs with newly loaded weights is returned.</returns>
-        public BlobCollection<T> LoadWeights(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, out bool bLoadedDiffs)
+        public BlobCollection<T> LoadWeights(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, bool bSizeToFit, out bool bLoadedDiffs, List<string> inputWtInfo = null, List<string> targetWtInfo = null)
         {
             BlobCollection<T> colBlob1;
             m_log.WriteLine("Attempting to load weights in Caffe model...");
@@ -154,7 +157,7 @@ namespace MyCaffe.common
 
             if (!IsMyCaffe(rgWeights, out strVer))
             {
-                colBlob1 = loadFromCaffe(rgWeights, rgExpectedShapes, colBlobs, out bLoadedDiffs);
+                colBlob1 = loadFromCaffe(rgWeights, rgExpectedShapes, colBlobs, bSizeToFit, out bLoadedDiffs, inputWtInfo, targetWtInfo);
                 if (colBlob1 != null)
                 {
                     m_log.WriteLine("Weights loaded in Caffe model.");
@@ -170,7 +173,7 @@ namespace MyCaffe.common
             }
 
             m_log.WriteLine("Attempting to load weights in MyCaffe model...");
-            colBlob1 = loadFromMyCaffe(rgWeights, rgExpectedShapes, colBlobs, out bLoadedDiffs);
+            colBlob1 = loadFromMyCaffe(rgWeights, rgExpectedShapes, colBlobs, bSizeToFit, out bLoadedDiffs, inputWtInfo, targetWtInfo);
             if (colBlob1 != null)
             {
                 m_log.WriteLine("Weights loaded in MyCaffe model.");
@@ -182,6 +185,38 @@ namespace MyCaffe.common
 
             m_log.FAIL("Loading weights with 'depreciated' native format...");
             return null;
+        }
+
+        /// <summary>
+        /// Returns the weight information describing the weights containined within the weight bytes.
+        /// </summary>
+        /// <param name="rgWeights">Specifies the bytes containing the weights.</param>
+        /// <returns>The weight information is returned.</returns>
+        public WeightInfo<T> LoadWeightInfo(byte[] rgWeights)
+        {
+            string strVer;
+
+            if (!IsMyCaffe(rgWeights, out strVer))
+                return loadInfoFromCaffe(rgWeights);
+            else
+                return loadInfoFromMyCaffe(rgWeights);
+        }
+
+        /// <summary>
+        /// Returns the weight information describing the weights containined within the Blob collection.
+        /// </summary>
+        /// <param name="colBlobs">Specifies the Blob collection containing the weights.</param>
+        /// <returns>The weight information is returned.</returns>
+        public WeightInfo<T> LoadWeightInfo(BlobCollection<T> colBlobs)
+        {
+            WeightInfo<T> info = new common.WeightInfo<T>();
+
+            foreach (Blob<T> b in colBlobs)
+            {
+                info.AddBlob(b);
+            }
+
+            return info;
         }
 
         /// <summary>
@@ -433,13 +468,18 @@ namespace MyCaffe.common
             return writer.GetBytes();
         }
 
-        private BlobCollection<T> loadFromMyCaffe(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, out bool bLoadedDiffs)
+        private BlobCollection<T> loadFromMyCaffe(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, bool bSizeToFit, out bool bLoadedDiffs, List<string> inputWtInfo = null, List<string> targetWtInfo = null)
         {
-            BlobCollection<T> colBlobs1 = loadFromCaffe(rgWeights, rgExpectedShapes, colBlobs, out bLoadedDiffs);
+            BlobCollection<T> colBlobs1 = loadFromCaffe(rgWeights, rgExpectedShapes, colBlobs, bSizeToFit, out bLoadedDiffs, inputWtInfo, targetWtInfo);
             return colBlobs1;
         }
 
-        private BlobCollection<T> loadFromCaffe(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, out bool bLoadedDiffs)
+        private WeightInfo<T> loadInfoFromMyCaffe(byte[] rgWeights)
+        {
+            return loadInfoFromCaffe(rgWeights);
+        }
+
+        private BlobCollection<T> loadFromCaffe(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, bool bSizeToFit, out bool bLoadedDiffs, List<string> inputWtInfo = null, List<string> targetWtInfo = null)
         {
             FieldDescriptor fd = FieldDescriptor.CreateNetworkParamFieldDesc();
             ProtoBufReader reader = new ProtoBufReader(rgWeights);
@@ -520,67 +560,120 @@ namespace MyCaffe.common
 
             int nFieldIdx = 0;
             int nBlobIdx = 0;
+            int nInfoIdx = 0;
+            int nTargetIdx = 0;
 
             List<long> rgBlobShape = null;
 
             while (nFieldIdx < colFieldBlobs.Count && nBlobIdx < colBlobs.Count)
             {
                 Blob<T> blob = colBlobs[nBlobIdx];
+
+                if (targetWtInfo != null)
+                {
+                    while (blob.Name != targetWtInfo[nTargetIdx] && nBlobIdx < colBlobs.Count)
+                    {
+                        nBlobIdx++;
+                        blob = colBlobs[nBlobIdx];
+                    }
+
+                    if (nBlobIdx == colBlobs.Count)
+                        m_log.WriteError(new Exception("Could not find the target blob '" + targetWtInfo[nTargetIdx] + "'!"));
+
+                    nTargetIdx++;
+                }
+
                 string strShapeB = rgExpectedShapes[nBlobIdx];
+                string strShapeW = "";
                 long lCount = 0;
+                bool bResizeNeeded = false;
 
                 //-----------------------------------------
                 //  Find the first matching size.
                 //-----------------------------------------
                 while (nFieldIdx < colFieldBlobs.Count)
                 {
-                    ProtoBufField pbShape = colFieldBlobs[nFieldIdx].Array.FindFirstChild("shape");
-                    if (pbShape != null && pbShape.Type == ProtoBufField.TYPE.ARRAY)
-                    {
-                        ProtoBufField pbDim = pbShape.Array.FindFirstChild("dim");
-                        if (pbDim != null && pbDim.Type == ProtoBufField.TYPE.LONG_ARRAY)
-                        {
-                            string strShapeW = createShapeString(pbDim.LongValues, out lCount);
+                    string strName = null;
 
-                            if (compareShapes(strShapeB, strShapeW))
-                            {
-                                rgBlobShape = new List<long>(pbDim.LongValues);
-                                break;
-                            }
-                        }
+                    ProtoBufField pbName = colFieldBlobs[nFieldIdx].Array.FindFirstChild("name");
+                    if (pbName != null && pbName.Type == ProtoBufField.TYPE.STRING)
+                    {
+                        strName = pbName.StringValue;
                     }
                     else
                     {
-                        ProtoBufField pbNum = colFieldBlobs[nFieldIdx].Array.FindFirstChild("num");
-                        if (pbNum != null && pbNum.Type == ProtoBufField.TYPE.BIT32)
+                        ProtoBufField pbType = colFieldBlobs[nFieldIdx].Array.FindFirstChild("type");
+                        if (pbType != null && pbType.Type == ProtoBufField.TYPE.STRING)
+                            strName = pbType.StringValue + "_" + nFieldIdx.ToString();
+                        else
+                            strName = "blob_" + nFieldIdx.ToString();
+                    }
+
+                    if (inputWtInfo == null || strName == inputWtInfo[nInfoIdx])
+                    {
+                        nInfoIdx++;
+
+                        ProtoBufField pbShape = colFieldBlobs[nFieldIdx].Array.FindFirstChild("shape");
+                        if (pbShape != null && pbShape.Type == ProtoBufField.TYPE.ARRAY)
                         {
-                            List<long> rgShape = new List<long>();
-                            rgShape.Add(pbNum.IntValue);
-
-                            ProtoBufField pbChannels = colFieldBlobs[nFieldIdx].Array.FindFirstChild("channels");
-                            if (pbChannels != null && pbChannels.Type == ProtoBufField.TYPE.BIT32)
+                            ProtoBufField pbDim = pbShape.Array.FindFirstChild("dim");
+                            if (pbDim != null && pbDim.Type == ProtoBufField.TYPE.LONG_ARRAY)
                             {
-                                rgShape.Add(pbChannels.IntValue);
+                                strShapeW = createShapeString(pbDim.LongValues, out lCount);
 
-                                ProtoBufField pbHeight = colFieldBlobs[nFieldIdx].Array.FindFirstChild("height");
-                                if (pbHeight != null && pbHeight.Type == ProtoBufField.TYPE.BIT32)
+                                if (compareShapes(strShapeB, strShapeW))
                                 {
-                                    rgShape.Add(pbHeight.IntValue);
+                                    rgBlobShape = new List<long>(pbDim.LongValues);
+                                    break;
+                                }
 
-                                    ProtoBufField pbWidth = colFieldBlobs[nFieldIdx].Array.FindFirstChild("width");
-                                    if (pbWidth != null && pbWidth.Type == ProtoBufField.TYPE.BIT32)
-                                    {
-                                        rgShape.Add(pbWidth.IntValue);
-                                    }
+                                if (bSizeToFit && compareShapes(strShapeB, strShapeW, 2))
+                                {
+                                    rgBlobShape = new List<long>(pbDim.LongValues);
+                                    break;
                                 }
                             }
-
-                            string strShapeW = createShapeString(rgShape.ToArray(), out lCount);
-
-                            if (compareShapes(strShapeB, strShapeW))
+                        }
+                        else
+                        {
+                            ProtoBufField pbNum = colFieldBlobs[nFieldIdx].Array.FindFirstChild("num");
+                            if (pbNum != null && pbNum.Type == ProtoBufField.TYPE.BIT32)
                             {
-                                rgBlobShape = rgShape;
-                                break;
+                                List<long> rgShape = new List<long>();
+                                rgShape.Add(pbNum.IntValue);
+
+                                ProtoBufField pbChannels = colFieldBlobs[nFieldIdx].Array.FindFirstChild("channels");
+                                if (pbChannels != null && pbChannels.Type == ProtoBufField.TYPE.BIT32)
+                                {
+                                    rgShape.Add(pbChannels.IntValue);
+
+                                    ProtoBufField pbHeight = colFieldBlobs[nFieldIdx].Array.FindFirstChild("height");
+                                    if (pbHeight != null && pbHeight.Type == ProtoBufField.TYPE.BIT32)
+                                    {
+                                        rgShape.Add(pbHeight.IntValue);
+
+                                        ProtoBufField pbWidth = colFieldBlobs[nFieldIdx].Array.FindFirstChild("width");
+                                        if (pbWidth != null && pbWidth.Type == ProtoBufField.TYPE.BIT32)
+                                        {
+                                            rgShape.Add(pbWidth.IntValue);
+                                        }
+                                    }
+                                }
+
+                                strShapeW = createShapeString(rgShape.ToArray(), out lCount);
+
+                                if (compareShapes(strShapeB, strShapeW) || bSizeToFit)
+                                {
+                                    rgBlobShape = rgShape;
+                                    break;
+                                }
+
+                                if (bSizeToFit && compareShapes(strShapeB, strShapeW, 2))
+                                {
+                                    rgBlobShape = rgShape;
+                                    bResizeNeeded = true;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -608,21 +701,179 @@ namespace MyCaffe.common
                     lDataCount = pbData.FloatValues.Length;
                 }
 
-                if (pbData == null || lDataCount != lCount)
+                if (pbData == null || (lDataCount != lCount && !bSizeToFit))
                     m_log.FAIL("Could not find the weights matching the data size '" + strShapeB + "'!");
 
-                T[] rgData = copyData(pbData, type, lCount, rgBlobShape);
+                if (bSizeToFit && !compareShapes(strShapeB, strShapeW, 2))
+                    m_log.FAIL("Could not find the weights matching the first two items of the shape '" + strShapeB + "'!");
+
+                T[] rgData = copyData(pbData, type, lDataCount, rgBlobShape);
                 blob.mutable_cpu_data = rgData;
                 blob.Tag = colFieldBlobs[nFieldIdx].Tag;
+
+                if (bSizeToFit && bResizeNeeded)
+                {
+                    List<int> rgNewShape = parseShape(strShapeB);
+                    Blob<T> blobResized = blob.Resize(rgNewShape);
+                    blob.Dispose();
+                    colBlobs[nBlobIdx] = blobResized;
+                } 
 
                 m_log.Progress = (double)nBlobIdx / (double)colBlobs.Count;
                 m_log.WriteLine("(" + m_log.Progress.ToString("P") + ") loaded blob '" + colBlobs[nBlobIdx].Name + "' size = " + strShapeB);
 
                 nFieldIdx++;
                 nBlobIdx++;
+
+                if ((targetWtInfo != null && nTargetIdx == targetWtInfo.Count) ||
+                    (inputWtInfo != null && nInfoIdx == inputWtInfo.Count))
+                    break;
             }
 
             return colBlobs;
+        }
+
+        private WeightInfo<T> loadInfoFromCaffe(byte[] rgWeights)
+        {
+            WeightInfo<T> info = new common.WeightInfo<T>();
+            FieldDescriptor fd = FieldDescriptor.CreateNetworkParamFieldDesc();
+            ProtoBufReader reader = new ProtoBufReader(rgWeights);
+            ProtoBufFieldCollection fields = reader.ReadFields(fd, true);
+            Stopwatch sw = new Stopwatch();
+
+            if (fields == null || fields.Count == 0)
+                return null;
+
+            sw.Start();
+
+            for (int i = 0; i < fields.Count; i++)
+            {
+                ProtoBufField field = fields[i];
+                field.LoadSubFields(0, 4);
+
+                if (sw.Elapsed.TotalMilliseconds > 1000)
+                {
+                    m_log.Progress = (double)i / (double)fields.Count;
+                    m_log.WriteLine("(" + m_log.Progress.ToString("P") + ") loading fields...");
+                    sw.Restart();
+                }
+            }
+
+            //---------------------------------------------
+            //  Find all the blobs containing learnable
+            //  parameters.
+            //---------------------------------------------
+
+            ProtoBufFieldCollection colFieldBlobs = new common.ProtoBufFieldCollection();
+            int nLayerIdx = 0;
+
+            for (int i = 0; i < fields.Count; i++)
+            {
+                if (fields[i].FieldDesc.Name == "LayerParameter")
+                {
+                    ProtoBufField pbName = fields[i].Array.FindFirstChild("name");
+                    ProtoBufFieldCollection col = fields[i].Array.FindAllChildren("blobs");
+                    string strName = (pbName != null) ? pbName.StringValue : ("layer_" + nLayerIdx.ToString());
+
+                    if (col != null && col.Count > 0)
+                    {
+                        col.SetTag(strName);
+                        colFieldBlobs.AddRange(col);
+                    }
+
+                    nLayerIdx++;
+                }
+                else if (fields[i].FieldDesc.Name == "V1LayerParameter")
+                {
+                    ProtoBufField pbName = fields[i].Array.FindFirstChild("name");
+                    ProtoBufFieldCollection col = fields[i].Array.FindAllChildren("blobs");
+                    string strName = (pbName != null) ? pbName.StringValue : ("layer_" + nLayerIdx.ToString());
+
+                    if (col != null && col.Count > 0)
+                    {
+                        col.SetTag(strName);
+                        col.SetLegacy(true);
+                        colFieldBlobs.AddRange(col);
+                    }
+
+                    nLayerIdx++;
+                }
+            }
+
+            //---------------------------------------------
+            //  Find the first learnable parameter that
+            //  matches the size of the first colBlob.
+            //---------------------------------------------
+
+            m_log.Progress = 0;
+
+            int nFieldIdx = 0;
+
+            while (nFieldIdx < colFieldBlobs.Count)
+            {
+                string strName = null;
+
+                ProtoBufField pbName = colFieldBlobs[nFieldIdx].Array.FindFirstChild("name");
+                if (pbName != null && pbName.Type == ProtoBufField.TYPE.STRING)
+                {
+                    strName = pbName.StringValue;
+                }
+                else
+                {
+                    ProtoBufField pbType = colFieldBlobs[nFieldIdx].Array.FindFirstChild("type");
+                    if (pbType != null && pbType.Type == ProtoBufField.TYPE.STRING)
+                        strName = pbType.StringValue + "_" + nFieldIdx.ToString();
+                    else
+                        strName = "blob_" + nFieldIdx.ToString();
+                }
+
+                List<int> rgShape = new List<int>();
+
+                ProtoBufField pbShape = colFieldBlobs[nFieldIdx].Array.FindFirstChild("shape");
+                if (pbShape != null && pbShape.Type == ProtoBufField.TYPE.ARRAY)
+                {
+                    ProtoBufField pbDim = pbShape.Array.FindFirstChild("dim");
+                    if (pbDim != null && pbDim.Type == ProtoBufField.TYPE.LONG_ARRAY)
+                    {
+                        for (int i = 0; i < pbDim.LongValues.Length; i++)
+                        {
+                            rgShape.Add((int)pbDim.LongValues[i]);
+                        }
+                    }
+                }
+                else
+                {
+                    ProtoBufField pbNum = colFieldBlobs[nFieldIdx].Array.FindFirstChild("num");
+                    if (pbNum != null && pbNum.Type == ProtoBufField.TYPE.BIT32)
+                    {
+                        rgShape.Add(pbNum.IntValue);
+
+                        ProtoBufField pbChannels = colFieldBlobs[nFieldIdx].Array.FindFirstChild("channels");
+                        if (pbChannels != null && pbChannels.Type == ProtoBufField.TYPE.BIT32)
+                        {
+                            rgShape.Add(pbChannels.IntValue);
+
+                            ProtoBufField pbHeight = colFieldBlobs[nFieldIdx].Array.FindFirstChild("height");
+                            if (pbHeight != null && pbHeight.Type == ProtoBufField.TYPE.BIT32)
+                            {
+                                rgShape.Add(pbHeight.IntValue);
+
+                                ProtoBufField pbWidth = colFieldBlobs[nFieldIdx].Array.FindFirstChild("width");
+                                if (pbWidth != null && pbWidth.Type == ProtoBufField.TYPE.BIT32)
+                                {
+                                    rgShape.Add(pbWidth.IntValue);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                info.AddBlob(strName, rgShape);
+
+                nFieldIdx++;
+            }
+
+            return info;
         }
 
         private T[] copyData(ProtoBufField pb, FieldDescriptor.TYPE type, long lCount, List<long> rgBlobShape)
@@ -637,18 +888,12 @@ namespace MyCaffe.common
             return rgData;
         }
 
-        private bool compareShapes(string strA, string strB)
+        private List<int> parseShape(string strShape, int nCount = int.MaxValue)
         {
-            if (strA == strB)
-                return true;
-
-            string[] rgstr1 = strA.Split(' ');
-            string[] rgstr2 = strB.Split(' ');
-
             List<int> rg1 = new List<int>();
-            List<int> rg2 = new List<int>();
+            string[] rgstr1 = strShape.Split(' ');
 
-            for (int i = 0; i < rgstr1.Length - 1; i++)
+            for (int i = 0; i < rgstr1.Length - 1 && i < nCount; i++)
             {
                 int nVal = int.Parse(rgstr1[i]);
 
@@ -656,13 +901,16 @@ namespace MyCaffe.common
                     rg1.Add(nVal);
             }
 
-            for (int i = 0; i < rgstr2.Length - 1; i++)
-            {
-                int nVal = int.Parse(rgstr2[i]);
+            return rg1;
+        }
 
-                if (nVal > 1)
-                    rg2.Add(nVal);
-            }
+        private bool compareShapes(string strA, string strB, int nCount = int.MaxValue)
+        {
+            if (strA == strB)
+                return true;
+
+            List<int> rg1 = parseShape(strA, nCount);
+            List<int> rg2 = parseShape(strB, nCount);
 
             if (rg1.Count != rg2.Count)
                 return false;
@@ -691,10 +939,12 @@ namespace MyCaffe.common
 
             for (int i = 0; i < rg.Length; i++)
             {
-                str += rg[i].ToString();
-                str += " ";
-
-                lCount *= rg[i];
+                if (rg[i] > 1)
+                {
+                    str += rg[i].ToString();
+                    str += " ";
+                    lCount *= rg[i];
+                }
             }
 
             str += "(" + rg.Length.ToString() + ")";
