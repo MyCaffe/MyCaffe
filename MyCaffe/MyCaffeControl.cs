@@ -1384,7 +1384,7 @@ namespace MyCaffe
             }
 
             bool bLoadDiffs;
-            m_persist.LoadWeights(rgWeights, rgExpectedShapes, m_solver.TrainingNet.learnable_parameters, out bLoadDiffs);
+            m_persist.LoadWeights(rgWeights, rgExpectedShapes, m_solver.TrainingNet.learnable_parameters, false, out bLoadDiffs);
 
             m_solver.WeightsUpdated = true;
             m_log.WriteLine("Solver weights updated.");
@@ -1417,6 +1417,14 @@ namespace MyCaffe
                 return m_solver.TrainingNet;
 
             return m_net;
+        }
+
+        /// <summary>
+        /// The Snapshot function forces a snapshot to occur.
+        /// </summary>
+        public void Snapshot()
+        {
+            m_solver.Snapshot(true, false);
         }
 
         /// <summary>
