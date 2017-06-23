@@ -409,10 +409,10 @@ namespace MyCaffe.common
             if (typeof(T) == typeof(float))
                 return (float[])Convert.ChangeType(rg, typeof(float[]));
 
-            float[] rgdf = new float[rg.Length];
-            Array.Copy(rg, rgdf, rg.Length);
+            float[] rgf = new float[rg.Length];
+            Array.Copy(Array.ConvertAll(rg, p => Convert.ToSingle(p)), rgf, rgf.Length);
 
-            return rgdf;
+            return rgf;
         }
 
         /// <summary>
