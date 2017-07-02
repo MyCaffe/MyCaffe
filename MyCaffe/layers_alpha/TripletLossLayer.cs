@@ -25,7 +25,7 @@ namespace MyCaffe.layers.alpha
     /// * Initial Python code for TripletDataLayer/TripletSelectionLayer/TripletLossLayer by luhaofang/tripletloss on github. 
     /// See https://github.com/luhaofang/tripletloss - for general architecture
     /// 
-    /// * Initial C++ code for TripletLoss layer by eli-oscherovich in 'Triplet loss #3663' pull request on BLVC/caffe github.
+    /// * Initial C++ code for TripletLoss layer by eli-oscherovich in 'Triplet loss #3663' pull request on BVLC/caffe github.
     /// See https://github.com/BVLC/caffe/pull/3663/commits/c6518fb5752344e1922eaa1b1eb686bae5cc3964 - for triplet loss layer implementation
     /// 
     /// For an explanation of the gradient calculations,
