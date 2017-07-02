@@ -127,8 +127,9 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="d">Specifies the Datum to use.</param>
         /// <param name="clrMap">Optionally, specifies a color mapper to use when converting each value into a color (default = null, not used).</param>
+        /// <param name="rgClrOrder">Optionally, specifies the color ordering. Note, this list must have the same number of elements as there are channels.</param>
         /// <returns>The Image of the data is returned.</returns>
-        public static Image GetImage(Datum d, ColorMapper clrMap = null)
+        public static Image GetImage(Datum d, ColorMapper clrMap = null, List<int> rgClrOrder = null)
         {
             if (d.channels != 1 && d.channels != 3)
                 throw new Exception("Standard images only support either 1 or 3 channels.");
@@ -145,6 +146,10 @@ namespace MyCaffe.basecode
             {
                 List<byte> rgByteData = new List<byte>();
                 List<double> rgRealData = new List<double>();
+                int nChIdx = i;
+
+                if (rgClrOrder != null)
+                    nChIdx = rgClrOrder[i];
 
                 if (bDataIsReal)
                 {
@@ -153,7 +158,7 @@ namespace MyCaffe.basecode
                         rgRealData.Add(d.float_data[nOffset + j]);
                     }
 
-                    rgrgRealData[i] = rgRealData;
+                    rgrgRealData[nChIdx] = rgRealData;
                 }
                 else
                 {
@@ -162,7 +167,7 @@ namespace MyCaffe.basecode
                         rgByteData.Add(d.data[nOffset + j]);
                     }
 
-                    rgrgByteData[i] = rgByteData;
+                    rgrgByteData[nChIdx] = rgByteData;
                 }
 
                 nOffset += nCount;
