@@ -45,7 +45,8 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Returns the list of blob information describing the weights.
+        /// Returns the list of blob information describing the weights.  Each entry within the Dictionary returned contains
+        /// the Blob's name and the Blob's dimensions (e.g. {num, channels, height, width}) as a List of integers.
         /// </summary>
         public Dictionary<string, List<int>> Blobs
         {
