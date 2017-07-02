@@ -366,6 +366,11 @@ namespace MyCaffe.test
             return (double)Convert.ChangeType(t, typeof(double));
         }
 
+        protected T convert(double df)
+        {
+            return (T)Convert.ChangeType(df, typeof(T));
+        }
+
         protected double[] convert(T[] rg)
         {
             double[] rgdf = new double[rg.Length];
