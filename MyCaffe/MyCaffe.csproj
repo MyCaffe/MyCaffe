@@ -72,6 +72,7 @@
     <Compile Include="common\CudaDnn.cs" />
     <Compile Include="common\CudaDnnMemoryTracker.cs" />
     <Compile Include="common\DebugInformation.cs" />
+    <Compile Include="common\DeepDraw.cs" />
     <Compile Include="common\DictionaryEx.cs" />
     <Compile Include="common\DictionaryMap.cs" />
     <Compile Include="common\EventArgs.cs" />
