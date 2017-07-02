@@ -758,7 +758,9 @@ namespace MyCaffe.common
             CUDA_TSNE_CREATE = 875,
             CUDA_TSNE_FREE = 876,
             CUDA_TSNE_COMPUTE_GRADIENT1 = 877,
-            CUDA_TSNE_COMPUTE_ERROR1 = 878
+            CUDA_TSNE_COMPUTE_ERROR1 = 878,
+
+            CUDA_GUASSIAN_BLUR = 900
         }
 
         /// <summary>
@@ -3940,12 +3942,13 @@ namespace MyCaffe.common
         /// <param name="n">Specifies the number of items (not bytes) in the vector Y.</param>
         /// <param name="fAlpha">Specifies the scalar value in type 'T'.</param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
-        public void add_scalar(int n, T fAlpha, long hY)
+        /// <param name="nYOff">Optionally, specifies an offset into Y.  The default is 0.</param>
+        public void add_scalar(int n, T fAlpha, long hY, int nYOff = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADD_SCALAR, new double[] { n, convertD(fAlpha), hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ADD_SCALAR, new double[] { n, convertD(fAlpha), hY, nYOff });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADD_SCALAR, new float[] { n, convertF(fAlpha), hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ADD_SCALAR, new float[] { n, convertF(fAlpha), hY, nYOff });
         }
 
         /// <summary>
@@ -6386,6 +6389,35 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_FREE, new double[] { hTsne });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_FREE, new float[] { hTsne });
+        }
+
+        #endregion
+
+        #region Image Processing
+
+        /// <summary>
+        /// The gaussian_blur runs a Gaussian blurring operation over each channel of the data using the sigma.
+        /// </summary>
+        /// <remarks>
+        /// The gaussian blur operation runs a 3x3 patch, initialized with the gaussian distribution using the formula
+        /// @f$
+        /// G(x, y) = \frac{1}{{2\pi\sigma^2 }}e^{{{ - \left( {x^2 - y^2 } \right) } \mathord{\left/ {\vphantom {{ - \left( {x^2 - y^2 } \right) } {2\sigma ^2 }}} \right. \kern-\nulldelimiterspace} {2\sigma ^2 }}}
+        /// @f$
+        /// @see [Gaussian Blur](https://en.wikipedia.org/wiki/Gaussian_blur) on Wikipedia for more information.
+        /// </remarks>
+        /// <param name="n">Specifies the number of items in the memory of 'X'.</param>
+        /// <param name="nChannels">Specifies the number of channels (i.e. 3 for RGB, 1 for B/W).</param>
+        /// <param name="nHeight">Specifies the height of each item.</param>
+        /// <param name="nWidth">Specifies the width of each item.</param>
+        /// <param name="dfSigma">Specifies the sigma used in the gaussian blur.</param>
+        /// <param name="hX">Specifies a handle to GPU memory containing the source data to blur.</param>
+        /// <param name="hY">Specifies a handle to GPU memory where the blurred information is placed.</param>
+        public void gaussian_blur(int n, int nChannels, int nHeight, int nWidth, double dfSigma, long hX, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GUASSIAN_BLUR, new double[] { n, nChannels, nHeight, nWidth, dfSigma, hX, hY });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GUASSIAN_BLUR, new float[] { n, nChannels, nHeight, nWidth, (float)dfSigma, hX, hY });
         }
 
         #endregion

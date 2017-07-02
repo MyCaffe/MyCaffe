@@ -38,6 +38,10 @@
 //  IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY 
 //  OF SUCH DAMAGE.
 //
+//	--Guassian Blur--
+//	Created by AlanTatourian and Licensed by Microsoft under the Apache License, Version 2.0
+//	See https://code.msdn.microsoft.com/windowsdesktop/Gaussian-blur-with-CUDA-5-df5db506
+//
 //  (See LICENSE.TXT for full copyright and license)
 //	
 //	FILE:	math.cu
@@ -54,10 +58,13 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
+#include <math.h>
 
 //=============================================================================
 //	Constants
 //=============================================================================
+
+#define M_PI       3.14159265358979323846   // pi
 
 const int NUM_BLOCKS_MAX = 65535;
 const int ADD_BLOCK_SIZE = 16;
@@ -1064,7 +1071,7 @@ __global__ void add_scalar_kernel(const int n, const T alpha, T* y)
 }
 
 template <>
-long Math<double>::add_scalar(int n, double fAlpha, long hY)
+long Math<double>::add_scalar(int n, double fAlpha, long hY, int nYOff)
 {
 	LONG lErr;
 	MemoryItem* pY;
@@ -1072,13 +1079,17 @@ long Math<double>::add_scalar(int n, double fAlpha, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	add_scalar_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, (double*)pY->Data());
+	double* y = (double*)pY->Data();
+	if (nYOff > 0)
+		y += nYOff;
+
+	add_scalar_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, y);
 
 	return cudaGetLastError();
 }
 
 template <>
-long Math<float>::add_scalar(int n, float fAlpha, long hY)
+long Math<float>::add_scalar(int n, float fAlpha, long hY, int nYOff)
 {
 	LONG lErr;
 	MemoryItem* pY;
@@ -1086,7 +1097,11 @@ long Math<float>::add_scalar(int n, float fAlpha, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	add_scalar_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, (float*)pY->Data());
+	float* y = (float*)pY->Data();
+	if (nYOff > 0)
+		y += nYOff;
+
+	add_scalar_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, y);
 
 	return cudaGetLastError();
 }
@@ -8064,5 +8079,129 @@ long Math<T>::tsne_compute_knn_bounds(unsigned int n, long hData, T fPctInCircle
 
 template long Math<double>::tsne_compute_knn_bounds(unsigned int n, long hData, double fPctInCircle, double* pfMinX, double* pfMinY, double* pfMaxX, double* pfMaxY);
 template long Math<float>::tsne_compute_knn_bounds(unsigned int n, long hData, float fPctInCircle, float* pfMinX, float* pfMinY, float* pfMaxX, float* pfMaxY);
+
+
+template <typename T>
+__global__ void gaussian_blur_kernel(const int rows, const int cols, const T* filter, const T* input, T* output)
+{
+	int r = blockIdx.y * blockDim.y + threadIdx.y;
+	int c = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if (r >= rows || c >= cols)
+		return;
+
+	T fBlur = T(0.0);
+	int width = cols - 1;
+	int height = rows - 1;
+	int nIdxFlt = 0;
+	int nIdx;
+
+	for (int i = -1; i <= 1; i++)
+	{
+		for (int j = -1; j <= 1; j++)
+		{
+			// Clamp the filter to the image border.
+			int h = min(max(r + i, 0), height);
+			int w = min(max(c + j, 0), width);
+
+			// Blur is a product of current pixel value and weight of that pixel.
+			// Remember that sum of all weights should equal 1 (hence used normalized weights).
+			nIdx = h * cols + w;
+			T fPixel = input[nIdx];
+			T fWeight = filter[nIdxFlt];
+			nIdxFlt++;
+
+			fBlur += fPixel * fWeight;
+		}
+	}
+
+	nIdx = r * cols + c;
+	output[nIdx] = fBlur;
+}
+
+template <class T>
+long Math<T>::gaussian_blur(int n, int nChannels, int h, int w, T fSigma, long hX, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	int nDim = h * w;
+	int nIdx = 0;
+	T rgFilter[9];
+	T fSigmaSq = fSigma * fSigma;
+	T fFactor1 = (1 / (2 * M_PI * fSigmaSq));
+	T fFactor2 = 2 * fSigmaSq;
+	T fExp;
+	T fSum = 0;
+
+	// Fill the covariance matrix
+	for (int y = -1; y <= 1; y++)
+	{
+		for (int x = -1; x <= 1; x++)
+		{
+			fExp = ((x * x) + (y * y)) / fFactor2;
+			rgFilter[nIdx] = fFactor1 * ::exp(-fExp);
+			fSum += rgFilter[nIdx];
+			nIdx++;
+		}
+	}
+
+	// Normalize the matrix.
+	for (int y = 0; y < 3; y++)
+	{
+		for (int x = 0; x < 3; x++)
+		{
+			nIdx = y * 3 + x;
+			rgFilter[nIdx] /= fSum;
+		}
+	}
+
+	T* pFilterDev;
+	if (lErr = cudaMalloc(&pFilterDev, sizeof(T) * 9))
+		return lErr;
+
+	if (lErr = cudaMemcpy(pFilterDev, rgFilter, sizeof(T) * 9, cudaMemcpyHostToDevice))
+	{
+		cudaFree(pFilterDev);
+		return lErr;
+	}
+
+	T* pData = (T*)pX->Data();
+	T* pBlur = (T*)pY->Data();
+
+	int BLOCK_WIDTH = 32;
+	int x = static_cast<int>(ceilf(static_cast<float>(w) / BLOCK_WIDTH));
+	int y = static_cast<int>(ceilf(static_cast<float>(h) / BLOCK_WIDTH));
+	const dim3 grid(x, y, 1);
+	const dim3 block(BLOCK_WIDTH, BLOCK_WIDTH, 1);
+
+	// Blur each channel individually.
+	for (int c = 0; c < nChannels; c++)
+	{
+		gaussian_blur_kernel << <grid, block >> > (h, w, pFilterDev, pData, pBlur);
+		if (lErr = cudaGetLastError())
+		{
+			cudaFree(pFilterDev);
+			return lErr;
+		}
+
+		pData += nDim;
+		pBlur += nDim;
+	}
+
+	cudaFree(pFilterDev);
+
+	return 0;
+}
+
+template long Math<double>::gaussian_blur(int n, int c, int h, int w, double dfSigma, long hX, long hY);
+template long Math<float>::gaussian_blur(int n, int c, int h, int w, float fSigma, long hX, long hY);
 
 //end math.cu

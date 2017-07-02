@@ -1290,14 +1290,18 @@ long Device<T>::cuda_add_scalar(long lInput, T* pfInput, long* plOutput, T** ppf
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+	if (lErr = verifyInput(lInput, pfInput, 3, 4))
 		return lErr;
 
 	int n = (int)pfInput[0];
 	T fAlpha = pfInput[1];
 	long hY = (long)pfInput[2];
+	int nYOff = 0;
 
-	return m_math.add_scalar(n, fAlpha, hY);
+	if (lInput > 3)
+		nYOff = (int)pfInput[3];
+
+	return m_math.add_scalar(n, fAlpha, hY, nYOff);
 }
 
 template long Device<double>::cuda_add_scalar(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
@@ -2958,5 +2962,31 @@ long Device<T>::cuda_tsne_compute_knn_bounds(long lInput, T* pfInput, long* plOu
 
 template long Device<double>::cuda_tsne_compute_knn_bounds(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
 template long Device<float>::cuda_tsne_compute_knn_bounds(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
+long Device<T>::cuda_guassian_blur(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+		return lErr;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	int c = (int)pfInput[1];
+	int h = (int)pfInput[2];
+	int w = (int)pfInput[3];
+	T fSigma = pfInput[4];
+	long hX = (long)pfInput[5];
+	long hY = (long)pfInput[6];
+
+	return m_math.gaussian_blur(n, c, h, w, fSigma, hX, hY);
+}
+
+template long Device<double>::cuda_guassian_blur(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_guassian_blur(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
 
 //end device.cu

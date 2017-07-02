@@ -105,7 +105,7 @@ class Math
 		long asum(int n, long hX, T* pOut, int nXOff = 0);
 		long asum(int n, T* x, T* pOut);
 		long scale(int n, T fAlpha, long hX, long hY, int nXOff = 0, int nYOff = 0);
-		long add_scalar(int n, T fAlpha, long hY);
+		long add_scalar(int n, T fAlpha, long hY, int nYOff = 0);
 		long add(int n, long hA, long hB, long hY, T fAlpha);
 		long add(int n, T* a, T* b, T* c);
 		long add2(int n, long hA, long hB, long hY, T fAlphaA, T fAlphaB, int AOff = 0, int nBOff = 0, int nYOff = 0);
@@ -262,6 +262,8 @@ class Math
 		long tsne_compute_exact_error(unsigned int n, long hP, long hQ, long hY);
 		long tsne_symmetrize_matrix(unsigned int n, long hRowP, long hColP, long hValP, unsigned int* pnRowCount);
 		long tsne_compute_knn_bounds(unsigned int n, long hData, T fPctInCircle, T* pfMinX, T* pfMinY, T* pfMaxX, T* pfMaxY);
+
+		long gaussian_blur(int n, int c, int h, int w, T fSigma, long hX, long hY);
 };
 
 

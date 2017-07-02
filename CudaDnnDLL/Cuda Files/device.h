@@ -379,6 +379,8 @@ class Device
 		long cuda_tsne_compute_exact_gradient(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_tsne_symmetrize_matrix(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_tsne_compute_knn_bounds(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
+		long cuda_guassian_blur(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 };
 
 
