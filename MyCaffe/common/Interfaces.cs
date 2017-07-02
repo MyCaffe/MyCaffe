@@ -340,9 +340,10 @@ namespace MyCaffe.common
         /// <param name="rgWeights">Specifies the trained weights to load.</param>
         /// <param name="shape">Specifies the expected shape to run on.</param>
         /// <param name="sdMean">Optionally, specifies the simple datum mean to subtract from input images that are run.</param>
+        /// <param name="bForceBackward">Optionally, enables the force backward.</param>
         /// <param name="transParam">Optionally, specifies the TransformationParameter to use.  When using a 'deployment' model that has no data layers, you should supply a transformation parameter
         /// that matches the transformation used during training.</param>
-        void LoadToRun(string strModel, byte[] rgWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null);
+        void LoadToRun(string strModel, byte[] rgWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null, bool bForceBackward = false);
         /// <summary>
         /// Run on a given bitmap image.
         /// </summary>
