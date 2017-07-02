@@ -158,6 +158,22 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Returns the CudaDnn object that manages the Blob's memory."/>
+        /// </summary>
+        public CudaDnn<T> Cuda
+        {
+            get { return m_cuda; }
+        }
+
+        /// <summary>
+        /// Returns the Log associated with the blob.
+        /// </summary>
+        public Log Log
+        {
+            get { return m_log; }
+        }
+
+        /// <summary>
         /// Releases all resources used by the Blob (including both GPU and Host).
         /// </summary>
         /// <param name="bDisposing">Set to <i>true</i> when disposing the object.</param>
