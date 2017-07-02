@@ -810,7 +810,7 @@ namespace MyCaffe.basecode
             RawProtoCollection rgLayers = proto.FindChildren("layer");
             RawProtoCollection rgRemove = new RawProtoCollection();
 
-            RawProto protoSoftMaxLoss = null;
+            List<RawProto> rgProtoSoftMaxLoss = new List<basecode.RawProto>();
             RawProto protoSoftMax = null;
 
             foreach (RawProto layer in rgLayers)
@@ -836,7 +836,7 @@ namespace MyCaffe.basecode
                     }
                     else if (strType == "softmaxwithloss")
                     {
-                        protoSoftMaxLoss = layer;
+                        rgProtoSoftMaxLoss.Add(layer);
                         bKeepLayer = true;
                     }
                     else if (strType == "softmax")
@@ -890,7 +890,7 @@ namespace MyCaffe.basecode
                 }
             }
 
-            if (protoSoftMaxLoss != null)
+            foreach (RawProto protoSoftMaxLoss in rgProtoSoftMaxLoss)
             {
                 if (protoSoftMax != null)
                 {
