@@ -692,7 +692,9 @@ namespace MyCaffe
         /// <param name="sdMean">Optionally, specifies the simple datum mean to subtract from input images that are run.</param>
         /// <param name="transParam">Optionally, specifies the TransformationParameter to use.  When using a 'deployment' model that has no data layers, you should supply a transformation parameter
         /// that matches the transformation used during training.</param>
-        public void LoadToRun(string strModel, byte[] rgWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null)
+        /// <param name="bForceBackward">Optionally, specifies to force backward propagation in the event that a backward pass is to be run on the Run net - The DeepDraw functionality
+        /// uses this setting so that it can view what the trained weights actually see.</param>
+        public void LoadToRun(string strModel, byte[] rgWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null, bool bForceBackward = false)
         {
             m_dataSet = null;
             m_project = null;
@@ -704,6 +706,8 @@ namespace MyCaffe
            
             TransformationParameter tp = null;
             NetParameter netParam = createNetParameterForRunning(shape, strModel, out tp);
+
+            netParam.force_backward = bForceBackward;
 
             if (tp == null)
                 tp = transParam;
