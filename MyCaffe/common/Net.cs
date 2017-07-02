@@ -1916,6 +1916,19 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Returns the index of a blob given its name.
+        /// </summary>
+        /// <param name="strName">Specifies the name of the blob to look for.</param>
+        /// <returns>The index of the blob within the 'blobs' is returned.</returns>
+        public int blob_index_by_name(string strName)
+        {
+            if (!has_blob(strName))
+                return -1;
+
+            return m_rgBlobNamesIndex[strName];
+        }
+
+        /// <summary>
         /// Returns whether or not the Net has a given Layer by its name.
         /// </summary>
         /// <param name="strLayer">Specifies the Layer name.</param>
@@ -1945,6 +1958,19 @@ namespace MyCaffe.common
             }
 
             return layer_ptr;
+        }
+
+        /// <summary>
+        /// Returns a Layer's index given its name.
+        /// </summary>
+        /// <param name="strLayer">Specifies the Layer name.</param>
+        /// <returns>The index of the Layer with the given name is returned, or <i>-1</i> if not found.</returns>
+        public int layer_index_by_name(string strLayer)
+        {
+            if (!has_layer(strLayer))
+                return -1;
+
+            return m_rgLayerNamesIndex[strLayer];
         }
 
         /// <summary>
