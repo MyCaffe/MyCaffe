@@ -546,34 +546,60 @@ namespace MyCaffe.common
         }
     }
 
-    class OctavesCollection : IEnumerable<Octaves> /** @private */
+    /// <summary>
+    /// The OctavesCollection manages a list of Octaves.
+    /// </summary>
+    public class OctavesCollection : IEnumerable<Octaves>
     {
         List<Octaves> m_rgOctaves = new List<Octaves>();
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
         public OctavesCollection()
         {
         }
 
+        /// <summary>
+        /// The number of Octaves in the collection.
+        /// </summary>
         public int Count
         {
             get { return m_rgOctaves.Count; }
         }
 
+        /// <summary>
+        /// Returns the Octaves at an index within the collection.
+        /// </summary>
+        /// <param name="nIdx"></param>
+        /// <returns></returns>
         public Octaves this[int nIdx]
         {
             get { return m_rgOctaves[nIdx]; }
         }
 
+        /// <summary>
+        /// Adds a new Octaves to the collection.
+        /// </summary>
+        /// <param name="o"></param>
         public void Add(Octaves o)
         {
             m_rgOctaves.Add(o);
         }
 
+        /// <summary>
+        /// Returns the enumerator for the collection.
+        /// </summary>
+        /// <returns>The Octaves enumerator is returned.</returns>
         public IEnumerator<Octaves> GetEnumerator()
         {
             return m_rgOctaves.GetEnumerator();
         }
 
+        /// <summary>
+        /// Returns the enumerator for the collection.
+        /// </summary>
+        /// <returns>The Octaves enumerator is returned.</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return m_rgOctaves.GetEnumerator();
