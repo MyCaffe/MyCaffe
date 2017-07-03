@@ -110,7 +110,16 @@ namespace MyCaffe.common
         public void Add(string strLayer, int nIterations, double dfStartSigma, double dfEndSigma, double dfStartStep, double dfEndStep, bool bSaveFile = false, double dfPctDetailsToApply = 0.25)
         {
             m_rgOctaves.Add(new common.Octaves(strLayer, nIterations, dfStartSigma, dfEndSigma, dfStartStep, dfEndStep, bSaveFile, dfPctDetailsToApply));
-        } 
+        }
+
+        /// <summary>
+        /// Add a new Octaves to the collection of Octaves to run.
+        /// </summary>
+        /// <param name="octaves">Specifies the Octaves to add.</param>
+        public void Add(Octaves octaves)
+        {
+            m_rgOctaves.Add(octaves);
+        }
 
         /// <summary>
         /// Returns the Octave enumerator.
@@ -146,6 +155,19 @@ namespace MyCaffe.common
             if (nH <= 0)
                 nH = m_nWid;
 
+            return CreateRandomImageEx(clrBack, nW, nH, dfScale);
+        }
+
+        /// <summary>
+        /// Creates an image with random noise.
+        /// </summary>
+        /// <param name="clrBack">Specifies the base back color.</param>
+        /// <param name="nW">Specifies the width.</param>
+        /// <param name="nH">Specifies the height.</param>
+        /// <param name="dfScale">Optionally, specifies the spread of pixels randomized around the base color.  For example the default of 16 randomly picks a color value +8 and -8 from the base color.</param>
+        /// <returns></returns>
+        public static Bitmap CreateRandomImageEx(Color clrBack, int nW, int nH, double dfScale = 16.0)
+        {
             Bitmap bmp = new Bitmap(nW, nH);
             Random rand = new Random();
             double dfVal;
@@ -221,7 +243,7 @@ namespace MyCaffe.common
 
                     make_step(m_blobBlur, strLayer, dfSigma, dfStepSize, nFocusLabel);
 
-                    if (strOutputDir != null && (bVisualizeEachStep || (i == o.IterationN - 1 && o.Save)))
+                    if ((bVisualizeEachStep || (i == o.IterationN - 1 && o.Save)))
                     {
                         if (dfDetailPercentageToOutput < 1.0)
                         {
@@ -236,15 +258,19 @@ namespace MyCaffe.common
                         }
 
                         Image bmp = getImage(m_blobBlur);
-                        string strFile = strOutputDir + "\\" + o.UniqueName + "_" + i.ToString();
-                        if (nFocusLabel >= 0)
-                            strFile += "_class_" + nFocusLabel.ToString();
 
-                        bmp.Save(strFile + ".png");
+                        if (strOutputDir != null)
+                        {
+                            string strFile = strOutputDir + "\\" + o.UniqueName + "_" + i.ToString();
+                            if (nFocusLabel >= 0)
+                                strFile += "_class_" + nFocusLabel.ToString();
 
-                        Bitmap bmp1 = adjustContrast(bmp, 1.0f, 1.1f, 1.1f);
-                        bmp1.Save(strFile + "_bright.png");
-                        bmp1.Dispose();
+                            bmp.Save(strFile + ".png");
+
+                            Bitmap bmp1 = adjustContrast(bmp, 1.0f, 1.1f, 1.1f);
+                            bmp1.Save(strFile + "_bright.png");
+                            bmp1.Dispose();
+                        }
 
                         if (i == o.IterationN - 1)
                             o.Images.Add(nFocusLabel, bmp);
@@ -397,6 +423,74 @@ namespace MyCaffe.common
 
             return bmpNew;
         }
+
+        /// <summary>
+        /// The CreateConfigurationString function packs all deep draw settings into a configuration string.
+        /// </summary>
+        /// <param name="nWd">Specifies the input width.</param>
+        /// <param name="nHt">Specifies the input height.</param>
+        /// <param name="dfOutputDetailPct">Specifies the percentage of detail to apply to the final output.</param>
+        /// <param name="colOctaves">Specifies the collection of Octaves to run.</param>
+        /// <param name="strSrcBlobName">Specifies the name of the source blob.</param>
+        /// <returns>The configuration string is returned.</returns>
+        public static string CreateConfigurationString(int nWd, int nHt, double dfOutputDetailPct, OctavesCollection colOctaves, string strSrcBlobName)
+        {
+            RawProtoCollection rgChildren = new RawProtoCollection();
+
+            rgChildren.Add("input_height", nHt.ToString(), RawProto.TYPE.STRING);
+            rgChildren.Add("input_width", nWd.ToString(), RawProto.TYPE.STRING);
+            rgChildren.Add("output_detail_pct", dfOutputDetailPct.ToString(), RawProto.TYPE.STRING);
+            rgChildren.Add("src_blob_name", strSrcBlobName, RawProto.TYPE.STRING);
+
+            foreach (Octaves octave in colOctaves)
+            {
+                rgChildren.Add(octave.ToProto("octave"));
+            }
+
+            RawProto proto = new RawProto("root", "", rgChildren);
+
+            return proto.ToString();
+        }
+
+        /// <summary>
+        /// The ParseConfigurationString method parses a deep draw configuration string into the actual settings.
+        /// </summary>
+        /// <param name="strConfig">Specifies the configuration string to parse.</param>
+        /// <param name="nWd">Returns the input width.</param>
+        /// <param name="nHt">Returns the input height.</param>
+        /// <param name="dfOutputDetailPct">Returns the percentage of detail to apply to the final image.</param>
+        /// <param name="strSrcBlobName">Returns the source blob name.</param>
+        /// <returns>Returns the collection of Octaves to run.</returns>
+        public static OctavesCollection ParseConfigurationString(string strConfig, out int nWd, out int nHt, out double dfOutputDetailPct, out string strSrcBlobName)
+        {
+            RawProto proto = RawProto.Parse(strConfig);
+            string strVal;
+
+            nHt = -1;
+            if ((strVal = proto.FindValue("input_height")) != null)
+                nHt = int.Parse(strVal);
+
+            nWd = -1;
+            if ((strVal = proto.FindValue("input_width")) != null)
+                nWd = int.Parse(strVal);
+
+            dfOutputDetailPct = 0.25;
+            if ((strVal = proto.FindValue("output_detail_pct")) != null)
+                dfOutputDetailPct = double.Parse(strVal);
+
+            strSrcBlobName = "data";
+            if ((strVal = proto.FindValue("src_blob_name")) != null)
+                strSrcBlobName = strVal;
+
+            OctavesCollection col = new OctavesCollection();
+            RawProtoCollection rpcol = proto.FindChildren("octave");
+            foreach (RawProto protoChild in rpcol)
+            {
+                col.Add(Octaves.FromProto(protoChild));
+            }
+
+            return col;
+        }
     }
 
     /// <summary>
@@ -543,6 +637,71 @@ namespace MyCaffe.common
             }
 
             return strOut;
+        }
+
+        /// <summary>
+        /// The ToProto function converts the Octaves settings into a RawProto.
+        /// </summary>
+        /// <param name="strName">Specifies the name of the RawProto.</param>
+        /// <returns>The RawProto is returned.</returns>
+        public RawProto ToProto(string strName)
+        {
+            RawProtoCollection rgChildren = new RawProtoCollection();
+
+            rgChildren.Add("layer", m_strLayerName, RawProto.TYPE.STRING);
+            rgChildren.Add("iterations", m_nIterN.ToString(), RawProto.TYPE.STRING);
+            rgChildren.Add("sigma_start", m_dfStartSigma.ToString(), RawProto.TYPE.STRING);
+            rgChildren.Add("sigma_end", m_dfEndSigma.ToString(), RawProto.TYPE.STRING);
+            rgChildren.Add("step_start", m_dfStartStepSize.ToString(), RawProto.TYPE.STRING);
+            rgChildren.Add("step_end", m_dfEndStepSize.ToString(), RawProto.TYPE.STRING);
+            rgChildren.Add("save", m_bSave.ToString(), RawProto.TYPE.STRING);
+            rgChildren.Add("pct_of_prev_detail", m_dfDetailPctToApply.ToString(), RawProto.TYPE.STRING);
+
+            return new RawProto(strName, "", rgChildren);
+        }
+
+        /// <summary>
+        /// The FromProto function parses a RawProto into a new Octaves.
+        /// </summary>
+        /// <param name="rp">Specifies the RawProto to parse.</param>
+        /// <returns>The new Octaves is returned.</returns>
+        public static Octaves FromProto(RawProto rp)
+        {
+            string strVal;
+
+            string strLayer = "";
+            if ((strVal = rp.FindValue("layer")) != null)
+                strLayer = strVal;
+
+            int nIterations = 10;
+            if ((strVal = rp.FindValue("iterations")) != null)
+                nIterations = int.Parse(strVal);
+
+            double dfSigmaStart = 0;
+            if ((strVal = rp.FindValue("sigma_start")) != null)
+                dfSigmaStart = double.Parse(strVal);
+
+            double dfSigmaEnd = 0;
+            if ((strVal = rp.FindValue("sigma_end")) != null)
+                dfSigmaEnd = double.Parse(strVal);
+
+            double dfStepStart = 1.5;
+            if ((strVal = rp.FindValue("step_start")) != null)
+                dfStepStart = double.Parse(strVal);
+
+            double dfStepEnd = 1.5;
+            if ((strVal = rp.FindValue("step_end")) != null)
+                dfStepEnd = double.Parse(strVal);
+
+            bool bSave = false;
+            if ((strVal = rp.FindValue("save")) != null)
+                bSave = bool.Parse(strVal);
+
+            double dfPctOfDetail = .25;
+            if ((strVal = rp.FindValue("pct_of_prev_detail")) != null)
+                dfPctOfDetail = double.Parse(strVal);
+
+            return new Octaves(strLayer, nIterations, dfSigmaStart, dfSigmaEnd, dfStepStart, dfStepEnd, bSave, dfPctOfDetail);
         }
     }
 
