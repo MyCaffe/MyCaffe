@@ -588,6 +588,33 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Removes an Octaves from the collection.
+        /// </summary>
+        /// <param name="o">Specifies the Octaves to remove.</param>
+        /// <returns>If the Octaves is found and removed, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public bool Remove(Octaves o)
+        {
+            return m_rgOctaves.Remove(o);
+        }
+
+        /// <summary>
+        /// Removes an Octaves at a given index in the collection.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index.</param>
+        public void RemoveAt(int nIdx)
+        {
+            m_rgOctaves.RemoveAt(nIdx);
+        }
+
+        /// <summary>
+        /// Removes all Octaves from the collection.
+        /// </summary>
+        public void Clear()
+        {
+            m_rgOctaves.Clear();
+        }
+
+        /// <summary>
         /// Returns the enumerator for the collection.
         /// </summary>
         /// <returns>The Octaves enumerator is returned.</returns>
