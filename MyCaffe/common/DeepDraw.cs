@@ -279,7 +279,7 @@ namespace MyCaffe.common
                     }
 
                     m_log.Progress = (double)i / (double)o.IterationN;
-                    m_log.WriteLine("Octave: '" + o.LayerName + "' - " + i.ToString() + " of " + o.IterationN.ToString() + " " + m_log.Progress.ToString("P"));
+                    m_log.WriteLine("Focus Label: " + nFocusLabel.ToString() + "  Octave: '" + o.LayerName + "' - " + i.ToString() + " of " + o.IterationN.ToString() + " " + m_log.Progress.ToString("P"));
 
                     if (nFocusLabel >= 0)
                         m_blobBase.CopyFrom(blobSrc);
