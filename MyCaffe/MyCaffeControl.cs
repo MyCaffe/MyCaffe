@@ -175,13 +175,39 @@ namespace MyCaffe
             if (m_evtCancel != null)
                 m_evtCancel.Set();
 
+            Unload();
+
+            if (m_cuda != null)
+            {
+                m_cuda.Dispose();
+                m_cuda = null;
+            }
+
+            if (m_msWeights != null)
+            {
+                m_msWeights.Dispose();
+                m_msWeights = null;
+            }
+        }
+
+        /// <summary>
+        /// Unload the currently loaded project, if any.
+        /// </summary>
+        public void Unload(bool bUnloadImageDb = true)
+        {
             if (m_solver != null)
             {
                 m_solver.Dispose();
                 m_solver = null;
             }
 
-            if (m_imgDb != null)
+            if (m_net != null)
+            {
+                m_net.Dispose();
+                m_net = null;
+            }
+
+            if (m_imgDb != null && bUnloadImageDb)
             {
                 if (m_bImgDbOwner)
                 {
@@ -195,22 +221,7 @@ namespace MyCaffe
                 m_imgDb = null;
             }
 
-            if (m_cuda != null)
-            {
-                m_cuda.Dispose();
-                m_cuda = null;
-            }
-
-            if (m_strCudaPath != null)
-            {
-                m_strCudaPath = null;
-            }
-
-            if (m_msWeights != null)
-            {
-                m_msWeights.Dispose();
-                m_msWeights = null;
-            }
+            m_project = null;
         }
 
         /// <summary>
@@ -453,13 +464,27 @@ namespace MyCaffe
         /// <param name="strModel">Specifies the model descriptor.</param>
         /// <param name="transform_param">Specifies the TransformationParameter to use.</param>
         /// <returns>The new NetParameter suitable for the RUN phase is returned.</returns>
-        protected NetParameter createNetParameterForRunning(BlobShape shape, string strModel, out TransformationParameter transform_param)
+        public NetParameter createNetParameterForRunning(BlobShape shape, string strModel, out TransformationParameter transform_param)
+        {
+            m_inputShape = shape;
+            return CreateNetParameterForRunning(shape, strModel, out transform_param);
+        }
+
+        /// <summary>
+        /// Creates a net parameter for the RUN phase.
+        /// </summary>
+        /// <remarks>
+        /// This function transforms the training net parameter into a new net parameter suitable to run in the RUN phase.
+        /// </remarks>
+        /// <param name="shape">Specifies the shape of the images that will be used.</param>
+        /// <param name="strModel">Specifies the model descriptor.</param>
+        /// <param name="transform_param">Specifies the TransformationParameter to use.</param>
+        /// <returns>The new NetParameter suitable for the RUN phase is returned.</returns>
+        public static NetParameter CreateNetParameterForRunning(BlobShape shape, string strModel, out TransformationParameter transform_param)
         {
             int nImageChannels = shape.dim[1];
             int nImageHeight = shape.dim[2];
             int nImageWidth = shape.dim[3];
-
-            m_inputShape = shape;
 
             RawProto protoTransform = null;
             RawProto protoModel = ProjectEx.CreateModelForRunning(strModel, "data", 1, nImageChannels, nImageHeight, nImageWidth, out protoTransform);
@@ -676,6 +701,7 @@ namespace MyCaffe
             }
             else if (phase == Phase.TEST || phase == Phase.TRAIN)
             {
+                netParam.force_backward = true;
                 m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb, Phase.RUN, null, m_solver.TrainingNet);
             }
         }
@@ -709,7 +735,7 @@ namespace MyCaffe
 
             netParam.force_backward = bForceBackward;
 
-            if (tp == null)
+            if (transParam != null)
                 tp = transParam;
 
             if (tp != null)

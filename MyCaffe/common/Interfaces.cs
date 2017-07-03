@@ -240,6 +240,11 @@ namespace MyCaffe.common
         /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
         void Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null);
         /// <summary>
+        /// Unload the currently loaded project.
+        /// </summary>
+        /// <param name="bUnloadImageDb">Optionally, specifies whether or not to unload the image database. The default = <i>true</i>.</param>
+        void Unload(bool bUnloadImageDb = true);
+        /// <summary>
         /// Train the network a set number of iterations.
         /// </summary>
         /// <param name="nIterationOverride">Optionally, specifies number of iterations to run that override the iterations specified in the solver desctiptor.</param>
