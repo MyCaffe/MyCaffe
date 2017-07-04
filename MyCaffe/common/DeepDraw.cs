@@ -622,11 +622,12 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Returns the percentage of detail from the previous Octave to apply to the source for this Octave.
+        /// Get/set the percentage of detail from the previous Octave to apply to the source for this Octave.
         /// </summary>
         public double PercentageOfPreviousOctaveDetailsToApply
         {
             get { return m_dfDetailPctToApply; }
+            set { m_dfDetailPctToApply = value; }
         }
 
         private string getCleanName(string str)
