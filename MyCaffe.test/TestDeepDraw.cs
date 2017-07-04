@@ -212,8 +212,8 @@ namespace MyCaffe.test
             // TODO: Change this file to an image of your own.
 #warning TODO: Change image name to a file on your computer.
             Bitmap inputImg = new Bitmap("c:\\temp\\ocean.png");
-            if (inputImg.Width > 224 || inputImg.Height > 224 || inputImg.Width != inputImg.Height)
-                inputImg = ImageTools.ResizeImage(inputImg, 224, 224);
+            if (inputImg.Width > 600 || inputImg.Height > 600 || inputImg.Width != inputImg.Height)
+                inputImg = ImageTools.ResizeImage(inputImg, 600, 600);
             inputImg.Save(strVisualizeDir + "\\input.png");
 
             m_caffe.LoadToRun(strModelDesc, rgWeights, new BlobShape(1, 3, inputImg.Height, inputImg.Width), null, null, true);
