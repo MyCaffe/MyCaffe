@@ -276,16 +276,22 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="rgData">Specifies the host data to set.</param>
         /// <param name="nCount">Specifies the number of items in the host data to set, which may be less than the host data array length.</param>
-        public void SetData(T[] rgData, int nCount)
+        /// <param name="bSetCount">Optionally, specifies whether or not to set the count.  The count is always set when re-allocating the buffer.</param>
+        public void SetData(T[] rgData, int nCount, bool bSetCount = true)
         {
             if (nCount == -1)
                 nCount = rgData.Length;
 
             if (nCount > m_lCapacity || m_hGpuData == 0)
+            {
+                bSetCount = true;
                 Allocate(nCount);
+            }
 
             m_cuda.SetMemory(m_hGpuData, rgData, 0, nCount);
-            m_lCount = nCount;
+
+            if (bSetCount)
+                m_lCount = nCount;
         }
 
         /// <summary>

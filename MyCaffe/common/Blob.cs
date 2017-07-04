@@ -1269,9 +1269,10 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="rgData">Specifies the data to set.</param>
         /// <param name="nCount">Optionally, specifies a subset count of items to set.</param>
-        public void SetData(T[] rgData, int nCount = -1)
+        /// <param name="bSetCount">Optionally, specifies whether or not to set the count.  The count is always set when re-allocating the buffer.</param>
+        public void SetData(T[] rgData, int nCount = -1, bool bSetCount = true)
         {
-            m_data.SetData(rgData, nCount);
+            m_data.SetData(rgData, nCount, bSetCount);
         }
 
         /// <summary>
