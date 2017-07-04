@@ -587,6 +587,7 @@ namespace MyCaffe.common
                 string strShapeW = "";
                 long lCount = 0;
                 bool bResizeNeeded = false;
+                bool bMisSized = false;
 
                 //-----------------------------------------
                 //  Find the first matching size.
@@ -632,6 +633,9 @@ namespace MyCaffe.common
                                     rgBlobShape = new List<long>(pbDim.LongValues);
                                     break;
                                 }
+
+                                bMisSized = true;
+                                break;
                             }
                         }
                         else
@@ -674,6 +678,9 @@ namespace MyCaffe.common
                                     bResizeNeeded = true;
                                     break;
                                 }
+
+                                bMisSized = true;
+                                break;
                             }
                         }
                     }
@@ -687,37 +694,41 @@ namespace MyCaffe.common
                 //-----------------------------------------
                 //  Copy the data.
                 //-----------------------------------------
-                ProtoBufField pbData = colFieldBlobs[nFieldIdx].Array.FindFirstChild("data");
-                FieldDescriptor.TYPE type = FieldDescriptor.TYPE.FLOAT;
-                long lDataCount = 0;
-                if (pbData == null)
+
+                if (!bMisSized)
                 {
-                    pbData = colFieldBlobs[nFieldIdx].Array.FindFirstChild("double_data");
-                    type = FieldDescriptor.TYPE.DOUBLE;
-                    lDataCount = pbData.DoubleValues.Length;
+                    ProtoBufField pbData = colFieldBlobs[nFieldIdx].Array.FindFirstChild("data");
+                    FieldDescriptor.TYPE type = FieldDescriptor.TYPE.FLOAT;
+                    long lDataCount = 0;
+                    if (pbData == null)
+                    {
+                        pbData = colFieldBlobs[nFieldIdx].Array.FindFirstChild("double_data");
+                        type = FieldDescriptor.TYPE.DOUBLE;
+                        lDataCount = pbData.DoubleValues.Length;
+                    }
+                    else
+                    {
+                        lDataCount = pbData.FloatValues.Length;
+                    }
+
+                    if (pbData == null || (lDataCount != lCount && !bSizeToFit))
+                        m_log.FAIL("Could not find the weights matching the data size '" + strShapeB + "'!");
+
+                    if (bSizeToFit && !compareShapes(strShapeB, strShapeW, 2))
+                        m_log.FAIL("Could not find the weights matching the first two items of the shape '" + strShapeB + "'!");
+
+                    T[] rgData = copyData(pbData, type, lDataCount, rgBlobShape);
+                    blob.mutable_cpu_data = rgData;
+                    blob.Tag = colFieldBlobs[nFieldIdx].Tag;
+
+                    if (bSizeToFit && bResizeNeeded)
+                    {
+                        List<int> rgNewShape = parseShape(strShapeB);
+                        Blob<T> blobResized = blob.Resize(rgNewShape);
+                        blob.Dispose();
+                        colBlobs[nBlobIdx] = blobResized;
+                    }
                 }
-                else
-                {
-                    lDataCount = pbData.FloatValues.Length;
-                }
-
-                if (pbData == null || (lDataCount != lCount && !bSizeToFit))
-                    m_log.FAIL("Could not find the weights matching the data size '" + strShapeB + "'!");
-
-                if (bSizeToFit && !compareShapes(strShapeB, strShapeW, 2))
-                    m_log.FAIL("Could not find the weights matching the first two items of the shape '" + strShapeB + "'!");
-
-                T[] rgData = copyData(pbData, type, lDataCount, rgBlobShape);
-                blob.mutable_cpu_data = rgData;
-                blob.Tag = colFieldBlobs[nFieldIdx].Tag;
-
-                if (bSizeToFit && bResizeNeeded)
-                {
-                    List<int> rgNewShape = parseShape(strShapeB);
-                    Blob<T> blobResized = blob.Resize(rgNewShape);
-                    blob.Dispose();
-                    colBlobs[nBlobIdx] = blobResized;
-                } 
 
                 m_log.Progress = (double)nBlobIdx / (double)colBlobs.Count;
                 m_log.WriteLine("(" + m_log.Progress.ToString("P") + ") loaded blob '" + colBlobs[nBlobIdx].Name + "' size = " + strShapeB);
