@@ -83,10 +83,17 @@ namespace MyCaffe.test
 
     class DeepDrawTest<T> : TestEx<T>, IDeepDrawTest
     {
+        SettingsCaffe m_settings = new SettingsCaffe();
+        CancelEvent m_evtCancel = new CancelEvent();
+        MyCaffeControl<T> m_caffe = null;
+
         public DeepDrawTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
         {
             m_engine = engine;
+
+            m_caffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
+            m_log.EnableTrace = true;
         }
 
         protected override void dispose()
@@ -109,13 +116,6 @@ namespace MyCaffe.test
         /// 
         public void TestDeepDraw1()
         {
-            SettingsCaffe settings = new SettingsCaffe();
-            Log log = new Log("Deep Draw");
-            CancelEvent m_evtCancel = new CancelEvent();
-            MyCaffeControl<T> caffe = new MyCaffeControl<T>(settings, log, m_evtCancel);
-
-            log.EnableTrace = true;
-
             string strModelFile = getTestPath("\\test_data\\models\\bvlc_googlenet\\train_val.prototxt");
             string strFile = getTestPath("\\test_data\\models\\bvlc_googlenet\\bvlc_googlenet.caffemodel");
             byte[] rgWeights = null;
@@ -134,9 +134,9 @@ namespace MyCaffe.test
                 strModelDesc = sr.ReadToEnd();
             }
 
-            caffe.LoadToRun(strModelDesc, rgWeights, new BlobShape(1, 3, 300, 300), null, null, true);
-            Net<T> net = caffe.GetInternalNet(Phase.RUN);
-            DataTransformer<T> transformer = caffe.DataTransformer;
+            m_caffe.LoadToRun(strModelDesc, rgWeights, new BlobShape(1, 3, 600, 600), null, null, true);
+            Net<T> net = m_caffe.GetInternalNet(Phase.RUN);
+            DataTransformer<T> transformer = m_caffe.DataTransformer;
             // No cropping used.
             transformer.param.crop_size = 0;
             // Caffe weights use BGR color ordering (same as weight file)
@@ -171,6 +171,7 @@ namespace MyCaffe.test
             }
 
             deepDraw.Dispose();
+            m_caffe.Unload();
         }
 
         /// <summary>
@@ -182,13 +183,6 @@ namespace MyCaffe.test
         /// </summary>
         public void TestDeepDraw2()
         {
-            SettingsCaffe settings = new SettingsCaffe();
-            Log log = new Log("Deep Draw");
-            CancelEvent m_evtCancel = new CancelEvent();
-            MyCaffeControl<T> caffe = new MyCaffeControl<T>(settings, log, m_evtCancel);
-
-            log.EnableTrace = true;
-
             string strModelFile = getTestPath("\\test_data\\models\\bvlc_googlenet\\train_val.prototxt");
             string strFile = getTestPath("\\test_data\\models\\bvlc_googlenet\\bvlc_googlenet.caffemodel");
             byte[] rgWeights = null;
@@ -222,9 +216,9 @@ namespace MyCaffe.test
                 inputImg = ImageTools.ResizeImage(inputImg, 600, 600);
             inputImg.Save(strVisualizeDir + "\\input.png");
 
-            caffe.LoadToRun(strModelDesc, rgWeights, new BlobShape(1, 3, inputImg.Height, inputImg.Width), null, null, true);
-            Net<T> net = caffe.GetInternalNet(Phase.RUN);
-            DataTransformer<T> transformer = caffe.DataTransformer;
+            m_caffe.LoadToRun(strModelDesc, rgWeights, new BlobShape(1, 3, inputImg.Height, inputImg.Width), null, null, true);
+            Net<T> net = m_caffe.GetInternalNet(Phase.RUN);
+            DataTransformer<T> transformer = m_caffe.DataTransformer;
             // No cropping used.
             transformer.param.crop_size = 0;
             // Caffe weights use BGR color ordering (same as weight file)
@@ -248,6 +242,7 @@ namespace MyCaffe.test
             }
 
             deepDraw.Dispose();
+            m_caffe.Unload();
         }
 
 
