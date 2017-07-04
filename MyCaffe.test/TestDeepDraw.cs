@@ -134,7 +134,7 @@ namespace MyCaffe.test
                 strModelDesc = sr.ReadToEnd();
             }
 
-            m_caffe.LoadToRun(strModelDesc, rgWeights, new BlobShape(1, 3, 600, 600), null, null, true);
+            m_caffe.LoadToRun(strModelDesc, rgWeights, new BlobShape(1, 3, 224, 224), null, null, true);
             Net<T> net = m_caffe.GetInternalNet(Phase.RUN);
             DataTransformer<T> transformer = m_caffe.DataTransformer;
             // No cropping used.
@@ -146,10 +146,10 @@ namespace MyCaffe.test
             DeepDraw<T> deepDraw = new DeepDraw<T>(evtCancel, net, transformer, "data");
 
             // these octaves determine gradient ascent steps
-            deepDraw.Add("loss3/classifier", 190, 2.5, 0.78, 11.0, 11.0, false);
-            deepDraw.Add("loss3/classifier", 150, 0.78, 0.78, 6.0, 6.0, false);
-            deepDraw.Add("loss2/classifier", 150, 0.78, 0.44, 6.0, 3.0, true);
-            deepDraw.Add("loss1/classifier", 10, 0.44, 0.304, 3.0, 3.0, true);
+            deepDraw.Add("loss3/classifier", 190, 2.5, 0.78, 11.0, 11.0, false, 1);
+            deepDraw.Add("loss3/classifier", 150, 0.78, 0.78, 6.0, 6.0, false, 1);
+            deepDraw.Add("loss2/classifier", 150, 0.78, 0.44, 6.0, 3.0, true, 1);
+            deepDraw.Add("loss1/classifier", 10, 0.44, 0.304, 3.0, 3.0, true, 1);
 
             // Set the target output directory.
 #warning TODO: Change image name to a file on your computer.
@@ -163,7 +163,7 @@ namespace MyCaffe.test
             inputImg.Save(strVisualizeDir + "\\input.png");
 
             // which imagenet class to visualize
-            List<int> rgImageNetClasses = new List<int>() { -1, 13, 20, 40, 90, 110, 140, 180, 200, 250, 300, 310, 370, 500, 600, 880 };
+            List<int> rgImageNetClasses = new List<int>() { 13, 240, 400 };
 
             for (int i = 0; i < rgImageNetClasses.Count; i++)
             {
@@ -212,8 +212,8 @@ namespace MyCaffe.test
             // TODO: Change this file to an image of your own.
 #warning TODO: Change image name to a file on your computer.
             Bitmap inputImg = new Bitmap("c:\\temp\\ocean.png");
-            if (inputImg.Width > 600 || inputImg.Height > 600 || inputImg.Width != inputImg.Height)
-                inputImg = ImageTools.ResizeImage(inputImg, 600, 600);
+            if (inputImg.Width > 224 || inputImg.Height > 224 || inputImg.Width != inputImg.Height)
+                inputImg = ImageTools.ResizeImage(inputImg, 224, 224);
             inputImg.Save(strVisualizeDir + "\\input.png");
 
             m_caffe.LoadToRun(strModelDesc, rgWeights, new BlobShape(1, 3, inputImg.Height, inputImg.Width), null, null, true);
@@ -238,7 +238,7 @@ namespace MyCaffe.test
 
             for (int i = 0; i < rgImageNetClasses.Count; i++)
             {
-                deepDraw.Render(inputImg, rgImageNetClasses[i], 0.5, strVisualizeDir);
+                deepDraw.Render(inputImg, rgImageNetClasses[i], 1, strVisualizeDir);
             }
 
             deepDraw.Dispose();
