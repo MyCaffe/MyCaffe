@@ -530,7 +530,7 @@ namespace MyCaffe.common
             m_dfEndSigma = dfEndSigma;
             m_dfStartStepSize = dfStartStepSize;
             m_dfEndStepSize = dfEndStepSize;
-            m_dfDetailPctToApply = 0.25;
+            m_dfDetailPctToApply = dfPctDetailsToApply;
             m_bSave = bSaveFile;
         }
 
