@@ -303,12 +303,15 @@ namespace MyCaffe.common
 
             m_net.Forward(out dfLoss);
 
-            if (nFocusLabel < 0 || nFocusLabel >= blobDst.count())
+            if (nFocusLabel < 0)
             {
                 m_cuda.copy(blobDst.count(), blobDst.gpu_data, blobDst.mutable_gpu_diff);
             }
             else
             {
+                if (nFocusLabel >= blobDst.count())
+                    throw new Exception("The focus label '" + nFocusLabel + "' is greater than the number of outputs for blob '" + blobDst.Name + "' -- it only has '" + blobDst.count().ToString() + "' outputs!");
+
                 blobDst.SetDiff(0);
                 blobDst.SetDiff(1.0, nFocusLabel);
             }
