@@ -16,6 +16,7 @@ namespace MyCaffe.common
     /// introduced by Google.
     /// </summary>
     /// <remarks>
+    /// @see [Deep Dreams (with Caffe)](https://github.com/google/deepdream/blob/master/dream.ipynb) by the Google Deep Dream Team, 2015.
     /// @see [Diving Deeper into Deep Dreams](http://www.kpkaiser.com/machine-learning/diving-deeper-into-deep-dreams/) by Kirk Kaiser, 2015.
     /// @see [auduno/deepdraw](https://github.com/auduno/deepdraw/blob/master/deepdraw.ipynb) on GitHub.
     /// @see [kylemcdonald/deepdream](https://github.com/kylemcdonald/deepdream/blob/master/dream.ipynb) on GitHub
@@ -214,15 +215,16 @@ namespace MyCaffe.common
 
             // Set the base data.
             if (strOutputDir != null)
-                bmpInput.Save(strOutputDir + "\\inputimage.png");
+                bmpInput.Save(strOutputDir + "\\input_image.png");
             Datum d = ImageData.GetImageData(bmpInput, 3, false, -1);
             m_blobBase.mutable_cpu_data = m_transformer.Transform(d);
 
             m_blobDetail.SetData(0.0);
             m_blobBlur.SetData(0);
 
-            foreach (Octaves o in m_rgOctaves)
+            for (int i=0; i<m_rgOctaves.Count; i++)
             {
+                Octaves o = m_rgOctaves[i];
                 // Select layer.
                 string strLayer = o.LayerName;
 
@@ -230,7 +232,7 @@ namespace MyCaffe.common
                 if (nFocusLabel == -1)
                     m_cuda.add(blobSrc.count(), m_blobBase.gpu_data, m_blobDetail.gpu_data, blobSrc.mutable_gpu_data, o.PercentageOfPreviousOctaveDetailsToApply);
 
-                for (int i = 0; i < o.IterationN; i++)
+                for (int j = 0; j < o.IterationN; j++)
                 {
                     if (m_evtCancel.WaitOne(0))
                         return false;
@@ -238,17 +240,18 @@ namespace MyCaffe.common
                     if (nFocusLabel >= 0)
                         blobSrc.CopyFrom(m_blobBase);
 
-                    double dfSigma = o.StartSigma + ((o.EndSigma - o.StartSigma) * i) / o.IterationN;
-                    double dfStepSize = o.StartStepSize + ((o.EndStepSize - o.StartStepSize) * i) / o.IterationN;
+                    double dfSigma = o.StartSigma + ((o.EndSigma - o.StartSigma) * j) / o.IterationN;
+                    double dfStepSize = o.StartStepSize + ((o.EndStepSize - o.StartStepSize) * j) / o.IterationN;
 
-                    make_step(m_blobBlur, strLayer, dfSigma, dfStepSize, nFocusLabel);
+                    make_step(strLayer, dfSigma, dfStepSize, nFocusLabel);
 
-                    if ((bVisualizeEachStep || (i == o.IterationN - 1 && o.Save)))
+                    if ((bVisualizeEachStep || (j == o.IterationN - 1 && o.Save)))
                     {
+                        // Get the detail.
+                        m_cuda.sub(m_blobDetail.count(), blobSrc.gpu_data, m_blobBase.gpu_data, m_blobDetail.mutable_gpu_data);
+
                         if (dfDetailPercentageToOutput < 1.0)
                         {
-                            // Get the detail.
-                            m_cuda.sub(m_blobDetail.count(), blobSrc.gpu_data, m_blobBase.gpu_data, m_blobDetail.mutable_gpu_data);
                             // reuse blob blur memory.
                             m_cuda.add(m_blobBlur.count(), m_blobBase.gpu_data, m_blobDetail.gpu_data, m_blobBlur.mutable_gpu_data, dfDetailPercentageToOutput);
                         }
@@ -259,27 +262,30 @@ namespace MyCaffe.common
 
                         Image bmp = getImage(m_blobBlur);
 
+                        if (nFocusLabel < 0)
+                        {
+                            Bitmap bmp1 = AdjustContrast(bmp, 0.8f, 1.2f, 1.8f);
+                            bmp.Dispose();
+                            bmp = bmp1;
+                        }
+
                         if (strOutputDir != null)
                         {
-                            string strFile = strOutputDir + "\\" + o.UniqueName + "_" + i.ToString();
+                            string strFile = strOutputDir + "\\" + o.UniqueName + "_" + j.ToString();
                             if (nFocusLabel >= 0)
                                 strFile += "_class_" + nFocusLabel.ToString();
 
                             bmp.Save(strFile + ".png");
-
-                            Bitmap bmp1 = adjustContrast(bmp, 1.0f, 1.1f, 1.1f);
-                            bmp1.Save(strFile + "_bright.png");
-                            bmp1.Dispose();
                         }
 
-                        if (i == o.IterationN - 1)
+                        if (j == o.IterationN - 1)
                             o.Images.Add(nFocusLabel, bmp);
                         else
                             bmp.Dispose();
                     }
 
-                    m_log.Progress = (double)i / (double)o.IterationN;
-                    m_log.WriteLine("Focus Label: " + nFocusLabel.ToString() + "  Octave: '" + o.LayerName + "' - " + i.ToString() + " of " + o.IterationN.ToString() + " " + m_log.Progress.ToString("P"));
+                    m_log.Progress = (double)j / (double)o.IterationN;
+                    m_log.WriteLine("Focus Label: " + nFocusLabel.ToString() + "  Octave: '" + o.LayerName + "' - " + j.ToString() + " of " + o.IterationN.ToString() + " " + m_log.Progress.ToString("P"));
 
                     if (nFocusLabel >= 0)
                         m_blobBase.CopyFrom(blobSrc);
@@ -294,7 +300,7 @@ namespace MyCaffe.common
             return true;
         }
 
-        private void make_step(Blob<T> blobBlur, string strLayer, double dfSigma, double dfStepSize = 1.5, int nFocusLabel = -1)
+        private void make_step(string strLayer, double dfSigma, double dfStepSize = 1.5, int nFocusLabel = -1)
         {
             Blob<T> blobSrc = m_net.blob_by_name("data"); // input image is stored in Net's 'data' blob
             Blob<T> blobDst = m_net.blob_by_name(strLayer);
@@ -327,12 +333,9 @@ namespace MyCaffe.common
 
             if (dfSigma != 0)
             {
-                m_cuda.gaussian_blur(blobSrc.count(), blobSrc.channels, blobSrc.height, blobSrc.width, dfSigma, blobSrc.gpu_data, blobBlur.mutable_gpu_data);
-                blobSrc.CopyFrom(blobBlur);
+                m_cuda.gaussian_blur(blobSrc.count(), blobSrc.channels, blobSrc.height, blobSrc.width, dfSigma, blobSrc.gpu_data, m_blobBlur.mutable_gpu_data);
+                blobSrc.CopyFrom(m_blobBlur);
             }
-
-            // reset objective for nest step.
-            blobDst.SetDiff(0);
         }
 
         private Image getImage(Blob<T> blobSrc)
@@ -352,13 +355,17 @@ namespace MyCaffe.common
             double dfMaxG = -double.MaxValue;
             double dfMaxB = -double.MaxValue;
 
+            double dfMeanR = (m_transformer.param.mean_value.Count > 0) ? m_transformer.param.mean_value[0] : 0;
+            double dfMeanG = (m_transformer.param.mean_value.Count > 1) ? m_transformer.param.mean_value[1] : 0;
+            double dfMeanB = (m_transformer.param.mean_value.Count > 2) ? m_transformer.param.mean_value[2] : 0;
+
             if (bByChannel)
             {
                 for (int i = 0; i < nDim; i++)
                 {
-                    double dfR = rgdf[i];
-                    double dfG = rgdf[i + nDim];
-                    double dfB = rgdf[i + nDim * 2];
+                    double dfR = rgdf[i] + dfMeanR;
+                    double dfG = rgdf[i + nDim] + dfMeanG;
+                    double dfB = rgdf[i + nDim * 2] + dfMeanB;
 
                     dfMinR = Math.Min(dfR, dfMinR);
                     dfMaxR = Math.Max(dfR, dfMaxR);
@@ -371,7 +378,7 @@ namespace MyCaffe.common
             else
             {
                 dfMinR = b.min_data;
-                dfMaxR = b.max_data;
+                dfMaxR = b.max_data + Math.Max(dfMeanR, Math.Max(dfMeanG, dfMeanB));
                 dfMinG = dfMinR;
                 dfMaxG = dfMaxR;
                 dfMinB = dfMinR;
@@ -384,9 +391,9 @@ namespace MyCaffe.common
 
             for (int i = 0; i < nDim; i++)
             {
-                double dfR = rgdf[i];
-                double dfG = rgdf[i + nDim];
-                double dfB = rgdf[i + nDim * 2];
+                double dfR = rgdf[i] + dfMeanR;
+                double dfG = rgdf[i + nDim] + dfMeanG;
+                double dfB = rgdf[i + nDim * 2] + dfMeanB;
 
                 dfR = (dfR - dfMinR) * dfRs + dfMin1;
                 dfG = (dfG - dfMinG) * dfGs + dfMin1;
@@ -400,9 +407,17 @@ namespace MyCaffe.common
             b.mutable_cpu_data = Utility.ConvertVec<T>(rgdf);
         }
 
-        private Bitmap adjustContrast(Image bmp, float fBrightNess = 1.0f, float fContrast = 1.0f, float fGamma = 1.0f)
+        /// <summary>
+        /// The AdjustContrast function adjusts the brightness, contrast and gamma of the image and returns the newly adjusted image.
+        /// </summary>
+        /// <param name="bmp">Specifies the image to adjust.</param>
+        /// <param name="fBrightness">Specifies the brightness to apply.</param>
+        /// <param name="fContrast">Specifies the contrast to apply.</param>
+        /// <param name="fGamma">Specifies the gamma to apply.</param>
+        /// <returns>The updated image is returned.</returns>
+        public static Bitmap AdjustContrast(Image bmp, float fBrightness = 1.0f, float fContrast = 1.0f, float fGamma = 1.0f)
         {
-            float fAdjBrightNess = fBrightNess - 1.0f;
+            float fAdjBrightNess = fBrightness - 1.0f;
             float[][] ptsArray =
             {
                 new float[] { fContrast, 0, 0, 0, 0 },  // scale red.
