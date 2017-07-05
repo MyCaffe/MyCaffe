@@ -264,7 +264,7 @@ namespace MyCaffe.common
 
                         if (nFocusLabel < 0)
                         {
-                            Bitmap bmp1 = AdjustContrast(bmp, 0.8f, 1.2f, 1.8f);
+                            Bitmap bmp1 = AdjustContrast(bmp, 0.9f, 1.6f, 1.2f);
                             bmp.Dispose();
                             bmp = bmp1;
                         }
