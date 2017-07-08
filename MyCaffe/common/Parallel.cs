@@ -375,11 +375,17 @@ namespace MyCaffe.common
 
                 SolverInfo<T> info = new common.SolverInfo<T>(m_solver, m_cuda.KernelHandle, rghNccl[i], i, nIterationOverride, m_cuda.Path, m_rgGradientReady, evtAllCreated);
                 worker.StartInternalThread(null, null, rgGpus[i], info);
-                int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_solver.CancelEvent.Handle, info.ErrorEvent, info.StartedEvent });
-                if (nWait == 0)
+
+                List<WaitHandle> rgWait = new List<WaitHandle>();
+                rgWait.AddRange(m_solver.CancelEvent.Handles);
+                rgWait.Add(info.ErrorEvent);
+                rgWait.Add(info.StartedEvent);
+
+                int nWait = WaitHandle.WaitAny(rgWait.ToArray());
+                if (nWait < rgWait.Count - 2)
                     return;
 
-                if (nWait == 1)
+                if (nWait == rgWait.Count - 2)
                 {
                     if (info.Error != null)
                         throw info.Error;
@@ -472,8 +478,12 @@ namespace MyCaffe.common
                 info.InitializedEvent.Set();
                 m_cuda.SynchronizeDevice();
 
-                int nWait = WaitHandle.WaitAny(new WaitHandle[] { rank0.CancelEvent.Handle, info.AllCreatedEvent });
-                if (nWait == 0)
+                List<WaitHandle> rgWait = new List<WaitHandle>();
+                rgWait.AddRange(rank0.CancelEvent.Handles);
+                rgWait.Add(info.AllCreatedEvent);
+
+                int nWait = WaitHandle.WaitAny(rgWait.ToArray());
+                if (nWait < rgWait.Count - 1)
                     return;
 
                 nccl.Broadcast();

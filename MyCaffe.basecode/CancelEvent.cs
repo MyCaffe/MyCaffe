@@ -18,6 +18,7 @@ namespace MyCaffe.basecode
         bool m_bOwnOriginal = false;
         ManualResetEvent m_evtOriginalCancel = null;
         ManualResetEvent m_evtCancel = null;
+        WaitHandle m_hCancellation = null;
 
         /// <summary>
         /// The CancelEvent constructor.
@@ -37,6 +38,15 @@ namespace MyCaffe.basecode
         {
             m_evtOriginalCancel = evtCancel;
             m_evtCancel = evtCancel;
+        }
+
+        /// <summary>
+        /// The CancelEvent constructor that accepts a CancellationToken.
+        /// </summary>
+        /// <param name="cancellationToken">Specifies the CancellationToken to attach to.</param>
+        public CancelEvent(CancellationToken cancellationToken)
+        {
+            m_hCancellation = cancellationToken.WaitHandle;
         }
 
         /// <summary>
@@ -74,15 +84,35 @@ namespace MyCaffe.basecode
         /// <returns>If the CancelEvent is in the signal state, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
         public bool WaitOne(int nMs = int.MaxValue)
         {
+            if (m_hCancellation != null)
+            {
+                WaitHandle[] rgWait = new WaitHandle[] { m_evtCancel, m_hCancellation };
+
+                if (WaitHandle.WaitAny(rgWait) == WaitHandle.WaitTimeout)
+                    return false;
+
+                return true;
+            }
+
             return m_evtCancel.WaitOne(nMs);
         }
 
         /// <summary>
         /// Returns the internal wait handle of the CancelEvent.
         /// </summary>
-        public WaitHandle Handle
+        public WaitHandle[] Handles
         {
-            get { return m_evtCancel; }
+            get
+            {
+                List<WaitHandle> rgHandles = new List<WaitHandle>();
+
+                rgHandles.Add(m_evtCancel);
+
+                if (m_hCancellation != null)
+                    rgHandles.Add(m_hCancellation);
+
+                return rgHandles.ToArray();
+            }
         }
 
         #region IDisposable Support

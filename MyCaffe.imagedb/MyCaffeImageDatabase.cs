@@ -354,7 +354,7 @@ namespace MyCaffe.imagedb
                     List<WaitHandle> rgAbort = new List<WaitHandle>() { m_evtAbortInitialization };
 
                     if (evtCancel != null)
-                        rgAbort.Add(evtCancel.Handle);
+                        rgAbort.AddRange(evtCancel.Handles);
 
                     DatasetExCollection col = null;
 
@@ -460,7 +460,7 @@ namespace MyCaffe.imagedb
                 List<WaitHandle> rgAbort = new List<WaitHandle>() { m_evtAbortInitialization };
 
                 if (evtCancel != null)
-                    rgAbort.Add(evtCancel.Handle);
+                    rgAbort.AddRange(evtCancel.Handles);
 
                 if (!m_colDatasets.ContainsKey(m_nStrIDHashCode))
                     return false;

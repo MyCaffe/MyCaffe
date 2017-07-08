@@ -392,8 +392,11 @@ namespace MyCaffe.app
 
             while (!m_evtCancel.WaitOne(0))
             {
-                WaitHandle[] rgWait = new WaitHandle[] { m_evtCancel.Handle, m_evtCommandRead };
-                int nWait = WaitHandle.WaitAny(rgWait);
+                List<WaitHandle> rgWait = new List<WaitHandle>();
+                rgWait.AddRange(m_evtCancel.Handles);
+                rgWait.Add(m_evtCommandRead);
+
+                int nWait = WaitHandle.WaitAny(rgWait.ToArray());
 
                 if (nWait > 0)
                 {

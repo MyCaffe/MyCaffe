@@ -50,7 +50,7 @@ namespace MyCaffe.common
                 if (m_evtCancel == null)
                     return false;
 
-                WaitHandle hCancel = m_evtCancel.Handle;
+                WaitHandle[] rghCancel = m_evtCancel.Handles;
 
                 if (m_evtAbort == null)
                     return false;
@@ -62,8 +62,13 @@ namespace MyCaffe.common
 
                 ManualResetEvent evtReady = m_evtReady;
 
-                int nWait = WaitHandle.WaitAny(new WaitHandle[] { hCancel, evtAbort, evtReady });
-                if (nWait <= 1)
+                List<WaitHandle> rgWait = new List<WaitHandle>();
+                rgWait.AddRange(rghCancel);
+                rgWait.Add(evtAbort);
+                rgWait.Add(evtReady);
+
+                int nWait = WaitHandle.WaitAny(rgWait.ToArray());
+                if (nWait < rgWait.Count-1)
                     return false;
 
                 evtReady.Reset();
@@ -120,7 +125,7 @@ namespace MyCaffe.common
                 if (m_evtCancel == null)
                     return false;
 
-                WaitHandle hCancel = m_evtCancel.Handle;
+                WaitHandle[] rghCancel = m_evtCancel.Handles;
 
                 if (m_evtAbort == null)
                     return false;
@@ -132,8 +137,13 @@ namespace MyCaffe.common
 
                 ManualResetEvent evtReady = m_evtReady;
 
-                int nWait = WaitHandle.WaitAny(new WaitHandle[] { hCancel, evtAbort, evtReady });
-                if (nWait <= 1)
+                List<WaitHandle> rgWait = new List<WaitHandle>();
+                rgWait.AddRange(rghCancel);
+                rgWait.Add(evtAbort);
+                rgWait.Add(evtReady);
+
+                int nWait = WaitHandle.WaitAny(rgWait.ToArray());
+                if (nWait < rgWait.Count - 1)
                     return false;
 
                 evtReady.Reset();

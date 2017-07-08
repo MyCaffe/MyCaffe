@@ -258,7 +258,11 @@ namespace MyCaffe.test
             : base(strName, null, nDeviceID)
         {
             m_engine = engine;
-            m_rgevtCancel = new WaitHandle[] { m_evtCancel.Handle };
+
+            List<WaitHandle> rgWait = new List<WaitHandle>();
+            rgWait.AddRange(m_evtCancel.Handles);
+
+            m_rgevtCancel = rgWait.ToArray();
             m_settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
         }
 

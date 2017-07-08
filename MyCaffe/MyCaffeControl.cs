@@ -1062,11 +1062,13 @@ namespace MyCaffe
             colBottom.Add(blobInput);
 
             m_solver.CancelEvent.Reset();
-            WaitHandle[] rgWait = new WaitHandle[] { m_solver.CancelEvent.Handle, m_solver.CompletedEvent };
+            List<WaitHandle> rgWait = new List<WaitHandle>();
+            rgWait.AddRange(m_solver.CancelEvent.Handles);
+            rgWait.Add(m_solver.CompletedEvent);
             int nWait;
             int nBatchIdx = 0;
 
-            while ((nWait = WaitHandle.WaitAny(rgWait, 0)) == WaitHandle.WaitTimeout)
+            while ((nWait = WaitHandle.WaitAny(rgWait.ToArray(), 0)) == WaitHandle.WaitTimeout)
             {
                 double dfLoss;
                 BlobCollection<T> colResults = m_solver.TrainingNet.Forward(colBottom, out dfLoss);
@@ -1111,7 +1113,7 @@ namespace MyCaffe
 
             blobInput.Dispose();
 
-            if (nWait < 1)
+            if (nWait < rgWait.Count-1)
                 return false;
 
             return true;
