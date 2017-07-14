@@ -181,7 +181,7 @@ namespace MyCaffe.test
 
             SourceDescriptor srcTrain = new SourceDescriptor(0, strDs + ".training", 500, 500, 3, false);
             SourceDescriptor srcTest = new SourceDescriptor(0, strDs + ".testing", 500, 500, 3, false);
-            DatasetDescriptor ds = new DatasetDescriptor(0, strDs, null, null, srcTrain, srcTest, "");
+            DatasetDescriptor ds = new DatasetDescriptor(0, strDs, null, null, srcTrain, srcTest, "", "Testing Dataset");
 
             factory.AddDataset(ds);
 

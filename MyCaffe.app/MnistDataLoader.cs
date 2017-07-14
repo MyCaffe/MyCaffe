@@ -44,7 +44,7 @@ namespace MyCaffe.app
             DatasetFactory factory = new DatasetFactory();
             SourceDescriptor srcTrain = factory.LoadSource("MNIST.training");
             SourceDescriptor srcTest = factory.LoadSource("MNIST.testing");
-            DatasetDescriptor ds = new DatasetDescriptor(0, "MNIST", null, null, srcTrain, srcTest, "MNIST");
+            DatasetDescriptor ds = new DatasetDescriptor(0, "MNIST", null, null, srcTrain, srcTest, "MNIST", "MNIST Character Dataset");
             factory.AddDataset(ds);
             factory.UpdateDatasetCounts(ds.ID);
         }

@@ -30,5 +30,6 @@ namespace MyCaffe.imagedb
         public Nullable<decimal> TestingPercent { get; set; }
         public Nullable<bool> Relabeled { get; set; }
         public string OwnerID { get; set; }
+        public string Description { get; set; }
     }
 }

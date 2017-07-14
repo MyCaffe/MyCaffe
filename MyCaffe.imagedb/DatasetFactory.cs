@@ -860,6 +860,16 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Update the description of a given dataset.
+        /// </summary>
+        /// <param name="nDsId">Specifies the ID of the dataset to update.</param>
+        /// <param name="strDesc">Specifies the new description.</param>
+        public void UpdateDatasetDescription(int nDsId, string strDesc)
+        {
+            m_db.UpdateDatasetDescription(nDsId, strDesc);
+        }
+
+        /// <summary>
         /// Updates the dataset counts, and training/testing source counts.
         /// </summary>
         /// <param name="nDsId"></param>
@@ -1406,7 +1416,7 @@ namespace MyCaffe.imagedb
             SourceDescriptor srcTest = LoadSource(ds.TestingSourceID.GetValueOrDefault());
             GroupDescriptor dsGroup = LoadDatasetGroup(ds.DatasetGroupID.GetValueOrDefault());
             GroupDescriptor mdlGroup = LoadModelGroup(ds.ModelGroupID.GetValueOrDefault());
-            DatasetDescriptor dsDesc = new DatasetDescriptor(ds.ID, ds.Name, mdlGroup, dsGroup, srcTrain, srcTest, m_db.GetDatasetCreatorName(ds.DatasetCreatorID.GetValueOrDefault()), ds.OwnerID);
+            DatasetDescriptor dsDesc = new DatasetDescriptor(ds.ID, ds.Name, mdlGroup, dsGroup, srcTrain, srcTest, m_db.GetDatasetCreatorName(ds.DatasetCreatorID.GetValueOrDefault()), ds.OwnerID, ds.Description);
 
             dsDesc.Parameters = LoadDatasetParameters(ds.ID);
 

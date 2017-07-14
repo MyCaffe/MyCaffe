@@ -51,6 +51,7 @@
           <Property Name="TestingPercent" Type="numeric" Precision="12" Scale="5" />
           <Property Name="Relabeled" Type="bit" />
           <Property Name="OwnerID" Type="nvarchar" MaxLength="60" />
+          <Property Name="Description" Type="text" />
         </EntityType>
         <EntityType Name="LabelBoosts">
           <Key>
@@ -394,6 +395,7 @@
           <Property Name="TestingPercent" Type="Decimal" Precision="12" Scale="5" />
           <Property Name="Relabeled" Type="Boolean" />
           <Property Name="OwnerID" Type="String" MaxLength="60" FixedLength="false" Unicode="true" />
+          <Property Name="Description" Type="String" MaxLength="Max" FixedLength="false" Unicode="false" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -573,6 +575,7 @@
           <EntitySetMapping Name="Datasets">
             <EntityTypeMapping TypeName="DNNModel.Dataset">
               <MappingFragment StoreEntitySet="Datasets">
+                <ScalarProperty Name="Description" ColumnName="Description" />
                 <ScalarProperty Name="OwnerID" ColumnName="OwnerID" />
                 <ScalarProperty Name="Relabeled" ColumnName="Relabeled" />
                 <ScalarProperty Name="TestingPercent" ColumnName="TestingPercent" />

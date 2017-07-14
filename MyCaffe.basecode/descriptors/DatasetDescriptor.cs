@@ -20,6 +20,7 @@ namespace MyCaffe.basecode.descriptors
         GroupDescriptor m_groupModel;
         ParameterDescriptorCollection m_colParameters = new ParameterDescriptorCollection();
         string m_strCreatorName;
+        string m_strDescription;
 
         /// <summary>
         /// The DatasetDescriptor constructor.
@@ -31,8 +32,9 @@ namespace MyCaffe.basecode.descriptors
         /// <param name="srcTrain">Specifies the data source for training.</param>
         /// <param name="srcTest">Specifies the data source for testing.</param>
         /// <param name="strCreatorName">Specifies the dataset creator name.</param>
+        /// <param name="strDescription">Specifies a description of the dataset.</param>
         /// <param name="strOwner">Specifies the identifier of the item's owner.</param>
-        public DatasetDescriptor(int nID, string strName, GroupDescriptor grpModel, GroupDescriptor grpDs, SourceDescriptor srcTrain, SourceDescriptor srcTest, string strCreatorName, string strOwner = null)
+        public DatasetDescriptor(int nID, string strName, GroupDescriptor grpModel, GroupDescriptor grpDs, SourceDescriptor srcTrain, SourceDescriptor srcTest, string strCreatorName, string strDescription, string strOwner = null)
             : base(nID, strName, strOwner)
         {
             if (grpModel != null)
@@ -51,6 +53,7 @@ namespace MyCaffe.basecode.descriptors
             if (srcTrain != null)
                 m_srcTrain = new SourceDescriptor(srcTrain);
 
+            m_strDescription = strDescription;
             m_strCreatorName = strCreatorName;
         }
 
@@ -59,7 +62,7 @@ namespace MyCaffe.basecode.descriptors
         /// </summary>
         /// <param name="strName">Specifies the name of the item.</param>
         public DatasetDescriptor(string strName)
-            : this(0, strName, null, null, null, null, null)
+            : this(0, strName, null, null, null, null, null, "")
         {
         }
 
@@ -68,7 +71,7 @@ namespace MyCaffe.basecode.descriptors
         /// </summary>
         /// <param name="d">Specifies another DatasetDesciptor used to create this one.</param>
         public DatasetDescriptor(DatasetDescriptor d)
-            : this(d.ID, d.Name, d.ModelGroup, d.DatasetGroup, d.TrainingSource, d.TestingSource, d.CreatorName, d.Owner)
+            : this(d.ID, d.Name, d.ModelGroup, d.DatasetGroup, d.TrainingSource, d.TestingSource, d.CreatorName, d.Description, d.Owner)
         {
         }
 
@@ -107,10 +110,11 @@ namespace MyCaffe.basecode.descriptors
             }
 
             m_strCreatorName = ds.m_strCreatorName;
+            m_strDescription = ds.m_strDescription;
         }
 
         /// <summary>
-        /// Return the dataset group.
+        /// Returns the dataset group.
         /// </summary>
         [Category("Groups"), Description("Specifies the dataset group (if any).")]
         public GroupDescriptor DatasetGroup
@@ -149,7 +153,7 @@ namespace MyCaffe.basecode.descriptors
         }
 
         /// <summary>
-        /// Return the training source name, or <i>null</i> if not specifies.
+        /// Returns the training source name, or <i>null</i> if not specifies.
         /// </summary>
         [Browsable(false)]
         public string TrainingSourceName
@@ -158,7 +162,7 @@ namespace MyCaffe.basecode.descriptors
         }
 
         /// <summary>
-        /// Return the testing source name or <i>null</i> if not specified.
+        /// Returns the testing source name or <i>null</i> if not specified.
         /// </summary>
         [Browsable(false)]
         public string TestingSourceName
@@ -167,12 +171,22 @@ namespace MyCaffe.basecode.descriptors
         }
 
         /// <summary>
-        /// Return the dataset creator name.
+        /// Returns the dataset creator name.
         /// </summary>
         [Description("Specifies the name of the creator used to create this dataset.")]
         public string CreatorName
         {
             get { return m_strCreatorName; }
+        }
+
+        /// <summary>
+        /// Get/set the description of the Dataset.
+        /// </summary>
+        [Description("Specifies the description of this dataset.")]
+        public string Description
+        {
+            get { return m_strDescription; }
+            set { m_strDescription = value; }
         }
 
         /// <summary>

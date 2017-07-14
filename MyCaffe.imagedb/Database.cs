@@ -2653,6 +2653,25 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Update the description of a given dataset.
+        /// </summary>
+        /// <param name="nDsId">Specifies the ID of the dataset to update.</param>
+        /// <param name="strDesc">Specifies the new description.</param>
+        public void UpdateDatasetDescription(int nDsId, string strDesc)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<Dataset> rgDs = entities.Datasets.Where(p => p.ID == nDsId).ToList();
+
+                if (rgDs.Count == 0)
+                    return;
+
+                rgDs[0].Description = strDesc;
+                entities.SaveChanges();
+            }
+        }
+
+        /// <summary>
         /// Update the dataset counts.
         /// </summary>
         /// <param name="nDsId">Specifies the ID of the dataset to update.</param>

@@ -46,7 +46,7 @@ namespace MyCaffe.app
             DatasetFactory factory = new DatasetFactory();
             SourceDescriptor srcTrain = factory.LoadSource("CIFAR-10.training");
             SourceDescriptor srcTest = factory.LoadSource("CIFAR-10.testing");
-            DatasetDescriptor ds = new DatasetDescriptor(0, "CIFAR-10", null, null, srcTrain, srcTest, "CIFAR-10");
+            DatasetDescriptor ds = new DatasetDescriptor(0, "CIFAR-10", null, null, srcTrain, srcTest, "CIFAR-10", "CiFar-10 Dataset");
             factory.AddDataset(ds);
             factory.UpdateDatasetCounts(ds.ID);
         }
