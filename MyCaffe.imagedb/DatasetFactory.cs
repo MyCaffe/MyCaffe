@@ -31,6 +31,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         public DatasetFactory()
         {
+            m_db = new Database();
         }
 
         /// <summary>
@@ -80,13 +81,14 @@ namespace MyCaffe.imagedb
         /// Open a given data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source to use.</param>
-        /// <param name="nCacheMax">Specifies the maximum cache count to use when adding RawImages (default = 500).</param>
-        public void Open(int nSrcId, int nCacheMax = 500)
+        /// <param name="nCacheMax">Optionally, specifies the maximum cache count to use when adding RawImages (default = 500).</param>
+        /// <param name="bForceLoadImageFilePath">Optionally specfies to force load the image file path (default = <i>false</i>).</param>
+        public void Open(int nSrcId, int nCacheMax = 500, bool bForceLoadImageFilePath = false)
         {
             if (m_openSource == null)
                 m_openSource = LoadSource(nSrcId);
 
-            m_db.Open(nSrcId);
+            m_db.Open(nSrcId, bForceLoadImageFilePath);
             m_imageCache = new imagedb.ImageCache(nCacheMax);
         }
 
@@ -637,7 +639,7 @@ namespace MyCaffe.imagedb
         /// <returns>The ID of the data source added is returned.</returns>
         public int AddSource(SourceDescriptor src)
         {
-            src.ID = m_db.AddSource(src.Name, src.ImageChannels, src.ImageWidth, src.ImageHeight, src.IsRealData);
+            src.ID = m_db.AddSource(src.Name, src.ImageChannels, src.ImageWidth, src.ImageHeight, src.IsRealData, src.SaveImagesToFile);
             return src.ID;
         }
 
@@ -649,10 +651,11 @@ namespace MyCaffe.imagedb
         /// <param name="nWidth">Specifies the width of each item.</param>
         /// <param name="nHeight">Specifies the height of each item.</param>
         /// <param name="bDataIsReal">Specifies whether or not the item uses real or <i>byte</i> data.</param>
+        /// <param name="bSaveImagesToFile">Optionally, specifies whether or not to save the images to the file system (<i>true</i>) or directly into the database (<i>false</i>).  The default is <i>true</i>.</param>
         /// <returns>The ID of the data source added is returned.</returns>
-        public int AddSource(string strName, int nChannels, int nWidth, int nHeight, bool bDataIsReal)
+        public int AddSource(string strName, int nChannels, int nWidth, int nHeight, bool bDataIsReal, bool bSaveImagesToFile = true)
         {
-            return m_db.AddSource(strName, nChannels, nWidth, nHeight, bDataIsReal);
+            return m_db.AddSource(strName, nChannels, nWidth, nHeight, bDataIsReal, bSaveImagesToFile);
         }
 
         /// <summary>
@@ -798,6 +801,26 @@ namespace MyCaffe.imagedb
             return m_db.GetLastTimeStamp(nSrcId, strDesc);
         }
 
+        public List<int> GetAllDataSourceIDs() /** @private */
+        {
+            return m_db.GetAllDataSourcesIDs();
+        }
+
+        public bool ConvertRawImagesSaveToFile(int nIdx, int nCount) /** @private */
+        {
+            return m_db.ConvertRawImagesSaveToFile(nIdx, nCount);
+        }
+
+        public bool ConvertRawImagesSaveToDatabase(int nIdx, int nCount) /** @private */
+        {
+            return m_db.ConvertRawImagesSaveToDatabase(nIdx, nCount);
+        }
+
+        public void UpdateSaveImagesToFile(bool bSaveToFile, int nSrcId = 0) /** @private */
+        {
+            m_db.UpdateSaveImagesToFile(bSaveToFile, nSrcId);
+        }
+
         #endregion
 
 
@@ -876,7 +899,7 @@ namespace MyCaffe.imagedb
         public void UpdateDatasetCounts(int nDsId)
         {
             Dataset ds = m_db.GetDataset(nDsId);
-            Database db = new imagedb.Database();
+            Database db = new Database();
 
             db.Open(ds.TestingSourceID.GetValueOrDefault());
             db.UpdateSourceCounts();
@@ -1073,8 +1096,7 @@ namespace MyCaffe.imagedb
             if (img.ActiveLabel != (int)nLabel)
                 throw new Exception("The raw image with ID = " + nImageId.ToString() + " does not have a label equal to the expected label of " + nLabel.ToString());
 
-            DatasetFactory factory = new DatasetFactory();
-            return new Datum(factory.LoadDatum(img));
+            return new Datum(LoadDatum(img));
         }
 
         /// <summary>
@@ -1252,6 +1274,7 @@ namespace MyCaffe.imagedb
                                                             src.ImageWidth.GetValueOrDefault(),
                                                             src.ImageChannels.GetValueOrDefault(),
                                                             src.ImageEncoded.GetValueOrDefault(),
+                                                            src.SaveImagesToFile.GetValueOrDefault(),
                                                             src.OwnerID,
                                                             src.ImageCount.GetValueOrDefault());
             srcDesc.Labels = LoadLabels(nSrcId);

@@ -398,10 +398,10 @@ namespace MyCaffe.test
             DatasetFactory factory = new DatasetFactory();
 
             m_log.WriteLine("Creating temporary dataset '" + m_strSrc1 + "'.");
-            SourceDescriptor src1 = new SourceDescriptor(0, m_strSrc1, 2, 4, 3, false);
+            SourceDescriptor src1 = new SourceDescriptor(0, m_strSrc1, 2, 4, 3, false, true);
             src1.ID = factory.AddSource(src1);
             m_nSrcID1 = src1.ID;
-            SourceDescriptor src2 = new SourceDescriptor(0, m_strSrc2, 2, 4, 3, false);
+            SourceDescriptor src2 = new SourceDescriptor(0, m_strSrc2, 2, 4, 3, false, true);
             src2.ID = factory.AddSource(src2);
             m_nSrcID2 = src2.ID;
 
@@ -445,9 +445,9 @@ namespace MyCaffe.test
 
             string strName = m_strSrc1 + ".x";
             m_log.WriteLine("Creating temporary dataset '" + m_strSrc1 + "'.");
-            SourceDescriptor src1 = new SourceDescriptor(0, strName, 2, 4, 3, false);
+            SourceDescriptor src1 = new SourceDescriptor(0, strName, 2, 4, 3, false, true);
             m_nSrcID1 = factory.AddSource(src1);
-            SourceDescriptor src2 = new SourceDescriptor(0, strName + ".t", 2, 4, 3, false);
+            SourceDescriptor src2 = new SourceDescriptor(0, strName + ".t", 2, 4, 3, false, true);
             m_nSrcID2 = factory.AddSource(src2);
 
             List<SourceDescriptor> rgSrcId = new List<SourceDescriptor>() { src1, src2 };

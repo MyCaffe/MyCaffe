@@ -672,8 +672,8 @@ namespace MyCaffe.test
             deleteSimpleDataset(false);
 
             DatasetFactory dsFactory = new DatasetFactory();
-            SourceDescriptor srcTest = new SourceDescriptor(0, "simple.test", 2, 2, 1, false, null, 4);
-            SourceDescriptor srcTrain = new SourceDescriptor(0, "simple.train", 2, 2, 1, false, null, 4);
+            SourceDescriptor srcTest = new SourceDescriptor(0, "simple.test", 2, 2, 1, false, false, null, 4);
+            SourceDescriptor srcTrain = new SourceDescriptor(0, "simple.train", 2, 2, 1, false, false, null, 4);
             DatasetDescriptor ds = new DatasetDescriptor(0, "simple", null, null, srcTrain, srcTest, null, null);
 
             ds.ID = dsFactory.AddDataset(ds);

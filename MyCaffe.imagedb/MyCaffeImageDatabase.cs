@@ -25,7 +25,7 @@ namespace MyCaffe.imagedb
     /// </remarks>
     public partial class MyCaffeImageDatabase : Component, IXImageDatabase 
     {
-        DatasetFactory m_factory = new DatasetFactory();
+        DatasetFactory m_factory;
         string m_strID = "";
         int m_nStrIDHashCode = 0;
         int m_nMaskOutAllButLastColumns = 0;
@@ -60,6 +60,7 @@ namespace MyCaffe.imagedb
         /// <param name="strId">Specifies an identifier for this in memory database instance (default = "default").</param>
         public MyCaffeImageDatabase(Log log = null, string strId = "default")
         {
+            m_factory = new DatasetFactory();
             m_userGuid = Guid.NewGuid();
             m_log = log;
             InitializeComponent();

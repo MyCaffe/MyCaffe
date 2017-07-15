@@ -179,8 +179,8 @@ namespace MyCaffe.test
             if (dsd != null)
                 return;
 
-            SourceDescriptor srcTrain = new SourceDescriptor(0, strDs + ".training", 500, 500, 3, false);
-            SourceDescriptor srcTest = new SourceDescriptor(0, strDs + ".testing", 500, 500, 3, false);
+            SourceDescriptor srcTrain = new SourceDescriptor(0, strDs + ".training", 500, 500, 3, false, true);
+            SourceDescriptor srcTest = new SourceDescriptor(0, strDs + ".testing", 500, 500, 3, false, true);
             DatasetDescriptor ds = new DatasetDescriptor(0, strDs, null, null, srcTrain, srcTest, "", "Testing Dataset");
 
             factory.AddDataset(ds);

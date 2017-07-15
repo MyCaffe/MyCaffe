@@ -370,6 +370,7 @@ ALTER DATABASE [%DBNAME%] SET DB_CHAINING OFF</value>
 	[ImageEncoded] [bit] NULL,
 	[ImageCount] [int] NULL,
 	[OwnerID] [nvarchar](60) NULL,
+	[SaveImagesToFile] [bit] NULL,
  CONSTRAINT [PK_Sources] PRIMARY KEY CLUSTERED 
 (
 	[ID] ASC

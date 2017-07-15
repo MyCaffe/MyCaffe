@@ -19,6 +19,7 @@ namespace MyCaffe.basecode.descriptors
         int m_nImageCh;
         bool m_bIsRealData;
         int m_nImageCount;
+        bool m_bSaveImagesToFile;
         List<LabelDescriptor> m_rgLabels = new List<LabelDescriptor>();
         ParameterDescriptorCollection m_colParameters = new ParameterDescriptorCollection();
         string m_strLabelCounts;
@@ -32,11 +33,12 @@ namespace MyCaffe.basecode.descriptors
         /// <param name="nHt">Specifies the height of each data item.</param>
         /// <param name="nCh">Specifies the channels of each data item.</param>
         /// <param name="bIsRealData">Specifies whether or not the data items contain real data or <i>byte</i> data.</param>
+        /// <param name="bSaveImagesToFile">Specifies whether the images are saved to the file system (<i>true</i>), or directly to the database (<i>false</i>).</param>
         /// <param name="strOwner">Optionally, specifies the identifier of the item's owner.</param>
         /// <param name="nCount">Optionallty, specifies the number of items in the data source.</param>
         /// <param name="rgLabels">Optionally, specifies a list of LabelDescriptors that describe the labels used by the data items.</param>
         /// <param name="strLabelCounts">Optionally, specifies a string containing the label counts.</param>
-        public SourceDescriptor(int nID, string strName, int nWd, int nHt, int nCh, bool bIsRealData, string strOwner = null, int nCount = 0, List<LabelDescriptor> rgLabels = null, string strLabelCounts = null)
+        public SourceDescriptor(int nID, string strName, int nWd, int nHt, int nCh, bool bIsRealData, bool bSaveImagesToFile, string strOwner = null, int nCount = 0, List<LabelDescriptor> rgLabels = null, string strLabelCounts = null)
             : base(nID, strName, strOwner)
         {
             m_nImageHt = nHt;
@@ -46,14 +48,16 @@ namespace MyCaffe.basecode.descriptors
             m_nImageCount = nCount;
             m_strLabelCounts = strLabelCounts;
             m_rgLabels = rgLabels;
+            m_bSaveImagesToFile = bSaveImagesToFile;
         }
 
         /// <summary>
         /// The SourceDescriptor constructor.
         /// </summary>
         /// <param name="strName">Specifies the name of the item.</param>
-        public SourceDescriptor(string strName)
-            : this(0, strName, 0, 0, 0, false)
+        /// <param name="bSaveImagesToFile">Specifies whether the images are saved to the file system (<i>true</i>), or directly to the database (<i>false</i>).</param>
+        public SourceDescriptor(string strName, bool bSaveImagesToFile)
+            : this(0, strName, 0, 0, 0, false, bSaveImagesToFile)
         {
         }
 
@@ -62,7 +66,7 @@ namespace MyCaffe.basecode.descriptors
         /// </summary>
         /// <param name="s">Specifies another SourceDescriptor used to create this one.</param>
         public SourceDescriptor(SourceDescriptor s)
-            : this(s.ID, s.Name, s.ImageWidth, s.ImageHeight, s.ImageChannels, s.IsRealData, s.Owner, s.ImageCount, s.Labels, s.LabelCountsAsText)
+            : this(s.ID, s.Name, s.ImageWidth, s.ImageHeight, s.ImageChannels, s.IsRealData, s.SaveImagesToFile, s.Owner, s.ImageCount, s.Labels, s.LabelCountsAsText)
         {
             m_colParameters = new descriptors.ParameterDescriptorCollection();
             foreach (ParameterDescriptor p in s.m_colParameters)
@@ -84,6 +88,7 @@ namespace MyCaffe.basecode.descriptors
             m_nImageWd = sd.m_nImageWd;
             m_bIsRealData = sd.m_bIsRealData;
             m_nImageCount = sd.m_nImageCount;
+            m_bSaveImagesToFile = sd.m_bSaveImagesToFile;
 
             m_rgLabels = new List<descriptors.LabelDescriptor>();
             foreach (LabelDescriptor ld in sd.m_rgLabels)
@@ -98,6 +103,15 @@ namespace MyCaffe.basecode.descriptors
             }
 
             m_strLabelCounts = sd.m_strLabelCounts;
+        }
+
+        /// <summary>
+        /// Gets whether or not the images are saved to the file system (<i>true</i>), or directly to the database (<i>false</i>).
+        /// </summary>
+        [Description("Specifies whether the images are saved to the file system or directly to the database.")]
+        public bool SaveImagesToFile
+        {
+            get { return m_bSaveImagesToFile; }
         }
 
         /// <summary>

@@ -22,5 +22,6 @@ namespace MyCaffe.imagedb
         public Nullable<bool> ImageEncoded { get; set; }
         public Nullable<int> ImageCount { get; set; }
         public string OwnerID { get; set; }
+        public Nullable<bool> SaveImagesToFile { get; set; }
     }
 }

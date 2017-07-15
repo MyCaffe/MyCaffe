@@ -83,7 +83,7 @@ namespace MyCaffe.app
                 uint cols = image_file.ReadUInt32();
                 int nChannels = 1;  // black and white
 
-                int nSrcId = m_factory.AddSource(strSourceName, nChannels, (int)cols, (int)rows, false);
+                int nSrcId = m_factory.AddSource(strSourceName, nChannels, (int)cols, (int)rows, false, true);
 
                 m_factory.Open(nSrcId);
                 m_factory.DeleteSourceData();

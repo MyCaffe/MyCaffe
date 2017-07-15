@@ -10,6 +10,7 @@ using MyCaffe.basecode.descriptors;
 
 namespace MyCaffe.test
 {
+
     [TestClass]
     public class TestMyCaffeImageDatabase
     {
@@ -845,6 +846,160 @@ namespace MyCaffe.test
             IDisposable idisp = db as IDisposable;
             if (idisp != null)
                 idisp.Dispose();
+        }
+
+        [TestMethod]
+        public void TestDbFilePath()
+        {
+            Database db = new Database();
+
+            string strFile = db.GetDatabaseFilePath("DNN");
+            string strFileImg = db.GetDatabaseImagePath("DNN");
+
+            int nPos = strFileImg.IndexOf(strFile);
+            Assert.AreEqual(nPos, 0);
+
+            string strTemp = strFileImg.Substring(strFile.Length);
+            Assert.AreEqual(strTemp, "Images\\DNN\\");
+        }
+
+        [TestMethod]
+        public void TestPutRawImageToDatabase()
+        {
+            TestPutRawImage(false);
+        }
+
+        [TestMethod]
+        public void TestPutRawImageToFileSystem()
+        {
+            TestPutRawImage(true);
+        }
+
+        public void TestPutRawImage(bool bSaveImagesToFile)
+        {
+            DatasetFactory factory = new DatasetFactory();
+
+            factory.DeleteSources("Test123");
+            int nSrcId = factory.AddSource("Test123", 1, 10, 10, false, bSaveImagesToFile);
+            factory.Open(nSrcId, 10);
+
+            byte[] rgBytes = new byte[10 * 10];
+
+            for (int i = 0; i < 20; i++)
+            {
+                rgBytes[i] = (byte)i;
+                SimpleDatum sd = new SimpleDatum(false, 1, 10, 10, i, DateTime.MinValue, rgBytes.ToList(), null, 0, false, i);
+
+                factory.PutRawImageCache(i, sd);
+            }
+
+            factory.ClearImageCash(true);
+
+            List<RawImage> rgImg = factory.GetRawImagesAt(0, 20);
+            for (int i = 0; i < rgImg.Count; i++)
+            {
+                SimpleDatum sd = factory.LoadDatum(rgImg[i]);
+                bool bEncoded = false;
+                byte[] rgData = sd.GetByteData(out bEncoded);
+
+                for (int j = 0; j < 100; j++)
+                {
+                    if (j <= i)
+                        Assert.AreEqual(rgData[j], j);
+                    else
+                        Assert.AreEqual(rgData[j], 0);
+                }
+            }
+
+            factory.DeleteSources("Test123");
+            factory.Close();
+        }
+
+        [TestMethod]
+        public void ConvertAllRawImagesToFileBased()
+        {
+            DatasetFactory factory = new DatasetFactory();
+
+            List<int> rgSrc = factory.GetAllDataSourceIDs();
+
+            for (int i = 0; i < rgSrc.Count; i++)
+            {
+                int nSrcId = rgSrc[i];
+                SourceDescriptor src = factory.LoadSource(nSrcId);
+
+                Trace.WriteLine("Converting data source '" + src.Name + "' - (" + src.ImageCount.ToString("N0") + " images) to file based...");
+
+                factory.Open(nSrcId, 500, true);
+
+                int nIdx = 0;
+                int nBatchCount = 1000;
+                Stopwatch sw = new Stopwatch();
+
+                sw.Start();
+
+                while (nIdx < src.ImageCount)
+                {
+                    int nImageCount = Math.Min(nBatchCount, src.ImageCount - nIdx);
+                    bool bResult = factory.ConvertRawImagesSaveToFile(nIdx, nImageCount);
+
+                    if (sw.Elapsed.TotalMilliseconds > 1000)
+                    {
+                        double dfTotalPct = (double)i / rgSrc.Count;
+                        double dfPct = (double)nIdx / (double)src.ImageCount;
+                        Trace.WriteLine(dfTotalPct.ToString("P") + " (" + (i+1).ToString() + " of " + rgSrc.Count.ToString() + ") Processing '" + src.Name + "' at " + dfPct.ToString("P"));
+                        sw.Restart();
+                    }
+
+                    nIdx += nImageCount;
+                }
+
+                factory.UpdateSaveImagesToFile(true);
+                factory.Close();
+            }
+        }
+
+
+        [TestMethod]
+        public void ConvertAllRawImagesToDatabaseBased()
+        {
+            DatasetFactory factory = new DatasetFactory();
+
+            List<int> rgSrc = factory.GetAllDataSourceIDs();
+
+            for (int i = 0; i < rgSrc.Count; i++)
+            {
+                int nSrcId = rgSrc[i];
+                SourceDescriptor src = factory.LoadSource(nSrcId);
+
+                Trace.WriteLine("Converting data source '" + src.Name + "' - (" + src.ImageCount.ToString("N0") + " images) to database based...");
+
+                factory.Open(nSrcId, 500, true);
+
+                int nIdx = 0;
+                int nBatchCount = 1000;
+                Stopwatch sw = new Stopwatch();
+
+                sw.Start();
+
+                while (nIdx < src.ImageCount)
+                {
+                    int nImageCount = Math.Min(nBatchCount, src.ImageCount - nIdx);
+                    bool bResult = factory.ConvertRawImagesSaveToDatabase(nIdx, nImageCount);
+
+                    if (sw.Elapsed.TotalMilliseconds > 1000)
+                    {
+                        double dfTotalPct = (double)i / rgSrc.Count;
+                        double dfPct = (double)nIdx / (double)src.ImageCount;
+                        Trace.WriteLine(dfTotalPct.ToString("P") + " (" + (i + 1).ToString() + " of " + rgSrc.Count.ToString() + ") Processing '" + src.Name + "' at " + dfPct.ToString("P"));
+                        sw.Restart();
+                    }
+
+                    nIdx += nImageCount;
+                }
+
+                factory.UpdateSaveImagesToFile(false);
+                factory.Close();
+            }
         }
     }
 

@@ -68,7 +68,7 @@ namespace MyCaffe.app
                 {
                     fs = null;
 
-                    int nSrcId = m_factory.AddSource(strSourceName, 3, 32, 32, false);
+                    int nSrcId = m_factory.AddSource(strSourceName, 3, 32, 32, false, true);
 
                     m_factory.Open(nSrcId);
                     if (nIdx == 0)

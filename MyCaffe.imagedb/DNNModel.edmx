@@ -182,6 +182,7 @@
           <Property Name="ImageEncoded" Type="bit" />
           <Property Name="ImageCount" Type="int" />
           <Property Name="OwnerID" Type="nvarchar" MaxLength="60" />
+          <Property Name="SaveImagesToFile" Type="bit" />
         </EntityType>
         <EntityContainer Name="DNNModelStoreContainer">
           <EntitySet Name="DatasetCreators" EntityType="Self.DatasetCreators" Schema="dbo" store:Type="Tables" />
@@ -342,6 +343,7 @@
           <Property Name="ImageEncoded" Type="Boolean" />
           <Property Name="ImageCount" Type="Int32" />
           <Property Name="OwnerID" Type="String" MaxLength="60" FixedLength="false" Unicode="true" />
+          <Property Name="SaveImagesToFile" Type="Boolean" />
         </EntityType>
         <EntityContainer Name="DNNEntities" annotation:LazyLoadingEnabled="true">
           <EntitySet Name="DatasetGroups" EntityType="Self.DatasetGroup" />
@@ -543,6 +545,7 @@
           <EntitySetMapping Name="Sources">
             <EntityTypeMapping TypeName="DNNModel.Source">
               <MappingFragment StoreEntitySet="Sources">
+                <ScalarProperty Name="SaveImagesToFile" ColumnName="SaveImagesToFile" />
                 <ScalarProperty Name="OwnerID" ColumnName="OwnerID" />
                 <ScalarProperty Name="ID" ColumnName="ID" />
                 <ScalarProperty Name="Name" ColumnName="Name" />

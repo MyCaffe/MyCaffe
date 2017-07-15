@@ -2002,7 +2002,7 @@ namespace MyCaffe.test
             int nCount = nNum * nChannels * nHeight * nWidth;
 
             DatasetFactory factory = new DatasetFactory();
-            SourceDescriptor src = new SourceDescriptor(0, strSrc, nWidth, nHeight, nChannels, true);
+            SourceDescriptor src = new SourceDescriptor(0, strSrc, nWidth, nHeight, nChannels, true, true);
             src.ID = factory.AddSource(src);
 
             factory.Open(src);

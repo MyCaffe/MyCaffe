@@ -20,6 +20,7 @@ namespace MyCaffe.basecode
         bool m_bExistTest = false;
         bool m_bExistTrain = false;
         bool m_bDatasetAdjusted = false;
+        bool m_bDefaultSaveImagesToFile = true;
 
         /// <summary>
         /// The OverrrideModel event fires each time the SetDataset function is called.
@@ -100,10 +101,16 @@ namespace MyCaffe.basecode
             }
 
             if (strSrcTest != null)
-                m_project.Dataset.TestingSource = new SourceDescriptor(strSrcTest);
+            {
+                bool bSaveImagesToFile = (m_project.Dataset.TestingSource != null) ? m_project.Dataset.TestingSource.SaveImagesToFile : m_bDefaultSaveImagesToFile;
+                m_project.Dataset.TestingSource = new SourceDescriptor(strSrcTest, bSaveImagesToFile);
+            }
 
             if (strSrcTrain != null)
-                m_project.Dataset.TrainingSource = new SourceDescriptor(strSrcTrain);
+            {
+                bool bSaveImagesToFile = (m_project.Dataset.TrainingSource != null) ? m_project.Dataset.TrainingSource.SaveImagesToFile : m_bDefaultSaveImagesToFile;
+                m_project.Dataset.TrainingSource = new SourceDescriptor(strSrcTrain, bSaveImagesToFile);
+            }
         }
 
         private void setDatasetToProto(RawProto proto)
