@@ -927,9 +927,9 @@ namespace MyCaffe.imagedb
         {
             if (img.VirtualID == 0)
             {
-                rgDataCriteria = img.DataCriteria;
+                rgDataCriteria = getRawImage(img.DataCriteria);
                 nDataCriteriaFmtId = img.DataCriteriaFormatID;
-                rgDebugData = img.DebugData;
+                rgDebugData = getRawImage(img.DebugData);
                 nDebugDataFmtId = img.DebugDataFormatID;
                 return getRawImage(img.Data);
             }
@@ -947,9 +947,9 @@ namespace MyCaffe.imagedb
                     return null;
                 }
 
-                rgDataCriteria = rgImg[0].DataCriteria;
+                rgDataCriteria = getRawImage(rgImg[0].DataCriteria);
                 nDataCriteriaFmtId = rgImg[0].DataCriteriaFormatID;
-                rgDebugData = rgImg[0].DebugData;
+                rgDebugData = getRawImage(rgImg[0].DebugData);
                 nDebugDataFmtId = rgImg[0].DebugDataFormatID;
 
                 return getRawImage(rgImg[0].Data);
@@ -1116,33 +1116,32 @@ namespace MyCaffe.imagedb
             else
             {
                 img.VirtualID = 0;
-                img.Data = getImageByteData(d, out bEncoded);
+                img.Data = getImageByteData(d.GetByteData(out bEncoded));
                 img.Encoded = bEncoded;
             }
 
             if (d.DebugData != null)
             {
-                img.DebugData = d.DebugData;
+                img.DebugData = getImageByteData(d.DebugData, "dbg");
                 img.DebugDataFormatID = (int)d.DebugDataFormat;
             }
 
             if (d.DataCriteria != null)
             {
-                img.DataCriteria = d.DataCriteria;
+                img.DataCriteria = getImageByteData(d.DataCriteria, "criteria");
                 img.DataCriteriaFormatID = (int)d.DataCriteriaFormat;
             }
 
             return img;
         }
 
-        private byte[] getImageByteData(SimpleDatum d, out bool bEncoded)
+        private byte[] getImageByteData(byte[] rgImg, string strType = null)
         {
-            byte[] rgImg = d.GetByteData(out bEncoded);
-
             if (m_strImgPath == null)
                 return rgImg;
 
-            string strPath = m_strImgPath + Guid.NewGuid().ToString() + ".bin";
+            string strTypeExt = (strType == null) ? "" : "." + strType;
+            string strPath = m_strImgPath + Guid.NewGuid().ToString() + strTypeExt + ".bin";
             File.WriteAllBytes(strPath, rgImg);
 
             string strTag = "PATH:" + strPath;
@@ -1165,24 +1164,54 @@ namespace MyCaffe.imagedb
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
                 List<RawImage> rgImg = entities.RawImages.Where(p => p.SourceID == m_src.ID && p.Idx >= nIdx && p.Active == true).OrderBy(p => p.Idx).Take(nCount).ToList();
+                string strPath;
+                string strImgPath;
+                string strTag;
+                byte[] rgData;
 
                 for (int i=0; i<rgImg.Count; i++)
                 {
                     if (evtCancel != null && evtCancel.WaitOne(0))
                         return false;
 
-                    byte[] rgData = rgImg[i].Data;
-                    if (rgData == null)
-                        continue;
+                    rgData = rgImg[i].Data;
+                    if (rgData != null)
+                    {
+                        strPath = getImagePath(rgData);
+                        if (strPath == null)
+                        {
+                            strImgPath = m_strImgPath + Guid.NewGuid().ToString() + ".bin";
+                            File.WriteAllBytes(strImgPath, rgData);
+                            strTag = "PATH:" + strImgPath;
+                            rgImg[i].Data = Encoding.ASCII.GetBytes(strTag);
+                        }
+                    }
 
-                    string strPath = getImagePath(rgData);
-                    if (strPath != null)
-                        continue;
+                    rgData = rgImg[i].DebugData;
+                    if (rgData != null)
+                    {
+                        strPath = getImagePath(rgData);
+                        if (strPath == null)
+                        {
+                            strImgPath = m_strImgPath + Guid.NewGuid().ToString() + ".dbg.bin";
+                            File.WriteAllBytes(strImgPath, rgData);
+                            strTag = "PATH:" + strImgPath;
+                            rgImg[i].DebugData = Encoding.ASCII.GetBytes(strTag);
+                        }
+                    }
 
-                    string strImgPath = m_strImgPath + Guid.NewGuid().ToString() + ".bin";
-                    File.WriteAllBytes(strImgPath, rgData);
-                    string strTag = "PATH:" + strImgPath;
-                    rgImg[i].Data = Encoding.ASCII.GetBytes(strTag);
+                    rgData = rgImg[i].DataCriteria;
+                    if (rgData != null)
+                    {
+                        strPath = getImagePath(rgData);
+                        if (strPath == null)
+                        {
+                            strImgPath = m_strImgPath + Guid.NewGuid().ToString() + ".criteria.bin";
+                            File.WriteAllBytes(strImgPath, rgData);
+                            strTag = "PATH:" + strImgPath;
+                            rgImg[i].DataCriteria = Encoding.ASCII.GetBytes(strTag);
+                        }
+                    }
                 }
 
                 entities.SaveChanges();
@@ -1209,22 +1238,46 @@ namespace MyCaffe.imagedb
             {
                 List<RawImage> rgImg = entities.RawImages.Where(p => p.SourceID == m_src.ID && p.Idx >= nIdx && p.Active == true).OrderBy(p => p.Idx).Take(nCount).ToList();
                 List<string> rgstrFiles = new List<string>();
+                string strPath;
+                byte[] rgData;
 
                 for (int i = 0; i < rgImg.Count; i++)
                 {
                     if (evtCancel != null && evtCancel.WaitOne(0))
                         return false;
 
-                    byte[] rgData = rgImg[i].Data;
-                    if (rgData == null)
-                        continue;
+                    rgData = rgImg[i].Data;
+                    if (rgData != null)
+                    {
+                        strPath = getImagePath(rgData);
+                        if (strPath != null)
+                        {
+                            rgImg[i].Data = File.ReadAllBytes(strPath);
+                            rgstrFiles.Add(strPath);
+                        }
+                    }
 
-                    string strPath = getImagePath(rgData);
-                    if (strPath == null)
-                        continue;
+                    rgData = rgImg[i].DebugData;
+                    if (rgData != null)
+                    {
+                        strPath = getImagePath(rgData);
+                        if (strPath != null)
+                        {
+                            rgImg[i].DebugData = File.ReadAllBytes(strPath);
+                            rgstrFiles.Add(strPath);
+                        }
+                    }
 
-                    rgImg[i].Data = File.ReadAllBytes(strPath);
-                    rgstrFiles.Add(strPath);
+                    rgData = rgImg[i].DataCriteria;
+                    if (rgData != null)
+                    {
+                        strPath = getImagePath(rgData);
+                        if (strPath != null)
+                        {
+                            rgImg[i].DataCriteria = File.ReadAllBytes(strPath);
+                            rgstrFiles.Add(strPath);
+                        }
+                    }
                 }
 
                 entities.SaveChanges();
