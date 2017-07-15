@@ -837,7 +837,6 @@ namespace MyCaffe
                 return null;
 
             DatasetFactory factory = new DatasetFactory();
-
             return factory.LoadDataset(strTestSrc, strTrainSrc);
         }
 
