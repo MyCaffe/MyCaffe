@@ -130,8 +130,8 @@
     <Compile Include="TestBase.cs" />
     <Compile Include="TestBiasLayer.cs" />
     <Compile Include="TestBlob.cs" />
-    <Compile Include="TestCaffeControl.cs" />
-    <Compile Include="TestCaffeImageDatabase.cs" />
+    <Compile Include="TestMyCaffeControl.cs" />
+    <Compile Include="TestMyCaffeImageDatabase.cs" />
     <Compile Include="TestConcatLayer.cs" />
     <Compile Include="TestConvolutionLayer.cs" />
     <Compile Include="TestCudaDnn.cs" />
