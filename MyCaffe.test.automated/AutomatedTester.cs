@@ -693,7 +693,8 @@ namespace MyCaffe.test.automated
                         }
 
                         rgTest[0].Success = (mi.Status == MethodInfoEx.STATUS.Passed) ? true : false;
-                        rgTest[0].TestTiming = (decimal)mi.TestTiming.TotalMilliseconds;
+                        decimal dTiming = Math.Min(decimal.MaxValue, (decimal)mi.TestTiming.TotalMilliseconds);
+                        rgTest[0].TestTiming = dTiming;
 
                         entities.SaveChanges();
                     }
