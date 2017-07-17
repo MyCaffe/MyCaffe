@@ -880,7 +880,7 @@ namespace MyCaffe.test
             DatasetFactory factory = new DatasetFactory();
 
             factory.DeleteSources("Test123");
-            int nSrcId = factory.AddSource("Test123", 1, 10, 10, false, bSaveImagesToFile);
+            int nSrcId = factory.AddSource("Test123", 1, 10, 10, false, 0, bSaveImagesToFile);
             factory.Open(nSrcId, 10);
 
             byte[] rgBytes = new byte[10 * 10];

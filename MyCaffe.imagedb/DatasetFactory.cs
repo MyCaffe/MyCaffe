@@ -639,7 +639,7 @@ namespace MyCaffe.imagedb
         /// <returns>The ID of the data source added is returned.</returns>
         public int AddSource(SourceDescriptor src)
         {
-            src.ID = m_db.AddSource(src.Name, src.ImageChannels, src.ImageWidth, src.ImageHeight, src.IsRealData, src.SaveImagesToFile);
+            src.ID = m_db.AddSource(src.Name, src.ImageChannels, src.ImageWidth, src.ImageHeight, src.IsRealData, src.CopyOfSourceID, src.SaveImagesToFile);
             return src.ID;
         }
 
@@ -651,11 +651,13 @@ namespace MyCaffe.imagedb
         /// <param name="nWidth">Specifies the width of each item.</param>
         /// <param name="nHeight">Specifies the height of each item.</param>
         /// <param name="bDataIsReal">Specifies whether or not the item uses real or <i>byte</i> data.</param>
+        /// <param name="nCopyOfSourceID">Optionally, specifies the ID of the source from which this source was copied (and has virtual raw image references).  The default 
+        /// of 0 specifies that this is an original source.</param>
         /// <param name="bSaveImagesToFile">Optionally, specifies whether or not to save the images to the file system (<i>true</i>) or directly into the database (<i>false</i>).  The default is <i>true</i>.</param>
         /// <returns>The ID of the data source added is returned.</returns>
-        public int AddSource(string strName, int nChannels, int nWidth, int nHeight, bool bDataIsReal, bool bSaveImagesToFile = true)
+        public int AddSource(string strName, int nChannels, int nWidth, int nHeight, bool bDataIsReal, int nCopyOfSourceID = 0, bool bSaveImagesToFile = true)
         {
-            return m_db.AddSource(strName, nChannels, nWidth, nHeight, bDataIsReal, bSaveImagesToFile);
+            return m_db.AddSource(strName, nChannels, nWidth, nHeight, bDataIsReal, nCopyOfSourceID, bSaveImagesToFile);
         }
 
         /// <summary>
@@ -1275,6 +1277,7 @@ namespace MyCaffe.imagedb
                                                             src.ImageChannels.GetValueOrDefault(),
                                                             src.ImageEncoded.GetValueOrDefault(),
                                                             src.SaveImagesToFile.GetValueOrDefault(),
+                                                            src.CopyOfSourceID.GetValueOrDefault(0),
                                                             src.OwnerID,
                                                             src.ImageCount.GetValueOrDefault());
             srcDesc.Labels = LoadLabels(nSrcId);

@@ -24,7 +24,14 @@ namespace MyCaffe.imagedb
         Source m_src = null;
         DNNEntities m_entities = null;
         List<Label> m_rgLabelCache;
-        string m_strImgPath = null;
+        /// <summary>
+        /// Specifies the base path to the file based data.
+        /// </summary>
+        protected string m_strImgPath = null;
+        /// <summary>
+        /// Specifies whether or not file based data is enabled.
+        /// </summary>
+        protected bool m_bEnableFileBasedData = false;
 
         /// <summary>
         /// The Database constructor.
@@ -81,23 +88,38 @@ namespace MyCaffe.imagedb
             setImagePath(bForceLoadImageFilePath);
         }
 
-        private void setImagePath(bool bForceLoadImageFilePath)
+        /// <summary>
+        /// Sets the image path member to the path used when saving binary data to the file system.
+        /// </summary>
+        /// <param name="bForceLoadImageFilePath">Specifies whether or not to enable saving binary data to the file system.</param>
+        protected virtual void setImagePath(bool bForceLoadImageFilePath)
         {
+            m_strImgPath = getImagePath();
+
             if (m_src.SaveImagesToFile.GetValueOrDefault(false) || bForceLoadImageFilePath)
             {
-                m_strImgPath = getImagePath();
+                m_bEnableFileBasedData = true;
 
                 if (!Directory.Exists(m_strImgPath))
                     Directory.CreateDirectory(m_strImgPath);
             }
         }
 
-        private string getImagePath()
+        /// <summary>
+        /// Returns the base image path used when saving binary data to the file system.
+        /// </summary>
+        /// <returns>The base image path is returned.</returns>
+        protected virtual string getImagePath()
         {
             if (m_src == null)
                 return null;
 
-            return GetDatabaseImagePath(m_entities.Database.Connection.Database) + m_src.Name + "\\";
+            string strSrcName = m_src.Name;
+
+            if (m_src.CopyOfSourceID > 0)
+                strSrcName = GetSourceName(m_src.CopyOfSourceID.GetValueOrDefault());
+
+            return GetDatabaseImagePath(m_entities.Database.Connection.Database) + strSrcName + "\\";
         }
 
         /// <summary>
@@ -109,6 +131,7 @@ namespace MyCaffe.imagedb
             m_entities.Dispose();
             m_entities = null;
             m_strImgPath = null;
+            m_bEnableFileBasedData = false;
         }
 
         /// <summary>
@@ -956,7 +979,13 @@ namespace MyCaffe.imagedb
             }
         }
 
-        private byte[] getRawImage(byte[] rgData)
+        /// <summary>
+        /// Converts a set of bytes from a file path\name by loading its bytes and returning them, or if the original bytes do not
+        /// contain a path, just returns the original bytes.
+        /// </summary>
+        /// <param name="rgData">Specifies the original bytes.</param>
+        /// <returns>The actual data bytes (whether direct or loaded from file) are returned.</returns>
+        protected byte[] getRawImage(byte[] rgData)
         {
             if (rgData == null || rgData.Length < 5)
                 return rgData;
@@ -965,11 +994,19 @@ namespace MyCaffe.imagedb
             if (strPath == null)
                 return rgData;
 
+            if (m_strImgPath == null)
+                throw new Exception("You must open the database on a datasource.");
+
             // Get the file.
-            return File.ReadAllBytes(strPath);
+            return File.ReadAllBytes(m_strImgPath + strPath);
         }
 
-        private string getImagePath(byte[] rgData)
+        /// <summary>
+        /// Returns the file path contained within a byte array or <i>null</i> if no path is found.
+        /// </summary>
+        /// <param name="rgData">Specifies the bytes to check.</param>
+        /// <returns>The actual embedded file path is returned if found, otherwise, <i>null</i> is returned.</returns>
+        protected string getImagePath(byte[] rgData)
         {
             if (rgData == null)
                 return null;
@@ -977,10 +1014,10 @@ namespace MyCaffe.imagedb
             if (rgData.Length < 5)
                 return null;
 
-            if (rgData[0] != 'P' ||
-                rgData[1] != 'A' ||
-                rgData[2] != 'T' ||
-                rgData[3] != 'H' ||
+            if (rgData[0] != 'F' ||
+                rgData[1] != 'I' ||
+                rgData[2] != 'L' ||
+                rgData[3] != 'E' ||
                 rgData[4] != ':')
                 return null;
 
@@ -1116,35 +1153,45 @@ namespace MyCaffe.imagedb
             else
             {
                 img.VirtualID = 0;
-                img.Data = getImageByteData(d.GetByteData(out bEncoded));
+                img.Data = setImageByteData(d.GetByteData(out bEncoded));
                 img.Encoded = bEncoded;
             }
 
             if (d.DebugData != null)
             {
-                img.DebugData = getImageByteData(d.DebugData, "dbg");
+                img.DebugData = setImageByteData(d.DebugData, "dbg");
                 img.DebugDataFormatID = (int)d.DebugDataFormat;
             }
 
             if (d.DataCriteria != null)
             {
-                img.DataCriteria = getImageByteData(d.DataCriteria, "criteria");
+                img.DataCriteria = setImageByteData(d.DataCriteria, "criteria");
                 img.DataCriteriaFormatID = (int)d.DataCriteriaFormat;
             }
 
             return img;
         }
 
-        private byte[] getImageByteData(byte[] rgImg, string strType = null)
+        /// <summary>
+        /// When enabled, saves the bytes to file and returns the file name of the binary file saved as an
+        /// array of bytes..
+        /// </summary>
+        /// <remarks>
+        /// The path format returned is 'FILE:filepath'
+        /// </remarks>
+        /// <param name="rgImg">Specifies the bytes to check for a path.</param>
+        /// <param name="strType">Specifies an extra name to add to the file name.</param>
+        /// <returns></returns>
+        protected byte[] setImageByteData(byte[] rgImg, string strType = null)
         {
-            if (m_strImgPath == null)
+            if (!m_bEnableFileBasedData || rgImg.Length < 100)
                 return rgImg;
 
             string strTypeExt = (strType == null) ? "" : "." + strType;
             string strPath = m_strImgPath + Guid.NewGuid().ToString() + strTypeExt + ".bin";
             File.WriteAllBytes(strPath, rgImg);
 
-            string strTag = "PATH:" + strPath;
+            string strTag = "FILE:" + strPath;
             return Encoding.ASCII.GetBytes(strTag);
         }
 
@@ -1167,22 +1214,29 @@ namespace MyCaffe.imagedb
                 string strPath;
                 string strImgPath;
                 string strTag;
+                string strName;
                 byte[] rgData;
+                List<int?> rgId = new List<int?>();
+                Dictionary<int, string> rgNames = new Dictionary<int, string>();
 
                 for (int i=0; i<rgImg.Count; i++)
                 {
                     if (evtCancel != null && evtCancel.WaitOne(0))
                         return false;
 
+                    strName = Guid.NewGuid().ToString();
+                    rgNames.Add(rgImg[i].ID, strName);
+
+                    rgId.Add(rgImg[i].ID);
                     rgData = rgImg[i].Data;
                     if (rgData != null)
                     {
                         strPath = getImagePath(rgData);
                         if (strPath == null)
                         {
-                            strImgPath = m_strImgPath + Guid.NewGuid().ToString() + ".bin";
-                            File.WriteAllBytes(strImgPath, rgData);
-                            strTag = "PATH:" + strImgPath;
+                            strImgPath = strName + ".bin";
+                            File.WriteAllBytes(m_strImgPath + strImgPath, rgData);
+                            strTag = "FILE:" + strImgPath;
                             rgImg[i].Data = Encoding.ASCII.GetBytes(strTag);
                         }
                     }
@@ -1193,9 +1247,9 @@ namespace MyCaffe.imagedb
                         strPath = getImagePath(rgData);
                         if (strPath == null)
                         {
-                            strImgPath = m_strImgPath + Guid.NewGuid().ToString() + ".dbg.bin";
-                            File.WriteAllBytes(strImgPath, rgData);
-                            strTag = "PATH:" + strImgPath;
+                            strImgPath = strName + ".dbg.bin";
+                            File.WriteAllBytes(m_strImgPath + strImgPath, rgData);
+                            strTag = "FILE:" + strImgPath;
                             rgImg[i].DebugData = Encoding.ASCII.GetBytes(strTag);
                         }
                     }
@@ -1206,10 +1260,31 @@ namespace MyCaffe.imagedb
                         strPath = getImagePath(rgData);
                         if (strPath == null)
                         {
-                            strImgPath = m_strImgPath + Guid.NewGuid().ToString() + ".criteria.bin";
-                            File.WriteAllBytes(strImgPath, rgData);
-                            strTag = "PATH:" + strImgPath;
+                            strImgPath = strName + ".criteria.bin";
+                            File.WriteAllBytes(m_strImgPath + strImgPath, rgData);
+                            strTag = "FILE:" + strImgPath;
                             rgImg[i].DataCriteria = Encoding.ASCII.GetBytes(strTag);
+                        }
+                    }
+                }
+
+                entities.SaveChanges();
+
+                List<RawImageParameter> rgParam = entities.RawImageParameters.Where(p => rgId.Contains(p.RawImageID)).ToList();
+                for (int i = 0; i < rgParam.Count; i++)
+                {
+                    rgData = rgParam[i].Value;
+                    if (rgData != null)
+                    {
+                        strPath = getImagePath(rgData);
+                        if (strPath == null)
+                        {
+                            int nRawImgId = rgParam[i].RawImageID.GetValueOrDefault(0);
+                            string strName1 = rgNames[nRawImgId];
+                            strImgPath = strName1 + ".param_" + rgParam[i].Name + ".bin";
+                            File.WriteAllBytes(m_strImgPath + strImgPath, rgData);
+                            strTag = "FILE:" + strImgPath;
+                            rgParam[i].Value = Encoding.ASCII.GetBytes(strTag);
                         }
                     }
                 }
@@ -1240,6 +1315,7 @@ namespace MyCaffe.imagedb
                 List<string> rgstrFiles = new List<string>();
                 string strPath;
                 byte[] rgData;
+                List<int?> rgId = new List<int?>();
 
                 for (int i = 0; i < rgImg.Count; i++)
                 {
@@ -1252,8 +1328,8 @@ namespace MyCaffe.imagedb
                         strPath = getImagePath(rgData);
                         if (strPath != null)
                         {
-                            rgImg[i].Data = File.ReadAllBytes(strPath);
-                            rgstrFiles.Add(strPath);
+                            rgImg[i].Data = File.ReadAllBytes(m_strImgPath + strPath);
+                            rgstrFiles.Add(m_strImgPath + strPath);
                         }
                     }
 
@@ -1263,8 +1339,8 @@ namespace MyCaffe.imagedb
                         strPath = getImagePath(rgData);
                         if (strPath != null)
                         {
-                            rgImg[i].DebugData = File.ReadAllBytes(strPath);
-                            rgstrFiles.Add(strPath);
+                            rgImg[i].DebugData = File.ReadAllBytes(m_strImgPath + strPath);
+                            rgstrFiles.Add(m_strImgPath + strPath);
                         }
                     }
 
@@ -1274,8 +1350,25 @@ namespace MyCaffe.imagedb
                         strPath = getImagePath(rgData);
                         if (strPath != null)
                         {
-                            rgImg[i].DataCriteria = File.ReadAllBytes(strPath);
-                            rgstrFiles.Add(strPath);
+                            rgImg[i].DataCriteria = File.ReadAllBytes(m_strImgPath + strPath);
+                            rgstrFiles.Add(m_strImgPath + strPath);
+                        }
+                    }
+                }
+
+                entities.SaveChanges();
+
+                List<RawImageParameter> rgParam = entities.RawImageParameters.Where(p => rgId.Contains(p.RawImageID)).ToList();
+                for (int i = 0; i < rgParam.Count; i++)
+                {
+                    rgData = rgParam[i].Value;
+                    if (rgData != null)
+                    {
+                        strPath = getImagePath(rgData);
+                        if (strPath != null)
+                        {
+                            rgParam[i].Value = File.ReadAllBytes(m_strImgPath + strPath);
+                            rgstrFiles.Add(m_strImgPath + strPath);
                         }
                     }
                 }
@@ -1891,7 +1984,7 @@ namespace MyCaffe.imagedb
                 if (rgP.Count == 0)
                     return null;
 
-                return rgP[0].Value;
+                return getRawImage(rgP[0].Value);
             }
         }
 
@@ -1945,7 +2038,7 @@ namespace MyCaffe.imagedb
             }
 
             riP.TextValue = strValue;
-            riP.Value = rgData;
+            riP.Value = setImageByteData(rgData, "param_" + strName);
 
             if (rgP.Count == 0)
                 entities.RawImageParameters.Add(riP);
@@ -1985,7 +2078,7 @@ namespace MyCaffe.imagedb
                 }
 
                 riP.TextValue = strValue;
-                riP.Value = rgData;
+                riP.Value = setImageByteData(rgData, "param_" + strName);
 
                 if (rgP.Count == 0)
                     entities.RawImageParameters.Add(riP);
@@ -2478,9 +2571,10 @@ namespace MyCaffe.imagedb
         /// <param name="nWidth">Specifies the width of each item.</param>
         /// <param name="nHeight">Specifies the height of each item.</param>
         /// <param name="bDataIsReal">Specifies whether or not the item uses real or <i>byte</i> data.</param>
+        /// <param name="nCopyOfSourceID">Optionally, specifies the ID of the source from which this source was copied.  If this is an original source, this parameter should be 0.</param>
         /// <param name="bSaveImagesToFile">Optionally, specifies whether or not to save the images to the file system (<i>true</i>) or directly into the database (<i>false</i>)  The default = <i>true</i>.</param>
         /// <returns>The ID of the data source added is returned.</returns>
-        public int AddSource(string strName, int nChannels, int nWidth, int nHeight, bool bDataIsReal, bool bSaveImagesToFile = true)
+        public int AddSource(string strName, int nChannels, int nWidth, int nHeight, bool bDataIsReal, int nCopyOfSourceID = 0, bool bSaveImagesToFile = true)
         {
             Source src = new Source();
 
@@ -2491,6 +2585,7 @@ namespace MyCaffe.imagedb
             src.ImageEncoded = bDataIsReal;
             src.ImageCount = 0;
             src.SaveImagesToFile = bSaveImagesToFile;
+            src.CopyOfSourceID = nCopyOfSourceID;
 
             return PutSource(src);
         }

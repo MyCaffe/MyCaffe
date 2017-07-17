@@ -23,5 +23,6 @@ namespace MyCaffe.imagedb
         public Nullable<int> ImageCount { get; set; }
         public string OwnerID { get; set; }
         public Nullable<bool> SaveImagesToFile { get; set; }
+        public Nullable<int> CopyOfSourceID { get; set; }
     }
 }

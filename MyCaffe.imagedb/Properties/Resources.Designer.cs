@@ -358,11 +358,11 @@ namespace MyCaffe.imagedb.Properties {
         ///	[ImageCount] [int] NULL,
         ///	[OwnerID] [nvarchar](60) NULL,
         ///	[SaveImagesToFile] [bit] NULL,
+        ///	[CopyOfSourceID] [int] NULL,
         /// CONSTRAINT [PK_Sources] PRIMARY KEY CLUSTERED 
         ///(
         ///	[ID] ASC
-        ///)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
-        ///) ON [rest of string was truncated]&quot;;.
+        ///)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_ [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CreateSourcesTable {
             get {
