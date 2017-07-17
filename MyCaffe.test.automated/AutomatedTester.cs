@@ -587,55 +587,79 @@ namespace MyCaffe.test.automated
             FileInfo fi = new FileInfo(strPath);
             Directory.SetCurrentDirectory(fi.DirectoryName);
 
-            Assembly a = Assembly.LoadFile(m_strPath);
-
-            m_strName = a.FullName;
-
-            foreach (Type t in a.GetTypes())
+            try
             {
-                TestClass tc = new TestClass(t);
-                MethodInfo miDispose = null;
+                Assembly a = Assembly.LoadFile(m_strPath);
 
-                foreach (MethodInfo mi in t.GetMethods())
+                m_strName = a.FullName;
+
+                foreach (Type t in a.GetTypes())
                 {
-                    if (mi.Name == "Dispose")
-                    {
-                        miDispose = mi;
-                    }
-                    else
-                    {
-                        IList<CustomAttributeData> rgAttributes = CustomAttributeData.GetCustomAttributes(mi);
+                    TestClass tc = new TestClass(t);
+                    MethodInfo miDispose = null;
 
-                        foreach (CustomAttributeData data in rgAttributes)
+                    foreach (MethodInfo mi in t.GetMethods())
+                    {
+                        if (mi.Name == "Dispose")
                         {
-                            string strAttribute = data.ToString();
+                            miDispose = mi;
+                        }
+                        else
+                        {
+                            IList<CustomAttributeData> rgAttributes = CustomAttributeData.GetCustomAttributes(mi);
 
-                            if (strAttribute.Contains("TestMethodAttribute"))
+                            foreach (CustomAttributeData data in rgAttributes)
                             {
-                                tc.AddMethod(mi);
-                                break;
+                                string strAttribute = data.ToString();
+
+                                if (strAttribute.Contains("TestMethodAttribute"))
+                                {
+                                    tc.AddMethod(mi);
+                                    break;
+                                }
                             }
                         }
                     }
-                }
 
-                if (tc.Methods.Count > 0)
-                {
-                    if (miDispose != null)
+                    if (tc.Methods.Count > 0)
                     {
-                        foreach (MethodInfoEx mi in tc.Methods)
+                        if (miDispose != null)
                         {
-                            mi.DisposeMethod = miDispose;
+                            foreach (MethodInfoEx mi in tc.Methods)
+                            {
+                                mi.DisposeMethod = miDispose;
+                            }
+
+                            tc.AddMethod(miDispose);
                         }
 
-                        tc.AddMethod(miDispose);
+                        Add(tc);
                     }
-
-                    Add(tc);
                 }
-            }
 
-            m_nTotalTests = totalTestCount;
+                m_nTotalTests = totalTestCount;
+            }
+            catch (Exception excpt)
+            {
+                string strErr = excpt.Message;
+
+                if (excpt.InnerException != null)
+                    strErr += " Inner Exception: " + excpt.InnerException.Message;
+
+                if (excpt is ReflectionTypeLoadException)
+                {
+                    ReflectionTypeLoadException lexcpt = excpt as ReflectionTypeLoadException;
+
+                    foreach (Exception excpt1 in lexcpt.LoaderExceptions)
+                    {
+                        strErr += Environment.NewLine;
+                        strErr += excpt1.Message;
+                    }
+                }
+
+                MessageBox.Show("Error! " + strErr);
+                return;
+            }
         }
 
         public TestClass Find(string strName)
@@ -693,7 +717,7 @@ namespace MyCaffe.test.automated
                         }
 
                         rgTest[0].Success = (mi.Status == MethodInfoEx.STATUS.Passed) ? true : false;
-                        decimal dTiming = Math.Min(decimal.MaxValue, (decimal)mi.TestTiming.TotalMilliseconds);
+                        decimal dTiming = Math.Min(9999999, (decimal)mi.TestTiming.TotalMilliseconds);
                         rgTest[0].TestTiming = dTiming;
 
                         entities.SaveChanges();
