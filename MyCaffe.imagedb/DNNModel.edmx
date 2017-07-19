@@ -148,8 +148,8 @@
           <Property Name="SourceID" Type="int" />
           <Property Name="Idx" Type="int" />
           <Property Name="GroupID" Type="int" />
-          <Property Name="OriginalBoost" Type="int" />
-          <Property Name="ActiveBoost" Type="int" />
+          <Property Name="OriginalBoost" Type="smallint" />
+          <Property Name="ActiveBoost" Type="smallint" />
           <Property Name="AutoLabel" Type="bit" />
           <Property Name="VirtualID" Type="int" />
           <Property Name="RawData" Type="image" />
@@ -158,8 +158,9 @@
           <Property Name="ActiveLabel" Type="int" />
           <Property Name="Active" Type="bit" />
           <Property Name="Description" Type="nvarchar" MaxLength="64" />
-          <Property Name="DebugDataFormatID" Type="int" />
-          <Property Name="DataCriteriaFormatID" Type="int" />
+          <Property Name="DebugDataFormatID" Type="tinyint" />
+          <Property Name="DataCriteriaFormatID" Type="tinyint" />
+          <Property Name="OriginalSourceID" Type="int" />
         </EntityType>
         <EntityType Name="SourceParameters">
           <Key>
@@ -295,34 +296,6 @@
           <Property Name="SourceID" Type="Int32" />
           <Property Name="TimeStamp" Type="DateTime" Precision="3" />
         </EntityType>
-        <EntityType Name="RawImage">
-          <Key>
-            <PropertyRef Name="ID" />
-          </Key>
-          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="Height" Type="Int32" />
-          <Property Name="Width" Type="Int32" />
-          <Property Name="Channels" Type="Int32" />
-          <Property Name="Data" Type="Binary" MaxLength="Max" FixedLength="false" />
-          <Property Name="DebugData" Type="Binary" MaxLength="Max" FixedLength="false" />
-          <Property Name="TimeStamp" Type="DateTime" Precision="3" />
-          <Property Name="Encoded" Type="Boolean" />
-          <Property Name="SourceID" Type="Int32" />
-          <Property Name="Idx" Type="Int32" />
-          <Property Name="GroupID" Type="Int32" />
-          <Property Name="OriginalBoost" Type="Int32" />
-          <Property Name="ActiveBoost" Type="Int32" />
-          <Property Name="AutoLabel" Type="Boolean" />
-          <Property Name="VirtualID" Type="Int32" />
-          <Property Name="RawData" Type="Binary" MaxLength="Max" FixedLength="false" />
-          <Property Name="DataCriteria" Type="Binary" MaxLength="Max" FixedLength="false" />
-          <Property Name="OriginalLabel" Type="Int32" />
-          <Property Name="ActiveLabel" Type="Int32" />
-          <Property Name="Active" Type="Boolean" />
-          <Property Name="Description" Type="String" MaxLength="64" FixedLength="false" Unicode="true" />
-          <Property Name="DebugDataFormatID" Type="Int32" />
-          <Property Name="DataCriteriaFormatID" Type="Int32" />
-        </EntityType>
         <EntityType Name="SourceParameter">
           <Key>
             <PropertyRef Name="ID" />
@@ -356,12 +329,12 @@
           <EntitySet Name="RawImageMeans" EntityType="Self.RawImageMean" />
           <EntitySet Name="RawImageParameters" EntityType="Self.RawImageParameter" />
           <EntitySet Name="RawImageResults" EntityType="Self.RawImageResult" />
-          <EntitySet Name="RawImages" EntityType="Self.RawImage" />
           <EntitySet Name="SourceParameters" EntityType="Self.SourceParameter" />
           <EntitySet Name="Sources" EntityType="Self.Source" />
           <EntitySet Name="DatasetCreators" EntityType="DNNModel.DatasetCreator" />
           <EntitySet Name="ModelGroups" EntityType="DNNModel.ModelGroup" />
           <EntitySet Name="Datasets" EntityType="DNNModel.Dataset" />
+          <EntitySet Name="RawImages" EntityType="DNNModel.RawImage" />
         </EntityContainer>
         <EntityType Name="DatasetCreator">
           <Key>
@@ -400,6 +373,35 @@
           <Property Name="Relabeled" Type="Boolean" />
           <Property Name="OwnerID" Type="String" MaxLength="60" FixedLength="false" Unicode="true" />
           <Property Name="Description" Type="String" MaxLength="Max" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <EntityType Name="RawImage">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Height" Type="Int32" />
+          <Property Name="Width" Type="Int32" />
+          <Property Name="Channels" Type="Int32" />
+          <Property Name="Data" Type="Binary" MaxLength="Max" FixedLength="false" />
+          <Property Name="DebugData" Type="Binary" MaxLength="Max" FixedLength="false" />
+          <Property Name="TimeStamp" Type="DateTime" Precision="3" />
+          <Property Name="Encoded" Type="Boolean" />
+          <Property Name="SourceID" Type="Int32" />
+          <Property Name="Idx" Type="Int32" />
+          <Property Name="GroupID" Type="Int32" />
+          <Property Name="OriginalBoost" Type="Int16" />
+          <Property Name="ActiveBoost" Type="Int16" />
+          <Property Name="AutoLabel" Type="Boolean" />
+          <Property Name="VirtualID" Type="Int32" />
+          <Property Name="RawData" Type="Binary" MaxLength="Max" FixedLength="false" />
+          <Property Name="DataCriteria" Type="Binary" MaxLength="Max" FixedLength="false" />
+          <Property Name="OriginalLabel" Type="Int32" />
+          <Property Name="ActiveLabel" Type="Int32" />
+          <Property Name="Active" Type="Boolean" />
+          <Property Name="Description" Type="String" MaxLength="64" FixedLength="false" Unicode="true" />
+          <Property Name="DebugDataFormatID" Type="Byte" />
+          <Property Name="DataCriteriaFormatID" Type="Byte" />
+          <Property Name="OriginalSourceID" Type="Int32" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -505,35 +507,6 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="RawImages">
-            <EntityTypeMapping TypeName="DNNModel.RawImage">
-              <MappingFragment StoreEntitySet="RawImages">
-                <ScalarProperty Name="DataCriteriaFormatID" ColumnName="DataCriteriaFormatID" />
-                <ScalarProperty Name="DebugDataFormatID" ColumnName="DebugDataFormatID" />
-                <ScalarProperty Name="ID" ColumnName="ID" />
-                <ScalarProperty Name="Height" ColumnName="Height" />
-                <ScalarProperty Name="Width" ColumnName="Width" />
-                <ScalarProperty Name="Channels" ColumnName="Channels" />
-                <ScalarProperty Name="Data" ColumnName="Data" />
-                <ScalarProperty Name="DebugData" ColumnName="DebugData" />
-                <ScalarProperty Name="TimeStamp" ColumnName="TimeStamp" />
-                <ScalarProperty Name="Encoded" ColumnName="Encoded" />
-                <ScalarProperty Name="SourceID" ColumnName="SourceID" />
-                <ScalarProperty Name="Idx" ColumnName="Idx" />
-                <ScalarProperty Name="GroupID" ColumnName="GroupID" />
-                <ScalarProperty Name="OriginalBoost" ColumnName="OriginalBoost" />
-                <ScalarProperty Name="ActiveBoost" ColumnName="ActiveBoost" />
-                <ScalarProperty Name="AutoLabel" ColumnName="AutoLabel" />
-                <ScalarProperty Name="VirtualID" ColumnName="VirtualID" />
-                <ScalarProperty Name="RawData" ColumnName="RawData" />
-                <ScalarProperty Name="DataCriteria" ColumnName="DataCriteria" />
-                <ScalarProperty Name="OriginalLabel" ColumnName="OriginalLabel" />
-                <ScalarProperty Name="ActiveLabel" ColumnName="ActiveLabel" />
-                <ScalarProperty Name="Active" ColumnName="Active" />
-                <ScalarProperty Name="Description" ColumnName="Description" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <EntitySetMapping Name="SourceParameters">
             <EntityTypeMapping TypeName="DNNModel.SourceParameter">
               <MappingFragment StoreEntitySet="SourceParameters">
@@ -597,6 +570,36 @@
                 <ScalarProperty Name="TestingSourceID" ColumnName="TestingSourceID" />
                 <ScalarProperty Name="TrainingSourceID" ColumnName="TrainingSourceID" />
                 <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="RawImages">
+            <EntityTypeMapping TypeName="DNNModel.RawImage">
+              <MappingFragment StoreEntitySet="RawImages">
+                <ScalarProperty Name="OriginalSourceID" ColumnName="OriginalSourceID" />
+                <ScalarProperty Name="DataCriteriaFormatID" ColumnName="DataCriteriaFormatID" />
+                <ScalarProperty Name="DebugDataFormatID" ColumnName="DebugDataFormatID" />
+                <ScalarProperty Name="Description" ColumnName="Description" />
+                <ScalarProperty Name="Active" ColumnName="Active" />
+                <ScalarProperty Name="ActiveLabel" ColumnName="ActiveLabel" />
+                <ScalarProperty Name="OriginalLabel" ColumnName="OriginalLabel" />
+                <ScalarProperty Name="DataCriteria" ColumnName="DataCriteria" />
+                <ScalarProperty Name="RawData" ColumnName="RawData" />
+                <ScalarProperty Name="VirtualID" ColumnName="VirtualID" />
+                <ScalarProperty Name="AutoLabel" ColumnName="AutoLabel" />
+                <ScalarProperty Name="ActiveBoost" ColumnName="ActiveBoost" />
+                <ScalarProperty Name="OriginalBoost" ColumnName="OriginalBoost" />
+                <ScalarProperty Name="GroupID" ColumnName="GroupID" />
+                <ScalarProperty Name="Idx" ColumnName="Idx" />
+                <ScalarProperty Name="SourceID" ColumnName="SourceID" />
+                <ScalarProperty Name="Encoded" ColumnName="Encoded" />
+                <ScalarProperty Name="TimeStamp" ColumnName="TimeStamp" />
+                <ScalarProperty Name="DebugData" ColumnName="DebugData" />
+                <ScalarProperty Name="Data" ColumnName="Data" />
+                <ScalarProperty Name="Channels" ColumnName="Channels" />
+                <ScalarProperty Name="Width" ColumnName="Width" />
+                <ScalarProperty Name="Height" ColumnName="Height" />
                 <ScalarProperty Name="ID" ColumnName="ID" />
               </MappingFragment>
             </EntityTypeMapping>

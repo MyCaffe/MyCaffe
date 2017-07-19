@@ -25,8 +25,8 @@ namespace MyCaffe.imagedb
         public Nullable<int> SourceID { get; set; }
         public Nullable<int> Idx { get; set; }
         public Nullable<int> GroupID { get; set; }
-        public Nullable<int> OriginalBoost { get; set; }
-        public Nullable<int> ActiveBoost { get; set; }
+        public Nullable<short> OriginalBoost { get; set; }
+        public Nullable<short> ActiveBoost { get; set; }
         public Nullable<bool> AutoLabel { get; set; }
         public Nullable<int> VirtualID { get; set; }
         public byte[] RawData { get; set; }
@@ -35,7 +35,8 @@ namespace MyCaffe.imagedb
         public Nullable<int> ActiveLabel { get; set; }
         public Nullable<bool> Active { get; set; }
         public string Description { get; set; }
-        public Nullable<int> DebugDataFormatID { get; set; }
-        public Nullable<int> DataCriteriaFormatID { get; set; }
+        public Nullable<byte> DebugDataFormatID { get; set; }
+        public Nullable<byte> DataCriteriaFormatID { get; set; }
+        public Nullable<int> OriginalSourceID { get; set; }
     }
 }

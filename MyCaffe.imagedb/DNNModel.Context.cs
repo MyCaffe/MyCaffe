@@ -33,11 +33,11 @@ namespace MyCaffe.imagedb
         public virtual DbSet<RawImageMean> RawImageMeans { get; set; }
         public virtual DbSet<RawImageParameter> RawImageParameters { get; set; }
         public virtual DbSet<RawImageResult> RawImageResults { get; set; }
-        public virtual DbSet<RawImage> RawImages { get; set; }
         public virtual DbSet<SourceParameter> SourceParameters { get; set; }
         public virtual DbSet<Source> Sources { get; set; }
         public virtual DbSet<DatasetCreator> DatasetCreators { get; set; }
         public virtual DbSet<ModelGroup> ModelGroups { get; set; }
         public virtual DbSet<Dataset> Datasets { get; set; }
+        public virtual DbSet<RawImage> RawImages { get; set; }
     }
 }

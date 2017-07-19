@@ -24,10 +24,15 @@ namespace MyCaffe.imagedb
         Source m_src = null;
         DNNEntities m_entities = null;
         List<Label> m_rgLabelCache;
+        int m_nSecondarySourceID = 0;
         /// <summary>
         /// Specifies the base path to the file based data.
         /// </summary>
-        protected string m_strImgPath = null;
+        protected string m_strPrimaryImgPath = null;
+        /// <summary>
+        /// Specifies the secondary base path to the file based data (used when copying a data source)
+        /// </summary> 
+        protected string m_strSecondaryImgPath = null;
         /// <summary>
         /// Specifies whether or not file based data is enabled.
         /// </summary>
@@ -94,14 +99,14 @@ namespace MyCaffe.imagedb
         /// <param name="bForceLoadImageFilePath">Specifies whether or not to enable saving binary data to the file system.</param>
         protected virtual void setImagePath(bool bForceLoadImageFilePath)
         {
-            m_strImgPath = getImagePath();
+            m_strPrimaryImgPath = getImagePath();
 
             if (m_src.SaveImagesToFile.GetValueOrDefault(false) || bForceLoadImageFilePath)
             {
                 m_bEnableFileBasedData = true;
 
-                if (!Directory.Exists(m_strImgPath))
-                    Directory.CreateDirectory(m_strImgPath);
+                if (!Directory.Exists(m_strPrimaryImgPath))
+                    Directory.CreateDirectory(m_strPrimaryImgPath);
             }
         }
 
@@ -109,15 +114,18 @@ namespace MyCaffe.imagedb
         /// Returns the base image path used when saving binary data to the file system.
         /// </summary>
         /// <returns>The base image path is returned.</returns>
-        protected virtual string getImagePath()
+        protected virtual string getImagePath(string strSrcName = null)
         {
-            if (m_src == null)
-                return null;
+            if (strSrcName == null)
+            {
+                if (m_src == null)
+                    return null;
 
-            string strSrcName = m_src.Name;
+                strSrcName = m_src.Name;
 
-            if (m_src.CopyOfSourceID > 0)
-                strSrcName = GetSourceName(m_src.CopyOfSourceID.GetValueOrDefault());
+                if (m_src.CopyOfSourceID > 0)
+                    strSrcName = GetSourceName(m_src.CopyOfSourceID.GetValueOrDefault());
+            }
 
             return GetDatabaseImagePath(m_entities.Database.Connection.Database) + strSrcName + "\\";
         }
@@ -130,7 +138,7 @@ namespace MyCaffe.imagedb
             m_src = null;
             m_entities.Dispose();
             m_entities = null;
-            m_strImgPath = null;
+            m_strPrimaryImgPath = null;
             m_bEnableFileBasedData = false;
         }
 
@@ -950,11 +958,11 @@ namespace MyCaffe.imagedb
         {
             if (img.VirtualID == 0)
             {
-                rgDataCriteria = getRawImage(img.DataCriteria);
+                rgDataCriteria = getRawImage(img.DataCriteria, img.OriginalSourceID);
                 nDataCriteriaFmtId = img.DataCriteriaFormatID;
-                rgDebugData = getRawImage(img.DebugData);
+                rgDebugData = getRawImage(img.DebugData, img.OriginalSourceID);
                 nDebugDataFmtId = img.DebugDataFormatID;
-                return getRawImage(img.Data);
+                return getRawImage(img.Data, img.OriginalSourceID);
             }
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
@@ -970,12 +978,12 @@ namespace MyCaffe.imagedb
                     return null;
                 }
 
-                rgDataCriteria = getRawImage(rgImg[0].DataCriteria);
+                rgDataCriteria = getRawImage(rgImg[0].DataCriteria, img.OriginalSourceID);
                 nDataCriteriaFmtId = rgImg[0].DataCriteriaFormatID;
-                rgDebugData = getRawImage(rgImg[0].DebugData);
+                rgDebugData = getRawImage(rgImg[0].DebugData, img.OriginalSourceID);
                 nDebugDataFmtId = rgImg[0].DebugDataFormatID;
 
-                return getRawImage(rgImg[0].Data);
+                return getRawImage(rgImg[0].Data, img.OriginalSourceID);
             }
         }
 
@@ -985,20 +993,36 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="rgData">Specifies the original bytes.</param>
         /// <returns>The actual data bytes (whether direct or loaded from file) are returned.</returns>
-        protected byte[] getRawImage(byte[] rgData)
+        protected byte[] getRawImage(byte[] rgData, int? nSecondarySrcId = null)
         {
             if (rgData == null || rgData.Length < 5)
                 return rgData;
 
-            string strPath = getImagePath(rgData);
-            if (strPath == null)
+            string strFile = getImagePath(rgData);
+            if (strFile == null)
                 return rgData;
 
-            if (m_strImgPath == null)
+            if (m_strPrimaryImgPath == null)
                 throw new Exception("You must open the database on a datasource.");
 
             // Get the file.
-            return File.ReadAllBytes(m_strImgPath + strPath);
+            if (nSecondarySrcId == null)
+                return File.ReadAllBytes(m_strPrimaryImgPath + strFile);
+
+            string strPath = m_strPrimaryImgPath;
+
+            if (!File.Exists(strPath + strFile))
+            {
+                if (nSecondarySrcId.Value != m_nSecondarySourceID)
+                {
+                    m_nSecondarySourceID = nSecondarySrcId.Value;
+                    m_strSecondaryImgPath = getImagePath(GetSourceName(m_nSecondarySourceID));
+                }
+
+                strPath = m_strSecondaryImgPath;
+            }
+
+            return File.ReadAllBytes(strPath + strFile);
         }
 
         /// <summary>
@@ -1135,8 +1159,8 @@ namespace MyCaffe.imagedb
             img.SourceID = m_src.ID;
             img.TimeStamp = (d.TimeStamp < dtMin) ? dtMin : d.TimeStamp;
             img.Idx = nIdx;
-            img.OriginalBoost = d.Boost;
-            img.ActiveBoost = d.Boost;
+            img.OriginalBoost = (short)d.Boost;
+            img.ActiveBoost = (short)d.Boost;
             img.GroupID = d.GroupID;
             img.ActiveLabel = d.Label;
             img.OriginalLabel = d.Label;
@@ -1160,13 +1184,13 @@ namespace MyCaffe.imagedb
             if (d.DebugData != null)
             {
                 img.DebugData = setImageByteData(d.DebugData, "dbg");
-                img.DebugDataFormatID = (int)d.DebugDataFormat;
+                img.DebugDataFormatID = (byte)d.DebugDataFormat;
             }
 
             if (d.DataCriteria != null)
             {
                 img.DataCriteria = setImageByteData(d.DataCriteria, "criteria");
-                img.DataCriteriaFormatID = (int)d.DataCriteriaFormat;
+                img.DataCriteriaFormatID = (byte)d.DataCriteriaFormat;
             }
 
             return img;
@@ -1188,7 +1212,7 @@ namespace MyCaffe.imagedb
                 return rgImg;
 
             string strTypeExt = (strType == null) ? "" : "." + strType;
-            string strPath = m_strImgPath + Guid.NewGuid().ToString() + strTypeExt + ".bin";
+            string strPath = m_strPrimaryImgPath + Guid.NewGuid().ToString() + strTypeExt + ".bin";
             File.WriteAllBytes(strPath, rgImg);
 
             string strTag = "FILE:" + strPath;
@@ -1205,8 +1229,8 @@ namespace MyCaffe.imagedb
         /// <returns>Upon full completion, <i>true</i> is returned, otherwise <i>false</i> is returned when cancelled.</returns>
         public bool ConvertRawImagesSaveToFile(int nIdx, int nCount, ManualResetEvent evtCancel = null)
         {
-            if (m_strImgPath == null)
-                m_strImgPath = getImagePath();
+            if (m_strPrimaryImgPath == null)
+                m_strPrimaryImgPath = getImagePath();
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
@@ -1235,7 +1259,7 @@ namespace MyCaffe.imagedb
                         if (strPath == null)
                         {
                             strImgPath = strName + ".bin";
-                            File.WriteAllBytes(m_strImgPath + strImgPath, rgData);
+                            File.WriteAllBytes(m_strPrimaryImgPath + strImgPath, rgData);
                             strTag = "FILE:" + strImgPath;
                             rgImg[i].Data = Encoding.ASCII.GetBytes(strTag);
                         }
@@ -1248,7 +1272,7 @@ namespace MyCaffe.imagedb
                         if (strPath == null)
                         {
                             strImgPath = strName + ".dbg.bin";
-                            File.WriteAllBytes(m_strImgPath + strImgPath, rgData);
+                            File.WriteAllBytes(m_strPrimaryImgPath + strImgPath, rgData);
                             strTag = "FILE:" + strImgPath;
                             rgImg[i].DebugData = Encoding.ASCII.GetBytes(strTag);
                         }
@@ -1261,7 +1285,7 @@ namespace MyCaffe.imagedb
                         if (strPath == null)
                         {
                             strImgPath = strName + ".criteria.bin";
-                            File.WriteAllBytes(m_strImgPath + strImgPath, rgData);
+                            File.WriteAllBytes(m_strPrimaryImgPath + strImgPath, rgData);
                             strTag = "FILE:" + strImgPath;
                             rgImg[i].DataCriteria = Encoding.ASCII.GetBytes(strTag);
                         }
@@ -1282,7 +1306,7 @@ namespace MyCaffe.imagedb
                             int nRawImgId = rgParam[i].RawImageID.GetValueOrDefault(0);
                             string strName1 = rgNames[nRawImgId];
                             strImgPath = strName1 + ".param_" + rgParam[i].Name + ".bin";
-                            File.WriteAllBytes(m_strImgPath + strImgPath, rgData);
+                            File.WriteAllBytes(m_strPrimaryImgPath + strImgPath, rgData);
                             strTag = "FILE:" + strImgPath;
                             rgParam[i].Value = Encoding.ASCII.GetBytes(strTag);
                         }
@@ -1295,7 +1319,6 @@ namespace MyCaffe.imagedb
             return true;
         }
 
-
         /// <summary>
         /// The ConvertRawImagesSaveToDatabase method saves the image in the file system to the database and deletes the file from
         /// the file system.
@@ -1306,8 +1329,8 @@ namespace MyCaffe.imagedb
         /// <returns>Upon full completion, <i>true</i> is returned, otherwise <i>false</i> is returned when cancelled.</returns>
         public bool ConvertRawImagesSaveToDatabase(int nIdx, int nCount, ManualResetEvent evtCancel = null)
         {
-            if (m_strImgPath == null)
-                m_strImgPath = getImagePath();
+            if (m_strPrimaryImgPath == null)
+                m_strPrimaryImgPath = getImagePath();
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
@@ -1328,8 +1351,8 @@ namespace MyCaffe.imagedb
                         strPath = getImagePath(rgData);
                         if (strPath != null)
                         {
-                            rgImg[i].Data = File.ReadAllBytes(m_strImgPath + strPath);
-                            rgstrFiles.Add(m_strImgPath + strPath);
+                            rgImg[i].Data = File.ReadAllBytes(m_strPrimaryImgPath + strPath);
+                            rgstrFiles.Add(m_strPrimaryImgPath + strPath);
                         }
                     }
 
@@ -1339,8 +1362,8 @@ namespace MyCaffe.imagedb
                         strPath = getImagePath(rgData);
                         if (strPath != null)
                         {
-                            rgImg[i].DebugData = File.ReadAllBytes(m_strImgPath + strPath);
-                            rgstrFiles.Add(m_strImgPath + strPath);
+                            rgImg[i].DebugData = File.ReadAllBytes(m_strPrimaryImgPath + strPath);
+                            rgstrFiles.Add(m_strPrimaryImgPath + strPath);
                         }
                     }
 
@@ -1350,8 +1373,8 @@ namespace MyCaffe.imagedb
                         strPath = getImagePath(rgData);
                         if (strPath != null)
                         {
-                            rgImg[i].DataCriteria = File.ReadAllBytes(m_strImgPath + strPath);
-                            rgstrFiles.Add(m_strImgPath + strPath);
+                            rgImg[i].DataCriteria = File.ReadAllBytes(m_strPrimaryImgPath + strPath);
+                            rgstrFiles.Add(m_strPrimaryImgPath + strPath);
                         }
                     }
                 }
@@ -1367,8 +1390,8 @@ namespace MyCaffe.imagedb
                         strPath = getImagePath(rgData);
                         if (strPath != null)
                         {
-                            rgParam[i].Value = File.ReadAllBytes(m_strImgPath + strPath);
-                            rgstrFiles.Add(m_strImgPath + strPath);
+                            rgParam[i].Value = File.ReadAllBytes(m_strPrimaryImgPath + strPath);
+                            rgstrFiles.Add(m_strPrimaryImgPath + strPath);
                         }
                     }
                 }
@@ -1380,16 +1403,66 @@ namespace MyCaffe.imagedb
                     File.Delete(strFile);
                 }
 
-                if (Directory.Exists(m_strImgPath))
+                if (Directory.Exists(m_strPrimaryImgPath))
                 {
-                    if (Directory.GetFiles(m_strImgPath).Length == 0)
-                        Directory.Delete(m_strImgPath);
+                    if (Directory.GetFiles(m_strPrimaryImgPath).Length == 0)
+                        Directory.Delete(m_strPrimaryImgPath);
                 }
             }
 
             return true;
         }
 
+        /// <summary>
+        /// The FixupRawImageCopy method is used to fixup the OriginalSourceId by setting it to a secondary
+        /// source ID in the event that the path created using the PrimarySourceID does not have the image
+        /// data file.
+        /// </summary>
+        /// <remarks>
+        /// When creating a copy of a Data Source that uses both training and testing Data Sources (e.g., 
+        /// re-arranging the time period used for training vs testing), it is important that the 
+        /// OriginalSourceID be set with the Data Source ID that holds the data file.
+        /// </remarks>
+        /// <param name="nImageID">Specifies the image to update.</param>
+        /// <param name="nSecondarySrcId">Specifies the secondary Source ID to use if the data file is not found.</param>
+        public void FixupRawImageCopy(int nImageID, int nSecondarySrcId)
+        {
+            if (m_strPrimaryImgPath == null)
+                m_strPrimaryImgPath = getImagePath();
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<RawImage> rgImg = entities.RawImages.Where(p => p.ID == nImageID).ToList();
+                if (rgImg.Count > 0)
+                {
+                    string strPath;
+                    int nVirtId = rgImg[0].VirtualID.GetValueOrDefault(0);
+
+                    if (nVirtId > 0)
+                    {
+                        List<RawImage> rgImg2 = entities.RawImages.Where(p => p.ID == nVirtId).ToList();
+                        if (rgImg2.Count > 0)
+                        {
+                            strPath = getImagePath(rgImg2[0].Data);
+                            if (!File.Exists(m_strPrimaryImgPath + strPath))
+                            {
+                                rgImg[0].OriginalSourceID = nSecondarySrcId;
+                                entities.SaveChanges();
+                            }
+                        }
+                    }
+                    else if (rgImg[0].Data != null)
+                    {
+                        strPath = getImagePath(rgImg[0].Data);
+                        if (!File.Exists(m_strPrimaryImgPath + strPath))
+                        {
+                            rgImg[0].OriginalSourceID = nSecondarySrcId;
+                            entities.SaveChanges();
+                        }
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Saves a List of RawImages to the database.

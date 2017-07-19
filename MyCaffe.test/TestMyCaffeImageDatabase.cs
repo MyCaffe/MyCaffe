@@ -7,6 +7,7 @@ using MyCaffe.imagedb;
 using MyCaffe.basecode;
 using System.Diagnostics;
 using MyCaffe.basecode.descriptors;
+using System.IO;
 
 namespace MyCaffe.test
 {
@@ -946,7 +947,7 @@ namespace MyCaffe.test
                     {
                         double dfTotalPct = (double)i / rgSrc.Count;
                         double dfPct = (double)nIdx / (double)src.ImageCount;
-                        Trace.WriteLine(dfTotalPct.ToString("P") + " (" + (i+1).ToString() + " of " + rgSrc.Count.ToString() + ") Processing '" + src.Name + "' at " + dfPct.ToString("P"));
+                        Trace.WriteLine(dfTotalPct.ToString("P") + " (" + (i + 1).ToString() + " of " + rgSrc.Count.ToString() + ") Processing '" + src.Name + "' at " + dfPct.ToString("P"));
                         sw.Restart();
                     }
 

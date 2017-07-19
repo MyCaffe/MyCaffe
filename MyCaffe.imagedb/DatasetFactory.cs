@@ -428,6 +428,22 @@ namespace MyCaffe.imagedb
             m_db.ActivateAllRawImages(rgSrcId);
         }
 
+        /// <summary>
+        /// The FixupRawImageCopy function is used to fix errors in the copy source ID of a copied
+        /// raw image.  For original images, this function does nothing.
+        /// </summary>
+        /// <remarks>
+        /// When creating a copy of a Data Source that uses both training and testing Data Sources (e.g., 
+        /// re-arranging the time period used for training vs testing), it is important that the 
+        /// OriginalSourceID be set with the Data Source ID that holds the data file.
+        /// </remarks>
+        /// <param name="nImageID">Specifies the ID of the raw image to fixup.</param>
+        /// <param name="nSecondarySrcId">Specifies the secondary Source ID to use if the data file is not found.</param>
+        public void FixupRawImageCopy(int nImageID, int nSecondarySrcId)
+        {
+            m_db.FixupRawImageCopy(nImageID, nSecondarySrcId);
+        }
+
         #endregion
 
 
