@@ -381,6 +381,7 @@ class Device
 		long cuda_tsne_compute_knn_bounds(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long cuda_guassian_blur(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_hamming_diff(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 };
 
 

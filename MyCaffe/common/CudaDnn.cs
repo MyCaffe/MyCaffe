@@ -760,7 +760,8 @@ namespace MyCaffe.common
             CUDA_TSNE_COMPUTE_GRADIENT1 = 877,
             CUDA_TSNE_COMPUTE_ERROR1 = 878,
 
-            CUDA_GUASSIAN_BLUR = 900
+            CUDA_GUASSIAN_BLUR = 900,
+            CUDA_HAMMING_DIFF = 901
         }
 
         /// <summary>
@@ -6393,7 +6394,7 @@ namespace MyCaffe.common
 
         #endregion
 
-        #region Image Processing
+        #region Image Processing And Misc
 
         /// <summary>
         /// The gaussian_blur runs a Gaussian blurring operation over each channel of the data using the sigma.
@@ -6418,6 +6419,33 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GUASSIAN_BLUR, new double[] { n, nChannels, nHeight, nWidth, dfSigma, hX, hY });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GUASSIAN_BLUR, new float[] { n, nChannels, nHeight, nWidth, (float)dfSigma, hX, hY });
+        }
+
+        /// <summary>
+        /// The hamming_distance calculates the Hamming Distance between X and Y both of length <i>n</i>.
+        /// </summary>
+        /// <remarks>
+        /// To calculate the hamming distance first, X and Y are bitified where each element is converted to 1 if > than the threshold, or 0 otherwise.
+        /// Next, the bitified versions of X and Y are subtracted from one another, and the Asum of the result is returned, which is the
+        /// number of bits that are different, thus the Hamming distance.
+        /// </remarks>
+        /// <param name="n">Specifies the number of elements to compare in both X and Y.</param>
+        /// <param name="dfThreshold">Specifies the threshold used to 'bitify' both X and Y</param>
+        /// <param name="hA">Specifies the handle to the GPU memory containing the first vector to compare.</param>
+        /// <param name="hB">Specifies the handle to the GPU memory containing the second vector to compare.</param>
+        /// <param name="hY">Specifies the handle to the GPU memory where the hamming difference (bitified A - bitified B) is placed.</param>
+        /// <param name="nOffA">Optionally, specifies an offset into the GPU memory of A, the default is 0.</param>
+        /// <param name="nOffB">Optionally, specifies an offset into the GPU memory of B, the default is 0.</param>
+        /// <param name="nOffY">Optionally, specifies an offset into the GPU memory of Y, the default is 0.</param>
+        /// <returns>The hamming distance is returned.</returns>
+        public double hamming_distance(int n, double dfThreshold, long hA, long hB, long hY, int nOffA = 0, int nOffB = 0, int nOffY = 0)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_HAMMING_DIFF, new double[] { n, dfThreshold, hA, hB, hY, nOffA, nOffB, nOffY });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_HAMMING_DIFF, new float[] { n, (float)dfThreshold, hA, hB, hY, nOffA, nOffB, nOffY });
+
+            return asum_double(n, hY);
         }
 
         #endregion

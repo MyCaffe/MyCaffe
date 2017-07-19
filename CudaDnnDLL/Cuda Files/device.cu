@@ -2989,4 +2989,40 @@ long Device<T>::cuda_guassian_blur(long lInput, T* pfInput, long* plOutput, T** 
 template long Device<double>::cuda_guassian_blur(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
 template long Device<float>::cuda_guassian_blur(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
 
+
+template <class T>
+long Device<T>::cuda_hamming_diff(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 5, 8))
+		return lErr;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	T fThreshold = pfInput[1];
+	long hA = (long)pfInput[2];
+	long hB = (long)pfInput[3];
+	long hY = (long)pfInput[4];
+	int nOffA = 0;
+	int nOffB = 0;
+	int nOffY = 0;
+
+	if (lInput > 5)
+		nOffA = (int)pfInput[5];
+
+	if (lInput > 6)
+		nOffB = (int)pfInput[6];
+
+	if (lInput > 7)
+		nOffY = (int)pfInput[7];
+
+	return m_math.hamming_diff(n, fThreshold, hA, hB, hY, nOffA, nOffB, nOffY);
+}
+
+template long Device<double>::cuda_hamming_diff(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_hamming_diff(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
 //end device.cu

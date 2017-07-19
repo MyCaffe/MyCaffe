@@ -264,6 +264,7 @@ class Math
 		long tsne_compute_knn_bounds(unsigned int n, long hData, T fPctInCircle, T* pfMinX, T* pfMinY, T* pfMaxX, T* pfMaxY);
 
 		long gaussian_blur(int n, int c, int h, int w, T fSigma, long hX, long hY);
+		long hamming_diff(int n, T fThreshold, long hA, long hB, long hY, int nOffA = 0, int nOffB = 0, int nOffY = 0);
 };
 
 

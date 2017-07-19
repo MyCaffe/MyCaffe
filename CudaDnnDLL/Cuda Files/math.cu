@@ -8204,4 +8204,51 @@ long Math<T>::gaussian_blur(int n, int nChannels, int h, int w, T fSigma, long h
 template long Math<double>::gaussian_blur(int n, int c, int h, int w, double dfSigma, long hX, long hY);
 template long Math<float>::gaussian_blur(int n, int c, int h, int w, float fSigma, long hX, long hY);
 
+template <typename T>
+__global__ void hamming_diff_kernel(int n, const T threshold, const T* x, T* y, T* out)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	{
+		out[i] =  ((x[i] > threshold) ? 1 : 0) - ((y[i] > threshold) ? 1 : 0);
+	}
+}
+
+template <class T>
+long Math<T>::hamming_diff(int n, T fThreshold, long hA, long hB, long hY, int nOffA, int nOffB, int nOffY)
+{
+	LONG lErr;
+	MemoryItem* pA;
+	MemoryItem* pB;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hB, &pB))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* a = (T*)pA->Data();
+	T* b = (T*)pB->Data();
+	T* y = (T*)pY->Data();
+
+	if (nOffA > 0)
+		a += nOffA;
+
+	if (nOffB > 0)
+		b += nOffB;
+
+	if (nOffY > 0)
+		y += nOffY;
+
+	hamming_diff_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fThreshold, a, b, y);
+	
+	return cudaGetLastError();
+}
+
+template long Math<double>::hamming_diff(int n, double dfThreshold, long hA, long hB, long hY, int nOffA, int nOffB, int nOffY);
+template long Math<float>::hamming_diff(int n, float fThreshold, long hA, long hB, long hY, int nOffA, int nOffB, int nOffY);
+
 //end math.cu
