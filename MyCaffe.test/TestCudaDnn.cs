@@ -1263,6 +1263,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestHammingDistance()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITestCudaDnn t in test.Tests)
+                {
+                    t.TestHammingDistance();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     public interface ITestCudaDnn : ITest
@@ -1272,6 +1290,7 @@ namespace MyCaffe.test
         void TestMemoryTestByBlock();
         void TestMemoryTestAll();
         void TestMemoryPointers();
+        void TestHammingDistance();
     }
 
     class CudaDnnTest : TestBase
@@ -1611,6 +1630,45 @@ namespace MyCaffe.test
                 {
                     Assert.AreEqual(rgData1[lOffset + j], i + 1);
                 }
+            }
+        }
+
+        public void TestHammingDistance()
+        {
+            double dfThreshold = 0.5;
+            double[] rgDataA = new double[] { 3.2, 4.5, 8.3, -1.2, 0.03, 0.22 };    // binarified(thresh = 0.5): 1, 1, 1,  0, 0,  0
+            double[] rgDataB = new double[] { 0.2, 4.9, 8.1,  9.3,  0.1, 0.88 };    // binarified(thresh = 0.5): 0, 1, 1,  1, 0,  1
+                                                                                    // hamming difference:       1, 0, 0, -1, 0, -1 = 3 hamming distance (sum of abs value)
+            m_A = new Blob<T>(m_cuda, m_log, new List<int>() { rgDataA.Length });
+            m_B = new Blob<T>(m_cuda, m_log, new List<int>() { rgDataB.Length });   // both A and B must have same length.
+            m_C = new Blob<T>(m_cuda, m_log);
+            m_C.ReshapeLike(m_A);
+
+            m_A.mutable_cpu_data = convert(rgDataA);
+            m_B.mutable_cpu_data = convert(rgDataB);
+
+            double dfHammingDistance = m_cuda.hamming_distance(rgDataA.Length, dfThreshold, m_A.gpu_data, m_B.gpu_data, m_C.mutable_gpu_data);
+
+            m_log.CHECK_EQ(3.0, dfHammingDistance, "The hamming distance should = 3.0");
+
+            double[] rgDataC = convert(m_C.mutable_cpu_data);
+
+            m_log.CHECK_EQ(rgDataC.Length, rgDataA.Length, "The length of C is incorrect.");
+
+            // Calculate the hamming distance.
+            List<double> rgExpected = new List<double>();
+
+            for (int i = 0; i < rgDataA.Length; i++)
+            {
+                double dfA = (rgDataA[i] > dfThreshold) ? 1 : 0;
+                double dfB = (rgDataB[i] > dfThreshold) ? 1 : 0;
+                double dfDiff = dfA - dfB;
+                rgExpected.Add(dfDiff);
+            }
+
+            for (int i = 0; i < rgDataC.Length; i++)
+            {
+                m_log.CHECK_EQ(rgExpected[i], rgDataC[i], "The values at " + i.ToString() + " are not as expected.");
             }
         }
     }
