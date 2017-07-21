@@ -244,6 +244,10 @@ namespace MyCaffe.solvers
 
             // Scale gradient to counterbalance accumulation.
             BlobCollection<T> colNetParams = m_net.learnable_parameters;
+
+            if (!colNetParams[param_id].DiffExists)
+                return;
+
             double dfAccumNormalization = 1.0 / m_param.iter_size;
             m_cuda.scal(colNetParams[param_id].count(), dfAccumNormalization, colNetParams[param_id].mutable_gpu_diff);
         }
@@ -255,6 +259,10 @@ namespace MyCaffe.solvers
         public virtual void Regularize(int param_id)
         {
             BlobCollection<T> colNetParams = m_net.learnable_parameters;
+
+            if (!colNetParams[param_id].DiffExists)
+                return;
+
             List<double?> rgNetParamWeightDecay = m_net.params_weight_decay;
             double dfWeightDecay = m_param.weight_decay;
             double dfLocalDecay = dfWeightDecay * rgNetParamWeightDecay[param_id].GetValueOrDefault(0);
@@ -284,6 +292,10 @@ namespace MyCaffe.solvers
         public virtual void ComputeUpdateValue(int param_id, double dfRate)
         {
             BlobCollection<T> colNetParams = m_net.learnable_parameters;
+
+            if (!colNetParams[param_id].DiffExists)
+                return;
+
             List<double?> net_params_lr = m_net.params_lr;
             T fMomentum = Utility.ConvertVal<T>(m_param.momentum);
             T fLocalRate = Utility.ConvertVal<T>(dfRate * net_params_lr[param_id].GetValueOrDefault(0));
@@ -307,7 +319,8 @@ namespace MyCaffe.solvers
 
             for (int i = 0; i < colNetParams.Count; i++)
             {
-                dfSumsqDiff += Utility.ConvertVal<T>(colNetParams[i].sumsq_diff());
+                if (colNetParams[i].DiffExists)
+                    dfSumsqDiff += Utility.ConvertVal<T>(colNetParams[i].sumsq_diff());
             }
 
             double dfL2NormDiff = Math.Sqrt(dfSumsqDiff);
@@ -320,7 +333,8 @@ namespace MyCaffe.solvers
 
                 for (int i = 0; i < colNetParams.Count; i++)
                 {
-                    colNetParams[i].scale_diff(Utility.ConvertVal<T>(dfScaleFactor));
+                    if (colNetParams[i].DiffExists)
+                        colNetParams[i].scale_diff(Utility.ConvertVal<T>(dfScaleFactor));
                 }
             }
         }
