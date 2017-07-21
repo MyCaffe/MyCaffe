@@ -17,7 +17,7 @@ namespace MyCaffe.param
     {
         uint m_nNumOutput = 0;
         bool m_bBiasTerm = true;
-        FillerParameter m_fillerParam_weights = new FillerParameter("gaussian");
+        FillerParameter m_fillerParam_weights = new FillerParameter("xavier");
         FillerParameter m_fillerParam_bias = new FillerParameter("constant", 1.0);
         int m_nAxis = 1;
         bool m_bTranspose = false;
