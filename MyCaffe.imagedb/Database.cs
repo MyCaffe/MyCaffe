@@ -1208,14 +1208,17 @@ namespace MyCaffe.imagedb
         /// <returns></returns>
         protected byte[] setImageByteData(byte[] rgImg, string strType = null)
         {
+            if (rgImg == null)
+                return null;
+
             if (!m_bEnableFileBasedData || rgImg.Length < 100)
                 return rgImg;
 
             string strTypeExt = (strType == null) ? "" : "." + strType;
-            string strPath = m_strPrimaryImgPath + Guid.NewGuid().ToString() + strTypeExt + ".bin";
-            File.WriteAllBytes(strPath, rgImg);
+            string strFile = Guid.NewGuid().ToString() + strTypeExt + ".bin";
+            File.WriteAllBytes(m_strPrimaryImgPath + strFile, rgImg);
 
-            string strTag = "FILE:" + strPath;
+            string strTag = "FILE:" + strFile;
             return Encoding.ASCII.GetBytes(strTag);
         }
 
