@@ -917,6 +917,7 @@ namespace MyCaffe
 
             sw.Start();
 
+            UpdateRunWeights();
             m_log.WriteHeader("Test Many (" + nCount.ToString() + ") - " + ((bOnTrainingSet) ? ("on training set") : ("on testing set")));
 
             LabelMappingParameter labelMapping = null;
