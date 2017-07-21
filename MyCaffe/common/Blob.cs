@@ -374,6 +374,14 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Returns whether or not the Diff portion exists.
+        /// </summary>
+        public bool DiffExists
+        {
+            get { return m_bIncludeDiff; }
+        }
+
+        /// <summary>
         /// Returns an array where each element contains the shape of an axis of the Blob.
         /// </summary>
         /// <returns>The shape array is returned.</returns>
@@ -968,6 +976,9 @@ namespace MyCaffe.common
         /// </remarks>
         public void Update()
         {
+            if (!m_bIncludeDiff)
+                return;
+
             // The GPU is assumed to be the owner of the data.
             m_cuda.axpy(m_nCount, (T)Convert.ChangeType(-1.0, typeof(T)), m_diff.gpu_data, m_data.mutable_gpu_data);
         }
@@ -1294,7 +1305,8 @@ namespace MyCaffe.common
         /// <param name="nIdx">Optionally, specifies the index of the item to set.</param>
         public void SetDiff(double dfVal, int nIdx = -1)
         {
-            m_cuda.set(count(), mutable_gpu_diff, dfVal, nIdx);
+            if (m_bIncludeDiff)
+                m_cuda.set(count(), mutable_gpu_diff, dfVal, nIdx);
         }
 
         /// <summary>
