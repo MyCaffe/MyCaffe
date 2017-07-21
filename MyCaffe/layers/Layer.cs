@@ -135,6 +135,15 @@ namespace MyCaffe.layers
         {
         }
 
+        /// <summary>
+        /// Changes the layer's Phase to the one specified.
+        /// </summary>
+        /// <param name="phase">Specifies the new Phase for the layer.</param>
+        public void SetPhase(Phase phase)
+        {
+            m_phase = phase;
+            m_param.phase = phase;
+        }
 
         /// <summary>
         /// Implements common Layer setup functionality.
@@ -815,6 +824,9 @@ namespace MyCaffe.layers
 
                 case LayerParameter.LayerType.BIAS:
                     return new BiasLayer<T>(cuda, log, p);
+
+                case LayerParameter.LayerType.BINARYHASH:
+                    return new BinaryHashLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.CONCAT:
                     return new ConcatLayer<T>(cuda, log, p);

@@ -854,6 +854,12 @@ namespace MyCaffe.basecode
                     {
                         rgRemove.Add(layer);
                     }
+                    else if (strType == "binaryhash")
+                    {
+                        RawProtoCollection col = layer.FindChildren("bottom");
+                        if (col.Count > 0)
+                            layer.RemoveChild(col[col.Count - 1]);
+                    }
                     else if (strType == "debug")
                     {
                         rgRemove.Add(layer);

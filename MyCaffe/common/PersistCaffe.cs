@@ -1912,6 +1912,8 @@ namespace MyCaffe.common
             rgF.Add(new FieldDescriptor(138, LayerParameter.LayerType.TILE.ToString() + "_param", FieldDescriptor.TYPE.FIELDDESC));
             rgF.Add(new FieldDescriptor(129, "window_data_param", FieldDescriptor.TYPE.FIELDDESC));
 
+            rgF.Add(new FieldDescriptor(900, LayerParameter.LayerType.BINARYHASH.ToString() + "_param", FieldDescriptor.TYPE.FIELDDESC));
+
             return rgF;
         }
 

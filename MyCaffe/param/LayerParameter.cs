@@ -346,6 +346,10 @@ namespace MyCaffe.param
             /// Initializes a parameter for the DebugLayer.
             /// </summary>
             DEBUG,
+            /// <summary>
+            /// Initializes a parameter for the BinaryHashLayer.
+            /// </summary>
+            BINARYHASH,
             _MAX
         }
 
@@ -621,6 +625,15 @@ namespace MyCaffe.param
                     expected_bottom.Add("bias");
                     expected_top.Add("bias");
                     m_rgLayerParameters[lt] = new BiasParameter();
+                    break;
+
+                case LayerType.BINARYHASH:
+                    expected_bottom.Add("input1");
+                    expected_bottom.Add("input2");
+                    expected_bottom.Add("input3");
+                    expected_bottom.Add("label");
+                    expected_top.Add("binhash");
+                    m_rgLayerParameters[lt] = new BinaryHashParameter();
                     break;
 
                 case LayerType.BNLL:
@@ -1155,6 +1168,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.BINARYHASH
+        /// </summary>
+        public BinaryHashParameter binary_hash_param
+        {
+            get { return (BinaryHashParameter)m_rgLayerParameters[LayerType.BINARYHASH]; }
+            set { m_rgLayerParameters[LayerType.BINARYHASH] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.CONCAT
         /// </summary>
         public ConcatParameter concat_param
@@ -1668,6 +1690,9 @@ namespace MyCaffe.param
                 case LayerType.BIAS:
                     return "Bias";
 
+                case LayerType.BINARYHASH:
+                    return "BinaryHash";
+
                 case LayerType.BNLL:
                     return "BNLL";
 
@@ -1901,6 +1926,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(batch_data_param, "batch_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(batch_norm_param, "batch_norm_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(bias_param, "bias_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(binary_hash_param, "binaryhash_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(concat_param, "concat_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(contrastive_loss_param, "contrastive_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(convolution_param, "convolution_param"));
@@ -2047,6 +2073,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("bias_param")) != null)
                 p.bias_param = BiasParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("binaryhash_param")) != null)
+                p.binary_hash_param = BinaryHashParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("concat_param")) != null)
                 p.concat_param = ConcatParameter.FromProto(rpp);
@@ -2221,6 +2250,9 @@ namespace MyCaffe.param
 
                 case "bias":
                     return LayerType.BIAS;
+
+                case "binaryhash":
+                    return LayerType.BINARYHASH;
 
                 case "bnll":
                     return LayerType.BNLL;
