@@ -2356,23 +2356,31 @@ template long Math<float>::sumsqdiff(int n, long hW, long hA, long hB, int nAOff
 
 
 template <class T>
-long Math<T>::sumsqdiff(int n, T* w, T* x, T* y, T* pOut)
+long Math<T>::sumsqdiff(int n, T* w, T* x, T* y, T* pOut, cudaStream_t stream)
 {
 	LONG lErr;
 
-	sub_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, y, w);
+	if (stream != NULL)
+		sub_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS, 0, stream>>>(n, x, y, w);
+	else
+		sub_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, y, w);
+
 	if (lErr = cudaGetLastError())
 		return lErr;
 
-	mul_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, w, w, w);
+	if (stream != NULL)
+		mul_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS, 0, stream>>>(n, w, w, w);
+	else
+		mul_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, w, w, w);
+
 	if (lErr = cudaGetLastError())
 		return lErr;
 
 	return asum(n, w, pOut);
 }
 
-template long Math<double>::sumsqdiff(int n, double* w, double* x, double* y, double* pOut);
-template long Math<float>::sumsqdiff(int n, float* w, float* x, float* y, float* pOut);
+template long Math<double>::sumsqdiff(int n, double* w, double* x, double* y, double* pOut, cudaStream_t stream);
+template long Math<float>::sumsqdiff(int n, float* w, float* x, float* y, float* pOut, cudaStream_t stream);
 
 
 template <typename T>
@@ -8250,5 +8258,100 @@ long Math<T>::hamming_diff(int n, T fThreshold, long hA, long hB, long hY, int n
 
 template long Math<double>::hamming_diff(int n, double dfThreshold, long hA, long hB, long hY, int nOffA, int nOffB, int nOffY);
 template long Math<float>::hamming_diff(int n, float fThreshold, long hA, long hB, long hY, int nOffA, int nOffB, int nOffY);
+
+template <class T>
+long Math<T>::calc_batch_dist(int nDistMethod, T fThreshold, int nItemDim, long hS, long hT, long hW, const int nDim0, const int nDim1, T* rgOffsets, T* rgDist)
+{
+	LONG lErr;
+	MemoryItem* pS;
+	MemoryItem* pT;
+	MemoryItem* pW;
+
+	if (lErr = m_pMemCol->GetData(hS, &pS))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hT, &pT))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hW, &pW))
+		return lErr;
+
+	T* s = (T*)pS->Data();
+	T* t = (T*)pT->Data();
+	T* w = (T*)pW->Data();
+	int nCreatedCount = 0;
+	cudaStream_t* streams = new cudaStream_t[nDim0];
+	bool bReset = true;
+
+	if (streams == NULL)
+		goto cleanup;
+
+	for (int i = 0; i < nDim0; i++)
+	{
+		if (lErr = cudaStreamCreate(&streams[i]))
+			goto cleanup;
+
+		nCreatedCount++;
+
+		if (lErr = cublasSetStream(m_cublas, streams[i]))
+			goto cleanup;
+
+		int nOffset1 = (int)rgOffsets[i * 2 + 0];
+		int nOffset2 = (int)rgOffsets[i * 2 + 1];
+		T* s1 = s + nOffset1;
+		T* t1 = t + nOffset2;
+		T* w1 = w + nOffset2;
+
+		if (nDistMethod == DISTANCE_METHOD_HAMMING)
+		{
+			hamming_diff_kernel<T><<<CAFFE_GET_BLOCKS(nItemDim), CAFFE_CUDA_NUM_THREADS, 0, streams[i]>>>(nItemDim, fThreshold, s1, t1, w1);
+			if (lErr = cudaGetLastError())
+				goto cleanup;
+		}
+		else
+		{
+			if (lErr = sumsqdiff(nItemDim, w1, s1, t1, &rgDist[i], streams[i]))
+				goto cleanup;
+		}
+	}
+
+	cudaDeviceSynchronize();
+	cublasSetStream(m_cublas, NULL);
+	bReset = false;
+
+	for (int i = 0; i < nDim0; i++)
+	{
+		int nOffset2 = (int)rgOffsets[i * 2 + 1];
+		T* w1 = w + nOffset2;
+
+		if (lErr = asum(nItemDim, w1, &rgDist[i]))
+			goto cleanup;
+
+		if (nDistMethod == DISTANCE_METHOD_EUCLIDEAN)
+			rgDist[i] = ::sqrt(rgDist[i]);
+	}
+
+cleanup:
+	if (bReset)
+	{
+		cudaDeviceSynchronize();
+		cublasSetStream(m_cublas, NULL);
+	}
+
+	if (streams != NULL)
+	{
+		for (int j = nCreatedCount-1; j >= 0; j--)
+		{
+			cudaStreamDestroy(streams[j]);
+		}
+
+		delete streams;
+	}
+
+	return lErr;
+}
+
+template long Math<double>::calc_batch_dist(int nDistMethod, double fThreshold, int nItemDim, long hS, long hT, long hW, const int nDim0, const int nDim1, double* rgOffsets, double* rgDist);
+template long Math<float>::calc_batch_dist(int nDistMethod, float fThreshold, int nItemDim, long hS, long hT, long hW, const int nDim0, const int nDim1, float* rgOffsets, float* rgDist);
 
 //end math.cu

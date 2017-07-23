@@ -31,6 +31,9 @@ const int AGGREGATION_SUM = 0;
 const int AGGREGATION_MAX = 1;
 const int AGGREGATION_MIN = 2;
 
+const int DISTANCE_METHOD_HAMMING = 0;
+const int DISTANCE_METHOD_EUCLIDEAN = 1;
+
 
 //=============================================================================
 //	Forward References
@@ -132,7 +135,7 @@ class Math
 		long naninfval(int n, long hA, long hWork1, long hWork2, T* pNan, T* pInf, int nAOff = 0);
 		long sumsq(int n, long hW, long hA, int nAOff, T* pOut);
 		long sumsqdiff(int n, long hW, long hA, long hB, int nAOff, int nBOff, T* pOut);
-		long sumsqdiff(int n, T* w, T* x, T* y, T* pOut);
+		long sumsqdiff(int n, T* w, T* x, T* y, T* pOut, cudaStream_t stream = NULL);
 		long width(int n, long hMean, long hMin, long hMax, T fAlpha, long hWidth);
 		long contains_point(int n, long hMean, long hWidth, long hX, long hWork, T* pOut, int nXOff = 0);
 		long denan(int n, long hX, T fReplacement);
@@ -265,6 +268,7 @@ class Math
 
 		long gaussian_blur(int n, int c, int h, int w, T fSigma, long hX, long hY);
 		long hamming_diff(int n, T fThreshold, long hA, long hB, long hY, int nOffA = 0, int nOffB = 0, int nOffY = 0);
+		long calc_batch_dist(int nDistMethod, T fThreshold, int nItemDim, long hS, long hT, long hW, const int nDim0, const int nDim1, T* rgOffsets, T* rgDist);
 };
 
 

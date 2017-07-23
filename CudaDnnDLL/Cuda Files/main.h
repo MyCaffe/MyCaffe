@@ -306,6 +306,7 @@ const int CUDA_FN_TSNE_COMPUTE_ERROR1		= 878;
 
 const int CUDA_FN_GUASSIAN_BLUR     = 900;
 const int CUDA_FN_HAMMING_DIFF      = 901;
+const int CUDA_FN_CALC_BATCH_DIST   = 902;
 
 const int CUDA_FN_GET_DEVICE_NAME	= 1000;
 const int CUDA_FN_GET_P2P_INFO		= 1001;

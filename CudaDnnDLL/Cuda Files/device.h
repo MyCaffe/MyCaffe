@@ -382,6 +382,7 @@ class Device
 
 		long cuda_guassian_blur(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_hamming_diff(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_calc_batch_dist(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 };
 
 

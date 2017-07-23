@@ -3025,4 +3025,53 @@ long Device<T>::cuda_hamming_diff(long lInput, T* pfInput, long* plOutput, T** p
 template long Device<double>::cuda_hamming_diff(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
 template long Device<float>::cuda_hamming_diff(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
 
+
+template <class T>
+long Device<T>::cuda_calc_batch_dist(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 9, SHRT_MAX))
+		return lErr;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	int nDistMethod = (int)pfInput[0];
+	T fThreshold = pfInput[1];
+	int nItemDim = (int)pfInput[2];
+	long hSrc = (long)pfInput[3];
+	long hTargets = (long)pfInput[4];
+	long hWork = (long)pfInput[5];
+	int nDim0 = (int)pfInput[6];
+	int nDim1 = (int)pfInput[7];
+
+	if (nDim1 != 2)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	if (nDim0 < 0)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	T* pfOutput = NULL;
+	if (lErr = m_memory.AllocHost(nDim0, &pfOutput, NULL, false))
+		return lErr;
+
+	lErr = m_math.calc_batch_dist(nDistMethod, fThreshold, nItemDim, hSrc, hTargets, hWork, nDim0, nDim1, &pfInput[8], pfOutput);
+
+	if (!lErr)
+	{
+		*ppfOutput = pfOutput;
+		*plOutput = nDim0;
+	}
+	else
+	{
+		m_memory.FreeHost(pfOutput);
+	}
+
+	return lErr;
+}
+
+template long Device<double>::cuda_calc_batch_dist(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_calc_batch_dist(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
 //end device.cu

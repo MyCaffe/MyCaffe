@@ -684,6 +684,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_HAMMING_DIFF:
 			return m_device.cuda_hamming_diff(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_CALC_BATCH_DIST:
+			return m_device.cuda_calc_batch_dist(lCount, pfInput, plCount, ppfOutput);
+
 		default:
 			return ERROR_PARAM_OUT_OF_RANGE;
 	}
