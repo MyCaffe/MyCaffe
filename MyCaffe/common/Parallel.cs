@@ -238,7 +238,8 @@ namespace MyCaffe.common
                         break;
 
                     case Op.replace_gpu_diff:
-                        rgBlobs[i].diff.set_gpu_data(hBuffer, nCount, lOffset);
+                        if (rgBlobs[i].DiffExists)
+                            rgBlobs[i].diff.set_gpu_data(hBuffer, nCount, lOffset);
                         break;
                 }
 

@@ -23,8 +23,10 @@ namespace MyCaffe.param
         SELECTION_METHOD m_selMethod = SELECTION_METHOD.MINIMUM_DISTANCE;
         int m_nIterationEnable = 0;
         bool m_bEnableDuringTesting = true;
+        bool m_bEnableTripletLoss = false;
         DISTANCE_TYPE m_distPass1 = DISTANCE_TYPE.HAMMING;
         DISTANCE_TYPE m_distPass2 = DISTANCE_TYPE.EUCLIDEAN;
+        double m_dfAlpha = 0.5;
 
         /// <summary>
         /// Defines the type of distance calculation to use.
@@ -62,6 +64,53 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Specifies whether or not to enable the triplet loss error adjustment during back-propagation.
+        /// </summary>
+        [Description("Specifies whether or not to enable the triplet loss error adjustment during back-propagation.")]
+        [Category("Features")]
+        public bool enable_triplet_loss
+        {
+            get { return m_bEnableTripletLoss; }
+            set { m_bEnableTripletLoss = value; }
+        }
+
+        /// <summary>
+        /// Specifies to enable during the Phase::TEST.
+        /// </summary>
+        /// <remarks>
+        /// When enabled, the testing phase will slow down.
+        /// </remarks>
+        [Description("Specifies to enable during the testing Phase (this will slow down the testing phase).")]
+        [Category("Features")]
+        public bool enable_test
+        {
+            get { return m_bEnableDuringTesting; }
+            set { m_bEnableDuringTesting = value; }
+        }
+
+        /// <summary>
+        /// Specifies whether or not to calculate the Euclidean distance  from 0 to each item in each cache
+        /// and return the values in the debug Blob.
+        /// </summary>
+        [Description("Specifies whether or not to calculate the Euclidean distance  from 0 to each item in each cache and return the values in the debug Blob.")]
+        [Category("Features")]
+        public bool enable_debug
+        {
+            get { return m_bEnableDebug; }
+            set { m_bEnableDebug = value; }
+        }
+
+        /// <summary>
+        /// Specifies the triplet loss margin 'alpha' used when 'enable_triplet_loss' is set to <i>true</i>.
+        /// </summary>
+        [Description("Specifies the triplet loss margin 'alpha' used when 'enable_triplet_loss' is set to true.")]
+        public double alpha
+        {
+            get { return m_dfAlpha; }
+            set { m_dfAlpha = value; }
+        }
+
+        /// <summary>
         /// Specifies the distance calculation to use on the first (rough) pass.
         /// </summary>
         [Description("Specifies the distance calculation to use on the first (rough) pass.")]
@@ -79,19 +128,6 @@ namespace MyCaffe.param
         {
             get { return m_distPass2; }
             set { m_distPass2 = value; }
-        }
-
-        /// <summary>
-        /// Specifies to enable during the Phase::TEST.
-        /// </summary>
-        /// <remarks>
-        /// When enabled, the testing phase will slow down.
-        /// </remarks>
-        [Description("Specifies to enable during the testing Phase (this will slow down the testing phase).")]
-        public bool enable_test
-        {
-            get { return m_bEnableDuringTesting; }
-            set { m_bEnableDuringTesting = value; }
         }
 
         /// <summary>
@@ -117,6 +153,18 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Specifies the threshold used to determine whether to set the value to 1 or 0 when binarizing the outputs from
+        /// the first layer.  For example if a given output is > than the threshold then the associated value is set to 1
+        /// otherwise it is set to 0.  So outputs of 0.2, 2.1, 0.5 with a threshold of 0.5 would produce 0, 1, 1.
+        /// </summary>
+        [Description("Specifies the threshold used to determine whether to set the value to 1 or 0 when binarizing the outputs from the first layer.  For example if a given output is > than the threshold then the associated value is set to 1 otherwise it is set to 0.  So outputs of 0.2, 2.1, 0.5 with a threshold of 0.5 would produce 0, 1, 1.")]
+        public double binary_threshold
+        {
+            get { return m_dfBinaryThresholdForPooling; }
+            set { m_dfBinaryThresholdForPooling = value; }
+        }
+
+        /// <summary>
         /// Specifies the cache depth (per class) of the caches used to cache outputs
         /// of the layers feeding into the BinaryHashLayer.
         /// </summary>
@@ -139,18 +187,6 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Specifies the threshold used to determine whether to set the value to 1 or 0 when binarizing the outputs from
-        /// the first layer.  For example if a given output is > than the threshold then the associated value is set to 1
-        /// otherwise it is set to 0.  So outputs of 0.2, 2.1, 0.5 with a threshold of 0.5 would produce 0, 1, 1.
-        /// </summary>
-        [Description("Specifies the threshold used to determine whether to set the value to 1 or 0 when binarizing the outputs from the first layer.  For example if a given output is > than the threshold then the associated value is set to 1 otherwise it is set to 0.  So outputs of 0.2, 2.1, 0.5 with a threshold of 0.5 would produce 0, 1, 1.")]
-        public double binary_threshold
-        {
-            get { return m_dfBinaryThresholdForPooling; }
-            set { m_dfBinaryThresholdForPooling = value; }
-        }
-
-        /// <summary>
         /// Specifies the number of top results to select from the fine-grained selection pass.  The final
         /// class is selected from these items either by highest rank, or by vote.
         /// </summary>
@@ -159,17 +195,6 @@ namespace MyCaffe.param
         {
             get { return m_nTopK; }
             set { m_nTopK = value; }
-        }
-
-        /// <summary>
-        /// Specifies whether or not to calculate the Euclidean distance  from 0 to each item in each cache
-        /// and return the values in the debug Blob.
-        /// </summary>
-        [Description("Specifies whether or not to calculate the Euclidean distance  from 0 to each item in each cache and return the values in the debug Blob.")]
-        public bool enable_debug
-        {
-            get { return m_bEnableDebug; }
-            set { m_bEnableDebug = value; }
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -198,6 +223,8 @@ namespace MyCaffe.param
             m_bEnableDuringTesting = p.m_bEnableDuringTesting;
             m_distPass1 = p.m_distPass1;
             m_distPass2 = p.m_distPass2;
+            m_bEnableTripletLoss = p.m_bEnableTripletLoss;
+            m_dfAlpha = p.m_dfAlpha;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -223,6 +250,8 @@ namespace MyCaffe.param
             rgChildren.Add("enable_test", enable_test.ToString());
             rgChildren.Add("dist_calc_pass1", dist_calc_pass1.ToString());
             rgChildren.Add("dist_calc_pass2", dist_calc_pass2.ToString());
+            rgChildren.Add("enable_triplet_loss", enable_triplet_loss.ToString());
+            rgChildren.Add("alpha", alpha.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -281,6 +310,12 @@ namespace MyCaffe.param
                 else
                     p.dist_calc_pass2 = DISTANCE_TYPE.EUCLIDEAN;
             }
+
+            if ((strVal = rp.FindValue("enable_triplet_loss")) != null)
+                p.enable_triplet_loss = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("alpha")) != null)
+                p.alpha = double.Parse(strVal);
 
             return p;
         }
