@@ -11,6 +11,21 @@ using MyCaffe.basecode;
 namespace MyCaffe.common
 {
     /// <summary>
+    /// Specifies the distance method used when calculating batch distances.
+    /// </summary>
+    public enum DistanceMethod
+    {
+        /// <summary>
+        /// Specifies to calculate the hamming distance.
+        /// </summary>
+        HAMMING = 0,
+        /// <summary>
+        /// Specifies to calculate the euclidean distance.
+        /// </summary>
+        EUCLIDEAN = 1
+    }
+
+    /// <summary>
     /// Specifies the pooling method used by the cuDnn function SetPoolingDesc.
     /// </summary>
     /// <remarks>
@@ -761,7 +776,8 @@ namespace MyCaffe.common
             CUDA_TSNE_COMPUTE_ERROR1 = 878,
 
             CUDA_GUASSIAN_BLUR = 900,
-            CUDA_HAMMING_DIFF = 901
+            CUDA_HAMMING_DIFF = 901,
+            CUDA_CALC_BATCH_DIST = 902
         }
 
         /// <summary>
@@ -6446,6 +6462,67 @@ namespace MyCaffe.common
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_HAMMING_DIFF, new float[] { n, (float)dfThreshold, hA, hB, hY, nOffA, nOffB, nOffY });
 
             return asum_double(n, hY);
+        }
+
+        /// <summary>
+        /// The calculate_batch_distances method calculates a set of distances based on the DistanceMethod specified.
+        /// </summary>
+        /// <param name="distMethod">Specifies the DistanceMethod to use (i.e. HAMMING or EUCLIDEAN).</param>
+        /// <param name="dfThreshold">Specifies the threshold used when binarifying the values for the HAMMING distance.  This parameter is ignored when calculating the EUCLIDEAN distance.</param>
+        /// <param name="nItemDim">Specifies the dimension of a single item.</param>
+        /// <param name="hSrc">Specifies the GPU memory containing the source items.</param>
+        /// <param name="hTargets">Specifies the GPU memory containing the target items that are compared against the source items.</param>
+        /// <param name="hWork">Specifies the GPU memory containing the work memory - this must be the same size as the maximum size of the src or targets.</param>
+        /// <param name="rgOffsets">Specifies the array of offset pairs where the first offset is into the source and the second is into the target.</param>
+        /// <returns>The array distances corresponding to each offset pair is returned.</returns>
+        public double[] calculate_batch_distances(DistanceMethod distMethod, double dfThreshold, int nItemDim, long hSrc, long hTargets, long hWork, int[,] rgOffsets)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                List<double> rgArg = new List<double> { (int)distMethod, dfThreshold, nItemDim, hSrc, hTargets, hWork };
+                int nDim0 = rgOffsets.GetLength(0);
+                int nDim1 = rgOffsets.GetLength(1);
+
+                rgArg.Add(nDim0);
+                rgArg.Add(nDim1);
+
+                for (int i = 0; i < nDim0; i++)
+                {
+                    for (int j = 0; j < nDim1; j++)
+                    {
+                        rgArg.Add(rgOffsets[i, j]);
+                    }
+                }
+
+                return m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CALC_BATCH_DIST, rgArg.ToArray());
+            }
+            else
+            {
+                List<float> rgArg = new List<float> { (int)distMethod, (float)dfThreshold, nItemDim, hSrc, hTargets, hWork };
+                int nDim0 = rgOffsets.GetLength(0);
+                int nDim1 = rgOffsets.GetLength(1);
+
+                rgArg.Add(nDim0);
+                rgArg.Add(nDim1);
+
+                for (int i = 0; i < nDim0; i++)
+                {
+                    for (int j = 0; j < nDim1; j++)
+                    {
+                        rgArg.Add(rgOffsets[i, j]);
+                    }
+                }
+
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CALC_BATCH_DIST, rgArg.ToArray());
+                double[] rgD = new double[rg.Length];
+
+                for (int i = 0; i < rg.Length; i++)
+                {
+                    rgD[i] = rg[i];
+                }
+
+                return rgD;
+            }
         }
 
         #endregion

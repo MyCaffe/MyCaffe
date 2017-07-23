@@ -6,6 +6,7 @@ using System.Text;
 using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
+using System.Diagnostics;
 
 namespace MyCaffe.layers.alpha
 {
@@ -22,9 +23,6 @@ namespace MyCaffe.layers.alpha
     {
         Blob<T> m_blobDebug;
         Blob<T> m_blobWork;
-        Blob<T> m_blobWorkMinMax;
-        PoolItemCollection m_rgPool1;
-        PoolItemCollection m_rgPool2;
         IndexItemCollection m_rgCache1CurrentIndex;
         IndexItemCollection m_rgCache2CurrentIndex;
         int m_nLayer2Dim = 0;
@@ -34,6 +32,7 @@ namespace MyCaffe.layers.alpha
         bool m_bIsFull = false;
         double m_dfBinaryThreshold1 = 0;
         double m_dfBinaryThreshold2 = 0;
+        float[] m_rgLabels = null;
 
         /// <summary>
         /// The BinaryHashLayer constructor.
@@ -50,11 +49,8 @@ namespace MyCaffe.layers.alpha
             m_blobDebug = new common.Blob<T>(cuda, log, false);
             m_blobDebug.Name = "debug";
 
-            m_blobWork = new common.Blob<T>(cuda, log, false);
+            m_blobWork = new common.Blob<T>(cuda, log);
             m_blobWork.Name = "work";
-
-            m_blobWorkMinMax = new common.Blob<T>(cuda, log);
-            m_blobWorkMinMax.Name = "work min/max";
         }
 
         /** @copydoc Layer::dispose */
@@ -126,10 +122,6 @@ namespace MyCaffe.layers.alpha
             //  Item2 = index of the item associated with the label.
             //  Item3 = distance from input item and this item in the cache.
             m_log.CHECK_LE(m_param.binary_hash_param.pool_size, m_param.binary_hash_param.cache_depth * m_nLabelCount, "The pool depth is too big, it must be less than the cache_depth * the label count.");
-            m_rgPool1 = new PoolItemCollection();
-
-            // The second pool is used to select the K'th best values.
-            m_rgPool2 = new PoolItemCollection();
 
             Blob<T> blobCache1 = new common.Blob<T>(m_cuda, m_log, false);
             blobCache1.Name = "cache 1";
@@ -165,7 +157,7 @@ namespace MyCaffe.layers.alpha
             m_nLayer2Dim = colBottom[1].count() / colBottom[1].num;
             m_nLayer3Dim = colBottom[2].count() / colBottom[2].num;
 
-            m_blobWork.Reshape(new List<int>() { Math.Max(m_nLayer2Dim, m_nLayer3Dim) });
+            m_blobWork.Reshape(new List<int>() { m_nLabelCount, m_param.binary_hash_param.cache_depth, Math.Max(m_nLayer2Dim, m_nLayer3Dim) });
 
             m_colBlobs[0].Reshape(new List<int>() { nLabelCount, m_param.binary_hash_param.cache_depth, m_nLayer2Dim });
             m_colBlobs[1].Reshape(new List<int>() { nLabelCount, m_param.binary_hash_param.cache_depth, m_nLayer3Dim });
@@ -177,7 +169,10 @@ namespace MyCaffe.layers.alpha
             {
                 Tuple<double, double, double, double> workSize1 = m_cuda.minmax(m_colBlobs[0].count(), 0, 0, 0);
                 Tuple<double, double, double, double> workSize2 = m_cuda.minmax(m_colBlobs[1].count(), 0, 0, 0);
-                m_blobWorkMinMax.Reshape((int)Math.Max(workSize1.Item1, workSize2.Item1), 1, 1, 1);
+
+                int nMax = (int)Math.Max(workSize1.Item1, workSize2.Item1);
+                if (m_blobWork.count() < nMax)
+                    m_blobWork.Reshape((int)Math.Max(workSize1.Item1, workSize2.Item1), 1, 1, 1);
             }
         }
 
@@ -191,23 +186,25 @@ namespace MyCaffe.layers.alpha
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             int nNum = colBottom[0].num;
-            int nDim = colTop[0].count() / colTop[0].num;
 
             m_log.CHECK_EQ(nNum, colBottom[1].num, "The bottom[1] should have the same num as bottom[0]!");
-            m_log.CHECK_EQ(nNum, colBottom[2].num, "The bottom[1] should have the same num as bottom[0]!");
+            m_log.CHECK_EQ(nNum, colBottom[2].num, "The bottom[2] should have the same num as bottom[0]!");
 
             m_cuda.copy(colBottom[0].count(), colBottom[0].gpu_data, colTop[0].mutable_gpu_data);
 
             if (m_phase == Phase.TRAIN)
             {
+                m_log.CHECK_EQ(colBottom.Count, 4, "When training, the bottom should have 4 items: input1, input2 (rough pass), input3 (fine pass), labels");
+                m_log.CHECK_EQ(nNum, colBottom[3].num, "The bottom[3] should have the same num as bottom[0]!");
+
                 if (m_param.binary_hash_param.iteration_enable == 0 || m_nIteration > m_param.binary_hash_param.iteration_enable)
                 {
-                    float[] rgLabels = convertF(colBottom[3].update_cpu_data());
+                    m_rgLabels = convertF(colBottom[3].update_cpu_data());
 
                     // Load the first cache with colBottom[1] inputs.
                     for (int i = 0; i < nNum; i++)
                     {
-                        int nLabel = (int)rgLabels[i];
+                        int nLabel = (int)m_rgLabels[i];
                         int nClassIdx = m_rgCache1CurrentIndex[nLabel].Index;
                         int nIdx = (nLabel * (m_nLayer2Dim * m_param.binary_hash_param.cache_depth)) + (nClassIdx * m_nLayer2Dim);
 
@@ -222,7 +219,7 @@ namespace MyCaffe.layers.alpha
                     // Load the second cache with colBottom[2] inputs.
                     for (int i = 0; i < nNum; i++)
                     {
-                        int nLabel = (int)rgLabels[i];
+                        int nLabel = (int)m_rgLabels[i];
                         int nClassIdx = m_rgCache2CurrentIndex[nLabel].Index;
                         int nIdx = (nLabel * (m_nLayer3Dim * m_param.binary_hash_param.cache_depth)) + (nClassIdx * m_nLayer3Dim);
 
@@ -237,146 +234,149 @@ namespace MyCaffe.layers.alpha
             }
             else if (m_phase != Phase.TEST || m_param.binary_hash_param.enable_test)
             {
-                // This happens on the test or run net so we need to see if the cache that is shared (or loaded) is ready to use.
-                if (!m_bIsFull)
+                run(nNum, colBottom, colTop);
+            }
+        }
+
+        private List<PoolItemCollection> run(int nNum, BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            List<PoolItemCollection> rgrgPool = new List<PoolItemCollection>();
+
+            // This happens on the test or run net so we need to see if the cache that is shared (or loaded) is ready to use.
+            if (!m_bIsFull)
+            {
+                float[] rgIsFull = convertF(m_colBlobs[2].mutable_cpu_data);
+                if (rgIsFull[0] == 1 && rgIsFull[1] == 1)
                 {
-                    float[] rgIsFull = convertF(m_colBlobs[2].mutable_cpu_data);
-                    if (rgIsFull[0] == 1 && rgIsFull[1] == 1)
-                    {
-                        m_bIsFull = true;
-                        m_log.WriteLine("The Binary Hash Cache is ready to use.");
-                    }
-
-                    if (m_param.binary_hash_param.dist_calc_pass1 == BinaryHashParameter.DISTANCE_TYPE.HAMMING)
-                    {
-                        Tuple<double, double, double, double> minmax = m_cuda.minmax(m_colBlobs[0].count(), m_colBlobs[0].gpu_data, m_blobWorkMinMax.mutable_gpu_data, m_blobWorkMinMax.mutable_gpu_diff);
-
-                        double dfMin = minmax.Item1;
-                        double dfMax = minmax.Item2;
-
-                        m_dfBinaryThreshold1 = ((dfMax - dfMin) * m_param.binary_hash_param.binary_threshold);
-
-                        if (dfMin > 0)
-                            m_dfBinaryThreshold1 += dfMin;
-                    }
-
-                    if (m_param.binary_hash_param.dist_calc_pass2 == BinaryHashParameter.DISTANCE_TYPE.HAMMING)
-                    {
-                        Tuple<double, double, double, double> minmax = m_cuda.minmax(m_colBlobs[1].count(), m_colBlobs[1].gpu_data, m_blobWorkMinMax.mutable_gpu_data, m_blobWorkMinMax.mutable_gpu_diff);
-
-                        double dfMin = minmax.Item1;
-                        double dfMax = minmax.Item2;
-
-                        m_dfBinaryThreshold2 = ((dfMax - dfMin) * m_param.binary_hash_param.binary_threshold);
-
-                        if (dfMin > 0)
-                            m_dfBinaryThreshold2 += dfMin;
-                    }
+                    m_bIsFull = true;
+                    m_log.WriteLine("The Binary Hash Cache is ready to use.");
                 }
 
-                if (m_bIsFull)
+                if (m_param.binary_hash_param.dist_calc_pass1 == BinaryHashParameter.DISTANCE_TYPE.HAMMING)
                 {
-                    float[] rgOutput = convertF(colTop[0].mutable_cpu_data);
-                    bool bUpdate = false;
+                    Tuple<double, double, double, double> minmax = m_cuda.minmax(m_colBlobs[0].count(), m_colBlobs[0].gpu_data, m_blobWork.mutable_gpu_data, m_blobWork.mutable_gpu_diff);
 
-                    // Find the distance between each input and each element of cache #1.
-                    for (int i = 0; i < nNum; i++)
-                    {
-                        //-----------------------------------
-                        //  Rough pass
-                        //-----------------------------------
-                        m_rgPool1.Clear();
+                    double dfMin = minmax.Item1;
+                    double dfMax = minmax.Item2;
 
-                        for (int j = 0; j < m_nLabelCount; j++)
-                        {
-                            for (int k = 0; k < m_param.binary_hash_param.cache_depth; k++)
-                            {
-                                double dfDist = 0;
+                    m_dfBinaryThreshold1 = ((dfMax - dfMin) * m_param.binary_hash_param.binary_threshold);
 
-                                if (m_param.binary_hash_param.dist_calc_pass1 == BinaryHashParameter.DISTANCE_TYPE.EUCLIDEAN)
-                                {
-                                    dfDist = m_cuda.sumsqdiff(m_nLayer3Dim,
-                                                                         m_blobWork.mutable_gpu_data,
-                                                                         colBottom[1].gpu_data,
-                                                                         m_colBlobs[0].gpu_data,
-                                                                         i * m_nLayer2Dim,
-                                                                         j * m_nLayer2Dim * m_param.binary_hash_param.cache_depth + k * m_nLayer2Dim);
-                                    dfDist = Math.Sqrt(dfDist);
-                                }
-                                else
-                                {
-                                    dfDist = m_cuda.hamming_distance(m_nLayer2Dim,
-                                                                         m_dfBinaryThreshold1,
-                                                                         colBottom[1].gpu_data,
-                                                                         m_colBlobs[0].gpu_data,
-                                                                         m_blobWork.mutable_gpu_data,
-                                                                         i * m_nLayer2Dim,
-                                                                         j * m_nLayer2Dim * m_param.binary_hash_param.cache_depth + k * m_nLayer2Dim,
-                                                                         0);
-                                }
+                    if (dfMin > 0)
+                        m_dfBinaryThreshold1 += dfMin;
+                }
 
-                                m_rgPool1.Add(new PoolItem(j, k, dfDist));            
-                            }
-                        }
+                if (m_param.binary_hash_param.dist_calc_pass2 == BinaryHashParameter.DISTANCE_TYPE.HAMMING)
+                {
+                    Tuple<double, double, double, double> minmax = m_cuda.minmax(m_colBlobs[1].count(), m_colBlobs[1].gpu_data, m_blobWork.mutable_gpu_data, m_blobWork.mutable_gpu_diff);
 
-                        // Find the 'pool_size' number of minimum distance items.
-                        m_rgPool1.Sort();
+                    double dfMin = minmax.Item1;
+                    double dfMax = minmax.Item2;
 
-                        //-----------------------------------
-                        //  Fine tuned pass
-                        //-----------------------------------
-                        m_rgPool2.Clear();
+                    m_dfBinaryThreshold2 = ((dfMax - dfMin) * m_param.binary_hash_param.binary_threshold);
 
-                        // Calculate the Euclidean distances
-                        for (int k=0; k<m_param.binary_hash_param.pool_size; k++)
-                        {
-                            PoolItem poolItem = m_rgPool1[k];
-                            double dfDist = 0;
-
-                            if (m_param.binary_hash_param.dist_calc_pass2 == BinaryHashParameter.DISTANCE_TYPE.HAMMING)
-                            {
-                                dfDist = m_cuda.hamming_distance(m_nLayer2Dim,
-                                                                     m_dfBinaryThreshold2,
-                                                                     colBottom[2].gpu_data,
-                                                                     m_colBlobs[1].gpu_data,
-                                                                     m_blobWork.mutable_gpu_data,
-                                                                     i * m_nLayer3Dim,
-                                                                     poolItem.Label * m_nLayer3Dim * m_param.binary_hash_param.cache_depth + poolItem.IndexIntoClass * m_nLayer3Dim,
-                                                                     0);
-                            }
-                            else
-                            {
-                                dfDist = m_cuda.sumsqdiff(m_nLayer3Dim,
-                                                                     m_blobWork.mutable_gpu_data,
-                                                                     colBottom[2].gpu_data,
-                                                                     m_colBlobs[1].gpu_data,
-                                                                     i * m_nLayer3Dim,
-                                                                     poolItem.Label * m_nLayer3Dim * m_param.binary_hash_param.cache_depth + poolItem.IndexIntoClass * m_nLayer3Dim);
-                                dfDist = Math.Sqrt(dfDist);
-                            }
-
-                            m_rgPool2.Add(new PoolItem(poolItem.Label, poolItem.IndexIntoClass, dfDist));
-                        }
-
-                        m_rgPool2.Sort();
-                        m_rgPool2.ShrinkToSize((int)m_param.binary_hash_param.top_k);
-
-                        int nNewLabel = m_rgPool2.SelectNewLabel(m_param.binary_hash_param.selection_method);
-                        int nIdx = i * nDim;
-                        int nPredictionLabel = getLabel(rgOutput, nIdx, nDim);
-
-                        // If the new label is different from the previously predicted label, replace it.
-                        if (nNewLabel != nPredictionLabel)
-                        {
-                            setLabel(rgOutput, nIdx, nDim, nNewLabel);
-                            bUpdate = true;
-                        }
-                    }
-
-                    if (bUpdate)
-                        colTop[0].mutable_cpu_data = convert(rgOutput);
+                    if (dfMin > 0)
+                        m_dfBinaryThreshold2 += dfMin;
                 }
             }
+
+            if (!m_bIsFull)
+                return null;
+
+            float[] rgOutput = convertF(colTop[0].mutable_cpu_data);
+            bool bUpdate = false;
+
+            Stopwatch sw = new Stopwatch();
+            
+
+            // Find the distance between each input and each element of cache #1 
+            // and then from cache #2.
+            for (int i = 0; i < nNum; i++)
+            {
+                //-----------------------------------------
+                //  Build the pool using the Rough pass
+                //-----------------------------------------
+                PoolItemCollection rgPool1 = new alpha.PoolItemCollection();
+
+                int[,] rgOffsets1 = new int[m_nLabelCount * m_param.binary_hash_param.cache_depth, 2];
+                for (int j = 0; j < m_nLabelCount; j++)
+                {
+                    for (int k = 0; k < m_param.binary_hash_param.cache_depth; k++)
+                    {
+                        int nIdx1 = j * m_param.binary_hash_param.cache_depth + k;
+                        rgOffsets1[nIdx1, 0] = i * m_nLayer2Dim;
+                        rgOffsets1[nIdx1, 1] = j * m_nLayer2Dim * m_param.binary_hash_param.cache_depth + k * m_nLayer2Dim;
+                    }
+                }
+
+                sw.Restart();
+                DistanceMethod distMethod1 = (m_param.binary_hash_param.dist_calc_pass1 == BinaryHashParameter.DISTANCE_TYPE.EUCLIDEAN) ? DistanceMethod.EUCLIDEAN : DistanceMethod.HAMMING;
+                double[] rgDist1 = m_cuda.calculate_batch_distances(distMethod1, m_dfBinaryThreshold1, m_nLayer2Dim, colBottom[1].gpu_data, m_colBlobs[0].gpu_data, m_blobWork.mutable_gpu_data, rgOffsets1);
+                sw.Stop();
+                Trace.WriteLine("timing = " + sw.Elapsed.TotalMilliseconds.ToString());
+
+                for (int j = 0; j < m_nLabelCount; j++)
+                {
+                    for (int k = 0; k < m_param.binary_hash_param.cache_depth; k++)
+                    {
+                        int nIdx1 = j * m_param.binary_hash_param.cache_depth + k;
+                        rgPool1.Add(new PoolItem(j, k, rgDist1[nIdx1]));
+                    }
+                }
+
+                rgPool1.Sort();
+
+
+                //-----------------------------------------
+                //  Fine tuned pass
+                //
+                //  Find the 'pool_size' number of 
+                //  minimum distances.
+                //-----------------------------------------
+                PoolItemCollection rgPool2 = new PoolItemCollection();
+
+                int[,] rgOffsets2 = new int[m_param.binary_hash_param.pool_size, 2];
+                for (int k = 0; k < m_param.binary_hash_param.pool_size; k++)
+                {
+                    PoolItem poolItem = rgPool1[k];
+                    rgOffsets2[k, 0] = i * m_nLayer3Dim;
+                    rgOffsets2[k, 1] = poolItem.Label * m_nLayer3Dim * m_param.binary_hash_param.cache_depth + poolItem.IndexIntoClass * m_nLayer3Dim;
+                }
+
+                DistanceMethod distMethod2 = (m_param.binary_hash_param.dist_calc_pass2 == BinaryHashParameter.DISTANCE_TYPE.EUCLIDEAN) ? DistanceMethod.EUCLIDEAN : DistanceMethod.HAMMING;
+                double[] rgDist2 = m_cuda.calculate_batch_distances(distMethod2, m_dfBinaryThreshold2, m_nLayer3Dim, colBottom[2].gpu_data, m_colBlobs[1].gpu_data, m_blobWork.mutable_gpu_data, rgOffsets2);
+
+                for (int k = 0; k < m_param.binary_hash_param.pool_size; k++)
+                {
+                    PoolItem poolItem = rgPool1[k];
+                    rgPool2.Add(new PoolItem(poolItem.Label, poolItem.IndexIntoClass, rgDist2[k]));
+                }
+
+                rgPool2.Sort();
+
+
+                //-----------------------------------------
+                //  Select the label from the 'top_k' 
+                //  minimum items of the fine-tuned pass.
+                //-----------------------------------------
+
+                int nNewLabel = rgPool2.SelectNewLabel(m_param.binary_hash_param.selection_method, (int)m_param.binary_hash_param.top_k);
+                int nIdx = i * m_nLabelCount;
+                int nPredictionLabel = getLabel(rgOutput, nIdx, m_nLabelCount);
+
+                // If the new label is different from the previously predicted label, replace it.
+                if (nNewLabel != nPredictionLabel)
+                {
+                    setLabel(rgOutput, nIdx, m_nLabelCount, nNewLabel);
+                    bUpdate = true;
+                }
+
+                rgrgPool.Add(rgPool2);
+            }
+
+            if (bUpdate)
+                colTop[0].mutable_cpu_data = convert(rgOutput);
+
+            return rgrgPool;
         }
 
         private int getLabel(float[] rg, int nIdx, int nCount)
@@ -420,6 +420,79 @@ namespace MyCaffe.layers.alpha
             if (rgbPropagateDown[0])
             {
                 m_cuda.copy(colTop[0].count(), colTop[0].gpu_diff, colBottom[0].mutable_gpu_diff);
+
+                if (m_param.binary_hash_param.enable_triplet_loss && (m_param.binary_hash_param.iteration_enable == 0 || m_nIteration > m_param.binary_hash_param.iteration_enable))
+                {
+                    int nNum = colBottom[1].num;
+                    int nDim = colBottom[1].count() / colBottom[1].num;
+
+                    List<PoolItemCollection> rgrgPool = run(nNum, colBottom, colTop);
+                    if (rgrgPool == null)
+                        return;
+
+                    float[] rgDiff = convertF(colTop[0].mutable_cpu_diff);
+                    bool bUpdate = false;
+
+                    for (int i = 0; i < nNum; i++)
+                    {
+                        PoolItemCollection rgPool = rgrgPool[i];
+                        PoolItem itemPos = null;
+                        PoolItem itemNeg = null;
+                        int nLabel = (int)m_rgLabels[i];
+
+                        // Find values with smallest differences for negatives (argmin)
+                        for (int j = 0; j < rgPool.Count; j++)
+                        {
+                            int nPooledLabel = rgPool[j].Label;
+                            if (rgPool[j].IndexIntoClass != m_rgCache2CurrentIndex[nPooledLabel].LastIndex)
+                            {
+                                if (itemNeg == null && nPooledLabel != nLabel)
+                                {
+                                    itemNeg = rgPool[j];
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Find values with largest differences for positives (argmax)
+                        for (int j = rgPool.Count-1; j >= 0; j--)
+                        {
+                            int nPooledLabel = rgPool[j].Label;
+                            if (rgPool[j].IndexIntoClass != m_rgCache2CurrentIndex[nPooledLabel].LastIndex)
+                            {
+                                if (itemPos == null && nPooledLabel == nLabel)
+                                {
+                                    itemPos = rgPool[j];
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (itemNeg != null && itemPos != null)
+                        {
+                            // See page 3 of https://arxiv.org/pdf/1503.03832.pdf
+                            int nAOff = i * nDim;
+                            int nBOffPos = (itemPos.Label * (m_param.binary_hash_param.cache_depth * nDim)) + (itemPos.IndexIntoClass * nDim);
+                            double dfPos = m_cuda.sumsqdiff(nDim, m_blobWork.mutable_gpu_data, colTop[0].gpu_data, m_colBlobs[1].gpu_data, nAOff, nBOffPos);
+                            int nBOffNeg = (itemNeg.Label * (m_param.binary_hash_param.cache_depth * nDim)) + (itemNeg.IndexIntoClass * nDim);
+                            double dfNeg = m_cuda.sumsqdiff(nDim, m_blobWork.mutable_gpu_data, colTop[0].gpu_data, m_colBlobs[1].gpu_data, nAOff, nBOffNeg);
+                            double dfErr = (Math.Sqrt(dfPos) - Math.Sqrt(dfNeg)) + m_param.binary_hash_param.alpha;
+
+                            if (dfErr > 0)
+                            {
+                                for (int k = 0; k < m_nLabelCount; k++)
+                                {
+                                    rgDiff[i * m_nLabelCount + k] += (float)(dfErr / nDim);
+                                }
+
+                                bUpdate = true;
+                            }
+                        }
+                    }
+
+                    if (bUpdate)
+                        colBottom[0].mutable_cpu_diff = convert(rgDiff);
+                }
             }
         }
     }
@@ -466,6 +539,11 @@ namespace MyCaffe.layers.alpha
         public PoolItemCollection()
         {
             m_rg = new List<PoolItem>();
+        }
+
+        public int Count
+        {
+            get { return m_rg.Count; }
         }
 
         public PoolItem this[int nIdx]
@@ -518,7 +596,7 @@ namespace MyCaffe.layers.alpha
             return 0;
         }
 
-        public int SelectNewLabel(BinaryHashParameter.SELECTION_METHOD method)
+        public int SelectNewLabel(BinaryHashParameter.SELECTION_METHOD method, int nK)
         {
             if (method == BinaryHashParameter.SELECTION_METHOD.MINIMUM_DISTANCE)
                 return m_rg[0].Label;
@@ -526,8 +604,10 @@ namespace MyCaffe.layers.alpha
             // Select the item with the most votes.
             Dictionary<int, int> rgCounts = new Dictionary<int, int>();
 
-            foreach (PoolItem p in m_rg)
+            for (int i=0; i<m_rg.Count && i<nK; i++)
             {
+                PoolItem p = m_rg[i];
+
                 if (!rgCounts.ContainsKey(p.Label))
                     rgCounts.Add(p.Label, 0);
 
@@ -573,6 +653,7 @@ namespace MyCaffe.layers.alpha
 
     class IndexItem /** @private */
     {
+        int m_nLastIdx = -1;
         int m_nIdx = 0;
         bool m_bFull = false;
 
@@ -586,6 +667,11 @@ namespace MyCaffe.layers.alpha
             set { m_nIdx = value; }
         }
 
+        public int LastIndex
+        {
+            get { return m_nLastIdx; }
+        }
+
         public bool Full
         {
             get { return m_bFull; }
@@ -594,6 +680,7 @@ namespace MyCaffe.layers.alpha
 
         public void Increment(int nMax)
         {
+            m_nLastIdx = m_nIdx;
             m_nIdx++;
 
             if (m_nIdx >= nMax)
