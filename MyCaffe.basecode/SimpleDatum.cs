@@ -712,11 +712,12 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Return the boost for this data.
+        /// Get/set the boost for this data.
         /// </summary>
         public int Boost
         {
             get { return m_nBoost; }
+            set { m_nBoost = value; }
         }
 
         /// <summary>
