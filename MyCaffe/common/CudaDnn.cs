@@ -4443,7 +4443,7 @@ namespace MyCaffe.common
         /// <param name="hWork2">Specifies a handle to workspace data in GPU memory.  To get the size of the workspace memoory, call this function with hA = 0.</param>
         /// <param name="bDetectNans">Optionally, specifies whether or not to detect Nans.</param>
         /// <param name="nAOff">Optionally, specifies an offset (in items, not bytes) into the memory of A.</param>
-        /// <returns>A two element tuple is returned where the first item contains the minimum, the second item contains the maximum, the third contains the number
+        /// <returns>A four element tuple is returned where the first item contains the minimum, the second item contains the maximum, the third contains the number
         /// of NaN values and the fourth contains the number of Infinity values.  
         /// When calling this function with <code>hA = 0</code> the function instead returns the required size of <i>hWork1</i>, <i>hWork2</i>, 0, 0 (in items, not bytes).</returns>
         public Tuple<double, double, double, double> minmax(int n, long hA, long hWork1, long hWork2, bool bDetectNans = false, int nAOff = 0)
