@@ -15,10 +15,10 @@ namespace MyCaffe.param
     /// </remarks>
     public class BinaryHashParameter : LayerParameterBase 
     {
-        int m_nCacheDepth = 10;
+        int m_nCacheDepth = 40;
         int m_nPoolSize = 20;
-        double m_dfBinaryThresholdForPooling = 0.4;
-        uint m_nTopK = 10;
+        double m_dfBinaryThresholdForPooling = 0.5;
+        uint m_nTopK = 5;
         bool m_bEnableDebug = false;
         SELECTION_METHOD m_selMethod = SELECTION_METHOD.MINIMUM_DISTANCE;
         int m_nIterationEnable = 0;
@@ -26,7 +26,7 @@ namespace MyCaffe.param
         bool m_bEnableTripletLoss = false;
         DISTANCE_TYPE m_distPass1 = DISTANCE_TYPE.HAMMING;
         DISTANCE_TYPE m_distPass2 = DISTANCE_TYPE.EUCLIDEAN;
-        double m_dfAlpha = 0.5;
+        double m_dfAlpha = 0.1;
 
         /// <summary>
         /// Defines the type of distance calculation to use.
