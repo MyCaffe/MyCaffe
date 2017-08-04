@@ -939,7 +939,7 @@ namespace MyCaffe
                     return;
                 }
 
-                SimpleDatum sd = m_imgDb.QueryImage(nSrcId, i, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+                SimpleDatum sd = m_imgDb.QueryImage(nSrcId, i);
 
                 if (sd.ByteData == null && sd.RealData == null)
                 {
