@@ -8144,7 +8144,7 @@ long Math<T>::gaussian_blur(int n, int nChannels, int h, int w, T fSigma, long h
 	int nIdx = 0;
 	T rgFilter[9];
 	T fSigmaSq = fSigma * fSigma;
-	T fFactor1 = (1 / (2 * M_PI * fSigmaSq));
+	T fFactor1 = T(1 / (2 * M_PI * fSigmaSq));
 	T fFactor2 = 2 * fSigmaSq;
 	T fExp;
 	T fSum = 0;
