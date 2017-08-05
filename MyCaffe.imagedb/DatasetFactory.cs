@@ -1210,10 +1210,18 @@ namespace MyCaffe.imagedb
         /// Returns the image at a given image ID.
         /// </summary>
         /// <param name="nImageId">Specifies the image ID within the database.</param>
+        /// <param name="nSrcId">Optionally, specifies the expected Source ID.  The default is 0, which specifies to use the open Source ID.</param>
         /// <returns>The SimpleDatum containing the image is returned.</returns>
-        public SimpleDatum LoadImage(int nImageId)
+        public SimpleDatum LoadImage(int nImageId, int nSrcId = 0)
         {
-            return LoadDatum(m_db.GetRawImage(nImageId));
+            if (nSrcId == 0)
+                nSrcId = m_db.CurrentSource.ID;
+
+            RawImage img = m_db.GetRawImage(nImageId);
+            if (img.SourceID != nSrcId)
+                return null;
+
+            return LoadDatum(img);
         }
 
         /// <summary>

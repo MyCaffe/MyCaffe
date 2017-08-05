@@ -1333,17 +1333,38 @@ namespace MyCaffe
         /// <summary>
         /// Retrives the image at a given index within the Testing data set.
         /// </summary>
+        /// <param name="nSrcId">Specifies the Source ID.</param>
         /// <param name="nIdx">Specifies the image index.</param>
         /// <param name="nLabel">Returns the expected label for the image.</param>
         /// <param name="strLabel">Returns the expected label name for the image.</param>
         /// <returns>The image queried is returned.</returns>
-        public Bitmap GetTargetImage(int nIdx, out int nLabel, out string strLabel)
+        public Bitmap GetTargetImage(int nSrcId, int nIdx, out int nLabel, out string strLabel)
         {
-            int nSrcId = m_dataSet.TestingSource.ID;
             SimpleDatum d = m_imgDb.QueryImage(nSrcId, nIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
 
             nLabel = d.Label;
             strLabel = m_imgDb.GetLabelName(nSrcId, nLabel);
+
+            if (strLabel == null || strLabel.Length == 0)
+                strLabel = nLabel.ToString();
+
+            return new Bitmap(ImageData.GetImage(new Datum(d), null));
+        }
+
+
+        /// <summary>
+        /// Retrives the image with a given ID.
+        /// </summary>
+        /// <param name="nImageID">Specifies the Raw Image ID.</param>
+        /// <param name="nLabel">Returns the expected label for the image.</param>
+        /// <param name="strLabel">Returns the expected label name for the image.</param>
+        /// <returns>The image queried is returned.</returns>
+        public Bitmap GetTargetImage(int nImageID, out int nLabel, out string strLabel)
+        {
+            SimpleDatum d = m_imgDb.GetImage(nImageID, m_dataSet.TrainingSource.ID, m_dataSet.TestingSource.ID);
+
+            nLabel = d.Label;
+            strLabel = m_imgDb.GetLabelName(m_dataSet.TestingSource.ID, nLabel);
 
             if (strLabel == null || strLabel.Length == 0)
                 strLabel = nLabel.ToString();

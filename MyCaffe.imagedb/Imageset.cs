@@ -436,6 +436,27 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Returns the SimpleDatum of the image at a given ID.
+        /// </summary>
+        /// <param name="nImageID">Specifies the Raw Image ID to get.</param>
+        /// <returns>The SimpleDatum of the image is returned.</returns>
+        public SimpleDatum GetImage(int nImageID)
+        {
+            lock (m_syncObj)
+            {
+                List<SimpleDatum> rgSd = m_rgImages.Where(p => p.ImageID == nImageID).ToList();
+                if (rgSd.Count > 0)
+                    return rgSd[0];
+
+                SimpleDatum sd = m_factory.LoadImage(nImageID);
+                if (sd != null)
+                    Add(sd.Index, sd);
+
+                return sd;
+            }
+        }
+
+        /// <summary>
         /// Retuns the LabelSet corresponding to a label.
         /// </summary>
         /// <param name="nLabel">Specifies the label.</param>

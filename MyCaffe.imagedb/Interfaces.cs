@@ -143,6 +143,16 @@ namespace MyCaffe.imagedb
         SimpleDatum QueryImage(int nSrcId, int nIdx, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null);
 
         /// <summary>
+        /// Get the image with a given Raw Image ID.
+        /// </summary>
+        /// <param name="nImageID">Specifies the Raw Image ID of the image to get.</param>
+        /// <param name="rgSrcId">Specifies a list of Source ID's to search for the image.</param>
+        /// <returns>The SimpleDatum of the image is returned.</returns>
+        [OperationContract]
+        [FaultContract(typeof(ImageDatabaseErrorData))]
+        SimpleDatum GetImage(int nImageID, params int[] rgSrcId);
+
+        /// <summary>
         /// Returns a list of LabelDescriptor%s associated with the labels within a data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>

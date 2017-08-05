@@ -584,6 +584,31 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Returns the image with a given Raw Image ID.
+        /// </summary>
+        /// <param name="nImageID">Specifies the Raw Image ID.</param>
+        /// <param name="rgSrcId">Specifies a set of source ID's to query from.</param>
+        /// <returns>If found, the SimpleDatum of the Raw Image is returned, otherwise, <i>null</i> is returned.</returns>
+        public SimpleDatum GetImage(int nImageID, params int[] rgSrcId)
+        {
+            int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
+
+            if (nWait == 0)
+                return null;
+
+            foreach (int nSrcId in rgSrcId)
+            {
+                ImageSet imgSet = m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId);
+                SimpleDatum sd = imgSet.GetImage(nImageID);
+
+                if (sd != null)
+                    return sd;
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Returns a list of LabelDescriptor%s associated with the labels within a data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
