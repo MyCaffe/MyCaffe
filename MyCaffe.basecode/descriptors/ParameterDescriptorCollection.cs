@@ -30,7 +30,7 @@ namespace MyCaffe.basecode.descriptors
         {
             foreach (ParameterDescriptor p in rg)
             {
-                m_rgParams.Add(new descriptors.ParameterDescriptor(p));
+                m_rgParams.Add(new ParameterDescriptor(p));
             }
         }
 

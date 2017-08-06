@@ -73,6 +73,7 @@ namespace MyCaffe.basecode.descriptors
         public DatasetDescriptor(DatasetDescriptor d)
             : this(d.ID, d.Name, d.ModelGroup, d.DatasetGroup, d.TrainingSource, d.TestingSource, d.CreatorName, d.Description, d.Owner)
         {
+            m_colParameters = new ParameterDescriptorCollection(d.Parameters);
         }
 
         /// <summary>
