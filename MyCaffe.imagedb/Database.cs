@@ -1128,15 +1128,22 @@ namespace MyCaffe.imagedb
         /// Returns the ID's of all RawImages within a data source.
         /// </summary>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="nMax">Specifies the maximum number of ID's to query, the default is int max.</param>
+        /// <param name="nLabel">Specifies a label from which images are to be queried, default is to ignore (-1).</param>
         /// <returns>The List of RawImage ID's is returned.</returns>
-        public List<int> QueryAllRawImageIDs(int nSrcId = 0)
+        public List<int> QueryAllRawImageIDs(int nSrcId = 0, int nMax = int.MaxValue, int nLabel = -1)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                string strCmd = "SELECT ID FROM RawImages WHERE(SourceID = " + nSrcId.ToString() + ")";
+                string strTop = (nMax == int.MaxValue) ? "" : "TOP " + nMax.ToString();
+                string strCmd = "SELECT " + strTop + " ID FROM RawImages WHERE (SourceID = " + nSrcId.ToString() + ")";
+
+                if (nLabel != -1)
+                    strCmd += " AND (ActiveLabel = " + nLabel.ToString() + ")";
+
                 return entities.Database.SqlQuery<int>(strCmd).ToList();
             }
         }

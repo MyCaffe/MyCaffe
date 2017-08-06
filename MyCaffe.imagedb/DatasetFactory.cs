@@ -262,10 +262,12 @@ namespace MyCaffe.imagedb
         /// Returns all raw image IDs for a given data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <param name="nMax">Specifies the maximum number of ID's to query, the default is int max.</param>
+        /// <param name="nLabel">Specifies a label from which images are to be queried, default is to ignore (-1).</param>
         /// <returns>The list of raw image ID's is returned.</returns>
-        public List<int> QueryRawImageIDs(int nSrcId = 0)
+        public List<int> QueryRawImageIDs(int nSrcId = 0, int nMax = int.MaxValue, int nLabel = -1)
         {
-            return m_db.QueryAllRawImageIDs(nSrcId);
+            return m_db.QueryAllRawImageIDs(nSrcId, nMax, nLabel);
         }
 
         /// <summary>
