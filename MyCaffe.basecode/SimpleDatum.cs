@@ -58,6 +58,10 @@ namespace MyCaffe.basecode
             /// </summary>
             SEGMENTATION,
             /// <summary>
+            /// Specifies that the data contains a dictionary of values.
+            /// </summary>
+            DICTIONARY,
+            /// <summary>
             /// Specifies that the data contains custom data.
             /// </summary>
             CUSTOM
