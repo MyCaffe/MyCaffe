@@ -444,7 +444,7 @@ namespace MyCaffe.imagedb
         {
             lock (m_syncObj)
             {
-                List<SimpleDatum> rgSd = m_rgImages.Where(p => p.ImageID == nImageID).ToList();
+                List<SimpleDatum> rgSd = m_rgImages.Where(p => p != null && p.ImageID == nImageID).ToList();
                 if (rgSd.Count > 0)
                     return rgSd[0];
 
