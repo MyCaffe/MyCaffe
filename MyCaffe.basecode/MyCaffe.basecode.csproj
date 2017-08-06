@@ -96,6 +96,7 @@
     <Compile Include="descriptors\SourceDescriptor.cs" />
     <Compile Include="descriptors\StateDescriptor.cs" />
     <Compile Include="descriptors\ValueDescriptor.cs" />
+    <Compile Include="SimpleDictionary.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.Config" />
