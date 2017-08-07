@@ -84,6 +84,7 @@
     <Compile Include="DatasetParameter.cs">
       <DependentUpon>DNNModel.tt</DependentUpon>
     </Compile>
+    <Compile Include="DeleteFiles.cs" />
     <Compile Include="DNNModel.Context.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -148,6 +149,7 @@
     <Compile Include="SourceParameter.cs">
       <DependentUpon>DNNModel.tt</DependentUpon>
     </Compile>
+    <Compile Include="StopWatch.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.Config" />
