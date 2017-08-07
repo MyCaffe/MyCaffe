@@ -116,6 +116,11 @@ namespace MyCaffe.imagedb
         /// <returns>The base image path is returned.</returns>
         protected virtual string getImagePath(string strSrcName = null)
         {
+            return getImagePathBase(strSrcName);
+        }
+
+        string getImagePathBase(string strSrcName = null, DNNEntities entities = null)
+        {
             if (strSrcName == null)
             {
                 if (m_src == null)
@@ -127,7 +132,10 @@ namespace MyCaffe.imagedb
                     strSrcName = GetSourceName(m_src.CopyOfSourceID.GetValueOrDefault());
             }
 
-            return GetDatabaseImagePath(m_entities.Database.Connection.Database) + strSrcName + "\\";
+            if (entities == null)
+                entities = m_entities;
+
+            return GetDatabaseImagePath(entities.Database.Connection.Database) + strSrcName + "\\";
         }
 
         /// <summary>
@@ -1176,6 +1184,8 @@ namespace MyCaffe.imagedb
             img.AutoLabel = d.AutoLabeled;
             img.Description = strDescription;
 
+            string strGuid = Guid.NewGuid().ToString();
+
             if (d.VirtualID > 0)
             {
                 img.VirtualID = d.VirtualID;
@@ -1184,19 +1194,19 @@ namespace MyCaffe.imagedb
             else
             {
                 img.VirtualID = 0;
-                img.Data = setImageByteData(d.GetByteData(out bEncoded));
+                img.Data = setImageByteData(d.GetByteData(out bEncoded), null, strGuid);
                 img.Encoded = bEncoded;
             }
 
             if (d.DebugData != null)
             {
-                img.DebugData = setImageByteData(d.DebugData, "dbg");
+                img.DebugData = setImageByteData(d.DebugData, "dbg", strGuid);
                 img.DebugDataFormatID = (byte)d.DebugDataFormat;
             }
 
             if (d.DataCriteria != null)
             {
-                img.DataCriteria = setImageByteData(d.DataCriteria, "criteria");
+                img.DataCriteria = setImageByteData(d.DataCriteria, "criteria", strGuid);
                 img.DataCriteriaFormatID = (byte)d.DataCriteriaFormat;
             }
 
@@ -1212,8 +1222,9 @@ namespace MyCaffe.imagedb
         /// </remarks>
         /// <param name="rgImg">Specifies the bytes to check for a path.</param>
         /// <param name="strType">Specifies an extra name to add to the file name.</param>
+        /// <param name="strGuid">Specifies an optional guid string to use as the file name.</param>
         /// <returns></returns>
-        protected byte[] setImageByteData(byte[] rgImg, string strType = null)
+        protected byte[] setImageByteData(byte[] rgImg, string strType = null, string strGuid = null)
         {
             if (rgImg == null)
                 return null;
@@ -1221,8 +1232,11 @@ namespace MyCaffe.imagedb
             if (!m_bEnableFileBasedData || rgImg.Length < 100)
                 return rgImg;
 
+            if (strGuid == null)
+                strGuid = Guid.NewGuid().ToString();
+
             string strTypeExt = (strType == null) ? "" : "." + strType;
-            string strFile = Guid.NewGuid().ToString() + strTypeExt + ".bin";
+            string strFile = strGuid + strTypeExt + ".bin";
             File.WriteAllBytes(m_strPrimaryImgPath + strFile, rgImg);
 
             string strTag = "FILE:" + strFile;
@@ -3402,9 +3416,13 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="strDsName">Specifies the dataset name.</param>
         /// <param name="bDeleteRelatedProjects">Specifies whether or not to also delete all projects using the dataset.  <b>WARNING!</b> Use this with caution for it will permenantly delete the projects and their results.</param>
-        public virtual void DeleteDataset(string strDsName, bool bDeleteRelatedProjects)
+        /// <param name="log">Specifies the Log object for status output.</param>
+        /// <param name="evtCancel">Specifies the cancel event used to cancel the delete.</param>
+        public virtual void DeleteDataset(string strDsName, bool bDeleteRelatedProjects, Log log, CancelEvent evtCancel)
         {
             Dataset ds = GetDataset(strDsName);
+            Source srcTraining = GetSource(ds.TrainingSourceID.GetValueOrDefault());
+            Source srcTesting = GetSource(ds.TestingSourceID.GetValueOrDefault());
             string strCmd;
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
@@ -3437,6 +3455,10 @@ namespace MyCaffe.imagedb
 
                 strCmd = "DELETE Datasets WHERE (ID = " + ds.ID.ToString() + ")";
                 entities.Database.ExecuteSqlCommand(strCmd);
+
+                DeleteFiles del = new DeleteFiles(log, evtCancel);
+                del.DeleteDirectory(getImagePathBase(srcTesting.Name, entities));
+                del.DeleteDirectory(getImagePathBase(srcTraining.Name, entities));
             }
         }
 
@@ -3845,14 +3867,16 @@ namespace MyCaffe.imagedb
         /// Deletes a model group from the database.
         /// </summary>
         /// <param name="strGroup">Specifies the name of the group.</param>
-        public void DeleteModelGroup(string strGroup)
+        /// <param name="log">Specifies the Log object for status output.</param>
+        /// <param name="evtCancel">Specifies the cancel event used to cancel the delete.</param>
+        public void DeleteModelGroup(string strGroup, Log log, CancelEvent evtCancel)
         {
             int nModelGroupId = GetModelGroupID(strGroup);
             List<Dataset> rgDs = GetAllDatasetsInModelGroup(nModelGroupId);
 
             foreach (Dataset ds in rgDs)
             {
-                DeleteDataset(ds.Name, false);
+                DeleteDataset(ds.Name, false, log, evtCancel);
             }
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
