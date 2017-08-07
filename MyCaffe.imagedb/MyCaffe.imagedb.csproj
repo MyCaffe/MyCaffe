@@ -149,7 +149,6 @@
     <Compile Include="SourceParameter.cs">
       <DependentUpon>DNNModel.tt</DependentUpon>
     </Compile>
-    <Compile Include="StopWatch.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.Config" />
