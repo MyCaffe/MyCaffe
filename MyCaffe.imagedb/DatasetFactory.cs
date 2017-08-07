@@ -147,7 +147,9 @@ namespace MyCaffe.imagedb
             if (m_imageCache.Count == 0)
                 return;
 
-            m_db.PutRawImages(m_imageCache.Images, m_imageCache.Parameters);
+            if (bSave)
+                m_db.PutRawImages(m_imageCache.Images, m_imageCache.Parameters);
+
             m_imageCache.Clear();
         }
 
@@ -1541,12 +1543,6 @@ namespace MyCaffe.imagedb
             m_rgImages.Add(img);
 
             List<ParameterData> rgParam = new List<imagedb.ParameterData>();
-
-            if (sd.DataCriteria != null)
-                rgParam.Add(new ParameterData("DataCriteria", "", sd.DataCriteria));
-
-            if (sd.DebugData != null)
-                rgParam.Add(new ParameterData("DebugData", "", sd.DebugData));
 
             if (sd is Datum)
             {
