@@ -1305,7 +1305,7 @@ namespace MyCaffe
         public Bitmap GetTestImage(Phase phase, out int nLabel, out string strLabel)
         {
             int nSrcId = (phase == Phase.TRAIN) ? m_dataSet.TrainingSource.ID : m_dataSet.TestingSource.ID;
-            SimpleDatum d = m_imgDb.QueryImage(nSrcId, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+            SimpleDatum d = m_imgDb.QueryImage(nSrcId, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM | IMGDB_IMAGE_SELECTION_METHOD.BOOST);
 
             nLabel = d.Label;
             strLabel = m_imgDb.GetLabelName(nSrcId, nLabel);
@@ -1325,7 +1325,7 @@ namespace MyCaffe
         public Bitmap GetTestImage(Phase phase, int nLabel)
         {
             int nSrcId = (phase == Phase.TRAIN) ? m_dataSet.TrainingSource.ID : m_dataSet.TestingSource.ID;
-            SimpleDatum d = m_imgDb.QueryImage(nSrcId, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, nLabel);
+            SimpleDatum d = m_imgDb.QueryImage(nSrcId, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM | IMGDB_IMAGE_SELECTION_METHOD.BOOST, nLabel);
 
             return new Bitmap(ImageData.GetImage(new Datum(d), null));
         }
