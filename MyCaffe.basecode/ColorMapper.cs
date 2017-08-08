@@ -112,6 +112,31 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns the value associated with the color.
+        /// </summary>
+        /// <param name="clr"></param>
+        /// <returns>The value associated with the color is returned.</returns>
+        public double GetValue(Color clr)
+        {
+            KeyValuePair<Color, SizeF> kvLast = new KeyValuePair<Color, SizeF>(Color.Black, new SizeF(0, 0));
+
+            foreach (KeyValuePair<Color, SizeF> kv in m_rgColorMappings)
+            {
+                if (kv.Key.R >= clr.R && kv.Key.G >= clr.G && kv.Key.B >= clr.B)
+                {
+                    if (kv.Key.R == clr.R && kv.Key.G == clr.G && kv.Key.B == clr.B)
+                        return (kv.Value.Height - kv.Value.Width) / 2;
+                    else
+                        return (kvLast.Value.Height + kvLast.Value.Width) / 2;
+                }
+
+                kvLast = kv;
+            }
+
+            return 0;
+        }
+
+        /// <summary>
         /// Calculate the gradient color.
         /// </summary>
         /// <remarks>
