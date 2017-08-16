@@ -916,92 +916,93 @@ namespace MyCaffe.test
             factory.Close();
         }
 
-        [TestMethod]
-        public void ConvertAllRawImagesToFileBased()
-        {
-            DatasetFactory factory = new DatasetFactory();
+        // ONLY UNCOMMENT WHEN USING, but do not leave in the Test Cycle.
+        //[TestMethod]
+        //public void ConvertAllRawImagesToFileBased()
+        //{
+        //    DatasetFactory factory = new DatasetFactory();
 
-            List<int> rgSrc = factory.GetAllDataSourceIDs();
+        //    List<int> rgSrc = factory.GetAllDataSourceIDs();
 
-            for (int i = 0; i < rgSrc.Count; i++)
-            {
-                int nSrcId = rgSrc[i];
-                SourceDescriptor src = factory.LoadSource(nSrcId);
+        //    for (int i = 0; i < rgSrc.Count; i++)
+        //    {
+        //        int nSrcId = rgSrc[i];
+        //        SourceDescriptor src = factory.LoadSource(nSrcId);
 
-                Trace.WriteLine("Converting data source '" + src.Name + "' - (" + src.ImageCount.ToString("N0") + " images) to file based...");
+        //        Trace.WriteLine("Converting data source '" + src.Name + "' - (" + src.ImageCount.ToString("N0") + " images) to file based...");
 
-                factory.Open(nSrcId, 500, true);
+        //        factory.Open(nSrcId, 500, true);
 
-                int nIdx = 0;
-                int nBatchCount = 1000;
-                Stopwatch sw = new Stopwatch();
+        //        int nIdx = 0;
+        //        int nBatchCount = 1000;
+        //        Stopwatch sw = new Stopwatch();
 
-                sw.Start();
+        //        sw.Start();
 
-                while (nIdx < src.ImageCount)
-                {
-                    int nImageCount = Math.Min(nBatchCount, src.ImageCount - nIdx);
-                    bool bResult = factory.ConvertRawImagesSaveToFile(nIdx, nImageCount);
+        //        while (nIdx < src.ImageCount)
+        //        {
+        //            int nImageCount = Math.Min(nBatchCount, src.ImageCount - nIdx);
+        //            bool bResult = factory.ConvertRawImagesSaveToFile(nIdx, nImageCount);
 
-                    if (sw.Elapsed.TotalMilliseconds > 1000)
-                    {
-                        double dfTotalPct = (double)i / rgSrc.Count;
-                        double dfPct = (double)nIdx / (double)src.ImageCount;
-                        Trace.WriteLine(dfTotalPct.ToString("P") + " (" + (i + 1).ToString() + " of " + rgSrc.Count.ToString() + ") Processing '" + src.Name + "' at " + dfPct.ToString("P"));
-                        sw.Restart();
-                    }
+        //            if (sw.Elapsed.TotalMilliseconds > 1000)
+        //            {
+        //                double dfTotalPct = (double)i / rgSrc.Count;
+        //                double dfPct = (double)nIdx / (double)src.ImageCount;
+        //                Trace.WriteLine(dfTotalPct.ToString("P") + " (" + (i + 1).ToString() + " of " + rgSrc.Count.ToString() + ") Processing '" + src.Name + "' at " + dfPct.ToString("P"));
+        //                sw.Restart();
+        //            }
 
-                    nIdx += nImageCount;
-                }
+        //            nIdx += nImageCount;
+        //        }
 
-                factory.UpdateSaveImagesToFile(true);
-                factory.Close();
-            }
-        }
+        //        factory.UpdateSaveImagesToFile(true);
+        //        factory.Close();
+        //    }
+        //}
 
+        // ONLY UNCOMMENT WHEN USING, but do not leave in the Test Cycle.
+        //[TestMethod]
+        //public void ConvertAllRawImagesToDatabaseBased()
+        //{
+        //    DatasetFactory factory = new DatasetFactory();
 
-        [TestMethod]
-        public void ConvertAllRawImagesToDatabaseBased()
-        {
-            DatasetFactory factory = new DatasetFactory();
+        //    List<int> rgSrc = factory.GetAllDataSourceIDs();
 
-            List<int> rgSrc = factory.GetAllDataSourceIDs();
+        //    for (int i = 0; i < rgSrc.Count; i++)
+        //    {
+        //        int nSrcId = rgSrc[i];
+        //        SourceDescriptor src = factory.LoadSource(nSrcId);
 
-            for (int i = 0; i < rgSrc.Count; i++)
-            {
-                int nSrcId = rgSrc[i];
-                SourceDescriptor src = factory.LoadSource(nSrcId);
+        //        Trace.WriteLine("Converting data source '" + src.Name + "' - (" + src.ImageCount.ToString("N0") + " images) to database based...");
 
-                Trace.WriteLine("Converting data source '" + src.Name + "' - (" + src.ImageCount.ToString("N0") + " images) to database based...");
+        //        factory.Open(nSrcId, 500, true);
 
-                factory.Open(nSrcId, 500, true);
+        //        int nIdx = 0;
+        //        int nBatchCount = 1000;
+        //        Stopwatch sw = new Stopwatch();
 
-                int nIdx = 0;
-                int nBatchCount = 1000;
-                Stopwatch sw = new Stopwatch();
+        //        sw.Start();
 
-                sw.Start();
+        //        while (nIdx < src.ImageCount)
+        //        {
+        //            int nImageCount = Math.Min(nBatchCount, src.ImageCount - nIdx);
+        //            bool bResult = factory.ConvertRawImagesSaveToDatabase(nIdx, nImageCount);
 
-                while (nIdx < src.ImageCount)
-                {
-                    int nImageCount = Math.Min(nBatchCount, src.ImageCount - nIdx);
-                    bool bResult = factory.ConvertRawImagesSaveToDatabase(nIdx, nImageCount);
+        //            if (sw.Elapsed.TotalMilliseconds > 1000)
+        //            {
+        //                double dfTotalPct = (double)i / rgSrc.Count;
+        //                double dfPct = (double)nIdx / (double)src.ImageCount;
+        //                Trace.WriteLine(dfTotalPct.ToString("P") + " (" + (i + 1).ToString() + " of " + rgSrc.Count.ToString() + ") Processing '" + src.Name + "' at " + dfPct.ToString("P"));
+        //                sw.Restart();
+        //            }
 
-                    if (sw.Elapsed.TotalMilliseconds > 1000)
-                    {
-                        double dfTotalPct = (double)i / rgSrc.Count;
-                        double dfPct = (double)nIdx / (double)src.ImageCount;
-                        Trace.WriteLine(dfTotalPct.ToString("P") + " (" + (i + 1).ToString() + " of " + rgSrc.Count.ToString() + ") Processing '" + src.Name + "' at " + dfPct.ToString("P"));
-                        sw.Restart();
-                    }
+        //            nIdx += nImageCount;
+        //        }
 
-                    nIdx += nImageCount;
-                }
-
-                factory.UpdateSaveImagesToFile(false);
-                factory.Close();
-            }
-        }
+        //        factory.UpdateSaveImagesToFile(false);
+        //        factory.Close();
+        //    }
+        //}
     }
 
     class CalculationArray
