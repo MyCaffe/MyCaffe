@@ -21,6 +21,10 @@ To get started with the MyCaffe C# source, check out the <a href="https://github
 
 The C# based MyCaffe open-source project is independently maintained by <a href="http://www.signalpop.com">SignalPOP LLC</a> and made 
 available under the Apache 2.0 License.
+<h3>Supported Development Environments:</h3>
+* Visual Studio 2017 & CUDA 9.0RC (currently uses VS2015 compile)</br>
+* Visual Studio 2015 & CUDA 9.0RC</br>
+</br>
 
 [1] [Caffe: Convolutional Architecture for Fast Feature Embedding](https://arxiv.org/abs/1408.5093) by Yangqing Jai, Evan Shelhamer, Jeff Donahue, 
 Sergey Karayev, Jonathan Long, Ross Girshick, Sergio Guadarrama, and Trevor Darrell, 2014.
