@@ -181,7 +181,7 @@ namespace MyCaffe.test
 
             layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(2, layer.blobs.Count, "There should be 2 blobs for the layer.");
+            m_log.CHECK_EQ(3, layer.blobs.Count, "There should be 3 blobs for the layer.");
 
             int nLabelCount = m_blobFC8.count() / m_blobFC8.num;
             int nCacheDepth = p.binary_hash_param.cache_depth;
@@ -203,7 +203,7 @@ namespace MyCaffe.test
 
         public void TestForward()
         {
-            testForward(1000);
+            testForward(100);
         }
 
         private BinaryHashLayer<T> testForward(int nIterations)
