@@ -162,6 +162,8 @@ namespace MyCaffe.test
             m_nGpu1 = rgGpu[0];
             m_nGpu2 = rgGpu[1];
 
+            cuda.Dispose();
+
             return true;
         }
 
