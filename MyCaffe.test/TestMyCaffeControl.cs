@@ -96,9 +96,10 @@ namespace MyCaffe.test
 
             try
             {
+                List<int> rgGpu = getGpus(2);
                 foreach (IMyCaffeControlTest t in test.Tests)
                 {
-                    t.TestTrainMultiGpu(1, 2);
+                    t.TestTrainMultiGpu(rgGpu.ToArray());
                 }
             }
             finally
@@ -114,9 +115,13 @@ namespace MyCaffe.test
 
             try
             {
+                List<int> rgGpu = getGpus(3);
+                if (rgGpu.Count < 3)
+                    return;
+
                 foreach (IMyCaffeControlTest t in test.Tests)
                 {
-                    t.TestTrainMultiGpu(1, 2, 3);
+                    t.TestTrainMultiGpu(rgGpu.ToArray());
                 }
             }
             finally
@@ -132,9 +137,13 @@ namespace MyCaffe.test
 
             try
             {
+                List<int> rgGpu = getGpus(4);
+                if (rgGpu.Count < 4)
+                    return;
+
                 foreach (IMyCaffeControlTest t in test.Tests)
                 {
-                    t.TestTrainMultiGpu(1, 2, 3, 4);
+                    t.TestTrainMultiGpu(rgGpu.ToArray());
                 }
             }
             finally
@@ -213,6 +222,29 @@ namespace MyCaffe.test
             {
                 test.Dispose();
             }
+        }
+
+        private List<int> getGpus(int nMax)
+        {
+            CudaDnn<float> cuda = new CudaDnn<float>(0);
+            List<int> rgGpu = new List<int>();
+            int nDevCount = cuda.GetDeviceCount();
+
+            for (int i = 0; i < nDevCount; i++)
+            {
+                string strDevInfo = cuda.GetDeviceInfo(i, true);
+                string strP2PInfo = cuda.GetDeviceP2PInfo(i);
+
+                if (strP2PInfo.Contains("P2P Capable = YES"))
+                    rgGpu.Add(i);
+
+                if (rgGpu.Count == nMax)
+                    break;
+            }
+
+            cuda.Dispose();
+
+            return rgGpu;
         }
     }
 
