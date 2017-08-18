@@ -123,6 +123,7 @@ namespace MyCaffe.test
                 {
                     try
                     {
+#warning TestConvolutionLayer.TestGradientCuDnn test fails when run as <double> on CUDA 9.0RC + cuDnn 7.0.
                         Trace.WriteLine(t.DataType.ToString() + ":" + t.engine.ToString() + ": TestGradient");
                         t.TestGradient();
                     }
@@ -1122,7 +1123,6 @@ namespace MyCaffe.test
             p.convolution_param.num_output = 2;
             p.convolution_param.weight_filler = new FillerParameter("gaussian");
             p.convolution_param.bias_filler = new FillerParameter("gaussian");
-            p.convolution_param.bias_filler.value = 0.1;
             ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
 
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
