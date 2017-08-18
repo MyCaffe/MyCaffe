@@ -138,8 +138,41 @@ namespace MyCaffe.test
             return 0;
         }
 
+        private bool setGpus()
+        {
+            CudaDnn<T> cuda = new CudaDnn<T>(0);
+            int nDevCount = cuda.GetDeviceCount();
+
+            if (nDevCount < 0)
+                return false;
+
+            List<int> rgGpu = new List<int>();
+            for (int i = 0; i < nDevCount; i++)
+            {
+                string strDevInfo = cuda.GetDeviceInfo(i, true);
+                string strP2PInfo = cuda.GetDeviceP2PInfo(i);
+
+                if (strP2PInfo.Contains("P2P Capable = YES"))
+                    rgGpu.Add(i);
+            }
+
+            if (rgGpu.Count < 2)
+                return false;
+
+            m_nGpu1 = rgGpu[0];
+            m_nGpu2 = rgGpu[1];
+
+            return true;
+        }
+
         public void TestBroadcast()
         {
+            if (!setGpus())
+            {
+                m_log.WriteLine("WARNING: You must have 2 P2P capable GPU's that do not have a monitor connected to perform NCCL tests.");
+                return;
+            }
+
             CudaDnn<T> cuda = new CudaDnn<T>(m_nGpu1);
             long hNccl1 = cuda.CreateNCCL(m_nGpu1, 2, 0, m_guid);
             long hNccl2 = cuda.CreateNCCL(m_nGpu2, 2, 1, m_guid);
@@ -222,6 +255,12 @@ namespace MyCaffe.test
 
         public void TestAllReduce()
         {
+            if (!setGpus())
+            {
+                m_log.WriteLine("WARNING: You must have 2 P2P capable GPU's that do not have a monitor connected to perform NCCL tests.");
+                return;
+            }
+
             CudaDnn<T> cuda = new CudaDnn<T>(m_nGpu1);
             long hNccl1 = cuda.CreateNCCL(m_nGpu1, 2, 0, m_guid);
             long hNccl2 = cuda.CreateNCCL(m_nGpu2, 2, 1, m_guid);
