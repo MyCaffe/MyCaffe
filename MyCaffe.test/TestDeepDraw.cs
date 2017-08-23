@@ -98,6 +98,7 @@ namespace MyCaffe.test
 
         protected override void dispose()
         {
+            m_caffe.Dispose();
             base.dispose();
         }
 

@@ -143,26 +143,31 @@ namespace MyCaffe.test
             CudaDnn<T> cuda = new CudaDnn<T>(0);
             int nDevCount = cuda.GetDeviceCount();
 
-            if (nDevCount < 0)
-                return false;
-
-            List<int> rgGpu = new List<int>();
-            for (int i = 0; i < nDevCount; i++)
+            try
             {
-                string strDevInfo = cuda.GetDeviceInfo(i, true);
-                string strP2PInfo = cuda.GetDeviceP2PInfo(i);
+                if (nDevCount < 0)
+                    return false;
 
-                if (strP2PInfo.Contains("P2P Capable = YES"))
-                    rgGpu.Add(i);
+                List<int> rgGpu = new List<int>();
+                for (int i = 0; i < nDevCount; i++)
+                {
+                    string strDevInfo = cuda.GetDeviceInfo(i, true);
+                    string strP2PInfo = cuda.GetDeviceP2PInfo(i);
+
+                    if (strP2PInfo.Contains("P2P Capable = YES"))
+                        rgGpu.Add(i);
+                }
+
+                if (rgGpu.Count < 2)
+                    return false;
+
+                m_nGpu1 = rgGpu[0];
+                m_nGpu2 = rgGpu[1];
             }
-
-            if (rgGpu.Count < 2)
-                return false;
-
-            m_nGpu1 = rgGpu[0];
-            m_nGpu2 = rgGpu[1];
-
-            cuda.Dispose();
+            finally
+            {
+                cuda.Dispose();
+            }
 
             return true;
         }

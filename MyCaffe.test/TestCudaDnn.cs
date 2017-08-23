@@ -66,26 +66,42 @@ namespace MyCaffe.test
         public void TestGetDeviceMemory()
         {
             CudaDnn<double> cuda1 = new CudaDnn<double>(TestBase.DEFAULT_DEVICE_ID, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
-            bool bEstimate;
-            double dfFree = 0;
-            double dfUsed = 0;
-            double dfTotal = cuda1.GetDeviceMemory(out dfFree, out dfUsed, out bEstimate);
 
-            Assert.AreEqual(dfUsed + dfFree, dfTotal);
+            try
+            {
+                bool bEstimate;
+                double dfFree = 0;
+                double dfUsed = 0;
+                double dfTotal = cuda1.GetDeviceMemory(out dfFree, out dfUsed, out bEstimate);
 
-            CudaDnn<float> cuda2 = new CudaDnn<float>(TestBase.DEFAULT_DEVICE_ID, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
-            bool bEstimate2;
-            double dfFree2 = 0;
-            double dfUsed2 = 0;
-            double dfTotal2 = cuda2.GetDeviceMemory(out dfFree2, out dfUsed2, out bEstimate2);
+                Assert.AreEqual(dfUsed + dfFree, dfTotal);
 
-            float fActual = (float)(dfUsed2 + dfFree2);
-            float fTotal = (float)dfTotal2;
+                CudaDnn<float> cuda2 = new CudaDnn<float>(TestBase.DEFAULT_DEVICE_ID, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
 
-            Assert.AreEqual(fActual, fTotal);
-            Assert.AreEqual((float)dfUsed, (float)dfUsed2);
-            Assert.AreEqual((float)dfFree, (float)dfFree2);
-            Assert.AreEqual((float)dfTotal, (float)dfTotal2);
+                try
+                {
+                    bool bEstimate2;
+                    double dfFree2 = 0;
+                    double dfUsed2 = 0;
+                    double dfTotal2 = cuda2.GetDeviceMemory(out dfFree2, out dfUsed2, out bEstimate2);
+
+                    float fActual = (float)(dfUsed2 + dfFree2);
+                    float fTotal = (float)dfTotal2;
+
+                    Assert.AreEqual(fActual, fTotal);
+                    Assert.AreEqual((float)dfUsed, (float)dfUsed2);
+                    Assert.AreEqual((float)dfFree, (float)dfFree2);
+                    Assert.AreEqual((float)dfTotal, (float)dfTotal2);
+                }
+                finally
+                {
+                    cuda2.Dispose();
+                }
+            }
+            finally
+            {
+                cuda1.Dispose();
+            }
         }
 
         [TestMethod]
@@ -103,6 +119,8 @@ namespace MyCaffe.test
             }
             finally
             {
+                cuda1.Dispose();
+                cuda2.Dispose();
             }
         }
 
@@ -121,6 +139,8 @@ namespace MyCaffe.test
             }
             finally
             {
+                cuda1.Dispose();
+                cuda2.Dispose();
             }
         }
 
@@ -181,6 +201,8 @@ namespace MyCaffe.test
             }
             finally
             {
+                cuda1.Dispose();
+                cuda2.Dispose();
             }
         }
 
@@ -221,6 +243,8 @@ namespace MyCaffe.test
             }
             finally
             {
+                cuda1.Dispose();
+                cuda2.Dispose();
             }
         }
 
@@ -255,121 +279,129 @@ namespace MyCaffe.test
             CudaDnn<double> cuda1 = new CudaDnn<double>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, strPath);
             CudaDnn<double> cuda2 = new CudaDnn<double>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, strPath);
 
-            int nDeviceCount = cuda1.GetDeviceCount();
-
-            for (int i = 0; i < nDeviceCount; i++)
+            try
             {
-                string strInfo = cuda1.GetDeviceP2PInfo(i);
-                Trace.WriteLine(strInfo);
-            }
+                int nDeviceCount = cuda1.GetDeviceCount();
 
-            List<int> rgDevices = new List<int>();
-
-            for (int i = 1; i < nDeviceCount; i++)
-            {
-                int nDevice1 = i - 1;
-                int nDevice2 = i;
-
-                bool bAccessFwd = cuda1.DeviceCanAccessPeer(nDevice1, nDevice2);
-                bool bAccessBwd = cuda1.DeviceCanAccessPeer(nDevice2, nDevice1);
-                string strAccessFwd = ((bAccessFwd) ? " can" : " CANNOT");
-                string strAccessBwd = ((bAccessBwd) ? " can" : " CANNOT");
-
-                Trace.WriteLine("---");
-                Trace.WriteLine("Device " + nDevice1.ToString() + strAccessFwd + " access " + nDevice2.ToString());
-                Trace.WriteLine("Device " + nDevice2.ToString() + strAccessBwd + " access " + nDevice1.ToString());
-
-                if (bAccessBwd && bAccessFwd)
+                for (int i = 0; i < nDeviceCount; i++)
                 {
-                    if (!rgDevices.Contains(nDevice1))
-                        rgDevices.Add(nDevice1);
-
-                    if (!rgDevices.Contains(nDevice2))
-                        rgDevices.Add(nDevice2);
-                }
-            }
-
-            string strAccessibleDevices = "";
-
-            foreach (int nDev in rgDevices)
-            {
-                strAccessibleDevices += nDev.ToString() + ",";
-            }
-
-            strAccessibleDevices = strAccessibleDevices.TrimEnd(',');
-
-            Trace.WriteLine("----");
-            Trace.WriteLine("P2P Accessible Devices = " + strAccessibleDevices);
-            Trace.WriteLine("----");
-            Trace.WriteLine("");
-
-            Trace.WriteLine("Memcpy Test");
-
-            for (int i = 1; i < rgDevices.Count; i++)
-            {
-                Trace.WriteLine("testing " + rgDevices[i - 1].ToString() + " -> " + rgDevices[i].ToString());
-
-                cuda1.SetDeviceID(rgDevices[i - 1]);
-                long hMem1 = cuda1.AllocMemory(new List<double>() { 1, 2, 3, 4 });
-                long hHost = cuda1.AllocHostBuffer(4);
-
-                cuda2.SetDeviceID(rgDevices[i]);
-                long hMem2 = cuda2.AllocMemory(new List<double>() { 10, 20, 30, 40 });
-
-                cuda1.SetDeviceID();
-                cuda1.KernelCopy(4, hMem1, 0, cuda2.KernelHandle, hMem2, 0, hHost);
-
-                double[] rgData1 = cuda1.GetMemory(hMem1);
-                cuda1.FreeMemory(hMem1);
-                hMem1 = 0;
-                cuda2.FreeHostBuffer(hHost);
-                hHost = 0;
-
-                cuda2.SetDeviceID();
-                double[] rgData2 = cuda2.GetMemory(hMem2);
-                cuda2.FreeMemory(hMem2);
-                hMem2 = 0;
-
-                Assert.AreEqual(rgData1.Length, rgData2.Length);
-
-                for (int j = 0; j < rgData1.Length; j++)
-                {
-                    Assert.AreEqual(rgData1[j], rgData2[j]);
-                    Assert.AreEqual(rgData1[j], j + 1);
-                    Assert.AreEqual(rgData2[j], j + 1);
+                    string strInfo = cuda1.GetDeviceP2PInfo(i);
+                    Trace.WriteLine(strInfo);
                 }
 
-                Trace.WriteLine("testing " + rgDevices[i - 1].ToString() + " <- " + rgDevices[i].ToString());
+                List<int> rgDevices = new List<int>();
 
-                cuda1.SetDeviceID(rgDevices[i]);
-                hMem1 = cuda1.AllocMemory(new List<double>() { 1, 2, 3, 4 });
-                hHost = cuda1.AllocHostBuffer(4);
-
-                cuda2.SetDeviceID(rgDevices[i - 1]);
-                hMem2 = cuda2.AllocMemory(new List<double>() { 10, 20, 30, 40 });
-
-                cuda1.SetDeviceID();
-                cuda1.KernelCopy(4, hMem1, 0, cuda2.KernelHandle, hMem2, 0, hHost);
-
-                rgData1 = cuda1.GetMemory(hMem1);
-                cuda1.FreeMemory(hMem1);
-                hMem1 = 0;
-                cuda1.FreeHostBuffer(hHost);
-                hHost = 0;
-
-                cuda2.SetDeviceID();
-                rgData2 = cuda2.GetMemory(hMem2);
-                cuda2.FreeMemory(hMem2);
-                hMem2 = 0;
-
-                Assert.AreEqual(rgData1.Length, rgData2.Length);
-
-                for (int j = 0; j < rgData1.Length; j++)
+                for (int i = 1; i < nDeviceCount; i++)
                 {
-                    Assert.AreEqual(rgData1[j], rgData2[j]);
-                    Assert.AreEqual(rgData1[j], j + 1);
-                    Assert.AreEqual(rgData2[j], j + 1);
+                    int nDevice1 = i - 1;
+                    int nDevice2 = i;
+
+                    bool bAccessFwd = cuda1.DeviceCanAccessPeer(nDevice1, nDevice2);
+                    bool bAccessBwd = cuda1.DeviceCanAccessPeer(nDevice2, nDevice1);
+                    string strAccessFwd = ((bAccessFwd) ? " can" : " CANNOT");
+                    string strAccessBwd = ((bAccessBwd) ? " can" : " CANNOT");
+
+                    Trace.WriteLine("---");
+                    Trace.WriteLine("Device " + nDevice1.ToString() + strAccessFwd + " access " + nDevice2.ToString());
+                    Trace.WriteLine("Device " + nDevice2.ToString() + strAccessBwd + " access " + nDevice1.ToString());
+
+                    if (bAccessBwd && bAccessFwd)
+                    {
+                        if (!rgDevices.Contains(nDevice1))
+                            rgDevices.Add(nDevice1);
+
+                        if (!rgDevices.Contains(nDevice2))
+                            rgDevices.Add(nDevice2);
+                    }
                 }
+
+                string strAccessibleDevices = "";
+
+                foreach (int nDev in rgDevices)
+                {
+                    strAccessibleDevices += nDev.ToString() + ",";
+                }
+
+                strAccessibleDevices = strAccessibleDevices.TrimEnd(',');
+
+                Trace.WriteLine("----");
+                Trace.WriteLine("P2P Accessible Devices = " + strAccessibleDevices);
+                Trace.WriteLine("----");
+                Trace.WriteLine("");
+
+                Trace.WriteLine("Memcpy Test");
+
+                for (int i = 1; i < rgDevices.Count; i++)
+                {
+                    Trace.WriteLine("testing " + rgDevices[i - 1].ToString() + " -> " + rgDevices[i].ToString());
+
+                    cuda1.SetDeviceID(rgDevices[i - 1]);
+                    long hMem1 = cuda1.AllocMemory(new List<double>() { 1, 2, 3, 4 });
+                    long hHost = cuda1.AllocHostBuffer(4);
+
+                    cuda2.SetDeviceID(rgDevices[i]);
+                    long hMem2 = cuda2.AllocMemory(new List<double>() { 10, 20, 30, 40 });
+
+                    cuda1.SetDeviceID();
+                    cuda1.KernelCopy(4, hMem1, 0, cuda2.KernelHandle, hMem2, 0, hHost);
+
+                    double[] rgData1 = cuda1.GetMemory(hMem1);
+                    cuda1.FreeMemory(hMem1);
+                    hMem1 = 0;
+                    cuda2.FreeHostBuffer(hHost);
+                    hHost = 0;
+
+                    cuda2.SetDeviceID();
+                    double[] rgData2 = cuda2.GetMemory(hMem2);
+                    cuda2.FreeMemory(hMem2);
+                    hMem2 = 0;
+
+                    Assert.AreEqual(rgData1.Length, rgData2.Length);
+
+                    for (int j = 0; j < rgData1.Length; j++)
+                    {
+                        Assert.AreEqual(rgData1[j], rgData2[j]);
+                        Assert.AreEqual(rgData1[j], j + 1);
+                        Assert.AreEqual(rgData2[j], j + 1);
+                    }
+
+                    Trace.WriteLine("testing " + rgDevices[i - 1].ToString() + " <- " + rgDevices[i].ToString());
+
+                    cuda1.SetDeviceID(rgDevices[i]);
+                    hMem1 = cuda1.AllocMemory(new List<double>() { 1, 2, 3, 4 });
+                    hHost = cuda1.AllocHostBuffer(4);
+
+                    cuda2.SetDeviceID(rgDevices[i - 1]);
+                    hMem2 = cuda2.AllocMemory(new List<double>() { 10, 20, 30, 40 });
+
+                    cuda1.SetDeviceID();
+                    cuda1.KernelCopy(4, hMem1, 0, cuda2.KernelHandle, hMem2, 0, hHost);
+
+                    rgData1 = cuda1.GetMemory(hMem1);
+                    cuda1.FreeMemory(hMem1);
+                    hMem1 = 0;
+                    cuda1.FreeHostBuffer(hHost);
+                    hHost = 0;
+
+                    cuda2.SetDeviceID();
+                    rgData2 = cuda2.GetMemory(hMem2);
+                    cuda2.FreeMemory(hMem2);
+                    hMem2 = 0;
+
+                    Assert.AreEqual(rgData1.Length, rgData2.Length);
+
+                    for (int j = 0; j < rgData1.Length; j++)
+                    {
+                        Assert.AreEqual(rgData1[j], rgData2[j]);
+                        Assert.AreEqual(rgData1[j], j + 1);
+                        Assert.AreEqual(rgData2[j], j + 1);
+                    }
+                }
+            }
+            finally
+            {
+                cuda1.Dispose();
+                cuda2.Dispose();
             }
         }
 
