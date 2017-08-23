@@ -76,6 +76,9 @@ namespace MyCaffe.test
 
         protected virtual void dispose()
         {
+            CudaDnn<float> cuda = new CudaDnn<float>(0, DEVINIT.NONE);
+            cuda.ResetDevice();
+            cuda.Dispose();
         }
 
         public static string CudaPath
