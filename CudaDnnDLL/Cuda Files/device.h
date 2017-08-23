@@ -458,12 +458,6 @@ inline Device<T>::Device() : m_memory(), m_math()
 template <class T>
 inline Device<T>::~Device()
 {
-	if (m_cublas != NULL)
-	{
-		cublasDestroy(m_cublas);
-		m_cublas = NULL;
-	}
-
 	if (m_curand != NULL)
 	{
 		curandDestroyGenerator(m_curand);
@@ -474,6 +468,12 @@ inline Device<T>::~Device()
 	{
 		DeregisterEventSource(m_hEventSrc);
 		m_hEventSrc = NULL;
+	}
+
+	if (m_cublas != NULL)
+	{
+		cublasDestroy(m_cublas);
+		m_cublas = NULL;
 	}
 }
 
