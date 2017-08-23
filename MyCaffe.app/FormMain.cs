@@ -27,6 +27,7 @@ namespace MyCaffe.app
         COMMAND m_Cmd = COMMAND.NONE;
         byte[] m_rgTrainedWeights = null;
         SimpleDatum m_sdImageMean = null;
+        AutomatedTesterServer m_autoTest = new AutomatedTesterServer();
 
         enum COMMAND
         {
@@ -50,6 +51,15 @@ namespace MyCaffe.app
         private void FormMain_Load(object sender, EventArgs e)
         {
             m_bwProcess.RunWorkerAsync();
+
+            m_autoTest.OnProgress += M_autoTest_OnProgress;
+            m_autoTest.OnCompleted += M_autoTest_OnCompleted;
+
+            setStatus("The MyCaffe Test App supports two different types of automated testing:");
+            setStatus(" 1.) User interface based automated testing via the 'Test | Run Autotests UI', and");
+            setStatus(" 2.) Server based automated testing via the 'Test | Start Server Autotests' menu.");
+            setStatus("Server auto tests can easily integrate into other applications.");
+            setStatus("----------------------------------------------------------------------------------");
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -474,7 +484,64 @@ namespace MyCaffe.app
             {
                 ((IDisposable)m_caffeRun).Dispose();
                 m_caffeRun = null;
+                m_autoTest.Abort();
             }
         }
+
+        #region Server Based Autotesting
+
+        private void startToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (openFileDialogAutoTests.ShowDialog() == DialogResult.OK)
+            {
+                runAutotestsToolStripMenuItem.Enabled = false;
+                startAutotestsToolStripMenuItem.Enabled = false;
+                abortAutotestsToolStripMenuItem.Enabled = true;
+                m_autoTest.Initialize("c:\\temp");
+                m_autoTest.Run(openFileDialogAutoTests.FileName, false);
+            }
+        }
+
+        private void startWithResetToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (openFileDialogAutoTests.ShowDialog() == DialogResult.OK)
+            {
+                if (MessageBox.Show("Resetting the test database will delete all test results for the '" + openFileDialogAutoTests.FileName + "'!  Do you want to continue?", "Delete Test Configuration", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
+                    return;
+
+                runAutotestsToolStripMenuItem.Enabled = false;
+                startAutotestsToolStripMenuItem.Enabled = false;
+                abortAutotestsToolStripMenuItem.Enabled = true;
+                m_autoTest.Initialize("c:\\temp");
+                m_autoTest.Run(openFileDialogAutoTests.FileName, true);
+            }
+        }
+
+        private void abortAutotestsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            abortAutotestsToolStripMenuItem.Enabled = false;
+            m_autoTest.Abort();
+        }
+
+        private void M_autoTest_OnCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if (e.Error != null)
+                setStatus("AutoTest ERROR: " + e.Error.Message);
+            else if (e.Cancelled)
+                setStatus("AutoTest ABORTED!");
+            else
+                setStatus("AutoTest COMPLETED!");
+
+            startAutotestsToolStripMenuItem.Enabled = true;
+            runAutotestsToolStripMenuItem.Enabled = true;
+        }
+
+        private void M_autoTest_OnProgress(object sender, ProgressChangedEventArgs e)
+        {
+            AutoTestProgressInfo pi = e.UserState as AutoTestProgressInfo;
+            setStatus(pi.ToString());
+        }
+
+        #endregion
     }
 }

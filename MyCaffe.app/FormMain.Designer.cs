@@ -39,6 +39,11 @@
             this.testToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.runAutotestsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.startAutotestsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.startToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.startWithResetToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.abortAutotestsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.createMyCaffeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.deviceInformationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.destroyMyCaffeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -65,7 +70,7 @@
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(588, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(615, 24);
             this.menuStrip1.TabIndex = 0;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -120,6 +125,9 @@
             this.testToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.runAutotestsToolStripMenuItem,
             this.toolStripSeparator2,
+            this.startAutotestsToolStripMenuItem,
+            this.abortAutotestsToolStripMenuItem,
+            this.toolStripSeparator1,
             this.createMyCaffeToolStripMenuItem,
             this.deviceInformationToolStripMenuItem,
             this.destroyMyCaffeToolStripMenuItem,
@@ -134,19 +142,55 @@
             // runAutotestsToolStripMenuItem
             // 
             this.runAutotestsToolStripMenuItem.Name = "runAutotestsToolStripMenuItem";
-            this.runAutotestsToolStripMenuItem.Size = new System.Drawing.Size(175, 22);
-            this.runAutotestsToolStripMenuItem.Text = "&Run Autotests";
+            this.runAutotestsToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
+            this.runAutotestsToolStripMenuItem.Text = "&Run Autotests UI";
             this.runAutotestsToolStripMenuItem.Click += new System.EventHandler(this.runAutotestsToolStripMenuItem_Click);
             // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(172, 6);
+            this.toolStripSeparator2.Size = new System.Drawing.Size(189, 6);
+            // 
+            // startAutotestsToolStripMenuItem
+            // 
+            this.startAutotestsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.startToolStripMenuItem,
+            this.startWithResetToolStripMenuItem});
+            this.startAutotestsToolStripMenuItem.Name = "startAutotestsToolStripMenuItem";
+            this.startAutotestsToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
+            this.startAutotestsToolStripMenuItem.Text = "Start Server Autotests";
+            // 
+            // startToolStripMenuItem
+            // 
+            this.startToolStripMenuItem.Name = "startToolStripMenuItem";
+            this.startToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
+            this.startToolStripMenuItem.Text = "Start";
+            this.startToolStripMenuItem.Click += new System.EventHandler(this.startToolStripMenuItem_Click);
+            // 
+            // startWithResetToolStripMenuItem
+            // 
+            this.startWithResetToolStripMenuItem.Name = "startWithResetToolStripMenuItem";
+            this.startWithResetToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
+            this.startWithResetToolStripMenuItem.Text = "Start with Reset";
+            this.startWithResetToolStripMenuItem.Click += new System.EventHandler(this.startWithResetToolStripMenuItem_Click);
+            // 
+            // abortAutotestsToolStripMenuItem
+            // 
+            this.abortAutotestsToolStripMenuItem.Enabled = false;
+            this.abortAutotestsToolStripMenuItem.Name = "abortAutotestsToolStripMenuItem";
+            this.abortAutotestsToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
+            this.abortAutotestsToolStripMenuItem.Text = "Abort Server Autotests";
+            this.abortAutotestsToolStripMenuItem.Click += new System.EventHandler(this.abortAutotestsToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(189, 6);
             // 
             // createMyCaffeToolStripMenuItem
             // 
             this.createMyCaffeToolStripMenuItem.Name = "createMyCaffeToolStripMenuItem";
-            this.createMyCaffeToolStripMenuItem.Size = new System.Drawing.Size(175, 22);
+            this.createMyCaffeToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.createMyCaffeToolStripMenuItem.Text = "Create MyCaffe";
             this.createMyCaffeToolStripMenuItem.Click += new System.EventHandler(this.createMyCaffeToolStripMenuItem_Click);
             // 
@@ -154,7 +198,7 @@
             // 
             this.deviceInformationToolStripMenuItem.Enabled = false;
             this.deviceInformationToolStripMenuItem.Name = "deviceInformationToolStripMenuItem";
-            this.deviceInformationToolStripMenuItem.Size = new System.Drawing.Size(175, 22);
+            this.deviceInformationToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.deviceInformationToolStripMenuItem.Text = "Device Information";
             this.deviceInformationToolStripMenuItem.Click += new System.EventHandler(this.deviceInformationToolStripMenuItem_Click);
             // 
@@ -162,7 +206,7 @@
             // 
             this.destroyMyCaffeToolStripMenuItem.Enabled = false;
             this.destroyMyCaffeToolStripMenuItem.Name = "destroyMyCaffeToolStripMenuItem";
-            this.destroyMyCaffeToolStripMenuItem.Size = new System.Drawing.Size(175, 22);
+            this.destroyMyCaffeToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.destroyMyCaffeToolStripMenuItem.Text = "Destroy MyCaffe";
             this.destroyMyCaffeToolStripMenuItem.Click += new System.EventHandler(this.destroyMyCaffeToolStripMenuItem_Click);
             // 
@@ -170,7 +214,7 @@
             // 
             this.trainMNISTToolStripMenuItem.Enabled = false;
             this.trainMNISTToolStripMenuItem.Name = "trainMNISTToolStripMenuItem";
-            this.trainMNISTToolStripMenuItem.Size = new System.Drawing.Size(175, 22);
+            this.trainMNISTToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.trainMNISTToolStripMenuItem.Text = "Train MNIST";
             this.trainMNISTToolStripMenuItem.Click += new System.EventHandler(this.trainMNISTToolStripMenuItem_Click);
             // 
@@ -178,7 +222,7 @@
             // 
             this.testMNISTToolStripMenuItem.Enabled = false;
             this.testMNISTToolStripMenuItem.Name = "testMNISTToolStripMenuItem";
-            this.testMNISTToolStripMenuItem.Size = new System.Drawing.Size(175, 22);
+            this.testMNISTToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.testMNISTToolStripMenuItem.Text = "Test MNIST";
             this.testMNISTToolStripMenuItem.Click += new System.EventHandler(this.testMNISTToolStripMenuItem_Click);
             // 
@@ -186,7 +230,7 @@
             // 
             this.runTestImageToolStripMenuItem.Enabled = false;
             this.runTestImageToolStripMenuItem.Name = "runTestImageToolStripMenuItem";
-            this.runTestImageToolStripMenuItem.Size = new System.Drawing.Size(175, 22);
+            this.runTestImageToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.runTestImageToolStripMenuItem.Text = "Run Test Image";
             this.runTestImageToolStripMenuItem.Click += new System.EventHandler(this.runTestImageToolStripMenuItem_Click);
             // 
@@ -194,7 +238,7 @@
             // 
             this.abortToolStripMenuItem.Enabled = false;
             this.abortToolStripMenuItem.Name = "abortToolStripMenuItem";
-            this.abortToolStripMenuItem.Size = new System.Drawing.Size(175, 22);
+            this.abortToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.abortToolStripMenuItem.Text = "Abort";
             this.abortToolStripMenuItem.Click += new System.EventHandler(this.abortToolStripMenuItem_Click);
             // 
@@ -227,7 +271,7 @@
             this.edtStatus.Multiline = true;
             this.edtStatus.Name = "edtStatus";
             this.edtStatus.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.edtStatus.Size = new System.Drawing.Size(588, 428);
+            this.edtStatus.Size = new System.Drawing.Size(615, 428);
             this.edtStatus.TabIndex = 1;
             // 
             // m_bwLoadMnistDatabase
@@ -258,7 +302,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(588, 452);
+            this.ClientSize = new System.Drawing.Size(615, 452);
             this.Controls.Add(this.edtStatus);
             this.Controls.Add(this.menuStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -300,6 +344,11 @@
         private System.Windows.Forms.ToolStripMenuItem loadCIFAR10ToolStripMenuItem;
         private System.ComponentModel.BackgroundWorker m_bwLoadCiFar10Database;
         private System.Windows.Forms.ToolStripMenuItem runTestImageToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem startAutotestsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem abortAutotestsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
+        private System.Windows.Forms.ToolStripMenuItem startToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem startWithResetToolStripMenuItem;
     }
 }
 

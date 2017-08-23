@@ -64,6 +64,12 @@
     <Compile Include="AutomatedTester.Designer.cs">
       <DependentUpon>AutomatedTester.cs</DependentUpon>
     </Compile>
+    <Compile Include="AutomatedTesterServer.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="AutomatedTesterServer.Designer.cs">
+      <DependentUpon>AutomatedTesterServer.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormAutomatedTests.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -102,6 +108,9 @@
   <ItemGroup>
     <EmbeddedResource Include="AutomatedTester.resx">
       <DependentUpon>AutomatedTester.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AutomatedTesterServer.resx">
+      <DependentUpon>AutomatedTesterServer.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormAutomatedTests.resx">
       <DependentUpon>FormAutomatedTests.cs</DependentUpon>

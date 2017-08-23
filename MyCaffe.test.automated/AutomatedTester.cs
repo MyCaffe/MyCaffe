@@ -523,14 +523,16 @@ namespace MyCaffe.test.automated
             return rgstr.ToArray();
         }
 
-        public void Run(AutoResetEvent evtCancel)
+        public void Run(AutoResetEvent evtCancel, bool bServerMode = false)
         {
-            m_testTask = Task.Factory.StartNew(new Action<object>(testThread), evtCancel, TaskCreationOptions.LongRunning);
+            m_testTask = Task.Factory.StartNew(new Action<object>(testThread), new Tuple<AutoResetEvent, bool>(evtCancel, bServerMode), TaskCreationOptions.LongRunning);
         }
 
         private void testThread(object obj)
         {
-            AutoResetEvent evtCancel = obj as AutoResetEvent;
+            Tuple<AutoResetEvent, bool> param = obj as Tuple<AutoResetEvent, bool>;
+            AutoResetEvent evtCancel = param.Item1;
+            bool bServerMode = param.Item2;
             TestClass tcCurrent = null;
             MethodInfoEx miCurrent = null;
 
@@ -551,7 +553,7 @@ namespace MyCaffe.test.automated
                         if (evtCancel.WaitOne(0))
                             return;
 
-                        if (mi.Enabled)
+                        if (mi.Enabled && (!bServerMode || mi.Status == MethodInfoEx.STATUS.NotExecuted))
                         {
                             mi.Invoke(tc.Instance);
 
@@ -848,6 +850,23 @@ namespace MyCaffe.test.automated
                         }
                     }
                 }
+            }
+        }
+
+        public void ResetAllTests()
+        {
+            using (TestingEntities entities = TestEntitiesConnection.CreateEntities())
+            {
+                string strName = m_strName;
+
+                List<Session> rgSessions = entities.Sessions.Where(p => p.Session1 == strName).ToList();
+
+                if (rgSessions.Count == 0)
+                    return;
+
+                Session s = rgSessions[0];
+                string strCmd = "DELETE FROM[Testing].[dbo].[Tests] WHERE SessionID = " + s.ID.ToString();
+                entities.ExecuteStoreCommand(strCmd);
             }
         }
 
