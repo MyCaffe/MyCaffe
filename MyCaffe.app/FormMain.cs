@@ -134,8 +134,23 @@ namespace MyCaffe.app
 
         private void setStatus(string str)
         {
+            int nMaxLines = 2000;
+
             edtStatus.Text += Environment.NewLine;
             edtStatus.Text += str;
+
+            if (edtStatus.Lines.Length > nMaxLines)
+            {
+                List<string> rgstr = new List<string>(edtStatus.Lines);
+
+                while (rgstr.Count > nMaxLines)
+                {
+                    rgstr.RemoveAt(0);
+                }
+
+                edtStatus.Lines = rgstr.ToArray();
+            }
+
             edtStatus.SelectionLength = 0;
             edtStatus.SelectionStart = edtStatus.Text.Length;
             edtStatus.ScrollToCaret();
