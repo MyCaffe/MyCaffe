@@ -9,15 +9,11 @@
 
 #include <cuda_runtime.h>
 
-#if CUDART_VERSION >= 9000
-#undef CUDA_HAS_HALF
-#else
 #if CUDART_VERSION >= 7050
 #include <cuda_fp16.h>
 #define CUDA_HAS_HALF 1
 #else
 #undef CUDA_HAS_HALF
-#endif
 #endif
 
 #ifdef _WIN32
