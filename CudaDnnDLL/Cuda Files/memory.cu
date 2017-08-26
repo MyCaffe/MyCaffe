@@ -124,22 +124,27 @@ long Memory<T>::GetDeviceMemory(int nDeviceID, T* pfTotal, T* pfFree, T* pfUsed,
 	size_t lTotal = 0;
 	size_t lUsed = 0;
 	int nOriginalDeviceID = -1;
-	cudaDeviceProp prop;
-
-	if (lErr = cudaGetDeviceProperties(&prop, nDeviceID))
-		return lErr;
 
 	if (nDeviceID >= 0)
 	{
 		if (lErr = cudaGetDevice(&nOriginalDeviceID))
 			return lErr;
 
-		if (lErr = cudaSetDevice(nDeviceID))
-			return lErr;
+		if (nDeviceID != nOriginalDeviceID)
+		{
+			if (lErr = cudaSetDevice(nDeviceID))
+				return lErr;
+		}
 	}
 
 	if (nDeviceID == -1)
 	{
+		cudaDeviceProp prop;
+
+		memset(&prop, 0, sizeof(cudaDeviceProp));
+		if (lErr = cudaGetDeviceProperties(&prop, nDeviceID))
+			return lErr;
+
 		lTotal = prop.totalGlobalMem;
 		lUsed = (size_t)m_memory.GetTotalUsed();
 		lFree = lTotal - lUsed;
@@ -158,7 +163,7 @@ long Memory<T>::GetDeviceMemory(int nDeviceID, T* pfTotal, T* pfFree, T* pfUsed,
 	*pfFree = (T)((double)lFree / (double)1000000000.0);
 	*pfUsed = (T)((double)lUsed / (double)1000000000.0);
 
-	if (nOriginalDeviceID >= 0)
+	if (nOriginalDeviceID >= 0 && nOriginalDeviceID != nDeviceID)
 	{
 		if (lErr = cudaSetDevice(nOriginalDeviceID))
 			return lErr;
