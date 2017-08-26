@@ -9,6 +9,7 @@
 *.sln.docstates
 
 # Private Files
+**/MyCaffe.app.setup/*
 **/_private/*
 **/_build/*
 **/_nuget/*
