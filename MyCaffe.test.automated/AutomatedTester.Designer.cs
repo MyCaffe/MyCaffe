@@ -31,6 +31,7 @@
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AutomatedTester));
             this.lstTests = new System.Windows.Forms.ListView();
+            this.colIdx = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colResult = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colTestClass = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colTestMethod = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -48,6 +49,9 @@
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.btnRun = new System.Windows.Forms.ToolStripButton();
             this.btnAbort = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnGradientTests = new System.Windows.Forms.ToolStripButton();
+            this.btnNonGradientTests = new System.Windows.Forms.ToolStripButton();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.tsTotalTests = new System.Windows.Forms.ToolStripStatusLabel();
@@ -58,9 +62,6 @@
             this.toolStripStatusLabel2 = new System.Windows.Forms.ToolStripStatusLabel();
             this.tsTestingTime = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
-            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
-            this.btnGradientTests = new System.Windows.Forms.ToolStripButton();
-            this.btnNonGradientTests = new System.Windows.Forms.ToolStripButton();
             this.contextMenuStrip1.SuspendLayout();
             this.toolStripContainer1.ContentPanel.SuspendLayout();
             this.toolStripContainer1.TopToolStripPanel.SuspendLayout();
@@ -73,6 +74,7 @@
             // 
             this.lstTests.CheckBoxes = true;
             this.lstTests.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.colIdx,
             this.colResult,
             this.colTestClass,
             this.colTestMethod,
@@ -94,6 +96,11 @@
             this.lstTests.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler(this.lstTests_ColumnClick);
             this.lstTests.ItemChecked += new System.Windows.Forms.ItemCheckedEventHandler(this.lstTests_ItemChecked);
             this.lstTests.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.lstTests_MouseDoubleClick);
+            // 
+            // colIdx
+            // 
+            this.colIdx.Text = "Index";
+            this.colIdx.Width = 78;
             // 
             // colResult
             // 
@@ -182,7 +189,7 @@
             this.btnNonGradientTests});
             this.toolStrip1.Location = new System.Drawing.Point(3, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(239, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(208, 25);
             this.toolStrip1.TabIndex = 0;
             // 
             // btnShowAll
@@ -260,6 +267,31 @@
             this.btnAbort.Size = new System.Drawing.Size(23, 22);
             this.btnAbort.Text = "Abort Tests";
             this.btnAbort.Click += new System.EventHandler(this.btnAbort_Click);
+            // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 25);
+            // 
+            // btnGradientTests
+            // 
+            this.btnGradientTests.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnGradientTests.Image = ((System.Drawing.Image)(resources.GetObject("btnGradientTests.Image")));
+            this.btnGradientTests.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnGradientTests.Name = "btnGradientTests";
+            this.btnGradientTests.Size = new System.Drawing.Size(23, 22);
+            this.btnGradientTests.Text = "Gradient tests";
+            this.btnGradientTests.Click += new System.EventHandler(this.btnGradientTests_Click);
+            // 
+            // btnNonGradientTests
+            // 
+            this.btnNonGradientTests.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnNonGradientTests.Image = ((System.Drawing.Image)(resources.GetObject("btnNonGradientTests.Image")));
+            this.btnNonGradientTests.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnNonGradientTests.Name = "btnNonGradientTests";
+            this.btnNonGradientTests.Size = new System.Drawing.Size(23, 22);
+            this.btnNonGradientTests.Text = "Non-gradient tests";
+            this.btnNonGradientTests.Click += new System.EventHandler(this.btnNonGradientTests_Click);
             // 
             // statusStrip1
             // 
@@ -358,31 +390,6 @@
             this.timerUI.Interval = 250;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
-            // toolStripSeparator2
-            // 
-            this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 25);
-            // 
-            // btnGradientTests
-            // 
-            this.btnGradientTests.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnGradientTests.Image = ((System.Drawing.Image)(resources.GetObject("btnGradientTests.Image")));
-            this.btnGradientTests.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnGradientTests.Name = "btnGradientTests";
-            this.btnGradientTests.Size = new System.Drawing.Size(23, 22);
-            this.btnGradientTests.Text = "Gradient tests";
-            this.btnGradientTests.Click += new System.EventHandler(this.btnGradientTests_Click);
-            // 
-            // btnNonGradientTests
-            // 
-            this.btnNonGradientTests.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnNonGradientTests.Image = ((System.Drawing.Image)(resources.GetObject("btnNonGradientTests.Image")));
-            this.btnNonGradientTests.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnNonGradientTests.Name = "btnNonGradientTests";
-            this.btnNonGradientTests.Size = new System.Drawing.Size(23, 22);
-            this.btnNonGradientTests.Text = "Non-gradient tests";
-            this.btnNonGradientTests.Click += new System.EventHandler(this.btnNonGradientTests_Click);
-            // 
             // AutomatedTester
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -440,5 +447,6 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripButton btnGradientTests;
         private System.Windows.Forms.ToolStripButton btnNonGradientTests;
+        private System.Windows.Forms.ColumnHeader colIdx;
     }
 }

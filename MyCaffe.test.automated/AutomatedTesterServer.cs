@@ -124,7 +124,12 @@ namespace MyCaffe.test.automated
             while (!bw.CancellationPending && colTests.IsRunning)
             {
                 Thread.Sleep(1000);
-                pi.Set(colTests.PercentComplete, colTests.TotalTestTimingString + " completed " + colTests.TotalTestRunCount.ToString("N0") + " of " + colTests.TotalTestCount.ToString("N0") + " (" + colTests.TotalTestFailureCount.ToString("N0") + " failed).");
+                string strCurrent = colTests.CurrentTest;
+
+                if (strCurrent.Length > 0)
+                    strCurrent = " [" + strCurrent + "]";
+
+                pi.Set(colTests.PercentComplete, colTests.TotalTestTimingString + " completed " + colTests.TotalTestRunCount.ToString("N0") + " of " + colTests.TotalTestCount.ToString("N0") + " (" + colTests.TotalTestFailureCount.ToString("N0") + " failed)." + strCurrent);
                 bw.ReportProgress((int)(pi.Progress * 100), pi);
             }
 

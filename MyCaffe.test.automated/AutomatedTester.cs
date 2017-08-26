@@ -85,13 +85,16 @@ namespace MyCaffe.test.automated
         {
             lstTests.Items.Clear();
 
+            int nIdx = 1;
+
             foreach (TestClass tc in m_rgTestClasses)
             {
                 foreach (MethodInfoEx mi in tc.Methods)
                 {
                     if (lt == LOADTYPE.ALL || (lt == LOADTYPE.FAILURE && mi.Status == MethodInfoEx.STATUS.Failed) || (lt == LOADTYPE.SUCCESS && mi.Status == MethodInfoEx.STATUS.Passed) || (lt == LOADTYPE.NOTEXECUTED && (mi.Status == MethodInfoEx.STATUS.NotExecuted || mi.Status == MethodInfoEx.STATUS.Pending)))
                     {
-                        ListViewItem lvi = new ListViewItem(mi.Status.ToString(), (int)mi.Status);
+                        ListViewItem lvi = new ListViewItem(nIdx.ToString(), (int)mi.Status);
+                        lvi.SubItems.Add(mi.Status.ToString());
                         lvi.SubItems.Add(tc.Name);
                         lvi.SubItems.Add(mi.Name);
                         lvi.SubItems.Add(mi.ErrorInfo.FullErrorString);
@@ -108,6 +111,7 @@ namespace MyCaffe.test.automated
                         }
 
                         lstTests.Items.Add(lvi);
+                        nIdx++;
                     }
                     else
                     {
@@ -139,10 +143,10 @@ namespace MyCaffe.test.automated
                         lvi.EnsureVisible();
                 }
 
-                if (mi.ErrorInfo.Error != null && lvi.SubItems[3].Text.Length == 0)
+                if (mi.ErrorInfo.Error != null && lvi.SubItems[4].Text.Length == 0)
                 {
-                    lvi.SubItems[3].Text = mi.ErrorInfo.ShortErrorString;
-                    lvi.SubItems[3].Tag = mi.ErrorInfo;
+                    lvi.SubItems[4].Text = mi.ErrorInfo.ShortErrorString;
+                    lvi.SubItems[4].Tag = mi.ErrorInfo;
                 }
             }
         }
@@ -201,9 +205,9 @@ namespace MyCaffe.test.automated
 
             if (hti != null)
             {
-                if (hti.Item.SubItems[3].Text.Length > 0)
+                if (hti.Item.SubItems[4].Text.Length > 0)
                 {
-                    ErrorInfo error = hti.Item.SubItems[3].Tag as ErrorInfo;
+                    ErrorInfo error = hti.Item.SubItems[4].Tag as ErrorInfo;
                     FormError dlg = new FormError(error);
 
                     dlg.ShowDialog();
@@ -281,8 +285,8 @@ namespace MyCaffe.test.automated
                 mi.Status = MethodInfoEx.STATUS.NotExecuted;
 
                 lvi.Checked = true;
-                lvi.SubItems[3].Text = "";
-                lvi.SubItems[3].Tag = null;
+                lvi.SubItems[4].Text = "";
+                lvi.SubItems[4].Tag = null;
             }
         }
 
@@ -364,6 +368,7 @@ namespace MyCaffe.test.automated
 
     class TestClassCollection : IEnumerable<TestClass>, IDisposable 
     {
+        string m_strCurrentTest = "";
         string m_strPath;
         string m_strName;
         List<TestClass> m_rgClasses = new List<TestClass>();
@@ -386,6 +391,11 @@ namespace MyCaffe.test.automated
         public string Name
         {
             get { return m_strName; }
+        }
+
+        public string CurrentTest
+        {
+            get { return m_strCurrentTest; }
         }
 
         public int Count
@@ -555,6 +565,7 @@ namespace MyCaffe.test.automated
 
                         if (mi.Enabled && (!bServerMode || mi.Status == MethodInfoEx.STATUS.NotExecuted))
                         {
+                            m_strCurrentTest = tc.Name + "::" + mi.Name;
                             mi.Invoke(tc.Instance);
 
                             if (mi.Status != MethodInfoEx.STATUS.Aborted)
