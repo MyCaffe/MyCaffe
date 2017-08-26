@@ -202,7 +202,6 @@ namespace MyCaffe.test
 
         public Test(string strName, int nDeviceID = TestBase.DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
         {
-            CudaDnn<T>.SetDefaultCudaPath(TestBase.CudaPath);
             m_dt = (typeof(T) == typeof(double)) ? DataType.DOUBLE : DataType.FLOAT;
             m_cuda = GetCuda(nDeviceID);
 
