@@ -70,7 +70,11 @@ public:
 			}
 		}
 
-		_tcscat_s(szPath, 1024, _T("nccl64_133.dll"));
+#ifdef CUDA9
+		_tcscat_s(szPath, 1024, _T("nccl64_134.9.dll"));
+#else
+		_tcscat_s(szPath, 1024, _T("nccl64_134.8.dll"));
+#endif
 		m_hDLL = LoadLibrary(szPath);
 		if (m_hDLL == NULL)
 			return ERROR_CUDA_MISSING_NCCL64DLL;
