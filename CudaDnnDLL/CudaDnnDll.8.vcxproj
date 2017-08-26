@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectName>CudaDnnDLL</ProjectName>
+    <ProjectName>CudaDnnDll.8</ProjectName>
     <ProjectGuid>{8588C74B-4225-4FA0-B1A7-82387BC67301}</ProjectGuid>
     <RootNamespace>CudaDLL_NN</RootNamespace>
     <Keyword>Win32Proj</Keyword>
@@ -107,7 +107,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProgramW6432)\NVIDIA GPU Computing Toolkit\CUDA\v8.0\cudann_8.0-win-v6.0;$(ProgramW6432)\NVIDIA GPU Computing Toolkit\CUDA\v9.0\nvapi_384;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH_V8_0)\cudann_8.0-win-v6.0;$(CUDA_PATH_V8_0)\nvapi_370;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;CUDADLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -132,7 +132,7 @@
       <CodeGeneration>compute_30,sm_35</CodeGeneration>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <AdditionalOptions>-lineinfo --default-stream per-thread %(AdditionalOptions)</AdditionalOptions>
-      <Include>$(ProgramW6432)\NVIDIA GPU Computing Toolkit\CUDA\v8.0\cudann_8.0-win-v6.0</Include>
+      <Include>$(CUDA_PATH_V8_0)\cudann_8.0-win-v6.0</Include>
     </CudaCompile>
     <PostBuildEvent>
       <Command>xcopy /s /y $(TargetPath) $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)
@@ -167,7 +167,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProgramW6432)\NVIDIA GPU Computing Toolkit\CUDA\v8.0\cudann_8.0-win-v6.0;$(ProgramW6432)\NVIDIA GPU Computing Toolkit\CUDA\v9.0\nvapi_384;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH_V8_0)\cudann_8.0-win-v6.0;$(CUDA_PATH_V8_0)\nvapi_370;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;CUDADLL_NN_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>false</FunctionLevelLinking>
@@ -194,7 +194,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
       <CodeGeneration>compute_30,sm_35</CodeGeneration>
       <Optimization>O2</Optimization>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <Include>$(ProgramW6432)\NVIDIA GPU Computing Toolkit\CUDA\v8.0\cudann_8.0-win-v6.0</Include>
+      <Include>$(CUDA_PATH_V8_0)\cudann_8.0-win-v6.0</Include>
       <AdditionalOptions>--default-stream per-thread %(AdditionalOptions)</AdditionalOptions>
     </CudaCompile>
     <PostBuildEvent>
@@ -266,7 +266,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     <None Include="CudaDnnDLL.def" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Resource.rc" />
+    <ResourceCompile Include="Resource.8.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

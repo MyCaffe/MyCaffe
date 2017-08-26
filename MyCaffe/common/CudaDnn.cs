@@ -814,7 +814,12 @@ namespace MyCaffe.common
                 if (strPath.Length == 0)
                 {
                     FileInfo fi = new FileInfo(Process.GetCurrentProcess().MainModule.FileName);
-                    strPath = fi.DirectoryName + "\\CudaDNNDll.dll";
+
+                    strPath = fi.DirectoryName + "\\CudaDnnDll.9.dll";
+                    if (!File.Exists(strPath))
+                        strPath = fi.DirectoryName + "\\CudaDnnDll.8.dll";
+
+                    m_strPath = strPath;
                 }
 
                 m_cuda.Load(strPath);
@@ -824,7 +829,7 @@ namespace MyCaffe.common
                 if (excpt.Message != null && excpt.Message.Length > 0)
                     throw excpt;
 
-                throw new Exception("The CudaDNNDLL.DLL at '" + strPath + "' failed to load.  The error code = 0x" + excpt.HResult.ToString("X"));
+                throw new Exception("The CudaDnnDll.x.dll at '" + strPath + "' failed to load.  The error code = 0x" + excpt.HResult.ToString("X"));
             }
 
             try
