@@ -70,7 +70,7 @@
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(615, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(957, 24);
             this.menuStrip1.TabIndex = 0;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -271,7 +271,7 @@
             this.edtStatus.Multiline = true;
             this.edtStatus.Name = "edtStatus";
             this.edtStatus.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.edtStatus.Size = new System.Drawing.Size(615, 428);
+            this.edtStatus.Size = new System.Drawing.Size(957, 428);
             this.edtStatus.TabIndex = 1;
             // 
             // m_bwLoadMnistDatabase
@@ -302,7 +302,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(615, 452);
+            this.ClientSize = new System.Drawing.Size(957, 452);
             this.Controls.Add(this.edtStatus);
             this.Controls.Add(this.menuStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));

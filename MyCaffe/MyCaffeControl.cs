@@ -565,6 +565,7 @@ namespace MyCaffe
                 m_cuda.Dispose();
 
             m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath, bResetFirst);
+            m_log.WriteLine("Cuda Connection created using '" + m_cuda.Path + "'.");
 
             if (phase == Phase.TEST || phase == Phase.TRAIN)
             {
@@ -668,6 +669,7 @@ namespace MyCaffe
                 m_cuda.Dispose();
 
             m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath, bResetFirst);
+            m_log.WriteLine("Cuda Connection created using '" + m_cuda.Path + "'.");
 
             if (phase == Phase.TEST || phase == Phase.TRAIN)
             {
@@ -729,7 +731,8 @@ namespace MyCaffe
                 m_cuda.Dispose();
 
             m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath);
-           
+            m_log.WriteLine("Cuda Connection created using '" + m_cuda.Path + "'.");
+
             TransformationParameter tp = null;
             NetParameter netParam = createNetParameterForRunning(shape, strModel, out tp);
 
