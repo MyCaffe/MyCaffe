@@ -1235,6 +1235,9 @@ namespace MyCaffe.imagedb
             if (strGuid == null)
                 strGuid = Guid.NewGuid().ToString();
 
+            if (!Directory.Exists(m_strPrimaryImgPath))
+                Directory.CreateDirectory(m_strPrimaryImgPath);
+
             string strTypeExt = (strType == null) ? "" : "." + strType;
             string strFile = strGuid + strTypeExt + ".bin";
             File.WriteAllBytes(m_strPrimaryImgPath + strFile, rgImg);
