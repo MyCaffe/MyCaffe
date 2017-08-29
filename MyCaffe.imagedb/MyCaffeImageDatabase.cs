@@ -1015,9 +1015,12 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="strName">Specifies the name of the database (recommended value = "DNN").</param>
         /// <param name="strPath">Specifies the file path where the database is to be created.</param>
-        public static void CreateDatabase(string strName, string strPath)
+        public static void CreateDatabase(string strName, string strPath, string strInstance = null)
         {
-            DatabaseManagement dbMgr = new DatabaseManagement(strName, strPath, ".");
+            if (strInstance == null)
+                strInstance = EntitiesConnection.GlobalDatabaseServerName;
+
+            DatabaseManagement dbMgr = new DatabaseManagement(strName, strPath, strInstance);
             Exception excpt = dbMgr.CreateDatabase();
 
             if (excpt != null)

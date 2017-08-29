@@ -70,6 +70,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Database.cs" />
+    <Compile Include="DatabaseInstanceQuery.cs" />
     <Compile Include="DatabaseManagement.cs" />
     <Compile Include="Dataset.cs">
       <DependentUpon>DNNModel.tt</DependentUpon>

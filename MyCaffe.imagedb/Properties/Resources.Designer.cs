@@ -314,14 +314,13 @@ namespace MyCaffe.imagedb.Properties {
         ///	[SourceID] [int] NULL,
         ///	[Idx] [int] NULL,
         ///	[GroupID] [int] NULL,
-        ///	[OriginalBoost] [int] NULL,
-        ///	[ActiveBoost] [int] NULL,
+        ///	[OriginalBoost] [smallint] NULL,
+        ///	[ActiveBoost] [smallint] NULL,
         ///	[AutoLabel] [bit] NULL,
         ///	[VirtualID] [int] NULL,
         ///	[RawData] [image] NULL,
         ///	[DataCriteria] [image] NULL,
-        ///	[OriginalLabel] [int] NULL,
-        /// [rest of string was truncated]&quot;;.
+        ///	[OriginalLabel] [in [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CreateRawImagesTable {
             get {

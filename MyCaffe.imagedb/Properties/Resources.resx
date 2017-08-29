@@ -330,8 +330,8 @@ ALTER DATABASE [%DBNAME%] SET DB_CHAINING OFF</value>
 	[SourceID] [int] NULL,
 	[Idx] [int] NULL,
 	[GroupID] [int] NULL,
-	[OriginalBoost] [int] NULL,
-	[ActiveBoost] [int] NULL,
+	[OriginalBoost] [smallint] NULL,
+	[ActiveBoost] [smallint] NULL,
 	[AutoLabel] [bit] NULL,
 	[VirtualID] [int] NULL,
 	[RawData] [image] NULL,
@@ -340,9 +340,10 @@ ALTER DATABASE [%DBNAME%] SET DB_CHAINING OFF</value>
 	[ActiveLabel] [int] NULL,
 	[Active] [bit] NULL,
 	[Description] [nvarchar](64) NULL,
-	[DebugDataFormatID] [int] NULL,
-	[DataCriteriaFormatID] [int] NULL,
- CONSTRAINT [PK_Images] PRIMARY KEY CLUSTERED 
+	[DebugDataFormatID] [tinyint] NULL,
+	[DataCriteriaFormatID] [tinyint] NULL,
+	[OriginalSourceID] [int] NULL,
+ CONSTRAINT [PK_RawImages] PRIMARY KEY CLUSTERED 
 (
 	[ID] ASC
 )WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
