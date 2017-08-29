@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Data.SqlClient;
 using System.Data.EntityClient;
+using MyCaffe.imagedb;
 
 namespace MyCaffe.test.automated
 {
@@ -13,10 +14,10 @@ namespace MyCaffe.test.automated
         {
         }
 
-        public static string CreateConnectionString()
+        public static string CreateConnectionString(string strInstance)
         {
             string strProviderName = "System.Data.SqlClient";
-            string strServerName = ".";
+            string strServerName = strInstance;
             string strDatabaseName = "Testing";
             SqlConnectionStringBuilder sqlBuilder = new SqlConnectionStringBuilder();
             EntityConnectionStringBuilder builder = new EntityConnectionStringBuilder();
@@ -36,9 +37,12 @@ namespace MyCaffe.test.automated
             return builder.ToString();
         }
 
-        public static TestingEntities CreateEntities()
+        public static TestingEntities CreateEntities(string strInstance = null)
         {
-            return new TestingEntities(CreateConnectionString());
+            if (strInstance == null)
+                strInstance = EntitiesConnection.GlobalDatabaseServerName;
+
+            return new TestingEntities(CreateConnectionString(strInstance));
         }
     }
 }

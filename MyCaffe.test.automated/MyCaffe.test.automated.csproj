@@ -126,6 +126,12 @@
   <ItemGroup>
     <Content Include="MainIcon.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MyCaffe.imagedb\MyCaffe.imagedb.csproj">
+      <Project>{642BA581-59CB-445E-8D7D-81E67B748D77}</Project>
+      <Name>MyCaffe.imagedb</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>
