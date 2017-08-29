@@ -85,7 +85,11 @@ namespace MyCaffe.test
         {
             get
             {
-                return ExecutingAppPath + "\\CudaDnnDLL.DLL";
+                string strFile = ExecutingAppPath + "\\CudaDnnDll.9.dll";
+                if (!File.Exists(strFile))
+                    strFile = ExecutingAppPath + "\\CudaDnnDll.8.dll";
+
+                return strFile;
             }
         }
 
@@ -113,7 +117,13 @@ namespace MyCaffe.test
 
         public static string GetTestPath(string strItem)
         {
-            string strPath = TestBase.ExecutingAssemblyPath;
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+            string strTemp = strPath + strItem;
+            if (File.Exists(strTemp))
+                return strTemp;
+
+            strPath = TestBase.ExecutingAssemblyPath;
             int nPos;
 
             // Remove the build (Release or Debug)
