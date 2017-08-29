@@ -20,6 +20,7 @@ namespace MyCaffe.app
 
         public event EventHandler<ProgressArgs> OnProgress;
         public event EventHandler<ProgressArgs> OnError;
+        public event EventHandler OnCompleted;
 
         public CiFar10DataLoader(CiFar10DataParameters param)
         {
@@ -49,6 +50,9 @@ namespace MyCaffe.app
             DatasetDescriptor ds = new DatasetDescriptor(0, "CIFAR-10", null, null, srcTrain, srcTest, "CIFAR-10", "CiFar-10 Dataset");
             factory.AddDataset(ds);
             factory.UpdateDatasetCounts(ds.ID);
+
+            if (OnCompleted != null)
+                OnCompleted(this, new EventArgs());
         }
 
         private void loadFile(string strImagesFile, string strSourceName, int nTotal, ref int nIdx)

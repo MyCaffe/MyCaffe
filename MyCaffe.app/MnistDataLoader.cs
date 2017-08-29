@@ -19,6 +19,7 @@ namespace MyCaffe.app
 
         public event EventHandler<ProgressArgs> OnProgress;
         public event EventHandler<ProgressArgs> OnError;
+        public event EventHandler OnCompleted;
 
         public MnistDataLoader(MnistDataParameters param)
         {
@@ -47,6 +48,9 @@ namespace MyCaffe.app
             DatasetDescriptor ds = new DatasetDescriptor(0, "MNIST", null, null, srcTrain, srcTest, "MNIST", "MNIST Character Dataset");
             factory.AddDataset(ds);
             factory.UpdateDatasetCounts(ds.ID);
+
+            if (OnCompleted != null)
+                OnCompleted(this, new EventArgs());
         }
 
         private void loadFile(string strImagesFile, string strLabelsFile, string strSourceName)
