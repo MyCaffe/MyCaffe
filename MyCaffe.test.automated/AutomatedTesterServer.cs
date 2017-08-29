@@ -53,9 +53,9 @@ namespace MyCaffe.test.automated
             return null;
         }
 
-        public bool Initialize(string strDbPath)
+        public bool Initialize(string strDbPath, string strInstance)
         {
-            TestDatabaseManager dbMgr = new TestDatabaseManager();
+            TestDatabaseManager dbMgr = new TestDatabaseManager(strInstance);
             bool bExists;
             Exception err = dbMgr.DatabaseExists(out bExists);
 

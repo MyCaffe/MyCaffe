@@ -12,8 +12,9 @@ namespace MyCaffe.test.automated
         string m_strName = "Testing";
         string m_strInstance = ".";
 
-        public TestDatabaseManager()
+        public TestDatabaseManager(string strInstance)
         {
+            m_strInstance = strInstance;
         }
 
         public string DatabaseName
