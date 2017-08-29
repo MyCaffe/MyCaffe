@@ -64,7 +64,7 @@
             this.lblDownloadSite.Location = new System.Drawing.Point(386, 13);
             this.lblDownloadSite.Name = "lblDownloadSite";
             this.lblDownloadSite.Size = new System.Drawing.Size(147, 16);
-            this.lblDownloadSite.TabIndex = 0;
+            this.lblDownloadSite.TabIndex = 1;
             this.lblDownloadSite.Text = "yann.lecun.com/exdb/mnist/";
             this.lblDownloadSite.Click += new System.EventHandler(this.lblDownloadSite_Click);
             this.lblDownloadSite.MouseLeave += new System.EventHandler(this.lblDownloadSite_MouseLeave);
@@ -73,25 +73,25 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(19, 47);
+            this.label1.Location = new System.Drawing.Point(19, 87);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(133, 13);
-            this.label1.TabIndex = 1;
+            this.label1.TabIndex = 8;
             this.label1.Text = "train-images-idx3-ubyte file:";
             // 
             // edtTrainImagesFile
             // 
-            this.edtTrainImagesFile.Location = new System.Drawing.Point(158, 44);
+            this.edtTrainImagesFile.Location = new System.Drawing.Point(158, 84);
             this.edtTrainImagesFile.Name = "edtTrainImagesFile";
             this.edtTrainImagesFile.Size = new System.Drawing.Size(461, 20);
-            this.edtTrainImagesFile.TabIndex = 2;
+            this.edtTrainImagesFile.TabIndex = 9;
             // 
             // btnBrowseGz1
             // 
-            this.btnBrowseGz1.Location = new System.Drawing.Point(625, 44);
+            this.btnBrowseGz1.Location = new System.Drawing.Point(625, 84);
             this.btnBrowseGz1.Name = "btnBrowseGz1";
             this.btnBrowseGz1.Size = new System.Drawing.Size(29, 20);
-            this.btnBrowseGz1.TabIndex = 3;
+            this.btnBrowseGz1.TabIndex = 10;
             this.btnBrowseGz1.Text = "...";
             this.btnBrowseGz1.UseVisualStyleBackColor = true;
             this.btnBrowseGz1.Click += new System.EventHandler(this.btnBrowseGz_Click);
@@ -104,25 +104,25 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(25, 73);
+            this.label2.Location = new System.Drawing.Point(25, 113);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(127, 13);
-            this.label2.TabIndex = 1;
+            this.label2.TabIndex = 11;
             this.label2.Text = "train-labels-idx1-ubyte file:";
             // 
             // edtTrainLabelsFile
             // 
-            this.edtTrainLabelsFile.Location = new System.Drawing.Point(158, 70);
+            this.edtTrainLabelsFile.Location = new System.Drawing.Point(158, 110);
             this.edtTrainLabelsFile.Name = "edtTrainLabelsFile";
             this.edtTrainLabelsFile.Size = new System.Drawing.Size(461, 20);
-            this.edtTrainLabelsFile.TabIndex = 2;
+            this.edtTrainLabelsFile.TabIndex = 12;
             // 
             // btnBrowseGz2
             // 
-            this.btnBrowseGz2.Location = new System.Drawing.Point(625, 70);
+            this.btnBrowseGz2.Location = new System.Drawing.Point(625, 110);
             this.btnBrowseGz2.Name = "btnBrowseGz2";
             this.btnBrowseGz2.Size = new System.Drawing.Size(29, 20);
-            this.btnBrowseGz2.TabIndex = 3;
+            this.btnBrowseGz2.TabIndex = 13;
             this.btnBrowseGz2.Text = "...";
             this.btnBrowseGz2.UseVisualStyleBackColor = true;
             this.btnBrowseGz2.Click += new System.EventHandler(this.btnBrowseGz_Click);
@@ -130,25 +130,25 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(19, 99);
+            this.label3.Location = new System.Drawing.Point(19, 35);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(134, 13);
-            this.label3.TabIndex = 1;
+            this.label3.TabIndex = 2;
             this.label3.Text = "t10k-images-idx3-ubyte file:";
             // 
             // edtTestImagesFile
             // 
-            this.edtTestImagesFile.Location = new System.Drawing.Point(158, 96);
+            this.edtTestImagesFile.Location = new System.Drawing.Point(158, 32);
             this.edtTestImagesFile.Name = "edtTestImagesFile";
             this.edtTestImagesFile.Size = new System.Drawing.Size(461, 20);
-            this.edtTestImagesFile.TabIndex = 2;
+            this.edtTestImagesFile.TabIndex = 3;
             // 
             // btnBrowseGz3
             // 
-            this.btnBrowseGz3.Location = new System.Drawing.Point(625, 96);
+            this.btnBrowseGz3.Location = new System.Drawing.Point(625, 32);
             this.btnBrowseGz3.Name = "btnBrowseGz3";
             this.btnBrowseGz3.Size = new System.Drawing.Size(29, 20);
-            this.btnBrowseGz3.TabIndex = 3;
+            this.btnBrowseGz3.TabIndex = 4;
             this.btnBrowseGz3.Text = "...";
             this.btnBrowseGz3.UseVisualStyleBackColor = true;
             this.btnBrowseGz3.Click += new System.EventHandler(this.btnBrowseGz_Click);
@@ -156,25 +156,25 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(24, 125);
+            this.label4.Location = new System.Drawing.Point(24, 61);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(128, 13);
-            this.label4.TabIndex = 1;
+            this.label4.TabIndex = 5;
             this.label4.Text = "t10k-labels-idx1-ubyte file:";
             // 
             // edtTestLabelsFile
             // 
-            this.edtTestLabelsFile.Location = new System.Drawing.Point(158, 122);
+            this.edtTestLabelsFile.Location = new System.Drawing.Point(158, 58);
             this.edtTestLabelsFile.Name = "edtTestLabelsFile";
             this.edtTestLabelsFile.Size = new System.Drawing.Size(461, 20);
-            this.edtTestLabelsFile.TabIndex = 2;
+            this.edtTestLabelsFile.TabIndex = 6;
             // 
             // btnBrowseGz4
             // 
-            this.btnBrowseGz4.Location = new System.Drawing.Point(625, 122);
+            this.btnBrowseGz4.Location = new System.Drawing.Point(625, 58);
             this.btnBrowseGz4.Name = "btnBrowseGz4";
             this.btnBrowseGz4.Size = new System.Drawing.Size(29, 20);
-            this.btnBrowseGz4.TabIndex = 3;
+            this.btnBrowseGz4.TabIndex = 7;
             this.btnBrowseGz4.Text = "...";
             this.btnBrowseGz4.UseVisualStyleBackColor = true;
             this.btnBrowseGz4.Click += new System.EventHandler(this.btnBrowseGz_Click);
@@ -183,10 +183,10 @@
             // 
             this.btnOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.btnOK.Location = new System.Drawing.Point(498, 155);
+            this.btnOK.Location = new System.Drawing.Point(498, 140);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(75, 23);
-            this.btnOK.TabIndex = 4;
+            this.btnOK.TabIndex = 14;
             this.btnOK.Text = "OK";
             this.btnOK.UseVisualStyleBackColor = true;
             this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
@@ -195,10 +195,10 @@
             // 
             this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(579, 155);
+            this.btnCancel.Location = new System.Drawing.Point(579, 140);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(75, 23);
-            this.btnCancel.TabIndex = 4;
+            this.btnCancel.TabIndex = 15;
             this.btnCancel.Text = "Cancel";
             this.btnCancel.UseVisualStyleBackColor = true;
             // 
@@ -212,7 +212,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(666, 190);
+            this.ClientSize = new System.Drawing.Size(666, 175);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOK);
             this.Controls.Add(this.btnBrowseGz4);

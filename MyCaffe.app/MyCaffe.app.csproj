@@ -66,7 +66,6 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Deployment" />
     <Reference Include="System.Drawing" />
-    <Reference Include="System.Net.Http" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
   </ItemGroup>
@@ -102,6 +101,12 @@
       <DependentUpon>FormMnist.cs</DependentUpon>
     </Compile>
     <Compile Include="CiFar10DataLoader.cs" />
+    <Compile Include="FormSqlInstances.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormSqlInstances.Designer.cs">
+      <DependentUpon>FormSqlInstances.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormTestImage.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -129,6 +134,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormMnist.resx">
       <DependentUpon>FormMnist.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormSqlInstances.resx">
+      <DependentUpon>FormSqlInstances.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormTestImage.resx">
       <DependentUpon>FormTestImage.cs</DependentUpon>

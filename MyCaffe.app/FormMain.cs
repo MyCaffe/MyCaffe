@@ -15,6 +15,7 @@ using MyCaffe.common;
 using System.Diagnostics;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.param;
+using System.IO;
 
 namespace MyCaffe.app
 {
@@ -23,11 +24,13 @@ namespace MyCaffe.app
         CancelEvent m_evtCancel = new CancelEvent();
         AutoResetEvent m_evtCommandRead = new AutoResetEvent(false);
         AutoResetEvent m_evtThreadDone = new AutoResetEvent(false);
-        IXMyCaffeNoDb<float> m_caffeRun;
+        IXMyCaffeNoDb<float> m_caffeRun = null;
         COMMAND m_Cmd = COMMAND.NONE;
         byte[] m_rgTrainedWeights = null;
         SimpleDatum m_sdImageMean = null;
         AutomatedTesterServer m_autoTest = new AutomatedTesterServer();
+        bool m_bLoading = false;
+        bool m_bCaffeCreated = false;
 
         enum COMMAND
         {
@@ -50,7 +53,35 @@ namespace MyCaffe.app
 
         private void FormMain_Load(object sender, EventArgs e)
         {
+            List<string> rgSqlInst = DatabaseInstanceQuery.GetInstances();
+
             m_bwProcess.RunWorkerAsync();
+
+            if (!File.Exists("index.chm"))
+                onlineHelpToolStripMenuItem.Enabled = false;
+
+            if (rgSqlInst == null || rgSqlInst.Count == 0)
+            {
+                setStatus("You must download and install 'Microsoft SQL' or 'Microsoft SQL Express' first!");
+                setStatus("see 'https://www.microsoft.com/en-us/sql-server/sql-server-editions-express'");
+                setStatus("");
+                return;
+            }
+            else if (rgSqlInst.Count == 1)
+            {
+                if (rgSqlInst[0] != ".\\MSSQLSERVER")
+                    EntitiesConnection.GlobalDatabaseServerName = rgSqlInst[0];
+            }
+            else
+            {
+                FormSqlInstances dlg = new FormSqlInstances(rgSqlInst);
+
+                dlg.ShowDialog();
+                EntitiesConnection.GlobalDatabaseServerName = dlg.Instance;
+            }
+
+            setStatus("Using SQL Instance '" + EntitiesConnection.GlobalDatabaseServerName + "'", false);
+            setStatus("");
 
             m_autoTest.OnProgress += M_autoTest_OnProgress;
             m_autoTest.OnCompleted += M_autoTest_OnCompleted;
@@ -96,7 +127,7 @@ namespace MyCaffe.app
 
         private void runAutotestsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            TestDatabaseManager dbMgr = new TestDatabaseManager();
+            TestDatabaseManager dbMgr = new TestDatabaseManager(EntitiesConnection.GlobalDatabaseServerName);
             bool bExists;
             Exception err = dbMgr.DatabaseExists(out bExists);
 
@@ -132,11 +163,13 @@ namespace MyCaffe.app
             }
         }
 
-        private void setStatus(string str)
+        private void setStatus(string str, bool bNewLine = true)
         {
             int nMaxLines = 2000;
 
-            edtStatus.Text += Environment.NewLine;
+            if (bNewLine)
+                edtStatus.Text += Environment.NewLine;
+
             edtStatus.Text += str;
 
             if (edtStatus.Lines.Length > nMaxLines)
@@ -167,6 +200,7 @@ namespace MyCaffe.app
 
             if (dlg.ShowDialog() == DialogResult.OK)
             {
+                m_bLoading = true;
                 m_evtCancel.Set();
                 loadMNISTToolStripMenuItem.Enabled = false;
                 loadCIFAR10ToolStripMenuItem.Enabled = false;
@@ -185,6 +219,7 @@ namespace MyCaffe.app
 
             if (dlg.ShowDialog() == DialogResult.OK)
             {
+                m_bLoading = true;
                 loadMNISTToolStripMenuItem.Enabled = false;
                 loadCIFAR10ToolStripMenuItem.Enabled = false;
                 trainMNISTToolStripMenuItem.Enabled = false;
@@ -213,13 +248,16 @@ namespace MyCaffe.app
                 setStatus("COMPLETED.");
             }
 
-            trainMNISTToolStripMenuItem.Enabled = false;
-            testMNISTToolStripMenuItem.Enabled = false;
-            destroyMyCaffeToolStripMenuItem.Enabled = false;
-            deviceInformationToolStripMenuItem.Enabled = false;
-            createMyCaffeToolStripMenuItem.Enabled = true;
-            loadMNISTToolStripMenuItem.Enabled = true;
-            loadCIFAR10ToolStripMenuItem.Enabled = true;
+            startAutotestsToolStripMenuItem.Enabled = !m_bLoading;
+            runAutotestsToolStripMenuItem.Enabled = !m_bLoading;
+            createDatabaseToolStripMenuItem.Enabled = !m_bLoading;
+            trainMNISTToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
+            testMNISTToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
+            destroyMyCaffeToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
+            deviceInformationToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
+            createMyCaffeToolStripMenuItem.Enabled = !m_bLoading && !m_bCaffeCreated;
+            loadMNISTToolStripMenuItem.Enabled = !m_bLoading;
+            loadCIFAR10ToolStripMenuItem.Enabled = !m_bLoading;
         }
 
         private void m_bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -230,23 +268,30 @@ namespace MyCaffe.app
             {
                 if (pi.Alive.Value == true)
                 {
-                    loadMNISTToolStripMenuItem.Enabled = true;
-                    loadCIFAR10ToolStripMenuItem.Enabled = true;
-                    destroyMyCaffeToolStripMenuItem.Enabled = true;
-                    trainMNISTToolStripMenuItem.Enabled = true;
-                    testMNISTToolStripMenuItem.Enabled = true;
-                    deviceInformationToolStripMenuItem.Enabled = true;
+                    startAutotestsToolStripMenuItem.Enabled = !m_bLoading;
+                    runAutotestsToolStripMenuItem.Enabled = !m_bLoading;
+                    createDatabaseToolStripMenuItem.Enabled = !m_bLoading;
+                    loadMNISTToolStripMenuItem.Enabled = !m_bLoading;
+                    loadCIFAR10ToolStripMenuItem.Enabled = !m_bLoading;
+                    createMyCaffeToolStripMenuItem.Enabled = !m_bLoading && !m_bCaffeCreated;
+                    destroyMyCaffeToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
+                    trainMNISTToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
+                    testMNISTToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
+                    deviceInformationToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
                 }
                 else
                 {
-                    loadMNISTToolStripMenuItem.Enabled = true;
-                    loadCIFAR10ToolStripMenuItem.Enabled = true;
-                    createMyCaffeToolStripMenuItem.Enabled = true;
+                    startAutotestsToolStripMenuItem.Enabled = !m_bLoading;
+                    runAutotestsToolStripMenuItem.Enabled = !m_bLoading;
+                    createDatabaseToolStripMenuItem.Enabled = !m_bLoading;
+                    loadMNISTToolStripMenuItem.Enabled = !m_bLoading;
+                    loadCIFAR10ToolStripMenuItem.Enabled = !m_bLoading;
+                    createMyCaffeToolStripMenuItem.Enabled = !m_bLoading && !m_bCaffeCreated;
                 }
 
                 setStatus(pi.Message);
 
-                if (pi.Message == "MyCaffe Traning completed.")
+                if (pi.Message == "MyCaffe Training completed.")
                 {
                     if (m_rgTrainedWeights != null)
                     {
@@ -266,12 +311,13 @@ namespace MyCaffe.app
             }
         }
 
-        private void m_bwLoadDatabase_DoWork(object sender, DoWorkEventArgs e)
+        private void m_bwLoadMnistDatabase_DoWork(object sender, DoWorkEventArgs e)
         {
             MnistDataLoader loader = new app.MnistDataLoader(e.Argument as MnistDataParameters);
 
             loader.OnProgress += loader_OnProgress;
             loader.OnError += loader_OnError;
+            loader.OnCompleted += loader_OnCompleted;
 
             loader.LoadDatabase();            
         }
@@ -282,8 +328,14 @@ namespace MyCaffe.app
 
             loader.OnProgress += loader_OnProgress;
             loader.OnError += loader_OnError;
+            loader.OnCompleted += loader_OnCompleted;
 
             loader.LoadDatabase();
+        }
+
+        private void loader_OnCompleted(object sender, EventArgs e)
+        {
+            m_bLoading = false;
         }
 
         private void loader_OnError(object sender, ProgressArgs e)
@@ -292,6 +344,8 @@ namespace MyCaffe.app
                 m_bwLoadMnistDatabase.ReportProgress((int)e.Progress.Percentage, e.Progress);
             else
                 m_bwLoadCiFar10Database.ReportProgress((int)e.Progress.Percentage, e.Progress);
+
+            m_bLoading = false;
         }
 
         private void loader_OnProgress(object sender, ProgressArgs e)
@@ -304,6 +358,7 @@ namespace MyCaffe.app
 
         private void createMyCaffeToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            m_bCaffeCreated = true;
             createMyCaffeToolStripMenuItem.Enabled = false;
             destroyMyCaffeToolStripMenuItem.Enabled = false;
             trainMNISTToolStripMenuItem.Enabled = false;
@@ -445,6 +500,7 @@ namespace MyCaffe.app
                             break;
 
                         case COMMAND.DESTROY:
+                            m_bCaffeCreated = false;
                             caffe.Dispose();
                             caffe = null;
                             log = null;
@@ -512,7 +568,7 @@ namespace MyCaffe.app
                 runAutotestsToolStripMenuItem.Enabled = false;
                 startAutotestsToolStripMenuItem.Enabled = false;
                 abortAutotestsToolStripMenuItem.Enabled = true;
-                m_autoTest.Initialize("c:\\temp");
+                m_autoTest.Initialize("c:\\temp", EntitiesConnection.GlobalDatabaseServerName);
                 m_autoTest.Run(openFileDialogAutoTests.FileName, false);
             }
         }
@@ -527,7 +583,7 @@ namespace MyCaffe.app
                 runAutotestsToolStripMenuItem.Enabled = false;
                 startAutotestsToolStripMenuItem.Enabled = false;
                 abortAutotestsToolStripMenuItem.Enabled = true;
-                m_autoTest.Initialize("c:\\temp");
+                m_autoTest.Initialize("c:\\temp", EntitiesConnection.GlobalDatabaseServerName);
                 m_autoTest.Run(openFileDialogAutoTests.FileName, true);
             }
         }
@@ -558,5 +614,19 @@ namespace MyCaffe.app
         }
 
         #endregion
+
+        private void onlineHelpToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Process p = new Process();
+            p.StartInfo = new ProcessStartInfo("index.chm");
+            p.Start();
+        }
+
+        private void installVisualCRuntimeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Process p = new Process();
+            p.StartInfo = new ProcessStartInfo("https://go.microsoft.com/fwlink/?LinkId=746572");
+            p.Start();
+        }
     }
 }
