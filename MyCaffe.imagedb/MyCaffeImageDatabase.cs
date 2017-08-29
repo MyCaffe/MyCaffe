@@ -1015,6 +1015,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="strName">Specifies the name of the database (recommended value = "DNN").</param>
         /// <param name="strPath">Specifies the file path where the database is to be created.</param>
+        /// <param name="strInstance">Optionally, specifies the SQL Instance.  By default this is <i>null</i>, which sets the instance to the default global instance.</param>
         public static void CreateDatabase(string strName, string strPath, string strInstance = null)
         {
             if (strInstance == null)
