@@ -16,6 +16,11 @@ namespace MyCaffe.imagedb
         string m_strInstance;
 
         /// <summary>
+        /// Specifies whether or not the database is just being updated or not.
+        /// </summary>
+        protected bool m_bUpdateDatabase = true;
+
+        /// <summary>
         /// The DatabaseManagement constructor.
         /// </summary>
         /// <param name="strName">Specifies the name of the database (recommended value = "DNN").</param>
@@ -82,7 +87,7 @@ namespace MyCaffe.imagedb
 
                 connection.Open();
                 deleteTables(connection);
-                createTables(connection, false);
+                createTables(connection, false, false);
                 connection.Close();
             }
             catch (Exception excpt)
@@ -96,34 +101,42 @@ namespace MyCaffe.imagedb
         /// <summary>
         /// The CreateDatabae creates a new instance of the database in Microsoft SQL.
         /// </summary>
+        /// <param name="bUpdateDatabase">Specifies to update an existing database.</param>
         /// <returns>Returns <i>null</i> on success, an Exception on error.</returns>
-        public Exception CreateDatabase()
+        public Exception CreateDatabase(bool bUpdateDatabase = false)
         {
             try
             {
-                bool bExists;
-                Exception err = DatabaseExists(out bExists);
+                SqlConnection connection;
 
-                if (err != null)
-                    throw err;
+                m_bUpdateDatabase = bUpdateDatabase;
 
-                if (bExists)
-                    throw new Exception("Database already exists!");
+                if (!m_bUpdateDatabase)
+                {
+                    bool bExists;
+                    Exception err = DatabaseExists(out bExists);
 
-                SqlConnection connection = new SqlConnection(GetConnectionString("master"));
-                SqlCommand cmdCreate;
-                string strCmd = getCreateDatabaseCmd(m_strName, m_strPath);
+                    if (err != null)
+                        throw err;
 
-                connection.Open();
-                cmdCreate = new SqlCommand(strCmd, connection);
-                cmdCreate.CommandTimeout = 120;
-                cmdCreate.ExecuteNonQuery();
-                cmdCreate.Dispose();
-                connection.Close();
+                    if (bExists)
+                        throw new Exception("Database already exists!");
+
+                    connection = new SqlConnection(GetConnectionString("master"));
+                    SqlCommand cmdCreate;
+                    string strCmd = getCreateDatabaseCmd(m_strName, m_strPath);
+
+                    connection.Open();
+                    cmdCreate = new SqlCommand(strCmd, connection);
+                    cmdCreate.CommandTimeout = 120;
+                    cmdCreate.ExecuteNonQuery();
+                    cmdCreate.Dispose();
+                    connection.Close();
+                }
 
                 connection = new SqlConnection(GetConnectionString(m_strName));
                 connection.Open();
-                createTables(connection, true);
+                createTables(connection, true, m_bUpdateDatabase);
                 connection.Close();
             }
             catch (Exception excpt)
@@ -139,8 +152,12 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="connection">Specifies the SQL connection.</param>
         /// <param name="bFullCreate">When <i>true</i> the full database is created, otherwise all tables are created except the DatasetCreators table.</param>
-        protected virtual void createTables(SqlConnection connection, bool bFullCreate)
+        /// <param name="bUpdateOnly">When <i>true</i> an existing database is being updated.</param>
+        protected virtual void createTables(SqlConnection connection, bool bFullCreate, bool bUpdateOnly)
         {
+            if (bUpdateOnly)
+                return;
+
             SqlCommand cmdCreate;
 
             cmdCreate = new SqlCommand(Properties.Resources.CreateDatasetGroupsTable, connection);
