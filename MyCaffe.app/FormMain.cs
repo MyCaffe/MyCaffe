@@ -76,8 +76,15 @@ namespace MyCaffe.app
             {
                 FormSqlInstances dlg = new FormSqlInstances(rgSqlInst);
 
-                dlg.ShowDialog();
-                EntitiesConnection.GlobalDatabaseServerName = dlg.Instance;
+                if (dlg.ShowDialog() == DialogResult.OK)
+                {
+                    if (rgSqlInst[0] != ".\\MSSQLSERVER")
+                        EntitiesConnection.GlobalDatabaseServerName = dlg.Instance;
+                }
+                else
+                {
+                    setStatus("You are NOT connected to SQL.");
+                }
             }
 
             setStatus("Using SQL Instance '" + EntitiesConnection.GlobalDatabaseServerName + "'", false);
