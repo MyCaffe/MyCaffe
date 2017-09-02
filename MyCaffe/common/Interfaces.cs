@@ -248,7 +248,8 @@ namespace MyCaffe.common
         /// Train the network a set number of iterations.
         /// </summary>
         /// <param name="nIterationOverride">Optionally, specifies number of iterations to run that override the iterations specified in the solver desctiptor.</param>
-        void Train(int nIterationOverride = -1);
+        /// <param name="nTrainingTimeLimitInMinutes">Optionally, specifies a maximum number of minutes to train.  When set to 0, this parameter is ignored and no time limit is imposed.</param>
+        void Train(int nIterationOverride = -1, int nTrainingTimeLimitInMinutes = 0);
         /// <summary>
         /// Test the network a given number of iterations.
         /// </summary>

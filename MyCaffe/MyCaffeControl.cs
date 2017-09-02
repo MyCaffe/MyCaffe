@@ -870,16 +870,24 @@ namespace MyCaffe
         /// Train the network a set number of iterations.
         /// </summary>
         /// <param name="nIterationOverride">Optionally, specifies number of iterations to run that override the iterations specified in the solver desctiptor.</param>
-        public void Train(int nIterationOverride = -1)
+        /// <param name="nTrainingTimeLimitInMinutes">Optionally, specifies a maximum number of minutes to train.  When set to 0, this parameter is ignored and no time limit is imposed.</param>
+        public void Train(int nIterationOverride = -1, int nTrainingTimeLimitInMinutes = 0)
         {
             if (nIterationOverride == -1)
                 nIterationOverride = m_settings.MaximumIterationOverride;
 
+            m_solver.TrainingTimeLimitInMinutes = nTrainingTimeLimitInMinutes;
             m_solver.TrainingIterationOverride = nIterationOverride;
             m_solver.TestingIterationOverride = m_solver.TestingIterationOverride;
 
             if (m_rgGpu.Count > 1)
             {
+                if (nTrainingTimeLimitInMinutes > 0)
+                {
+                    m_log.WriteLine("You have a training time-limit of " + nTrainingTimeLimitInMinutes.ToString("N0") + " minutes.  Multi-GPU training is not supported when a training time-limit is imposed.");
+                    return;
+                }
+
                 NCCL<T> nccl = new NCCL<T>(m_cuda, m_log, m_solver, m_rgGpu[0], 0, null);
                 nccl.Run(m_rgGpu, m_solver.TrainingIterationOverride);
             }

@@ -94,6 +94,7 @@ namespace MyCaffe.solvers
         Blob<T> m_blobBatchInputData = null;
         double m_dfAverageTestTime = 0;
         SNAPSHOT_WEIGHT_UPDATE_METHOD m_snapshotWeightUpdatemMethod = SNAPSHOT_WEIGHT_UPDATE_METHOD.FAVOR_ACCURACY;
+        int m_nTrainingTimeLimitInMinutes = 0;
 
         /// <summary>
         /// The OnStart event fires at the start of each training iteration.
@@ -159,6 +160,15 @@ namespace MyCaffe.solvers
         public void Dispose()
         {
             dispose();
+        }
+
+        /// <summary>
+        /// Get/set the training time limit in minutes.  When set to 0, no time limit is imposed on training.
+        /// </summary>
+        public int TrainingTimeLimitInMinutes
+        {
+            get { return m_nTrainingTimeLimitInMinutes; }
+            set { m_nTrainingTimeLimitInMinutes = value; }
         }
 
         /// <summary>
@@ -640,6 +650,9 @@ namespace MyCaffe.solvers
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
 
+                Stopwatch swTimeout = new Stopwatch();
+                swTimeout.Start();
+
                 while (m_nIter < stop_iter && !m_evtCompleted.WaitOne(0))
                 {
                     // zero-init the params.
@@ -837,6 +850,17 @@ namespace MyCaffe.solvers
                         if (!bSnapshotTaken)
                             Snapshot(true, false);
                         break;
+                    }
+
+                    //-------------------------------------
+                    //  If a time-limit has been imposed
+                    //  and we have exceeded it, stop
+                    //  training.
+                    //-------------------------------------
+                    if (m_nTrainingTimeLimitInMinutes > 0 && swTimeout.Elapsed.TotalMinutes > m_nTrainingTimeLimitInMinutes)
+                    {
+                        m_log.WriteLine("A training time-limit of " + m_nTrainingTimeLimitInMinutes.ToString("N0") + " minutes has been exceeded - training will now stop.");
+                        return true;
                     }
                 }
 
