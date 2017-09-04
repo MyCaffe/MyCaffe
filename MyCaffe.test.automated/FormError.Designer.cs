@@ -46,12 +46,14 @@
             // 
             // edtError
             // 
+            this.edtError.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.edtError.Font = new System.Drawing.Font("Century Gothic", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.edtError.Location = new System.Drawing.Point(76, 12);
             this.edtError.Multiline = true;
             this.edtError.Name = "edtError";
             this.edtError.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.edtError.Size = new System.Drawing.Size(633, 102);
+            this.edtError.Size = new System.Drawing.Size(734, 102);
             this.edtError.TabIndex = 1;
             // 
             // label2
@@ -66,24 +68,26 @@
             // 
             // edtLocation
             // 
+            this.edtLocation.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.edtLocation.Font = new System.Drawing.Font("Century Gothic", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.edtLocation.Location = new System.Drawing.Point(76, 120);
             this.edtLocation.Multiline = true;
             this.edtLocation.Name = "edtLocation";
             this.edtLocation.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.edtLocation.Size = new System.Drawing.Size(633, 102);
+            this.edtLocation.Size = new System.Drawing.Size(734, 161);
             this.edtLocation.TabIndex = 1;
             // 
             // FormError
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(721, 233);
+            this.ClientSize = new System.Drawing.Size(822, 292);
             this.Controls.Add(this.edtLocation);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.edtError);
             this.Controls.Add(this.label1);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "FormError";

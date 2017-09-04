@@ -99,6 +99,7 @@ namespace MyCaffe.test.automated
                         lvi.SubItems.Add(mi.Name);
                         lvi.SubItems.Add(mi.ErrorInfo.FullErrorString);
                         lvi.Tag = new KeyValuePair<TestClass, MethodInfoEx>(tc, mi);
+                        lvi.SubItems[4].Tag = mi.ErrorInfo;
 
                         if (mi.Status != MethodInfoEx.STATUS.Passed)
                         {
@@ -130,7 +131,7 @@ namespace MyCaffe.test.automated
 
                 if (lvi.ImageIndex != (int)mi.Status)
                 {
-                    lvi.Text = mi.Status.ToString();
+                    lvi.SubItems[1].Text = mi.Status.ToString();
                     lvi.ImageIndex = (int)mi.Status;
 
                     if (mi.Status == MethodInfoEx.STATUS.Passed)
@@ -1163,6 +1164,9 @@ namespace MyCaffe.test.automated
 
                     e = e.InnerException;
                 }
+
+                m_rgstrErrors.Reverse();
+                m_rgstrLocations.Reverse();
             }
         }
 
@@ -1198,9 +1202,6 @@ namespace MyCaffe.test.automated
             {
                 lock (m_syncObj)
                 {
-                    if (m_rgstrErrors.Count > 1)
-                        return m_rgstrErrors[1];
-
                     return m_rgstrErrors[0];
                 }
             }
@@ -1212,9 +1213,6 @@ namespace MyCaffe.test.automated
             {
                 lock (m_syncObj)
                 {
-                    if (m_rgstrLocations.Count > 1)
-                        return m_rgstrLocations[1];
-
                     return m_rgstrLocations[0];
                 }
             }
@@ -1250,10 +1248,19 @@ namespace MyCaffe.test.automated
             {
                 lock (m_syncObj)
                 {
-                    if (m_rgstrLocations.Count == 0)
-                        return "";
+                    string strErr = "";
 
-                    return m_rgstrLocations[m_rgstrLocations.Count - 1];
+                    for (int i = 0; i < m_rgstrLocations.Count; i++)
+                    {
+                        strErr += m_rgstrLocations[i];
+
+                        if (i < m_rgstrLocations.Count - 1)
+                        {
+                            strErr += Environment.NewLine;
+                        }
+                    }
+
+                    return strErr;
                 }
             }
         }

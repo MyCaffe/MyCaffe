@@ -15,7 +15,7 @@ namespace MyCaffe.test.automated
 
         public FormError(ErrorInfo error)
         {
-            m_error = error; ;
+            m_error = error;
             InitializeComponent();
         }
 
