@@ -33,6 +33,11 @@ namespace MyCaffe.imagedb
             m_strPath = strPath;
         }
 
+        public string Name
+        {
+            get { return m_strName; }
+        }
+
         private string GetConnectionString(string strName)
         {
             return "Data Source=" + m_strInstance + ";Initial Catalog=" + strName + ";Integrated Security=True; MultipleActiveResultSets=True;";
