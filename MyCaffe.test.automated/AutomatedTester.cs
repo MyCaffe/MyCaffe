@@ -761,18 +761,19 @@ namespace MyCaffe.test.automated
                     s.Session1 = strName;
                 }
 
+                decimal dTotalTestTiming = 1000 * 60 * 60 * 1;
+                if (TotalTestTiming.TotalMilliseconds < (double)dTotalTestTiming)
+                    dTotalTestTiming = (decimal)TotalTestTiming.TotalMilliseconds;
+
                 s.TimeStamp = DateTime.Now;
                 s.TotalTestsRun = TotalTestRunCount;
                 s.TotalTestFailures = TotalTestFailureCount;
                 s.TestFailureRate = (decimal)dfFailureRate;
-                s.TotalTestTiming = (decimal)TotalTestTiming.TotalMilliseconds;
+                s.TotalTestTiming = dTotalTestTiming;
                 s.Path = m_strPath;
 
                 if (rgSessions.Count == 0)
                     entities.Sessions.AddObject(s);
-
-                if (s.TotalTestTiming > 248000)
-                    s.TotalTestTiming = 248000;
 
                 entities.SaveChanges();
 
@@ -795,10 +796,14 @@ namespace MyCaffe.test.automated
                             t.SessionID = s.ID;
                         }
 
+                        dTotalTestTiming = 1000 * 60 * 60 * 1;
+                        if (mi.TestTiming.TotalMilliseconds < (double)dTotalTestTiming)
+                            dTotalTestTiming = (decimal)mi.TestTiming.TotalMilliseconds;
+
                         t.ErrorString = getString(mi.ErrorInfo.FullErrorString, 1023);
                         t.ErrorLocation = getString(mi.ErrorInfo.FullErrorStringLocation, 1023);
                         t.Success = (mi.Status == MethodInfoEx.STATUS.Passed) ? true : false;
-                        t.TestTiming = (decimal)mi.TestTiming.TotalMilliseconds;
+                        t.TestTiming = dTotalTestTiming;
 
                         if (rgTest.Count == 0)
                             entities.Tests.AddObject(t);

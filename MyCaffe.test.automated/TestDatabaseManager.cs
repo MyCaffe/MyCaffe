@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -59,6 +60,28 @@ namespace MyCaffe.test.automated
             return null;
         }
 
+        static string getUniqueFilename(string fullPath)
+        {
+            if (!Path.IsPathRooted(fullPath))
+                fullPath = Path.GetFullPath(fullPath);
+
+            if (File.Exists(fullPath))
+            {
+                String filename = Path.GetFileName(fullPath);
+                String path = fullPath.Substring(0, fullPath.Length - filename.Length);
+                String filenameWOExt = Path.GetFileNameWithoutExtension(fullPath);
+                String ext = Path.GetExtension(fullPath);
+                int n = 1;
+                do
+                {
+                    fullPath = Path.Combine(path, String.Format("{0}_{1}{2}", filenameWOExt, (n++), ext));
+                }
+                while (File.Exists(fullPath));
+            }
+
+            return fullPath;
+        }
+
         public Exception CreateDatabase(string strPath)
         {
             try
@@ -72,9 +95,12 @@ namespace MyCaffe.test.automated
                 if (bExists)
                     throw new Exception("Database already exists!");
 
+                string strFile = getUniqueFilename(strPath.TrimEnd('\\') + "\\" + m_strName + ".mdf");
+                strFile = Path.GetFileNameWithoutExtension(strFile);
+
                 SqlConnection connection = new SqlConnection(GetConnectionString("master"));
                 SqlCommand cmdCreate;
-                string strCmd = getCreateDatabaseCmd(m_strName, strPath);
+                string strCmd = getCreateDatabaseCmd(m_strName, strFile, strPath);
 
                 connection.Open();
                 cmdCreate = new SqlCommand(strCmd, connection);
@@ -131,9 +157,14 @@ namespace MyCaffe.test.automated
             return strCmd;
         }
 
-        protected string getCreateDatabaseCmd(string strName, string strPath)
+        protected string getCreateDatabaseCmd(string strName, string strFileName, string strPath)
         {
             string strCmd = Properties.Resources.CreateDatabase;
+
+            while (strCmd.Contains("%DBFNAME%"))
+            {
+                strCmd = strCmd.Replace("%DBFNAME%", strFileName);
+            }
 
             while (strCmd.Contains("%DBNAME%"))
             {
