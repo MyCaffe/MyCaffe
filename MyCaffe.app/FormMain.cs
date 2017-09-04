@@ -78,7 +78,7 @@ namespace MyCaffe.app
 
                 if (dlg.ShowDialog() == DialogResult.OK)
                 {
-                    if (rgSqlInst[0] != ".\\MSSQLSERVER")
+                    if (dlg.Instance != ".\\MSSQLSERVER")
                         EntitiesConnection.GlobalDatabaseServerName = dlg.Instance;
                 }
                 else
@@ -88,6 +88,18 @@ namespace MyCaffe.app
             }
 
             setStatus("Using SQL Instance '" + EntitiesConnection.GlobalDatabaseServerName + "'", false);
+
+            DatabaseManagement dbMgr = new DatabaseManagement("DNN", "", EntitiesConnection.GlobalDatabaseServerName);
+            bool bExists;
+            Exception err = dbMgr.DatabaseExists(out bExists);
+
+            if (err != null)
+                setStatus("ERROR: " + err.Message);
+            else if (!bExists)
+                createDatabaseToolStripMenuItem_Click(this, new EventArgs());
+            else
+                setStatus("Using database '" + dbMgr.Name + "'");
+
             setStatus("");
 
             m_autoTest.OnProgress += M_autoTest_OnProgress;
@@ -98,6 +110,23 @@ namespace MyCaffe.app
             setStatus(" 2.) Server based automated testing via the 'Test | Start Server Autotests' menu.");
             setStatus("Server auto tests can easily integrate into other applications.");
             setStatus("----------------------------------------------------------------------------------");
+
+            DatasetFactory factory = new DatasetFactory();
+            int nCifarID = factory.GetDatasetID("CIFAR-10");
+            int nMnistID = factory.GetDatasetID("MNIST");
+
+            if (nCifarID == 0 || nMnistID == 0)
+            {
+                setStatus(" !Before running any automated tests, make sure to load the following datasets:");
+
+                if (nCifarID == 0)
+                    setStatus("    CIFAR-10");
+
+                if (nMnistID == 0)
+                    setStatus("    MNIST");
+
+                setStatus(" see the 'Database' menu.");
+            }
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -134,9 +163,9 @@ namespace MyCaffe.app
 
         private void runAutotestsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            TestDatabaseManager dbMgr = new TestDatabaseManager(EntitiesConnection.GlobalDatabaseServerName);
+            TestDatabaseManager dbMgrTest = new TestDatabaseManager(EntitiesConnection.GlobalDatabaseServerName);
             bool bExists;
-            Exception err = dbMgr.DatabaseExists(out bExists);
+            Exception err = dbMgrTest.DatabaseExists(out bExists);
 
             if (err != null)
             {
@@ -146,12 +175,12 @@ namespace MyCaffe.app
 
             if (!bExists)
             {
-                FormCreateDatabase dlg = new FormCreateDatabase(dbMgr.DatabaseName, "You must create the 'Testing' Database first");
+                FormCreateDatabase dlg = new FormCreateDatabase(dbMgrTest.DatabaseName, "You must create the 'Testing' Database first");
 
                 if (dlg.ShowDialog() != DialogResult.OK)
                     return;
 
-                err = dbMgr.CreateDatabase(dlg.DatabasePath);
+                err = dbMgrTest.CreateDatabase(dlg.DatabasePath);
                 if (err != null)
                 {
                     setStatus("ERROR Creating Testing Database! " + err.Message);
