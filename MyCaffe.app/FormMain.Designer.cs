@@ -52,15 +52,13 @@
             this.runTestImageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.abortToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.onlineHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialogAutoTests = new System.Windows.Forms.OpenFileDialog();
             this.edtStatus = new System.Windows.Forms.TextBox();
             this.m_bwLoadMnistDatabase = new System.ComponentModel.BackgroundWorker();
             this.m_bwProcess = new System.ComponentModel.BackgroundWorker();
             this.m_bwLoadCiFar10Database = new System.ComponentModel.BackgroundWorker();
-            this.onlineHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
-            this.installVisualCRuntimeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -249,17 +247,22 @@
             // 
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.onlineHelpToolStripMenuItem,
-            this.aboutToolStripMenuItem,
-            this.toolStripSeparator3,
-            this.installVisualCRuntimeToolStripMenuItem});
+            this.aboutToolStripMenuItem});
             this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
             this.helpToolStripMenuItem.Size = new System.Drawing.Size(44, 20);
             this.helpToolStripMenuItem.Text = "&Help";
             // 
+            // onlineHelpToolStripMenuItem
+            // 
+            this.onlineHelpToolStripMenuItem.Name = "onlineHelpToolStripMenuItem";
+            this.onlineHelpToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.onlineHelpToolStripMenuItem.Text = "Online Help";
+            this.onlineHelpToolStripMenuItem.Click += new System.EventHandler(this.onlineHelpToolStripMenuItem_Click);
+            // 
             // aboutToolStripMenuItem
             // 
             this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(223, 22);
+            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.aboutToolStripMenuItem.Text = "&About";
             this.aboutToolStripMenuItem.Click += new System.EventHandler(this.aboutToolStripMenuItem_Click);
             // 
@@ -267,7 +270,7 @@
             // 
             this.openFileDialogAutoTests.DefaultExt = "dll";
             this.openFileDialogAutoTests.Filter = "Auto Test Files (*.dll)|*.dll||";
-            this.openFileDialogAutoTests.Title = "Select the Auto Test DLL";
+            this.openFileDialogAutoTests.Title = "Select the MyCaffe.test.dll";
             // 
             // edtStatus
             // 
@@ -303,25 +306,6 @@
             this.m_bwLoadCiFar10Database.DoWork += new System.ComponentModel.DoWorkEventHandler(this.m_bwLoadCiFar10Database_DoWork);
             this.m_bwLoadCiFar10Database.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
             this.m_bwLoadCiFar10Database.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
-            // 
-            // onlineHelpToolStripMenuItem
-            // 
-            this.onlineHelpToolStripMenuItem.Name = "onlineHelpToolStripMenuItem";
-            this.onlineHelpToolStripMenuItem.Size = new System.Drawing.Size(223, 22);
-            this.onlineHelpToolStripMenuItem.Text = "Online Help";
-            this.onlineHelpToolStripMenuItem.Click += new System.EventHandler(this.onlineHelpToolStripMenuItem_Click);
-            // 
-            // toolStripSeparator3
-            // 
-            this.toolStripSeparator3.Name = "toolStripSeparator3";
-            this.toolStripSeparator3.Size = new System.Drawing.Size(220, 6);
-            // 
-            // installVisualCRuntimeToolStripMenuItem
-            // 
-            this.installVisualCRuntimeToolStripMenuItem.Name = "installVisualCRuntimeToolStripMenuItem";
-            this.installVisualCRuntimeToolStripMenuItem.Size = new System.Drawing.Size(223, 22);
-            this.installVisualCRuntimeToolStripMenuItem.Text = "Install Visual C++ Runtime...";
-            this.installVisualCRuntimeToolStripMenuItem.Click += new System.EventHandler(this.installVisualCRuntimeToolStripMenuItem_Click);
             // 
             // FormMain
             // 
@@ -375,8 +359,6 @@
         private System.Windows.Forms.ToolStripMenuItem startToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem startWithResetToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem onlineHelpToolStripMenuItem;
-        private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
-        private System.Windows.Forms.ToolStripMenuItem installVisualCRuntimeToolStripMenuItem;
     }
 }
 
