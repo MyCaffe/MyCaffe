@@ -77,7 +77,7 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "FormSqlInstances";
-            this.Text = "Select SQL Instance";
+            this.Text = "MyCaffe - Select SQL Instance";
             this.Load += new System.EventHandler(this.FormSqlInstances_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
