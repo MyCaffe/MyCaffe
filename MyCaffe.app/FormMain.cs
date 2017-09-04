@@ -190,12 +190,24 @@ namespace MyCaffe.app
                 setStatus("Testing database created.");
             }
 
+            openFileDialogAutoTests.InitialDirectory = initialDirectory;
             if (openFileDialogAutoTests.ShowDialog() == DialogResult.OK)
             {
                 FormAutomatedTests dlg = new FormAutomatedTests(openFileDialogAutoTests.FileName);
 
                 setStatus("Running automatic tests.");
                 dlg.ShowDialog();
+            }
+        }
+
+        private string initialDirectory
+        {
+            get
+            {
+                string codeBase = Process.GetCurrentProcess().MainModule.FileName;
+                UriBuilder uri = new UriBuilder(codeBase);
+                string strPath = Uri.UnescapeDataString(uri.Path);
+                return Path.GetDirectoryName(strPath);
             }
         }
 
@@ -599,6 +611,7 @@ namespace MyCaffe.app
 
         private void startToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            openFileDialogAutoTests.InitialDirectory = initialDirectory;
             if (openFileDialogAutoTests.ShowDialog() == DialogResult.OK)
             {
                 runAutotestsToolStripMenuItem.Enabled = false;
@@ -611,6 +624,7 @@ namespace MyCaffe.app
 
         private void startWithResetToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            openFileDialogAutoTests.InitialDirectory = initialDirectory;
             if (openFileDialogAutoTests.ShowDialog() == DialogResult.OK)
             {
                 if (MessageBox.Show("Resetting the test database will delete all test results for the '" + openFileDialogAutoTests.FileName + "'!  Do you want to continue?", "Delete Test Configuration", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
@@ -655,13 +669,6 @@ namespace MyCaffe.app
         {
             Process p = new Process();
             p.StartInfo = new ProcessStartInfo("index.chm");
-            p.Start();
-        }
-
-        private void installVisualCRuntimeToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            Process p = new Process();
-            p.StartInfo = new ProcessStartInfo("https://go.microsoft.com/fwlink/?LinkId=746572");
             p.Start();
         }
     }
