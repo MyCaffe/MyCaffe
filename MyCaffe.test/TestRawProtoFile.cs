@@ -15,7 +15,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestLoadingFiles()
         {
-            string strPath = TestBase.GetTestPath("\\test_data\\models");
+            string strPath = TestBase.GetTestPath("\\MyCaffe\\test_data\\models");
             string[] rgstrDir = Directory.GetDirectories(strPath);
 
             foreach (string strDir in rgstrDir)

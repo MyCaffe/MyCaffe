@@ -117,8 +117,8 @@ namespace MyCaffe.test
         /// 
         public void TestDeepDraw1()
         {
-            string strModelFile = getTestPath("\\test_data\\models\\bvlc_googlenet\\train_val.prototxt");
-            string strFile = getTestPath("\\test_data\\models\\bvlc_googlenet\\bvlc_googlenet.caffemodel");
+            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_googlenet\\train_val.prototxt");
+            string strFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_googlenet\\bvlc_googlenet.caffemodel");
             byte[] rgWeights = null;
             string strModelDesc = "";
 
@@ -184,8 +184,8 @@ namespace MyCaffe.test
         /// </summary>
         public void TestDeepDraw2()
         {
-            string strModelFile = getTestPath("\\test_data\\models\\bvlc_googlenet\\train_val.prototxt");
-            string strFile = getTestPath("\\test_data\\models\\bvlc_googlenet\\bvlc_googlenet.caffemodel");
+            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_googlenet\\train_val.prototxt");
+            string strFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_googlenet\\bvlc_googlenet.caffemodel");
             byte[] rgWeights = null;
             string strModelDesc = "";
 

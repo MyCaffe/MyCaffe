@@ -314,8 +314,8 @@ namespace MyCaffe.test
             p.OnOverrideModel += new EventHandler<OverrideProjectArgs>(project_OnOverrideModel);
             p.OnOverrideSolver += new EventHandler<OverrideProjectArgs>(p_OnOverrideSolver);
 
-            string strModelFile = getTestPath("\\test_data\\models\\mnist\\lenet_train_test.prototxt");
-            string strSolverFile = getTestPath("\\test_data\\models\\mnist\\lenet_solver.prototxt");
+            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\mnist\\lenet_train_test.prototxt");
+            string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\mnist\\lenet_solver.prototxt");
 
             p.LoadModelFile(strModelFile);
             RawProto proto = RawProtoFile.LoadFromFile(strSolverFile);
@@ -446,7 +446,7 @@ namespace MyCaffe.test
             p.OnOverrideModel += new EventHandler<OverrideProjectArgs>(project_OnOverrideModel);
             p.OnOverrideSolver += new EventHandler<OverrideProjectArgs>(p_OnOverrideSolver);
 
-            string strSolverFile = getTestPath("\\test_data\\models\\mnist\\lenet_solver.prototxt");
+            string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\mnist\\lenet_solver.prototxt");
 
             RawProto proto = RawProtoFile.LoadFromFile(strSolverFile);
 
@@ -468,8 +468,8 @@ namespace MyCaffe.test
             DatasetFactory factory = new DatasetFactory();
             p.SetDataset(factory.LoadDataset(strDs));
 
-            string strModelFile = getTestPath("\\test_data\\models\\simple\\train_test.prototxt");
-            string strSolverFile = getTestPath("\\test_data\\models\\mnist\\lenet_solver.prototxt");
+            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\simple\\train_test.prototxt");
+            string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\mnist\\lenet_solver.prototxt");
 
             p.LoadModelFile(strModelFile);
             RawProto proto = RawProtoFile.LoadFromFile(strSolverFile);

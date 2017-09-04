@@ -204,10 +204,12 @@ namespace MyCaffe.test
 
             factory.Open(ds.TrainingSource.ID);
             factory.PutRawImage(0, sd);
+            factory.PutRawImage(1, sd);
             factory.Close();
 
             factory.Open(ds.TestingSource.ID);
             factory.PutRawImage(0, sd);
+            factory.PutRawImage(1, sd);
             factory.Close();
 
             factory.UpdateDatasetCounts(ds.ID);
@@ -216,8 +218,8 @@ namespace MyCaffe.test
         public void TestImport()
         {
             PersistCaffe<T> persist = new PersistCaffe<T>(m_log, true);
-            string strModelFile = getTestPath("\\test_data\\models\\voc_fcns32\\train_val.prototxt");
-            string strFile = getTestPath("\\test_data\\models\\voc_fcns32\\fcn32s-heavy-pascal.caffemodel");
+            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\voc_fcns32\\train_val.prototxt");
+            string strFile = getTestPath("\\MyCaffe\\test_data\\models\\voc_fcns32\\fcn32s-heavy-pascal.caffemodel");
             byte[] rgWeights = null;
             string strModelDesc = "";
 
@@ -253,8 +255,8 @@ namespace MyCaffe.test
         public void TestImportExport()
         {
             PersistCaffe<T> persist = new PersistCaffe<T>(m_log, true);
-            string strModelFile = getTestPath("\\test_data\\models\\voc_fcns32\\train_val.prototxt");
-            string strFile = getTestPath("\\test_data\\models\\voc_fcns32\\fcn32s-heavy-pascal.caffemodel");
+            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\voc_fcns32\\train_val.prototxt");
+            string strFile = getTestPath("\\MyCaffe\\test_data\\models\\voc_fcns32\\fcn32s-heavy-pascal.caffemodel");
             byte[] rgWeights = null;
             string strModelDesc = "";
 
@@ -298,8 +300,8 @@ namespace MyCaffe.test
         public void TestImportExportV1()
         {
             PersistCaffe<T> persist = new PersistCaffe<T>(m_log, true);
-            string strModelFile = getTestPath("\\test_data\\models\\bvlc_nin\\train_val.prototxt");
-            string strFile = getTestPath("\\test_data\\models\\bvlc_nin\\cifar10_nin.caffemodel");
+            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_nin\\train_val.prototxt");
+            string strFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_nin\\cifar10_nin.caffemodel");
             byte[] rgWeights = null;
             string strModelDesc = "";
 
@@ -366,7 +368,7 @@ namespace MyCaffe.test
         public void TestReadBlobProto()
         {
             PersistCaffe<T> persist = new PersistCaffe<T>(m_log, true);
-            string strFile = getTestPath("\\test_data\\models\\bvlc_alexnet_imgnet\\imagenet_mean.binaryproto");
+            string strFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_alexnet_imgnet\\imagenet_mean.binaryproto");
             byte[] rgData = null;
 
             using (FileStream fs = new FileStream(strFile, FileMode.Open))
@@ -483,8 +485,8 @@ namespace MyCaffe.test
         public void TestReadWeightInfo()
         {
             PersistCaffe<T> persist = new PersistCaffe<T>(m_log, true);
-            string strModelFile = getTestPath("\\test_data\\models\\voc_fcns32\\train_val.prototxt");
-            string strFile = getTestPath("\\test_data\\models\\voc_fcns32\\fcn32s-heavy-pascal.caffemodel");
+            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\voc_fcns32\\train_val.prototxt");
+            string strFile = getTestPath("\\MyCaffe\\test_data\\models\\voc_fcns32\\fcn32s-heavy-pascal.caffemodel");
             byte[] rgWeights = null;
             string strModelDesc = "";
 
