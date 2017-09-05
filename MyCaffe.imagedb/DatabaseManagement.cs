@@ -33,6 +33,9 @@ namespace MyCaffe.imagedb
             m_strPath = strPath;
         }
 
+        /// <summary>
+        /// Returns the name of the database.
+        /// </summary>
         public string Name
         {
             get { return m_strName; }
