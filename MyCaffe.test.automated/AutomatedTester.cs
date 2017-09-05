@@ -365,6 +365,15 @@ namespace MyCaffe.test.automated
                 }
             }
         }
+
+        private void contextMenuStrip1_Opening(object sender, CancelEventArgs e)
+        {
+            if (m_rgTestClasses.IsRunning)
+            {
+                e.Cancel = true;
+                return;
+            }
+        }
     }
 
     class TestClassCollection : IEnumerable<TestClass>, IDisposable 

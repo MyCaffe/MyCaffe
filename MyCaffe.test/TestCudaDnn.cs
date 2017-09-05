@@ -108,19 +108,31 @@ namespace MyCaffe.test
         public void TestKernelMemCpyDouble()
         {
             CudaDnn<double> cuda1 = new CudaDnn<double>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
-            CudaDnn<double> cuda2 = new CudaDnn<double>(1, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
+            int nDevCount = cuda1.GetDeviceCount();
+            CudaDnn<double> cuda2 = null;
+
+            if (nDevCount > 1)
+                cuda2 = new CudaDnn<double>(1, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
 
             try
             {
+                if (nDevCount < 1)
+                    return;
+
                 copyMemTest(cuda1, cuda2, 0, 1);
-                copyMemTest(cuda1, cuda2, 1, 2);
+
+                if (nDevCount > 2)
+                    copyMemTest(cuda1, cuda2, 1, 2);
+
                 copyMemTest(cuda1, cuda2, 0, 0);
                 copyMemTest(cuda1, cuda2, 1, 1);
             }
             finally
             {
                 cuda1.Dispose();
-                cuda2.Dispose();
+
+                if (cuda2 != null)
+                    cuda2.Dispose();
             }
         }
 
@@ -128,19 +140,31 @@ namespace MyCaffe.test
         public void TestKernelMemCpyFloat()
         {
             CudaDnn<float> cuda1 = new CudaDnn<float>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
-            CudaDnn<float> cuda2 = new CudaDnn<float>(1, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
+            int nDevCount = cuda1.GetDeviceCount();
+            CudaDnn<float> cuda2 = null;
+
+            if (nDevCount > 1)
+                cuda2 = new CudaDnn<float>(1, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
 
             try
             {
+                if (nDevCount < 1)
+                    return;
+
                 copyMemTest(cuda1, cuda2, 0, 1);
-                copyMemTest(cuda1, cuda2, 1, 2);
+
+                if (nDevCount > 2)
+                    copyMemTest(cuda1, cuda2, 1, 2);
+
                 copyMemTest(cuda1, cuda2, 0, 0);
                 copyMemTest(cuda1, cuda2, 1, 1);
             }
             finally
             {
                 cuda1.Dispose();
-                cuda2.Dispose();
+
+                if (cuda2 != null)
+                    cuda2.Dispose();
             }
         }
 
