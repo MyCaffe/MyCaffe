@@ -18,6 +18,7 @@ namespace MyCaffe.test
 
         List<ITest> m_rgTests = new List<ITest>();
         string m_strName;
+        static bool m_bResetOnCleanUp = false;
 
         public TestBase(string strName, int nDeviceID = DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, object tag = null)
         {            
@@ -76,9 +77,18 @@ namespace MyCaffe.test
 
         protected virtual void dispose()
         {
-            CudaDnn<float> cuda = new CudaDnn<float>(0, DEVINIT.NONE);
-            cuda.ResetDevice();
-            cuda.Dispose();
+            if (m_bResetOnCleanUp)
+            {
+                CudaDnn<float> cuda = new CudaDnn<float>(0, DEVINIT.NONE);
+                cuda.ResetDevice();
+                cuda.Dispose();
+            }
+        }
+
+        public static bool ResetOnCleanup
+        {
+            get { return m_bResetOnCleanUp; }
+            set { m_bResetOnCleanUp = value; }
         }
 
         public static string CudaPath
