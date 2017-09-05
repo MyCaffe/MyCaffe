@@ -332,7 +332,7 @@ namespace MyCaffe.test.automated
             {
                 if (lvi.Text == "NotExecuted")
                 {
-                    string strName = lvi.SubItems[2].Text.ToLower();
+                    string strName = lvi.SubItems[3].Text.ToLower();
 
                     if (strName.Contains("gradient"))
                         lvi.Selected = true;
@@ -352,7 +352,7 @@ namespace MyCaffe.test.automated
             {
                 if (lvi.Text == "NotExecuted")
                 {
-                    string strName = lvi.SubItems[2].Text.ToLower();
+                    string strName = lvi.SubItems[3].Text.ToLower();
 
                     if (!strName.Contains("gradient"))
                         lvi.Selected = true;
