@@ -26,22 +26,22 @@ namespace MyCaffe.test
 
             if (create_count == 1)
             {
-                m_rgTests.Add(create(DataType.DOUBLE, strName, nDeviceID, engine));
                 m_rgTests.Add(create(DataType.FLOAT, strName, nDeviceID, engine));
+                m_rgTests.Add(create(DataType.DOUBLE, strName, nDeviceID, engine));
             }
             else
             {
                 for (int i = 0; i < create_count; i++)
                 {
-                    ITest iTestD = create(i, DataType.DOUBLE, strName, nDeviceID, engine);
-
-                    if (iTestD != null)
-                        m_rgTests.Add(iTestD);
-
                     ITest iTestF = create(i, DataType.FLOAT, strName, nDeviceID, engine);
 
                     if (iTestF != null)
                         m_rgTests.Add(iTestF);
+
+                    ITest iTestD = create(i, DataType.DOUBLE, strName, nDeviceID, engine);
+
+                    if (iTestD != null)
+                        m_rgTests.Add(iTestD);
                 }
             }
         }
@@ -145,6 +145,11 @@ namespace MyCaffe.test
             nPos = strPath.LastIndexOf('\\');
             if (nPos > 0)
                 strPath = strPath.Substring(0, nPos);
+
+            string strTarget = "\\MyCaffe";
+            nPos = strItem.IndexOf(strTarget);
+            if (nPos >= 0)
+                strItem = strItem.Substring(nPos + strTarget.Length);
 
             return strPath + strItem;
         }
@@ -263,6 +268,8 @@ namespace MyCaffe.test
 
             // NOTE: CudaPath set in TestBase will be used, see CudaPath and SetDefaultCudaPath() above.
             CudaDnn<T> cuda = new CudaDnn<T>(nDeviceID, flags, lSeed);
+
+            Trace.WriteLine("TestBase using Cuda Connection: '" + cuda.Path + "'");
 
             return cuda;
         }
