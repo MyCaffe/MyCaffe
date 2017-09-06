@@ -123,7 +123,6 @@ namespace MyCaffe.test
                 {
                     try
                     {
-#warning TestConvolutionLayer.TestGradientCuDnn test fails when run as <double> on CUDA 9.0RC + cuDnn 7.0.
                         Trace.WriteLine(t.DataType.ToString() + ":" + t.engine.ToString() + ": TestGradient");
                         t.TestGradient();
                     }
