@@ -7,6 +7,7 @@ using MyCaffe.common;
 using MyCaffe.basecode;
 using System.Threading;
 using MyCaffe.layers;
+using System.Diagnostics;
 
 namespace MyCaffe.test
 {
@@ -296,8 +297,8 @@ namespace MyCaffe.test
                 }
 
                 double dfLossWeight = 2.0;
+                T[] rgData = colTop[nTopID].mutable_cpu_data;
                 double dfTopVal = (double)Convert.ChangeType(colTop[nTopID].GetData(nTopDataID), typeof(double));
-                T[] rgData = colTop[nTopID].update_cpu_data();
 
                 if ((double)Convert.ChangeType(rgData[nTopDataID], typeof(double)) != dfTopVal)
                     throw new Exception("Top data did not set correctly!");

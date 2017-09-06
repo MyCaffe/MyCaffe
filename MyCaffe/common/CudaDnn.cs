@@ -1686,7 +1686,8 @@ namespace MyCaffe.common
                 if (m_rgGhostMemory == null)
                 {
                     List<double> rg = new List<double>() { hMem, lCount };
-                    return convert(m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETMEM, rg.ToArray()));
+                    double[] rgr = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETMEM, rg.ToArray());
+                    return convert(rgr);
                 }
                 else
                 {
@@ -1698,7 +1699,8 @@ namespace MyCaffe.common
                 if (m_rgGhostMemory == null)
                 {
                     List<float> rg = new List<float>() { hMem, lCount };
-                    return convert(m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETMEM, rg.ToArray()));
+                    float[] rgr = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETMEM, rg.ToArray());
+                    return convert(rgr);
                 }
                 else
                 {
