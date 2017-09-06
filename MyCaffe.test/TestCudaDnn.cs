@@ -215,18 +215,27 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestKernelAddDouble()
         {
-            CudaDnn<double> cuda1 = new CudaDnn<double>(1, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
-            CudaDnn<double> cuda2 = new CudaDnn<double>(2, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
+            CudaDnn<double> cuda1 = new CudaDnn<double>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
+            int nDevCount = cuda1.GetDeviceCount();
+            CudaDnn<double> cuda2 = null;
+
+            if (nDevCount > 1)
+                cuda2 = new CudaDnn<double>(1, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
 
             try
             {
-                addMemTest(cuda1, cuda2, 1, 2);
-                addMemTest(cuda1, cuda2, 1, 1);
+                if (nDevCount > 1)
+                {
+                    addMemTest(cuda1, cuda2, 0, 1);
+                    addMemTest(cuda1, cuda2, 0, 0);
+                }
             }
             finally
             {
                 cuda1.Dispose();
-                cuda2.Dispose();
+
+                if (cuda2 != null)
+                    cuda2.Dispose();
             }
         }
 
@@ -257,18 +266,27 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestKernelAddFloat()
         {
-            CudaDnn<float> cuda1 = new CudaDnn<float>(1, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
-            CudaDnn<float> cuda2 = new CudaDnn<float>(2, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
+            CudaDnn<float> cuda1 = new CudaDnn<float>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
+            int nDevCount = cuda1.GetDeviceCount();
+            CudaDnn<float> cuda2 = null;
+
+            if (nDevCount > 1)
+                cuda2 = new CudaDnn<float>(1, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
 
             try
             {
-                addMemTest(cuda1, cuda2, 1, 2);
-                addMemTest(cuda1, cuda2, 1, 1);
+                if (nDevCount > 1)
+                {
+                    addMemTest(cuda1, cuda2, 0, 1);
+                    addMemTest(cuda1, cuda2, 0, 0);
+                }
             }
             finally
             {
                 cuda1.Dispose();
-                cuda2.Dispose();
+
+                if (cuda2 != null)
+                    cuda2.Dispose();
             }
         }
 
