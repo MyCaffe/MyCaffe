@@ -119,6 +119,7 @@ namespace MyCaffe.test
         {
             string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_googlenet\\train_val.prototxt");
             string strFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_googlenet\\bvlc_googlenet.caffemodel");
+            string strDir = getTestPath("\\MyCaffe\\test_data\\deepdraw");
             byte[] rgWeights = null;
             string strModelDesc = "";
 
@@ -153,8 +154,7 @@ namespace MyCaffe.test
             deepDraw.Add("loss1/classifier", 10, 0.44, 0.304, 3.0, 3.0, true, 1);
 
             // Set the target output directory.
-#warning TODO: Change image name to a file on your computer.
-            string strVisualizeDir = createTargetDir("c:\\temp\\deepdraw");
+            string strVisualizeDir = createTargetDir(strDir);
 
             // the background color of the original image.
             Color clrBackground = Color.FromArgb(250, 250, 250);
@@ -186,6 +186,8 @@ namespace MyCaffe.test
         {
             string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_googlenet\\train_val.prototxt");
             string strFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_googlenet\\bvlc_googlenet.caffemodel");
+            string strImg = getTestPath("\\MyCaffe\\test_data\\mthood_224.png");
+            string strDir = getTestPath("\\MyCaffe\\test_data\\deepdraw");
             byte[] rgWeights = null;
             string strModelDesc = "";
 
@@ -204,15 +206,13 @@ namespace MyCaffe.test
 
 
             // Set the target output directory.
-#warning TODO: Change image name to a file on your computer.
-            string strVisualizeDir = createTargetDir("c:\\temp\\deepdraw");
+            string strVisualizeDir = createTargetDir(strDir);
 
             // the background color of the original image.
             Color clrBackground = Color.FromArgb(250, 250, 250);
 
             // TODO: Change this file to an image of your own.
-#warning TODO: Change image name to a file on your computer.
-            Bitmap inputImg = new Bitmap("c:\\temp\\ocean.png");
+            Bitmap inputImg = new Bitmap(strImg);
             if (inputImg.Width > 600 || inputImg.Height > 600 || inputImg.Width != inputImg.Height)
                 inputImg = ImageTools.ResizeImage(inputImg, 600, 600);
             inputImg.Save(strVisualizeDir + "\\input.png");
