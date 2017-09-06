@@ -689,7 +689,10 @@ long Memory<T>::ConvolutionForward(long hHandle, T fAlpha, long hBottomDesc, lon
 	if (wksp != NULL && nWorkspaceOffset > 0)
 		wksp += nWorkspaceOffset;
 
-	return cudnnConvolutionForward(cudnn, &fAlpha, btmdesc, btmdata, filterdesc, weight, convdesc, (cudnnConvolutionFwdAlgo_t)algo, wksp, lWorkspaceSize, &fBeta, topdesc, topdata);
+	if (lErr = cudnnConvolutionForward(cudnn, &fAlpha, btmdesc, btmdata, filterdesc, weight, convdesc, (cudnnConvolutionFwdAlgo_t)algo, wksp, lWorkspaceSize, &fBeta, topdesc, topdata))
+		return lErr;
+
+	return cudaDeviceSynchronize();
 }
 
 template long Memory<double>::ConvolutionForward(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, double dfBeta, long hTopDesc, long hTopData, int nTopOffset);
