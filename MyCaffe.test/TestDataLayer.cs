@@ -90,7 +90,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestRead()
+        public void TestReadLoadAll()
         {
             DataLayerTest test = new DataLayerTest();
 
@@ -100,7 +100,7 @@ namespace MyCaffe.test
                 {
                     bool unique_pixels = false;
                     t.Fill(unique_pixels);
-                    t.TestRead();
+                    t.TestRead(IMAGEDB_LOAD_METHOD.LOAD_ALL);
                 }
             }
             finally
@@ -110,7 +110,27 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestSkip()
+        public void TestReadLoadOnDemand()
+        {
+            DataLayerTest test = new DataLayerTest();
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    bool unique_pixels = false;
+                    t.Fill(unique_pixels);
+                    t.TestRead(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSkipLoadAll()
         {
             DataLayerTest test = new DataLayerTest();
 
@@ -119,7 +139,7 @@ namespace MyCaffe.test
                 foreach (IDataLayerTest t in test.Tests)
                 {
                     t.Fill(false);
-                    t.TestSkip();
+                    t.TestSkip(IMAGEDB_LOAD_METHOD.LOAD_ALL);
                 }
             }
             finally
@@ -129,7 +149,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestReshape()
+        public void TestSkipLoadOnDemand()
         {
             DataLayerTest test = new DataLayerTest();
 
@@ -137,7 +157,8 @@ namespace MyCaffe.test
             {
                 foreach (IDataLayerTest t in test.Tests)
                 {
-                    t.TestReshape();
+                    t.Fill(false);
+                    t.TestSkip(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
                 }
             }
             finally
@@ -147,7 +168,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestReadCropTrain()
+        public void TestReshapeLoadAll()
         {
             DataLayerTest test = new DataLayerTest();
 
@@ -155,9 +176,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataLayerTest t in test.Tests)
                 {
-                    bool unique_pixels = true;
-                    t.Fill(unique_pixels);
-                    t.TestReadCrop(Phase.TRAIN);
+                    t.TestReshape(IMAGEDB_LOAD_METHOD.LOAD_ALL);
                 }
             }
             finally
@@ -167,7 +186,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestReadCropTrainSequenceSeeded()
+        public void TestReshapeLoadOnDemand()
         {
             DataLayerTest test = new DataLayerTest();
 
@@ -175,9 +194,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataLayerTest t in test.Tests)
                 {
-                    bool unique_pixels = true;
-                    t.Fill(unique_pixels);
-                    t.TestReadCropSequenceSeeded();
+                    t.TestReshape(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
                 }
             }
             finally
@@ -187,27 +204,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestReadCropTrainSequenceUnseeded()
-        {
-            DataLayerTest test = new DataLayerTest();
-
-            try
-            {
-                foreach (IDataLayerTest t in test.Tests)
-                {
-                    bool unique_pixels = true;
-                    t.Fill(unique_pixels);
-                    t.TestReadCropSequenceSeeded();
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestReadCropTest()
+        public void TestReadCropTrainLoadAll()
         {
             DataLayerTest test = new DataLayerTest();
 
@@ -217,7 +214,147 @@ namespace MyCaffe.test
                 {
                     bool unique_pixels = true;
                     t.Fill(unique_pixels);
-                    t.TestReadCrop(Phase.TEST);
+                    t.TestReadCrop(Phase.TRAIN, IMAGEDB_LOAD_METHOD.LOAD_ALL);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestReadCropTrainLoadOnDemand()
+        {
+            DataLayerTest test = new DataLayerTest();
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    bool unique_pixels = true;
+                    t.Fill(unique_pixels);
+                    t.TestReadCrop(Phase.TRAIN, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestReadCropTrainSequenceSeededLoadAll()
+        {
+            DataLayerTest test = new DataLayerTest();
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    bool unique_pixels = true;
+                    t.Fill(unique_pixels);
+                    t.TestReadCropSequenceSeeded(IMAGEDB_LOAD_METHOD.LOAD_ALL);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestReadCropTrainSequenceSeededLoadOnDemand()
+        {
+            DataLayerTest test = new DataLayerTest();
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    bool unique_pixels = true;
+                    t.Fill(unique_pixels);
+                    t.TestReadCropSequenceSeeded(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestReadCropTrainSequenceUnseededLoadAll()
+        {
+            DataLayerTest test = new DataLayerTest();
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    bool unique_pixels = true;
+                    t.Fill(unique_pixels);
+                    t.TestReadCropSequenceSeeded(IMAGEDB_LOAD_METHOD.LOAD_ALL);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestReadCropTrainSequenceUnseededLoadOnDemand()
+        {
+            DataLayerTest test = new DataLayerTest();
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    bool unique_pixels = true;
+                    t.Fill(unique_pixels);
+                    t.TestReadCropSequenceSeeded(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestReadCropTestLoadAll()
+        {
+            DataLayerTest test = new DataLayerTest();
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    bool unique_pixels = true;
+                    t.Fill(unique_pixels);
+                    t.TestReadCrop(Phase.TEST, IMAGEDB_LOAD_METHOD.LOAD_ALL);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestReadCropTestLoadOnDemand()
+        {
+            DataLayerTest test = new DataLayerTest();
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    bool unique_pixels = true;
+                    t.Fill(unique_pixels);
+                    t.TestReadCrop(Phase.TEST, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
                 }
             }
             finally
@@ -306,12 +443,12 @@ namespace MyCaffe.test
         void TestForward2(string strSrc);
         string Fill(bool unique_pixels);
         string Fill2(int num_inputs);
-        void TestRead();
-        void TestSkip();
-        void TestReshape();
-        void TestReadCrop(Phase phase);
-        void TestReadCropSequenceSeeded();
-        void TestReadCropSequenceUnSeeded();
+        void TestRead(IMAGEDB_LOAD_METHOD loadMethod);
+        void TestSkip(IMAGEDB_LOAD_METHOD loadMethod);
+        void TestReshape(IMAGEDB_LOAD_METHOD loadMethod);
+        void TestReadCrop(Phase phase, IMAGEDB_LOAD_METHOD loadMethod);
+        void TestReadCropSequenceSeeded(IMAGEDB_LOAD_METHOD loadMethod);
+        void TestReadCropSequenceUnSeeded(IMAGEDB_LOAD_METHOD loadMethod);
     }
 
     class DataLayerTest<T> : TestEx<T>, IDataLayerTest
@@ -486,7 +623,7 @@ namespace MyCaffe.test
             return strName;
         }
 
-        public void TestRead()
+        public void TestRead(IMAGEDB_LOAD_METHOD loadMethod)
         {
             Assert.AreNotEqual(0, m_nSrcID1, "You must call 'Fill' first to set the source id!");
             double dfScale = 3;
@@ -500,6 +637,8 @@ namespace MyCaffe.test
             p.transform_param.scale = dfScale;
 
             MyCaffeImageDatabase m_imgDb = new MyCaffeImageDatabase();
+
+            m_parent.Settings.ImageDbLoadMethod = loadMethod;
             m_imgDb.Initialize(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
@@ -542,7 +681,7 @@ namespace MyCaffe.test
             m_parent.CancelEvent.Reset();
         }
 
-        public void TestSkip()
+        public void TestSkip(IMAGEDB_LOAD_METHOD loadMethod)
         {
             int nBatchSize = 5;
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.DATA);
@@ -553,6 +692,7 @@ namespace MyCaffe.test
             p.data_param.backend = DataParameter.DB.IMAGEDB;
 
             MyCaffeImageDatabase m_imgDb = new MyCaffeImageDatabase();
+            m_parent.Settings.ImageDbLoadMethod = loadMethod;
             m_imgDb.Initialize(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
@@ -587,7 +727,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestReshape()
+        public void TestReshape(IMAGEDB_LOAD_METHOD loadMethod)
         {
             int num_inputs = 5;
             // Save data of varying shapes
@@ -603,6 +743,7 @@ namespace MyCaffe.test
             p.data_param.backend = DataParameter.DB.IMAGEDB;
 
             MyCaffeImageDatabase m_imgDb = new MyCaffeImageDatabase();
+            m_parent.Settings.ImageDbLoadMethod = loadMethod;
             m_imgDb.Initialize(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
@@ -646,7 +787,7 @@ namespace MyCaffe.test
             m_parent.CancelEvent.Reset();
         }
 
-        public void TestReadCrop(Phase phase)
+        public void TestReadCrop(Phase phase, IMAGEDB_LOAD_METHOD loadMethod)
         {
             Assert.AreNotEqual(0, m_nSrcID1, "You must call 'Fill' first to set the source id!");
             m_log.WriteLine("Using temporary dataset '" + m_strSrc1 + "'.");
@@ -663,6 +804,7 @@ namespace MyCaffe.test
             p.transform_param.random_seed = 1701;
 
             MyCaffeImageDatabase m_imgDb = new MyCaffeImageDatabase();
+            m_parent.Settings.ImageDbLoadMethod = loadMethod;
             m_imgDb.Initialize(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
@@ -717,7 +859,7 @@ namespace MyCaffe.test
             m_parent.CancelEvent.Reset();
         }
 
-        public void TestReadCropSequenceSeeded()
+        public void TestReadCropSequenceSeeded(IMAGEDB_LOAD_METHOD loadMethod)
         {
             Assert.AreNotEqual(0, m_nSrcID1, "You must call 'Fill' first to set the source id!");
             m_log.WriteLine("Using temporary dataset '" + m_strSrc1 + "'.");
@@ -735,6 +877,7 @@ namespace MyCaffe.test
             p.transform_param.random_seed = 1701;
 
             MyCaffeImageDatabase imgDb = new MyCaffeImageDatabase();
+            m_parent.Settings.ImageDbLoadMethod = loadMethod;
             imgDb.Initialize(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
@@ -804,7 +947,7 @@ namespace MyCaffe.test
             m_parent.CancelEvent.Reset();
         }
 
-        public void TestReadCropSequenceUnSeeded()
+        public void TestReadCropSequenceUnSeeded(IMAGEDB_LOAD_METHOD loadMethod)
         {
             Assert.AreNotEqual(0, m_nSrcID1, "You must call 'Fill' first to set the source id!");
             m_log.WriteLine("Using temporary dataset '" + m_strSrc1 + "'.");
@@ -821,6 +964,7 @@ namespace MyCaffe.test
             p.transform_param.mirror = true;
 
             MyCaffeImageDatabase m_imgDb = new MyCaffeImageDatabase();
+            m_parent.Settings.ImageDbLoadMethod = loadMethod;
             m_imgDb.Initialize(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
