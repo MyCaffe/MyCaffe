@@ -103,7 +103,7 @@ namespace MyCaffe.layers
         {
             CudaDnn<T> cuda = m_cuda;
             Log log = m_log;
-            long hStream = cuda.CreateStream(false);
+            long hStream = 0; // cuda.CreateStream(false);
 
             while (!m_internalThread.CancellationPending)
             {
@@ -114,12 +114,14 @@ namespace MyCaffe.layers
                     load_batch(batch);
 
                     batch.Data.AsyncGpuPush(hStream);
-                    m_cuda.SynchronizeStream(hStream);
+                    if (hStream != 0)
+                        m_cuda.SynchronizeStream(hStream);
 
                     if (m_bOutputLabels)
                     {
                         batch.Label.AsyncGpuPush(hStream);
-                        m_cuda.SynchronizeStream(hStream);
+                        if (hStream != 0)
+                            m_cuda.SynchronizeStream(hStream);
                     }
 
                     m_rgPrefetchFull.Push(batch);
