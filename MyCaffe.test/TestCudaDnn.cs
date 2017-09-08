@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MyCaffe.common;
 using System.Diagnostics;
 using MyCaffe.param;
+using MyCaffe.basecode;
 
 namespace MyCaffe.test
 {
@@ -65,6 +66,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestGetDeviceMemory()
         {
+            Log log = new Log("TestCudnn");
             CudaDnn<double> cuda1 = new CudaDnn<double>(TestBase.DEFAULT_DEVICE_ID, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
 
             try
@@ -74,7 +76,7 @@ namespace MyCaffe.test
                 double dfUsed = 0;
                 double dfTotal = cuda1.GetDeviceMemory(out dfFree, out dfUsed, out bEstimate);
 
-                Assert.AreEqual(dfUsed + dfFree, dfTotal);
+                log.EXPECT_EQUAL<float>(dfUsed + dfFree, dfTotal, "used + free expected to equal total.");
 
                 CudaDnn<float> cuda2 = new CudaDnn<float>(TestBase.DEFAULT_DEVICE_ID, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
 
@@ -88,10 +90,10 @@ namespace MyCaffe.test
                     float fActual = (float)(dfUsed2 + dfFree2);
                     float fTotal = (float)dfTotal2;
 
-                    Assert.AreEqual(fActual, fTotal);
-                    Assert.AreEqual((float)dfUsed, (float)dfUsed2);
-                    Assert.AreEqual((float)dfFree, (float)dfFree2);
-                    Assert.AreEqual((float)dfTotal, (float)dfTotal2);
+                    log.EXPECT_EQUAL<float>(fActual, fTotal, "Actual expected to equal total.");
+                    log.EXPECT_EQUAL<float>(dfUsed, dfUsed2, "Used expected to eaual Used2.");
+                    log.EXPECT_EQUAL<float>(dfFree, dfFree2, "Free expected to equal Free2.");
+                    log.EXPECT_EQUAL<float>(dfTotal, dfTotal2, "Total expected to equal Total2.");
                 }
                 finally
                 {
