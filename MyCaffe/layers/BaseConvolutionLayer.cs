@@ -538,35 +538,15 @@ namespace MyCaffe.layers
                 List<int> rgBottomDimBlobShape = new List<int>() { m_nNumSpatialAxes + 1 };
                 m_blobConvInputShape.Reshape(rgBottomDimBlobShape);
 
-                T[] rgConvInputShapeData = m_blobConvInputShape.cpu_data;
-                if (rgConvInputShapeData == null || rgConvInputShapeData.Length != m_nNumSpatialAxes + 1)
-                    rgConvInputShapeData = new T[m_nNumSpatialAxes + 1];
-
-                bool bDirty = false;
-
+                T[] rgConvInputShapeData = m_blobConvInputShape.mutable_cpu_data;
                 for (int i = 0; i < m_nNumSpatialAxes + 1; i++)
                 {
-                    int nShape;
-
                     if (reverse_dimensions())
-                        nShape = colTop[0].shape(m_nChannelAxis + i);
+                        rgConvInputShapeData[i] = (T)Convert.ChangeType(colTop[0].shape(m_nChannelAxis + i), typeof(T));
                     else
-                        nShape = colBottom[0].shape(m_nChannelAxis + i);
-
-                    int nShape1 = (int)Convert.ChangeType(rgConvInputShapeData[i], typeof(int));
-
-                    if (nShape != nShape1)
-                    {
-                        rgConvInputShapeData[i] = (T)Convert.ChangeType(nShape, typeof(T));
-                        bDirty = true;
-                    }
+                        rgConvInputShapeData[i] = (T)Convert.ChangeType(colBottom[0].shape(m_nChannelAxis + i), typeof(T));
                 }
-
-                if (bDirty)
-                {
-                    m_blobConvInputShape.mutable_cpu_data = rgConvInputShapeData;
-                    m_blobConvInputShape.update_cpu_data();
-                }
+                m_blobConvInputShape.mutable_cpu_data = rgConvInputShapeData;
 
                 // The im2col result buffer will only hold one image at a time to avoid
                 // overly large memory usage.  In the special case of 1x1 convolution
