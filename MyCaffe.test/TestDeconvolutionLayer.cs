@@ -349,7 +349,7 @@ namespace MyCaffe.test
 
                 bCopyDiff = false;
                 bReshape = false;
-                layer_2d.blobs[0].CopyFrom(weights, bCopyDiff, bReshape);
+                layer_2d.blobs[0].CopyFrom(weights, bCopyDiff, bReshape);                
                 layer_2d.Forward(BottomVec, TopVec);
 
                 bCopyDiff = false;

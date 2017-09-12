@@ -81,6 +81,11 @@ namespace MyCaffe.test
 
             foreach (string strDs in rgDs)
             {
+                DatasetFactory df = new DatasetFactory();
+                int nDs = df.GetDatasetID(strDs);
+                if (nDs == 0)
+                    throw new Exception("The dataset '" + strDs + "' does not exist - you need to load it.");
+
                 SettingsCaffe settings = new SettingsCaffe();
                 settings.ImageDbLoadMethod = loadMethod;
                 settings.ImageDbLoadLimit = nLoadLimit;
@@ -318,6 +323,11 @@ namespace MyCaffe.test
 
             foreach (string strDs in rgDs)
             {
+                DatasetFactory df = new DatasetFactory();
+                int nDs = df.GetDatasetID(strDs);
+                if (nDs == 0)
+                    throw new Exception("The dataset '" + strDs + "' does not exist - you need to load it.");
+
                 SettingsCaffe settings = new SettingsCaffe();
                 settings.ImageDbLoadMethod = loadMethod;
                 settings.ImageDbLoadLimit = nLoadLimit;
@@ -699,6 +709,11 @@ namespace MyCaffe.test
 
             foreach (string strDs in rgDs)
             {
+                DatasetFactory df = new DatasetFactory();
+                int nDs = df.GetDatasetID(strDs);
+                if (nDs == 0)
+                    throw new Exception("The dataset '" + strDs + "' does not exist - you need to load it.");
+
                 SettingsCaffe settings = new SettingsCaffe();
                 settings.ImageDbLoadMethod = loadMethod;
                 settings.ImageDbLoadLimit = nLoadLimit;
