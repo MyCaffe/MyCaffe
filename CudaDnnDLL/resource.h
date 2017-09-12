@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by Resource.9.rc
+// Used by Resource.8.rc
 //
 
 // Next default values for new objects
