@@ -102,7 +102,12 @@ namespace MyCaffe.test.automated
                         lvi.Tag = new KeyValuePair<TestClass, MethodInfoEx>(tc, mi);
                         lvi.SubItems[4].Tag = mi.ErrorInfo;
 
-                        if (mi.Status != MethodInfoEx.STATUS.Passed)
+                        if (mi.Status != MethodInfoEx.STATUS.Passed && mi.Status != MethodInfoEx.STATUS.Failed)
+                        {
+                            lvi.Checked = true;
+                            mi.Enabled = true;
+                        }
+                        else if (mi.Status == MethodInfoEx.STATUS.Failed && lt == LOADTYPE.FAILURE)
                         {
                             lvi.Checked = true;
                             mi.Enabled = true;
@@ -686,6 +691,8 @@ namespace MyCaffe.test.automated
                     }
                 }
 
+                setInitialSettings();
+
                 m_nTotalTests = totalTestCount;
             }
             catch (Exception excpt)
@@ -708,6 +715,28 @@ namespace MyCaffe.test.automated
 
                 MessageBox.Show("Error! " + strErr);
                 return;
+            }
+        }
+
+        private void setInitialSettings()
+        {
+            List<Tuple<string, string, string>> rgKnownFailures = new List<Tuple<string, string, string>>();
+
+            rgKnownFailures.Add(new Tuple<string, string, string>("TestTripletSelectLayer", "TestGradient", "SKIPPED - currently causes lock-up."));
+            rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestLoadLimitNextSequential", "SKIPPED - currently causes lock-up."));
+
+            foreach (Tuple<string, string, string> knownFailure in rgKnownFailures)
+            {
+                TestClass testClass = Find(knownFailure.Item1);
+                if (testClass != null)
+                {
+                    MethodInfoEx mi = testClass.Methods.Find(knownFailure.Item2);
+                    if (mi != null)
+                    {
+                        mi.Status = MethodInfoEx.STATUS.Failed;
+                        mi.ErrorInfo.SetError(new Exception(knownFailure.Item3));
+                    }
+                }
             }
         }
 
