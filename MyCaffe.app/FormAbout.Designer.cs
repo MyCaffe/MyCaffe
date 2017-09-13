@@ -69,7 +69,7 @@
             // 
             this.lblWebUrl.Font = new System.Drawing.Font("Century Gothic", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblWebUrl.ForeColor = System.Drawing.Color.CornflowerBlue;
-            this.lblWebUrl.Location = new System.Drawing.Point(387, 262);
+            this.lblWebUrl.Location = new System.Drawing.Point(372, 262);
             this.lblWebUrl.Name = "lblWebUrl";
             this.lblWebUrl.Size = new System.Drawing.Size(134, 17);
             this.lblWebUrl.TabIndex = 5;
@@ -91,27 +91,28 @@
             // 
             this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.label2.Font = new System.Drawing.Font("Century Gothic", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(272, 163);
+            this.label2.Font = new System.Drawing.Font("Century Gothic", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label2.Location = new System.Drawing.Point(259, 163);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(331, 71);
+            this.label2.Size = new System.Drawing.Size(344, 71);
             this.label2.TabIndex = 7;
-            this.label2.Text = "MyCaffe is a complete re-write of Caffe in C# for Windows .NET programmers.";
+            this.label2.Text = "MyCaffe is a complete re-write of the open-source Caffe project in C# for Windows" +
+    " .NET programmers.";
             // 
             // lblVersion
             // 
             this.lblVersion.Font = new System.Drawing.Font("Courier New", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblVersion.Location = new System.Drawing.Point(276, 53);
+            this.lblVersion.Location = new System.Drawing.Point(263, 53);
             this.lblVersion.Name = "lblVersion";
-            this.lblVersion.Size = new System.Drawing.Size(452, 15);
+            this.lblVersion.Size = new System.Drawing.Size(342, 15);
             this.lblVersion.TabIndex = 9;
             // 
             // lblProduct
             // 
             this.lblProduct.Font = new System.Drawing.Font("Century Gothic", 18F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblProduct.Location = new System.Drawing.Point(270, 19);
+            this.lblProduct.Location = new System.Drawing.Point(263, 19);
             this.lblProduct.Name = "lblProduct";
-            this.lblProduct.Size = new System.Drawing.Size(333, 34);
+            this.lblProduct.Size = new System.Drawing.Size(338, 34);
             this.lblProduct.TabIndex = 11;
             this.lblProduct.Text = "Product:";
             // 
@@ -120,7 +121,7 @@
             this.pictureBox1.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox1.Image")));
             this.pictureBox1.Location = new System.Drawing.Point(12, 12);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(252, 273);
+            this.pictureBox1.Size = new System.Drawing.Size(220, 275);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.pictureBox1.TabIndex = 3;
             this.pictureBox1.TabStop = false;
@@ -129,7 +130,7 @@
             // 
             this.label4.Font = new System.Drawing.Font("Century Gothic", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label4.ForeColor = System.Drawing.Color.SlateGray;
-            this.label4.Location = new System.Drawing.Point(273, 262);
+            this.label4.Location = new System.Drawing.Point(261, 262);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(112, 17);
             this.label4.TabIndex = 5;
@@ -145,9 +146,9 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblMyCaffeUrl.Font = new System.Drawing.Font("Century Gothic", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblMyCaffeUrl.ForeColor = System.Drawing.Color.Blue;
-            this.lblMyCaffeUrl.Location = new System.Drawing.Point(272, 235);
+            this.lblMyCaffeUrl.Location = new System.Drawing.Point(260, 235);
             this.lblMyCaffeUrl.Name = "lblMyCaffeUrl";
-            this.lblMyCaffeUrl.Size = new System.Drawing.Size(331, 27);
+            this.lblMyCaffeUrl.Size = new System.Drawing.Size(343, 27);
             this.lblMyCaffeUrl.TabIndex = 7;
             this.lblMyCaffeUrl.Text = "http://www.mycaffe.org";
             this.lblMyCaffeUrl.Click += new System.EventHandler(this.lblMyCaffeUrl_Click);
