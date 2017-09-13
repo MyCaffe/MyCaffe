@@ -119,7 +119,7 @@ namespace MyCaffe.test.automated
             else
                 colTests.LoadFromDatabase();
 
-            colTests.Run(m_evtCancel, true);
+            colTests.Run(m_evtCancel, false, true);
 
             while (!bw.CancellationPending && colTests.IsRunning)
             {

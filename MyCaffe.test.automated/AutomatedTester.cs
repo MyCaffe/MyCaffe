@@ -21,6 +21,7 @@ namespace MyCaffe.test.automated
         EventWaitHandle m_evtGlobalCancel = new EventWaitHandle(false, EventResetMode.AutoReset, "__GRADIENT_CHECKER_CancelEvent__");
         ListViewColumnSorter m_lstSorter = new ListViewColumnSorter();
         FileInfo m_fiPath;
+        bool m_bSkip = false;
 
         enum LOADTYPE
         {
@@ -230,7 +231,8 @@ namespace MyCaffe.test.automated
                 Trace.WriteLine("   " + str);
             }
 
-            m_rgTestClasses.Run(m_evtCancel);
+            m_rgTestClasses.Run(m_evtCancel, m_bSkip, false);
+            m_bSkip = false;
         }
 
         private void btnAbort_Click(object sender, EventArgs e)
@@ -373,6 +375,20 @@ namespace MyCaffe.test.automated
                 e.Cancel = true;
                 return;
             }
+        }
+
+        private void skipToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            foreach (ListViewItem lvi in lstTests.Items)
+            {
+                if (lvi.Selected)
+                    lvi.Checked = true;
+                else
+                    lvi.Checked = false;
+            }
+
+            m_bSkip = true;
+            btnRun_Click(sender, e);
         }
     }
 
@@ -543,16 +559,17 @@ namespace MyCaffe.test.automated
             return rgstr.ToArray();
         }
 
-        public void Run(AutoResetEvent evtCancel, bool bServerMode = false)
+        public void Run(AutoResetEvent evtCancel, bool bSkip, bool bServerMode = false)
         {
-            m_testTask = Task.Factory.StartNew(new Action<object>(testThread), new Tuple<AutoResetEvent, bool>(evtCancel, bServerMode), TaskCreationOptions.LongRunning);
+            m_testTask = Task.Factory.StartNew(new Action<object>(testThread), new Tuple<AutoResetEvent, bool, bool>(evtCancel, bSkip, bServerMode), TaskCreationOptions.LongRunning);
         }
 
         private void testThread(object obj)
         {
-            Tuple<AutoResetEvent, bool> param = obj as Tuple<AutoResetEvent, bool>;
+            Tuple<AutoResetEvent, bool, bool> param = obj as Tuple<AutoResetEvent, bool, bool>;
             AutoResetEvent evtCancel = param.Item1;
-            bool bServerMode = param.Item2;
+            bool bSkip = param.Item2;
+            bool bServerMode = param.Item3;
             TestClass tcCurrent = null;
             MethodInfoEx miCurrent = null;
 
@@ -576,7 +593,16 @@ namespace MyCaffe.test.automated
                         if (mi.Enabled && (!bServerMode || mi.Status == MethodInfoEx.STATUS.NotExecuted))
                         {
                             m_strCurrentTest = tc.Name + "::" + mi.Name;
-                            mi.Invoke(tc.Instance);
+
+                            if (bSkip)
+                            {
+                                mi.ErrorInfo.SetError(new Exception("SKIPPED"));
+                                mi.Status = MethodInfoEx.STATUS.Failed;
+                            }
+                            else
+                            {
+                                mi.Invoke(tc.Instance);
+                            }
 
                             if (mi.Status != MethodInfoEx.STATUS.Aborted)
                                 SaveToDatabase(tc, mi);

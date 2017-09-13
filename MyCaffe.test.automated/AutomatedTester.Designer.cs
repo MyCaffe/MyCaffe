@@ -62,6 +62,7 @@
             this.toolStripStatusLabel2 = new System.Windows.Forms.ToolStripStatusLabel();
             this.tsTestingTime = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
+            this.skipToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.contextMenuStrip1.SuspendLayout();
             this.toolStripContainer1.ContentPanel.SuspendLayout();
             this.toolStripContainer1.TopToolStripPanel.SuspendLayout();
@@ -126,9 +127,10 @@
             // 
             this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.resetToolStripMenuItem,
-            this.runToolStripMenuItem});
+            this.runToolStripMenuItem,
+            this.skipToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(153, 70);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(153, 92);
             this.contextMenuStrip1.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStrip1_Opening);
             // 
             // resetToolStripMenuItem
@@ -391,6 +393,13 @@
             this.timerUI.Interval = 250;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
+            // skipToolStripMenuItem
+            // 
+            this.skipToolStripMenuItem.Name = "skipToolStripMenuItem";
+            this.skipToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.skipToolStripMenuItem.Text = "Skip";
+            this.skipToolStripMenuItem.Click += new System.EventHandler(this.skipToolStripMenuItem_Click);
+            // 
             // AutomatedTester
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -449,5 +458,6 @@
         private System.Windows.Forms.ToolStripButton btnGradientTests;
         private System.Windows.Forms.ToolStripButton btnNonGradientTests;
         private System.Windows.Forms.ColumnHeader colIdx;
+        private System.Windows.Forms.ToolStripMenuItem skipToolStripMenuItem;
     }
 }
