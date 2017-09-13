@@ -11,7 +11,7 @@ using MyCaffe.fillers;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestDeDeconvolutionLayer
+    public class TestDeconvolutionLayer
     {
         [TestMethod]
         public void TestSetup()
@@ -349,7 +349,8 @@ namespace MyCaffe.test
 
                 bCopyDiff = false;
                 bReshape = false;
-                layer_2d.blobs[0].CopyFrom(weights, bCopyDiff, bReshape);                
+                layer_2d.blobs[0].CopyFrom(weights, bCopyDiff, bReshape);
+#warning The call to Forward below causes a CUDA map overwrite error.                
                 layer_2d.Forward(BottomVec, TopVec);
 
                 bCopyDiff = false;

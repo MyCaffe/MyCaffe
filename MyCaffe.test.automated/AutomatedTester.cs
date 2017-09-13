@@ -399,6 +399,7 @@ namespace MyCaffe.test.automated
 
     class TestClassCollection : IEnumerable<TestClass>, IDisposable 
     {
+        List<Tuple<string, string, string>> m_rgKnownFailures = new List<Tuple<string, string, string>>();
         string m_strCurrentTest = "";
         string m_strPath;
         string m_strName;
@@ -635,6 +636,8 @@ namespace MyCaffe.test.automated
 
         public void Load(string strPath)
         {
+            bool bLoadedKnownFailures = false;
+
             m_strPath = strPath;
             m_rgClasses.Clear();
 
@@ -657,6 +660,15 @@ namespace MyCaffe.test.automated
                         if (mi.Name == "Dispose")
                         {
                             miDispose = mi;
+                        }
+                        else if (tc.Name == "TestBase" && mi.Name == "get_KnownFailures")
+                        {
+                            if (!bLoadedKnownFailures)
+                            {
+                                object obj = mi.Invoke(tc.Instance, null);
+                                m_rgKnownFailures = obj as List<Tuple<string, string, string>>;
+                                bLoadedKnownFailures = true;
+                            }
                         }
                         else
                         {
@@ -720,12 +732,10 @@ namespace MyCaffe.test.automated
 
         private void setInitialSettings()
         {
-            List<Tuple<string, string, string>> rgKnownFailures = new List<Tuple<string, string, string>>();
+            if (m_rgKnownFailures == null)
+                return;
 
-            rgKnownFailures.Add(new Tuple<string, string, string>("TestTripletSelectLayer", "TestGradient", "SKIPPED - currently causes lock-up."));
-            rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestLoadLimitNextSequential", "SKIPPED - currently causes lock-up."));
-
-            foreach (Tuple<string, string, string> knownFailure in rgKnownFailures)
+            foreach (Tuple<string, string, string> knownFailure in m_rgKnownFailures)
             {
                 TestClass testClass = Find(knownFailure.Item1);
                 if (testClass != null)

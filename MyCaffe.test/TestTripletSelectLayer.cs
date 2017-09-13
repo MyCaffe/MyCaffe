@@ -350,7 +350,6 @@ namespace MyCaffe.test
 
         public void TestGradient()
         {
-            throw new NotSupportedException("Currently this test is not complete and causes a system hang.");
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TRIPLET_SELECT);            
             TripletSelectLayer<T> layer = new TripletSelectLayer<T>(m_cuda, m_log, p);
             layer.Setup(BottomVec, TopVec);

@@ -12,16 +12,16 @@ using System.Diagnostics;
 
 namespace MyCaffe.test
 {
-    public class TestBase : IDisposable 
+    public class TestBase : IDisposable, ITestKnownFailures
     {
         public const int DEFAULT_DEVICE_ID = 0;
 
         List<ITest> m_rgTests = new List<ITest>();
-        string m_strName;
+        string m_strName = "";
         static bool m_bResetOnCleanUp = false;
 
         public TestBase(string strName, int nDeviceID = DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, object tag = null)
-        {            
+        {
             m_strName = strName;
 
             if (create_count == 1)
@@ -43,6 +43,23 @@ namespace MyCaffe.test
                     if (iTestD != null)
                         m_rgTests.Add(iTestD);
                 }
+            }
+        }
+
+        public TestBase()
+        {
+            m_strName = "";
+        }
+
+        public List<Tuple<string, string, string>> KnownFailures
+        {
+            get
+            {
+                List<Tuple<string, string, string>> rgKnownFailures = new List<Tuple<string, string, string>>();
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestTripletSelectLayer", "TestGradient", "SKIPPED - currently causes lock-up."));
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestLoadLimitNextSequential", "SKIPPED - currently causes lock-up."));
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestDeconvolutionLayer", "TestNDAgainst2D", "SKIPPED - currently causes a CUDA map buffer object failure (14) error on some GPU's.  This appears to corrupt the GPU for all subsequent tests fail with CUDA Missing Configuration (1) errors."));
+                return rgKnownFailures;
             }
         }
 

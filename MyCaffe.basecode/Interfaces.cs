@@ -84,4 +84,15 @@ namespace MyCaffe.basecode
         /// </summary>
         LAST_STATE
     }
+
+    /// <summary>
+    /// Defines the ITest interface used by the Test module to return its known failures.
+    /// </summary>
+    public interface ITestKnownFailures
+    {
+        /// <summary>
+        /// Get the known failures of the test module.
+        /// </summary>
+        List<Tuple<string, string, string>> KnownFailures { get; }
+    }
 }
