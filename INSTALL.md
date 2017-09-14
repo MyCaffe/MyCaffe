@@ -4,13 +4,13 @@ To install and run <b>MyCaffe</b> you will need to do the following steps.
 <H3>I. CUDA - Install NVIDIA CUDA and cuDNN Libraries</H3>
 Install either CUDA 8.0 -or- CUDA 9.0 (or both) as shown below.
 <H4>A. CUDA 8.0 - Install NVIDIA CUDA and cuDNN Libraries</H4>
-</br>1.) Install the NVIDIA CUDA 8.0 Toolkit for Windows from https://developer.nvidia.com/cuda-downloads. 
+1.) Install the NVIDIA CUDA 8.0 Toolkit for Windows from https://developer.nvidia.com/cuda-downloads. 
 </br>2.) Install the NVIDIA cuDNN 6.0 Accelerated Libraries for CUDA 8.0 from https://developer.nvidia.com/cuDNN.
 </br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V8_0)</i></b> installation location  named <b><i>cudann_8.0-win-v6.0</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
 </br>4.) Copy the <b><i>cudnn64_6.dll</i></b> file into the <b><i>$(CUDA_PATH_V8_0)\bin</i></b> directory.
 </br>
 <H4>B. CUDA 9.0 - Install NVIDIA CUDA and cuDNN Libraries</H4>
-</br>1.) Install the NVIDIA CUDA 9.0 Toolkit for Windows from https://developer.nvidia.com/cuda-downloads. 
+1.) Install the NVIDIA CUDA 9.0 Toolkit for Windows from https://developer.nvidia.com/cuda-downloads. 
 </br>2.) Install the NVIDIA cuDNN 7.0 Accelerated Libraries for CUDA 9.0 from https://developer.nvidia.com/cuDNN.
 </br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V9_0)</i></b> installation location  named <b><i>cudann_9.0rc-win-v7.0</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
 </br>4.) Copy the <b><i>cudnn64_7.dll</i></b> file into the <b><i>$(CUDA_PATH_V9_0)\bin</i></b> directory.
