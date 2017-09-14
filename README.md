@@ -28,6 +28,8 @@ available under the Apache 2.0 License.
 * Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 8.0</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 6.0</a> </br>
 </br>
 
+NOTE: Visual Studio 2017 support noted above currently uses the Platform Toolset "Visual Studio 2015 (v140)" build setting.
+
 IMPORTANT: The open-source MyCaffe project on GitHub is considered 'pre-release' and will have bugs.  When you find bugs or other issues, please report them here - or better yet, get involved
 and propose a fix!
 
