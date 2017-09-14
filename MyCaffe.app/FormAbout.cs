@@ -29,7 +29,7 @@ namespace MyCaffe.app
 
         private void lblWebUrl_MouseHover(object sender, EventArgs e)
         {
-            lblWebUrl.ForeColor = Color.SkyBlue;
+            lblWebUrl.ForeColor = Color.Blue;
         }
 
         private void lblWebUrl_MouseLeave(object sender, EventArgs e)
@@ -47,12 +47,12 @@ namespace MyCaffe.app
 
         private void lblMyCaffeUrl_MouseHover(object sender, EventArgs e)
         {
-            lblMyCaffeUrl.ForeColor = Color.SkyBlue;
+            lblMyCaffeUrl.ForeColor = Color.Blue;
         }
 
         private void lblMyCaffeUrl_MouseLeave(object sender, EventArgs e)
         {
-            lblMyCaffeUrl.ForeColor = Color.Blue;
+            lblMyCaffeUrl.ForeColor = Color.CornflowerBlue;
         }
 
 

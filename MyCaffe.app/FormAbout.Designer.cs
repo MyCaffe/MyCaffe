@@ -30,14 +30,13 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormAbout));
             this.edtLicense = new System.Windows.Forms.TextBox();
-            this.label1 = new System.Windows.Forms.Label();
+            this.lblLicense = new System.Windows.Forms.Label();
             this.lblWebUrl = new System.Windows.Forms.Label();
-            this.label3 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
+            this.lblDescription = new System.Windows.Forms.Label();
             this.lblVersion = new System.Windows.Forms.Label();
             this.lblProduct = new System.Windows.Forms.Label();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
-            this.label4 = new System.Windows.Forms.Label();
+            this.lblBroughtToYou = new System.Windows.Forms.Label();
             this.lblMyCaffeUrl = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
@@ -56,14 +55,14 @@
             this.edtLicense.Size = new System.Drawing.Size(586, 263);
             this.edtLicense.TabIndex = 12;
             // 
-            // label1
+            // lblLicense
             // 
-            this.label1.Font = new System.Drawing.Font("Corbel", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(12, 288);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(458, 18);
-            this.label1.TabIndex = 4;
-            this.label1.Text = "License:";
+            this.lblLicense.Font = new System.Drawing.Font("Corbel", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblLicense.Location = new System.Drawing.Point(12, 288);
+            this.lblLicense.Name = "lblLicense";
+            this.lblLicense.Size = new System.Drawing.Size(458, 18);
+            this.lblLicense.TabIndex = 4;
+            this.lblLicense.Text = "License:";
             // 
             // lblWebUrl
             // 
@@ -79,24 +78,16 @@
             this.lblWebUrl.MouseLeave += new System.EventHandler(this.lblWebUrl_MouseLeave);
             this.lblWebUrl.MouseHover += new System.EventHandler(this.lblWebUrl_MouseHover);
             // 
-            // label3
+            // lblDescription
             // 
-            this.label3.Font = new System.Drawing.Font("Century Gothic", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(270, 258);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(275, 27);
-            this.label3.TabIndex = 6;
-            // 
-            // label2
-            // 
-            this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.lblDescription.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.label2.Font = new System.Drawing.Font("Century Gothic", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(259, 163);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(344, 71);
-            this.label2.TabIndex = 7;
-            this.label2.Text = "MyCaffe is a complete re-write of the open-source Caffe project in C# for Windows" +
+            this.lblDescription.Font = new System.Drawing.Font("Century Gothic", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblDescription.Location = new System.Drawing.Point(259, 163);
+            this.lblDescription.Name = "lblDescription";
+            this.lblDescription.Size = new System.Drawing.Size(344, 71);
+            this.lblDescription.TabIndex = 7;
+            this.lblDescription.Text = "MyCaffe is a complete re-write of the open-source Caffe project in C# for Windows" +
     " .NET programmers.";
             // 
             // lblVersion
@@ -126,26 +117,26 @@
             this.pictureBox1.TabIndex = 3;
             this.pictureBox1.TabStop = false;
             // 
-            // label4
+            // lblBroughtToYou
             // 
-            this.label4.Font = new System.Drawing.Font("Century Gothic", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label4.ForeColor = System.Drawing.Color.SlateGray;
-            this.label4.Location = new System.Drawing.Point(261, 262);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(112, 17);
-            this.label4.TabIndex = 5;
-            this.label4.Text = "brought to you by";
-            this.label4.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.label4.Click += new System.EventHandler(this.lblWebUrl_Click);
-            this.label4.MouseLeave += new System.EventHandler(this.lblWebUrl_MouseLeave);
-            this.label4.MouseHover += new System.EventHandler(this.lblWebUrl_MouseHover);
+            this.lblBroughtToYou.Font = new System.Drawing.Font("Century Gothic", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblBroughtToYou.ForeColor = System.Drawing.Color.SlateGray;
+            this.lblBroughtToYou.Location = new System.Drawing.Point(261, 262);
+            this.lblBroughtToYou.Name = "lblBroughtToYou";
+            this.lblBroughtToYou.Size = new System.Drawing.Size(112, 17);
+            this.lblBroughtToYou.TabIndex = 5;
+            this.lblBroughtToYou.Text = "brought to you by";
+            this.lblBroughtToYou.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.lblBroughtToYou.Click += new System.EventHandler(this.lblWebUrl_Click);
+            this.lblBroughtToYou.MouseLeave += new System.EventHandler(this.lblWebUrl_MouseLeave);
+            this.lblBroughtToYou.MouseHover += new System.EventHandler(this.lblWebUrl_MouseHover);
             // 
             // lblMyCaffeUrl
             // 
             this.lblMyCaffeUrl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblMyCaffeUrl.Font = new System.Drawing.Font("Century Gothic", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblMyCaffeUrl.ForeColor = System.Drawing.Color.Blue;
+            this.lblMyCaffeUrl.ForeColor = System.Drawing.Color.CornflowerBlue;
             this.lblMyCaffeUrl.Location = new System.Drawing.Point(260, 235);
             this.lblMyCaffeUrl.Name = "lblMyCaffeUrl";
             this.lblMyCaffeUrl.Size = new System.Drawing.Size(343, 27);
@@ -161,12 +152,11 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(615, 584);
             this.Controls.Add(this.edtLicense);
-            this.Controls.Add(this.label1);
-            this.Controls.Add(this.label4);
+            this.Controls.Add(this.lblLicense);
+            this.Controls.Add(this.lblBroughtToYou);
             this.Controls.Add(this.lblWebUrl);
-            this.Controls.Add(this.label3);
             this.Controls.Add(this.lblMyCaffeUrl);
-            this.Controls.Add(this.label2);
+            this.Controls.Add(this.lblDescription);
             this.Controls.Add(this.lblVersion);
             this.Controls.Add(this.lblProduct);
             this.Controls.Add(this.pictureBox1);
@@ -184,14 +174,13 @@
         #endregion
 
         private System.Windows.Forms.TextBox edtLicense;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label lblLicense;
         private System.Windows.Forms.Label lblWebUrl;
-        private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Label lblDescription;
         private System.Windows.Forms.Label lblVersion;
         private System.Windows.Forms.Label lblProduct;
         private System.Windows.Forms.PictureBox pictureBox1;
-        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Label lblBroughtToYou;
         private System.Windows.Forms.Label lblMyCaffeUrl;
     }
 }
