@@ -15,7 +15,7 @@ Install either CUDA 8.0 -or- CUDA 9.0 (or both) as shown below.
 </br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V9_0)</i></b> installation location  named <b><i>cudann_9.0rc-win-v7.0</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
 </br>4.) Copy the <b><i>cudnn64_7.dll</i></b> file into the <b><i>$(CUDA_PATH_V9_0)\bin</i></b> directory.
 </br>
-NOTE: The CudaDnnDLL project points to the file directories noted above for the cuDNN include and library files.  
+</br>NOTE: The CudaDnnDLL project points to the file directories noted above for the cuDNN include and library files.  
 
 <H3>II. Setup Strong Names and Signing</H3>
 The <b><i>MyCaffe</i></b> project, uses the following strong name key files:
