@@ -1,12 +1,17 @@
 <H2>Installation Instructions</H2>
 To install and run <b>MyCaffe</b> you will need to do the following steps.
 </br>
-<H3>I. Install NVIDIA CUDA and cuDNN Libraries</H3>
+<H3>I. CUDA 8.0 - Install NVIDIA CUDA and cuDNN Libraries</H3>
 </br>1.) Install the NVIDIA CUDA 8.0 Toolkit for Windows from https://developer.nvidia.com/cuda-downloads. 
-</br>2.) Install the NVIDIA cuDNN Accelerated Libraries for CUDA 8.0 from https://developer.nvidia.com/cuDNN.
-</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V8_0)</i></b> installation location named <b><i>cudann_8.0-win-v6.0</i></b> and copy
- the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
+</br>2.) Install the NVIDIA cuDNN 6.0 Accelerated Libraries for CUDA 8.0 from https://developer.nvidia.com/cuDNN.
+</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V8_0)</i></b> installation location  named <b><i>cudann_8.0-win-v6.0</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
 </br>4.) Copy the <b><i>cudnn64_6.dll</i></b> file into the <b><i>$(CUDA_PATH_V8_0)\bin</i></b> directory.
+</br>
+<H3>I. CUDA 9.0 - Install NVIDIA CUDA and cuDNN Libraries</H3>
+</br>1.) Install the NVIDIA CUDA 9.0 Toolkit for Windows from https://developer.nvidia.com/cuda-downloads. 
+</br>2.) Install the NVIDIA cuDNN 7.0 Accelerated Libraries for CUDA 9.0 from https://developer.nvidia.com/cuDNN.
+</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V9_0)</i></b> installation location  named <b><i>cudann_9.0rc-win-v7.0</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
+</br>4.) Copy the <b><i>cudnn64_7.dll</i></b> file into the <b><i>$(CUDA_PATH_V9_0)\bin</i></b> directory.
 </br>
 NOTE: The CudaDnnDLL project points to the file directories noted above for the cuDNN include and library files.  
 
@@ -47,11 +52,11 @@ you must register the CudaControl.dll (run '<b><i>regsvr32 CudaControl.dll</i></
 <H3>IV. Required Software</H3>
 <b>MyCaffe</b> requires the following software.
 </br>
-</br>a.) Microsoft Visual Studio 2015 (2017 should work for most projects, but as of this writing is not yet supported for CUDA 8.0)
+</br>a.) Microsoft Visual Studio 2015 or Visual Studio 2017
 </br>b.) Microsoft SQL or Microsoft SQL Express
 </br>Both 'a' and 'b' are available from Microsoft at www.microsoft.com.
 </br>
-</br>c.) nccl64_133.dll - If you plan on running multi-GPU training sessions, you will need the <b><i>nccl64_133.dll</i></b>, which must be placed
+</br>c.) nccl64_134.dll - If you plan on running multi-GPU training sessions, you will need the <b><i>nccl64_134.dll</i></b>, which must be placed
 in a directory that is visible by your executable files.  This library can be built from the MyCaffe\NCCL repository.  Alternatively, it is installed
 by the <b>CudaControl</b> NuGet package and placed in the <i>packages\CudaControl.1.0.0.271\lib\Net40</i> directory.  You should copy the library into
 a directory that is visible by your executable files.  NOTE: The automated multi-GPU tests use GPU's 1-4 where the monitor is plugged into GPU 0.

@@ -23,7 +23,9 @@ The C# based MyCaffe open-source project is independently maintained by <a href=
 available under the Apache 2.0 License.
 <h3>Supported Development Environments:</h3>
 * Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 9.0RC</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.0</a> (currently uses VS2015 compile)</br>
+* Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 8.0</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 6.0</a> (currently uses VS2015 compile)</br>
 * Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 9.0RC</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.0</a> </br>
+* Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 8.0</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 6.0</a> </br>
 </br>
 
 [1] [Caffe: Convolutional Architecture for Fast Feature Embedding](https://arxiv.org/abs/1408.5093) by Yangqing Jai, Evan Shelhamer, Jeff Donahue, 
