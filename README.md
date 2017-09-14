@@ -28,7 +28,7 @@ available under the Apache 2.0 License.
 * Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 8.0</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 6.0</a> </br>
 </br>
 
-IMPORTANT: The open-source MyCaffe project on GitHub is considered 'pre-release' and will have bugs.  When you find bugs or other issued, please report them here - or better yet get involved
+IMPORTANT: The open-source MyCaffe project on GitHub is considered 'pre-release' and will have bugs.  When you find bugs or other issues, please report them here - or better yet, get involved
 and propose a fix!
 
 [1] [Caffe: Convolutional Architecture for Fast Feature Embedding](https://arxiv.org/abs/1408.5093) by Yangqing Jai, Evan Shelhamer, Jeff Donahue, 
