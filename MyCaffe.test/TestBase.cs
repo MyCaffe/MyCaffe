@@ -142,9 +142,21 @@ namespace MyCaffe.test
             }
         }
 
-        public static string GetTestPath(string strItem)
+        public static string GetTestPath(string strItem, bool bPathOnly = false, bool bCreateIfMissing = false)
         {
             string strPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+            if (bPathOnly)
+            {
+                if (Directory.Exists(strPath))
+                    return strPath;
+
+                if (bCreateIfMissing)
+                    Directory.CreateDirectory(strPath);
+
+                if (Directory.Exists(strPath))
+                    return strPath;
+            }
 
             string strTemp = strPath + strItem;
             if (File.Exists(strTemp))
@@ -262,9 +274,9 @@ namespace MyCaffe.test
             m_cuda = null;
         }
 
-        protected string getTestPath(string strItem)
+        protected string getTestPath(string strItem, bool bPathOnly = false, bool bCreateIfMissing = false)
         {
-            return TestBase.GetTestPath(strItem);
+            return TestBase.GetTestPath(strItem, bPathOnly, bCreateIfMissing);
         }
 
         public bool Enabled

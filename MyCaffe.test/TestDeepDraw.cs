@@ -119,7 +119,7 @@ namespace MyCaffe.test
         {
             string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_googlenet\\train_val.prototxt");
             string strFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_googlenet\\bvlc_googlenet.caffemodel");
-            string strDir = getTestPath("\\MyCaffe\\test_data\\deepdraw");
+            string strDir = getTestPath("\\MyCaffe\\test_data\\deepdraw", true, true);
             byte[] rgWeights = null;
             string strModelDesc = "";
 
@@ -187,7 +187,7 @@ namespace MyCaffe.test
             string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_googlenet\\train_val.prototxt");
             string strFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_googlenet\\bvlc_googlenet.caffemodel");
             string strImg = getTestPath("\\MyCaffe\\test_data\\mthood_224.png");
-            string strDir = getTestPath("\\MyCaffe\\test_data\\deepdraw");
+            string strDir = getTestPath("\\MyCaffe\\test_data\\deepdraw", true, true);
             byte[] rgWeights = null;
             string strModelDesc = "";
 
