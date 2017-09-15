@@ -39,6 +39,7 @@
             this.btnOK = new System.Windows.Forms.Button();
             this.folderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
+            this.label3 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // label1
@@ -116,11 +117,22 @@
             this.timerUI.Interval = 250;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.ForeColor = System.Drawing.Color.RoyalBlue;
+            this.label3.Location = new System.Drawing.Point(27, 82);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(339, 13);
+            this.label3.TabIndex = 4;
+            this.label3.Text = "Make sure that you have write access in the \'Database path\' selected.";
+            // 
             // FormCreateDatabase
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(642, 112);
+            this.Controls.Add(this.label3);
             this.Controls.Add(this.btnOK);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnBrowse);
@@ -152,5 +164,6 @@
         private System.Windows.Forms.Button btnOK;
         private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog;
         private System.Windows.Forms.Timer timerUI;
+        private System.Windows.Forms.Label label3;
     }
 }
