@@ -10,11 +10,13 @@ using MyCaffe.basecode;
 using MyCaffe.imagedb;
 using System.Drawing;
 using MyCaffe.basecode.descriptors;
+using System.Threading;
 
 namespace MyCaffe.app
 {
     public class CiFar10DataLoader
     {
+        List<SimpleDatum> m_rgImg = new List<SimpleDatum>();
         CiFar10DataParameters m_param;
         DatasetFactory m_factory = new DatasetFactory();
 
@@ -34,25 +36,37 @@ namespace MyCaffe.app
 
             reportProgress(nIdx, 0, "Loading database...");
 
+            Log log = new Log("MNIST");
+            log.OnWriteLine += Log_OnWriteLine;
+
+            DatasetFactory factory = new DatasetFactory();
+
             loadFile(m_param.DataBatchFile1, "CIFAR-10.training", nTotal, ref nIdx);
             loadFile(m_param.DataBatchFile2, "CIFAR-10.training", nTotal, ref nIdx);
             loadFile(m_param.DataBatchFile3, "CIFAR-10.training", nTotal, ref nIdx);
             loadFile(m_param.DataBatchFile4, "CIFAR-10.training", nTotal, ref nIdx);
             loadFile(m_param.DataBatchFile5, "CIFAR-10.training", nTotal, ref nIdx);
+            SourceDescriptor srcTrain = factory.LoadSource("CIFAR-10.training");
+            m_factory.SaveImageMean(SimpleDatum.CalculateMean(log, m_rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true, srcTrain.ID);
 
+            m_rgImg = new List<SimpleDatum>();
             nIdx = 0;
             nTotal = 10000;
             loadFile(m_param.TestBatchFile, "CIFAR-10.testing", nTotal, ref nIdx);
-
-            DatasetFactory factory = new DatasetFactory();
-            SourceDescriptor srcTrain = factory.LoadSource("CIFAR-10.training");
             SourceDescriptor srcTest = factory.LoadSource("CIFAR-10.testing");
+            m_factory.SaveImageMean(SimpleDatum.CalculateMean(log, m_rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true, srcTest.ID);
+
             DatasetDescriptor ds = new DatasetDescriptor(0, "CIFAR-10", null, null, srcTrain, srcTest, "CIFAR-10", "CiFar-10 Dataset");
             factory.AddDataset(ds);
             factory.UpdateDatasetCounts(ds.ID);
 
             if (OnCompleted != null)
                 OnCompleted(this, new EventArgs());
+        }
+
+        private void Log_OnWriteLine(object sender, LogArg e)
+        {
+            reportProgress((int)(e.Progress * 1000), 1000, e.Message);
         }
 
         private void loadFile(string strImagesFile, string strSourceName, int nTotal, ref int nIdx)
@@ -89,6 +103,8 @@ namespace MyCaffe.app
                         Datum d = ImageData.GetImageData(img, 3, false, nLabel);
 
                         m_factory.PutRawImageCache(nIdx, d);
+                        m_rgImg.Add(new SimpleDatum(d));
+
                         nIdx++;
 
                         if (sw.ElapsedMilliseconds > 1000)

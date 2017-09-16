@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using MyCaffe.basecode;
 using MyCaffe.imagedb;
 using MyCaffe.basecode.descriptors;
+using System.Threading;
 
 namespace MyCaffe.app
 {
@@ -63,6 +64,9 @@ namespace MyCaffe.app
             BinaryFile image_file = new app.BinaryFile(strImagesFile);
             BinaryFile label_file = new app.BinaryFile(strLabelsFile);
 
+            Log log = new Log("MNIST");
+            log.OnWriteLine += Log_OnWriteLine;
+
             try
             {
                 // Verify the files
@@ -103,6 +107,8 @@ namespace MyCaffe.app
 
                 sw.Start();
 
+                List<SimpleDatum> rgImg = new List<SimpleDatum>();
+
                 for (int i = 0; i < num_items; i++)
                 {
                     rgPixels = image_file.ReadBytes((int)(rows * cols));
@@ -116,10 +122,12 @@ namespace MyCaffe.app
 
                     datum.SetData(rgPixels.ToList(), (int)rgLabel[0]);
                     m_factory.PutRawImageCache(i, datum);
+                    rgImg.Add(new SimpleDatum(datum));
                 }
 
                 m_factory.ClearImageCash(true);
                 m_factory.UpdateSourceCounts();
+                m_factory.SaveImageMean(SimpleDatum.CalculateMean(log, rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true);
 
                 reportProgress((int)num_items, (int)num_items, " loading completed.");
             }
@@ -128,6 +136,11 @@ namespace MyCaffe.app
                 image_file.Dispose();
                 label_file.Dispose();
             }
+        }
+
+        private void Log_OnWriteLine(object sender, LogArg e)
+        {
+            reportProgress((int)(e.Progress * 1000), 1000, e.Message);
         }
 
         private string expandFile(string strFile)
