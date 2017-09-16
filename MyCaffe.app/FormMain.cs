@@ -109,6 +109,7 @@ namespace MyCaffe.app
             setStatus(" 1.) User interface based automated testing via the 'Test | Run Autotests UI', and");
             setStatus(" 2.) Server based automated testing via the 'Test | Start Server Autotests' menu.");
             setStatus("Server auto tests can easily integrate into other applications.");
+            setStatus("NOTE: Known test failures are pre-set with a FAILURE status.");
             setStatus("----------------------------------------------------------------------------------");
 
             DatasetFactory factory = new DatasetFactory();
