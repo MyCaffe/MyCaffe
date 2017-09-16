@@ -218,3 +218,7 @@ $RECYCLE.BIN/
 #####
 # End of core ignore list, below put you custom 'per project' settings (patterns or path)
 #####
+/MyCaffe.test/test_data/deepdraw/input_image.png
+/MyCaffe.test/test_data/deepdraw/input.png
+/MyCaffe.test/test_data/deepdraw/20_loss2classifier_19.png
+/MyCaffe.test/test_data/deepdraw/10_loss1classifier_9.png
