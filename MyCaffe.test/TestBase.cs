@@ -63,9 +63,6 @@ namespace MyCaffe.test
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestSimpleTripletLossLayer", "TestGradient", "SKIPPED - Values 0.9923858 and 0.354433 are NOT within the range 0.01 of one another."));
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestContrastiveLossLayer", "TestGradientLegacy", "SKIPPED - Values -0.400000 and 0.158390 are NOT within the range 0.01 of one another."));
 
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestQuerySequential2LoadLimit", "SKIPPED - Assert.AreEqual failed.  Expected:<1>. Actual<10>."));
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestQuerySequential4LoadLimit", "SKIPPED - Assert.AreEqual failed.  Expected:<1>. Actual<10>."));
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestQueryPairLoadLimit", "SKIPPED - Assert.AreEqual failed.  Expected:<1>. Actual<10>."));
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestLoadLimitNextSequential", "SKIPPED - currently causes lock-up."));
 
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionLayer", "TestNDAgainst2D", "SKIPPED - currently causes a CUDA map buffer object failure (14) error on some GPU's.  This appears to corrupt the GPU for all subsequent tests fail with CUDA Missing Configuration (1) errors."));
