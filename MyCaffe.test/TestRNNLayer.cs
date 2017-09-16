@@ -389,6 +389,8 @@ namespace MyCaffe.test
             filler.Fill(m_blob_bottom);
             filler.Fill(m_blob_bottom_static);
 
+            BottomVec.Add(m_blob_bottom_static);
+
             RNNLayer<T> layer = new RNNLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
 

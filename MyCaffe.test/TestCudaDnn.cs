@@ -228,7 +228,13 @@ namespace MyCaffe.test
             {
                 if (nDevCount > 1)
                 {
-                    addMemTest(cuda1, cuda2, 0, 1);
+                    string strP2P1 = cuda1.GetDeviceP2PInfo(0);
+                    string strP2P2 = cuda2.GetDeviceP2PInfo(1);
+
+                    if (strP2P1.Contains("P2P Capable = YES") &&
+                        strP2P2.Contains("P2P Capable = YES"))
+                        addMemTest(cuda1, cuda2, 0, 1);
+
                     addMemTest(cuda1, cuda2, 0, 0);
                 }
             }
@@ -279,7 +285,13 @@ namespace MyCaffe.test
             {
                 if (nDevCount > 1)
                 {
-                    addMemTest(cuda1, cuda2, 0, 1);
+                    string strP2P1 = cuda1.GetDeviceP2PInfo(0);
+                    string strP2P2 = cuda2.GetDeviceP2PInfo(1);
+
+                    if (strP2P1.Contains("P2P Capable = YES") &&
+                        strP2P2.Contains("P2P Capable = YES"))
+                        addMemTest(cuda1, cuda2, 0, 1);
+
                     addMemTest(cuda1, cuda2, 0, 0);
                 }
             }
