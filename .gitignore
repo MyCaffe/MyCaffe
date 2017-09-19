@@ -29,6 +29,7 @@ build/
 # Help
 **/_help/html/*
 **/_help/latex/*
+**/_help/media/*
 
 # NuGet Packages
 *.nupkg
