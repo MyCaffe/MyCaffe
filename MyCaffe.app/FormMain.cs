@@ -16,6 +16,7 @@ using System.Diagnostics;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.param;
 using System.IO;
+using System.Net;
 
 namespace MyCaffe.app
 {
@@ -58,7 +59,7 @@ namespace MyCaffe.app
             m_bwProcess.RunWorkerAsync();
 
             if (!File.Exists("index.chm"))
-                onlineHelpToolStripMenuItem.Enabled = false;
+                localHelpToolStripMenuItem.Enabled = false;
 
             if (rgSqlInst == null || rgSqlInst.Count == 0)
             {
@@ -102,7 +103,7 @@ namespace MyCaffe.app
 
             setStatus("");
 
-            m_autoTest.OnProgress += M_autoTest_OnProgress;
+            m_autoTest.OnProgress += m_autoTest_OnProgress;
             m_autoTest.OnCompleted += M_autoTest_OnCompleted;
 
             setStatus("The MyCaffe Test App supports two different types of automated testing:");
@@ -128,6 +129,33 @@ namespace MyCaffe.app
 
                 setStatus(" see the 'Database' menu.");
             }
+        }
+
+        private bool checkURL(string url)
+        {
+            bool pageExists = false;
+            try
+            {
+                WebRequest r = WebRequest.Create(url);
+
+                if (r is HttpWebRequest)
+                {
+                    HttpWebRequest request = (HttpWebRequest)r;
+                    request.Method = WebRequestMethods.Http.Head;
+                    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                    pageExists = response.StatusCode == HttpStatusCode.OK;
+                }
+                else
+                {
+                    pageExists = true;
+                }
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+
+            return pageExists;
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -658,7 +686,7 @@ namespace MyCaffe.app
             runAutotestsToolStripMenuItem.Enabled = true;
         }
 
-        private void M_autoTest_OnProgress(object sender, ProgressChangedEventArgs e)
+        private void m_autoTest_OnProgress(object sender, ProgressChangedEventArgs e)
         {
             AutoTestProgressInfo pi = e.UserState as AutoTestProgressInfo;
             setStatus(pi.ToString());
@@ -666,10 +694,23 @@ namespace MyCaffe.app
 
         #endregion
 
-        private void onlineHelpToolStripMenuItem_Click(object sender, EventArgs e)
+        private void helpToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (checkURL(Properties.Settings.Default.OnlineHelpUrl))
+                onlineHelpToolStripMenuItem.Enabled = true;
+        }
+
+        private void localHelpToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Process p = new Process();
             p.StartInfo = new ProcessStartInfo("index.chm");
+            p.Start();
+        }
+
+        private void onlineHelpToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Process p = new Process();
+            p.StartInfo = new ProcessStartInfo(Properties.Settings.Default.OnlineHelpUrl);
             p.Start();
         }
     }

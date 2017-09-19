@@ -37,7 +37,6 @@
             this.lblProduct = new System.Windows.Forms.Label();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.lblBroughtToYou = new System.Windows.Forms.Label();
-            this.lblMyCaffeUrl = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -66,11 +65,11 @@
             // 
             // lblWebUrl
             // 
-            this.lblWebUrl.Font = new System.Drawing.Font("Century Gothic", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblWebUrl.Font = new System.Drawing.Font("Century Gothic", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblWebUrl.ForeColor = System.Drawing.Color.CornflowerBlue;
-            this.lblWebUrl.Location = new System.Drawing.Point(372, 262);
+            this.lblWebUrl.Location = new System.Drawing.Point(410, 251);
             this.lblWebUrl.Name = "lblWebUrl";
-            this.lblWebUrl.Size = new System.Drawing.Size(134, 17);
+            this.lblWebUrl.Size = new System.Drawing.Size(180, 21);
             this.lblWebUrl.TabIndex = 5;
             this.lblWebUrl.Text = "www.signalpop.com";
             this.lblWebUrl.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -119,32 +118,17 @@
             // 
             // lblBroughtToYou
             // 
-            this.lblBroughtToYou.Font = new System.Drawing.Font("Century Gothic", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblBroughtToYou.Font = new System.Drawing.Font("Century Gothic", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblBroughtToYou.ForeColor = System.Drawing.Color.SlateGray;
-            this.lblBroughtToYou.Location = new System.Drawing.Point(261, 262);
+            this.lblBroughtToYou.Location = new System.Drawing.Point(259, 251);
             this.lblBroughtToYou.Name = "lblBroughtToYou";
-            this.lblBroughtToYou.Size = new System.Drawing.Size(112, 17);
+            this.lblBroughtToYou.Size = new System.Drawing.Size(152, 20);
             this.lblBroughtToYou.TabIndex = 5;
             this.lblBroughtToYou.Text = "brought to you by";
             this.lblBroughtToYou.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.lblBroughtToYou.Click += new System.EventHandler(this.lblWebUrl_Click);
             this.lblBroughtToYou.MouseLeave += new System.EventHandler(this.lblWebUrl_MouseLeave);
             this.lblBroughtToYou.MouseHover += new System.EventHandler(this.lblWebUrl_MouseHover);
-            // 
-            // lblMyCaffeUrl
-            // 
-            this.lblMyCaffeUrl.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblMyCaffeUrl.Font = new System.Drawing.Font("Century Gothic", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblMyCaffeUrl.ForeColor = System.Drawing.Color.CornflowerBlue;
-            this.lblMyCaffeUrl.Location = new System.Drawing.Point(260, 235);
-            this.lblMyCaffeUrl.Name = "lblMyCaffeUrl";
-            this.lblMyCaffeUrl.Size = new System.Drawing.Size(343, 27);
-            this.lblMyCaffeUrl.TabIndex = 7;
-            this.lblMyCaffeUrl.Text = "http://www.mycaffe.org";
-            this.lblMyCaffeUrl.Click += new System.EventHandler(this.lblMyCaffeUrl_Click);
-            this.lblMyCaffeUrl.MouseLeave += new System.EventHandler(this.lblMyCaffeUrl_MouseLeave);
-            this.lblMyCaffeUrl.MouseHover += new System.EventHandler(this.lblMyCaffeUrl_MouseHover);
             // 
             // FormAbout
             // 
@@ -155,7 +139,6 @@
             this.Controls.Add(this.lblLicense);
             this.Controls.Add(this.lblBroughtToYou);
             this.Controls.Add(this.lblWebUrl);
-            this.Controls.Add(this.lblMyCaffeUrl);
             this.Controls.Add(this.lblDescription);
             this.Controls.Add(this.lblVersion);
             this.Controls.Add(this.lblProduct);
@@ -181,6 +164,5 @@
         private System.Windows.Forms.Label lblProduct;
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.Label lblBroughtToYou;
-        private System.Windows.Forms.Label lblMyCaffeUrl;
     }
 }

@@ -37,25 +37,6 @@ namespace MyCaffe.app
             lblWebUrl.ForeColor = Color.CornflowerBlue;
         }
 
-        private void lblMyCaffeUrl_Click(object sender, EventArgs e)
-        {
-            Process p = new Process();
-
-            p.StartInfo = new ProcessStartInfo("http://www.mycaffe.org");
-            p.Start();
-        }
-
-        private void lblMyCaffeUrl_MouseHover(object sender, EventArgs e)
-        {
-            lblMyCaffeUrl.ForeColor = Color.Blue;
-        }
-
-        private void lblMyCaffeUrl_MouseLeave(object sender, EventArgs e)
-        {
-            lblMyCaffeUrl.ForeColor = Color.CornflowerBlue;
-        }
-
-
         private void FormAbout_Load(object sender, EventArgs e)
         {
             this.lblProduct.Text = AssemblyProduct;

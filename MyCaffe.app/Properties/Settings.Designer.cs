@@ -22,5 +22,17 @@ namespace MyCaffe.app.Properties {
                 return defaultInstance;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("https://www.signalpop.com/help")]
+        public string OnlineHelpUrl {
+            get {
+                return ((string)(this["OnlineHelpUrl"]));
+            }
+            set {
+                this["OnlineHelpUrl"] = value;
+            }
+        }
     }
 }
