@@ -14,10 +14,10 @@ namespace MyCaffe.test
     [TestClass]
     public class TestUnPoolingLayer
     {
-        #region CAFFE Tests
+        #region CAFFE Tests UnPooling1
 
         [TestMethod]
-        public void TestForwardSquare()
+        public void TestForwardSquare1()
         {
             UnPoolingLayerTest test = new UnPoolingLayerTest(EngineParameter.Engine.CAFFE);
 
@@ -25,7 +25,7 @@ namespace MyCaffe.test
             {
                 foreach (IUnPoolingLayerTest t in test.Tests)
                 {
-                    t.TestForwardSquare();
+                    t.TestForwardSquare(LayerParameter.LayerType.UNPOOLING1);
                 }
             }
             finally
@@ -35,7 +35,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardRectHigh()
+        public void TestForwardRectHigh1()
         {
             UnPoolingLayerTest test = new UnPoolingLayerTest(EngineParameter.Engine.CAFFE);
 
@@ -43,7 +43,7 @@ namespace MyCaffe.test
             {
                 foreach (IUnPoolingLayerTest t in test.Tests)
                 {
-                    t.TestForwardRectHigh();
+                    t.TestForwardRectHigh(LayerParameter.LayerType.UNPOOLING1);
                 }
             }
             finally
@@ -53,7 +53,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardRectWithPad()
+        public void TestForwardRectWithPad1()
         {
             UnPoolingLayerTest test = new UnPoolingLayerTest(EngineParameter.Engine.CAFFE);
 
@@ -61,7 +61,7 @@ namespace MyCaffe.test
             {
                 foreach (IUnPoolingLayerTest t in test.Tests)
                 {
-                    t.TestForwardRectWithPad();
+                    t.TestForwardRectWithPad(LayerParameter.LayerType.UNPOOLING1);
                 }
             }
             finally
@@ -71,7 +71,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardSquareWithPad()
+        public void TestForwardSquareWithPad1()
         {
             UnPoolingLayerTest test = new UnPoolingLayerTest(EngineParameter.Engine.CAFFE);
 
@@ -79,7 +79,83 @@ namespace MyCaffe.test
             {
                 foreach (IUnPoolingLayerTest t in test.Tests)
                 {
-                    t.TestForwardSquareWithPad();
+                    t.TestForwardSquareWithPad(LayerParameter.LayerType.UNPOOLING1);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        #endregion
+
+        #region CAFFE Tests UnPooling2
+
+        [TestMethod]
+        public void TestForwardSquare2()
+        {
+            UnPoolingLayerTest test = new UnPoolingLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IUnPoolingLayerTest t in test.Tests)
+                {
+                    t.TestForwardSquare(LayerParameter.LayerType.UNPOOLING2);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardRectHigh2()
+        {
+            UnPoolingLayerTest test = new UnPoolingLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IUnPoolingLayerTest t in test.Tests)
+                {
+                    t.TestForwardRectHigh(LayerParameter.LayerType.UNPOOLING2);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardRectWithPad2()
+        {
+            UnPoolingLayerTest test = new UnPoolingLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IUnPoolingLayerTest t in test.Tests)
+                {
+                    t.TestForwardRectWithPad(LayerParameter.LayerType.UNPOOLING2);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardSquareWithPad2()
+        {
+            UnPoolingLayerTest test = new UnPoolingLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IUnPoolingLayerTest t in test.Tests)
+                {
+                    t.TestForwardSquareWithPad(LayerParameter.LayerType.UNPOOLING2);
                 }
             }
             finally
@@ -109,10 +185,10 @@ namespace MyCaffe.test
 
     interface IUnPoolingLayerTest : ITest
     {
-        void TestForwardSquare();
-        void TestForwardRectHigh();
-        void TestForwardRectWithPad();
-        void TestForwardSquareWithPad();
+        void TestForwardSquare(LayerParameter.LayerType type);
+        void TestForwardRectHigh(LayerParameter.LayerType type);
+        void TestForwardRectWithPad(LayerParameter.LayerType type);
+        void TestForwardSquareWithPad(LayerParameter.LayerType type);
     }
 
     class UnPoolingLayerTest<T> : TestEx<T>, IUnPoolingLayerTest
@@ -153,9 +229,9 @@ namespace MyCaffe.test
         /// <summary>
         /// Test for 2x2 square unpooling layer
         /// </summary>
-        public void TestForwardSquare()
+        public void TestForwardSquare(LayerParameter.LayerType type)
         {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.UNPOOLING);
+            LayerParameter p = new LayerParameter(type);
             p.pooling_param.kernel_size.Add(2);
             p.pooling_param.pool = PoolingParameter.PoolingMethod.MAX;
             p.pooling_param.engine = m_engine;
@@ -231,9 +307,9 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestForwardRectHigh()
+        public void TestForwardRectHigh(LayerParameter.LayerType type)
         {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.UNPOOLING);
+            LayerParameter p = new LayerParameter(type);
             p.pooling_param.kernel_h = 3;
             p.pooling_param.kernel_w = 2;
             p.pooling_param.pool = PoolingParameter.PoolingMethod.MAX;
@@ -306,7 +382,7 @@ namespace MyCaffe.test
             Bottom.mutable_cpu_data = convert(rgBottom);
             BottomMask.mutable_cpu_data = convert(rgBottomMask);
 
-            UnPoolingLayer<T> layer = new UnPoolingLayer<T>(m_cuda, m_log, p);
+            UnPoolingLayer1<T> layer = new UnPoolingLayer1<T>(m_cuda, m_log, p);
             layer.Setup(BottomVec, TopVec);
 
             m_log.CHECK_EQ(nNum, Top.num, "The top num should equal " + nNum.ToString());
@@ -370,9 +446,9 @@ namespace MyCaffe.test
         /// <summary>
         /// Test for 2x4 rectangular unpooling layer
         /// </summary>
-        public void TestForwardRectWithPad()
+        public void TestForwardRectWithPad(LayerParameter.LayerType type)
         {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.UNPOOLING);
+            LayerParameter p = new LayerParameter(type);
             p.pooling_param.kernel_size.Add(3);
             p.pooling_param.stride.Add(2);
             p.pooling_param.pad.Add(1);
@@ -475,9 +551,9 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestForwardSquareWithPad()
+        public void TestForwardSquareWithPad(LayerParameter.LayerType type)
         {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.UNPOOLING);
+            LayerParameter p = new LayerParameter(type);
             p.pooling_param.kernel_h = 2;
             p.pooling_param.kernel_w = 2;
             p.pooling_param.stride.Add(2);
@@ -528,7 +604,7 @@ namespace MyCaffe.test
             Bottom.mutable_cpu_data = convert(rgBottom);
             BottomMask.mutable_cpu_data = convert(rgBottomMask);
 
-            UnPoolingLayer<T> layer = new UnPoolingLayer<T>(m_cuda, m_log, p);
+            UnPoolingLayer1<T> layer = new UnPoolingLayer1<T>(m_cuda, m_log, p);
             layer.Setup(BottomVec, TopVec);
 
             m_log.CHECK_EQ(nNum, Top.num, "The top num should equal " + nNum.ToString());

@@ -150,7 +150,6 @@
     <Compile Include="layers\LSTMSimpleLayer.cs" />
     <Compile Include="layers\NeuronLayer.cs" />
     <Compile Include="layers\HingeLossLayer.cs" />
-    <Compile Include="layers\UnPoolingLayer.cs" />
     <Compile Include="layers\PoolingLayer.cs" />
     <Compile Include="layers\PowerLayer.cs" />
     <Compile Include="layers\PReLULayer.cs" />
@@ -169,6 +168,8 @@
     <Compile Include="layers\SoftmaxLossLayer.cs" />
     <Compile Include="layers\SplitLayer.cs" />
     <Compile Include="layers\TanhLayer.cs" />
+    <Compile Include="layers_alpha\UnPoolingLayer1.cs" />
+    <Compile Include="layers_alpha\UnPoolingLayer2.cs" />
     <Compile Include="MyCaffeControl.cs">
       <SubType>Component</SubType>
     </Compile>

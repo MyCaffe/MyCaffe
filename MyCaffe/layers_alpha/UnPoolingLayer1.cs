@@ -2,29 +2,29 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Drawing;
-using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
+using MyCaffe.basecode;
+using System.Drawing;
 
-namespace MyCaffe.layers
+namespace MyCaffe.layers.alpha
 {
     /// <summary>
     /// <H3>PRE ALPHA</H3>
     /// 
-    /// The UnPoolingLayer performs unpooling on the network like Zeiler's paper in ECCV 2014.
+    /// The UnPoolingLayer1 performs CPU based unpooling on the network like Zeiler's paper in ECCV 2014.
     /// 
-    /// This layer is initialized with the MyCaffe.param.PoolingParameter.
+    /// This layer is initialized with the Caffe.net.param.PoolingParameter.
     /// </summary>
     /// <remarks>
-    /// * Original implementation at: https://github.com/HyeonwooNoh/caffe (merged into https://github.com/mariolew/caffe-unpooling)
+    /// * Original implementation at: https://github.com/mariolew/caffe-unpooling
     /// 
-    /// @see [A Deep Convolutional Auto-Encoder with Pooling - Unpooling Layers in Caffe](https://arxiv.org/abs/1701.04949) by Volodymyr Turchenko, Eric Chalmers, Artur Luczak, 2017.
-    /// @see [Visualizing and Understanding Convolutional Networks](https://arxiv.org/abs/1311.2901) by Matthew D. Zeiler and Rob Fergus, 2013.
-    /// @see [Decoupled Deep Neural Network for Semi-supervised Semantic Segmentation](https://arxiv.org/abs/1506.04924) by Seunghoon Hong, Hyeonwoo Noh, and Bohyung Han, 2015.
+    /// @see [A Deep Convolutional Auto-Encoder with Pooling - Unpooling Layers in Caffe](https://arxiv.org/abs/1701.04949) by Turchenko, Volodymyr and Chalmers, Eric and Luczak, Artur, 2017.
+    /// @see [Visualizing and Understanding Convolutional Networks](https://arxiv.org/abs/1311.2901) by Zeiler, Matthew D. and Fergus, Rob, 2013.
+    /// @see [Decoupled Deep Neural Network for Semi-supervised Semantic Segmentation](https://arxiv.org/abs/1506.04924) by Hong, Seunghoon and Noh, Hyeonwoo and Han, Bohyung, 2015.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class UnPoolingLayer<T> : Layer<T>
+    public class UnPoolingLayer1<T> : Layer<T>
     {
         int m_nKernelH;
         int m_nKernelW;
@@ -40,7 +40,7 @@ namespace MyCaffe.layers
         bool m_bGlobalPooling;
 
         /// <summary>
-        /// The UnPoolingLayer constructor.
+        /// The UnPoolingLayer1 constructor.
         /// </summary>
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
@@ -67,10 +67,10 @@ namespace MyCaffe.layers
         ///  - engine: convolution has Engine.CAFFE (matrix multiplication) and Engine.CUDNN (library
         ///  kernels + stream parallelism) engines.
         ///  </param>
-        public UnPoolingLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
+        public UnPoolingLayer1(CudaDnn<T> cuda, Log log, LayerParameter p)
             : base(cuda, log, p)
         {
-            m_type = LayerParameter.LayerType.UNPOOLING;
+            m_type = LayerParameter.LayerType.UNPOOLING1;
         }
 
 
@@ -81,23 +81,15 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Returns the minimum number of required bottom (input) Blobs: input
+        /// Returns the required number of bottom (input) Blobs: pool, mask
         /// </summary>
-        public override int MinBottomBlobs
+        public override int ExactNumBottomBlobs
         {
-            get { return 1; }
+            get { return 2; }
         }
 
         /// <summary>
-        /// Returns the maximum number of required bottom (input) Blobs: input, mask (only when using MAX)
-        /// </summary>
-        public override int MaxBottomBlobs
-        {
-            get { return (m_param.pooling_param.pool == PoolingParameter.PoolingMethod.MAX) ? 2 : 1; }
-        }
-
-        /// <summary>
-        /// Returns the required number of top (output) Blobs: unpool
+        /// Returns the required number of top (output) Blobs: input
         /// </summary>
         public override int ExactNumTopBlobs
         {
@@ -185,7 +177,8 @@ namespace MyCaffe.layers
 
             if (m_nPadH != 0 || m_nPadW != 0)
             {
-                m_log.CHECK(m_param.pooling_param.pool == PoolingParameter.PoolingMethod.MAX, "Padding implemented for MAX unpooling only.");
+                m_log.CHECK(m_param.pooling_param.pool == PoolingParameter.PoolingMethod.AVE ||
+                            m_param.pooling_param.pool == PoolingParameter.PoolingMethod.MAX, "Padding implemented for AVE and MAX pooling only.");
                 m_log.CHECK_LT(m_nPadH, m_nKernelH, "The pad_h must be <= kernel_h.");
                 m_log.CHECK_LT(m_nPadW, m_nKernelW, "The pad_w must be <= kernel_w.");
             }
@@ -210,36 +203,33 @@ namespace MyCaffe.layers
                 m_nKernelW = colBottom[0].width;
             }
 
-            m_nUnPooledHeight = (int)Math.Max((m_nHeight - 1) * m_nStrideH + m_nKernelH - 2 * m_nPadH, m_nHeight * m_nStrideH - m_nPadH + 1); 
-            m_nUnPooledWidth = (int)Math.Max((m_nWidth - 1) * m_nStrideW + m_nKernelW - 2 * m_nPadW, m_nWidth * m_nStrideW - m_nPadW + 1);
-
-            // m_log.CHECK_EQ(m_nPadW, 0, "Only pad=0 is supported at this time.");
-            // m_log.CHECK_EQ(m_nPadH, 0, "Only pad=0 is supported at this time.");
+            m_nUnPooledHeight = (int)((m_nHeight - 1) * m_nStrideH + m_nKernelH - 2 * m_nPadH); 
+            m_nUnPooledWidth = (int)((m_nWidth - 1) * m_nStrideW + m_nKernelW - 2 * m_nPadW);
 
             if (m_nPadH > 0)
             {
-                // Must take into account Math.Ceiling function in PoolingLayer
-                if (m_nHeight % 2 != 0)
-                    m_nUnPooledHeight--;
+                m_nUnPooledHeight -= (m_nHeight % 2 == 0) ? 1 : 0;
+                if ((m_nHeight - 1) * m_nStrideH >= m_nUnPooledHeight + m_nPadH)
+                    m_nUnPooledHeight++;
             }
 
             if (m_nPadW > 0)
             {
-                // Must take into account Math.Ceiling function in PoolingLayer
-                if (m_nWidth % 2 != 0)
-                    m_nUnPooledWidth--;
+                m_nUnPooledWidth -= (m_nWidth % 2 == 0) ? 1 : 0;
+                if ((m_nWidth - 1) * m_nStrideW >= m_nUnPooledWidth + m_nPadW)
+                    m_nUnPooledWidth++;
             }
 
             if (m_nUnPooledHeight <= 0)
             {
                 m_nUnPooledHeight = 1;
-                m_log.WriteLine("WARNING: unpooling height was 0, setting to 1.");
+//                m_log.WriteLine("WARNING: unpooling height was 0, setting to 1.");
             }
 
             if (m_nUnPooledWidth <= 0)
             {
                 m_nUnPooledWidth = 1;
-                m_log.WriteLine("WARNING: unpooling width was 0, setting to 1.");
+//                m_log.WriteLine("WARNING: unpooling width was 0, setting to 1.");
             }
 
             colTop[0].Reshape(colBottom[0].num, m_nChannels, m_nUnPooledHeight, m_nUnPooledWidth);
@@ -248,69 +238,68 @@ namespace MyCaffe.layers
         /// <summary>
         /// Run the Forward computation using the Engine.CAFFE mode only.
         /// </summary>
-        /// <param name="colBottom">Specifies the bottom input Blob vector (length 1-2).</param>
-        /// <param name="colTop">Specifies the top output Blob vector (length 1).</param>
+        /// <param name="colBottom">bottom input Blob vector (length 1).</param>
+        /// <param name="colTop">top output Blob vector (length 1).</param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            int nCount = colBottom[0].count();
-            long hBottomData = colBottom[0].gpu_data;
-            long hTopData = colTop[0].mutable_gpu_data;            
-            long hBottomMask = 0;   // We'll get the mas from bottom[1] if its of size > 1
-
+            // Init the top blob to be all zeros since only special places
+            // wouldn't be zero then.
             colTop[0].SetData(0);
+
+            T[] bottom_data = colBottom[0].update_cpu_data();
+            T[] mask = colBottom[1].update_cpu_data();
+            T[] top_data = colTop[0].mutable_cpu_data;
+            int nBottomDataOffset = 0;
+            int nTopDataOffset = 0;
+            int nMaskOffset = 0;
 
             switch (m_param.pooling_param.pool)
             {
                 case PoolingParameter.PoolingMethod.MAX:
-                    if (colBottom.Count > 1)
-                        hBottomMask = colBottom[1].gpu_data;
-                    m_cuda.unpooling_fwd(POOLING_METHOD.MAX, nCount, hBottomData, colBottom[0].num, m_nChannels, m_nHeight, m_nWidth, m_nUnPooledHeight, m_nUnPooledWidth, m_nKernelH, m_nKernelW, m_nStrideH, m_nStrideW, m_nPadH, m_nPadW, hTopData, hBottomMask);
+                    // Currently only the CPU version is supported
+                    for (int n = 0; n < colBottom[0].num; n++)
+                    {
+                        for (int c = 0; c < m_nChannels; c++)
+                        {
+                            for (int ph = 0; ph < m_nHeight; ph++)
+                            {
+                                for (int pw = 0; pw < m_nWidth; pw++)
+                                {
+                                    int nIdx = ph * m_nWidth + pw;
+
+#warning TODO: Bug - nMaskOffset + nIdx exceed length on last row of mask.
+                                    if (nMaskOffset + nIdx < mask.Length)
+                                    {
+                                        int nTopIdx = (int)Convert.ChangeType(mask[nMaskOffset + nIdx], typeof(int));
+
+#warning TODO: Bug - nTopDataOffset + nTopIdx exceed length on last row of data.
+                                        if (nTopDataOffset + nTopIdx < top_data.Length)
+                                            top_data[nTopDataOffset + nTopIdx] = bottom_data[nBottomDataOffset + nIdx];
+                                    }
+                                }
+                            }
+
+                            // switch to the next channel.
+                            nTopDataOffset += colTop[0].offset(0, 1);
+                            nBottomDataOffset += colBottom[0].offset(0, 1);
+                            nMaskOffset += colBottom[0].offset(0, 1);
+                        }
+                    }
+                    colTop[0].mutable_cpu_data = top_data;
                     break;
 
                 case PoolingParameter.PoolingMethod.AVE:
-                    m_cuda.unpooling_fwd(POOLING_METHOD.AVE, nCount, hBottomData, colBottom[0].num, m_nChannels, m_nHeight, m_nWidth, m_nUnPooledHeight, m_nUnPooledWidth, m_nKernelH, m_nKernelW, m_nStrideH, m_nStrideW, m_nPadH, m_nPadW, hTopData, 0);
-                    break;
+                    throw new NotImplementedException("Unpooling is only supported on the MAX type of pooling.");
 
-                default:
-                    m_log.FAIL("Unknown pooling method '" + m_param.pooling_param.pool.ToString() + "'");
-                    break;
+                case PoolingParameter.PoolingMethod.STOCHASTIC:
+                    throw new NotImplementedException("Unpooling is only supported on the MAX type of pooling.");
             }
         }
 
-        /// <summary>
-        /// Run the Backward computation using the Engine.CAFFE mode only.
-        /// </summary>
-        /// <param name="colTop">Specifies the top output Blob vector (length 1).</param>
-        /// <param name="rgbPropagateDown">Specifies whether or not to propagagte down.</param>
-        /// <param name="colBottom">Specifies the bottom input Blob vector (length 1-2).</param>
+        /// @brief Currently, not implemented.
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            if (!rgbPropagateDown[0])
-                return;
-
-            int nCount = colBottom[0].count();
-            long hTopDiff = colTop[0].gpu_diff;
-            long hBottomDiff = colBottom[0].mutable_gpu_diff;
-            long hBottomMask = 0;   // We'll get the mas from bottom[1] if its of size > 1
-
-            colBottom[0].SetDiff(0);
-
-            switch (m_param.pooling_param.pool)
-            {
-                case PoolingParameter.PoolingMethod.MAX:
-                    if (colBottom.Count > 1)
-                        hBottomMask = colBottom[1].gpu_data;
-                    m_cuda.unpooling_bwd(POOLING_METHOD.MAX, nCount, hTopDiff, colBottom[0].num, m_nChannels, m_nHeight, m_nWidth, m_nUnPooledHeight, m_nUnPooledWidth, m_nKernelH, m_nKernelW, m_nStrideH, m_nStrideW, m_nPadH, m_nPadW, hBottomDiff, hBottomMask);
-                    break;
-
-                case PoolingParameter.PoolingMethod.AVE:
-                    m_cuda.unpooling_bwd(POOLING_METHOD.AVE, nCount, hTopDiff, colBottom[0].num, m_nChannels, m_nHeight, m_nWidth, m_nUnPooledHeight, m_nUnPooledWidth, m_nKernelH, m_nKernelW, m_nStrideH, m_nStrideW, m_nPadH, m_nPadW, hBottomDiff, 0);
-                    break;
-
-                default:
-                    m_log.FAIL("Unknown pooling method '" + m_param.pooling_param.pool.ToString() + "'");
-                    break;
-            }
+            throw new NotImplementedException("UnPooling does not support the backward operation.");
         }
     }
 }

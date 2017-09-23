@@ -315,9 +315,13 @@ namespace MyCaffe.param
             /// </summary>
             REINFORCEMENT_LOSS,
             /// <summary>
-            /// Initializes a parameter for the UnpoolingLayer.
+            /// Initializes a parameter for the UnpoolingLayer1 which uses a CPU based implementation (slower).
             /// </summary>
-            UNPOOLING,
+            UNPOOLING1,
+            /// <summary>
+            /// Initializes a parameter for the UnpoolingLayer2 which uses a GPU based implementation (faster).
+            /// </summary>
+            UNPOOLING2,
             /// <summary>
             /// Initializes a parameter for the NormalizationLayer.
             /// </summary>
@@ -835,7 +839,8 @@ namespace MyCaffe.param
                     m_rgLayerParameters[LayerType.POOLING] = new PoolingParameter();
                     break;
 
-                case LayerType.UNPOOLING:
+                case LayerType.UNPOOLING1:
+                case LayerType.UNPOOLING2:
                     expected_bottom.Add("pool");
                     expected_bottom.Add("mask");
                     expected_top.Add("unpool");
@@ -1789,8 +1794,11 @@ namespace MyCaffe.param
                 case LayerType.POOLING:
                     return "Pooling";
 
-                case LayerType.UNPOOLING:
-                    return "UnPooling";
+                case LayerType.UNPOOLING1:
+                    return "UnPooling1";
+
+                case LayerType.UNPOOLING2:
+                    return "UnPooling2";
 
                 case LayerType.POWER:
                     return "Power";
@@ -2362,8 +2370,11 @@ namespace MyCaffe.param
                 case "pooling":
                     return LayerType.POOLING;
 
-                case "unpooling":
-                    return LayerType.UNPOOLING;
+                case "unpooling1":
+                    return LayerType.UNPOOLING1;
+
+                case "unpooling2":
+                    return LayerType.UNPOOLING2;
 
                 case "power":
                     return LayerType.POWER;
