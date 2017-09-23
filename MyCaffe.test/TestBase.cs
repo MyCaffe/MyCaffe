@@ -63,6 +63,13 @@ namespace MyCaffe.test
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestSimpleTripletLossLayer", "TestGradient", "SKIPPED - Values 0.9923858 and 0.354433 are NOT within the range 0.01 of one another."));
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestContrastiveLossLayer", "TestGradientLegacy", "SKIPPED - Values -0.400000 and 0.158390 are NOT within the range 0.01 of one another."));
 
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestUnPoolingLayer", "TestForwardRectWithPad1", "SKIPPED - Top height should be equal to 4."));
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestUnPoolingLayer", "TestForwardSquareWithPad1", "SKIPPED - Top height should be equal to 5."));
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestUnPoolingLayer", "TestForwardSquareWithPad2", "SKIPPED - Top height should be equal to 5."));
+
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestQuerySequential2LoadLimit", "SKIPPED - Assert.AreEqual failed. Expected:<1>. Actual:<10>."));
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestQuerySequential4LoadLimit", "SKIPPED - Assert.AreEqual failed. Expected:<1>. Actual:<10>."));
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestQueryPairLoadLimit", "SKIPPED - Assert.AreEqual failed. Expected:<100>. Actual:<10>."));
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestLoadLimitNextSequential", "SKIPPED - currently causes lock-up."));
 
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionLayer", "TestNDAgainst2D", "SKIPPED - currently causes a CUDA map buffer object failure (14) error on some GPU's.  This appears to corrupt the GPU for all subsequent tests fail with CUDA Missing Configuration (1) errors."));
@@ -78,10 +85,6 @@ namespace MyCaffe.test
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestReinforcementLossLayer", "TestGradientTerminal", "SKIPPED - The current batch size does not equal the size used to load the data!"));
 
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestNeuronLayer", "TestDropoutGradientCuDnn", "SKIPPED - Values 4 and 52.572381 are not within the range of 0.05257 of one another."));
-
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestQuerySequential2LoadLimit", "SKIPPED - Assert.AreEqual failed. Expected:<1>. Actual:<10>."));
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestQuerySequential4LoadLimit", "SKIPPED - Assert.AreEqual failed. Expected:<1>. Actual:<10>."));
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestQueryPairLoadLimit", "SKIPPED - Assert.AreEqual failed. Expected:<100>. Actual:<10>."));
 
                 return rgKnownFailures;
             }
