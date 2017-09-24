@@ -2558,7 +2558,7 @@ namespace MyCaffe.test
             int nAvailableP2PDevices = 0;
             for (int i = 1; i < nAvailableDevices; i++)
             {
-                string strP2P = m_cuda.GetDeviceP2PInfo(1);
+                string strP2P = m_cuda.GetDeviceP2PInfo(i);
                 if (!strP2P.Contains("P2P Capable = NO"))
                     nAvailableP2PDevices++;
             }
@@ -3157,7 +3157,7 @@ namespace MyCaffe.test
             int nDeviceCount = m_cuda.GetDeviceCount();
             List<int> rgGpu = new List<int>() { m_nDeviceId };
 
-            string strP2P = m_cuda.GetDeviceP2PInfo(1);
+            string strP2P = m_cuda.GetDeviceP2PInfo(m_nDeviceId);
             if (!strP2P.Contains("P2P Capable = NO"))
             {
                 for (int i = 0; i < nDeviceCount; i++)

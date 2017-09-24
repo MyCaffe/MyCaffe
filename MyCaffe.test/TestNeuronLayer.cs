@@ -1218,7 +1218,7 @@ namespace MyCaffe.test
     class TanhLayerTest : TestBase
     {
         public TanhLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("Tanh Layer Test", 1, engine)
+            : base("Tanh Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
@@ -1293,7 +1293,7 @@ namespace MyCaffe.test
     class ReluLayerTest : TestBase
     {
         public ReluLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("Relu Layer Test", 1, engine)
+            : base("Relu Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
@@ -1405,7 +1405,7 @@ namespace MyCaffe.test
     class ELULayerTest : TestBase
     {
         public ELULayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("ELU Layer Test", 1, engine)
+            : base("ELU Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
@@ -1515,7 +1515,7 @@ namespace MyCaffe.test
     class AbsValLayerTest : TestBase
     {
         public AbsValLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("AbsVal Layer Test", 1, engine)
+            : base("AbsVal Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
@@ -1587,7 +1587,7 @@ namespace MyCaffe.test
     class ExpLayerTest : TestBase
     {
         public ExpLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("Exp Layer Test", 1, engine)
+            : base("Exp Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
@@ -1674,7 +1674,7 @@ namespace MyCaffe.test
     class LabelMappingLayerTest : TestBase
     {
         public LabelMappingLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("Label Mapping Layer Test", 1, engine)
+            : base("Label Mapping Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
@@ -1728,7 +1728,7 @@ namespace MyCaffe.test
     class LogLayerTest : TestBase
     {
         public LogLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("Log Layer Test", 1, engine)
+            : base("Log Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
@@ -1821,7 +1821,7 @@ namespace MyCaffe.test
     class DropoutLayerTest : TestBase
     {
         public DropoutLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("Dropout Layer Test", 1, engine)
+            : base("Dropout Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
@@ -1967,7 +1967,7 @@ namespace MyCaffe.test
     class BNLLLayerTest : TestBase
     {
         public BNLLLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("BNLL Layer Test", 1, engine)
+            : base("BNLL Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
@@ -2034,7 +2034,7 @@ namespace MyCaffe.test
     class PReLULayerTest : TestBase
     {
         public PReLULayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("PReLU Layer Test", 1, engine)
+            : base("PReLU Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 

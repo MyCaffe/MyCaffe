@@ -65,7 +65,7 @@ namespace MyCaffe.test
     class NCCLTest : TestBase
     {
         public NCCLTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("NCCL Test", 1, engine)
+            : base("NCCL Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
@@ -140,7 +140,7 @@ namespace MyCaffe.test
 
         private bool setGpus()
         {
-            CudaDnn<T> cuda = new CudaDnn<T>(0);
+            CudaDnn<T> cuda = new CudaDnn<T>(TestBase.DEFAULT_DEVICE_ID);
             int nDevCount = cuda.GetDeviceCount();
 
             try
