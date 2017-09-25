@@ -331,7 +331,7 @@ namespace MyCaffe.common
     }
 
     /// <summary>
-    /// The IXMyCaffe interface contains functions used to perform MyCaffe operations that run in a light-weight manner without the MyCaffeImageDatabase.
+    /// The IXMyCaffeNoDb interface contains functions used to perform MyCaffe operations that run in a light-weight manner without the MyCaffeImageDatabase.
     /// </summary>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public interface IXMyCaffeNoDb<T>
