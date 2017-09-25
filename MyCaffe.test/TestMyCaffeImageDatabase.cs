@@ -418,6 +418,7 @@ namespace MyCaffe.test
 
                 int nCount = 100;
                 double dfTotalMs = 0;
+                List<int> rgIdx = new List<int>();
 
                 for (int i = 0; i < nCount; i++)
                 {
@@ -431,6 +432,8 @@ namespace MyCaffe.test
                         rg.Add(d.Index, new List<SimpleDatum>() { d });
                     else
                         rg[d.Index].Add(d);
+
+                    rgIdx.Add(d.Index);
                 }
 
                 str = (dfTotalMs / (double)nCount).ToString();
@@ -438,12 +441,16 @@ namespace MyCaffe.test
 
                 // Verify sequential selection.
 
+                rgIdx.Sort();
+
                 int nIdx = 0;
 
                 foreach (KeyValuePair<int, List<SimpleDatum>> kv in rg)
                 {
+                    int nIdx1 = rgIdx[nIdx];
+
                     Assert.AreEqual(kv.Value.Count, (nLoadLimit == 0) ? 1 : nLoadLimit);
-                    Assert.AreEqual(rg[nIdx][0].Index, (nLoadLimit == 0) ? nIdx : nIdx % nLoadLimit);
+                    Assert.AreEqual(rg[nIdx1][0].Index, (nLoadLimit == 0) ? nIdx1 : nIdx1 % nLoadLimit);
                     nIdx++;
                 }
             }
@@ -574,6 +581,7 @@ namespace MyCaffe.test
 
                 int nCount = 100;
                 double dfTotalMs = 0;
+                List<int> rgIdx = new List<int>();
 
                 for (int i = 0; i < nCount; i++)
                 {
@@ -587,6 +595,8 @@ namespace MyCaffe.test
                         rg.Add(d.Index, new List<SimpleDatum>() { d });
                     else
                         rg[d.Index].Add(d);
+
+                    rgIdx.Add(d.Index);
                 }
 
                 str = (dfTotalMs / (double)nCount).ToString();
@@ -596,10 +606,14 @@ namespace MyCaffe.test
 
                 int nIdx = 0;
 
+                rgIdx.Sort();
+
                 foreach (KeyValuePair<int, List<SimpleDatum>> kv in rg)
                 {
+                    int nIdx1 = rgIdx[nIdx];
+
                     Assert.AreEqual(kv.Value.Count, (nLoadLimit == 0) ? 1 : nLoadLimit);
-                    Assert.AreEqual(rg[nIdx][0].Index, (nLoadLimit == 0) ? nIdx : nIdx % nLoadLimit);
+                    Assert.AreEqual(rg[nIdx1][0].Index, (nLoadLimit == 0) ? nIdx1 : nIdx1 % nLoadLimit);
                     nIdx++;
                 }
             }
