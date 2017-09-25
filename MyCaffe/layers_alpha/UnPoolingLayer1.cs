@@ -14,7 +14,7 @@ namespace MyCaffe.layers.alpha
     /// 
     /// The UnPoolingLayer1 performs CPU based unpooling on the network like Zeiler's paper in ECCV 2014.
     /// 
-    /// This layer is initialized with the Caffe.net.param.PoolingParameter.
+    /// This layer is initialized with the MyCaffe.param.PoolingParameter.
     /// </summary>
     /// <remarks>
     /// * Original implementation at: https://github.com/mariolew/caffe-unpooling

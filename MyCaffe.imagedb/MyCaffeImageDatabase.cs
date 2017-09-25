@@ -328,7 +328,7 @@ namespace MyCaffe.imagedb
                             DatasetExCollection col = m_colDatasets[m_nStrIDHashCode];
 
                             if (m_log != null)
-                                m_log.WriteLine("The Caffe.NET Image Database is already initialized.");
+                                m_log.WriteLine("The MyCaffe Image Database is already initialized.");
 
                             DatasetEx ds = col.FindDataset(nDataSetID);
                             if (ds != null)
