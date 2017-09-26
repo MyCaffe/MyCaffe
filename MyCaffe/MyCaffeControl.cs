@@ -888,6 +888,7 @@ namespace MyCaffe
                     return;
                 }
 
+                m_log.WriteLine("Starting multi-GPU training on GPUs: " + listToString(m_rgGpu));
                 NCCL<T> nccl = new NCCL<T>(m_cuda, m_log, m_solver, m_rgGpu[0], 0, null);
                 nccl.Run(m_rgGpu, m_solver.TrainingIterationOverride);
             }
@@ -895,6 +896,21 @@ namespace MyCaffe
             {
                 m_solver.Solve();
             }
+        }
+
+        private string listToString(List<int> rg)
+        {
+            string strOut = "";
+
+            for (int i = 0; i < rg.Count; i++)
+            {
+                strOut += rg[i].ToString();
+
+                if (i < rg.Count - 1)
+                    strOut += ", ";
+            }
+
+            return strOut;
         }
 
         /// <summary>
