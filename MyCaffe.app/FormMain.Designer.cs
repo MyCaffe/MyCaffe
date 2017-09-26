@@ -258,7 +258,7 @@
             // localHelpToolStripMenuItem
             // 
             this.localHelpToolStripMenuItem.Name = "localHelpToolStripMenuItem";
-            this.localHelpToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.localHelpToolStripMenuItem.Size = new System.Drawing.Size(137, 22);
             this.localHelpToolStripMenuItem.Text = "Local Help";
             this.localHelpToolStripMenuItem.Click += new System.EventHandler(this.localHelpToolStripMenuItem_Click);
             // 
@@ -266,21 +266,21 @@
             // 
             this.onlineHelpToolStripMenuItem.Enabled = false;
             this.onlineHelpToolStripMenuItem.Name = "onlineHelpToolStripMenuItem";
-            this.onlineHelpToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.onlineHelpToolStripMenuItem.Size = new System.Drawing.Size(137, 22);
             this.onlineHelpToolStripMenuItem.Text = "Online Help";
             this.onlineHelpToolStripMenuItem.Click += new System.EventHandler(this.onlineHelpToolStripMenuItem_Click);
             // 
             // aboutToolStripMenuItem
             // 
             this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(137, 22);
             this.aboutToolStripMenuItem.Text = "&About";
             this.aboutToolStripMenuItem.Click += new System.EventHandler(this.aboutToolStripMenuItem_Click);
             // 
             // openFileDialogAutoTests
             // 
             this.openFileDialogAutoTests.DefaultExt = "dll";
-            this.openFileDialogAutoTests.Filter = "Auto Test Files (*.dll)|*.dll||";
+            this.openFileDialogAutoTests.Filter = "Auto Test Files (*.test.dll)|*.test.dll||";
             this.openFileDialogAutoTests.Title = "Select the MyCaffe.test.dll";
             // 
             // edtStatus

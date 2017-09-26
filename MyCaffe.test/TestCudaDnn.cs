@@ -118,7 +118,7 @@ namespace MyCaffe.test
 
             try
             {
-                if (nDevCount < 1)
+                if (nDevCount <= 1)
                     return;
 
                 copyMemTest(cuda1, cuda2, 0, 1);
@@ -150,7 +150,7 @@ namespace MyCaffe.test
 
             try
             {
-                if (nDevCount < 1)
+                if (nDevCount <= 1)
                     return;
 
                 copyMemTest(cuda1, cuda2, 0, 1);
