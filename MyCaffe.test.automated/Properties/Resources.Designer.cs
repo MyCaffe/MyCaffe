@@ -63,7 +63,7 @@ namespace MyCaffe.test.automated.Properties {
         /// <summary>
         ///   Looks up a localized string similar to USE [master]
         ///CREATE DATABASE [%DBNAME%] ON  PRIMARY 
-        ///( NAME = N&apos;%DBNAME%&apos;, FILENAME = N&apos;%PATH%\%DBFNAME%.mdf&apos; , SIZE = 2048KB , MAXSIZE = UNLIMITED, FILEGROWTH = 1024KB )
+        ///( NAME = N&apos;%DBNAME%&apos;, FILENAME = N&apos;%PATH%\%DBFNAME%.mdf&apos; , SIZE = 4096KB , MAXSIZE = UNLIMITED, FILEGROWTH = 1024KB )
         /// LOG ON 
         ///( NAME = N&apos;%DBNAME%_log&apos;, FILENAME = N&apos;%PATH%\%DBFNAME%_log.ldf&apos; , SIZE = 4096KB , MAXSIZE = 2048GB , FILEGROWTH = 10%)
         ///ALTER DATABASE [%DBNAME%] SET COMPATIBILITY_LEVEL = 100
