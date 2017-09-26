@@ -414,6 +414,24 @@ namespace MyCaffe.imagedb
         /// Returns the label selection method.
         /// </summary>
         IMGDB_LABEL_SELECTION_METHOD LabelSelectionMethod { get; set; }
+
+        /// <summary>
+        /// The UnloadDataset function unloads a given dataset from memory.
+        /// </summary>
+        /// <param name="strDataset">Specifies the name of the dataset to unload.</param>
+        /// <returns>If the dataset is found and removed, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        [OperationContract]
+        [FaultContract(typeof(ImageDatabaseErrorData))]
+        bool UnloadDataset(string strDataset);
+
+        /// <summary>
+        /// The UnloadDataset function unloads a given dataset from memory.
+        /// </summary>
+        /// <param name="nDatasetID">Specifies the ID of the dataset to unload.</param>
+        /// <returns>If the dataset is found and removed, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        [OperationContract]
+        [FaultContract(typeof(ImageDatabaseErrorData))]
+        bool UnloadDataset(int nDatasetID);
     }
 
     [DataContract]

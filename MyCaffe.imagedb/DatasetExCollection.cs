@@ -23,6 +23,16 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Remove the dataset specified.
+        /// </summary>
+        /// <param name="ds">Specifies the dataset to remove.</param>
+        /// <returns>If the dataset is found and removed, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public bool RemoveDataset(DatasetEx ds)
+        {
+            return m_rgDatasets.Remove(ds);
+        }
+
+        /// <summary>
         /// Removes a user from the list of users using the DatasetExCollection.
         /// </summary>
         /// <param name="user">Specifies the unique user ID.</param>

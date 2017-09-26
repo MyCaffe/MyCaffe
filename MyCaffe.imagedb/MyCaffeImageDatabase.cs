@@ -1011,6 +1011,64 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// The UnloadDataset method removes the dataset specified from memory.
+        /// </summary>
+        /// <param name="strDataset">Specifies the dataset to remove.</param>
+        /// <returns>If found and removed, this function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
+        public bool UnloadDataset(string strDataset)
+        {
+            bool bRemoved = false;
+
+            lock (m_syncObject)
+            {
+                if (m_colDatasets.ContainsKey(m_nStrIDHashCode))
+                {
+                    DatasetExCollection col = m_colDatasets[m_nStrIDHashCode];
+                    DatasetEx ds = col.FindDataset(strDataset);
+                    if (ds != null)
+                    {
+                        if (m_log != null)
+                            m_log.WriteLine("Unloading dataset '" + ds.DatasetName + "'.");
+
+                        bRemoved = col.RemoveDataset(ds);
+                        GC.Collect();
+                    }
+                }
+            }
+
+            return bRemoved;
+        }
+
+        /// <summary>
+        /// The UnloadDataset method removes the dataset specified from memory.
+        /// </summary>
+        /// <param name="nDataSetID">Specifies the dataset ID to remove.</param>
+        /// <returns>If found and removed, this function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
+        public bool UnloadDataset(int nDataSetID)
+        {
+            bool bRemoved = false;
+
+            lock (m_syncObject)
+            {
+                if (m_colDatasets.ContainsKey(m_nStrIDHashCode))
+                {
+                    DatasetExCollection col = m_colDatasets[m_nStrIDHashCode];
+                    DatasetEx ds = col.FindDataset(nDataSetID);
+                    if (ds != null)
+                    {
+                        if (m_log != null)
+                            m_log.WriteLine("Unloading dataset '" + ds.DatasetName + "'.");
+
+                        bRemoved = col.RemoveDataset(ds);
+                        GC.Collect();
+                    }
+                }
+            }
+
+            return bRemoved;
+        }
+
+        /// <summary>
         /// Create the database used by the CaffeImageDatabase.
         /// </summary>
         /// <param name="strName">Specifies the name of the database (recommended value = "DNN").</param>

@@ -57,6 +57,59 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestUnloadDataset()
+        {
+            List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
+            IXImageDatabase db = new MyCaffeImageDatabase();
+            Stopwatch sw = new Stopwatch();
+            string str;
+
+            foreach (string strDs in rgDs)
+            {
+                SettingsCaffe settings = new SettingsCaffe();
+                settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+                settings.ImageDbLoadLimit = 0;
+
+                sw.Start();
+                db.Initialize(settings, strDs);
+                str = sw.ElapsedMilliseconds.ToString();
+                Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
+
+                sw.Reset();
+                sw.Stop();
+            }
+
+            sw.Stop();
+            sw.Reset();
+
+            bool bRemoved = db.UnloadDataset(rgDs[0]);
+            Assert.AreEqual(bRemoved, true);
+
+            bRemoved = db.UnloadDataset(rgDs[1]);
+            Assert.AreEqual(bRemoved, true);
+
+            bRemoved = db.UnloadDataset(rgDs[2]);
+            Assert.AreEqual(bRemoved, false);
+
+            sw.Start();
+            db.CleanUp();
+            str = sw.ElapsedMilliseconds.ToString();
+            Trace.WriteLine("Cleanup Time: " + str + " ms.");
+
+            sw.Stop();
+            sw.Reset();
+            sw.Start();
+
+            IDisposable idisp = db as IDisposable;
+            if (idisp != null)
+                idisp.Dispose();
+
+            str = sw.ElapsedMilliseconds.ToString();
+            Trace.WriteLine("Dispose Time: " + str + " ms.");
+
+        }
+
+        [TestMethod]
         public void TestInitializationLoadAll()
         {
             TestInitialization(IMAGEDB_LOAD_METHOD.LOAD_ALL, 0);
