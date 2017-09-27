@@ -570,18 +570,17 @@ namespace MyCaffe
 
                 m_imgDb.UpdateLabelBoosts(p.ID, p.Dataset.TrainingSource.ID);
 
-                KeyValuePair<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> kvSelection = MyCaffeImageDatabase.GetSelectionMethod(p);
+                Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> selMethod = MyCaffeImageDatabase.GetSelectionMethod(p);
+                IMGDB_LABEL_SELECTION_METHOD lblSel = selMethod.Item1;
+                IMGDB_IMAGE_SELECTION_METHOD imgSel = selMethod.Item2;
 
                 if (labelSelectionOverride.HasValue)
-                    m_imgDb.LabelSelectionMethod = labelSelectionOverride.Value;
-                else
-                    m_imgDb.LabelSelectionMethod = kvSelection.Key;
+                    lblSel = labelSelectionOverride.Value;
 
                 if (imageSelectionOverride.HasValue)
-                    m_imgDb.ImageSelectionMethod = imageSelectionOverride.Value;
-                else
-                    m_imgDb.ImageSelectionMethod = kvSelection.Value;
+                    imgSel = imageSelectionOverride.Value;
 
+                m_imgDb.SetSelectionMethod(lblSel, imgSel);
                 m_imgDb.QueryImageMean(p.Dataset.TrainingSource.ID);
                 m_log.WriteLine("Images loaded.");
             }
@@ -686,18 +685,17 @@ namespace MyCaffe
                 if (m_evtCancel.WaitOne(0))
                     return false;
 
-                KeyValuePair<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> kvSelection = MyCaffeImageDatabase.GetSelectionMethod(m_settings);
+                Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> selMethod = MyCaffeImageDatabase.GetSelectionMethod(m_settings);
+                IMGDB_LABEL_SELECTION_METHOD lblSel = selMethod.Item1;
+                IMGDB_IMAGE_SELECTION_METHOD imgSel = selMethod.Item2;
 
                 if (labelSelectionOverride.HasValue)
-                    m_imgDb.LabelSelectionMethod = labelSelectionOverride.Value;
-                else
-                    m_imgDb.LabelSelectionMethod = kvSelection.Key;
+                    lblSel = labelSelectionOverride.Value;
 
                 if (imageSelectionOverride.HasValue)
-                    m_imgDb.ImageSelectionMethod = imageSelectionOverride.Value;
-                else
-                    m_imgDb.ImageSelectionMethod = kvSelection.Value;
+                    imgSel = imageSelectionOverride.Value;
 
+                m_imgDb.SetSelectionMethod(lblSel, imgSel);
                 m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID);
                 m_log.WriteLine("Images loaded.");
             }

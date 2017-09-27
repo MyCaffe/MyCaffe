@@ -364,7 +364,7 @@ namespace MyCaffe.imagedb
         bool ReloadImageSet(int nSrcId);
 
         /// <summary>
-        /// Searches fro the image index of an image within a data source matching a DateTime/description pattern.
+        /// Searches for the image index of an image within a data source matching a DateTime/description pattern.
         /// </summary>
         /// <remarks>
         /// Optionally, images may have a time-stamp and/or description associated with each image.  In such cases
@@ -386,13 +386,20 @@ namespace MyCaffe.imagedb
         bool LoadNextSet(string strEvtCancel);
 
         /// <summary>
-        /// Returns the image selection method.
-        /// </summary>
-        IMGDB_IMAGE_SELECTION_METHOD ImageSelectionMethod { get; set; }
         /// <summary>
-        /// Returns the label selection method.
+        /// Returns the label and image selection method used.
         /// </summary>
-        IMGDB_LABEL_SELECTION_METHOD LabelSelectionMethod { get; set; }
+        /// <returns>A tuple containing the Label and Image selection method.</returns>
+        [OperationContract(IsOneWay = false)]
+        Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> GetSelectionMethod();
+
+        /// <summary>
+        /// Sets the label and image selection methods.
+        /// </summary>
+        /// <param name="lbl">Specifies the label selection method or <i>null</i> to ignore.</param>
+        /// <param name="img">Specifies the image selection method or <i>null</i> to ignore.</param>
+        [OperationContract(IsOneWay = false)]
+        void SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD? lbl, IMGDB_IMAGE_SELECTION_METHOD? img);
 
         /// <summary>
         /// The UnloadDataset function unloads a given dataset from memory.

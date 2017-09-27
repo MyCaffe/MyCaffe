@@ -122,7 +122,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="s">Specifies the caffe settings.</param>
         /// <returns>The label/image selection method is returned.</returns>
-        public static KeyValuePair<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> GetSelectionMethod(SettingsCaffe s)
+        public static Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> GetSelectionMethod(SettingsCaffe s)
         {
             IMGDB_IMAGE_SELECTION_METHOD imageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.NONE;
             IMGDB_LABEL_SELECTION_METHOD labelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
@@ -146,7 +146,7 @@ namespace MyCaffe.imagedb
                     imageSelectionMethod |= IMGDB_IMAGE_SELECTION_METHOD.PAIR;
             }
 
-            return new KeyValuePair<IMGDB_LABEL_SELECTION_METHOD,IMGDB_IMAGE_SELECTION_METHOD>(labelSelectionMethod, imageSelectionMethod);
+            return new Tuple<IMGDB_LABEL_SELECTION_METHOD,IMGDB_IMAGE_SELECTION_METHOD>(labelSelectionMethod, imageSelectionMethod);
         }
 
         /// <summary>
@@ -154,7 +154,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="p">Specifies the project.</param>
         /// <returns>The label/image selection method is returned.</returns>
-        public static KeyValuePair<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> GetSelectionMethod(ProjectEx p)
+        public static Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> GetSelectionMethod(ProjectEx p)
         {
             IMGDB_IMAGE_SELECTION_METHOD imageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.NONE;
             IMGDB_LABEL_SELECTION_METHOD labelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
@@ -175,25 +175,31 @@ namespace MyCaffe.imagedb
                     imageSelectionMethod |= IMGDB_IMAGE_SELECTION_METHOD.PAIR;
             }
 
-            return new KeyValuePair<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD>(labelSelectionMethod, imageSelectionMethod);
+            return new Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD>(labelSelectionMethod, imageSelectionMethod);
+        }
+
+
+        /// <summary>
+        /// Returns the label and image selection method used.
+        /// </summary>
+        /// <returns>A KeyValue containing the Label and Image selection method.</returns>
+        public Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> GetSelectionMethod()
+        {
+            return new Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD>(m_labelSelectionMethod, m_imageSelectionMethod);
         }
 
         /// <summary>
-        /// Returns the image selection method.
+        /// Sets the label and image selection methods.
         /// </summary>
-        public IMGDB_IMAGE_SELECTION_METHOD ImageSelectionMethod
+        /// <param name="lbl">Specifies the label selection method or <i>null</i> to ignore.</param>
+        /// <param name="img">Specifies the image selection method or <i>null</i> to ignore.</param>
+        public void SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD? lbl, IMGDB_IMAGE_SELECTION_METHOD? img)
         {
-            get { return m_imageSelectionMethod; }
-            set { m_imageSelectionMethod = value; }
-        }
+            if (lbl.HasValue)
+                m_labelSelectionMethod = lbl.Value;
 
-        /// <summary>
-        /// Returns the label selection method.
-        /// </summary>
-        public IMGDB_LABEL_SELECTION_METHOD LabelSelectionMethod
-        {
-            get { return m_labelSelectionMethod; }
-            set { m_labelSelectionMethod = value; }
+            if (img.HasValue)
+                m_imageSelectionMethod = img.Value;
         }
 
         /// <summary>
@@ -304,13 +310,13 @@ namespace MyCaffe.imagedb
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
         public bool InitializeWithDsId(SettingsCaffe s, int nDataSetID, string strEvtCancel = null, int nPadW = 0, int nPadH = 0)
         {
-            KeyValuePair<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> kvSelectionMethod = GetSelectionMethod(s);
+            Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> selMethod = GetSelectionMethod(s);
 
             m_nPadW = nPadW;
             m_nPadH = nPadH;
             m_nMaskOutAllButLastColumns = s.MaskAllButLastColumns;
-            m_labelSelectionMethod = kvSelectionMethod.Key;
-            m_imageSelectionMethod = kvSelectionMethod.Value;
+            m_labelSelectionMethod = selMethod.Item1;
+            m_imageSelectionMethod = selMethod.Item2;
             m_dfSuperBoostProbability = s.SuperBoostProbability;
             m_loadMethod = s.ImageDbLoadMethod;
             m_nLoadLimit = s.ImageDbLoadLimit;

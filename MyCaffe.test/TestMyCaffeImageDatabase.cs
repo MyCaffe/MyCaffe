@@ -231,8 +231,7 @@ namespace MyCaffe.test
 
                 sw.Start();
                 db.InitializeWithDsName(settings, strDs);
-                db.LabelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
-                db.ImageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.NONE;
+                db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
                 string str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -548,8 +547,7 @@ namespace MyCaffe.test
 
                 sw.Start();
                 db.InitializeWithDsName(settings, strDs);
-                db.LabelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
-                db.ImageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.NONE;
+                db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
                 string str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -624,8 +622,7 @@ namespace MyCaffe.test
 
                 sw.Start();
                 db.InitializeWithDsName(settings, strDs);
-                db.LabelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
-                db.ImageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.NONE;
+                db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
                 string str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -711,8 +708,7 @@ namespace MyCaffe.test
 
                 sw.Start();
                 db.InitializeWithDsName(settings, strDs);
-                db.LabelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
-                db.ImageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM;
+                db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
                 string str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -789,8 +785,7 @@ namespace MyCaffe.test
 
                 sw.Start();
                 db.InitializeWithDsName(settings, strDs);
-                db.LabelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
-                db.ImageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.NONE;
+                db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
                 string str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 

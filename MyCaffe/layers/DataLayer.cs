@@ -59,21 +59,26 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.DATA;
 
+            Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> kvSel = db.GetSelectionMethod();
+            IMGDB_IMAGE_SELECTION_METHOD imgSel = kvSel.Item2;
+
             if (m_param.data_param.enable_pair_selection.HasValue)
             {
                 if (m_param.data_param.enable_pair_selection.Value)
-                    db.ImageSelectionMethod |= IMGDB_IMAGE_SELECTION_METHOD.PAIR;
+                    imgSel |= IMGDB_IMAGE_SELECTION_METHOD.PAIR;
                 else
-                    db.ImageSelectionMethod &= (~IMGDB_IMAGE_SELECTION_METHOD.PAIR);
+                    imgSel &= (~IMGDB_IMAGE_SELECTION_METHOD.PAIR);
             }
 
             if (m_param.data_param.enable_random_selection.HasValue)
             {
                 if (m_param.data_param.enable_random_selection.Value)
-                    db.ImageSelectionMethod |= IMGDB_IMAGE_SELECTION_METHOD.RANDOM;
+                    imgSel |= IMGDB_IMAGE_SELECTION_METHOD.RANDOM;
                 else
-                    db.ImageSelectionMethod &= (~IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+                    imgSel &= (~IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
             }
+
+            db.SetSelectionMethod(null, imgSel);
 
             m_db = new data.DB(db);
             m_db.Open(p.data_param.source);
