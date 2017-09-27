@@ -710,7 +710,7 @@ namespace MyCaffe.common
                         return ((LabelMappingLayer<T>)layer).GetActualLabelCounts(strSrc);
                 }
 
-                return m_db.GetLabelCountsAsText(strSrc);
+                return m_db.GetLabelCountsAsTextFromSourceName(strSrc);
             }
         }
 

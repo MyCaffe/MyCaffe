@@ -185,8 +185,8 @@ namespace MyCaffe.layers
 
                     if (m_param.labelmapping_param.update_database)
                     {
-                        string strLabelCounts = m_db.GetLabelCountsAsText(nSrcId);
-                        string strLabelBoosts = m_db.GetLabelBoostsAsText(m_nProjectID, nSrcId);
+                        string strLabelCounts = m_db.GetLabelCountsAsTextFromSourceId(nSrcId);
+                        string strLabelBoosts = m_db.GetLabelBoostsAsTextFromProject(m_nProjectID, nSrcId);
 
                         if (m_param.labelmapping_param.reset_database_labels)
                         {
@@ -258,8 +258,8 @@ namespace MyCaffe.layers
 
                         if (m_db != null)
                         {
-                            string strNewLabelCounts = m_db.GetLabelCountsAsText(nSrcId);
-                            string strNewLabelBoosts = m_db.GetLabelBoostsAsText(m_nProjectID, nSrcId);
+                            string strNewLabelCounts = m_db.GetLabelCountsAsTextFromSourceId(nSrcId);
+                            string strNewLabelBoosts = m_db.GetLabelBoostsAsTextFromProject(m_nProjectID, nSrcId);
 
                             if (strNewLabelCounts != strLabelCounts || strNewLabelBoosts != strLabelBoosts)
                                 m_db.ReloadImageSet(nSrcId);

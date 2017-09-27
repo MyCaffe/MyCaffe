@@ -72,7 +72,7 @@ namespace MyCaffe.data
         public Cursor(IXImageDatabase db, string strSrc)
         {
             m_db = db;
-            SourceDescriptor src = m_db.GetSource(strSrc);
+            SourceDescriptor src = m_db.GetSourceByName(strSrc);
             m_nSrcID = src.ID;
             m_nCount = src.ImageCount;
         }
