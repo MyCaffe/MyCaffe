@@ -382,7 +382,7 @@ namespace MyCaffe.test
             if (strDs != null && strDs.Length > 0)
             {
                 m_db = new MyCaffeImageDatabase();
-                m_db.Initialize(m_settings, strDs);
+                m_db.InitializeWithDsName(m_settings, strDs);
             }
         }
 
@@ -639,7 +639,7 @@ namespace MyCaffe.test
             MyCaffeImageDatabase m_imgDb = new MyCaffeImageDatabase();
 
             m_parent.Settings.ImageDbLoadMethod = loadMethod;
-            m_imgDb.Initialize(m_parent.Settings, m_nDsID);
+            m_imgDb.InitializeWithDsId(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
             DataLayer<T> layer = new DataLayer<T>(m_cuda, m_log, p, m_imgDb, evtCancel);
@@ -693,7 +693,7 @@ namespace MyCaffe.test
 
             MyCaffeImageDatabase m_imgDb = new MyCaffeImageDatabase();
             m_parent.Settings.ImageDbLoadMethod = loadMethod;
-            m_imgDb.Initialize(m_parent.Settings, m_nDsID);
+            m_imgDb.InitializeWithDsId(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
             int nSolverCount = 8;
@@ -744,7 +744,7 @@ namespace MyCaffe.test
 
             MyCaffeImageDatabase m_imgDb = new MyCaffeImageDatabase();
             m_parent.Settings.ImageDbLoadMethod = loadMethod;
-            m_imgDb.Initialize(m_parent.Settings, m_nDsID);
+            m_imgDb.InitializeWithDsId(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
             DataLayer<T> layer = new DataLayer<T>(m_cuda, m_log, p, m_imgDb, evtCancel);
@@ -805,7 +805,7 @@ namespace MyCaffe.test
 
             MyCaffeImageDatabase m_imgDb = new MyCaffeImageDatabase();
             m_parent.Settings.ImageDbLoadMethod = loadMethod;
-            m_imgDb.Initialize(m_parent.Settings, m_nDsID);
+            m_imgDb.InitializeWithDsId(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
             DataLayer<T> layer = new DataLayer<T>(m_cuda, m_log, p, m_imgDb, evtCancel);
@@ -878,7 +878,7 @@ namespace MyCaffe.test
 
             MyCaffeImageDatabase imgDb = new MyCaffeImageDatabase();
             m_parent.Settings.ImageDbLoadMethod = loadMethod;
-            imgDb.Initialize(m_parent.Settings, m_nDsID);
+            imgDb.InitializeWithDsId(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
             // Get crop sequence with seed 1701.
@@ -915,7 +915,7 @@ namespace MyCaffe.test
 
 
             imgDb = new MyCaffeImageDatabase();
-            imgDb.Initialize(m_parent.Settings, m_nDsID);
+            imgDb.InitializeWithDsId(m_parent.Settings, m_nDsID);
 
             // Get crop sequence after reseeding caffe (done within the data transformer)
             p.transform_param.random_seed = 1701;
@@ -965,7 +965,7 @@ namespace MyCaffe.test
 
             MyCaffeImageDatabase m_imgDb = new MyCaffeImageDatabase();
             m_parent.Settings.ImageDbLoadMethod = loadMethod;
-            m_imgDb.Initialize(m_parent.Settings, m_nDsID);
+            m_imgDb.InitializeWithDsId(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
             // Get crop sequence without setting a seed.

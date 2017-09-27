@@ -70,7 +70,7 @@ namespace MyCaffe.test
             m_engine = engine;
 
             m_db = new MyCaffeImageDatabase();
-            m_db.Initialize(new SettingsCaffe(), "MNIST");
+            m_db.InitializeWithDsName(new SettingsCaffe(), "MNIST");
             m_persist = new PersistCaffe<T>(m_log, false);
         }
 

@@ -1845,7 +1845,7 @@ namespace MyCaffe.test
             m_nWidth = src.ImageWidth;
 
             m_db = new MyCaffeImageDatabase();
-            m_db.Initialize(new SettingsCaffe(), m_strDs);
+            m_db.InitializeWithDsName(new SettingsCaffe(), m_strDs);
 
             m_persist = new PersistCaffe<T>(m_log, false);
 
@@ -2847,7 +2847,7 @@ namespace MyCaffe.test
             prj.ModelDescription = getAlexNetModel(strDataset + ".training", strDataset + ".testing");
             prj.SolverDescription = getSolverProto(type);
 
-            m_db.Initialize(new SettingsCaffe(), strDataset);
+            m_db.InitializeWithDsName(new SettingsCaffe(), strDataset);
 
             m_solver = Solver<T>.Create(m_cuda, m_log, prj, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_db, m_persist);
             m_solver.TrainingIterationOverride = 10;

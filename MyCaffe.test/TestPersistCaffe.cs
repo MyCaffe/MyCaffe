@@ -239,7 +239,7 @@ namespace MyCaffe.test
             createPascalSbdDatasetShell("PASCAL_SBD");
 
             MyCaffeImageDatabase db = new MyCaffeImageDatabase();
-            db.Initialize(new SettingsCaffe(), "PASCAL_SBD");
+            db.InitializeWithDsName(new SettingsCaffe(), "PASCAL_SBD");
 
             RawProto proto = RawProto.Parse(strModelDesc);
             NetParameter net_param = NetParameter.FromProto(proto);
@@ -276,7 +276,7 @@ namespace MyCaffe.test
             createPascalSbdDatasetShell("PASCAL_SBD");
 
             MyCaffeImageDatabase db = new MyCaffeImageDatabase();
-            db.Initialize(new SettingsCaffe(), "PASCAL_SBD");
+            db.InitializeWithDsName(new SettingsCaffe(), "PASCAL_SBD");
 
             RawProto proto = RawProto.Parse(strModelDesc);
             NetParameter net_param = NetParameter.FromProto(proto);
@@ -319,7 +319,7 @@ namespace MyCaffe.test
             }
 
             MyCaffeImageDatabase db = new MyCaffeImageDatabase();
-            db.Initialize(new SettingsCaffe(), "CIFAR-10");
+            db.InitializeWithDsName(new SettingsCaffe(), "CIFAR-10");
 
             RawProto proto = RawProto.Parse(strModelDesc);
             NetParameter net_param = NetParameter.FromProto(proto);
@@ -506,7 +506,7 @@ namespace MyCaffe.test
             createPascalSbdDatasetShell("PASCAL_SBD");
 
             MyCaffeImageDatabase db = new MyCaffeImageDatabase();
-            db.Initialize(new SettingsCaffe(), "PASCAL_SBD");
+            db.InitializeWithDsName(new SettingsCaffe(), "PASCAL_SBD");
 
             RawProto proto = RawProto.Parse(strModelDesc);
             NetParameter net_param = NetParameter.FromProto(proto);

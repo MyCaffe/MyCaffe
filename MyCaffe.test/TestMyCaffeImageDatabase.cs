@@ -29,7 +29,7 @@ namespace MyCaffe.test
                 settings.ImageDbLoadLimit = nLoadLimit;
 
                 sw.Start();
-                db.Initialize(settings, strDs);
+                db.InitializeWithDsName(settings, strDs);
                 str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -71,7 +71,7 @@ namespace MyCaffe.test
                 settings.ImageDbLoadLimit = 0;
 
                 sw.Start();
-                db.Initialize(settings, strDs);
+                db.InitializeWithDsName(settings, strDs);
                 str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -82,13 +82,13 @@ namespace MyCaffe.test
             sw.Stop();
             sw.Reset();
 
-            bool bRemoved = db.UnloadDataset(rgDs[0]);
+            bool bRemoved = db.UnloadDatasetByName(rgDs[0]);
             Assert.AreEqual(bRemoved, true);
 
-            bRemoved = db.UnloadDataset(rgDs[1]);
+            bRemoved = db.UnloadDatasetByName(rgDs[1]);
             Assert.AreEqual(bRemoved, true);
 
-            bRemoved = db.UnloadDataset(rgDs[2]);
+            bRemoved = db.UnloadDatasetByName(rgDs[2]);
             Assert.AreEqual(bRemoved, false);
 
             sw.Start();
@@ -146,11 +146,11 @@ namespace MyCaffe.test
                 Stopwatch sw = new Stopwatch();
 
                 sw.Start();
-                db.Initialize(settings, strDs);
+                db.InitializeWithDsName(settings, strDs);
                 string str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                DatasetDescriptor ds = db.GetDataset(strDs);
+                DatasetDescriptor ds = db.GetDatasetByName(strDs);
                 Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
 
                 int nCount = 100;
@@ -230,13 +230,13 @@ namespace MyCaffe.test
                 Stopwatch sw = new Stopwatch();
 
                 sw.Start();
-                db.Initialize(settings, strDs);
+                db.InitializeWithDsName(settings, strDs);
                 db.LabelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
                 db.ImageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.NONE;
                 string str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                DatasetDescriptor ds = db.GetDataset(strDs);
+                DatasetDescriptor ds = db.GetDatasetByName(strDs);
                 Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
                 Dictionary<int, int> rgCounts = new Dictionary<int, int>();
 
@@ -388,11 +388,11 @@ namespace MyCaffe.test
                 Stopwatch sw = new Stopwatch();
 
                 sw.Start();
-                db.Initialize(settings, strDs);
+                db.InitializeWithDsName(settings, strDs);
                 string str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                DatasetDescriptor ds = db.GetDataset(strDs);
+                DatasetDescriptor ds = db.GetDatasetByName(strDs);
                 Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
 
                 int nCount = 100;
@@ -462,11 +462,11 @@ namespace MyCaffe.test
                 Stopwatch sw = new Stopwatch();
 
                 sw.Start();
-                db.Initialize(settings, strDs);
+                db.InitializeWithDsName(settings, strDs);
                 string str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                DatasetDescriptor ds = db.GetDataset(strDs);
+                DatasetDescriptor ds = db.GetDatasetByName(strDs);
                 Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
 
                 int nCount = 100;
@@ -547,13 +547,13 @@ namespace MyCaffe.test
                 Stopwatch sw = new Stopwatch();
 
                 sw.Start();
-                db.Initialize(settings, strDs);
+                db.InitializeWithDsName(settings, strDs);
                 db.LabelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
                 db.ImageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.NONE;
                 string str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                DatasetDescriptor ds = db.GetDataset(strDs);
+                DatasetDescriptor ds = db.GetDatasetByName(strDs);
                 Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
 
                 int nCount = 100;
@@ -623,13 +623,13 @@ namespace MyCaffe.test
                 Stopwatch sw = new Stopwatch();
 
                 sw.Start();
-                db.Initialize(settings, strDs);
+                db.InitializeWithDsName(settings, strDs);
                 db.LabelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
                 db.ImageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.NONE;
                 string str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                DatasetDescriptor ds = db.GetDataset(strDs);
+                DatasetDescriptor ds = db.GetDatasetByName(strDs);
                 Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
 
                 int nCount = 100;
@@ -710,13 +710,13 @@ namespace MyCaffe.test
                 Stopwatch sw = new Stopwatch();
 
                 sw.Start();
-                db.Initialize(settings, strDs);
+                db.InitializeWithDsName(settings, strDs);
                 db.LabelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
                 db.ImageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM;
                 string str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                DatasetDescriptor ds = db.GetDataset(strDs);
+                DatasetDescriptor ds = db.GetDatasetByName(strDs);
                 Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
 
                 int nCount = 100;
@@ -788,13 +788,13 @@ namespace MyCaffe.test
                 Stopwatch sw = new Stopwatch();
 
                 sw.Start();
-                db.Initialize(settings, strDs);
+                db.InitializeWithDsName(settings, strDs);
                 db.LabelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
                 db.ImageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.NONE;
                 string str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                DatasetDescriptor ds = db.GetDataset(strDs);
+                DatasetDescriptor ds = db.GetDatasetByName(strDs);
                 Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
                 Dictionary<int, List<SimpleDatum>> rgFirst = new Dictionary<int, List<SimpleDatum>>();
 
@@ -901,11 +901,11 @@ namespace MyCaffe.test
                 Stopwatch sw = new Stopwatch();
 
                 sw.Start();
-                db.Initialize(settings, strDs);
+                db.InitializeWithDsName(settings, strDs);
                 string str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                DatasetDescriptor ds = db.GetDataset(strDs);
+                DatasetDescriptor ds = db.GetDatasetByName(strDs);
 
                 SimpleDatum d1 = db.QueryImageMean(ds.TrainingSource.ID);
                 SimpleDatum d2 = db.QueryImageMeanFromDataset(ds.ID);

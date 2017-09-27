@@ -84,7 +84,7 @@ namespace MyCaffe.test
             m_userGuid = Guid.NewGuid();
             m_settings = new SettingsCaffe();
             m_db = new MyCaffeImageDatabase();
-            m_db.Initialize(m_settings, strDs);
+            m_db.InitializeWithDsName(m_settings, strDs);
         }
 
         protected override ITest create(DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)

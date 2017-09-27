@@ -891,7 +891,7 @@ namespace MyCaffe.test
 
             m_evtCancel = new CancelEvent();
             m_db = new MyCaffeImageDatabase();
-            m_db.Initialize(new SettingsCaffe(), "MNIST");
+            m_db.InitializeWithDsName(new SettingsCaffe(), "MNIST");
         }
 
         protected override void dispose()

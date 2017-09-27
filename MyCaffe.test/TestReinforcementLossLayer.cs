@@ -70,7 +70,7 @@ namespace MyCaffe.test
         {
             m_settings = new SettingsCaffe();
             m_db = new MyCaffeImageDatabase();
-            m_db.Initialize(m_settings, strDs, m_evtCancel);
+            m_db.InitializeWithDsName(m_settings, strDs, m_evtCancel.Name);
         }
 
         protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)

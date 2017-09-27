@@ -135,7 +135,7 @@ namespace MyCaffe.test
 
             SettingsCaffe s = new SettingsCaffe();
             s.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
-            m_db.Initialize(s, m_ds);
+            m_db.InitializeWithDs(s, m_ds);
 
             int nBatchSize = 2;
             Fill(nBatchSize);
