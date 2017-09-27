@@ -120,11 +120,30 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="onTest">Specifies the event handler called when testing.</param>
         void SetOnTestOverride(EventHandler<TestArgs> onTest);
+
         /// <summary>
-        /// Sets the cance override.
+        /// Add a cancel override.
         /// </summary>
-        /// <param name="evtCancel">Specifies the new cancel event to use.</param>
-        void SetCancelOverride(ManualResetEvent evtCancel);
+        /// <param name="strEvtCancel">Specifies the name of the new cancel event to add.</param>
+        void AddCancelOverrideByName(string strEvtCancel);
+
+        /// <summary>
+        /// Add a cancel override.
+        /// </summary>
+        /// <param name="evtCancel">Specifies the cancel event to add.</param>
+        void AddCancelOverride(CancelEvent evtCancel);
+
+        /// <summary>
+        /// Remove a cancel override.
+        /// </summary>
+        /// <param name="strEvtCancel">Specifies the name of the new cancel event to remove.</param>
+        void RemoveCancelOverrideByName(string strEvtCancel);
+
+        /// <summary>
+        /// Remove a cancel override.
+        /// </summary>
+        /// <param name="evtCancel">Specifies the cancel event to remove.</param>
+        void RemoveCancelOverride(CancelEvent evtCancel);
 
         /// <summary>
         /// Enable/disable blob debugging.
@@ -223,7 +242,8 @@ namespace MyCaffe.common
         /// <param name="imageSelectionOverride">Optionally, specifies the image selection override (overides the image selection in SettingsCaffe).  The image selection dictates how the images are selected from each label set.</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
         /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
-        void Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null);
+        /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
+        bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null);
         /// <summary>
         /// Load a project and optionally the MyCaffeImageDatabase.
         /// </summary>
@@ -238,7 +258,8 @@ namespace MyCaffe.common
         /// <param name="imageSelectionOverride">Optionally, specifies the image selection override (overides the image selection in SettingsCaffe).  The image selection dictates how the images are selected from each label set.</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
         /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
-        void Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null);
+        /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
+        bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null);
         /// <summary>
         /// Unload the currently loaded project.
         /// </summary>

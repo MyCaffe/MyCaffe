@@ -263,11 +263,11 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="s">Specifies the caffe settings.</param>
         /// <param name="strDs">Specifies the data set to load.</param>
-        /// <param name="evtCancel">Specifies the CancelEvent used to cancel load operations.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
-        public bool Initialize(SettingsCaffe s, string strDs, CancelEvent evtCancel = null)
+        public bool InitializeWithDsName(SettingsCaffe s, string strDs, string strEvtCancel = null)
         {
-            return Initialize(s, new DatasetDescriptor(strDs), evtCancel);
+            return InitializeWithDs(s, new DatasetDescriptor(strDs), strEvtCancel);
         }
 
         /// <summary>
@@ -275,9 +275,9 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="s">Specifies the caffe settings.</param>
         /// <param name="ds">Specifies the data set to load.</param>
-        /// <param name="evtCancel">Specifies the CancelEvent used to cancel load operations.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
-        public bool Initialize(SettingsCaffe s, DatasetDescriptor ds, CancelEvent evtCancel = null)
+        public bool InitializeWithDs(SettingsCaffe s, DatasetDescriptor ds, string strEvtCancel = null)
         {
             string strDsName = ds.Name;
 
@@ -290,7 +290,7 @@ namespace MyCaffe.imagedb
 
             int nDsId = m_factory.GetDatasetID(strDsName); 
 
-            return Initialize(s, nDsId, evtCancel);
+            return InitializeWithDsId(s, nDsId, strEvtCancel);
         }
 
         /// <summary>
@@ -298,11 +298,11 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="s">Specifies the caffe settings.</param>
         /// <param name="nDataSetID">Specifies the database ID of the data set to load.</param>
-        /// <param name="evtCancel">Specifies the CancelEvent used to cancel load operations.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
         /// <param name="nPadW">Specifies the padding to add to each image width (default = 0).</param>
         /// <param name="nPadH">Specifies the padding to add to each image height (default = 0).</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
-        public bool Initialize(SettingsCaffe s, int nDataSetID, CancelEvent evtCancel = null, int nPadW = 0, int nPadH = 0)
+        public bool InitializeWithDsId(SettingsCaffe s, int nDataSetID, string strEvtCancel = null, int nPadW = 0, int nPadH = 0)
         {
             KeyValuePair<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> kvSelectionMethod = GetSelectionMethod(s);
 
@@ -353,9 +353,13 @@ namespace MyCaffe.imagedb
                         throw new Exception("Could not find dataset with ID = " + nDataSetID.ToString());
 
                     List<WaitHandle> rgAbort = new List<WaitHandle>() { m_evtAbortInitialization };
+                    CancelEvent evtCancel;
 
-                    if (evtCancel != null)
+                    if (strEvtCancel != null)
+                    {
+                        evtCancel = new CancelEvent(strEvtCancel);
                         rgAbort.AddRange(evtCancel.Handles);
+                    }
 
                     DatasetExCollection col = null;
 
@@ -446,9 +450,9 @@ namespace MyCaffe.imagedb
         /// <summary>
         /// When using a <i>Load Limit</i> that is greater than 0, this function loads the next set of images.
         /// </summary>
-        /// <param name="evtCancel">Specifies the cance event to abort loading the images.</param>
+        /// <param name="strEvtCancel">Specifies the name of the Cancel Event to abort loading the images.</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
-        public bool LoadNextSet(CancelEvent evtCancel)
+        public bool LoadNextSet(string strEvtCancel)
         {
             if (m_nLoadLimit == 0)
                 return false;
@@ -459,9 +463,13 @@ namespace MyCaffe.imagedb
                     return false;
 
                 List<WaitHandle> rgAbort = new List<WaitHandle>() { m_evtAbortInitialization };
+                CancelEvent evtCancel;
 
-                if (evtCancel != null)
+                if (strEvtCancel != null)
+                {
+                    evtCancel = new CancelEvent(strEvtCancel);
                     rgAbort.AddRange(evtCancel.Handles);
+                }
 
                 if (!m_colDatasets.ContainsKey(m_nStrIDHashCode))
                     return false;
@@ -634,7 +642,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nDsId">Specifies the data set ID.</param>
         /// <returns>The dataset Descriptor is returned.</returns>
-        public DatasetDescriptor GetDataset(int nDsId)
+        public DatasetDescriptor GetDatasetById(int nDsId)
         {
             DatasetEx ds = m_colDatasets[m_nStrIDHashCode].FindDataset(nDsId);
             return ds.Descriptor;
@@ -645,7 +653,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="strDs">Specifies the data set name.</param>
         /// <returns>The dataset Descriptor is returned.</returns>
-        public DatasetDescriptor GetDataset(string strDs)
+        public DatasetDescriptor GetDatasetByName(string strDs)
         {
             DatasetEx ds = m_colDatasets[m_nStrIDHashCode].FindDataset(strDs);
             return ds.Descriptor;
@@ -658,7 +666,7 @@ namespace MyCaffe.imagedb
         /// <returns>The data set ID is returned.</returns>
         public int GetDatasetID(string strDs)
         {
-            DatasetDescriptor ds = GetDataset(strDs);
+            DatasetDescriptor ds = GetDatasetByName(strDs);
             if (ds == null)
                 return 0;
 
@@ -672,7 +680,7 @@ namespace MyCaffe.imagedb
         /// <returns>The data set name is returned.</returns>
         public string GetDatasetName(int nDsId)
         {
-            DatasetDescriptor ds = GetDataset(nDsId);
+            DatasetDescriptor ds = GetDatasetById(nDsId);
             if (ds == null)
                 return null;
 
@@ -684,7 +692,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
         /// <returns>The SourceDescriptor is returned.</returns>
-        public SourceDescriptor GetSource(int nSrcId)
+        public SourceDescriptor GetSourceById(int nSrcId)
         {
             ImageSet imgSet = m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId);
             if (imgSet != null)
@@ -698,7 +706,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="strSrc">Specifies the data source name.</param>
         /// <returns>The SourceDescriptor is returned.</returns>
-        public SourceDescriptor GetSource(string strSrc)
+        public SourceDescriptor GetSourceByName(string strSrc)
         {
             ImageSet imgSet = m_colDatasets[m_nStrIDHashCode].FindImageset(strSrc);
             if (imgSet != null)
@@ -714,7 +722,7 @@ namespace MyCaffe.imagedb
         /// <returns>The data source ID is returned.</returns>
         public int GetSourceID(string strSrc)
         {
-            SourceDescriptor desc = GetSource(strSrc);
+            SourceDescriptor desc = GetSourceByName(strSrc);
             if (desc == null)
                 return 0;
 
@@ -728,7 +736,7 @@ namespace MyCaffe.imagedb
         /// <returns>The data source name is returned.</returns>
         public string GetSourceName(int nSrcId)
         {
-            SourceDescriptor desc = GetSource(nSrcId);
+            SourceDescriptor desc = GetSourceById(nSrcId);
             if (desc == null)
                 return null;
 
@@ -833,7 +841,8 @@ namespace MyCaffe.imagedb
         /// <param name="bUpdate">Specifies whether or not to update the mean image.</param>
         public void SaveImageMean(int nSrcId, SimpleDatum d, bool bUpdate)
         {
-            m_colDatasets[m_nStrIDHashCode].SaveImageMean(nSrcId, d, bUpdate);
+            if (m_colDatasets.ContainsKey(m_nStrIDHashCode))
+                m_colDatasets[m_nStrIDHashCode].SaveImageMean(nSrcId, d, bUpdate);
         }
 
         /// <summary>
@@ -844,6 +853,9 @@ namespace MyCaffe.imagedb
         /// <returns></returns>
         public SimpleDatum QueryImageMean(int nSrcId, int nMaskOutAllButLastColumns)
         {
+            if (!m_colDatasets.ContainsKey(m_nStrIDHashCode))
+                return null;
+
             return m_colDatasets[m_nStrIDHashCode].QueryImageMean(nSrcId, nMaskOutAllButLastColumns);
         }
 
@@ -931,7 +943,7 @@ namespace MyCaffe.imagedb
         /// <param name="nProjectId">Specifies the project ID.</param>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <returns>The label boosts are returned as a text string.</returns>
-        public string GetLabelBoostsAsText(int nProjectId, int nSrcId)
+        public string GetLabelBoostsAsTextFromProject(int nProjectId, int nSrcId)
         {
             return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetLabelBoostsAsText(nProjectId);
         }
@@ -961,7 +973,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <returns>A string containing all label counts is returned.</returns>
-        public string GetLabelCountsAsText(int nSrcId)
+        public string GetLabelCountsAsTextFromSourceId(int nSrcId)
         {
             return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetLabelCountsAsText();
         }
@@ -971,7 +983,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="strSource">Specifies the name of the data source.</param>
         /// <returns>A string containing all label counts is returned.</returns>
-        public string GetLabelCountsAsText(string strSource)
+        public string GetLabelCountsAsTextFromSourceName(string strSource)
         {
             return m_colDatasets[m_nStrIDHashCode].FindImageset(strSource).GetLabelCountsAsText();
         }
@@ -1015,7 +1027,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="strDataset">Specifies the dataset to remove.</param>
         /// <returns>If found and removed, this function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool UnloadDataset(string strDataset)
+        public bool UnloadDatasetByName(string strDataset)
         {
             bool bRemoved = false;
 
@@ -1044,7 +1056,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nDataSetID">Specifies the dataset ID to remove.</param>
         /// <returns>If found and removed, this function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool UnloadDataset(int nDataSetID)
+        public bool UnloadDatasetById(int nDataSetID)
         {
             bool bRemoved = false;
 
