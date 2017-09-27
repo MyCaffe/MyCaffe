@@ -715,7 +715,7 @@ namespace MyCaffe.imagedb
         /// <param name="evtCancel">Specifies the cancel event used to cancel the operation.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <returns>Upon completion <i>true</i> is returned, otherwise <i>false</i> is returned when cancelled.</returns>
-        public bool ReindexRawImages(Log log, ManualResetEvent evtCancel, int nSrcId = 0)
+        public bool ReindexRawImages(Log log, CancelEvent evtCancel, int nSrcId = 0)
         {
             return m_db.ReindexRawImages(log, evtCancel, nSrcId);
         }
@@ -1061,7 +1061,7 @@ namespace MyCaffe.imagedb
         /// <param name="evtCancel">Optionally specifies to cancel the load, when <i>null</i> this parameter is ignored.</param>
         /// <param name="rgSrcId">Specifies the source ID's to load.</param>
         /// <returns>A list of image descriptors for each image is returned.</returns>
-        public List<ImageDescriptor> LoadImages(ManualResetEvent evtCancel, params int[] rgSrcId)
+        public List<ImageDescriptor> LoadImages(CancelEvent evtCancel, params int[] rgSrcId)
         {
             if (rgSrcId.Length == 0)
                 throw new Exception("You must specify at least one source ID.");

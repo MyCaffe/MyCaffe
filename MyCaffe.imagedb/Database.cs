@@ -1254,7 +1254,7 @@ namespace MyCaffe.imagedb
         /// <param name="nCount">Specifies the number of RawImages to convert including and following the RawImage at the index.</param>
         /// <param name="evtCancel">Optionally, specifies a cancellation event.</param>
         /// <returns>Upon full completion, <i>true</i> is returned, otherwise <i>false</i> is returned when cancelled.</returns>
-        public bool ConvertRawImagesSaveToFile(int nIdx, int nCount, ManualResetEvent evtCancel = null)
+        public bool ConvertRawImagesSaveToFile(int nIdx, int nCount, CancelEvent evtCancel = null)
         {
             if (m_strPrimaryImgPath == null)
                 m_strPrimaryImgPath = getImagePath();
@@ -1354,7 +1354,7 @@ namespace MyCaffe.imagedb
         /// <param name="nCount">Specifies the number of RawImages to convert including and following the RawImage at the index.</param>
         /// <param name="evtCancel">Optionally, specifies a cancellation event.</param>
         /// <returns>Upon full completion, <i>true</i> is returned, otherwise <i>false</i> is returned when cancelled.</returns>
-        public bool ConvertRawImagesSaveToDatabase(int nIdx, int nCount, ManualResetEvent evtCancel = null)
+        public bool ConvertRawImagesSaveToDatabase(int nIdx, int nCount, CancelEvent evtCancel = null)
         {
             if (m_strPrimaryImgPath == null)
                 m_strPrimaryImgPath = getImagePath();
@@ -1798,7 +1798,7 @@ namespace MyCaffe.imagedb
         /// <param name="evtCancel">Specifies the cancel event used to cancel the operation.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <returns>Upon completion <i>true</i> is returned, otherwise <i>false</i> is returned when cancelled.</returns>
-        public bool ReindexRawImages(Log log, ManualResetEvent evtCancel, int nSrcId = 0)
+        public bool ReindexRawImages(Log log, CancelEvent evtCancel, int nSrcId = 0)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;

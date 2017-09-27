@@ -234,12 +234,39 @@ namespace MyCaffe
         }
 
         /// <summary>
-        /// Sets the cance override.
+        /// Adds a cancel override.
         /// </summary>
-        /// <param name="evtCancel">Specifies the new cancel event to use.</param>
-        public void SetCancelOverride(ManualResetEvent evtCancel)
+        /// <param name="strEvtCancel">Specifies the new name of the cancel event to add.</param>
+        public void AddCancelOverrideByName(string strEvtCancel)
         {
-            m_evtCancel.SetCancelOverride(evtCancel);
+            m_evtCancel.AddCancelOverride(strEvtCancel);
+        }
+
+        /// <summary>
+        /// Adds a cancel override.
+        /// </summary>
+        /// <param name="evtCancel">Specifies the new name of the cancel event to add.</param>
+        public void AddCancelOverride(CancelEvent evtCancel)
+        {
+            m_evtCancel.AddCancelOverride(evtCancel);
+        }
+
+        /// <summary>
+        /// Remove a cancel override.
+        /// </summary>
+        /// <param name="strEvtCancel">Specifies the new name of the cancel event to remove.</param>
+        public void RemoveCancelOverrideByName(string strEvtCancel)
+        {
+            m_evtCancel.RemoveCancelOverride(strEvtCancel);
+        }
+
+        /// <summary>
+        /// Remove a cancel override.
+        /// </summary>
+        /// <param name="evtCancel">Specifies the new name of the cancel event to remove.</param>
+        public void RemoveCancelOverride(CancelEvent evtCancel)
+        {
+            m_evtCancel.RemoveCancelOverride(evtCancel);
         }
 
         /// <summary>
@@ -523,7 +550,8 @@ namespace MyCaffe
         /// <param name="imageSelectionOverride">Optionally, specifies the image selection override (overides the image selection in SettingsCaffe).  The image selection dictates how the images are selected from each label set.</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
         /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
-        public void Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null)
+        /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
+        public bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null)
         {
             m_imgDb = imgdb;
             m_bImgDbOwner = false;
@@ -535,7 +563,11 @@ namespace MyCaffe
 
                 m_log.WriteLine("Loading images...");
 
-                m_imgDb.Initialize(m_settings, p.Dataset, m_evtCancel);
+                m_imgDb.InitializeWithDs(m_settings, p.Dataset, m_evtCancel.Name);
+
+                if (m_evtCancel.WaitOne(0))
+                    return false;
+
                 m_imgDb.UpdateLabelBoosts(p.ID, p.Dataset.TrainingSource.ID);
 
                 KeyValuePair<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> kvSelection = MyCaffeImageDatabase.GetSelectionMethod(p);
@@ -589,7 +621,7 @@ namespace MyCaffe
                 m_imgDb.UpdateLabelBoosts(p.ID, m_dataSet.TestingSource.ID);
 
             if (p == null)
-                return;
+                return true;
 
             TransformationParameter tp = null;
             NetParameter netParam = createNetParameterForRunning(p, out tp);
@@ -610,6 +642,8 @@ namespace MyCaffe
             {
                 m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb, Phase.RUN, null, m_solver.TrainingNet);
             }
+
+            return true;
         }
 
         /// <summary>
@@ -626,7 +660,8 @@ namespace MyCaffe
         /// <param name="imageSelectionOverride">Optionally, specifies the image selection override (overides the image selection in SettingsCaffe).  The image selection dictates how the images are selected from each label set.</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
         /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
-        public void Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null)
+        /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
+        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null)
         {
             m_imgDb = imgdb;
             m_bImgDbOwner = false;
@@ -646,7 +681,11 @@ namespace MyCaffe
 
                 m_log.WriteLine("Loading images...");
 
-                m_imgDb.Initialize(m_settings, m_dataSet, m_evtCancel);
+                m_imgDb.InitializeWithDs(m_settings, m_dataSet, m_evtCancel.Name);
+
+                if (m_evtCancel.WaitOne(0))
+                    return false;
+
                 KeyValuePair<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> kvSelection = MyCaffeImageDatabase.GetSelectionMethod(m_settings);
 
                 if (labelSelectionOverride.HasValue)
@@ -706,6 +745,8 @@ namespace MyCaffe
                 netParam.force_backward = true;
                 m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, m_imgDb, Phase.RUN, null, m_solver.TrainingNet);
             }
+
+            return true;
         }
 
         /// <summary>

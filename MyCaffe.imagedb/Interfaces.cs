@@ -63,10 +63,21 @@ namespace MyCaffe.imagedb
         BOOST = 0x0002
     }
 
+    [ServiceContract]
+    public interface IXImageDatabaseEvent /** @private */
+    {
+        [OperationContract(IsOneWay = false)]
+        void OnResult(string strMsg, double dfProgress);
+
+        [OperationContract(IsOneWay = false)]
+        void OnError(ImageDatabaseErrorData err);
+    }
+
+
     /// <summary>
     /// The IXImageDatabase interface defines the eneral interface to the in-memory image database.
     /// </summary>
-    [ServiceContract]
+    [ServiceContract(CallbackContract = typeof(IXImageDatabaseEvent), SessionMode = SessionMode.Required)]
     public interface IXImageDatabase
     {
         /// <summary>
@@ -74,41 +85,37 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="s">Specifies the caffe settings.</param>
         /// <param name="strDs">Specifies the data set to load.</param>
-        /// <param name="evtCancel">Specifies the CancelEvent used to cancel load operations.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
-        bool Initialize(SettingsCaffe s, string strDs, CancelEvent evtCancel = null);
+        [OperationContract(IsOneWay = false)]
+        bool InitializeWithDsName(SettingsCaffe s, string strDs, string strEvtCancel = null);
 
         /// <summary>
         /// Initializes the image database.
         /// </summary>
         /// <param name="s">Specifies the caffe settings.</param>
         /// <param name="ds">Specifies the data set to load.</param>
-        /// <param name="evtCancel">Specifies the CancelEvent used to cancel load operations.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
-        bool Initialize(SettingsCaffe s, DatasetDescriptor ds, CancelEvent evtCancel = null);
+        [OperationContract(IsOneWay = false)]
+        bool InitializeWithDs(SettingsCaffe s, DatasetDescriptor ds, string strEvtCancel = null);
 
         /// <summary>
         /// Initializes the image database.
         /// </summary>
         /// <param name="s">Specifies the caffe settings.</param>
         /// <param name="nDataSetID">Specifies the database ID of the data set to load.</param>
-        /// <param name="evtCancel">Specifies the CancelEvent used to cancel load operations.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
         /// <param name="nPadW">Specifies the padding to add to each image width (default = 0).</param>
         /// <param name="nPadH">Specifies the padding to add to each image height (default = 0).</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
-        bool Initialize(SettingsCaffe s, int nDataSetID, CancelEvent evtCancel = null, int nPadW = 0, int nPadH = 0);
+        [OperationContract(IsOneWay = false)]
+        bool InitializeWithDsId(SettingsCaffe s, int nDataSetID, string strEvtCancel = null, int nPadW = 0, int nPadH = 0);
 
         /// <summary>
         /// Releases the image database, and if this is the last instance using the in-memory database, frees all memory used.
         /// </summary>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         void CleanUp();
 
         /// <summary>
@@ -116,8 +123,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nProjectId">Specifies the project ID in the database.</param>
         /// <param name="nSrcId">Specifies the data source ID.</param>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         void UpdateLabelBoosts(int nProjectId, int nSrcId);
 
         /// <summary>
@@ -125,8 +131,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
         /// <returns>The number of images is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         int ImageCount(int nSrcId);
 
         /// <summary>
@@ -138,8 +143,7 @@ namespace MyCaffe.imagedb
         /// <param name="imageSelectionOverride">Optionally, specifies the image selection method override.  The default = null, which directs the method to use the image selection method specified during Initialization.</param>
         /// <param name="nLabel">Optionally, specifies a label set to use for the image selection.  When specified only images of this label are returned using the image selection method.</param>
         /// <returns>The image SimpleDatum is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         SimpleDatum QueryImage(int nSrcId, int nIdx, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null);
 
         /// <summary>
@@ -148,8 +152,7 @@ namespace MyCaffe.imagedb
         /// <param name="nImageID">Specifies the Raw Image ID of the image to get.</param>
         /// <param name="rgSrcId">Specifies a list of Source ID's to search for the image.</param>
         /// <returns>The SimpleDatum of the image is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         SimpleDatum GetImage(int nImageID, params int[] rgSrcId);
 
         /// <summary>
@@ -157,8 +160,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
         /// <returns>The list of LabelDescriptor%s is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         List<LabelDescriptor> GetLabels(int nSrcId);
 
         /// <summary>
@@ -167,8 +169,7 @@ namespace MyCaffe.imagedb
         /// <param name="nSrcId">Specifies the data source ID.</param>
         /// <param name="nLabel">Specifies the label.</param>
         /// <returns>The laben name is returned as a string.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         string GetLabelName(int nSrcId, int nLabel);
 
         /// <summary>
@@ -176,26 +177,23 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nDsId">Specifies the data set ID.</param>
         /// <returns>The dataset Descriptor is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
-        DatasetDescriptor GetDataset(int nDsId);
+        [OperationContract(IsOneWay = false)]
+        DatasetDescriptor GetDatasetById(int nDsId);
 
         /// <summary>
         /// Returns the DatasetDescriptor for a given data set name.
         /// </summary>
         /// <param name="strDs">Specifies the data set name.</param>
         /// <returns>The dataset Descriptor is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
-        DatasetDescriptor GetDataset(string strDs);
+        [OperationContract(IsOneWay = false)]
+        DatasetDescriptor GetDatasetByName(string strDs);
 
         /// <summary>
         /// Returns a data set name given its ID.
         /// </summary>
         /// <param name="nDsId">Specifies the data set ID.</param>
         /// <returns>The data set name is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         string GetDatasetName(int nDsId);
 
         /// <summary>
@@ -203,8 +201,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="strDs">Specifies the data set name.</param>
         /// <returns>The data set ID is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         int GetDatasetID(string strDs);
 
         /// <summary>
@@ -212,26 +209,23 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
         /// <returns>The SourceDescriptor is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
-        SourceDescriptor GetSource(int nSrcId);
+        [OperationContract(IsOneWay = false)]
+        SourceDescriptor GetSourceById(int nSrcId);
 
         /// <summary>
         /// Returns the SourceDescriptor for a given data source name.
         /// </summary>
         /// <param name="strSrc">Specifies the data source name.</param>
         /// <returns>The SourceDescriptor is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
-        SourceDescriptor GetSource(string strSrc);
+        [OperationContract(IsOneWay = false)]
+        SourceDescriptor GetSourceByName(string strSrc);
 
         /// <summary>
         /// Returns a data source name given its ID.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
         /// <returns>The data source name is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         string GetSourceName(int nSrcId);
 
         /// <summary>
@@ -239,8 +233,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="strSrc">Specifies the data source name.</param>
         /// <returns>The data source ID is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         int GetSourceID(string strSrc);
 
         /// <summary>
@@ -248,7 +241,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <returns>The image mean is returned as a SimpleDatum.</returns>
-        [OperationContract]
+        [OperationContract(IsOneWay = false)]
         [FaultContract(typeof(ImageDatabaseErrorData))]
         SimpleDatum QueryImageMean(int nSrcId);
 
@@ -257,7 +250,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <returns>The image mean is returned as a SimpleDatum.</returns>
-        [OperationContract]
+        [OperationContract(IsOneWay = false)]
         [FaultContract(typeof(ImageDatabaseErrorData))]
         SimpleDatum GetImageMean(int nSrcId);
 
@@ -266,8 +259,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nDatasetId">Specifies the data set to use.</param>
         /// <returns>The image mean is returned as a SimpleDatum.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         SimpleDatum QueryImageMeanFromDataset(int nDatasetId);
 
         /// <summary>
@@ -275,8 +267,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <param name="map">Specifies the label mapping to set.</param>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         void SetLabelMapping(int nSrcId, LabelMapping map);
 
         /// <summary>
@@ -285,8 +276,7 @@ namespace MyCaffe.imagedb
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <param name="nNewLabel">Specifies a new label.</param>
         /// <param name="rgOriginalLabels">Specifies the original lables that are mapped to the new label.</param>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         void UpdateLabelMapping(int nSrcId, int nNewLabel, List<int> rgOriginalLabels);
 
         /// <summary>
@@ -294,8 +284,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nProjectId">Specifies the ID of the project.</param>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         void ResetLabels(int nProjectId, int nSrcId);
 
         /// <summary>
@@ -303,8 +292,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nProjectId">Specifies the project ID.</param>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         void DeleteLabelBoosts(int nProjectId, int nSrcId);
 
         /// <summary>
@@ -312,8 +300,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nProjectId">Specifies a project ID.</param>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         void UpdateLabelCounts(int nProjectId, int nSrcId);
 
         /// <summary>
@@ -323,8 +310,7 @@ namespace MyCaffe.imagedb
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <param name="nLabel">Specifies the label.</param>
         /// <param name="dfBoost">Specifies the new boost for the label.</param>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         void AddLabelBoost(int nProjectId, int nSrcId, int nLabel, double dfBoost);
 
         /// <summary>
@@ -332,7 +318,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <returns>A dictionary containing label,count pairs is returned.</returns>
-        [OperationContract]
+        [OperationContract(IsOneWay = false)]
         [FaultContract(typeof(ImageDatabaseErrorData))]
         Dictionary<int, int> LoadLabelCounts(int nSrcId);
 
@@ -341,18 +327,16 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <returns>A string containing all label counts is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
-        string GetLabelCountsAsText(int nSrcId);
+        [OperationContract(IsOneWay = false)]
+        string GetLabelCountsAsTextFromSourceId(int nSrcId);
 
         /// <summary>
         /// Returns a string with all label counts for a data source.
         /// </summary>
         /// <param name="strSource">Specifies the name of the data source.</param>
         /// <returns>A string containing all label counts is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
-        string GetLabelCountsAsText(string strSource);
+        [OperationContract(IsOneWay = false)]
+        string GetLabelCountsAsTextFromSourceName(string strSource);
 
         /// <summary>
         /// Returns the label boosts as a text string for all boosted labels within a data source associated with a given project. 
@@ -360,17 +344,15 @@ namespace MyCaffe.imagedb
         /// <param name="nProjectId">Specifies the project ID.</param>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <returns>The label boosts are returned as a text string.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
-        string GetLabelBoostsAsText(int nProjectId, int nSrcId);
+        [OperationContract(IsOneWay = false)]
+        string GetLabelBoostsAsTextFromProject(int nProjectId, int nSrcId);
 
         /// <summary>
         /// Reload a data set.
         /// </summary>
         /// <param name="nDsId">Specifies the ID of the data set.</param>
         /// <returns>If the data set is found, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         bool ReloadDataset(int nDsId);
 
         /// <summary>
@@ -378,8 +360,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <returns>If the data source is found, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         bool ReloadImageSet(int nSrcId);
 
         /// <summary>
@@ -393,18 +374,16 @@ namespace MyCaffe.imagedb
         /// <param name="dt">Specifies the time-stamp to search for.</param>
         /// <param name="strDescription">Specifies the description to search for.</param>
         /// <returns>If found the zero-based index of the image is returned, otherwise -1 is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
+        [OperationContract(IsOneWay = false)]
         int FindImageIndex(int nSrcId, DateTime dt, string strDescription);
 
         /// <summary>
         /// When using a <i>Load Limit</i> that is greater than 0, this function loads the next set of images.
         /// </summary>
-        /// <param name="evtCancel">Specifies the cance event to abort loading the images.</param>
+        /// <param name="evtCancel">Specifies the name of the Cancel Event to abort loading the images.</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
-        bool LoadNextSet(CancelEvent evtCancel);
+        [OperationContract(IsOneWay = false)]
+        bool LoadNextSet(string strEvtCancel);
 
         /// <summary>
         /// Returns the image selection method.
@@ -420,18 +399,16 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="strDataset">Specifies the name of the dataset to unload.</param>
         /// <returns>If the dataset is found and removed, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
-        bool UnloadDataset(string strDataset);
+        [OperationContract(IsOneWay = false)]
+        bool UnloadDatasetByName(string strDataset);
 
         /// <summary>
         /// The UnloadDataset function unloads a given dataset from memory.
         /// </summary>
         /// <param name="nDatasetID">Specifies the ID of the dataset to unload.</param>
         /// <returns>If the dataset is found and removed, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
-        [OperationContract]
-        [FaultContract(typeof(ImageDatabaseErrorData))]
-        bool UnloadDataset(int nDatasetID);
+        [OperationContract(IsOneWay = false)]
+        bool UnloadDatasetById(int nDatasetID);
     }
 
     [DataContract]
