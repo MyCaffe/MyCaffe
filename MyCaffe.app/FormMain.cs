@@ -23,6 +23,7 @@ namespace MyCaffe.app
     public partial class FormMain : Form
     {
         CancelEvent m_evtCancel = new CancelEvent();
+        CancelEvent m_evtCaffeCancel = new CancelEvent();
         AutoResetEvent m_evtCommandRead = new AutoResetEvent(false);
         AutoResetEvent m_evtThreadDone = new AutoResetEvent(false);
         IXMyCaffeNoDb<float> m_caffeRun = null;
@@ -104,7 +105,7 @@ namespace MyCaffe.app
             setStatus("");
 
             m_autoTest.OnProgress += m_autoTest_OnProgress;
-            m_autoTest.OnCompleted += M_autoTest_OnCompleted;
+            m_autoTest.OnCompleted += m_autoTest_OnCompleted;
 
             setStatus("The MyCaffe Test App supports two different types of automated testing:");
             setStatus(" 1.) User interface based automated testing via the 'Test | Run Autotests UI', and");
@@ -466,7 +467,6 @@ namespace MyCaffe.app
             m_evtCommandRead.Set();
         }
 
-
         private void trainMNISTToolStripMenuItem_Click(object sender, EventArgs e)
         {
             createMyCaffeToolStripMenuItem.Enabled = false;
@@ -538,7 +538,13 @@ namespace MyCaffe.app
         private void abortToolStripMenuItem_Click(object sender, EventArgs e)
         {
             abortToolStripMenuItem.Enabled = false;
+            m_evtCaffeCancel.Set();
             m_evtCancel.Set();
+        }
+
+        private void cancelToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            m_evtCaffeCancel.Set();
         }
 
         private void m_bwProcess_DoWork(object sender, DoWorkEventArgs e)
@@ -567,7 +573,7 @@ namespace MyCaffe.app
                             log = new Log("MyCaffe");
                             log.OnWriteLine += log_OnWriteLine1;
 
-                            caffe = new MyCaffeControl<float>(settings, log, m_evtCancel);
+                            caffe = new MyCaffeControl<float>(settings, log, m_evtCaffeCancel);
 
                             string strSolver = System.Text.Encoding.UTF8.GetString(Properties.Resources.lenet_solver);
                             string strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.lenet_train_test);
@@ -582,7 +588,6 @@ namespace MyCaffe.app
                             caffe = null;
                             log = null;
                             bw.ReportProgress(0, new ProgressInfo(0, 0, "MyCaffe Destroyed", null, false));
-                            m_evtCancel.Reset();
                             break;
 
                         case COMMAND.TRAIN:
@@ -606,12 +611,15 @@ namespace MyCaffe.app
                             break;
                     }
                 }
+
+                m_evtCaffeCancel.Reset();
             }
 
             if (caffe != null)
             {
                 caffe.Dispose();
                 m_evtCancel.Reset();
+                m_bCaffeCreated = false;
             }
 
             m_evtThreadDone.Set();
@@ -673,7 +681,7 @@ namespace MyCaffe.app
             m_autoTest.Abort();
         }
 
-        private void M_autoTest_OnCompleted(object sender, RunWorkerCompletedEventArgs e)
+        private void m_autoTest_OnCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             if (e.Error != null)
                 setStatus("AutoTest ERROR: " + e.Error.Message);
