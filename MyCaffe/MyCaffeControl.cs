@@ -211,7 +211,7 @@ namespace MyCaffe
             {
                 if (m_bImgDbOwner)
                 {
-                    m_imgDb.CleanUp();
+                    m_imgDb.CleanUp(m_dataSet.ID);
 
                     IDisposable idisp = m_imgDb as IDisposable;
                     if (idisp != null)
