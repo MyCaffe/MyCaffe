@@ -82,14 +82,45 @@ namespace MyCaffe.test
             sw.Stop();
             sw.Reset();
 
-            bool bRemoved = db.UnloadDatasetByName(rgDs[0]);
-            Assert.AreEqual(bRemoved, true);
+            double dfTraining;
+            double dfTesting;
+            double dfPctLoaded;
+            
+            dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[0], out dfTraining, out dfTesting);
+            Assert.AreEqual(1, dfPctLoaded);
+            Assert.AreEqual(1, dfTraining);
+            Assert.AreEqual(1, dfTesting);
 
-            bRemoved = db.UnloadDatasetByName(rgDs[1]);
-            Assert.AreEqual(bRemoved, true);
+            db.UnloadDatasetByName(rgDs[0]);
 
-            bRemoved = db.UnloadDatasetByName(rgDs[2]);
-            Assert.AreEqual(bRemoved, false);
+            dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[0], out dfTraining, out dfTesting);
+            Assert.AreEqual(0, dfPctLoaded);
+            Assert.AreEqual(0, dfTraining);
+            Assert.AreEqual(0, dfTesting);
+
+            dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[1], out dfTraining, out dfTesting);
+            Assert.AreEqual(1, dfPctLoaded);
+            Assert.AreEqual(1, dfTraining);
+            Assert.AreEqual(1, dfTesting);
+
+            db.UnloadDatasetByName(rgDs[1]);
+
+            dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[1], out dfTraining, out dfTesting);
+            Assert.AreEqual(0, dfPctLoaded);
+            Assert.AreEqual(0, dfTraining);
+            Assert.AreEqual(0, dfTesting);
+
+            dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[2], out dfTraining, out dfTesting);
+            Assert.AreEqual(0, dfPctLoaded);
+            Assert.AreEqual(0, dfTraining);
+            Assert.AreEqual(0, dfTesting);
+
+            db.UnloadDatasetByName(rgDs[2]);
+
+            dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[2], out dfTraining, out dfTesting);
+            Assert.AreEqual(0, dfPctLoaded);
+            Assert.AreEqual(0, dfTraining);
+            Assert.AreEqual(0, dfTesting);
 
             sw.Start();
             db.CleanUp();
