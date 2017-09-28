@@ -321,6 +321,9 @@ namespace MyCaffe.imagedb
             m_loadMethod = s.ImageDbLoadMethod;
             m_nLoadLimit = s.ImageDbLoadLimit;
 
+            if (m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_EXTERNAL)
+                m_loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
+
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtInitialized, m_evtInitializing, m_evtAbortInitialization }, 0);
 
             lock (m_syncObject)
@@ -417,7 +420,8 @@ namespace MyCaffe.imagedb
         /// <summary>
         /// Releases the image database, and if this is the last instance using the in-memory database, frees all memory used.
         /// </summary>
-        public void CleanUp()
+        /// <param name="nDsId">Optionally, specifies the dataset previously loaded.</param>
+        public void CleanUp(int nDsId = 0)
         {
             lock (m_syncObject)
             {
@@ -1048,8 +1052,9 @@ namespace MyCaffe.imagedb
                         if (m_log != null)
                             m_log.WriteLine("Unloading dataset '" + ds.DatasetName + "'.");
 
-                        bRemoved = col.RemoveDataset(ds);
+                        ds.Unload();
                         GC.Collect();
+                        bRemoved = true;
                     }
                 }
             }
@@ -1077,8 +1082,9 @@ namespace MyCaffe.imagedb
                         if (m_log != null)
                             m_log.WriteLine("Unloading dataset '" + ds.DatasetName + "'.");
 
-                        bRemoved = col.RemoveDataset(ds);
+                        ds.Unload();
                         GC.Collect();
+                        bRemoved = true;
                     }
                 }
             }

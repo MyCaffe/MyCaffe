@@ -115,8 +115,9 @@ namespace MyCaffe.imagedb
         /// <summary>
         /// Releases the image database, and if this is the last instance using the in-memory database, frees all memory used.
         /// </summary>
+        /// <param name="nDsId">Optionally, specifies the dataset previously used.</param>
         [OperationContract(IsOneWay = false)]
-        void CleanUp();
+        void CleanUp(int nDsId = 0);
 
         /// <summary>
         /// Updates the label boosts for the images based on the label boosts set for the given project.
