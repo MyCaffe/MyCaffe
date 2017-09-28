@@ -417,6 +417,26 @@ namespace MyCaffe.imagedb
         /// <returns>If the dataset is found and removed, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
         [OperationContract(IsOneWay = false)]
         bool UnloadDatasetById(int nDatasetID);
+
+        /// <summary>
+        /// Returns the percentage that a dataset is loaded into memory.
+        /// </summary>
+        /// <param name="strDataset">Specifies the name of the dataset.</param>
+        /// <param name="dfTraining">Specifies the percent of training images that are loaded.</param>
+        /// <param name="dfTesting">Specifies the percent of testing images that are loaded.</param>
+        /// <returns>The current image load percent for the dataset is returned..</returns>
+        [OperationContract(IsOneWay = false)]
+        double GetDatasetLoadedPercentByName(string strDataset, out double dfTraining, out double dfTesting);
+
+        /// <summary>
+        /// Returns the percentage that a dataset is loaded into memory.
+        /// </summary>
+        /// <param name="nDatasetID">Specifies the ID of the dataset.</param>
+        /// <param name="dfTraining">Specifies the percent of training images that are loaded.</param>
+        /// <param name="dfTesting">Specifies the percent of testing images that are loaded.</param>
+        /// <returns>The current image load percent for the dataset is returned..</returns>
+        [OperationContract(IsOneWay = false)]
+        double GetDatasetLoadedPercentById(int nDatasetID, out double dfTraining, out double dfTesting);
     }
 
     [DataContract]

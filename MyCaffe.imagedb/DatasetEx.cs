@@ -349,6 +349,25 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Returns the total percentage of images loaded for testing, training and combined.
+        /// </summary>
+        /// <param name="dfTraining">Returns the total percentage of training images loaded.</param>
+        /// <param name="dfTesting">Returns the total percentage of testing images loaded.</param>
+        /// <returns>Returns the combined total percentage of images loaded for both testing and training.</returns>
+        public double GetPercentageLoaded(out double dfTraining, out double dfTesting)
+        {
+            dfTraining = m_TrainingImages.GetPercentLoaded();
+            dfTesting = m_TestingImages.GetPercentLoaded();
+
+            int nTrainingLoaded = (int)(dfTraining * m_TrainingImages.GetCount(false));
+            int nTestingLoaded = (int)(dfTesting * m_TestingImages.GetCount(false));
+            int nTotalLoaded = nTrainingLoaded + nTestingLoaded;
+            int nTotalImages = m_TrainingImages.GetCount(false) + m_TestingImages.GetCount(false);
+
+            return (double)nTotalLoaded / (double)nTotalImages;
+        }
+
+        /// <summary>
         /// Releases all resources used.
         /// </summary>
         /// <param name="bDisposing">Set to <i>true</i> when called by Dispose().</param>

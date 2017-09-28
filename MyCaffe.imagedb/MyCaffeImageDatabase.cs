@@ -1092,6 +1092,55 @@ namespace MyCaffe.imagedb
             return bRemoved;
         }
 
+
+        /// <summary>
+        /// Returns the percentage that a dataset is loaded into memory.
+        /// </summary>
+        /// <param name="strDataset">Specifies the name of the dataset.</param>
+        /// <param name="dfTraining">Specifies the percent of training images that are loaded.</param>
+        /// <param name="dfTesting">Specifies the percent of testing images that are loaded.</param>
+        /// <returns>The current image load percent for the dataset is returned..</returns>
+        public double GetDatasetLoadedPercentByName(string strDataset, out double dfTraining, out double dfTesting)
+        {
+            dfTraining = 0;
+            dfTesting = 0;
+
+            if (!m_colDatasets.ContainsKey(m_nStrIDHashCode))
+                return 0;
+
+            DatasetExCollection col = m_colDatasets[m_nStrIDHashCode];
+            DatasetEx ds = col.FindDataset(strDataset);
+
+            if (ds == null)
+                return 0;
+
+            return ds.GetPercentageLoaded(out dfTraining, out dfTesting);
+        }
+
+        /// <summary>
+        /// Returns the percentage that a dataset is loaded into memory.
+        /// </summary>
+        /// <param name="nDatasetID">Specifies the ID of the dataset.</param>
+        /// <param name="dfTraining">Specifies the percent of training images that are loaded.</param>
+        /// <param name="dfTesting">Specifies the percent of testing images that are loaded.</param>
+        /// <returns>The current image load percent for the dataset is returned..</returns>
+        public double GetDatasetLoadedPercentById(int nDatasetID, out double dfTraining, out double dfTesting)
+        {
+            dfTraining = 0;
+            dfTesting = 0;
+
+            if (!m_colDatasets.ContainsKey(m_nStrIDHashCode))
+                return 0;
+
+            DatasetExCollection col = m_colDatasets[m_nStrIDHashCode];
+            DatasetEx ds = col.FindDataset(nDatasetID);
+
+            if (ds == null)
+                return 0;
+
+            return ds.GetPercentageLoaded(out dfTraining, out dfTesting);
+        }
+
         /// <summary>
         /// Create the database used by the CaffeImageDatabase.
         /// </summary>

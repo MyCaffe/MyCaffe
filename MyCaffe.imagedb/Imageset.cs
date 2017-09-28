@@ -32,6 +32,7 @@ namespace MyCaffe.imagedb
         double m_dfLabelBoostTotal = 0;
         DatasetFactory m_factory;
         int m_nLastImageIdxFromLoad = 0;
+        int m_nLoadedCount = 0;
 
         /// <summary>
         /// The OnCalculateImageMean event fires when the ImageSet needs to calculate the image mean for the image set.
@@ -237,6 +238,7 @@ namespace MyCaffe.imagedb
                 return false;
 
             m_rgImages[nIdx] = d;
+            m_nLoadedCount++;
 
             if (m_nLoadLimit > 0)
                 m_rgImagesLimitLoaded.Add(d);
@@ -688,7 +690,19 @@ namespace MyCaffe.imagedb
                 {
                     ls.Unload();
                 }
+
+                m_nLoadedCount = 0;
             }
+        }
+
+        /// <summary>
+        /// Returns the percentage of the image set that is loaded into memory.
+        /// </summary>
+        /// <returns></returns>
+        public double GetPercentLoaded()
+        {
+            double dfPct = (double)m_nLoadedCount / (double)m_rgImages.Length;
+            return dfPct;
         }
     }
 }
