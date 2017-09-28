@@ -44,7 +44,11 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Load the images as they are queried.
         /// </summary>
-        LOAD_ON_DEMAND
+        LOAD_ON_DEMAND,
+        /// <summary>
+        /// Load the images from an external source such as a Windows Service.
+        /// </summary>
+        LOAD_EXTERNAL
     }
 
     /// <summary>
