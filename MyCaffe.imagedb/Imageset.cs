@@ -671,5 +671,24 @@ namespace MyCaffe.imagedb
         {
             return m_factory.GetLabelCountsAsText(m_src.ID);
         }
+
+        /// <summary>
+        /// Unload all images in the image set.
+        /// </summary>
+        public void Unload()
+        {
+            lock (m_syncObj)
+            {
+                for (int i = 0; i < m_rgImages.Length; i++)
+                {
+                    m_rgImages[i] = null;
+                }
+
+                foreach (LabelSet ls in m_rgLabelSet)
+                {
+                    ls.Unload();
+                }
+            }
+        }
     }
 }

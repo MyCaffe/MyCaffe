@@ -15,6 +15,7 @@ namespace MyCaffe.imagedb
     /// </summary>
     public class DatasetEx : IDisposable
     {
+        object m_syncObj = new object();
         DatasetFactory m_factory = null;
         DatasetDescriptor m_ds = null;
         ImageSet m_TestingImages = null;
@@ -79,29 +80,32 @@ namespace MyCaffe.imagedb
         /// <returns></returns>
         public bool Initialize(DatasetDescriptor ds, WaitHandle[] rgAbort, int nPadW = 0, int nPadH = 0, Log log = null, IMAGEDB_LOAD_METHOD loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL, int nImageDbLoadLimit = 0)
         {
-            if (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ALL && nImageDbLoadLimit > 0)
-                throw new Exception("Currently the load-limit only works with the LOAD_ALLL image loading method.");
+            lock (m_syncObj)
+            {
+                if (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ALL && nImageDbLoadLimit > 0)
+                    throw new Exception("Currently the load-limit only works with the LOAD_ALLL image loading method.");
 
-            SimpleDatum imgMean = null;
+                SimpleDatum imgMean = null;
 
-            if (ds != null)
-                m_ds = ds;
-            
-            m_TrainingImages = loadImageset("Training", m_ds.TrainingSource, rgAbort, ref imgMean, out m_nLastTrainingImageIdx, nPadW, nPadH, log, loadMethod, nImageDbLoadLimit, m_nLastTrainingImageIdx, (ds == null) ? true : false);
-            if (m_nLastTrainingImageIdx >= m_ds.TrainingSource.ImageCount)
-                m_nLastTrainingImageIdx = 0;
+                if (ds != null)
+                    m_ds = ds;
 
-            if (EventWaitHandle.WaitAny(rgAbort, 0) != EventWaitHandle.WaitTimeout)
-                return false;
+                m_TrainingImages = loadImageset("Training", m_ds.TrainingSource, rgAbort, ref imgMean, out m_nLastTrainingImageIdx, nPadW, nPadH, log, loadMethod, nImageDbLoadLimit, m_nLastTrainingImageIdx, (ds == null) ? true : false);
+                if (m_nLastTrainingImageIdx >= m_ds.TrainingSource.ImageCount)
+                    m_nLastTrainingImageIdx = 0;
 
-            m_TestingImages = loadImageset("Testing", m_ds.TestingSource, rgAbort, ref imgMean, out m_nLastTestingImageIdx, nPadW, nPadH, log, loadMethod, nImageDbLoadLimit, m_nLastTestingImageIdx, (ds == null) ? true : false);
-            if (m_nLastTestingImageIdx >= m_ds.TestingSource.ImageCount)
-                m_nLastTestingImageIdx = 0;
+                if (EventWaitHandle.WaitAny(rgAbort, 0) != EventWaitHandle.WaitTimeout)
+                    return false;
 
-            if (EventWaitHandle.WaitAny(rgAbort, 0) != EventWaitHandle.WaitTimeout)
-                return false;
+                m_TestingImages = loadImageset("Testing", m_ds.TestingSource, rgAbort, ref imgMean, out m_nLastTestingImageIdx, nPadW, nPadH, log, loadMethod, nImageDbLoadLimit, m_nLastTestingImageIdx, (ds == null) ? true : false);
+                if (m_nLastTestingImageIdx >= m_ds.TestingSource.ImageCount)
+                    m_nLastTestingImageIdx = 0;
 
-            return true;
+                if (EventWaitHandle.WaitAny(rgAbort, 0) != EventWaitHandle.WaitTimeout)
+                    return false;
+
+                return true;
+            }
         }
 
         /// <summary>
@@ -330,6 +334,18 @@ namespace MyCaffe.imagedb
                 return null;
 
             return m_factory.QueryImageMean(nMaskOutAllButLastColumn, nSrcId);
+        }
+
+        /// <summary>
+        /// Unload the images of the training and testing image sets.
+        /// </summary>
+        public void Unload()
+        {
+            lock (m_syncObj)
+            {
+                m_TestingImages.Unload();
+                m_TrainingImages.Unload();
+            }
         }
 
         /// <summary>

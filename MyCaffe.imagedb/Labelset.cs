@@ -164,6 +164,17 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Unload all images from the label set.
+        /// </summary>
+        public void Unload()
+        {
+            for (int i = 0; i < m_rgImages.Length; i++)
+            {
+                m_rgImages[i] = null;
+            }
+        }
+
+        /// <summary>
         /// Releases all resources used.
         /// </summary>
         /// <param name="bDisposing">Set to <i>true</i> when called from Dispose().</param>
