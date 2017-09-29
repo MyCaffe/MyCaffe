@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("MyCaffe Auto Tests")]
 [assembly: AssemblyDescription("MyCaffe - Deep Learning for Windows Developers")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("SignalPOP LLC")]
+[assembly: AssemblyCompany("SignalPop LLC")]
 [assembly: AssemblyProduct("MyCaffe")]
-[assembly: AssemblyCopyright("Copyright © SignalPOP 2016-2017")]
+[assembly: AssemblyCopyright("Copyright © SignalPop and Contributors (see LICENSE) 2016-2017.  All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -31,5 +31,5 @@ using System.Runtime.InteropServices;
 //
 // You can specify all the values or you can default the Build and Revision Numbers 
 // by using the '*' as shown below:
-[assembly: AssemblyVersion("0.9.0.271")]
-[assembly: AssemblyFileVersion("0.9.0.271")]
+[assembly: AssemblyVersion("0.9.0.316")]
+[assembly: AssemblyFileVersion("0.9.0.316")]

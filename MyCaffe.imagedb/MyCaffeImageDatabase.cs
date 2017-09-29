@@ -118,6 +118,15 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Set the database instance to use.
+        /// </summary>
+        /// <param name="strInstance">Specifies the instance name to use in '.\\name' format.</param>
+        public void SetInstance(string strInstance)
+        {
+            MyCaffe.imagedb.EntitiesConnection.GlobalDatabaseServerName = strInstance;
+        }
+
+        /// <summary>
         /// Returns the label/image selection methods based on the SettingsCaffe settings.
         /// </summary>
         /// <param name="s">Specifies the caffe settings.</param>

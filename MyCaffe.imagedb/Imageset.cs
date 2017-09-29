@@ -696,13 +696,21 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
-        /// Returns the percentage of the image set that is loaded into memory.
+        /// Returns the number of images loaded.
         /// </summary>
         /// <returns></returns>
-        public double GetPercentLoaded()
+        public int GetLoadedCount()
         {
-            double dfPct = (double)m_nLoadedCount / (double)m_rgImages.Length;
-            return dfPct;
+            return m_nLoadedCount;
+        }
+
+        /// <summary>
+        /// Returns the total number of images.
+        /// </summary>
+        /// <returns></returns>
+        public int GetTotalCount()
+        {
+            return m_rgImages.Length;
         }
     }
 }

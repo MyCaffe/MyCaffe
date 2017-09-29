@@ -356,13 +356,16 @@ namespace MyCaffe.imagedb
         /// <returns>Returns the combined total percentage of images loaded for both testing and training.</returns>
         public double GetPercentageLoaded(out double dfTraining, out double dfTesting)
         {
-            dfTraining = m_TrainingImages.GetPercentLoaded();
-            dfTesting = m_TestingImages.GetPercentLoaded();
+            int nTrainingTotal = m_TrainingImages.GetTotalCount();
+            int nTrainingLoaded = m_TrainingImages.GetLoadedCount();
+            int nTestingTotal = m_TestingImages.GetTotalCount();
+            int nTestingLoaded = m_TestingImages.GetLoadedCount();
 
-            int nTrainingLoaded = (int)(dfTraining * m_TrainingImages.GetCount(false));
-            int nTestingLoaded = (int)(dfTesting * m_TestingImages.GetCount(false));
+            dfTraining = (double)nTrainingLoaded / (double)nTrainingTotal;
+            dfTesting = (double)nTestingLoaded / (double)nTestingTotal;
+
             int nTotalLoaded = nTrainingLoaded + nTestingLoaded;
-            int nTotalImages = m_TrainingImages.GetCount(false) + m_TestingImages.GetCount(false);
+            int nTotalImages = nTrainingTotal + nTestingTotal;
 
             return (double)nTotalLoaded / (double)nTotalImages;
         }

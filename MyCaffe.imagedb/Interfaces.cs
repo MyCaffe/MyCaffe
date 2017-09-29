@@ -81,6 +81,13 @@ namespace MyCaffe.imagedb
     public interface IXImageDatabase
     {
         /// <summary>
+        /// Set the database instance to use.
+        /// </summary>
+        /// <param name="strInstance">Specifies the instance name to use in '.\\name' format.</param>
+        [OperationContract(IsOneWay = false)]
+        void SetInstance(string strInstance);
+
+        /// <summary>
         /// Initializes the image database.
         /// </summary>
         /// <param name="s">Specifies the caffe settings.</param>
