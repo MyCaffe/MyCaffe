@@ -169,9 +169,12 @@ namespace MyCaffe.test
             }
         }
 
-        public static string GetTestPath(string strItem, bool bPathOnly = false, bool bCreateIfMissing = false)
+        public static string GetTestPath(string strItem, bool bPathOnly = false, bool bCreateIfMissing = false, bool bUserData = false)
         {
-            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+
+            if (bUserData)
+                strPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
             if (bPathOnly)
             {
@@ -301,9 +304,9 @@ namespace MyCaffe.test
             m_cuda = null;
         }
 
-        protected string getTestPath(string strItem, bool bPathOnly = false, bool bCreateIfMissing = false)
+        protected string getTestPath(string strItem, bool bPathOnly = false, bool bCreateIfMissing = false, bool bUserData = false)
         {
-            return TestBase.GetTestPath(strItem, bPathOnly, bCreateIfMissing);
+            return TestBase.GetTestPath(strItem, bPathOnly, bCreateIfMissing, bUserData);
         }
 
         public bool Enabled
