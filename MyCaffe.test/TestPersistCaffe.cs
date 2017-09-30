@@ -223,7 +223,7 @@ namespace MyCaffe.test
             byte[] rgWeights = null;
             string strModelDesc = "";
 
-            using (FileStream fs = new FileStream(strFile, FileMode.Open))
+            using (FileStream fs = new FileStream(strFile, FileMode.Open, FileAccess.Read))
             {
                 using (BinaryReader br = new BinaryReader(fs))
                 {
@@ -260,7 +260,7 @@ namespace MyCaffe.test
             byte[] rgWeights = null;
             string strModelDesc = "";
 
-            using (FileStream fs = new FileStream(strFile, FileMode.Open))
+            using (FileStream fs = new FileStream(strFile, FileMode.Open, FileAccess.Read))
             {
                 using (BinaryReader br = new BinaryReader(fs))
                 {
@@ -305,7 +305,7 @@ namespace MyCaffe.test
             byte[] rgWeights = null;
             string strModelDesc = "";
 
-            using (FileStream fs = new FileStream(strFile, FileMode.Open))
+            using (FileStream fs = new FileStream(strFile, FileMode.Open, FileAccess.Read))
             {
                 using (BinaryReader br = new BinaryReader(fs))
                 {
@@ -371,7 +371,7 @@ namespace MyCaffe.test
             string strFile = getTestPath("\\MyCaffe\\test_data\\models\\bvlc_alexnet_imgnet\\imagenet_mean.binaryproto");
             byte[] rgData = null;
 
-            using (FileStream fs = new FileStream(strFile, FileMode.Open))
+            using (FileStream fs = new FileStream(strFile, FileMode.Open, FileAccess.Read))
             {
                 using (BinaryReader br = new BinaryReader(fs))
                 {
@@ -490,7 +490,7 @@ namespace MyCaffe.test
             byte[] rgWeights = null;
             string strModelDesc = "";
 
-            using (FileStream fs = new FileStream(strFile, FileMode.Open))
+            using (FileStream fs = new FileStream(strFile, FileMode.Open, FileAccess.Read))
             {
                 using (BinaryReader br = new BinaryReader(fs))
                 {

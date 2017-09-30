@@ -123,7 +123,7 @@ namespace MyCaffe.test
             byte[] rgWeights = null;
             string strModelDesc = "";
 
-            using (FileStream fs = new FileStream(strFile, FileMode.Open))
+            using (FileStream fs = new FileStream(strFile, FileMode.Open, FileAccess.Read))
             {
                 using (BinaryReader br = new BinaryReader(fs))
                 {
@@ -191,7 +191,7 @@ namespace MyCaffe.test
             byte[] rgWeights = null;
             string strModelDesc = "";
 
-            using (FileStream fs = new FileStream(strFile, FileMode.Open))
+            using (FileStream fs = new FileStream(strFile, FileMode.Open, FileAccess.Read))
             {
                 using (BinaryReader br = new BinaryReader(fs))
                 {

@@ -1912,7 +1912,7 @@ namespace MyCaffe.test
             data.Reshape(8, 3, 10, 10);
             targets.Reshape(8, 1, 1, 1);
 
-            string strFile = TestBase.GetTestPath("\\MyCaffe\\test_data\\solver_data.h5");
+            string strFile = TestBase.GetTestPath("\\MyCaffe\\test_data\\solver_data.h5", false, false, false);
 
             if (!File.Exists(strFile))
             {
