@@ -34,10 +34,25 @@ namespace MyCaffe.imagedb
         [EnumMember]
         PAIR = 0x0002,
         /// <summary>
+        /// Combines RANDOM + PAIR for marshalling.
+        /// </summary>
+        [EnumMember]
+        RANDOM_AND_PAIR = 0x0003,
+        /// <summary>
         /// Randomly select, but given higher priority to boosted images using the super-boost setting.
         /// </summary>
         [EnumMember]
         BOOST = 0x0004,
+        /// <summary>
+        /// Combines RANDOM + BOOST for marshalling.
+        /// </summary>
+        [EnumMember]
+        RANDOM_AND_BOOST = 0x0005,
+        /// <summary>
+        /// Combines RANDOM + PAIR + BOOST for marshalling.
+        /// </summary>
+        [EnumMember]
+        RANDOM_AND_PAIR_AND_BOOST = 0x0007,
         /// <summary>
         /// Specifically select based on the input index.
         /// </summary>
