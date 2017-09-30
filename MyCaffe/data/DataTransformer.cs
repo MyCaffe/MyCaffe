@@ -105,7 +105,7 @@ namespace MyCaffe.data
                     throw new Exception("Cannot find the file '" + strFile + "'!");
 
                 byte[] rgBytes;
-                using (FileStream fs = new FileStream(strFile, FileMode.Open))
+                using (FileStream fs = new FileStream(strFile, FileMode.Open, FileAccess.Read))
                 {
                     using (BinaryReader br = new BinaryReader(fs))
                     {
