@@ -178,6 +178,8 @@ namespace MyCaffe.test
 
             if (bPathOnly)
             {
+                strPath += strItem;
+
                 if (Directory.Exists(strPath))
                     return strPath;
 
