@@ -14,32 +14,39 @@ namespace MyCaffe.imagedb
     /// Defines the image selection method.
     /// </summary>
     [Serializable]
+    [DataContract]
     public enum IMGDB_IMAGE_SELECTION_METHOD
     {
         /// <summary>
         /// No selection method used, select sequentially by index.
         /// </summary>
+        [EnumMember]
         NONE = 0x0000,
         /// <summary>
         /// Randomly select the images, ignore the input index.
         /// </summary>
+        [EnumMember]
         RANDOM = 0x0001,
         /// <summary>
         /// Pair select the images where the first query returns a randomly selected image,
         /// and the next query returns the image just following the last queried image.
         /// </summary>
+        [EnumMember]
         PAIR = 0x0002,
         /// <summary>
         /// Randomly select, but given higher priority to boosted images using the super-boost setting.
         /// </summary>
+        [EnumMember]
         BOOST = 0x0004,
         /// <summary>
         /// Specifically select based on the input index.
         /// </summary>
+        [EnumMember]
         FIXEDINDEX = 0x0008,
         /// <summary>
         /// Clear the fixed index.
         /// </summary>
+        [EnumMember]
         CLEARFIXEDINDEX = 0x0010
     }
 
@@ -47,19 +54,23 @@ namespace MyCaffe.imagedb
     /// Defines the label selection method.
     /// </summary>
     [Serializable]
+    [DataContract]
     public enum IMGDB_LABEL_SELECTION_METHOD
     {
         /// <summary>
         /// Don't use label selection and instead select from the general list of all images.
         /// </summary>
+        [EnumMember]
         NONE = 0x0000,
         /// <summary>
         /// Randomly select the label set.
         /// </summary>
+        [EnumMember]
         RANDOM = 0x0001,
         /// <summary>
         /// Randomly select the label set but give a higher priority to boosted label sets using their boost values.
         /// </summary>
+        [EnumMember]
         BOOST = 0x0002
     }
 
