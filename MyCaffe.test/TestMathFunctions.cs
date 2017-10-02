@@ -303,10 +303,16 @@ namespace MyCaffe.test
 
         public void TestMinMax()
         {
+            double dfFree;
+            double dfUsed;
+            bool bCudaCall;
+            m_cuda.GetDeviceMemory(out dfFree, out dfUsed, out bCudaCall);
+            int nSize = (dfFree < 3.0) ? 124 : 1024;
+
             Blob<T> data = new Blob<T>(m_cuda, m_log);
             Blob<T> work = new Blob<T>(m_cuda, m_log);
 
-            data.Reshape(1024, 3, 224, 224);
+            data.Reshape(nSize, 3, 224, 224);
             Tuple<double, double, double, double> workSize = m_cuda.minmax(data.count(), 0, 0, 0);
             work.Reshape((int)workSize.Item1, 1, 1, 1);
 
@@ -356,10 +362,16 @@ namespace MyCaffe.test
 
         public void TestNanInf()
         {
+            double dfFree;
+            double dfUsed;
+            bool bCudaCall;
+            m_cuda.GetDeviceMemory(out dfFree, out dfUsed, out bCudaCall);
+            int nSize = (dfFree < 3.0) ? 124 : 1024;
+
             Blob<T> data = new Blob<T>(m_cuda, m_log);
             Blob<T> work = new Blob<T>(m_cuda, m_log);
 
-            data.Reshape(1024, 3, 224, 224);
+            data.Reshape(nSize, 3, 224, 224);
             Tuple<double, double, double, double> workSize = m_cuda.minmax(data.count(), 0, 0, 0, true);
             work.Reshape((int)workSize.Item1, 1, 1, 1);
 
