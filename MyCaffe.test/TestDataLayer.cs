@@ -844,7 +844,7 @@ namespace MyCaffe.test
 
                         // At TEST time, check that we always get center value.
                         if (phase == Phase.TEST)
-                            m_log.CHECK_EQ(dfCenterValue, dfTop, "debug : iter " + iter.ToString() + " i " + i.ToString() + " j " + j.ToString());
+                            m_log.CHECK_EQ(dfCenterValue, dfTop, "The center value '" + dfCenterValue.ToString() + "' should equal the top value '" + dfTop.ToString() + "', debug : iter " + iter.ToString() + " i " + i.ToString() + " j " + j.ToString());
                     }
                 }
 
