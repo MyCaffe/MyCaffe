@@ -55,80 +55,95 @@ namespace MyCaffe.app
 
         private void FormMain_Load(object sender, EventArgs e)
         {
-            List<string> rgSqlInst = DatabaseInstanceQuery.GetInstances();
-
-            m_bwProcess.RunWorkerAsync();
-
-            if (!File.Exists("index.chm"))
-                localHelpToolStripMenuItem.Enabled = false;
-
-            if (rgSqlInst == null || rgSqlInst.Count == 0)
+            try
             {
-                setStatus("You must download and install 'Microsoft SQL' or 'Microsoft SQL Express' first!");
-                setStatus("see 'https://www.microsoft.com/en-us/sql-server/sql-server-editions-express'");
-                setStatus("");
-                return;
-            }
-            else if (rgSqlInst.Count == 1)
-            {
-                if (rgSqlInst[0] != ".\\MSSQLSERVER")
-                    EntitiesConnection.GlobalDatabaseServerName = rgSqlInst[0];
-            }
-            else
-            {
-                FormSqlInstances dlg = new FormSqlInstances(rgSqlInst);
+                List<string> rgSqlInst = DatabaseInstanceQuery.GetInstances();
 
-                if (dlg.ShowDialog() == DialogResult.OK)
+                m_bwProcess.RunWorkerAsync();
+
+                if (!File.Exists("index.chm"))
+                    localHelpToolStripMenuItem.Enabled = false;
+
+                if (rgSqlInst == null || rgSqlInst.Count == 0)
                 {
-                    if (dlg.Instance != ".\\MSSQLSERVER")
-                        EntitiesConnection.GlobalDatabaseServerName = dlg.Instance;
+                    setStatus("You must download and install 'Microsoft SQL' or 'Microsoft SQL Express' first!");
+                    setStatus("see 'https://www.microsoft.com/en-us/sql-server/sql-server-editions-express'");
+                    setStatus("");
+                    return;
+                }
+                else if (rgSqlInst.Count == 1)
+                {
+                    if (rgSqlInst[0] != ".\\MSSQLSERVER")
+                        EntitiesConnection.GlobalDatabaseServerName = rgSqlInst[0];
                 }
                 else
                 {
-                    setStatus("You are NOT connected to SQL.");
+                    FormSqlInstances dlg = new FormSqlInstances(rgSqlInst);
+
+                    if (dlg.ShowDialog() == DialogResult.OK)
+                    {
+                        if (dlg.Instance != ".\\MSSQLSERVER")
+                            EntitiesConnection.GlobalDatabaseServerName = dlg.Instance;
+                    }
+                    else
+                    {
+                        setStatus("You are NOT connected to SQL.");
+                    }
+                }
+
+                setStatus("Using SQL Instance '" + EntitiesConnection.GlobalDatabaseServerName + "'", false);
+
+                DatabaseManagement dbMgr = new DatabaseManagement("DNN", "", EntitiesConnection.GlobalDatabaseServerName);
+                bool bExists;
+                Exception err = dbMgr.DatabaseExists(out bExists);
+
+                if (err != null)
+                    setStatus("ERROR: " + err.Message);
+                else if (!bExists)
+                    createDatabaseToolStripMenuItem_Click(this, new EventArgs());
+                else
+                    setStatus("Using database '" + dbMgr.Name + "'");
+
+                setStatus("");
+
+                m_autoTest.OnProgress += m_autoTest_OnProgress;
+                m_autoTest.OnCompleted += m_autoTest_OnCompleted;
+
+                setStatus("The MyCaffe Test App supports two different types of automated testing:");
+                setStatus(" 1.) User interface based automated testing via the 'Test | Run Autotests UI', and");
+                setStatus(" 2.) Server based automated testing via the 'Test | Start Server Autotests' menu.");
+                setStatus("Server auto tests can easily integrate into other applications.");
+                setStatus("NOTE: Known test failures are pre-set with a FAILURE status.");
+                setStatus("----------------------------------------------------------------------------------");
+
+                DatasetFactory factory = new DatasetFactory();
+                int nCifarID = factory.GetDatasetID("CIFAR-10");
+                int nMnistID = factory.GetDatasetID("MNIST");
+
+                if (nCifarID == 0 || nMnistID == 0)
+                {
+                    setStatus(" !Before running any automated tests, make sure to load the following datasets:");
+
+                    if (nCifarID == 0)
+                        setStatus("    CIFAR-10");
+
+                    if (nMnistID == 0)
+                        setStatus("    MNIST");
+
+                    setStatus(" see the 'Database' menu.");
                 }
             }
-
-            setStatus("Using SQL Instance '" + EntitiesConnection.GlobalDatabaseServerName + "'", false);
-
-            DatabaseManagement dbMgr = new DatabaseManagement("DNN", "", EntitiesConnection.GlobalDatabaseServerName);
-            bool bExists;
-            Exception err = dbMgr.DatabaseExists(out bExists);
-
-            if (err != null)
-                setStatus("ERROR: " + err.Message);
-            else if (!bExists)
-                createDatabaseToolStripMenuItem_Click(this, new EventArgs());
-            else
-                setStatus("Using database '" + dbMgr.Name + "'");
-
-            setStatus("");
-
-            m_autoTest.OnProgress += m_autoTest_OnProgress;
-            m_autoTest.OnCompleted += m_autoTest_OnCompleted;
-
-            setStatus("The MyCaffe Test App supports two different types of automated testing:");
-            setStatus(" 1.) User interface based automated testing via the 'Test | Run Autotests UI', and");
-            setStatus(" 2.) Server based automated testing via the 'Test | Start Server Autotests' menu.");
-            setStatus("Server auto tests can easily integrate into other applications.");
-            setStatus("NOTE: Known test failures are pre-set with a FAILURE status.");
-            setStatus("----------------------------------------------------------------------------------");
-
-            DatasetFactory factory = new DatasetFactory();
-            int nCifarID = factory.GetDatasetID("CIFAR-10");
-            int nMnistID = factory.GetDatasetID("MNIST");
-
-            if (nCifarID == 0 || nMnistID == 0)
+            catch (Exception excpt)
             {
-                setStatus(" !Before running any automated tests, make sure to load the following datasets:");
+                string strErr = excpt.Message;
 
-                if (nCifarID == 0)
-                    setStatus("    CIFAR-10");
+                if (excpt.InnerException != null)
+                    strErr += " " + excpt.InnerException.Message;
 
-                if (nMnistID == 0)
-                    setStatus("    MNIST");
+                if (strErr.Contains("login") && strErr.Contains("DNN"))
+                    strErr += " Make sure that this user can access the DNN database - this setting is made using the SQL Management Studio.";
 
-                setStatus(" see the 'Database' menu.");
+                setStatus("ERROR: " + strErr);
             }
         }
 
