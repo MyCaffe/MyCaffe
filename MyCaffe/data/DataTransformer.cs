@@ -140,8 +140,8 @@ namespace MyCaffe.data
 
             // Check dimensions
             m_log.CHECK_GT(nDatumChannels, 0, "There must be 1 or more data channels in the datum.");
-            m_log.CHECK_GE(nDatumHeight, nCropSize, "The datum height must be >= the crop size of " + nCropSize.ToString());
-            m_log.CHECK_GE(nDatumWidth, nCropSize, "The datum width must be >= the crop size of " + nCropSize.ToString());
+            m_log.CHECK_GE(nDatumHeight, nCropSize, "The datum height must be >= the crop size of " + nCropSize.ToString() + ". To fix this change the 'crop_size' DataLayer property.");
+            m_log.CHECK_GE(nDatumWidth, nCropSize, "The datum width must be >= the crop size of " + nCropSize.ToString() + ". To fix this change the 'crop_size' DataLayer property.");
 
             // Build BlobShape.
             List<int> rgShape = new List<int>();
