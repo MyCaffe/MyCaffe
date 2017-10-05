@@ -394,7 +394,7 @@ namespace MyCaffe.solvers
             }
             catch(Exception excpt)
             {
-                throw new Exception("Initializing Treaining Net: " + excpt.Message);
+                throw new Exception("Initializing Training Net: " + excpt.Message);
             }
         }
 
