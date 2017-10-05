@@ -28,6 +28,7 @@ namespace MyCaffe.data
         Phase m_phase;
         CryptoRandom m_random;
         T[] m_rgTransformedData = null;
+        float[] m_rgfTransformedData = null;
         double m_dfLastMin = 0;
         double m_dfLastMax = 0;
         BlobProto m_protoMean = null;
@@ -356,8 +357,10 @@ namespace MyCaffe.data
             int nLen = nDatumChannels * nHeight * nWidth;
             double[] rgRealData = d.RealData;
             byte[] rgByteData = d.ByteData;
-            float[] rgTransformedData = new float[nLen];
             int[] rgChannelSwap = null;
+
+            if (m_rgfTransformedData == null || m_rgfTransformedData.Length < nLen)
+                m_rgfTransformedData = new float[nLen];
 
             if (nDatumChannels == 3 && param.color_order == TransformationParameter.COLOR_ORDER.BGR)
                 rgChannelSwap = new int[] { 2, 1, 0 };
@@ -401,12 +404,12 @@ namespace MyCaffe.data
                         if (m_dfLastMin > dfTransformedElement)
                             m_dfLastMin = dfTransformedElement;
 
-                        rgTransformedData[nTopIdx] = (float)dfTransformedElement;
+                        m_rgfTransformedData[nTopIdx] = (float)dfTransformedElement;
                     }
                 }
             }
 
-            Array.Copy(rgTransformedData, m_rgTransformedData, nLen);
+            Array.Copy(m_rgfTransformedData, m_rgTransformedData, nLen);
 
             if (m_rgTransformedData.Length == nItemCount)
                 return m_rgTransformedData;
