@@ -142,6 +142,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Only used during testing.
         /// </summary>
+        [Category("Testing"), Description("Only used during testing.")]
         public int? random_seed
         {
             get { return m_nRandomSeed; }
@@ -152,9 +153,10 @@ namespace MyCaffe.param
         /// Specifies the path to file containing the image mean in the proto buffer format of a BlobProto.
         /// </summary>
         /// <remarks>
-        /// The mean file is used when specified and the 'use_image_mean' = <i>true</i>.  If the 'use_image_mean' = <i>true</i> and
+        /// The mean file is used when specified and the 'use_imagedb_mean' = <i>true</i>.  If the 'use_imagedb_mean' = <i>true</i> and
         /// the mean file is not set, the Caffe Image Database is queried for the calculated mean image.
         /// </remarks>
+        [Category("Data Mean"), Description("The mean file is used when specified and 'use_imagedb_mean' = true.  If the 'use_imagedb_mean' is true and the 'mean_file' is not set, then the image database is queried for the mean image to use.")]
         public string mean_file
         {
             get { return m_strMeanFile; }
@@ -165,6 +167,7 @@ namespace MyCaffe.param
         /// Specifies the color ordering to use.  Native Caffe models often uses COLOR_ORDER.BGR, whereas MyCaffe datasets often
         /// uses the COLOR_ORDER.RGB ordering.
         /// </summary>
+        [Category("Data Color"), Description("Specifies the color ordering to use.  Native Caffe models expect the BGR color ordering.")]
         public COLOR_ORDER color_order
         {
             get { return m_colorOrder; }
