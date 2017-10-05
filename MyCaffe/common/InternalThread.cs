@@ -44,6 +44,7 @@ namespace MyCaffe.common
 
             if (m_task != null)
             {
+                m_task.Wait(2000);
                 m_task.Dispose();
                 m_task = null;
             }
