@@ -494,6 +494,7 @@ namespace MyCaffe.common
                     nIterations = info.IterationOverride;
 
                 solver.Step(nIterations);
+                solver.Dispose();
             }
             catch (Exception excpt)
             {
