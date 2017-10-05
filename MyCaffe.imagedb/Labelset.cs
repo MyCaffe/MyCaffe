@@ -156,11 +156,10 @@ namespace MyCaffe.imagedb
             if (nIdx >= rgImages.Length)
                 nIdx = nIdx % rgImages.Length;
 
-            SimpleDatum d = rgImages[nIdx];
             nLastIndex = nIdx;
             nImageIdx = nIdx;
 
-            return d;
+            return rgImages[nIdx];
         }
 
         /// <summary>
