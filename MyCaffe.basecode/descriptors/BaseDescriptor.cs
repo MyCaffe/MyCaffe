@@ -77,6 +77,7 @@ namespace MyCaffe.basecode.descriptors
         /// Get/set the owner of the item.
         /// </summary>
         [ReadOnly(true)]
+        [Browsable(false)]
         public string Owner
         {
             get { return m_strOwner; }
