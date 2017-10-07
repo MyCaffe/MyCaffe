@@ -46,11 +46,11 @@ namespace MyCaffe.basecode
             /// </summary>
             NONE,
             /// <summary>
-            /// Specifies that the data contains a black and white square image.
+            /// Specifies that the data contains a black and white square image packed as a set of byte values [0-255] in the order: image wxh.
             /// </summary>
             IMAGE_1CH,
             /// <summary>
-            /// Specifies that the data contains a RGB square image.
+            /// Specifies that the data contains a RGB square image packed as a set of byte values [0-255] in the order: wxh of R, wxh of G and wxh of B.
             /// </summary>
             IMAGE_3CH,
             /// <summary>
@@ -64,7 +64,12 @@ namespace MyCaffe.basecode
             /// <summary>
             /// Specifies that the data contains custom data.
             /// </summary>
-            CUSTOM
+            CUSTOM,
+            /// <summary>
+            /// Specifies that the data contains an image converted to a byte array using ImageTools.ImageToByteArray.
+            /// </summary>
+            /// <remarks>To convert back to an image, use the ImageTools.ByteArrayToImage method.</remarks>
+            BITMAP
         }
 
 
