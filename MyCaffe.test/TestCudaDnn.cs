@@ -30,6 +30,8 @@ namespace MyCaffe.test
                     t.Cuda.SetDeviceID(0);
                     nDeviceID = t.Cuda.GetDeviceID();
                     t.Log.CHECK_EQ(0, nDeviceID, "The deviceID should be equal to 0.");
+
+                    t.Cuda.SetDeviceID(TestBase.DEFAULT_DEVICE_ID);
                 }
             }
             finally
