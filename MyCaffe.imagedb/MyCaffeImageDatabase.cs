@@ -1075,6 +1075,7 @@ namespace MyCaffe.imagedb
         /// The UnloadDataset method removes the dataset specified from memory.
         /// </summary>
         /// <param name="nDataSetID">Specifies the dataset ID to remove.</param>
+        /// <remarks>Specifiying a dataset ID of -1 directs the UnloadDatasetById to unload ALL datasets loaded.</remarks>
         /// <returns>If found and removed, this function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
         public bool UnloadDatasetById(int nDataSetID)
         {
@@ -1085,15 +1086,21 @@ namespace MyCaffe.imagedb
                 if (m_colDatasets.ContainsKey(m_nStrIDHashCode))
                 {
                     DatasetExCollection col = m_colDatasets[m_nStrIDHashCode];
-                    DatasetEx ds = col.FindDataset(nDataSetID);
-                    if (ds != null)
-                    {
-                        if (m_log != null)
-                            m_log.WriteLine("Unloading dataset '" + ds.DatasetName + "'.");
 
-                        ds.Unload();
-                        GC.Collect();
-                        bRemoved = true;
+                    foreach (DatasetEx ds in col)
+                    {
+                        if (ds != null)
+                        {
+                            if (ds.DatasetID == nDataSetID || nDataSetID == -1)
+                            {
+                                if (m_log != null)
+                                    m_log.WriteLine("Unloading dataset '" + ds.DatasetName + "'.");
+
+                                ds.Unload();
+                                GC.Collect();
+                                bRemoved = true;
+                            }
+                        }
                     }
                 }
             }

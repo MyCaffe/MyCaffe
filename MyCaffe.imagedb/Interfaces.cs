@@ -447,6 +447,7 @@ namespace MyCaffe.imagedb
         /// The UnloadDataset function unloads a given dataset from memory.
         /// </summary>
         /// <param name="nDatasetID">Specifies the ID of the dataset to unload.</param>
+        /// <remarks>Specifiying a dataset ID of -1 directs the UnloadDatasetById to unload ALL datasets loaded.</remarks>
         /// <returns>If the dataset is found and removed, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
         [OperationContract(IsOneWay = false)]
         bool UnloadDatasetById(int nDatasetID);
