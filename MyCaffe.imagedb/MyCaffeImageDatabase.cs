@@ -584,10 +584,10 @@ namespace MyCaffe.imagedb
                 imageSelectionMethod |= IMGDB_IMAGE_SELECTION_METHOD.BOOST;
 
             SimpleDatum sd = null;
+            ImageSet imgSet = m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId);
 
             if (nLabel.HasValue)
             {
-                ImageSet imgSet = m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId);
                 LabelSet lblSet = imgSet.GetLabelSet(nLabel.Value);
                 sd = lblSet.GetImage(0, imageSelectionMethod);
             }
@@ -597,7 +597,7 @@ namespace MyCaffe.imagedb
 
             if (sd == null)
             {
-                sd = m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImage(nIdx, labelSelectionMethod, imageSelectionMethod, m_log);
+                sd = imgSet.GetImage(nIdx, labelSelectionMethod, imageSelectionMethod, m_log);
                 if (sd == null)
                 {
                     Exception err = new Exception("Could not acquire an image - re-index the dataset.");
