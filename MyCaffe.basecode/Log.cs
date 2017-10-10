@@ -127,7 +127,15 @@ namespace MyCaffe.basecode
         /// <param name="e">Specifies the error.</param>
         public void WriteError(Exception e)
         {
-            WriteLine("ERROR! " + e.Message, false, false, true);
+            string strErr = e.Message;
+
+            if (e.InnerException != null)
+                strErr += " " + e.InnerException.Message;
+
+            if (strErr.Trim().Length == 0)
+                strErr = "No error message!";
+
+            WriteLine("ERROR! " + strErr, false, false, true);
         }
 
         /// <summary>
