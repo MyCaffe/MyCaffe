@@ -14,6 +14,7 @@ namespace MyCaffe.imagedb
         List<DatasetEx> m_rgDatasets = new List<DatasetEx>();
         bool m_bUseTrainingSourcesForTesting = false;
         ImageSet m_lastImgSet = null;
+        object m_syncObj = new object();
 
         /// <summary>
         /// The DatasetExCollection constructor.
@@ -203,21 +204,24 @@ namespace MyCaffe.imagedb
         /// <returns>If found, the ImageSet is returned, otherwise an Exception is thrown.</returns>
         public ImageSet FindImageset(int nSourceID)
         {
-            if (m_lastImgSet != null && m_lastImgSet.SourceID == nSourceID)
-                return m_lastImgSet;
-
-            foreach (DatasetEx ds in m_rgDatasets)
+            lock (m_syncObj)
             {
-                ImageSet imgSet = ds.Find(nSourceID);
+                if (m_lastImgSet != null && m_lastImgSet.SourceID == nSourceID)
+                    return m_lastImgSet;
 
-                if (imgSet != null)
+                foreach (DatasetEx ds in m_rgDatasets)
                 {
-                    m_lastImgSet = imgSet;
-                    return imgSet;
-                }
-            }
+                    ImageSet imgSet = ds.Find(nSourceID);
 
-            throw new Exception("Could not find source with ID = " + nSourceID.ToString() + "!");
+                    if (imgSet != null)
+                    {
+                        m_lastImgSet = imgSet;
+                        return imgSet;
+                    }
+                }
+
+                throw new Exception("Could not find source with ID = " + nSourceID.ToString() + "!");
+            }
         }
 
         /// <summary>
@@ -227,21 +231,24 @@ namespace MyCaffe.imagedb
         /// <returns>If found, the ImageSet is returned, otherwise an Exception is thrown.</returns>
         public ImageSet FindImageset(string strSource)
         {
-            if (m_lastImgSet != null && m_lastImgSet.SourceName == strSource)
-                return m_lastImgSet;
-
-            foreach (DatasetEx ds in m_rgDatasets)
+            lock (m_syncObj)
             {
-                ImageSet imgSet = ds.Find(strSource);
+                if (m_lastImgSet != null && m_lastImgSet.SourceName == strSource)
+                    return m_lastImgSet;
 
-                if (imgSet != null)
+                foreach (DatasetEx ds in m_rgDatasets)
                 {
-                    m_lastImgSet = imgSet;
-                    return imgSet;
-                }
-            }
+                    ImageSet imgSet = ds.Find(strSource);
 
-            throw new Exception("Could not find source with Name = " + strSource + "!");
+                    if (imgSet != null)
+                    {
+                        m_lastImgSet = imgSet;
+                        return imgSet;
+                    }
+                }
+
+                throw new Exception("Could not find source with Name = " + strSource + "!");
+            }
         }
 
         /// <summary>
