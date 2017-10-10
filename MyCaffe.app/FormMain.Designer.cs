@@ -51,6 +51,7 @@
             this.testMNISTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.runTestImageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.abortToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.cancelToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.localHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.onlineHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -60,7 +61,6 @@
             this.m_bwLoadMnistDatabase = new System.ComponentModel.BackgroundWorker();
             this.m_bwProcess = new System.ComponentModel.BackgroundWorker();
             this.m_bwLoadCiFar10Database = new System.ComponentModel.BackgroundWorker();
-            this.cancelToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -247,6 +247,15 @@
             this.abortToolStripMenuItem.ToolTipText = "Abort the engire command thread.";
             this.abortToolStripMenuItem.Click += new System.EventHandler(this.abortToolStripMenuItem_Click);
             // 
+            // cancelToolStripMenuItem
+            // 
+            this.cancelToolStripMenuItem.Enabled = false;
+            this.cancelToolStripMenuItem.Name = "cancelToolStripMenuItem";
+            this.cancelToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
+            this.cancelToolStripMenuItem.Text = "Cancel";
+            this.cancelToolStripMenuItem.ToolTipText = "Cancel the current operation.";
+            this.cancelToolStripMenuItem.Click += new System.EventHandler(this.cancelToolStripMenuItem_Click);
+            // 
             // helpToolStripMenuItem
             // 
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -320,14 +329,6 @@
             this.m_bwLoadCiFar10Database.DoWork += new System.ComponentModel.DoWorkEventHandler(this.m_bwLoadCiFar10Database_DoWork);
             this.m_bwLoadCiFar10Database.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
             this.m_bwLoadCiFar10Database.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
-            // 
-            // cancelToolStripMenuItem
-            // 
-            this.cancelToolStripMenuItem.Name = "cancelToolStripMenuItem";
-            this.cancelToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
-            this.cancelToolStripMenuItem.Text = "Cancel";
-            this.cancelToolStripMenuItem.ToolTipText = "Cancel the current operation.";
-            this.cancelToolStripMenuItem.Click += new System.EventHandler(this.cancelToolStripMenuItem_Click);
             // 
             // FormMain
             // 

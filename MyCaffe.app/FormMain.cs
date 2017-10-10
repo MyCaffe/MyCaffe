@@ -351,6 +351,7 @@ namespace MyCaffe.app
             createMyCaffeToolStripMenuItem.Enabled = !m_bLoading && !m_bCaffeCreated;
             loadMNISTToolStripMenuItem.Enabled = !m_bLoading;
             loadCIFAR10ToolStripMenuItem.Enabled = !m_bLoading;
+            cancelToolStripMenuItem.Enabled = false;
         }
 
         private void m_bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -460,6 +461,7 @@ namespace MyCaffe.app
             deviceInformationToolStripMenuItem.Enabled = false;
             abortToolStripMenuItem.Enabled = true;
             m_evtCancel.Reset();
+            m_evtCaffeCancel.Reset();
 
             if (!m_bwProcess.IsBusy)
                 m_bwProcess.RunWorkerAsync();
@@ -492,8 +494,10 @@ namespace MyCaffe.app
             deviceInformationToolStripMenuItem.Enabled = false;
             abortToolStripMenuItem.Enabled = true;
             m_evtCancel.Reset();
+            m_evtCaffeCancel.Reset();
             m_Cmd = COMMAND.TRAIN;
             m_evtCommandRead.Set();
+            cancelToolStripMenuItem.Enabled = true;
         }
 
         private void testMNISTToolStripMenuItem_Click(object sender, EventArgs e)
@@ -506,8 +510,10 @@ namespace MyCaffe.app
             deviceInformationToolStripMenuItem.Enabled = false;
             abortToolStripMenuItem.Enabled = true;
             m_evtCancel.Reset();
+            m_evtCaffeCancel.Reset();
             m_Cmd = COMMAND.TEST;
             m_evtCommandRead.Set();
+            cancelToolStripMenuItem.Enabled = true;
         }
 
         private void runTestImageToolStripMenuItem_Click(object sender, EventArgs e)
@@ -568,6 +574,8 @@ namespace MyCaffe.app
             Log log = new Log("MyCaffe");
             MyCaffeControl<float> caffe = null;
 
+            log.OnWriteLine += log_OnWriteLine1;
+
             while (!m_evtCancel.WaitOne(0))
             {
                 List<WaitHandle> rgWait = new List<WaitHandle>();
@@ -575,55 +583,57 @@ namespace MyCaffe.app
                 rgWait.Add(m_evtCommandRead);
 
                 int nWait = WaitHandle.WaitAny(rgWait.ToArray());
-
                 if (nWait > 0)
                 {
-                    switch (m_Cmd)
+                    try
                     {
-                        case COMMAND.CREATE:
-                            SettingsCaffe settings = new SettingsCaffe();
-                            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
-                            settings.EnableRandomInputSelection = true;
+                        switch (m_Cmd)
+                        {
+                            case COMMAND.CREATE:
+                                SettingsCaffe settings = new SettingsCaffe();
+                                settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+                                settings.EnableRandomInputSelection = true;
 
-                            log = new Log("MyCaffe");
-                            log.OnWriteLine += log_OnWriteLine1;
+                                caffe = new MyCaffeControl<float>(settings, log, m_evtCaffeCancel);
 
-                            caffe = new MyCaffeControl<float>(settings, log, m_evtCaffeCancel);
+                                string strSolver = System.Text.Encoding.UTF8.GetString(Properties.Resources.lenet_solver);
+                                string strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.lenet_train_test);
 
-                            string strSolver = System.Text.Encoding.UTF8.GetString(Properties.Resources.lenet_solver);
-                            string strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.lenet_train_test);
+                                caffe.Load(Phase.TRAIN, strSolver, strModel, null);
+                                bw.ReportProgress(1, new ProgressInfo(1, 1, "MyCaffe Created.", null, true));
+                                break;
 
-                            caffe.Load(Phase.TRAIN, strSolver, strModel, null);
-                            bw.ReportProgress(1, new ProgressInfo(1, 1, "MyCaffe Created.", null, true));
-                            break;
+                            case COMMAND.DESTROY:
+                                m_bCaffeCreated = false;
+                                caffe.Dispose();
+                                caffe = null;
+                                bw.ReportProgress(0, new ProgressInfo(0, 0, "MyCaffe Destroyed", null, false));
+                                break;
 
-                        case COMMAND.DESTROY:
-                            m_bCaffeCreated = false;
-                            caffe.Dispose();
-                            caffe = null;
-                            log = null;
-                            bw.ReportProgress(0, new ProgressInfo(0, 0, "MyCaffe Destroyed", null, false));
-                            break;
+                            case COMMAND.TRAIN:
+                                caffe.Train(5000);
+                                m_rgTrainedWeights = caffe.GetWeights();
+                                m_sdImageMean = caffe.GetImageMean();
+                                bw.ReportProgress(0, new ProgressInfo(0, 0, "MyCaffe Training completed.", null, true));
+                                break;
 
-                        case COMMAND.TRAIN:
-                            caffe.Train(5000);
-                            m_rgTrainedWeights = caffe.GetWeights();
-                            m_sdImageMean = caffe.GetImageMean();
-                            bw.ReportProgress(0, new ProgressInfo(0, 0, "MyCaffe Traning completed.", null, true));
-                            break;
+                            case COMMAND.TEST:
+                                double dfAccuracy = caffe.Test(100);
+                                log.WriteLine("Accuracy = " + dfAccuracy.ToString("P"));
+                                bw.ReportProgress(0, new ProgressInfo(0, 0, "MyCaffe Testing completed.", null, true));
+                                break;
 
-                        case COMMAND.TEST:
-                            double dfAccuracy = caffe.Test(100);
-                            log.WriteLine("Accuracy = " + dfAccuracy.ToString("P"));
-                            bw.ReportProgress(0, new ProgressInfo(0, 0, "MyCaffe Testing completed.", null, true));
-                            break;
-
-                        case COMMAND.DEVICEINFO:
-                            string str1 = caffe.GetDeviceName(0);
-                            str1 += Environment.NewLine;
-                            str1 += caffe.Cuda.GetDeviceInfo(0, true);
-                            bw.ReportProgress(0, new ProgressInfo(0, 0, str1, null, true));
-                            break;
+                            case COMMAND.DEVICEINFO:
+                                string str1 = caffe.GetDeviceName(0);
+                                str1 += Environment.NewLine;
+                                str1 += caffe.Cuda.GetDeviceInfo(0, true);
+                                bw.ReportProgress(0, new ProgressInfo(0, 0, str1, null, true));
+                                break;
+                        }
+                    }
+                    catch (Exception excpt)
+                    {
+                        log.WriteError(excpt);
                     }
                 }
 
