@@ -1235,7 +1235,11 @@ namespace MyCaffe.imagedb
         /// <returns>The image mean is returned in a SimpleDatum.</returns>
         public SimpleDatum LoadImageMean(int nSrcId)
         {
-            return LoadDatum(m_db.GetRawImageMean(nSrcId));
+            RawImageMean imgMean = m_db.GetRawImageMean(nSrcId);
+            if (imgMean == null)
+                return null;
+
+            return LoadDatum(imgMean);
         }
 
         /// <summary>
