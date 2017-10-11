@@ -307,7 +307,7 @@ namespace MyCaffe.test
             double dfUsed;
             bool bCudaCall;
             m_cuda.GetDeviceMemory(out dfFree, out dfUsed, out bCudaCall);
-            int nSize = (dfFree < 3.0) ? 124 : 1024;
+            int nSize = (dfFree < 3.0) ? 124 : 512;
 
             Blob<T> data = new Blob<T>(m_cuda, m_log);
             Blob<T> work = new Blob<T>(m_cuda, m_log);
@@ -366,7 +366,7 @@ namespace MyCaffe.test
             double dfUsed;
             bool bCudaCall;
             m_cuda.GetDeviceMemory(out dfFree, out dfUsed, out bCudaCall);
-            int nSize = (dfFree < 3.0) ? 124 : 1024;
+            int nSize = (dfFree < 3.0) ? 124 : 512;
 
             Blob<T> data = new Blob<T>(m_cuda, m_log);
             Blob<T> work = new Blob<T>(m_cuda, m_log);
