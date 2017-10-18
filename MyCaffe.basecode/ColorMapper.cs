@@ -125,9 +125,9 @@ namespace MyCaffe.basecode
                 if (kv.Key.R >= clr.R && kv.Key.G >= clr.G && kv.Key.B >= clr.B)
                 {
                     if (kv.Key.R == clr.R && kv.Key.G == clr.G && kv.Key.B == clr.B)
-                        return (kv.Value.Height - kv.Value.Width) / 2;
+                        return kv.Value.Width + ((kv.Value.Height - kv.Value.Width) / 2);
                     else
-                        return (kvLast.Value.Height + kvLast.Value.Width) / 2;
+                        return kvLast.Value.Width + ((kvLast.Value.Height + kvLast.Value.Width) / 2);
                 }
 
                 kvLast = kv;
