@@ -118,10 +118,7 @@ namespace MyCaffe.basecode
         /// <returns>The value associated with the color is returned.</returns>
         public double GetValue(Color clr)
         {
-            KeyValuePair<Color, SizeF> kvLast = new KeyValuePair<Color, SizeF>(Color.Black, new SizeF(0, 0));        
             List<KeyValuePair<Color, SizeF>> rgItems = m_rgColorMappings.ToList();
-            rgItems.Add(kvLast);
-
             Color clr0 = Color.Black;
 
             for (int i = 0; i < rgItems.Count; i++)
@@ -149,7 +146,11 @@ namespace MyCaffe.basecode
                 clr0 = clr1;
             }
 
-            return 0;
+            int nCount = rgItems.Count;
+            double dfMin1 = rgItems[nCount - 1].Value.Width;
+            double dfMax1 = rgItems[nCount - 1].Value.Height;
+
+            return dfMin1 + (dfMax1 - dfMin1) / 2;
         }
 
         /// <summary>
