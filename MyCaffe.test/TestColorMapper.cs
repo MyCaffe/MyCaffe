@@ -39,6 +39,9 @@ namespace MyCaffe.test
                 dfVal += dfInc;
             }
 
+            dfVal = clrMap.GetValue(Color.FromArgb(0, 130, 124));
+            log.CHECK_NE(0, dfVal, "The value should not be zero.");
+
             log.WriteLine("DONE.");
         }
     }
