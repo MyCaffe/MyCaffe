@@ -24,16 +24,15 @@ namespace MyCaffe.test
             Log log = new Log("Test ColorMapper");
             log.EnableTrace = true;
 
+            int nCount = 300;
             ColorMapper clrMap = new ColorMapper(0, 1, Color.Black, Color.Red);
             double dfVal = 0;
-            double dfInc = 1.0 / 10.0;
+            double dfInc = 1.0 / (double)nCount;
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < nCount; i++)
             {
                 Color clr = clrMap.GetColor(dfVal);
                 double dfVal1 = clrMap.GetValue(clr);
-
-                dfVal1 = Math.Round(dfVal1, 1);
 
                 log.EXPECT_EQUAL<float>(dfVal1, dfVal, "The value at i = " + i.ToString() + " value = " + dfVal.ToString() + " does not equal value1 = " + dfVal1.ToString());
 

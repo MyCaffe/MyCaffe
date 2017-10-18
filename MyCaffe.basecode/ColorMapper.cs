@@ -118,19 +118,35 @@ namespace MyCaffe.basecode
         /// <returns>The value associated with the color is returned.</returns>
         public double GetValue(Color clr)
         {
-            KeyValuePair<Color, SizeF> kvLast = new KeyValuePair<Color, SizeF>(Color.Black, new SizeF(0, 0));
+            KeyValuePair<Color, SizeF> kvLast = new KeyValuePair<Color, SizeF>(Color.Black, new SizeF(0, 0));        
+            List<KeyValuePair<Color, SizeF>> rgItems = m_rgColorMappings.ToList();
+            rgItems.Add(kvLast);
 
-            foreach (KeyValuePair<Color, SizeF> kv in m_rgColorMappings)
+            Color clr0 = Color.Black;
+
+            for (int i = 0; i < rgItems.Count; i++)
             {
-                if (kv.Key.R >= clr.R && kv.Key.G >= clr.G && kv.Key.B >= clr.B)
+                Color clr1 = rgItems[i].Key;
+                double dfMin = rgItems[i].Value.Width;
+                double dfMax = rgItems[i].Value.Height;
+
+                if (i == 0)
                 {
-                    if (kv.Key.R == clr.R && kv.Key.G == clr.G && kv.Key.B == clr.B)
-                        return kv.Value.Width + ((kv.Value.Height - kv.Value.Width) / 2);
-                    else
-                        return kvLast.Value.Width + ((kvLast.Value.Height + kvLast.Value.Width) / 2);
+                    if (clr.R <= clr1.R && clr.G <= clr1.G && clr.B <= clr1.B)
+                        return dfMin + (dfMax - dfMin) / 2;
+                }
+                else
+                {
+                    if (((clr1.R >= clr0.R && clr.R <= clr1.R) ||
+                         (clr1.R < clr0.R && clr.R >= clr1.R)) &&
+                        ((clr1.G >= clr0.G && clr.G <= clr1.G) ||
+                         (clr1.G < clr0.G && clr.G >= clr1.G)) &&
+                        ((clr1.B >= clr0.B && clr.B <= clr1.B) ||
+                         (clr1.B < clr0.B && clr.B >= clr1.B)))
+                        return dfMin + (dfMax - dfMin) / 2;
                 }
 
-                kvLast = kv;
+                clr0 = clr1;
             }
 
             return 0;
