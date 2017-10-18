@@ -84,6 +84,7 @@
     </Compile>
     <Compile Include="SqlServerTypes\Loader.cs" />
     <Compile Include="TestBinaryHashLayer.cs" />
+    <Compile Include="TestColorMapper.cs" />
     <Compile Include="TestDeepDraw.cs" />
     <Compile Include="TestCropLayer.cs" />
     <Compile Include="TestDebugLayer.cs" />
