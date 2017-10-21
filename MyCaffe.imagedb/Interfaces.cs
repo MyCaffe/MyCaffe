@@ -414,7 +414,7 @@ namespace MyCaffe.imagedb
         /// <summary>
         /// When using a <i>Load Limit</i> that is greater than 0, this function loads the next set of images.
         /// </summary>
-        /// <param name="evtCancel">Specifies the name of the Cancel Event to abort loading the images.</param>
+        /// <param name="strEvtCancel">Specifies the name of the Cancel Event to abort loading the images.</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
         [OperationContract(IsOneWay = false)]
         bool LoadNextSet(string strEvtCancel);
