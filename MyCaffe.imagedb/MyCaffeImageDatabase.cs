@@ -636,6 +636,23 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Reset all in-memory image boosts.
+        /// </summary>
+        /// <remarks>
+        /// This does not impact the boost setting within the physical database.
+        /// </remarks>
+        /// <param name="nSrcId">Specifies the source ID of the data set to reset.</param>
+        public void ResetAllBoosts(int nSrcId)
+        {
+            int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
+            if (nWait == 0)
+                return;
+
+            ImageSet imgSet = m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId);
+            imgSet.ResetAllBoosts();
+        }
+
+        /// <summary>
         /// Returns a list of LabelDescriptor%s associated with the labels within a data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>

@@ -24,6 +24,7 @@ namespace MyCaffe.basecode
         double[] m_rgRealData;
         bool m_bIsRealData = false;
         DateTime m_dt = DateTime.MinValue;
+        int m_nOriginalBoost = 0;
         int m_nBoost = 0;
         bool m_bAutoLabeled = false;
         int m_nImageID = 0;
@@ -105,6 +106,7 @@ namespace MyCaffe.basecode
             m_nOriginalLabel = nLabel;
             m_nLabel = nLabel;
             m_dt = dtTime;
+            m_nOriginalBoost = nBoost;
             m_nBoost = nBoost;
             m_bAutoLabeled = bAutoLabeled;
             m_nVirtualID = nVirtualID;
@@ -153,6 +155,7 @@ namespace MyCaffe.basecode
             m_rgRealData = d.m_rgRealData;
             m_rgByteData = d.m_rgByteData;
             m_dt = d.m_dt;
+            m_nOriginalBoost = d.m_nOriginalBoost;
             m_nBoost = d.m_nBoost;
             m_bAutoLabeled = d.m_bAutoLabeled;
             m_nImageID = d.m_nImageID;
@@ -727,6 +730,14 @@ namespace MyCaffe.basecode
         {
             get { return m_nBoost; }
             set { m_nBoost = value; }
+        }
+
+        /// <summary>
+        /// Reset the boost to the original boost.
+        /// </summary>
+        public void ResetBoost()
+        {
+            m_nBoost = m_nOriginalBoost;
         }
 
         /// <summary>

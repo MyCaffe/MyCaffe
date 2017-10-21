@@ -712,5 +712,16 @@ namespace MyCaffe.imagedb
         {
             return m_rgImages.Length;
         }
+
+        /// <summary>
+        /// Resets all image boosts to the original boost loaded from the physical database.
+        /// </summary>
+        public void ResetAllBoosts()
+        {
+            foreach (SimpleDatum sd in m_rgImages)
+            {
+                sd.ResetBoost();
+            }
+        }
     }
 }
