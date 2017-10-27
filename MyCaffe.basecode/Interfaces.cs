@@ -76,17 +76,25 @@ namespace MyCaffe.basecode
     public enum SNAPSHOT_LOAD_METHOD
     {
         /// <summary>
+        /// Load the last solver state snapshotted.
+        /// </summary>
+        LAST_STATE = 0,
+        /// <summary>
         /// Load the weights with the best accuracy (which may not be the last).
         /// </summary>
-        WEIGHTS_BEST_ACCURACY,
+        WEIGHTS_BEST_ACCURACY = 1,
         /// <summary>
         /// Load the weights with the best error (which may not be the last).
         /// </summary>
-        WEIGHTS_BEST_ERROR,
+        WEIGHTS_BEST_ERROR = 2,
         /// <summary>
-        /// Load the last solver state snapshotted.
+        /// Load the state with the best accuracy (which may not be the last).
         /// </summary>
-        LAST_STATE
+        STATE_BEST_ACCURACY = 4,
+        /// <summary>
+        /// Load the state with the best error (which may not be the last).
+        /// </summary>
+        STATE_BEST_ERROR = 8
     }
 
     /// <summary>
