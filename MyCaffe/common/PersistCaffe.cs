@@ -102,7 +102,7 @@ namespace MyCaffe.common
             ProtoBufFieldCollection fields = reader.ReadFields(fd, false);
             Stopwatch sw = new Stopwatch();
 
-            m_log.WriteLine("Attampting to load the Solver state...");
+            m_log.WriteLine("Loading the Solver state...");
 
             if (fields == null || fields.Count == 0)
                 return null;
@@ -152,7 +152,7 @@ namespace MyCaffe.common
         public BlobCollection<T> LoadWeights(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, bool bSizeToFit, out bool bLoadedDiffs, List<string> inputWtInfo = null, List<string> targetWtInfo = null)
         {
             BlobCollection<T> colBlob1;
-            m_log.WriteLine("Attempting to load weights in Caffe model...");
+            m_log.WriteLine("Attempting to load the weights in Caffe model format...");
             string strVer;
 
             if (!IsMyCaffe(rgWeights, out strVer))
@@ -160,7 +160,7 @@ namespace MyCaffe.common
                 colBlob1 = loadFromCaffe(rgWeights, rgExpectedShapes, colBlobs, bSizeToFit, out bLoadedDiffs, inputWtInfo, targetWtInfo);
                 if (colBlob1 != null)
                 {
-                    m_log.WriteLine("Weights loaded in Caffe model.");
+                    m_log.WriteLine("Weights loaded in Caffe model format.");
                     return colBlob1;
                 }
 
@@ -172,11 +172,11 @@ namespace MyCaffe.common
                 m_log.FAIL("Loading weights with 'depreciated' native v.1.0 format...");
             }
 
-            m_log.WriteLine("Attempting to load weights in MyCaffe model...");
+            m_log.WriteLine("Attempting to load weights in MyCaffe model format...");
             colBlob1 = loadFromMyCaffe(rgWeights, rgExpectedShapes, colBlobs, bSizeToFit, out bLoadedDiffs, inputWtInfo, targetWtInfo);
             if (colBlob1 != null)
             {
-                m_log.WriteLine("Weights loaded in MyCaffe model.");
+                m_log.WriteLine("Weights loaded in MyCaffe model format.");
                 return colBlob1;
             }
 
