@@ -473,10 +473,10 @@ namespace MyCaffe.common
         /// <param name="dfOutputDetailPct">Specifies the percentage of detail to apply to the final output.</param>
         /// <param name="colOctaves">Specifies the collection of Octaves to run.</param>
         /// <param name="strSrcBlobName">Specifies the name of the source blob.</param>
-        /// <param name="nRandomImageScale">Specifies the random image scale to use, a number in the range [0,50] used to create varying degrees of gray in the random input image.  
+        /// <param name="dfRandomImageScale">Specifies the random image scale to use, a number in the range [0,50] used to create varying degrees of gray in the random input image.  
         /// A value of 0 removes the variation and uses a consistent image.</param>
         /// <returns>The configuration string is returned.</returns>
-        public static string CreateConfigurationString(int nWd, int nHt, double dfOutputDetailPct, OctavesCollection colOctaves, string strSrcBlobName, int nRandomImageScale)
+        public static string CreateConfigurationString(int nWd, int nHt, double dfOutputDetailPct, OctavesCollection colOctaves, string strSrcBlobName, double dfRandomImageScale)
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
@@ -484,7 +484,7 @@ namespace MyCaffe.common
             rgChildren.Add("input_width", nWd.ToString(), RawProto.TYPE.STRING);
             rgChildren.Add("output_detail_pct", dfOutputDetailPct.ToString(), RawProto.TYPE.STRING);
             rgChildren.Add("src_blob_name", strSrcBlobName, RawProto.TYPE.STRING);
-            rgChildren.Add("random_image_scale", nRandomImageScale.ToString(), RawProto.TYPE.STRING);
+            rgChildren.Add("random_image_scale", dfRandomImageScale.ToString(), RawProto.TYPE.STRING);
 
             foreach (Octaves octave in colOctaves)
             {
@@ -504,10 +504,10 @@ namespace MyCaffe.common
         /// <param name="nHt">Returns the input height.</param>
         /// <param name="dfOutputDetailPct">Returns the percentage of detail to apply to the final image.</param>
         /// <param name="strSrcBlobName">Returns the source blob name.</param>
-        /// <param name="nRandomImageScale">Returns the random image scale to use, a number in the range [0,50] used to create varying degrees of gray in the random input image.  
+        /// <param name="dfRandomImageScale">Returns the random image scale to use, a number in the range [0,50] used to create varying degrees of gray in the random input image.  
         /// A value of 0 removes the variation and uses a consistent image.  The default value is 16.</param>
         /// <returns>Returns the collection of Octaves to run.</returns>
-        public static OctavesCollection ParseConfigurationString(string strConfig, out int nWd, out int nHt, out double dfOutputDetailPct, out string strSrcBlobName, out int nRandomImageScale)
+        public static OctavesCollection ParseConfigurationString(string strConfig, out int nWd, out int nHt, out double dfOutputDetailPct, out string strSrcBlobName, out double dfRandomImageScale)
         {
             RawProto proto = RawProto.Parse(strConfig);
             string strVal;
@@ -528,9 +528,9 @@ namespace MyCaffe.common
             if ((strVal = proto.FindValue("src_blob_name")) != null)
                 strSrcBlobName = strVal;
 
-            nRandomImageScale = 16;
+            dfRandomImageScale = 16;
             if ((strVal = proto.FindValue("random_image_scale")) != null)
-                nRandomImageScale = int.Parse(strVal);
+                dfRandomImageScale = double.Parse(strVal);
 
             OctavesCollection col = new OctavesCollection();
             RawProtoCollection rpcol = proto.FindChildren("octave");
