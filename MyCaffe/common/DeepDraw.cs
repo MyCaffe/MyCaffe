@@ -201,9 +201,16 @@ namespace MyCaffe.common
         /// <param name="dfDetailPercentageToOutput">Optionally, specifies the amount of detail to apply to the original image when producing the final image (Default = 0.25 for 25%).</param>
         /// <param name="strOutputDir">Optionally, specifies the output directory wheren images are to be output.  When <i>null</i>, no images are output, but are instead set in each Octave.</param>
         /// <param name="bVisualizeEachStep">Optionally, specifies to create an image at each step of the process which can be useful when making a video of the evolution (default = <i>false</i>).</param>
-        /// <returns></returns>
-        public bool Render(Bitmap bmpInput, int nFocusLabel = -1, double dfDetailPercentageToOutput = 0.25, string strOutputDir = null, bool bVisualizeEachStep = false)
+        /// <param name="rgDirectInputs">Optionally, specifies the direct inputs used to set each output.  When not <i>null</i> the direct inputs are used instead of the <i>nFocusLabel</i> whereby the 
+        /// network outputs are set to the direct input values and the <i>nFocusLabel</i> is used to index the image and should therefore be unique for each set of direct inputs.  
+        /// By default, this value is set to <i>null</i>.
+        /// </param>
+        /// <returns>Upon completing the render, this method returns <i>true</i>, otherwise if cancelled it returns <i>false</i>.</returns>
+        public bool Render(Bitmap bmpInput, int nFocusLabel = -1, double dfDetailPercentageToOutput = 0.25, string strOutputDir = null, bool bVisualizeEachStep = false, float[] rgDirectInputs = null)
         {
+            if (rgDirectInputs != null && nFocusLabel < 0)
+                throw new Exception("The focus label must be set to a unique value >= 0 that corresponds to this specific direct input set.");
+
             // get the input dimensions from net
             Blob<T> blobSrc = m_net.blob_by_name("data");
 
@@ -216,6 +223,7 @@ namespace MyCaffe.common
             // Set the base data.
             if (strOutputDir != null)
                 bmpInput.Save(strOutputDir + "\\input_image.png");
+
             Datum d = ImageData.GetImageData(bmpInput, 3, false, -1);
             m_blobBase.mutable_cpu_data = m_transformer.Transform(d);
 
@@ -229,7 +237,7 @@ namespace MyCaffe.common
                 string strLayer = o.LayerName;
 
                 // Add changed details to the image.
-                if (nFocusLabel == -1)
+                if (nFocusLabel < 0)
                     m_cuda.add(blobSrc.count(), m_blobBase.gpu_data, m_blobDetail.gpu_data, blobSrc.mutable_gpu_data, o.PercentageOfPreviousOctaveDetailsToApply);
 
                 for (int j = 0; j < o.IterationN; j++)
@@ -243,7 +251,7 @@ namespace MyCaffe.common
                     double dfSigma = o.StartSigma + ((o.EndSigma - o.StartSigma) * j) / o.IterationN;
                     double dfStepSize = o.StartStepSize + ((o.EndStepSize - o.StartStepSize) * j) / o.IterationN;
 
-                    make_step(strLayer, dfSigma, dfStepSize, nFocusLabel);
+                    make_step(strLayer, dfSigma, dfStepSize, nFocusLabel, rgDirectInputs);
 
                     if ((bVisualizeEachStep || (j == o.IterationN - 1 && o.Save)))
                     {
@@ -273,7 +281,12 @@ namespace MyCaffe.common
                         {
                             string strFile = strOutputDir + "\\" + o.UniqueName + "_" + j.ToString();
                             if (nFocusLabel >= 0)
-                                strFile += "_class_" + nFocusLabel.ToString();
+                            {
+                                if (rgDirectInputs != null)
+                                    strFile += "_idx_" + nFocusLabel.ToString();
+                                else
+                                   strFile += "_class_" + nFocusLabel.ToString();
+                            }
 
                             bmp.Save(strFile + ".png");
                         }
@@ -292,7 +305,7 @@ namespace MyCaffe.common
                 }
 
                 // Extract details produced on the current octave.
-                if (nFocusLabel == -1)
+                if (nFocusLabel < 0)
                     m_cuda.sub(m_blobDetail.count(), blobSrc.gpu_data, m_blobBase.gpu_data, m_blobDetail.mutable_gpu_data);
             }
 
@@ -300,7 +313,7 @@ namespace MyCaffe.common
             return true;
         }
 
-        private void make_step(string strLayer, double dfSigma, double dfStepSize = 1.5, int nFocusLabel = -1)
+        private void make_step(string strLayer, double dfSigma, double dfStepSize = 1.5, int nFocusLabel = -1, float[] rgDirectInputs = null)
         {
             Blob<T> blobSrc = m_net.blob_by_name("data"); // input image is stored in Net's 'data' blob
             Blob<T> blobDst = m_net.blob_by_name(strLayer);
@@ -309,9 +322,19 @@ namespace MyCaffe.common
 
             m_net.Forward(out dfLoss);
 
-            if (nFocusLabel < 0)
+            if (nFocusLabel < 0 && rgDirectInputs == null)
             {
                 m_cuda.copy(blobDst.count(), blobDst.gpu_data, blobDst.mutable_gpu_diff);
+            }
+            else if (rgDirectInputs != null)
+            {
+                blobDst.SetDiff(0);
+
+                for (int i = 0; i < rgDirectInputs.Length && i < blobDst.count(); i++)
+                {
+                    if (rgDirectInputs[i] != 0)
+                        blobDst.SetDiff(rgDirectInputs[i], i);
+                }
             }
             else
             {
@@ -450,8 +473,10 @@ namespace MyCaffe.common
         /// <param name="dfOutputDetailPct">Specifies the percentage of detail to apply to the final output.</param>
         /// <param name="colOctaves">Specifies the collection of Octaves to run.</param>
         /// <param name="strSrcBlobName">Specifies the name of the source blob.</param>
+        /// <param name="nRandomImageScale">Specifies the random image scale to use, a number in the range [0,50] used to create varying degrees of gray in the random input image.  
+        /// A value of 0 removes the variation and uses a consistent image.</param>
         /// <returns>The configuration string is returned.</returns>
-        public static string CreateConfigurationString(int nWd, int nHt, double dfOutputDetailPct, OctavesCollection colOctaves, string strSrcBlobName)
+        public static string CreateConfigurationString(int nWd, int nHt, double dfOutputDetailPct, OctavesCollection colOctaves, string strSrcBlobName, int nRandomImageScale)
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
@@ -459,6 +484,7 @@ namespace MyCaffe.common
             rgChildren.Add("input_width", nWd.ToString(), RawProto.TYPE.STRING);
             rgChildren.Add("output_detail_pct", dfOutputDetailPct.ToString(), RawProto.TYPE.STRING);
             rgChildren.Add("src_blob_name", strSrcBlobName, RawProto.TYPE.STRING);
+            rgChildren.Add("random_image_scale", nRandomImageScale.ToString(), RawProto.TYPE.STRING);
 
             foreach (Octaves octave in colOctaves)
             {
@@ -478,8 +504,10 @@ namespace MyCaffe.common
         /// <param name="nHt">Returns the input height.</param>
         /// <param name="dfOutputDetailPct">Returns the percentage of detail to apply to the final image.</param>
         /// <param name="strSrcBlobName">Returns the source blob name.</param>
+        /// <param name="nRandomImageScale">Returns the random image scale to use, a number in the range [0,50] used to create varying degrees of gray in the random input image.  
+        /// A value of 0 removes the variation and uses a consistent image.  The default value is 16.</param>
         /// <returns>Returns the collection of Octaves to run.</returns>
-        public static OctavesCollection ParseConfigurationString(string strConfig, out int nWd, out int nHt, out double dfOutputDetailPct, out string strSrcBlobName)
+        public static OctavesCollection ParseConfigurationString(string strConfig, out int nWd, out int nHt, out double dfOutputDetailPct, out string strSrcBlobName, out int nRandomImageScale)
         {
             RawProto proto = RawProto.Parse(strConfig);
             string strVal;
@@ -499,6 +527,10 @@ namespace MyCaffe.common
             strSrcBlobName = "data";
             if ((strVal = proto.FindValue("src_blob_name")) != null)
                 strSrcBlobName = strVal;
+
+            nRandomImageScale = 16;
+            if ((strVal = proto.FindValue("random_image_scale")) != null)
+                nRandomImageScale = int.Parse(strVal);
 
             OctavesCollection col = new OctavesCollection();
             RawProtoCollection rpcol = proto.FindChildren("octave");
