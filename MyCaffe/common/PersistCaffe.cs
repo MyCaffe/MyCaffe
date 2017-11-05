@@ -516,7 +516,7 @@ namespace MyCaffe.common
 
             for (int i = 0; i < fields.Count; i++)
             {
-                if (fields[i].FieldDesc != null)
+                if (fields[i].FieldDesc != null) // Ignore null entries which can occur in V1.
                 {
                     if (fields[i].FieldDesc.Name == "LayerParameter")
                     {
@@ -783,7 +783,7 @@ namespace MyCaffe.common
 
             for (int i = 0; i < fields.Count; i++)
             {
-                if (fields[i].FieldDesc != null)
+                if (fields[i].FieldDesc != null)  // Ignore null entries which can occur in V1
                 {
                     if (fields[i].FieldDesc.Name == "LayerParameter")
                     {
