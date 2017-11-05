@@ -516,34 +516,37 @@ namespace MyCaffe.common
 
             for (int i = 0; i < fields.Count; i++)
             {
-                if (fields[i].FieldDesc.Name == "LayerParameter")
+                if (fields[i].FieldDesc != null)
                 {
-                    ProtoBufField pbName = fields[i].Array.FindFirstChild("name");
-                    ProtoBufFieldCollection col = fields[i].Array.FindAllChildren("blobs");
-                    string strName = (pbName != null) ? pbName.StringValue : ("layer_" + nLayerIdx.ToString());
-
-                    if (col != null && col.Count > 0)
+                    if (fields[i].FieldDesc.Name == "LayerParameter")
                     {
-                        col.SetTag(strName);
-                        colFieldBlobs.AddRange(col);
-                    }
+                        ProtoBufField pbName = fields[i].Array.FindFirstChild("name");
+                        ProtoBufFieldCollection col = fields[i].Array.FindAllChildren("blobs");
+                        string strName = (pbName != null) ? pbName.StringValue : ("layer_" + nLayerIdx.ToString());
 
-                    nLayerIdx++;
-                }
-                else if (fields[i].FieldDesc.Name == "V1LayerParameter")
-                {
-                    ProtoBufField pbName = fields[i].Array.FindFirstChild("name");
-                    ProtoBufFieldCollection col = fields[i].Array.FindAllChildren("blobs");
-                    string strName = (pbName != null) ? pbName.StringValue : ("layer_" + nLayerIdx.ToString());
-                   
-                    if (col != null && col.Count > 0)
+                        if (col != null && col.Count > 0)
+                        {
+                            col.SetTag(strName);
+                            colFieldBlobs.AddRange(col);
+                        }
+
+                        nLayerIdx++;
+                    }
+                    else if (fields[i].FieldDesc.Name == "V1LayerParameter")
                     {
-                        col.SetTag(strName);
-                        col.SetLegacy(true);
-                        colFieldBlobs.AddRange(col);
-                    }
+                        ProtoBufField pbName = fields[i].Array.FindFirstChild("name");
+                        ProtoBufFieldCollection col = fields[i].Array.FindAllChildren("blobs");
+                        string strName = (pbName != null) ? pbName.StringValue : ("layer_" + nLayerIdx.ToString());
 
-                    nLayerIdx++;
+                        if (col != null && col.Count > 0)
+                        {
+                            col.SetTag(strName);
+                            col.SetLegacy(true);
+                            colFieldBlobs.AddRange(col);
+                        }
+
+                        nLayerIdx++;
+                    }
                 }
             }
 
@@ -780,34 +783,37 @@ namespace MyCaffe.common
 
             for (int i = 0; i < fields.Count; i++)
             {
-                if (fields[i].FieldDesc.Name == "LayerParameter")
+                if (fields[i].FieldDesc != null)
                 {
-                    ProtoBufField pbName = fields[i].Array.FindFirstChild("name");
-                    ProtoBufFieldCollection col = fields[i].Array.FindAllChildren("blobs");
-                    string strName = (pbName != null) ? pbName.StringValue : ("layer_" + nLayerIdx.ToString());
-
-                    if (col != null && col.Count > 0)
+                    if (fields[i].FieldDesc.Name == "LayerParameter")
                     {
-                        col.SetTag(strName);
-                        colFieldBlobs.AddRange(col);
+                        ProtoBufField pbName = fields[i].Array.FindFirstChild("name");
+                        ProtoBufFieldCollection col = fields[i].Array.FindAllChildren("blobs");
+                        string strName = (pbName != null) ? pbName.StringValue : ("layer_" + nLayerIdx.ToString());
+
+                        if (col != null && col.Count > 0)
+                        {
+                            col.SetTag(strName);
+                            colFieldBlobs.AddRange(col);
+                        }
+
+                        nLayerIdx++;
                     }
-
-                    nLayerIdx++;
-                }
-                else if (fields[i].FieldDesc.Name == "V1LayerParameter")
-                {
-                    ProtoBufField pbName = fields[i].Array.FindFirstChild("name");
-                    ProtoBufFieldCollection col = fields[i].Array.FindAllChildren("blobs");
-                    string strName = (pbName != null) ? pbName.StringValue : ("layer_" + nLayerIdx.ToString());
-
-                    if (col != null && col.Count > 0)
+                    else if (fields[i].FieldDesc.Name == "V1LayerParameter")
                     {
-                        col.SetTag(strName);
-                        col.SetLegacy(true);
-                        colFieldBlobs.AddRange(col);
-                    }
+                        ProtoBufField pbName = fields[i].Array.FindFirstChild("name");
+                        ProtoBufFieldCollection col = fields[i].Array.FindAllChildren("blobs");
+                        string strName = (pbName != null) ? pbName.StringValue : ("layer_" + nLayerIdx.ToString());
 
-                    nLayerIdx++;
+                        if (col != null && col.Count > 0)
+                        {
+                            col.SetTag(strName);
+                            col.SetLegacy(true);
+                            colFieldBlobs.AddRange(col);
+                        }
+
+                        nLayerIdx++;
+                    }
                 }
             }
 
