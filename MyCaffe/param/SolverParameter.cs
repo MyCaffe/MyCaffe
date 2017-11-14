@@ -61,7 +61,7 @@ namespace MyCaffe.param
         double m_dfMomentum2 = 0.999;
         double m_dfRmsDecay = 0.95;
         bool m_bDebugInfo = false;
-        bool m_bSnapshotAfterTrain = true;
+        bool m_bSnapshotAfterTrain = false;
         string m_strCustomTrainer = null;
         bool m_bOutputAverageResults = false;
         bool m_bSnapshotIncludeWeights = true;
