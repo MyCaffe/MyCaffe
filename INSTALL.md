@@ -1,27 +1,27 @@
 <H2>Installation Instructions</H2>
-To install and run <b>MyCaffe</b> you will need to do the following steps.
+To install and run <b>MyCaffe</b> you will need to do the following steps.  As a side note, we are using (and recommend) CUDA 9.0 with cuDNN 7.0.3 and Visual Studio 2017 for all of our testing.
 </br>
 <H3>I. CUDA - Install NVIDIA CUDA and cuDNN Libraries</H3>
-Install either CUDA 8.0 -or- CUDA 9.0 (or both) as shown below.
-<H4>A. CUDA 8.0 - Install NVIDIA CUDA and cuDNN Libraries</H4>
+Install either CUDA 9.0 (recommended) -or- CUDA 8.0 (depreciated) as shown below.
+<H4>A. CUDA 9.0 - Install NVIDIA CUDA and cuDNN Libraries</H4>
+1.) Install the NVIDIA CUDA 9.0 Toolkit for Windows from https://developer.nvidia.com/cuda-downloads. 
+</br>2.) Install the NVIDIA cuDNN 7.0 Accelerated Libraries for CUDA 9.0 from https://developer.nvidia.com/cuDNN.
+</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V9_0)</i></b> installation location  named <b><i>cudann_9.0rc-win-v7.0.3</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
+</br>4.) Copy the <b><i>cudnn64_7.dll</i></b> file into the <b><i>$(CUDA_PATH_V9_0)\bin</i></b> directory.
+</br>
+<H4>B. CUDA 8.0 - Install NVIDIA CUDA and cuDNN Libraries (depreciated)</H4>
 1.) Install the NVIDIA CUDA 8.0 Toolkit for Windows from https://developer.nvidia.com/cuda-downloads. 
 </br>2.) Install the NVIDIA cuDNN 6.0 Accelerated Libraries for CUDA 8.0 from https://developer.nvidia.com/cuDNN.
 </br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V8_0)</i></b> installation location  named <b><i>cudann_8.0-win-v6.0</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
 </br>4.) Copy the <b><i>cudnn64_6.dll</i></b> file into the <b><i>$(CUDA_PATH_V8_0)\bin</i></b> directory.
 </br>
-<H4>B. CUDA 9.0 - Install NVIDIA CUDA and cuDNN Libraries</H4>
-1.) Install the NVIDIA CUDA 9.0 Toolkit for Windows from https://developer.nvidia.com/cuda-downloads. 
-</br>2.) Install the NVIDIA cuDNN 7.0 Accelerated Libraries for CUDA 9.0 from https://developer.nvidia.com/cuDNN.
-</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V9_0)</i></b> installation location  named <b><i>cudann_9.0rc-win-v7.0</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
-</br>4.) Copy the <b><i>cudnn64_7.dll</i></b> file into the <b><i>$(CUDA_PATH_V9_0)\bin</i></b> directory.
-</br>
 </br>NOTE: The CudaDnnDLL project points to the file directories noted above for the cuDNN include and library files.  
 
 <H3>II. Setup Strong Names and Signing</H3>
 The <b><i>MyCaffe</i></b> project, uses the following strong name key files:
-</br>The <b>CudaControl</b> uses the <b><i>CudaControl.pfx</i></b> located in the <b><i>packages\CudaControl.1.0.0.271\lib\Net40\</i></b> directory.  
+</br>The <b>CudaControl</b> uses the <b><i>CudaControl.pfx</i></b> located in the <b><i>packages\CudaControl.1.0.0.372\lib\Net40\</i></b> directory.  
 If you download, build the <b>CudaControl</b> repository and create a new <b><i>CudaControl.pfx</i></b> file, you should also copy it into the 
-<b><i>packages\CudaControl.1.0.0.271\lib\Net40\</i></b> directory, replacing the pfx file there.  Alternatively, you can just install 
+<b><i>packages\CudaControl.1.0.0.372\lib\Net40\</i></b> directory, replacing the pfx file there.  Alternatively, you can just install 
 the <b>CudaControl</b> package from NuGet.
 </p>
 The <b><i>MyCaffe</i></b> uses the <b><i>mycaffe.sn.pfx</i></b> key file for string name signing.
@@ -38,7 +38,7 @@ right click the <b><i>MyCaffe</i></b> solution and select the '<i>Restore NuGet 
 </br>
 </br>The <b><i>MyCaffe</i></b> project uses the following NuGet Packages:
 </br>a.) <b>Google.Protobuf</b> by Google Inc., version 3.3.0
-</br>b.) <b>CudaControl</b> by SignalPOP, version 1.0.0.271 (available on NuGet, or build from CudaControl repository.)  NOTE: when using the CudaControl repository,
+</br>b.) <b>CudaControl</b> by SignalPop, version 0.9.0.372 (available on NuGet, or build from CudaControl repository.)  NOTE: when using the CudaControl repository,
 you must register the CudaControl.dll (run '<b><i>regsvr32 CudaControl.dll</i></b>' from a CMD window run with Administrative privileges).
 </br>
 </br>The <b><i>MyCaffe.app</i></b> project uses the following NuGet Packages:
@@ -54,7 +54,7 @@ you must register the CudaControl.dll (run '<b><i>regsvr32 CudaControl.dll</i></
 <H3>IV. Required Software</H3>
 <b>MyCaffe</b> requires the following software.
 </br>
-</br>a.) Microsoft Visual Studio 2015 or Visual Studio 2017
+</br>a.) Microsoft Visual Studio 2017 or Visual Studio 2015
 </br>b.) Microsoft SQL or Microsoft SQL Express
 </br>Both 'a' and 'b' are available from Microsoft at www.microsoft.com.
 </br>
