@@ -242,10 +242,9 @@ namespace MyCaffe.imagedb
         /// <summary>
         /// Return the SimpleDatum for the image mean from the open data source.
         /// </summary>
-        /// <param name="nMaskOutAllButLastColumn">Specifies to mask out all but the last 'n' columns of data.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <returns>The SimpleDatum is returned if found, otherwise <i>null</i> is returned.</returns>
-        public SimpleDatum QueryImageMean(int nMaskOutAllButLastColumn, int nSrcId = 0)
+        public SimpleDatum QueryImageMean(int nSrcId = 0)
         {
             RawImageMean img = m_db.GetRawImageMean(nSrcId);
             return LoadDatum(img);

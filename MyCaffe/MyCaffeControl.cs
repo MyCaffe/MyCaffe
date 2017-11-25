@@ -834,7 +834,7 @@ namespace MyCaffe
             if (sd == null)
                 throw new Exception("Could not find the data source '" + strSrc + "' in the database.");
 
-            return factory.QueryImageMean(0, sd.ID);
+            return factory.QueryImageMean(sd.ID);
         }
 
         private DatasetDescriptor findDataset(NetParameter p)

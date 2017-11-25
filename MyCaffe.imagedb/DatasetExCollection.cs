@@ -73,13 +73,12 @@ namespace MyCaffe.imagedb
         /// Returns the image mean for a data source.
         /// </summary>
         /// <param name="nSrcID">Specifies the ID of the data source.</param>
-        /// <param name="nMaskOutAllButLastColumns">Optionally, specifies to mask out all but the last 'n' columns.</param>
         /// <returns>The image mean queried is returned as a SimpleDatum.</returns>
-        public SimpleDatum QueryImageMean(int nSrcID, int nMaskOutAllButLastColumns)
+        public SimpleDatum QueryImageMean(int nSrcID)
         {
             foreach (DatasetEx ds in m_rgDatasets)
             {
-                SimpleDatum sd = ds.QueryImageMean(nSrcID, nMaskOutAllButLastColumns);
+                SimpleDatum sd = ds.QueryImageMean(nSrcID);
                 if (sd != null)
                     return sd;
             }

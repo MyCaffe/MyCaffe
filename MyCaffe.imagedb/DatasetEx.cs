@@ -325,15 +325,14 @@ namespace MyCaffe.imagedb
         /// Query the image mean for a data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source to use.</param>
-        /// <param name="nMaskOutAllButLastColumn">Optionally directs to mask out all columns but the last as specified.</param>
         /// <returns>The SimpleDatum containing the image mean is returned.</returns>
-        public SimpleDatum QueryImageMean(int nSrcId, int nMaskOutAllButLastColumn)
+        public SimpleDatum QueryImageMean(int nSrcId)
         {
             if (m_TestingImages.SourceID != nSrcId &&
                 m_TrainingImages.SourceID != nSrcId)
                 return null;
 
-            return m_factory.QueryImageMean(nMaskOutAllButLastColumn, nSrcId);
+            return m_factory.QueryImageMean(nSrcId);
         }
 
         /// <summary>
