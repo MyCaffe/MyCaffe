@@ -854,11 +854,15 @@ namespace MyCaffe.imagedb
         /// <summary>
         /// Queries the image mean for a data source from the database on disk.
         /// </summary>
+        /// <remarks>
+        /// If the image mean does not exist in the database, one is created, saved
+        /// and then returned.
+        /// </remarks>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
         /// <returns>The image mean is returned as a SimpleDatum.</returns>
-        public SimpleDatum QueryImageMean(int nSrcId)
+        public SimpleDatum QueryImageMeanFromDb(int nSrcId)
         {
-            SimpleDatum sd = QueryImageMean(nSrcId, m_nMaskOutAllButLastColumns);
+            SimpleDatum sd = QueryImageMean(nSrcId);
 
             if (sd != null)
                 return sd;
@@ -885,14 +889,13 @@ namespace MyCaffe.imagedb
         /// Query the image mean for a data source and mask out (set to 0) all of the image except for the last columns.
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
-        /// <param name="nMaskOutAllButLastColumns">Specifies the number of last columns to leave in the image mean.</param>
         /// <returns></returns>
-        public SimpleDatum QueryImageMean(int nSrcId, int nMaskOutAllButLastColumns)
+        public SimpleDatum QueryImageMean(int nSrcId)
         {
             if (!m_colDatasets.ContainsKey(m_nStrIDHashCode))
                 return null;
 
-            return m_colDatasets[m_nStrIDHashCode].QueryImageMean(nSrcId, nMaskOutAllButLastColumns);
+            return m_colDatasets[m_nStrIDHashCode].QueryImageMean(nSrcId);
         }
 
         /// <summary>

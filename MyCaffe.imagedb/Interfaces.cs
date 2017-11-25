@@ -280,6 +280,19 @@ namespace MyCaffe.imagedb
         SimpleDatum QueryImageMean(int nSrcId);
 
         /// <summary>
+        /// Queries the image mean for a data source from the database on disk.
+        /// </summary>
+        /// <remarks>
+        /// If the image mean does not exist in the database, one is created, saved
+        /// and then returned.
+        /// </remarks>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        /// <returns>The image mean is returned as a SimpleDatum.</returns>
+        [OperationContract(IsOneWay = false)]
+        [FaultContract(typeof(ImageDatabaseErrorData))]
+        SimpleDatum QueryImageMeanFromDb(int nSrcId);
+
+        /// <summary>
         /// Returns the image mean for a data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
