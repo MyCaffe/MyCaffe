@@ -82,7 +82,7 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source to use.</param>
         /// <param name="nCacheMax">Optionally, specifies the maximum cache count to use when adding RawImages (default = 500).</param>
-        /// <param name="bForceLoadImageFilePath">Optionally specfies to force load the image file path (default = <i>false</i>).</param>
+        /// <param name="bForceLoadImageFilePath">Optionally specfies to force load the image file path (default = <i>false</i>) and use file based data.</param>
         public void Open(int nSrcId, int nCacheMax = 500, bool bForceLoadImageFilePath = false)
         {
             if (m_openSource == null)

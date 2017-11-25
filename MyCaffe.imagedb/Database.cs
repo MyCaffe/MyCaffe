@@ -83,7 +83,7 @@ namespace MyCaffe.imagedb
         /// Opens a data source.
         /// </summary>
         /// <param name="strSrc">Specifies the name of the data source to open.</param>
-        /// <param name="bForceLoadImageFilePath">Optionally, specifies to force load the image file path (default = <i>false</i>).</param>
+        /// <param name="bForceLoadImageFilePath">Optionally, specifies to force load the image file path (default = <i>false</i>) and use file-based data.</param>
         public void Open(string strSrc, bool bForceLoadImageFilePath = false)
         {
             m_src = GetSource(strSrc);
