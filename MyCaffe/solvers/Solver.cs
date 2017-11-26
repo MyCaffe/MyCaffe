@@ -884,9 +884,12 @@ namespace MyCaffe.solvers
         /// <summary>
         /// The restore method simply calls the RestoreSolverState method of the inherited class.
         /// </summary>
-        public void Restore(byte[] rgWeights, byte[] rgState)
+        /// <param name="rgWeights">Specifies the weights to load, or <i>null</i> to ignore.</param>
+        /// <param name="rgState">Specifies the state to load, or <i>null</i> to ignore.</param>
+        /// <param name="strSkipBlobTypes">Specifies the blob types to ignore and not load, or <i>null</i> to ignore.</param>
+        public void Restore(byte[] rgWeights, byte[] rgState, string strSkipBlobTypes = null)
         {
-            m_net.LoadWeights(rgWeights, m_persist);
+            m_net.LoadWeights(rgWeights, m_persist, null, null, strSkipBlobTypes);
 
             if (rgState != null)
             {
