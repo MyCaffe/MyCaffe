@@ -1,6 +1,6 @@
 <H2>Welcome to MyCaffe!</H2>
 
-<b><a href="http://mycaffe.ai">MyCaffe</a></b> is a complete C# re-write of the native C++ CAFFE[1] open source project.
+<b><a href="https://github.com/mycaffe">MyCaffe</a></b> is a complete C# re-write of the native C++ CAFFE[1] open source project.
 
 MyCaffe allows Windows C# software developers to use and expand deep learning solutions in their native C# language.  All layers except for a few, and nearly every unit test are now provided in C#.
 Windows programmers can now write their own custom layers in the C# language, yet still enjoy the benefit of an efficient deep learning architecture that supports multi-GPU training on up to 8 
@@ -13,7 +13,7 @@ the general CAFFE architecture for all.  In addition, MyCaffe uses the same Prot
 binary files allowing an easy exchange between the MyCaffe and C++ CAFFE platforms.  
 
 Most of the MyCaffe C# code is very similar to the C++ CAFFE code, for our goal is to extend the CAFFE platform to C# programmers, while 
-maintaining compatibility with Caffe's solver descriptions, model descriptions and binary weight format.
+maintaining compatibility with CAFFE's solver descriptions, model descriptions and binary weight format.
 
 To get started with the MyCaffe C# source, check out the <a href="https://github.com/mycaffe">MyCaffe open-source</a> project on GitHub.  
 
