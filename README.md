@@ -20,9 +20,9 @@ To get started with the MyCaffe C# source, check out the <a href="https://github
 The C# based MyCaffe open-source project is independently maintained by <a href="http://www.signalpop.com">SignalPop LLC</a> and made 
 available under the Apache 2.0 License.
 <h3>Supported Development Environments:</h3>
-* Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 9.0RC</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.0.3</a> (currently uses VS2015 compile)</br>
+* Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 9.0</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.0.4</a> (currently uses VS2015 compile)</br>
 * (depreciated) Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 8.0</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 6.0</a> (currently uses VS2015 compile)</br>
-* Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 9.0RC</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.0</a> </br>
+* Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 9.0</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.0.4</a> </br>
 * (depreciated) Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 8.0</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 6.0</a> </br>
 </br>
 
