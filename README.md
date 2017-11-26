@@ -15,8 +15,6 @@ binary files allowing an easy exchange between the MyCaffe and C++ CAFFE platfor
 Most of the MyCaffe C# code is very similar to the C++ CAFFE code, for our goal is to extend the CAFFE platform to C# programmers, while 
 maintaining compatibility with CAFFE's solver descriptions, model descriptions and binary weight format.
 
-To get started with the MyCaffe C# source, check out the <a href="https://github.com/mycaffe">MyCaffe open-source</a> project on GitHub.  
-
 The C# based MyCaffe open-source project is independently maintained by <a href="http://www.signalpop.com">SignalPop LLC</a> and made 
 available under the Apache 2.0 License.
 <h3>Supported Development Environments:</h3>
