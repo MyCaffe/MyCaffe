@@ -19,6 +19,7 @@ namespace MyCaffe.basecode
         WaitHandle m_hOriginalCancel = null;
         List<Tuple<WaitHandle, bool, string>> m_rgCancel = new List<Tuple<WaitHandle, bool, string>>();
         string m_strName = null;
+        object m_syncObj = new object();
 
         /// <summary>
         /// The CancelEvent constructor.
@@ -56,7 +57,11 @@ namespace MyCaffe.basecode
         public void AddCancelOverride(string strName)
         {
             EventWaitHandle evtWait = EventWaitHandle.OpenExisting(strName, System.Security.AccessControl.EventWaitHandleRights.Synchronize | System.Security.AccessControl.EventWaitHandleRights.Modify);
-            m_rgCancel.Add(new Tuple<WaitHandle, bool, string>(evtWait, true, strName));
+
+            lock (m_syncObj)
+            {
+                m_rgCancel.Add(new Tuple<WaitHandle, bool, string>(evtWait, true, strName));
+            }
         }
 
         /// <summary>
@@ -65,7 +70,10 @@ namespace MyCaffe.basecode
         /// <param name="evtCancel">Specifies the cancel override to add.</param>
         public void AddCancelOverride(CancelEvent evtCancel)
         {
-            m_rgCancel.Add(new Tuple<WaitHandle, bool, string>(evtCancel.m_hOriginalCancel, false, evtCancel.Name));
+            lock (m_syncObj)
+            {
+                m_rgCancel.Add(new Tuple<WaitHandle, bool, string>(evtCancel.m_hOriginalCancel, false, evtCancel.Name));
+            }
         }
 
         /// <summary>
@@ -75,24 +83,27 @@ namespace MyCaffe.basecode
         /// <returns>If removed, <i>true</i> is returned.</returns>
         public bool RemoveCancelOverride(string strName)
         {
-            int nIdx = -1;
-
-            for (int i = 0; i < m_rgCancel.Count; i++)
+            lock (m_syncObj)
             {
-                if (m_rgCancel[i].Item3 == strName)
+                int nIdx = -1;
+
+                for (int i = 0; i < m_rgCancel.Count; i++)
                 {
-                    nIdx = i;
-                    break;
+                    if (m_rgCancel[i].Item3 == strName)
+                    {
+                        nIdx = i;
+                        break;
+                    }
                 }
-            }
 
-            if (nIdx >= 0)
-            {
-                if (m_rgCancel[nIdx].Item2)
-                    m_rgCancel[nIdx].Item1.Dispose();
+                if (nIdx >= 0)
+                {
+                    if (m_rgCancel[nIdx].Item2)
+                        m_rgCancel[nIdx].Item1.Dispose();
 
-                m_rgCancel.RemoveAt(nIdx);
-                return true;
+                    m_rgCancel.RemoveAt(nIdx);
+                    return true;
+                }
             }
 
             return false;
@@ -105,24 +116,27 @@ namespace MyCaffe.basecode
         /// <returns>If removed, <i>true</i> is returned.</returns>
         public bool RemoveCancelOverride(CancelEvent evtCancel)
         {
-            int nIdx = -1;
-
-            for (int i = 0; i < m_rgCancel.Count; i++)
+            lock (m_syncObj)
             {
-                if (m_rgCancel[i].Item1 == evtCancel.m_hOriginalCancel)
+                int nIdx = -1;
+
+                for (int i = 0; i < m_rgCancel.Count; i++)
                 {
-                    nIdx = i;
-                    break;
+                    if (m_rgCancel[i].Item1 == evtCancel.m_hOriginalCancel)
+                    {
+                        nIdx = i;
+                        break;
+                    }
                 }
-            }
 
-            if (nIdx >= 0)
-            {
-                if (m_rgCancel[nIdx].Item2)
-                    m_rgCancel[nIdx].Item1.Dispose();
+                if (nIdx >= 0)
+                {
+                    if (m_rgCancel[nIdx].Item2)
+                        m_rgCancel[nIdx].Item1.Dispose();
 
-                m_rgCancel.RemoveAt(nIdx);
-                return true;
+                    m_rgCancel.RemoveAt(nIdx);
+                    return true;
+                }
             }
 
             return false;
@@ -176,9 +190,12 @@ namespace MyCaffe.basecode
             {
                 List<WaitHandle> rgHandles = new List<WaitHandle>() { m_hOriginalCancel };
 
-                foreach (Tuple<WaitHandle, bool, string> item in m_rgCancel)
+                lock (m_syncObj)
                 {
-                    rgHandles.Add(item.Item1);
+                    foreach (Tuple<WaitHandle, bool, string> item in m_rgCancel)
+                    {
+                        rgHandles.Add(item.Item1);
+                    }
                 }
 
                 return rgHandles.ToArray();
@@ -199,13 +216,16 @@ namespace MyCaffe.basecode
                 m_hOriginalCancel = null;
             }
 
-            foreach (Tuple<WaitHandle, bool, string> item in m_rgCancel)
+            lock (m_syncObj)
             {
-                if (item.Item2)
-                    item.Item1.Dispose();
-            }
+                foreach (Tuple<WaitHandle, bool, string> item in m_rgCancel)
+                {
+                    if (item.Item2)
+                        item.Item1.Dispose();
+                }
 
-            m_rgCancel.Clear();
+                m_rgCancel.Clear();
+            }
         }
 
         /// <summary>
