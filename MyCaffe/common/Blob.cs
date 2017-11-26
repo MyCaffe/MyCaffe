@@ -55,6 +55,10 @@ namespace MyCaffe.common
             /// </summary>
             DATA,
             /// <summary>
+            /// The Blob holds an inner product weight.
+            /// </summary>
+            IP_WEIGHT,
+            /// <summary>
             /// The Blob holds Loss Data.
             /// </summary>
             LOSS,
