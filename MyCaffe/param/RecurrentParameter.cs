@@ -15,8 +15,8 @@ namespace MyCaffe.param
     public class RecurrentParameter : LayerParameterBase
     {
         uint m_nNumOutput = 0;
-        FillerParameter m_weight_filler = new FillerParameter("gaussian");
-        FillerParameter m_bias_filler = new FillerParameter("constant", 1.0);
+        FillerParameter m_weight_filler = new FillerParameter("xavier");
+        FillerParameter m_bias_filler = new FillerParameter("constant", 0.1);
         bool m_bDebugInfo = false;
         bool m_bExposeHidden = false;
 

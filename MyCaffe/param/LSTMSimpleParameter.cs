@@ -23,8 +23,8 @@ namespace MyCaffe.param
     {
         uint m_nNumOutput;
         double m_dfClippingThreshold = 0;
-        FillerParameter m_fillerWeights = new FillerParameter("gaussian");
-        FillerParameter m_fillerBias = new FillerParameter("constant", 1.0);
+        FillerParameter m_fillerWeights = new FillerParameter("xavier");
+        FillerParameter m_fillerBias = new FillerParameter("constant", 0.1);
         uint m_nBatchSize = 1;
         bool m_bEnableClockworkForgetGateBias = false;
 
