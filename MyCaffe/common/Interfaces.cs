@@ -77,8 +77,9 @@ namespace MyCaffe.common
         /// <param name="bLoadedDiffs">Returns whether or not the diffs were loaded.</param>
         /// <param name="inputWtInfo">Optionally, specifies the weight info describing the input weight blobs to import by name.  Note when used the number of blobs must match the number of <i>targetWtInfo</i> blobs.  Otherwise, when <i>null</i> this parameter is ignored.</param>
         /// <param name="targetWtInfo">Optionally, specifies the weight info describing the target weight blobs to import by name.  Note when used the number of blobs must match the number of <i>inputWtInfo</i> blobs.  Otherwise, when <i>null</i> this parameter is ignored.</param>
+        /// <param name="strSkipBlobType">Optionally, specifies a blob type where weights are NOT loaded.  See Blob.BLOB_TYPE for the types of Blobs.</param>
         /// <returns>The collection of Blobs with newly loaded weights is returned.</returns>
-        BlobCollection<T> LoadWeights(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, bool bSizeToFit, out bool bLoadedDiffs, List<string> inputWtInfo = null, List<string> targetWtInfo = null);
+        BlobCollection<T> LoadWeights(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, bool bSizeToFit, out bool bLoadedDiffs, List<string> inputWtInfo = null, List<string> targetWtInfo = null, string strSkipBlobType = null);
 
         /// <summary>
         /// Save the solver state to a byte array.

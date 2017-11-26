@@ -605,7 +605,15 @@ namespace MyCaffe
                 m_solver = Solver<T>.Create(m_cuda, m_log, p, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_imgDb, m_persist, m_rgGpu.Count, 0);
                 m_solver.SnapshotWeightUpdateMethod = m_settings.SnapshotWeightUpdateMethod;
                 if (p.WeightsState != null || p.SolverState != null)
-                    m_solver.Restore(p.WeightsState, p.SolverState);
+                {
+                    string strSkipBlobType = null;
+
+                    ParameterDescriptor param = p.Parameters.Find("ModelResized");
+                    if (param != null && param.Value == "True")
+                        strSkipBlobType = Blob<T>.BLOB_TYPE.IP_WEIGHT.ToString();
+
+                    m_solver.Restore(p.WeightsState, p.SolverState, strSkipBlobType);
+                }
 
                 m_solver.OnSnapshot += new EventHandler<SnapshotArgs>(m_solver_OnSnapshot);
                 m_solver.OnTrainingIteration += new EventHandler<TrainingIterationArgs<T>>(m_solver_OnTrainingIteration);

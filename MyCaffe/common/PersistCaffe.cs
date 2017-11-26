@@ -148,8 +148,9 @@ namespace MyCaffe.common
         /// <param name="bLoadedDiffs">Returns whether or not the diffs were loaded.</param>
         /// <param name="inputWtInfo">Optionally, specifies the weight info describing the input weight blobs to import by name.  Note when used the number of blobs must match the number of <i>targetWtInfo</i> blobs.  Otherwise, when <i>null</i> this parameter is ignored.</param>
         /// <param name="targetWtInfo">Optionally, specifies the weight info describing the target weight blobs to import by name.  Note when used the number of blobs must match the number of <i>inputWtInfo</i> blobs.  Otherwise, when <i>null</i> this parameter is ignored.</param>
+        /// <param name="strSkipBlobType">Optionally, specifies a blob type where weights are NOT loaded.  See Blob.BLOB_TYPE for the types of Blobs.</param>
         /// <returns>The collection of Blobs with newly loaded weights is returned.</returns>
-        public BlobCollection<T> LoadWeights(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, bool bSizeToFit, out bool bLoadedDiffs, List<string> inputWtInfo = null, List<string> targetWtInfo = null)
+        public BlobCollection<T> LoadWeights(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, bool bSizeToFit, out bool bLoadedDiffs, List<string> inputWtInfo = null, List<string> targetWtInfo = null, string strSkipBlobType = null)
         {
             BlobCollection<T> colBlob1;
             m_log.WriteLine("Attempting to load the weights in Caffe model format...");
@@ -157,7 +158,7 @@ namespace MyCaffe.common
 
             if (!IsMyCaffe(rgWeights, out strVer))
             {
-                colBlob1 = loadFromCaffe(rgWeights, rgExpectedShapes, colBlobs, bSizeToFit, out bLoadedDiffs, inputWtInfo, targetWtInfo);
+                colBlob1 = loadFromCaffe(rgWeights, rgExpectedShapes, colBlobs, bSizeToFit, out bLoadedDiffs, inputWtInfo, targetWtInfo, strSkipBlobType);
                 if (colBlob1 != null)
                 {
                     m_log.WriteLine("Weights loaded in Caffe model format.");
@@ -173,7 +174,7 @@ namespace MyCaffe.common
             }
 
             m_log.WriteLine("Attempting to load weights in MyCaffe model format...");
-            colBlob1 = loadFromMyCaffe(rgWeights, rgExpectedShapes, colBlobs, bSizeToFit, out bLoadedDiffs, inputWtInfo, targetWtInfo);
+            colBlob1 = loadFromMyCaffe(rgWeights, rgExpectedShapes, colBlobs, bSizeToFit, out bLoadedDiffs, inputWtInfo, targetWtInfo, strSkipBlobType);
             if (colBlob1 != null)
             {
                 m_log.WriteLine("Weights loaded in MyCaffe model format.");
@@ -468,9 +469,9 @@ namespace MyCaffe.common
             return writer.GetBytes();
         }
 
-        private BlobCollection<T> loadFromMyCaffe(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, bool bSizeToFit, out bool bLoadedDiffs, List<string> inputWtInfo = null, List<string> targetWtInfo = null)
+        private BlobCollection<T> loadFromMyCaffe(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, bool bSizeToFit, out bool bLoadedDiffs, List<string> inputWtInfo = null, List<string> targetWtInfo = null, string strSkipBlobType = null)
         {
-            BlobCollection<T> colBlobs1 = loadFromCaffe(rgWeights, rgExpectedShapes, colBlobs, bSizeToFit, out bLoadedDiffs, inputWtInfo, targetWtInfo);
+            BlobCollection<T> colBlobs1 = loadFromCaffe(rgWeights, rgExpectedShapes, colBlobs, bSizeToFit, out bLoadedDiffs, inputWtInfo, targetWtInfo, strSkipBlobType);
             return colBlobs1;
         }
 
@@ -479,7 +480,7 @@ namespace MyCaffe.common
             return loadInfoFromCaffe(rgWeights);
         }
 
-        private BlobCollection<T> loadFromCaffe(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, bool bSizeToFit, out bool bLoadedDiffs, List<string> inputWtInfo = null, List<string> targetWtInfo = null)
+        private BlobCollection<T> loadFromCaffe(byte[] rgWeights, List<string> rgExpectedShapes, BlobCollection<T> colBlobs, bool bSizeToFit, out bool bLoadedDiffs, List<string> inputWtInfo = null, List<string> targetWtInfo = null, string strSkipBlobType = null)
         {
             FieldDescriptor fd = FieldDescriptor.CreateNetworkParamFieldDesc();
             ProtoBufReader reader = new ProtoBufReader(rgWeights);
@@ -695,10 +696,12 @@ namespace MyCaffe.common
                     continue;
 
                 //-----------------------------------------
-                //  Copy the data.
+                //  Copy the data, but only for blobs 
+                //  that are not missized and ones that do 
+                //  not match the skip type, if specified.
                 //-----------------------------------------
 
-                if (!bMisSized)
+                if (!bMisSized && (strSkipBlobType == null || blob.type.ToString() != strSkipBlobType))
                 {
                     ProtoBufField pbData = colFieldBlobs[nFieldIdx].Array.FindFirstChild("data");
                     FieldDescriptor.TYPE type = FieldDescriptor.TYPE.FLOAT;
@@ -721,6 +724,7 @@ namespace MyCaffe.common
                         m_log.FAIL("Could not find the weights matching the first two items of the shape '" + strShapeB + "'!");
 
                     T[] rgData = copyData(pbData, type, lDataCount, rgBlobShape);
+
                     blob.mutable_cpu_data = rgData;
                     blob.Tag = colFieldBlobs[nFieldIdx].Tag;
 
