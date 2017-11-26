@@ -489,6 +489,14 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns any project parameters that may exist (if any).
+        /// </summary>
+        public ParameterDescriptorCollection Parameters
+        {
+            get { return m_project.Parameters; }
+        }
+
+        /// <summary>
         /// Get/set the total number of iterations that the Project has been trained.
         /// </summary>
         public int TotalIterations
@@ -701,13 +709,29 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="strModelDescription">Specifies the model description.</param>
         /// <param name="strName">Specifies the model name.</param>
+        /// <param name="bCaffeFormat">Specifies whether or not the model description should use the native C++ caffe format where coloring is ordered in BGR, or use the MyCaffe format where coloring is ordered in RGB.</param>
         /// <returns>The RawProto of the model description is returned.</returns>
-        public static RawProto CreateModelForTraining(string strModelDescription, string strName)
+        public static RawProto CreateModelForTraining(string strModelDescription, string strName, bool bCaffeFormat = false)
         {
             RawProto proto = RawProto.Parse(strModelDescription);
 
+            string strLayers = "layer";
             RawProtoCollection rgLayers = proto.FindChildren("layer");
+            if (rgLayers.Count == 0)
+            {
+                rgLayers = proto.FindChildren("layers");
+                strLayers = "layers";
+            }
+
+            bool bDirty = false;
             RawProtoCollection rgRemove = new RawProtoCollection();
+            RawProto protoSoftmax = null;
+            RawProto protoName = proto.FindChild("name");
+            int nTrainDataLayerIdx = -1;
+            int nTestDataLayerIdx = -1;
+            int nSoftmaxLossLayerIdx = -1;
+            int nAccuracyLayerIdx = -1;
+            int nIdx = 0;
 
             foreach (RawProto layer in rgLayers)
             {
@@ -716,6 +740,11 @@ namespace MyCaffe.basecode
                 RawProto include = layer.FindChild("include");
                 RawProto exclude = layer.FindChild("exclude");
 
+                string strType = type.Value.ToLower();
+
+                if (strType == "softmax")
+                    protoSoftmax = layer;
+
                 if (include != null)
                 {
                     RawProto phase = include.FindChild("phase");
@@ -723,6 +752,24 @@ namespace MyCaffe.basecode
                     {
                         if (phase.Value != "TEST" && phase.Value != "TRAIN")
                             bRemove = true;
+                        else
+                        {
+                            if (strType == "data")
+                            {
+                                if (phase.Value == "TRAIN")
+                                    nTrainDataLayerIdx = nIdx;
+                                else
+                                    nTestDataLayerIdx = nIdx;
+                            }
+                            else if (strType == "accuracy")
+                            {
+                                nAccuracyLayerIdx = nIdx;
+                            }
+                            else if (strType == "softmaxwithloss")
+                            {
+                                nSoftmaxLossLayerIdx = nIdx;
+                            }
+                        }
                     }
                 }
 
@@ -740,6 +787,29 @@ namespace MyCaffe.basecode
                 {
                     rgRemove.Add(layer);
                 }
+
+                nIdx++;
+            }
+
+            if (nTestDataLayerIdx < 0)
+            {
+                string strProto = getDataLayerProto(strLayers, strName, bCaffeFormat, 16, "", Phase.TEST);
+                RawProto protoData = RawProto.Parse(strProto).Children[0];
+
+                if (nTrainDataLayerIdx > 0)
+                    rgLayers.Insert(nTrainDataLayerIdx + 1, protoData);
+                else
+                    rgLayers.Insert(0, protoData);
+
+                bDirty = true;
+            }
+
+            if (nTrainDataLayerIdx < 0)
+            {
+                string strProto = getDataLayerProto(strLayers, strName, bCaffeFormat, 16, "", Phase.TRAIN);
+                RawProto protoData = RawProto.Parse(strProto).Children[0];
+                rgLayers.Insert(0, protoData);
+                bDirty = true;
             }
 
             foreach (RawProto layer in rgRemove)
@@ -747,7 +817,63 @@ namespace MyCaffe.basecode
                 proto.RemoveChild(layer);
             }
 
+            if (protoSoftmax != null)
+            {
+                RawProto type = protoSoftmax.FindChild("type");
+                if (type != null)
+                    type.Value = "SoftmaxWithLoss";
+
+                protoSoftmax.Children.Add(new RawProto("bottom", "label"));
+                protoSoftmax.Children.Add(new RawProto("loss_weight", "1", null, RawProto.TYPE.NUMERIC));
+
+                string strInclude = "include { phase: TRAIN }";
+                protoSoftmax.Children.Add(RawProto.Parse(strInclude).Children[0]);
+
+                string strLoss = "loss_param { normalization: VALID }";
+                protoSoftmax.Children.Add(RawProto.Parse(strLoss).Children[0]);
+                bDirty = true;
+            }
+
+            if (nAccuracyLayerIdx < 0)
+            {
+                string strBottom = null;
+                if (rgLayers.Count > 0)
+                {
+                    RawProto last = rgLayers[rgLayers.Count - 1];
+                    RawProtoCollection colBtm = last.FindChildren("bottom");
+
+                    if (colBtm.Count > 0)
+                        strBottom = colBtm[0].Value;
+                }
+
+                if (strBottom != null)
+                {
+                    string strProto = getAccuracyLayerProto(strLayers, strBottom);
+                    RawProto protoData = RawProto.Parse(strProto).Children[0];
+                    rgLayers.Add(protoData);
+                    bDirty = true;
+                }
+            }
+
+            if (bDirty || proto.FindChildren("input_dim").Count > 0)
+            {
+                rgLayers.Insert(0, protoName);
+                proto = new RawProto("root", null, rgLayers);
+            }
+
             return proto;
+        }
+
+        private static string getDataLayerProto(string strLayer, string strName, bool bCaffeFormat, int nBatchSize, string strSrc, Phase phase)
+        {
+            string strRgb = (bCaffeFormat) ? "BGR" : "RGB";
+            string strPhase = phase.ToString();
+            return strLayer + " { name: \"" + strName + "\" type: \"Data\" top: \"data\" top: \"label\" include { phase: " + strPhase + " } transform_param { scale: 1 mirror: True use_imagedb_mean: True color_order: " + strRgb + " } data_param { source: \"" + strSrc + "\" batch_size: " + nBatchSize.ToString() + " backend: IMAGEDB enable_random_selection: True } }";
+        }
+
+        private static string getAccuracyLayerProto(string strLayer, string strBottom)
+        {
+            return strLayer + " { name: \"accuracy\" type: \"Accuracy\" bottom: \"" + strBottom + "\" bottom: \"label\" top: \"accuracy\" include { phase: TEST } accuracy_param { top_k: 1 } }";
         }
 
         /// <summary>
@@ -943,61 +1069,9 @@ namespace MyCaffe.basecode
 
             if (m_project.ModelDescription != null && m_project.ModelDescription.Length > 0)
             {
-                RawProto proto = RawProto.Parse(m_project.ModelDescription);
-                RawProtoCollection colLayers = proto.FindChildren("layer");
-
-                foreach (RawProto protoChild in colLayers)
-                {
-                    RawProto type = protoChild.FindChild("type");
-                    RawProto name = protoChild.FindChild("name");
-
-                    string strType = type.Value.ToLower();
-
-                    if (strType == "data")
-                    {
-                        int nCropSize = 0;
-
-                        RawProto data_param = protoChild.FindChild("data_param");
-                        if (data_param != null)
-                        {
-                            RawProto include = protoChild.FindChild("include");
-                            if (include != null)
-                            {
-                                RawProto phase = include.FindChild("phase");
-                                if (phase != null)
-                                {
-                                    RawProto source = data_param.FindChild("source");
-                                    if (source != null)
-                                    {
-                                        if (phase.Value == "TEST")
-                                        {
-                                            source.Value = dataset.TestingSource.Name;
-                                            nCropSize = dataset.TestingSource.ImageHeight;
-                                        }
-                                        else
-                                        {
-                                            source.Value = dataset.TrainingSource.Name;
-                                            nCropSize = dataset.TrainingSource.ImageHeight;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        RawProto transform_param = protoChild.FindChild("transform_param");
-                        if (transform_param != null)
-                        {
-                            RawProto crop_size = transform_param.FindChild("crop_size");
-                            if (crop_size != null)
-                            {
-                                int nSize = int.Parse(crop_size.Value);
-
-                                if (nCropSize < nSize)
-                                    crop_size.Value = nCropSize.ToString();
-                            }
-                        }
-                    }
-                }
+                bool bResized = false;
+                string strProto = SetDataset(m_project.ModelDescription, dataset, out bResized);
+                RawProto proto = RawProto.Parse(strProto);
 
                 if (OnOverrideModel != null)
                 {
@@ -1021,6 +1095,129 @@ namespace MyCaffe.basecode
                     SolverDescription = proto.ToString();
                 }
             }
+        }
+
+        /// <summary>
+        /// Sets the dataset of a model, overriding the current dataset used.
+        /// </summary>
+        /// <remarks>
+        /// Note, this function 'fixes' up the model used by the Project to use the new dataset.
+        /// </remarks>
+        /// <param name="strModelDesc">Specifies the model description to update.</param>
+        /// <param name="dataset">Specifies the new dataset to use.</param>
+        /// <param name="bResized">Returns whether or not the model was resized with a different output size.</param>
+        /// <param name="bUpdateOutputs">Optionally, specifies whether or not to update the number of outputs in the last layer (e.g. the number of classes in the dataset).</param>
+        public static string SetDataset(string strModelDesc, DatasetDescriptor dataset, out bool bResized, bool bUpdateOutputs = false)
+        {
+            bResized = false;
+
+            if (dataset == null)
+                return null;
+
+            string strTypeLast = null;
+            RawProto protoLast = null;
+            RawProto proto = RawProto.Parse(strModelDesc);
+            List<RawProto> rgLastIp = new List<RawProto>();
+            RawProtoCollection colLayers = proto.FindChildren("layer");
+
+            if (colLayers.Count == 0)
+                colLayers = proto.FindChildren("layers");
+
+            foreach (RawProto protoChild in colLayers)
+            {
+                RawProto type = protoChild.FindChild("type");
+                RawProto name = protoChild.FindChild("name");
+
+                string strType = type.Value.ToLower();
+
+                if (strType == "data")
+                {
+                    int nCropSize = 0;
+
+                    RawProto data_param = protoChild.FindChild("data_param");
+                    if (data_param != null)
+                    {
+                        RawProto include = protoChild.FindChild("include");
+                        if (include != null)
+                        {
+                            RawProto phase = include.FindChild("phase");
+                            if (phase != null)
+                            {
+                                RawProto source = data_param.FindChild("source");
+                                if (phase.Value == "TEST")
+                                {
+                                    if (source != null)
+                                    {
+                                        source.Value = dataset.TestingSource.Name;
+                                        nCropSize = dataset.TestingSource.ImageHeight;
+                                    }
+                                    else
+                                    {
+                                        data_param.Children.Add(new RawProto("source", dataset.TestingSource.Name, null, RawProto.TYPE.STRING));
+                                    }
+                                }
+                                else
+                                {
+                                    if (source != null)
+                                    {
+                                        source.Value = dataset.TrainingSource.Name;
+                                        nCropSize = dataset.TrainingSource.ImageHeight;
+                                    }
+                                    else
+                                    {
+                                        data_param.Children.Add(new RawProto("source", dataset.TrainingSource.Name, null, RawProto.TYPE.STRING));
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    RawProto transform_param = protoChild.FindChild("transform_param");
+                    if (transform_param != null)
+                    {
+                        RawProto crop_size = transform_param.FindChild("crop_size");
+                        if (crop_size != null)
+                        {
+                            int nSize = int.Parse(crop_size.Value);
+
+                            if (nCropSize < nSize)
+                                crop_size.Value = nCropSize.ToString();
+                        }
+                    }
+                }
+                else if (strType.Contains("loss"))
+                {
+                    if (protoLast != null && (strTypeLast == "inner_product" || strTypeLast == "innerproduct"))
+                        rgLastIp.Add(protoLast);
+                }
+
+                protoLast = protoChild;
+                strTypeLast = strType;
+            }
+
+            if (bUpdateOutputs)
+            {
+                foreach (RawProto lastIp in rgLastIp)
+                {
+                    RawProto protoParam = lastIp.FindChild("inner_product_param");
+                    if (protoParam != null)
+                    {
+                        RawProto protoNumOut = protoParam.FindChild("num_output");
+                        if (protoNumOut != null)
+                        {
+                            int nNumOut = dataset.TrainingSource.Labels.Count;
+
+                            if (nNumOut > 0)
+                            {
+                                protoNumOut.Value = nNumOut.ToString();
+                                bResized = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return proto.ToString();
         }
 
         /// <summary>
