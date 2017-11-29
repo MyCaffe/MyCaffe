@@ -1102,6 +1102,9 @@ namespace MyCaffe.imagedb
         {
             RawImage img = m_db.GetRawImage(nImageId);
 
+            if (img == null)
+                return null;
+
             if (nSrcId == 0)
                 nSrcId = m_openSource.ID;
 
@@ -1129,6 +1132,9 @@ namespace MyCaffe.imagedb
         /// <returns>A new SimpleDatum is returned containing the image.</returns>
         public SimpleDatum LoadDatum(RawImage img, int nPadW = 0, int nPadH = 0)
         {
+            if (img == null)
+                return null;
+
             byte[] rgDataCriteria = null;
             int? nDataCriteriaFormatId = null;
             byte[] rgDebugData = null;
@@ -1180,6 +1186,9 @@ namespace MyCaffe.imagedb
         /// <returns>A new SimpleDatum is returned containing the image mean.</returns>
         public SimpleDatum LoadDatum(RawImageMean img, int nPadW = 0, int nPadH = 0)
         {
+            if (img == null)
+                return null;
+
             List<byte> rgDataBytes = null;
             List<double> rgDataDouble = null;
             int nHeight = img.Height.GetValueOrDefault();
@@ -1221,7 +1230,7 @@ namespace MyCaffe.imagedb
                 nSrcId = m_db.CurrentSource.ID;
 
             RawImage img = m_db.GetRawImage(nImageId);
-            if (img.SourceID != nSrcId)
+            if (img == null || img.SourceID != nSrcId)
                 return null;
 
             return LoadDatum(img);
@@ -1300,6 +1309,9 @@ namespace MyCaffe.imagedb
         public SourceDescriptor LoadSource(int nSrcId)
         {
             Source src = m_db.GetSource(nSrcId);
+
+            if (src == null)
+                return null;
 
             SourceDescriptor srcDesc = new SourceDescriptor(src.ID,
                                                             src.Name,
