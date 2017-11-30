@@ -1527,11 +1527,15 @@ namespace MyCaffe
         /// Creates a new Net, loads the weights specified into it and returns it.
         /// </summary>
         /// <param name="rgWeights">Specifies the weights to load.</param>
+        /// <param name="cudaOverride">Optionally, specifies a different cuda instance for the Net to use.</param>
         /// <returns>The new Net is returned.</returns>
-        public Net<T> GetNet(byte[] rgWeights)
+        public Net<T> GetNet(byte[] rgWeights, CudaDnn<T> cudaOverride = null)
         {
+            if (cudaOverride == null)
+                cudaOverride = m_cuda;
+
             NetParameter p = m_net.ToProto(false);
-            Net<T> net = new Net<T>(m_cuda, m_log, p, m_evtCancel, m_imgDb);
+            Net<T> net = new Net<T>(cudaOverride, m_log, p, m_evtCancel, m_imgDb);
             loadWeights(net, rgWeights);
             return net;
         }
