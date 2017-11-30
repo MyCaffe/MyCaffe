@@ -210,6 +210,16 @@ namespace MyCaffe.layers.alpha
                 m_nKernelW = colBottom[0].width;
             }
 
+            m_nUnPooledHeight = (int)(((m_nHeight + m_nPadH) - 1) * m_nStrideH + m_nKernelH - 2 * m_nPadH);
+            m_nUnPooledWidth = (int)(((m_nWidth + m_nPadW) - 1) * m_nStrideW + m_nKernelW - 2 * m_nPadW);
+
+            if (m_nPadH > 0)
+                m_nUnPooledHeight -= 1; // adjust for ceil function
+
+            if (m_nPadW > 0)
+                m_nUnPooledWidth -= 1; // adjust for ceil function
+
+            /*
             m_nUnPooledHeight = (int)Math.Max((m_nHeight - 1) * m_nStrideH + m_nKernelH - 2 * m_nPadH, m_nHeight * m_nStrideH - m_nPadH + 1); 
             m_nUnPooledWidth = (int)Math.Max((m_nWidth - 1) * m_nStrideW + m_nKernelW - 2 * m_nPadW, m_nWidth * m_nStrideW - m_nPadW + 1);
 
@@ -229,6 +239,7 @@ namespace MyCaffe.layers.alpha
                 if (m_nWidth % 2 != 0)
                     m_nUnPooledWidth--;
             }
+            */
 
             if (m_nUnPooledHeight <= 0)
             {

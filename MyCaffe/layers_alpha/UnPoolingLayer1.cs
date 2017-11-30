@@ -203,22 +203,14 @@ namespace MyCaffe.layers.alpha
                 m_nKernelW = colBottom[0].width;
             }
 
-            m_nUnPooledHeight = (int)((m_nHeight - 1) * m_nStrideH + m_nKernelH - 2 * m_nPadH); 
-            m_nUnPooledWidth = (int)((m_nWidth - 1) * m_nStrideW + m_nKernelW - 2 * m_nPadW);
+            m_nUnPooledHeight = (int)(((m_nHeight + m_nPadH) - 1) * m_nStrideH + m_nKernelH - 2 * m_nPadH); 
+            m_nUnPooledWidth = (int)(((m_nWidth + m_nPadW) - 1) * m_nStrideW + m_nKernelW - 2 * m_nPadW);
 
             if (m_nPadH > 0)
-            {
-                m_nUnPooledHeight -= (m_nHeight % 2 == 0) ? 1 : 0;
-                if ((m_nHeight - 1) * m_nStrideH >= m_nUnPooledHeight + m_nPadH)
-                    m_nUnPooledHeight++;
-            }
+                m_nUnPooledHeight -= 1; // adjust for ceil function
 
             if (m_nPadW > 0)
-            {
-                m_nUnPooledWidth -= (m_nWidth % 2 == 0) ? 1 : 0;
-                if ((m_nWidth - 1) * m_nStrideW >= m_nUnPooledWidth + m_nPadW)
-                    m_nUnPooledWidth++;
-            }
+                m_nUnPooledWidth -= 1; // adjust for ceil function
 
             if (m_nUnPooledHeight <= 0)
             {
