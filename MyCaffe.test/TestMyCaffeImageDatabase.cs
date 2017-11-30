@@ -9,6 +9,7 @@ using System.Diagnostics;
 using MyCaffe.basecode.descriptors;
 using System.IO;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace MyCaffe.test
 {
@@ -93,6 +94,7 @@ namespace MyCaffe.test
             Assert.AreEqual(1, dfTesting);
 
             db.UnloadDatasetByName(rgDs[0]);
+            Thread.Sleep(5000);
 
             dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[0], out dfTraining, out dfTesting);
             Assert.AreEqual(0, dfPctLoaded);
@@ -105,6 +107,7 @@ namespace MyCaffe.test
             Assert.AreEqual(1, dfTesting);
 
             db.UnloadDatasetByName(rgDs[1]);
+            Thread.Sleep(5000);
 
             dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[1], out dfTraining, out dfTesting);
             Assert.AreEqual(0, dfPctLoaded);
@@ -117,6 +120,7 @@ namespace MyCaffe.test
             Assert.AreEqual(0, dfTesting);
 
             db.UnloadDatasetByName(rgDs[2]);
+            Thread.Sleep(5000);
 
             dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[2], out dfTraining, out dfTesting);
             Assert.AreEqual(0, dfPctLoaded);
