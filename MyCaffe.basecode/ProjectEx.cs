@@ -1119,6 +1119,8 @@ namespace MyCaffe.basecode
             RawProto proto = RawProto.Parse(strModelDesc);
             List<RawProto> rgLastIp = new List<RawProto>();
             RawProtoCollection colLayers = proto.FindChildren("layer");
+            RawProto protoDataTrainBatch = null;
+            RawProto protoDataTestBatch = null;
 
             if (colLayers.Count == 0)
                 colLayers = proto.FindChildren("layers");
@@ -1137,6 +1139,8 @@ namespace MyCaffe.basecode
                     RawProto data_param = protoChild.FindChild("data_param");
                     if (data_param != null)
                     {
+                        RawProto batchProto = data_param.FindChild("batch_size");
+
                         RawProto include = protoChild.FindChild("include");
                         if (include != null)
                         {
@@ -1146,6 +1150,8 @@ namespace MyCaffe.basecode
                                 RawProto source = data_param.FindChild("source");
                                 if (phase.Value == "TEST")
                                 {
+                                    protoDataTestBatch = batchProto;
+
                                     if (source != null)
                                     {
                                         source.Value = dataset.TestingSource.Name;
@@ -1158,6 +1164,8 @@ namespace MyCaffe.basecode
                                 }
                                 else
                                 {
+                                    protoDataTrainBatch = batchProto;
+
                                     if (source != null)
                                     {
                                         source.Value = dataset.TrainingSource.Name;
@@ -1180,7 +1188,7 @@ namespace MyCaffe.basecode
                         {
                             int nSize = int.Parse(crop_size.Value);
 
-                            if (nCropSize < nSize)
+                            if (nCropSize != nSize)
                                 crop_size.Value = nCropSize.ToString();
                         }
                     }
@@ -1193,6 +1201,15 @@ namespace MyCaffe.basecode
 
                 protoLast = protoChild;
                 strTypeLast = strType;
+            }
+
+            if (protoDataTestBatch != null && protoDataTrainBatch != null)
+            {
+                int nTestSize = int.Parse(protoDataTestBatch.Value);
+                int nTrainSize = int.Parse(protoDataTrainBatch.Value);
+
+                if (nTrainSize < nTestSize)
+                    protoDataTrainBatch.Value = nTestSize.ToString();
             }
 
             if (bUpdateOutputs)
