@@ -1800,8 +1800,11 @@ namespace MyCaffe.imagedb
         /// <returns>Upon completion <i>true</i> is returned, otherwise <i>false</i> is returned when cancelled.</returns>
         public bool ReindexRawImages(Log log, CancelEvent evtCancel, int nSrcId = 0)
         {
-            if (nSrcId == 0)
+            if (nSrcId == 0 && m_src != null)
                 nSrcId = m_src.ID;
+
+            if (nSrcId == 0)
+                return false;
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
