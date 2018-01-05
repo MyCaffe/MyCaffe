@@ -118,7 +118,7 @@ bool GetErrorString(long lErr, char* szErr, long lMaxErr)
 			return true;
 
 		case ERROR_CUDA_MISSING_NCCL64DLL:
-			_snprintf(szErr, lMaxErr, "CUDA: The 'nccl64' DLL is missing from the executable directory!  For example when using version 134, the file 'nccl64_134.dll' should be in the same directory as the executable. (%ld)", lErr);
+			_snprintf(szErr, lMaxErr, "CUDA: The 'nccl64' DLL is missing from the executable directory!  For example when using the version 134 for CUDA 9.1, the file 'nccl64_134.9.1.dll' should be in the same directory as the executable. (%ld)", lErr);
 			return true;
 	}
 

@@ -70,10 +70,14 @@ public:
 			}
 		}
 
+#ifdef CUDA9_1
+		_tcscat_s(szPath, 1024, _T("nccl64_134.9.1.dll"));
+#else
 #ifdef CUDA9
 		_tcscat_s(szPath, 1024, _T("nccl64_134.9.dll"));
 #else
 		_tcscat_s(szPath, 1024, _T("nccl64_134.8.dll"));
+#endif
 #endif
 		m_hDLL = LoadLibrary(szPath);
 		if (m_hDLL == NULL)
