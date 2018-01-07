@@ -51,7 +51,7 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// The axis along wich to perform the softmax -- may be negative to index
+        /// The axis along which to perform the softmax -- may be negative to index
         /// from the end (e.g., -1 for the last axis).
         /// Any other axes will be evaluated as independent softmaxes.
         /// </summary>
