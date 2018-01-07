@@ -288,9 +288,10 @@ namespace MyCaffe.layers
                         // Get the number of items and the item size from the end of the data.
                         int nLen = BitConverter.ToInt32(datum.DataCriteria, datum.DataCriteria.Length - (sizeof(int) * 4));
                         int nItemSize = BitConverter.ToInt32(datum.DataCriteria, datum.DataCriteria.Length - (sizeof(int) * 3));
+                        int nDstIdx = i * nLen;
 
                         m_log.CHECK_EQ(nItemSize, 1, "Currently only byte sized labels are supported in multi-label scenarios.");
-                        Array.Copy(datum.DataCriteria, rgTopLabel, nLen);
+                        Array.Copy(datum.DataCriteria, 0, rgTopLabel, nDstIdx, nLen);
                     }
                     else
                     {
