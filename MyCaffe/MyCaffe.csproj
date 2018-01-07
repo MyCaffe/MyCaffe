@@ -98,6 +98,7 @@
     <Compile Include="layers\CropLayer.cs" />
     <Compile Include="layers\MemoryDataLayer.cs" />
     <Compile Include="layers\DebugLayer.cs" />
+    <Compile Include="layers\SoftmaxLayer.cs" />
     <Compile Include="layers_alpha\BinaryHashLayer.cs" />
     <Compile Include="layers_alpha\GRNLayer.cs" />
     <Compile Include="layers_alpha\TripletDataLayer.cs" />
@@ -163,7 +164,6 @@
     <Compile Include="layers\SigmoidLayer.cs" />
     <Compile Include="layers\SilenceLayer.cs" />
     <Compile Include="layers\SliceLayer.cs" />
-    <Compile Include="layers\SoftmaxLayer.cs" />
     <Compile Include="layers_alpha\ReinforcementLossLayer.cs" />
     <Compile Include="layers\SoftmaxLossLayer.cs" />
     <Compile Include="layers\SplitLayer.cs" />
