@@ -5,6 +5,7 @@ using System.Text;
 using System.IO;
 using MyCaffe.basecode;
 using MyCaffe.common;
+using System.ComponentModel;
 
 namespace MyCaffe.param
 {
@@ -55,6 +56,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the Phase of the NetState.
         /// </summary>
+        [Description("Specifies the Phase of the NetState.")]
         public Phase phase
         {
             get { return m_phase; }
@@ -64,6 +66,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the level of the NetState.
         /// </summary>
+        [Description("Specifies the level of the NetState.")]
         public int level
         {
             get { return m_nLevel; }
@@ -73,6 +76,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the stages of the NetState.
         /// </summary>
+        [Description("Specifies the stages of the NetState.")]
         public List<string> stage
         {
             get { return m_rgStage; }

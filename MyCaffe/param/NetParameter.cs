@@ -72,6 +72,8 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the ID of the project that created this net param (if any).
         /// </summary>
+        [ReadOnly(true)]
+        [Description("Specifies the ID of the project that created this net param (if any).")]
         public int ProjectID
         {
             get { return m_nProjectID; }
@@ -81,6 +83,7 @@ namespace MyCaffe.param
         /// <summary>
         /// The name of the network.
         /// </summary>
+        [Description("The name of the network.")]
         public string name
         {
             get { return m_strName; }

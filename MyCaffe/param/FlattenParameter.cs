@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using MyCaffe.basecode;
@@ -27,6 +28,7 @@ namespace MyCaffe.param
         /// Specifies the first axis to flatten: all preceding axes are retained in the output.
         /// May be negative to index from the end (e.g., -1 for the last axis).
         /// </summary>
+        [Description("Specifies the first axis to flatten: all preceding axes are retained in the output.")]
         public int axis
         {
             get { return m_nAxis; }
@@ -37,6 +39,7 @@ namespace MyCaffe.param
         /// Specifies the last axis to flatten: all following axes are retained in the output.
         /// May be negative to index from the end (e.g., -1 for the last axis).
         /// </summary>
+        [Description("Specifies the last axis to flatten: all following axes are retained in the output.")]
         public int end_axis
         {
             get { return m_nEndAxis; }

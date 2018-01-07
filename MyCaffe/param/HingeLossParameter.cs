@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using MyCaffe.basecode;
@@ -40,6 +41,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specify the Norm to use L1 or L2
         /// </summary>
+        [Description("Specify the Norm to use: L1 or L2")]
         public Norm norm
         {
             get { return m_norm; }

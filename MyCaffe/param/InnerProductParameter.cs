@@ -30,6 +30,7 @@ namespace MyCaffe.param
         /// <summary>
         /// The number of outputs for the layer.
         /// </summary>
+        [Description("The number of outputs for the layer.")]
         public uint num_output
         {
             get { return m_nNumOutput; }
@@ -37,8 +38,9 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Whether to ahve bias terms or not.
+        /// Whether to have bias terms or not.
         /// </summary>
+        [Description("Whether to have bias terms or not.")]
         public bool bias_term
         {
             get { return m_bBiasTerm; }
@@ -46,9 +48,10 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// The filler for the weight.
+        /// The filler for the weights.
         /// </summary>
         [Category("Fillers")]
+        [Description("The filler for the weights.")]
         public FillerParameter weight_filler
         {
             get { return m_fillerParam_weights; }
@@ -59,6 +62,7 @@ namespace MyCaffe.param
         /// The filler for the bias.
         /// </summary>
         [Category("Fillers")]
+        [Description("The filler for the bias.")]
         public FillerParameter bias_filler
         {
             get { return m_fillerParam_bias; }
@@ -70,6 +74,7 @@ namespace MyCaffe.param
         /// all preceding axes are retained in the output.
         /// May be negative to index from the end (e.g., -1 for the last axis)
         /// </summary>
+        [Description("Specifies the first axis to be lumped into a single inner product computation; all preceding axes are retained in the output.")]
         public int axis
         {
             get { return m_nAxis; }
@@ -82,6 +87,7 @@ namespace MyCaffe.param
         /// of the weight matrix.  The weight matrix itself is not going to be transposed
         /// but rather the transfer flag of operations will be toggled accordingly.
         /// </summary>
+        [Description("Specifies whether to transpose the weight matrix or not.")]
         public bool transpose
         {
             get { return m_bTranspose; }

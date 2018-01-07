@@ -34,6 +34,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the base to use for the log, where @f$ y = log_base(shift + scale * x) @f$, for base > 0.
         /// </summary>
+        [Description("Specifies the base to use for the log, where y=log_base(shift + scale *x), for base > 0.")]
         public double base_val
         {
             get { return m_dfBase; }

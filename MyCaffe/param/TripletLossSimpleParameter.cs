@@ -39,6 +39,7 @@ namespace MyCaffe.param
         /// Label separate to distinguish the random sampled examples
         /// - should change according to the minibatch.
         /// </summary>
+        [Description("Label separate to distinguish the random sampled examples - should change according to the minibatch.")]
         public int separate
         {
             get { return m_nSeparate; }
