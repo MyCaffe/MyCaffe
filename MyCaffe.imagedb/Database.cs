@@ -45,6 +45,21 @@ namespace MyCaffe.imagedb
         {
         }
 
+        private string convertWs(string str, char chReplacement)
+        {
+            string strOut = "";
+
+            foreach (char ch in str)
+            {
+                if (char.IsWhiteSpace(ch))
+                    strOut += chReplacement;
+                else
+                    strOut += ch;
+            }
+
+            return strOut;
+        }
+
         /// <summary>
         /// Saves any changes on the open satabase.
         /// </summary>
@@ -2570,6 +2585,7 @@ namespace MyCaffe.imagedb
         /// <returns>The ID of the data source is returned.</returns>
         public int GetSourceID(string strName)
         {
+            strName = convertWs(strName, '_');
             Source src = GetSource(strName);
 
             if (src == null)
@@ -2600,6 +2616,7 @@ namespace MyCaffe.imagedb
         /// <returns>The Source entity is returned.</returns>
         public Source GetSource(string strName)
         {
+            strName = convertWs(strName, '_');
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
                 List<Source> rgSrc = entities.Sources.Where(p => p.Name == strName).ToList();
@@ -2681,7 +2698,7 @@ namespace MyCaffe.imagedb
         {
             Source src = new Source();
 
-            src.Name = strName;
+            src.Name = convertWs(strName, '_');
             src.ImageChannels = nChannels;
             src.ImageHeight = nHeight;
             src.ImageWidth = nWidth;
@@ -2725,10 +2742,17 @@ namespace MyCaffe.imagedb
         /// <param name="rgstrSrc">Specifies the list of data sources.</param>
         public void DeleteSources(params string[] rgstrSrc)
         {
+            List<string> rgstrSrc1 = new List<string>();
+
+            foreach (string str in rgstrSrc)
+            {
+                rgstrSrc1.Add(convertWs(str, '_'));
+            }
+
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                foreach (string str in rgstrSrc)
-                {
+                foreach (string str in rgstrSrc1)
+                {                
                     List<Source> rgSrc = entities.Sources.Where(p => rgstrSrc.Contains(p.Name)).ToList();
 
                     foreach (Source src in rgSrc)
@@ -2760,7 +2784,7 @@ namespace MyCaffe.imagedb
         /// <param name="strSrc">Specifies the data source name.</param>
         public void DeleteSourceData(string strSrc)
         {
-            DeleteSourceData(GetSourceID(strSrc));
+            DeleteSourceData(GetSourceID(convertWs(strSrc, '_')));
         }
 
         /// <summary>
@@ -2795,6 +2819,8 @@ namespace MyCaffe.imagedb
         /// <returns>The parameter value is returned as a string.</returns>
         public string GetSourceParameter(string strName, int nSrcId = 0)
         {
+            strName = convertWs(strName, '_');
+
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
 
@@ -2818,6 +2844,7 @@ namespace MyCaffe.imagedb
         /// <returns>The parameter value is returned as an <i>int</i>.</returns>
         public int GetSourceParameter(string strName, int nDefault, int nSrcId = 0)
         {
+            strName = convertWs(strName, '_');
             string strVal = GetSourceParameter(strName, nSrcId);
 
             if (strVal == null)
@@ -2835,6 +2862,7 @@ namespace MyCaffe.imagedb
         /// <returns>The parameter value is returned as a <i>double</i>.</returns>
         public double GetSourceParameter(string strName, double dfDefault, int nSrcId = 0)
         {
+            strName = convertWs(strName, '_');
             string strVal = GetSourceParameter(strName, nSrcId);
 
             if (strVal == null)
@@ -2852,6 +2880,7 @@ namespace MyCaffe.imagedb
         /// <returns>The parameter value is returned as a <i>bool</i>.</returns>
         public bool GetSourceParameter(string strName, bool bDefault, int nSrcId = 0)
         {
+            strName = convertWs(strName, '_');
             string strVal = GetSourceParameter(strName, nSrcId);
 
             if (strVal == null)
@@ -2868,6 +2897,8 @@ namespace MyCaffe.imagedb
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         public void SetSourceParameter(string strName, string strValue, int nSrcId = 0)
         {
+            strName = convertWs(strName, '_');
+
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
 
@@ -2996,6 +3027,7 @@ namespace MyCaffe.imagedb
         /// <returns>The ID of the dataset is returned.</returns>
         public int GetDatasetID(string strName)
         {
+            strName = convertWs(strName, '_');
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
                 List<Dataset> rgDs = entities.Datasets.Where(p => p.Name == strName).ToList();
@@ -3052,6 +3084,7 @@ namespace MyCaffe.imagedb
         /// <returns>The Dataset entity is returned.</returns>
         public Dataset GetDataset(string strName)
         {
+            strName = convertWs(strName, '_');
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
                 List<Dataset> rgDs = entities.Datasets.Where(p => p.Name == strName).ToList();
@@ -3097,6 +3130,8 @@ namespace MyCaffe.imagedb
         /// <returns></returns>
         public int AddDataset(int nDsCreatorID, string strName, int nTestSrcId, int nTrainSrcId, int nDsGroupID = 0, int nModelGroupID = 0)
         {
+            strName = convertWs(strName, '_');
+
             Source srcTest = GetSource(nTestSrcId);
             if (srcTest == null)
                 throw new Exception("Could not find either the test source with ID = " + nTestSrcId.ToString() + "!");
