@@ -183,12 +183,23 @@ namespace MyCaffe.imagedb
 
                 int nCount = src.ImageCount;
                 if (nCount == 0)
-                    throw new Exception("Could not find any images with " + strType + " Source = '" + src.Name + "'.");
+                {
+                    if (log != null)
+                        log.WriteLine("WARNING: Could not find any images with " + strType + " Source = '" + src.Name + "'.  If this is a training dataset, you will need to enable the 'UseTrainingSrcForTesting' setting.");
 
-                if (log != null)
-                    log.WriteLine("Loading '" + src.Name + "' - " + nCount.ToString("N0") + " images.");
+                    if (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND)
+                    {
+                        if (log != null)
+                            log.WriteLine("Because there are no images in this set, the image loading method has been changed to LOAD_ON_DEMAND for this dataset.");
+
+                        loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
+                    }
+                }
 
                 ImageSet imgset = new ImageSet(m_factory, src, loadMethod, nImageDbLoadLimit);
+
+                if (log != null && nCount > 0)
+                    log.WriteLine("Loading '" + src.Name + "' - " + nCount.ToString("N0") + " images.");
 
                 if (OnCalculateImageMean != null)
                     imgset.OnCalculateImageMean += OnCalculateImageMean;
@@ -210,7 +221,7 @@ namespace MyCaffe.imagedb
                     if (nImageDbLoadLimit <= 0)
                         nImageDbLoadLimit = nCount;
 
-                    List<int> rgIdx = getIndexList(nImageDbLoadLimitStartIdx, nImageDbLoadLimit);
+                    List<int> rgIdx = (nCount == 0) ? new List<int>() : getIndexList(nImageDbLoadLimitStartIdx, nImageDbLoadLimit);
                     int nIdx = 0;
 
                     sw.Start();
