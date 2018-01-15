@@ -36,6 +36,28 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// The SettingsCaffe constructor that copies another SettingsCaffe instance.
+        /// </summary>
+        public SettingsCaffe(SettingsCaffe s)
+        {
+            m_nMaskAllButLastColumns = s.m_nMaskAllButLastColumns;
+            m_bEnableLabelBalancing = s.m_bEnableLabelBalancing;
+            m_bEnableLabelBoosting = s.m_bEnableLabelBoosting;
+            m_bEnableRandomInputSelection = s.m_bEnableRandomInputSelection;
+            m_bEnablePairInputSelection = s.m_bEnablePairInputSelection;
+            m_bUseTrainingSourceForTesting = s.m_bUseTrainingSourceForTesting;
+            m_dfSuperBoostProbability = s.m_dfSuperBoostProbability;
+            m_nMaximumIterationOverride = s.m_nMaximumIterationOverride;
+            m_nTestingIterationOverride = s.m_nTestingIterationOverride;
+            m_strDefaultModelGroup = s.m_strDefaultModelGroup;
+            m_strGpuIds = s.m_strGpuIds;
+            m_imageDbLoadMethod = s.m_imageDbLoadMethod;
+            m_nImageDbLoadLimit = s.m_nImageDbLoadLimit;
+            m_snapshotWeightUpdateMethod = s.m_snapshotWeightUpdateMethod;
+            m_snapshotLoadMethod = s.m_snapshotLoadMethod;
+        }
+
+        /// <summary>
         /// The SettingsCaffe constructor used during deserialization.
         /// </summary>
         /// <param name="info">Specifies the serialization information.</param>
