@@ -38,15 +38,15 @@ namespace MyCaffe.basecode
     public enum IMAGEDB_LOAD_METHOD
     {
         /// <summary>
-        /// Load all of the images into memory.
-        /// </summary>
-        LOAD_ALL,
-        /// <summary>
-        /// Load the images as they are queried.
+        /// Load the images as they are queried - this option cahces images into memory as needed, training speeds are slower up until all images are loaded into memory.
         /// </summary>
         LOAD_ON_DEMAND,
         /// <summary>
-        /// Load the images from an external source such as a Windows Service.
+        /// Load all of the images into memory - this option provides the highest training speeds, but can use a lot of memory and takes time to load.
+        /// </summary>
+        LOAD_ALL,
+        /// <summary>
+        /// Load the images from an external source such as a Windows Service - this option provides the best balance of speed and short load times for once loaded all applications share the in-memory data.
         /// </summary>
         LOAD_EXTERNAL
     }
