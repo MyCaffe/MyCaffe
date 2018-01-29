@@ -846,7 +846,9 @@ void getError(long lErr, LPTSTR szErr, LONG lszErrMax)
 
 	if (!GetCudaErrorString(lErr, szErr1, MAX_ERROR) &&
 		!GetErrorString(lErr, szErr1, MAX_ERROR))
-		return;
+	{
+		snprintf(szErr1, MAX_ERROR, "Unknown error #%ld", lErr);
+	}
 	
 	szErr1[MAX_ERROR] = (TCHAR)NULL;
 
