@@ -153,7 +153,7 @@ bool GetCudaErrorString(long lErr, char* szErr, long lMaxErr)
 			return true;
 			
 		case cudaErrorLaunchTimeout:
-			_snprintf(szErr, lMaxErr, "CUDA: Prior launch failure (%ld)", lErr);
+			_snprintf(szErr, lMaxErr, "CUDA: Prior launch failure - timeout (%ld)", lErr);
 			return true;
 			
 		case cudaErrorLaunchOutOfResources:
@@ -165,19 +165,19 @@ bool GetCudaErrorString(long lErr, char* szErr, long lMaxErr)
 			return true;
 			
 		case cudaErrorInvalidConfiguration:
-			_snprintf(szErr, lMaxErr, "CUDA: Invalid configuration (%ld)", lErr);
+			_snprintf(szErr, lMaxErr, "CUDA: Invalid configuration for the device used (%ld)", lErr);
 			return true;
 			
 		case cudaErrorInvalidDevice:
-			_snprintf(szErr, lMaxErr, "CUDA: Invalid device (%ld)", lErr);
+			_snprintf(szErr, lMaxErr, "CUDA: Invalid CUDA device (%ld)", lErr);
 			return true;
 			
 		case cudaErrorInvalidValue:
-			_snprintf(szErr, lMaxErr, "CUDA: Invalid value (%ld)", lErr);
+			_snprintf(szErr, lMaxErr, "CUDA: Invalid parameter value (%ld)", lErr);
 			return true;
 			
 		case cudaErrorInvalidPitchValue:
-			_snprintf(szErr, lMaxErr, "CUDA: Invalid pitch value (%ld)", lErr);
+			_snprintf(szErr, lMaxErr, "CUDA: Invalid pitch parameter value (%ld)", lErr);
 			return true;
 			
 		case cudaErrorInvalidSymbol:
@@ -269,13 +269,17 @@ bool GetCudaErrorString(long lErr, char* szErr, long lMaxErr)
 			return true;
 			
 		case cudaErrorInsufficientDriver:
-			_snprintf(szErr, lMaxErr, "CUDA: cuda runtime is newer than driver (%ld)", lErr);
+			_snprintf(szErr, lMaxErr, "CUDA: cuda runtime is newer than the installed NVIDIA CUDA driver (%ld)", lErr);
 			return true;
 			
 		case cudaErrorSetOnActiveProcess:
 			_snprintf(szErr, lMaxErr, "CUDA: Set on active process error (%ld)", lErr);
 			return true;
-			
+
+		case cudaErrorInvalidSurface:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that the surface parameter is invalid (%ld)", lErr);
+			return true;
+
 		case cudaErrorNoDevice:
 			_snprintf(szErr, lMaxErr, "CUDA: No available CUDA device (%ld)", lErr);
 			return true;
@@ -283,7 +287,151 @@ bool GetCudaErrorString(long lErr, char* szErr, long lMaxErr)
 		case cudaErrorECCUncorrectable:
 			_snprintf(szErr, lMaxErr, "CUDA: Uncorrectable ECC error detected (%ld)", lErr);
 			return true;
-			
+
+		case cudaErrorSharedObjectSymbolNotFound:
+			_snprintf(szErr, lMaxErr, "CUDA: The link to to a shared object failed to resolve (%ld)", lErr);
+			return true;
+
+		case cudaErrorSharedObjectInitFailed:
+			_snprintf(szErr, lMaxErr, "CUDA: The initialization of a shared object failed (%ld)", lErr);
+			return true;
+
+		case cudaErrorUnsupportedLimit:
+			_snprintf(szErr, lMaxErr, "CUDA: The ::cudaLimit argument is not supported by the active device (%ld)", lErr);
+			return true;
+
+		case cudaErrorDuplicateVariableName:
+			_snprintf(szErr, lMaxErr, "CUDA: Inidcates that multiple global or constant variables share the same string name (%ld)", lErr);
+			return true;
+
+		case cudaErrorDuplicateTextureName:
+			_snprintf(szErr, lMaxErr, "CUDA: Inidcates that multiple texture variables share the same string name (%ld)", lErr);
+			return true;
+
+		case cudaErrorDuplicateSurfaceName:
+			_snprintf(szErr, lMaxErr, "CUDA: Inidcates that multiple surface variables share the same string name (%ld)", lErr);
+			return true;
+
+		case cudaErrorDevicesUnavailable:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that all CUDA devices are busy or unavailable at the current time (%ld)", lErr);
+			return true;
+
+		case cudaErrorInvalidKernelImage:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that the device kernel image is invalid (%ld)", lErr);
+			return true;
+
+		case cudaErrorNoKernelImageForDevice:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that there is no kernel image available that is suitable for the device (%ld)", lErr);
+			return true;
+
+		case cudaErrorIncompatibleDriverContext:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that the current context is not compatible with this CUDA Runtime (%ld)", lErr);
+			return true;
+
+		case cudaErrorPeerAccessAlreadyEnabled:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that a call to ::cudaDeviceEnablePeerAccess is trying to re-enable peer addressing from a context that already has peer addressing enabled (%ld)", lErr);
+			return true;
+
+		case cudaErrorPeerAccessNotEnabled:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that ::cudaDeviceDisablePeerAccess is trying to disable peer addressing which has not been enabled yet (%ld)", lErr);
+			return true;
+
+		case cudaErrorDeviceAlreadyInUse:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that a call tried to access an exclusive-thread device that is already in use by a different thread (%ld)", lErr);
+			return true;
+
+		case cudaErrorProfilerDisabled:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates profiler is not initialized for this run (%ld)", lErr);
+			return true;
+
+		case cudaErrorAssert:
+			_snprintf(szErr, lMaxErr, "CUDA: An assert triggered in device code during kernel execution (%ld)", lErr);
+			return true;
+
+		case cudaErrorTooManyPeers:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that the hardware resources required ot enable peer access have been exhaused for one or more of the devices (%ld)", lErr);
+			return true;
+
+		case cudaErrorHostMemoryAlreadyRegistered:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that the memory range specified has already been registered (%ld)", lErr);
+			return true;
+
+		case cudaErrorHostMemoryNotRegistered:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that the pointer specified does not correspond to any currently registered memory region (%ld)", lErr);
+			return true;
+
+		case cudaErrorOperatingSystem:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that an OS call failed (%ld)", lErr);
+			return true;
+
+		case cudaErrorPeerAccessUnsupported:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that P2P access is not supported across the given devices (%ld)", lErr);
+			return true;
+
+		case cudaErrorLaunchMaxDepthExceeded:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that a device runtime grid launch did not occur because  the depth of the child grid would exceed the maximum supported number of nested grid launches (%ld)", lErr);
+			return true;
+
+		case cudaErrorLaunchFileScopedTex:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that a grid launch did no occur because the kernel uses file-scoped textures which are unsupported by the device runtime (%ld)", lErr);
+			return true;
+
+		case cudaErrorLaunchFileScopedSurf:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that a grid launch did not occur because the kernel uses file-scoped surfaces which are unsupported by the device runtime. (%ld)", lErr);
+			return true;
+
+		case cudaErrorSyncDepthExceeded:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that a call to ::cudaDeviceSynchronize made from the device runtime failed becaue the call was made at grid depth greater than either the default (2 levels) or a user specified limit (%ld)", lErr);
+			return true;
+
+		case cudaErrorLaunchPendingCountExceeded:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates that a device runtime grid launch failed because the launch would exceed the limit ::cudaLimitDevRuntimePendingLaunchCount (%ld)", lErr);
+			return true;
+
+		case cudaErrorNotPermitted:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates the attempted operation is not permitted (%ld)", lErr);
+			return true;
+
+		case cudaErrorNotSupported:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates the attempted operation is not supported on the current system or device (%ld)", lErr);
+			return true;
+
+		case cudaErrorHardwareStackError:
+			_snprintf(szErr, lMaxErr, "CUDA: Device encountered an error in the call statck during kernel execution possibly due to stack corruption or exceeding the stack size limit (%ld)", lErr);
+			return true;
+
+		case cudaErrorIllegalInstruction:
+			_snprintf(szErr, lMaxErr, "CUDA: Device encountered an illegal instruction during kernel execution (%ld)", lErr);
+			return true;
+
+		case cudaErrorMisalignedAddress:
+			_snprintf(szErr, lMaxErr, "CUDA: Device encountered a load or storage instruction on a memory address which is not aligned (%ld)", lErr);
+			return true;
+
+		case cudaErrorInvalidAddressSpace:
+			_snprintf(szErr, lMaxErr, "CUDA: While executing a kernel, the device encountered an instruction which can only operate on memory locations in certain address spaces (global, shared, or local), but was supplied an address not in those spaces (%ld)", lErr);
+			return true;
+
+		case cudaErrorInvalidPc:
+			_snprintf(szErr, lMaxErr, "CUDA: Device encountered an invalid program counter (%ld)", lErr);
+			return true;
+
+		case cudaErrorIllegalAddress:
+			_snprintf(szErr, lMaxErr, "CUDA: Device encountered a load or storage instruction on an invalid memory address (%ld)", lErr);
+			return true;
+
+		case cudaErrorInvalidPtx:
+			_snprintf(szErr, lMaxErr, "CUDA: A PTX compilation failed (%ld)", lErr);
+			return true;
+
+		case cudaErrorInvalidGraphicsContext:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates an error with the OpenGL or DirectX context (%ld)", lErr);
+			return true;
+
+		case cudaErrorNvlinkUncorrectable:
+			_snprintf(szErr, lMaxErr, "CUDA: Indicates an uncorrectable NVLink error was detected during the execution (%ld)", lErr);
+			return true;
+
 		case cudaErrorStartupFailure:
 			_snprintf(szErr, lMaxErr, "CUDA: Startup failure (%ld)", lErr);
 			return true;
