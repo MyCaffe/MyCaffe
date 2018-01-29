@@ -60,7 +60,8 @@ namespace MyCaffe.basecode
 
             lock (m_syncObj)
             {
-                m_rgCancel.Add(new Tuple<WaitHandle, bool, string>(evtWait, true, strName));
+                if (!Contains(strName))
+                    m_rgCancel.Add(new Tuple<WaitHandle, bool, string>(evtWait, true, strName));
             }
         }
 
@@ -72,8 +73,41 @@ namespace MyCaffe.basecode
         {
             lock (m_syncObj)
             {
-                m_rgCancel.Add(new Tuple<WaitHandle, bool, string>(evtCancel.m_hOriginalCancel, false, evtCancel.Name));
+                if (!Contains(evtCancel))
+                    m_rgCancel.Add(new Tuple<WaitHandle, bool, string>(evtCancel.m_hOriginalCancel, false, evtCancel.Name));
             }
+        }
+
+        /// <summary>
+        /// Check to see if the cancel event has already been added.
+        /// </summary>
+        /// <param name="evt">Specifies the cancel event to look for.</param>
+        /// <returns>Returns <i>true</i> if the cancel event has already been added, <i>false</i> otherwise.</returns>
+        public bool Contains(CancelEvent evt)
+        {
+            foreach (Tuple<WaitHandle, bool, string> item in m_rgCancel)
+            {
+                if (item.Item1 == evt.m_hOriginalCancel)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Check to see if the named cancel event has already been added.
+        /// </summary>
+        /// <param name="strName">Specifies the name of the cancel event to look for.</param>
+        /// <returns>Returns <i>true</i> if the cancel event has already been added, <i>false</i> otherwise.</returns>
+        public bool Contains(string strName)
+        {
+            foreach (Tuple<WaitHandle, bool, string> item in m_rgCancel)
+            {
+                if (item.Item3 == strName)
+                    return true;
+            }
+
+            return false;
         }
 
         /// <summary>
