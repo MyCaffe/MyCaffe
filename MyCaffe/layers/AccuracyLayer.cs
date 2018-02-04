@@ -142,13 +142,142 @@ namespace MyCaffe.layers
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            // Currently using cpu version for gpu version fails in the auto tests.
+            forward_cpu(colBottom, colTop);
+        }
+
+        /// <summary>
+        /// Forward compuation.
+        /// </summary>
+        /// <param name="colBottom">bottom input blob (length 2)
+        ///  -# @f$ (N \times C \times H \times W) @f$
+        ///     the predictions @f$ x @f$, a blob with values in
+        ///     @f$ [-\infty, +\infty] @f$ indicating the predicted score of each of
+        ///     the @f$ K = CHW @f$ classes.  Each @f$ x_n @f$ is mapped to a predicted 
+        ///     label @f$ \hat{l}_n @f$ given by its maximal index:
+        ///     @f$ \hat{l}_n = \arg\max\limits_k x_{nk} @f$
+        ///  -# @f$ (N \times 1 \times 1 \times 1) @f$
+        ///     the labels l, an integer-valued blob with values
+        ///     @f$ l_n \in [0, 1, 2, ..., K-1] @f$
+        ///     indicating the correct class label among the @f$ K @f$ classes.</param>
+        /// <param name="colTop">top output blob vector (length 1)
+        ///  -# @f$ (1 \times 1 \times 1 \times 1) @f$
+        ///     the computed accuracy: @f$
+        ///       \frac{1}{N} \sum\limits_{n=1}^N \delta\{ \hat{l}_n = l_n \}
+        ///     @f$
+        ///     where @f$ 
+        ///       \delta\{\mathrm{condition}\} = \left\{
+        ///         \begin{array}{lr}
+        ///           1 & \mbox{if condition} \\
+        ///           0 & \mbox{otherwise}
+        ///         \end{array} \right.
+        ///     @f$
+        /// </param>
+        protected void forward_gpu(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            long hBottomData = colBottom[0].gpu_data;
+            long hBottomLabel = colBottom[1].gpu_data;
+            int nDim = colBottom[0].count() / m_nOuterNum;
+            int nNumLabels = colBottom[0].shape(m_nLabelAxis);
+            int nThreads = m_nOuterNum * m_nInnerNum;
+
+            // Since this memory is not used for anything, we use it here to avlid having
+            // to allocate new GPU memory to accumulate intermediate results.
+            long hAccData = colBottom[0].mutable_gpu_diff;
+
+            if (colTop.Count == 1)
+            {
+                // simple case - report only global accuracy.
+                long hCounts = colBottom[1].mutable_gpu_diff;
+
+                m_cuda.accuracy_fwd(nThreads, hBottomData, hBottomLabel, hAccData, m_nOuterNum, nDim, m_nInnerNum, nNumLabels, m_nTopK, hCounts, false, m_nIgnoreLabel);
+
+                double dfAcc = m_cuda.asum_double(nThreads, hAccData);
+                double dfValidCount = m_cuda.asum_double(nThreads, hCounts);
+
+                if (dfValidCount > 0)
+                    colTop[0].SetData(dfAcc / dfValidCount, 0);
+                else
+                    colTop[0].SetData(0, 0);
+            }
+            else
+            {
+                // need to report per-class accuracy as well.
+
+                // allocate space for more detailed 'counts'
+                m_blobNumsBuffer.ReshapeLike(colBottom[0]);
+                long hCounts = m_blobNumsBuffer.mutable_gpu_data;
+
+                m_cuda.set(colBottom[0].count(), hAccData, 0);
+                m_cuda.set(m_blobNumsBuffer.count(), hCounts, 0);
+
+                m_cuda.accuracy_fwd(nThreads, hBottomData, hBottomLabel, hAccData, m_nOuterNum, nDim, m_nInnerNum, nNumLabels, m_nTopK, hCounts, true, m_nIgnoreLabel);
+
+                // get the overall accuracy
+                double dfAcc = m_cuda.asum_double(nThreads, hAccData);
+                double dfValidCount = m_cuda.asum_double(nThreads, hCounts);
+
+                if (dfValidCount > 0)
+                    colTop[0].SetData(dfAcc / dfValidCount, 0);
+                else
+                    colTop[0].SetData(0, 0);
+
+                // get per-class accuracy
+                float[] rgPerClassAcc = convertF(colTop[1].mutable_cpu_data);
+                for (int l = 0; l < nNumLabels; l++)
+                {
+                    rgPerClassAcc[l] = m_cuda.asum_float(nThreads, hAccData, l * nThreads);
+                    float fValidCount = m_cuda.asum_float(nThreads, hCounts, l * nNumLabels);
+
+                    if (fValidCount > 0)
+                        rgPerClassAcc[l] /= fValidCount;
+                    else
+                        rgPerClassAcc[l] = 0;
+                }
+
+                colTop[1].mutable_cpu_data = convert(rgPerClassAcc);
+            }
+
+            // Clear scratch memory to prevent interfering with backwards (see #6202 on native Caffe Githum)
+            colBottom[0].SetDiff(0);
+
+            // Accuracy layer should not be used as a loss function.
+        }
+
+        /// <summary>
+        /// Forward compuation.
+        /// </summary>
+        /// <param name="colBottom">bottom input blob (length 2)
+        ///  -# @f$ (N \times C \times H \times W) @f$
+        ///     the predictions @f$ x @f$, a blob with values in
+        ///     @f$ [-\infty, +\infty] @f$ indicating the predicted score of each of
+        ///     the @f$ K = CHW @f$ classes.  Each @f$ x_n @f$ is mapped to a predicted 
+        ///     label @f$ \hat{l}_n @f$ given by its maximal index:
+        ///     @f$ \hat{l}_n = \arg\max\limits_k x_{nk} @f$
+        ///  -# @f$ (N \times 1 \times 1 \times 1) @f$
+        ///     the labels l, an integer-valued blob with values
+        ///     @f$ l_n \in [0, 1, 2, ..., K-1] @f$
+        ///     indicating the correct class label among the @f$ K @f$ classes.</param>
+        /// <param name="colTop">top output blob vector (length 1)
+        ///  -# @f$ (1 \times 1 \times 1 \times 1) @f$
+        ///     the computed accuracy: @f$
+        ///       \frac{1}{N} \sum\limits_{n=1}^N \delta\{ \hat{l}_n = l_n \}
+        ///     @f$
+        ///     where @f$ 
+        ///       \delta\{\mathrm{condition}\} = \left\{
+        ///         \begin{array}{lr}
+        ///           1 & \mbox{if condition} \\
+        ///           0 & \mbox{otherwise}
+        ///         \end{array} \right.
+        ///     @f$
+        /// </param>
+        protected void forward_cpu(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
             double dfAccuracy = 0;
             double[] rgBottomData = convertD(colBottom[0].update_cpu_data());
             double[] rgBottomLabel = convertD(colBottom[1].update_cpu_data());
             int nDim = colBottom[0].count() / m_nOuterNum;
             int nNumLabels = colBottom[0].shape(m_nLabelAxis);
-            List<double> rgMaxVal = Utility.Create<double>(m_nTopK + 1, 0.0);
-            List<int> rgMaxIdx = Utility.Create<int>(m_nTopK + 1, 0);
             double[] rgNumsBuffer = null;
             double[] rgTopLabel = null;
 
@@ -171,41 +300,38 @@ namespace MyCaffe.layers
                     if (m_nIgnoreLabel.HasValue && m_nIgnoreLabel.Value == nLabelValue)
                         continue;
 
-                    if (colTop.Count > 1)
-                        rgNumsBuffer[nLabelValue]++;
-
                     m_log.CHECK_GE(nLabelValue, 0, "The lable value must be >= 0.");
                     m_log.CHECK_LT(nLabelValue, nNumLabels, "The label value must be < " + nNumLabels.ToString() + ".  Make sure that the prototxt 'num_outputs' setting is > the highest label number.");
 
-                    // Top-k accuracy
-                    List<KeyValuePair<double, int>> rgBottomDataItems = new List<KeyValuePair<double, int>>();
+                    if (colTop.Count > 1)
+                        rgNumsBuffer[nLabelValue]++;
 
-                    for (int k = 0; k < nNumLabels; k++)
+                    double prob_of_true_class = rgBottomData[i * nDim 
+                                                             + nLabelValue * m_nInnerNum 
+                                                             + j];
+                    int num_better_predictions = -1; // true_class also counts as 'better'
+                    // Top-k accuracy
+                    for (int k = 0; k < nNumLabels && num_better_predictions < m_nTopK; k++)
                     {
-                        rgBottomDataItems.Add(new KeyValuePair<double, int>(rgBottomData[i * nDim + k * m_nInnerNum + j], k));
+                        if (rgBottomData[i * nDim + k * m_nInnerNum + j] >= prob_of_true_class)
+                            num_better_predictions += 1;
                     }
 
-                    rgBottomDataItems.Sort(new Comparison<KeyValuePair<double, int>>(sortDataItems));
-
                     // Check if true label is in top_k predictions
-                    for (int k = 0; k < m_nTopK; k++)
+                    if (num_better_predictions < m_nTopK)
                     {
-                        if (rgBottomDataItems[k].Value == nLabelValue)
-                        {
-                            dfAccuracy += 1.0;
+                        dfAccuracy += 1.0;
 
-                            if (colTop.Count > 1)
-                                rgTopLabel[nLabelValue] += 1.0;
-
-                            break;
-                        }
+                        if (colTop.Count > 1)
+                            rgTopLabel[nLabelValue] += 1.0;
                     }
 
                     nCount++;
                 }
             }
 
-            dfAccuracy /= (double)nCount;
+            m_log.WriteLine("Accuracy: " + dfAccuracy.ToString());
+            dfAccuracy = (nCount == 0) ? 0 : (dfAccuracy / nCount);
             colTop[0].SetData(dfAccuracy, 0);
             colTop[0].Tag = m_param.accuracy_param.top_k;
 
