@@ -337,18 +337,25 @@ namespace MyCaffe.test.automated
         {
             foreach (ListViewItem lvi in lstTests.Items)
             {
-                if (lvi.Text == "NotExecuted")
+                if (lvi.SubItems[1].Text == "NotExecuted")
                 {
                     string strName = lvi.SubItems[3].Text.ToLower();
 
                     if (strName.Contains("gradient"))
+                    {
                         lvi.Selected = true;
+                        lvi.Checked = true;
+                    }
                     else
+                    {
                         lvi.Selected = false;
+                        lvi.Checked = false;
+                    }
                 }
                 else
                 {
                     lvi.Selected = false;
+                    lvi.Checked = false;
                 }
             }
         }
@@ -357,18 +364,25 @@ namespace MyCaffe.test.automated
         {
             foreach (ListViewItem lvi in lstTests.Items)
             {
-                if (lvi.Text == "NotExecuted")
+                if (lvi.SubItems[1].Text == "NotExecuted")
                 {
                     string strName = lvi.SubItems[3].Text.ToLower();
 
                     if (!strName.Contains("gradient"))
+                    {
                         lvi.Selected = true;
+                        lvi.Checked = true;
+                    }
                     else
+                    {
                         lvi.Selected = false;
+                        lvi.Checked = false;
+                    }
                 }
                 else
                 {
                     lvi.Selected = false;
+                    lvi.Checked = false;
                 }
             }
         }
