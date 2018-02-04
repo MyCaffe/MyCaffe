@@ -276,6 +276,8 @@ class Device
 		long cuda_rng_gaussian(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_rng_bernoulli(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
+		long cuda_accuracy_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
 		long cuda_batchreidx_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_batchreidx_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
@@ -969,7 +971,7 @@ inline long Device<T>::GetConvolutionInfo(long lInput, T* pfInput, long* plOutpu
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(lInput, pfInput, 6, 7))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
@@ -981,6 +983,7 @@ inline long Device<T>::GetConvolutionInfo(long lInput, T* pfInput, long* plOutpu
 	long hConvDesc = (long)pfInput[3];
 	long hTopDesc = (long)pfInput[4];
 	long lWsLimitInBytes = (long)pfInput[5];
+	int nPreferredFwdAlgo = -1;
 	long algoFwd = 0;
 	long lWsSizeFwd = 0;
 	long algoBwdFilter = 0;
@@ -988,7 +991,10 @@ inline long Device<T>::GetConvolutionInfo(long lInput, T* pfInput, long* plOutpu
 	long algoBwdData = 0;
 	long lWsSizeBwdData = 0;
 
-	if (lErr = m_memory.GetConvolutionInfo(hHandle, hBottomDesc, hFilter, hConvDesc, hTopDesc, lWsLimitInBytes, &algoFwd, &lWsSizeFwd, &algoBwdFilter, &lWsSizeBwdFilter, &algoBwdData, &lWsSizeBwdData))
+	if (lInput >= 7)
+		nPreferredFwdAlgo = (int)pfInput[6];
+
+	if (lErr = m_memory.GetConvolutionInfo(hHandle, hBottomDesc, hFilter, hConvDesc, hTopDesc, lWsLimitInBytes, &algoFwd, &lWsSizeFwd, &algoBwdFilter, &lWsSizeBwdFilter, &algoBwdData, &lWsSizeBwdData, nPreferredFwdAlgo))
 		return lErr;
 
 	T* pOutput = NULL;
@@ -1207,6 +1213,37 @@ inline long Device<T>::PoolingBackward(long lInput, T* pfInput, long* plOutput, 
 	long hBottomDiff = (long)pfInput[11];
 
 	return m_memory.PoolingBackward(hHandle, hPoolingDesc, fAlpha, hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, fBeta, hBottomDiffDesc, hBottomDiff);
+}
+
+template <class T>
+inline long Device<T>::cuda_accuracy_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 11, 12))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hBtmData = (long)pfInput[1];
+	long hBtmLabel = (long)pfInput[2];
+	long hAccData = (long)pfInput[3];
+	int nOuterNum = (int)pfInput[4];
+	int nDim = (int)pfInput[5];
+	int nInnerNum = (int)pfInput[6];
+	int nNumLabels = (int)pfInput[7];
+	int nTopK = (int)pfInput[8];
+	long hCounts = (long)pfInput[9];
+	bool bPerClass = (pfInput[10] == 0) ? false : true;
+	int nIgnoreLabel = 0;
+	bool bIgnoreLabel = false;
+
+	if (lInput > 11)
+	{
+		nIgnoreLabel = (int)pfInput[11];
+		bIgnoreLabel = true;
+	}
+
+	return m_math.accuracy_fwd(nCount, hBtmData, hBtmLabel, hAccData, nOuterNum, nDim, nInnerNum, nNumLabels, nTopK, hCounts, bPerClass, bIgnoreLabel, nIgnoreLabel);
 }
 
 

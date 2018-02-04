@@ -453,6 +453,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_RNG_BERNOULLI:
 			return m_device.cuda_rng_bernoulli(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_ACCURACY_FWD:
+			return m_device.cuda_accuracy_fwd(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_BATCHREIDX_FWD:
 			return m_device.cuda_batchreidx_fwd(lCount, pfInput, plCount, ppfOutput);
 

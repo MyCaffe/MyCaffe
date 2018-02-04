@@ -175,6 +175,8 @@ const int CUDA_FN_IM2COL_ND			= 281;
 const int CUDA_FN_COL2IM			= 282;
 const int CUDA_FN_COL2IM_ND			= 283;
 
+const int CUDA_FN_ACCURACY_FWD      = 286;
+
 const int CUDA_FN_CHANNEL_MAX       = 290;
 const int CUDA_FN_CHANNEL_SUB       = 291;
 const int CUDA_FN_CHANNEL_SUM       = 292;

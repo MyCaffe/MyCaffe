@@ -3544,6 +3544,152 @@ long Math<float>::rng_bernoulli(int n, float fNonZeroProb, long hY)
 	return ERROR_BASE; // not implemented. 
 }
 
+template<typename T>
+__global__ void accuracy_fwd_kernel(const int nCount, const T* bottom_data, const T* label, T* acc, T* counts, const int num, const int dim, const int spatial_dim, const int num_labels, const int top_k)
+{
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount; index += blockDim.x * gridDim.x)
+	{
+		const int n = index / spatial_dim;
+		const int s = index % spatial_dim;
+		const int label_value = static_cast<int>(label[n * spatial_dim + s]);
+		const T prob_of_true_class = bottom_data[n * dim + label_value * spatial_dim + s];
+		int num_better_predictions = -1; // true_class also counts as 'better'
+
+		for (int k = 0; k < num_labels && num_better_predictions < top_k; k++)
+		{
+			num_better_predictions += (bottom_data[n * dim + k * spatial_dim + s] >= prob_of_true_class);
+		}
+
+		acc[index] = (num_better_predictions < top_k);
+		counts[index] = 1;
+	}
+}
+
+template<typename T>
+__global__ void accuracy_fwd_kernel_ignore(const int nCount, const T* bottom_data, const T* label, T* acc,  T* counts, const int num, const int dim, const int spatial_dim, const int num_labels, const int top_k, const int ignore_label)
+{
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount; index += blockDim.x * gridDim.x)
+	{
+		const int n = index / spatial_dim;
+		const int s = index % spatial_dim;
+		const int label_value = static_cast<int>(label[n * spatial_dim + s]);
+		const T prob_of_true_class = bottom_data[n * dim + label_value * spatial_dim + s];
+		int num_better_predictions = -1; // true_class also counts as 'better'
+
+		if (label_value == ignore_label)
+		{
+			acc[index] = 0;
+			counts[index] = 0;
+		}
+		else
+		{
+			for (int k = 0; k < num_labels && num_better_predictions < top_k; k++)
+			{
+				num_better_predictions += (bottom_data[n * dim + k * spatial_dim + s] >= prob_of_true_class);
+			}
+
+			acc[index] = (num_better_predictions < top_k);
+			counts[index] = 1;
+		}
+	}
+}
+
+template<typename T>
+__global__ void accuracy_fwd_kernel_perclass(const int nCount, const T* bottom_data, const T* label, T* acc, T* counts, const int num, const int dim, const int spatial_dim, const int num_labels, const int top_k)
+{
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount; index += blockDim.x * gridDim.x)
+	{
+		const int n = index / spatial_dim;
+		const int s = index % spatial_dim;
+		const int label_value = static_cast<int>(label[n * spatial_dim + s]);
+		const T prob_of_true_class = bottom_data[n * dim + label_value * spatial_dim + s];
+		int num_better_predictions = -1; // true_class also counts as 'better'
+
+		for (int k = 0; k < num_labels && num_better_predictions < top_k; k++)
+		{
+			num_better_predictions += (bottom_data[n * dim + k * spatial_dim + s] >= prob_of_true_class);
+		}
+
+		acc[label_value * nCount + index] = (num_better_predictions < top_k);
+		counts[label_value * nCount + index] = 1;
+	}
+}
+
+template<typename T>
+__global__ void accuracy_fwd_kernel_perclass_ignore(const int nCount, const T* bottom_data, const T* label, T* acc, T* counts, const int num, const int dim, const int spatial_dim, const int num_labels, const int top_k, const int ignore_label)
+{
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount; index += blockDim.x * gridDim.x)
+	{
+		const int n = index / spatial_dim;
+		const int s = index % spatial_dim;
+		const int label_value = static_cast<int>(label[n * spatial_dim + s]);
+		const T prob_of_true_class = bottom_data[n * dim + label_value * spatial_dim + s];
+
+		if (label_value == ignore_label)
+		{
+			// nothing to be done.
+		}
+		else
+		{
+			int num_better_predictions = -1; // true_class also counts as 'better'
+
+			for (int k = 0; k < num_labels && num_better_predictions < top_k; k++)
+			{
+				num_better_predictions += (bottom_data[n * dim + k * spatial_dim + s] >= prob_of_true_class);
+			}
+
+			acc[label_value * nCount + index] = (num_better_predictions < top_k);
+			counts[label_value * nCount + index] = 1;
+		}
+	}
+}
+
+template <class T>
+long Math<T>::accuracy_fwd(int n, long hBottomData, long hBottomLabel, long hAccData, int nOuterNum, int nDim, int nInnerNum, int nNumLabels, int nTopK, long hCounts, bool bPerClass, bool bIgnoreLabel, int nIgnoreLabel)
+{
+	LONG lErr;
+
+	MemoryItem* pBottomData;
+	MemoryItem* pBottomLabel;
+	MemoryItem* pAccData;
+	MemoryItem* pCounts;
+
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomLabel, &pBottomLabel))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hAccData, &pAccData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hCounts, &pCounts))
+		return lErr;
+
+	T* bottom_data = (T*)pBottomData->Data();
+	T* bottom_label = (T*)pBottomLabel->Data();
+	T* acc_data = (T*)pAccData->Data();
+	T* counts = (T*)pCounts->Data();
+
+	if (bPerClass)
+	{
+		if (bIgnoreLabel)
+			accuracy_fwd_kernel_ignore<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, bottom_label, acc_data, counts, nOuterNum, nDim, nInnerNum, nNumLabels, nTopK, nIgnoreLabel);
+		else
+			accuracy_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, bottom_label, acc_data, counts, nOuterNum, nDim, nInnerNum, nNumLabels, nTopK);
+	}
+	else
+	{
+		if (bIgnoreLabel)
+			accuracy_fwd_kernel_perclass_ignore<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, bottom_label, acc_data, counts, nOuterNum, nDim, nInnerNum, nNumLabels, nTopK, nIgnoreLabel);
+		else
+			accuracy_fwd_kernel_perclass<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, bottom_label, acc_data, counts, nOuterNum, nDim, nInnerNum, nNumLabels, nTopK);
+	}
+}
+
+template long Math<double>::accuracy_fwd(int nCount, long hBtmData, long hBtmLabel, long hAccData, int nOuterNum, int nDim, int nInnerNum, int nNumLabels, int nTopK, long hCounts, bool bPerClass, bool bIgnoreLabel, int nIgnoreLabel);
+template long Math<float>::accuracy_fwd(int nCount, long hBtmData, long hBtmLabel, long hAccData, int nOuterNum, int nDim, int nInnerNum, int nNumLabels, int nTopK, long hCounts, bool bPerClass, bool bIgnoreLabel, int nIgnoreLabel);
+
 
 template<typename T>
 __global__ void batchreidx_fwd_kernel(int nCount, const int inner_dim, const T* in, const T* permut, T* out)
