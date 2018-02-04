@@ -87,11 +87,15 @@ namespace MyCaffe.common
     /// </remarks>
     public enum CONV_FWD_ALGO
     {
+        NONE = -1,
         IMPLICIT_GEMM = 0,
         IMPLICIT_PRECOMP_GEMM = 1,
         ALGO_GEMM = 2,
         ALGO_DIRECT = 3,
-        ALGO_FFT = 4
+        ALGO_FFT = 4,
+        ALGO_FFT_TILING = 5,
+        ALGO_WINOGRAD = 6,
+        ALGO_WINOGRAD_NONFUSED = 7
     }
 
     /// <summary>
@@ -643,6 +647,8 @@ namespace MyCaffe.common
             CUDA_IM2COL_ND = 281,
             CUDA_COL2IM = 282,
             CUDA_COL2IM_ND = 283,
+
+            CUDA_ACCURACY_FWD = 286,
 
             CUDA_CHANNEL_MAX = 290,
             CUDA_CHANNEL_SUB = 291,
@@ -2473,11 +2479,11 @@ namespace MyCaffe.common
         /// <param name="lWsSizeBwdFilter">Returns the workspace size (int bytes) for the backward filter.</param>
         /// <param name="algoBwdData">Returns the algorithm for the backward data.</param>
         /// <param name="lWsSizeBwdData">Returns the workspace (in bytes) for the backward data.</param>
-        public void GetConvolutionInfo(long hCuDnn, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, long lWorkspaceSizeLimitInBytes, out CONV_FWD_ALGO algoFwd, out long lWsSizeFwd, out CONV_BWD_FILTER_ALGO algoBwdFilter, out long lWsSizeBwdFilter, out CONV_BWD_DATA_ALGO algoBwdData, out long lWsSizeBwdData)
+        public void GetConvolutionInfo(long hCuDnn, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, long lWorkspaceSizeLimitInBytes, out CONV_FWD_ALGO algoFwd, out long lWsSizeFwd, out CONV_BWD_FILTER_ALGO algoBwdFilter, out long lWsSizeBwdFilter, out CONV_BWD_DATA_ALGO algoBwdData, out long lWsSizeBwdData, CONV_FWD_ALGO preferredFwdAlgo = CONV_FWD_ALGO.NONE)
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, new double[] { hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, lWorkspaceSizeLimitInBytes });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, new double[] { hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, lWorkspaceSizeLimitInBytes, (int)preferredFwdAlgo });
                 algoFwd = (CONV_FWD_ALGO)rg[0];
                 lWsSizeFwd = (long)rg[1];
                 algoBwdFilter = (CONV_BWD_FILTER_ALGO)rg[2];
@@ -2487,7 +2493,7 @@ namespace MyCaffe.common
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, new float[] { hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, lWorkspaceSizeLimitInBytes });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, new float[] { hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, lWorkspaceSizeLimitInBytes, (int)preferredFwdAlgo });
                 algoFwd = (CONV_FWD_ALGO)rg[0];
                 lWsSizeFwd = (long)rg[1];
                 algoBwdFilter = (CONV_BWD_FILTER_ALGO)rg[2];
@@ -4936,6 +4942,41 @@ namespace MyCaffe.common
                 rg[i] = (dfRand <= dfNonZeroProb) ? m_tOne : m_tZero;
             }
         }
+
+
+        /// <summary>
+        /// Performs the forward pass for the accuracy layer
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
+        /// <param name="hBottomLabel">Specifies a handle to the bottom labels in GPU memory.</param>
+        /// <param name="hAccData">Specifies a handle to temporary accuracy data in GPU memory.</param>
+        /// <param name="nOuterNum">Specifies the outer count.</param>
+        /// <param name="nDim">Specifies the dimension.</param>
+        /// <param name="nInnerNum">Specifies the inner count.</param>
+        /// <param name="nNumLabels">Specifies the number of labels.</param>
+        /// <param name="nTopK">Specifies the top items to include in the accuracy.</param>
+        /// <param name="hCounts">Specifies a handle to the counts data in GPU memory.</param>
+        /// <param name="bPerClass">Specifies whether (true) to caculate the accuracy for each class, or (false) globally.</param>
+        /// <param name="nIgnoreLabel">Optionally, specifies a label to ignore, or <i>null</i> to ignore.</param>
+        public void accuracy_fwd(int nCount, long hBottomData, long hBottomLabel, long hAccData, int nOuterNum, int nDim, int nInnerNum, int nNumLabels, int nTopK, long hCounts, bool bPerClass, int? nIgnoreLabel = null)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                List<double> rgArg = new List<double>() { nCount, hBottomData, hBottomLabel, hAccData, nOuterNum, nDim, nInnerNum, nNumLabels, nTopK, hCounts, (bPerClass) ? 1 : 0 };
+                if (nIgnoreLabel.HasValue)
+                    rgArg.Add(nIgnoreLabel.Value);
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_ACCURACY_FWD, rgArg.ToArray());
+            }
+            else
+            {
+                List<float> rgArg = new List<float>() { nCount, hBottomData, hBottomLabel, hAccData, nOuterNum, nDim, nInnerNum, nNumLabels, nTopK, hCounts, (bPerClass) ? 1 : 0 };
+                if (nIgnoreLabel.HasValue)
+                    rgArg.Add(nIgnoreLabel.Value);
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_ACCURACY_FWD, rgArg.ToArray());
+            }
+        }
+
 
         /// <summary>
         /// Performs the forward pass for batch re-index
