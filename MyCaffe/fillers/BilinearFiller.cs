@@ -71,13 +71,13 @@ namespace MyCaffe.fillers
 
             T[] rgData = b.mutable_cpu_data;
             int nF = (int)Math.Ceiling(b.width / 2.0);
-            double dfC = (2.0 * nF - 1 - nF % 2) / (2.0 * nF);
+            double dfC = (b.width - 1) / (2.0 * nF);
 
             for (int i = 0; i < b.count(); i++)
             {
                 double dfX = i % b.width;
                 double dfY = (i / b.width) % b.height;
-                double dfVal = (i - Math.Abs(dfX / nF - dfC)) * (1 - Math.Abs(dfY / nF - dfC));
+                double dfVal = (1 - Math.Abs(dfX / nF - dfC)) * (1 - Math.Abs(dfY / nF - dfC));
 
                 rgData[i] = (T)Convert.ChangeType(dfVal, typeof(T));
             }
