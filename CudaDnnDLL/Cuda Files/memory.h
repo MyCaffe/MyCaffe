@@ -175,7 +175,7 @@ class Memory
 		long FreeConvolutionDesc(long hHandle);
 		cudnnConvolutionDescriptor_t GetConvolutionDesc(long hHandle);
 		long SetConvolutionDesc(long hHandle, int pad_h, int pad_w, int stride_h, int stride_w);
-	    long GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, long lWsLimitInBytes, long* palgoFwd, long* plWsSizeFwd, long* palgoBwdFilter, long* plWsSizeBwdFilter, long* palgoBwdData, long* plWsSizeBwdData);
+	    long GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, long lWsLimitInBytes, long* palgoFwd, long* plWsSizeFwd, long* palgoBwdFilter, long* plWsSizeBwdFilter, long* palgoBwdData, long* plWsSizeBwdData, int nPreferredFwdAlgo = -1);
 		long ConvolutionForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, T fBeta, long hTopDesc, long hTopData, int nTopOffset);
 		long ConvolutionBackwardBias(long hHandle, T fAlpha, long hTopDesc, long hTopDiff, int nTopOffset, T fBeta, long hBiasDesc, long hBiasDiff, int nBiasOffset);
 		long ConvolutionBackwardFilter(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSiz, T fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffsete);
@@ -525,9 +525,13 @@ inline cudnnTensorDescriptor_t Memory<T>::GetTensorDesc(long hHandle)
 template <class T>
 inline long Memory<T>::SetTensorDesc(long hHandle, int n, int c, int h, int w, int stride_n, int stride_c, int stride_h, int stride_w)
 {
+	LONG lErr;
 	cudnnTensorDescriptor_t desc = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hHandle);
 	cudnnDataType_t type = (sizeof(T) == 4) ? CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
-	return cudnnSetTensor4dDescriptorEx(desc, type, n, c, h, w, stride_n, stride_c, stride_h, stride_w);
+	if (lErr = cudnnSetTensor4dDescriptorEx(desc, type, n, c, h, w, stride_n, stride_c, stride_h, stride_w))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template <class T>
@@ -550,13 +554,17 @@ inline cudnnFilterDescriptor_t Memory<T>::GetFilterDesc(long hHandle)
 template <class T>
 inline long Memory<T>::SetFilterDesc(long hHandle, int n, int c, int h, int w)
 {
+	LONG lErr;
 	cudnnFilterDescriptor_t desc = (cudnnFilterDescriptor_t)m_filterDesc.GetData(hHandle);
 	cudnnDataType_t type = (sizeof(T) == 4) ? CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
 #ifdef CUDNN_5
-	return cudnnSetFilter4dDescriptor(desc, type, CUDNN_TENSOR_NCHW, n, c, h, w);
+	if (lErr = cudnnSetFilter4dDescriptor(desc, type, CUDNN_TENSOR_NCHW, n, c, h, w))
+		return lErr | ERROR_CUDNN_OFFSET;
 #else
-	return cudnnSetFilter4dDescriptor(desc, type, n, c, h, w);
+	if (lErr = cudnnSetFilter4dDescriptor(desc, type, n, c, h, w))
+		return lErr | ERROR_CUDNN_OFFSET;
 #endif
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template <class T>
@@ -579,13 +587,17 @@ inline cudnnConvolutionDescriptor_t Memory<T>::GetConvolutionDesc(long hHandle)
 template <class T>
 inline long Memory<T>::SetConvolutionDesc(long hHandle, int pad_h, int pad_w, int stride_h, int stride_w)
 {
+	LONG lErr;
 	cudnnConvolutionDescriptor_t desc = (cudnnConvolutionDescriptor_t)m_convDesc.GetData(hHandle);
 #ifdef CUDNN_6
 	cudnnDataType_t computeType = (sizeof(T) == sizeof(double)) ? CUDNN_DATA_DOUBLE : CUDNN_DATA_FLOAT;
-	return cudnnSetConvolution2dDescriptor(desc, pad_h, pad_w, stride_h, stride_w, 1, 1, CUDNN_CROSS_CORRELATION, computeType);
+	if (lErr = cudnnSetConvolution2dDescriptor(desc, pad_h, pad_w, stride_h, stride_w, 1, 1, CUDNN_CROSS_CORRELATION, computeType))
+		return lErr | ERROR_CUDNN_OFFSET;
 #else
-	return cudnnSetConvolution2dDescriptor(desc, pad_h, pad_w, stride_h, stride_w, 1, 1, CUDNN_CROSS_CORRELATION);
+	if (lErr = cudnnSetConvolution2dDescriptor(desc, pad_h, pad_w, stride_h, stride_w, 1, 1, CUDNN_CROSS_CORRELATION))
+		return lErr | ERROR_CUDNN_OFFSET;
 #endif
+	return CUDNN_STATUS_SUCCESS;
 }
 
 
@@ -609,12 +621,16 @@ inline cudnnPoolingDescriptor_t Memory<T>::GetPoolingDesc(long hHandle)
 template <class T>
 inline long Memory<T>::SetPoolingDesc(long hHandle, PoolingMethod method, int h, int w, int pad_h, int pad_w, int stride_h, int stride_w)
 {
+	LONG lErr;
 	cudnnPoolingDescriptor_t desc = (cudnnPoolingDescriptor_t)m_poolDesc.GetData(hHandle);
 #ifdef CUDNN_5
-	return cudnnSetPooling2dDescriptor(desc, (cudnnPoolingMode_t)method, CUDNN_NOT_PROPAGATE_NAN, h, w, pad_h, pad_w, stride_h, stride_w);
+	if (lErr = cudnnSetPooling2dDescriptor(desc, (cudnnPoolingMode_t)method, CUDNN_NOT_PROPAGATE_NAN, h, w, pad_h, pad_w, stride_h, stride_w))
+		return lErr | ERROR_CUDNN_OFFSET;
 #else
-	return cudnnSetPooling2dDescriptor(desc, (cudnnPoolingMode_t)method, h, w, pad_h, pad_w, stride_h, stride_w);
+	if (lErr = cudnnSetPooling2dDescriptor(desc, (cudnnPoolingMode_t)method, h, w, pad_h, pad_w, stride_h, stride_w))
+		return lErr | ERROR_CUDNN_OFFSET;
 #endif
+	return CUDNN_STATUS_SUCCESS;
 }
 
 
@@ -638,8 +654,12 @@ inline cudnnLRNDescriptor_t Memory<T>::GetLRNDesc(long hHandle)
 template <class T>
 inline long Memory<T>::SetLRNDesc(long hHandle, unsigned int nSize, T fAlpha, T fBeta, T fK)
 {
+	LONG lErr;
 	cudnnLRNDescriptor_t desc = (cudnnLRNDescriptor_t)m_lrnDesc.GetData(hHandle);
-	return cudnnSetLRNDescriptor(desc, nSize, fAlpha, fBeta, fK);
+	if (lErr = cudnnSetLRNDescriptor(desc, nSize, fAlpha, fBeta, fK))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 #ifdef CUDNN_5
@@ -687,8 +707,12 @@ inline cudnnActivationDescriptor_t Memory<T>::GetActivationDesc(long hHandle)
 template <class T>
 inline long Memory<T>::SetActivationDesc(long hHandle, ActivationMethod method)
 {
+	LONG lErr;
 	cudnnActivationDescriptor_t desc = GetActivationDesc(hHandle);
-	return cudnnSetActivationDescriptor(desc, (cudnnActivationMode_t)method, CUDNN_NOT_PROPAGATE_NAN, 0);
+	if (lErr = cudnnSetActivationDescriptor(desc, (cudnnActivationMode_t)method, CUDNN_NOT_PROPAGATE_NAN, 0))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 
