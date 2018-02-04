@@ -3685,6 +3685,8 @@ long Math<T>::accuracy_fwd(int n, long hBottomData, long hBottomLabel, long hAcc
 		else
 			accuracy_fwd_kernel_perclass<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, bottom_label, acc_data, counts, nOuterNum, nDim, nInnerNum, nNumLabels, nTopK);
 	}
+
+	return cudaGetLastError();
 }
 
 template long Math<double>::accuracy_fwd(int nCount, long hBtmData, long hBtmLabel, long hAccData, int nOuterNum, int nDim, int nInnerNum, int nNumLabels, int nTopK, long hCounts, bool bPerClass, bool bIgnoreLabel, int nIgnoreLabel);
