@@ -329,37 +329,42 @@ namespace MyCaffe.test
             AccuracyLayer<T> layer = new AccuracyLayer<T>(m_cuda, m_log, p);
 
             layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            double dfMaxVal;
-            int nMaxId;
-            int nNumCorrectLabels = 0;
-
-            for (int i = 0; i < 100; i++)
+            // repeat the forward
+            for (int iter = 0; iter < 3; iter++)
             {
-                dfMaxVal = -double.MaxValue;
-                nMaxId = 0;
+                layer.Forward(BottomVec, TopVec);
 
-                for (int j = 0; j < 10; j++)
+                double dfMaxVal;
+                int nMaxId;
+                int nNumCorrectLabels = 0;
+
+                for (int i = 0; i < 100; i++)
                 {
-                    double dfBottom = convert(Bottom.data_at(i, j, 0, 0));
+                    dfMaxVal = -double.MaxValue;
+                    nMaxId = 0;
 
-                    if (dfBottom > dfMaxVal)
+                    for (int j = 0; j < 10; j++)
                     {
-                        dfMaxVal = dfBottom;
-                        nMaxId = j;
+                        double dfBottom = convert(Bottom.data_at(i, j, 0, 0));
+
+                        if (dfBottom > dfMaxVal)
+                        {
+                            dfMaxVal = dfBottom;
+                            nMaxId = j;
+                        }
                     }
+
+                    int nIdx = (int)convert(BottomLabel.data_at(i, 0, 0, 0));
+                    if (nMaxId == nIdx)
+                        nNumCorrectLabels++;
                 }
 
-                int nIdx = (int)convert(BottomLabel.data_at(i, 0, 0, 0));
-                if (nMaxId == nIdx)
-                    nNumCorrectLabels++;
+                double dfTop = convert(Top.data_at(0, 0, 0, 0));
+                double dfExpected = nNumCorrectLabels / 100.0;
+
+                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
             }
-
-            double dfTop = convert(Top.data_at(0, 0, 0, 0));
-            double dfExpected = nNumCorrectLabels / 100.0;
-
-            m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
         }
 
         public void TestForwardWithSpatialAxes()
@@ -373,50 +378,55 @@ namespace MyCaffe.test
             AccuracyLayer<T> layer = new AccuracyLayer<T>(m_cuda, m_log, p);
 
             layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            double dfMaxVal;
-            int nNumLabels = BottomLabel.count();
-            int nMaxId;
-            int nNumCorrectLabels = 0;
-            int[] rgLabelOffset = new int[3];
-
-            for (int n = 0; n < Bottom.num; n++)
+            // repeat the forward
+            for (int iter = 0; iter < 3; iter++)
             {
-                for (int h = 0; h < Bottom.height; h++)
+                layer.Forward(BottomVec, TopVec);
+
+                double dfMaxVal;
+                int nNumLabels = BottomLabel.count();
+                int nMaxId;
+                int nNumCorrectLabels = 0;
+                int[] rgLabelOffset = new int[3];
+
+                for (int n = 0; n < Bottom.num; n++)
                 {
-                    for (int w = 0; w < Bottom.width; w++)
+                    for (int h = 0; h < Bottom.height; h++)
                     {
-                        dfMaxVal = -double.MaxValue;
-                        nMaxId = 0;
-
-                        for (int c = 0; c < Bottom.channels; c++)
+                        for (int w = 0; w < Bottom.width; w++)
                         {
-                            double dfPredVal = convert(Bottom.data_at(n, c, h, w));
+                            dfMaxVal = -double.MaxValue;
+                            nMaxId = 0;
 
-                            if (dfPredVal > dfMaxVal)
+                            for (int c = 0; c < Bottom.channels; c++)
                             {
-                                dfMaxVal = dfPredVal;
-                                nMaxId = c;
+                                double dfPredVal = convert(Bottom.data_at(n, c, h, w));
+
+                                if (dfPredVal > dfMaxVal)
+                                {
+                                    dfMaxVal = dfPredVal;
+                                    nMaxId = c;
+                                }
                             }
+
+                            rgLabelOffset[0] = n;
+                            rgLabelOffset[1] = h;
+                            rgLabelOffset[2] = w;
+
+                            int nCorrectLabel = (int)convert(BottomLabel.data_at(new List<int>(rgLabelOffset)));
+
+                            if (nMaxId == nCorrectLabel)
+                                nNumCorrectLabels++;
                         }
-
-                        rgLabelOffset[0] = n;
-                        rgLabelOffset[1] = h;
-                        rgLabelOffset[2] = w;
-
-                        int nCorrectLabel = (int)convert(BottomLabel.data_at(new List<int>(rgLabelOffset)));
-
-                        if (nMaxId == nCorrectLabel)
-                            nNumCorrectLabels++;
                     }
                 }
+
+                double dfTop = convert(Top.data_at(0, 0, 0, 0));
+                double dfExpected = nNumCorrectLabels / (double)nNumLabels;
+
+                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
             }
-
-            double dfTop = convert(Top.data_at(0, 0, 0, 0));
-            double dfExpected = nNumCorrectLabels / (double)nNumLabels;
-
-            m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
         }
 
         public void TestForwardIgnoreLabel()
@@ -432,46 +442,51 @@ namespace MyCaffe.test
             BottomLabel.SetData(kIgnoreLabelValue, 32);
 
             layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            double dfMaxVal;
-            int nMaxId;
-            int nNumCorrectLabels = 0;
-            int nCount = 0;
-
-            for (int i = 0; i < 100; i++)
+            // repeat the forward
+            for (int iter = 0; iter < 3; iter++)
             {
-                double dfBottomLabel = convert(BottomLabel.data_at(i, 0, 0, 0));
+                layer.Forward(BottomVec, TopVec);
 
-                if (kIgnoreLabelValue == (int)dfBottomLabel)
-                    continue;
+                double dfMaxVal;
+                int nMaxId;
+                int nNumCorrectLabels = 0;
+                int nCount = 0;
 
-                nCount++;
-                dfMaxVal = -double.MaxValue;
-                nMaxId = 0;
-
-                for (int j = 0; j < 10; j++)
+                for (int i = 0; i < 100; i++)
                 {
-                    double dfBottom = convert(Bottom.data_at(i, j, 0, 0));
+                    double dfBottomLabel = convert(BottomLabel.data_at(i, 0, 0, 0));
 
-                    if (dfBottom > dfMaxVal)
+                    if (kIgnoreLabelValue == (int)dfBottomLabel)
+                        continue;
+
+                    nCount++;
+                    dfMaxVal = -double.MaxValue;
+                    nMaxId = 0;
+
+                    for (int j = 0; j < 10; j++)
                     {
-                        dfMaxVal = dfBottom;
-                        nMaxId = j;
+                        double dfBottom = convert(Bottom.data_at(i, j, 0, 0));
+
+                        if (dfBottom > dfMaxVal)
+                        {
+                            dfMaxVal = dfBottom;
+                            nMaxId = j;
+                        }
                     }
+
+                    int nIdx = (int)convert(BottomLabel.data_at(i, 0, 0, 0));
+                    if (nMaxId == nIdx)
+                        nNumCorrectLabels++;
                 }
 
-                int nIdx = (int)convert(BottomLabel.data_at(i, 0, 0, 0));
-                if (nMaxId == nIdx)
-                    nNumCorrectLabels++;
+                m_log.CHECK_EQ(nCount, 97, "Expected to count 97 tests.");
+
+                double dfTop = convert(Top.data_at(0, 0, 0, 0));
+                double dfExpected = nNumCorrectLabels / (double)nCount;
+
+                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
             }
-
-            m_log.CHECK_EQ(nCount, 97, "Expected to count 97 tests.");
-
-            double dfTop = convert(Top.data_at(0, 0, 0, 0));
-            double dfExpected = nNumCorrectLabels / (double)nCount;
-
-            m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
         }
 
         public void TestForwardTopK()
@@ -481,38 +496,43 @@ namespace MyCaffe.test
             AccuracyLayer<T> layer = new AccuracyLayer<T>(m_cuda, m_log, p);
 
             layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            double dfCurrentValue;
-            int nCurrentRank;
-            int nNumCorrectLabels = 0;
-
-            for (int i = 0; i < 100; i++)
+            // repeat the forward
+            for (int iter = 0; iter < 3; iter++)
             {
-                for (int j = 0; j < 10; j++)
+                layer.Forward(BottomVec, TopVec);
+
+                double dfCurrentValue;
+                int nCurrentRank;
+                int nNumCorrectLabels = 0;
+
+                for (int i = 0; i < 100; i++)
                 {
-                    dfCurrentValue = convert(Bottom.data_at(i, j, 0, 0));
-                    nCurrentRank = 0;
-
-                    for (int k = 0; k < 10; k++)
+                    for (int j = 0; j < 10; j++)
                     {
-                        double dfBottom = convert(Bottom.data_at(i, k, 0, 0));
+                        dfCurrentValue = convert(Bottom.data_at(i, j, 0, 0));
+                        nCurrentRank = 0;
 
-                        if (dfBottom > dfCurrentValue)
-                            nCurrentRank++;
+                        for (int k = 0; k < 10; k++)
+                        {
+                            double dfBottom = convert(Bottom.data_at(i, k, 0, 0));
+
+                            if (dfBottom > dfCurrentValue)
+                                nCurrentRank++;
+                        }
+
+                        int nIdx = (int)convert(BottomLabel.data_at(i, 0, 0, 0));
+
+                        if (nCurrentRank < TopK && j == nIdx)
+                            nNumCorrectLabels++;
                     }
-
-                    int nIdx = (int)convert(BottomLabel.data_at(i, 0, 0, 0));
-
-                    if (nCurrentRank < TopK && j == nIdx)
-                        nNumCorrectLabels++;
                 }
+
+                double dfTop = convert(Top.data_at(0, 0, 0, 0));
+                double dfExpected = nNumCorrectLabels / (double)100.0;
+
+                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
             }
-
-            double dfTop = convert(Top.data_at(0, 0, 0, 0));
-            double dfExpected = nNumCorrectLabels / (double)100.0;
-
-            m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
         }
 
         public void TestForwardPerClass()
@@ -521,56 +541,61 @@ namespace MyCaffe.test
             AccuracyLayer<T> layer = new AccuracyLayer<T>(m_cuda, m_log, p);
 
             layer.Setup(BottomVec, TopPerClassVec);
-            layer.Forward(BottomVec, TopPerClassVec);
 
-            double dfMaxVal;
-            int nMaxId;
-            int nNumCorrectLabels = 0;
-            int nNumClass = TopPerClass.num;
-            int[] rgCorrectPerClass = new int[nNumClass];
-            int[] rgNumPerClass = new int[nNumClass];
-
-            for (int i = 0; i < 100; i++)
+            // repeat the forward
+            for (int iter = 0; iter < 3; iter++)
             {
-                dfMaxVal = -double.MaxValue;
-                nMaxId = 0;
+                layer.Forward(BottomVec, TopPerClassVec);
 
-                for (int j = 0; j < 10; j++)
+                double dfMaxVal;
+                int nMaxId;
+                int nNumCorrectLabels = 0;
+                int nNumClass = TopPerClass.num;
+                int[] rgCorrectPerClass = new int[nNumClass];
+                int[] rgNumPerClass = new int[nNumClass];
+
+                for (int i = 0; i < 100; i++)
                 {
-                    double dfBottom = convert(Bottom.data_at(i, j, 0, 0));
+                    dfMaxVal = -double.MaxValue;
+                    nMaxId = 0;
 
-                    if (dfBottom > dfMaxVal)
+                    for (int j = 0; j < 10; j++)
                     {
-                        dfMaxVal = dfBottom;
-                        nMaxId = j;
+                        double dfBottom = convert(Bottom.data_at(i, j, 0, 0));
+
+                        if (dfBottom > dfMaxVal)
+                        {
+                            dfMaxVal = dfBottom;
+                            nMaxId = j;
+                        }
+                    }
+
+                    int nIdx = (int)convert(BottomLabel.data_at(i, 0, 0, 0));
+                    rgNumPerClass[nIdx]++;
+
+                    if (nMaxId == nIdx)
+                    {
+                        rgCorrectPerClass[nIdx]++;
+                        nNumCorrectLabels++;
                     }
                 }
 
-                int nIdx = (int)convert(BottomLabel.data_at(i, 0, 0, 0));
-                rgNumPerClass[nIdx]++;
+                double dfTop = convert(Top.data_at(0, 0, 0, 0));
+                double dfExpected = nNumCorrectLabels / 100.0;
 
-                if (nMaxId == nIdx)
+                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+
+                for (int i = 0; i < nNumClass; i++)
                 {
-                    rgCorrectPerClass[nIdx]++;
-                    nNumCorrectLabels++;
+                    double dfAccuracyPerClass = 0;
+
+                    if (rgNumPerClass[i] > 0)
+                        dfAccuracyPerClass = rgCorrectPerClass[i] / (double)rgNumPerClass[i];
+
+                    double dfTopPerClass = convert(TopPerClass.data_at(i, 0, 0, 0));
+
+                    m_log.EXPECT_NEAR(dfTopPerClass, dfAccuracyPerClass, 1e-4);
                 }
-            }
-
-            double dfTop = convert(Top.data_at(0, 0, 0, 0));
-            double dfExpected = nNumCorrectLabels / 100.0;
-
-            m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
-
-            for (int i = 0; i < nNumClass; i++)
-            {
-                double dfAccuracyPerClass = 0;
-
-                if (rgNumPerClass[i] > 0)
-                    dfAccuracyPerClass = rgCorrectPerClass[i] / (double)rgNumPerClass[i];
-
-                double dfTopPerClass = convert(TopPerClass.data_at(i, 0, 0, 0));
-
-                m_log.EXPECT_NEAR(dfTopPerClass, dfAccuracyPerClass, 1e-4);
             }
         }
 
@@ -587,65 +612,70 @@ namespace MyCaffe.test
             BottomLabel.SetData(kIgnoreLabelValue, 32);
 
             layer.Setup(BottomVec, TopPerClassVec);
-            layer.Forward(BottomVec, TopPerClassVec);
 
-            double dfMaxVal;
-            int nMaxId;
-            int nNumCorrectLabels = 0;
-            int nNumClass = TopPerClass.num;
-            int[] rgCorrectPerClass = new int[nNumClass];
-            int[] rgNumPerClass = new int[nNumClass];
-            int nCount = 0;
-
-            for (int i = 0; i < 100; i++)
+            // repeat the forward
+            for (int iter = 0; iter < 3; iter++)
             {
-                double dfBottomLabel = convert(BottomLabel.data_at(i, 0, 0, 0));
+                layer.Forward(BottomVec, TopPerClassVec);
 
-                if (kIgnoreLabelValue == (int)dfBottomLabel)
-                    continue;
+                double dfMaxVal;
+                int nMaxId;
+                int nNumCorrectLabels = 0;
+                int nNumClass = TopPerClass.num;
+                int[] rgCorrectPerClass = new int[nNumClass];
+                int[] rgNumPerClass = new int[nNumClass];
+                int nCount = 0;
 
-                nCount++;
-                dfMaxVal = -double.MaxValue;
-                nMaxId = 0;
-
-                for (int j = 0; j < 10; j++)
+                for (int i = 0; i < 100; i++)
                 {
-                    double dfBottom = convert(Bottom.data_at(i, j, 0, 0));
+                    double dfBottomLabel = convert(BottomLabel.data_at(i, 0, 0, 0));
 
-                    if (dfBottom > dfMaxVal)
+                    if (kIgnoreLabelValue == (int)dfBottomLabel)
+                        continue;
+
+                    nCount++;
+                    dfMaxVal = -double.MaxValue;
+                    nMaxId = 0;
+
+                    for (int j = 0; j < 10; j++)
                     {
-                        dfMaxVal = dfBottom;
-                        nMaxId = j;
+                        double dfBottom = convert(Bottom.data_at(i, j, 0, 0));
+
+                        if (dfBottom > dfMaxVal)
+                        {
+                            dfMaxVal = dfBottom;
+                            nMaxId = j;
+                        }
+                    }
+
+                    int nIdx = (int)convert(BottomLabel.data_at(i, 0, 0, 0));
+                    rgNumPerClass[nIdx]++;
+
+                    if (nMaxId == nIdx)
+                    {
+                        rgCorrectPerClass[nIdx]++;
+                        nNumCorrectLabels++;
                     }
                 }
 
-                int nIdx = (int)convert(BottomLabel.data_at(i, 0, 0, 0));
-                rgNumPerClass[nIdx]++;
+                m_log.CHECK_EQ(nCount, 97, "Expected to count 97 tests.");
 
-                if (nMaxId == nIdx)
+                double dfTop = convert(Top.data_at(0, 0, 0, 0));
+                double dfExpected = nNumCorrectLabels / (double)nCount;
+
+                m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
+
+                for (int i = 0; i < nNumClass; i++)
                 {
-                    rgCorrectPerClass[nIdx]++;
-                    nNumCorrectLabels++;
+                    double dfAccuracyPerClass = 0;
+
+                    if (rgNumPerClass[i] > 0)
+                        dfAccuracyPerClass = rgCorrectPerClass[i] / (double)rgNumPerClass[i];
+
+                    double dfTopPerClass = convert(TopPerClass.data_at(i, 0, 0, 0));
+
+                    m_log.EXPECT_NEAR(dfTopPerClass, dfAccuracyPerClass, 1e-4);
                 }
-            }
-
-            m_log.CHECK_EQ(nCount, 97, "Expected to count 97 tests.");
-
-            double dfTop = convert(Top.data_at(0, 0, 0, 0));
-            double dfExpected = nNumCorrectLabels / (double)nCount;
-
-            m_log.EXPECT_NEAR(dfTop, dfExpected, 1e-4);
-
-            for (int i = 0; i < nNumClass; i++)
-            {
-                double dfAccuracyPerClass = 0;
-
-                if (rgNumPerClass[i] > 0)
-                    dfAccuracyPerClass = rgCorrectPerClass[i] / (double)rgNumPerClass[i];
-
-                double dfTopPerClass = convert(TopPerClass.data_at(i, 0, 0, 0));
-
-                m_log.EXPECT_NEAR(dfTopPerClass, dfAccuracyPerClass, 1e-4);
             }
         }
     }
