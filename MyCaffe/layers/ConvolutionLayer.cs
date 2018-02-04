@@ -68,7 +68,9 @@ namespace MyCaffe.layers
         long[] m_rglWorkspaceFwdSizes = null;
         long[] m_rglWorkspaceBwdFilterSizes = null;
         long[] m_rglWorkspaceBwdDataSizes = null;
-        long[] m_rglWorkspaceOffsets = null; // offsets into workspace data.
+        long[] m_rglWorkspaceFwdOffsets = null; // offsets into workspace fwd data.
+        long[] m_rglWorkspaceBwdFilterOffsets = null; // offsets into workspace bwd filter data.
+        long[] m_rglWorkspaceBwdDataOffsets = null; // offsets into workspace bwd data.
 
         /// <summary>
         /// The ConvolutionLayer constructor.
@@ -184,7 +186,9 @@ namespace MyCaffe.layers
             m_rglWorkspaceFwdSizes = new long[colBottom.Count];
             m_rglWorkspaceBwdFilterSizes = new long[colBottom.Count];
             m_rglWorkspaceBwdDataSizes = new long[colBottom.Count];
-            m_rglWorkspaceOffsets = new long[m_nGroup * CUDNN_STREAMS_PER_GROUP];
+            m_rglWorkspaceFwdOffsets = new long[m_nGroup * CUDNN_STREAMS_PER_GROUP];
+            m_rglWorkspaceBwdFilterOffsets = new long[m_nGroup * CUDNN_STREAMS_PER_GROUP];
+            m_rglWorkspaceBwdDataOffsets = new long[m_nGroup * CUDNN_STREAMS_PER_GROUP];
 
             for (int i = 0; i < colBottom.Count; i++)
             {
@@ -203,7 +207,9 @@ namespace MyCaffe.layers
             {
                 m_rghStream[g] = m_cuda.CreateStream();
                 m_rghCudnn[g] = m_cuda.CreateCuDNN(m_rghStream[g]);
-                m_rglWorkspaceOffsets[g] = 0;
+                m_rglWorkspaceFwdOffsets[g] = 0;
+                m_rglWorkspaceBwdFilterOffsets[g] = 0;
+                m_rglWorkspaceBwdDataOffsets[g] = 0;
             }
 
             // Set the indexing parameters.
@@ -307,7 +313,9 @@ namespace MyCaffe.layers
             // if we succedd in the allocation, set the offsets for the workspaces.
             for (int g = 0; g < (m_nGroup * CUDNN_STREAMS_PER_GROUP); g++)
             {
-                m_rglWorkspaceOffsets[g] = g * lMaxWorkspace;
+                m_rglWorkspaceFwdOffsets[g] = g * lTotalWsFwd;
+                m_rglWorkspaceBwdFilterOffsets[g] = g * lTotalWsBwdFilter;
+                m_rglWorkspaceBwdDataOffsets[g] = g * lTotalWsBwdData;
             }
 
             // Tensor descriptor for bias.
@@ -474,7 +482,7 @@ namespace MyCaffe.layers
                                               hWeight, m_nWeightOffset * g,
                                               m_rghConvDesc[i],
                                               m_rgfwdAlgo[i],
-                                              wsArgs.Data, (int)m_rglWorkspaceOffsets[g], m_rglWorkspaceFwdSizes[i],
+                                              wsArgs.Data, (int)m_rglWorkspaceFwdOffsets[g], m_rglWorkspaceFwdSizes[i],
                                               m_tZero,
                                               m_rghTopDesc[i],
                                               hTopData, m_nTopOffset * g);
@@ -494,8 +502,14 @@ namespace MyCaffe.layers
                     }
                 }
 
-                // Synchronize the work across groups, each of which went into its own.
+                // Synchronize the work across groups, each of which went into its own
+                // stream, by launching an empty kernel into the default (null) stream.
                 m_cuda.SynchronizeThread();
+            }
+
+            for (int g = 0; g < m_nGroup; g++)
+            {
+                m_cuda.SynchronizeStream(m_rghStream[g]);
             }
         }
 
@@ -554,7 +568,7 @@ namespace MyCaffe.layers
                                                        hTopDiff, m_nTopOffset * g,
                                                        m_rghConvDesc[i],
                                                        m_rgbwdFilterAlgo[i],
-                                                       wsArgs.Data, (int)m_rglWorkspaceOffsets[1 * m_nGroup + g],
+                                                       wsArgs.Data, (int)m_rglWorkspaceBwdFilterOffsets[1 * m_nGroup + g],
                                                        m_rglWorkspaceBwdFilterSizes[i],
                                                        m_tOne,
                                                        m_hFilterDesc,
@@ -577,7 +591,7 @@ namespace MyCaffe.layers
                                                       hTopDiff, m_nTopOffset * g,
                                                       m_rghConvDesc[i],
                                                       m_rgbwdDataAlgo[i],
-                                                      wsArgs.Data, (int)m_rglWorkspaceOffsets[2 * m_nGroup + g],
+                                                      wsArgs.Data, (int)m_rglWorkspaceBwdDataOffsets[2 * m_nGroup + g],
                                                       m_rglWorkspaceBwdDataSizes[i],
                                                       m_tZero,
                                                       m_rghBottomDesc[i],
@@ -585,8 +599,14 @@ namespace MyCaffe.layers
                     }
                 }
 
-                // Synchronize the work across groups, each of which went into its own.
+                // Synchronize the work across groups, each of which went into its own
+                // stream, by launching an empty kernel into the default (null) stream.
                 m_cuda.SynchronizeThread();
+            }
+
+            for (int g = 0; g < m_nGroup; g++)
+            {
+                m_cuda.SynchronizeStream(m_rghStream[g]);
             }
         }
     }
