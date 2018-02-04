@@ -199,6 +199,44 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestBilinearFillOdd()
+        {
+            BilinearFillerTest test = new BilinearFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    double dfN = 7.0;
+                    t.TestFill(FillerParameter.VarianceNorm.AVERAGE, dfN);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBilinearFillEven()
+        {
+            BilinearFillerTest test = new BilinearFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    double dfN = 6.0;
+                    t.TestFill(FillerParameter.VarianceNorm.AVERAGE, dfN);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -246,7 +284,7 @@ namespace MyCaffe.test
 
             for (int i = 0; i < nCount; i++)
             {
-                m_log.CHECK_GE(rgData[i], m_fp.value, "The filler value should be equal to " + m_fp.value.ToString());
+                m_log.CHECK_EQ(rgData[i], m_fp.value, "The filler value should be equal to " + m_fp.value.ToString());
             }
         }
     }
@@ -420,7 +458,6 @@ namespace MyCaffe.test
         }
     }
 
-
     class XavierFillerTest : TestBase
     {
         public XavierFillerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
@@ -531,6 +568,61 @@ namespace MyCaffe.test
 
             m_log.EXPECT_NEAR(dfMean, 0, 0.1);
             m_log.EXPECT_NEAR(dfStd, dfTargetStd, 0.1);
+        }
+    }
+
+    class BilinearFillerTest : TestBase
+    {
+        public BilinearFillerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+            : base("Bilinear Filler Test", TestBase.DEFAULT_DEVICE_ID, engine)
+        {
+        }
+
+        protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
+        {
+            if (dt == common.DataType.DOUBLE)
+                return new BilinearFillerTest<double>(strName, nDeviceID, engine);
+            else
+                return new BilinearFillerTest<float>(strName, nDeviceID, engine);
+        }
+    }
+
+    class BilinearFillerTest<T> : TestEx<T>, IFillerTest
+    {
+        FillerParameter m_fp;
+
+        public BilinearFillerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
+            : base(strName, null, nDeviceID)
+        {
+        }
+
+        public void TestFill(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            m_fp = new FillerParameter("bilinear");
+            m_fp.variance_norm = varNorm; // not used for this test.
+
+            Bottom.Reshape(1000, 2, (int)dfN, (int)dfN);
+
+            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, m_fp);
+            filler.Fill(Bottom);
+
+            int nOuterNum = Bottom.count(0, 2);
+            int nInnerNum = Bottom.count(2, 4);
+            double[] rgData = convert(Bottom.update_cpu_data());
+            int nF = (int)Math.Ceiling(Bottom.width / 2.0);
+            double dfC = (Bottom.width - 1.0) / (2.0 * nF);
+
+            for (int i = 0; i < nOuterNum; i++)
+            {
+                for (int j = 0; j < nInnerNum; j++)
+                {
+                    double dfX = j % Bottom.width;
+                    double dfY = (j / Bottom.width) % Bottom.height;
+                    double dfExpectedVal = (1 - Math.Abs(dfX / nF - dfC)) * (1 - Math.Abs(dfY / nF - dfC));
+                    double dfActualVal = rgData[i * nInnerNum + j];
+                    m_log.EXPECT_NEAR(dfExpectedVal, dfActualVal, 0.01);
+                }
+            }
         }
     }
 }
