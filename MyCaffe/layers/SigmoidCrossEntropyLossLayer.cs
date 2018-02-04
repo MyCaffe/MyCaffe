@@ -184,9 +184,8 @@ namespace MyCaffe.layers
             long hInputData = colBottom[0].gpu_data;
             long hTarget = colBottom[1].gpu_data;
 
-            // Since this memory is not used for anything until it is overwritten
-            // on the backward pass, we use it here to avoid having to allocate new GPU
-            // memory to accumulate intermediate results in the kernel.
+            // Since this memory is not used for anything, we use it here to avoid having
+            // to allocate the GPU memory to accumulate intermediate results.
             long hLossData = colBottom[0].mutable_gpu_diff;
             long hCountData = colBottom[1].mutable_gpu_diff;
 
@@ -201,6 +200,10 @@ namespace MyCaffe.layers
             m_dfNormalizer = get_normalizer(m_normalization, (int)dfValidCount);
 
             colTop[0].SetData(dfLoss / m_dfNormalizer, 0);
+
+            // Clear scratch memory to prevent interfering with the backward pass (see #6202)
+            colBottom[0].SetDiff(0);
+            colBottom[1].SetDiff(0);
         }
 
         /// <summary>

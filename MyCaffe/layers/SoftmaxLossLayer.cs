@@ -211,9 +211,8 @@ namespace MyCaffe.layers
             int nDim = m_blobProb.count() / m_nOuterNum;
             int nCount = m_nOuterNum * m_nInnerNum;
 
-            // Since this memory is not used for anything until it is overwritten
-            // on the backward pass, we use it here to avoid having to allocate new GPU
-            // memory to accumulate intermediate results in the kernel.
+            // Since this memory is not used for anything, we use it here to avoid having
+            // to allocate new GPU memory to accumulate intermediate results.
             long hLossData = colBottom[0].mutable_gpu_diff;
 
             // Similarly, this memory is never used elsewhere, and thus we can use it
@@ -236,6 +235,9 @@ namespace MyCaffe.layers
 
             if (colTop.Count == 2)
                 colTop[1].ShareData(m_blobProb);
+
+            // Clear scratch memory to prevent with interfering with backward pass (see #602)
+            colBottom[0].SetDiff(0);
         }
 
         /// <summary>
