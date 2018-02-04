@@ -115,6 +115,7 @@ const int ERROR_CUDA							= ERROR_NN + 20;
 const int ERROR_CUDA_NOTSUPPORED_ON_DISPLAYGPU  = ERROR_CUDA + 1;
 const int ERROR_CUDA_MISSING_NCCL64DLL			= ERROR_CUDA + 2;
 
+const int ERROR_CUDNN_OFFSET					= 0x4000;
 
 //-----------------------------------------------------------------------------
 //	Helper Types

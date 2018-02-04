@@ -419,12 +419,12 @@ long Memory<T>::CreateCuDNN(long hStream, long* phHandle)
 		return ERROR_PARAM_NULL;
 
 	if (lErr = cudnnCreate(&cudnn))
-		return lErr;
+		return lErr | ERROR_CUDNN_OFFSET;
 
 	if (hStream > 0)
 	{
 		if (lErr = cudnnSetStream(cudnn, GetStream(hStream)))
-			return lErr;
+			return lErr | ERROR_CUDNN_OFFSET;
 	}
 
 	long hHandle = m_cudnn.Allocate(cudnn);
@@ -452,7 +452,7 @@ long Memory<T>::CreateTensorDesc(long* phHandle)
 		return ERROR_PARAM_NULL;
 
 	if (lErr = cudnnCreateTensorDescriptor(&desc))
-		return lErr;
+		return lErr | ERROR_CUDNN_OFFSET;
 
 	long hHandle = m_tensorDesc.Allocate(desc);
 	if (hHandle < 0)
@@ -498,10 +498,13 @@ long Memory<T>::AddTensor(long hHandle, T fAlpha, long hSrcDesc, long hSrc, int 
 		dst += nDstOffset;
 
 #ifdef CUDNN_4
-	return cudnnAddTensor(cudnn, &fAlpha, srcdesc, src, &fBeta, dstdesc, dst);
+	if (lErr = cudnnAddTensor(cudnn, &fAlpha, srcdesc, src, &fBeta, dstdesc, dst))
+		return lErr | ERROR_CUDNN_OFFSET;
 #else
-	return cudnnAddTensor(cudnn, CUDNN_ADD_SAME_C, &fAlpha, srcdesc, src, &fBeta, dstdesc, dst);
+	if (lErr = cudnnAddTensor(cudnn, CUDNN_ADD_SAME_C, &fAlpha, srcdesc, src, &fBeta, dstdesc, dst))
+		return lErr | ERROR_CUDNN_OFFSET;
 #endif
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::AddTensor(long hHandle, double dfAlpha, long hSrcDesc, long hSrc, int nSrcOffset, double dfBeta, long hDstDesc, long hDst, int nDstOffset);
@@ -518,7 +521,7 @@ long Memory<T>::CreateFilterDesc(long* phHandle)
 		return ERROR_PARAM_NULL;
 
 	if (lErr = cudnnCreateFilterDescriptor(&desc))
-		return lErr;
+		return lErr | ERROR_CUDNN_OFFSET;
 
 	long hHandle = m_filterDesc.Allocate(desc);
 	if (hHandle < 0)
@@ -545,7 +548,7 @@ long Memory<T>::CreateConvolutionDesc(long* phHandle)
 		return ERROR_PARAM_NULL;
 
 	if (lErr = cudnnCreateConvolutionDescriptor(&desc))
-		return lErr;
+		return lErr | ERROR_CUDNN_OFFSET;
 
 	long hHandle = m_convDesc.Allocate(desc);
 	if (hHandle < 0)
@@ -563,9 +566,9 @@ template long Memory<float>::CreateConvolutionDesc(long* phHandle);
 
 
 template <class T>
-long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, long lWsLimitInBytes, long* palgoFwd, long* plWsSizeFwd, long* palgoBwdFilter, long* plWsSizeBwdFilter, long* palgoBwdData, long* plWsSizeBwdData)
+long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, long lWsLimitInBytes, long* palgoFwd, long* plWsSizeFwd, long* palgoBwdFilter, long* plWsSizeBwdFilter, long* palgoBwdData, long* plWsSizeBwdData, int nPreferredFwdAlgo = -1)
 {
-	cudnnStatus_t err;	
+	cudnnStatus_t lErr;	
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
 	cudnnTensorDescriptor_t bottom = GetTensorDesc(hBottomDesc);
 	cudnnFilterDescriptor_t filter = GetFilterDesc(hFilterDesc);
@@ -595,33 +598,55 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 
 	// Choose forward algorithm for convolution.
 	cudnnConvolutionFwdAlgo_t algoFwd;
-	if (err = cudnnGetConvolutionForwardAlgorithm(cudnn, bottom, filter, conv, top, fwdPref, lWsLimitInBytes, &algoFwd))
-		return err;
+	if (lErr = cudnnGetConvolutionForwardAlgorithm(cudnn, bottom, filter, conv, top, fwdPref, lWsLimitInBytes, &algoFwd))
+		return lErr | ERROR_CUDNN_OFFSET;
 
 	// Get workspace size for forward algorithm.
 	size_t szFwd = 0;
-	if (err = cudnnGetConvolutionForwardWorkspaceSize(cudnn, bottom, filter, conv, top, algoFwd, &szFwd))
-		return err;
+	if (lErr = cudnnGetConvolutionForwardWorkspaceSize(cudnn, bottom, filter, conv, top, algoFwd, &szFwd))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	// CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD has been found by the native Caffe team to work better than 
+	// CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM on deconvolution (which acts a bit buggy in this
+	// situation.  For this reason, when using cuDnn deconvolution, the C# side sets the preferred
+	// fwd algo to CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD which is used only when the workspace is less
+	// than or equat to the default workspace size and no errors occur when attempting to get the
+	// workspace size for WINOGRAD.  By default, the nPrefferredFwdAlgo paraeter is ignored.
+	if (nPreferredFwdAlgo >= 0 && 
+		algoFwd == CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM && 
+		(int)algoFwd != nPreferredFwdAlgo)
+	{
+		size_t lWinogradWorkspaceSize = 0;
+		lErr = cudnnGetConvolutionForwardWorkspaceSize(cudnn, bottom, filter, conv, top, (cudnnConvolutionFwdAlgo_t)nPreferredFwdAlgo, &lWinogradWorkspaceSize);
+		if (lErr == CUDNN_STATUS_SUCCESS)
+		{
+			if (lWinogradWorkspaceSize <= szFwd)
+			{
+				algoFwd = (cudnnConvolutionFwdAlgo_t)nPreferredFwdAlgo;
+				szFwd = lWinogradWorkspaceSize;
+			}
+		}
+	}
 
 	// Choose backward filter algorithm.
 	cudnnConvolutionBwdFilterAlgo_t algoBwdFilter;
-	if (err = cudnnGetConvolutionBackwardFilterAlgorithm(cudnn, bottom, top, conv, filter, bwdFltPref, lWsLimitInBytes, &algoBwdFilter))
-		return err;
+	if (lErr = cudnnGetConvolutionBackwardFilterAlgorithm(cudnn, bottom, top, conv, filter, bwdFltPref, lWsLimitInBytes, &algoBwdFilter))
+		return lErr | ERROR_CUDNN_OFFSET;
 
 	// Get workspace size for backward filter algorithm.
 	size_t szBwdFilter = 0;
-	if (err = cudnnGetConvolutionBackwardFilterWorkspaceSize(cudnn, bottom, top, conv, filter, algoBwdFilter, &szBwdFilter))
-		return err;
+	if (lErr = cudnnGetConvolutionBackwardFilterWorkspaceSize(cudnn, bottom, top, conv, filter, algoBwdFilter, &szBwdFilter))
+		return lErr | ERROR_CUDNN_OFFSET;
 
 	// Choose backward data algorithm.
 	cudnnConvolutionBwdDataAlgo_t algoBwdData;
-	if (err = cudnnGetConvolutionBackwardDataAlgorithm(cudnn, filter, top, conv, bottom, bwdDataPref, lWsLimitInBytes, &algoBwdData))
-		return err;
+	if (lErr = cudnnGetConvolutionBackwardDataAlgorithm(cudnn, filter, top, conv, bottom, bwdDataPref, lWsLimitInBytes, &algoBwdData))
+		return lErr | ERROR_CUDNN_OFFSET;
 
 	// Get workspace size for backward data algorithm.
 	size_t szBwdData = 0;
-	if (err = cudnnGetConvolutionBackwardDataWorkspaceSize(cudnn, filter, top, conv, bottom, algoBwdData, &szBwdData))
-		return err;
+	if (lErr = cudnnGetConvolutionBackwardDataWorkspaceSize(cudnn, filter, top, conv, bottom, algoBwdData, &szBwdData))
+		return lErr | ERROR_CUDNN_OFFSET;
 
 	*palgoFwd = (long)algoFwd;
 	*plWsSizeFwd = (long)szFwd;
@@ -633,8 +658,8 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 	return cudaSuccess;
 }
 
-template long Memory<double>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, long lWsLimitInBytes, long* palgoFwd, long* plWsSizeFwd, long* palgoBwdFilter, long* plWsSizeBwdFilter, long* palgoBwdData, long* plWsSizeBwdData);
-template long Memory<float>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, long lWsLimitInBytes, long* palgoFwd, long* plWsSizeFwd, long* palgoBwdFilter, long* plWsSizeBwdFilter, long* palgoBwdData, long* plWsSizeBwdData);
+template long Memory<double>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, long lWsLimitInBytes, long* palgoFwd, long* plWsSizeFwd, long* palgoBwdFilter, long* plWsSizeBwdFilter, long* palgoBwdData, long* plWsSizeBwdData, int nPreferredFwdAlgo);
+template long Memory<float>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, long lWsLimitInBytes, long* palgoFwd, long* plWsSizeFwd, long* palgoBwdFilter, long* plWsSizeBwdFilter, long* palgoBwdData, long* plWsSizeBwdData, int nPreferredFwdAlgo);
 
 
 template <class T>
@@ -690,7 +715,7 @@ long Memory<T>::ConvolutionForward(long hHandle, T fAlpha, long hBottomDesc, lon
 		wksp += nWorkspaceOffset;
 
 	if (lErr = cudnnConvolutionForward(cudnn, &fAlpha, btmdesc, btmdata, filterdesc, weight, convdesc, (cudnnConvolutionFwdAlgo_t)algo, wksp, lWorkspaceSize, &fBeta, topdesc, topdata))
-		return lErr;
+		return lErr | ERROR_CUDNN_OFFSET;
 
 	return cudaDeviceSynchronize();
 }
@@ -724,7 +749,10 @@ long Memory<T>::ConvolutionBackwardBias(long hHandle, T fAlpha, long hTopDesc, l
 	if (nBiasOffset > 0)
 		biasdiff += nBiasOffset;
 
-	return cudnnConvolutionBackwardBias(cudnn, &fAlpha, topdesc, topdiff, &fBeta, biasdesc, biasdiff);
+	if (lErr = cudnnConvolutionBackwardBias(cudnn, &fAlpha, topdesc, topdiff, &fBeta, biasdesc, biasdiff))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::ConvolutionBackwardBias(long hHandle, double dfAlpha, long hTopDesc, long hTopDiff, int nTopOffset, double dfBeta, long hBiasDesc, long hBiasDiff, int nBiasOffset);
@@ -784,10 +812,14 @@ long Memory<T>::ConvolutionBackwardFilter(long hHandle, T fAlpha, long hBottomDe
 		wksp += nWorkspaceOffset;
 	
 #ifdef CUDNN_5
-	return cudnnConvolutionBackwardFilter(cudnn, &fAlpha, btmdesc, btmdata, topdesc, topdiff, convdesc, (cudnnConvolutionBwdFilterAlgo_t)algo, wksp, lWorkspaceSize, &fBeta, filterdesc, weightdiff);
+	if (lErr = cudnnConvolutionBackwardFilter(cudnn, &fAlpha, btmdesc, btmdata, topdesc, topdiff, convdesc, (cudnnConvolutionBwdFilterAlgo_t)algo, wksp, lWorkspaceSize, &fBeta, filterdesc, weightdiff))
+		return lErr | ERROR_CUDNN_OFFSET;
 #else
-	return cudnnConvolutionBackwardFilter_v3(cudnn, &fAlpha, btmdesc, btmdata, topdesc, topdiff, convdesc, (cudnnConvolutionBwdFilterAlgo_t)algo, wksp, lWorkspaceSize, &fBeta, filterdesc, weightdiff);
+	if (lErr = cudnnConvolutionBackwardFilter_v3(cudnn, &fAlpha, btmdesc, btmdata, topdesc, topdiff, convdesc, (cudnnConvolutionBwdFilterAlgo_t)algo, wksp, lWorkspaceSize, &fBeta, filterdesc, weightdiff))
+		return lErr | ERROR_CUDNN_OFFSET;
 #endif
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::ConvolutionBackwardFilter(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, double dfBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset);
@@ -847,10 +879,14 @@ long Memory<T>::ConvolutionBackwardData(long hHandle, T fAlpha, long hFilterDesc
 		wksp += nWorkspaceOffset;
 
 #ifdef CUDNN_5
-	return cudnnConvolutionBackwardData(cudnn, &fAlpha, filterdesc, weight, topdesc, topdiff, convdesc, (cudnnConvolutionBwdDataAlgo_t)algo, wksp, lWorkspaceSize, &fBeta, btmdesc, btmdiff);
+	if (lErr = cudnnConvolutionBackwardData(cudnn, &fAlpha, filterdesc, weight, topdesc, topdiff, convdesc, (cudnnConvolutionBwdDataAlgo_t)algo, wksp, lWorkspaceSize, &fBeta, btmdesc, btmdiff))
+		return lErr | ERROR_CUDNN_OFFSET;
 #else
-	return cudnnConvolutionBackwardData_v3(cudnn, &fAlpha, filterdesc, weight, topdesc, topdiff, convdesc, (cudnnConvolutionBwdDataAlgo_t)algo, wksp, lWorkspaceSize, &fBeta, btmdesc, btmdiff);
+	if (lErr = cudnnConvolutionBackwardData_v3(cudnn, &fAlpha, filterdesc, weight, topdesc, topdiff, convdesc, (cudnnConvolutionBwdDataAlgo_t)algo, wksp, lWorkspaceSize, &fBeta, btmdesc, btmdiff))
+		return lErr | ERROR_CUDNN_OFFSET;
 #endif
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::ConvolutionBackwardData(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, double dfBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset);
@@ -867,7 +903,7 @@ long Memory<T>::CreatePoolingDesc(long* phHandle)
 		return ERROR_PARAM_NULL;
 
 	if (lErr = cudnnCreatePoolingDescriptor(&desc))
-		return lErr;
+		return lErr | ERROR_CUDNN_OFFSET;
 
 	long hHandle = m_poolDesc.Allocate(desc);
 	if (hHandle < 0)
@@ -904,7 +940,10 @@ long Memory<T>::PoolingForward(long hHandle, long hPoolingDesc, T fAlpha, long h
 	T* topdata = (T*)pTopData->Data();
 	T* btmdata = (T*)pBtmData->Data();
 
-	return cudnnPoolingForward(cudnn, pooldesc, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata); 
+	if (lErr = cudnnPoolingForward(cudnn, pooldesc, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::PoolingForward(long hHandle, long hPoolingDesc, double dfAlpha, long hBottomDesc, long hBottomData, double dfBeta, long hTopDesc, long hTopData);
@@ -943,7 +982,10 @@ long Memory<T>::PoolingBackward(long hHandle, long hPoolingDesc, T fAlpha, long 
 	T* topdiff = (T*)pTopDiff->Data();
 	T* btmdiff = (T*)pBtmDiff->Data();
 
-	return cudnnPoolingBackward(cudnn, pooldesc, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff);
+	if (lErr = cudnnPoolingBackward(cudnn, pooldesc, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::PoolingBackward(long hHandle, long hPoolingDesc, double dfAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, double dfBeta, long hBottomDiffDesc, long hBottomDiff);
@@ -960,7 +1002,7 @@ long Memory<T>::CreateDropoutDesc(long* phHandle)
 		return ERROR_PARAM_NULL;
 
 	if (lErr = cudnnCreateDropoutDescriptor(&desc))
-		return lErr;
+		return lErr | ERROR_CUDNN_OFFSET;
 
 	long hHandle = m_dropoutDesc.Allocate(desc);
 	if (hHandle < 0)
@@ -991,7 +1033,10 @@ long Memory<T>::SetDropoutDesc(long hHandle, long hDropoutDesc, T fDropout, long
 	T* states = (T*)pStates->Data();
 	size_t szStates = (size_t)pStates->Size();
 
-	return cudnnSetDropoutDescriptor(desc, cudnn, (float)fDropout, states, szStates, (unsigned long long)lSeed);
+	if (lErr = cudnnSetDropoutDescriptor(desc, cudnn, (float)fDropout, states, szStates, (unsigned long long)lSeed))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::SetDropoutDesc(long hHandle, long hDropoutDesc, double fDropout, long hStates, long lSeed);
@@ -1011,10 +1056,10 @@ long Memory<T>::GetDropoutInfo(long hHandle, long hBottomDesc, unsigned long* pl
 		return ERROR_PARAM_NULL;
 
 	if (lErr = cudnnDropoutGetStatesSize(cudnn, &szStates))
-		return lErr;
+		return lErr | ERROR_CUDNN_OFFSET;
 
 	if (lErr = cudnnDropoutGetReserveSpaceSize(bottomDesc, &szReserved))
-		return lErr;
+		return lErr | ERROR_CUDNN_OFFSET;
 
 	*plState = (unsigned long)szStates;
 	*plReserved = (unsigned long)szReserved;
@@ -1052,7 +1097,10 @@ long Memory<T>::DropoutForward(long hHandle, long hDropoutDesc, long hBottomDesc
 	T* reserved = (T*)pReserved->Data();
 	size_t szReserved = (size_t)pReserved->Size();
 
-	return cudnnDropoutForward(cudnn, desc, bottomDesc, bottom, topDesc, top, reserved, szReserved);
+	if (lErr = cudnnDropoutForward(cudnn, desc, bottomDesc, bottom, topDesc, top, reserved, szReserved))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::DropoutForward(long hHandle, long hDropoutDesc, long hBottomDesc, long hBottom, long hTopDesc, long hTop, long hReservedSpace);
@@ -1085,7 +1133,10 @@ long Memory<T>::DropoutBackward(long hHandle, long hDropoutDesc, long hTopDesc, 
 	T* reserved = (T*)pReserved->Data();
 	size_t szReserved = (size_t)pReserved->Size();
 
-	return cudnnDropoutBackward(cudnn, desc, topDesc, top, bottomDesc, bottom, reserved, szReserved);
+	if (lErr = cudnnDropoutBackward(cudnn, desc, topDesc, top, bottomDesc, bottom, reserved, szReserved))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::DropoutBackward(long hHandle, long hDropoutDesc, long hTopDesc, long hTop, long hBottomDesc, long hBottom, long hReservedSpace);
@@ -1102,7 +1153,7 @@ long Memory<T>::CreateLRNDesc(long* phHandle)
 		return ERROR_PARAM_NULL;
 
 	if (lErr = cudnnCreateLRNDescriptor(&desc))
-		return lErr;
+		return lErr | ERROR_CUDNN_OFFSET;
 
 	long hHandle = m_lrnDesc.Allocate(desc);
 	if (hHandle < 0)
@@ -1139,7 +1190,10 @@ long Memory<T>::LRNForwardCC(long hHandle, long hNormDesc, T fAlpha, long hBotto
 	T* topdata = (T*)pTopData->Data();
 	T* btmdata = (T*)pBottomData->Data();
 
-	return cudnnLRNCrossChannelForward(cudnn, normdesc, CUDNN_LRN_CROSS_CHANNEL_DIM1, &fAlpha, btmdatadesc, btmdata, &fBeta, topdatadesc, topdata);
+	if (lErr = cudnnLRNCrossChannelForward(cudnn, normdesc, CUDNN_LRN_CROSS_CHANNEL_DIM1, &fAlpha, btmdatadesc, btmdata, &fBeta, topdatadesc, topdata))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::LRNForwardCC(long hHandle, long hNormDesc, double fAlpha, long hBottomDesc, long hBottomData, double fBeta, long hTopDesc, long hTopData);
@@ -1178,7 +1232,10 @@ long Memory<T>::LRNBackwardCC(long hHandle, long hNormDesc, T fAlpha, long hTopD
 	T* topdiff = (T*)pTopDiff->Data();
 	T* btmdiff = (T*)pBtmDiff->Data();
 
-	return cudnnLRNCrossChannelBackward(cudnn, normdesc, CUDNN_LRN_CROSS_CHANNEL_DIM1, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff);
+	if (lErr = cudnnLRNCrossChannelBackward(cudnn, normdesc, CUDNN_LRN_CROSS_CHANNEL_DIM1, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::LRNBackwardCC(long hHandle, long hNormDesc, double fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomDadta, double fBeta, long hBottomDiffDesc, long hBottomDiff);
@@ -1215,7 +1272,10 @@ long Memory<T>::LCNForwardCC(long hHandle, long hNormDesc, T fAlpha, long hBotto
 	T* temp1 = (T*)pTemp1->Data();
 	T* temp2 = (T*)pTemp2->Data();
 
-	return cudnnDivisiveNormalizationForward(cudnn, normdesc, CUDNN_DIVNORM_PRECOMPUTED_MEANS, &fAlpha, btmdatadesc, btmdata, NULL, temp1, temp2, &fBeta, topdatadesc, topdata);
+	if (lErr = cudnnDivisiveNormalizationForward(cudnn, normdesc, CUDNN_DIVNORM_PRECOMPUTED_MEANS, &fAlpha, btmdatadesc, btmdata, NULL, temp1, temp2, &fBeta, topdatadesc, topdata))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::LCNForwardCC(long hHandle, long hNormDesc, double fAlpha, long hBottomDesc, long hBottomData, long hTemp1, long hTemp2, double fBeta, long hTopDesc, long hTopData);
@@ -1257,7 +1317,10 @@ long Memory<T>::LCNBackwardCC(long hHandle, long hNormDesc, T fAlpha, long hBott
 	T* temp1 = (T*)pTemp1->Data();
 	T* temp2 = (T*)pTemp2->Data();
 
-	return cudnnDivisiveNormalizationBackward(cudnn, normdesc, CUDNN_DIVNORM_PRECOMPUTED_MEANS, &fAlpha, btmdatadesc, btmdata, NULL, topdiff, temp1, temp2, &fBeta, btmdiffdesc, btmdiff, NULL);
+	if (lErr = cudnnDivisiveNormalizationBackward(cudnn, normdesc, CUDNN_DIVNORM_PRECOMPUTED_MEANS, &fAlpha, btmdatadesc, btmdata, NULL, topdiff, temp1, temp2, &fBeta, btmdiffdesc, btmdiff, NULL))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::LCNBackwardCC(long hHandle, long hNormDesc, double fAlpha, long hBottomDataDesc, long hBottomData, long hTopDiff, long hTemp1, long hTemp2, double fBeta, long hBottomDiffDesc, long hBottomDiff);
@@ -1287,10 +1350,14 @@ long Memory<T>::TanhForward(long hHandle, T fAlpha, long hBottomDesc, long hBott
 
 #ifdef CUDNN_5
 	cudnnActivationDescriptor_t desc = GetActivationDesc(m_hGlobalActivationTanh);
-	return cudnnActivationForward(cudnn, desc, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata); 
+	if (lErr = cudnnActivationForward(cudnn, desc, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata))
+		return lErr | ERROR_CUDNN_OFFSET;
 #else
-	return cudnnActivationForward(cudnn, CUDNN_ACTIVATION_TANH, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata); 
+	if (lErr = cudnnActivationForward(cudnn, CUDNN_ACTIVATION_TANH, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata))
+		return lErr | ERROR_CUDNN_OFFSET;
 #endif
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::TanhForward(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, double dfBeta, long hTopDesc, long hTopData);
@@ -1330,10 +1397,14 @@ long Memory<T>::TanhBackward(long hHandle, T fAlpha, long hTopDataDesc, long hTo
 
 #ifdef CUDNN_5
 	cudnnActivationDescriptor_t desc = GetActivationDesc(m_hGlobalActivationTanh);
-	return cudnnActivationBackward(cudnn, desc, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff);
+	if (lErr = cudnnActivationBackward(cudnn, desc, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff))
+		return lErr | ERROR_CUDNN_OFFSET;
 #else
-	return cudnnActivationBackward(cudnn, CUDNN_ACTIVATION_TANH, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff);
+	if (lErr = cudnnActivationBackward(cudnn, CUDNN_ACTIVATION_TANH, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff))
+		return lErr | ERROR_CUDNN_OFFSET;
 #endif
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::TanhBackward(long hHandle, double dfAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, double dfBeta, long hBottomDiffDesc, long hBottomDiff);
@@ -1361,10 +1432,14 @@ long Memory<T>::SigmoidForward(long hHandle, T fAlpha, long hBottomDesc, long hB
 
 #ifdef CUDNN_5
 	cudnnActivationDescriptor_t desc = GetActivationDesc(m_hGlobalActivationSigmoid);
-	return cudnnActivationForward(cudnn, desc, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata); 
+	if (lErr = cudnnActivationForward(cudnn, desc, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata))
+		return lErr | ERROR_CUDNN_OFFSET;
 #else
-	return cudnnActivationForward(cudnn, CUDNN_ACTIVATION_SIGMOID, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata); 
+	if (lErr = cudnnActivationForward(cudnn, CUDNN_ACTIVATION_SIGMOID, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata))
+		return lErr | ERROR_CUDNN_OFFSET;
 #endif
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::SigmoidForward(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, double dfBeta, long hTopDesc, long hTopData);
@@ -1404,10 +1479,14 @@ long Memory<T>::SigmoidBackward(long hHandle, T fAlpha, long hTopDataDesc, long 
 
 #ifdef CUDNN_5
 	cudnnActivationDescriptor_t desc = GetActivationDesc(m_hGlobalActivationSigmoid);
-	return cudnnActivationBackward(cudnn, desc, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff);
+	if (lErr = cudnnActivationBackward(cudnn, desc, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff))
+		return lErr | ERROR_CUDNN_OFFSET;
 #else
-	return cudnnActivationBackward(cudnn, CUDNN_ACTIVATION_SIGMOID, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff);
+	if (lErr = cudnnActivationBackward(cudnn, CUDNN_ACTIVATION_SIGMOID, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff))
+		return lErr | ERROR_CUDNN_OFFSET;
 #endif
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::SigmoidBackward(long hHandle, double dfAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, double dfBeta, long hBottomDiffDesc, long hBottomDiff);
@@ -1435,10 +1514,14 @@ long Memory<T>::ReLUForward(long hHandle, T fAlpha, long hBottomDesc, long hBott
 
 #ifdef CUDNN_5
 	cudnnActivationDescriptor_t desc = GetActivationDesc(m_hGlobalActivationRelu);
-	return cudnnActivationForward(cudnn, desc, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata); 
+	if (lErr = cudnnActivationForward(cudnn, desc, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata))
+		return lErr | ERROR_CUDNN_OFFSET;
 #else
-	return cudnnActivationForward(cudnn, CUDNN_ACTIVATION_RELU, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata); 
+	if (lErr = cudnnActivationForward(cudnn, CUDNN_ACTIVATION_RELU, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata))
+		return lErr | ERROR_CUDNN_OFFSET;
 #endif
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::ReLUForward(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, double dfBeta, long hTopDesc, long hTopData);
@@ -1478,10 +1561,14 @@ long Memory<T>::ReLUBackward(long hHandle, T fAlpha, long hTopDataDesc, long hTo
 
 #ifdef CUDNN_5
 	cudnnActivationDescriptor_t desc = GetActivationDesc(m_hGlobalActivationRelu);
-	return cudnnActivationBackward(cudnn, desc, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff);
+	if (lErr = cudnnActivationBackward(cudnn, desc, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff))
+		return lErr | ERROR_CUDNN_OFFSET;
 #else
-	return cudnnActivationBackward(cudnn, CUDNN_ACTIVATION_RELU, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff);
+	if (lErr = cudnnActivationBackward(cudnn, CUDNN_ACTIVATION_RELU, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff))
+		return lErr | ERROR_CUDNN_OFFSET;
 #endif
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::ReLUBackward(long hHandle, double dfAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, double dfBeta, long hBottomDiffDesc, long hBottomDiff);
@@ -1508,7 +1595,10 @@ long Memory<T>::SoftmaxForward(long hHandle, T fAlpha, long hBottomDesc, long hB
 	T* topdata = (T*)pTopData->Data();
 	T* btmdata = (T*)pBtmData->Data();
 
-	return cudnnSoftmaxForward(cudnn, CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata);
+	if (lErr = cudnnSoftmaxForward(cudnn, CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::SoftmaxForward(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, double dfBeta, long hTopDesc, long hTopData);
@@ -1540,7 +1630,10 @@ long Memory<T>::SoftmaxBackward(long hHandle, T fAlpha, long hTopDataDesc, long 
 	T* topdiff = (T*)pTopDiff->Data();
 	T* btmdiff = (T*)pBtmDiff->Data();
 
-	return cudnnSoftmaxBackward(cudnn, CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, &fBeta, btmdiffdesc, btmdiff);
+	if (lErr = cudnnSoftmaxBackward(cudnn, CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, &fBeta, btmdiffdesc, btmdiff))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
 template long Memory<double>::SoftmaxBackward(long hHandle, double dfAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, double dfBeta, long hBottomDiffDesc, long hBottomDiff);

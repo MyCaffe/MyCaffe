@@ -130,6 +130,70 @@ bool GetCudaErrorString(long lErr, char* szErr, long lMaxErr)
 	if (lErr == 0)
 		return false;
 
+	if ((lErr & ERROR_CUDNN_OFFSET) == ERROR_CUDNN_OFFSET)
+	{
+		lErr &= (~ERROR_CUDNN_OFFSET);
+
+		switch (lErr)
+		{
+			case CUDNN_STATUS_NOT_INITIALIZED:
+				_snprintf(szErr, lMaxErr, "cuDNN: The cuDNN library was not initialized propertly (%ld)", lErr);
+				return true;
+
+			case CUDNN_STATUS_ALLOC_FAILED:
+				_snprintf(szErr, lMaxErr, "cuDNN: A resource allocation failed within the cuDNN library (%ld)", lErr);
+				return true;
+
+			case CUDNN_STATUS_BAD_PARAM:
+				_snprintf(szErr, lMaxErr, "cuDNN: An incorrect parameter was passed to a function (%ld)", lErr);
+				return true;
+
+			case CUDNN_STATUS_INTERNAL_ERROR:
+				_snprintf(szErr, lMaxErr, "cuDNN: An internal operation failed (%ld)", lErr);
+				return true;
+
+			case CUDNN_STATUS_INVALID_VALUE:
+				_snprintf(szErr, lMaxErr, "cuDNN: An invalid value was detected (%ld)", lErr);
+				return true;
+
+			case CUDNN_STATUS_ARCH_MISMATCH:
+				_snprintf(szErr, lMaxErr, "cuDNN: The function requires a feature not supported by the current GPU device - your device must have compute capability of 3.0 or greater (%ld)", lErr);
+				return true;
+
+			case CUDNN_STATUS_MAPPING_ERROR:
+				_snprintf(szErr, lMaxErr, "cuDNN: An access to the GPU's memory space failed perhaps caused when binding to a texture (%ld)", lErr);
+				return true;
+
+			case CUDNN_STATUS_EXECUTION_FAILED:
+				_snprintf(szErr, lMaxErr, "cuDNN: The current GPU program failed to execute (%ld)", lErr);
+				return true;
+
+			case CUDNN_STATUS_NOT_SUPPORTED:
+				_snprintf(szErr, lMaxErr, "cuDNN: The functionality requested is not supported by this version of cuDNN (%ld)", lErr);
+				return true;
+
+			case CUDNN_STATUS_LICENSE_ERROR:
+				_snprintf(szErr, lMaxErr, "cuDNN: The functionality requested requires a license that does not appear to exist (%ld)", lErr);
+				return true;
+
+			case CUDNN_STATUS_RUNTIME_PREREQUISITE_MISSING:
+				_snprintf(szErr, lMaxErr, "cuDNN: The runtime library required by RNN calls (nvcuda.dll) cannot be found (%ld)", lErr);
+				return true;
+
+#if CUDNN_MAJOR >= 7
+			case CUDNN_STATUS_RUNTIME_IN_PROGRESS:
+				_snprintf(szErr, lMaxErr, "cuDNN: Some tasks in the user stream are still running (%ld)", lErr);
+				return true;
+
+			case CUDNN_STATUS_RUNTIME_FP_OVERFLOW:
+				_snprintf(szErr, lMaxErr, "cuDNN: A numerical overflow occurred while executing the GPU kernel (%ld)", lErr);
+				return true;
+#endif
+		}
+
+		return false;
+	}
+
 	switch (lErr)
 	{
 		case cudaErrorMissingConfiguration:
