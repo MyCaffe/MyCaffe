@@ -330,7 +330,7 @@ namespace MyCaffe.layers
                 }
             }
 
-            m_log.WriteLine("Accuracy: " + dfAccuracy.ToString());
+            // m_log.WriteLine("Accuracy: " + dfAccuracy.ToString());
             dfAccuracy = (nCount == 0) ? 0 : (dfAccuracy / nCount);
             colTop[0].SetData(dfAccuracy, 0);
             colTop[0].Tag = m_param.accuracy_param.top_k;
