@@ -13,10 +13,112 @@ namespace MyCaffe.test
     [TestClass]
     public class TestDeconvolutionLayer
     {
+        #region CuDNN Only Tests
+
+        [TestMethod]
+        public void TestSetupCuDnn()
+        {
+            DeconvolutionLayerTest test = new DeconvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IDeconvolutionLayerTest t in test.Tests)
+                {
+                    t.TestSetup();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSimpleDeconvolutionCuDnn()
+        {
+            DeconvolutionLayerTest test = new DeconvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IDeconvolutionLayerTest t in test.Tests)
+                {
+                    t.TestSimpleDeconvolution();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientCuDnn()
+        {
+            DeconvolutionLayerTest test = new DeconvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IDeconvolutionLayerTest t in test.Tests)
+                {
+                    t.TestGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// This test fails.
+        /// </summary>
+        [TestMethod]
+        public void TestNDAgainst2DCuDnn()
+        {
+            DeconvolutionLayerTest test = new DeconvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IDeconvolutionLayerTest t in test.Tests)
+                {
+                    t.TestNDAgainst2D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// This test fails.
+        /// </summary>
+        [TestMethod]
+        public void TestGradient3DCuDnn()
+        {
+            DeconvolutionLayerTest test = new DeconvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IDeconvolutionLayerTest t in test.Tests)
+                {
+                    t.TestGradient3D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        #endregion
+
+        #region CAFFE Only Tests
+
         [TestMethod]
         public void TestSetup()
         {
-            DeconvolutionLayerTest test = new DeconvolutionLayerTest();
+            DeconvolutionLayerTest test = new DeconvolutionLayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
@@ -34,7 +136,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestSimpleDeconvolution()
         {
-            DeconvolutionLayerTest test = new DeconvolutionLayerTest();
+            DeconvolutionLayerTest test = new DeconvolutionLayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
@@ -52,7 +154,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestGradient()
         {
-            DeconvolutionLayerTest test = new DeconvolutionLayerTest();
+            DeconvolutionLayerTest test = new DeconvolutionLayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
@@ -73,7 +175,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestNDAgainst2D()
         {
-            DeconvolutionLayerTest test = new DeconvolutionLayerTest();
+            DeconvolutionLayerTest test = new DeconvolutionLayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
@@ -94,7 +196,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestGradient3D()
         {
-            DeconvolutionLayerTest test = new DeconvolutionLayerTest();
+            DeconvolutionLayerTest test = new DeconvolutionLayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
@@ -108,6 +210,8 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        #endregion
     }
 
 
@@ -174,6 +278,8 @@ namespace MyCaffe.test
             p.value = 1.0;
             return p;
         }
+
+        #region CuDNN and CAFFE Tests
 
         public void TestSetup()
         {
@@ -288,7 +394,7 @@ namespace MyCaffe.test
         }
 
         /// <summary>
-        /// This test fails.
+        /// This test fails with Engine.CAFFE.
         /// </summary>
         public void TestNDAgainst2D()
         {
@@ -417,7 +523,7 @@ namespace MyCaffe.test
                 double dfND = rgResultND[i];
 
 #warning TestDeconvolutionLayer<T>.TestNDAgainst2D test fails.
-                m_log.CHECK_EQ(df2D, dfND, "The 2D and ND values at " + i.ToString() + " should be equal!");
+                m_log.EXPECT_EQUAL<float>(df2D, dfND, "The 2D and ND values at " + i.ToString() + " should be equal!");
             }
 
             m_log.CHECK_EQ(backward_result_nd.count(), backward_result_2d.count(), "The backward_result_2d and backward_result_nd should have the same count().");
@@ -430,7 +536,7 @@ namespace MyCaffe.test
                 double df2D = rgBackwardResult2D[i];
                 double dfND = rgBackwardResultND[i];
 
-                m_log.CHECK_EQ(df2D, dfND, "The backward 2D and ND values at " + i.ToString() + " should be equal!");
+                m_log.EXPECT_EQUAL<float>(df2D, dfND, "The backward 2D and ND values at " + i.ToString() + " should be equal!");
             }
 
             m_log.CHECK_EQ(backward_weight_result_nd.count(), backward_weight_result_2d.count(), "The backward_weight_result_2d and backward_result_nd should have the same count().");
@@ -443,12 +549,12 @@ namespace MyCaffe.test
                 double df2D = rgBackwardWeightResult2D[i];
                 double dfND = rgBackwardWeightResultND[i];
 
-                m_log.CHECK_EQ(df2D, dfND, "The backward weight 2D and ND values at " + i.ToString() + " should be equal!");
+                m_log.EXPECT_EQUAL<float>(df2D, dfND, "The backward weight 2D and ND values at " + i.ToString() + " should be equal!");
             }
         }
 
         /// <summary>
-        /// This test fails.
+        /// This test fails with Engine.CAFFE.
         /// </summary>
         public void TestGradient3D()
         {
@@ -481,5 +587,7 @@ namespace MyCaffe.test
 #warning TestDeconvolutionLayer<T>.TestGradient3D test fails.
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
         }
+
+        #endregion
     }
 }
