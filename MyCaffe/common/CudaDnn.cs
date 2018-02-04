@@ -2479,6 +2479,7 @@ namespace MyCaffe.common
         /// <param name="lWsSizeBwdFilter">Returns the workspace size (int bytes) for the backward filter.</param>
         /// <param name="algoBwdData">Returns the algorithm for the backward data.</param>
         /// <param name="lWsSizeBwdData">Returns the workspace (in bytes) for the backward data.</param>
+        /// <param name="preferredFwdAlgo">Optionally, specifies a preferred forward algo to attempt to use for forward convolution.  The new algo is only used if the current device supports it.</param>
         public void GetConvolutionInfo(long hCuDnn, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, long lWorkspaceSizeLimitInBytes, out CONV_FWD_ALGO algoFwd, out long lWsSizeFwd, out CONV_BWD_FILTER_ALGO algoBwdFilter, out long lWsSizeBwdFilter, out CONV_BWD_DATA_ALGO algoBwdData, out long lWsSizeBwdData, CONV_FWD_ALGO preferredFwdAlgo = CONV_FWD_ALGO.NONE)
         {
             if (m_dt == DataType.DOUBLE)
