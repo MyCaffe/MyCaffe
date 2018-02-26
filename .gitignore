@@ -31,6 +31,9 @@ build/
 **/_help/latex/*
 **/_help/media/*
 
+!/MyCaffe.app/SqlServerTypes/*
+!/MyCaffe.test/SqlServerTypes/*
+
 # NuGet Packages
 *.nupkg
 *.nuspec
