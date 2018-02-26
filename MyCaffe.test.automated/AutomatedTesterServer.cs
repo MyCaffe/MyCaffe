@@ -77,12 +77,12 @@ namespace MyCaffe.test.automated
             get { return m_bw.IsBusy; }
         }
 
-        public void Run(string strTestDllFile, bool bResetAllTests)
+        public void Run(string strTestDllFile, bool bResetAllTests, int nGpuId = 0)
         {
             m_evtCancel.Reset();
             m_evtGlobalCancel.Reset();
             m_fiPath = new FileInfo(strTestDllFile);
-            m_bw.RunWorkerAsync(new AutoTestParams(strTestDllFile, bResetAllTests));
+            m_bw.RunWorkerAsync(new AutoTestParams(strTestDllFile, bResetAllTests, nGpuId));
         }
 
         public void Abort()
@@ -119,7 +119,7 @@ namespace MyCaffe.test.automated
             else
                 colTests.LoadFromDatabase();
 
-            colTests.Run(m_evtCancel, false, true);
+            colTests.Run(m_evtCancel, false, true, param.GpuId);
 
             while (!bw.CancellationPending && colTests.IsRunning)
             {
@@ -146,11 +146,18 @@ namespace MyCaffe.test.automated
     {
         string m_strTestDllFile;
         bool m_bResetAllTests = false;
+        int m_nGpuId = 0;
 
-        public AutoTestParams(string strTestDllFile, bool bResetAllTests)
+        public AutoTestParams(string strTestDllFile, bool bResetAllTests, int nGpuId = 0)
         {
             m_strTestDllFile = strTestDllFile;
             m_bResetAllTests = bResetAllTests;
+            m_nGpuId = nGpuId;
+        }
+
+        public int GpuId
+        {
+            get { return m_nGpuId; }
         }
 
         public string TestDllFile

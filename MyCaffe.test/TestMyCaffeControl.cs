@@ -284,7 +284,7 @@ namespace MyCaffe.test
         AutoResetEvent m_evtForceSnapshot = new AutoResetEvent(false);
         AutoResetEvent m_evtForceTest = new AutoResetEvent(false);
         WaitHandle[] m_rgevtCancel;
-        List<int> m_rgGpu = new List<int>() { TestBase.DEFAULT_DEVICE_ID };
+        List<int> m_rgGpu = new List<int>();
 
         public MyCaffeControlTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
@@ -296,6 +296,8 @@ namespace MyCaffe.test
 
             m_rgevtCancel = rgWait.ToArray();
             m_settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+            m_settings.GpuIds = nDeviceID.ToString();
+            m_rgGpu.Add(nDeviceID);
         }
 
         protected override void dispose()

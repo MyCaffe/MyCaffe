@@ -33,6 +33,7 @@ namespace MyCaffe.app
         AutomatedTesterServer m_autoTest = new AutomatedTesterServer();
         bool m_bLoading = false;
         bool m_bCaffeCreated = false;
+        FormWait m_dlgWait = null;
 
         enum COMMAND
         {
@@ -132,6 +133,10 @@ namespace MyCaffe.app
 
                     setStatus(" see the 'Database' menu.");
                 }
+
+                m_dlgWait = new FormWait();
+                m_bwInit.RunWorkerAsync();
+                m_dlgWait.ShowDialog();
             }
             catch (Exception excpt)
             {
@@ -145,6 +150,78 @@ namespace MyCaffe.app
 
                 setStatus("ERROR: " + strErr);
             }
+        }
+
+        private void m_bwInit_DoWork(object sender, DoWorkEventArgs e)
+        {
+            List<string> rgstrGpu = new List<string>();
+
+            // Setup the GPU menu with all GPU's in the system and 
+            //  select the first GPU as the default for testing.
+            CudaDnn<float> cuda = new CudaDnn<float>(0);
+            int nDeviceCount = cuda.GetDeviceCount();
+            for (int i = 0; i < nDeviceCount; i++)
+            {
+                string strDevice = cuda.GetDeviceName(i);
+                rgstrGpu.Add(strDevice);
+            }
+
+            cuda.Dispose();
+
+            e.Result = rgstrGpu;
+        }
+
+        private void m_bwInit_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            m_dlgWait.Close();
+
+            if (e.Error != null)
+            {
+                MessageBox.Show("Initializing Error: " + e.Error.Message, "Initialization Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            else
+            {
+                List<string> rgstrGpu = e.Result as List<string>;
+
+                if (rgstrGpu != null)
+                {
+                    for (int i = 0; i < rgstrGpu.Count; i++)
+                    {
+                        string strDevice = rgstrGpu[i];
+                        ToolStripMenuItem menu = new ToolStripMenuItem(strDevice);
+                        menu.Tag = i;
+                        menu.Click += menuGpu_Click;
+
+                        if (i == 0)
+                            menu.Checked = true;
+
+                        gPUToolStripMenuItem.DropDownItems.Add(menu);
+                    }
+                }
+            }
+        }
+
+        private void menuGpu_Click(object sender, EventArgs e)
+        {
+            ToolStripMenuItem menu = sender as ToolStripMenuItem;
+
+            foreach (ToolStripMenuItem item in gPUToolStripMenuItem.DropDownItems)
+            {
+                item.Checked = false;
+            }
+
+            menu.Checked = true;
+        }
+
+        private int getGpu()
+        {
+            foreach (ToolStripMenuItem menu in gPUToolStripMenuItem.DropDownItems)
+            {
+                if (menu.Checked)
+                    return (int)menu.Tag;
+            }
+
+            return 0;
         }
 
         private bool checkURL(string url)
@@ -238,7 +315,7 @@ namespace MyCaffe.app
             openFileDialogAutoTests.InitialDirectory = initialDirectory;
             if (openFileDialogAutoTests.ShowDialog() == DialogResult.OK)
             {
-                FormAutomatedTests dlg = new FormAutomatedTests(openFileDialogAutoTests.FileName);
+                FormAutomatedTests dlg = new FormAutomatedTests(openFileDialogAutoTests.FileName, getGpu());
 
                 setStatus("Running automatic tests.");
                 dlg.ShowDialog();
@@ -680,7 +757,7 @@ namespace MyCaffe.app
                 startAutotestsToolStripMenuItem.Enabled = false;
                 abortAutotestsToolStripMenuItem.Enabled = true;
                 m_autoTest.Initialize("c:\\temp", EntitiesConnection.GlobalDatabaseServerName);
-                m_autoTest.Run(openFileDialogAutoTests.FileName, false);
+                m_autoTest.Run(openFileDialogAutoTests.FileName, false, getGpu());
             }
         }
 
@@ -696,7 +773,7 @@ namespace MyCaffe.app
                 startAutotestsToolStripMenuItem.Enabled = false;
                 abortAutotestsToolStripMenuItem.Enabled = true;
                 m_autoTest.Initialize("c:\\temp", EntitiesConnection.GlobalDatabaseServerName);
-                m_autoTest.Run(openFileDialogAutoTests.FileName, true);
+                m_autoTest.Run(openFileDialogAutoTests.FileName, true, getGpu());
             }
         }
 

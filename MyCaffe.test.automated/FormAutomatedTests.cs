@@ -12,16 +12,19 @@ namespace MyCaffe.test.automated
     public partial class FormAutomatedTests : Form
     {
         string m_strPath;
+        int m_nGpuID = 0;
 
-        public FormAutomatedTests(string strPath)
+        public FormAutomatedTests(string strPath, int nGpuID)
         {
             m_strPath = strPath;
+            m_nGpuID = nGpuID;
             InitializeComponent();
         }
 
         private void FormAutomatedTests_Load(object sender, EventArgs e)
         {
             automatedTester1.TestAssemblyPath = m_strPath;
+            automatedTester1.GpuId = m_nGpuID;
             automatedTester1.LoadFromDatabase();
             Text = "Automated Tests [" + automatedTester1.TestName + "]";
         }

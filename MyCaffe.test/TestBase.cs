@@ -9,6 +9,7 @@ using MyCaffe.fillers;
 using System.Reflection;
 using System.IO;
 using System.Diagnostics;
+using System.Threading;
 
 namespace MyCaffe.test
 {
@@ -22,6 +23,24 @@ namespace MyCaffe.test
 
         public TestBase(string strName, int nDeviceID = DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, object tag = null)
         {
+            // If an auto test has set the GPUID, us it instead.
+            LocalDataStoreSlot lds = Thread.GetNamedDataSlot("GPUID");
+            if (lds != null)
+            {
+                object obj = Thread.GetData(lds);
+                if (obj != null)
+                {
+                    string strGpuId = obj.ToString();
+                    if (!string.IsNullOrEmpty(strGpuId))
+                    {
+                        int nVal;
+
+                        if (int.TryParse(strGpuId, out nVal) && nDeviceID < 4)
+                            nDeviceID = nVal;
+                    }
+                }
+            }
+
             m_strName = strName;
 
             if (create_count == 1)

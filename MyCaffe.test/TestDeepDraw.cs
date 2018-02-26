@@ -92,6 +92,7 @@ namespace MyCaffe.test
         {
             m_engine = engine;
 
+            m_settings.GpuIds = nDeviceID.ToString();
             m_caffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
             m_log.EnableTrace = true;
         }

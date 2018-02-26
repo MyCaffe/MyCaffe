@@ -56,11 +56,13 @@
             this.localHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.onlineHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.gPUToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialogAutoTests = new System.Windows.Forms.OpenFileDialog();
             this.edtStatus = new System.Windows.Forms.TextBox();
             this.m_bwLoadMnistDatabase = new System.ComponentModel.BackgroundWorker();
             this.m_bwProcess = new System.ComponentModel.BackgroundWorker();
             this.m_bwLoadCiFar10Database = new System.ComponentModel.BackgroundWorker();
+            this.m_bwInit = new System.ComponentModel.BackgroundWorker();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -70,7 +72,8 @@
             this.fileToolStripMenuItem,
             this.databaseToolStripMenuItem,
             this.testToolStripMenuItem,
-            this.helpToolStripMenuItem});
+            this.helpToolStripMenuItem,
+            this.gPUToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Size = new System.Drawing.Size(957, 24);
@@ -289,6 +292,12 @@
             this.aboutToolStripMenuItem.Text = "&About";
             this.aboutToolStripMenuItem.Click += new System.EventHandler(this.aboutToolStripMenuItem_Click);
             // 
+            // gPUToolStripMenuItem
+            // 
+            this.gPUToolStripMenuItem.Name = "gPUToolStripMenuItem";
+            this.gPUToolStripMenuItem.Size = new System.Drawing.Size(42, 20);
+            this.gPUToolStripMenuItem.Text = "GPU";
+            // 
             // openFileDialogAutoTests
             // 
             this.openFileDialogAutoTests.DefaultExt = "dll";
@@ -329,6 +338,11 @@
             this.m_bwLoadCiFar10Database.DoWork += new System.ComponentModel.DoWorkEventHandler(this.m_bwLoadCiFar10Database_DoWork);
             this.m_bwLoadCiFar10Database.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
             this.m_bwLoadCiFar10Database.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
+            // 
+            // m_bwInit
+            // 
+            this.m_bwInit.DoWork += new System.ComponentModel.DoWorkEventHandler(this.m_bwInit_DoWork);
+            this.m_bwInit.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bwInit_RunWorkerCompleted);
             // 
             // FormMain
             // 
@@ -384,6 +398,8 @@
         private System.Windows.Forms.ToolStripMenuItem localHelpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem onlineHelpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem cancelToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem gPUToolStripMenuItem;
+        private System.ComponentModel.BackgroundWorker m_bwInit;
     }
 }
 

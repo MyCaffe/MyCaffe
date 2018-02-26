@@ -21,6 +21,7 @@ namespace MyCaffe.test.automated
         EventWaitHandle m_evtGlobalCancel = new EventWaitHandle(false, EventResetMode.AutoReset, "__GRADIENT_CHECKER_CancelEvent__");
         ListViewColumnSorter m_lstSorter = new ListViewColumnSorter();
         FileInfo m_fiPath;
+        int m_nGpuId = 0;
         bool m_bSkip = false;
 
         enum LOADTYPE
@@ -174,6 +175,12 @@ namespace MyCaffe.test.automated
             }
         }
 
+        public int GpuId
+        {
+            get { return m_nGpuId; }
+            set { m_nGpuId = value; }
+        }
+
         private void btnShowAll_Click(object sender, EventArgs e)
         {
             btnShowFailures.Checked = false;
@@ -236,7 +243,7 @@ namespace MyCaffe.test.automated
                 Trace.WriteLine("   " + str);
             }
 
-            m_rgTestClasses.Run(m_evtCancel, m_bSkip, false);
+            m_rgTestClasses.Run(m_evtCancel, m_bSkip, false, m_nGpuId);
             m_bSkip = false;
         }
 
@@ -579,20 +586,22 @@ namespace MyCaffe.test.automated
             return rgstr.ToArray();
         }
 
-        public void Run(AutoResetEvent evtCancel, bool bSkip, bool bServerMode = false)
+        public void Run(AutoResetEvent evtCancel, bool bSkip, bool bServerMode = false, int nGpuId = 0)
         {
-            m_testTask = Task.Factory.StartNew(new Action<object>(testThread), new Tuple<AutoResetEvent, bool, bool>(evtCancel, bSkip, bServerMode), TaskCreationOptions.LongRunning);
+            m_testTask = Task.Factory.StartNew(new Action<object>(testThread), new Tuple<AutoResetEvent, bool, bool, int>(evtCancel, bSkip, bServerMode, nGpuId), TaskCreationOptions.LongRunning);
         }
 
         private void testThread(object obj)
         {
-            Tuple<AutoResetEvent, bool, bool> param = obj as Tuple<AutoResetEvent, bool, bool>;
+            Tuple<AutoResetEvent, bool, bool, int> param = obj as Tuple<AutoResetEvent, bool, bool, int>;
             AutoResetEvent evtCancel = param.Item1;
             bool bSkip = param.Item2;
             bool bServerMode = param.Item3;
+            int nGpuId = param.Item4;
             TestClass tcCurrent = null;
             MethodInfoEx miCurrent = null;
 
+            
             m_nCurrentTest = 0;
             m_swTiming.Reset();
             m_swTiming.Start();
@@ -621,7 +630,7 @@ namespace MyCaffe.test.automated
                             }
                             else
                             {
-                                mi.Invoke(tc.Instance);
+                                mi.Invoke(tc.Instance, nGpuId);
                             }
 
                             if (mi.Status != MethodInfoEx.STATUS.Aborted)
@@ -1182,16 +1191,27 @@ namespace MyCaffe.test.automated
             set { m_status = value; }
         }
 
-        public void Invoke(object instance)
+        public void Invoke(object instance, int nGpuId)
         {
-            m_taskTest = Task.Factory.StartNew(new Action<object>(invoke), instance);
+            m_taskTest = Task.Factory.StartNew(new Action<object>(invoke), new Tuple<object, int>(instance, nGpuId));
             m_taskTest.Wait();
         }
 
-        public void invoke(object instance)
+        public void invoke(object obj)
         {
+            Tuple<object, int> arg = obj as Tuple<object, int>;
+            object instance = arg.Item1;
+            int nGpuId = arg.Item2;
+
             try
             {
+                LocalDataStoreSlot lds = Thread.GetNamedDataSlot("GPUID");
+                if (lds == null)
+                    lds = Thread.AllocateNamedDataSlot("GPUID");
+
+                if (lds != null)
+                    Thread.SetData(lds, nGpuId.ToString());
+
                 m_swTiming.Reset();
                 m_swTiming.Start();
                 m_status = STATUS.Running;
@@ -1216,6 +1236,8 @@ namespace MyCaffe.test.automated
 
                 if (m_miDispose != null)
                     m_miDispose.Invoke(instance, null);
+
+                Thread.FreeNamedDataSlot("GPUID");
             }
         }
     }
