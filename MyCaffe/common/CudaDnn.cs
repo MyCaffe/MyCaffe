@@ -812,7 +812,7 @@ namespace MyCaffe.common
             }
             catch (Exception excpt)
             {
-                throw new Exception("The CudaControl is not registered!  Run 'regsvr32 CudaControl.dll' from a CMD window with Administrative privileges to register.", excpt);
+                throw new Exception("The CudaControl is not registered! Make sure that you are using the 'x64' build and if so, run 'regsvr32 CudaControl.dll' from a CMD window with Administrative privileges to register.", excpt);
             }
 
             try
