@@ -137,6 +137,7 @@ namespace MyCaffe.app
                 m_dlgWait = new FormWait();
                 m_bwInit.RunWorkerAsync();
                 m_dlgWait.ShowDialog();
+                m_bwUrlCheck.RunWorkerAsync();
             }
             catch (Exception excpt)
             {
@@ -806,8 +807,6 @@ namespace MyCaffe.app
 
         private void helpToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (checkURL(Properties.Settings.Default.OnlineHelpUrl))
-                onlineHelpToolStripMenuItem.Enabled = true;
         }
 
         private void localHelpToolStripMenuItem_Click(object sender, EventArgs e)
@@ -822,6 +821,19 @@ namespace MyCaffe.app
             Process p = new Process();
             p.StartInfo = new ProcessStartInfo(Properties.Settings.Default.OnlineHelpUrl);
             p.Start();
+        }
+
+        private void m_bwUrlCheck_DoWork(object sender, DoWorkEventArgs e)
+        {
+            e.Result = checkURL(Properties.Settings.Default.OnlineHelpUrl);
+        }
+
+        private void m_bwUrlCheck_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if (e.Error != null)
+                return;
+
+            onlineHelpToolStripMenuItem.Enabled = (bool)e.Result;
         }
     }
 }

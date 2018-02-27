@@ -63,6 +63,7 @@
             this.m_bwProcess = new System.ComponentModel.BackgroundWorker();
             this.m_bwLoadCiFar10Database = new System.ComponentModel.BackgroundWorker();
             this.m_bwInit = new System.ComponentModel.BackgroundWorker();
+            this.m_bwUrlCheck = new System.ComponentModel.BackgroundWorker();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -273,7 +274,7 @@
             // localHelpToolStripMenuItem
             // 
             this.localHelpToolStripMenuItem.Name = "localHelpToolStripMenuItem";
-            this.localHelpToolStripMenuItem.Size = new System.Drawing.Size(137, 22);
+            this.localHelpToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.localHelpToolStripMenuItem.Text = "Local Help";
             this.localHelpToolStripMenuItem.Click += new System.EventHandler(this.localHelpToolStripMenuItem_Click);
             // 
@@ -281,14 +282,14 @@
             // 
             this.onlineHelpToolStripMenuItem.Enabled = false;
             this.onlineHelpToolStripMenuItem.Name = "onlineHelpToolStripMenuItem";
-            this.onlineHelpToolStripMenuItem.Size = new System.Drawing.Size(137, 22);
+            this.onlineHelpToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.onlineHelpToolStripMenuItem.Text = "Online Help";
             this.onlineHelpToolStripMenuItem.Click += new System.EventHandler(this.onlineHelpToolStripMenuItem_Click);
             // 
             // aboutToolStripMenuItem
             // 
             this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(137, 22);
+            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.aboutToolStripMenuItem.Text = "&About";
             this.aboutToolStripMenuItem.Click += new System.EventHandler(this.aboutToolStripMenuItem_Click);
             // 
@@ -343,6 +344,11 @@
             // 
             this.m_bwInit.DoWork += new System.ComponentModel.DoWorkEventHandler(this.m_bwInit_DoWork);
             this.m_bwInit.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bwInit_RunWorkerCompleted);
+            // 
+            // m_bwUrlCheck
+            // 
+            this.m_bwUrlCheck.DoWork += new System.ComponentModel.DoWorkEventHandler(this.m_bwUrlCheck_DoWork);
+            this.m_bwUrlCheck.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bwUrlCheck_RunWorkerCompleted);
             // 
             // FormMain
             // 
@@ -400,6 +406,7 @@
         private System.Windows.Forms.ToolStripMenuItem cancelToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem gPUToolStripMenuItem;
         private System.ComponentModel.BackgroundWorker m_bwInit;
+        private System.ComponentModel.BackgroundWorker m_bwUrlCheck;
     }
 }
 
