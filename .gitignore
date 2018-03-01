@@ -28,6 +28,7 @@ build/
 
 # Help
 **/_help/html/*
+**/_help/html.new/*
 **/_help/latex/*
 **/_help/media/*
 
