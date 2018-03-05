@@ -595,7 +595,7 @@ namespace MyCaffe.common
                 m_bDebugInfo = param.debug_info;
                 m_log.WriteLine("Network initialization done.");
             }
-            catch (Exception)
+            catch (Exception excpt)
             {
                 foreach (Layer<T> layer in m_rgLayers)
                 {
@@ -631,7 +631,7 @@ namespace MyCaffe.common
                 m_lMemoryUsed = 0;
                 m_bDebugInfo = false;
                 m_db = null;
-                throw;
+                throw excpt;
             }
         }
 
