@@ -262,6 +262,12 @@ namespace MyCaffe.layers
             // default = 1024 * 1024 * 8;
             long lWorkspaceLimitBytes = m_param.convolution_param.cudnn_workspace_limit * 8;
 
+            // BUG Work Around
+            // With cuDNN 7.0.5 and above we are seeing memory overwrite errors (from CUDA)
+            //  when using more than 1 group and the workspace.
+            if (m_nGroup > 1)
+                lWorkspaceLimitBytes = 0; // sets option to NO_WORKSPACE for Bwd Filter and Data
+
             for (int i = 0; i < colBottom.Count; i++)
             {
                 m_cuda.SetTensorDesc(m_rghBottomDesc[i], m_nNum, m_nChannels / m_nGroup, nHeight, nWidth, m_nChannels * nHeight * nWidth, nHeight * nWidth, nWidth, 1);
@@ -604,7 +610,7 @@ namespace MyCaffe.layers
                 m_cuda.SynchronizeThread();
             }
 
-            for (int g = 0; g < m_nGroup; g++)
+            for (int g = 0; g < m_nGroup * 3; g++)
             {
                 m_cuda.SynchronizeStream(m_rghStream[g]);
             }
