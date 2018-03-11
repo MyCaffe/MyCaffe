@@ -38,7 +38,7 @@
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(308, 30);
             this.label1.TabIndex = 0;
-            this.label1.Text = "Initializing the applicaiton by locating all GPU\'s installed on your machine...";
+            this.label1.Text = "Initializing the application by locating all GPU\'s installed on your machine...";
             // 
             // FormWait
             // 

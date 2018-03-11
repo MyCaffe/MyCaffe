@@ -244,7 +244,7 @@ namespace MyCaffe.app
                     pageExists = true;
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return false;
             }
