@@ -13,6 +13,7 @@
 **/MyCaffe.app.setup/*
 **/MyCaffe.app.setup.vs/*
 **/_private/*
+**/_in_progress/*
 **/_build/*
 **/_nuget/*
 **/bin/*
