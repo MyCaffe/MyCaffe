@@ -267,6 +267,10 @@ namespace MyCaffe.param
             /// </summary>
             SPLIT,
             /// <summary>
+            /// Initializes a parameter for the SwishLayer
+            /// </summary>
+            SWISH,
+            /// <summary>
             /// Initializes a parameter for the TanhLayer.
             /// </summary>
             TANH,
@@ -900,7 +904,7 @@ namespace MyCaffe.param
                     expected_bottom.Add("scores");
                     expected_bottom.Add("trgt");
                     expected_top.Add("loss");
-                    m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
+                    m_rgLayerParameters[LayerType.LOSS] = new LossParameter(LossParameter.NormalizationMode.BATCH_SIZE);
                     m_rgLayerParameters[LayerType.SIGMOID] = new SigmoidParameter();
                     break;
 
@@ -937,6 +941,12 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("spp");
                     m_rgLayerParameters[lt] = new SPPParameter();
+                    break;
+
+                case LayerType.SWISH:
+                    expected_bottom.Add("input");
+                    expected_top.Add("swish");
+                    m_rgLayerParameters[lt] = new SwishParameter();
                     break;
 
                 case LayerType.TANH:
@@ -1496,6 +1506,16 @@ namespace MyCaffe.param
             set { m_rgLayerParameters[LayerType.SLICE] = value; }
         }
 
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.SWISH
+        /// </summary>
+        public SwishParameter swish_param
+        {
+            get { return (SwishParameter)m_rgLayerParameters[LayerType.SWISH]; }
+            set { m_rgLayerParameters[LayerType.SWISH] = value; }
+        }
+
         /// <summary>
         /// Returns the parameter set when initialized with LayerType.TANH
         /// </summary>
@@ -1845,6 +1865,9 @@ namespace MyCaffe.param
                 case LayerType.SPP:
                     return "SPP";
 
+                case LayerType.SWISH:
+                    return "Swish";
+
                 case LayerType.TANH:
                     return "TanH";
 
@@ -1969,6 +1992,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(softmax_param, "softmax_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(spp_param, "spp_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(slice_param, "slice_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(swish_param, "swish_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tanh_param, "tanh_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(threshold_param, "threshold_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tile_param, "tile_param"));
@@ -2186,6 +2210,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("slice_param")) != null)
                 p.slice_param = SliceParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("swish_param")) != null)
+                p.swish_param = SwishParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("tanh_param")) != null)
                 p.tanh_param = TanhParameter.FromProto(rpp);
@@ -2424,6 +2451,9 @@ namespace MyCaffe.param
 
                 case "spp":
                     return LayerType.SPP;
+
+                case "swish":
+                    return LayerType.SWISH;
 
                 case "tanh":
                     return LayerType.TANH;

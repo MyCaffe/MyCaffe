@@ -969,6 +969,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.SPP:
                     return new SPPLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.SWISH:
+                    return new SwishLayer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.TANH:
                     return new TanhLayer<T>(cuda, log, p);
 
