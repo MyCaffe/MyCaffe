@@ -33,6 +33,60 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestConstantFiller1D()
+        {
+            ConstantFillerTest test = new ConstantFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill1D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestConstantFiller2D()
+        {
+            ConstantFillerTest test = new ConstantFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill2D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestConstantFiller5D()
+        {
+            ConstantFillerTest test = new ConstantFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill5D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestUniformFiller()
         {
             UniformFillerTest test = new UniformFillerTest();
@@ -42,6 +96,60 @@ namespace MyCaffe.test
                 foreach (IFillerTest t in test.Tests)
                 {
                     t.TestFill();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestUniformFiller1D()
+        {
+            UniformFillerTest test = new UniformFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill1D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestUniformFiller2D()
+        {
+            UniformFillerTest test = new UniformFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill2D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestUniformFiller5D()
+        {
+            UniformFillerTest test = new UniformFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill5D();
                 }
             }
             finally
@@ -69,6 +177,60 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestPositiveUnitballFiller1D()
+        {
+            PositiveUnitballFillerTest test = new PositiveUnitballFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill1D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestPositiveUnitballFiller2D()
+        {
+            PositiveUnitballFillerTest test = new PositiveUnitballFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill2D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestPositiveUnitballFiller5D()
+        {
+            PositiveUnitballFillerTest test = new PositiveUnitballFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill5D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestGaussianFiller()
         {
             GaussianFillerTest test = new GaussianFillerTest();
@@ -78,6 +240,60 @@ namespace MyCaffe.test
                 foreach (IFillerTest t in test.Tests)
                 {
                     t.TestFill();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGaussianFiller1D()
+        {
+            GaussianFillerTest test = new GaussianFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill1D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGaussianFiller2D()
+        {
+            GaussianFillerTest test = new GaussianFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill2D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGaussianFiller5D()
+        {
+            GaussianFillerTest test = new GaussianFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill5D();
                 }
             }
             finally
@@ -144,6 +360,60 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestXavierFiller1D()
+        {
+            XavierFillerTest test = new XavierFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill1D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestXavierFiller2D()
+        {
+            XavierFillerTest test = new XavierFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill2D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestXavierFiller5D()
+        {
+            XavierFillerTest test = new XavierFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill5D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestMSRAFillerFanIn()
         {
             MSRAFillerTest test = new MSRAFillerTest();
@@ -201,16 +471,69 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestMSRAFiller1D()
+        {
+            MSRAFillerTest test = new MSRAFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill1D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMSRAFiller2D()
+        {
+            MSRAFillerTest test = new MSRAFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill2D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMSRAFiller5D()
+        {
+            MSRAFillerTest test = new MSRAFillerTest();
+
+            try
+            {
+                foreach (IFillerTest t in test.Tests)
+                {
+                    t.TestFill5D();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestBilinearFillOdd()
         {
             BilinearFillerTest test = new BilinearFillerTest();
 
             try
             {
-                foreach (IFillerTest t in test.Tests)
+                foreach (IFillerTest2 t in test.Tests)
                 {
-                    double dfN = 7.0;
-                    t.TestFill(FillerParameter.VarianceNorm.AVERAGE, dfN);
+                    t.TestFillOdd();
                 }
             }
             finally
@@ -226,10 +549,9 @@ namespace MyCaffe.test
 
             try
             {
-                foreach (IFillerTest t in test.Tests)
+                foreach (IFillerTest2 t in test.Tests)
                 {
-                    double dfN = 6.0;
-                    t.TestFill(FillerParameter.VarianceNorm.AVERAGE, dfN);
+                    t.TestFillEven();
                 }
             }
             finally
@@ -243,6 +565,15 @@ namespace MyCaffe.test
     interface IFillerTest : ITest
     {
         void TestFill(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0);
+        void TestFill1D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0);
+        void TestFill2D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0);
+        void TestFill5D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0);
+    }
+
+    interface IFillerTest2 : ITest
+    {
+        void TestFillOdd();
+        void TestFillEven();
     }
 
     class ConstantFillerTest : TestBase
@@ -277,8 +608,11 @@ namespace MyCaffe.test
             return m_fp;
         }
 
-        public void TestFill(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        protected virtual void test_params(List<int> rgShape)
         {
+            Bottom.Reshape(rgShape);
+            m_filler.Fill(Bottom);
+
             int nCount = Bottom.count();
             double[] rgData = convert(Bottom.update_cpu_data());
 
@@ -286,6 +620,30 @@ namespace MyCaffe.test
             {
                 m_log.CHECK_EQ(rgData[i], m_fp.value, "The filler value should be equal to " + m_fp.value.ToString());
             }
+        }
+
+        public void TestFill(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 2, 3, 4, 5 };
+            test_params(rgShape);
+        }
+
+        public void TestFill1D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 15 };
+            test_params(rgShape);
+        }
+
+        public void TestFill2D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 8, 3 };
+            test_params(rgShape);
+        }
+
+        public void TestFill5D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 2, 3, 4, 5, 2 };
+            test_params(rgShape);
         }
     }
 
@@ -324,8 +682,11 @@ namespace MyCaffe.test
             return m_fp;
         }
 
-        public void TestFill(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        protected virtual void test_params(List<int> rgShape)
         {
+            Bottom.Reshape(rgShape);
+            m_filler.Fill(Bottom);
+
             int nCount = Bottom.count();
             double[] rgData = convert(Bottom.update_cpu_data());
 
@@ -334,6 +695,30 @@ namespace MyCaffe.test
                 m_log.CHECK_GE(rgData[i], m_fp.min, "The filler value should be greater than or equal to " + m_fp.min.ToString());
                 m_log.CHECK_LE(rgData[i], m_fp.max, "The filler value should be less than or equal to " + m_fp.max.ToString());
             }
+        }
+
+        public void TestFill(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 2, 3, 4, 5 };
+            test_params(rgShape);
+        }
+
+        public void TestFill1D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 15 };
+            test_params(rgShape);
+        }
+
+        public void TestFill2D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 8, 3 };
+            test_params(rgShape);
+        }
+
+        public void TestFill5D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 2, 3, 4, 5, 2 };
+            test_params(rgShape);
         }
     }
 
@@ -370,9 +755,12 @@ namespace MyCaffe.test
             return m_fp;
         }
 
-        public void TestFill(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        protected virtual void test_params(List<int> rgShape)
         {
-            int nNum = Bottom.num;
+            Bottom.Reshape(rgShape);
+            m_filler.Fill(Bottom);
+
+            int nNum = Bottom.shape(0);
             int nCount = Bottom.count();
             int nDim = nCount / nNum;
             double[] rgData = convert(Bottom.update_cpu_data());
@@ -395,6 +783,30 @@ namespace MyCaffe.test
                 m_log.CHECK_GE(dfSum, 0.999, "The sum should be greater than or equal to 0.999");
                 m_log.CHECK_LE(dfSum, 1.001, "The sum should be less than or equal to 1.0001");
             }
+        }
+
+        public void TestFill(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 2, 3, 4, 5 };
+            test_params(rgShape);
+        }
+
+        public void TestFill1D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 15 };
+            test_params(rgShape);
+        }
+
+        public void TestFill2D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 8, 3 };
+            test_params(rgShape);
+        }
+
+        public void TestFill5D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 2, 3, 4, 5, 2 };
+            test_params(rgShape);
         }
     }
 
@@ -433,8 +845,25 @@ namespace MyCaffe.test
             return m_fp;
         }
 
-        public void TestFill(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        protected virtual void test_params(List<int> rgShape, double dfTolerance = 5, int nRepetitions = 100)
         {
+            // Test for statistical properties should be run multiple times.
+            Bottom.Reshape(rgShape);
+
+            for (int i = 0; i < nRepetitions; i++)
+            {
+                test_params_iter(dfTolerance);
+            }
+        }
+
+        protected virtual void test_params_iter(double dfTolerance)
+        {
+            // This test has a configurable tolerance perameter - by default it is
+            // equal to 5.0 which is very loose - allowing some tuning (e.g. for tests
+            // on smaller blobs the actual variance will be larger than desired, so the
+            // tolerance can be increased to account for that.
+            m_filler.Fill(Bottom);
+
             int nCount = Bottom.count();
             double[] rgData = convert(Bottom.update_cpu_data());
             double dfMean = 0;
@@ -443,18 +872,42 @@ namespace MyCaffe.test
             for (int i = 0; i < nCount; i++)
             {
                 dfMean += rgData[i];
-                dfVar += (rgData[i] - m_fp.mean) * (rgData[i] - m_fp.mean);
+                dfVar += rgData[i] * rgData[i];
             }
 
             dfMean /= nCount;
             dfVar /= nCount;
+            dfVar -= dfMean * dfMean;
 
-            // Very loose test.
-            m_log.CHECK_GE(dfMean, m_fp.mean - m_fp.std * 5, "The mean is not as expected.");
-            m_log.CHECK_LE(dfMean, m_fp.mean + m_fp.std * 5, "The mean is not as expected.");
+            m_log.CHECK_GE(dfMean, m_fp.mean - m_fp.std * dfTolerance, "The mean is not as expected.");
+            m_log.CHECK_LE(dfMean, m_fp.mean + m_fp.std * dfTolerance, "The mean is not as expected.");
             double dfTarget = m_fp.std * m_fp.std;
-            m_log.CHECK_GE(dfVar, dfTarget / 5.0, "The variance is not as expected.");
-            m_log.CHECK_LE(dfVar, dfTarget * 5.0, "The variance is not as expected.");
+            m_log.CHECK_GE(dfVar, dfTarget / dfTolerance, "The variance is not as expected.");
+            m_log.CHECK_LE(dfVar, dfTarget * dfTolerance, "The variance is not as expected.");
+        }
+
+        public void TestFill(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 2, 3, 4, 5 };
+            test_params(rgShape);
+        }
+
+        public void TestFill1D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 15 };
+            test_params(rgShape);
+        }
+
+        public void TestFill2D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 8, 3 };
+            test_params(rgShape);
+        }
+
+        public void TestFill5D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 2, 3, 4, 5, 2 };
+            test_params(rgShape);
         }
     }
 
@@ -484,7 +937,17 @@ namespace MyCaffe.test
             m_engine = engine;
         }
 
-        public void TestFill(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        protected virtual void test_params(FillerParameter.VarianceNorm varNorm, double dfN, List<int> rgShape, int nRepetitions = 100)
+        {
+            Bottom.Reshape(rgShape);
+
+            for (int i = 0; i < nRepetitions; i++)
+            {
+                test_params_iter(varNorm, dfN);
+            }
+        }
+
+        protected virtual void test_params_iter(FillerParameter.VarianceNorm varNorm, double dfN)
         {
             m_fp = new FillerParameter("xavier");
             m_fp.variance_norm = varNorm;
@@ -511,6 +974,42 @@ namespace MyCaffe.test
 
             m_log.EXPECT_NEAR(dfMean, 0, 0.1);
             m_log.EXPECT_NEAR(dfStd, dfTargetStd, 0.1);
+        }
+
+        public void TestFill(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 1000, 2, 4, 5 };
+            test_params(varNorm, dfN, rgShape);
+        }
+
+        public void TestFill1D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 25 };
+            Bottom.Reshape(rgShape);
+            m_fp = new FillerParameter("xavier");
+            m_fp.variance_norm = varNorm;
+            m_filler = Filler<T>.Create(m_cuda, m_log, m_fp);
+            m_filler.Fill(Bottom);
+        }
+
+        public void TestFill2D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 8, 3 };
+            Bottom.Reshape(rgShape);
+            m_fp = new FillerParameter("xavier");
+            m_fp.variance_norm = varNorm;
+            m_filler = Filler<T>.Create(m_cuda, m_log, m_fp);
+            m_filler.Fill(Bottom);
+        }
+
+        public void TestFill5D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 2, 3, 4, 5, 2 };
+            Bottom.Reshape(rgShape);
+            m_fp = new FillerParameter("xavier");
+            m_fp.variance_norm = varNorm;
+            m_filler = Filler<T>.Create(m_cuda, m_log, m_fp);
+            m_filler.Fill(Bottom);
         }
     }
 
@@ -541,7 +1040,17 @@ namespace MyCaffe.test
             m_engine = engine;
         }
 
-        public void TestFill(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        protected virtual void test_params(FillerParameter.VarianceNorm varNorm, double dfN, List<int> rgShape, int nRepetitions = 100)
+        {
+            Bottom.Reshape(rgShape);
+
+            for (int i = 0; i < nRepetitions; i++)
+            {
+                test_params_iter(varNorm, dfN);
+            }
+        }
+
+        protected virtual void test_params_iter(FillerParameter.VarianceNorm varNorm, double dfN)
         {
             m_fp = new FillerParameter("msra");
             m_fp.variance_norm = varNorm;
@@ -569,6 +1078,42 @@ namespace MyCaffe.test
             m_log.EXPECT_NEAR(dfMean, 0, 0.1);
             m_log.EXPECT_NEAR(dfStd, dfTargetStd, 0.1);
         }
+
+        public void TestFill(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 1000, 2, 4, 5 };
+            test_params(varNorm, dfN, rgShape);
+        }
+
+        public void TestFill1D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 25 };
+            Bottom.Reshape(rgShape);
+            m_fp = new FillerParameter("msra");
+            m_fp.variance_norm = varNorm;
+            m_filler = Filler<T>.Create(m_cuda, m_log, m_fp);
+            m_filler.Fill(Bottom);
+        }
+
+        public void TestFill2D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 8, 3 };
+            Bottom.Reshape(rgShape);
+            m_fp = new FillerParameter("msra");
+            m_fp.variance_norm = varNorm;
+            m_filler = Filler<T>.Create(m_cuda, m_log, m_fp);
+            m_filler.Fill(Bottom);
+        }
+
+        public void TestFill5D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        {
+            List<int> rgShape = new List<int>() { 2, 3, 4, 5, 2 };
+            Bottom.Reshape(rgShape);
+            m_fp = new FillerParameter("msra");
+            m_fp.variance_norm = varNorm;
+            m_filler = Filler<T>.Create(m_cuda, m_log, m_fp);
+            m_filler.Fill(Bottom);
+        }
     }
 
     class BilinearFillerTest : TestBase
@@ -587,7 +1132,7 @@ namespace MyCaffe.test
         }
     }
 
-    class BilinearFillerTest<T> : TestEx<T>, IFillerTest
+    class BilinearFillerTest<T> : TestEx<T>, IFillerTest2
     {
         FillerParameter m_fp;
 
@@ -596,33 +1141,50 @@ namespace MyCaffe.test
         {
         }
 
-        public void TestFill(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
+        protected virtual void test_params(List<int> rgShape)
         {
             m_fp = new FillerParameter("bilinear");
-            m_fp.variance_norm = varNorm; // not used for this test.
+            m_filler = Filler<T>.Create(m_cuda, m_log, m_fp);
 
-            Bottom.Reshape(1000, 2, (int)dfN, (int)dfN);
+            Bottom.Reshape(rgShape);
+            m_filler.Fill(Bottom);
 
             Filler<T> filler = Filler<T>.Create(m_cuda, m_log, m_fp);
             filler.Fill(Bottom);
 
+            m_log.CHECK_EQ(Bottom.num_axes, 4, "The bilinear test expects 4 axes.");
+
             int nOuterNum = Bottom.count(0, 2);
             int nInnerNum = Bottom.count(2, 4);
             double[] rgData = convert(Bottom.update_cpu_data());
-            int nF = (int)Math.Ceiling(Bottom.width / 2.0);
-            double dfC = (Bottom.width - 1.0) / (2.0 * nF);
+            int nF = (int)Math.Ceiling(Bottom.shape(3) / 2.0);
+            double dfC = (Bottom.shape(3) - 1.0) / (2.0 * nF);
 
             for (int i = 0; i < nOuterNum; i++)
             {
                 for (int j = 0; j < nInnerNum; j++)
                 {
-                    double dfX = j % Bottom.width;
-                    double dfY = (j / Bottom.width) % Bottom.height;
+                    double dfX = j % Bottom.shape(3);
+                    double dfY = (j / Bottom.shape(3)) % Bottom.shape(2);
                     double dfExpectedVal = (1 - Math.Abs(dfX / nF - dfC)) * (1 - Math.Abs(dfY / nF - dfC));
                     double dfActualVal = rgData[i * nInnerNum + j];
                     m_log.EXPECT_NEAR(dfExpectedVal, dfActualVal, 0.01);
                 }
             }
+        }
+
+        public void TestFillOdd()
+        {
+            const int n = 7;
+            List<int> rgShape = new List<int>() { 1000, 2, n, n };
+            test_params(rgShape);
+        }
+
+        public void TestFillEven()
+        {
+            const int n = 6;
+            List<int> rgShape = new List<int>() { 1000, 2, n, n };
+            test_params(rgShape);
         }
     }
 }
