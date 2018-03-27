@@ -14,6 +14,7 @@ using MyCaffe.data;
 using System.Diagnostics;
 using System.IO;
 using System.Drawing.Imaging;
+using MyCaffe.extras;
 
 namespace MyCaffe.test
 {

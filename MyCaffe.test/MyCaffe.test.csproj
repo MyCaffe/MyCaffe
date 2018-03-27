@@ -201,6 +201,10 @@
       <Project>{d168418c-cdcc-4f5b-bf55-292a38cc2429}</Project>
       <Name>MyCaffe.basecode</Name>
     </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.extras\MyCaffe.extras.csproj">
+      <Project>{9376B860-9896-40E5-8746-8ABF1F0A8B3D}</Project>
+      <Name>MyCaffe.extras</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MyCaffe.imagedb\MyCaffe.imagedb.csproj">
       <Project>{642ba581-59cb-445e-8d7d-81e67b748d77}</Project>
       <Name>MyCaffe.imagedb</Name>
