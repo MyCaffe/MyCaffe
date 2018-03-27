@@ -123,6 +123,118 @@ namespace MyCaffe.test
             }
         }
 
+
+        [TestMethod]
+        public void TestSwish()
+        {
+            SwishLayerTest test = new SwishLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (INeuronLayerTest t in test.Tests)
+                {
+                    t.TestForward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSwishGradient()
+        {
+            SwishLayerTest test = new SwishLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (INeuronLayerTest t in test.Tests)
+                {
+                    t.TestGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
+        public void TestSwishWithBeta()
+        {
+            SwishLayerWithBetaTest test = new SwishLayerWithBetaTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (INeuronLayerTest t in test.Tests)
+                {
+                    t.TestForward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSwishWithBetaGradient()
+        {
+            SwishLayerWithBetaTest test = new SwishLayerWithBetaTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (INeuronLayerTest t in test.Tests)
+                {
+                    t.TestGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
+        public void TestSwishAsLinear()
+        {
+            SwishLayerAsLinearTest test = new SwishLayerAsLinearTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (INeuronLayerTest t in test.Tests)
+                {
+                    t.TestForward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSwishAsLinearGradient()
+        {
+            SwishLayerAsLinearTest test = new SwishLayerAsLinearTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (INeuronLayerTest t in test.Tests)
+                {
+                    t.TestGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
         [TestMethod]
         public void TestTanh()
         {
@@ -1210,6 +1322,208 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.SIGMOID);
             SigmoidLayer<T> layer = new SigmoidLayer<T>(m_cuda, m_log, p);
+            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+        }
+    }
+
+    class SwishLayerTest : TestBase
+    {
+        public SwishLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+            : base("Swish Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
+        {
+        }
+
+        protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
+        {
+            if (dt == common.DataType.DOUBLE)
+                return new SwishLayerTest<double>(strName, nDeviceID, engine);
+            else
+                return new SwishLayerTest<float>(strName, nDeviceID, engine);
+        }
+    }
+
+    class SwishLayerTest<T> : TestEx<T>, INeuronLayerTest
+    {
+        public SwishLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
+            : base(strName, new List<int>() { 2, 3, 4, 5 }, nDeviceID)
+        {
+            m_engine = engine;
+        }
+
+        protected override void dispose()
+        {
+            base.dispose();
+        }
+
+        protected override FillerParameter getFillerParam()
+        {
+            FillerParameter p = new FillerParameter("uniform");
+            return p;
+        }
+
+        public void TestForward()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.SWISH);
+            SwishLayer<T> layer = new SwishLayer<T>(m_cuda, m_log, p);
+
+            layer.Setup(BottomVec, TopVec);
+            layer.Forward(BottomVec, TopVec);
+
+            // Now, check values
+            double[] rgBottom = convert(Bottom.update_cpu_data());
+            double[] rgTop = convert(Top.update_cpu_data());
+
+            for (int i = 0; i < Bottom.count(); i++)
+            {
+                double dfTop = rgTop[i];
+                double dfBottom = rgBottom[i];
+                double dfExpected = dfBottom / (1.0 + Math.Exp(-dfBottom));
+
+                m_log.EXPECT_EQUAL<float>(dfTop, dfExpected);
+            }
+        }
+
+        public void TestGradient()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.SWISH);
+            SwishLayer<T> layer = new SwishLayer<T>(m_cuda, m_log, p);
+            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+        }
+    }
+
+    class SwishLayerWithBetaTest : TestBase
+    {
+        public SwishLayerWithBetaTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+            : base("Swish Layer With Beta Test", TestBase.DEFAULT_DEVICE_ID, engine)
+        {
+        }
+
+        protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
+        {
+            if (dt == common.DataType.DOUBLE)
+                return new SwishLayerWithBetaTest<double>(strName, nDeviceID, engine);
+            else
+                return new SwishLayerWithBetaTest<float>(strName, nDeviceID, engine);
+        }
+    }
+
+    class SwishLayerWithBetaTest<T> : TestEx<T>, INeuronLayerTest
+    {
+        public SwishLayerWithBetaTest(string strName, int nDeviceID, EngineParameter.Engine engine)
+            : base(strName, new List<int>() { 2, 3, 4, 5 }, nDeviceID)
+        {
+            m_engine = engine;
+        }
+
+        protected override void dispose()
+        {
+            base.dispose();
+        }
+
+        protected override FillerParameter getFillerParam()
+        {
+            FillerParameter p = new FillerParameter("uniform");
+            return p;
+        }
+
+        public void TestForward()
+        {
+            RawProto rp = RawProto.Parse("type: \"Swish\" swish_param { beta: 1.5 }");
+            LayerParameter p = LayerParameter.FromProto(rp);
+            SwishLayer<T> layer = new SwishLayer<T>(m_cuda, m_log, p);
+
+            layer.Setup(BottomVec, TopVec);
+            layer.Forward(BottomVec, TopVec);
+
+            // Now, check values
+            double[] rgBottom = convert(Bottom.update_cpu_data());
+            double[] rgTop = convert(Top.update_cpu_data());
+
+            for (int i = 0; i < Bottom.count(); i++)
+            {
+                double dfTop = rgTop[i];
+                double dfBottom = rgBottom[i];
+                double dfExpected = dfBottom / (1.0 + Math.Exp(-1.5 * dfBottom));
+
+                m_log.EXPECT_EQUAL<float>(dfTop, dfExpected);
+            }
+        }
+
+        public void TestGradient()
+        {
+            RawProto rp = RawProto.Parse("type: \"Swish\" swish_param { beta: 1.5 }");
+            LayerParameter p = LayerParameter.FromProto(rp);
+            SwishLayer<T> layer = new SwishLayer<T>(m_cuda, m_log, p);
+            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
+            checker.CheckGradientEltwise(layer, BottomVec, TopVec);
+        }
+    }
+
+    class SwishLayerAsLinearTest : TestBase
+    {
+        public SwishLayerAsLinearTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+            : base("Swish Layer As Linear Test", TestBase.DEFAULT_DEVICE_ID, engine)
+        {
+        }
+
+        protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
+        {
+            if (dt == common.DataType.DOUBLE)
+                return new SwishLayerAsLinearTest<double>(strName, nDeviceID, engine);
+            else
+                return new SwishLayerAsLinearTest<float>(strName, nDeviceID, engine);
+        }
+    }
+
+    class SwishLayerAsLinearTest<T> : TestEx<T>, INeuronLayerTest
+    {
+        public SwishLayerAsLinearTest(string strName, int nDeviceID, EngineParameter.Engine engine)
+            : base(strName, new List<int>() { 2, 3, 4, 5 }, nDeviceID)
+        {
+            m_engine = engine;
+        }
+
+        protected override void dispose()
+        {
+            base.dispose();
+        }
+
+        protected override FillerParameter getFillerParam()
+        {
+            FillerParameter p = new FillerParameter("uniform");
+            return p;
+        }
+
+        public void TestForward()
+        {
+            RawProto rp = RawProto.Parse("type: \"Swish\" swish_param { beta: 0.0 }");
+            LayerParameter p = LayerParameter.FromProto(rp);
+            SwishLayer<T> layer = new SwishLayer<T>(m_cuda, m_log, p);
+
+            layer.Setup(BottomVec, TopVec);
+            layer.Forward(BottomVec, TopVec);
+
+            // Now, check values
+            double[] rgBottom = convert(Bottom.update_cpu_data());
+            double[] rgTop = convert(Top.update_cpu_data());
+
+            for (int i = 0; i < Bottom.count(); i++)
+            {
+                double dfTop = rgTop[i];
+                double dfBottom = rgBottom[i];
+                double dfExpected = dfBottom / 2.0;
+
+                m_log.EXPECT_EQUAL<float>(dfTop, dfExpected);
+            }
+        }
+
+        public void TestGradient()
+        {
+            RawProto rp = RawProto.Parse("type: \"Swish\" swish_param { beta: 0.0 }");
+            LayerParameter p = LayerParameter.FromProto(rp);
+            SwishLayer<T> layer = new SwishLayer<T>(m_cuda, m_log, p);
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
             checker.CheckGradientEltwise(layer, BottomVec, TopVec);
         }
