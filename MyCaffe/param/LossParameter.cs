@@ -47,9 +47,18 @@ namespace MyCaffe.param
             NONE = 3
         }
 
-        /** @copydoc LayerParameterBase */
-        public LossParameter()
+        /// <summary>
+        /// The constructor for the LossParameter.
+        /// </summary>
+        /// <remarks>
+        /// The default VALID normalization mode is used for all loss layers, except
+        /// for the SigmoidCrossEntropyLoss layer which uses BATCH_SIZE as the default
+        /// for historical reasons.
+        /// </remarks>
+        /// <param name="norm">Specifies the default normalization mode.</param>
+        public LossParameter(NormalizationMode norm = NormalizationMode.VALID)
         {
+            m_normalization = norm;
         }
 
         /// <summary>
