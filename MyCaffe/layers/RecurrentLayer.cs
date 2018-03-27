@@ -321,7 +321,7 @@ namespace MyCaffe.layers
                 int nBottomOffset = 2 + nStaticInput;
                 for (int i = nBottomOffset, j = 0; i < colBottom.Count; i++, j++)
                 {
-                    m_log.CHECK(Utility.Compare<int>(m_colRecurInputBlobs[j].shape(), colBottom[i].shape()), "bottom[" + i.ToString() + "] shape must match hidden state input shape: " + m_colRecurInputBlobs[j].shape_string);
+                    m_log.CHECK(Utility.Compare<int>(m_colRecurInputBlobs[j].shape(), colBottom[i].shape()), "Shape mismatch - recur_input_blobs_[" + j.ToString() + "]: '" + m_colRecurInputBlobs[j].shape_string + "' vs. bottom[" + i.ToString() + "]: '" + colBottom[i].shape_string + "'");
                     m_colRecurInputBlobs[j].ShareData(colBottom[i]);
                 }
             }

@@ -97,7 +97,7 @@ namespace MyCaffe.layers
             if (m_rgSlicePoints.Count != 0)
             {
                 m_log.CHECK_EQ(m_rgSlicePoints.Count, colTop.Count - 1, "The slice point count is incorrect.");
-                m_log.CHECK_LE(colTop.Count, bottom_slice_axis, "The top count should be less than the bottom slice axis " + bottom_slice_axis.ToString());
+                m_log.CHECK_LE(colTop.Count, bottom_slice_axis, "slice axis: " + bottom_slice_axis.ToString() + ", bottom[0] shape: '" + colBottom[0].shape_string + "'");
 
                 int nPrev = 0;
                 List<int> rgSlices = new List<int>();

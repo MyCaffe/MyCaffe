@@ -498,7 +498,7 @@ namespace MyCaffe.layers
             // TODO: generalize to handle inputs of different shapes.
             for (int i = 1; i < colBottom.Count; i++)
             {
-                m_log.CHECK(Utility.Compare<int>(colBottom[0].shape(), colBottom[i].shape()), "All inputs must have the same shape.");
+                m_log.CHECK(Utility.Compare<int>(colBottom[0].shape(), colBottom[i].shape()), "Shape mismatch - bottom[0]: '" + colBottom[0].shape_string + "' vs. bottom[" + i.ToString() + "]: '" + colBottom[i].shape_string + "'");
             }
 
             // Shape the tops.
