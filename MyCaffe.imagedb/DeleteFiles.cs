@@ -56,11 +56,12 @@ namespace MyCaffe.imagedb
 
             for (int i = 0; i < rgstrFiles.Length; i++)
             {
-                SHFILEOPSTRUCT shf = new SHFILEOPSTRUCT();
-                shf.wFunc = FO_DELETE;
-                shf.fFlags = FOF_ALLOWUNDO + FOF_NOCONFIRMATION;
-                shf.pFrom = strDir + '\0' + '\0';
-                SHFileOperation(ref shf);
+                File.Delete(rgstrFiles[i]);
+                //SHFILEOPSTRUCT shf = new SHFILEOPSTRUCT();
+                //shf.wFunc = FO_DELETE;
+                //shf.fFlags = FOF_ALLOWUNDO + FOF_NOCONFIRMATION;
+                //shf.pFrom = strDir + '\0' + '\0';
+                //SHFileOperation(ref shf);
 
                 if (m_evtCancel.WaitOne(0))
                     return false;
