@@ -72,7 +72,6 @@
     <Compile Include="common\CudaDnn.cs" />
     <Compile Include="common\CudaDnnMemoryTracker.cs" />
     <Compile Include="common\DebugInformation.cs" />
-    <Compile Include="common\DeepDraw.cs" />
     <Compile Include="common\DictionaryEx.cs" />
     <Compile Include="common\DictionaryMap.cs" />
     <Compile Include="common\EventArgs.cs" />
@@ -96,6 +95,7 @@
     <Compile Include="fillers\UniformFiller.cs" />
     <Compile Include="fillers\XavierFiller.cs" />
     <Compile Include="layers\CropLayer.cs" />
+    <Compile Include="layers\SwishLayer.cs" />
     <Compile Include="layers\MemoryDataLayer.cs" />
     <Compile Include="layers\DebugLayer.cs" />
     <Compile Include="layers\SoftmaxLayer.cs" />
@@ -181,6 +181,7 @@
     <Compile Include="param\MemoryDataParameter.cs" />
     <Compile Include="param\DebugParameter.cs" />
     <Compile Include="param\KnnParameter.cs" />
+    <Compile Include="param\SwishParameter.cs" />
     <Compile Include="param\TripletLossParameter.cs" />
     <Compile Include="param\TripletLossSimpleParameter.cs" />
     <Compile Include="param\NormalizationParameter.cs" />
