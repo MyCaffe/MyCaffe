@@ -41,11 +41,11 @@ namespace MyCaffe.fillers
             // just use a simple implementation.
 
             T[] rgData = b.mutable_cpu_data;
-            int nDim = nCount / b.num;
+            int nDim = nCount / b.shape(0);
 
             m_log.CHECK_GT(nDim, 0, "The dimension must be greater than 0.");
 
-            for (int i = 0; i < b.num; i++)
+            for (int i = 0; i < b.shape(0); i++)
             {
                 double dfSum = 0;
 

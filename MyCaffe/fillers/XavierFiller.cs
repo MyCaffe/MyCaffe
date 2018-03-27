@@ -45,8 +45,11 @@ namespace MyCaffe.fillers
             int nCount = b.count();
             m_log.CHECK(nCount > 0, "There is no data to fill!");
 
-            int nFanIn = nCount / b.num;
-            int nFanOut = nCount / b.channels;
+            int nFanIn = nCount / b.shape(0);
+            // Compatibility with ND blobs
+            int nFanOut = b.num_axes > 1 ?
+                          b.count() / b.shape(1) :
+                          b.count();
             double dfN = nFanIn; // default to fan_in
 
             if (m_param.variance_norm == FillerParameter.VarianceNorm.AVERAGE)
