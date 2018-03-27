@@ -151,7 +151,7 @@ namespace MyCaffe.test
                 m_log.CHECK_LE(dfPrediction, 1.0, "The prediction should be <= 1.0");
                 m_log.CHECK_GE(dfPrediction, 0.0, "The preduction should be >= 0.0");
                 m_log.CHECK_LE(dfTarget, 1.0, "The target should be <= 1.0");
-                m_log.CHECK_GE(dfTarget, 0.0, "The target shopuld be >= 0.0");
+                m_log.CHECK_GE(dfTarget, 0.0, "The target should be >= 0.0");
                 dfLoss -= dfTarget * Math.Log(dfPrediction + dfTargetEqualZero);
                 dfLoss -= (1 - dfTarget) * Math.Log(1 - dfPrediction + dfTargetEqualOne);
             }
