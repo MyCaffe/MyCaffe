@@ -492,6 +492,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_SIGMOID_BWD:
 			return m_device.cuda_sigmoid_bwd(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_SWISH_BWD:
+			return m_device.cuda_swish_bwd(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_RELU_FWD:
 			return m_device.cuda_relu_fwd(lCount, pfInput, plCount, ppfOutput);
 

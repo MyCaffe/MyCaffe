@@ -177,6 +177,8 @@ class Math
 		long sigmoid_fwd(int nCount, long hBottomData, long hTopData);
 		long sigmoid_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
 
+		long swish_bwd(int nCount, long hTopDiff, long hTopData, long hSigmoidOutputData, long hBottomDiff, T fBeta);
+
 		long relu_fwd(int nCount, long hBottomData, long hTopData, T fNegativeSlope);
 		long relu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, T fNegativeSlope);
 

@@ -207,6 +207,8 @@ const int CUDA_FN_TANH_BWD			= 421;
 const int CUDA_FN_SIGMOID_FWD		= 424;
 const int CUDA_FN_SIGMOID_BWD		= 425;
 
+const int CUDA_FN_SWISH_BWD			= 427;
+
 const int CUDA_FN_RELU_FWD			= 428;
 const int CUDA_FN_RELU_BWD			= 429;
 

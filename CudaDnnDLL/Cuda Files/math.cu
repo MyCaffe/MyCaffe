@@ -4655,7 +4655,53 @@ template long Math<float>::sigmoid_bwd(int nCount, long hTopDiff, long hTopData,
 
 
 template<typename T>
-__global__ void relu_fwd_kernel(int n, T* in, T* out, T negative_slope)
+__global__ void swish_bwd_kernel(int n, const T* in_diff, const T* out_data, const T* sigmoid_output_data, T* out_diff, const T beta)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	{
+		const T swish_x = out_data[i];
+		out_diff[i] = in_diff[i] * (beta * swish_x
+			+ sigmoid_output_data[i] * (1 - beta * swish_x));
+	}
+}
+
+template <class T>
+long Math<T>::swish_bwd(int n, long hTopDiff, long hTopData, long hSigmoidOutputData, long hBottomDiff, T fBeta)
+{
+	LONG lErr;
+	MemoryItem* pTopDiff;
+	MemoryItem* pTopData;
+	MemoryItem* pSigmoidOutputData;
+	MemoryItem* pBottomDiff;
+
+	if (lErr = m_pMemCol->GetData(hTopDiff, &pTopDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hSigmoidOutputData, &pSigmoidOutputData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomDiff, &pBottomDiff))
+		return lErr;
+
+	T* top_diff = (T*)pTopDiff->Data();
+	T* top_data = (T*)pTopData->Data();
+	T* sigmoid_output_data = (T*)pSigmoidOutputData->Data();
+	T* bottom_diff = (T*)pBottomDiff->Data();
+
+	swish_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, top_diff, top_data, sigmoid_output_data, bottom_diff, fBeta);
+
+	return cudaGetLastError();
+}
+
+template long Math<double>::swish_bwd(int nCount, long hTopDiff, long hTopData, long hSigmoidOutputData, long hBottomDiff, double dfBeta);
+template long Math<float>::swish_bwd(int nCount, long hTopDiff, long hTopData, long hSigmoidOutputData, long hBottomDiff, float fBeta);
+
+
+template<typename T>
+__global__ void relu_fwd_kernel(int n, const T* in, T* out, const T negative_slope)
 {
 	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
 	{

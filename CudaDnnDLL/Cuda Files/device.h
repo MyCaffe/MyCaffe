@@ -296,6 +296,8 @@ class Device
 		long cuda_sigmoid_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_sigmoid_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
+		long cuda_swish_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
 		long cuda_relu_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_relu_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
@@ -2109,6 +2111,24 @@ inline long Device<T>::cuda_sigmoid_bwd(long lInput, T* pfInput, long* plOutput,
 	long hBottomDiff = (long)pfInput[3];
 
 	return m_math.sigmoid_bwd(nCount, hTopDiff, hTopData, hBottomDiff);
+}
+
+template <class T>
+inline long Device<T>::cuda_swish_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hTopDiff = (long)pfInput[1];
+	long hTopData = (long)pfInput[2];
+	long hSigmoidOutputData = (long)pfInput[3];
+	long hBottomDiff = (long)pfInput[4];
+	T fBeta = pfInput[5];
+
+	return m_math.swish_bwd(nCount, hTopDiff, hTopData, hSigmoidOutputData, hBottomDiff, fBeta);
 }
 
 
