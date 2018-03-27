@@ -133,15 +133,19 @@ namespace MyCaffe.solvers
                     break;
 
                 case "step":
+                    m_log.CHECK_GT(m_param.stepsize, 0, "The stepsize must be greater than 0.");
                     m_nCurrentStep = m_nIter / m_param.stepsize;
+                    m_log.CHECK_GE(m_param.gamma, 0, "The gamma must be greater than or equal to 0.");
                     dfRate = m_param.base_lr * Math.Pow(m_param.gamma, m_nCurrentStep);
                     break;
 
                 case "exp":
+                    m_log.CHECK_GE(m_param.gamma, 0, "The gamma must be greater than or equal to 0.");
                     dfRate = m_param.base_lr * Math.Pow(m_param.gamma, m_nIter);
                     break;
 
                 case "inv":
+                    m_log.CHECK_GE(m_param.gamma, 0, "The gamma must be greater than or equal to 0.");
                     dfRate = m_param.base_lr * Math.Pow(1.0 + m_param.gamma * m_nIter, -1.0 * m_param.power);
                     break;
 
@@ -151,6 +155,7 @@ namespace MyCaffe.solvers
                         m_nCurrentStep++;
                         m_log.WriteLine("MultiStep Status: Iteration " + m_nIter.ToString() + ", step = " + m_nCurrentStep.ToString());
                     }
+                    m_log.CHECK_GE(m_param.gamma, 0, "The gamma must be greater than or equal to 0.");
                     dfRate = m_param.base_lr * Math.Pow(m_param.gamma, m_nCurrentStep);
                     break;
 
@@ -159,6 +164,8 @@ namespace MyCaffe.solvers
                     break;
 
                 case "sigmoid":
+                    m_log.CHECK_GE(m_param.gamma, 0, "The gamma must be greater than or equal to 0.");
+                    m_log.CHECK_GT(m_param.stepsize, 0, "The stepsize must be greater than 0.");
                     dfRate = m_param.base_lr * (1.0 / (1.0 + Math.Exp(-1.0 * m_param.gamma * m_nIter - m_param.stepsize)));
                     break;
 
