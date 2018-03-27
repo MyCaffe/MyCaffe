@@ -680,6 +680,8 @@ namespace MyCaffe.common
             CUDA_SIGMOID_FWD = 424,
             CUDA_SIGMOID_BWD = 425,
 
+            CUDA_SWISH_BWD = 427,
+
             CUDA_RELU_FWD = 428,
             CUDA_RELU_BWD = 429,
 
@@ -5169,7 +5171,7 @@ namespace MyCaffe.common
         /// <remarks>
         /// Calculation @f$ Y[i] = tanh(X[i]) @f$
         /// 
-        /// See [Hyperbolic Function](https://en.wikipedia.org/wiki/Hyperbolic_function).
+        /// @see [Hyperbolic Function](https://en.wikipedia.org/wiki/Hyperbolic_function).
         /// </remarks>
         /// <param name="nCount">Specifies the number of items in the bottom and top data.</param>
         /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
@@ -5186,7 +5188,7 @@ namespace MyCaffe.common
         /// Performs a TanH backward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// See [Hyperbolic Function](https://en.wikipedia.org/wiki/Hyperbolic_function).
+        /// @see [Hyperbolic Function](https://en.wikipedia.org/wiki/Hyperbolic_function).
         /// </remarks>
         /// <param name="nCount">Specifies the number of items.</param>
         /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
@@ -5206,7 +5208,7 @@ namespace MyCaffe.common
         /// <remarks>
         /// Calcuation @f$ Y[i] = 1.0 / (1.0 + exp(-X[i])) @f$
         /// 
-        /// See [Sigmoid Function](https://en.wikipedia.org/wiki/Sigmoid_function).
+        /// @see [Sigmoid Function](https://en.wikipedia.org/wiki/Sigmoid_function).
         /// </remarks>
         /// <param name="nCount">Specifies the number of items in the bottom and top data.</param>
         /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
@@ -5223,7 +5225,7 @@ namespace MyCaffe.common
         /// Performs a Sigmoid backward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// See [Sigmoid Function](https://en.wikipedia.org/wiki/Sigmoid_function).
+        /// @see [Sigmoid Function](https://en.wikipedia.org/wiki/Sigmoid_function).
         /// </remarks>
         /// <param name="nCount">Specifies the number of items.</param>
         /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
@@ -5238,14 +5240,34 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Performs a Swish backward pass in Cuda.
+        /// </summary>
+        /// <remarks>
+        /// @see [Activation Functions](https://arxiv.org/abs/1710.05941v2) by Prajit Ramachandran, Barret Zoph, Quoc V. Le., 2017.
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        /// <param name="hSigmoidOutputData">Specifies a handle to the sigmoid output data in GPU memory.</param>
+        /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
+        /// <param name="dfBeta">Specifies the 'beta' value applied to the output.</param>
+        public void swish_bwd(int nCount, long hTopDiff, long hTopData, long hSigmoidOutputData, long hBottomDiff, double dfBeta)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SWISH_BWD, new double[] { nCount, hTopDiff, hTopData, hSigmoidOutputData, hBottomDiff, dfBeta });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SWISH_BWD, new float[] { nCount, hTopDiff, hTopData, hSigmoidOutputData, hBottomDiff, (float)dfBeta });
+        }
+
+        /// <summary>
         /// Performs a Rectifier Linear Unit (ReLU) forward pass in Cuda.
         /// </summary>
         /// <remarks>
         /// Calculation @f$ Y[i] = (X[i] > 0) ? X[i] : X[i] * negativeSlope @f$
         /// 
-        /// See [Rectifier](https://en.wikipedia.org/wiki/Rectifier_(neural_networks)), and
-        /// [Understanding Deep Neural Networks with Rectified Linear Units](https://arxiv.org/abs/1611.01491) by Arora, et al., 2016,
-        /// [Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification](https://arxiv.org/abs/1502.01852v1) by He, et al., 2015
+        /// @see [Rectifier](https://en.wikipedia.org/wiki/Rectifier_(neural_networks)), and
+        /// @see [Understanding Deep Neural Networks with Rectified Linear Units](https://arxiv.org/abs/1611.01491) by Arora, et al., 2016,
+        /// @see [Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification](https://arxiv.org/abs/1502.01852v1) by He, et al., 2015
         /// </remarks>
         /// <param name="nCount">Specifies the number of items in the bottom and top data.</param>
         /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
@@ -5263,9 +5285,9 @@ namespace MyCaffe.common
         /// Performs a Rectifier Linear Unit (ReLU) backward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// See [Rectifier](https://en.wikipedia.org/wiki/Rectifier_(neural_networks)), and
-        /// [Understanding Deep Neural Networks with Rectified Linear Units](https://arxiv.org/abs/1611.01491) by Arora, et al., 2016,
-        /// [Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification](https://arxiv.org/abs/1502.01852v1) by He, et al., 2015
+        /// @see [Rectifier](https://en.wikipedia.org/wiki/Rectifier_(neural_networks)), and
+        /// @see [Understanding Deep Neural Networks with Rectified Linear Units](https://arxiv.org/abs/1611.01491) by Arora, et al., 2016,
+        /// @see [Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification](https://arxiv.org/abs/1502.01852v1) by He, et al., 2015
         /// </remarks>
         /// <param name="nCount">Specifies the number of items.</param>
         /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
@@ -5286,7 +5308,7 @@ namespace MyCaffe.common
         /// <remarks>
         /// Calculates @f$ Y[i] = (X[i] > 0) ? X[i] : alpha * (exp(X[i]) - 1) @f$
         /// 
-        /// See [Deep Residual Networks with Exponential Linear Unit](https://arxiv.org/abs/1604.04112) by Shah, et al., 2016
+        /// @see [Deep Residual Networks with Exponential Linear Unit](https://arxiv.org/abs/1604.04112) by Shah, et al., 2016
         /// </remarks>
         /// <param name="nCount">Specifies the number of items in the bottom and top data.</param>
         /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
@@ -5304,7 +5326,7 @@ namespace MyCaffe.common
         /// Performs a Exponential Linear Unit (ELU) backward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// See [Deep Residual Networks with Exponential Linear Unit](https://arxiv.org/abs/1604.04112) by Shah, et al., 2016
+        /// @see [Deep Residual Networks with Exponential Linear Unit](https://arxiv.org/abs/1604.04112) by Shah, et al., 2016
         /// </remarks>
         /// <param name="nCount">Specifies the number of items.</param>
         /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
@@ -5324,7 +5346,7 @@ namespace MyCaffe.common
         /// Performs a dropout forward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// See [Improving neural networks by preventing co-adaptation of feature detectors](https://arxiv.org/abs/1207.0580) by Hinton, et al., 2012
+        /// @see [Improving neural networks by preventing co-adaptation of feature detectors](https://arxiv.org/abs/1207.0580) by Hinton, et al., 2012
         /// </remarks>
         /// <param name="nCount">Specifies the number of items.</param>
         /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
@@ -5344,7 +5366,7 @@ namespace MyCaffe.common
         /// Performs a dropout backward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// See [Improving neural networks by preventing co-adaptation of feature detectors](https://arxiv.org/abs/1207.0580) by Hinton, et al., 2012
+        /// @see [Improving neural networks by preventing co-adaptation of feature detectors](https://arxiv.org/abs/1207.0580) by Hinton, et al., 2012
         /// </remarks>
         /// <param name="nCount">Specifies the number of items.</param>
         /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
@@ -5398,8 +5420,8 @@ namespace MyCaffe.common
         /// <remarks>
         /// Calculation @f$ Y[i] = (X[i] > 0) ? X[i] : X[i] * slopeData @f$
         /// 
-        /// See [Understanding Deep Neural Networks with Rectified Linear Units](https://arxiv.org/abs/1611.01491) by Arora, et al., 2016,
-        /// [Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification](https://arxiv.org/abs/1502.01852v1) by He, et al., 2015
+        /// @see [Understanding Deep Neural Networks with Rectified Linear Units](https://arxiv.org/abs/1611.01491) by Arora, et al., 2016,
+        /// @see [Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification](https://arxiv.org/abs/1502.01852v1) by He, et al., 2015
         /// </remarks>
         /// <param name="nCount">Specifies the number of items.</param>
         /// <param name="nChannels">Specifies the channels per input.</param>
@@ -5421,8 +5443,8 @@ namespace MyCaffe.common
         /// Performs Parameterized Rectifier Linear Unit (ReLU) backward param pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// See [Understanding Deep Neural Networks with Rectified Linear Units](https://arxiv.org/abs/1611.01491) by Arora, et al., 2016,
-        /// [Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification](https://arxiv.org/abs/1502.01852v1) by He, et al., 2015
+        /// @see [Understanding Deep Neural Networks with Rectified Linear Units](https://arxiv.org/abs/1611.01491) by Arora, et al., 2016,
+        /// @see [Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification](https://arxiv.org/abs/1502.01852v1) by He, et al., 2015
         /// </remarks>
         /// <param name="nCDim"><b><i>NEEDS REVIEW</i></b></param>
         /// <param name="nNum"><b><i>NEEDS REVIEW</i></b></param>
@@ -5442,8 +5464,8 @@ namespace MyCaffe.common
         /// Performs Parameterized Rectifier Linear Unit (ReLU) backward pass in Cuda.
         /// </summary>
         /// <remarks>
-        /// See [Understanding Deep Neural Networks with Rectified Linear Units](https://arxiv.org/abs/1611.01491) by Arora, et al., 2016,
-        /// [Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification](https://arxiv.org/abs/1502.01852v1) by He, et al., 2015
+        /// @see [Understanding Deep Neural Networks with Rectified Linear Units](https://arxiv.org/abs/1611.01491) by Arora, et al., 2016,
+        /// @see [Delving Deep into Rectifiers: Surpassing Human-Level Performance on ImageNet Classification](https://arxiv.org/abs/1502.01852v1) by He, et al., 2015
         /// </remarks>
         /// <param name="nCount">Specifies the number of items.</param>
         /// <param name="nChannels">Specifies the channels per input.</param>
