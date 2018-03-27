@@ -1,4 +1,5 @@
 ﻿using MyCaffe.basecode;
+using MyCaffe.common;
 using MyCaffe.data;
 using System;
 using System.Collections;
@@ -9,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyCaffe.common
+namespace MyCaffe.extras
 {
     /// <summary>
     /// The DeepDraw class implements both deep drawing and deep dream as originally
@@ -110,7 +111,7 @@ namespace MyCaffe.common
         /// <param name="dfPctDetailsToApply">Specifies the percentage of the details from the previous octave run to apply to the source for this Octave - this value must be 1.0 when only using one Octave.</param>
         public void Add(string strLayer, int nIterations, double dfStartSigma, double dfEndSigma, double dfStartStep, double dfEndStep, bool bSaveFile = false, double dfPctDetailsToApply = 0.25)
         {
-            m_rgOctaves.Add(new common.Octaves(strLayer, nIterations, dfStartSigma, dfEndSigma, dfStartStep, dfEndStep, bSaveFile, dfPctDetailsToApply));
+            m_rgOctaves.Add(new Octaves(strLayer, nIterations, dfStartSigma, dfEndSigma, dfStartStep, dfEndStep, bSaveFile, dfPctDetailsToApply));
         }
 
         /// <summary>
