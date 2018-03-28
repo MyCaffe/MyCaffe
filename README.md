@@ -18,8 +18,8 @@ maintaining compatibility with CAFFE's solver descriptions, model descriptions a
 The C# based MyCaffe open-source project is independently maintained by <a href="http://www.signalpop.com">SignalPop LLC</a> and made 
 available under the Apache 2.0 License.
 <h3>Supported Development Environments:</h3>
-* Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 9.1</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.1.1</a> (currently uses VS2015 compile)</br>
-* Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 9.1</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.1.1</a> </br>
+* Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 9.1</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.1.2</a> (currently uses VS2015 compile)</br>
+* Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 9.1</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.1.2</a> </br>
 </br>
 
 NOTE: Visual Studio 2017 support noted above currently uses the Platform Toolset "Visual Studio 2015 (v140)" build setting.
