@@ -10,6 +10,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+/// <summary>
+/// The MyCaffe.extras namespace contains classes that use the MyCaffe and other namespaces to add enhanced features.  
+/// </summary>
 namespace MyCaffe.extras
 {
     /// <summary>
