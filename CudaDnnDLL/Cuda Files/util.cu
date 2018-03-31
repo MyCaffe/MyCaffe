@@ -120,6 +120,14 @@ bool GetErrorString(long lErr, char* szErr, long lMaxErr)
 		case ERROR_CUDA_MISSING_NCCL64DLL:
 			_snprintf(szErr, lMaxErr, "CUDA: The 'nccl64' DLL is missing from the executable directory!  For example when using the version 134 for CUDA 9.1, the file 'nccl64_134.9.1.dll' should be in the same directory as the executable. (%ld)", lErr);
 			return true;
+
+		case ERROR_TSNE:
+			_snprintf(szErr, lMaxErr, "TSNE: A general TSN-E error occurred. (%ld)", lErr);
+			return true;
+
+		case ERROR_TSNE_NO_DISTANCES_FOUND:
+			_snprintf(szErr, lMaxErr, "TSNE: No differences found between the images - they may all be the same. (%ld)", lErr);
+			return true;
 	}
 
 	return false;

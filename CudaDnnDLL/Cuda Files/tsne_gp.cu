@@ -463,7 +463,8 @@ long tsnegpHandle<T>::Run(bool *pbDone, int* pnCurrentIteration, int* pnMaxItera
 	std::vector<T> rgDistances;
 
 	m_pTree->search(m_rgObjX[n], m_nK + 1, &rgIndices, &rgDistances);
-
+	if (rgDistances.size() == 0)
+		return ERROR_TSNE_NO_DISTANCES_FOUND;
 
 	// Initialize some variables for binary search.
 	bool found = false;
