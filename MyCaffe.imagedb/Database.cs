@@ -49,6 +49,9 @@ namespace MyCaffe.imagedb
         {
             string strOut = "";
 
+            if (str == null)
+                return strOut;
+
             foreach (char ch in str)
             {
                 if (char.IsWhiteSpace(ch))
