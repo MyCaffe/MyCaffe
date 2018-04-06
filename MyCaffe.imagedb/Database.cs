@@ -1180,8 +1180,9 @@ namespace MyCaffe.imagedb
         /// <param name="nIdx">Specifies the image index.</param>
         /// <param name="d">Specifies the SimpleDatum containing the data.</param>
         /// <param name="strDescription">Optionally, specifies the description (default = null).</param>
+        /// <param name="nOriginalSourceID">Optionally, specifies the original source ID (default = null)</param>
         /// <returns>The RawImage is returned.</returns>
-        public RawImage CreateRawImage(int nIdx, SimpleDatum d, string strDescription = null)
+        public RawImage CreateRawImage(int nIdx, SimpleDatum d, string strDescription = null, int? nOriginalSourceID = null)
         {
             DateTime dtMin = new DateTime(1980, 1, 1);
             RawImage img = new RawImage();
@@ -1201,6 +1202,9 @@ namespace MyCaffe.imagedb
             img.Active = true;
             img.AutoLabel = d.AutoLabeled;
             img.Description = strDescription;
+
+            if (nOriginalSourceID.HasValue)
+                img.OriginalSourceID = nOriginalSourceID.Value;
 
             string strGuid = Guid.NewGuid().ToString();
 

@@ -23,6 +23,11 @@ namespace MyCaffe.imagedb
         /// Specifies the open source descriptor (if any).
         /// </summary>
         protected SourceDescriptor m_openSource = null;
+        /// <summary>
+        /// Specifies the original source ID (if any).
+        /// </summary>
+        protected int? m_nOriginalSourceID = null;
+
         ImageCache m_imageCache;
 
 
@@ -132,7 +137,7 @@ namespace MyCaffe.imagedb
         /// <param name="rgParams">Optionally, specifies a variable number of parameters to add to the RawImage.</param>
         public void PutRawImageCache(int nIdx, SimpleDatum sd, string strDescription = null, params ParameterData[] rgParams)
         {
-            RawImage img = m_db.CreateRawImage(nIdx, sd, strDescription);
+            RawImage img = m_db.CreateRawImage(nIdx, sd, strDescription, m_nOriginalSourceID);
 
             if (m_imageCache.Add(img, sd, rgParams))
                 ClearImageCash(true);
@@ -840,6 +845,16 @@ namespace MyCaffe.imagedb
         public void UpdateSaveImagesToFile(bool bSaveToFile, int nSrcId = 0) /** @private */
         {
             m_db.UpdateSaveImagesToFile(bSaveToFile, nSrcId);
+        }
+
+        /// <summary>
+        /// Get/set the original source ID (if any).  This field is used when copying a source and using the virutal image reference,
+        /// but retaining the original source ID for the internal image lookup.
+        /// </summary>
+        public int? OriginalSourceID
+        {
+            get { return m_nOriginalSourceID; }
+            set { m_nOriginalSourceID = value; }
         }
 
         #endregion
