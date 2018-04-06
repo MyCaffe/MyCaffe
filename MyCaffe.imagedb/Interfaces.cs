@@ -164,9 +164,10 @@ namespace MyCaffe.imagedb
         /// Returns the number of images in a given data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <param name="bSuperboostOnly">Optionally, specifies to only count boosted images (default = false).</param>
         /// <returns>The number of images is returned.</returns>
         [OperationContract(IsOneWay = false)]
-        int ImageCount(int nSrcId);
+        int ImageCount(int nSrcId, bool bSuperboostOnly = false);
 
         /// <summary>
         /// Query an image in a given data source.
