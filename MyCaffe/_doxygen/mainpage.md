@@ -4,7 +4,7 @@
 
 MyCaffe allows Windows C# software developers to use and expand deep learning solutions in their native C# language.  All layers except for a few, and nearly every unit test are now
 provided in C#.  Windows programmers can now write their own custom layers in the C# langauge, yet still enjoy the benefit of an efficient deep learning architecture that supports 
-multi-GPU training on up to 8 headless GPU's using <a href="https://devblogs.nvidia.com/parallelforall/fast-multi-gpu-collectives-nccl/">NCCL 1.4 ('Nickel')</a>.
+multi-GPU training on up to 8 headless GPU's using <a href="https://devblogs.nvidia.com/parallelforall/fast-multi-gpu-collectives-nccl/">NCCL 1.3.4 ('Nickel')</a>.
 
 Now you can create custom layers for MyCaffe in C# using the full extent of the <a href="https://msdn.microsoft.com/en-us/library/w0x726c2(v=vs.110).aspx">Windows .NET Framwork</a>!
 
