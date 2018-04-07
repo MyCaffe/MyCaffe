@@ -1412,8 +1412,9 @@ namespace MyCaffe
         /// <param name="nLabel">Returns the expected label for the image.</param>
         /// <param name="strLabel">Returns the expected label name for the image.</param>
         /// <param name="rgCriteria">Returns the data criteria if one exists.</param>
+        /// <param name="fmtCriteria">Returns the format of the data criteria, if one exists.</param>
         /// <returns>The image queried is returned.</returns>
-        public Bitmap GetTargetImage(int nSrcId, int nIdx, out int nLabel, out string strLabel, out byte[] rgCriteria)
+        public Bitmap GetTargetImage(int nSrcId, int nIdx, out int nLabel, out string strLabel, out byte[] rgCriteria, out SimpleDatum.DATA_FORMAT fmtCriteria)
         {
             SimpleDatum d = m_imgDb.QueryImage(nSrcId, nIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
 
@@ -1424,6 +1425,7 @@ namespace MyCaffe
                 strLabel = nLabel.ToString();
 
             rgCriteria = d.DataCriteria;
+            fmtCriteria = d.DataCriteriaFormat;
 
             return new Bitmap(ImageData.GetImage(new Datum(d), null));
         }
@@ -1436,8 +1438,9 @@ namespace MyCaffe
         /// <param name="nLabel">Returns the expected label for the image.</param>
         /// <param name="strLabel">Returns the expected label name for the image.</param>
         /// <param name="rgCriteria">Returns the data criteria if one exists.</param>
+        /// <param name="fmtCriteria">Returns the format of the data criteria, if one exists.</param>
         /// <returns>The image queried is returned.</returns>
-        public Bitmap GetTargetImage(int nImageID, out int nLabel, out string strLabel, out byte[] rgCriteria)
+        public Bitmap GetTargetImage(int nImageID, out int nLabel, out string strLabel, out byte[] rgCriteria, out SimpleDatum.DATA_FORMAT fmtCriteria)
         {
             SimpleDatum d = m_imgDb.GetImage(nImageID, m_dataSet.TrainingSource.ID, m_dataSet.TestingSource.ID);
 
@@ -1448,6 +1451,7 @@ namespace MyCaffe
                 strLabel = nLabel.ToString();
 
             rgCriteria = d.DataCriteria;
+            fmtCriteria = d.DataCriteriaFormat;
 
             return new Bitmap(ImageData.GetImage(new Datum(d), null));
         }
