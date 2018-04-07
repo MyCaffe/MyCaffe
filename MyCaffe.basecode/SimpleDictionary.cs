@@ -21,17 +21,21 @@ namespace MyCaffe.basecode
         public enum TYPE
         {
             /// <summary>
+            /// Specifies no type.
+            /// </summary>
+            NONE = -1,
+            /// <summary>
             /// Specifies a text string value.
             /// </summary>
-            STRING,
+            STRING = 0,
             /// <summary>
             /// Specifies a <i>double</i> value.
             /// </summary>
-            NUMERIC,
+            NUMERIC = 1,
             /// <summary>
             /// Specifies a 32-bit <i>integer</i> value.
             /// </summary>
-            INTEGER
+            INTEGER = 2
         }
 
         /// <summary>
@@ -45,10 +49,18 @@ namespace MyCaffe.basecode
         /// Returns the type of a given item.
         /// </summary>
         /// <param name="strName">Specifies the name of the item.</param>
-        /// <returns>The TYPE of the item is returned.</returns>
-        public TYPE GetType(string strName)
+        /// <param name="type">Returns the type of the item, if found in the dictionary.</param>
+        /// <returns>If the variable 'strName' exists in the dictionary, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public bool GetType(string strName, out TYPE type)
         {
-            return m_rgTypes[strName];
+            type = TYPE.NONE;
+
+            if (!m_rgTypes.ContainsKey(strName))
+                return false;
+
+            type = m_rgTypes[strName];
+
+            return true;
         }
 
         /// <summary>
@@ -68,9 +80,18 @@ namespace MyCaffe.basecode
         /// Returns the integer value of an item.
         /// </summary>
         /// <param name="strName">Specifies the name of the item to get.</param>
+        /// <param name="nDefault">Specifies a default value, which when specified is returned if no value is found.</param>
         /// <returns>The integer value of the item is returned.</returns>
-        public int GetInteger(string strName)
+        public int GetInteger(string strName, int? nDefault = null)
         {
+            if (!m_rgTypes.ContainsKey(strName))
+            {
+                if (nDefault.HasValue)
+                    return nDefault.Value;
+
+                throw new Exception("The variable '" + strName + "' is not in the dictionary.");
+            }
+
             if (m_rgTypes[strName] != TYPE.INTEGER)
                 throw new Exception("Invalid type, expected '" + m_rgTypes[strName].ToString() + "'");
 
@@ -154,6 +175,10 @@ namespace MyCaffe.basecode
 
                     switch (rgTypes[i].Value)
                     {
+                        case TYPE.STRING:
+                            bw.Write(rgValues[i].Value.ToString());
+                            break;
+
                         case TYPE.INTEGER:
                             bw.Write((int)rgValues[i].Value);
                             break;
@@ -163,7 +188,6 @@ namespace MyCaffe.basecode
                             break;
 
                         default:
-                            bw.Write(rgValues[i].Value.ToString());
                             break;
                     }
                 }
@@ -193,6 +217,11 @@ namespace MyCaffe.basecode
 
                     switch (type)
                     {
+                        case TYPE.STRING:
+                            string strVal = br.ReadString();
+                            dictionary.Add(strName, strVal);
+                            break;
+
                         case TYPE.INTEGER:
                             int nVal = br.ReadInt32();
                             dictionary.Add(strName, nVal);
@@ -204,14 +233,74 @@ namespace MyCaffe.basecode
                             break;
 
                         default:
-                            string strVal = br.ReadString();
-                            dictionary.Add(strName, strVal);
                             break;
                     }
                 }
             }
 
             return dictionary;
+        }
+
+        /// <summary>
+        /// Convert all numeric values into a standard Dictionary.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of numeric values in the SimpleDictionary.</param>
+        /// <param name="strKey">Specifies the base key used, such as 'A'.</param>
+        /// <returns>A Dictionary of string-double pairs is returned.</returns>
+        public Dictionary<string, double> ToNumericValues(int nCount, string strKey)
+        {
+            Dictionary<string, double> rg = new Dictionary<string, double>();
+
+            for (int i = 0; i < nCount; i++)
+            {
+                string strKeyName = strKey + i.ToString() + "_name";
+                string strKeyVal = strKey + i.ToString() + "_val";
+                TYPE typeName;
+                TYPE typeVal;
+
+                if (GetType(strKeyName, out typeName) && GetType(strKeyVal, out typeVal))
+                {
+                    if (typeName == TYPE.STRING && typeVal != TYPE.STRING)
+                    {
+                        string strName = GetString(strKeyName);
+                        double dfVal = GetNumeric(strKeyVal);
+                        rg.Add(strName, dfVal);
+                    }
+                }
+            }
+
+            return rg;
+        }
+
+        /// <summary>
+        /// Convert all string values into a standard Dictionary.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of string values in the SimpleDictionary.</param>
+        /// <param name="strKey">Specifies the base key used, such as 'Atx'.</param>
+        /// <returns>A Dictionary of string-string pairs is returned.</returns>
+        public Dictionary<string, string> ToStringValues(int nCount, string strKey)
+        {
+            Dictionary<string, string> rg = new Dictionary<string, string>();
+
+            for (int i = 0; i < nCount; i++)
+            {
+                string strKeyName = strKey + i.ToString() + "_name";
+                string strKeyVal = strKey + i.ToString() + "_val";
+                TYPE typeName;
+                TYPE typeVal;
+
+                if (GetType(strKeyName, out typeName) && GetType(strKeyVal, out typeVal))
+                {
+                    if (typeName == TYPE.STRING && typeVal == TYPE.STRING)
+                    {
+                        string strName = GetString(strKeyName);
+                        string strVal = GetString(strKeyVal);
+                        rg.Add(strName, strVal);
+                    }
+                }
+            }
+
+            return rg;
         }
     }
 }
