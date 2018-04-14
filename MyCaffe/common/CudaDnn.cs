@@ -819,7 +819,7 @@ namespace MyCaffe.common
 
             try
             {
-                if (strPath.Length == 0)
+                if (string.IsNullOrEmpty(strPath))
                 {
                     FileInfo fi = new FileInfo(Process.GetCurrentProcess().MainModule.FileName);
 
