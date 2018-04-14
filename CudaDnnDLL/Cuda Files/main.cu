@@ -18,6 +18,13 @@
 // includes, project
 #include "main.h"
 
+#ifdef _DEBUG
+#ifdef _TRACEAPI
+static char s_msgbuf[256];
+
+char* GetApiName(long lfnIdx);
+#endif
+#endif
 
 //=============================================================================
 //	Methods
@@ -27,6 +34,13 @@ template <class T>
 long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* plCount)
 {
 	cudaGetLastError();
+
+#ifdef _DEBUG
+#ifdef _TRACEAPI
+	snprintf(s_msgbuf, 256, "calling CudaDnnDLL FunctionID (%ld) %s\n", lfnIdx, GetApiName(lfnIdx));
+	OutputDebugStringA(s_msgbuf);
+#endif
+#endif
 
 	switch (lfnIdx)
 	{
@@ -701,6 +715,681 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 template long Kernel<double>::Run(long lfnIdx, double* pfInput, long lCount, double** ppfOutput, long* plCount);
 template long Kernel<float>::Run(long lfnIdx, float* pfInput, long lCount, float** ppfOutput, long* plCount);
 
+#ifdef _DEBUG
+#ifdef _TRACEAPI
+char* GetApiName(long lfnIdx)
+{
+	switch (lfnIdx)
+	{
+	case CUDA_FN_SETDEVICE:
+		return "CUDA_FN_SETDEVICE";
+
+	case CUDA_FN_SETRANDOMSEED:
+		return "CUDA_FN_SETRANDOMSEED";
+
+	case CUDA_FN_GETDEVICE:
+		return "CUDA_FN_GETDEVICE";
+
+	case CUDA_FN_RESETDEVICE:
+		return "CUDA_FN_RESETDEVICE";
+
+	case CUDA_FN_SYNCHRONIZEDEVICE:
+		return "CUDA_FN_SYNCHRONIZEDEVICE";
+
+	case CUDA_FN_GETDEVICEPROP:
+		return "CUDA_FN_GETDEVICEPROP";
+
+	case CUDA_FN_CHECKMEMORYATTRIB:
+		return "CUDA_FN_CHECKMEMORYATTRIB";
+
+	case CUDA_FN_GETDEVICEMEMORY:
+		return "CUDA_FN_GETDEVICEMEMORY";
+
+	case CUDA_FN_DEVICE_CANACCESSPEER:
+		return "CUDA_FN_DEVICE_CANACCESSPEER";
+
+	case CUDA_FN_DEVICE_ENABLEPEERACCESS:
+		return "CUDA_FN_DEVICE_ENABLEPEERACCESS";
+
+	case CUDA_FN_DEVICE_DISABLEPEERACCESS:
+		return "CUDA_FN_DEVICE_DISABLEPEERACCESS";
+
+	case CUDA_FN_ALLOCMEM:
+		return "CUDA_FN_ALLOCMEM";
+
+	case CUDA_FN_FREEMEM:
+		return "CUDA_FN_FREEMEM";
+
+	case CUDA_FN_GETMEM:
+		return "CUDA_FN_GETMEM";
+
+	case CUDA_FN_SETMEM:
+		return "CUDA_FN_SETMEM";
+
+	case CUDA_FN_SETMEMAT:
+		return "CUDA_FN_SETMEMAT";
+
+	case CUDA_FN_ALLOCHOSTBUFFER:
+		return "CUDA_FN_ALLOCHOSTBUFFER";
+
+	case CUDA_FN_FREEHOSTBUFFER:
+		return "CUDA_FN_FREEHOSTBUFFER";
+
+	case CUDA_FN_GETHOSTMEM:
+		return "CUDA_FN_GETHOSTMEM";
+
+	case CUDA_FN_SETHOSTMEM:
+		return "CUDA_FN_SETHOSTMEM";
+
+	case CUDA_FN_CREATE_MEMORYPOINTER:
+		return "CUDA_FN_CREATE_MEMORYPOINTER";
+
+	case CUDA_FN_FREE_MEMORYPOINTER:
+		return "CUDA_FN_FREE_MEMORYPOINTER";
+
+	case CUDA_FN_CREATE_STREAM:
+		return "CUDA_FN_CREATE_STREAM";
+
+	case CUDA_FN_FREE_STREAM:
+		return "CUDA_FN_FREE_STREAM";
+
+	case CUDA_FN_SYNCHRONIZE_STREAM:
+		return "CUDA_FN_SYNCHRONIZE_STREAM";
+
+	case CUDA_FN_SYNCHRONIZE_THREAD:
+		return "CUDA_FN_SYNCHRONIZE_THREAD";
+
+	case CUDA_FN_CREATE_MEMTEST:
+		return "CUDA_FN_CREATE_MEMTEST";
+
+	case CUDA_FN_FREE_MEMTEST:
+		return "CUDA_FN_FREE_MEMTEST";
+
+	case CUDA_FN_RUN_MEMTEST:
+		return "CUDA_FN_RUN_MEMTEST";
+
+	case CUDA_FN_CREATE_NCCL:
+		return "CUDA_FN_CREATE_NCCL";
+
+	case CUDA_FN_FREE_NCCL:
+		return "CUDA_FN_FREE_NCCL";
+
+	case CUDA_FN_NCCL_INIT_SINGLEPROCESS:
+		return "CUDA_FN_NCCL_INIT_SINGLEPROCESS";
+
+	case CUDA_FN_NCCL_INIT_MULTIPROCESS:
+		return "CUDA_FN_NCCL_INIT_MULTIPROCESS";
+
+	case CUDA_FN_NCCL_BROADCAST:
+		return "CUDA_FN_NCCL_BROADCAST";
+
+	case CUDA_FN_NCCL_ALLREDUCE:
+		return "CUDA_FN_NCCL_ALLREDUCE";
+
+	case CUDNN_FN_CREATE_CUDNN:
+		return "CUDNN_FN_CREATE_CUDNN";
+
+	case CUDNN_FN_FREE_CUDNN:
+		return "CUDNN_FN_FREE_CUDNN";
+
+	case CUDNN_FN_CREATE_TENSORDESC:
+		return "CUDNN_FN_CREATE_TENSORDESC";
+
+	case CUDNN_FN_FREE_TENSORDESC:
+		return "CUDNN_FN_FREE_TENSORDESC";
+
+	case CUDNN_FN_SET_TENSORDESC:
+		return "CUDNN_FN_SET_TENSORDESC";
+
+	case CUDNN_FN_ADD_TENSOR:
+		return "CUDNN_FN_ADD_TENSOR";
+
+	case CUDNN_FN_CREATE_FILTERDESC:
+		return "CUDNN_FN_CREATE_FILTERDESC";
+
+	case CUDNN_FN_FREE_FILTERDESC:
+		return "CUDNN_FN_FREE_FILTERDESC";
+
+	case CUDNN_FN_SET_FILTERDESC:
+		return "CUDNN_FN_SET_FILTERDESC";
+
+	case CUDNN_FN_CREATE_CONVDESC:
+		return "CUDNN_FN_CREATE_CONVDESC";
+
+	case CUDNN_FN_FREE_CONVDESC:
+		return "CUDNN_FN_FREE_CONVDESC";
+
+	case CUDNN_FN_SET_CONVDESC:
+		return "CUDNN_FN_SET_CONVDESC";
+
+	case CUDNN_FN_GET_CONVINFO:
+		return "CUDNN_FN_GET_CONVINFO";
+
+	case CUDNN_FN_FWD_CONV:
+		return "CUDNN_FN_FWD_CONV";
+
+	case CUDNN_FN_BWD_CONV_BIAS:
+		return "CUDNN_FN_BWD_CONV_BIAS";
+
+	case CUDNN_FN_BWD_CONV_FILTER:
+		return "CUDNN_FN_BWD_CONV_FILTER";
+
+	case CUDNN_FN_BWD_CONV_DATA:
+		return "CUDNN_FN_BWD_CONV_DATA";
+
+	case CUDNN_FN_CREATE_POOLDESC:
+		return "CUDNN_FN_CREATE_POOLDESC";
+
+	case CUDNN_FN_FREE_POOLDESC:
+		return "CUDNN_FN_FREE_POOLDESC";
+
+	case CUDNN_FN_SET_POOLDESC:
+		return "CUDNN_FN_SET_POOLDESC";
+
+	case CUDNN_FN_POOL_FWD:
+		return "CUDNN_FN_POOL_FWD";
+
+	case CUDNN_FN_POOL_BWD:
+		return "CUDNN_FN_POOL_BWD";
+
+	case CUDNN_FN_GET_DROPOUT_INFO:
+		return "CUDNN_FN_GET_DROPOUT_INFO";
+
+	case CUDNN_FN_CREATE_DROPOUTDESC:
+		return "CUDNN_FN_CREATE_DROPOUTDESC";
+
+	case CUDNN_FN_FREE_DROPOUTDESC:
+		return "CUDNN_FN_FREE_DROPOUTDESC";
+
+	case CUDNN_FN_SET_DROPOUTDESC:
+		return "CUDNN_FN_SET_DROPOUTDESC";
+
+	case CUDNN_FN_DROPOUT_FWD:
+		return "CUDNN_FN_DROPOUT_FWD";
+
+	case CUDNN_FN_DROPOUT_BWD:
+		return "CUDNN_FN_DROPOUT_BWD";
+
+	case CUDNN_FN_CREATE_LRNDESC:
+		return "CUDNN_FN_CREATE_LRNDESC";
+
+	case CUDNN_FN_FREE_LRNDESC:
+		return "CUDNN_FN_FREE_LRNDESC";
+
+	case CUDNN_FN_SET_LRNDESC:
+		return "CUDNN_FN_SET_LRNDESC";
+
+	case CUDNN_FN_TANH_FWD:
+		return "CUDNN_FN_TANH_FWD";
+
+	case CUDNN_FN_TANH_BWD:
+		return "CUDNN_FN_TANH_BWD";
+
+	case CUDNN_FN_SIGMOID_FWD:
+		return "CUDNN_FN_SIGMOID_FWD";
+
+	case CUDNN_FN_SIGMOID_BWD:
+		return "CUDNN_FN_SIGMOID_BWD";
+
+	case CUDNN_FN_RELU_FWD:
+		return "CUDNN_FN_RELU_FWD";
+
+	case CUDNN_FN_RELU_BWD:
+		return "CUDNN_FN_RELU_BWD";
+
+	case CUDNN_FN_SOFTMAX_FWD:
+		return "CUDNN_FN_SOFTMAX_FWD";
+
+	case CUDNN_FN_SOFTMAX_BWD:
+		return "CUDNN_FN_SOFTMAX_BWD";
+
+	case CUDNN_FN_LRN_CC_FWD:
+		return "CUDNN_FN_LRN_CC_FWD";
+
+	case CUDNN_FN_LRN_CC_BWD:
+		return "CUDNN_FN_LRN_CC_BWD";
+
+	case CUDNN_FN_LCN_CC_FWD:
+		return "CUDNN_FN_LCN_CC_FWD";
+
+	case CUDNN_FN_LCN_CC_BWD:
+		return "CUDNN_FN_LCN_CC_BWD";
+
+	case CUDA_FN_CREATE_PCA:
+		return "CUDA_FN_CREATE_PCA";
+
+	case CUDA_FN_FREE_PCA:
+		return "CUDA_FN_FREE_PCA";
+
+	case CUDA_FN_RUN_PCA:
+		return "CUDA_FN_RUN_PCA";
+
+	case CUDA_FN_CREATE_TSNE_GAUSSIAN_PERPLEXITY:
+		return "CUDA_FN_CREATE_TSNE_GAUSSIAN_PERPLEXITY";
+
+	case CUDA_FN_FREE_TSNE_GAUSSIAN_PERPLEXITY:
+		return "CUDA_FN_FREE_TSNE_GAUSSIAN_PERPLEXITY";
+
+	case CUDA_FN_FIND_TSNE_GAUSSIAN_PERPLEXITY:
+		return "CUDA_FN_FIND_TSNE_GAUSSIAN_PERPLEXITY";
+
+	case CUDA_FN_CREATE_TSNE:
+		return "CUDA_FN_CREATE_TSNE";
+
+	case CUDA_FN_FREE_TSNE:
+		return "CUDA_FN_FREE_TSNE";
+
+	case CUDA_FN_TSNE_COMPUTE_GRADIENT1:
+		return "CUDA_FN_TSNE_COMPUTE_GRADIENT1";
+
+	case CUDA_FN_TSNE_COMPUTE_ERROR1:
+		return "CUDA_FN_TSNE_COMPUTE_ERROR1";
+
+	case CUDA_FN_SET:
+		return "CUDA_FN_SET";
+
+	case CUDA_FN_GET:
+		return "CUDA_FN_GET";
+
+	case CUDA_FN_COPY:
+		return "CUDA_FN_COPY";
+
+	case CUDA_FN_GEMM:
+		return "CUDA_FN_GEMM";
+
+	case CUDA_FN_GEMM2:
+		return "CUDA_FN_GEMM2";
+
+	case CUDA_FN_GEMV:
+		return "CUDA_FN_GEMV";
+
+	case CUDA_FN_AXPY:
+		return "CUDA_FN_AXPY";
+
+	case CUDA_FN_AXPBY:
+		return "CUDA_FN_AXPBY";
+
+	case CUDA_FN_SCAL:
+		return "CUDA_FN_SCAL";
+
+	case CUDA_FN_DOT:
+		return "CUDA_FN_DOT";
+
+	case CUDA_FN_ASUM:
+		return "CUDA_FN_ASUM";
+
+	case CUDA_FN_SCALE:
+		return "CUDA_FN_SCALE";
+
+	case CUDA_FN_ADD_SCALAR:
+		return "CUDA_FN_ADD_SCALAR";
+
+	case CUDA_FN_ADD:
+		return "CUDA_FN_ADD";
+
+	case CUDA_FN_ADD2:
+		return "CUDA_FN_ADD2";
+
+	case CUDA_FN_SUB:
+		return "CUDA_FN_SUB";
+
+	case CUDA_FN_MUL:
+		return "CUDA_FN_MUL";
+
+	case CUDA_FN_SUB_AND_DOT:
+		return "CUDA_FN_SUB_AND_DOT";
+
+	case CUDA_FN_MUL_SCALAR:
+		return "CUDA_FN_MUL_SCALAR";
+
+	case CUDA_FN_DIV:
+		return "CUDA_FN_DIV";
+
+	case CUDA_FN_ABS:
+		return "CUDA_FN_ABS";
+
+	case CUDA_FN_EXP:
+		return "CUDA_FN_EXP";
+
+	case CUDA_FN_LOG:
+		return "CUDA_FN_LOG";
+
+	case CUDA_FN_POWX:
+		return "CUDA_FN_POWX";
+
+	case CUDA_FN_SIGN:
+		return "CUDA_FN_SIGN";
+
+	case CUDA_FN_SQRT:
+		return "CUDA_FN_SQRT";
+
+	case CUDA_FN_RECIPROCOL:
+		return "CUDA_FN_RECIPROCOL";
+
+	case CUDA_FN_STUDENT:
+		return "CUDA_FN_STUDENT";
+
+	case CUDA_FN_LOGISTIC1:
+		return "CUDA_FN_LOGISTIC1";
+
+	case CUDA_FN_LOGISTIC2:
+		return "CUDA_FN_LOGISTIC2";
+
+	case CUDA_FN_COMPARE_SIGNS:
+		return "CUDA_FN_COMPARE_SIGNS";
+
+	case CUDA_FN_DENAN:
+		return "CUDA_FN_DENAN";
+
+	case CUDA_FN_MAXVAL:
+		return "CUDA_FN_MAXVAL";
+
+	case CUDA_FN_MINVAL:
+		return "CUDA_FN_MINVAL";
+
+	case CUDA_FN_MINMAXVAL:
+		return "CUDA_FN_MINMAXVAL";
+
+	case CUDA_FN_SUMSQ:
+		return "CUDA_FN_SUMSQ";
+
+	case CUDA_FN_SUMSQDIFF:
+		return "CUDA_FN_SUMSQDIFF";
+
+	case CUDA_FN_WIDTH:
+		return "CUDA_FN_WIDTH";
+
+	case CUDA_FN_CONTAINS_POINT:
+		return "CUDA_FN_CONTAINS_POINT";
+
+	case CUDA_FN_CHANNEL_MAX:
+		return "CUDA_FN_CHANNEL_MAX";
+
+	case CUDA_FN_CHANNEL_SUB:
+		return "CUDA_FN_CHANNEL_SUB";
+
+	case CUDA_FN_CHANNEL_SUM:
+		return "CUDA_FN_CHANNEL_SUM";
+
+	case CUDA_FN_CHANNEL_DIV:
+		return "CUDA_FN_CHANNEL_DIV";
+
+	case CUDA_FN_CHANNEL_MUL:
+		return "CUDA_FN_CHANNEL_MUL";
+
+	case CUDA_FN_CHANNEL_DOT:
+		return "CUDA_FN_CHANNEL_DOT";
+
+	case CUDA_FN_IM2COL:
+		return "CUDA_FN_IM2COL";
+
+	case CUDA_FN_IM2COL_ND:
+		return "CUDA_FN_IM2COL_ND";
+
+	case CUDA_FN_COL2IM:
+		return "CUDA_FN_COL2IM";
+
+	case CUDA_FN_COL2IM_ND:
+		return "CUDA_FN_COL2IM_ND";
+
+	case CUDA_RNG_SETSEED:
+		return "CUDA_RNG_SETSEED";
+
+	case CUDA_RNG_UNIFORM:
+		return "CUDA_RNG_UNIFORM";
+
+	case CUDA_RNG_GAUSSIAN:
+		return "CUDA_RNG_GAUSSIAN";
+
+	case CUDA_RNG_BERNOULLI:
+		return "CUDA_RNG_BERNOULLI";
+
+	case CUDA_FN_ACCURACY_FWD:
+		return "CUDA_FN_ACCURACY_FWD";
+
+	case CUDA_FN_BATCHREIDX_FWD:
+		return "CUDA_FN_BATCHREIDX_FWD";
+
+	case CUDA_FN_BATCHREIDX_BWD:
+		return "CUDA_FN_BATCHREIDX_BWD";
+
+	case CUDA_FN_EMBED_FWD:
+		return "CUDA_FN_EMBED_FWD";
+
+	case CUDA_FN_EMBED_BWD:
+		return "CUDA_FN_EMBED_BWD";
+
+	case CUDA_FN_POOL_FWD:
+		return "CUDA_FN_POOL_FWD";
+
+	case CUDA_FN_POOL_BWD:
+		return "CUDA_FN_POOL_BWD";
+
+	case CUDA_FN_UNPOOL_FWD:
+		return "CUDA_FN_UNPOOL_FWD";
+
+	case CUDA_FN_UNPOOL_BWD:
+		return "CUDA_FN_UNPOOL_BWD";
+
+	case CUDA_FN_TANH_FWD:
+		return "CUDA_FN_TANH_FWD";
+
+	case CUDA_FN_TANH_BWD:
+		return "CUDA_FN_TANH_BWD";
+
+	case CUDA_FN_SIGMOID_FWD:
+		return "CUDA_FN_SIGMOID_FWD";
+
+	case CUDA_FN_SIGMOID_BWD:
+		return "CUDA_FN_SIGMOID_BWD";
+
+	case CUDA_FN_SWISH_BWD:
+		return "CUDA_FN_SWISH_BWD";
+
+	case CUDA_FN_RELU_FWD:
+		return "CUDA_FN_RELU_FWD";
+
+	case CUDA_FN_RELU_BWD:
+		return "CUDA_FN_RELU_BWD";
+
+	case CUDA_FN_ELU_FWD:
+		return "CUDA_FN_ELU_FWD";
+
+	case CUDA_FN_ELU_BWD:
+		return "CUDA_FN_ELU_BWD";
+
+	case CUDA_FN_DROPOUT_FWD:
+		return "CUDA_FN_DROPOUT_FWD";
+
+	case CUDA_FN_DROPOUT_BWD:
+		return "CUDA_FN_DROPOUT_BWD";
+
+	case CUDA_FN_BNLL_FWD:
+		return "CUDA_FN_BNLL_FWD";
+
+	case CUDA_FN_BNLL_BWD:
+		return "CUDA_FN_BNLL_BWD";
+
+	case CUDA_FN_PRELU_FWD:
+		return "CUDA_FN_PRELU_FWD";
+
+	case CUDA_FN_PRELU_BWD:
+		return "CUDA_FN_PRELU_BWD";
+
+	case CUDA_FN_PRELU_BWD_PARAM:
+		return "CUDA_FN_PRELU_BWD_PARAM";
+
+	case CUDA_FN_SOFTMAXLOSS_FWD:
+		return "CUDA_FN_SOFTMAXLOSS_FWD";
+
+	case CUDA_FN_SOFTMAXLOSS_BWD:
+		return "CUDA_FN_SOFTMAXLOSS_BWD";
+
+	case CUDA_FN_MAX_FWD:
+		return "CUDA_FN_MAX_FWD";
+
+	case CUDA_FN_MAX_BWD:
+		return "CUDA_FN_MAX_BWD";
+
+	case CUDA_FN_CROP_FWD:
+		return "CUDA_FN_CROP_FWD";
+
+	case CUDA_FN_CROP_BWD:
+		return "CUDA_FN_CROP_BWD";
+
+	case CUDA_FN_CONCAT_FWD:
+		return "CUDA_FN_CONCAT_FWD";
+
+	case CUDA_FN_CONCAT_BWD:
+		return "CUDA_FN_CONCAT_BWD";
+
+	case CUDA_FN_SLICE_FWD:
+		return "CUDA_FN_SLICE_FWD";
+
+	case CUDA_FN_SLICE_BWD:
+		return "CUDA_FN_SLICE_BWD";
+
+	case CUDA_FN_TILE_FWD:
+		return "CUDA_FN_TILE_FWD";
+
+	case CUDA_FN_TILE_BWD:
+		return "CUDA_FN_TILE_BWD";
+
+	case CUDA_FN_BIAS_FWD:
+		return "CUDA_FN_BIAS_FWD";
+
+	case CUDA_FN_SCALE_FWD:
+		return "CUDA_FN_SCALE_FWD";
+
+	case CUDA_FN_THRESHOLD_FWD:
+		return "CUDA_FN_THRESHOLD_FWD";
+
+	case CUDA_FN_CLL_BWD:
+		return "CUDA_FN_CLL_BWD";
+
+	case CUDA_FN_LRN_FILLSCALE:
+		return "CUDA_FN_LRN_FILLSCALE";
+
+	case CUDA_FN_LRN_COMPUTEOUTPUT:
+		return "CUDA_FN_LRN_COMPUTEOUTPUT";
+
+	case CUDA_FN_LRN_COMPUTEDIFF:
+		return "CUDA_FN_LRN_COMPUTEDIFF";
+
+	case CUDA_FN_LSTM_FWD:
+		return "CUDA_FN_LSTM_FWD";
+
+	case CUDA_FN_LSTM_BWD:
+		return "CUDA_FN_LSTM_BWD";
+
+	case CUDA_FN_LSTM_UNIT_FWD:
+		return "CUDA_FN_LSTM_UNIT_FWD";
+
+	case CUDA_FN_LSTM_UNIT_BWD:
+		return "CUDA_FN_LSTM_UNIT_BWD";
+
+	case CUDA_FN_COEFF_SUM_FWD:
+		return "CUDA_FN_COEFF_SUM_FWD";
+
+	case CUDA_FN_COEFF_SUM_BWD:
+		return "CUDA_FN_COEFF_SUM_BWD";
+
+	case CUDA_FN_SIGMOID_CROSS_ENTROPY_FWD:
+		return "CUDA_FN_SIGMOID_CROSS_ENTROPY_FWD";
+
+	case CUDA_FN_SIGMOID_CROSS_ENTROPY_IGNORE:
+		return "CUDA_FN_SIGMOID_CROSS_ENTROPY_IGNORE";
+
+	case CUDA_FN_SGD_UPDATE:
+		return "CUDA_FN_SGD_UPDATE";
+
+	case CUDA_FN_NESTEROV_UPDATE:
+		return "CUDA_FN_NESTEROV_UPDATE";
+
+	case CUDA_FN_ADAGRAD_UPDATE:
+		return "CUDA_FN_ADAGRAD_UPDATE";
+
+	case CUDA_FN_ADADELTA_UPDATE:
+		return "CUDA_FN_ADADELTA_UPDATE";
+
+	case CUDA_FN_ADAM_UPDATE:
+		return "CUDA_FN_ADAM_UPDATE";
+
+	case CUDA_FN_RMSPROP_UPDATE:
+		return "CUDA_FN_RMSPROP_UPDATE";
+
+	case CUDA_FN_COMBINE_DATA:
+		return "CUDA_FN_COMBINE_DATA";
+
+	case CUDA_FN_MTX_SET_DIAGONAL:
+		return "CUDA_FN_MTX_SET_DIAGONAL";
+
+	case CUDA_FN_MTX_SET_DIAGONAL2:
+		return "CUDA_FN_MTX_SET_DIAGONAL2";
+
+	case CUDA_FN_MTX_ADD_VECTOR:
+		return "CUDA_FN_MTX_ADD_VECTOR";
+
+	case CUDA_FN_MTX_TRANSPOSE_OP:
+		return "CUDA_FN_MTX_TRANSPOSE_OP";
+
+	case CUDA_FN_MTX_AGGREGATE_COLS:
+		return "CUDA_FN_MTX_AGGREGATE_COLS";
+
+	case CUDA_FN_MTX_AGGREGATE_ROWS:
+		return "CUDA_FN_MTX_AGGREGATE_ROWS";
+
+	case CUDA_FN_MTX_TRANSPOSE:
+		return "CUDA_FN_MTX_TRANSPOSE";
+
+	case CUDA_FN_MTX_MEANCENTER_BY_COL:
+		return "CUDA_FN_MTX_MEANCENTER_BY_COL";
+
+	case CUDA_FN_MTX_EUCLIDEAN_DIST:
+		return "CUDA_FN_MTX_EUCLIDEAN_DIST";
+
+	case CUDA_FN_MTX_DOT:
+		return "CUDA_FN_MTX_DOT";
+
+	case CUDA_FN_TSNE_UPDATE:
+		return "CUDA_FN_TSNE_UPDATE";
+
+	case CUDA_FN_TSNE_UPDATE_GRAD:
+		return "CUDA_FN_TSNE_UPDATE_GRAD";
+
+	case CUDA_FN_TSNE_COMPUTE_EXACT_ERROR:
+		return "CUDA_FN_TSNE_COMPUTE_EXACT_ERROR";
+
+	case CUDA_FN_TSNE_COMPUTE_SQUARED_EUCLIDEAN_DISTANCE:
+		return "CUDA_FN_TSNE_COMPUTE_SQUARED_EUCLIDEAN_DISTANCE";
+
+	case CUDA_FN_TSNE_COMPUTE_Q_MATRIX:
+		return "CUDA_FN_TSNE_COMPUTE_Q_MATRIX";
+
+	case CUDA_FN_TSNE_COMPUTE_EXACT_GRADIENT:
+		return "CUDA_FN_TSNE_COMPUTE_EXACT_GRADIENT";
+
+	case CUDA_FN_TSNE_SYMMETRIZE_MATRIX:
+		return "CUDA_FN_TSNE_SYMMETRIZE_MATRIX";
+
+	case CUDA_FN_TSNE_COMPUTE_KNN_BOUNDS:
+		return "CUDA_FN_TSNE_COMPUTE_KNN_BOUNDS";
+
+	case CUDA_FN_GUASSIAN_BLUR:
+		return "CUDA_FN_GUASSIAN_BLUR";
+
+	case CUDA_FN_HAMMING_DIFF:
+		return "CUDA_FN_HAMMING_DIFF";
+
+	case CUDA_FN_CALC_BATCH_DIST:
+		return "CUDA_FN_CALC_BATCH_DIST";
+
+	default:
+		return "UNKNOWN";
+	}
+}
+#endif
+#endif
 
 template <class T>
 long Kernel<T>::Query(long lfnIdx, LONG* pfInput, long lCount, LPTSTR* ppOutput)
