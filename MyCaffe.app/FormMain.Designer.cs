@@ -109,21 +109,21 @@
             // createDatabaseToolStripMenuItem
             // 
             this.createDatabaseToolStripMenuItem.Name = "createDatabaseToolStripMenuItem";
-            this.createDatabaseToolStripMenuItem.Size = new System.Drawing.Size(161, 22);
+            this.createDatabaseToolStripMenuItem.Size = new System.Drawing.Size(160, 22);
             this.createDatabaseToolStripMenuItem.Text = "&Create Database";
             this.createDatabaseToolStripMenuItem.Click += new System.EventHandler(this.createDatabaseToolStripMenuItem_Click);
             // 
             // loadMNISTToolStripMenuItem
             // 
             this.loadMNISTToolStripMenuItem.Name = "loadMNISTToolStripMenuItem";
-            this.loadMNISTToolStripMenuItem.Size = new System.Drawing.Size(161, 22);
+            this.loadMNISTToolStripMenuItem.Size = new System.Drawing.Size(160, 22);
             this.loadMNISTToolStripMenuItem.Text = "Load MNIST...";
             this.loadMNISTToolStripMenuItem.Click += new System.EventHandler(this.loadMNISTToolStripMenuItem_Click);
             // 
             // loadCIFAR10ToolStripMenuItem
             // 
             this.loadCIFAR10ToolStripMenuItem.Name = "loadCIFAR10ToolStripMenuItem";
-            this.loadCIFAR10ToolStripMenuItem.Size = new System.Drawing.Size(161, 22);
+            this.loadCIFAR10ToolStripMenuItem.Size = new System.Drawing.Size(160, 22);
             this.loadCIFAR10ToolStripMenuItem.Text = "Load CIFAR-10...";
             this.loadCIFAR10ToolStripMenuItem.Click += new System.EventHandler(this.loadCIFAR10ToolStripMenuItem_Click);
             // 
@@ -144,7 +144,7 @@
             this.abortToolStripMenuItem,
             this.cancelToolStripMenuItem});
             this.testToolStripMenuItem.Name = "testToolStripMenuItem";
-            this.testToolStripMenuItem.Size = new System.Drawing.Size(41, 20);
+            this.testToolStripMenuItem.Size = new System.Drawing.Size(40, 20);
             this.testToolStripMenuItem.Text = "&Test";
             // 
             // runAutotestsToolStripMenuItem
@@ -274,7 +274,7 @@
             // localHelpToolStripMenuItem
             // 
             this.localHelpToolStripMenuItem.Name = "localHelpToolStripMenuItem";
-            this.localHelpToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.localHelpToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.localHelpToolStripMenuItem.Text = "Local Help";
             this.localHelpToolStripMenuItem.Click += new System.EventHandler(this.localHelpToolStripMenuItem_Click);
             // 
@@ -282,14 +282,14 @@
             // 
             this.onlineHelpToolStripMenuItem.Enabled = false;
             this.onlineHelpToolStripMenuItem.Name = "onlineHelpToolStripMenuItem";
-            this.onlineHelpToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.onlineHelpToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.onlineHelpToolStripMenuItem.Text = "Online Help";
             this.onlineHelpToolStripMenuItem.Click += new System.EventHandler(this.onlineHelpToolStripMenuItem_Click);
             // 
             // aboutToolStripMenuItem
             // 
             this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.aboutToolStripMenuItem.Text = "&About";
             this.aboutToolStripMenuItem.Click += new System.EventHandler(this.aboutToolStripMenuItem_Click);
             // 
