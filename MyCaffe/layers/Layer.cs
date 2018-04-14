@@ -157,10 +157,20 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of allocated but unshaped top (output) Blobs.</param>
         public void Setup(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            CheckBlobCounts(colBottom, colTop);
-            LayerSetUp(colBottom, colTop);
-            Reshape(colBottom, colTop);
-            SetLossWeights(colTop);
+            try
+            {
+                CheckBlobCounts(colBottom, colTop);
+                LayerSetUp(colBottom, colTop);
+                Reshape(colBottom, colTop);
+                SetLossWeights(colTop);
+            }
+            catch (Exception excpt)
+            {
+                if (m_param != null)
+                    throw new Exception("Layer: '" + m_param.name + "' (" + m_param.type.ToString() + ") Error: " + excpt.Message, excpt);
+                else
+                    throw excpt;
+            }
         }
 
         /// <summary>
@@ -240,8 +250,12 @@ namespace MyCaffe.layers
 
                 return dfLoss;
             }
-            finally
+            catch (Exception excpt)
             {
+                if (m_param != null)
+                    throw new Exception("Layer: '" + m_param.name + "' (" + m_param.type.ToString() + ") Error: " + excpt.Message, excpt);
+                else
+                    throw excpt;
             }
         }
 
@@ -271,11 +285,21 @@ namespace MyCaffe.layers
         /// the gradient of the error with respect to themselves after the Backward function is run.</param>
         public void Backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            m_swTiming.Restart();
-            backward(colTop, rgbPropagateDown, colBottom);
-            m_swTiming.Stop();
-            m_dfBackwardTiming = m_swTiming.Elapsed.TotalMilliseconds;
-            m_dfBackwardAverageTiming = getAveTiming(m_dfAverageInterval, m_dfBackwardTiming, m_dfBackwardAverageTiming);
+            try
+            {
+                m_swTiming.Restart();
+                backward(colTop, rgbPropagateDown, colBottom);
+                m_swTiming.Stop();
+                m_dfBackwardTiming = m_swTiming.Elapsed.TotalMilliseconds;
+                m_dfBackwardAverageTiming = getAveTiming(m_dfAverageInterval, m_dfBackwardTiming, m_dfBackwardAverageTiming);
+            }
+            catch (Exception excpt)
+            {
+                if (m_param != null)
+                    throw new Exception("Layer: '" + m_param.name + "' (" + m_param.type.ToString() + ") Error: " + excpt.Message, excpt);
+                else
+                    throw excpt;
+            }
         }
 
         /// <summary>
