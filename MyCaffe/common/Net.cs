@@ -114,6 +114,10 @@ namespace MyCaffe.common
         bool m_bDetectDetailedNans = false;
         Blob<T> m_blobWork = null;
 
+        /// Specifies the OnGetIteration event that fires when a layer needs to get the current iteration from the solver.
+        /// </summary>
+        public event EventHandler<GetIterationArgs> OnGetIteration;
+
         public enum BEST_RESULT_TYPE /** @private */
         {
             BY_CHANNEL,
@@ -334,6 +338,7 @@ namespace MyCaffe.common
                     Layer<T> layer1 = Layer<T>.Create(m_cuda, m_log, layer_paramEx, m_evtCancel, m_db, new TransferInput(getInput, setInput));
                     layer1.OnGetWorkspace += layer_OnGetWorkspace;
                     layer1.OnSetWorkspace += layer_OnSetWorkspace;
+                    layer1.OnGetIteration += layer_OnGetIteration;
                     m_rgLayers.Add(layer1);
 
                     m_rgstrLayerNames.Add(layer_param.name);
@@ -633,6 +638,12 @@ namespace MyCaffe.common
                 m_db = null;
                 throw excpt;
             }
+        }
+
+        private void layer_OnGetIteration(object sender, GetIterationArgs e)
+        {
+            if (OnGetIteration != null)
+                OnGetIteration(sender, e);
         }
 
         private void layer_OnSetWorkspace(object sender, WorkspaceArgs e)

@@ -463,4 +463,48 @@ namespace MyCaffe.common
         {
         }
     }
+
+    /// <summary>
+    /// The GetIterationArgs is sent bubbled up to the solver when a layer needs to know
+    /// the curret training iteration.
+    /// </summary>
+    public class GetIterationArgs : EventArgs
+    {
+        int m_nIteration = 0;
+        Phase m_phase = Phase.TRAIN;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        public GetIterationArgs()
+        {
+        }
+
+        /// <summary>
+        /// The SetIteration method is used to set the iteration and the phase.
+        /// </summary>
+        /// <param name="p">Specifies the phase associated with the iteration.</param>
+        /// <param name="nIteration">Specifies the iteration.</param>
+        public void SetIteration(Phase p, int nIteration)
+        {
+            m_phase = p;
+            m_nIteration = nIteration;
+        }
+
+        /// <summary>
+        /// Returns the iteration.
+        /// </summary>
+        public int Iteration
+        {
+            get { return m_nIteration; }
+        }
+
+        /// <summary>
+        /// Returns the phase.
+        /// </summary>
+        public Phase CurrentPhase
+        {
+            get { return m_phase; }
+        }
+    }
 }
