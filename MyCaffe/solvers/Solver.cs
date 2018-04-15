@@ -391,11 +391,17 @@ namespace MyCaffe.solvers
                 net_param.solver_count = m_nSolverCount;
                 net_param.solver_rank = m_nSolverRank;
                 m_net = new Net<T>(m_cuda, m_log, net_param, m_evtCancel, m_db, Phase.NONE, m_evtCompleted);
+                m_net.OnGetIteration += net_OnGetIteration;
             }
             catch(Exception excpt)
             {
                 throw new Exception("Initializing Training Net: " + excpt.Message);
             }
+        }
+
+        private void net_OnGetIteration(object sender, GetIterationArgs e)
+        {
+            e.SetIteration(Phase.TRAIN, m_nIter);
         }
 
         /// <summary>
