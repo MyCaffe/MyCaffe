@@ -90,6 +90,10 @@ namespace MyCaffe.layers
         /// Specifies the OnSetWorkspace event that fires when the setWorkspace() function is called by a layer to get a shareable workspace to conserve GPU memory.
         /// </summary>
         public event EventHandler<WorkspaceArgs> OnSetWorkspace;
+        /// <summary>
+        /// Specifies the OnGetIteration event that fires when a layer needs to get the current iteration from the solver.
+        /// </summary>
+        public event EventHandler<GetIterationArgs> OnGetIteration;
 
         /// <summary>
         /// The Layer constructor.
@@ -133,6 +137,23 @@ namespace MyCaffe.layers
         /// </summary>
         protected virtual void dispose()
         {
+        }
+
+        /// <summary>
+        /// Fires the OnGetIteration event to query the current iteration.
+        /// </summary>
+        /// <returns>The GetIterationArgs is returned if the event is connected, otherwise <i>null</i> is returned.</returns>
+        protected GetIterationArgs getCurrentIteration()
+        {
+            GetIterationArgs args = null;
+
+            if (OnGetIteration != null)
+            {
+                args = new GetIterationArgs();
+                OnGetIteration(this, args);               
+            }
+
+            return args;
         }
 
         /// <summary>
@@ -905,6 +926,9 @@ namespace MyCaffe.layers
 
                 case LayerParameter.LayerType.GRN:
                     return new GRNLayer<T>(cuda, log, p);
+
+                case LayerParameter.LayerType.GRADIENTSCALER:
+                    return new GradientScaleLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.HINGE_LOSS:
                     return new HingeLossLayer<T>(cuda, log, p);
