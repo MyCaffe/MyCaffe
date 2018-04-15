@@ -159,6 +159,10 @@ namespace MyCaffe.param
             /// </summary>
             FLATTEN,
             /// <summary>
+            /// Initializes a parameter for the GradScaleLayer (used for gradient reversal)
+            /// </summary>
+            GRADIENTSCALER,
+            /// <summary>
             /// Initializes a parameter for the GRNLayer (global response normalization L2)
             /// </summary>
             GRN,
@@ -763,6 +767,12 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new FlattenParameter();
                     break;
 
+                case LayerType.GRADIENTSCALER:
+                    expected_bottom.Add("input");
+                    expected_top.Add("identity");
+                    m_rgLayerParameters[lt] = new GradientScaleParameter();
+                    break;
+
                 case LayerType.GRN:
                     expected_bottom.Add("input");
                     expected_top.Add("grn");
@@ -1309,6 +1319,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.GSL
+        /// </summary>
+        public GradientScaleParameter gradient_scale_param
+        {
+            get { return (GradientScaleParameter)m_rgLayerParameters[LayerType.GRADIENTSCALER]; }
+            set { m_rgLayerParameters[LayerType.GRADIENTSCALER] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.HINGE_LOSS
         /// </summary>
         public HingeLossParameter hinge_loss_param
@@ -1772,6 +1791,9 @@ namespace MyCaffe.param
                 case LayerType.GRN:
                     return "GRN";
 
+                case LayerType.GRADIENTSCALER:
+                    return "GSL";
+
                 case LayerType.HINGE_LOSS:
                     return "HingeLoss";
 
@@ -1970,6 +1992,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(embed_param, "embed_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(exp_param, "exp_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(flatten_param, "flatten_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(gradient_scale_param, "gradient_scale_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(hinge_loss_param, "hinge_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(infogain_loss_param, "infogain_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(inner_product_param, "inner_product_param"));
@@ -2144,6 +2167,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("flatten_param")) != null)
                 p.flatten_param = FlattenParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("gradient_scale_param")) != null)
+                p.gradient_scale_param = GradientScaleParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("hinge_loss_param")) != null)
                 p.hinge_loss_param = HingeLossParameter.FromProto(rpp);
@@ -2344,6 +2370,9 @@ namespace MyCaffe.param
 
                 case "grn":
                     return LayerType.GRN;
+
+                case "gsl":
+                    return LayerType.GRADIENTSCALER;
 
 //                case "hdf5data":
 //                    return LayerType.HDF5DATA;

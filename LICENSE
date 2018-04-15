@@ -186,7 +186,7 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright 2017 SignalPOP LLC
+   Copyright 2017-2018 SignalPOP LLC
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -248,6 +248,10 @@
 	or otherwise, the contributor releases their content to the
 	license and copyright terms herein.
   ** end Caffe License **
+
+  Some parts of MyCaffe are derived from forks off the Caffe source 
+  (such as the GradientScalerLayer, forked at https://github.com/ddtm/caffe)
+  which are also bound by the Caffe License above.
 
   Some parts of MyCaffe are derived from the t-SNE algorithm developed by Laurens
   van der Maaten.  The t-SNE license is as follows:

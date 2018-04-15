@@ -1249,6 +1249,60 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestGradientScaleSetup()
+        {
+            GradientScaleLayerTest test = new GradientScaleLayerTest();
+
+            try
+            {
+                foreach (IGradientScaleLayerTest t in test.Tests)
+                {
+                    t.TestSetup();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientScale()
+        {
+            GradientScaleLayerTest test = new GradientScaleLayerTest();
+
+            try
+            {
+                foreach (IGradientScaleLayerTest t in test.Tests)
+                {
+                    t.TestForward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientScaleGradient()
+        {
+            GradientScaleLayerTest test = new GradientScaleLayerTest();
+
+            try
+            {
+                foreach (IGradientScaleLayerTest t in test.Tests)
+                {
+                    t.TestGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface INeuronLayerTest : ITest
@@ -2646,6 +2700,149 @@ namespace MyCaffe.test
 
                 m_log.EXPECT_EQUAL<float>(dfPreluDiff1, dfPreluDiff2, "The prelu diffs do not match at " + i.ToString());
             }
+        }
+    }
+
+    class GradientScaleLayerTest : TestBase
+    {
+        public GradientScaleLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+            : base("GradientScale Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
+        {
+        }
+
+        protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
+        {
+            if (dt == common.DataType.DOUBLE)
+                return new GradientScaleLayerTest<double>(strName, nDeviceID, engine);
+            else
+                return new GradientScaleLayerTest<float>(strName, nDeviceID, engine);
+        }
+    }
+
+    interface IGradientScaleLayerTest : INeuronLayerTest
+    {
+        void TestSetup();
+    }
+
+    class GradientScaleLayerTest<T> : TestEx<T>, IGradientScaleLayerTest
+    {
+        CancelEvent m_evtCancel = new CancelEvent();
+        Blob<T> m_blobTemp;
+        Blob<T> m_blobCompare;
+        int m_nIteration = 2;
+        bool m_bGetIterationHit = false;
+
+        public GradientScaleLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
+            : base(strName, new List<int> { 2, 3, 4, 5 }, nDeviceID)
+        {
+            m_blobTemp = new Blob<T>(m_cuda, m_log, m_blob_bottom);
+            m_blobCompare = new Blob<T>(m_cuda, m_log, m_blob_bottom);
+            m_engine = engine;
+        }
+
+        protected override void dispose()
+        {
+            m_blobTemp.Dispose();
+            m_blobCompare.Dispose();
+            m_evtCancel.Dispose();
+            base.dispose();
+        }
+
+        public void TestSetup()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRADIENTSCALER);
+
+            m_log.CHECK(p.type == LayerParameter.LayerType.GRADIENTSCALER, "Wrong type in parameter, expected GRADIENTSCALER");
+            m_log.CHECK(p.gradient_scale_param != null, "The gradient_scale_param should not be null.");
+            m_log.CHECK_EQ(p.gradient_scale_param.lower_bound, 0, "The gradient scale layer lower bound should be 0");
+            m_log.CHECK_EQ(p.gradient_scale_param.upper_bound, 1, "The gradient scale layer upper bound should be 1");
+            m_log.CHECK_EQ(p.gradient_scale_param.alpha, 10, "The gradient scale layer alpha should be 10");
+            m_log.CHECK_EQ(p.gradient_scale_param.max_iter, 1, "The gradient scale layer max iter should be 1");
+
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_evtCancel);
+            layer.OnGetIteration += Layer_OnGetIteration;
+
+            m_log.CHECK(layer.type == LayerParameter.LayerType.GRADIENTSCALER, "Wrong type in layer, expected GRADIENTSCALER");
+            p = layer.layer_param;
+
+            m_log.CHECK(p.type == LayerParameter.LayerType.GRADIENTSCALER, "Wrong type in parameter, expected GRADIENTSCALER");
+            m_log.CHECK(p.gradient_scale_param != null, "The gradient_scale_param should not be null.");
+            m_log.CHECK_EQ(p.gradient_scale_param.lower_bound, 0, "The gradient scale layer lower bound should be 0");
+            m_log.CHECK_EQ(p.gradient_scale_param.upper_bound, 1, "The gradient scale layer upper bound should be 1");
+            m_log.CHECK_EQ(p.gradient_scale_param.alpha, 10, "The gradient scale layer alpha should be 10");
+            m_log.CHECK_EQ(p.gradient_scale_param.max_iter, 1, "The gradient scale layer max iter should be 1");
+
+            m_bGetIterationHit = false;
+            layer.Setup(BottomVec, TopVec);
+            m_log.CHECK(m_bGetIterationHit == true, "The OnGetIteration event was not fired!");
+        }
+
+        public void TestForward()
+        {
+            m_blobTemp.CopyFrom(m_blob_bottom, false, true);
+            m_blobTemp.CopyFrom(m_blob_bottom, true, true);
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRADIENTSCALER);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_evtCancel);
+            layer.OnGetIteration += Layer_OnGetIteration;
+
+            m_bGetIterationHit = false;
+            layer.Setup(BottomVec, TopVec);
+            m_log.CHECK(m_bGetIterationHit == true, "The OnGetIteration event was not fired!");
+
+            layer.Forward(BottomVec, TopVec);
+
+            int nCount = m_blobTemp.count();
+            m_cuda.sub(nCount, m_blob_top.gpu_data, m_blobTemp.gpu_data, m_blobCompare.mutable_gpu_data);
+            m_cuda.sub(nCount, m_blob_top.gpu_diff, m_blobTemp.gpu_diff, m_blobCompare.mutable_gpu_diff);
+
+            // There should be no change as the gradient scalar performs an 
+            // identity transform on the forward pass.
+            double dfDiff1 = convert(m_blobCompare.asum_data());
+            m_log.CHECK_EQ(dfDiff1, 0, "The data asum should be 0.0");
+
+            double dfDiff2 = convert(m_blobCompare.asum_diff());
+            m_log.CHECK_EQ(dfDiff2, 0, "The data asum should be 0.0");
+        }
+
+        private void Layer_OnGetIteration(object sender, GetIterationArgs e)
+        {
+            e.SetIteration(Phase.TRAIN, m_nIteration);
+            m_bGetIterationHit = true;
+        }
+
+        public void TestGradient()
+        {
+            Top.ReshapeLike(Bottom);
+            m_filler.Fill(Top);
+            m_cuda.copy(Top.count(), Top.gpu_data, Top.mutable_gpu_diff);
+            m_blobTemp.CopyFrom(Top, false, true);
+            m_blobTemp.CopyFrom(Top, true, true);
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.GRADIENTSCALER);
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_evtCancel);
+            layer.OnGetIteration += Layer_OnGetIteration;
+
+            m_bGetIterationHit = false;
+            layer.Setup(BottomVec, TopVec);
+            m_log.CHECK(m_bGetIterationHit == true, "The OnGetIteration event was not fired!");
+
+            layer.Forward(BottomVec, TopVec);
+            layer.Backward(TopVec, new List<bool> { true }, BottomVec);
+
+            // Check values.
+            double dfLowerBound = p.gradient_scale_param.lower_bound;
+            double dfHeight = p.gradient_scale_param.upper_bound - dfLowerBound;
+            double dfAlpha = p.gradient_scale_param.alpha;
+            double dfProgress = Math.Min(1, (double)m_nIteration / p.gradient_scale_param.max_iter);
+            double dfCoeff = 2.0 * dfHeight / (1.0 + Math.Exp(-dfAlpha * dfProgress)) - dfHeight + dfLowerBound;
+
+            int nCount = m_blobTemp.count();
+            // The diff should have been scaled by the -dfCoeff value.
+            m_blobTemp.scale_diff(-dfCoeff);
+            m_cuda.sub(nCount, m_blob_bottom.gpu_diff, m_blobTemp.gpu_diff, m_blobCompare.mutable_gpu_diff);
+            double dfDiff2 = convert(m_blobCompare.asum_diff());
+            m_log.CHECK_EQ(dfDiff2, 0, "The data asum should be 0.0");
         }
     }
 }

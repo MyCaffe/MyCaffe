@@ -95,6 +95,7 @@
     <Compile Include="fillers\UniformFiller.cs" />
     <Compile Include="fillers\XavierFiller.cs" />
     <Compile Include="layers\CropLayer.cs" />
+    <Compile Include="layers\GradientScaleLayer.cs" />
     <Compile Include="layers\SwishLayer.cs" />
     <Compile Include="layers\MemoryDataLayer.cs" />
     <Compile Include="layers\DebugLayer.cs" />
@@ -178,6 +179,7 @@
     </Compile>
     <Compile Include="param\BinaryHashParameter.cs" />
     <Compile Include="param\CropParameter.cs" />
+    <Compile Include="param\GradientScaleParameter.cs" />
     <Compile Include="param\MemoryDataParameter.cs" />
     <Compile Include="param\DebugParameter.cs" />
     <Compile Include="param\KnnParameter.cs" />
