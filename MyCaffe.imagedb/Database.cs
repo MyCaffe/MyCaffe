@@ -3505,8 +3505,12 @@ namespace MyCaffe.imagedb
                 entities.Database.ExecuteSqlCommand(strCmd);
 
                 DeleteFiles del = new DeleteFiles(log, evtCancel);
-                del.DeleteDirectory(getImagePathBase(srcTesting.Name, entities));
-                del.DeleteDirectory(getImagePathBase(srcTraining.Name, entities));
+
+                if (srcTesting != null && !string.IsNullOrEmpty(srcTesting.Name))
+                    del.DeleteDirectory(getImagePathBase(srcTesting.Name, entities));
+
+                if (srcTraining != null && !string.IsNullOrEmpty(srcTraining.Name))
+                    del.DeleteDirectory(getImagePathBase(srcTraining.Name, entities));
             }
         }
 
