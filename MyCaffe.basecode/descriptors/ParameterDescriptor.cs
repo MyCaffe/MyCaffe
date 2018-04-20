@@ -55,11 +55,12 @@ namespace MyCaffe.basecode.descriptors
         }
 
         /// <summary>
-        /// Return the value of the item.
+        /// Get/set the value of the item.
         /// </summary>
         public string Value
         {
             get { return m_strValue; }
+            set { m_strValue = value; }
         }
     }
 }
