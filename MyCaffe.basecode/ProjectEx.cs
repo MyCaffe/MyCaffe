@@ -581,6 +581,34 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Get/set the dataset ID of the target dataset (if exists), otherwise return 0.
+        /// </summary>
+        public int TargetDatasetID
+        {
+            get
+            {
+                ParameterDescriptor p = m_project.Parameters.Find("TargetDatasetID");
+                if (p == null)
+                    return 0;
+
+                int nID;
+                if (!int.TryParse(p.Value, out nID))
+                    return 0;
+
+                return nID;
+            }
+
+            set
+            {
+                ParameterDescriptor p = m_project.Parameters.Find("TargetDatasetID");
+                if (p == null)
+                    m_project.Parameters.Add(new ParameterDescriptor(0, "TargetDatasetID", value.ToString()));
+                else
+                    p.Value = value.ToString();
+            }
+        }
+
+        /// <summary>
         /// Return whether or not testing results exist.
         /// </summary>
         public bool ExistTestResults
