@@ -35,9 +35,9 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Specifies optional slice points.
+        /// Specifies optional slice points which indicate the indexes in the selected dimensions (the number of indices must be equal to the number of top blobs minus one).
         /// </summary>
-        [Description("Specifies the optional slice points.")]
+        [Description("Specifies the optional slice points which indicate the indexes in the selected dimensions (the number of indices must be equal to the number of top blobs minus one).")]
         public List<uint> slice_point
         {
             get { return m_rgSlicePoint; }
