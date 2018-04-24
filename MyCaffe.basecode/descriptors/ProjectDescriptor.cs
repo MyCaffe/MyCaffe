@@ -14,6 +14,7 @@ namespace MyCaffe.basecode.descriptors
     public class ProjectDescriptor : BaseDescriptor
     {
         DatasetDescriptor m_dataset;
+        DatasetDescriptor m_datasetTarget = null;
         GroupDescriptor m_group;
         SettingsCaffe m_settings = new SettingsCaffe();
         string m_strSolverName;
@@ -81,6 +82,7 @@ namespace MyCaffe.basecode.descriptors
         public ProjectDescriptor(ProjectDescriptor p)
             : this(p.ID, p.Name, p.Dataset, p.Group, p.m_strSolverName, p.SolverDescription, p.m_strModelName, p.ModelDescription, p.GpuOverride, p.TotalIterations, p.Active, p.Settings, p.Owner)
         {
+            m_datasetTarget = p.DatasetTarget;
         }
 
         /// <summary>
@@ -100,6 +102,17 @@ namespace MyCaffe.basecode.descriptors
         {
             get { return m_dataset; }
             set { m_dataset = value; }
+        }
+
+
+        /// <summary>
+        /// Get/set the secondary 'target' dataset (if used).
+        /// </summary>
+        [Browsable(false)]
+        public DatasetDescriptor DatasetTarget
+        {
+            get { return m_datasetTarget; }
+            set { m_datasetTarget = value; }
         }
 
         /// <summary>
