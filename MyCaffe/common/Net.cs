@@ -381,6 +381,10 @@ namespace MyCaffe.common
                     int num_top = layer_param.top.Count;
                     for (int top_id = 0; top_id < num_top; top_id++)
                     {
+                        // Ignore top's named 'null'
+                        if (param.layer[layer_id] != null && param.layer[layer_id].top[top_id] == "null")
+                            continue;
+
                         AppendTop(param, layer_id, top_id, available_blobs, blob_name_to_idx);
 
                         // Collect Input layer tops as Net inputs.
