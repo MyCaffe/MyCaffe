@@ -923,7 +923,8 @@ namespace MyCaffe.param
 
                 case LayerType.SLICE:
                     expected_bottom.Add("input");
-                    expected_top.Add("slice");
+                    expected_top.Add("slice1");
+                    expected_top.Add("slice2");
                     m_rgLayerParameters[lt] = new SliceParameter();
                     break;
 
@@ -943,8 +944,8 @@ namespace MyCaffe.param
 
                 case LayerType.SPLIT:
                     expected_bottom.Add("input");
-                    expected_top.Add("splt1");
-                    expected_top.Add("splt2");
+                    expected_top.Add("split1");
+                    expected_top.Add("split2");
                     break;
 
                 case LayerType.SPP:
