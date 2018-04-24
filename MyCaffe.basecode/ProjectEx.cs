@@ -71,6 +71,8 @@ namespace MyCaffe.basecode
             RawProtoCollection col = proto.FindChildren("layer");
             string strSrcTest = null;
             string strSrcTrain = null;
+            string strSrcTest2 = null;
+            string strSrcTrain2 = null;
 
             foreach (RawProto rp in col)
             {
@@ -80,6 +82,12 @@ namespace MyCaffe.basecode
                     RawProto protoParam = rp.FindChild("data_param");
                     if (protoParam != null)
                     {
+                        bool bPrimary = true;
+
+                        RawProto protoPrimary = protoParam.FindChild("primary_data");
+                        if (protoPrimary != null)
+                            bPrimary = bool.Parse(protoPrimary.Value);
+
                         RawProto protoSrc = protoParam.FindChild("source");
                         if (protoSrc != null)
                         {
@@ -89,10 +97,20 @@ namespace MyCaffe.basecode
                                 RawProto protoPhase = protoInclude.FindChild("phase");
                                 if (protoPhase != null)
                                 {
-                                    if (protoPhase.Value == "TRAIN")
-                                        strSrcTrain = protoSrc.Value;
-                                    else if (protoPhase.Value == "TEST")
-                                        strSrcTest = protoSrc.Value;
+                                    if (bPrimary)
+                                    {
+                                        if (protoPhase.Value == "TRAIN")
+                                            strSrcTrain = protoSrc.Value;
+                                        else if (protoPhase.Value == "TEST")
+                                            strSrcTest = protoSrc.Value;
+                                    }
+                                    else
+                                    {
+                                        if (protoPhase.Value == "TRAIN")
+                                            strSrcTrain2 = protoSrc.Value;
+                                        else if (protoPhase.Value == "TEST")
+                                            strSrcTest2 = protoSrc.Value;
+                                    }
                                 }
                             }
                         }
@@ -111,6 +129,24 @@ namespace MyCaffe.basecode
                 bool bSaveImagesToFile = (m_project.Dataset.TrainingSource != null) ? m_project.Dataset.TrainingSource.SaveImagesToFile : m_bDefaultSaveImagesToFile;
                 m_project.Dataset.TrainingSource = new SourceDescriptor(strSrcTrain, bSaveImagesToFile);
             }
+
+            if (strSrcTest2 != null || strSrcTrain2 != null)
+            {
+                if (m_project.DatasetTarget == null)
+                    m_project.DatasetTarget = new DatasetDescriptor(m_project.Dataset.Name + "_tgt");
+
+                if (strSrcTest2 != null)
+                {
+                    bool bSaveImagesToFile = (m_project.DatasetTarget.TestingSource != null) ? m_project.DatasetTarget.TestingSource.SaveImagesToFile : m_bDefaultSaveImagesToFile;
+                    m_project.Dataset.TestingSource = new SourceDescriptor(strSrcTest2, bSaveImagesToFile);
+                }
+
+                if (strSrcTrain2 != null)
+                {
+                    bool bSaveImagesToFile = (m_project.DatasetTarget.TrainingSource != null) ? m_project.DatasetTarget.TrainingSource.SaveImagesToFile : m_bDefaultSaveImagesToFile;
+                    m_project.Dataset.TrainingSource = new SourceDescriptor(strSrcTrain2, bSaveImagesToFile);
+                }
+            }
         }
 
         private void setDatasetToProto(RawProto proto)
@@ -118,6 +154,8 @@ namespace MyCaffe.basecode
             RawProtoCollection col = proto.FindChildren("layer");
             string strSrcTest = m_project.Dataset.TestingSourceName;
             string strSrcTrain = m_project.Dataset.TrainingSourceName;
+            string strSrcTest2 = (m_project.DatasetTarget != null) ? m_project.DatasetTarget.TestingSourceName : null;
+            string strSrcTrain2 = (m_project.DatasetTarget != null ) ? m_project.DatasetTarget.TrainingSourceName : null;
 
             foreach (RawProto rp in col)
             {
@@ -127,6 +165,12 @@ namespace MyCaffe.basecode
                     RawProto protoParam = rp.FindChild("data_param");
                     if (protoParam != null)
                     {
+                        bool bPrimary = true;
+
+                        RawProto protoPrimary = protoParam.FindChild("primary_data");
+                        if (protoPrimary != null)
+                            bPrimary = bool.Parse(protoPrimary.Value);
+
                         RawProto protoSrc = protoParam.FindChild("source");
                         if (protoSrc != null)
                         {
@@ -136,15 +180,31 @@ namespace MyCaffe.basecode
                                 RawProto protoPhase = protoInclude.FindChild("phase");
                                 if (protoPhase != null)
                                 {
-                                    if (protoPhase.Value == "TRAIN")
+                                    if (bPrimary)
                                     {
-                                        if (strSrcTrain != null)
-                                            protoSrc.Value = strSrcTrain;
+                                        if (protoPhase.Value == "TRAIN")
+                                        {
+                                            if (strSrcTrain != null)
+                                                protoSrc.Value = strSrcTrain;
+                                        }
+                                        else if (protoPhase.Value == "TEST")
+                                        {
+                                            if (strSrcTest != null)
+                                                protoSrc.Value = strSrcTest;
+                                        }
                                     }
-                                    else if (protoPhase.Value == "TEST")
+                                    else
                                     {
-                                        if (strSrcTest != null)
-                                            protoSrc.Value = strSrcTest;
+                                        if (protoPhase.Value == "TRAIN")
+                                        {
+                                            if (strSrcTrain2 != null)
+                                                protoSrc.Value = strSrcTrain2;
+                                        }
+                                        else if (protoPhase.Value == "TEST")
+                                        {
+                                            if (strSrcTest2 != null)
+                                                protoSrc.Value = strSrcTest2;
+                                        }
                                     }
                                 }
                             }
@@ -425,7 +485,7 @@ namespace MyCaffe.basecode
                 {
                     m_protoSolver = RawProto.Parse(value);
 
-                    if (String.IsNullOrEmpty(m_project.Dataset.Name))
+                    if (string.IsNullOrEmpty(m_project.Dataset.Name))
                         setDatasetFromProto(m_protoSolver);
                     else
                         setDatasetToProto(m_protoSolver);
@@ -452,7 +512,7 @@ namespace MyCaffe.basecode
                 {
                     m_protoModel = RawProto.Parse(value);
 
-                    if (String.IsNullOrEmpty(m_project.Dataset.Name))
+                    if (string.IsNullOrEmpty(m_project.Dataset.Name))
                         setDatasetFromProto(m_protoModel);
                     else
                         setDatasetToProto(m_protoModel);
@@ -904,6 +964,38 @@ namespace MyCaffe.basecode
             return strLayer + " { name: \"accuracy\" type: \"Accuracy\" bottom: \"" + strBottom + "\" bottom: \"label\" top: \"accuracy\" include { phase: TEST } accuracy_param { top_k: 1 } }";
         }
 
+        private static List<Phase> getPhases(RawProtoCollection col)
+        {
+            List<Phase> rgPhases = new List<Phase>();
+
+            foreach (RawProto proto1 in col)
+            {
+                RawProto proto = proto1.FindChild("phase");
+                if (proto == null)
+                    continue;
+
+                if (proto.Value == Phase.RUN.ToString() || proto.Value == Phase.ALL.ToString())
+                {
+                    if (!rgPhases.Contains(Phase.RUN))
+                        rgPhases.Add(Phase.RUN);
+                }
+
+                if (proto.Value == Phase.TEST.ToString() || proto.Value == Phase.ALL.ToString())
+                {
+                    if (!rgPhases.Contains(Phase.TEST))
+                        rgPhases.Add(Phase.TEST);
+                }
+
+                if (proto.Value == Phase.TRAIN.ToString() || proto.Value == Phase.ALL.ToString())
+                {
+                    if (!rgPhases.Contains(Phase.TRAIN))
+                        rgPhases.Add(Phase.TRAIN);
+                }
+            }
+
+            return rgPhases;
+        }
+
         /// <summary>
         /// Create a model description as a RawProto for running the Project.
         /// </summary>
@@ -981,19 +1073,21 @@ namespace MyCaffe.basecode
                 {
                     string strType = type.Value.ToLower();
                     bool bKeepLayer = false;
-                    RawProto phase = null;
+                    List<Phase> rgPhaseInclude = new List<Phase>();
+                    List<Phase> rgPhaseExclude = new List<Phase>();
 
-                    RawProto include = layer.FindChild("include");
-                    if (include != null)
-                        phase = include.FindChild("phase");
+                    RawProtoCollection rgInclude = layer.FindChildren("include");
+                    if (rgInclude != null)
+                        rgPhaseInclude = getPhases(rgInclude);
+
+                    RawProtoCollection rgExclude = layer.FindChildren("exclude");
+                    if (rgExclude != null)
+                        rgPhaseExclude = getPhases(rgExclude);
 
                     if (strType == "data" || strType == "batchdata")
                     {
-                        if (phase != null)
-                        {
-                            if (phase.Value == "TEST")
-                                protoTransform = layer.FindChild("transform_param");
-                        }
+                        if (rgPhaseInclude.Contains(Phase.TEST))
+                            protoTransform = layer.FindChild("transform_param");
                     }
                     else if (strType == "softmaxwithloss")
                     {
@@ -1018,8 +1112,12 @@ namespace MyCaffe.basecode
                     {
                         rgRemove.Add(layer);
                     }
+                    else if (rgPhaseExclude.Contains(Phase.RUN))
+                    {
+                        rgRemove.Add(layer);
+                    }
 
-                    if (!bKeepLayer && phase != null && (phase.Value == "TEST" || phase.Value == "TRAIN"))
+                    if (!bKeepLayer && ((rgPhaseInclude.Contains(Phase.TEST) || rgPhaseInclude.Contains(Phase.TRAIN)) && !rgPhaseInclude.Contains(Phase.RUN)))
                     {
                         rgRemove.Add(layer);
                     }
@@ -1069,7 +1167,7 @@ namespace MyCaffe.basecode
                     if (type != null)
                         type.Value = "Softmax";
 
-                    protoSoftMaxLoss.RemoveChild("bottom", "label");
+                    protoSoftMaxLoss.RemoveChild("bottom", "label", true);
                 }
             }
 
