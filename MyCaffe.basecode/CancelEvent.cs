@@ -33,11 +33,18 @@ namespace MyCaffe.basecode
         /// <summary>
         /// The CancelEvent constructor that accepts a global name.
         /// </summary>
-        /// <param name="strGlobalName">Specifies the global name.</param>
+        /// <param name="strGlobalName">Specifies the global name.  If this parameter is <i>null</i>, the constructor acts like the default constructor.</param>
         public CancelEvent(string strGlobalName)
         {
-            m_strName = strGlobalName;
-            m_hOriginalCancel = EventWaitHandle.OpenExisting(strGlobalName, System.Security.AccessControl.EventWaitHandleRights.Synchronize | System.Security.AccessControl.EventWaitHandleRights.Modify);
+            if (strGlobalName == null)
+            {
+                m_hOriginalCancel = new EventWaitHandle(false, EventResetMode.ManualReset, m_strName);
+            }
+            else
+            {
+                m_strName = strGlobalName;
+                m_hOriginalCancel = EventWaitHandle.OpenExisting(strGlobalName, System.Security.AccessControl.EventWaitHandleRights.Synchronize | System.Security.AccessControl.EventWaitHandleRights.Modify);
+            }
         }
 
         /// <summary>
