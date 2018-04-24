@@ -19,8 +19,11 @@ namespace MyCaffe.test
     {
         public void TestInitialization(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
+            Log log = new Log("Test primary dataset");
+            log.EnableTrace = true;
+
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
-            IXImageDatabase db = new MyCaffeImageDatabase();
+            IXImageDatabase db = new MyCaffeImageDatabase(log);
             Stopwatch sw = new Stopwatch();
             string str;
 
@@ -50,6 +53,45 @@ namespace MyCaffe.test
             sw.Reset();
             sw.Start();
 
+            IDisposable idisp = db as IDisposable;
+            if (idisp != null)
+                idisp.Dispose();
+
+            str = sw.ElapsedMilliseconds.ToString();
+            Trace.WriteLine("Dispose Time: " + str + " ms.");
+        }
+
+        public void TestLoadSecondaryDataset(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
+        {
+            Log log = new Log("Test secondary dataset");
+            log.EnableTrace = true;
+
+            IXImageDatabase db = new MyCaffeImageDatabase(log);
+            Stopwatch sw = new Stopwatch();
+            string strDs = "MNIST";
+            string strDs2 = "CIFAR-10";
+            string str;
+
+            SettingsCaffe settings = new SettingsCaffe();
+            settings.ImageDbLoadMethod = loadMethod;
+            settings.ImageDbLoadLimit = nLoadLimit;
+            
+            sw.Start();
+            db.InitializeWithDsName(settings, strDs);
+            str = sw.ElapsedMilliseconds.ToString();
+            Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
+
+            sw.Restart();
+            db.LoadDatasetByName(strDs2);
+            str = sw.ElapsedMilliseconds.ToString();
+            Trace.WriteLine(strDs2 + " Initialization Time: " + str + " ms.");
+
+            sw.Restart();
+            db.CleanUp();
+            str = sw.ElapsedMilliseconds.ToString();
+            Trace.WriteLine("Cleanup Time: " + str + " ms.");
+
+            sw.Restart();
             IDisposable idisp = db as IDisposable;
             if (idisp != null)
                 idisp.Dispose();
@@ -161,6 +203,18 @@ namespace MyCaffe.test
         public void TestInitializationLoadLimit()
         {
             TestInitialization(IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
+        }
+
+        [TestMethod]
+        public void TestLoadSecondaryLoadAll()
+        {
+            TestLoadSecondaryDataset(IMAGEDB_LOAD_METHOD.LOAD_ALL, 0);
+        }
+
+        [TestMethod]
+        public void TestLoadSecondaryLoadOnDemand()
+        {
+            TestLoadSecondaryDataset(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
         }
 
         public void TestQueryRandom(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
