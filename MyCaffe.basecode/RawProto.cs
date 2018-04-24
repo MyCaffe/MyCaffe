@@ -193,18 +193,22 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="strName">Specifes the name of the node.</param>
         /// <param name="strValue">Specifies the value to match.</param>
+        /// <param name="bContains">Optionally, specifies whether just 'containing' the value (as opposed to equallying the value) is enough to delete the bottom.</param>
         /// <returns>If the named node is found and its value matches <i>strValue</i>, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
-        public bool RemoveChild(string strName, string strValue)
+        public bool RemoveChild(string strName, string strValue, bool bContains = false)
         {
             int nIdx = -1;
 
             for (int i = 0; i < m_rgChildren.Count; i++)
             {
-                if (m_rgChildren[i].Name == strName &&
-                    m_rgChildren[i].Value == strValue)
+                if (m_rgChildren[i].Name == strName)
                 {
-                    nIdx = i;
-                    break;
+                    if ((bContains && m_rgChildren[i].Value.Contains(strValue)) ||
+                        (!bContains && m_rgChildren[i].Value == strValue))
+                    {
+                        nIdx = i;
+                        break;
+                    }
                 }
             }
 
