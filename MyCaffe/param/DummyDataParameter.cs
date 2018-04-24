@@ -22,10 +22,21 @@ namespace MyCaffe.param
         List<uint> m_rgChannels = new List<uint>();
         List<uint> m_rgHeight = new List<uint>();
         List<uint> m_rgWidth = new List<uint>();
+        bool m_bPrimaryData = true;
 
         /** @copydoc LayerParameterBase */
         public DummyDataParameter()
         {
+        }
+
+        /// <summary>
+        /// (\b optional, default = true) Specifies whether or not the data is the primary datset as opposed to a secondary, target dataset.
+        /// </summary>
+        [Category("Data Selection"), Description("Specifies whether or not this data is the primary dataset as opposed to the target dataset.  By default, this is set to 'true'.")]
+        public bool primary_data
+        {
+            get { return m_bPrimaryData; }
+            set { m_bPrimaryData = value; }
         }
 
         /// <summary>
@@ -114,6 +125,7 @@ namespace MyCaffe.param
             m_rgChannels = Utility.Clone<uint>(p.m_rgChannels);
             m_rgHeight = Utility.Clone<uint>(p.m_rgHeight);
             m_rgWidth = Utility.Clone<uint>(p.m_rgWidth);
+            m_bPrimaryData = p.m_bPrimaryData;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -144,6 +156,9 @@ namespace MyCaffe.param
             rgChildren.Add<uint>("height", height);
             rgChildren.Add<uint>("width", width);
 
+            if (primary_data == false)
+                rgChildren.Add("primary_data", primary_data.ToString());
+
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -173,6 +188,10 @@ namespace MyCaffe.param
             p.channels = rp.FindArray<uint>("channels");
             p.height = rp.FindArray<uint>("height");
             p.width = rp.FindArray<uint>("width");
+
+            string strVal;
+            if ((strVal = rp.FindValue("primary_data")) != null)
+                p.primary_data = bool.Parse(strVal);
 
             return p;
         }

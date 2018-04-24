@@ -35,6 +35,7 @@ namespace MyCaffe.param
         bool? m_bEnablePairSelection = null;
         bool m_bDisplayTiming = false;
         bool m_bLoadMultipleLabels = false;
+        bool m_bPrimaryData = true;
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -142,6 +143,16 @@ namespace MyCaffe.param
             set { m_bLoadMultipleLabels = value; }
         }
 
+        /// <summary>
+        /// (\b optional, default = true) Specifies whether or not the data is the primary datset as opposed to a secondary, target dataset.
+        /// </summary>
+        [Category("Data Selection"), Description("Specifies whether or not this data is the primary dataset as opposed to the target dataset.  By default, this is set to 'true'.")]
+        public bool primary_data
+        {
+            get { return m_bPrimaryData; }
+            set { m_bPrimaryData = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -166,6 +177,7 @@ namespace MyCaffe.param
             m_bEnablePairSelection = p.m_bEnablePairSelection;
             m_bDisplayTiming = p.m_bDisplayTiming;
             m_bLoadMultipleLabels = p.m_bLoadMultipleLabels;
+            m_bPrimaryData = p.m_bPrimaryData;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -198,6 +210,9 @@ namespace MyCaffe.param
 
             if (load_multiple_labels == true)
                 rgChildren.Add("load_multiple_labels", load_multiple_labels.ToString());
+
+            if (primary_data == false)
+                rgChildren.Add("primary_data", primary_data.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -252,6 +267,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("load_multiple_labels")) != null)
                 p.load_multiple_labels = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("primary_data")) != null)
+                p.primary_data = bool.Parse(strVal);
 
             return p;
         }
