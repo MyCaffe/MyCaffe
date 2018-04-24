@@ -396,6 +396,32 @@ namespace MyCaffe.imagedb
         string GetLabelBoostsAsTextFromProject(int nProjectId, int nSrcId);
 
         /// <summary>
+        /// Load another, 'secondary' dataset.
+        /// </summary>
+        /// <remarks>
+        /// The primary dataset should be loaded using one of the 'Initialize' methods.  This method is provided to allow for loading
+        /// multiple datasets.
+        /// </remarks>
+        /// <param name="nDsId">Specifies the ID of the data set.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
+        /// <returns>When the dataset is loaded <i>true</i> is returned, otherwise if the dataset is already loaded <i>false</i> is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        bool LoadDatasetByID(int nDsId, string strEvtCancel = null);
+
+        /// <summary>
+        /// Load another, 'secondary' dataset.
+        /// </summary>
+        /// <remarks>
+        /// The primary dataset should be loaded using one of the 'Initialize' methods.  This method is provided to allow for loading
+        /// multiple datasets.
+        /// </remarks>
+        /// <param name="strDs">Specifies the name of the data set.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
+        /// <returns>When the dataset is loaded <i>true</i> is returned, otherwise if the dataset is already loaded <i>false</i> is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        bool LoadDatasetByName(string strDs, string strEvtCancel = null);
+
+        /// <summary>
         /// Reload a data set.
         /// </summary>
         /// <param name="nDsId">Specifies the ID of the data set.</param>

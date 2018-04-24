@@ -23,7 +23,7 @@ namespace MyCaffe.imagedb
     /// that point back into the list of images.  This organization allows for quick image selection by image or by label
     /// set and then by image from within the label set.
     /// </remarks>
-    public partial class MyCaffeImageDatabase : Component, IXImageDatabase 
+    public partial class MyCaffeImageDatabase : Component, IXImageDatabase
     {
         DatasetFactory m_factory;
         string m_strID = "";
@@ -155,7 +155,7 @@ namespace MyCaffe.imagedb
                     imageSelectionMethod |= IMGDB_IMAGE_SELECTION_METHOD.PAIR;
             }
 
-            return new Tuple<IMGDB_LABEL_SELECTION_METHOD,IMGDB_IMAGE_SELECTION_METHOD>(labelSelectionMethod, imageSelectionMethod);
+            return new Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD>(labelSelectionMethod, imageSelectionMethod);
         }
 
         /// <summary>
@@ -303,7 +303,7 @@ namespace MyCaffe.imagedb
                     throw new Exception("Could not find the dataset! You must specify either the Datast name or at least the training or testing source name!");
             }
 
-            int nDsId = m_factory.GetDatasetID(strDsName); 
+            int nDsId = m_factory.GetDatasetID(strDsName);
 
             return InitializeWithDsId(s, nDsId, strEvtCancel);
         }
@@ -400,7 +400,7 @@ namespace MyCaffe.imagedb
                     if (m_log != null)
                         m_log.WriteLine("Loading dataset '" + ds.Name + "'...");
 
-                    if (!ds0.Initialize(ds, rgAbort.ToArray(), nPadW, nPadH, m_log, s.ImageDbLoadMethod, s.ImageDbLoadLimit))
+                    if (!ds0.Initialize(ds, rgAbort.ToArray(), nPadW, nPadH, m_log, m_loadMethod, m_nLoadLimit))
                     {
                         col.Dispose();
                         return false;
@@ -1025,6 +1025,79 @@ namespace MyCaffe.imagedb
         public string GetLabelCountsAsTextFromSourceName(string strSource)
         {
             return m_colDatasets[m_nStrIDHashCode].FindImageset(strSource).GetLabelCountsAsText();
+        }
+
+
+        /// <summary>
+        /// Load another 'secondary' dataset.
+        /// </summary>
+        /// <remarks>
+        /// The primary dataset should be loaded using one of the 'Initialize' methods.  This method is provided to allow for loading
+        /// multiple datasets.
+        /// </remarks>
+        /// <param name="strDs">Specifies the name of the data set.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
+        /// <returns>When the dataset is loaded <i>true</i> is returned, otherwise if the dataset is already loaded <i>false</i> is returned.</returns>
+        public bool LoadDatasetByName(string strDs, string strEvtCancel = null)
+        {
+            int nDsId = m_factory.GetDatasetID(strDs);
+            return LoadDatasetByID(nDsId, strEvtCancel);
+        }
+
+
+        /// <summary>
+        /// Load another 'secondary' dataset.
+        /// </summary>
+        /// <remarks>
+        /// The primary dataset should be loaded using one of the 'Initialize' methods.  This method is provided to allow for loading
+        /// multiple datasets.
+        /// </remarks>
+        /// <param name="nDsId">Specifies the ID of the data set.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
+        /// <returns>When the dataset is loaded <i>true</i> is returned, otherwise if the dataset is already loaded <i>false</i> is returned.</returns>
+        public bool LoadDatasetByID(int nDsId, string strEvtCancel = null)
+        {
+            if (!m_evtInitialized.WaitOne(0))
+                throw new Exception("The image database must be initialized first before a secondary dataset can be loaded.");
+
+            if (m_evtInitializing.WaitOne(0))
+                throw new Exception("The image database is in the process of being initialized.");
+
+            DatasetEx ds = m_colDatasets[m_nStrIDHashCode].FindDataset(nDsId);
+            if (ds != null)
+                return false;
+
+            DatasetDescriptor desc = m_factory.LoadDataset(nDsId);
+            if (desc == null)
+                throw new Exception("Could not find dataset with ID = " + nDsId.ToString());
+
+            if (!m_colDatasets.ContainsKey(m_nStrIDHashCode))
+                throw new Exception("The image database was not initialized properly.");
+
+            DatasetExCollection col = m_colDatasets[m_nStrIDHashCode];
+            DatasetEx ds0 = new DatasetEx(m_userGuid, m_factory);
+
+            if (OnCalculateImageMean != null)
+                ds0.OnCalculateImageMean += OnCalculateImageMean;
+
+            if (m_log != null)
+                m_log.WriteLine("Loading dataset '" + desc.Name + "'...");
+
+            CancelEvent evtCancel = new CancelEvent(strEvtCancel);
+            List<WaitHandle> rgAbort = new List<WaitHandle>(evtCancel.Handles);
+
+            if (!ds0.Initialize(desc, rgAbort.ToArray(), 0, 0, m_log, m_loadMethod, m_nLoadLimit))
+            {
+                col.Dispose();
+                return false;
+            }
+
+            if (m_log != null)
+                m_log.WriteLine("Dataset '" + desc.Name + "' loaded.");
+
+            col.Add(ds0);
+
+            return true;
         }
 
         /// <summary>
