@@ -561,7 +561,7 @@ namespace MyCaffe
                 m_imgDb = new MyCaffeImageDatabase(m_log);
                 m_bImgDbOwner = true;
 
-                m_log.WriteLine("Loading images...");
+                m_log.WriteLine("Loading primary images...");
 
                 m_imgDb.InitializeWithDs(m_settings, p.Dataset, m_evtCancel.Name);
 
@@ -583,6 +583,17 @@ namespace MyCaffe
                 m_imgDb.SetSelectionMethod(lblSel, imgSel);
                 m_imgDb.QueryImageMean(p.Dataset.TrainingSource.ID);
                 m_log.WriteLine("Images loaded.");
+
+                if (p.TargetDatasetID > 0)
+                {
+                    DatasetFactory factory = new DatasetFactory();
+                    DatasetDescriptor dsTarget = factory.LoadDataset(p.TargetDatasetID);
+
+                    m_log.WriteLine("Loading target dataset '" + dsTarget.Name + "' images using " + m_settings.ImageDbLoadMethod.ToString() + " loading method.");
+                    m_imgDb.LoadDatasetByID(dsTarget.ID);
+                    m_imgDb.QueryImageMean(dsTarget.TrainingSource.ID);
+                    m_log.WriteLine("Target dataset images loaded.");
+                }
             }
 
             m_project = p;
@@ -686,7 +697,7 @@ namespace MyCaffe
                 m_imgDb = new MyCaffeImageDatabase(m_log);
                 m_bImgDbOwner = true;
 
-                m_log.WriteLine("Loading images...");
+                m_log.WriteLine("Loading primary images...");
 
                 m_imgDb.InitializeWithDs(m_settings, m_dataSet, m_evtCancel.Name);
 
@@ -706,6 +717,15 @@ namespace MyCaffe
                 m_imgDb.SetSelectionMethod(lblSel, imgSel);
                 m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID);
                 m_log.WriteLine("Images loaded.");
+
+                DatasetDescriptor dsTarget = findDataset(solverParam.net_param, m_dataSet);
+                if (dsTarget != null)
+                {
+                    m_log.WriteLine("Loading target dataset '" + dsTarget.Name + "' images using " + m_settings.ImageDbLoadMethod.ToString() + " loading method.");
+                    m_imgDb.LoadDatasetByID(dsTarget.ID);
+                    m_imgDb.QueryImageMean(dsTarget.TrainingSource.ID);
+                    m_log.WriteLine("Target dataset images loaded.");
+                }
             }
 
             m_project = null;
@@ -845,7 +865,7 @@ namespace MyCaffe
             return factory.QueryImageMean(sd.ID);
         }
 
-        private DatasetDescriptor findDataset(NetParameter p)
+        private DatasetDescriptor findDataset(NetParameter p, DatasetDescriptor dsPrimary = null)
         {
             string strTestSrc = null;
             string strTrainSrc = null;
@@ -880,10 +900,16 @@ namespace MyCaffe
                 }
 
                 if (strTrainSrc != null && strTestSrc != null)
-                    break;
+                {
+                    if (dsPrimary == null || (strTrainSrc != dsPrimary.TrainingSourceName && strTestSrc != dsPrimary.TestingSourceName))
+                        break;
+                }
             }
 
             if (strTrainSrc == null || strTestSrc == null)
+                return null;
+
+            if (dsPrimary != null && (strTrainSrc == dsPrimary.TrainingSourceName && strTestSrc == dsPrimary.TestingSourceName))
                 return null;
 
             DatasetFactory factory = new DatasetFactory();
