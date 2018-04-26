@@ -19,6 +19,7 @@ namespace MyCaffe.basecode
         List<List<double>> m_rgrgColors = new List<List<double>>();
         Color m_clrDefault;
         Color m_clrError;
+        Color m_clrNoMinMax = Color.HotPink;
 
         /// <summary>
         /// Defines the color scheme to use.
@@ -115,6 +116,15 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Get/set the color used when the Min and Max both equal 0.
+        /// </summary>
+        public Color NoMinMaxColor
+        {
+            get { return m_clrNoMinMax; }
+            set { m_clrNoMinMax = value; }
+        }
+
+        /// <summary>
         /// Returns the color associated with the value.
         /// </summary>
         /// <param name="dfVal">Specifies the value.</param>
@@ -139,7 +149,7 @@ namespace MyCaffe.basecode
                 }
                 else if (m_dfMin == m_dfMax && m_dfMin == 0)
                 {
-                    return Color.Black;
+                    return m_clrNoMinMax;
                 }
             }
 
