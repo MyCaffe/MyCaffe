@@ -46,6 +46,22 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Searches for the named layer.
+        /// </summary>
+        /// <param name="strLayer">Specifies the name of the layer to look for.</param>
+        /// <returns>If found, the layer debug information is returned, otherwise <i>null</i> is returned.</returns>
+        public LayerDebugInformation<T> FindLayer(string strLayer)
+        {
+            foreach (LayerDebugInformation<T> layer in m_rgLayerInfo)
+            {
+                if (layer.Name == strLayer)
+                    return layer;
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// Adds a Layer and its Bottom and Top blob collections.
         /// </summary>
         /// <param name="layer">Specifies the Layer.</param>
@@ -259,6 +275,22 @@ namespace MyCaffe.common
         public List<BlobDebugInformation<T>> BlobInfoList
         {
             get { return m_rgBlobInfo; }
+        }
+
+        /// <summary>
+        /// Searches for the named blob.
+        /// </summary>
+        /// <param name="strBlob">Specifies the name of the blob to look for.</param>
+        /// <returns>If found, the blob debug information is returned, otherwise <i>null</i> is returned.</returns>
+        public BlobDebugInformation<T> FindBlob(string strBlob)
+        {
+            foreach (BlobDebugInformation<T> blob in m_rgBlobInfo)
+            {
+                if (blob.Name == strBlob)
+                    return blob;
+            }
+
+            return null;
         }
 
         /// <summary>
