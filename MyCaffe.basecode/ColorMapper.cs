@@ -72,6 +72,41 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// The ColorMapper constructor.
+        /// </summary>
+        /// <param name="dfMin">Specifies the minimum value in the number range.</param>
+        /// <param name="dfMax">Specifies the maximum value in the number range.</param>
+        /// <param name="clrDefault">Specifies the default color to use.</param>
+        /// <param name="clrError">Specifies the color to use when an error is detected.</param>
+        /// <param name="rgClrStart">Specifies the RGB three color starting color with values of 0 to 1.</param>
+        /// <param name="rgClrEnd">Specifies the RGB three color ending color with values of 0 to 1.</param>
+        /// <param name="nResolution">Specifies the number of colors to generate (default = 160).</param>
+        public ColorMapper(double dfMin, double dfMax, Color clrDefault, Color clrError, List<double> rgClrStart, List<double> rgClrEnd, int nResolution = 160)
+        {
+            m_clrDefault = clrDefault;
+            m_clrError = clrError;
+            m_nResolution = nResolution;
+            m_dfMin = dfMin;
+            m_dfMax = dfMax;
+
+            m_rgrgColors.Add(rgClrStart);   
+            m_rgrgColors.Add(rgClrEnd);
+
+            double dfRange = dfMax - dfMin;
+            double dfInc = dfRange / m_nResolution;
+
+            dfMax = dfMin + dfInc;
+
+            while (dfMax < m_dfMax)
+            {
+                Color clr = calculate(dfMin);
+                m_rgColorMappings.Add(new KeyValuePair<Color, SizeF>(clr, new SizeF((float)dfMin, (float)dfMax)));
+                dfMin = dfMax;
+                dfMax += dfInc;
+            }
+        }
+
+        /// <summary>
         /// Returns the color resolution used.
         /// </summary>
         public int Resolution
