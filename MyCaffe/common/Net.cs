@@ -1912,8 +1912,9 @@ namespace MyCaffe.common
         /// Returns a blob given its name.
         /// </summary>
         /// <param name="strName">Specifies the Blob's name.</param>
+        /// <param name="bThrowExceptionOnError">Optionally, specifies to throw an exception when the layer is not found.  The default = <i>true</i>.</param>
         /// <returns>The Blob with the given name is returned, or <i>null</i> if not found.</returns>
-        public Blob<T> blob_by_name(string strName)
+        public Blob<T> blob_by_name(string strName, bool bThrowExceptionOnError = true)
         {
             Blob<T> blob_ptr = null;
 
@@ -1924,7 +1925,8 @@ namespace MyCaffe.common
             }
             else
             {
-                m_log.FAIL("Unknown blob name " + strName);
+                if (bThrowExceptionOnError)
+                    m_log.FAIL("Unknown blob name " + strName);
             }
 
             return blob_ptr;
@@ -1957,8 +1959,9 @@ namespace MyCaffe.common
         /// Returns a Layer given its name.
         /// </summary>
         /// <param name="strLayer">Specifies the Layer name.</param>
+        /// <param name="bThrowExceptionOnError">Optionally, specifies to throw an exception when the layer is not found.  The default = <i>true</i>.</param>
         /// <returns>The Layer with the given name is returned, or <i>null</i> if not found.</returns>
-        public Layer<T> layer_by_name(string strLayer)
+        public Layer<T> layer_by_name(string strLayer, bool bThrowExceptionOnError = true)
         {
             Layer<T> layer_ptr = null;
 
@@ -1969,7 +1972,8 @@ namespace MyCaffe.common
             }
             else
             {
-                m_log.FAIL("Unknown layer name " + strLayer);
+                if (bThrowExceptionOnError)
+                    m_log.FAIL("Unknown layer name " + strLayer);
             }
 
             return layer_ptr;
