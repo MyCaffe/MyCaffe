@@ -113,6 +113,7 @@ namespace MyCaffe.common
         bool m_bBreakOnFirstNan = false;
         bool m_bDetectDetailedNans = false;
         Blob<T> m_blobWork = null;
+        List<Layer<T>> m_rgConnectedLayers = new List<Layer<T>>();
 
         /// Specifies the OnGetIteration event that fires when a layer needs to get the current iteration from the solver.
         /// </summary>
@@ -153,6 +154,13 @@ namespace MyCaffe.common
         /// <param name="bDisposing">Set to <i>true</i> when called from Dispose().</param>
         protected virtual void Dispose(bool bDisposing)
         {
+            foreach (Layer<T> layer in m_rgConnectedLayers)
+            {
+                ((DataLayer<T>)layer).Disconnect();
+            }
+
+            m_rgConnectedLayers.Clear();
+
             foreach (Layer<T> l in m_rgLayers)
             {
                 l.Dispose();
@@ -287,6 +295,8 @@ namespace MyCaffe.common
                 m_rgrgnTopIdVecs = new List<List<int>>();
                 m_rgrgbBottomNeedBackward = new List<List<bool>>();
 
+                Dictionary<string, Layer<T>> rgSyncLayers = new Dictionary<string, Layer<T>>();
+
                 for (int layer_id = 0; layer_id < param.layer.Count; layer_id++)
                 {
                     m_rgcolBottomVecs.Add(new BlobCollection<T>());
@@ -417,7 +427,8 @@ namespace MyCaffe.common
                     // After this layer is connected, set it up.
                     m_rgLayers[layer_id].SetNetParameterUsed(param); // used for label mapping
                     m_rgLayers[layer_id].Setup(m_rgcolBottomVecs[layer_id], m_rgcolTopVecs[layer_id]);
-
+            
+                    // Setup the layer.
                     m_log.WriteLine("Setting up " + m_rgstrLayerNames[layer_id]);
 
                     for (int top_id = 0; top_id < m_rgcolTopVecs[layer_id].Count; top_id++)
@@ -466,6 +477,28 @@ namespace MyCaffe.common
                         AppendParam(param, layer_id, param_id);
                     }
 
+                    // Connect up the synced layers, if any.
+                    if (layer_param.type == LayerParameter.LayerType.DATA)
+                    {
+                        if (layer_param.data_param.synchronize_with != null)
+                        {
+                            rgSyncLayers.Add(layer_param.data_param.synchronize_with, m_rgLayers[layer_id]);
+                        }
+                        else
+                        {
+                            List<KeyValuePair<string, Layer<T>>> rgSyncLayers1 = rgSyncLayers.ToList();
+                            for (int i = 0; i < rgSyncLayers1.Count; i++)
+                            {
+                                if (rgSyncLayers1[i].Key == layer_param.name)
+                                {
+                                    ((DataLayer<T>)layer).Connect((DataLayer<T>)rgSyncLayers1[i].Value);
+                                    m_rgConnectedLayers.Add(layer);
+                                    rgSyncLayers.Remove(layer_param.name);
+                                }
+                            }
+                        }
+                    }
+
                     // Finally, set the backward flag.
                     m_rgbLayerNeedBackward.Add(need_backward);
 
@@ -477,6 +510,19 @@ namespace MyCaffe.common
                             m_rgbBlobNeedBackward[nIdx] = true;
                         }
                     }
+                }
+
+                if (rgSyncLayers.Count > 0)
+                {
+                    string strLayer = "";
+
+                    foreach (KeyValuePair<string, Layer<T>> kv in rgSyncLayers)
+                    {
+                        strLayer += kv.Key + ", ";
+                    }
+
+                    strLayer = strLayer.TrimEnd(',', ' ');
+                    m_log.FAIL("The following layers are expected to be marked with 'synchronize_target = True': '" + strLayer + "'.");
                 }
 
                 // Go through the net backwards to determine which blobs contribute to the
@@ -606,6 +652,13 @@ namespace MyCaffe.common
             }
             catch (Exception excpt)
             {
+                foreach (Layer<T> layer in m_rgConnectedLayers)
+                {
+                    ((DataLayer<T>)layer).Disconnect();
+                }
+
+                m_rgConnectedLayers.Clear();
+
                 foreach (Layer<T> layer in m_rgLayers)
                 {
                     layer.Dispose();
