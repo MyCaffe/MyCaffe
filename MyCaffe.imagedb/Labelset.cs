@@ -66,6 +66,19 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Returns whether or not the label set is fully loaded or not (which is the case when first using LOAD_ON_DEMAND).
+        /// </summary>
+        public bool IsLoaded
+        {
+            get
+            {
+                if (m_nCurrentIdx == m_rgImages.Length)
+                    return true;
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Adds an image to the current index and then advances the internal index.
         /// </summary>
         /// <param name="s">Specifies the image.</param>
