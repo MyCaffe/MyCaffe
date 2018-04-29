@@ -279,7 +279,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestDummyDataParameter1()
         {
-            string str = "dummydata_param { data_filler { type: \"uniform\" min: -2.2 max: 3.4 } data_filler { type: \"gaussian\" mean: 0.25 std: 2.34 } shape { dim: 1 dim: 2 } shape { dim: 3 dim: 4 dim: 5 } }";
+            string str = "dummydata_param { data_filler { type: \"uniform\" min: -2.2 max: 3.4 } data_filler { type: \"gaussian\" mean: 0.25 std: 2.34 } shape { dim: 1 dim: 2 } shape { dim: 3 dim: 4 dim: 5 } force_refill: True }";
             RawProto proto = RawProto.Parse(str).FindChild("dummydata_param");
             DummyDataParameter p = DummyDataParameter.FromProto(proto);
 
@@ -298,6 +298,7 @@ namespace MyCaffe.test
             Assert.AreEqual(p.shape[1].dim[0], 3);
             Assert.AreEqual(p.shape[1].dim[1], 4);
             Assert.AreEqual(p.shape[1].dim[2], 5);
+            Assert.AreEqual(p.force_refill, true); // we now refill on each forward pass because of layer memory sharing.
 
             RawProto proto2 = p.ToProto("dummydata_param");
             string strProto2 = proto2.ToString();
@@ -309,7 +310,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestDummyDataParameter2()
         {
-            string str = "dummydata_param { data_filler { type: \"uniform\" min: -2.2 max: 3.4 } data_filler { type: \"gaussian\" mean: 0.25 std: 2.34 } num: 1 num: 2 channels: 3 channels: 4 height: 5 height: 6 width: 7 width: 8 }";
+            string str = "dummydata_param { data_filler { type: \"uniform\" min: -2.2 max: 3.4 } data_filler { type: \"gaussian\" mean: 0.25 std: 2.34 } num: 1 num: 2 channels: 3 channels: 4 height: 5 height: 6 width: 7 width: 8 force_refill: True }";
             RawProto proto = RawProto.Parse(str).FindChild("dummydata_param");
             DummyDataParameter p = DummyDataParameter.FromProto(proto);
 
@@ -333,6 +334,7 @@ namespace MyCaffe.test
             Assert.AreEqual(p.width.Count, 2);
             Assert.AreEqual(p.width[0], (uint)7);
             Assert.AreEqual(p.width[1], (uint)8);
+            Assert.AreEqual(p.force_refill, true); // we now refill on each forward pass because of layer memory sharing.
 
             RawProto proto2 = p.ToProto("dummydata_param");
             string strProto2 = proto2.ToString();
