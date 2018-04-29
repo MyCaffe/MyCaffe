@@ -551,7 +551,12 @@ namespace MyCaffe.solvers
         /// The main entry of the solver function.  In default, iter will be zero.  Pass
         /// in a non-zero iter number to resume training for a pre-trained net.
         /// </summary>
-        public virtual void Solve(int nIterationOverride = -1, byte[] rgWeights = null, byte[] rgState = null, BatchInformationCollection col = null)
+        /// <param name="nIterationOverride">Optionally, specifies an iteration override value to use for the number of iterations run.  The default is -1, which ignores the parameter.</param>
+        /// <param name="rgWeights">Optionally, specifies weights to load via the Restore method.  The default is <i>null</i> which ignores the parameter.</param>
+        /// <param name="rgState">Optionally, specifies the state to load via the Restore method.  The default is <i>null</i> which ignores the parameter.</param>
+        /// <param name="bSingleStep">Optionally, specifies to single step the training pass - typically this is used during debugging. The default = <i>false</i>.</param>
+        /// <param name="col">Optionally, specifies batch information used when using reinforcement learning.  The default is <i>null</i> which ignores the parameter.</param>
+        public virtual void Solve(int nIterationOverride = -1, byte[] rgWeights = null, byte[] rgState = null, bool bSingleStep = false, BatchInformationCollection col = null)
         {
             m_log.CHECK(is_root_solver, "Solve is only supported by the root solver.");
             m_log.WriteLine("Solving " + m_net.name);
@@ -567,12 +572,12 @@ namespace MyCaffe.solvers
             if (nIterationOverride <= 0)
                 nIterationOverride = TrainingIterations;
 
-            if (!Step(nIterationOverride, col))
+            if (!Step(nIterationOverride, bSingleStep, col))
                 return;
 
             // If we haven't already, save a snapshot after optimization, unless
             // overriden by setting snapshot_after_train = false.
-            if (m_param.snapshot_after_train && (m_param.snapshot == 0 || (m_nIter % m_param.snapshot) != 0))
+            if (!bSingleStep && (m_param.snapshot_after_train && (m_param.snapshot == 0 || (m_nIter % m_param.snapshot) != 0)))
                 Snapshot(false, true);
 
             if (m_evtCancel.WaitOne(0))
@@ -616,9 +621,10 @@ namespace MyCaffe.solvers
         /// Steps a set of iterations through a training cycle.
         /// </summary>
         /// <param name="nIters">Specifies the number of steps to iterate.</param>
-        /// <param name="col">Specifies a collection of BatchInformation used when performing custom training.</param>
+        /// <param name="bSingleStep">Optionally, specifies to single step the training pass - typically this is used during debugging. The default = <i>false</i>.</param>
+        /// <param name="col">Optionally, specifies a collection of BatchInformation used when performing custom training. The default = <i>null</i>.</param>
         /// <returns></returns>
-        public bool Step(int nIters, BatchInformationCollection col = null)
+        public bool Step(int nIters, bool bSingleStep = false, BatchInformationCollection col = null)
         {
             Exception err = null;
 
@@ -667,10 +673,10 @@ namespace MyCaffe.solvers
                     if (OnStart != null)
                         OnStart(this, new EventArgs());
 
-                    if (forceTest ||
+                    if (!bSingleStep && (forceTest ||
                          (m_param.test_interval > 0 &&
                           (m_nIter % m_param.test_interval) == 0 &&
-                          (m_nIter > 0 || m_param.test_initialization)))
+                          (m_nIter > 0 || m_param.test_initialization))))
                     {
                         if (m_bEnableTest && is_root_solver)
                             m_dfLastAccuracy = TestAll();
@@ -681,7 +687,6 @@ namespace MyCaffe.solvers
                     }
 
                     // on_start currently not used, so no event added.
-
                     bool bDisplay = (is_root_solver && m_param.display > 0 && (m_nIter % m_param.display) == 0) ? true : false;
                     m_net.set_debug_info(bDisplay && m_param.debug_info);
 
@@ -786,10 +791,10 @@ namespace MyCaffe.solvers
                     bool bSnapshotTaken = false;
                     bool bForceSnapshot = forceSnapshot;
 
-                    if (is_root_solver && bFwdPassNanFree &&
+                    if (!bSingleStep && (is_root_solver && bFwdPassNanFree &&
                         (bForceSnapshot ||
                          (m_param.snapshot > 0 && (m_nIter % m_param.snapshot) == 0) ||
-                         (m_dfLastAccuracy > m_dfBestAccuracy)))
+                         (m_dfLastAccuracy > m_dfBestAccuracy))))
                     {
                         bSnapshotTaken = true;
                         Snapshot(bForceSnapshot, ((m_param.snapshot > 0 && (m_nIter % m_param.snapshot) == 0)) ? true : false);
@@ -847,14 +852,17 @@ namespace MyCaffe.solvers
                     //-------------------------------------
                     //  If single stepping, stop the solver.
                     //-------------------------------------
-                    if (m_bEnableSingleStep)
+                    if (bSingleStep || m_bEnableSingleStep)
                     {
                         m_log.WriteLine("Single step triggered - solving stopped after a single forward/backward pass.");
 
-                        // When single stepping, force the snapshot so as to allow
-                        //  debugging the net visually.
-                        if (!bSnapshotTaken)
-                            Snapshot(true, false);
+                        if (!bSingleStep)
+                        {
+                            // When single stepping, force the snapshot so as to allow
+                            //  debugging the net visually.
+                            if (!bSnapshotTaken)
+                                Snapshot(true, false);
+                        }
                         break;
                     }
 
