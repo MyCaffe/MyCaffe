@@ -585,11 +585,13 @@ namespace MyCaffe.imagedb
 
             SimpleDatum sd = null;
             ImageSet imgSet = m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId);
+            LabelSet lblSet = null;
 
             if (nLabel.HasValue)
             {
-                LabelSet lblSet = imgSet.GetLabelSet(nLabel.Value);
-                sd = lblSet.GetImage(0, imageSelectionMethod);
+                lblSet = imgSet.GetLabelSet(nLabel.Value);
+                if (lblSet.IsLoaded)
+                    sd = lblSet.GetImage(0, imageSelectionMethod);
             }
 
             if (m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND && (imageSelectionMethod & IMGDB_IMAGE_SELECTION_METHOD.PAIR) == IMGDB_IMAGE_SELECTION_METHOD.PAIR)
@@ -603,6 +605,16 @@ namespace MyCaffe.imagedb
                     Exception err = new Exception("Could not acquire an image - re-index the dataset.");
                     m_log.WriteError(err);
                     throw err;
+                }
+
+                if (nLabel.HasValue)
+                {
+                    while (sd.Label != nLabel.Value)
+                    {
+                        sd = imgSet.GetImage(nIdx, labelSelectionMethod, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, m_log);
+                    }
+
+                    lblSet.Add(sd);
                 }
             }
 
