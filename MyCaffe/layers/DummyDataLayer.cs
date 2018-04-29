@@ -139,9 +139,12 @@ namespace MyCaffe.layers
 
             // Invert the inverted refill_ values to refill the desired (non-constant)
             // Blobs in every usual forward pass.
-            for (int i=0; i<m_rgbRefill.Count; i++)
+            for (int i = 0; i < m_rgbRefill.Count; i++)
             {
-                m_rgbRefill[i] = !m_rgbRefill[i];
+                if (m_param.dummy_data_param.force_refill)
+                    m_rgbRefill[i] = true;
+                else
+                    m_rgbRefill[i] = !m_rgbRefill[i];
             }
         }
 

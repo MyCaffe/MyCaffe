@@ -23,10 +23,24 @@ namespace MyCaffe.param
         List<uint> m_rgHeight = new List<uint>();
         List<uint> m_rgWidth = new List<uint>();
         bool m_bPrimaryData = true;
+        bool m_bForceRefill = true;
 
         /** @copydoc LayerParameterBase */
         public DummyDataParameter()
         {
+        }
+
+        /// <summary>
+        /// (\b optional, default = true) Specifies whether to force refill the data (even constant data) as opposed to only refilling once.
+        /// </summary>
+        /// <remarks>
+        /// Given that the training and testing nets share memory, we have changed the default from <i>false</i> to <i>true</i> so that the 
+        /// values are refilled on every forward pass.
+        /// </remarks>
+        public bool force_refill
+        {
+            get { return m_bForceRefill; }
+            set { m_bForceRefill = value; }
         }
 
         /// <summary>
@@ -126,6 +140,7 @@ namespace MyCaffe.param
             m_rgHeight = Utility.Clone<uint>(p.m_rgHeight);
             m_rgWidth = Utility.Clone<uint>(p.m_rgWidth);
             m_bPrimaryData = p.m_bPrimaryData;
+            m_bForceRefill = p.m_bForceRefill;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -158,6 +173,9 @@ namespace MyCaffe.param
 
             if (primary_data == false)
                 rgChildren.Add("primary_data", primary_data.ToString());
+
+            if (force_refill == true)
+                rgChildren.Add("force_refill", force_refill.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -192,6 +210,9 @@ namespace MyCaffe.param
             string strVal;
             if ((strVal = rp.FindValue("primary_data")) != null)
                 p.primary_data = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("force_refill")) != null)
+                p.force_refill = bool.Parse(strVal);
 
             return p;
         }
