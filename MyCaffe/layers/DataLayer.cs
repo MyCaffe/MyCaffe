@@ -46,6 +46,13 @@ namespace MyCaffe.layers
         protected double m_dfTransTime;
         private T[] m_rgTopData = null;
 
+        private LabelCollection m_rgBatchLabels = null;
+
+        /// <summary>
+        /// This event fires (only when set) each time a batch is loaded form this dataset.
+        /// </summary>
+        public event EventHandler<LastBatchLoadedArgs> OnBatchLoad;
+
         /// <summary>
         /// The DataLayer constructor.
         /// </summary>
@@ -58,6 +65,9 @@ namespace MyCaffe.layers
             : base(cuda, log, p, db, evtCancel)
         {
             m_type = LayerParameter.LayerType.DATA;
+
+            if (p.data_param.synchronize_target)
+                m_rgBatchLabels = new LabelCollection();
 
             Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> kvSel = db.GetSelectionMethod();
             IMGDB_IMAGE_SELECTION_METHOD imgSel = kvSel.Item2;
@@ -94,7 +104,59 @@ namespace MyCaffe.layers
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
+            if (m_rgBatchLabels != null)
+            {
+                m_rgBatchLabels.Dispose();
+                m_rgBatchLabels = null;
+            }
+
             base.dispose();
+        }
+
+        /// <summary>
+        /// Specifies to delay the prefetch when using a synchronized Data Layer.
+        /// </summary>
+        protected override bool delayPrefetch
+        {
+            get
+            {
+                if (m_param.data_param.synchronize_with != null || m_param.data_param.synchronize_target)
+                    return true;
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// The Connect method connects one Data Layer to another so that they can synchronize.
+        /// </summary>
+        /// <param name="src">Specifies the source Data Layer whos OnBatchLoad event fires and
+        /// is handled by this Data Layer.
+        /// </param>
+        public void Connect(DataLayer<T> src)
+        {
+            src.OnBatchLoad += Src_OnBatchLoad;
+            m_log.WriteLine("DataLayer '" + m_param.name + "' is now connected to DataLayer '" + src.m_param.name + "'.");
+
+            statupPrefetch();
+            src.statupPrefetch();
+        }
+
+        /// <summary>
+        /// Disconnect any previously connected Data Layers.
+        /// </summary>
+        public void Disconnect()
+        {
+            m_rgBatchLabels.Cancel();
+        }
+
+        private void Src_OnBatchLoad(object sender, LastBatchLoadedArgs e)
+        {
+            int nWait = m_rgBatchLabels.WaitProcessing;
+            if (nWait == 0)
+                return;
+
+            m_rgBatchLabels.Set(e.Labels);
         }
 
         /// <summary>
@@ -215,13 +277,6 @@ namespace MyCaffe.layers
         /// <param name="batch">Specifies the Batch of data to load.</param>
         protected override void load_batch(Batch<T> batch)
         {
-            if (m_param.data_param.display_timing)
-            {
-                m_swTimerBatch.Restart();
-                m_dfReadTime = 0;
-                m_dfTransTime = 0;
-            }
-
             m_log.CHECK(batch.Data.count() > 0, "There is no space allocated for data!");
             int nBatchSize = (int)m_param.data_param.batch_size;
 
@@ -230,8 +285,28 @@ namespace MyCaffe.layers
             if (m_bOutputLabels)
                 rgTopLabel = batch.Label.mutable_cpu_data;
 
+            if (m_param.data_param.display_timing)
+            {
+                m_swTimerBatch.Restart();
+                m_dfReadTime = 0;
+                m_dfTransTime = 0;
+            }
+
             Datum datum;
             int nDim = 0;
+            List<int> rgLabels = new List<int>();
+            List<int> rgTargetLabels = null;
+
+            // If we are synced with another dataset, wait for it to load the initial data set.
+            if (m_param.data_param.synchronize_target)
+            {
+                int nWait = m_rgBatchLabels.WaitReady;
+                if (nWait == 0)
+                    return;
+
+                rgTargetLabels = m_rgBatchLabels.Get();
+                m_log.CHECK_EQ(nBatchSize, m_rgBatchLabels.Count, "The batch label count (previously loaded by the primary dataset) does not match the batch size '" + m_param.data_param.batch_size.ToString() + "' of this layer!");
+            }
 
             for (int i = 0; i < nBatchSize; i++)
             {
@@ -243,7 +318,10 @@ namespace MyCaffe.layers
                     Next();
                 }
 
-                datum = m_cursor.GetValue();
+                if (rgTargetLabels == null)
+                    datum = m_cursor.GetValue();
+                else
+                    datum = m_cursor.GetValue(rgTargetLabels[i]);
 
                 if (m_param.data_param.display_timing)
                 {
@@ -302,6 +380,8 @@ namespace MyCaffe.layers
                 if (m_param.data_param.display_timing)
                     m_dfTransTime += m_swTimerTransaction.Elapsed.TotalMilliseconds;
 
+                rgLabels.Add(datum.Label);
+
                 Next();
             }
 
@@ -318,6 +398,130 @@ namespace MyCaffe.layers
                 m_log.WriteLine("     Read time: " + m_dfReadTime.ToString() + " ms.", true);
                 m_log.WriteLine("Transform time: " + m_dfTransTime.ToString() + " ms.", true);
             }
+
+            if (m_param.data_param.synchronize_target)
+                m_rgBatchLabels.Done();
+
+            if (OnBatchLoad != null)
+                OnBatchLoad(this, new LastBatchLoadedArgs(rgLabels));
+        }
+    }
+
+    class LabelCollection : IDisposable /** @private */
+    {
+        ManualResetEvent m_evtReady = new ManualResetEvent(false);
+        ManualResetEvent m_evtDone = new ManualResetEvent(true);
+        AutoResetEvent m_evtCancel = new AutoResetEvent(false);
+        List<int> m_rgLabels = new List<int>();
+        object m_sync = new object();
+
+        public LabelCollection()
+        {
+        }
+
+        public void Dispose()
+        {
+            if (m_evtReady != null)
+            {
+                m_evtReady.Dispose();
+                m_evtReady = null;
+            }
+
+            if (m_evtDone != null)
+            {
+                m_evtDone.Dispose();
+                m_evtDone = null;
+            }
+
+            if (m_evtCancel != null)
+            {
+                m_evtCancel.Dispose();
+                m_evtCancel = null;
+            }
+        }
+
+        public void Cancel()
+        {
+            m_evtCancel.Set();
+        }
+
+        public int WaitReady
+        {
+            get
+            {
+                List<WaitHandle> rgWait = new List<WaitHandle>() { m_evtCancel, m_evtReady };
+                return WaitHandle.WaitAny(rgWait.ToArray());
+            }
+        }
+
+        public int WaitProcessing
+        {
+            get
+            {
+                List<WaitHandle> rgWait = new List<WaitHandle>() { m_evtCancel, m_evtDone };
+                return WaitHandle.WaitAny(rgWait.ToArray());
+            }
+        }
+
+        public void Done()
+        {
+            m_evtDone.Set();
+        }
+
+        public void Set(List<int> rg)
+        {
+            lock (m_sync)
+            {
+                m_rgLabels = new List<int>(rg);
+                m_evtReady.Set();
+            }
+        }
+
+        public int Count
+        {
+            get
+            {
+                lock (m_sync)
+                {
+                    return m_rgLabels.Count;
+                }
+            }
+        }
+
+        public List<int> Get()
+        {
+            lock (m_sync)
+            {
+                List<int> rg = new List<int>(m_rgLabels);
+                m_evtReady.Reset();
+                m_evtDone.Reset();
+                return rg;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Specifies the arguments sent to the OnBatchLoad event used when synchronizing between Data Layers.
+    /// </summary>
+    public class LastBatchLoadedArgs : EventArgs
+    {
+        List<int> m_rgLabels;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="rgLabels">Specifies the labels loaded.</param>
+        public LastBatchLoadedArgs(List<int> rgLabels)
+        {
+            m_rgLabels = new List<int>(rgLabels);
+        }
+
+        /// <summary>
+        /// Returns the labels loaded.
+        /// </summary>
+        public List<int> Labels
+        {
+            get { return m_rgLabels; }
         }
     }
 }

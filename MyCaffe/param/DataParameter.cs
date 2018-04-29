@@ -36,6 +36,8 @@ namespace MyCaffe.param
         bool m_bDisplayTiming = false;
         bool m_bLoadMultipleLabels = false;
         bool m_bPrimaryData = true;
+        string m_strSynchronizeWith = null;
+        bool m_bSyncTarget = false;
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -153,6 +155,30 @@ namespace MyCaffe.param
             set { m_bPrimaryData = value; }
         }
 
+        /// <summary>
+        /// (\b optional, default = false) Specifies whether or not this is a to be synchronized with another data layer as the target.
+        /// </summary>
+        [Category("Synchronization"), Description("Specifies whether or not this is to be synchronized with another data layer as the target.")]
+        public bool synchronize_target
+        {
+            get { return m_bSyncTarget; }
+            set { m_bSyncTarget = value; }
+        }
+
+        /// <summary>
+        /// (\b optional, default = null) Specifies a secondary (target) dataset to syncrhonize with.
+        /// </summary>
+        /// <remarks>
+        /// When synchronizing with another dataset the ordering of labels is guaranteed to be the same from both data sets even though
+        /// the images selected are selected at random.
+        /// </remarks>
+        [Category("Synchronization"), Description("Specifies a secondary (target) dataset to synchronize with.")]
+        public string synchronize_with
+        {
+            get { return m_strSynchronizeWith; }
+            set { m_strSynchronizeWith = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -178,6 +204,8 @@ namespace MyCaffe.param
             m_bDisplayTiming = p.m_bDisplayTiming;
             m_bLoadMultipleLabels = p.m_bLoadMultipleLabels;
             m_bPrimaryData = p.m_bPrimaryData;
+            m_strSynchronizeWith = p.m_strSynchronizeWith;
+            m_bSyncTarget = p.m_bSyncTarget;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -213,6 +241,12 @@ namespace MyCaffe.param
 
             if (primary_data == false)
                 rgChildren.Add("primary_data", primary_data.ToString());
+
+            if (synchronize_with != null)
+                rgChildren.Add("synchronize_with", m_strSynchronizeWith);
+
+            if (synchronize_target)
+                rgChildren.Add("synchronize_target", m_bSyncTarget.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -270,6 +304,11 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("primary_data")) != null)
                 p.primary_data = bool.Parse(strVal);
+
+            p.synchronize_with = rp.FindValue("synchronize_with");
+
+            if ((strVal = rp.FindValue("synchronize_target")) != null)
+                p.synchronize_target = bool.Parse(strVal);
 
             return p;
         }
