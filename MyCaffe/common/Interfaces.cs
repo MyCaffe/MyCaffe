@@ -267,11 +267,12 @@ namespace MyCaffe.common
         /// <param name="bUnloadImageDb">Optionally, specifies whether or not to unload the image database. The default = <i>true</i>.</param>
         void Unload(bool bUnloadImageDb = true);
         /// <summary>
-        /// Train the network a set number of iterations.
+        /// Train the network a set number of iterations and allow for single stepping.
         /// </summary>
         /// <param name="nIterationOverride">Optionally, specifies number of iterations to run that override the iterations specified in the solver desctiptor.</param>
         /// <param name="nTrainingTimeLimitInMinutes">Optionally, specifies a maximum number of minutes to train.  When set to 0, this parameter is ignored and no time limit is imposed.</param>
-        void Train(int nIterationOverride = -1, int nTrainingTimeLimitInMinutes = 0);
+        /// <param name="bSingleStep">Optionally, specifies whether or not to single step the training.  The default is <i>false</i>.</param>
+        void Train(int nIterationOverride = -1, int nTrainingTimeLimitInMinutes = 0, bool bSingleStep = false);
         /// <summary>
         /// Test the network a given number of iterations.
         /// </summary>
@@ -284,7 +285,8 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="nCount">Specifies the number of cycles to run.</param>
         /// <param name="bOnTrainingSet">Specifies on whether to select images from the training set, or when <i>false</i> the testing set of data.</param>
-        void TestMany(int nCount, bool bOnTrainingSet);
+        /// <param name="bOnTargetSet">Optionally, specifies to test on the target dataset (if exists) as opposed to the source dataset.</param>
+        void TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false);
         /// <summary>
         /// Run on a given image in the MyCaffeImageDatabase based on its image index.
         /// </summary>
