@@ -11,6 +11,7 @@ using MyCaffe.fillers;
 using MyCaffe.layers;
 using MyCaffe.imagedb;
 using System.Threading;
+using System.Diagnostics;
 
 namespace MyCaffe.test
 {
@@ -808,6 +809,42 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestSynchronizedDataLayersLoadOnDemand()
+        {
+            NetTest test = new NetTest();
+
+            try
+            {
+                foreach (INetTest t in test.Tests)
+                {
+                    t.TestSynchronizedDataLayers(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSynchronizedDataLayersLoadAll()
+        {
+            NetTest test = new NetTest();
+
+            try
+            {
+                foreach (INetTest t in test.Tests)
+                {
+                    t.TestSynchronizedDataLayers(IMAGEDB_LOAD_METHOD.LOAD_ALL);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -833,7 +870,6 @@ namespace MyCaffe.test
         void TestSharedWeightsResume();
         void TestParamPropagateDown();
         void TestFromTo();
-
         void TestNoFilter();
         void TestFilterNetTrainTest();
         void TestFilterOutByStage();
@@ -854,11 +890,11 @@ namespace MyCaffe.test
         void TestFilterInOutByIncludeMultiRule();
         void TestFilterInByIncludeMultiRule();
         void TestFilterInOutByExcludeMultiRule();
-
         void TestReshape();
         void TestSkipPropagateDown();
         void TestForcePropagateDown();
         void TestAllInOneNetTrain();
+        void TestSynchronizedDataLayers(IMAGEDB_LOAD_METHOD loadMethod);
     }
 
     class NetTest : TestBase
@@ -896,6 +932,12 @@ namespace MyCaffe.test
 
         protected override void dispose()
         {
+            if (m_net != null)
+            {
+                m_net.Dispose();
+                m_net = null;
+            }
+
             base.dispose();
         }
 
@@ -3691,6 +3733,102 @@ namespace MyCaffe.test
 
             m_log.CHECK(bFoundData, "Did not find the data layer.");
             m_log.CHECK(bFoundLoss, "Did not find the loss layer.");
+        }
+
+        public void TestSynchronizedDataLayers(IMAGEDB_LOAD_METHOD loadMethod)
+        {
+            string strProto =
+                "name: 'SyncDataLayer Network'" +
+                "layer { " +
+                "  name: 'src_dta' " +
+                "  type: 'Data' " +
+                "  top: 'src_data' " +
+                "  top: 'src_label' " +
+                "  transform_param { " +
+                "    scale: 0.00390625 " +
+                "    mirror: True " +
+                "    use_imagedb_mean: False " +
+                "    color_order: RGB " +
+                "  } " +
+                "  data_param { " +
+                "    source: 'MNIST.training' " +
+                "    batch_size: 64 " +
+                "    backend: IMAGEDB " +
+                "    enable_random_selection: True " +
+                "    synchronize_with: 'tgt_data' " +
+                "  } " +
+                "  include { phase: TRAIN } " +
+                "} " +
+                "layer { " +
+                "  name: 'tgt_data' " +
+                "  type: 'Data' " +
+                "  top: 'tgt_data' " +
+                "  top: 'tgt_label' " +
+                "  transform_param { " +
+                "    scale: 0.00390625 " +
+                "    mirror: True " +
+                "    use_imagedb_mean: False " +
+                "    color_order: RGB " +
+                "  } " +
+                "  data_param { " +
+                "    source: 'CIFAR-10.training' " +
+                "    batch_size: 64 " +
+                "    backend: IMAGEDB " +
+                "    enable_random_selection: True " +
+                "    synchronize_target: True " +
+                "  } " +
+                "  include { phase: TRAIN } " +
+                "} ";
+
+            RawProto proto = RawProto.Parse(strProto);
+            NetParameter param = NetParameter.FromProto(proto);
+
+            m_log.EnableTrace = true;
+
+            MyCaffeImageDatabase db = new MyCaffeImageDatabase(m_log);
+            SettingsCaffe s = new SettingsCaffe();
+            s.ImageDbLoadLimit = 0;
+            s.ImageDbLoadMethod = loadMethod;
+
+            db.InitializeWithDsName(s, "MNIST");
+            db.LoadDatasetByName("CIFAR-10");
+
+            m_log.EnableTrace = true;
+            m_net = new Net<T>(m_cuda, m_log, param, m_evtCancel, db, Phase.TRAIN);
+            Stopwatch sw = new Stopwatch();
+
+            sw.Start();
+
+            int nTotal = 100;
+            for (int i = 0; i < nTotal; i++)
+            {
+                double dfLoss;
+                m_net.Forward(out dfLoss);
+
+                Blob<T> src = m_net.blob_by_name("src_label");
+                Blob<T> tgt = m_net.blob_by_name("tgt_label");
+
+                double[] rgSrc = convert(src.update_cpu_data());
+                double[] rgTgt = convert(tgt.update_cpu_data());
+
+                m_log.CHECK_EQ(rgSrc.Length, rgTgt.Length, "The target and source should have the same length!");
+
+                for (int j = 0; j < rgSrc.Length; j++)
+                {
+                    m_log.CHECK_EQ(rgSrc[j], rgTgt[j], "The target and source have different labels at index " + j.ToString() + " on iteration " + i.ToString());
+                }
+
+                if (sw.Elapsed.TotalMilliseconds > 1000)
+                {
+                    m_log.Progress = (double)i / (double)nTotal;
+                    m_log.WriteLine("Iteration " + i.ToString() + " of " + nTotal.ToString() + "...");
+                    sw.Restart();
+                }
+            }
+
+            m_net.Dispose();
+            m_net = null;
+            db.Dispose();
         }
     }
 }
