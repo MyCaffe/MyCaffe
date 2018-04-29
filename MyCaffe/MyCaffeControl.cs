@@ -88,6 +88,7 @@ namespace MyCaffe
         Guid m_guidUser;
         PersistCaffe<T> m_persist;
         BlobShape m_inputShape = null;
+        Phase m_lastPhaseRun = Phase.NONE;
 
 
         /// <summary>
@@ -450,6 +451,14 @@ namespace MyCaffe
         public string GetDeviceName(int nDeviceID)
         {
             return m_cuda.GetDeviceName(nDeviceID);
+        }
+
+        /// <summary>
+        /// Returns the last phase run (TRAIN, TEST or RUN).
+        /// </summary>
+        public Phase LastPhase
+        {
+            get { return m_lastPhaseRun; }
         }
 
         /// <summary>
@@ -944,8 +953,14 @@ namespace MyCaffe
         /// </summary>
         /// <param name="nIterationOverride">Optionally, specifies number of iterations to run that override the iterations specified in the solver desctiptor.</param>
         /// <param name="nTrainingTimeLimitInMinutes">Optionally, specifies a maximum number of minutes to train.  When set to 0, this parameter is ignored and no time limit is imposed.</param>
-        public void Train(int nIterationOverride = -1, int nTrainingTimeLimitInMinutes = 0)
+        /// <param name="bSingleStep">Optionally, specifies whether or not to single step the training.  The default is <i>false</i>.</param>
+        /// <remarks>
+        /// Note when single stepping, no testing cycles are performed.  Currently, the single-step parameter is only suppored when running in single GPU mode.
+        /// </remarks>
+        public void Train(int nIterationOverride = -1, int nTrainingTimeLimitInMinutes = 0, bool bSingleStep = false)
         {
+            m_lastPhaseRun = Phase.TRAIN;
+
             if (nIterationOverride == -1)
                 nIterationOverride = m_settings.MaximumIterationOverride;
 
@@ -967,7 +982,7 @@ namespace MyCaffe
             }
             else
             {
-                m_solver.Solve();
+                m_solver.Solve(-1, null, null, bSingleStep);
             }
         }
 
@@ -993,6 +1008,8 @@ namespace MyCaffe
         /// <returns>The accuracy value from the test is returned.</returns>
         public double Test(int nIterationOverride = -1)
         {
+            m_lastPhaseRun = Phase.TEST;
+
             if (nIterationOverride == -1)
                 nIterationOverride = m_settings.TestingIterationOverride;
 
@@ -1007,18 +1024,30 @@ namespace MyCaffe
         /// </summary>
         /// <param name="nCount">Specifies the number of cycles to run.</param>
         /// <param name="bOnTrainingSet">Specifies on whether to select images from the training set, or when <i>false</i> the testing set of data.</param>
-        public void TestMany(int nCount, bool bOnTrainingSet)
+        /// <param name="bOnTargetSet">Optionally, specifies to test on the target dataset (if exists) as opposed to the source dataset.  The default is <i>false</i>, which tests on the default (source) dataset.</param>
+        public void TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false)
         {
+            m_lastPhaseRun = Phase.RUN;
+
             Stopwatch sw = new Stopwatch();
             int nSrcId = (bOnTrainingSet) ? m_dataSet.TrainingSource.ID : m_dataSet.TestingSource.ID;
+            string strSrc = (bOnTrainingSet) ? m_dataSet.TrainingSourceName : m_dataSet.TestingSourceName;
+            string strSet = (bOnTrainingSet) ? "training" : "test";
             int nCorrectCount = 0;
             Dictionary<int, int> rgCorrectCounts = new Dictionary<int, int>();
             Dictionary<int, int> rgLabelTotals = new Dictionary<int, int>();
 
+            if (bOnTargetSet && m_project.DatasetTarget != null)
+            {
+                nSrcId = (bOnTrainingSet) ? m_project.DatasetTarget.TrainingSource.ID : m_project.DatasetTarget.TestingSource.ID;
+                strSrc = (bOnTrainingSet) ? m_project.DatasetTarget.TrainingSourceName : m_project.DatasetTarget.TestingSourceName;
+                strSet = (bOnTrainingSet) ? "target training" : "target test";
+            }
+
             sw.Start();
 
             UpdateRunWeights();
-            m_log.WriteHeader("Test Many (" + nCount.ToString() + ") - " + ((bOnTrainingSet) ? ("on training set") : ("on testing set")));
+            m_log.WriteHeader("Test Many (" + nCount.ToString() + ") - on " + strSet + " '" + strSrc + "'");
 
             LabelMappingParameter labelMapping = null;
 
@@ -1117,7 +1146,7 @@ namespace MyCaffe
             try
             {
                 m_solver.EnableTesting = bEnableTesting;
-                m_solver.Solve(-1, null, null, col);
+                m_solver.Solve(-1, null, null, false, col);
 
                 if (m_evtCancel.WaitOne(0))
                     return false;
@@ -1575,8 +1604,22 @@ namespace MyCaffe
         /// </summary>
         /// <param name="phase">Specifies the Phase used to select the Net.</param>
         /// <returns>The internal Net is returned.</returns>
+        /// <remarks>
+        /// The following net is returned under the following conditions:
+        ///   phase = ALL, return the net from the LastPhase run.  If the LastPhase run = NONE, return the RUN net.
+        ///   phase = n/a, return the default RUN net.
+        ///   phase = NONE, return the default RUN net.
+        ///   phase = TRAIN, return the training net.
+        ///   phase = TEST, return the testing net.
+        /// </remarks>
         public Net<T> GetInternalNet(Phase phase = Phase.RUN)
         {
+            if (phase == Phase.ALL)
+                phase = m_lastPhaseRun;
+
+            if (phase == Phase.NONE)
+                phase = Phase.RUN;
+
             if (phase == Phase.TEST)
                 return m_solver.TestingNet;
 
