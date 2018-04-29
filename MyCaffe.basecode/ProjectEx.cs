@@ -641,6 +641,17 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns the target dataset (if exists) or <i>null</i> if it does not.
+        /// </summary>
+        /// <remarks>
+        /// The target dataset only applies when using both a source and target dataset.
+        /// </remarks>
+        public DatasetDescriptor DatasetTarget
+        {
+            get { return m_project.DatasetTarget; }
+        }
+
+        /// <summary>
         /// Get/set the dataset ID of the target dataset (if exists), otherwise return 0.
         /// </summary>
         public int TargetDatasetID
@@ -1011,6 +1022,8 @@ namespace MyCaffe.basecode
         {
             RawProto proto = RawProto.Parse(strModelDescription);
             int nNameIdx = proto.FindChildIndex("name");
+            int nInputInsertIdx = -1;
+            int nInputShapeInsertIdx = -1;
 
             nNameIdx++;
             if (nNameIdx < 0)
@@ -1023,7 +1036,8 @@ namespace MyCaffe.basecode
             }
             else
             {
-                proto.Children.Insert(nNameIdx, new RawProto("input", strName, null, RawProto.TYPE.STRING));
+                input = new RawProto("input", strName, null, RawProto.TYPE.STRING);
+                nInputInsertIdx = nNameIdx;
                 nNameIdx++;
             }
 
@@ -1053,7 +1067,7 @@ namespace MyCaffe.basecode
                 input_shape.Children.Add(new RawProto("dim", nChannels.ToString()));
                 input_shape.Children.Add(new RawProto("dim", nHeight.ToString()));
                 input_shape.Children.Add(new RawProto("dim", nWidth.ToString()));
-                proto.Children.Insert(nNameIdx, input_shape);
+                nInputShapeInsertIdx = nNameIdx;
             }
 
             RawProto net_name = proto.FindChild("name");
@@ -1175,6 +1189,18 @@ namespace MyCaffe.basecode
             {
                 proto.RemoveChild(layer);
             }
+
+            int nIdx = (nInputInsertIdx < 0) ? 0 : nInputInsertIdx;
+            RawProto protoBtm = proto.Children[nIdx].FindChild("bottom");
+
+            if (protoBtm != null)
+                input.Value = protoBtm.Value;
+
+            if (nInputInsertIdx >= 0)   
+                proto.Children.Insert(nInputInsertIdx, input);
+
+            if (nInputShapeInsertIdx >= 0)
+                proto.Children.Insert(nInputShapeInsertIdx, input_shape);
 
             return proto;
         }
