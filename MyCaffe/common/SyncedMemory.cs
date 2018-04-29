@@ -24,6 +24,7 @@ namespace MyCaffe.common
         long m_hGpuData = 0;
         T[] m_rgCpuData = null;
         bool m_bOwnData = true;
+        object m_tag = null;
 
         /// <summary>
         /// The SyncedMemory constructor.
@@ -31,10 +32,12 @@ namespace MyCaffe.common
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="lCapacity">Optionally, specifies the capacity of the SyncedMemory (in items).</param>
-        public SyncedMemory(CudaDnn<T> cuda, Log log, long lCapacity = 0)
+        /// <param name="tag">Optionally, specifies a tag used for debugging (the default = <i>null</i>).</param>
+        public SyncedMemory(CudaDnn<T> cuda, Log log, long lCapacity = 0, object tag = null)
         {
             m_cuda = cuda;
             m_log = log;
+            m_tag = tag;
 
             if (lCapacity > 0)
             {
@@ -97,6 +100,8 @@ namespace MyCaffe.common
             m_lCapacity = rg.Length;
             m_lCount = rg.Length;
             m_bOwnData = true;
+            check_device();
+
             return;
         }
 
@@ -199,6 +204,15 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Get/set data associated with the synced memory.
+        /// </summary>
+        public object Tag
+        {
+            get { return m_tag; }
+            set { m_tag = value; }
+        }
+
+        /// <summary>
         /// Returns the Device ID on which the GPU memory of this SyncedMemory was allocated.
         /// </summary>
         public int DeviceID
@@ -245,6 +259,7 @@ namespace MyCaffe.common
             m_lCapacity = lCount;
             m_lCount = lCount;
             m_bOwnData = false;
+            check_device();
         }
 
         /// <summary>
@@ -260,7 +275,7 @@ namespace MyCaffe.common
                 check_device();
                 return m_hGpuData;
             }
-//            set { m_hGpuData = value; }
+//          set { m_hGpuData = value; }
         }
 
         /// <summary>
@@ -292,6 +307,8 @@ namespace MyCaffe.common
 
             if (bSetCount)
                 m_lCount = nCount;
+
+            check_device();
         }
 
         /// <summary>
@@ -315,6 +332,7 @@ namespace MyCaffe.common
                 {
                     m_cuda.SetMemory(m_hGpuData, value);
                     m_lCount = value.Length;
+                    check_device();
                 }
             }
         }
@@ -334,13 +352,12 @@ namespace MyCaffe.common
                 m_lCount = lCount;
             }
 
+            check_device();
+
             if (m_lCount == 0)
                 m_rgCpuData = new List<T>().ToArray();
             else
-            {
-                check_device();
                 m_rgCpuData = m_cuda.GetMemory(m_hGpuData, m_lCount);
-            }
 
             return m_rgCpuData;
         }
@@ -376,13 +393,17 @@ namespace MyCaffe.common
             }
 
             m_lCount = rg.Length;
+            check_device();
         }
 
         private void check_device()
         {
 #if DEBUG
-            int nDeviceId = m_cuda.GetDeviceID();
-            m_log.CHECK_EQ(nDeviceId, m_nDeviceID, "The current device DOESNT match the device for which the memory was allocated!");
+            if (m_lCount > 0)
+            {
+                int nDeviceId = m_cuda.GetDeviceID();
+                m_log.CHECK_EQ(nDeviceId, m_nDeviceID, "The current device DOES'NT match the device for which the memory was allocated!");
+            }
 #endif
         }
     }
