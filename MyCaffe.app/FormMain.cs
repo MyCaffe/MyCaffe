@@ -129,7 +129,7 @@ namespace MyCaffe.app
                         setStatus("    CIFAR-10");
 
                     if (nMnistID == 0)
-                        setStatus("    MNIST");
+                        setStatus("    MNIST (1 channel)");
 
                     setStatus(" see the 'Database' menu.");
                 }
