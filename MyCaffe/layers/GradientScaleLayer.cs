@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using MyCaffe.basecode;
@@ -26,7 +27,7 @@ namespace MyCaffe.layers
     /// gradient reversals.
     /// 
     /// @see [Domain-Adversarial Training of Neural Networks](https://arxiv.org/abs/1505.07818) by Ganin et al., 2015, v4 in 2016.
-    /// @see [Github\ddtm\caffe](https://github.com/ddtm/caffe) for original source.
+    /// @see [Github: ddtm-caffe](https://github.com/ddtm/caffe) for original source.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class GradientScaleLayer<T> : NeuronLayer<T>
@@ -36,6 +37,7 @@ namespace MyCaffe.layers
         double m_dfAlpha;
         double m_dfMaxIter;
         double m_dfCoeff;
+        Stopwatch m_swOutput = new Stopwatch();
 
         /// <summary>
         /// The GradientScaleLayer constructor.
@@ -84,11 +86,12 @@ namespace MyCaffe.layers
             m_log.CHECK_GE(m_dfCoeff, 1, "The max_iter must be >= 1.0");
 
             int nIteration = (args == null) ? 1 : args.Iteration;
-            double dfProgress = Math.Min(1.0, (double)nIteration) / m_dfMaxIter;
+            double dfProgress = Math.Min(1.0, (double)nIteration / m_dfMaxIter);
             double dfHeight = m_dfUpperBound - m_dfLowerBound;
 
             m_dfCoeff = 2.0 * dfHeight / (1.0 + Math.Exp(-m_dfAlpha * dfProgress)) - dfHeight + m_dfLowerBound;
             m_log.WriteLine("iter = " + nIteration.ToString() + " progress = " + dfProgress.ToString() + " coeff = " + m_dfCoeff.ToString());
+            m_swOutput.Start();
         }
 
         /// <summary>
@@ -117,9 +120,25 @@ namespace MyCaffe.layers
             if (!rgbPropagateDown[0])
                 return;
 
+            GetIterationArgs args = getCurrentIteration();
+            if (args != null && args.CurrentPhase != Phase.TRAIN)
+                return;
+
             int nCount = colTop[0].count();
             long hTopDiff = colTop[0].gpu_diff;
             long hBottomDiff = colBottom[0].mutable_gpu_diff;
+
+            int nIteration = (args == null) ? 1 : args.Iteration;
+            double dfProgress = Math.Min(1.0, (double)nIteration / m_dfMaxIter);
+            double dfHeight = m_dfUpperBound - m_dfLowerBound;
+
+            m_dfCoeff = 2.0 * dfHeight / (1.0 + Math.Exp(-m_dfAlpha * dfProgress)) - dfHeight + m_dfLowerBound;
+
+            if (m_swOutput.Elapsed.TotalMilliseconds > 1000)
+            {
+                m_log.WriteLine("iter = " + nIteration.ToString() + " progress = " + dfProgress.ToString() + " coeff = " + m_dfCoeff.ToString());
+                m_swOutput.Restart();
+            }
 
             m_cuda.scale(nCount, -m_dfCoeff, hTopDiff, hBottomDiff);
         }
