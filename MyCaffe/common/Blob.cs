@@ -1412,7 +1412,16 @@ namespace MyCaffe.common
         public string Name
         {
             get { return m_strName; }
-            set { m_strName = value; }
+            set
+            {
+                m_strName = value;
+
+                if (m_data != null)
+                    m_data.Tag = m_strName + " data";
+
+                if (m_diff != null)
+                    m_diff.Tag = m_strName + " diff";
+            }
         }
 
         /// <summary>
@@ -1427,7 +1436,7 @@ namespace MyCaffe.common
                 b.m_diff.Copy(m_diff);
 
             b.m_data.Copy(m_data);
-            b.m_strName = m_strName;
+            b.Name = Name;
 
             return b;
         }
