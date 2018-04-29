@@ -93,10 +93,34 @@ namespace MyCaffe.layers
                     m_rgPrefetch[i].Label.update_cpu_data();
             }
 
-            m_log.WriteLine("Initializing prefetch...");
             m_transformer.InitRand();
+
+            if (!delayPrefetch)
+            {
+                m_log.WriteLine("Initializing prefetch for '" + m_param.name + "'...");
+                statupPrefetch();
+            }
+            else
+            {
+                m_log.WriteLine("Delaying prefetch for '" + m_param.name + "'...");
+            }
+        }
+
+        /// <summary>
+        /// Specifies whether or not to delay the prefetch.
+        /// </summary>
+        protected virtual bool delayPrefetch
+        {
+            get { return false; }
+        }
+
+        /// <summary>
+        /// Starts the prefetch thread.
+        /// </summary>
+        protected void statupPrefetch()
+        {
             m_internalThread.StartInternalThread(m_cuda, m_log, m_cuda.GetDeviceID());
-            m_log.WriteLine("Prefetch initialized.");
+            m_log.WriteLine("Prefetch initialized for '" + m_param.name + "'.");
         }
 
         void m_internalThread_DoWork(object sender, ActionStateArgs<T> e)
