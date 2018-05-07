@@ -706,10 +706,12 @@ namespace MyCaffe.imagedb
         /// Return the number of boosted images for a data source.
         /// </summary>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="strFilterVal">Optionally, specifies a parameter filtering value (default = <i>null</i>).</param>
+        /// <param name="nBoostVal">Optionally, specifies a boost filtering value (default = <i>null</i>).</param>
         /// <returns>The number of boosted images is returned.</returns>
-        public int GetBoostCount(int nSrcId = 0)
+        public int GetBoostCount(int nSrcId = 0, string strFilterVal = null, int? nBoostVal = null)
         {
-            return m_db.GetBoostCount(nSrcId);
+            return m_db.GetBoostCount(nSrcId, strFilterVal, nBoostVal);
         }
 
         /// <summary>

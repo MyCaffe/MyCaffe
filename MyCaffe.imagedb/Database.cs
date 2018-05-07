@@ -1771,15 +1771,40 @@ namespace MyCaffe.imagedb
         /// Return the number of boosted images for a data source.
         /// </summary>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="strFilterVal">Optionally, specifies a parameter filtering value (default = <i>null</i>).</param>
+        /// <param name="nBoostVal">Optionally, specifies a boost filtering value (default = <i>null</i>).</param>
         /// <returns>The number of boosted images is returned.</returns>
-        public int GetBoostCount(int nSrcId = 0)
+        public int GetBoostCount(int nSrcId = 0, string strFilterVal = null, int? nBoostVal = null)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                return entities.RawImages.Where(p => p.SourceID == nSrcId && p.ActiveBoost > 0).Count();
+                IQueryable<RawImage> iQuery = entities.RawImages.Where(p => p.SourceID == nSrcId);
+
+                if (!string.IsNullOrEmpty(strFilterVal))
+                    iQuery = iQuery.Where(p => p.Description == strFilterVal);
+
+                if (nBoostVal.HasValue)
+                {
+                    if (nBoostVal.Value < 0)
+                    {
+                        int nVal = Math.Abs(nBoostVal.Value);
+                        iQuery = iQuery.Where(p => p.ActiveBoost == nVal);
+                    }
+                    else
+                    {
+                        int nVal = nBoostVal.Value;
+                        iQuery = iQuery.Where(p => p.ActiveBoost >= nVal);
+                    }
+                }
+                else
+                {
+                    iQuery = iQuery.Where(p => p.ActiveBoost > 0);
+                }
+
+                return iQuery.Count();
             }
         }
 
