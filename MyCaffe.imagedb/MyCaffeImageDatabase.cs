@@ -545,15 +545,39 @@ namespace MyCaffe.imagedb
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
         /// <param name="bSuperBoostOnly">Specifies whether or not to only count the super boosted images.</param>
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <returns>The number of images is returned.</returns>
-        public int ImageCount(int nSrcId, bool bSuperBoostOnly)
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
+        public int ImageCount(int nSrcId, bool bSuperBoostOnly, string strFilterVal = null, int? nBoostVal = null)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
 
             if (nWait == 0)
                 return 0;
 
-            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetCount(bSuperBoostOnly);
+            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetCount(bSuperBoostOnly, strFilterVal, nBoostVal);
+        }
+
+        /// <summary>
+        /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <param name="bSuperboostOnly">Specifies whether or not to return images with super-boost.</param>
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <returns>The list of images is returned.</returns>
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
+        public List<SimpleDatum> GetImages(int nSrcId, bool bSuperBoostOnly, string strFilterVal = null, int? nBoostVal = null)
+        {
+            int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
+
+            if (nWait == 0)
+                return null;
+
+            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImages(bSuperBoostOnly, strFilterVal, nBoostVal);
         }
 
         /// <summary>

@@ -355,17 +355,66 @@ namespace MyCaffe.imagedb
             get { return m_rgImages.Length; }
         }
 
+        private IEnumerable<SimpleDatum> getQuery(bool bSuperboostOnly, string strFilterVal = null, int? nBoostVal = null)
+        {
+            IEnumerable<SimpleDatum> iQuery = m_rgImages.Where(p => p != null);
+
+            if (bSuperboostOnly)
+            {
+                if (nBoostVal.HasValue)
+                {
+                    int nVal = nBoostVal.Value;
+
+                    if (nVal < 0)
+                    {
+                        nVal = Math.Abs(nVal);
+                        iQuery = iQuery.Where(p => p.Boost == nVal);
+                    }
+                    else
+                    {
+                        iQuery = iQuery.Where(p => p.Boost >= nVal);
+                    }
+                }
+                else
+                {
+                    iQuery = iQuery.Where(p => p.Boost > 0);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(strFilterVal))
+                iQuery = iQuery.Where(p => p.Description == strFilterVal);
+
+            return iQuery;
+        }
+
         /// <summary>
         /// Returns the number of images in the image set, optionally with super-boost only.
         /// </summary>
         /// <param name="bSuperboostOnly">Specifies whether or not to only count images with super-boost.</param>
-        /// <returns></returns>
-        public int GetCount(bool bSuperboostOnly)
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <returns>The number of images is returned.</returns>
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
+        public int GetCount(bool bSuperboostOnly, string strFilterVal = null, int? nBoostVal = null)
         {
-            if (!bSuperboostOnly)
-                return Count;
+            IEnumerable<SimpleDatum> iQuery = getQuery(bSuperboostOnly, strFilterVal, nBoostVal);
+            return iQuery.Count();
+        }
 
-            return m_rgImages.Where(p => p != null && p.Boost > 0).Count();
+        /// <summary>
+        /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
+        /// </summary>
+        /// <param name="bSuperboostOnly">Specifies whether or not to return images with super-boost.</param>
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <returns>The list of images is returned.</returns>
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
+        public List<SimpleDatum> GetImages(bool bSuperboostOnly, string strFilterVal = null, int? nBoostVal = null)
+        {
+            IEnumerable<SimpleDatum> iQuery = getQuery(bSuperboostOnly, strFilterVal, nBoostVal);
+            return iQuery.ToList();
         }
 
         /// <summary>

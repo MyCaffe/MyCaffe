@@ -164,10 +164,27 @@ namespace MyCaffe.imagedb
         /// Returns the number of images in a given data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
-        /// <param name="bSuperboostOnly">Optionally, specifies to only count boosted images (default = false).</param>
+        /// <param name="bSuperboostOnly">Optionally, specifies to only count boosted images (default = <i>false</i>).</param>
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <returns>The number of images is returned.</returns>
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
         [OperationContract(IsOneWay = false)]
-        int ImageCount(int nSrcId, bool bSuperboostOnly = false);
+        int ImageCount(int nSrcId, bool bSuperboostOnly = false, string strFilterVal = null, int? nBoostVal = null);
+
+        /// <summary>
+        /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <param name="bSuperboostOnly">Specifies whether or not to return images with super-boost.</param>
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <returns>The list of images is returned.</returns>
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
+        [OperationContract(IsOneWay = false)]
+        List<SimpleDatum> GetImages(int nSrcId, bool bSuperBoostOnly, string strFilterVal = null, int? nBoostVal = null);
 
         /// <summary>
         /// Query an image in a given data source.
