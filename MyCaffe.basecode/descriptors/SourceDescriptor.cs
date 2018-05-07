@@ -19,6 +19,7 @@ namespace MyCaffe.basecode.descriptors
         int m_nImageCh;
         bool m_bIsRealData;
         int m_nImageCount;
+        int m_nInactiveCount;
         bool m_bSaveImagesToFile;
         List<LabelDescriptor> m_rgLabels = new List<LabelDescriptor>();
         ParameterDescriptorCollection m_colParameters = new ParameterDescriptorCollection();
@@ -72,6 +73,7 @@ namespace MyCaffe.basecode.descriptors
             : this(s.ID, s.Name, s.ImageWidth, s.ImageHeight, s.ImageChannels, s.IsRealData, s.SaveImagesToFile, s.CopyOfSourceID, s.Owner, s.ImageCount, s.Labels, s.LabelCountsAsText)
         {
             m_colParameters = new descriptors.ParameterDescriptorCollection();
+            m_nInactiveCount = s.m_nInactiveCount;
             foreach (ParameterDescriptor p in s.m_colParameters)
             {
                 m_colParameters.Add(new ParameterDescriptor(p));
@@ -91,6 +93,7 @@ namespace MyCaffe.basecode.descriptors
             m_nImageWd = sd.m_nImageWd;
             m_bIsRealData = sd.m_bIsRealData;
             m_nImageCount = sd.m_nImageCount;
+            m_nInactiveCount = sd.m_nInactiveCount;
             m_bSaveImagesToFile = sd.m_bSaveImagesToFile;
             m_nCopyOfSourceID = sd.m_nCopyOfSourceID;
 
@@ -182,6 +185,24 @@ namespace MyCaffe.basecode.descriptors
         public int ImageCount
         {
             get { return m_nImageCount; }
+        }
+
+        /// <summary>
+        /// Returns the number of inactive images within this data source.
+        /// </summary>
+        [Description("Specifies the number of inactive images within this data source.")]
+        public int InactiveImageCount
+        {
+            get { return m_nInactiveCount; }
+        }
+
+        /// <summary>
+        /// Set the number of inactive images within this data source.
+        /// </summary>
+        /// <param name="nCount"></param>
+        public void SetInactiveImageCount(int nCount)
+        {
+            m_nInactiveCount = nCount;
         }
 
         /// <summary>
