@@ -715,6 +715,18 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Activate the images that meet the filtering criteria in the Data Source.  If no filtering criteria is set, all images are activated.
+        /// </summary>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="strFilterVal">Optionally, specifies a parameter filtering value (default = <i>null</i>).</param>
+        /// <param name="nBoostVal">Optionally, specifies a boost filtering value (default = <i>null</i>).</param>
+        /// <returns>The number of activated images is returned.</returns>
+        public int ActivateFiltered(int nSrcId = 0, string strFilterVal = null, int? nBoostVal = null)
+        {
+            return m_db.ActivateFiltered(nSrcId, strFilterVal, nBoostVal);
+        }
+
+        /// <summary>
         /// Reindex the RawImages of a data source.
         /// </summary>
         /// <param name="log">Specifies the Log to use for status output.</param>
@@ -1342,7 +1354,7 @@ namespace MyCaffe.imagedb
                                                             src.ImageCount.GetValueOrDefault());
             srcDesc.Labels = LoadLabels(nSrcId);
             srcDesc.LabelCountsAsText = m_db.GetLabelCountsAsText(nSrcId);
-
+            srcDesc.SetInactiveImageCount(m_db.GetImageCount(nSrcId, false, true));
             srcDesc.Parameters = LoadSourceParameters(srcDesc.ID);
 
             return srcDesc;

@@ -1767,6 +1767,32 @@ namespace MyCaffe.imagedb
             }
         }
 
+        private IQueryable<RawImage> getQuery(IQueryable<RawImage> iQuery, string strFilterVal, int? nBoostVal)
+        {
+            if (!string.IsNullOrEmpty(strFilterVal))
+                iQuery = iQuery.Where(p => p.Description == strFilterVal);
+
+            if (nBoostVal.HasValue)
+            {
+                if (nBoostVal.Value < 0)
+                {
+                    int nVal = Math.Abs(nBoostVal.Value);
+                    iQuery = iQuery.Where(p => p.ActiveBoost == nVal);
+                }
+                else
+                {
+                    int nVal = nBoostVal.Value;
+                    iQuery = iQuery.Where(p => p.ActiveBoost >= nVal);
+                }
+            }
+            else
+            {
+                iQuery = iQuery.Where(p => p.ActiveBoost > 0);
+            }
+
+            return iQuery;
+        }
+
         /// <summary>
         /// Return the number of boosted images for a data source.
         /// </summary>
@@ -1782,27 +1808,85 @@ namespace MyCaffe.imagedb
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
                 IQueryable<RawImage> iQuery = entities.RawImages.Where(p => p.SourceID == nSrcId);
+                iQuery = getQuery(iQuery, strFilterVal, nBoostVal);
+                return iQuery.Count();
+            }
+        }
 
-                if (!string.IsNullOrEmpty(strFilterVal))
-                    iQuery = iQuery.Where(p => p.Description == strFilterVal);
+        /// <summary>
+        /// Activate the images that meet the filtering criteria in the Data Source.  If no filtering criteria is set, all images are activated.
+        /// </summary>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="strFilterVal">Optionally, specifies a parameter filtering value (default = <i>null</i>).</param>
+        /// <param name="nBoostVal">Optionally, specifies a boost filtering value (default = <i>null</i>).</param>
+        /// <returns>The number of activated images is returned.</returns>
+        public int ActivateFiltered(int nSrcId = 0, string strFilterVal = null, int? nBoostVal = null)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
 
-                if (nBoostVal.HasValue)
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                if (!string.IsNullOrEmpty(strFilterVal) || nBoostVal.HasValue)
                 {
-                    if (nBoostVal.Value < 0)
-                    {
-                        int nVal = Math.Abs(nBoostVal.Value);
-                        iQuery = iQuery.Where(p => p.ActiveBoost == nVal);
-                    }
-                    else
+                    string strCmd1 = "UPDATE[dbo].[RawImages] SET[Active] = 0 WHERE SourceID = " + nSrcId.ToString();
+                    entities.Database.ExecuteSqlCommand(strCmd1);
+
+                    string strCmd2 = "UPDATE[dbo].[RawImages] SET[Active] = 1 WHERE SourceID = " + nSrcId.ToString();
+
+                    if (strFilterVal != null)
+                        strCmd2 += " AND Description = '" + strFilterVal + "'";
+
+                    if (nBoostVal.HasValue)
                     {
                         int nVal = nBoostVal.Value;
-                        iQuery = iQuery.Where(p => p.ActiveBoost >= nVal);
+
+                        if (nVal < 0)
+                        {
+                            nVal = Math.Abs(nVal);
+                            strCmd2 += " AND ActiveBoost == " + nVal.ToString();
+                        }
+                        else
+                        {
+                            strCmd2 += " AND ActiveBoost >= " + nVal.ToString();
+                        }
                     }
+
+                    entities.Database.ExecuteSqlCommand(strCmd2);
                 }
                 else
                 {
-                    iQuery = iQuery.Where(p => p.ActiveBoost > 0);
+                    string strCmd2 = "UPDATE[dbo].[RawImages] SET[Active] = 1 WHERE SourceID = " + nSrcId.ToString();
+                    entities.Database.ExecuteSqlCommand(strCmd2);
                 }
+
+                return entities.RawImages.Where(p => p.Active == true).Count();
+            }
+        }
+
+        /// <summary>
+        /// Get the number of images in the source.
+        /// </summary>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="bActive">Optionally, specifies to get the active image count.</param>
+        /// <param name="bInactive">Optionally, specifies to get the inactive image count.</param>
+        /// <returns>The number of images is returned.  When both 'bActive' and 'bInactive' are <i>true</i> the total image count is returned.</returns>
+        public int GetImageCount(int nSrcId = 0, bool bActive = true, bool bInactive = true)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                IQueryable<RawImage> iQuery = entities.RawImages.Where(p => p.SourceID == nSrcId);
+
+                if (bActive && bInactive)
+                    return iQuery.Count();
+
+                if (bActive)
+                    iQuery = iQuery.Where(p => p.Active == true);
+                else
+                    iQuery = iQuery.Where(p => p.Active == false);
 
                 return iQuery.Count();
             }
