@@ -23,6 +23,7 @@ namespace MyCaffe.common
     public class Blob<T> : IDisposable
     {
         T m_tZero;
+        T m_tMinusOne;
         string m_strName = "";
         CudaDnn<T> m_cuda;
         Log m_log;
@@ -77,6 +78,7 @@ namespace MyCaffe.common
         public Blob(CudaDnn<T> cuda, Log log, bool bIncludeDiff = true)
         {
             m_tZero = (T)Convert.ChangeType(0, typeof(T));
+            m_tMinusOne = (T)Convert.ChangeType(-1, typeof(T));
             m_bIncludeDiff = bIncludeDiff;
             m_cuda = cuda;
             m_log = log;
@@ -984,7 +986,7 @@ namespace MyCaffe.common
                 return;
 
             // The GPU is assumed to be the owner of the data.
-            m_cuda.axpy(m_nCount, (T)Convert.ChangeType(-1.0, typeof(T)), m_diff.gpu_data, m_data.mutable_gpu_data);
+            m_cuda.axpy(m_nCount, m_tMinusOne, m_diff.gpu_data, m_data.mutable_gpu_data);
         }
 
         /// <summary>
