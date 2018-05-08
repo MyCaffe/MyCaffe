@@ -470,7 +470,7 @@ namespace MyCaffe.imagedb
                         sd = m_factory.LoadImageAt(nImageIdx);
                         if (sd != null)
                         {
-                            Add(nIdx, sd);
+                            Add(nImageIdx, sd);
                             break;
                         }
 
