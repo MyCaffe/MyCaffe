@@ -1939,25 +1939,22 @@ namespace MyCaffe.imagedb
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                log.WriteLine("Querying images...");
+                log.WriteLine("Resetting inactive indexes...");
+                string strCmd = "UPDATE [dbo].[RawImages] SET [Idx] = -1 WHERE SourceID = " + nSrcId.ToString() + " AND Active = 0";
+                entities.Database.ExecuteSqlCommand(strCmd);
+
+                log.WriteLine("Querying active images...");
 
                 Stopwatch sw = new Stopwatch();
-                List<RawImage> rgImg = entities.RawImages.Where(p => p.SourceID == nSrcId).OrderBy(p => p.TimeStamp).ThenBy(p => p.ID).ToList();
+                List<RawImage> rgImg = entities.RawImages.Where(p => p.SourceID == nSrcId && p.Active == true).OrderBy(p => p.TimeStamp).ThenBy(p => p.ID).ToList();
 
                 sw.Start();
                 int nIdx = 0;
 
                 for (int i = 0; i < rgImg.Count; i++)
                 {
-                    if (rgImg[i].Active.GetValueOrDefault(false))
-                    {
-                        rgImg[i].Idx = nIdx;
-                        nIdx++;
-                    }
-                    else
-                    {
-                        rgImg[i].Idx = -1;
-                    }
+                    rgImg[i].Idx = nIdx;
+                    nIdx++;
 
                     if (i % 1000 == 0)
                         entities.SaveChanges();
