@@ -162,8 +162,6 @@ namespace MyCaffe.layers
         {
             long hMask = 0;
             int nCount = colTop[0].count();
-            int nNum = colTop[0].num;
-            int nDim = nCount / nNum;
             long hTopData = colTop[0].mutable_gpu_data;
             long hCoeffData = 0;
             int nCoeffCount = 0;
@@ -180,17 +178,27 @@ namespace MyCaffe.layers
                     break;
 
                 case EltwiseParameter.EltwiseOp.SUM:
-                    // TODO(shelhamer) does cuBLAS optimize to sum of coeff = 1?
                     if (m_bCoeffBlob)
                     {
+                        int nNum = colTop[0].num;
+                        int nDim = nCount / nNum;
                         hCoeffData = colBottom[colBottom.Count - 1].gpu_data;
                         nCoeffCount = 1;
-                    }
 
-                    for (int i = 0; i < colBottom.Count - nCoeffCount; i++)
+                        for (int i = 0; i < colBottom.Count - nCoeffCount; i++)
+                        {
+                            long hBottomData = colBottom[i].gpu_data;
+                            m_cuda.coeff_sum_fwd(nCount, nDim, i * nNum, m_rgdfCoeffs[i], hCoeffData, hBottomData, hTopData);
+                        }
+                    }
+                    else
                     {
-                        long hBottomData = colBottom[i].gpu_data;
-                        m_cuda.coeff_sum_fwd(nCount, nDim, i * nNum, m_rgdfCoeffs[i], hCoeffData, hBottomData, hTopData);
+                        m_cuda.set(nCount, hTopData, 0);
+                        // TODO(shelhamer) does cuBLAS optimize to sum of coeff = 1?
+                        for (int i = 0; i < colBottom.Count; i++)
+                        {
+                            m_cuda.axpy(nCount, m_rgdfCoeffs[i], colBottom[i].gpu_data, hTopData);
+                        }
                     }
                     break;
 
@@ -220,11 +228,11 @@ namespace MyCaffe.layers
         {
             long hMask = 0;
             int nCount = colTop[0].count();
-            int nNum = colTop[0].num;
-            int nDim = nCount / nNum;
             long hTopData = colTop[0].gpu_data;
             long hTopDiff = colTop[0].gpu_diff;
             long hCoeffData = 0;
+            int nNum = colTop[0].num;
+            int nDim = nCount / nNum;
 
             if (m_bCoeffBlob)
                 hCoeffData = colBottom[colBottom.Count - 1].gpu_data;
@@ -266,7 +274,17 @@ namespace MyCaffe.layers
                             break;
 
                         case EltwiseParameter.EltwiseOp.SUM:
-                            m_cuda.coeff_sum_bwd(nCount, nDim, i * nNum, m_rgdfCoeffs[i], hCoeffData, hTopDiff, hBottomDiff);
+                            if (m_bCoeffBlob)
+                            {
+                                m_cuda.coeff_sum_bwd(nCount, nDim, i * nNum, m_rgdfCoeffs[i], hCoeffData, hTopDiff, hBottomDiff);
+                            }
+                            else
+                            {
+                                if (m_rgdfCoeffs[i] == 1.0)
+                                    m_cuda.copy(nCount, hTopDiff, hBottomDiff);
+                                else
+                                    m_cuda.scale(nCount, m_rgdfCoeffs[i], hTopDiff, hBottomDiff);
+                            }
                             break;
 
                         case EltwiseParameter.EltwiseOp.MAX:
