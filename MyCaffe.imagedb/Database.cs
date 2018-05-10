@@ -904,6 +904,28 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Returns the list of raw images that have a source ID from a selected list.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the source ID.</param>
+        /// <param name="bActive">Optionally, specifies to query active (or non active) images (default = <i>null</i>, which queries all images).</param>
+        /// <returns>The list of RawImage's is returned.</returns>
+        public List<RawImage> QueryRawImages(int nSrcId, bool? bActive = null)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                IQueryable<RawImage> iQuery = entities.RawImages.Where(p => p.SourceID == nSrcId);
+
+                if (bActive.HasValue)
+                {
+                    bool bVal = bActive.Value;
+                    iQuery = iQuery.Where(p => p.Active == bVal);
+                }
+
+                return iQuery.ToList();
+            }
+        }
+
+        /// <summary>
         /// Returns a list of RawImages from the database for a data source.
         /// </summary>
         /// <param name="nIdx">Specifies the starting image index.</param>
@@ -1010,6 +1032,38 @@ namespace MyCaffe.imagedb
                 nDebugDataFmtId = rgImg[0].DebugDataFormatID;
 
                 return getRawImage(rgImg[0].Data, img.OriginalSourceID);
+            }
+        }
+
+        /// <summary>
+        /// Returns the raw data criteria data of the RawImage.
+        /// </summary>
+        /// <remarks>
+        /// If the RawImage uses its Virtual ID, the RawImage with that ID is queried from the database and its raw data is returned.
+        /// </remarks>
+        /// <param name="img">Specifies the RawImage to use.</param>
+        /// <param name="nDataCriteriaFmtId">Returns the image data criteria format (if any).</param>
+        /// <returns>The raw data criteria is returned as a array of <i>byte</i> values.</returns>
+        public byte[] GetRawImageDataCriteria(RawImage img, out int? nDataCriteriaFmtId)
+        {
+            if (img.VirtualID == 0)
+            {
+                nDataCriteriaFmtId = img.DataCriteriaFormatID;
+                return getRawImage(img.DataCriteria, img.OriginalSourceID);
+            }
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<RawImage> rgImg = entities.RawImages.Where(p => p.ID == img.VirtualID).ToList();
+
+                if (rgImg.Count == 0)
+                {
+                    nDataCriteriaFmtId = null;
+                    return null;
+                }
+
+                nDataCriteriaFmtId = rgImg[0].DataCriteriaFormatID;
+                return getRawImage(rgImg[0].DataCriteria, img.OriginalSourceID);
             }
         }
 

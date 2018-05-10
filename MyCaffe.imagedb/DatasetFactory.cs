@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -217,6 +218,48 @@ namespace MyCaffe.imagedb
         {
             return m_db.GetRawImagesAt(nImageIdx, nImageCount, nSrcId, strDescription);
         }
+
+        /// <summary>
+        /// Returns the list of raw images that have a source ID from a selected list.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the source ID.</param>
+        /// <param name="bActive">Optionally, specifies to query active (or non active) images (default = <i>null</i>, which queries all images).</param>
+        /// <param name="bLoadCriteria">Optionally, specifies to load the data criteria which can take longer (default = <i>false</i>).</param>
+        /// <param name="log">Optionally, specifies the output log (default = <i>null</i>).</param>
+        /// <param name="evtCancel">Optionally, specifies the cancel event to abort loading (default = <i>null</i>).</param>
+        /// <returns>The list of RawImage's is returned.</returns>
+        public List<RawImage> QueryRawImages(int nSrcId, bool? bActive = null, bool bLoadCriteria = false, Log log = null, CancelEvent evtCancel = null)
+        {
+            List<RawImage> rgImg = m_db.QueryRawImages(nSrcId, bActive);
+
+            if (!bLoadCriteria)
+                return rgImg;
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
+            for (int i = 0; i < rgImg.Count; i++)
+            {
+                int? nFmt;
+                rgImg[i].DataCriteria = m_db.GetRawImageDataCriteria(rgImg[i], out nFmt);
+
+                if (evtCancel != null && evtCancel.WaitOne(0))
+                    return null;
+
+                if (log != null)
+                {
+                    if (sw.Elapsed.TotalMilliseconds > 1000)
+                    {
+                        log.Progress = (double)i / (double)rgImg.Count;
+                        log.WriteLine("loading " + i.ToString("N0") + " of " + rgImg.Count.ToString("N0") + "...");
+                        sw.Restart();
+                    }
+                }
+            }
+
+            return rgImg;
+        }
+
 
         /// <summary>
         /// Save the SimpleDatum as a RawImageMean in the database for the open data source.
