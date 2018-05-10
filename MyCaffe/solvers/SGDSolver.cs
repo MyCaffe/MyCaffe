@@ -213,8 +213,8 @@ namespace MyCaffe.solvers
             m_nIter = state.iter;
             m_nCurrentStep = state.current_step;
 
-            m_log.CHECK_EQ(state.history.Count, m_colHistory.Count, "Incorrect length of history blobs.");
-            m_log.WriteLine("SGDSolver: restoring history.");
+            m_log.CHECK_EQ(state.history.Count, m_colHistory.Count, "Incorrect length of state history blobs.");
+            m_log.WriteLine("SGDSolver: restoring state history.");
 
             for (int i = 0; i < m_colHistory.Count; i++)
             {
