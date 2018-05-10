@@ -7,12 +7,42 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace MyCaffe.common
 {
+    /// <summary>
+    /// Defines the training stepping method (if any).
+    /// </summary>
+    [Serializable]
+    [DataContract]
+    public enum TRAIN_STEP
+    {
+        /// <summary>
+        /// No stepping.
+        /// </summary>
+        [EnumMember]
+        NONE = 0x0000,
+        /// <summary>
+        /// Step only in the forward direction.
+        /// </summary>
+        [EnumMember]
+        FORWARD = 0x0001,
+        /// <summary>
+        /// Step only in the backward direction.
+        /// </summary>
+        [EnumMember]
+        BACKWARD = 0x0002,
+        /// <summary>
+        /// Step in both directions (one forward and one backward).
+        /// </summary>
+        [EnumMember]
+        BOTH = 0x0003
+    }
+
     /// <summary>
     /// The IXDebugData interface is implemented by the DebugLayer to give access to the debug information managed by the layer.
     /// </summary>
@@ -271,8 +301,8 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="nIterationOverride">Optionally, specifies number of iterations to run that override the iterations specified in the solver desctiptor.</param>
         /// <param name="nTrainingTimeLimitInMinutes">Optionally, specifies a maximum number of minutes to train.  When set to 0, this parameter is ignored and no time limit is imposed.</param>
-        /// <param name="bSingleStep">Optionally, specifies whether or not to single step the training.  The default is <i>false</i>.</param>
-        void Train(int nIterationOverride = -1, int nTrainingTimeLimitInMinutes = 0, bool bSingleStep = false);
+        /// <param name="step">Optionally, specifies whether or not to single step the training on the forward pass, backward pass or both.  The default is <i>TRAIN_STEP.NONE</i> which runs the training to the maximum number of iterations specified.</param>
+        void Train(int nIterationOverride = -1, int nTrainingTimeLimitInMinutes = 0, TRAIN_STEP step = TRAIN_STEP.NONE);
         /// <summary>
         /// Test the network a given number of iterations.
         /// </summary>

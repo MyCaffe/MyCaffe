@@ -953,11 +953,11 @@ namespace MyCaffe
         /// </summary>
         /// <param name="nIterationOverride">Optionally, specifies number of iterations to run that override the iterations specified in the solver desctiptor.</param>
         /// <param name="nTrainingTimeLimitInMinutes">Optionally, specifies a maximum number of minutes to train.  When set to 0, this parameter is ignored and no time limit is imposed.</param>
-        /// <param name="bSingleStep">Optionally, specifies whether or not to single step the training.  The default is <i>false</i>.</param>
+        /// <param name="step">Optionally, specifies whether or not to single step the training on the forward pass, backward pass or both.  The default is <i>TRAIN_STEP.NONE</i> which runs the training to the maximum number of iterations specified.</param>
         /// <remarks>
         /// Note when single stepping, no testing cycles are performed.  Currently, the single-step parameter is only suppored when running in single GPU mode.
         /// </remarks>
-        public void Train(int nIterationOverride = -1, int nTrainingTimeLimitInMinutes = 0, bool bSingleStep = false)
+        public void Train(int nIterationOverride = -1, int nTrainingTimeLimitInMinutes = 0, TRAIN_STEP step = TRAIN_STEP.NONE)
         {
             m_lastPhaseRun = Phase.TRAIN;
 
@@ -982,7 +982,7 @@ namespace MyCaffe
             }
             else
             {
-                m_solver.Solve(-1, null, null, bSingleStep);
+                m_solver.Solve(-1, null, null, step);
             }
         }
 
@@ -1146,7 +1146,7 @@ namespace MyCaffe
             try
             {
                 m_solver.EnableTesting = bEnableTesting;
-                m_solver.Solve(-1, null, null, false, col);
+                m_solver.Solve(-1, null, null, TRAIN_STEP.NONE, col);
 
                 if (m_evtCancel.WaitOne(0))
                     return false;

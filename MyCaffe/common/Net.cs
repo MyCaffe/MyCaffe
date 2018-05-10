@@ -1690,10 +1690,14 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="colBottom">Optionally, specifies input data passed to the Forward pass.</param>
         /// <param name="dfLocalLoss">Returns the local loss of the Forward pass.</param>
+        /// <param name="step">Optionally, specifies to step forward or backward.</param>
         /// <returns>If EnableBreakOnFirstNaN == <i>true</i> and a NaN is detected, this function returns <i>false</i>, otherwise <i>true</i> is returned.</returns>
-        public bool ForwardBackward(BlobCollection<T> colBottom, out double dfLocalLoss)
+        public bool ForwardBackward(BlobCollection<T> colBottom, out double dfLocalLoss, TRAIN_STEP step = TRAIN_STEP.NONE)
         {
-            Forward(colBottom, out dfLocalLoss);
+            dfLocalLoss = 0;
+
+            if (step != TRAIN_STEP.BACKWARD)
+                Forward(colBottom, out dfLocalLoss);
 
             if (m_bBreakOnFirstNan)
             {
@@ -1704,7 +1708,8 @@ namespace MyCaffe.common
                     return false;
             }
 
-            Backward();
+            if (step != TRAIN_STEP.FORWARD)
+                Backward();
 
             return true;
         }

@@ -554,9 +554,9 @@ namespace MyCaffe.solvers
         /// <param name="nIterationOverride">Optionally, specifies an iteration override value to use for the number of iterations run.  The default is -1, which ignores the parameter.</param>
         /// <param name="rgWeights">Optionally, specifies weights to load via the Restore method.  The default is <i>null</i> which ignores the parameter.</param>
         /// <param name="rgState">Optionally, specifies the state to load via the Restore method.  The default is <i>null</i> which ignores the parameter.</param>
-        /// <param name="bSingleStep">Optionally, specifies to single step the training pass - typically this is used during debugging. The default = <i>false</i>.</param>
+        /// <param name="step">Optionally, specifies to single step the training pass - typically this is used during debugging. The default = <i>TRAIN_STEP.NONE</i> which runs the solver in the normal manner.</param>
         /// <param name="col">Optionally, specifies batch information used when using reinforcement learning.  The default is <i>null</i> which ignores the parameter.</param>
-        public virtual void Solve(int nIterationOverride = -1, byte[] rgWeights = null, byte[] rgState = null, bool bSingleStep = false, BatchInformationCollection col = null)
+        public virtual void Solve(int nIterationOverride = -1, byte[] rgWeights = null, byte[] rgState = null, TRAIN_STEP step = TRAIN_STEP.NONE, BatchInformationCollection col = null)
         {
             m_log.CHECK(is_root_solver, "Solve is only supported by the root solver.");
             m_log.WriteLine("Solving " + m_net.name);
@@ -572,12 +572,12 @@ namespace MyCaffe.solvers
             if (nIterationOverride <= 0)
                 nIterationOverride = TrainingIterations;
 
-            if (!Step(nIterationOverride, bSingleStep, col))
+            if (!Step(nIterationOverride, step, col))
                 return;
 
             // If we haven't already, save a snapshot after optimization, unless
             // overriden by setting snapshot_after_train = false.
-            if (!bSingleStep && (m_param.snapshot_after_train && (m_param.snapshot == 0 || (m_nIter % m_param.snapshot) != 0)))
+            if (step == TRAIN_STEP.NONE && (m_param.snapshot_after_train && (m_param.snapshot == 0 || (m_nIter % m_param.snapshot) != 0)))
                 Snapshot(false, true);
 
             if (m_evtCancel.WaitOne(0))
@@ -621,10 +621,10 @@ namespace MyCaffe.solvers
         /// Steps a set of iterations through a training cycle.
         /// </summary>
         /// <param name="nIters">Specifies the number of steps to iterate.</param>
-        /// <param name="bSingleStep">Optionally, specifies to single step the training pass - typically this is used during debugging. The default = <i>false</i>.</param>
+        /// <param name="step">Optionally, specifies to single step the training pass - typically this is used during debugging. The default = <i>TRAIN_STEP.NONE</i> for no stepping.</param>
         /// <param name="col">Optionally, specifies a collection of BatchInformation used when performing custom training. The default = <i>null</i>.</param>
         /// <returns></returns>
-        public bool Step(int nIters, bool bSingleStep = false, BatchInformationCollection col = null)
+        public bool Step(int nIters, TRAIN_STEP step = TRAIN_STEP.NONE, BatchInformationCollection col = null)
         {
             Exception err = null;
 
@@ -673,7 +673,7 @@ namespace MyCaffe.solvers
                     if (OnStart != null)
                         OnStart(this, new EventArgs());
 
-                    if (!bSingleStep && (forceTest ||
+                    if (step == TRAIN_STEP.NONE && (forceTest ||
                          (m_param.test_interval > 0 &&
                           (m_nIter % m_param.test_interval) == 0 &&
                           (m_nIter > 0 || m_param.test_initialization))))
@@ -706,7 +706,7 @@ namespace MyCaffe.solvers
 
                         swTiming.Restart();
 
-                        bFwdPassNanFree = m_net.ForwardBackward(colBottom, out dfLocalLoss);
+                        bFwdPassNanFree = m_net.ForwardBackward(colBottom, out dfLocalLoss, step);
 
                         dfLossTotal += dfLocalLoss;
                         swTiming.Stop();
@@ -791,7 +791,7 @@ namespace MyCaffe.solvers
                     bool bSnapshotTaken = false;
                     bool bForceSnapshot = forceSnapshot;
 
-                    if (!bSingleStep && (is_root_solver && bFwdPassNanFree &&
+                    if (step == TRAIN_STEP.NONE && (is_root_solver && bFwdPassNanFree &&
                         (bForceSnapshot ||
                          (m_param.snapshot > 0 && (m_nIter % m_param.snapshot) == 0) ||
                          (m_dfLastAccuracy > m_dfBestAccuracy))))
@@ -852,11 +852,15 @@ namespace MyCaffe.solvers
                     //-------------------------------------
                     //  If single stepping, stop the solver.
                     //-------------------------------------
-                    if (bSingleStep || m_bEnableSingleStep)
+                    if (step != TRAIN_STEP.NONE || m_bEnableSingleStep)
                     {
-                        m_log.WriteLine("Single step triggered - solving stopped after a single forward/backward pass.");
-
-                        if (!bSingleStep)
+                        if (step == TRAIN_STEP.BOTH)
+                            m_log.WriteLine("Single step (both) triggered - solving stopped after a single forward/backward pass.");
+                        else if (step == TRAIN_STEP.FORWARD)
+                            m_log.WriteLine("Single step (forward) triggered - solving stopped after a single forward pass.");
+                        else if (step == TRAIN_STEP.BACKWARD)
+                            m_log.WriteLine("Single step (backward) triggered - solving stopped after a single backward pass.");
+                        else
                         {
                             // When single stepping, force the snapshot so as to allow
                             //  debugging the net visually.
