@@ -296,7 +296,7 @@ namespace MyCaffe.layers
             }
             else
             {
-                m_cuda.copy(m_blobXNorm.count(), colTop[0].gpu_diff, m_blobXNorm.mutable_gpu_data);
+                m_cuda.copy(m_blobXNorm.count(), colTop[0].gpu_diff, m_blobXNorm.mutable_gpu_diff);
                 hTopDiff = m_blobXNorm.gpu_diff;
             }
 
