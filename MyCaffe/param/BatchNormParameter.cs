@@ -85,9 +85,9 @@ namespace MyCaffe.param
         public override void Copy(LayerParameterBase src)
         {
             BatchNormParameter p = (BatchNormParameter)src;
-            p.m_bUseGlobalStats = m_bUseGlobalStats;
-            p.m_dfEps = m_dfEps;
-            p.m_dfMovingAverageFraction = m_dfMovingAverageFraction;
+            m_bUseGlobalStats = p.m_bUseGlobalStats;
+            m_dfEps = p.m_dfEps;
+            m_dfMovingAverageFraction = p.m_dfMovingAverageFraction;
         }
 
         /** @copydoc LayerParameterBase::Clone */
