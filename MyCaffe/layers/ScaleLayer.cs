@@ -26,7 +26,7 @@ namespace MyCaffe.layers
     public class ScaleLayer<T> : Layer<T>
     {
         BiasLayer<T> m_biasLayer = null;
-        BlobCollection<T> m_colBiasVec = new BlobCollection<T>();
+        BlobCollection<T> m_colBiasBottomVec = new BlobCollection<T>();
         List<bool> m_rgbBiasPropagateDown = new List<bool>();
         int m_nBiasParamId;
         Blob<T> m_blobSumMultiplier;
@@ -164,17 +164,17 @@ namespace MyCaffe.layers
                 }
 
                 Blob<T> blobScale = new Blob<T>(m_cuda, m_log, rgShape);
-
+                blobScale.Name = "scale";
                 FillerParameter fp = p.filler;
 
                 if (fp == null)
                 {
+                    // Default to unit (1) filler for identity operation.
                     fp = new FillerParameter();
                     fp.value = 1.0;
                 }
 
                 Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
-
                 filler.Fill(blobScale);
 
                 m_colBlobs.Add(blobScale);
@@ -185,13 +185,14 @@ namespace MyCaffe.layers
                 LayerParameter pb = new LayerParameter(LayerParameter.LayerType.BIAS);
                 pb.bias_param.axis = p.axis;
                 pb.bias_param.num_axes = (colBottom.Count > 1) ? colBottom[1].num_axes : p.num_axes;
-                pb.bias_param.filler = p.bias_filler.Clone();
+                pb.bias_param.filler = (p.bias_filler != null) ? p.bias_filler.Clone() : new FillerParameter("constant", 1.0);
+
                 m_biasLayer = new BiasLayer<T>(m_cuda, m_log, pb);
 
-                m_colBiasVec = new BlobCollection<T>();
-                m_colBiasVec.Add(colBottom[0]);
+                m_colBiasBottomVec = new BlobCollection<T>();
+                m_colBiasBottomVec.Add(colBottom[0]);
 
-                m_biasLayer.Setup(m_colBiasVec, colTop);
+                m_biasLayer.Setup(m_colBiasBottomVec, colTop);
 
                 if (m_colBlobs.Count + colBottom.Count < 3)
                 {
@@ -224,13 +225,12 @@ namespace MyCaffe.layers
             Blob<T> blobScale = (colBottom.Count > 1) ? colBottom[1] : m_colBlobs[0];
 
             // Always set axis == 0 in special case where bias is a scalar
-            // (num_axes == 0.  Mathematically eqiuvalent for any choice of axis, os the
+            // (num_axes == 0.  Mathematically eqiuvalent for any choice of axis, so the
             // actual setting can be safely ignored; and computation is most efficient
             // with axis == 0 and (therefore) outer_dim == 1. (Setting m_nAxis to
             // bottom[0].num_axes - 1, giving inner_dim_ == 1, would be equally
             // performant.)
             m_nAxis = (blobScale.num_axes == 0) ? 0 : colBottom[0].CanonicalAxisIndex(p.axis);
-
             m_log.CHECK_GE(colBottom[0].num_axes, m_nAxis + blobScale.num_axes, "scale blob's shape extends past bottom[0]'s shape when applied starting with bottom[0] axis = " + m_nAxis.ToString());
 
             for (int i = 0; i < blobScale.num_axes; i++)
@@ -254,8 +254,8 @@ namespace MyCaffe.layers
 
             if (m_biasLayer != null)
             {
-                m_colBiasVec[0] = colTop[0];
-                m_biasLayer.Reshape(m_colBiasVec, colTop);
+                m_colBiasBottomVec[0] = colTop[0];
+                m_biasLayer.Reshape(m_colBiasBottomVec, colTop);
             }
         }
 
@@ -295,7 +295,7 @@ namespace MyCaffe.layers
                 m_cuda.copy(colBottom[0].count(), colBottom[0].gpu_data, m_blobTemp.mutable_gpu_data);
             }
 
-            long hScaleData = (colBottom.Count > 1) ? colBottom[1].mutable_gpu_data : m_colBlobs[0].mutable_gpu_data;
+            long hScaleData = (colBottom.Count > 1) ? colBottom[1].gpu_data : m_colBlobs[0].gpu_data;
             long hTopData = colTop[0].mutable_gpu_data;
 
             if (m_biasLayer != null)
@@ -319,7 +319,7 @@ namespace MyCaffe.layers
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
             if (m_biasLayer != null && m_rgbParamPropagateDown[m_rgbParamPropagateDown.Count - 1])
-                m_biasLayer.Backward(colTop, m_rgbBiasPropagateDown, m_colBiasVec);
+                m_biasLayer.Backward(colTop, m_rgbBiasPropagateDown, m_colBiasBottomVec);
 
             bool bScaleParam = (colBottom.Count == 1) ? true : false;
             Blob<T> blobScale = (bScaleParam) ? m_colBlobs[0] : colBottom[1];
@@ -335,7 +335,7 @@ namespace MyCaffe.layers
                 // can store it directly in the scale diff, and we're done.
                 // If we're computing in-place (and not doing eltwise computation), this
                 // hack doesn't work and we store the product in temp_.
-                bool bIsEltwise = (colBottom[0].count() == blobScale.count());
+                bool bIsEltwise = (colBottom[0].count() == blobScale.count()) ? true : false;
                 long hProduct = (bIsEltwise) ? blobScale.mutable_gpu_diff : ((bInPlace) ? m_blobTemp.mutable_gpu_data : colBottom[0].mutable_gpu_diff);
                 long hSumMult = m_blobSumMultiplier.gpu_data;
 
