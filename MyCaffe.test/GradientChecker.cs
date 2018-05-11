@@ -25,6 +25,7 @@ namespace MyCaffe.test
         protected double m_dfKink;
         protected double m_dfKinkRange;
         protected EventWaitHandle m_evtCancel = new EventWaitHandle(false, EventResetMode.AutoReset, "__GRADIENT_CHECKER_CancelEvent__");
+        protected string m_strBaseType;
 
         /// <summary>
         /// The constructor.
@@ -45,6 +46,7 @@ namespace MyCaffe.test
             m_uiSeed = nSeed;
             m_dfKink = dfKink;
             m_dfKinkRange = dfKinkRange;
+            m_strBaseType = (typeof(T) == typeof(double)) ? "DOUBLE" : "FLOAT";
         }
 
         /// <summary>
@@ -211,15 +213,33 @@ namespace MyCaffe.test
 
         public void CheckGradientExhaustive(Layer<T> layer, BlobCollection<T> colBottom, BlobCollection<T> colTop, int nCheckBottom = -1)
         {
+            Stopwatch sw = new Stopwatch();
             layer.Setup(colBottom, colTop);
 
             m_log.CHECK_GT(colTop.Count, 0, "Exhaustive mode requires at least one top blob.");
+            sw.Start();
+
+            int nTotal = 0;
+            int nIdx = 0;
+
+            for (int i = 0; i < colTop.Count; i++)
+            {
+                nTotal += colTop[i].count();
+            }
 
             for (int i = 0; i < colTop.Count; i++)
             {
                 for (int j = 0; j < colTop[i].count(); j++)
                 {
                     CheckGradientSingle(layer, colBottom, colTop, nCheckBottom, i, j);
+                    nIdx++;
+
+                    if (sw.Elapsed.TotalMilliseconds > 1000)
+                    {
+                        double dfPct = (double)nIdx / (double)nTotal;
+                        Trace.WriteLine(m_strBaseType + ": Check gradient exhaustive at " + dfPct.ToString("P") + "...");
+                        sw.Restart();
+                    }
                 }
             }
         }
