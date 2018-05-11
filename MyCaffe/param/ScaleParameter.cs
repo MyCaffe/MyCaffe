@@ -13,7 +13,7 @@ namespace MyCaffe.param
     public class ScaleParameter : BiasParameter 
     {
         bool m_bBiasTerm = false;
-        FillerParameter m_FillerBias = new FillerParameter("constant", 0.1);
+        FillerParameter m_FillerBias = null;
 
         /** @copydoc LayerParameterBase */
         public ScaleParameter()
