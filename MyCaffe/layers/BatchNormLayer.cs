@@ -152,7 +152,7 @@ namespace MyCaffe.layers
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             m_dfMovingAverageFraction = m_param.batch_norm_param.moving_average_fraction;
-            m_bUseGlobalStats = (m_phase == Phase.TEST) ? true : false;
+            m_bUseGlobalStats = (m_phase != Phase.TRAIN) ? true : false;
 
             if (m_param.batch_norm_param.use_global_stats.HasValue)
                 m_bUseGlobalStats = m_param.batch_norm_param.use_global_stats.Value;
