@@ -201,6 +201,13 @@ namespace MyCaffe.common
         /// This option requires that EnableBlobDebugging == true.
         /// </remarks>
         bool EnableSingleStep { get; set; }
+        /// <summary>
+        /// Enable/disable layer debugging which causes each layer to check for NAN/INF on each forward/backward pass and throw an exception when found.
+        /// </summary>
+        /// <remarks>
+        /// This option dramatically slows down training and is only recommended during debugging.
+        /// </remarks>
+        bool EnableLayerDebugging { get; set; }
 
         /// <summary>
         /// Returns the persist used to load and save weights.
@@ -253,6 +260,13 @@ namespace MyCaffe.common
         /// <param name="nDeviceID">Specifies the device ID.</param>
         /// <returns></returns>
         string GetDeviceName(int nDeviceID);
+        /// <summary>
+        /// Re-initializes each of the specified layers by re-running the filler (if any) specified by the layer.  
+        /// When the 'rgstr' parameter is <i>null</i> or otherwise empty, the blobs of all layers are re-initialized. 
+        /// </summary>
+        /// <param name="rgstrLayers">Specifies the layers to reinitialize, when <i>null</i> or empty, all layers are re-initialized</param>
+        /// <returns>If a layer is specified and found, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        bool ReInitializeParameters(params string[] rgstrLayers);
     }
 
     /// <summary>

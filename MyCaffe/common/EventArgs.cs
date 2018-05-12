@@ -49,6 +49,32 @@ namespace MyCaffe.common
     }
 
     /// <summary>
+    /// The GetWorkBlobArgs are passed to the Layer::OnGetWorkBlob event which is supported for debugging only.
+    /// </summary>
+    /// <typeparam name="T">Specifies the default type.</typeparam>
+    public class GetWorkBlobArgs<T> : EventArgs
+    {
+        Blob<T> m_work = null;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="b"></param>
+        public GetWorkBlobArgs()
+        {
+        }
+
+        /// <summary>
+        /// Specifies the blob.
+        /// </summary>
+        public Blob<T> Blob
+        {
+            get { return m_work; }
+            set { m_work = value; }
+        }
+    }
+
+    /// <summary>
     /// The TestArgs are passed to the Solver::OnTest event.
     /// </summary>
     /// <remarks>

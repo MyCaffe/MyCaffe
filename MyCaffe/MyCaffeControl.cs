@@ -226,6 +226,20 @@ namespace MyCaffe
         }
 
         /// <summary>
+        /// Re-initializes each of the specified layers by re-running the filler (if any) specified by the layer.  
+        /// When the 'rgstr' parameter is <i>null</i> or otherwise empty, the blobs of all layers are re-initialized. 
+        /// </summary>
+        /// <param name="rgstrLayers">Specifies the layers to reinitialize, when <i>null</i> or empty, all layers are re-initialized</param>
+        /// <returns>If a layer is specified and found, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        /// <remarks>This method causes the OnTrainingIteration event to fire with the updated values from the re-init.</remarks>
+        public bool ReInitializeParameters(params string[] rgstrLayers)
+        {
+            Net<T> net = GetInternalNet(Phase.TRAIN);
+            net.ReInitializeParameters(rgstrLayers);
+            return m_solver.ForceOnTrainingIterationEvent();
+        }
+
+        /// <summary>
         /// Sets the root solver's onTest event function.
         /// </summary>
         /// <param name="onTest">Specifies the event handler called when testing.</param>
@@ -312,6 +326,22 @@ namespace MyCaffe
             {
                 if (m_solver != null)
                     m_solver.EnableDetailedNanDetection = value;
+            }
+        }
+
+        /// <summary>
+        /// Enable/disable layer debugging which causes each layer to check for NAN/INF on each forward/backward pass and throw an exception when found.
+        /// </summary>
+        /// <remarks>
+        /// This option dramatically slows down training and is only recommended during debugging.
+        /// </remarks>
+        public bool EnableLayerDebugging
+        {
+            get { return (m_solver == null) ? false : m_solver.EnableLayerDebugging; }
+            set
+            {
+                if (m_solver != null)
+                    m_solver.EnableLayerDebugging = value;
             }
         }
 

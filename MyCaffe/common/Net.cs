@@ -11,6 +11,7 @@ using MyCaffe.param;
 using MyCaffe.data;
 using MyCaffe.layers;
 using MyCaffe.layers.alpha;
+using MyCaffe.fillers;
 
 namespace MyCaffe.common
 {
@@ -112,8 +113,10 @@ namespace MyCaffe.common
         Net<T> m_sharedNet = null;
         bool m_bBreakOnFirstNan = false;
         bool m_bDetectDetailedNans = false;
+        bool m_bEnableLayerDebugging = false;
         Blob<T> m_blobWork = null;
         List<Layer<T>> m_rgConnectedLayers = new List<Layer<T>>();
+        Blob<T> m_debugBlob = null;
 
         /// Specifies the OnGetIteration event that fires when a layer needs to get the current iteration from the solver.
         /// </summary>
@@ -142,6 +145,7 @@ namespace MyCaffe.common
             m_db = imgDb;
             m_cuda = cuda;
             m_log = log;
+            m_blobWork = new Blob<T>(cuda, log);
 
             m_evtCancel = evtCancel;
 
@@ -226,6 +230,12 @@ namespace MyCaffe.common
         /// </summary>
         public void Dispose()
         {
+            if (m_debugBlob != null)
+            {
+                m_debugBlob.Dispose();
+                m_debugBlob = null;
+            }
+
             Dispose(true);
         }
 
@@ -349,6 +359,7 @@ namespace MyCaffe.common
                     layer1.OnGetWorkspace += layer_OnGetWorkspace;
                     layer1.OnSetWorkspace += layer_OnSetWorkspace;
                     layer1.OnGetIteration += layer_OnGetIteration;
+
                     m_rgLayers.Add(layer1);
 
                     m_rgstrLayerNames.Add(layer_param.name);
@@ -697,6 +708,11 @@ namespace MyCaffe.common
             }
         }
 
+        private void layer_OnDebug(object sender, GetWorkBlobArgs<T> e)
+        {
+            e.Blob = m_blobWork;
+        }
+
         private void layer_OnGetIteration(object sender, GetIterationArgs e)
         {
             if (OnGetIteration != null)
@@ -741,6 +757,39 @@ namespace MyCaffe.common
         {
             get { return m_bDetectDetailedNans; }
             set { m_bDetectDetailedNans = value; }
+        }
+
+        /// <summary>
+        /// Enable/disable layer debugging which causes each layer to check for NAN/INF on each forward/backward pass and throw an exception when found.
+        /// </summary>
+        /// <remarks>
+        /// This option dramatically slows down training and is only recommended during debugging.
+        /// </remarks>
+        public bool EnableLayerDebugging
+        {
+            get { return m_bEnableLayerDebugging; }
+            set
+            {
+                if (m_bEnableLayerDebugging == value)
+                    return;
+
+                foreach (Layer<T> layer in m_rgLayers)
+                {
+                    // Enable layer debugging which checks for NAN/INF on each fwd/bwd pass, but is much
+                    // slower and therefore only for debugging.
+                    if (value)
+                        layer.OnDebug += layer_OnDebug;
+                    else
+                        layer.OnDebug -= layer_OnDebug;
+                }
+
+                m_bEnableLayerDebugging = value;
+
+                if (m_bEnableLayerDebugging)
+                    m_log.WriteLine("WARNING: Layer debugging enabled, training will be slow.");
+                else
+                    m_log.WriteLine("Layer debugging disabled.");
+            }
         }
 
         public void EnableBestResultMask(string strTargetNode, int nBestResultCount = 5, BEST_RESULT_TYPE resultType = BEST_RESULT_TYPE.BY_CHANNEL) /** @private */
@@ -2062,6 +2111,8 @@ namespace MyCaffe.common
             m_bDebugInfo = bVal;
         }
 
+
+
         /// <summary>
         /// Create a new NetParameter and insert splits into it based on a given NetParameter.
         /// </summary>
@@ -2379,6 +2430,31 @@ namespace MyCaffe.common
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Re-initializes the blobs and each of the specified layers by re-running the filler (if any) specified by the layer.  
+        /// When the 'rgstr' parameter is <i>null</i> or otherwise empty, the blobs of all layers are re-initialized. 
+        /// </summary>
+        /// <param name="rgstrLayers">Specifies the layers to reinitialize, when <i>null</i> or empty, all layers are re-initialized</param>
+        /// <returns>If a layer is specified and found, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public bool ReInitializeParameters(params string[] rgstrLayers)
+        {
+            foreach (Blob<T> b in m_colBlobs)
+            {
+                b.SetData(0);
+                b.SetDiff(0);
+            }
+
+            foreach (Layer<T> layer in m_rgLayers)
+            {
+                if (rgstrLayers == null || rgstrLayers.Length == 0 || rgstrLayers.Contains(layer.layer_param.name))
+                {
+                    layer.ReInitializeParameters();
+                }
+            }
+
+            return true;
         }
     }
 }
