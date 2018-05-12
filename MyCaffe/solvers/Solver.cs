@@ -60,6 +60,7 @@ namespace MyCaffe.solvers
         protected List<double> m_rgLosses = new List<double>();
         AutoResetEvent m_evtCompleted = new AutoResetEvent(false);
         bool m_bEnableTest = true;
+        bool m_bEnableLayerDebugging = false;
         bool m_bEnableBlobDebugging = false;
         bool m_bEnableBreakOnNan = false;
         bool m_bEnableDetailedNanDetection = false;
@@ -163,6 +164,62 @@ namespace MyCaffe.solvers
         }
 
         /// <summary>
+        /// Force an OnTrainingIterationEvent to fire.
+        /// </summary>
+        /// <returns>When fired, <i>true</i> is returned, otherwise <i>false</i>.</returns>
+        public bool ForceOnTrainingIterationEvent()
+        {
+            int nTimingCount = 0;
+            double dfTotalTime = 0;
+            return fireOnTrainingIterationEvent(false, 0, 0, ref nTimingCount, ref dfTotalTime);
+        }
+
+        private bool fireOnTrainingIterationEvent(bool bFwdPassNanFree, double dfLoss, double dfLastLearningRate, ref int nTimingCount, ref double dfTotalTime)
+        {
+            if (is_root_solver && OnTrainingIteration != null)
+            {
+                string strFirstNanBlob = null;
+                DebugInformation<T> dbgInfo = null;
+
+                if (m_bEnableBlobDebugging)
+                {
+                    dbgInfo = TrainingNet.GetDebugInformation(m_bEnableDetailedNanDetection);
+
+                    if (m_bEnableBreakOnNan && dbgInfo != null)
+                    {
+                        string strType;
+                        strFirstNanBlob = dbgInfo.DetectFirstNaN(out strType);
+
+                        if (strFirstNanBlob != null)
+                        {
+                            string strPass = (!bFwdPassNanFree) ? "Forward" : "Backward";
+                            m_log.WriteLine("First NaN detected in the '" + strType + "' of blob '" + strFirstNanBlob + "' after " + strPass + " pass.");
+
+                            string strTypeLast;
+                            string strLastNanBlob = dbgInfo.DetectLastNaN(out strTypeLast);
+
+                            if (strLastNanBlob != strFirstNanBlob && strType != strTypeLast)
+                                m_log.WriteLine("Last NaN detected in the '" + strTypeLast + "' of blob '" + strLastNanBlob + "' after " + strPass + " pass.");
+                        }
+                    }
+                }
+
+                double dfTime = (nTimingCount > 0) ? (dfTotalTime / nTimingCount) : 0;
+                OnTrainingIteration(this, new TrainingIterationArgs<T>(m_nIter, m_dfLastAccuracy, dfLoss, m_dfSmoothedLoss, m_dfBestError, m_bWeightsUpdated, m_net.ActiveLabelCounts, dfLastLearningRate, dfTime, dbgInfo));
+                dfTotalTime = 0;
+                nTimingCount = 0;
+
+                if (strFirstNanBlob != null)
+                {
+                    m_log.WriteLine("Training is now stopping at iteration " + m_nIter.ToString("N0") + " as the first NaN has been detected ('" + strFirstNanBlob + "').");
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Get/set the training time limit in minutes.  When set to 0, no time limit is imposed on training.
         /// </summary>
         public int TrainingTimeLimitInMinutes
@@ -229,6 +286,18 @@ namespace MyCaffe.solvers
         {
             get { return m_bEnableBlobDebugging; }
             set { m_bEnableBlobDebugging = value; }
+        }
+
+        /// <summary>
+        /// Enable/disable layer debugging which causes each layer to check for NAN/INF on each forward/backward pass and throw an exception when found.
+        /// </summary>
+        /// <remarks>
+        /// This option dramatically slows down training and is only recommended during debugging.
+        /// </remarks>
+        public bool EnableLayerDebugging
+        {
+            get { return TrainingNet.EnableLayerDebugging; }
+            set { TrainingNet.EnableLayerDebugging = value; }
         }
 
         /// <summary>
@@ -778,7 +847,10 @@ namespace MyCaffe.solvers
                     if (OnGradientsReady != null && bFwdPassNanFree)
                         OnGradientsReady(this, new GradientsReadyArgs());
 
-                    double dfLastLearningRate = ApplyUpdate();
+                    double dfLastLearningRate = 0;
+
+                    if (step != TRAIN_STEP.FORWARD)
+                        dfLastLearningRate = ApplyUpdate();
 
                     if (m_evtCancel.WaitOne(0))
                         break;
@@ -803,51 +875,11 @@ namespace MyCaffe.solvers
                             m_dfBestAccuracy = m_dfLastAccuracy;
                     }
 
-
                     //-------------------------------------
                     //  Call the training iteration event
                     //  on the root solver.  
                     //-------------------------------------
-                    if (is_root_solver && OnTrainingIteration != null)
-                    {
-                        string strFirstNanBlob = null;
-                        DebugInformation<T> dbgInfo = null;
-
-                        if (m_bEnableBlobDebugging)
-                        {
-                            dbgInfo = TrainingNet.GetDebugInformation(m_bEnableDetailedNanDetection);
-
-                            if (m_bEnableBreakOnNan && dbgInfo != null)
-                            {
-                                string strType;
-                                strFirstNanBlob = dbgInfo.DetectFirstNaN(out strType);
-
-                                if (strFirstNanBlob != null)
-                                {
-                                    string strPass = (!bFwdPassNanFree) ? "Forward" : "Backward";
-                                    m_log.WriteLine("First NaN detected in the '" + strType + "' of blob '" + strFirstNanBlob + "' after " + strPass + " pass.");
-
-                                    string strTypeLast;
-                                    string strLastNanBlob = dbgInfo.DetectLastNaN(out strTypeLast);
-
-                                    if (strLastNanBlob != strFirstNanBlob && strType != strTypeLast)
-                                        m_log.WriteLine("Last NaN detected in the '" + strTypeLast + "' of blob '" + strLastNanBlob + "' after " + strPass + " pass.");
-                                }
-                            }
-                        }
-
-                        double dfTime = (nTimingCount > 0) ? (dfTotalTime / nTimingCount) : 0;
-                        OnTrainingIteration(this, new TrainingIterationArgs<T>(m_nIter, m_dfLastAccuracy, dfLoss, m_dfSmoothedLoss, m_dfBestError, m_bWeightsUpdated, m_net.ActiveLabelCounts, dfLastLearningRate, dfTime, dbgInfo));
-                        dfTotalTime = 0;
-                        nTimingCount = 0;
-
-                        if (strFirstNanBlob != null)
-                        {
-                            m_log.WriteLine("Training is now stopping at iteration " + m_nIter.ToString("N0") + " as the first NaN has been detected ('" + strFirstNanBlob + "').");
-                            return false;
-                        }
-                    }
-
+                    fireOnTrainingIterationEvent(bFwdPassNanFree, dfLoss, dfLastLearningRate, ref nTimingCount, ref dfTotalTime);
 
                     //-------------------------------------
                     //  If single stepping, stop the solver.
