@@ -1300,6 +1300,9 @@ namespace MyCaffe.common
         /// <param name="nIdx">Optionally, specifies the index of the item to set.</param>
         public void SetData(double dfVal, int nIdx = -1)
         {
+            if (mutable_gpu_data == 0)
+                return;
+
             m_cuda.set(count(), mutable_gpu_data, dfVal, nIdx);
         }
 
@@ -1312,7 +1315,12 @@ namespace MyCaffe.common
         public void SetDiff(double dfVal, int nIdx = -1)
         {
             if (m_bIncludeDiff)
+            {
+                if (mutable_gpu_diff == 0)
+                    return;
+
                 m_cuda.set(count(), mutable_gpu_diff, dfVal, nIdx);
+            }
         }
 
         /// <summary>
