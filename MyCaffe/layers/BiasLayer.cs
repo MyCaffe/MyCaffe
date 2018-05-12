@@ -89,6 +89,24 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Re-initialize the parameters of the layer.
+        /// </summary>
+        /// <returns>When handled, this method returns <i>true</i>, otherwise <i>false</i>.</returns>
+        public override bool ReInitializeParameters()
+        {
+            base.ReInitializeParameters();
+
+            FillerParameter fp = m_param.bias_param.filler;
+            if (fp == null)
+                fp = new FillerParameter("constant", 0.0);
+
+            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+            filler.Fill(m_colBlobs[0]);
+
+            return true;
+        }
+
+        /// <summary>
         /// Setup the layer.
         /// </summary>
         /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
@@ -123,8 +141,13 @@ namespace MyCaffe.layers
                 }
 
                 Blob<T> blobBias = new Blob<T>(m_cuda, m_log, rgBiasShape);
-                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, p.filler);
+                blobBias.Name = "bias";
 
+                FillerParameter fp = p.filler;
+                if (fp == null)
+                    fp = new FillerParameter("constant", 0.0);
+
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
                 filler.Fill(blobBias);
 
                 m_colBlobs.Add(blobBias);

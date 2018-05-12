@@ -130,6 +130,28 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Re-initialize the parameters of the layer.
+        /// </summary>
+        /// <returns>When handled, this method returns <i>true</i>, otherwise <i>false</i>.</returns>
+        public override bool ReInitializeParameters()
+        {
+            base.ReInitializeParameters();
+
+            FillerParameter fp = m_param.scale_param.filler;
+            if (fp == null)
+                fp = new FillerParameter("constant", 1.0);
+
+            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+            filler.Fill(m_colBlobs[0]);
+
+            if (m_param.scale_param.bias_term)
+                m_biasLayer.ReInitializeParameters();
+
+            return true;
+        }
+
+
+        /// <summary>
         /// Setup the layer.
         /// </summary>
         /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
@@ -167,12 +189,9 @@ namespace MyCaffe.layers
                 blobScale.Name = "scale";
                 FillerParameter fp = p.filler;
 
+                // Default to unit (1) filler for identity operation.
                 if (fp == null)
-                {
-                    // Default to unit (1) filler for identity operation.
-                    fp = new FillerParameter();
-                    fp.value = 1.0;
-                }
+                    fp = new FillerParameter("constant", 1.0);
 
                 Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
                 filler.Fill(blobScale);
@@ -185,13 +204,12 @@ namespace MyCaffe.layers
                 LayerParameter pb = new LayerParameter(LayerParameter.LayerType.BIAS);
                 pb.bias_param.axis = p.axis;
                 pb.bias_param.num_axes = (colBottom.Count > 1) ? colBottom[1].num_axes : p.num_axes;
-                pb.bias_param.filler = (p.bias_filler != null) ? p.bias_filler.Clone() : new FillerParameter("constant", 1.0);
-
-                m_biasLayer = new BiasLayer<T>(m_cuda, m_log, pb);
+                pb.bias_param.filler = p.bias_filler;
 
                 m_colBiasBottomVec = new BlobCollection<T>();
                 m_colBiasBottomVec.Add(colBottom[0]);
 
+                m_biasLayer = new BiasLayer<T>(m_cuda, m_log, pb);
                 m_biasLayer.Setup(m_colBiasBottomVec, colTop);
 
                 if (m_colBlobs.Count + colBottom.Count < 3)

@@ -84,6 +84,24 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Re-initialize the parameters of the layer.
+        /// </summary>
+        /// <returns>When handled, this method returns <i>true</i>, otherwise <i>false</i>.</returns>
+        public override bool ReInitializeParameters()
+        {
+            base.ReInitializeParameters();
+
+            FillerParameter fp = m_param.prelu_param.filler;
+            if (fp == null)
+                fp = new FillerParameter("constant", 0.25);
+
+            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+            filler.Fill(m_colBlobs[0]);
+
+            return true;
+        }
+
+        /// <summary>
         /// Setup the layer.
         /// </summary>
         /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
@@ -111,16 +129,12 @@ namespace MyCaffe.layers
 
                 m_colBlobs[0].Name = "slope";
 
-                FillerParameter fillerParam = p.filler;
+                FillerParameter fp = p.filler;
 
-                if (fillerParam == null)
-                {
-                    fillerParam = new FillerParameter();
-                    fillerParam.type = "constant";
-                    fillerParam.value = 0.25;
-                }
+                if (fp == null)
+                    fp = new FillerParameter("constant", 0.25);
 
-                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fillerParam);
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
 
                 filler.Fill(m_colBlobs[0]);
             }

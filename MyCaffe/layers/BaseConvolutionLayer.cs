@@ -224,6 +224,26 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Re-initialize the parameters of the layer.
+        /// </summary>
+        /// <returns>When handled, this method returns <i>true</i>, otherwise <i>false</i>.</returns>
+        public override bool ReInitializeParameters()
+        {
+            base.ReInitializeParameters();
+
+            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, m_param.convolution_param.weight_filler);
+            filler.Fill(m_colBlobs[0]);
+
+            if (m_param.convolution_param.bias_term && m_colBlobs.Count > 1)
+            {
+                Filler<T> fillerBias = Filler<T>.Create(m_cuda, m_log, m_param.convolution_param.bias_filler);
+                fillerBias.Fill(m_colBlobs[1]);
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Setup the layer.
         /// </summary>
         /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>

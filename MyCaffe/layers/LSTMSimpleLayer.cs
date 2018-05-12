@@ -142,6 +142,40 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Re-initialize the parameters of the layer.
+        /// </summary>
+        /// <returns>When handled, this method returns <i>true</i>, otherwise <i>false</i>.</returns>
+        public override bool ReInitializeParameters()
+        {
+            base.ReInitializeParameters();
+
+            Filler<T> weight_filler = Filler<T>.Create(m_cuda, m_log, m_param.lstm_simple_param.weight_filler);
+            weight_filler.Fill(m_colBlobs[0]);
+            weight_filler.Fill(m_colBlobs[1]);
+
+            Filler<T> bias_filler = Filler<T>.Create(m_cuda, m_log, m_param.lstm_simple_param.bias_filler);
+            bias_filler.Fill(m_colBlobs[2]);
+
+            // Initialize the bias for the forget gate to 5.0 as described in the
+            // Clockwork RNN paper: 
+            // [1] Koutnik, J., Greff, K., Gomez, F., Schmidhuber, J., 'A Clockwork RNN', 2014"
+            if (m_param.lstm_simple_param.enable_clockwork_forgetgate_bias)
+            {
+                double[] rgBias = convertD(m_colBlobs[2].mutable_cpu_data);
+
+                for (int i = m_nH; i < 2 * m_nH; i++)
+                {
+                    rgBias[i] = 5.0;
+                }
+
+                m_colBlobs[2].mutable_cpu_data = convert(rgBias);
+            }
+
+            return true;
+        }
+
+
+        /// <summary>
         /// Setup the layer.
         /// </summary>
         /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>

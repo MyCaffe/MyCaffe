@@ -129,6 +129,22 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Re-initialize the parameters of the layer.
+        /// </summary>
+        /// <returns>When handled, this method returns <i>true</i>, otherwise <i>false</i>.</returns>
+        public override bool ReInitializeParameters()
+        {
+            base.ReInitializeParameters();
+
+            for (int i = 0; i < 3; i++)
+            {
+                m_colBlobs[i].SetData(0);
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Setup the layer.
         /// </summary>
         /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
@@ -169,6 +185,16 @@ namespace MyCaffe.layers
                 {
                     m_colBlobs[i].SetData(0);
                 }
+            }
+
+            // Mask statistics from optimization by setting local learning rates
+            // for mean, variance, and bias correction to zero.
+            for (int i = 0; i < m_colBlobs.Count; i++)
+            {
+                if (m_param.parameters.Count == i)
+                    m_param.parameters.Add(new ParamSpec(0.0, 0.0));
+                else
+                    m_log.CHECK_EQ(m_param.parameters[i].lr_mult, 0, "Cannot configure batch normalization statistics as layer parameters.");
             }
         }
 
