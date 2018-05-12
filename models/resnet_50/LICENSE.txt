@@ -1,1 +1,0 @@
-https://github.com/KaimingHe/deep-residual-networks/blob/master/LICENSE
