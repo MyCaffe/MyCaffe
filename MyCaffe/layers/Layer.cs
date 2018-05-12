@@ -94,6 +94,14 @@ namespace MyCaffe.layers
         /// Specifies the OnGetIteration event that fires when a layer needs to get the current iteration from the solver.
         /// </summary>
         public event EventHandler<GetIterationArgs> OnGetIteration;
+        /// <summary>
+        /// Specifies the OnGetWorkBlob event that is only supported when debugging to get a work
+        /// blob from the primary Net holding this layer.
+        /// </summary>
+        /// <remarks>
+        /// When implemented, this event causes a nan/inf check at the end of each forward and backward pass
+        /// and is only recommended use during debugging.</remarks>
+        public event EventHandler<GetWorkBlobArgs<T>> OnDebug;
 
         /// <summary>
         /// The Layer constructor.
@@ -137,6 +145,27 @@ namespace MyCaffe.layers
         /// </summary>
         protected virtual void dispose()
         {
+        }
+
+        /// <summary>
+        /// Re-initialize the parameters of the layer.
+        /// </summary>
+        /// <returns>When handled, this method returns <i>true</i>, otherwise <i>false</i>.</returns>
+        public virtual bool ReInitializeParameters()
+        {
+            foreach (Blob<T> b in m_colBlobs)
+            {
+                b.SetDiff(0);
+                b.SetData(0);
+            }
+
+            foreach (Blob<T> b in internal_blobs)
+            {
+                b.SetDiff(0);
+                b.SetData(0);
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -269,6 +298,24 @@ namespace MyCaffe.layers
                 m_dfForwardTiming = m_swTiming.Elapsed.TotalMilliseconds;
                 m_dfForwardAverageTiming = getAveTiming(m_dfAverageInterval, m_dfForwardTiming, m_dfForwardAverageTiming);
 
+                if (OnDebug != null)
+                {
+                    GetWorkBlobArgs<T> args = new GetWorkBlobArgs<T>();
+                    OnDebug(this, args);
+
+                    foreach (Blob<T> b in colTop)
+                    {
+                        Tuple<double, double, double, double> mm_data = b.minmax_data(args.Blob, true);
+                        Tuple<double, double, double, double> mm_diff = b.minmax_diff(args.Blob, true);
+
+                        if (mm_data.Item3 > 0 || mm_data.Item4 > 0)
+                            throw new Exception("NAN or INF detected in the TOP '" + b.Name + "' Data for layer '" + m_param.name + "' on the forward pass.");
+
+                        if (mm_diff.Item3 > 0 || mm_diff.Item4 > 0)
+                            throw new Exception("NAN or INF detected in TOP '" + b.Name + "' Diff for layer '" + m_param.name + "' on the forward pass.");
+                    }
+                }
+
                 return dfLoss;
             }
             catch (Exception excpt)
@@ -313,6 +360,24 @@ namespace MyCaffe.layers
                 m_swTiming.Stop();
                 m_dfBackwardTiming = m_swTiming.Elapsed.TotalMilliseconds;
                 m_dfBackwardAverageTiming = getAveTiming(m_dfAverageInterval, m_dfBackwardTiming, m_dfBackwardAverageTiming);
+
+                if (OnDebug != null)
+                {
+                    GetWorkBlobArgs<T> args = new GetWorkBlobArgs<T>();
+                    OnDebug(this, args);
+
+                    foreach (Blob<T> b in colBottom)
+                    {
+                        Tuple<double, double, double, double> mm_data = b.minmax_data(args.Blob, true);
+                        Tuple<double, double, double, double> mm_diff = b.minmax_diff(args.Blob, true);
+
+                        if (mm_data.Item3 > 0 || mm_data.Item4 > 0)
+                            throw new Exception("NAN or INF detected in the BOTTOM '" + b.Name + "' Data for layer '" + m_param.name + "' on the backward pass.");
+
+                        if (mm_diff.Item3 > 0 || mm_diff.Item4 > 0)
+                            throw new Exception("NAN or INF detected in the BOTTOM '" + b.Name + "' Diff for layer '" + m_param.name + "' on the backward pass.");
+                    }
+                }
             }
             catch (Exception excpt)
             {
