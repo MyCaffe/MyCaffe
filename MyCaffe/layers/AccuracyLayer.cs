@@ -290,6 +290,7 @@ namespace MyCaffe.layers
             }
 
             int nCount = 0;
+            bool bNanDetected = false;
 
             for (int i = 0; i < m_nOuterNum; i++)
             {
@@ -313,12 +314,16 @@ namespace MyCaffe.layers
                     // Top-k accuracy
                     for (int k = 0; k < nNumLabels && num_better_predictions < m_nTopK; k++)
                     {
-                        if (rgBottomData[i * nDim + k * m_nInnerNum + j] >= prob_of_true_class)
+                        double dfVal = rgBottomData[i * nDim + k * m_nInnerNum + j];
+
+                        if (double.IsNaN(dfVal) || double.IsInfinity(dfVal))
+                            bNanDetected = true;
+                        else if (dfVal >= prob_of_true_class)
                             num_better_predictions += 1;
                     }
 
                     // Check if true label is in top_k predictions
-                    if (num_better_predictions < m_nTopK)
+                    if (num_better_predictions != -1 && num_better_predictions < m_nTopK)
                     {
                         dfAccuracy += 1.0;
 
@@ -329,6 +334,9 @@ namespace MyCaffe.layers
                     nCount++;
                 }
             }
+
+            if (bNanDetected)
+                m_log.WriteLine("WARNING: NAN/INF detected in output!");
 
             // m_log.WriteLine("Accuracy: " + dfAccuracy.ToString());
             dfAccuracy = (nCount == 0) ? 0 : (dfAccuracy / nCount);
