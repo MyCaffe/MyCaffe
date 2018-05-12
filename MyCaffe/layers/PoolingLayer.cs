@@ -173,7 +173,8 @@ namespace MyCaffe.layers
 
             if (p.global_pooling)
             {
-                m_log.CHECK(!(p.kernel_size.Count > 0 || p.kernel_h.HasValue || p.kernel_w.HasValue), "With global pooling = true, Filter size cannot be specified.");
+                if (!(p.kernel_size.Count > 0 || p.kernel_h.HasValue || p.kernel_w.HasValue))
+                    m_log.WriteLine("WARNING: With global pooling = true, Filter size cannot be specified, the bottom hxw = '" + colBottom[0].height.ToString() + "x" + colBottom[0].width.ToString() + "' will be used instead for the kernel size.");
             }
             else
             {
