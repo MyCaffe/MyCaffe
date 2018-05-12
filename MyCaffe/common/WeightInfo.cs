@@ -14,6 +14,7 @@ namespace MyCaffe.common
     public class WeightInfo<T>
     {
         Dictionary<string, List<int>> m_rgBlobInfo = new Dictionary<string, List<int>>();
+        BlobName m_names = new BlobName();
 
         /// <summary>
         /// The constructor.
@@ -29,9 +30,7 @@ namespace MyCaffe.common
         /// <param name="rgShape">Specifies the Blob shape.</param>
         public void AddBlob(string strName, List<int> rgShape)
         {
-            if (m_rgBlobInfo.ContainsKey(strName))
-                throw new Exception("The blob name is already used.");
-
+            strName = m_names.GetName(strName);
             m_rgBlobInfo.Add(strName, rgShape);
         }
 
@@ -41,7 +40,8 @@ namespace MyCaffe.common
         /// <param name="b">Specifies the Blob who's name and shape are to be added.</param>
         public void AddBlob(Blob<T> b)
         {
-            m_rgBlobInfo.Add(b.Name, b.shape());
+            string strName = m_names.GetName(b.Name);
+            m_rgBlobInfo.Add(strName, b.shape());
         }
 
         /// <summary>
@@ -51,6 +51,44 @@ namespace MyCaffe.common
         public Dictionary<string, List<int>> Blobs
         {
             get { return m_rgBlobInfo; }
+        }
+    }
+
+    /// <summary>
+    /// The BlobName class is used to build unique blob names.
+    /// </summary>
+    public class BlobName
+    {
+        Dictionary<string, int> m_rgNames = new Dictionary<string, int>();
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        public BlobName()
+        {
+        }
+
+        /// <summary>
+        /// Returns a unique blob name.
+        /// </summary>
+        /// <param name="strName">Specifies the original name of the blob.</param>
+        /// <returns>A unique blob name is returned.</returns>
+        public string GetName(string strName)
+        {
+            if (string.IsNullOrEmpty(strName))
+                strName = "b";
+
+            if (!m_rgNames.ContainsKey(strName))
+            {
+                m_rgNames.Add(strName, 1);
+            }
+            else
+            {
+                m_rgNames[strName]++;
+                strName = strName + m_rgNames[strName].ToString();
+            }
+
+            return strName;
         }
     }
 }

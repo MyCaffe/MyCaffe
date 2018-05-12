@@ -486,6 +486,7 @@ namespace MyCaffe.common
             ProtoBufReader reader = new ProtoBufReader(rgWeights);
             ProtoBufFieldCollection fields = reader.ReadFields(fd, true);
             Stopwatch sw = new Stopwatch();
+            BlobName name = new BlobName();
 
             bLoadedDiffs = false;
 
@@ -572,13 +573,15 @@ namespace MyCaffe.common
             while (nFieldIdx < colFieldBlobs.Count && nBlobIdx < colBlobs.Count)
             {
                 Blob<T> blob = colBlobs[nBlobIdx];
+                string strName = name.GetName(blob.Name);
 
                 if (targetWtInfo != null)
                 {
-                    while (blob.Name != targetWtInfo[nTargetIdx] && nBlobIdx < colBlobs.Count)
+                    while (strName != targetWtInfo[nTargetIdx] && nBlobIdx < colBlobs.Count)
                     {
-                        nBlobIdx++;
                         blob = colBlobs[nBlobIdx];
+                        strName = name.GetName(blob.Name);
+                        nBlobIdx++;
                     }
 
                     if (nBlobIdx == colBlobs.Count)
@@ -598,7 +601,7 @@ namespace MyCaffe.common
                 //-----------------------------------------
                 while (nFieldIdx < colFieldBlobs.Count)
                 {
-                    string strName = null;
+                    strName = null;
 
                     ProtoBufField pbName = colFieldBlobs[nFieldIdx].Array.FindFirstChild("name");
                     if (pbName != null && pbName.Type == ProtoBufField.TYPE.STRING)
