@@ -52,6 +52,7 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.SOFTMAXWITH_LOSS;
             m_blobProb = new Blob<T>(cuda, log);
+            m_blobProb.Name = "prob";
         }
 
         /** @copydoc Layer::dispose */
@@ -63,6 +64,17 @@ namespace MyCaffe.layers
                 m_softmaxLayer.Dispose();
 
             base.dispose();
+        }
+
+        /** @copydoc Layer::internal_blobs */
+        public override BlobCollection<T> internal_blobs
+        {
+            get
+            {
+                BlobCollection<T> col = new BlobCollection<T>();
+                col.Add(m_blobProb);
+                return col;
+            }
         }
 
         /// <summary>
