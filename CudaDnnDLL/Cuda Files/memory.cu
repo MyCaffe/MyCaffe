@@ -663,7 +663,7 @@ template long Memory<float>::GetConvolutionInfo(long hHandle, long hBottomDesc, 
 
 
 template <class T>
-long Memory<T>::ConvolutionForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, T fBeta, long hTopDesc, long hTopData, int nTopOffset)
+long Memory<T>::ConvolutionForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, T fBeta, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -717,15 +717,18 @@ long Memory<T>::ConvolutionForward(long hHandle, T fAlpha, long hBottomDesc, lon
 	if (lErr = cudnnConvolutionForward(cudnn, &fAlpha, btmdesc, btmdata, filterdesc, weight, convdesc, (cudnnConvolutionFwdAlgo_t)algo, wksp, lWorkspaceSize, &fBeta, topdesc, topdata))
 		return lErr | ERROR_CUDNN_OFFSET;
 
-	return cudaDeviceSynchronize();
+	if (bSyncStream)
+		return cudaStreamSynchronize(0);
+
+	return CUDNN_STATUS_SUCCESS;
 }
 
-template long Memory<double>::ConvolutionForward(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, double dfBeta, long hTopDesc, long hTopData, int nTopOffset);
-template long Memory<float>::ConvolutionForward(long hHandle, float fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, float fBeta, long hTopDesc, long hTopData, int nTopOffset);
+template long Memory<double>::ConvolutionForward(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, double dfBeta, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream);
+template long Memory<float>::ConvolutionForward(long hHandle, float fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, float fBeta, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream);
 
 
 template <class T>
-long Memory<T>::ConvolutionBackwardBias(long hHandle, T fAlpha, long hTopDesc, long hTopDiff, int nTopOffset, T fBeta, long hBiasDesc, long hBiasDiff, int nBiasOffset)
+long Memory<T>::ConvolutionBackwardBias(long hHandle, T fAlpha, long hTopDesc, long hTopDiff, int nTopOffset, T fBeta, long hBiasDesc, long hBiasDiff, int nBiasOffset, bool bSyncStream)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -752,15 +755,18 @@ long Memory<T>::ConvolutionBackwardBias(long hHandle, T fAlpha, long hTopDesc, l
 	if (lErr = cudnnConvolutionBackwardBias(cudnn, &fAlpha, topdesc, topdiff, &fBeta, biasdesc, biasdiff))
 		return lErr | ERROR_CUDNN_OFFSET;
 
+	if (bSyncStream)
+		return cudaStreamSynchronize(0);
+
 	return CUDNN_STATUS_SUCCESS;
 }
 
-template long Memory<double>::ConvolutionBackwardBias(long hHandle, double dfAlpha, long hTopDesc, long hTopDiff, int nTopOffset, double dfBeta, long hBiasDesc, long hBiasDiff, int nBiasOffset);
-template long Memory<float>::ConvolutionBackwardBias(long hHandle, float fAlpha, long hTopDesc, long hTopDiff, int nTopOffset, float fBeta, long hBiasDesc, long hBiasDiff, int nBiasOffset);
+template long Memory<double>::ConvolutionBackwardBias(long hHandle, double dfAlpha, long hTopDesc, long hTopDiff, int nTopOffset, double dfBeta, long hBiasDesc, long hBiasDiff, int nBiasOffset, bool bSyncStream);
+template long Memory<float>::ConvolutionBackwardBias(long hHandle, float fAlpha, long hTopDesc, long hTopDiff, int nTopOffset, float fBeta, long hBiasDesc, long hBiasDiff, int nBiasOffset, bool bSyncStream);
 
 
 template <class T>
-long Memory<T>::ConvolutionBackwardFilter(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, T fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset)
+long Memory<T>::ConvolutionBackwardFilter(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, T fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -819,15 +825,18 @@ long Memory<T>::ConvolutionBackwardFilter(long hHandle, T fAlpha, long hBottomDe
 		return lErr | ERROR_CUDNN_OFFSET;
 #endif
 
+	if (bSyncStream)
+		return cudaStreamSynchronize(0);
+
 	return CUDNN_STATUS_SUCCESS;
 }
 
-template long Memory<double>::ConvolutionBackwardFilter(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, double dfBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset);
-template long Memory<float>::ConvolutionBackwardFilter(long hHandle, float fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, float fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset);
+template long Memory<double>::ConvolutionBackwardFilter(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, double dfBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream);
+template long Memory<float>::ConvolutionBackwardFilter(long hHandle, float fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, float fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream);
 
 
 template <class T>
-long Memory<T>::ConvolutionBackwardData(long hHandle, T fAlpha, long hFilterDesc, long hWeight, int nWeightOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, T fBeta, long hBottomDesc, long hBottomDiff, int nBottomOffset)
+long Memory<T>::ConvolutionBackwardData(long hHandle, T fAlpha, long hFilterDesc, long hWeight, int nWeightOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, T fBeta, long hBottomDesc, long hBottomDiff, int nBottomOffset, bool bSyncStream)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -886,11 +895,14 @@ long Memory<T>::ConvolutionBackwardData(long hHandle, T fAlpha, long hFilterDesc
 		return lErr | ERROR_CUDNN_OFFSET;
 #endif
 
+	if (bSyncStream)
+		return cudaStreamSynchronize(0);
+
 	return CUDNN_STATUS_SUCCESS;
 }
 
-template long Memory<double>::ConvolutionBackwardData(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, double dfBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset);
-template long Memory<float>::ConvolutionBackwardData(long hHandle, float fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, float fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset);
+template long Memory<double>::ConvolutionBackwardData(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, double dfBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream);
+template long Memory<float>::ConvolutionBackwardData(long hHandle, float fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, float fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream);
 
 
 template <class T>
@@ -943,7 +955,7 @@ long Memory<T>::PoolingForward(long hHandle, long hPoolingDesc, T fAlpha, long h
 	if (lErr = cudnnPoolingForward(cudnn, pooldesc, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata))
 		return lErr | ERROR_CUDNN_OFFSET;
 
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::PoolingForward(long hHandle, long hPoolingDesc, double dfAlpha, long hBottomDesc, long hBottomData, double dfBeta, long hTopDesc, long hTopData);
@@ -985,7 +997,7 @@ long Memory<T>::PoolingBackward(long hHandle, long hPoolingDesc, T fAlpha, long 
 	if (lErr = cudnnPoolingBackward(cudnn, pooldesc, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff))
 		return lErr | ERROR_CUDNN_OFFSET;
 
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::PoolingBackward(long hHandle, long hPoolingDesc, double dfAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, double dfBeta, long hBottomDiffDesc, long hBottomDiff);
@@ -1100,7 +1112,7 @@ long Memory<T>::DropoutForward(long hHandle, long hDropoutDesc, long hBottomDesc
 	if (lErr = cudnnDropoutForward(cudnn, desc, bottomDesc, bottom, topDesc, top, reserved, szReserved))
 		return lErr | ERROR_CUDNN_OFFSET;
 
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::DropoutForward(long hHandle, long hDropoutDesc, long hBottomDesc, long hBottom, long hTopDesc, long hTop, long hReservedSpace);
@@ -1136,7 +1148,7 @@ long Memory<T>::DropoutBackward(long hHandle, long hDropoutDesc, long hTopDesc, 
 	if (lErr = cudnnDropoutBackward(cudnn, desc, topDesc, top, bottomDesc, bottom, reserved, szReserved))
 		return lErr | ERROR_CUDNN_OFFSET;
 
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::DropoutBackward(long hHandle, long hDropoutDesc, long hTopDesc, long hTop, long hBottomDesc, long hBottom, long hReservedSpace);
@@ -1193,7 +1205,7 @@ long Memory<T>::LRNForwardCC(long hHandle, long hNormDesc, T fAlpha, long hBotto
 	if (lErr = cudnnLRNCrossChannelForward(cudnn, normdesc, CUDNN_LRN_CROSS_CHANNEL_DIM1, &fAlpha, btmdatadesc, btmdata, &fBeta, topdatadesc, topdata))
 		return lErr | ERROR_CUDNN_OFFSET;
 
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::LRNForwardCC(long hHandle, long hNormDesc, double fAlpha, long hBottomDesc, long hBottomData, double fBeta, long hTopDesc, long hTopData);
@@ -1235,7 +1247,7 @@ long Memory<T>::LRNBackwardCC(long hHandle, long hNormDesc, T fAlpha, long hTopD
 	if (lErr = cudnnLRNCrossChannelBackward(cudnn, normdesc, CUDNN_LRN_CROSS_CHANNEL_DIM1, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff))
 		return lErr | ERROR_CUDNN_OFFSET;
 
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::LRNBackwardCC(long hHandle, long hNormDesc, double fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomDadta, double fBeta, long hBottomDiffDesc, long hBottomDiff);
@@ -1275,7 +1287,7 @@ long Memory<T>::LCNForwardCC(long hHandle, long hNormDesc, T fAlpha, long hBotto
 	if (lErr = cudnnDivisiveNormalizationForward(cudnn, normdesc, CUDNN_DIVNORM_PRECOMPUTED_MEANS, &fAlpha, btmdatadesc, btmdata, NULL, temp1, temp2, &fBeta, topdatadesc, topdata))
 		return lErr | ERROR_CUDNN_OFFSET;
 
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::LCNForwardCC(long hHandle, long hNormDesc, double fAlpha, long hBottomDesc, long hBottomData, long hTemp1, long hTemp2, double fBeta, long hTopDesc, long hTopData);
@@ -1320,7 +1332,7 @@ long Memory<T>::LCNBackwardCC(long hHandle, long hNormDesc, T fAlpha, long hBott
 	if (lErr = cudnnDivisiveNormalizationBackward(cudnn, normdesc, CUDNN_DIVNORM_PRECOMPUTED_MEANS, &fAlpha, btmdatadesc, btmdata, NULL, topdiff, temp1, temp2, &fBeta, btmdiffdesc, btmdiff, NULL))
 		return lErr | ERROR_CUDNN_OFFSET;
 
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::LCNBackwardCC(long hHandle, long hNormDesc, double fAlpha, long hBottomDataDesc, long hBottomData, long hTopDiff, long hTemp1, long hTemp2, double fBeta, long hBottomDiffDesc, long hBottomDiff);
@@ -1357,7 +1369,7 @@ long Memory<T>::TanhForward(long hHandle, T fAlpha, long hBottomDesc, long hBott
 		return lErr | ERROR_CUDNN_OFFSET;
 #endif
 
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::TanhForward(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, double dfBeta, long hTopDesc, long hTopData);
@@ -1404,7 +1416,7 @@ long Memory<T>::TanhBackward(long hHandle, T fAlpha, long hTopDataDesc, long hTo
 		return lErr | ERROR_CUDNN_OFFSET;
 #endif
 
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::TanhBackward(long hHandle, double dfAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, double dfBeta, long hBottomDiffDesc, long hBottomDiff);
@@ -1439,7 +1451,7 @@ long Memory<T>::SigmoidForward(long hHandle, T fAlpha, long hBottomDesc, long hB
 		return lErr | ERROR_CUDNN_OFFSET;
 #endif
 
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::SigmoidForward(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, double dfBeta, long hTopDesc, long hTopData);
@@ -1486,7 +1498,7 @@ long Memory<T>::SigmoidBackward(long hHandle, T fAlpha, long hTopDataDesc, long 
 		return lErr | ERROR_CUDNN_OFFSET;
 #endif
 
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::SigmoidBackward(long hHandle, double dfAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, double dfBeta, long hBottomDiffDesc, long hBottomDiff);
@@ -1521,7 +1533,7 @@ long Memory<T>::ReLUForward(long hHandle, T fAlpha, long hBottomDesc, long hBott
 		return lErr | ERROR_CUDNN_OFFSET;
 #endif
 
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::ReLUForward(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, double dfBeta, long hTopDesc, long hTopData);
@@ -1568,7 +1580,7 @@ long Memory<T>::ReLUBackward(long hHandle, T fAlpha, long hTopDataDesc, long hTo
 		return lErr | ERROR_CUDNN_OFFSET;
 #endif
 
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::ReLUBackward(long hHandle, double dfAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, double dfBeta, long hBottomDiffDesc, long hBottomDiff);
@@ -1598,7 +1610,7 @@ long Memory<T>::SoftmaxForward(long hHandle, T fAlpha, long hBottomDesc, long hB
 	if (lErr = cudnnSoftmaxForward(cudnn, CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata))
 		return lErr | ERROR_CUDNN_OFFSET;
 
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::SoftmaxForward(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, double dfBeta, long hTopDesc, long hTopData);
@@ -1633,7 +1645,7 @@ long Memory<T>::SoftmaxBackward(long hHandle, T fAlpha, long hTopDataDesc, long 
 	if (lErr = cudnnSoftmaxBackward(cudnn, CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, &fBeta, btmdiffdesc, btmdiff))
 		return lErr | ERROR_CUDNN_OFFSET;
 
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::SoftmaxBackward(long hHandle, double dfAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, double dfBeta, long hBottomDiffDesc, long hBottomDiff);

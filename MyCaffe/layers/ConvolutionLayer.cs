@@ -482,7 +482,7 @@ namespace MyCaffe.layers
                     // Filters.
                     m_cuda.ConvolutionForward(m_rghCudnn[g],
                                               m_tOne,
-                                              m_rghBottomDesc[i], 
+                                              m_rghBottomDesc[i],
                                               hBottomData, m_nBottomOffset * g,
                                               m_hFilterDesc,
                                               hWeight, m_nWeightOffset * g,
@@ -491,11 +491,21 @@ namespace MyCaffe.layers
                                               wsArgs.Data, (int)m_rglWorkspaceFwdOffsets[g], m_rglWorkspaceFwdSizes[i],
                                               m_tZero,
                                               m_rghTopDesc[i],
-                                              hTopData, m_nTopOffset * g);
+                                              hTopData, m_nTopOffset * g,
+                                              false);
+                }
 
-                    // Bias.
-                    if (m_bBiasTerm)
-                    {
+                // Synchronize the work across groups, each of which went into its own stream.
+                for (int g = 0; g < m_nGroup; g++)
+                {
+                    m_cuda.SynchronizeStream(m_rghStream[g]);
+                }
+
+                // Bias.
+                if (m_bBiasTerm)
+                {
+                    for (int g=0; g<m_nGroup; g++)
+                    { 
                         long hBiasData = m_colBlobs[1].gpu_data;
 
                         m_cuda.AddTensor(m_rghCudnn[g],
@@ -506,16 +516,13 @@ namespace MyCaffe.layers
                                               m_rghTopDesc[i],
                                               hTopData, m_nTopOffset * g);
                     }
+
+                    // Synchronize the work across groups, each of which went into its own stream.
+                    for (int g = 0; g < m_nGroup; g++)
+                    {
+                        m_cuda.SynchronizeStream(m_rghStream[g]);
+                    }
                 }
-
-                // Synchronize the work across groups, each of which went into its own
-                // stream, by launching an empty kernel into the default (null) stream.
-                m_cuda.SynchronizeThread();
-            }
-
-            for (int g = 0; g < m_nGroup; g++)
-            {
-                m_cuda.SynchronizeStream(m_rghStream[g]);
             }
         }
 
@@ -527,92 +534,97 @@ namespace MyCaffe.layers
         /// <param name="colBottom">bottom input Blob vector (length 1).</param>
         protected void backward_cudnn(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            long hWeight = 0;
-            long hWeightDiff = 0;
             WorkspaceArgs wsArgs = getWorkspace();
 
-            if (m_rgbParamPropagateDown[0])
-            {
-                hWeight = m_colBlobs[0].gpu_data;
-                hWeightDiff = m_colBlobs[0].mutable_gpu_diff;
-            }
-
-            long hBiasDiff = 0;
-
+            // Gradient w.r.t. bias.
             if (m_bBiasTerm && m_rgbParamPropagateDown[1])
-                hBiasDiff = m_colBlobs[1].mutable_gpu_diff;
-
-            for (int i = 0; i < colTop.Count; i++)
             {
-                long hTopDiff = colTop[i].gpu_diff;
+                long hBiasDiff = m_colBlobs[1].mutable_gpu_diff;
 
-                // Backward through cuDNN in parallel over groups and gradients.
-                for (int g = 0; g < m_nGroup; g++)
+                for (int i = 0; i < colTop.Count; i++)
                 {
-                    // Gradient w.r.t. bias.
-                    if (m_bBiasTerm && m_rgbParamPropagateDown[1])
+                    long hTopDiff = colTop[i].mutable_gpu_diff;
+
+                    // Backward through cuDNN in parallel over groups and gradients.
+                    for (int g = 0; g < m_nGroup; g++)
                     {
                         m_cuda.ConvolutionBackwardBias(m_rghCudnn[0 * m_nGroup + g],
-                                                       m_tOne,
-                                                       m_rghTopDesc[i],
-                                                       hTopDiff, m_nTopOffset * g,
-                                                       m_tOne,
-                                                       m_hBiasDesc,
-                                                       hBiasDiff, m_nBiasOffset * g);
+                                m_tOne, m_rghTopDesc[i], hTopDiff, m_nTopOffset * g,
+                                m_tOne, m_hBiasDesc, hBiasDiff, m_nBiasOffset * g,
+                                false);
                     }
-
-                    // Gradient w.r.t weights.
-                    if (m_rgbParamPropagateDown[0])
+                    // Synchronize the work across groups, each of which went into its own stream.
+                    for (int g = 0; g < m_nGroup; g++)
                     {
-                        long hBottomData = colBottom[i].gpu_data;
+                        m_cuda.SynchronizeStream(m_rghStream[g]);
+                    }
+                }
+            }
 
+            // Gradient w.r.t weights.
+            if (m_rgbParamPropagateDown[0])
+            {
+                long hWeightDiff = m_colBlobs[0].mutable_gpu_diff;
+
+                for (int i = 0; i < colTop.Count; i++)
+                {
+                    long hTopDiff = colTop[i].mutable_gpu_diff;
+                    long hBottomData = colBottom[i].gpu_data;
+
+                    // Backward through cuDNN in parallel over groups and gradients.
+                    for (int g = 0; g < m_nGroup; g++)
+                    {
                         m_cuda.ConvolutionBackwardFilter(m_rghCudnn[1 * m_nGroup + g],
                                                        m_tOne,
-                                                       m_rghBottomDesc[i],
-                                                       hBottomData, m_nBottomOffset * g,
-                                                       m_rghTopDesc[i],
-                                                       hTopDiff, m_nTopOffset * g,
-                                                       m_rghConvDesc[i],
-                                                       m_rgbwdFilterAlgo[i],
+                                                       m_rghBottomDesc[i], hBottomData, m_nBottomOffset * g,
+                                                       m_rghTopDesc[i], hTopDiff, m_nTopOffset * g,
+                                                       m_rghConvDesc[i], 
+                                                       m_rgbwdFilterAlgo[i], 
                                                        wsArgs.Data, (int)m_rglWorkspaceBwdFilterOffsets[1 * m_nGroup + g],
                                                        m_rglWorkspaceBwdFilterSizes[i],
                                                        m_tOne,
-                                                       m_hFilterDesc,
-                                                       hWeightDiff, m_nWeightOffset * g);
+                                                       m_hFilterDesc, hWeightDiff, m_nWeightOffset * g,
+                                                       false);
                     }
-
-                    // Gradient w.r.t. bottom data.
-                    if (rgbPropagateDown[i])
+                    // Synchronize the work across groups, each of which went into its own stream.
+                    for (int g = 0; g < m_nGroup; g++)
                     {
-                        if (hWeight == 0)
-                            hWeightDiff = m_colBlobs[0].gpu_data;
+                        m_cuda.SynchronizeStream(m_rghStream[g]);
+                    }
+                }
+            }
 
-                        long hBottomDiff = colBottom[i].mutable_gpu_diff;
+            // Gradient w.r.t. bottom data.
+            long hWeight = m_colBlobs[0].gpu_data;
 
+            for (int i=0; i<colTop.Count; i++)
+            { 
+                if (rgbPropagateDown[i])
+                {
+                    long hTopDiff = colTop[i].mutable_gpu_diff;
+                    long hBottomDiff = colBottom[i].mutable_gpu_diff;
+
+                    // Backward through cuDNN in parallel over groups and gradients.
+                    for (int g = 0; g < m_nGroup; g++)
+                    {
                         m_cuda.ConvolutionBackwardData(m_rghCudnn[2 * m_nGroup + g],
                                                       m_tOne,
-                                                      m_hFilterDesc,
-                                                      hWeight, m_nWeightOffset * g,
-                                                      m_rghTopDesc[i],
-                                                      hTopDiff, m_nTopOffset * g,
+                                                      m_hFilterDesc, hWeight, m_nWeightOffset * g,
+                                                      m_rghTopDesc[i], hTopDiff, m_nTopOffset * g,
                                                       m_rghConvDesc[i],
                                                       m_rgbwdDataAlgo[i],
                                                       wsArgs.Data, (int)m_rglWorkspaceBwdDataOffsets[2 * m_nGroup + g],
                                                       m_rglWorkspaceBwdDataSizes[i],
                                                       m_tZero,
-                                                      m_rghBottomDesc[i],
-                                                      hBottomDiff, m_nBottomOffset * g);
+                                                      m_rghBottomDesc[i], hBottomDiff, m_nBottomOffset * g,
+                                                      false);
+                    }
+                    // Synchronize the work across groups, each of which went into its own stream.
+                    for (int g = 0; g < m_nGroup; g++)
+                    {
+                        m_cuda.SynchronizeStream(m_rghStream[g]);
                     }
                 }
-
-                // Synchronize the work across groups, each of which went into its own
-                // stream, by launching an empty kernel into the default (null) stream.
-                m_cuda.SynchronizeThread();
-            }
-
-            for (int g = 0; g < m_nGroup * 3; g++)
-            {
-                m_cuda.SynchronizeStream(m_rghStream[g]);
             }
         }
     }

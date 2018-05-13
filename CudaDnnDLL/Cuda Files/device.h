@@ -1021,7 +1021,7 @@ inline long Device<T>::ConvolutionForward(long lInput, T* pfInput, long* plOutpu
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 17, 17))
+	if (lErr = verifyInput(lInput, pfInput, 17, 18))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
@@ -1041,8 +1041,12 @@ inline long Device<T>::ConvolutionForward(long lInput, T* pfInput, long* plOutpu
 	long hTopDesc = (long)pfInput[14];
 	long hTopData = (long)pfInput[15];
 	int nTopOffset = (int)pfInput[16];
+	bool bSyncStream = true;
 
-	return m_memory.ConvolutionForward(hHandle, fAlpha, hBottomDesc, hBottomData, nBottomOffset, hFilterDesc, hWeight, nWeightOffset, hConvDesc, algo, hWorkspace, nWorkspaceOffset, lWorkspaceSize, fBeta, hTopDesc, hTopData, nTopOffset);
+	if (lInput > 17)
+		bSyncStream = (pfInput[17] == 0) ? false : true;
+
+	return m_memory.ConvolutionForward(hHandle, fAlpha, hBottomDesc, hBottomData, nBottomOffset, hFilterDesc, hWeight, nWeightOffset, hConvDesc, algo, hWorkspace, nWorkspaceOffset, lWorkspaceSize, fBeta, hTopDesc, hTopData, nTopOffset, bSyncStream);
 }
 
 template <class T>
@@ -1050,7 +1054,7 @@ inline long Device<T>::ConvolutionBackwardBias(long lInput, T* pfInput, long* pl
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 9, 9))
+	if (lErr = verifyInput(lInput, pfInput, 9, 10))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
@@ -1062,8 +1066,12 @@ inline long Device<T>::ConvolutionBackwardBias(long lInput, T* pfInput, long* pl
 	long hBiasDesc = (long)pfInput[6];
 	long hBiasDiff = (long)pfInput[7];
 	int nBiasOffset = (int)pfInput[8];
+	bool bSyncStream = true;
 
-	return m_memory.ConvolutionBackwardBias(hHandle, fAlpha, hTopDesc, hTopDiff, nTopOffset, fBeta, hBiasDesc, hBiasDiff, nBiasOffset);
+	if (lInput > 9)
+		bSyncStream = (pfInput[9] == 0) ? false : true;
+
+	return m_memory.ConvolutionBackwardBias(hHandle, fAlpha, hTopDesc, hTopDiff, nTopOffset, fBeta, hBiasDesc, hBiasDiff, nBiasOffset, bSyncStream);
 }
 
 template <class T>
@@ -1071,7 +1079,7 @@ inline long Device<T>::ConvolutionBackwardFilter(long lInput, T* pfInput, long* 
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 17, 17))
+	if (lErr = verifyInput(lInput, pfInput, 17, 18))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
@@ -1091,8 +1099,12 @@ inline long Device<T>::ConvolutionBackwardFilter(long lInput, T* pfInput, long* 
 	long hFilterDesc = (long)pfInput[14];
 	long hWeightDiff = (long)pfInput[15];
 	int nWeightOffset = (int)pfInput[16];
+	bool bSyncStream = true;
 
-	return m_memory.ConvolutionBackwardFilter(hHandle, fAlpha, hBottomDesc, hBottomData, nBottomOffset, hTopDesc, hTopDiff, nTopOffset, hConvDesc, algo, hWorkspace, nWorkspaceOffset, lWorkspaceSize, fBeta, hFilterDesc, hWeightDiff, nWeightOffset);
+	if (lInput > 17)
+		bSyncStream = (pfInput[17] == 0) ? false : true;
+
+	return m_memory.ConvolutionBackwardFilter(hHandle, fAlpha, hBottomDesc, hBottomData, nBottomOffset, hTopDesc, hTopDiff, nTopOffset, hConvDesc, algo, hWorkspace, nWorkspaceOffset, lWorkspaceSize, fBeta, hFilterDesc, hWeightDiff, nWeightOffset, bSyncStream);
 }
 
 template <class T>
@@ -1100,7 +1112,7 @@ inline long Device<T>::ConvolutionBackwardData(long lInput, T* pfInput, long* pl
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 17, 17))
+	if (lErr = verifyInput(lInput, pfInput, 17, 18))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
@@ -1120,8 +1132,12 @@ inline long Device<T>::ConvolutionBackwardData(long lInput, T* pfInput, long* pl
 	long hBottomDesc = (long)pfInput[14];
 	long hBottomDiff = (long)pfInput[15];
 	int nBottomOffset = (int)pfInput[16];
+	bool bSyncStream = true;
 
-	return m_memory.ConvolutionBackwardData(hHandle, fAlpha, hFilterDesc, hWeight, nWeightOffset, hTopDesc, hTopDiff, nTopOffset, hConvDesc, algo, hWorkspace, nWorkspaceOffset, lWorkspaceSize, fBeta, hBottomDesc, hBottomDiff, nBottomOffset );
+	if (lInput > 17)
+		bSyncStream = (pfInput[17] == 0) ? false : true;
+
+	return m_memory.ConvolutionBackwardData(hHandle, fAlpha, hFilterDesc, hWeight, nWeightOffset, hTopDesc, hTopDiff, nTopOffset, hConvDesc, algo, hWorkspace, nWorkspaceOffset, lWorkspaceSize, fBeta, hBottomDesc, hBottomDiff, nBottomOffset, bSyncStream);
 }
 
 
