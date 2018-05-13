@@ -18,11 +18,11 @@ namespace MyCaffe.param
     /// @f$ upper\_bound @f$ is the largest scaling factor,
     /// @f$ \alpha @f$ controls how fast the transition occurs between the scaling factors,
     /// @f$ progress = \min(iter / max\_iter, 1) @f$ corresponds to the current transition
-    /// state (@f$ iter @f$ is the current iteration of the solver).
+    /// state (the @f$ iter @f$ is the current iteration of the solver).
     /// 
     /// The GradientScaleLayer can be used to implement
     /// gradient reversals.
-    /// 
+    ///
     /// @see [Domain-Adversarial Training of Neural Networks](https://arxiv.org/abs/1505.07818) by Ganin et al., 2015, v4 in 2016.
     /// @see [Github\ddtm\caffe](https://github.com/ddtm/caffe) for original source.
     /// </remarks> 
