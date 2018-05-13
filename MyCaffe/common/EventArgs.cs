@@ -59,7 +59,6 @@ namespace MyCaffe.common
         /// <summary>
         /// The constructor.
         /// </summary>
-        /// <param name="b"></param>
         public GetWorkBlobArgs()
         {
         }
