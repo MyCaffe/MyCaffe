@@ -570,14 +570,14 @@ namespace MyCaffe.imagedb
         /// <returns>The list of images is returned.</returns>
         /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
-        public List<SimpleDatum> GetImages(int nSrcId, bool bSuperBoostOnly, string strFilterVal = null, int? nBoostVal = null)
+        public List<SimpleDatum> GetImages(int nSrcId, bool bSuperboostOnly, string strFilterVal = null, int? nBoostVal = null)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
 
             if (nWait == 0)
                 return null;
 
-            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImages(bSuperBoostOnly, strFilterVal, nBoostVal);
+            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImages(bSuperboostOnly, strFilterVal, nBoostVal);
         }
 
         /// <summary>
