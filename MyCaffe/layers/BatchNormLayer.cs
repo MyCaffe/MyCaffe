@@ -152,7 +152,7 @@ namespace MyCaffe.layers
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             m_dfMovingAverageFraction = m_param.batch_norm_param.moving_average_fraction;
-            m_bUseGlobalStats = (m_phase != Phase.TRAIN) ? true : false;
+            m_bUseGlobalStats = (m_phase == Phase.TEST || m_phase == Phase.RUN) ? true : false;
 
             if (m_param.batch_norm_param.use_global_stats.HasValue)
                 m_bUseGlobalStats = m_param.batch_norm_param.use_global_stats.Value;
@@ -185,6 +185,10 @@ namespace MyCaffe.layers
                 {
                     m_colBlobs[i].SetData(0);
                 }
+
+                m_colBlobs[0].Name = "mean";
+                m_colBlobs[1].Name = "variance";
+                m_colBlobs[2].Name = "scale";
             }
 
             // Mask statistics from optimization by setting local learning rates
@@ -192,7 +196,7 @@ namespace MyCaffe.layers
             for (int i = 0; i < m_colBlobs.Count; i++)
             {
                 if (m_param.parameters.Count == i)
-                    m_param.parameters.Add(new ParamSpec(0.0, 0.0));
+                    m_param.parameters.Add(new ParamSpec(0.0, 1.0));
                 else
                     m_log.CHECK_EQ(m_param.parameters[i].lr_mult, 0, "Cannot configure batch normalization statistics as layer parameters.");
             }
