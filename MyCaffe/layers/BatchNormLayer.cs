@@ -613,7 +613,7 @@ namespace MyCaffe.layers
             long hGlobalMean = m_colBlobs[0].gpu_data;
             long hGlobalVar = m_colBlobs[1].gpu_data;
 
-            if (m_phase != Phase.TEST && m_phase != Phase.RUN)
+            if (!m_bUseGlobalStats)
             {
                 long hSaveMean = m_blobMean.mutable_gpu_data;
                 long hSaveVar = m_blobVariance.mutable_gpu_data;
