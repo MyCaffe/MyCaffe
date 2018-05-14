@@ -15,7 +15,7 @@ namespace MyCaffe.param
     /// @see [In Defense of the Triplet Loss for Person Re-Identification](https://arxiv.org/abs/1703.07737v2) by Alexander Hermans, Lucas Beyer, and Bastian Leibe, 2017. 
     /// @see [Layer Normalization](https://arxiv.org/abs/1607.06450) by Jimmy Lei Ba,  and Jamie Ryan Kiros, and Geoffrey E. Hinton, 2016.
     /// </remarks>
-    public class BatchNormParameter : LayerParameterBase 
+    public class BatchNormParameter : EngineParameter
     {
         bool? m_bUseGlobalStats = null;
         double m_dfMovingAverageFraction = 0.999;
@@ -24,6 +24,30 @@ namespace MyCaffe.param
         /** @copydoc LayerParameterBase */
         public BatchNormParameter()
         {
+        }
+
+        /// <summary>
+        /// Returns the reason that Caffe version was used instead of [NVIDIA's cuDnn](https://developer.nvidia.com/cudnn).
+        /// </summary>
+        /// <returns></returns>
+        public string useCaffeReason()
+        {
+            if (engine == Engine.CAFFE)
+                return "The engine setting is set on CAFFE.";
+
+            return "";
+        }
+
+        /// <summary>
+        /// Queries whether or not to use [NVIDIA's cuDnn](https://developer.nvidia.com/cudnn).
+        /// </summary>
+        /// <returns>Returns <i>true</i> when cuDnn is to be used, <i>false</i> otherwise.</returns>
+        public bool useCudnn()
+        {
+            if (engine == EngineParameter.Engine.CUDNN)
+                return true;
+
+            return false;
         }
 
         /// <summary>
@@ -84,10 +108,15 @@ namespace MyCaffe.param
         /** @copydoc LayerParameterBase::Copy */
         public override void Copy(LayerParameterBase src)
         {
-            BatchNormParameter p = (BatchNormParameter)src;
-            m_bUseGlobalStats = p.m_bUseGlobalStats;
-            m_dfEps = p.m_dfEps;
-            m_dfMovingAverageFraction = p.m_dfMovingAverageFraction;
+            base.Copy(src);
+
+            if (src is BatchNormParameter)
+            {
+                BatchNormParameter p = (BatchNormParameter)src;
+                m_bUseGlobalStats = p.m_bUseGlobalStats;
+                m_dfEps = p.m_dfEps;
+                m_dfMovingAverageFraction = p.m_dfMovingAverageFraction;
+            }
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -101,7 +130,10 @@ namespace MyCaffe.param
         /** @copydoc LayerParameterBase::ToProto */
         public override RawProto ToProto(string strName)
         {
+            RawProto rpBase = base.ToProto("engine");
             RawProtoCollection rgChildren = new RawProtoCollection();
+
+            rgChildren.Add(rpBase.Children);
 
             if (use_global_stats.HasValue)
                 rgChildren.Add("use_global_stats", use_global_stats.Value.ToString());
@@ -124,6 +156,8 @@ namespace MyCaffe.param
         {
             string strVal;
             BatchNormParameter p = new BatchNormParameter();
+
+            ((EngineParameter)p).Copy(EngineParameter.FromProto(rp));
 
             if ((strVal = rp.FindValue("use_global_stats")) != null)
                 p.use_global_stats = bool.Parse(strVal);

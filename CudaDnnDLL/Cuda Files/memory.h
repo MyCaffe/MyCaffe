@@ -188,6 +188,10 @@ class Memory
 		long PoolingForward(long hHandle, long hPoolingDesc, T fAlpha, long hBottomDesc, long hBottomData, T fBeta, long hTopDesc, long hTopData);
 		long PoolingBackward(long hHandle, long hPoolingDesc, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, T fBeta, long hBottomDiffDesc, long hBottomDiff);
 
+		long DeriveBatchNormDesc(long hFwdScaleBiasMeanVarDesc, long hFwdBottomDesc, long hBwdScaleBiasMeanVarDesc, long hBwdBottomDesc, int mode);
+		long BatchNormForward(long hHandle, int mode, T fAlpha, T fBeta, long hFwdBottomDesc, long hBottomData, long hFwdTopDesc, long hTopData, long hFwdScaleBiasMeanVarDesc, long hScaleData, long hBiasData, T fFactor, long hGlobalMean, long hGlobalVar, T fEps, long hSaveMean, long hSaveVar, bool bTraining);
+		long BatchNormBackward(long hHandle, int mode, T fAlphaDiff, T fBetaDiff, T fAlphaParamDiff, T fBetaParamDiff, long hBtmBottomDesc, long hBottomData, long hTopDiffDesc, long hTopDiff, long hBottomDiffDesc, long hBottomDiff, long hBwdScaleBiasMeanVarDesc, long hScaleData, long hScaleDiff, long hBiasDiff, T fEps, long hSaveMean, long hSaveVar);
+
 		long CreateLRNDesc(long* phHandle);
 		long FreeLRNDesc(long hHandle);
 		cudnnLRNDescriptor_t GetLRNDesc(long hHandle);

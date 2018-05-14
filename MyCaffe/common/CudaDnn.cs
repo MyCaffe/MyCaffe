@@ -80,6 +80,19 @@ namespace MyCaffe.common
     }
 
     /// <summary>
+    /// Specifies the cuDnn batch norm mode to use.
+    /// </summary>
+    /// <remarks>
+    /// @see [NVIDIA cuDnn](https://developer.nvidia.com/cudnn) documenation for more details.
+    /// </remarks>
+    public enum BATCHNORM_MODE
+    {
+        PER_ACTIVATION = 0,
+        SPATIAL = 1,
+        SPATIAL_PERSISTENT = 2
+    }
+
+    /// <summary>
     /// Specifies the cuDnn convolution forward algorithm to use.
     /// </summary>
     /// <remarks>
@@ -342,7 +355,9 @@ namespace MyCaffe.common
         void SetTensorDesc(long hHandle, int n, int c, int h, int w);
         void SetTensorDesc(long hHandle, int n, int c, int h, int w, int nStride, int cStride, int hStride, int wStride);
         void AddTensor(long hHandle, long hSrcDesc, long hSrc, int nSrcOffset, long hDstDesc, long hDst, int nDstOffset);
-        
+
+        void DeriveBatchNormDesc(long hFwdScaleBiasMeanVarDesc, long hFwdBottomDesc, long hBwdScaleBiasMeanVarDesc, long hBwdBottomDesc, BATCHNORM_MODE mode);
+
         long CreateFilterDesc();
         void FreeFilterDesc(long h);
         void SetFilterDesc(long hHandle, int n, int c, int h, int w);
@@ -451,7 +466,7 @@ namespace MyCaffe.common
     /// This is the transition location where C# meets C++.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class CudaDnn<T> : ICudaDnn, IDisposable 
+    public class CudaDnn<T> : ICudaDnn, IDisposable
     {
         CudaDnnMemoryTracker<T> m_memTracker = new CudaDnnMemoryTracker<T>();
         int m_nDeviceId;
@@ -567,12 +582,16 @@ namespace MyCaffe.common
             BWD_CONV_BIAS = 75,
             BWD_CONV_FILTER = 76,
             BWD_CONV_DATA = 77,
-            
+
             CREATE_POOLDESC = 80,
             FREE_POOLDESC = 81,
             SET_POOLDESC = 82,
             FWD_POOL = 83,
             BWD_POOL = 84,
+
+            DERIVE_BNDESC = 86,
+            FWD_BN = 87,
+            BWD_BN = 88,
 
             CREATE_LRNDESC = 90,
             FREE_LRNDESC = 91,
@@ -660,7 +679,7 @@ namespace MyCaffe.common
             CUDA_RNG_SETSEED = 349,
             CUDA_RNG_UNIFORM = 350,
             CUDA_RNG_GAUSSIAN = 351,
-//            CUDA_RNG_BERNOULLI = 352,   // Not implemented yet.
+            //            CUDA_RNG_BERNOULLI = 352,   // Not implemented yet.
 
             CUDA_BATCHREIDX_FWD = 386,
             CUDA_BATCHREIDX_BWD = 387,
@@ -739,7 +758,7 @@ namespace MyCaffe.common
 
             CUDA_SIGMOID_CROSS_ENTROPY_FWD = 496,
             CUDA_SIGMOID_CROSS_ENTROPY_IGNORE = 497,
-        
+
             CUDA_SGD_UPDATE = 500,
             CUDA_NESTEROV_UPDATE = 501,
             CUDA_ADAGRAD_UPDATE = 502,
@@ -923,7 +942,7 @@ namespace MyCaffe.common
                 else
                     m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CLEANUP, null);
 
-                m_hKernel = 0;                
+                m_hKernel = 0;
                 m_cuda = null;
             }
         }
@@ -1664,7 +1683,7 @@ namespace MyCaffe.common
         /// <param name="hMem">Specifies the handle to the GPU memory.</param>
         /// <param name="lCount">Optionally, specifies a count of items to retrieve.</param>
         /// <returns>An array of double is returned.</returns>
-        public double[] GetMemoryDouble(long hMem, long  lCount = -1)
+        public double[] GetMemoryDouble(long hMem, long lCount = -1)
         {
             return convertD(GetMemory(hMem, lCount));
         }
@@ -2340,7 +2359,7 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Add two tensors togehter.
+        /// Add two tensors together.
         /// </summary>
         /// <param name="hCuDnn">Specifies a handle to the cuDnn instance.</param>
         /// <param name="hSrcDesc">Specifies a handle to the source tensor descriptor.</param>
@@ -2355,7 +2374,7 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// 
+        /// Add two tensors together.
         /// </summary>
         /// <param name="hCuDnn">Specifies a handle to the cuDnn instance.</param>
         /// <param name="fAlpha">Specifies a scaling factor applied to the source GPU memory before the add.</param>
@@ -2373,6 +2392,7 @@ namespace MyCaffe.common
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ADD_TENSOR, new float[] { hCuDnn, convertF(fAlpha), hSrcDesc, hSrc, nSrcOffset, convertF(fBeta), hDstDesc, hDst, nDstOffset });
         }
+
 
         /// <summary>
         /// Create a new instance of a filter descriptor for use with [NVIDIA's cuDnn](https://developer.nvidia.com/cudnn).
@@ -2791,6 +2811,81 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_POOL, new double[] { hCuDnn, hPoolingDesc, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertD(fBeta), hBottomDiffDesc, hBottomDiff });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_POOL, new float[] { hCuDnn, hPoolingDesc, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertF(fBeta), hBottomDiffDesc, hBottomDiff });
+        }
+
+        /// <summary>
+        /// Derive the batch norm descriptors for both the forward and backward passes.
+        /// </summary>
+        /// <param name="hFwdScaleBiasMeanVarDesc">Specifies a handle to the scale bias mean var tensor descriptor for the forward pass.</param>
+        /// <param name="hFwdBottomDesc">Specifies a handle to the forward bottom tensor descriptor.</param>
+        /// <param name="hBwdScaleBiasMeanVarDesc">Specifies a handle to the scale bias mean var tensor descriptor for the backward pass.</param>
+        /// <param name="hBwdBottomDesc">Specifies a handle to the backward bottom tensor descriptor.</param>
+        /// <param name="mode"></param>
+        public void DeriveBatchNormDesc(long hFwdScaleBiasMeanVarDesc, long hFwdBottomDesc, long hBwdScaleBiasMeanVarDesc, long hBwdBottomDesc, BATCHNORM_MODE mode)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.DERIVE_BNDESC, new double[] { hFwdScaleBiasMeanVarDesc, hFwdBottomDesc, hBwdScaleBiasMeanVarDesc, hBwdBottomDesc, (int)mode });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.DERIVE_BNDESC, new float[] { hFwdScaleBiasMeanVarDesc, hFwdBottomDesc, hBwdScaleBiasMeanVarDesc, hBwdBottomDesc, (int)mode });
+        }
+
+        /// <summary>
+        /// Run the batch norm forward pass.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="mode">Specifies the batch normalization mode.</param>
+        /// <param name="fAlpha">Specifies the alpha value.</param>
+        /// <param name="fBeta">Specifies the beta value.</param>
+        /// <param name="hFwdBottomDesc">Specifies a handle to the forward bottom tensor descriptor.</param>
+        /// <param name="hBottomData">Specifies a handle to the bottom data tensor.</param>
+        /// <param name="hFwdTopDesc">Specifies a handle to the forward top tensor descriptor.</param>
+        /// <param name="hTopData">Specifies a handle to the top tensor.</param>
+        /// <param name="hFwdScaleBiasMeanVarDesc">Specifies a handle to the forward scale bias mean variance descriptor.</param>
+        /// <param name="hScaleData">Specifies a handle to the scale tensor.</param>
+        /// <param name="hBiasData">Specifies a handle to the bias tensor.</param>
+        /// <param name="dfFactor">Specifies a scaling factor.</param>
+        /// <param name="hGlobalMean">Specifies a handle to the global mean tensor.</param>
+        /// <param name="hGlobalVar">Specifies a handle to the global variance tensor.</param>
+        /// <param name="dfEps">Specifies the epsilon value to avoid dividing by zero.</param>
+        /// <param name="hSaveMean">Specifies a handle to the saved mean tensor.</param>
+        /// <param name="hSaveInvVar">Specifies a handle to the saved variance tensor.</param>
+        /// <param name="bTraining">Specifies that this is a training pass when <i>true</i>, and a testing pass when <i>false</i>.</param>
+        public void BatchNormForward(long hCuDnn, BATCHNORM_MODE mode, T fAlpha, T fBeta, long hFwdBottomDesc, long hBottomData, long hFwdTopDesc, long hTopData, long hFwdScaleBiasMeanVarDesc, long hScaleData, long hBiasData, double dfFactor, long hGlobalMean, long hGlobalVar, double dfEps, long hSaveMean, long hSaveInvVar, bool bTraining)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FWD_BN, new double[] { hCuDnn, (int)mode, convertD(fAlpha), convertD(fBeta), hFwdBottomDesc, hBottomData, hFwdTopDesc, hTopData, hFwdScaleBiasMeanVarDesc, hScaleData, hBiasData, dfFactor, hGlobalMean, hGlobalVar, dfEps, hSaveMean, hSaveInvVar, (bTraining) ? 1 : 0 });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FWD_BN, new float[] { hCuDnn, (int)mode, convertF(fAlpha), convertF(fBeta), hFwdBottomDesc, hBottomData, hFwdTopDesc, hTopData, hFwdScaleBiasMeanVarDesc, hScaleData, hBiasData, (float)dfFactor, hGlobalMean, hGlobalVar, (float)dfEps, hSaveMean, hSaveInvVar, (bTraining) ? 1 : 0 });
+        }
+
+        /// <summary>
+        /// Run the batch norm backward pass.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="mode">Specifies the batch normalization mode.</param>
+        /// <param name="fAlphaDiff">Specifies the alpha value applied to the diff.</param>
+        /// <param name="fBetaDiff">Specifies the beta value applied to the diff.</param>
+        /// <param name="fAlphaParamDiff">Specifies the alpha value applied to the param diff.</param>
+        /// <param name="fBetaParamDiff">Specifies the beta value applied to the param diff.</param>
+        /// <param name="hBwdBottomDesc">Specifies a handle to the backward bottom tensor descriptor.</param>
+        /// <param name="hBottomData">Specifies a handle to the bottom data tensor.</param>
+        /// <param name="hTopDiffDesc">Specifies a handle to the top diff tensor descriptor.</param>
+        /// <param name="hTopDiff">Specifies a handle to the top diff tensor.</param>
+        /// <param name="hBottomDiffDesc">Specifies a handle to the bottom diff tensor descriptor.</param>
+        /// <param name="hBottomDiff">Specifies a handle to the bottom diff tensor.</param>
+        /// <param name="hBwdScaleBiasMeanVarDesc">Specifies a handle to the backward scale bias mean var descriptor.</param>
+        /// <param name="hScaleData">Specifies a handle to the scale data tensor.</param>
+        /// <param name="hScaleDiff">Specifies a handle to the scale diff tensor.</param>
+        /// <param name="hBiasDiff">Specifies a handle to the bias diff tensor.</param>
+        /// <param name="dfEps">Specifies the epsilon value.</param>
+        /// <param name="hSaveMean">Specifies a handle to the saved mean tensor.</param>
+        /// <param name="hSaveInvVar">Specifies a handle to the saved variance tensor.</param>
+        public void BatchNormBackward(long hCuDnn, BATCHNORM_MODE mode, T fAlphaDiff, T fBetaDiff, T fAlphaParamDiff, T fBetaParamDiff, long hBwdBottomDesc, long hBottomData, long hTopDiffDesc, long hTopDiff, long hBottomDiffDesc, long hBottomDiff, long hBwdScaleBiasMeanVarDesc, long hScaleData, long hScaleDiff, long hBiasDiff, double dfEps, long hSaveMean, long hSaveInvVar)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_BN, new double[] { hCuDnn, (int)mode, convertD(fAlphaDiff), convertD(fBetaDiff), convertD(fAlphaParamDiff), convertD(fBetaParamDiff), hBwdBottomDesc, hBottomData, hTopDiffDesc, hTopDiff, hBottomDiffDesc, hBottomDiff, hBwdScaleBiasMeanVarDesc, hScaleData, hScaleDiff, hBiasDiff, dfEps, hSaveMean, hSaveInvVar });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_BN, new float[] { hCuDnn, (int)mode, convertF(fAlphaDiff), convertF(fBetaDiff), convertF(fAlphaParamDiff), convertF(fBetaParamDiff), hBwdBottomDesc, hBottomData, hTopDiffDesc, hTopDiff, hBottomDiffDesc, hBottomDiff, hBwdScaleBiasMeanVarDesc, hScaleData, hScaleDiff, hBiasDiff, (float)dfEps, hSaveMean, hSaveInvVar });
         }
 
         /// <summary>

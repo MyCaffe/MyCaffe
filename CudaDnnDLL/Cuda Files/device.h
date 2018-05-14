@@ -171,6 +171,10 @@ class Device
 		long PoolingForward(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long PoolingBackward(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
+		long DeriveBatchNormDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long BatchNormForward(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long BatchNormBackward(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
 		long CreateDropoutDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long FreeDropoutDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SetDropoutDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -1231,6 +1235,84 @@ inline long Device<T>::PoolingBackward(long lInput, T* pfInput, long* plOutput, 
 	long hBottomDiff = (long)pfInput[11];
 
 	return m_memory.PoolingBackward(hHandle, hPoolingDesc, fAlpha, hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, fBeta, hBottomDiffDesc, hBottomDiff);
+}
+
+template <class T>
+inline long Device<T>::DeriveBatchNormDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+		return lErr;
+
+	long hFwdScaleBiasMeanVarDesc = (long)pfInput[0];
+	long hFwdBottomDesc = (long)pfInput[1];
+	long hBwdScaleBiasMeanVarDesc = (long)pfInput[2];
+	long hBwdBottomDesc = (long)pfInput[3];
+	int mode = (int)pfInput[4];
+
+	return m_memory.DeriveBatchNormDesc(hFwdScaleBiasMeanVarDesc, hFwdBottomDesc, hBwdScaleBiasMeanVarDesc, hBwdBottomDesc, mode);
+}
+
+template <class T>
+inline long Device<T>::BatchNormForward(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 18, 18))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+	int mode = (int)pfInput[1];
+	T fAlpha = pfInput[2];
+	T fBeta = pfInput[3];
+	long hFwdBottomDesc = (long)pfInput[4];
+	long hBottomData = (long)pfInput[5];
+	long hFwdTopDesc = (long)pfInput[6];
+	long hTopData = (long)pfInput[7];
+	long hFwdScaleBiasMeanVarDesc = (long)pfInput[8];
+	long hScaleData = (long)pfInput[9];
+	long hBiasData = (long)pfInput[10];
+	T fFactor = pfInput[11];
+	long hGlobalMean = (long)pfInput[12];
+	long hGlobalVar = (long)pfInput[13];
+	T fEps = pfInput[14];
+	long hSaveMean = (long)pfInput[15];
+	long hSaveVar = (long)pfInput[16];
+	bool bTraining = (pfInput[17] == 0) ? false : true;
+
+	return m_memory.BatchNormForward(hHandle, mode, fAlpha, fBeta, hFwdBottomDesc, hBottomData, hFwdTopDesc, hTopData, hFwdScaleBiasMeanVarDesc, hScaleData, hBiasData, fFactor, hGlobalMean, hGlobalVar, fEps, hSaveMean, hSaveVar, bTraining);
+}
+
+template <class T>
+inline long Device<T>::BatchNormBackward(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 19, 19))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+	int mode = (int)pfInput[1];
+	T fAlphaDiff = pfInput[2];
+	T fBetaDiff = pfInput[3];
+	T fAlphaParamDiff = pfInput[4];
+	T fBetaParamDiff = pfInput[5];
+	long hBtmBottomDesc = (long)pfInput[6];
+	long hBottomData = (long)pfInput[7];
+	long hTopDiffDesc = (long)pfInput[8];
+	long hTopDiff = (long)pfInput[9];
+	long hBottomDiffDesc = (long)pfInput[10];
+	long hBottomDiff = (long)pfInput[11];
+	long hBwdScaleBiasMeanVarDesc = (long)pfInput[12];
+	long hScaleData = (long)pfInput[13];
+	long hScaleDiff = (long)pfInput[14];
+	long hBiasDiff = (long)pfInput[15];
+	T fEps = pfInput[16];
+	long hSaveMean = (long)pfInput[17];
+	long hSaveVar = (long)pfInput[18];
+
+	return m_memory.BatchNormBackward(hHandle, mode, fAlphaDiff, fBetaDiff, fAlphaParamDiff, fBetaParamDiff, hBtmBottomDesc, hBottomData, hTopDiffDesc, hTopDiff, hBottomDiffDesc, hBottomDiff, hBwdScaleBiasMeanVarDesc, hScaleData, hScaleDiff, hBiasDiff, fEps, hSaveMean, hSaveVar);
 }
 
 template <class T>

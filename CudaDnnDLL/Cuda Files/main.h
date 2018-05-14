@@ -101,6 +101,10 @@ const int CUDNN_FN_SET_POOLDESC		= 82;
 const int CUDNN_FN_POOL_FWD			= 83;
 const int CUDNN_FN_POOL_BWD			= 84;
 
+const int CUDNN_FN_DERIVE_BN		= 86;
+const int CUDNN_FN_BN_FWD			= 87;
+const int CUDNN_FN_BN_BWD			= 88;
+
 const int CUDNN_FN_CREATE_LRNDESC	= 90;
 const int CUDNN_FN_FREE_LRNDESC		= 91;
 const int CUDNN_FN_SET_LRNDESC		= 92;

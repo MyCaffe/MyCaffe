@@ -215,6 +215,15 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDNN_FN_POOL_BWD:	
 			return m_device.PoolingBackward(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDNN_FN_DERIVE_BN:
+			return m_device.DeriveBatchNormDesc(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_BN_FWD:
+			return m_device.BatchNormForward(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_BN_BWD:
+			return m_device.BatchNormBackward(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDNN_FN_GET_DROPOUT_INFO:
 			return m_device.GetDropoutInfo(lCount, pfInput, plCount, ppfOutput);
 

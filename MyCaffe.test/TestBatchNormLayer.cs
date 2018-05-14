@@ -67,6 +67,59 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+        [TestMethod]
+        public void TestForwardCuDnn()
+        {
+            BatchNormLayerTest test = new BatchNormLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IBatchNormLayerTest t in test.Tests)
+                {
+                    t.TestForward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardInplaceCuDnn()
+        {
+            BatchNormLayerTest test = new BatchNormLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IBatchNormLayerTest t in test.Tests)
+                {
+                    t.TestForwardInplace();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientCuDnn()
+        {
+            BatchNormLayerTest test = new BatchNormLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IBatchNormLayerTest t in test.Tests)
+                {
+                    t.TestGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IBatchNormLayerTest : ITest
@@ -113,6 +166,7 @@ namespace MyCaffe.test
         public void TestForward()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.BATCHNORM);
+            p.batch_norm_param.engine = m_engine;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
 
             layer.Setup(BottomVec, TopVec);
@@ -162,6 +216,7 @@ namespace MyCaffe.test
             BlobCollection<T> colBottom = new BlobCollection<T>();
             BlobCollection<T> colTop = new BlobCollection<T>();
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.BATCHNORM);
+            p.batch_norm_param.engine = m_engine;
             FillerParameter fp = new FillerParameter("gaussian");
             Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
             filler.Fill(blobInPlace);
@@ -216,6 +271,7 @@ namespace MyCaffe.test
         public void TestGradient()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.BATCHNORM);
+            p.batch_norm_param.engine = m_engine;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, new CancelEvent());
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-4);
 

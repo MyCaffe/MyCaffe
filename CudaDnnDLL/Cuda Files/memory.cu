@@ -1003,6 +1003,178 @@ long Memory<T>::PoolingBackward(long hHandle, long hPoolingDesc, T fAlpha, long 
 template long Memory<double>::PoolingBackward(long hHandle, long hPoolingDesc, double dfAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, double dfBeta, long hBottomDiffDesc, long hBottomDiff);
 template long Memory<float>::PoolingBackward(long hHandle, long hPoolingDesc, float fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, float fBeta, long hBottomDiffDesc, long hBottomDiff);
 
+template <class T>
+long Memory<T>::DeriveBatchNormDesc(long hFwdScaleBiasMeanVarDesc, long hFwdBottomDesc, long hBwdScaleBiasMeanVarDesc, long hBwdBottomDesc, int mode)
+{
+	LONG lErr;
+	cudnnTensorDescriptor_t fwdscalemeanvardesc = GetTensorDesc(hFwdScaleBiasMeanVarDesc);
+	cudnnTensorDescriptor_t fwdbtmdesc = GetTensorDesc(hFwdBottomDesc);
+	cudnnTensorDescriptor_t bwdscalemeanvardesc = GetTensorDesc(hBwdScaleBiasMeanVarDesc);
+	cudnnTensorDescriptor_t bwdbtmdesc = GetTensorDesc(hBwdBottomDesc);
+
+	if (lErr = cudnnDeriveBNTensorDescriptor(fwdscalemeanvardesc, fwdbtmdesc, (cudnnBatchNormMode_t)mode))
+		return lErr;
+
+	if (lErr = cudnnDeriveBNTensorDescriptor(bwdscalemeanvardesc, bwdbtmdesc, (cudnnBatchNormMode_t)mode))
+		return lErr;
+
+	return CUDNN_STATUS_SUCCESS;
+}
+
+template long Memory<double>::DeriveBatchNormDesc(long hFwdScaleBiasMeanVarDesc, long hFwdBottomDesc, long hBwdScaleBiasMeanVarDesc, long hBwdBottomDesc, int mode);
+template long Memory<float>::DeriveBatchNormDesc(long hFwdScaleBiasMeanVarDesc, long hFwdBottomDesc, long hBwdScaleBiasMeanVarDesc, long hBwdBottomDesc, int mode);
+
+
+template <class T>
+long Memory<T>::BatchNormForward(long hHandle, int mode, T fAlpha, T fBeta, long hFwdBottomDesc, long hBottomData, long hFwdTopDesc, long hTopData, long hFwdScaleBiasMeanVarDesc, long hScaleData, long hBiasData, T fFactor, long hGlobalMean, long hGlobalVar, T fEps, long hSaveMean, long hSaveVar, bool bTraining)
+{
+	LONG lErr;
+	cudnnHandle_t cudnn = GetCuDNN(hHandle);
+	cudnnTensorDescriptor_t fwdbtmdesc = GetTensorDesc(hFwdBottomDesc);
+	cudnnTensorDescriptor_t fwdtopdesc = GetTensorDesc(hFwdTopDesc);
+	cudnnTensorDescriptor_t fwdscalemeanvardesc = GetTensorDesc(hFwdScaleBiasMeanVarDesc);
+	MemoryItem* pBtmData;
+	MemoryItem* pTopData;
+	MemoryItem* pScaleData;
+	MemoryItem* pBiasData;
+	MemoryItem* pGlobalMean;
+	MemoryItem* pGlobalVar;
+	MemoryItem* pSaveMean;
+	MemoryItem* pSaveVar;
+
+	if (lErr = m_memory.GetData(hBottomData, &pBtmData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hTopData, &pTopData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hScaleData, &pScaleData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hBiasData, &pBiasData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hGlobalMean, &pGlobalMean))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hGlobalVar, &pGlobalVar))
+		return lErr;
+
+	T* btmdata = (T*)pBtmData->Data();
+	T* topdata = (T*)pTopData->Data();
+	T* scaledata = (T*)pScaleData->Data();
+	T* biasdata = (T*)pBiasData->Data();
+	T* globalmean = (T*)pGlobalMean->Data();
+	T* globalvar = (T*)pGlobalVar->Data();
+
+	if (sizeof(T) == 4)
+	{
+		if ((float)fEps < CUDNN_BN_MIN_EPSILON)
+			fEps = 0.0001f;
+	}
+	else
+	{
+		if ((double)fEps < CUDNN_BN_MIN_EPSILON)
+			fEps = CUDNN_BN_MIN_EPSILON;
+	}
+
+	if (bTraining)
+	{
+		if (lErr = m_memory.GetData(hSaveMean, &pSaveMean))
+			return lErr;
+
+		if (lErr = m_memory.GetData(hSaveVar, &pSaveVar))
+			return lErr;
+
+		T* savemean = (T*)pSaveMean->Data();
+		T* savevar = (T*)pSaveVar->Data();
+
+		if (lErr = cudnnBatchNormalizationForwardTraining(cudnn, (cudnnBatchNormMode_t)mode, &fAlpha, &fBeta, fwdbtmdesc, btmdata, fwdtopdesc, topdata, fwdscalemeanvardesc, scaledata, biasdata, fFactor, globalmean, globalvar, fEps, savemean, savevar))
+			return lErr;
+	}
+	else
+	{
+		if (lErr = cudnnBatchNormalizationForwardInference(cudnn, (cudnnBatchNormMode_t)mode, &fAlpha, &fBeta, fwdbtmdesc, btmdata, fwdtopdesc, topdata, fwdscalemeanvardesc, scaledata, biasdata, globalmean, globalvar, fEps))
+			return lErr;
+	}
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Memory<double>::BatchNormForward(long hHandle, int mode, double dfAlpha, double dfBeta, long hFwdBottomDesc, long hBottomData, long hFwdTopDesc, long hTopData, long hFwdScaleBiasMeanVarDesc, long hScaleData, long hBiasData, double fFactor, long hGlobalMean, long hGlobalVar, double fEps, long hSaveMean, long hSaveVar, bool bTraining);
+template long Memory<float>::BatchNormForward(long hHandle, int mode, float fAlpha, float fBeta, long hFwdBottomDesc, long hBottomData, long hFwdTopDesc, long hTopData, long hFwdScaleBiasMeanVarDesc, long hScaleData, long hBiasData, float fFactor, long hGlobalMean, long hGlobalVar, float fEps, long hSaveMean, long hSaveVar, bool bTraining);
+
+template <class T>
+long Memory<T>::BatchNormBackward(long hHandle, int mode, T fAlphaDiff, T fBetaDiff, T fAlphaParamDiff, T fBetaParamDiff, long hBwdBottomDesc, long hBottomData, long hTopDiffDesc, long hTopDiff, long hBottomDiffDesc, long hBottomDiff, long hBwdScaleBiasMeanVarDesc, long hScaleData, long hScaleDiff, long hBiasDiff, T fEps, long hSaveMean, long hSaveVar)
+{
+	LONG lErr;
+	cudnnHandle_t cudnn = GetCuDNN(hHandle);
+	cudnnTensorDescriptor_t bwdbtmdesc = GetTensorDesc(hBwdBottomDesc);
+	cudnnTensorDescriptor_t topdiffdesc = GetTensorDesc(hTopDiffDesc);
+	cudnnTensorDescriptor_t btmdiffdesc = GetTensorDesc(hBottomDiffDesc);
+	cudnnTensorDescriptor_t bwdscalemeanvardesc = GetTensorDesc(hBwdScaleBiasMeanVarDesc);
+	MemoryItem* pBtmData;
+	MemoryItem* pTopDiff;
+	MemoryItem* pBtmDiff;
+	MemoryItem* pScaleData;
+	MemoryItem* pScaleDiff;
+	MemoryItem* pBiasDiff;
+	MemoryItem* pSaveMean;
+	MemoryItem* pSaveVar;
+
+	if (lErr = m_memory.GetData(hBottomData, &pBtmData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hTopDiff, &pTopDiff))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hBottomDiff, &pBtmDiff))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hScaleData, &pScaleData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hScaleDiff, &pScaleDiff))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hBiasDiff, &pBiasDiff))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hSaveMean, &pSaveMean))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hSaveVar, &pSaveVar))
+		return lErr;
+
+	T* btmdata = (T*)pBtmData->Data();
+	T* topdiff = (T*)pTopDiff->Data();
+	T* btmdiff = (T*)pBtmDiff->Data();
+	T* scaledata = (T*)pScaleData->Data();
+	T* scalediff = (T*)pScaleDiff->Data();
+	T* biasdiff = (T*)pBiasDiff->Data();
+	T* savemean = (T*)pSaveMean->Data();
+	T* savevar = (T*)pSaveVar->Data();
+
+	if (sizeof(T) == 4)
+	{
+		if ((float)fEps < CUDNN_BN_MIN_EPSILON)
+			fEps = 0.0001f;
+	}
+	else
+	{
+		if ((double)fEps < CUDNN_BN_MIN_EPSILON)
+			fEps = CUDNN_BN_MIN_EPSILON;
+	}
+
+	if (lErr = cudnnBatchNormalizationBackward(cudnn, (cudnnBatchNormMode_t)mode, &fAlphaDiff, &fBetaDiff, &fAlphaParamDiff, &fBetaParamDiff, bwdbtmdesc, btmdata, topdiffdesc, topdiff, btmdiffdesc, btmdiff, bwdscalemeanvardesc, scaledata, scalediff, biasdiff, fEps, savemean, savevar))
+		return lErr;
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Memory<double>::BatchNormBackward(long hHandle, int mode, double dfAlphaDiff, double dfBetaDiff, double dfAlphaParamDiff, double dfBetaParamDiff, long hBtmBottomDesc, long hBottomData, long hTopDiffDesc, long hTopDiff, long hBottomDiffDesc, long hBottomDiff, long hBwdScaleBiasMeanVarDesc, long hScaleData, long hScaleDiff, long hBiasDiff, double fEps, long hSaveMean, long hSaveVar);
+template long Memory<float>::BatchNormBackward(long hHandle, int mode, float fAlphaDiff, float fBetaDiff, float fAlphaParamDiff, float fBetaParamDiff, long hBtmBottomDesc, long hBottomData, long hTopDiffDesc, long hTopDiff, long hBottomDiffDesc, long hBottomDiff, long hBwdScaleBiasMeanVarDesc, long hScaleData, long hScaleDiff, long hBiasDiff, float fEps, long hSaveMean, long hSaveVar);
+
 
 template <class T>
 long Memory<T>::CreateDropoutDesc(long* phHandle)
