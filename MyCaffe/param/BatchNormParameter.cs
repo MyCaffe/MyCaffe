@@ -44,7 +44,7 @@ namespace MyCaffe.param
         /// <returns>Returns <i>true</i> when cuDnn is to be used, <i>false</i> otherwise.</returns>
         public bool useCudnn()
         {
-            if (engine == EngineParameter.Engine.CUDNN)
+            if (engine != EngineParameter.Engine.CAFFE)
                 return true;
 
             return false;
