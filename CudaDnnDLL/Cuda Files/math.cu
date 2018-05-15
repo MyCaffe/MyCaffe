@@ -259,7 +259,7 @@ long Math<T>::set(int nCount, long hDst, T fVal, int nIdx, int nXOff)
 		set_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, fVal, pData);
 	}
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::set(int nCount, long hDst, double fVal, int nIdx, int nXOff);
@@ -1085,7 +1085,7 @@ long Math<double>::add_scalar(int n, double fAlpha, long hY, int nYOff)
 
 	add_scalar_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, y);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template <>
@@ -1103,7 +1103,7 @@ long Math<float>::add_scalar(int n, float fAlpha, long hY, int nYOff)
 
 	add_scalar_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, y);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 
@@ -1135,7 +1135,7 @@ long Math<double>::add(int n, long hA, long hB, long hY, double dfAlpha)
 
 	add_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (double*)pA->Data(), (double*)pB->Data(), (double*)pY->Data(), dfAlpha);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template <>
@@ -1157,7 +1157,7 @@ long Math<float>::add(int n, long hA, long hB, long hY, float fAlpha)
 
 	add_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (float*)pA->Data(), (float*)pB->Data(), (float*)pY->Data(), fAlpha);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template<>
@@ -1165,7 +1165,7 @@ long Math<float>::add(int n, float* a, float* b, float* c)
 {
 	add_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, c, 1.0);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 
@@ -1174,7 +1174,7 @@ long Math<double>::add(int n, double* a, double* b, double* c)
 {
 	add_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, c, 1.0);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 
@@ -1219,7 +1219,7 @@ long Math<T>::add2(int n, long hA, long hB, long hY, T dfAlphaA, T dfAlphaB, int
 
 	add2_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y, dfAlphaA, dfAlphaB);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::add2(int n, long hA, long hB, long hY, double dfAlphaA, double dfAlphaB, int nAOff, int nBOff, int nYOff);
@@ -1274,7 +1274,7 @@ long Math<double>::compare_signs(int n, long hA, long hB, long hY)
 
 	compare_signs_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (double*)pA->Data(), (double*)pB->Data(), (double*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template <>
@@ -1296,7 +1296,7 @@ long Math<float>::compare_signs(int n, long hA, long hB, long hY)
 
 	compare_signs_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (float*)pA->Data(), (float*)pB->Data(), (float*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 
@@ -1317,7 +1317,7 @@ long Math<T>::maxval(int n, long hA, T* pOut, int nAOff)
 	thrust::device_ptr<T> d_ptr = thrust::device_pointer_cast(a);
 	*pOut = *(thrust::max_element(d_ptr, d_ptr + n));
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::maxval(int n, long hA, double* pOut, int nAOff);
@@ -1341,7 +1341,7 @@ long Math<T>::minval(int n, long hA, T* pOut, int nAOff)
 	thrust::device_ptr<T> d_ptr = thrust::device_pointer_cast(a);
 	*pOut = *(thrust::min_element(d_ptr, d_ptr + n));
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::minval(int n, long hA, double* pOut, int nAOff);
@@ -1449,7 +1449,7 @@ long Math<T>::minmaxval(int n, long hA, long hWork1, long hWork2, T* pMin, T* pM
 
 			minmax_kernel<T> << <nBlocks, MAX_SH_MEM >> > (a, w1, w2, nSize, fMin, fMax);
 
-			if (lErr = cudaGetLastError())
+			if (lErr = cudaStreamSynchronize(0))
 				return lErr;
 
 			if (lErr = cudaMemcpy(&fMin1, w1, sizeof(T), cudaMemcpyDeviceToHost))
@@ -1481,7 +1481,7 @@ long Math<T>::minmaxval(int n, long hA, long hWork1, long hWork2, T* pMin, T* pM
 	*pMin = fMinFinal;
 	*pMax = fMaxFinal;
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::minmaxval(int n, long hA, long hWork1, long hWork2, double* pMin, double* pMax, int nAOff);
@@ -1586,7 +1586,7 @@ long Math<T>::naninfval(int n, long hA, long hWork1, long hWork2, T* pNan, T* pI
 
 			naninf_kernel<T> << <nBlocks, MAX_SH_MEM >> > (a, w1, w2, nSize);
 
-			if (lErr = cudaGetLastError())
+			if (lErr = cudaStreamSynchronize(0))
 				return lErr;
 
 			if (lErr = cudaMemcpy(&fNan1, w1, sizeof(T), cudaMemcpyDeviceToHost))
@@ -1622,7 +1622,7 @@ long Math<T>::naninfval(int n, long hA, long hWork1, long hWork2, T* pNan, T* pI
 	*pNan = fNanFinal;
 	*pInf = fInfFinal;
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::naninfval(int n, long hA, long hWork1, long hWork2, double* pNan, double* pInf, int nAOff);
@@ -1662,7 +1662,7 @@ long Math<T>::width(int n, long hMean, long hMin, long hMax, T fAlpha, long hWid
 
 	width_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (T*)pMean->Data(), (T*)pMin->Data(), (T*)pMax->Data(), fAlpha, (T*)pWidth->Data());
 
-	return cudaGetLastError();	
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::width(int n, long hMean, long hMax, long hMin, double fAlpha, long hWidth);
@@ -1709,7 +1709,7 @@ long Math<T>::contains_point(int n, long hMean, long hWidth, long hX, long hWork
 
 	contains_point_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, mean, wid, x, out);
 
-	if (lErr = cudaGetLastError())
+	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
 	if (lErr = asum(n, hWork, pOut))
@@ -1750,7 +1750,7 @@ long Math<T>::denan(int n, long hX, T fReplacement)
 
 	denan_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, fReplacement);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::denan(int n, long hX, double dfReplacement);
@@ -1798,7 +1798,7 @@ long Math<double>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, i
 
 	sub_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template <>
@@ -1833,7 +1833,7 @@ long Math<float>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, in
 
 	sub_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 
@@ -1882,7 +1882,7 @@ long Math<T>::sub_and_dot(int n, int nN, int nLen, long hA, long hB, long hY, in
 
 	sub_and_dot_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nN, nLen, a, b, y);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<float>::sub_and_dot(int n, int nN, int nLen, long hA, long hB, long hY, int nAOff, int nBOff, int nYOff);
@@ -1909,7 +1909,7 @@ long Math<double>::mul_scalar(int n, double fAlpha, long hY)
 
 	mul_scalar_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, (double*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template <>
@@ -1923,7 +1923,7 @@ long Math<float>::mul_scalar(int n, float fAlpha, long hY)
 
 	mul_scalar_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, (float*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 
@@ -1968,7 +1968,7 @@ long Math<double>::mul(int n, long hA, long hB, long hY, int nAOff, int nBOff, i
 
 	mul_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template <>
@@ -2003,7 +2003,7 @@ long Math<float>::mul(int n, long hA, long hB, long hY, int nAOff, int nBOff, in
 
 	mul_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 
@@ -2035,7 +2035,7 @@ long Math<double>::div(int n, long hA, long hB, long hY)
 
 	div_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (double*)pA->Data(), (double*)pB->Data(), (double*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template <>
@@ -2057,7 +2057,7 @@ long Math<float>::div(int n, long hA, long hB, long hY)
 
 	div_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (float*)pA->Data(), (float*)pB->Data(), (float*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 
@@ -2085,7 +2085,7 @@ long Math<double>::abs(int n, long hA, long hY)
 
 	abs_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (double*)pA->Data(), (double*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template <>
@@ -2103,7 +2103,7 @@ long Math<float>::abs(int n, long hA, long hY)
 
 	abs_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (float*)pA->Data(), (float*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 
@@ -2140,7 +2140,7 @@ long Math<double>::exp(int n, long hA, long hY, int nAOff, int nYOff, double dfB
 
 	exp_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, y, dfBeta);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template <>
@@ -2167,7 +2167,7 @@ long Math<float>::exp(int n, long hA, long hY, int nAOff, int nYOff, float fBeta
 
 	exp_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, y, fBeta);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 
@@ -2195,7 +2195,7 @@ long Math<T>::log(int n, long hA, long hY, T fBeta)
 
 	log_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (T*)pA->Data(), (T*)pY->Data(), fBeta);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::log(int n, long hA, long hY, double dfBeta);
@@ -2227,7 +2227,7 @@ long Math<double>::powx(int n, long hA, double fAlpha, long hY)
 
 	powx_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (double*)pA->Data(), fAlpha, (double*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template <>
@@ -2245,7 +2245,7 @@ long Math<float>::powx(int n, long hA, float fAlpha, long hY)
 
 	powx_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (float*)pA->Data(), fAlpha, (float*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 
@@ -2283,7 +2283,7 @@ long Math<T>::sign(int n, long hX, long hY, int nXOff, int nYOff)
 
 	sign_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, y);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::sign(int n, long hA, long hY, int nXOff, int nYOff);
@@ -2315,7 +2315,7 @@ long Math<T>::sqrt(int n, long hX, long hY)
 
 	sqrt_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (T*)pX->Data(), (T*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::sqrt(int n, long hA, long hY);
@@ -2365,7 +2365,7 @@ long Math<T>::sumsqdiff(int n, T* w, T* x, T* y, T* pOut, cudaStream_t stream)
 	else
 		sub_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, y, w);
 
-	if (lErr = cudaGetLastError())
+	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
 	if (stream != NULL)
@@ -2373,7 +2373,7 @@ long Math<T>::sumsqdiff(int n, T* w, T* x, T* y, T* pOut, cudaStream_t stream)
 	else
 		mul_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, w, w, w);
 
-	if (lErr = cudaGetLastError())
+	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
 	return asum(n, w, pOut);
@@ -2407,7 +2407,7 @@ long Math<T>::reciprocol(int n, long hX, long hY)
 
 	reciprocol_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (T*)pX->Data(), (T*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::reciprocol(int n, long hA, long hY);
@@ -2440,7 +2440,7 @@ long Math<T>::student(int n, long hX, long hY)
 
 	student_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (T*)pX->Data(), (T*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::student(int n, long hA, long hY);
@@ -2472,7 +2472,7 @@ long Math<T>::logistic1(int n, long hX, long hY)
 
 	logistic1_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (T*)pX->Data(), (T*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::logistic1(int n, long hA, long hY);
@@ -2504,7 +2504,7 @@ long Math<T>::logistic2(int n, long hX, long hY)
 
 	logistic2_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (T*)pX->Data(), (T*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::logistic2(int n, long hA, long hY);
@@ -2544,7 +2544,7 @@ long Math<T>::channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX
 
 	channel_max_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
@@ -2578,7 +2578,7 @@ long Math<T>::channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hX
 
 	channel_sub_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
@@ -2618,7 +2618,7 @@ long Math<T>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX
 
 	channel_sum_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
@@ -2669,7 +2669,7 @@ long Math<T>::channel_div(int n, int nOutNum, int nChannels, int nInNum, long hX
 	else
 		channel_div_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::channel_div(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod);
@@ -2720,7 +2720,7 @@ long Math<T>::channel_mul(int n, int nOutNum, int nChannels, int nInNum, long hX
 	else
 		channel_mul_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> >(n, nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::channel_mul(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY, int nMethod);
@@ -2765,7 +2765,7 @@ long Math<T>::channel_dot(int n, int nOutNum, int nChannels, int nInNum, long hX
 
 	channel_dot_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pA->Data(), (T*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::channel_dot(int n, int nOutNum, int nChannels, int nInNum, long hX, long hA, long hY);
@@ -2837,7 +2837,7 @@ long Math<T>::im2col(long hDataIm, int nDataImOffset, int nChannels, int nHeight
 
 	im2col_kernel<T><<<CAFFE_GET_BLOCKS(num_kernels), CAFFE_CUDA_NUM_THREADS>>>(num_kernels, data_im, nHeight, nWidth, nKernelH, nKernelW, nPadH, nPadW, nStrideH, nStrideW, nDilationH, nDilationW, height_col, width_col, data_col);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::im2col(long hDataIm, int nDataImOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataCol, int nDataColOffset);
@@ -2915,7 +2915,7 @@ long Math<T>::col2im(long hDataCol, int nDataColOffset, int nChannels, int nHeig
 
 	col2im_kernel<T><<<CAFFE_GET_BLOCKS(num_kernels), CAFFE_CUDA_NUM_THREADS>>>(num_kernels, data_col, nHeight, nWidth, nKernelH, nKernelW, nPadH, nPadW, nStrideH, nStrideW, nDilationH, nDilationW, height_col, width_col, data_im);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::col2im(long hDataCol, int nDataColOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataIm, int nDataImOffset);
@@ -3142,7 +3142,7 @@ long Math<T>::im2col_nd(long hDataIm, int nDataImOffset, int nNumSpatialAxes, in
 			return ERROR_PARAM_OUT_OF_RANGE;
 	}
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::im2col_nd(long hDataIm, int nDataImOffset, int nNumSpatialAxes, int nNumKernels, int nChannelAxis, long hImShape, long hColShape, long hKernelShape, long hPad, long hStride, long hDilation, long hDataCol, int nDataColOffset);
@@ -3388,7 +3388,7 @@ long Math<T>::col2im_nd(long hDataCol, int nDataColOffset, int nNumSpatialAxes, 
 			return ERROR_PARAM_OUT_OF_RANGE;
 	}
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::col2im_nd(long hDataCol, int nDataColOffset, int nNumSpatialAxes, int nImCount, int nChannelAxis, long hImShape, long hColShape, long hKernelShape, long hPad, long hStride, long hDilation, long hDataIm, int nDataImOffset);
@@ -3443,7 +3443,7 @@ long Math<double>::rng_uniform(int n, double fMin, double fMax, long hY)
 	if (fMin != 0)
 		add_scalar_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fMin, (double*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 
@@ -3472,7 +3472,7 @@ long Math<float>::rng_uniform(int n, float fMin, float fMax, long hY)
 	if (fMin != 0)
 		add_scalar_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fMin, (float*)pY->Data());
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 
@@ -3686,7 +3686,7 @@ long Math<T>::accuracy_fwd(int n, long hBottomData, long hBottomLabel, long hAcc
 			accuracy_fwd_kernel_perclass<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, bottom_label, acc_data, counts, nOuterNum, nDim, nInnerNum, nNumLabels, nTopK);
 	}
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::accuracy_fwd(int nCount, long hBtmData, long hBtmLabel, long hAccData, int nOuterNum, int nDim, int nInnerNum, int nNumLabels, int nTopK, long hCounts, bool bPerClass, bool bIgnoreLabel, int nIgnoreLabel);
@@ -3727,7 +3727,7 @@ long Math<T>::batchreidx_fwd(int n, int nInnerDim, long hBottomData, long hPermu
 
 	batchreidx_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, nInnerDim, bottom_data, permut_data, top_data);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::batchreidx_fwd(int n, int nInnerDim, long hBottomData, long hPermutData, long hTopData);
@@ -3785,7 +3785,7 @@ long Math<T>::batchreidx_bwd(int n, int nInnerDim, long hTopDiff, long hTopIdx, 
 
 	batchreidx_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, nInnerDim, top_diff, top_idx, begins, counts, bottom_diff);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::batchreidx_bwd(int n, int nInnerDim, long hTopDiff, long hTopIdx, long hBegins, long hCounts, long hBottomDiff);
@@ -3828,7 +3828,7 @@ long Math<T>::embed_fwd(int n, long hBottomData, long hWeight, int nM, int nN, i
 
 	embed_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, weight, nM, nN, nK, top_data);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::embed_fwd(int nCount, long hBottomData, long hWeight, int nM, int nN, int nK, long hTopData);
@@ -3871,7 +3871,7 @@ long Math<T>::embed_bwd(int n, long hBottomData, long hTopDiff, int nM, int nN, 
 
 	embed_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, top_diff, nM, nN, nK, weight_diff);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::embed_bwd(int nCount, long hBottomData, long hWeight, int nM, int nN, int nK, long hTopData);
@@ -4089,7 +4089,7 @@ long Math<T>::pooling_fwd(int nMethod, int n, long hBottomData, int nNum, int nC
 			break;
 	}
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::pooling_fwd(int nMethod, int nCount, long hBottomData, int nNum, int nChannels, int h, int w, int hPooled, int wPooled, int hKernel, int wKernel, int hStride, int wStride, int hPad, int wPad, long hTopData, long hMask, long hTopMask);
@@ -4278,7 +4278,7 @@ long Math<T>::pooling_bwd(int nMethod, int n, long hTopDiff, int nNum, int nChan
 			break;
 	}
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::pooling_bwd(int nMethod, int nCount, long hTopDiff, int nNum, int nChannels, int h, int w, int hPooled, int wPooled, int hKernel, int wKernel, int hStride, int wStride, int hPad, int wPad, long hBottomDiff, long hMask, long hTopMask);
@@ -4389,7 +4389,7 @@ long Math<T>::unpooling_fwd(int nMethod, int n, long hBottomData, int nNum, int 
 			return ERROR_PARAM_OUT_OF_RANGE;
 	}
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::unpooling_fwd(int nMethod, int nCount, long hBottomData, int nNum, int nChannels, int h, int w, int hUnPooled, int wUnPooled, int hKernel, int wKernel, int hStride, int wStride, int hPad, int wPad, long hTopData, long hBottomMask);
@@ -4499,7 +4499,7 @@ long Math<T>::unpooling_bwd(int nMethod, int n, long hTopDiff, int nNum, int nCh
 		return ERROR_PARAM_OUT_OF_RANGE;
 	}
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::unpooling_bwd(int nMethod, int nCount, long hTopDiff, int nNum, int nChannels, int h, int w, int hUnPooled, int wUnPooled, int hKernel, int wKernel, int hStride, int wStride, int hPad, int wPad, long hBottomDiff, long hBottomMask);
@@ -4533,7 +4533,7 @@ long Math<T>::tanh_fwd(int n, long hBottomData, long hTopData)
 
 	tanh_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, top_data);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::tanh_fwd(int nCount, long hBottomData, long hTopData);
@@ -4573,7 +4573,7 @@ long Math<T>::tanh_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff)
 
 	tanh_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, top_diff, top_data, bottom_diff);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::tanh_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
@@ -4607,7 +4607,7 @@ long Math<T>::sigmoid_fwd(int n, long hBottomData, long hTopData)
 
 	sigmoid_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, top_data);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::sigmoid_fwd(int nCount, long hBottomData, long hTopData);
@@ -4647,7 +4647,7 @@ long Math<T>::sigmoid_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff)
 
 	sigmoid_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, top_diff, top_data, bottom_diff);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::sigmoid_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
@@ -4693,7 +4693,7 @@ long Math<T>::swish_bwd(int n, long hTopDiff, long hTopData, long hSigmoidOutput
 
 	swish_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, top_diff, top_data, sigmoid_output_data, bottom_diff, fBeta);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::swish_bwd(int nCount, long hTopDiff, long hTopData, long hSigmoidOutputData, long hBottomDiff, double dfBeta);
@@ -4727,7 +4727,7 @@ long Math<T>::relu_fwd(int n, long hBottomData, long hTopData, T fNegativeSlope)
 
 	relu_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, top_data, fNegativeSlope);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::relu_fwd(int nCount, long hBottomData, long hTopData, double fNegativeSlope);
@@ -4766,7 +4766,7 @@ long Math<T>::relu_bwd(int n, long hTopDiff, long hTopData, long hBottomDiff, T 
 
 	relu_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, top_diff, top_data, bottom_diff, fNegativeSlope);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::relu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, double dfNegativeSlope);
@@ -4802,7 +4802,7 @@ long Math<T>::elu_fwd(int n, long hBottomData, long hTopData, T fAlpha)
 
 	elu_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> >(n, bottom_data, top_data, fAlpha);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::elu_fwd(int nCount, long hBottomData, long hTopData, double fAlpha);
@@ -4846,7 +4846,7 @@ long Math<T>::elu_bwd(int n, long hTopDiff, long hTopData, long hBottomData, lon
 
 	elu_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> >(n, top_diff, top_data, bottom_data, bottom_diff, fAlpha);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::elu_bwd(int nCount, long hTopDiff, long hTopData, long hBottomData, long hBottomDiff, double fAlpha);
@@ -4885,7 +4885,7 @@ long Math<T>::dropout_fwd(int n, long hBottomData, long hMask, unsigned int uiTh
 
 	dropout_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, mask, uiThreshold, fScale, top_data);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::dropout_fwd(int n, long hBottomData, long hMask, unsigned int uiThreshold, double fScale, long hTopData);
@@ -4924,7 +4924,7 @@ long Math<T>::dropout_bwd(int n, long hTopDiff, long hMask, unsigned int uiThres
 
 	dropout_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, top_diff, mask, uiThreshold, fScale, bottom_diff);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::dropout_bwd(int n, long hTopDiff, long hMask, unsigned int uiThreshold, double fScale, long hBottomDiff);
@@ -4960,7 +4960,7 @@ long Math<T>::bnll_fwd(int n, long hBottomData, long hTopData)
 
 	bnll_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, top_data);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::bnll_fwd(int nCount, long hBottomData, long hTopData);
@@ -5000,7 +5000,7 @@ long Math<T>::bnll_bwd(int n, long hTopDiff, long hBottomData, long hBottomDiff)
 
 	bnll_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, top_diff, bottom_data, bottom_diff);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::bnll_bwd(int nCount, long hTopDiff, long hBottomData, long hBottomDiff);
@@ -5040,7 +5040,7 @@ long Math<T>::prelu_fwd(int n, int nChannels, int nDim, long hBottomData, long h
 
 	prelu_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, nChannels, nDim, bottom_data, top_data, slope_data, nDivFactor);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::prelu_fwd(int nCount, int nChannels, int nDim, long hBottomData, long hTopData, long hSlopeData, int nDivFactor);
@@ -5085,7 +5085,7 @@ long Math<T>::prelu_bwd(int n, int nChannels, int nDim, long hTopDiff, long hBot
 
 	prelu_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, nChannels, nDim, top_diff, bottom_data, bottom_diff, slope_data, nDivFactor);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::prelu_bwd(int nCount, int nChannels, int nDim, long hTOpDiff, long hBottomData, long hBottomDiff, long hSlopeData, int nDivFactor);
@@ -5130,7 +5130,7 @@ long Math<T>::prelu_bwd_param(int n, int nNum, int nTopOffset, long hTopDiff, lo
 
 	prelu_bwd_param_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, nNum, nTopOffset, top_diff, bottom_data, buff_diff);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::prelu_bwd_param(int n, int nNum, int nTopOffset, long hTopDiff, long hBottomData, long hBackBuffDiff);
@@ -5204,7 +5204,7 @@ long Math<T>::softmaxloss_fwd(int n, long hProbData, long hLabels, long hLossDat
 	else
 		softmaxloss_fwd_param_kernel1<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, prob_data, labels, loss_data, nOuterNum, nDim, nInnerNum, counts, nIgnoreLabel);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::softmaxloss_fwd(int n, long hProbData, long hLabels, long hLossData, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
@@ -5284,7 +5284,7 @@ long Math<T>::softmaxloss_bwd(int n, long hTopData, long hLabels, long hBottomDi
 	else
 		softmaxloss_bwd_param_kernel1<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, top_data, labels, bottom_diff, nOuterNum, nDim, nInnerNum, counts, nIgnoreLabel);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::softmaxloss_bwd(int n, long hTopData, long hLabels, long hBottomDiff, int nOuterNum, int nDim, int nInnerNum, long hCounts, int nIgnoreLabel);
@@ -5348,7 +5348,7 @@ long Math<T>::max_fwd(int n, long hA, long hB, int nIdx, long hY, long hMask)
 
 	max_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, nIdx, y, mask);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::max_fwd(int n, long hA, long hB, int nIdx, long hY, long hMask);
@@ -5393,7 +5393,7 @@ long Math<T>::max_bwd(int n, long hX, int nIdx, long hMask, long hY)
 
 	max_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, nIdx, mask, y);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::max_bwd(int n, long hX, int nIdx, long hMask, long hY);
@@ -5459,7 +5459,7 @@ long Math<T>::crop_fwd(int nCount, int nNumAxes, long hSrcStrides, long hDstStri
 
 	crop_fwd_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nNumAxes, srcStrides, dstStrides, offsets, bottom_data, top_data);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::crop_fwd(int nCount, int nNumAxes, long hSrcStrides, long hDstStrides, long hOffsets, long hBottomData, long hTopData);
@@ -5509,7 +5509,7 @@ long Math<T>::crop_bwd(int nCount, int nNumAxes, long hSrcStrides, long hDstStri
 
 	crop_bwd_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nNumAxes, srcStrides, dstStrides, offsets, bottom_diff, top_diff);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::crop_bwd(int nCount, int nNumAxes, long hSrcStrides, long hDstStrides, long hOffsets, long hBottomDiff, long hTopDiff);
@@ -5548,7 +5548,7 @@ long Math<T>::concat_fwd(int n, long hBottomData, int nNumConcats, int nConcatIn
 
 	concat_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, nNumConcats, nConcatInputSize, nTopConcatAxis, nBottomConcatAxis, nOffsetConcatAxis, top_data);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 
@@ -5588,7 +5588,7 @@ long Math<T>::concat_bwd(int n, long hTopDiff, int nNumConcats, int nConcatInput
 
 	concat_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, top_diff, nNumConcats, nConcatInputSize, nTopConcatAxis, nBottomConcatAxis, nOffsetConcatAxis, bottom_diff);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::concat_bwd(int n, long hTopDiff, int nNumConcats, int nConcatInputSize, int nTopConcatAxis, int nBottomConcatAxis, int nOffsetConcatAxis, long hBottomDiff);		 
@@ -5627,7 +5627,7 @@ long Math<T>::slice_fwd(int n, long hBottomData, int nNumSlices, int nSliceInput
 
 	slice_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, nNumSlices, nSliceInputSize, nBottomSliceAxis, nTopSliceAxis, nOffsetSliceAxis, top_data);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::slice_fwd(int n, long hBottomData, int nNumSlices, int nSliceInputSize, int nBottomSliceAxis, int nTopSliceAxis, int nOffsetSliceAxis, long hTopData);
@@ -5666,7 +5666,7 @@ long Math<T>::slice_bwd(int n, long hTopDiff, int nNumSlices, int nSliceInputSiz
 
 	slice_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, top_diff, nNumSlices, nSliceInputSize, nBottomSliceAxis, nTopSliceAxis, nOffsetSliceAxis, bottom_diff);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::slice_bwd(int n, long hTopDiff, int nNumSlices, int nSliceInputSize, int nBottomSliceAxis, int nTopSliceAxis, int nOffsetSliceAxis, long hBottomDiff);
@@ -5704,7 +5704,7 @@ long Math<T>::tile_fwd(int n, long hBottomData, int nInnerDim, int nTiles, int n
 
 	tile_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> >(n, bottom_data, nInnerDim, nTiles, nBottomTileAxis, top_data);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::tile_fwd(int n, long hBottomData, int nInnerDim, int nTiles, int nBottomTileAxis, long hTopData);
@@ -5748,7 +5748,7 @@ long Math<T>::tile_bwd(int n, long hTopDiff, int nTileSize, int nTiles, int nBot
 
 	tile_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> >(n, top_diff, nTileSize, nTiles, nBottomTileAxis, bottom_diff);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::tile_bwd(int n, long hTopDiff, int nTileSize, int nTiles, int nBottomTileAxis, long hBottomDiff);
@@ -5788,7 +5788,7 @@ long Math<T>::bias_fwd(int n, long hBottomData, long hBiasData, int nBiasDim, in
 
 	bias_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, bias_data, nBiasDim, nInnerDim, top_data);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::bias_fwd(int n, long hBottomData, long hBiasData, int nBiasDim, int nInnerDim, long hTopData);
@@ -5852,7 +5852,7 @@ long Math<T>::scale_fwd(int n, long hX, long hScaleData, int nScaleDim, int nInn
 		scale_fwd_bias_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, scale_data, bias_data, nScaleDim, nInnerDim, y);
 	}
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::scale_fwd(int n, long hX, long hScaleData, int nScaleDim, int nInnerDim, long hY, long hBiasData);
@@ -5886,7 +5886,7 @@ long Math<T>::threshold_fwd(int n, T fThreshold, long hX, long hY)
 
 	threshold_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fThreshold, x, y);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::threshold_fwd(int n, double dfThreshold, long hX, long hY);
@@ -5973,7 +5973,7 @@ long Math<T>::cll_bwd(int nCount, int nChannels, T fMargin, bool bLegacyVersion,
 	else
 		cll_bwd_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nChannels, fMargin, fAlpha, y, diff, dist_sq, btm_diff);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::cll_bwd(int nCount, int nChannels, double fMargin, bool bLegacyVersion, double fAlpha, long hY, long hDiff, long hDistSq, long hBottomDiff);
@@ -6056,7 +6056,7 @@ long Math<T>::lrn_fillscale(int n, long hBottomData, int nNum, int nChannels, in
 
 	lrn_fillscale_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, nNum, nChannels, nHeight, nWidth, nSize, fA, fB, scale_data);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::lrn_fillscale(int n, long hBottomData, int nNum, int nChannels, int nHeight, int nWidth, int nSize, double fA, double fB, long hScaleData);
@@ -6095,7 +6095,7 @@ long Math<T>::lrn_computeoutput(int n, long hBottomData, long hScaleData, T fA, 
 
 	lrn_computeoutput_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, scale_data, fA, top_data);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::lrn_computeoutput(int n, long hBottomData, long hScaleData, double fA, long hTopData);
@@ -6198,7 +6198,7 @@ long Math<T>::lrn_computediff(int n, long hBottomData, long hTopData, long hScal
 
 	lrn_computediff_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, bottom_data, top_data, scale_data, top_diff, nNum, nChannels, nHeight, nWidth, nSize, fB, fA, bottom_diff);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::lrn_computediff(int n, long hBottomData, long hTopData, long hScaleData, long hTopDiff, int nNum, int nChannels, int nHeight, int nWidth, int nSize, double fB, double fA, long hBottomDiff);
@@ -6386,16 +6386,19 @@ long Math<T>::lstm_fwd(int t, int nN, int nH, long hWeight_h, long hWeight_i, lo
 	nCount = 4 * nN * nH;
 	clip_add_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, 4 * nH, t, clip_t, h_to_gate, pre_gate_t);
 
-	if (lErr = cudaGetLastError())
+	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
 	nCount = 4 * nN * nH;
 	activation_fwd_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nH, pre_gate_t, gate_t);
 
+	if (lErr = cudaStreamSynchronize(0))
+		return lErr;
+
 	nCount = nN * nH;
 	lstm_fwd_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nH, t, c_t_1, gate_t, clip_t, c_t, h_t);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::lstm_fwd(int t, int nN, int nH, long hWeight_h, long hWeight_i, long hClipData, int nClipOffset, long hTopData, int nTopOffset, long hCellData, int nCellOffset, long hPreGateData, int nPreGateOffset, long hGateData, int nGateOffset, long hHT1Data, int nHT1Offset, long hCT1Data, int nCT1Offset, long hHtoGateData);
@@ -6476,13 +6479,13 @@ long Math<T>::lstm_bwd(int t, int nN, int nH, T fClip, long hWeight_h, long hCli
 	nCount = nN * nH;
 	lstm_bwd_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nH, t, c_t_1, gate_t, c_t, clip_t, dc_t, dh_t, dc_t_1, gate_diff_t);
 
-	if (lErr = cudaGetLastError())
+	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
 	nCount = 4 * nN * nH;
 	activation_bwd_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nH, fClip, gate_t, gate_diff_t, pre_gate_diff_t);
 
-	if (lErr = cudaGetLastError())
+	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
 	// Backprop errors to previous time step.
@@ -6492,7 +6495,7 @@ long Math<T>::lstm_bwd(int t, int nN, int nH, T fClip, long hWeight_h, long hCli
 	nCount = nN * nH;
 	clip_add_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nH, t, clip_t, h_to_h, dh_t_1);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::lstm_bwd(int t, int nN, int nH, double fClip, long hWeight_h, long hClipData, int nClipOffset, long hTopDiff, int nTopOffset, long hCellData, long hCellDiff, int nCellOffset, long hPreGateDiff, int nPreGateOffset, long hGateData, long hGateDiff, int nGateOffset, long hCT1Data, int nCT1Offset, long hDHT1Diff, int nDHT1Offset, long hDCT1Diff, int nDCT1Offset, long hHtoHData);
@@ -6572,12 +6575,12 @@ long Math<T>::lstm_unit_fwd(int nCount, int nHiddenDim, int nXCount, long hX, lo
 
 	lstm_acts_fwd_kernel<T> <<<CAFFE_GET_BLOCKS(nXCount), CAFFE_CUDA_NUM_THREADS >>>(nXCount, nHiddenDim, x, x_acts);
 
-	if (lErr = cudaGetLastError())
+	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
 	lstm_unit_fwd_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> > (nCount, nHiddenDim, c_prev, x_acts, cont, c, h);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::lstm_unit_fwd(int nCount, int nHiddenDim, int nXCount, long hX, long hX_acts, long hC_prev, long hCont, long hC, long hH);
@@ -6693,12 +6696,12 @@ long Math<T>::lstm_unit_bwd(int nCount, int nHiddenDim, int nXCount, long hC_pre
 
 	lstm_unit_bwd_kernel<T> <<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>> (nCount, nHiddenDim, c_prev, x_acts, c, h, cont, c_diff, h_diff, c_prev_diff, x_acts_diff);
 
-	if (lErr = cudaGetLastError())
+	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
 	lstm_acts_bwd_kernel<T> <<<CAFFE_GET_BLOCKS(nXCount), CAFFE_CUDA_NUM_THREADS>>>(nXCount, nHiddenDim, x_acts, x_acts_diff, x_diff);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::lstm_unit_bwd(int nCount, int nHiddenDim, int nXCount, long hC_prev, long hX_acts, long hC, long hH, long hCont, long hC_diff, long hH_diff, long hC_prev_diff, long hX_acts_diff, long hX_diff);
@@ -6748,7 +6751,7 @@ long Math<T>::coeff_sum_fwd(int nCount, int nDim, int nNumOffset, T fCoeff, long
 
 	coeff_sum_fwd_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nDim, nNumOffset, fCoeff, coeffdata, bottom, top);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::coeff_sum_fwd(int nCount, int nDim, int nNumOffset, double fCoeff, long hCoeffData, long hBottom, long hTop);
@@ -6794,7 +6797,7 @@ long Math<T>::coeff_sum_bwd(int nCount, int nDim, int nNumOffset, T fCoeff, long
 
 	coeff_sum_bwd_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nDim, nNumOffset, fCoeff, coeffdata, topdiff, bottomdiff);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::coeff_sum_bwd(int nCount, int nDim, int nNumOffset, double fCoeff, long hCoeffData, long hTopDiff, long hBottomDiff);
@@ -6867,7 +6870,7 @@ long Math<T>::sigmoid_cross_entropy_fwd(int nCount, long hInput, long hTarget, l
 	else
 		sigmoid_cross_entropy_kernel<T> << <CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >> >(nCount, input_data, target, loss_data, count_data);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::sigmoid_cross_entropy_fwd(int nCount, long hInput, long hTarget, long hLoss, bool bHasIgnoreLabel, int nIgnoreLabel, long hCount);
@@ -6904,7 +6907,7 @@ long Math<T>::sigmoid_cross_entropy_ignore(int nCount, int nIgnoreLabel, long hT
 
 	sigmoid_cross_entropy_ignore_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nIgnoreLabel, target, bottom_diff);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::sigmoid_cross_entropy_ignore(int nCount, int nIgnoreLabel, long hTarget, long hData);
@@ -6938,7 +6941,7 @@ long Math<T>::sgd_update(int n, long hNetParamDiff, long hHistoryData, T fMoment
 
 	sgd_update_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, net_param_diff, history_data, fMomentum, fLearningRate);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::sgd_update(int nCount, long hNetParamDiff, long hHistoryData, double dfMomentum, double dfLearningRate);
@@ -6974,7 +6977,7 @@ long Math<T>::nesterov_update(int n, long hNetParamDiff, long hHistoryData, T fM
 
 	nesterov_update_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, net_param_diff, history_data, fMomentum, fLearningRate);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::nesterov_update(int nCount, long hNetParamDiff, long hHistoryData, double dfMomentum, double dfLearningRate);
@@ -7010,7 +7013,7 @@ long Math<T>::adagrad_update(int n, long hNetParamDiff, long hHistoryData, T fDe
 
 	adagrad_update_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, net_param_diff, history_data, fDelta, fLearningRate);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::adagrad_update(int nCount, long hNetParamDiff, long hHistoryData, double dfDelta, double dfLearningRate);
@@ -7054,7 +7057,7 @@ long Math<T>::adadelta_update(int n, long hNetParamDiff, long hHistoryData1, lon
 
 	adadelta_update_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, net_param_diff, history_data1, history_data2, fMomentum, fDelta, fLearningRate);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::adadelta_update(int nCount, long hNetParamDiff, long hHistoryData1, long hHistoryData2, double dfMomentum, double dfDelta, double dfLearningRate);
@@ -7096,7 +7099,7 @@ long Math<T>::adam_update(int n, long hNetParamDiff, long hValM, long hValV, T f
 
 	adam_update_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, net_param_diff, val_m, val_v, fBeta1, fBeta2, fEpsHat, fCorrectedLearningRate);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::adam_update(int nCount, long hNetParamDiff, long hValM, long hValV, double dfBeta1, double dfBeta2, double dfEpsHat, double dfCorrectedLearningRate);
@@ -7132,7 +7135,7 @@ long Math<T>::rmsprop_update(int n, long hNetParamDiff, long hHistoryData, T fRm
 
 	rmsprop_update_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, net_param_diff, history_data, fRmsDecay, fDelta, fLearningRate);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::rmsprop_update(int nCount, long hNetParamDiff, long hHistoryData, double dfRmsDecay, double dfDelta, double dfLearningRate);
@@ -7176,7 +7179,7 @@ long Math<T>::combine_data(int nCount, long hOriginal, long hUpdated, T fUpdated
 
 	combine_data_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, original, updated, fUpdatedPct, server, fServerPct, newdata);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::combine_data(int nCount, long hOriginal, long hUpdated, double fUpdatedPct, long hServer, double fServerPct, long hNewData);
@@ -7205,7 +7208,7 @@ long Math<T>::mtx_set_diagonal(int nCount, int nRows, T fVal, long hData)
 
 	mtx_set_diagonal_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nRows, fVal, data);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::mtx_set_diagonal(int nCount, int nRows, double fVal, long hData);
@@ -7239,7 +7242,7 @@ long Math<T>::mtx_set_diagonal(int nCount, int nRows, long hDiag, T fScaleA, T f
 	
 	mtx_set_diagonal_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nRows, diag, fScaleA, fScaleB, data);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::mtx_set_diagonal(int nCount, int nRows, long hDiagonal, double fScaleA, double fScaleB, long hData);
@@ -7292,7 +7295,7 @@ long Math<T>::mtx_add_vector(int nOrientation, int nWidth, int nHeight, T fScale
 	else
 		mtx_add_row_vector_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nWidth, nHeight, fScale, a, b, y);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::mtx_add_vector(int nOrientation, int nWidth, int nHeight, double fScale, long hA, long hB, long hY);
@@ -7437,14 +7440,14 @@ long Math<T>::mtx_transpose_op(int nOp, int nWidth, int nHeight, long hA, long h
 				break;
 		}
 
-		if (lErr = cudaGetLastError())
+		if (lErr = cudaStreamSynchronize(0))
 			return lErr;
 
 		nNumRowsProcessed += gridSize.y * ADD_BLOCK_SIZE;
 		gridSize.y = max(1, min(DIVUP(nHeight - nNumRowsProcessed, ADD_BLOCK_SIZE), NUM_BLOCKS_MAX));
 	}
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::mtx_transpose_op(int nOp, int nWidth, int nHeight, long hA, long hB, long hY, double fScaleA, double fScaleB);
@@ -7556,7 +7559,7 @@ long Math<T>::mtx_aggregate_cols(int nOp, int nWidth, int nHeight, long hA, long
 			break;
 	}
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::mtx_aggregate_cols(int nOp, int nWidth, int nHeight, long hA, long hY);
@@ -7726,7 +7729,7 @@ long Math<T>::mtx_meancenter_by_column(int nWidth, int nHeight, long hA, long hB
 			return lErr;
 	}
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::mtx_meancenter_by_column(int nWidth, int nHeight, long hA, long hB, long hY, bool bNormalize);
@@ -7796,7 +7799,7 @@ long Math<T>::mtx_euclidean_dist(long hX, long hY, long hOut, int n, int d, int 
 
 	mtx_euclidean_dist_kernel<T><<<grid, block>>>(x, y, out, n, d, nStart, nEnd);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::mtx_euclidean_dist(long hX, long hY, long hOut, int n, int d, int nStart, int nEnd);
@@ -7926,12 +7929,12 @@ long Math<T>::tsne_update(unsigned int n, T fMomentum, T fLearningRate, long hdY
 
 	tsne_update_gains_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, dY, uY, gains, fGainFactor1, fGainFactor2);
 
-	if (lErr = cudaGetLastError())
+	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
 	tsne_update_gradient_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fMomentum, fLearningRate, dY, uY, gains, Y);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::tsne_update(unsigned int n, double dfMomentum, double dfLearningRate, long hdY, long huY, long hGains, long hY, double dfGainFactor1, double dfGainFactor2);
@@ -7970,7 +7973,7 @@ long Math<T>::tsne_update_grad(unsigned int n, long hPosF, long hNegF, T fSumQ, 
 
 	tsne_update_grad_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, posF, negF, fSumQ, dc);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::tsne_update_grad(unsigned int n, long hPosF, long hNegF, double dfSumQ, long hdC);
@@ -8153,7 +8156,7 @@ long Math<T>::tsne_compute_exact_error(unsigned int n, long hP, long hQ, long hY
 
 	tsne_compute_exact_error_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, p, q, y);
 
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::tsne_compute_exact_error(unsigned int n, long hP, long hQ, long hWork);
@@ -8388,7 +8391,7 @@ long Math<T>::gaussian_blur(int n, int nChannels, int h, int w, T fSigma, long h
 	for (int c = 0; c < nChannels; c++)
 	{
 		gaussian_blur_kernel << <grid, block >> > (h, w, pFilterDev, pData, pBlur);
-		if (lErr = cudaGetLastError())
+		if (lErr = cudaStreamSynchronize(0))
 		{
 			cudaFree(pFilterDev);
 			return lErr;
@@ -8447,7 +8450,7 @@ long Math<T>::hamming_diff(int n, T fThreshold, long hA, long hB, long hY, int n
 
 	hamming_diff_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fThreshold, a, b, y);
 	
-	return cudaGetLastError();
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::hamming_diff(int n, double dfThreshold, long hA, long hB, long hY, int nOffA, int nOffB, int nOffY);
@@ -8509,7 +8512,9 @@ long Math<T>::calc_batch_dist(int nDistMethod, T fThreshold, int nItemDim, long 
 		}
 	}
 
-	cudaDeviceSynchronize();
+	if (lErr = cudaStreamSynchronize(0))
+		goto cleanup;
+
 	cublasSetStream(m_cublas, NULL);
 	bReset = false;
 
