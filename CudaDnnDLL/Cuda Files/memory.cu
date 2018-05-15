@@ -25,6 +25,8 @@ Memory<T>::Memory() : m_memory(), m_memoryPointers(), m_hostbuffers(), m_streams
 	SetActivationDesc(m_hGlobalActivationRelu, RELU);
 	CreateActivationDesc(&m_hGlobalActivationTanh);
 	SetActivationDesc(m_hGlobalActivationTanh, TANH);
+	CreateActivationDesc(&m_hGlobalActivationElu);
+	SetActivationDesc(m_hGlobalActivationElu, ELU);
 #endif
 }
 
@@ -84,6 +86,7 @@ Memory<T>::~Memory()
 	m_hGlobalActivationSigmoid = 0;
 	m_hGlobalActivationRelu = 0;
 	m_hGlobalActivationTanh = 0;
+	m_hGlobalActivationElu = 0;
 
 	for (int i = 0; i < m_dropoutDesc.GetCount(); i++)
 	{
@@ -1072,11 +1075,6 @@ long Memory<T>::BatchNormForward(long hHandle, int mode, T fAlpha, T fBeta, long
 		if ((float)fEps < CUDNN_BN_MIN_EPSILON)
 			fEps = 0.0001f;
 	}
-	else
-	{
-		if ((double)fEps < CUDNN_BN_MIN_EPSILON)
-			fEps = CUDNN_BN_MIN_EPSILON;
-	}
 
 	if (bTraining)
 	{
@@ -1159,11 +1157,6 @@ long Memory<T>::BatchNormBackward(long hHandle, int mode, T fAlphaDiff, T fBetaD
 	{
 		if ((float)fEps < CUDNN_BN_MIN_EPSILON)
 			fEps = 0.0001f;
-	}
-	else
-	{
-		if ((double)fEps < CUDNN_BN_MIN_EPSILON)
-			fEps = CUDNN_BN_MIN_EPSILON;
 	}
 
 	if (lErr = cudnnBatchNormalizationBackward(cudnn, (cudnnBatchNormMode_t)mode, &fAlphaDiff, &fBetaDiff, &fAlphaParamDiff, &fBetaParamDiff, bwdbtmdesc, btmdata, topdiffdesc, topdiff, btmdiffdesc, btmdiff, bwdscalemeanvardesc, scaledata, scalediff, biasdiff, fEps, savemean, savevar))
@@ -1511,8 +1504,6 @@ template long Memory<double>::LCNBackwardCC(long hHandle, long hNormDesc, double
 template long Memory<float>::LCNBackwardCC(long hHandle, long hNormDesc, float fAlpha, long hBottomDataDesc, long hBottomData, long hTopDiff, long hTemp1, long hTemp2, float fBeta, long hBottomDiffDesc, long hBottomDiff);
 
 
-
-
 template <class T>
 long Memory<T>::TanhForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, T fBeta, long hTopDesc, long hTopData)
 {
@@ -1593,6 +1584,88 @@ long Memory<T>::TanhBackward(long hHandle, T fAlpha, long hTopDataDesc, long hTo
 
 template long Memory<double>::TanhBackward(long hHandle, double dfAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, double dfBeta, long hBottomDiffDesc, long hBottomDiff);
 template long Memory<float>::TanhBackward(long hHandle, float fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, float fBeta, long hBottomDiffDesc, long hBottomDiff);
+
+
+template <class T>
+long Memory<T>::EluForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, T fBeta, long hTopDesc, long hTopData)
+{
+	LONG lErr;
+	cudnnHandle_t cudnn = GetCuDNN(hHandle);
+	cudnnTensorDescriptor_t topdesc = GetTensorDesc(hTopDesc);
+	cudnnTensorDescriptor_t btmdesc = GetTensorDesc(hBottomDesc);
+	MemoryItem* pTopData;
+	MemoryItem* pBtmData;
+
+	if (lErr = m_memory.GetData(hTopData, &pTopData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hBottomData, &pBtmData))
+		return lErr;
+
+	T* topdata = (T*)pTopData->Data();
+	T* btmdata = (T*)pBtmData->Data();
+
+#ifdef CUDNN_5
+	cudnnActivationDescriptor_t desc = GetActivationDesc(m_hGlobalActivationElu);
+	if (lErr = cudnnActivationForward(cudnn, desc, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata))
+		return lErr | ERROR_CUDNN_OFFSET;
+#else
+	if (lErr = cudnnActivationForward(cudnn, CUDNN_ACTIVATION_ELU, &fAlpha, btmdesc, btmdata, &fBeta, topdesc, topdata))
+		return lErr | ERROR_CUDNN_OFFSET;
+#endif
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Memory<double>::EluForward(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, double dfBeta, long hTopDesc, long hTopData);
+template long Memory<float>::EluForward(long hHandle, float fAlpha, long hBottomDesc, long hBottomData, float fBeta, long hTopDesc, long hTopData);
+
+
+template <class T>
+long Memory<T>::EluBackward(long hHandle, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, T fBeta, long hBottomDiffDesc, long hBottomDiff)
+{
+	LONG lErr;
+	cudnnHandle_t cudnn = GetCuDNN(hHandle);
+	cudnnTensorDescriptor_t topdatadesc = GetTensorDesc(hTopDataDesc);
+	cudnnTensorDescriptor_t btmdatadesc = GetTensorDesc(hBottomDataDesc);
+	cudnnTensorDescriptor_t topdiffdesc = (hTopDataDesc == hTopDiffDesc) ? topdatadesc : GetTensorDesc(hTopDiffDesc);
+	cudnnTensorDescriptor_t btmdiffdesc = (hBottomDataDesc == hBottomDiffDesc) ? btmdatadesc : GetTensorDesc(hBottomDiffDesc);
+	MemoryItem* pTopData;
+	MemoryItem* pBtmData;
+	MemoryItem* pTopDiff;
+	MemoryItem* pBtmDiff;
+
+	if (lErr = m_memory.GetData(hTopData, &pTopData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hBottomData, &pBtmData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hTopDiff, &pTopDiff))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hBottomDiff, &pBtmDiff))
+		return lErr;
+
+	T* topdata = (T*)pTopData->Data();
+	T* btmdata = (T*)pBtmData->Data();
+	T* topdiff = (T*)pTopDiff->Data();
+	T* btmdiff = (T*)pBtmDiff->Data();
+
+#ifdef CUDNN_5
+	cudnnActivationDescriptor_t desc = GetActivationDesc(m_hGlobalActivationElu);
+	if (lErr = cudnnActivationBackward(cudnn, desc, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff))
+		return lErr | ERROR_CUDNN_OFFSET;
+#else
+	if (lErr = cudnnActivationBackward(cudnn, CUDNN_ACTIVATION_ELU, &fAlpha, topdatadesc, topdata, topdiffdesc, topdiff, btmdatadesc, btmdata, &fBeta, btmdiffdesc, btmdiff))
+		return lErr | ERROR_CUDNN_OFFSET;
+#endif
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Memory<double>::EluBackward(long hHandle, double dfAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, double dfBeta, long hBottomDiffDesc, long hBottomDiff);
+template long Memory<float>::EluBackward(long hHandle, float fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, float fBeta, long hBottomDiffDesc, long hBottomDiff);
 
 
 template <class T>

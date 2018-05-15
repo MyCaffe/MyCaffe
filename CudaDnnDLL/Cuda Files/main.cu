@@ -257,6 +257,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDNN_FN_TANH_BWD:	
 			return m_device.TanhBackward(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDNN_FN_ELU_FWD:
+			return m_device.EluForward(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_ELU_BWD:
+			return m_device.EluBackward(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDNN_FN_SIGMOID_FWD:	
 			return m_device.SigmoidForward(lCount, pfInput, plCount, ppfOutput);
 

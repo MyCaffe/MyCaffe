@@ -38,7 +38,8 @@ enum ActivationMethod
 {
 	SIGMOID = CUDNN_ACTIVATION_SIGMOID,
 	RELU = CUDNN_ACTIVATION_RELU,
-	TANH = CUDNN_ACTIVATION_TANH
+	TANH = CUDNN_ACTIVATION_TANH,
+	ELU = CUDNN_ACTIVATION_ELU
 };
 
 
@@ -106,6 +107,7 @@ class Memory
 		long m_hGlobalActivationSigmoid;
 		long m_hGlobalActivationRelu;
 		long m_hGlobalActivationTanh;
+		long m_hGlobalActivationElu;
 #endif
 
 	public:
@@ -219,6 +221,9 @@ class Memory
 
 		long TanhForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, T fBeta, long hTopDesc, long hTopData);
 		long TanhBackward(long hHandle, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, T fBeta, long hBottomDiffDesc, long hBottomDiff);
+
+		long EluForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, T fBeta, long hTopDesc, long hTopData);
+		long EluBackward(long hHandle, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, T fBeta, long hBottomDiffDesc, long hBottomDiff);
 
 		long SigmoidForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, T fBeta, long hTopDesc, long hTopData);
 		long SigmoidBackward(long hHandle, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, T fBeta, long hBottomDiffDesc, long hBottomDiff);

@@ -119,6 +119,9 @@ const int CUDNN_FN_DROPOUT_BWD		= 99;
 const int CUDNN_FN_TANH_FWD			= 100;
 const int CUDNN_FN_TANH_BWD			= 101;
 
+const int CUDNN_FN_ELU_FWD			= 102;
+const int CUDNN_FN_ELU_BWD			= 103;
+
 const int CUDNN_FN_SIGMOID_FWD		= 104;
 const int CUDNN_FN_SIGMOID_BWD		= 105;
 

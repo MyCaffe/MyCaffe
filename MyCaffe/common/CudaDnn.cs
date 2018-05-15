@@ -607,6 +607,9 @@ namespace MyCaffe.common
             TANH_FWD = 100,
             TANH_BWD = 101,
 
+            ELU_FWD = 102,
+            ELU_BWD = 103,
+
             SIGMOID_FWD = 104,
             SIGMOID_BWD = 105,
 
@@ -3168,6 +3171,46 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.TANH_BWD, new double[] { hCuDnn, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertD(fBeta), hBottomDiffDesc, hBottomDiff });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.TANH_BWD, new float[] { hCuDnn, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertF(fBeta), hBottomDiffDesc, hBottomDiff });
+        }
+
+        /// <summary>
+        /// Perform a Elu forward pass.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="fAlpha">Specifies a scaling factor applied to the result.</param>
+        /// <param name="hBottomDataDesc">Specifies a handle to the bottom data tensor descriptor.</param>
+        /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
+        /// <param name="fBeta">Specifies a scaling factor applied to the prior destination value.</param>
+        /// <param name="hTopDataDesc">Specifies a handle to the top data tensor descriptor.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        public void EluForward(long hCuDnn, T fAlpha, long hBottomDataDesc, long hBottomData, T fBeta, long hTopDataDesc, long hTopData)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ELU_FWD, new double[] { hCuDnn, convertD(fAlpha), hBottomDataDesc, hBottomData, convertD(fBeta), hTopDataDesc, hTopData });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ELU_FWD, new float[] { hCuDnn, convertF(fAlpha), hBottomDataDesc, hBottomData, convertF(fBeta), hTopDataDesc, hTopData });
+        }
+
+        /// <summary>
+        /// Perform a Elu backward pass.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="fAlpha">Specifies a scaling factor applied to the result.</param>
+        /// <param name="hTopDataDesc">Specifies a handle to the top data tensor descriptor.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        /// <param name="hTopDiffDesc">Specifies a handle to the top diff tensor descriptor</param>
+        /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
+        /// <param name="hBottomDataDesc">Specifies a handle to the bottom data tensor descriptor.</param>
+        /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
+        /// <param name="fBeta">Specifies a scaling factor applied to the prior destination value.</param>
+        /// <param name="hBottomDiffDesc">Specifies a handle to the bottom diff tensor descriptor.</param>
+        /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
+        public void EluBackward(long hCuDnn, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, long hBottomDataDesc, long hBottomData, T fBeta, long hBottomDiffDesc, long hBottomDiff)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ELU_BWD, new double[] { hCuDnn, convertD(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertD(fBeta), hBottomDiffDesc, hBottomDiff });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ELU_BWD, new float[] { hCuDnn, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, convertF(fBeta), hBottomDiffDesc, hBottomDiff });
         }
 
         /// <summary>

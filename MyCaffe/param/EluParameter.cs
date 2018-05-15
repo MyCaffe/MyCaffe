@@ -15,13 +15,41 @@ namespace MyCaffe.param
     /// @see [Fast and Accurate Deep Network Learning by Exponential Linear Units (ELUs)](https://arxiv.org/abs/1511.07289) by Djork-Arné Clevert, Thomas Unterthiner, and Sepp Hochreiter, 2015.
     /// </remarks>
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class EluParameter : LayerParameterBase
+    public class EluParameter : EngineParameter
     {
         double m_dfAlpha = 1.0;
 
         /** @copydoc LayerParameterBase */
         public EluParameter()
+            : base()
         {
+        }
+
+        /// <summary>
+        /// Returns the reason that Caffe version was used instead of [NVIDIA's cuDnn](https://developer.nvidia.com/cudnn).
+        /// </summary>
+        /// <returns></returns>
+        public string useCaffeReason()
+        {
+            if (engine == Engine.CAFFE)
+                return "The engine setting is set on CAFFE.";
+
+            if (m_dfAlpha != 1.0)
+                return "cuDnn only supports Alpha = 1.0";
+
+            return "";
+        }
+
+        /// <summary>
+        /// Queries whether or not to use [NVIDIA's cuDnn](https://developer.nvidia.com/cudnn).
+        /// </summary>
+        /// <returns>Returns <i>true</i> when cuDnn is to be used, <i>false</i> otherwise.</returns>
+        public bool useCudnn()
+        {
+            if (engine == EngineParameter.Engine.CAFFE || m_dfAlpha != 1.0)
+                return false;
+
+            return true;
         }
 
         /// <summary>
@@ -52,8 +80,13 @@ namespace MyCaffe.param
         /** @copydoc LayerParameterBase::Copy */
         public override void Copy(LayerParameterBase src)
         {
-            EluParameter p = (EluParameter)src;
-            m_dfAlpha = p.m_dfAlpha;
+            base.Copy(src);
+
+            if (src is EluParameter)
+            {
+                EluParameter p = (EluParameter)src;
+                m_dfAlpha = p.m_dfAlpha;
+            }
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -67,7 +100,10 @@ namespace MyCaffe.param
         /** @copydoc LayerParameterBase::ToProto */
         public override RawProto ToProto(string strName)
         {
+            RawProto rpBase = base.ToProto("engine");
             RawProtoCollection rgChildren = new RawProtoCollection();
+
+            rgChildren.Add(rpBase.Children);
 
             if (alpha != 1.0)
                 rgChildren.Add("alpha", alpha.ToString());
@@ -80,10 +116,12 @@ namespace MyCaffe.param
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static EluParameter FromProto(RawProto rp)
+        public static new EluParameter FromProto(RawProto rp)
         {
             string strVal;
             EluParameter p = new EluParameter();
+
+            ((EngineParameter)p).Copy(EngineParameter.FromProto(rp));
 
             if ((strVal = rp.FindValue("alpha")) != null)
                 p.alpha = double.Parse(strVal);

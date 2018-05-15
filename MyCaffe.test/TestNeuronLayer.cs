@@ -454,7 +454,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestELU()
         {
-            ELULayerTest test = new ELULayerTest(EngineParameter.Engine.DEFAULT);
+            ELULayerTest test = new ELULayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
@@ -472,7 +472,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestELUasReLU()
         {
-            ELULayerTest test = new ELULayerTest(EngineParameter.Engine.DEFAULT);
+            ELULayerTest test = new ELULayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
@@ -490,7 +490,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestELUGradient()
         {
-            ELULayerTest test = new ELULayerTest(EngineParameter.Engine.DEFAULT);
+            ELULayerTest test = new ELULayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
@@ -508,13 +508,50 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestELUasReLUGradient()
         {
-            ELULayerTest test = new ELULayerTest(EngineParameter.Engine.DEFAULT);
+            ELULayerTest test = new ELULayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
                 foreach (IELULayerTest t in test.Tests)
                 {
                     t.TestGradientAsReLU();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
+        public void TestELUCuDnn()
+        {
+            ELULayerTest test = new ELULayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IELULayerTest t in test.Tests)
+                {
+                    t.TestForward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestELUGradientCuDnn()
+        {
+            ELULayerTest test = new ELULayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IELULayerTest t in test.Tests)
+                {
+                    t.TestGradient();
                 }
             }
             finally

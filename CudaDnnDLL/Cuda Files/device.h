@@ -189,6 +189,9 @@ class Device
 		long TanhForward(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long TanhBackward(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
+		long EluForward(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long EluBackward(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
 		long SigmoidForward(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SigmoidBackward(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
@@ -1716,6 +1719,49 @@ inline long Device<T>::TanhBackward(long lInput, T* pfInput, long* plOutput, T**
 	long hBottomDiff = (long)pfInput[10];
 
 	return m_memory.TanhBackward(hHandle, fAlpha, hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, fBeta, hBottomDiffDesc, hBottomDiff);
+}
+
+
+template <class T>
+inline long Device<T>::EluForward(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+	T fAlpha = pfInput[1];
+	long hBottomDesc = (long)pfInput[2];
+	long hBottomData = (long)pfInput[3];
+	T fBeta = pfInput[4];
+	long hTopDesc = (long)pfInput[5];
+	long hTopData = (long)pfInput[6];
+
+	return m_memory.EluForward(hHandle, fAlpha, hBottomDesc, hBottomData, fBeta, hTopDesc, hTopData);
+}
+
+template <class T>
+inline long Device<T>::EluBackward(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 11, 11))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+	T fAlpha = pfInput[1];
+	long hTopDataDesc = (long)pfInput[2];
+	long hTopData = (long)pfInput[3];
+	long hTopDiffDesc = (long)pfInput[4];
+	long hTopDiff = (long)pfInput[5];
+	long hBottomDataDesc = (long)pfInput[6];
+	long hBottomData = (long)pfInput[7];
+	T fBeta = pfInput[8];
+	long hBottomDiffDesc = (long)pfInput[9];
+	long hBottomDiff = (long)pfInput[10];
+
+	return m_memory.EluBackward(hHandle, fAlpha, hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, fBeta, hBottomDiffDesc, hBottomDiff);
 }
 
 template <class T>
