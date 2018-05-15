@@ -211,21 +211,8 @@ namespace MyCaffe.layers
 
                 m_biasLayer = new BiasLayer<T>(m_cuda, m_log, pb);
                 m_biasLayer.Setup(m_colBiasBottomVec, colTop);
-
-                if (m_colBlobs.Count + colBottom.Count < 3)
-                {
-                    // case: blobs.Count == 1 && bottom.Count == 1
-                    // or blobs.Count == 0 && bottom.Count == 2
-                    m_nBiasParamId = m_colBlobs.Count();
-                    m_colBlobs.Add(m_biasLayer.blobs[0]);
-                }
-                else
-                {
-                    // bias param already initialized
-                    m_nBiasParamId = m_colBlobs.Count() - 1;
-                    m_biasLayer.blobs[0] = m_colBlobs[m_nBiasParamId];
-                }
-
+                m_nBiasParamId = m_colBlobs.Count;
+                m_colBlobs.Add(m_biasLayer.blobs[0]);
                 m_rgbBiasPropagateDown = Utility.Create<bool>(1, false);
             }
 
@@ -301,20 +288,19 @@ namespace MyCaffe.layers
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            int nCount = colTop[0].count();
-            long hBottomData = colBottom[0].gpu_data;
-
             if (colBottom[0] == colTop[0])
             {
                 // in-place computation; need to store bottom data before overwriting it.
                 // Note that this is only necessary for backward; we could skip this if not
                 // doing backward, but Caffe currently provides no way of knowing whether
                 // we'll need to do backward at the time of the forward call.
-                m_cuda.copy(colBottom[0].count(), colBottom[0].gpu_data, m_blobTemp.mutable_gpu_data);
+                m_blobTemp.CopyFrom(colBottom[0]);
             }
 
             long hScaleData = (colBottom.Count > 1) ? colBottom[1].gpu_data : m_colBlobs[0].gpu_data;
             long hTopData = colTop[0].mutable_gpu_data;
+            int nCount = colTop[0].count();
+            long hBottomData = colBottom[0].gpu_data;
 
             if (m_biasLayer != null)
             {
@@ -369,10 +355,12 @@ namespace MyCaffe.layers
                     }
                     else if (m_blobSumResult.count() == 1)
                     {
+                        double dfScaleDiff = convertD(blobScale.GetDiff(0));
+
                         if (bScaleParam)
                         {
                             T fDot = m_cuda.dot(m_nInnerDim, hProduct, hSumMult);
-                            double dfScaleDiff = convertD(blobScale.GetDiff(0)) + convertD(fDot);
+                            dfScaleDiff += convertD(fDot);
                             blobScale.SetDiff(dfScaleDiff, 0);
                         }
                         else
@@ -391,10 +379,12 @@ namespace MyCaffe.layers
                     {
                         if (m_nScaleDim == 1)
                         {
+                            double dfScaleDiff = convertD(blobScale.GetDiff(0));
+
                             if (bScaleParam)
                             {
                                 T fDot = m_cuda.dot(m_nOuterDim, hSumMult, hSumResult);
-                                double dfScaleDiff = convertD(blobScale.GetDiff(0)) + convertD(fDot);
+                                dfScaleDiff += convertD(fDot);
                                 blobScale.SetDiff(dfScaleDiff, 0);
                             }
                             else
