@@ -1651,6 +1651,23 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Copy just the layer specific parameters to this layer parameter.
+        /// </summary>
+        /// <param name="src">Specifies the source who's specific layer parameters are to be compied.</param>
+        public void CopyParameters(LayerParameter src)
+        {
+            m_rgLayerParameters = new Dictionary<LayerType, LayerParameterBase>();
+
+            foreach (KeyValuePair<LayerType, LayerParameterBase> kv in src.m_rgLayerParameters)
+            {
+                if (kv.Value != null)
+                    m_rgLayerParameters.Add(kv.Key, kv.Value.Clone());
+                else
+                    m_rgLayerParameters.Add(kv.Key, null);
+            }
+        }
+
+        /// <summary>
         /// Creates a new copy of this instance of the parameter.
         /// </summary>
         /// <returns>A new instance of this parameter is returned.</returns>
