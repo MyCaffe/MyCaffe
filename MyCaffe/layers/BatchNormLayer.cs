@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using MyCaffe.basecode;
 using MyCaffe.common;
+using MyCaffe.fillers;
 using MyCaffe.param;
 
 namespace MyCaffe.layers
@@ -58,6 +59,7 @@ namespace MyCaffe.layers
         Blob<T> m_blobSpaitalSumMultiplier;
 
         // cuDNN support
+        bool m_bScaleBias = false;
         long m_hCuDnn = 0;
         long m_hFwdBottomDesc = 0;
         long m_hFwdTopDesc = 0;
@@ -103,14 +105,14 @@ namespace MyCaffe.layers
                 m_blobMean.Name = "save mean";
                 m_blobVariance.Name = "save var";
 
-                m_blobScaleOnes = new Blob<T>(cuda, log);
-                m_blobScaleOnes.Name = "scale ones";
-                m_blobBiasZeros = new Blob<T>(cuda, log);
-                m_blobBiasZeros.Name = "bias zeros";
                 m_blobPrivateTop = new Blob<T>(cuda, log);
                 m_blobPrivateTop.Name = "private top";
                 m_blobPrivateBottom = new Blob<T>(cuda, log);
                 m_blobPrivateBottom.Name = "private bottom";
+                m_blobScaleOnes = new Blob<T>(cuda, log);
+                m_blobScaleOnes.Name = "scale ones";
+                m_blobBiasZeros = new Blob<T>(cuda, log);
+                m_blobBiasZeros.Name = "bias zeros";
             }
         }
 
@@ -127,18 +129,6 @@ namespace MyCaffe.layers
 
 
             // CuDnn Cleanup
-            if (m_blobScaleOnes != null)
-            {
-                m_blobScaleOnes.Dispose();
-                m_blobScaleOnes = null;
-            }
-
-            if (m_blobBiasZeros != null)
-            {
-                m_blobBiasZeros.Dispose();
-                m_blobBiasZeros = null;
-            }
-
             if (m_blobPrivateTop != null)
             {
                 m_blobPrivateTop.Dispose();
@@ -149,6 +139,18 @@ namespace MyCaffe.layers
             {
                 m_blobPrivateBottom.Dispose();
                 m_blobPrivateBottom = null;
+            }
+
+            if (m_blobScaleOnes != null)
+            {
+                m_blobScaleOnes.Dispose();
+                m_blobScaleOnes = null;
+            }
+
+            if (m_blobBiasZeros != null)
+            {
+                m_blobBiasZeros.Dispose();
+                m_blobBiasZeros = null;
             }
 
             if (m_hBwdBottomDesc != 0)
@@ -208,10 +210,14 @@ namespace MyCaffe.layers
 
                 if (m_param.batch_norm_param.useCudnn())
                 {
-                    col.Add(m_blobScaleOnes);
-                    col.Add(m_blobBiasZeros);
                     col.Add(m_blobPrivateBottom);
                     col.Add(m_blobPrivateTop);
+
+                    if (!m_bScaleBias)
+                    {
+                        col.Add(m_blobScaleOnes);
+                        col.Add(m_blobBiasZeros);
+                    }
                 }
                 else
                 {
@@ -265,6 +271,8 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            bool bUseCuDnn = m_param.batch_norm_param.useCudnn();
+
             m_dfMovingAverageFraction = m_param.batch_norm_param.moving_average_fraction;
             m_bUseGlobalStats = (m_phase == Phase.TEST || m_phase == Phase.RUN) ? true : false;
 
@@ -278,41 +286,91 @@ namespace MyCaffe.layers
 
             m_dfEps = m_param.batch_norm_param.eps;
 
+            m_bScaleBias = m_param.batch_norm_param.scale_bias;  // by default = false;
+            if (m_param.batch_norm_param.scale_filler != null || // implicit set.
+                m_param.batch_norm_param.bias_filler != null)
+                m_bScaleBias = true;
+
+            if (m_bScaleBias && !bUseCuDnn)
+                m_bScaleBias = false;
+
             if (m_colBlobs.Count > 0)
             {
                 m_log.WriteLine("Skipping parameter initialization.");
             }
             else
             {
-                m_colBlobs.Clear(true);
-
                 List<int> rgSize = new List<int>();
                 rgSize.Add(m_nChannels);
 
-                m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize));
-                m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize));
+                m_colBlobs.Clear(true);
 
-                rgSize[0] = 1;
-                m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize));
+                m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize));  // global mean
+                m_colBlobs[0].Name = "global mean";
+                m_colBlobs[0].SetData(0.0);
+                m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize));  // glboal var
+                m_colBlobs[1].Name = "global variance";
+                m_colBlobs[1].SetData(0.0);
+                m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize));  // variance correction
+                m_colBlobs[2].Name = "var correction";
+                m_colBlobs[2].SetData(1.0);
 
-                for (int i = 0; i < 3; i++)
+                if (m_bScaleBias)
                 {
-                    m_colBlobs[i].SetData(0);
+                    m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize)); // scale
+                    m_colBlobs[3].Name = "scale";
+
+                    FillerParameter fpScale = m_param.batch_norm_param.scale_filler;
+                    if (fpScale == null)
+                        fpScale = new FillerParameter("constant", 1.0);
+
+                    Filler<T> fillerScale = Filler<T>.Create(m_cuda, m_log, fpScale);
+                    fillerScale.Fill(m_colBlobs[3]);
+
+                    m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize)); // bias
+                    m_colBlobs[4].Name = "bias";
+
+                    FillerParameter fpBias = m_param.batch_norm_param.bias_filler;
+                    if (fpBias == null)
+                        fpBias = new FillerParameter("constant", 0.0);
+
+                    Filler<T> fillerBias = Filler<T>.Create(m_cuda, m_log, fpBias);
+                    fillerBias.Fill(m_colBlobs[4]);
                 }
 
-                m_colBlobs[0].Name = "global mean";
-                m_colBlobs[1].Name = "global variance";
-                m_colBlobs[2].Name = "scale";
+                m_nIteration = 0;
             }
 
             // Mask statistics from optimization by setting local learning rates
-            // for mean, variance, and bias correction to zero.
-            for (int i = 0; i < m_colBlobs.Count; i++)
+            // for mean, variance, and variance correction to zero.
+            for (int i = 0; i < 3; i++)
             {
                 if (m_param.parameters.Count == i)
-                    m_param.parameters.Add(new ParamSpec(0.0, 1.0));
+                {
+                    m_param.parameters.Add(new ParamSpec(0.0, 0.0));
+                }
                 else
-                    m_log.CHECK_EQ(m_param.parameters[i].lr_mult, 0, "Cannot configure batch normalization statistics as layer parameters.");
+                {
+                    m_param.parameters[i].lr_mult = 0;
+                    m_param.parameters[i].decay_mult = 0;
+                }
+            }
+
+            // Set lr for scale and bias to 1
+            if (m_bScaleBias)
+            {
+                for (int i = 3; i < 5; i++)
+                {
+                    if (m_param.parameters.Count == i)
+                    {
+                        m_param.parameters.Add(new ParamSpec(1.0, 1.0));
+                    }
+                    else
+                    {
+                        m_param.parameters[i].lr_mult = 1;
+                        m_param.parameters[i].decay_mult = 1;
+                    }
+                }
             }
 
             if (!m_param.batch_norm_param.useCudnn())
@@ -322,7 +380,17 @@ namespace MyCaffe.layers
             // Handle cuDNN setup
             //-----------------------------------
 
-            m_nIteration = 0;
+            int nChannels = colBottom[0].channels;
+            List<int> rgShape = new List<int>() { 1, nChannels, 1, 1 };
+
+            if (!m_bScaleBias)
+            {
+                m_blobScaleOnes.Reshape(rgShape);
+                m_blobScaleOnes.SetData(1.0);
+                m_blobBiasZeros.Reshape(rgShape);
+                m_blobBiasZeros.SetData(0.0);
+            }
+
             m_hCuDnn = m_cuda.CreateCuDNN();
             m_hFwdBottomDesc = m_cuda.CreateTensorDesc();
             m_hFwdTopDesc = m_cuda.CreateTensorDesc();
@@ -332,14 +400,6 @@ namespace MyCaffe.layers
             m_hBwdScaleBiasMeanVarDesc = m_cuda.CreateTensorDesc();
             m_mode = BATCHNORM_MODE.SPATIAL_PERSISTENT;
             m_dfEps = Math.Min(m_dfEps, CUDNN_BN_MIN_EPSILON);
-
-            int nChannels = colBottom[0].channels;
-            List<int> rgShape = new List<int>() { 1, nChannels, 1, 1 };
-            // treat like !scale bias
-            m_blobScaleOnes.Reshape(rgShape);
-            m_blobScaleOnes.SetData(1.0);
-            m_blobBiasZeros.Reshape(rgShape);
-            m_blobBiasZeros.SetData(0.0);
 
             m_blobMean.Reshape(rgShape);
             m_blobVariance.Reshape(rgShape);
@@ -416,16 +476,19 @@ namespace MyCaffe.layers
             m_blobMean.Reshape(1, C, 1, 1);
             m_blobVariance.Reshape(1, C, 1, 1);
 
-            if (m_blobScaleOnes.channels != C)
+            if (!m_param.batch_norm_param.scale_bias)
             {
-                m_blobScaleOnes.Reshape(1, C, 1, 1);
-                m_blobScaleOnes.SetData(1.0);
-            }
+                if (m_blobScaleOnes.channels != C)    // scale
+                {
+                    m_blobScaleOnes.Reshape(1, C, 1, 1);
+                    m_blobScaleOnes.SetData(1.0);
+                }
 
-            if (m_blobBiasZeros.channels != C)
-            {
-                m_blobBiasZeros.Reshape(1, C, 1, 1);
-                m_blobBiasZeros.SetData(0.0);
+                if (m_blobBiasZeros.channels != C)    // bias
+                {
+                    m_blobBiasZeros.Reshape(1, C, 1, 1);
+                    m_blobBiasZeros.SetData(0.0);
+                }
             }
 
             m_cuda.DeriveBatchNormDesc(m_hFwdScaleBiasMeanVarDesc, m_hFwdBottomDesc, m_hBwdScaleBiasMeanVarDesc, m_hBwdBottomDesc, m_mode);
@@ -608,10 +671,10 @@ namespace MyCaffe.layers
                 hTopData = m_blobPrivateTop.mutable_gpu_data;
 
             double dfEps = m_dfEps;
-            long hScaleData = m_blobScaleOnes.gpu_data;     // currently, scale_bias is not supported.
-            long hBiasData = m_blobBiasZeros.gpu_data;      // currently, scale_bias is not supported.
             long hGlobalMean = m_colBlobs[0].gpu_data;
             long hGlobalVar = m_colBlobs[1].gpu_data;
+            long hScaleData = (m_bScaleBias) ? m_colBlobs[3].gpu_data : m_blobScaleOnes.gpu_data;
+            long hBiasData = (m_bScaleBias) ? m_colBlobs[4].gpu_data : m_blobBiasZeros.gpu_data;
 
             if (!m_bUseGlobalStats)
             {
@@ -661,9 +724,9 @@ namespace MyCaffe.layers
             double dfEps = m_dfEps;
             long hSaveMean = m_blobMean.gpu_data;
             long hSaveVar = m_blobVariance.gpu_data;
-            long hScaleData = m_blobScaleOnes.gpu_data;
-            long hScaleDiff = m_blobScaleOnes.mutable_gpu_diff;
-            long hBiasDiff = m_blobBiasZeros.mutable_gpu_diff;
+            long hScaleData = (m_bScaleBias) ? m_colBlobs[3].gpu_data : m_blobScaleOnes.gpu_data;
+            long hScaleDiff = (m_bScaleBias) ? m_colBlobs[3].mutable_gpu_diff : m_blobScaleOnes.mutable_gpu_diff;
+            long hBiasDiff = (m_bScaleBias) ? m_colBlobs[4].mutable_gpu_diff : m_blobBiasZeros.mutable_gpu_diff;
 
             if (colTop[0] == colBottom[0])
             {

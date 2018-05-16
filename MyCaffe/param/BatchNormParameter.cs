@@ -20,6 +20,9 @@ namespace MyCaffe.param
         bool? m_bUseGlobalStats = null;
         double m_dfMovingAverageFraction = 0.999;
         double m_dfEps = 1e-5;
+        bool m_bScaleBias = false;
+        FillerParameter m_scaleFiller = null;
+        FillerParameter m_biasFiller = null;
 
         /** @copydoc LayerParameterBase */
         public BatchNormParameter()
@@ -48,6 +51,46 @@ namespace MyCaffe.param
                 return true;
 
             return false;
+        }
+
+        /// <summary>
+        /// Specifies to use the scale and bias terms, otherwise the scale = 1 and bias = 0
+        /// are used to form an identity operation.
+        /// </summary>
+        /// <remarks>
+        /// NOTE: Currently the scale_bias is only used by the CUDNN engine.
+        /// </remarks>
+        [Description("Specifies to use the scale and bias terms, otherwise the scale = 1 and bias = 0 which performs an identity operation.")]
+        public bool scale_bias
+        {
+            get { return m_bScaleBias; }
+            set { m_bScaleBias = value; }
+        }
+
+        /// <summary>
+        /// Specifies the scale filler used to fill the scale value.  If null, a constant(1) filler is used.
+        /// </summary>
+        /// <remarks>
+        /// NOTE: Currently the scale_bias is only used by the CUDNN engine.
+        /// </remarks>
+        [Description("Specifies the scale filler used, when null 'constant(1)' is used.")]
+        public FillerParameter scale_filler
+        {
+            get { return m_scaleFiller; }
+            set { m_scaleFiller = value; }
+        }
+
+        /// <summary>
+        /// Specifies the bias filler used to file the bias value.  If null, a constant(0) filler is used.
+        /// </summary>
+        /// <remarks>
+        /// NOTE: Currently the scale_bias is only used by the CUDNN engine.
+        /// </remarks>
+        [Description("Specifies the bias filler used, when null 'constant(0)' is used.")]
+        public FillerParameter bias_filler
+        {
+            get { return m_biasFiller; }
+            set { m_biasFiller = value; }
         }
 
         /// <summary>
@@ -116,6 +159,17 @@ namespace MyCaffe.param
                 m_bUseGlobalStats = p.m_bUseGlobalStats;
                 m_dfEps = p.m_dfEps;
                 m_dfMovingAverageFraction = p.m_dfMovingAverageFraction;
+                m_biasFiller = p.m_biasFiller;
+
+                if (p.m_scaleFiller != null)
+                    m_scaleFiller = p.m_scaleFiller.Clone();
+                else
+                    m_scaleFiller = null;
+
+                if (p.m_biasFiller != null)
+                    m_biasFiller = p.m_biasFiller.Clone();
+                else
+                    m_biasFiller = null;
             }
         }
 
@@ -143,6 +197,17 @@ namespace MyCaffe.param
 
             if (eps != 1e-5)
                 rgChildren.Add("eps", eps.ToString());
+
+            if (scale_bias)
+            {
+                rgChildren.Add("scale_bias", scale_bias.ToString());
+
+                if (scale_filler != null)
+                    rgChildren.Add(scale_filler.ToProto("scale_filler"));
+
+                if (bias_filler != null)
+                    rgChildren.Add(bias_filler.ToProto("bias_filler"));
+            }
             
             return new RawProto(strName, "", rgChildren);
         }
@@ -152,7 +217,7 @@ namespace MyCaffe.param
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static BatchNormParameter FromProto(RawProto rp)
+        public static new BatchNormParameter FromProto(RawProto rp)
         {
             string strVal;
             BatchNormParameter p = new BatchNormParameter();
@@ -167,6 +232,19 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("eps")) != null)
                 p.eps = double.Parse(strVal);
+
+            if ((strVal = rp.FindValue("scale_bias")) != null)
+            {
+                p.scale_bias = bool.Parse(strVal);
+
+                RawProto rp1;
+
+                if ((rp1 = rp.FindChild("scale_filler")) != null)
+                    p.scale_filler = FillerParameter.FromProto(rp1);
+
+                if ((rp1 = rp.FindChild("bias_filler")) != null)
+                    p.bias_filler = FillerParameter.FromProto(rp1);
+            }
 
             return p;
         }
