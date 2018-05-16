@@ -159,6 +159,7 @@ namespace MyCaffe.param
                 m_bUseGlobalStats = p.m_bUseGlobalStats;
                 m_dfEps = p.m_dfEps;
                 m_dfMovingAverageFraction = p.m_dfMovingAverageFraction;
+                m_bScaleBias = p.m_bScaleBias;
                 m_biasFiller = p.m_biasFiller;
 
                 if (p.m_scaleFiller != null)
