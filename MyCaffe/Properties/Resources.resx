@@ -510,7 +510,7 @@ license and copyright terms herein.
 
   Innovative Systems Lab
   National Center for Supercomputing Applications
-  http ://www.ncsa.uiuc.edu/AboutUs/Directorates/ISL.html
+  http://www.ncsa.uiuc.edu/AboutUs/Directorates/ISL.html
 	
 	Permission is hereby granted, free of charge, to any person obtaining a copy of
 	this software and associated documentation files(the "Software"), to deal with
@@ -572,9 +572,37 @@ license and copyright terms herein.
   The U.S. Department of Energy funded the development of this software
   under subcontract 7078610 with Lawrence Berkeley National Laboratory.
   ** end NCCL 'Nickel' License**
+
+  Some of the models (ResNet-56) included with MyCaffe models were 
+  derived from the ResNet-56 model by Yihui He which can be found on 
+  Github at: https://github.com/yihui-he/resnet-cifar10-caffe
+
+  ** begin ResNet-56 License **
+  MIT License
+  
+  Copyright (c) 2016 Yihui He 何宜晖
+  
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+  
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+  
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+  ** end ResNet-56 License **
   
   $$OTHERLICENSES$$
 
-  SignalPOP LLC. is the curator of the MyCaffe code.</value>
+  SignalPOP LLC at https://www.signalpop.com is the curator of the MyCaffe code.</value>
   </data>
 </root>
