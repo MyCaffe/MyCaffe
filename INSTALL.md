@@ -1,23 +1,23 @@
 <H2>Installation Instructions</H2>
-To install and run <b>MyCaffe</b> you will need to do the following steps.  As a side note, we are using (and recommend) CUDA 9.1 with cuDNN 7.1.1 and Visual Studio 2017 on Windows 10 for all of our testing.
+To install and run <b>MyCaffe</b> you will need to do the following steps.  As a side note, we are using (and recommend) CUDA 9.2 with cuDNN 7.1.4 and Visual Studio 2017 on Windows 10 for all of our testing.
 </br>
 <H3>I. CUDA - Install NVIDIA CUDA and cuDNN Libraries</H3>
-Install either CUDA 9.1 as shown below.
-<H4>A. CUDA 9.1 - Install NVIDIA CUDA and cuDNN Libraries</H4>
-1.) Install the NVIDIA CUDA 9.1 Toolkit for Windows 10 from https://developer.nvidia.com/cuda-downloads. 
-</br>2.) Install the NVIDIA cuDNN 7.1.3 Accelerated Libraries for CUDA 9.1 on Windows 10 from https://developer.nvidia.com/cuDNN.
-</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V9_1)</i></b> installation location named <b><i>cudann_9.1-win-v7.1.3</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
-</br>4.) Copy the <b><i>cudnn64_7.dll</i></b> file into the <b><i>$(CUDA_PATH_V9_1)\bin</i></b> directory.
+Install CUDA 9.2 as shown below.
+<H4>A. CUDA 9.2 - Install NVIDIA CUDA and cuDNN Libraries</H4>
+1.) Install the NVIDIA CUDA 9.2 Toolkit for Windows 10 from https://developer.nvidia.com/cuda-downloads. 
+</br>2.) Install the NVIDIA cuDNN 7.1.4 Accelerated Libraries for CUDA 9.2 on Windows 10 from https://developer.nvidia.com/cuDNN.
+</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V9_2)</i></b> installation location named <b><i>cudann_9.2-win-v7.1.4</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
+</br>4.) Copy the <b><i>cudnn64_7.dll</i></b> file into the <b><i>$(CUDA_PATH_V9_2)\bin</i></b> directory.
 </br>5.) Install the NVIDIA NVAPI (r384) from https://developer.nvidia.com/nvapi.
-</br>6.) Create anew directory off your <b><i>$(CUDA_PATH_V9_1)</i></b> installation location named <b><i>nvapi_384</i></b> and copy the NVAPI header and library files into it.
+</br>6.) Create anew directory off your <b><i>$(CUDA_PATH_V9_2)</i></b> installation location named <b><i>nvapi_384</i></b> and copy the NVAPI header and library files into it.
 </br>
 </br>NOTE: The CudaDnnDLL project points to the file directories noted above for the cuDNN include and library files.  
 
 <H3>II. Setup Strong Names and Signing</H3>
 The <b><i>MyCaffe</i></b> project, uses the following strong name key files:
-</br>The <b>CudaControl</b> uses the <b><i>CudaControl.pfx</i></b> located in the <b><i>packages\CudaControl.0.9.1.x\lib\Net40\</i></b> directory.  
+</br>The <b>CudaControl</b> uses the <b><i>CudaControl.pfx</i></b> located in the <b><i>packages\CudaControl.0.9.2.x\lib\Net40\</i></b> directory.  
 If you download, build the <b>CudaControl</b> repository and create a new <b><i>CudaControl.pfx</i></b> file, you should also copy it into the 
-<b><i>packages\CudaControl.0.9.1.x\lib\Net40\</i></b> directory, replacing the pfx file there.  Alternatively, you can just install 
+<b><i>packages\CudaControl.0.9.2.x\lib\Net40\</i></b> directory, replacing the pfx file there.  Alternatively, you can just install 
 the <b>CudaControl</b> package from NuGet.
 </p>
 The <b><i>MyCaffe</i></b> uses the <b><i>mycaffe.sn.pfx</i></b> key file for string name signing.
@@ -35,9 +35,9 @@ then <i>Sign the assembly</i> with a strong name keyfile.  You can also use this
 </br>b.) Microsoft SQL or Microsoft SQL Express
 </br>Both 'a' and 'b' are available from Microsoft at www.microsoft.com.
 </br>
-</br>c.) nccl64_134.dll - If you plan on running multi-GPU training sessions, you will need the <b><i>nccl64_134.dll</i></b>, which must be placed
+</br>c.) nccl64_134.9.2.dll - If you plan on running multi-GPU training sessions, you will need the <b><i>nccl64_134.9.2.dll</i></b>, which must be placed
 in a directory that is visible by your executable files.  This library can be built from the MyCaffe\NCCL repository.  Alternatively, it is installed
-by the <b>CudaControl</b> NuGet package and placed in the <i>packages\CudaControl.0.9.1.x\lib\Net40</i> directory.  You should copy the library into
+by the <b>CudaControl</b> NuGet package and placed in the <i>packages\CudaControl.0.9.2.x\lib\Net40</i> directory.  You should copy the library into
 a directory that is visible by your executable files.  NOTE: The automated multi-GPU tests use GPU's 1-4 where the monitor is plugged into GPU 0.
 </br>
 <H3>V. Create The Database</H3>

@@ -90,8 +90,8 @@ namespace MyCaffe.test
         Task<int> m_task1;
         double[] m_rgData;
         Guid m_guid;
-        int m_nGpu1 = 3;
-        int m_nGpu2 = 4;
+        int m_nGpu1 = 0;
+        int m_nGpu2 = 1;
         int m_nDataCount = 4000000;
 
         public NCCLTest(string strName, int nDeviceID, EngineParameter.Engine engine)
@@ -138,7 +138,7 @@ namespace MyCaffe.test
             return 0;
         }
 
-        private bool setGpus()
+        private bool setGpus(bool bTCConly)
         {
             CudaDnn<T> cuda = new CudaDnn<T>(TestBase.DEFAULT_DEVICE_ID);
             int nDevCount = cuda.GetDeviceCount();
@@ -154,8 +154,11 @@ namespace MyCaffe.test
                     string strDevInfo = cuda.GetDeviceInfo(i, true);
                     string strP2PInfo = cuda.GetDeviceP2PInfo(i);
 
-                    if (strP2PInfo.Contains("P2P Capable = YES"))
-                        rgGpu.Add(i);
+                    if (strDevInfo.Contains("MonitorOn = NO"))
+                    {
+                        if (!bTCConly || strP2PInfo.Contains("TCC Driver = YES"))
+                            rgGpu.Add(i);
+                    }
                 }
 
                 if (rgGpu.Count < 2)
@@ -174,9 +177,12 @@ namespace MyCaffe.test
 
         public void TestBroadcast()
         {
-            if (!setGpus())
+            // NOTE: To test under WDM mode (which may cause the driver to crash)
+            //  change the below statement to 'false' and change each GPU to WDM mode.
+            //  (see https://developer.nvidia.com/nvidia-system-management-interface)
+            if (!setGpus(true))
             {
-                m_log.WriteLine("WARNING: You must have 2 P2P capable GPU's that do not have a monitor connected to perform NCCL tests.");
+                m_log.WriteLine("WARNING: You must have 2 TCC enabled headless GPU's (e.g. that do not have a monitor connected) to perform NCCL tests.");
                 return;
             }
 
@@ -262,9 +268,12 @@ namespace MyCaffe.test
 
         public void TestAllReduce()
         {
-            if (!setGpus())
+            // NOTE: To test under WDM mode (which may cause the driver to crash)
+            //  change the below statement to 'false' and change each GPU to WDM mode.
+            //  (see https://developer.nvidia.com/nvidia-system-management-interface)
+            if (!setGpus(true)) 
             {
-                m_log.WriteLine("WARNING: You must have 2 P2P capable GPU's that do not have a monitor connected to perform NCCL tests.");
+                m_log.WriteLine("WARNING: You must have 2 TCC enabled headless GPU's (e.g. that do not have a monitor connected) to perform NCCL tests.");
                 return;
             }
 
