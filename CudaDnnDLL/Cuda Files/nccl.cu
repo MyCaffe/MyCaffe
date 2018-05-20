@@ -24,6 +24,7 @@ typedef const char* (*LPNCCLGETERRORSTRING)(ncclResult_t result);
 typedef ncclResult_t (*LPNCCLALLREDUCE)(const void* sendbuff, void* recvbuff, int count, ncclDataType_t datatype, ncclRedOp_t op, ncclComm_t comm, cudaStream_t stream);
 typedef ncclResult_t (*LPNCCLBCAST)(void* buff, int count, ncclDataType_t datatype, int root, ncclComm_t comm, cudaStream_t stream);
 
+extern HMODULE g_hModule;
 
 //=============================================================================
 //	Private Classes
@@ -56,7 +57,9 @@ public:
 	LONG Initialize()
 	{
 		TCHAR szPath[1024] = { 0 };
-		LONG lErr = GetModuleFileName(NULL, szPath, sizeof(szPath));
+		TCHAR szNcclPath[1024] = { 0 };
+		TCHAR* pszVer = NULL;
+		LONG lErr = GetModuleFileName(g_hModule, szPath, sizeof(szPath));
 		if (lErr == 0 || lErr == sizeof(szPath))
 			return ERROR_PARAM_NULL;
 
@@ -65,21 +68,28 @@ public:
 		{
 			if (szPath[i] == _T('\\') && i < nLen-1)
 			{
-				szPath[i + 1] = NULL;
+				for (int j = i; j < nLen; j++)
+				{
+					if (szPath[j] == _T('.'))
+					{
+						pszVer = &szPath[j];
+						break;
+					}
+				}
+
+				_tcsncpy(szNcclPath, szPath, i + 1);
 				break;
 			}
 		}
 
-#ifdef CUDA9_1
-		_tcscat_s(szPath, 1024, _T("nccl64_134.9.1.dll"));
-#else
-#ifdef CUDA9
-		_tcscat_s(szPath, 1024, _T("nccl64_134.9.dll"));
-#else
-		_tcscat_s(szPath, 1024, _T("nccl64_134.8.dll"));
-#endif
-#endif
-		m_hDLL = LoadLibrary(szPath);
+		_tcscat(szNcclPath, _T("nccl64_134"));
+
+		if (pszVer != NULL)
+			_tcscat(szNcclPath, pszVer);
+		else
+			_tcscat(szNcclPath, _T(".dll"));
+
+		m_hDLL = LoadLibrary(szNcclPath);
 		if (m_hDLL == NULL)
 			return ERROR_CUDA_MISSING_NCCL64DLL;
 
