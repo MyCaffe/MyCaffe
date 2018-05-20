@@ -1,0 +1,2 @@
+MIT License
+For license see: https://github.com/yihui-he/resnet-cifar10-caffe/blob/master/LICENSE
