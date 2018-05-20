@@ -93,7 +93,7 @@ namespace MyCaffe.test
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestDeconvolutionLayer", "TestNDAgainst2D", "SKIPPED - Values - 8.11466598510742 and - 35.0204658508301 are NOT within the range 0.01 of one another.The backward 2D and ND values at 0 should be equal!"));
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestDeconvolutionLayer", "TestGradient3D", "SKIPPED - Values 1.7575769 and 0 are NOT within the range 0.001757569 of one another."));
 
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestDeconvolutionLayer", "TestNDAgainst2DCuDnn", "SKIPPED - currently causes a CUDA map buffer object failure (14) error on some GPU's.  This appears to corrupt the GPU for all subsequent tests fail with CUDA Missing Configuration (1) errors."));
+//                rgKnownFailures.Add(new Tuple<string, string, string>("TestDeconvolutionLayer", "TestNDAgainst2DCuDnn", "SKIPPED - currently causes a CUDA map buffer object failure (14) error on some GPU's.  This appears to corrupt the GPU for all subsequent tests fail with CUDA Missing Configuration (1) errors."));
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestDeconvolutionLayer", "TestGradient3DCuDnn", "SKIPPED - Values 1.7575769 and 0 are NOT within the range 0.001757569 of one another."));
 
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestSigmoidCrossEntropyLossLayer", "TestForward", "SKIPPED - Values 14.864425 and 3.398046 are NOT within the range 0.01 of one another."));
@@ -155,14 +155,7 @@ namespace MyCaffe.test
 
         public static string CudaPath
         {
-            get
-            {
-                string strFile = ExecutingAppPath + "\\CudaDnnDll.9.dll";
-                if (!File.Exists(strFile))
-                    strFile = ExecutingAppPath + "\\CudaDnnDll.8.dll";
-
-                return strFile;
-            }
+            get { return CudaDnn<float>.GetCudaDnnDllPath(); }
         }
 
         public static string ExecutingAppPath
