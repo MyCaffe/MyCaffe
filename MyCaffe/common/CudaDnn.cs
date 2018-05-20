@@ -842,16 +842,9 @@ namespace MyCaffe.common
             try
             {
                 if (string.IsNullOrEmpty(strPath))
-                {
-                    FileInfo fi = new FileInfo(Process.GetCurrentProcess().MainModule.FileName);
+                    strPath = GetCudaDnnDllPath();
 
-                    strPath = fi.DirectoryName + "\\CudaDnnDll.9.dll";
-                    if (!File.Exists(strPath))
-                        strPath = fi.DirectoryName + "\\CudaDnnDll.8.dll";
-
-                    m_strPath = strPath;
-                }
-
+                m_strPath = strPath;
                 m_cuda.Load(strPath);
             }
             catch (Exception excpt)
@@ -956,6 +949,28 @@ namespace MyCaffe.common
         public void Dispose()
         {
             Dispose(true);
+        }
+
+        /// <summary>
+        /// Returns the path to the CudaDnnDll module to use for low level CUDA processing.
+        /// </summary>
+        /// <returns>The CudaDnnDll path is returned.</returns>
+        public static string GetCudaDnnDllPath()
+        {
+            FileInfo fi = new FileInfo(Process.GetCurrentProcess().MainModule.FileName);
+
+            string strPath = fi.DirectoryName + "\\CudaDnnDll.9.2.dll";
+            if (!File.Exists(strPath))
+            {
+                strPath = fi.DirectoryName + "\\CudaDnnDll.9.1.dll";
+                if (!File.Exists(strPath))
+                {
+                    if (!File.Exists(strPath))
+                        strPath = fi.DirectoryName + "\\CudaDnnDll.8.dll";
+                }
+            }
+
+            return strPath;
         }
 
         /// <summary>
