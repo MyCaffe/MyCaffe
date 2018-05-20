@@ -111,13 +111,13 @@
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Resource.9.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="CudaDnnDLL.9.def">
+    <None Include="CudaDnnDLL.9.2.def">
       <Filter>Source Files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.9.2.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>
