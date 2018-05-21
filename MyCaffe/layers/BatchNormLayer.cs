@@ -67,7 +67,7 @@ namespace MyCaffe.layers
         long m_hBwdTopDesc = 0;
         long m_hFwdScaleBiasMeanVarDesc = 0;
         long m_hBwdScaleBiasMeanVarDesc = 0;
-        BATCHNORM_MODE m_mode = BATCHNORM_MODE.SPATIAL_PERSISTENT;
+        BATCHNORM_MODE m_mode = BATCHNORM_MODE.SPATIAL;
         Blob<T> m_blobScaleOnes = null;
         Blob<T> m_blobBiasZeros = null;
         Blob<T> m_blobPrivateTop = null;
@@ -398,7 +398,7 @@ namespace MyCaffe.layers
             m_hBwdBottomDesc = m_cuda.CreateTensorDesc();
             m_hBwdTopDesc = m_cuda.CreateTensorDesc();
             m_hBwdScaleBiasMeanVarDesc = m_cuda.CreateTensorDesc();
-            m_mode = BATCHNORM_MODE.SPATIAL_PERSISTENT;
+            m_mode = BATCHNORM_MODE.SPATIAL;
             m_dfEps = Math.Min(m_dfEps, CUDNN_BN_MIN_EPSILON);
 
             m_blobMean.Reshape(rgShape);
@@ -694,6 +694,7 @@ namespace MyCaffe.layers
                                         m_hFwdTopDesc, hTopData, 
                                         m_hFwdScaleBiasMeanVarDesc, hScaleData, hBiasData, 
                                         dfFactor, hGlobalMean, hGlobalVar, dfEps, hSaveMean, hSaveVar, true);
+                m_nIteration++;
             }
             else
             {
@@ -709,8 +710,6 @@ namespace MyCaffe.layers
                 m_blobPrivateBottom.CopyFrom(colBottom[0]);
                 colTop[0].CopyFrom(m_blobPrivateTop);
             }
-
-            m_nIteration++;
         }
 
         /// <summary>
@@ -722,8 +721,8 @@ namespace MyCaffe.layers
             long hBottomData = colBottom[0].gpu_data;
             long hBottomDiff = colBottom[0].mutable_gpu_diff;
             double dfEps = m_dfEps;
-            long hSaveMean = m_blobMean.gpu_data;
-            long hSaveVar = m_blobVariance.gpu_data;
+            long hMean = (m_bUseGlobalStats) ? 0 : m_blobMean.gpu_data;
+            long hVariance = (m_bUseGlobalStats) ? 0 : m_blobVariance.gpu_data;
             long hScaleData = (m_bScaleBias) ? m_colBlobs[3].gpu_data : m_blobScaleOnes.gpu_data;
             long hScaleDiff = (m_bScaleBias) ? m_colBlobs[3].mutable_gpu_diff : m_blobScaleOnes.mutable_gpu_diff;
             long hBiasDiff = (m_bScaleBias) ? m_colBlobs[4].mutable_gpu_diff : m_blobBiasZeros.mutable_gpu_diff;
@@ -741,7 +740,7 @@ namespace MyCaffe.layers
                                         m_hBwdBottomDesc, hTopDiff,
                                         m_hBwdBottomDesc, hBottomDiff,
                                         m_hBwdScaleBiasMeanVarDesc, hScaleData, hScaleDiff, hBiasDiff,
-                                        dfEps, hSaveMean, hSaveVar);
+                                        dfEps, hMean, hVariance);
         }
     }
 }
