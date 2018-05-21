@@ -1117,8 +1117,8 @@ long Memory<T>::BatchNormBackward(long hHandle, int mode, T fAlphaDiff, T fBetaD
 	MemoryItem* pScaleData;
 	MemoryItem* pScaleDiff;
 	MemoryItem* pBiasDiff;
-	MemoryItem* pSaveMean;
-	MemoryItem* pSaveVar;
+	MemoryItem* pSaveMean = NULL;
+	MemoryItem* pSaveVar = NULL;
 
 	if (lErr = m_memory.GetData(hBottomData, &pBtmData))
 		return lErr;
@@ -1138,20 +1138,26 @@ long Memory<T>::BatchNormBackward(long hHandle, int mode, T fAlphaDiff, T fBetaD
 	if (lErr = m_memory.GetData(hBiasDiff, &pBiasDiff))
 		return lErr;
 
-	if (lErr = m_memory.GetData(hSaveMean, &pSaveMean))
-		return lErr;
-
-	if (lErr = m_memory.GetData(hSaveVar, &pSaveVar))
-		return lErr;
-
 	T* btmdata = (T*)pBtmData->Data();
 	T* topdiff = (T*)pTopDiff->Data();
 	T* btmdiff = (T*)pBtmDiff->Data();
 	T* scaledata = (T*)pScaleData->Data();
 	T* scalediff = (T*)pScaleDiff->Data();
 	T* biasdiff = (T*)pBiasDiff->Data();
-	T* savemean = (T*)pSaveMean->Data();
-	T* savevar = (T*)pSaveVar->Data();
+	T* savemean = NULL;
+	T* savevar = NULL;
+
+	if (hSaveMean != 0 && hSaveVar != 0)
+	{
+		if (lErr = m_memory.GetData(hSaveMean, &pSaveMean))
+			return lErr;
+
+		if (lErr = m_memory.GetData(hSaveVar, &pSaveVar))
+			return lErr;
+
+		savemean = (T*)pSaveMean->Data();
+		savevar = (T*)pSaveVar->Data();
+	}
 
 	if (sizeof(T) == 4)
 	{
