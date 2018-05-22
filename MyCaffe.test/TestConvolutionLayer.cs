@@ -8,6 +8,7 @@ using MyCaffe.fillers;
 using MyCaffe.param;
 using MyCaffe.layers;
 using System.Diagnostics;
+using MyCaffe.basecode;
 
 namespace MyCaffe.test
 {

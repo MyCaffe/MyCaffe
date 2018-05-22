@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MyCaffe.common;
+using MyCaffe.basecode;
 
 namespace MyCaffe.test
 {

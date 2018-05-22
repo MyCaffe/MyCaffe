@@ -7,6 +7,7 @@ using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.layers;
 using MyCaffe.fillers;
+using MyCaffe.basecode;
 
 namespace MyCaffe.test
 {
@@ -456,7 +457,6 @@ namespace MyCaffe.test
                 bCopyDiff = false;
                 bReshape = false;
                 layer_2d.blobs[0].CopyFrom(weights, bCopyDiff, bReshape);
-#warning The call to Forward below causes a CUDA map overwrite error.                
                 layer_2d.Forward(BottomVec, TopVec);
 
                 bCopyDiff = false;

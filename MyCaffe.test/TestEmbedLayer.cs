@@ -6,6 +6,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MyCaffe.param;
 using MyCaffe.layers;
 using MyCaffe.common;
+using MyCaffe.basecode;
 
 namespace MyCaffe.test
 {
