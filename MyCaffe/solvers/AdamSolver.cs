@@ -64,6 +64,10 @@ namespace MyCaffe.solvers
         public override void ComputeUpdateValue(int param_id, double dfRate)
         {
             BlobCollection<T> colNetParams = m_net.learnable_parameters;
+
+            if (!colNetParams[param_id].DiffExists)
+                return;
+
             List<double?> net_params_lr = m_net.params_lr;
             double dfLocalRate = dfRate * net_params_lr[param_id].GetValueOrDefault(0);
             double dfBeta1 = m_param.momentum;
