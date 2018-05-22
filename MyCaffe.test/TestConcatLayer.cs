@@ -459,7 +459,6 @@ namespace MyCaffe.test
             ConcatLayer<T> layer = new ConcatLayer<T>(m_cuda, m_log, p);
 
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-#warning TestConcatLayer.TestGradientNum test fails
             checker.CheckGradient(layer, BottomVec1, TopVec);
         }
 
@@ -472,7 +471,6 @@ namespace MyCaffe.test
             ConcatLayer<T> layer = new ConcatLayer<T>(m_cuda, m_log, p);
 
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-#warning TestConcatLayer.TestGradientNum test fails
             checker.CheckGradient(layer, BottomVec, TopVec);
         }
 
@@ -485,7 +483,6 @@ namespace MyCaffe.test
             ConcatLayer<T> layer = new ConcatLayer<T>(m_cuda, m_log, p);
 
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2);
-#warning TestConcatLayer.TestGradientNum test fails
             checker.CheckGradient(layer, BottomVec, TopVec, 1);
         }
     }

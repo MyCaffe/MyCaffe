@@ -614,7 +614,6 @@ namespace MyCaffe.test
 
             Top.SetDiff(1.0);
 
-#warning TestLRNLayer.TestGradientWithinChannels test fails.
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
         }
     }

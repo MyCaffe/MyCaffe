@@ -2520,7 +2520,6 @@ namespace MyCaffe.test
             filler.Fill(layer.blobs[0]);
 
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
-#warning PReLULayer<T>.TesetPReLUGradient test fails.
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
         }
 
@@ -2560,7 +2559,6 @@ namespace MyCaffe.test
 
             layer.Setup(BottomVec, TopVec);
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3, 1701, 0.0, 0.01);
-#warning PReLULayer<T>.TesetPReLUGradientChannelShared test fails.
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
         }
 
