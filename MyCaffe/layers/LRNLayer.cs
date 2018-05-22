@@ -494,7 +494,6 @@ namespace MyCaffe.layers
             long hBottomData = colBottom[0].gpu_data;
             long hBottomDiff = colBottom[0].mutable_gpu_diff;
 
-#warning BUG: LRNLayer::backward_cudnn - WITHIN_CHANNEL causes memory overwrite, only using cuda version for this now.
             if (m_param.lrn_param.norm_region == LRNParameter.NormRegion.WITHIN_CHANNEL)
                 m_cuda.DivisiveNormalizationBackward(m_hCuDnn, m_hNormDesc, m_tOne, m_hBottomDesc, hBottomData, hTopDiff, m_hTempData1, m_hTempData2, m_tZero, m_hBottomDesc, hBottomDiff);
             else
