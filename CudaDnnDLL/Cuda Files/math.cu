@@ -276,12 +276,20 @@ long Math<T>::get(int nCount, long hDst, int nIdx, T* pfOutput)
 		return lErr;
 
 	if (nIdx == -1)
-		return cudaMemcpy(pfOutput, pItem->Data(), sizeof(T) * nCount, cudaMemcpyDeviceToHost);	
+	{
+		if (lErr = cudaMemcpy(pfOutput, pItem->Data(), sizeof(T) * nCount, cudaMemcpyDeviceToHost))
+			return lErr;
+	}
+	else
+	{
+		T* pData = (T*)pItem->Data();
+		pData += nIdx;
 
-	T* pData = (T*)pItem->Data();
-	pData += nIdx;
+		if (lErr = cudaMemcpy(pfOutput, pData, sizeof(T), cudaMemcpyDeviceToHost))
+			return lErr;
+	}
 
-	return cudaMemcpy(pfOutput, pData, sizeof(T), cudaMemcpyDeviceToHost);
+	return cudaStreamSynchronize(0);
 }
 
 template long Math<double>::get(int nCount, long hDst, int nIdx, double* pfOutput);
@@ -311,15 +319,26 @@ long Math<T>::copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOff
 	if (nDstOffset > 0)
 		dst += nDstOffset;
 
+	cudaStream_t stream = 0;
+
 	if (hAsyncStream < 0)
-		return cudaMemcpy(dst, src, lSize, cudaMemcpyDeviceToDevice);
+	{
+		if (lErr = cudaMemcpy(dst, src, lSize, cudaMemcpyDeviceToDevice))
+			return lErr;
+	}
+	else if (hAsyncStream == 0)
+	{
+		if (lErr = cudaMemcpyAsync(dst, src, lSize, cudaMemcpyDeviceToDevice, cudaStreamDefault))
+			return lErr;
+	}
+	else
+	{
+		stream = (cudaStream_t)m_pStreamCol->GetData(hAsyncStream);
+		if (lErr = cudaMemcpyAsync(dst, src, lSize, cudaMemcpyDeviceToDevice, stream))
+			return lErr;
+	}
 
-	if (hAsyncStream == 0)
-		return cudaMemcpyAsync(dst, src, lSize, cudaMemcpyDeviceToDevice, cudaStreamDefault);
-
-	cudaStream_t stream = (cudaStream_t)m_pStreamCol->GetData(hAsyncStream);
-
-	return cudaMemcpyAsync(dst, src, lSize, cudaMemcpyDeviceToDevice, stream);
+	return cudaStreamSynchronize(stream);
 }
 
 template long Math<double>::copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOffset, long hAsyncStream);
@@ -342,7 +361,14 @@ long Math<double>::nrm2(int n, long hA, int nAOff, double* pdfResult)
 	if (nAOff > 0)
 		a += nAOff;
 
-	return cublasDnrm2(m_cublas, n, a, 1, pdfResult);
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasDnrm2(m_cublas, n, a, 1, pdfResult))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template<>
@@ -362,7 +388,14 @@ long Math<float>::nrm2(int n, long hA, int nAOff, float* pfResult)
 	if (nAOff > 0)
 		a += nAOff;
 
-	return cublasSnrm2(m_cublas, n, a, 1, pfResult);
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasSnrm2(m_cublas, n, a, 1, pfResult))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template<>
@@ -399,7 +432,14 @@ long Math<double>::ger(int m, int n, double fAlpha, long hA, long hB, long hC, i
 	if (nCoff > 0)
 		c += nCoff;
 
-	return cublasDger(m_cublas, m, n, &fAlpha, a, 1, b, 1, c, 1);
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasDger(m_cublas, m, n, &fAlpha, a, 1, b, 1, c, 1))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template<>
@@ -436,13 +476,22 @@ long Math<float>::ger(int m, int n, float fAlpha, long hA, long hB, long hC, int
 	if (nCoff > 0)
 		c += nCoff;
 
-	return cublasSger(m_cublas, m, n, &fAlpha, a, 1, b, 1, c, 1);
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasSger(m_cublas, m, n, &fAlpha, a, 1, b, 1, c, 1))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 
 template <> 
 long Math<double>::gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, double* a, double* b, double fBeta, double* c)
 {
+	LONG lErr;
+
 	if (m_cublas == NULL)
 		return ERROR_CUBLAS_NULL;
 
@@ -454,12 +503,21 @@ long Math<double>::gemm(bool bTransA, bool bTransB, int m, int n, int k, double 
 	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
 	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
 
-	return cublasDgemm(m_cublas, cuTransB, cuTransA, n, m, k, &fAlpha, b, ldb, a, lda, &fBeta, c, n);
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasDgemm(m_cublas, cuTransB, cuTransA, n, m, k, &fAlpha, b, ldb, a, lda, &fBeta, c, n))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template <> 
 long Math<float>::gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, float* a, float *b, float fBeta, float* c)
 {
+	LONG lErr;
+
 	if (m_cublas == NULL)
 		return ERROR_CUBLAS_NULL;
 
@@ -469,7 +527,14 @@ long Math<float>::gemm(bool bTransA, bool bTransB, int m, int n, int k, float fA
 	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
 	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
 
-	return cublasSgemm(m_cublas, cuTransB, cuTransA, n, m, k, &fAlpha, b, ldb, a, lda, &fBeta, c, n);
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasSgemm(m_cublas, cuTransB, cuTransA, n, m, k, &fAlpha, b, ldb, a, lda, &fBeta, c, n))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 
@@ -573,7 +638,14 @@ long Math<double>::gemm2(bool bTransA, bool bTransB, int m, int n, int k, double
 	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
 	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
 
-	return cublasDgemm(m_cublas, cuTransA, cuTransB, m, n, k, &fAlpha, a, lda, b, ldb, &fBeta, c, ldc);
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasDgemm(m_cublas, cuTransA, cuTransB, m, n, k, &fAlpha, a, lda, b, ldb, &fBeta, c, ldc))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template <> 
@@ -603,29 +675,54 @@ long Math<float>::gemm2(bool bTransA, bool bTransB, int m, int n, int k, float f
 	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
 	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
 
-	return cublasSgemm(m_cublas, cuTransA, cuTransB, m, n, k, &fAlpha, a, lda, b, ldb, &fBeta, c, ldc);
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasSgemm(m_cublas, cuTransA, cuTransB, m, n, k, &fAlpha, a, lda, b, ldb, &fBeta, c, ldc))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template <>
 long Math<double>::gemv(bool bTransA, int m, int n, double fAlpha, double* a, double* x, double fBeta, double* y)
 {
+	LONG lErr;
+
 	if (m_cublas == NULL)
 		return ERROR_CUBLAS_NULL;
 
 	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-	return cublasDgemv(m_cublas, cuTransA, n, m, &fAlpha, a, n, x, 1, &fBeta, y, 1);
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasDgemv(m_cublas, cuTransA, n, m, &fAlpha, a, n, x, 1, &fBeta, y, 1))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template <>
 long Math<float>::gemv(bool bTransA, int m, int n, float fAlpha, float* a, float* x, float fBeta, float* y)
 {
+	LONG lErr;
+
 	if (m_cublas == NULL)
 		return ERROR_CUBLAS_NULL;
 
 	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-	return cublasSgemv(m_cublas, cuTransA, n, m, &fAlpha, a, n, x, 1, &fBeta, y, 1);
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasSgemv(m_cublas, cuTransA, n, m, &fAlpha, a, n, x, 1, &fBeta, y, 1))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template <>
@@ -726,7 +823,14 @@ long Math<double>::axpy(int n, double fAlpha, long hX, long hY, int nXOff, int n
 	if (nYOff > 0)
 		y += nYOff;
 
-	return cublasDaxpy(m_cublas, n, &fAlpha, x, 1, y, 1);
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasDaxpy(m_cublas, n, &fAlpha, x, 1, y, 1))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template <>
@@ -754,7 +858,14 @@ long Math<float>::axpy(int n, float fAlpha, long hX, long hY, int nXOff, int nYO
 	if (nYOff > 0)
 		y += nYOff;
 
-	return cublasSaxpy(m_cublas, n, &fAlpha, x, 1, y, 1);
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasSaxpy(m_cublas, n, &fAlpha, x, 1, y, 1))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template <>
@@ -773,10 +884,20 @@ long Math<double>::axpby(int n, double fAlpha, long hX, double fBeta, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
 	if (lErr = cublasDscal(m_cublas, n, &fBeta, (double*)pY->Data(), 1))
 		return lErr;
 
-	return cublasDaxpy(m_cublas, n, &fAlpha, (double*)pX->Data(), 1, (double*)pY->Data(), 1);
+	if (lErr = cudaStreamSynchronize(stream))
+		return lErr;
+
+	if (lErr = cublasDaxpy(m_cublas, n, &fAlpha, (double*)pX->Data(), 1, (double*)pY->Data(), 1))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template <>
@@ -795,10 +916,20 @@ long Math<float>::axpby(int n, float fAlpha, long hX, float fBeta, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
 	if (lErr = cublasSscal(m_cublas, n, &fBeta, (float*)pY->Data(), 1))
 		return lErr;
 
-	return cublasSaxpy(m_cublas, n, &fAlpha, (float*)pX->Data(), 1, (float*)pY->Data(), 1);
+	if (lErr = cudaStreamSynchronize(stream))
+		return lErr;
+
+	if (lErr = cublasSaxpy(m_cublas, n, &fAlpha, (float*)pX->Data(), 1, (float*)pY->Data(), 1))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 
@@ -850,12 +981,12 @@ long Math<float>::scal(int n, float fAlpha, long hX, int nXOff, long hStream)
 
 	if (hStream != 0)
 	{
-		cudaStream_t stream = m_pMem->GetStream(hStream);
+		cudaStream_t stream1 = m_pMem->GetStream(hStream);
 
 		if (lErr = cublasGetStream(m_cublas, &initial_stream))
 			return lErr;
 
-		if (lErr = cublasSetStream(m_cublas, stream))
+		if (lErr = cublasSetStream(m_cublas, stream1))
 			return lErr;
 	}
 
@@ -868,7 +999,13 @@ long Math<float>::scal(int n, float fAlpha, long hX, int nXOff, long hStream)
 	if (nXOff > 0)
 		x += nXOff;
 
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
 	lErr = cublasSscal(m_cublas, n, &fAlpha, x, 1);
+
+	cudaStreamSynchronize(stream);
 
 	if (initial_stream != NULL)
 		cublasSetStream(m_cublas, initial_stream);
@@ -905,7 +1042,14 @@ long Math<double>::dot(int n, long hX, long hY, double* pOut, int nXOff, int nYO
 	if (nYOff > 0)
 		y += nYOff;
 
-	return cublasDdot(m_cublas, n, x, 1, y, 1, (double*)pOut);
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasDdot(m_cublas, n, x, 1, y, 1, (double*)pOut))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template <>
@@ -936,7 +1080,14 @@ long Math<float>::dot(int n, long hX, long hY, float* pOut, int nXOff, int nYOff
 	if (nYOff > 0)
 		y += nYOff;
 
-	return cublasSdot(m_cublas, n, x, 1, y, 1, (float*)pOut);
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasSdot(m_cublas, n, x, 1, y, 1, (float*)pOut))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template <>
@@ -959,7 +1110,14 @@ long Math<double>::asum(int n, long hX, double* pOut, int nXOff)
 	if (nXOff > 0)
 		x += nXOff;
 
-	return cublasDasum(m_cublas, n, x, 1, (double*)pOut);
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasDasum(m_cublas, n, x, 1, (double*)pOut))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template <>
@@ -982,19 +1140,44 @@ long Math<float>::asum(int n, long hX, float* pOut, int nXOff)
 	if (nXOff > 0)
 		x += nXOff;
 
-	return cublasSasum(m_cublas, n, x, 1, (float*)pOut);
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasSasum(m_cublas, n, x, 1, (float*)pOut))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template <>
 long Math<double>::asum(int n, double* x, double* pOut)
 {
-	return cublasDasum(m_cublas, n, x, 1, pOut);
+	LONG lErr;
+
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasDasum(m_cublas, n, x, 1, pOut))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template <>
 long Math<float>::asum(int n, float* x, float* pOut)
 {
-	return cublasSasum(m_cublas, n, x, 1, pOut);
+	LONG lErr;
+
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasSasum(m_cublas, n, x, 1, pOut))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 
@@ -1023,10 +1206,20 @@ long Math<double>::scale(int n, double fAlpha, long hX, long hY, int nXOff, int 
 	if (nYOff > 0)
 		y += nYOff;
 
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
 	if (lErr = cublasDcopy(m_cublas, n, x, 1, y, 1))
 		return lErr;
 
-	return cublasDscal(m_cublas, n, &fAlpha, y, 1);
+	if (lErr = cudaStreamSynchronize(stream))
+		return lErr;
+
+	if (lErr = cublasDscal(m_cublas, n, &fAlpha, y, 1))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 
@@ -1055,10 +1248,20 @@ long Math<float>::scale(int n, float fAlpha, long hX, long hY, int nXOff, int nY
 	if (nYOff > 0)
 		y += nYOff;
 
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
 	if (lErr = cublasScopy(m_cublas, n, x, 1, y, 1))
 		return lErr;
 
-	return cublasSscal(m_cublas, n, &fAlpha, y, 1);
+	if (lErr = cudaStreamSynchronize(stream))
+		return lErr;
+
+	if (lErr = cublasSscal(m_cublas, n, &fAlpha, y, 1))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
 }
 
 template <typename T>
@@ -1455,7 +1658,13 @@ long Math<T>::minmaxval(int n, long hA, long hWork1, long hWork2, T* pMin, T* pM
 			if (lErr = cudaMemcpy(&fMin1, w1, sizeof(T), cudaMemcpyDeviceToHost))
 				return lErr;
 
+			if (lErr = cudaStreamSynchronize(0))
+				return lErr;
+
 			if (lErr = cudaMemcpy(&fMax1, w2, sizeof(T), cudaMemcpyDeviceToHost))
+				return lErr;
+
+			if (lErr = cudaStreamSynchronize(0))
 				return lErr;
 
 			fMinFinal = min(fMinFinal, fMin1);
@@ -1474,14 +1683,20 @@ long Math<T>::minmaxval(int n, long hA, long hWork1, long hWork2, T* pMin, T* pM
 		if (lErr = cudaMemcpy(&fMinFinal, a, sizeof(T), cudaMemcpyDeviceToHost))
 			return lErr;
 
+		if (lErr = cudaStreamSynchronize(0))
+			return lErr;
+
 		if (lErr = cudaMemcpy(&fMaxFinal, a, sizeof(T), cudaMemcpyDeviceToHost))
+			return lErr;
+
+		if (lErr = cudaStreamSynchronize(0))
 			return lErr;
 	}
 
 	*pMin = fMinFinal;
 	*pMax = fMaxFinal;
 
-	return cudaStreamSynchronize(0);
+	return CUDA_SUCCESS;
 }
 
 template long Math<double>::minmaxval(int n, long hA, long hWork1, long hWork2, double* pMin, double* pMax, int nAOff);
@@ -1592,7 +1807,13 @@ long Math<T>::naninfval(int n, long hA, long hWork1, long hWork2, T* pNan, T* pI
 			if (lErr = cudaMemcpy(&fNan1, w1, sizeof(T), cudaMemcpyDeviceToHost))
 				return lErr;
 
+			if (lErr = cudaStreamSynchronize(0))
+				return lErr;
+
 			if (lErr = cudaMemcpy(&fInf1, w2, sizeof(T), cudaMemcpyDeviceToHost))
+				return lErr;
+
+			if (lErr = cudaStreamSynchronize(0))
 				return lErr;
 
 			fNanFinal += fNan1;
@@ -1612,6 +1833,9 @@ long Math<T>::naninfval(int n, long hA, long hWork1, long hWork2, T* pNan, T* pI
 		if (lErr = cudaMemcpy(&fVal, a, sizeof(T), cudaMemcpyDeviceToHost))
 			return lErr;
 
+		if (lErr = cudaStreamSynchronize(0))
+			return lErr;
+
 		if (isnan(fVal))
 			fNanFinal = 1;
 
@@ -1622,7 +1846,7 @@ long Math<T>::naninfval(int n, long hA, long hWork1, long hWork2, T* pNan, T* pI
 	*pNan = fNanFinal;
 	*pInf = fInfFinal;
 
-	return cudaStreamSynchronize(0);
+	return CUDA_SUCCESS;
 }
 
 template long Math<double>::naninfval(int n, long hA, long hWork1, long hWork2, double* pNan, double* pInf, int nAOff);
