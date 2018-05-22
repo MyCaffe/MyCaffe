@@ -265,6 +265,7 @@ namespace MyCaffe.layers
             // BUG Work Around
             // With cuDNN 7.0.5 and above we are seeing memory overwrite errors (from CUDA)
             //  when using more than 1 group and the workspace.
+            //  * also confirmed in cuDNN 7.1.4 and CUDA 9.2 on driver 397.64
             if (m_nGroup > 1)
                 lWorkspaceLimitBytes = 0; // sets option to NO_WORKSPACE for Bwd Filter and Data
 
