@@ -978,7 +978,7 @@ namespace MyCaffe.common
         /// The 'update' method is used for parameter blobs in a Net.
         /// </summary>
         /// <remarks>
-        /// Update is called to apply the diff errors to the data.
+        /// Update is called to apply the diff errors to the data.  WHen !bIncludeDiff, no diff is applied.
         /// </remarks>
         public void Update()
         {
