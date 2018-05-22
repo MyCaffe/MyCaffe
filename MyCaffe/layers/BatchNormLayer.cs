@@ -305,13 +305,13 @@ namespace MyCaffe.layers
 
                 m_colBlobs.Clear(true);
 
-                m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize));  // global mean
+                m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize, false));  // global mean
                 m_colBlobs[0].Name = "global mean";
                 m_colBlobs[0].SetData(0.0);
-                m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize));  // glboal var
+                m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize, false));  // glboal var
                 m_colBlobs[1].Name = "global variance";
                 m_colBlobs[1].SetData(0.0);
-                m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize));  // variance correction
+                m_colBlobs.Add(new Blob<T>(m_cuda, m_log, rgSize, false));  // variance correction
                 m_colBlobs[2].Name = "var correction";
                 m_colBlobs[2].SetData(1.0);
 
