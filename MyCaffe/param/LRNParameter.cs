@@ -53,7 +53,7 @@ namespace MyCaffe.param
                 return "The engine setting is set on CAFFE.";
 
             if (norm_region == NormRegion.WITHIN_CHANNEL)
-                return "Currently using the normalization region 'WITHIN_CHANNEL' causes memory errors in cuDnn.";
+                return "Currently using the normalization region 'WITHIN_CHANNEL' returns inconsistent errors from Caffe.";
 
             return "";
         }
@@ -65,7 +65,7 @@ namespace MyCaffe.param
         public bool useCudnn()
         {
             if (engine == EngineParameter.Engine.CAFFE ||
-                norm_region == LRNParameter.NormRegion.WITHIN_CHANNEL)    // Currently CuDNN within channel causes memory overwrite.
+               norm_region == LRNParameter.NormRegion.WITHIN_CHANNEL)    // Currently CuDNN within channel Forward pass returns inconsistent results from Caffe.
                 return false;
 
             return true;
