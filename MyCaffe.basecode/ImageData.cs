@@ -112,10 +112,16 @@ namespace MyCaffe.basecode
             else
             {
                 List<byte> rgByteData = new List<byte>();
+                float[] rgDataF = Utility.ConvertVecF<T>(rgData);
 
                 for (int i = nStartIdx; i < nStartIdx + nCount; i++)
                 {
-                    rgByteData.Add((byte)Convert.ChangeType(rgData[i], typeof(byte)));
+                    float fVal = rgDataF[i];
+
+                    if (float.IsInfinity(fVal) || float.IsNaN(fVal))
+                        fVal = 0;
+
+                    rgByteData.Add((byte)fVal);
                 }
 
                 return new Datum(false, nChannels, nWidth, nHeight, 0, DateTime.MinValue, new List<byte>(rgByteData), null, 0, false, -1);
