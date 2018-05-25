@@ -39,6 +39,7 @@
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.resetToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.runToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.skipToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.imageListUI = new System.Windows.Forms.ImageList(this.components);
             this.toolStripContainer1 = new System.Windows.Forms.ToolStripContainer();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
@@ -61,8 +62,9 @@
             this.tsProgressPct = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabel2 = new System.Windows.Forms.ToolStripStatusLabel();
             this.tsTestingTime = new System.Windows.Forms.ToolStripStatusLabel();
+            this.pbItemProgress = new System.Windows.Forms.ToolStripProgressBar();
+            this.tsItemProgress = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
-            this.skipToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.contextMenuStrip1.SuspendLayout();
             this.toolStripContainer1.ContentPanel.SuspendLayout();
             this.toolStripContainer1.TopToolStripPanel.SuspendLayout();
@@ -130,22 +132,29 @@
             this.runToolStripMenuItem,
             this.skipToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(153, 92);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(103, 70);
             this.contextMenuStrip1.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStrip1_Opening);
             // 
             // resetToolStripMenuItem
             // 
             this.resetToolStripMenuItem.Name = "resetToolStripMenuItem";
-            this.resetToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.resetToolStripMenuItem.Size = new System.Drawing.Size(102, 22);
             this.resetToolStripMenuItem.Text = "Reset";
             this.resetToolStripMenuItem.Click += new System.EventHandler(this.resetToolStripMenuItem_Click);
             // 
             // runToolStripMenuItem
             // 
             this.runToolStripMenuItem.Name = "runToolStripMenuItem";
-            this.runToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.runToolStripMenuItem.Size = new System.Drawing.Size(102, 22);
             this.runToolStripMenuItem.Text = "Run";
             this.runToolStripMenuItem.Click += new System.EventHandler(this.runToolStripMenuItem_Click);
+            // 
+            // skipToolStripMenuItem
+            // 
+            this.skipToolStripMenuItem.Name = "skipToolStripMenuItem";
+            this.skipToolStripMenuItem.Size = new System.Drawing.Size(102, 22);
+            this.skipToolStripMenuItem.Text = "Skip";
+            this.skipToolStripMenuItem.Click += new System.EventHandler(this.skipToolStripMenuItem_Click);
             // 
             // imageListUI
             // 
@@ -306,7 +315,9 @@
             this.tsProgress,
             this.tsProgressPct,
             this.toolStripStatusLabel2,
-            this.tsTestingTime});
+            this.tsTestingTime,
+            this.pbItemProgress,
+            this.tsItemProgress});
             this.statusStrip1.Location = new System.Drawing.Point(0, 579);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(1053, 25);
@@ -316,7 +327,7 @@
             // toolStripStatusLabel1
             // 
             this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            this.toolStripStatusLabel1.Size = new System.Drawing.Size(67, 20);
+            this.toolStripStatusLabel1.Size = new System.Drawing.Size(65, 20);
             this.toolStripStatusLabel1.Text = "Total Tests:";
             this.toolStripStatusLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
@@ -335,7 +346,7 @@
             // toolStripStatusLabel3
             // 
             this.toolStripStatusLabel3.Name = "toolStripStatusLabel3";
-            this.toolStripStatusLabel3.Size = new System.Drawing.Size(80, 20);
+            this.toolStripStatusLabel3.Size = new System.Drawing.Size(79, 20);
             this.toolStripStatusLabel3.Text = "   Failed Tests:";
             // 
             // tsFailedTests
@@ -372,7 +383,7 @@
             // toolStripStatusLabel2
             // 
             this.toolStripStatusLabel2.Name = "toolStripStatusLabel2";
-            this.toolStripStatusLabel2.Size = new System.Drawing.Size(85, 20);
+            this.toolStripStatusLabel2.Size = new System.Drawing.Size(84, 20);
             this.toolStripStatusLabel2.Text = "  Testing Time:";
             // 
             // tsTestingTime
@@ -383,22 +394,35 @@
             | System.Windows.Forms.ToolStripStatusLabelBorderSides.Bottom)));
             this.tsTestingTime.BorderStyle = System.Windows.Forms.Border3DStyle.SunkenOuter;
             this.tsTestingTime.Name = "tsTestingTime";
-            this.tsTestingTime.Size = new System.Drawing.Size(150, 20);
+            this.tsTestingTime.Size = new System.Drawing.Size(110, 20);
             this.tsTestingTime.Text = "0";
             this.tsTestingTime.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // pbItemProgress
+            // 
+            this.pbItemProgress.ForeColor = System.Drawing.Color.Lime;
+            this.pbItemProgress.Name = "pbItemProgress";
+            this.pbItemProgress.Size = new System.Drawing.Size(100, 19);
+            this.pbItemProgress.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
+            this.pbItemProgress.Visible = false;
+            // 
+            // tsItemProgress
+            // 
+            this.tsItemProgress.AutoSize = false;
+            this.tsItemProgress.BackColor = System.Drawing.Color.Black;
+            this.tsItemProgress.Font = new System.Drawing.Font("Century Gothic", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.tsItemProgress.ForeColor = System.Drawing.Color.Lime;
+            this.tsItemProgress.Name = "tsItemProgress";
+            this.tsItemProgress.Size = new System.Drawing.Size(55, 20);
+            this.tsItemProgress.Text = "0.00%";
+            this.tsItemProgress.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.tsItemProgress.Visible = false;
             // 
             // timerUI
             // 
             this.timerUI.Enabled = true;
             this.timerUI.Interval = 250;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
-            // 
-            // skipToolStripMenuItem
-            // 
-            this.skipToolStripMenuItem.Name = "skipToolStripMenuItem";
-            this.skipToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.skipToolStripMenuItem.Text = "Skip";
-            this.skipToolStripMenuItem.Click += new System.EventHandler(this.skipToolStripMenuItem_Click);
             // 
             // AutomatedTester
             // 
@@ -459,5 +483,7 @@
         private System.Windows.Forms.ToolStripButton btnNonGradientTests;
         private System.Windows.Forms.ColumnHeader colIdx;
         private System.Windows.Forms.ToolStripMenuItem skipToolStripMenuItem;
+        private System.Windows.Forms.ToolStripProgressBar pbItemProgress;
+        private System.Windows.Forms.ToolStripStatusLabel tsItemProgress;
     }
 }

@@ -95,6 +95,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>TestingModel.edmx</DependentUpon>
     </Compile>
+    <Compile Include="TestingProgress.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.Config" />

@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;
+using System.IO.MemoryMappedFiles;
 
 namespace MyCaffe.test.automated
 {
@@ -131,6 +133,8 @@ namespace MyCaffe.test.automated
 
         public void UpdateStatus()
         {
+            int nProgressCount = 0;
+
             foreach (ListViewItem lvi in lstTests.Items)
             {
                 KeyValuePair<TestClass, MethodInfoEx> kvTc = (KeyValuePair<TestClass, MethodInfoEx>)lvi.Tag;
@@ -151,11 +155,26 @@ namespace MyCaffe.test.automated
                         lvi.EnsureVisible();
                 }
 
+                if (mi.Progress.HasValue)
+                {
+                    nProgressCount++;
+                    tsItemProgress.Visible = true;
+                    pbItemProgress.Visible = true;
+                    tsItemProgress.Text = mi.Progress.Value.ToString("P");
+                    pbItemProgress.Value = (int)(mi.Progress.Value * 100.0);
+                }
+
                 if (mi.ErrorInfo.Error != null && lvi.SubItems[4].Text.Length == 0)
                 {
                     lvi.SubItems[4].Text = mi.ErrorInfo.ShortErrorString;
                     lvi.SubItems[4].Tag = mi.ErrorInfo;
                 }
+            }
+
+            if (nProgressCount == 0)
+            {
+                tsItemProgress.Visible = false;
+                pbItemProgress.Visible = false;
             }
         }
 
@@ -1135,6 +1154,9 @@ namespace MyCaffe.test.automated
         bool m_bEnabled = true;
         Task m_taskTest = null;
         Stopwatch m_swTiming = new Stopwatch();
+        double? m_dfProgress = null;
+        Task m_taskStatus;
+        AutoResetEvent m_evtStatusCancel = new AutoResetEvent(false);
 
         public enum STATUS
         {
@@ -1191,14 +1213,28 @@ namespace MyCaffe.test.automated
             set { m_status = value; }
         }
 
+        public double? Progress
+        {
+            get { return m_dfProgress; }
+        }
+
         public void Invoke(object instance, int nGpuId)
         {
             m_taskTest = Task.Factory.StartNew(new Action<object>(invoke), new Tuple<object, int>(instance, nGpuId));
             m_taskTest.Wait();
         }
 
+        private void status()
+        {
+            while (!m_evtStatusCancel.WaitOne(1000))
+            {
+                m_dfProgress = TestingProgressGet.GetProgress();
+            }
+        }
+
         public void invoke(object obj)
         {
+            m_taskStatus = Task.Factory.StartNew(new Action(status));
             Tuple<object, int> arg = obj as Tuple<object, int>;
             object instance = arg.Item1;
             int nGpuId = arg.Item2;
@@ -1237,6 +1273,7 @@ namespace MyCaffe.test.automated
                 if (m_miDispose != null)
                     m_miDispose.Invoke(instance, null);
 
+                m_evtStatusCancel.Set();
                 Thread.FreeNamedDataSlot("GPUID");
             }
         }
