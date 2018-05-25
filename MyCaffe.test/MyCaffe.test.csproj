@@ -91,6 +91,7 @@
     <Compile Include="TestDebugLayer.cs" />
     <Compile Include="TestGRNLayer.cs" />
     <Compile Include="TestPersistCaffe.cs" />
+    <Compile Include="TestingProgress.cs" />
     <Compile Include="TestProjectEx.cs" />
     <Compile Include="TestMemoryDataLayer.cs" />
     <Compile Include="TestTripletDataLayer.cs" />
