@@ -234,6 +234,8 @@ namespace MyCaffe.test
                 nTotal += colTop[i].count();
             }
 
+            TestingProgressSet progress = new TestingProgressSet();
+
             for (int i = 0; i < colTop.Count; i++)
             {
                 for (int j = 0; j < colTop[i].count(); j++)
@@ -245,10 +247,16 @@ namespace MyCaffe.test
                     {
                         double dfPct = (double)nIdx / (double)nTotal;
                         Trace.WriteLine(m_strBaseType + ": Check gradient exhaustive at " + dfPct.ToString("P") + "...");
+
+                        progress.SetProgress(dfPct);
+
                         sw.Restart();
                     }
                 }
             }
+
+            progress.SetProgress(0);
+            progress.Dispose();
         }
 
         /// <summary>
