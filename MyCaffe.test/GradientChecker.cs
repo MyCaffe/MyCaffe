@@ -137,8 +137,11 @@ namespace MyCaffe.test
                 Blob<T> current_blob = colBlobsToCheck[nBlobID];
                 Blob<T> new_blob = new Blob<T>(m_cuda, m_log);
 
-                new_blob.ReshapeLike(current_blob);
-                m_cuda.copy(current_blob.count(), current_blob.gpu_diff, new_blob.mutable_gpu_data);
+                if (current_blob.DiffExists)
+                {
+                    new_blob.ReshapeLike(current_blob);
+                    m_cuda.copy(current_blob.count(), current_blob.gpu_diff, new_blob.mutable_gpu_data);
+                }
 
                 colComputedGradientBlobs.Add(new_blob);
             }
@@ -149,6 +152,10 @@ namespace MyCaffe.test
             for (int nBlobID = 0; nBlobID < colBlobsToCheck.Count; nBlobID++)
             {
                 Blob<T> current_blob = colBlobsToCheck[nBlobID];
+
+                if (!current_blob.DiffExists)
+                    continue;
+
                 T[] rgdfComputedGradients = colComputedGradientBlobs[nBlobID].update_cpu_data();
                 double dfData;
 
