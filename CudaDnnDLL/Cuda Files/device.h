@@ -463,7 +463,7 @@ inline Device<T>::Device() : m_memory(), m_math()
 	m_curand = NULL;
 	m_lSeed = 0;
 	m_nDevice = 0;
-	m_hEventSrc = RegisterEventSource(NULL, L"CUDA.NET");
+	m_hEventSrc = RegisterEventSource(NULL, L"MyCaffe");
 }
 
 template <class T>
