@@ -401,13 +401,6 @@ extern "C" LONG WINAPI DLL_QueryString(LONG lKernelIdx,
 
 
 	//-------------------------------------------
-	//	Set the initial values.
-	//-------------------------------------------
-
-	if (ppOutput != NULL)
-		*ppOutput = NULL;
-
-	//-------------------------------------------
 	//	Process the requested function.
 	//-------------------------------------------
 
@@ -417,15 +410,16 @@ extern "C" LONG WINAPI DLL_QueryString(LONG lKernelIdx,
 		switch (lFunctionIdx)
 		{
 			case CUDA_DLL_FREEMEM:
-				if (lInput != 1)
+				if (ppOutput != NULL && *ppOutput != NULL)
 				{
-					getError(lErr, szErr, lszErrMax);
-					return ERROR_PARAM_OUT_OF_RANGE;
+					free(*ppOutput);
+					*ppOutput = NULL;
 				}
-				lErr = pKernelD->FreeHost((LPTSTR)&pInput[0]);
 				break;
 
 			default:
+				if (ppOutput != NULL)
+					*ppOutput = NULL;
 				lErr = pKernelD->Query(lFunctionIdx, pInput, lInput, ppOutput);
 				break;
 		}
@@ -445,15 +439,16 @@ extern "C" LONG WINAPI DLL_QueryString(LONG lKernelIdx,
 		switch (lFunctionIdx)
 		{
 			case CUDA_DLL_FREEMEM:
-				if (lInput != 1)
+				if (ppOutput != NULL && *ppOutput != NULL)
 				{
-					getError(lErr, szErr, lszErrMax);
-					return ERROR_PARAM_OUT_OF_RANGE;
+					free(*ppOutput);
+					*ppOutput = NULL;
 				}
-				lErr = pKernelF->FreeHost((LPTSTR)&pInput[0]);
 				break;
 
 			default:
+				if (ppOutput != NULL)
+					*ppOutput = NULL;
 				lErr = pKernelF->Query(lFunctionIdx, pInput, lInput, ppOutput);
 				break;
 		}
