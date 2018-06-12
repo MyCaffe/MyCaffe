@@ -345,6 +345,12 @@ namespace MyCaffe.test
                 {
                     string strInfo = cuda1.GetDeviceP2PInfo(i);
                     Trace.WriteLine(strInfo);
+
+                    strInfo = cuda1.GetDeviceInfo(i, false);
+                    Trace.WriteLine(strInfo);
+
+                    strInfo = cuda1.GetDeviceInfo(i, true);
+                    Trace.WriteLine(strInfo);
                 }
 
                 List<int> rgDevices = new List<int>();
