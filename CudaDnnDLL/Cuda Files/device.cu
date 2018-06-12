@@ -81,49 +81,26 @@ template long Device<float>::DisablePeerAccess(long lInput, float* pfInput, long
 template <class T>
 long Device<T>::GetDeviceName(int nDevice, LPTSTR* pszDevice)
 {
+	USES_CONVERSION;
 	LONG lErr;
 	cudaDeviceProp prop;
 
 	if (lErr = cudaGetDeviceProperties(&prop, nDevice))
 		return lErr;
 
-	LPTSTR pDst = NULL;
-
-	BSTR bstrName = A2WBSTR(prop.name);
-	if (bstrName == NULL)
-		return ERROR_OUTOFMEMORY;
-
 	bool b64Bit = (sizeof(void*) == 8) ? true : false;
 	bool bTcc = (prop.tccDriver == 1) ? true : false;
 	bool bVer = (prop.major >= 2) ? true : false;
 
-	char szBuffer[256];
 	double dfGB = (double)prop.totalGlobalMem / 1000000000.00;
-	_snprintf(szBuffer, 255, " (%0.2lf GB - %s)", dfGB, (b64Bit && bTcc && bVer) ? "P2P on" : "P2P off"); 
-	szBuffer[255] = NULL;
 
-	BSTR bstrBuffer = A2WBSTR(szBuffer);
-	if (bstrBuffer == NULL)
-	{
-		::SysFreeString(bstrName);
-		return ERROR_OUTOFMEMORY;
-	}
-
-	BSTR bstr = NULL;
-	HRESULT hr = VarBstrCat(bstrName, bstrBuffer, &bstr);
-
-	::SysFreeString(bstrName);
-	::SysFreeString(bstrBuffer);
-
-	if (FAILED(hr))
+	LPTSTR pDst = (LPTSTR)malloc(sizeof(TCHAR) * 512);
+	if (pDst == NULL)
 		return ERROR_OUTOFMEMORY;
 
-	lErr = m_memory.AllocHost(&pDst, bstr);
-
-	if (!lErr)
-		*pszDevice = pDst;
-
-	::SysFreeString(bstr);
+	memset(pDst, 0, sizeof(TCHAR) * 512);
+	_sntprintf(pDst, 511, _T("%s (%0.2lf GB - %s)"), A2T(prop.name), dfGB, (b64Bit && bTcc && bVer) ? _T("P2P on") : _T("P2P off"));
+	*pszDevice = pDst;
 
 	return lErr;
 }
@@ -189,16 +166,12 @@ int getSPcores(cudaDeviceProp prop)
 template <class T>
 long Device<T>::GetDeviceP2PInfo(int nDevice, LPTSTR* pszDevice)
 {
+	USES_CONVERSION;
 	LONG lErr;
 	cudaDeviceProp prop;
 
 	if (lErr = cudaGetDeviceProperties(&prop, nDevice))
 		return lErr;
-
-	LPTSTR pDst = NULL;
-	BSTR bstrName = A2WBSTR(prop.name);
-	if (bstrName == NULL)
-		return ERROR_OUTOFMEMORY;
 
 	bool bCapable = false;
 	bool b64bit = (sizeof(void*) == 8) ? true : false;
@@ -206,32 +179,13 @@ long Device<T>::GetDeviceP2PInfo(int nDevice, LPTSTR* pszDevice)
 	if (prop.tccDriver && prop.major >= 2 && b64bit)
 		bCapable = true;
 
-	char szBuffer[1024];
-	_snprintf(szBuffer, 1023, " (Device: %d) -> TCC Driver = %s, 64bit = %s, Major = %d, Minor = %d, ComputeMode = %d, P2P Capable = %s, Cores = %d", nDevice, (prop.tccDriver) ? "YES" : "NO", (b64bit) ? "YES" : "NO", prop.major, prop.minor, prop.computeMode, (bCapable) ? "YES" : "NO", getSPcores(prop)); 
-	szBuffer[1023] = NULL;
-
-	BSTR bstrBuffer = A2WBSTR(szBuffer);
-	if (bstrBuffer == NULL)
-	{
-		::SysFreeString(bstrName);
-		return ERROR_OUTOFMEMORY;
-	}
-
-	BSTR bstr = NULL;
-	HRESULT hr = VarBstrCat(bstrName, bstrBuffer, &bstr);
-
-	::SysFreeString(bstrName);
-	::SysFreeString(bstrBuffer);
-
-	if (FAILED(hr))
+	LPTSTR pDst = (LPTSTR)malloc(sizeof(TCHAR) * 2048);
+	if (pDst == NULL)
 		return ERROR_OUTOFMEMORY;
 
-	lErr = m_memory.AllocHost(&pDst, bstr);
-
-	if (!lErr)
-		*pszDevice = pDst;
-
-	::SysFreeString(bstr);
+	memset(pDst, 0, sizeof(TCHAR) * 2048);
+	_sntprintf(pDst, 2047, _T("%s (Device: %d) -> TCC Driver = %s, 64bit = %s, Major = %d, Minor = %d, ComputeMode = %d, P2P Capable = %s, Cores = %d"), A2T(prop.name), nDevice, (prop.tccDriver) ? _T("YES") : _T("NO"), (b64bit) ? _T("YES") : _T("NO"), prop.major, prop.minor, prop.computeMode, (bCapable) ? _T("YES") : _T("NO"), getSPcores(prop));
+	*pszDevice = pDst;
 
 	return lErr;
 }
@@ -269,6 +223,7 @@ template long Device<float>::GetDeviceP2PInfo(long lInput, LONG* pInput, LPTSTR*
 template <class T>
 long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 {
+	USES_CONVERSION;
 	LONG lErr;
 
 	char rgID[256];
@@ -381,9 +336,6 @@ long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 	if (nIdx == -1 && nIdxTcc == -1)
 		return ERROR_NOT_IMPLEMENTED;
 
-	LPTSTR pDst = NULL;
-	char szBuffer[2048];
-	szBuffer[2047] = NULL;		
 	NvU32 connectedDisplays = 0;
 
 	if (nIdx >= 0)
@@ -447,11 +399,15 @@ long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 	double dfC = (double)thermal.sensor[0].currentTemp;
 	int nTemp = (int)dfC;
 
-	_snprintf(szBuffer, 2047, " GPU = %d, MonitorOn = %s, GPU_Temp = %d C%c, GPU_Use = %d%%", nDevice, (connectedDisplays == 0) ? "NO" : "YES", nTemp, (char)176, nUtilization);
-
-	BSTR bstr = A2WBSTR(szBuffer);
-	if (bstr == NULL)
+	LPTSTR pDst = (LPTSTR)malloc(sizeof(TCHAR) * 2048);
+	if (pDst == NULL)
 		return ERROR_OUTOFMEMORY;
+
+	memset(pDst, 0, sizeof(TCHAR) * 2048);
+	char szTmp[16];
+	_snprintf(szTmp, 16, "%c", (char)176);
+	_sntprintf(pDst, 2047, _T(" GPU = %d, MonitorOn = %s, GPU_Temp = %d C%s, GPU_Use = %d%%"), nDevice, (connectedDisplays == 0) ? _T("NO") : _T("YES"), nTemp, A2T(szTmp), nUtilization);
+	*pszDevice = pDst;
 
 	if (bVerbose)
 	{
@@ -459,31 +415,12 @@ long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 		if (lErr = cudaGetDeviceProperties(&prop, nDevice))
 			return lErr;
 
-		_snprintf(szBuffer, 2047, "\r\n Major: %d, Minor: %d, Compute Mode: %d\r\n Max Grid: { %d, %d, %d }, Max Thread Dim: { %d, %d, %d }\r\n Shared Memory/Block: %zd\r\n", prop.major, prop.minor, prop.computeMode, prop.maxGridSize[0], prop.maxGridSize[1], prop.maxGridSize[2], prop.maxThreadsDim[0], prop.maxThreadsDim[1], prop.maxThreadsDim[2], prop.sharedMemPerBlock);
-		BSTR bstr2 = A2WBSTR(szBuffer);
-		if (bstr2 == NULL)
-			return ERROR_OUTOFMEMORY;
-
-		BSTR bstr3 = NULL;
-		HRESULT hr = VarBstrCat(bstr, bstr2, &bstr3);
-
-		::SysFreeString(bstr2);
-		bstr2 = NULL;
-
-		::SysFreeString(bstr);
-		if (FAILED(hr))
-			return hr;
-
-		bstr = bstr3;
-		bstr3 = NULL;
+		char szBuffer[1024];
+		_snprintf(szBuffer, 1023, "\r\n Major: %d, Minor: %d, Compute Mode: %d\r\n Max Grid: { %d, %d, %d }, Max Thread Dim: { %d, %d, %d }\r\n Shared Memory/Block: %zd\r\n", prop.major, prop.minor, prop.computeMode, prop.maxGridSize[0], prop.maxGridSize[1], prop.maxGridSize[2], prop.maxThreadsDim[0], prop.maxThreadsDim[1], prop.maxThreadsDim[2], prop.sharedMemPerBlock);
+		_tcsncat(pDst, A2T(szBuffer), 2047);
 	}
 
-	lErr = m_memory.AllocHost(&pDst, bstr);
-
-	if (!lErr)
-		*pszDevice = pDst;
-
-	::SysFreeString(bstr);
+	*pszDevice = pDst;
 
 	return lErr;
 }
