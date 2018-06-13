@@ -7,6 +7,7 @@
 
 #include "device.h"
 #include <nvapi.h>
+#include <string>
 
 
 //=============================================================================
@@ -246,7 +247,9 @@ long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 		return ERROR_NOT_IMPLEMENTED;
 	}
 
-	int nCudaBusID = atoi(psz);
+	std::string str = "0x";
+	str += psz;
+	int nCudaBusID = std::stoul(str, nullptr, 16);
 
 	NvAPI_Status status;
 
