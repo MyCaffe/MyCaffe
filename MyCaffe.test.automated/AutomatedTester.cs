@@ -65,6 +65,10 @@ namespace MyCaffe.test.automated
         {
             if (m_rgTestClasses.Count > 0)
                 load(LOADTYPE.ALL);
+
+            m_lstSorter.SortColumn = 2;
+            m_lstSorter.Order = SortOrder.Ascending;
+            lstTests.Sort();
         }
 
         public string TestName
