@@ -94,6 +94,7 @@
     <Compile Include="TestingProgress.cs" />
     <Compile Include="TestProjectEx.cs" />
     <Compile Include="TestMemoryDataLayer.cs" />
+    <Compile Include="TestSpecialTests.cs" />
     <Compile Include="TestTripletDataLayer.cs" />
     <Compile Include="TestKnnLayer.cs" />
     <Compile Include="TestTripletSelectLayer.cs" />
