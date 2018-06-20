@@ -63,6 +63,26 @@ namespace MyCaffe.app.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
+        internal static byte[] alexnet_cifar_solver {
+            get {
+                object obj = ResourceManager.GetObject("alexnet_cifar_solver", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] alexnet_cifar_train_val {
+            get {
+                object obj = ResourceManager.GetObject("alexnet_cifar_train_val", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
         internal static byte[] lenet_solver {
             get {
                 object obj = ResourceManager.GetObject("lenet_solver", resourceCulture);
