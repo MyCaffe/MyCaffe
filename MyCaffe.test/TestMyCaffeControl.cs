@@ -314,7 +314,7 @@ namespace MyCaffe.test
 
             p.SetDataset(ds);
             p.OnOverrideModel += new EventHandler<OverrideProjectArgs>(project_OnOverrideModel);
-            p.OnOverrideSolver += new EventHandler<OverrideProjectArgs>(p_OnOverrideSolver);
+            p.OnOverrideSolver += new EventHandler<OverrideProjectArgs>(project_OnOverrideSolver);
 
             string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\mnist\\lenet_train_test.prototxt");
             string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\mnist\\lenet_solver.prototxt");
@@ -446,7 +446,7 @@ namespace MyCaffe.test
             p.ModelDescription = strModel;
 
             p.OnOverrideModel += new EventHandler<OverrideProjectArgs>(project_OnOverrideModel);
-            p.OnOverrideSolver += new EventHandler<OverrideProjectArgs>(p_OnOverrideSolver);
+            p.OnOverrideSolver += new EventHandler<OverrideProjectArgs>(project_OnOverrideSolver);
 
             string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\mnist\\lenet_solver.prototxt");
 
@@ -465,7 +465,7 @@ namespace MyCaffe.test
             ProjectEx p = new ProjectEx(strDs + " Project");
 
             p.OnOverrideModel += new EventHandler<OverrideProjectArgs>(project_OnOverrideModel);
-            p.OnOverrideSolver += new EventHandler<OverrideProjectArgs>(p_OnOverrideSolver);
+            p.OnOverrideSolver += new EventHandler<OverrideProjectArgs>(project_OnOverrideSolver);
 
             DatasetFactory factory = new DatasetFactory();
             p.SetDataset(factory.LoadDataset(strDs));
@@ -484,7 +484,7 @@ namespace MyCaffe.test
             return p;
         }
 
-        void p_OnOverrideSolver(object sender, OverrideProjectArgs e)
+        void project_OnOverrideSolver(object sender, OverrideProjectArgs e)
         {
             RawProto proto = e.Proto;
 
