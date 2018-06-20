@@ -173,6 +173,8 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Resources\alexnet_cifar_solver.prototxt" />
+    <None Include="Resources\alexnet_cifar_train_val.prototxt" />
     <None Include="Resources\lenet_solver.prototxt" />
     <None Include="Resources\lenet_train_test.prototxt" />
     <None Include="Resources\MainIcon.ico" />

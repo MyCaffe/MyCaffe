@@ -42,7 +42,8 @@ namespace MyCaffe.app
             DESTROY,
             TRAIN,
             TEST,
-            DEVICEINFO
+            DEVICEINFO,
+            SPECIALTEST_ALEXNETCIFAR
         }
 
         public FormMain()
@@ -427,6 +428,7 @@ namespace MyCaffe.app
             destroyMyCaffeToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
             deviceInformationToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
             createMyCaffeToolStripMenuItem.Enabled = !m_bLoading && !m_bCaffeCreated;
+            specialTestsToolStripMenuItem.Enabled = !m_bLoading && !m_bCaffeCreated;
             loadMNISTToolStripMenuItem.Enabled = !m_bLoading;
             loadCIFAR10ToolStripMenuItem.Enabled = !m_bLoading;
             cancelToolStripMenuItem.Enabled = false;
@@ -537,6 +539,7 @@ namespace MyCaffe.app
             testMNISTToolStripMenuItem.Enabled = false;
             loadMNISTToolStripMenuItem.Enabled = false;
             deviceInformationToolStripMenuItem.Enabled = false;
+            specialTestsToolStripMenuItem.Enabled = false;
             abortToolStripMenuItem.Enabled = true;
             m_evtCancel.Reset();
             m_evtCaffeCancel.Reset();
@@ -707,6 +710,12 @@ namespace MyCaffe.app
                                 str1 += caffe.Cuda.GetDeviceInfo(0, true);
                                 bw.ReportProgress(0, new ProgressInfo(0, 0, str1, null, true));
                                 break;
+
+                            case COMMAND.SPECIALTEST_ALEXNETCIFAR:
+                                bw.ReportProgress(0, new ProgressInfo(0, 0, "Starting special test " + m_Cmd.ToString(), null, true));
+                                caffe = runTest(m_Cmd, log);
+                                bw.ReportProgress(0, new ProgressInfo(0, 0, "Completed special test " + m_Cmd.ToString(), null, true));
+                                break;
                         }
                     }
                     catch (Exception excpt)
@@ -835,5 +844,63 @@ namespace MyCaffe.app
 
             onlineHelpToolStripMenuItem.Enabled = (bool)e.Result;
         }
+
+        #region Special Tests
+
+        private void alexNetToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            createMyCaffeToolStripMenuItem.Enabled = false;
+            destroyMyCaffeToolStripMenuItem.Enabled = false;
+            trainMNISTToolStripMenuItem.Enabled = false;
+            testMNISTToolStripMenuItem.Enabled = false;
+            loadMNISTToolStripMenuItem.Enabled = false;
+            deviceInformationToolStripMenuItem.Enabled = false;
+            specialTestsToolStripMenuItem.Enabled = false;
+            abortToolStripMenuItem.Enabled = true;
+            m_evtCancel.Reset();
+            m_evtCaffeCancel.Reset();
+
+            if (!m_bwProcess.IsBusy)
+                m_bwProcess.RunWorkerAsync();
+
+            m_Cmd = COMMAND.SPECIALTEST_ALEXNETCIFAR;
+            m_evtCommandRead.Set();
+        }
+
+        private MyCaffeControl<float> runTest(COMMAND cmd, Log log)
+        {
+            switch (cmd)
+            {
+                case COMMAND.SPECIALTEST_ALEXNETCIFAR:
+                    return runTest_alexnetcifar(log);
+
+                default:
+                    log.WriteLine("WARNING: Unknown test command '" + cmd.ToString() + "'.");
+                    return null;
+            }
+        }
+
+        private MyCaffeControl<float> runTest_alexnetcifar(Log log)
+        {
+            MyCaffeControl<float> caffe = null;
+            SettingsCaffe settings = new SettingsCaffe();
+            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
+            settings.EnableRandomInputSelection = true;
+            settings.GpuIds = getGpu().ToString();
+
+            log.WriteLine("Running AlexNet-Cifar test on GPU " + settings.GpuIds + "...");
+
+            caffe = new MyCaffeControl<float>(settings, log, m_evtCaffeCancel);
+
+            string strSolver = System.Text.Encoding.UTF8.GetString(Properties.Resources.alexnet_cifar_solver);
+            string strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.alexnet_cifar_train_val);
+
+            caffe.Load(Phase.TRAIN, strSolver, strModel, null);
+            caffe.Train();
+
+            return caffe;
+        }
+
+        #endregion
     }
 }
