@@ -10,12 +10,17 @@ namespace MyCaffe.test.automated
 {
     public class TestingProgressGet
     {
+        static bool m_bNoProgress = false;
+
         public TestingProgressGet()
         {
         }
 
         public static double? GetProgress()
         {
+            if (m_bNoProgress)
+                return null;
+
             MemoryMappedFile mmf = null;
             MemoryMappedViewStream mmvStrm = null;
 
@@ -35,6 +40,7 @@ namespace MyCaffe.test.automated
             }
             catch (Exception)
             {
+                m_bNoProgress = true;
                 return null;
             }
             finally
