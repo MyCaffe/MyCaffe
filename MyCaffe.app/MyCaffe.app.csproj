@@ -117,6 +117,9 @@
     <Compile Include="FormWait.Designer.cs">
       <DependentUpon>FormWait.cs</DependentUpon>
     </Compile>
+    <Compile Include="ListViewEx.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="MnistDataLoader.cs" />
     <Compile Include="CiFar10DataParameters.cs" />
     <Compile Include="MnistDataParameters.cs" />
@@ -168,6 +171,8 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <None Include="Resources\resnet56_cifar_solver.prototxt" />
+    <None Include="Resources\resnet56_cifar_train_val.prototxt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
