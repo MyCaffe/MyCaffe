@@ -33,6 +33,7 @@ namespace MyCaffe.app
         SimpleDatum m_sdImageMean = null;
         AutomatedTesterServer m_autoTest = new AutomatedTesterServer();
         bool m_bLoading = false;
+        bool m_bTesting = false;
         bool m_bCaffeCreated = false;
         FormWait m_dlgWait = null;
         StreamWriter m_swResNetTest = null;
@@ -78,7 +79,8 @@ namespace MyCaffe.app
             log.OnWriteLine += Log_OnWriteLine;
             m_caffeRun = new MyCaffeControl<float>(new SettingsCaffe(), log, m_evtCancel);
 
-            lvStatus.RowHeight = 12;
+            if (lvStatus is ListViewEx)
+                ((ListViewEx)lvStatus).RowHeight = 12;
         }
 
         private void FormMain_Load(object sender, EventArgs e)
@@ -250,6 +252,17 @@ namespace MyCaffe.app
             }
 
             return 0;
+        }
+
+        private string getGpuName()
+        {
+            foreach (ToolStripMenuItem menu in gPUToolStripMenuItem.DropDownItems)
+            {
+                if (menu.Checked)
+                    return ((int)menu.Tag).ToString() + ": " + menu.Text;
+            }
+
+            return "No GPU Selected";
         }
 
         private bool checkURL(string url)
@@ -479,7 +492,7 @@ namespace MyCaffe.app
                     createDatabaseToolStripMenuItem.Enabled = !m_bLoading;
                     loadMNISTToolStripMenuItem.Enabled = !m_bLoading;
                     loadCIFAR10ToolStripMenuItem.Enabled = !m_bLoading;
-                    createMyCaffeToolStripMenuItem.Enabled = !m_bLoading && !m_bCaffeCreated;
+                    createMyCaffeToolStripMenuItem.Enabled = !m_bLoading && !m_bCaffeCreated && !m_bTesting;
                     destroyMyCaffeToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
                     trainMNISTToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
                     testMNISTToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
@@ -922,17 +935,30 @@ namespace MyCaffe.app
 
         private MyCaffeControl<float> runTest(COMMAND cmd, Log log)
         {
-            switch (cmd)
+            try
             {
-                case COMMAND.SPECIALTEST_ALEXNETCIFAR:
-                    return runTest_alexnetcifar(log);
+                m_bTesting = true;
 
-                case COMMAND.SPECIALTEST_RESNETCIFAR:
-                    return runTest_resnetcifar(log);
+                switch (cmd)
+                {
+                    case COMMAND.SPECIALTEST_ALEXNETCIFAR:
+                        return runTest_alexnetcifar(log);
 
-                default:
-                    log.WriteLine("WARNING: Unknown test command '" + cmd.ToString() + "'.");
-                    return null;
+                    case COMMAND.SPECIALTEST_RESNETCIFAR:
+                        return runTest_resnetcifar(log);
+
+                    default:
+                        log.WriteLine("WARNING: Unknown test command '" + cmd.ToString() + "'.");
+                        return null;
+                }
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                m_bTesting = false;
             }
         }
 
@@ -1035,7 +1061,7 @@ namespace MyCaffe.app
 
             double dfAveTiming = (m_nTimingCount == 0) ? 0 : m_dfTotalTiming / m_nTimingCount;
             double dfGlobalTiming = (m_swGlobalTiming == null) ? 0 : m_swGlobalTiming.Elapsed.TotalMilliseconds / m_nTimingCount;
-            m_swResNetTest.WriteLine(m_nLastTrainingIteration.ToString("N0") + "," + m_dfLastLoss.ToString() + "," + e.Accuracy.ToString() + "," + dfAveTiming.ToString("N2") + "," + dfGlobalTiming.ToString("N2"));
+            m_swResNetTest.WriteLine(m_nLastTrainingIteration.ToString() + "," + m_dfLastLoss.ToString() + "," + e.Accuracy.ToString() + "," + dfAveTiming.ToString("N2") + "," + dfGlobalTiming.ToString("N2"));
             m_swResNetTest.Flush();
             m_dfTotalTiming = 0;
             m_nTimingCount = 0;
@@ -1104,6 +1130,11 @@ namespace MyCaffe.app
         private void FormMain_Resize(object sender, EventArgs e)
         {
             lvStatus.Columns[0].Width = Width - 24;
+        }
+
+        private void timerUI_Tick(object sender, EventArgs e)
+        {
+            lblGpu.Text = "Using GPU " + getGpuName();
         }
     }
 }

@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormMain));
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -69,7 +70,11 @@
             this.m_bwUrlCheck = new System.ComponentModel.BackgroundWorker();
             this.lvStatus = new ListViewEx();
             this.colStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.statusStrip1 = new System.Windows.Forms.StatusStrip();
+            this.lblGpu = new System.Windows.Forms.ToolStripStatusLabel();
+            this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.menuStrip1.SuspendLayout();
+            this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -376,14 +381,16 @@
             // 
             // lvStatus
             // 
+            this.lvStatus.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.lvStatus.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.colStatus});
-            this.lvStatus.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lvStatus.Font = new System.Drawing.Font("Courier New", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lvStatus.FullRowSelect = true;
-            this.lvStatus.Location = new System.Drawing.Point(0, 24);
+            this.lvStatus.Location = new System.Drawing.Point(0, 27);
             this.lvStatus.Name = "lvStatus";
-            this.lvStatus.Size = new System.Drawing.Size(957, 428);
+            this.lvStatus.Size = new System.Drawing.Size(957, 403);
             this.lvStatus.TabIndex = 1;
             this.lvStatus.UseCompatibleStateImageBehavior = false;
             this.lvStatus.View = System.Windows.Forms.View.Details;
@@ -393,11 +400,33 @@
             this.colStatus.Text = "Status";
             this.colStatus.Width = 934;
             // 
+            // statusStrip1
+            // 
+            this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.lblGpu});
+            this.statusStrip1.Location = new System.Drawing.Point(0, 430);
+            this.statusStrip1.Name = "statusStrip1";
+            this.statusStrip1.Size = new System.Drawing.Size(957, 22);
+            this.statusStrip1.TabIndex = 2;
+            this.statusStrip1.Text = "statusStrip1";
+            // 
+            // lblGpu
+            // 
+            this.lblGpu.Name = "lblGpu";
+            this.lblGpu.Size = new System.Drawing.Size(0, 17);
+            // 
+            // timerUI
+            // 
+            this.timerUI.Enabled = true;
+            this.timerUI.Interval = 1000;
+            this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(957, 452);
+            this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.lvStatus);
             this.Controls.Add(this.menuStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -409,6 +438,8 @@
             this.Resize += new System.EventHandler(this.FormMain_Resize);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
+            this.statusStrip1.ResumeLayout(false);
+            this.statusStrip1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -454,8 +485,11 @@
         private System.Windows.Forms.ToolStripMenuItem specialTestsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem alexNetToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem resNet56CifarAccuracyBugToolStripMenuItem;
-        private ListViewEx lvStatus;
+        private System.Windows.Forms.ListView lvStatus;
         private System.Windows.Forms.ColumnHeader colStatus;
+        private System.Windows.Forms.StatusStrip statusStrip1;
+        private System.Windows.Forms.ToolStripStatusLabel lblGpu;
+        private System.Windows.Forms.Timer timerUI;
     }
 }
 
