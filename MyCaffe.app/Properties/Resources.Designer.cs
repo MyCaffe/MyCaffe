@@ -109,5 +109,25 @@ namespace MyCaffe.app.Properties {
                 return ((System.Drawing.Icon)(obj));
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] resnet56_cifar_solver {
+            get {
+                object obj = ResourceManager.GetObject("resnet56_cifar_solver", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] resnet56_cifar_train_val {
+            get {
+                object obj = ResourceManager.GetObject("resnet56_cifar_train_val", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
     }
 }
