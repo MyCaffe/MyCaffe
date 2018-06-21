@@ -52,21 +52,23 @@
             this.runTestImageToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.abortToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.cancelToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
+            this.specialTestsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.alexNetToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.resNet56CifarAccuracyBugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.localHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.onlineHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.gPUToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialogAutoTests = new System.Windows.Forms.OpenFileDialog();
-            this.edtStatus = new System.Windows.Forms.TextBox();
             this.m_bwLoadMnistDatabase = new System.ComponentModel.BackgroundWorker();
             this.m_bwProcess = new System.ComponentModel.BackgroundWorker();
             this.m_bwLoadCiFar10Database = new System.ComponentModel.BackgroundWorker();
             this.m_bwInit = new System.ComponentModel.BackgroundWorker();
             this.m_bwUrlCheck = new System.ComponentModel.BackgroundWorker();
-            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
-            this.specialTestsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.alexNetToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.lvStatus = new ListViewEx();
+            this.colStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -265,6 +267,34 @@
             this.cancelToolStripMenuItem.ToolTipText = "Cancel the current operation.";
             this.cancelToolStripMenuItem.Click += new System.EventHandler(this.cancelToolStripMenuItem_Click);
             // 
+            // toolStripSeparator3
+            // 
+            this.toolStripSeparator3.Name = "toolStripSeparator3";
+            this.toolStripSeparator3.Size = new System.Drawing.Size(189, 6);
+            // 
+            // specialTestsToolStripMenuItem
+            // 
+            this.specialTestsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.alexNetToolStripMenuItem,
+            this.resNet56CifarAccuracyBugToolStripMenuItem});
+            this.specialTestsToolStripMenuItem.Name = "specialTestsToolStripMenuItem";
+            this.specialTestsToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
+            this.specialTestsToolStripMenuItem.Text = "Special Tests";
+            // 
+            // alexNetToolStripMenuItem
+            // 
+            this.alexNetToolStripMenuItem.Name = "alexNetToolStripMenuItem";
+            this.alexNetToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
+            this.alexNetToolStripMenuItem.Text = "AlexNet-Cifar Load Storage Bug";
+            this.alexNetToolStripMenuItem.Click += new System.EventHandler(this.alexNetToolStripMenuItem_Click);
+            // 
+            // resNet56CifarAccuracyBugToolStripMenuItem
+            // 
+            this.resNet56CifarAccuracyBugToolStripMenuItem.Name = "resNet56CifarAccuracyBugToolStripMenuItem";
+            this.resNet56CifarAccuracyBugToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
+            this.resNet56CifarAccuracyBugToolStripMenuItem.Text = "ResNet56-Cifar Accuracy Bug";
+            this.resNet56CifarAccuracyBugToolStripMenuItem.Click += new System.EventHandler(this.resNet56CifarAccuracyBugToolStripMenuItem_Click);
+            // 
             // helpToolStripMenuItem
             // 
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -310,17 +340,6 @@
             this.openFileDialogAutoTests.Filter = "Auto Test Files (*.test.dll)|*.test.dll||";
             this.openFileDialogAutoTests.Title = "Select the MyCaffe.test.dll";
             // 
-            // edtStatus
-            // 
-            this.edtStatus.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.edtStatus.Font = new System.Drawing.Font("Courier New", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.edtStatus.Location = new System.Drawing.Point(0, 24);
-            this.edtStatus.Multiline = true;
-            this.edtStatus.Name = "edtStatus";
-            this.edtStatus.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.edtStatus.Size = new System.Drawing.Size(957, 428);
-            this.edtStatus.TabIndex = 1;
-            // 
             // m_bwLoadMnistDatabase
             // 
             this.m_bwLoadMnistDatabase.WorkerReportsProgress = true;
@@ -355,32 +374,31 @@
             this.m_bwUrlCheck.DoWork += new System.ComponentModel.DoWorkEventHandler(this.m_bwUrlCheck_DoWork);
             this.m_bwUrlCheck.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bwUrlCheck_RunWorkerCompleted);
             // 
-            // toolStripSeparator3
+            // lvStatus
             // 
-            this.toolStripSeparator3.Name = "toolStripSeparator3";
-            this.toolStripSeparator3.Size = new System.Drawing.Size(189, 6);
+            this.lvStatus.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.colStatus});
+            this.lvStatus.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lvStatus.Font = new System.Drawing.Font("Courier New", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lvStatus.FullRowSelect = true;
+            this.lvStatus.Location = new System.Drawing.Point(0, 24);
+            this.lvStatus.Name = "lvStatus";
+            this.lvStatus.Size = new System.Drawing.Size(957, 428);
+            this.lvStatus.TabIndex = 1;
+            this.lvStatus.UseCompatibleStateImageBehavior = false;
+            this.lvStatus.View = System.Windows.Forms.View.Details;
             // 
-            // specialTestsToolStripMenuItem
+            // colStatus
             // 
-            this.specialTestsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.alexNetToolStripMenuItem});
-            this.specialTestsToolStripMenuItem.Name = "specialTestsToolStripMenuItem";
-            this.specialTestsToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
-            this.specialTestsToolStripMenuItem.Text = "Special Tests";
-            // 
-            // alexNetToolStripMenuItem
-            // 
-            this.alexNetToolStripMenuItem.Name = "alexNetToolStripMenuItem";
-            this.alexNetToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
-            this.alexNetToolStripMenuItem.Text = "AlexNet-Cifar Load Storage Bug";
-            this.alexNetToolStripMenuItem.Click += new System.EventHandler(this.alexNetToolStripMenuItem_Click);
+            this.colStatus.Text = "Status";
+            this.colStatus.Width = 934;
             // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(957, 452);
-            this.Controls.Add(this.edtStatus);
+            this.Controls.Add(this.lvStatus);
             this.Controls.Add(this.menuStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
@@ -388,6 +406,7 @@
             this.Text = "MyCaffe";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormMain_FormClosing);
             this.Load += new System.EventHandler(this.FormMain_Load);
+            this.Resize += new System.EventHandler(this.FormMain_Resize);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.ResumeLayout(false);
@@ -407,7 +426,6 @@
         private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
         private System.Windows.Forms.OpenFileDialog openFileDialogAutoTests;
-        private System.Windows.Forms.TextBox edtStatus;
         private System.Windows.Forms.ToolStripMenuItem deviceInformationToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem loadMNISTToolStripMenuItem;
         private System.ComponentModel.BackgroundWorker m_bwLoadMnistDatabase;
@@ -435,6 +453,9 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
         private System.Windows.Forms.ToolStripMenuItem specialTestsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem alexNetToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem resNet56CifarAccuracyBugToolStripMenuItem;
+        private ListViewEx lvStatus;
+        private System.Windows.Forms.ColumnHeader colStatus;
     }
 }
 

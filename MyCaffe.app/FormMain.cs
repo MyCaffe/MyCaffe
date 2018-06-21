@@ -17,6 +17,7 @@ using MyCaffe.basecode.descriptors;
 using MyCaffe.param;
 using System.IO;
 using System.Net;
+using System.Reflection;
 
 namespace MyCaffe.app
 {
@@ -34,6 +35,21 @@ namespace MyCaffe.app
         bool m_bLoading = false;
         bool m_bCaffeCreated = false;
         FormWait m_dlgWait = null;
+        StreamWriter m_swResNetTest = null;
+        MODE m_mode = MODE.UNKNOWN;
+        double m_dfLastLoss = 0;
+        int m_nLastTrainingIteration = 0;
+        double m_dfTotalTiming = 0;
+        int m_nTimingCount = 0;
+        Stopwatch m_swGlobalTiming = null;
+
+        enum STATUS
+        {
+            INFO,
+            INFO2,
+            WARNING,
+            ERROR
+        }
 
         enum COMMAND
         {
@@ -43,7 +59,15 @@ namespace MyCaffe.app
             TRAIN,
             TEST,
             DEVICEINFO,
-            SPECIALTEST_ALEXNETCIFAR
+            SPECIALTEST_ALEXNETCIFAR,
+            SPECIALTEST_RESNETCIFAR
+        }
+
+        enum MODE
+        {
+            UNKNOWN,
+            WDM,
+            TCC
         }
 
         public FormMain()
@@ -53,6 +77,8 @@ namespace MyCaffe.app
             Log log = new Log("Test Run");
             log.OnWriteLine += Log_OnWriteLine;
             m_caffeRun = new MyCaffeControl<float>(new SettingsCaffe(), log, m_evtCancel);
+
+            lvStatus.RowHeight = 12;
         }
 
         private void FormMain_Load(object sender, EventArgs e)
@@ -68,7 +94,7 @@ namespace MyCaffe.app
 
                 if (rgSqlInst == null || rgSqlInst.Count == 0)
                 {
-                    setStatus("You must download and install 'Microsoft SQL' or 'Microsoft SQL Express' first!");
+                    setStatus("You must download and install 'Microsoft SQL' or 'Microsoft SQL Express' first!", STATUS.WARNING);
                     setStatus("see 'https://www.microsoft.com/en-us/sql-server/sql-server-editions-express'");
                     setStatus("");
                     return;
@@ -89,34 +115,34 @@ namespace MyCaffe.app
                     }
                     else
                     {
-                        setStatus("You are NOT connected to SQL.");
+                        setStatus("You are NOT connected to SQL.", STATUS.WARNING);
                     }
                 }
 
-                setStatus("Using SQL Instance '" + EntitiesConnection.GlobalDatabaseServerName + "'", false);
+                setStatus("Using SQL Instance '" + EntitiesConnection.GlobalDatabaseServerName + "'", STATUS.INFO2);
 
                 DatabaseManagement dbMgr = new DatabaseManagement("DNN", "", EntitiesConnection.GlobalDatabaseServerName);
                 bool bExists;
                 Exception err = dbMgr.DatabaseExists(out bExists);
 
                 if (err != null)
-                    setStatus("ERROR: " + err.Message);
+                    setStatus("ERROR: " + err.Message, STATUS.ERROR);
                 else if (!bExists)
                     createDatabaseToolStripMenuItem_Click(this, new EventArgs());
                 else
-                    setStatus("Using database '" + dbMgr.Name + "'");
+                    setStatus("Using database '" + dbMgr.Name + "'", STATUS.INFO2);
 
-                setStatus("");
+                setStatus("", STATUS.INFO2);
 
                 m_autoTest.OnProgress += m_autoTest_OnProgress;
                 m_autoTest.OnCompleted += m_autoTest_OnCompleted;
 
-                setStatus("The MyCaffe Test App supports two different types of automated testing:");
-                setStatus(" 1.) User interface based automated testing via the 'Test | Run Autotests UI', and");
-                setStatus(" 2.) Server based automated testing via the 'Test | Start Server Autotests' menu.");
-                setStatus("Server auto tests can easily integrate into other applications.");
-                setStatus("NOTE: Known test failures are pre-set with a FAILURE status.");
-                setStatus("----------------------------------------------------------------------------------");
+                setStatus("The MyCaffe Test App supports two different types of automated testing:", STATUS.INFO2);
+                setStatus(" 1.) User interface based automated testing via the 'Test | Run Autotests UI', and", STATUS.INFO2);
+                setStatus(" 2.) Server based automated testing via the 'Test | Start Server Autotests' menu.", STATUS.INFO2);
+                setStatus("Server auto tests can easily integrate into other applications.", STATUS.INFO2);
+                setStatus("NOTE: Known test failures are pre-set with a FAILURE status.", STATUS.INFO2);
+                setStatus("----------------------------------------------------------------------------------", STATUS.INFO2);
 
                 DatasetFactory factory = new DatasetFactory();
                 int nCifarID = factory.GetDatasetID("CIFAR-10");
@@ -124,15 +150,15 @@ namespace MyCaffe.app
 
                 if (nCifarID == 0 || nMnistID == 0)
                 {
-                    setStatus(" !Before running any automated tests, make sure to load the following datasets:");
+                    setStatus(" !Before running any automated tests, make sure to load the following datasets:", STATUS.WARNING);
 
                     if (nCifarID == 0)
-                        setStatus("    CIFAR-10");
+                        setStatus("    CIFAR-10", STATUS.WARNING);
 
                     if (nMnistID == 0)
-                        setStatus("    MNIST (1 channel)");
+                        setStatus("    MNIST (1 channel)", STATUS.WARNING);
 
-                    setStatus(" see the 'Database' menu.");
+                    setStatus(" see the 'Database' menu.", STATUS.WARNING);
                 }
 
                 m_dlgWait = new FormWait();
@@ -150,7 +176,7 @@ namespace MyCaffe.app
                 if (strErr.Contains("login") && strErr.Contains("DNN"))
                     strErr += " Make sure that this user can access the DNN database - this setting is made using the SQL Management Studio.";
 
-                setStatus("ERROR: " + strErr);
+                setStatus("ERROR: " + strErr, STATUS.ERROR);
             }
         }
 
@@ -335,35 +361,41 @@ namespace MyCaffe.app
             }
         }
 
-        private void setStatus(string str, bool bNewLine = true)
+        private void setStatus(string str, STATUS status = STATUS.INFO, bool bBreathe = false)
         {
             int nMaxLines = 2000;
 
-            if (bNewLine)
-                edtStatus.Text += Environment.NewLine;
+            ListViewItem lvi = new ListViewItem(str);
 
-            edtStatus.Text += str;
-
-            if (edtStatus.Lines.Length > nMaxLines)
+            if (status == STATUS.ERROR || str.Contains("ERROR"))
+                lvi.BackColor = Color.Salmon;
+            else if (status == STATUS.WARNING || str.Contains("WARING"))
+                lvi.BackColor = Color.Yellow;
+            else if (status == STATUS.INFO2)
             {
-                List<string> rgstr = new List<string>(edtStatus.Lines);
-
-                while (rgstr.Count > nMaxLines)
-                {
-                    rgstr.RemoveAt(0);
-                }
-
-                edtStatus.Lines = rgstr.ToArray();
+                lvi.BackColor = Color.AliceBlue;
+                lvi.ForeColor = Color.SteelBlue;
             }
 
-            edtStatus.SelectionLength = 0;
-            edtStatus.SelectionStart = edtStatus.Text.Length;
-            edtStatus.ScrollToCaret();
+            lvStatus.Items.Add(lvi);
+
+            while (lvStatus.Items.Count > nMaxLines)
+            {
+                lvStatus.Items.RemoveAt(0);
+            }
+
+            if (bBreathe)
+            {
+                Thread.Sleep(0);
+                Application.DoEvents();
+            }
+
+            lvi.EnsureVisible();
         }
 
         private void Log_OnWriteLine(object sender, LogArg e)
         {
-            setStatus(e.Message);
+            setStatus(e.Message, STATUS.INFO, true);
         }
 
         private void loadMNISTToolStripMenuItem_Click(object sender, EventArgs e)
@@ -407,12 +439,12 @@ namespace MyCaffe.app
         {
             if (e.Error != null)
             {
-                setStatus("ERROR: " + e.Error.Message);
+                setStatus("ERROR: " + e.Error.Message, STATUS.ERROR);
                 runTestImageToolStripMenuItem.Enabled = false;
             }
             else if (e.Cancelled)
             {
-                setStatus("ABORTED!");
+                setStatus("ABORTED!", STATUS.WARNING);
                 runTestImageToolStripMenuItem.Enabled = false;
             }
             else
@@ -712,6 +744,7 @@ namespace MyCaffe.app
                                 break;
 
                             case COMMAND.SPECIALTEST_ALEXNETCIFAR:
+                            case COMMAND.SPECIALTEST_RESNETCIFAR:
                                 bw.ReportProgress(0, new ProgressInfo(0, 0, "Starting special test " + m_Cmd.ToString(), null, true));
                                 caffe = runTest(m_Cmd, log);
                                 bw.ReportProgress(0, new ProgressInfo(0, 0, "Completed special test " + m_Cmd.ToString(), null, true));
@@ -867,12 +900,35 @@ namespace MyCaffe.app
             m_evtCommandRead.Set();
         }
 
+        private void resNet56CifarAccuracyBugToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            createMyCaffeToolStripMenuItem.Enabled = false;
+            destroyMyCaffeToolStripMenuItem.Enabled = false;
+            trainMNISTToolStripMenuItem.Enabled = false;
+            testMNISTToolStripMenuItem.Enabled = false;
+            loadMNISTToolStripMenuItem.Enabled = false;
+            deviceInformationToolStripMenuItem.Enabled = false;
+            specialTestsToolStripMenuItem.Enabled = false;
+            abortToolStripMenuItem.Enabled = true;
+            m_evtCancel.Reset();
+            m_evtCaffeCancel.Reset();
+
+            if (!m_bwProcess.IsBusy)
+                m_bwProcess.RunWorkerAsync();
+
+            m_Cmd = COMMAND.SPECIALTEST_RESNETCIFAR;
+            m_evtCommandRead.Set();
+        }
+
         private MyCaffeControl<float> runTest(COMMAND cmd, Log log)
         {
             switch (cmd)
             {
                 case COMMAND.SPECIALTEST_ALEXNETCIFAR:
                     return runTest_alexnetcifar(log);
+
+                case COMMAND.SPECIALTEST_RESNETCIFAR:
+                    return runTest_resnetcifar(log);
 
                 default:
                     log.WriteLine("WARNING: Unknown test command '" + cmd.ToString() + "'.");
@@ -901,6 +957,153 @@ namespace MyCaffe.app
             return caffe;
         }
 
+        private MyCaffeControl<float> runTest_resnetcifar(Log log)
+        {
+            MyCaffeControl<float> caffe = null;
+            SettingsCaffe settings = new SettingsCaffe();
+            int nGpuId = getGpu();
+            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+            settings.EnableRandomInputSelection = true;
+            settings.GpuIds = nGpuId.ToString();
+
+            log.WriteLine("Running ResNet56-Cifar test on GPU " + settings.GpuIds + "...");
+
+            caffe = new MyCaffeControl<float>(settings, log, m_evtCaffeCancel);
+
+            string strSolver = System.Text.Encoding.UTF8.GetString(Properties.Resources.resnet56_cifar_solver);
+            string strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.resnet56_cifar_train_val);
+
+            // Use the OnTestingIteration event to log the ongoing results.
+            caffe.OnTestingIteration += Caffe_OnTestingIteration;
+
+            // Use the OnTrainingIteration event to save the last error.
+            caffe.OnTrainingIteration += Caffe_OnTrainingIteration;
+
+            // Load the model.
+            caffe.Load(Phase.TRAIN, strSolver, strModel, null);
+
+            // Get current mode used TCC or WDM
+            string strInfo = caffe.Cuda.GetDeviceP2PInfo(nGpuId);
+            if (strInfo.Contains("TCC Driver = YES"))
+                m_mode = MODE.TCC;
+            else if (strInfo.Contains("TCC Driver = NO"))
+                m_mode = MODE.WDM;
+            else
+                m_mode = MODE.UNKNOWN;
+
+            // Start training
+            caffe.Train();
+
+            if (m_swResNetTest != null)
+            {
+                m_swResNetTest.Close();
+                m_swResNetTest.Dispose();
+                m_swResNetTest = null;
+            }
+
+            return caffe;
+        }
+
+        private void Caffe_OnTrainingIteration(object sender, TrainingIterationArgs<float> e)
+        {
+            m_nLastTrainingIteration = e.Iteration;
+            m_dfLastLoss = e.SmoothedLoss;
+            m_dfTotalTiming += e.Timing;
+            m_nTimingCount++;
+
+            if (m_swGlobalTiming == null)
+            {
+                m_swGlobalTiming = new Stopwatch();
+                m_swGlobalTiming.Start();
+            }
+        }
+
+        private void Caffe_OnTestingIteration(object sender, TestingIterationArgs<float> e)
+        {
+            if (m_swResNetTest == null)
+            {
+                string strLog = GetTestPath("\\MyCaffe\\test_data\\models\\resnet56\\cifar", true, true, false);
+                strLog += "\\resnet56_cifar_" + m_mode.ToString() + "_log.csv";
+
+                if (File.Exists(strLog))
+                    File.Delete(strLog);
+
+                m_swResNetTest = new StreamWriter(strLog);
+                m_swResNetTest.WriteLine("Iteration, Loss, Accuracy, Ave Timing (ms), Global Ave Timing (ms)");
+                m_swResNetTest.Flush();
+            }
+
+            double dfAveTiming = (m_nTimingCount == 0) ? 0 : m_dfTotalTiming / m_nTimingCount;
+            double dfGlobalTiming = (m_swGlobalTiming == null) ? 0 : m_swGlobalTiming.Elapsed.TotalMilliseconds / m_nTimingCount;
+            m_swResNetTest.WriteLine(m_nLastTrainingIteration.ToString("N0") + "," + m_dfLastLoss.ToString() + "," + e.Accuracy.ToString() + "," + dfAveTiming.ToString("N2") + "," + dfGlobalTiming.ToString("N2"));
+            m_swResNetTest.Flush();
+            m_dfTotalTiming = 0;
+            m_nTimingCount = 0;
+            m_swGlobalTiming = null;
+        }
+
+        public static string GetTestPath(string strItem, bool bPathOnly = false, bool bCreateIfMissing = false, bool bUserData = false)
+        {
+            string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+
+            if (bUserData)
+                strPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+            if (bPathOnly)
+            {
+                strPath += strItem;
+
+                if (Directory.Exists(strPath))
+                    return strPath;
+
+                if (bCreateIfMissing)
+                    Directory.CreateDirectory(strPath);
+
+                if (Directory.Exists(strPath))
+                    return strPath;
+            }
+
+            string strTemp = strPath + strItem;
+            if (File.Exists(strTemp))
+                return strTemp;
+
+            strPath = ExecutingAssemblyPath;
+            int nPos;
+
+            // Remove the build (Release or Debug)
+            nPos = strPath.LastIndexOf('\\');
+            if (nPos > 0)
+                strPath = strPath.Substring(0, nPos);
+
+            // Remove the 'bin'
+            nPos = strPath.LastIndexOf('\\');
+            if (nPos > 0)
+                strPath = strPath.Substring(0, nPos);
+
+            string strTarget = "\\MyCaffe";
+            nPos = strItem.IndexOf(strTarget);
+            if (nPos >= 0)
+                strItem = strItem.Substring(nPos + strTarget.Length);
+
+            return strPath + strItem;
+        }
+
+        public static string ExecutingAssemblyPath
+        {
+            get
+            {
+                string codeBase = Assembly.GetExecutingAssembly().CodeBase;
+                UriBuilder uri = new UriBuilder(codeBase);
+                string strPath = Uri.UnescapeDataString(uri.Path);
+                return Path.GetDirectoryName(strPath);
+            }
+        }
+
         #endregion
+
+        private void FormMain_Resize(object sender, EventArgs e)
+        {
+            lvStatus.Columns[0].Width = Width - 24;
+        }
     }
 }
