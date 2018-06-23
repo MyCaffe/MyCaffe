@@ -86,7 +86,7 @@ namespace MyCaffe.test
             RawProto proto = RawProtoFile.LoadFromFile(strSolverFile);
 
             RawProto iter = proto.FindChild("max_iter");
-            iter.Value = "200";
+            iter.Value = "100";
 
             p.SolverDescription = proto.ToString();
 
