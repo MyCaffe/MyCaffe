@@ -43,6 +43,7 @@ namespace MyCaffe.app
         double m_dfTotalTiming = 0;
         int m_nTimingCount = 0;
         Stopwatch m_swGlobalTiming = null;
+        string m_strTestLogDir = null;
 
         enum STATUS
         {
@@ -1022,6 +1023,9 @@ namespace MyCaffe.app
 
             if (m_swResNetTest != null)
             {
+                if (!string.IsNullOrEmpty(m_strTestLogDir))
+                    log.WriteLine("The ResNet test logs are in the directory '" + m_strTestLogDir + "'");
+
                 m_swResNetTest.Close();
                 m_swResNetTest.Dispose();
                 m_swResNetTest = null;
@@ -1049,6 +1053,7 @@ namespace MyCaffe.app
             if (m_swResNetTest == null)
             {
                 string strLog = GetTestPath("\\MyCaffe\\test_data\\models\\resnet56\\cifar", true, true, false);
+                m_strTestLogDir = strLog;
                 strLog += "\\resnet56_cifar_" + m_mode.ToString() + "_log.csv";
 
                 if (File.Exists(strLog))
