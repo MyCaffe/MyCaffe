@@ -362,6 +362,44 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestOneHotVectorLoadAll()
+        {
+            DataLayerTest test = new DataLayerTest();
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    t.Fill(true);
+                    t.TestOneHotVector(IMAGEDB_LOAD_METHOD.LOAD_ALL);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestOneHotVectorLoadOnDemand()
+        {
+            DataLayerTest test = new DataLayerTest();
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    t.Fill(true);
+                    t.TestOneHotVector(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     class DataLayerTest : TestBase
@@ -449,6 +487,7 @@ namespace MyCaffe.test
         void TestReadCrop(Phase phase, IMAGEDB_LOAD_METHOD loadMethod);
         void TestReadCropSequenceSeeded(IMAGEDB_LOAD_METHOD loadMethod);
         void TestReadCropSequenceUnSeeded(IMAGEDB_LOAD_METHOD loadMethod);
+        void TestOneHotVector(IMAGEDB_LOAD_METHOD loadMethod);
     }
 
     class DataLayerTest<T> : TestEx<T>, IDataLayerTest
@@ -651,7 +690,7 @@ namespace MyCaffe.test
             m_log.CHECK_EQ(Top.height, 3, "The top should have height = 3");
             m_log.CHECK_EQ(Top.width, 4, "The top should have width = 4");
             m_log.CHECK_EQ(TopLabel.num, 5, "The top label should have num = 5");
-            m_log.CHECK_EQ(TopLabel.channels, 1, "The top label should have channels = 2");
+            m_log.CHECK_EQ(TopLabel.channels, 1, "The top label should have channels = 1");
             m_log.CHECK_EQ(TopLabel.height, 1, "The top label should have height = 1");
             m_log.CHECK_EQ(TopLabel.width, 1, "The top label should have width = 1");
 
@@ -1034,6 +1073,69 @@ namespace MyCaffe.test
             }
 
             layer2.Dispose();
+            m_parent.CancelEvent.Reset();
+        }
+
+        public void TestOneHotVector(IMAGEDB_LOAD_METHOD loadMethod)
+        {
+            Assert.AreNotEqual(0, m_nSrcID1, "You must call 'Fill' first to set the source id!");
+            double dfScale = 1;
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.DATA);
+            p.phase = Phase.TRAIN;
+            p.data_param.batch_size = 5;
+            p.data_param.source = m_strSrc1;
+            p.data_param.enable_random_selection = false;
+            p.data_param.label_type = DataParameter.LABEL_TYPE.ONEHOTVECTOR;
+            p.data_param.backend = DataParameter.DB.IMAGEDB;
+
+            p.transform_param.scale = dfScale;
+
+            MyCaffeImageDatabase m_imgDb = new MyCaffeImageDatabase();
+
+            m_parent.Settings.ImageDbLoadMethod = loadMethod;
+            m_imgDb.InitializeWithDsId(m_parent.Settings, m_nDsID);
+            CancelEvent evtCancel = new CancelEvent();
+
+            DataLayer<T> layer = new DataLayer<T>(m_cuda, m_log, p, m_imgDb, evtCancel);
+
+            layer.Setup(BottomVec, TopVec);
+
+            m_log.CHECK_EQ(Top.num, 5, "The top should have num = 5");
+            m_log.CHECK_EQ(Top.channels, 2, "The top should have channels = 2");
+            m_log.CHECK_EQ(Top.height, 3, "The top should have height = 3");
+            m_log.CHECK_EQ(Top.width, 4, "The top should have width = 4");
+            m_log.CHECK_EQ(TopLabel.num, 5, "The top label should have num = 5");
+            m_log.CHECK_EQ(TopLabel.channels, 2, "The top label should have channels = 2");
+            m_log.CHECK_EQ(TopLabel.height, 3, "The top label should have height = 3");
+            m_log.CHECK_EQ(TopLabel.width, 4, "The top label should have width = 4");
+
+            for (int iter = 0; iter < 100; iter++)
+            {
+                layer.Forward(BottomVec, TopVec);
+
+                for (int i = 0; i < 5; i++)
+                {
+                    double[] rgTopData = convert(Top.update_cpu_data());
+                    double[] rgTopLabel = convert(TopLabel.update_cpu_data());
+                    int nItemCountD = Top.count(1);
+                    int nItemCountL = TopLabel.count(1);
+
+                    m_log.CHECK_EQ(nItemCountD, nItemCountL, "The item count should be the same for both the data and label.");
+                    m_log.CHECK_EQ(rgTopData.Length, rgTopLabel.Length, "The length of the data and label should be the same.");
+                    m_log.CHECK_EQ(nItemCountD, 24, "The item count should be 24.");
+
+                    for (int j = 0; j < 24; j++)
+                    {
+                        int nIdx = (nItemCountD * i) + j;
+                        double dfD = rgTopData[nIdx];
+                        double dfL = rgTopLabel[nIdx];
+
+                        m_log.CHECK_EQ(dfD, dfL, "The data items at item " + i.ToString() + " sub-item " + j.ToString() + " are not equal.");
+                    }
+                }
+            }
+
+            layer.Dispose();
             m_parent.CancelEvent.Reset();
         }
 
