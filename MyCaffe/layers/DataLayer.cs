@@ -194,7 +194,7 @@ namespace MyCaffe.layers
 
                 // When using multi-labels, resize to batch x the number of multiple 
                 // labels per image.
-                if (m_param.data_param.load_multiple_labels)
+                if (m_param.data_param.label_type == DataParameter.LABEL_TYPE.MULTIPLE)
                 {
                     if (datum.DataCriteria == null || datum.DataCriteria.Length == 0)
                         m_log.FAIL("Could not find the multi-label data.  The data source '" + m_param.data_param.source + "' does not appear to have any Image Criteria data.");
@@ -204,7 +204,14 @@ namespace MyCaffe.layers
                     int nItemSize = BitConverter.ToInt32(datum.DataCriteria, datum.DataCriteria.Length - (sizeof(int) * 3));
 
                     m_log.CHECK_EQ(nItemSize, 1, "Currently only byte sized labels are supported in multi-label scenarios.");
-                    rgLabelShape.Add(nLen); 
+                    rgLabelShape.Add(nLen);
+                }
+                // When using a onehotvector as the label, resize the label to the data length.
+                else if (m_param.data_param.label_type == DataParameter.LABEL_TYPE.ONEHOTVECTOR)
+                {
+                    rgLabelShape.Add(datum.channels);
+                    rgLabelShape.Add(datum.height);
+                    rgLabelShape.Add(datum.width);
                 }
 
                 colTop[1].Reshape(rgLabelShape);
@@ -358,7 +365,7 @@ namespace MyCaffe.layers
                 // Copy label.
                 if (m_bOutputLabels)
                 {
-                    if (m_param.data_param.load_multiple_labels)
+                    if (m_param.data_param.label_type == DataParameter.LABEL_TYPE.MULTIPLE)
                     {
                         if (datum.DataCriteria == null || datum.DataCriteria.Length == 0)
                             m_log.FAIL("Could not find the multi-label data.  The data source '" + m_param.data_param.source + "' does not appear to have any Image Criteria data.");
@@ -370,6 +377,12 @@ namespace MyCaffe.layers
 
                         m_log.CHECK_EQ(nItemSize, 1, "Currently only byte sized labels are supported in multi-label scenarios.");
                         Array.Copy(datum.DataCriteria, 0, rgTopLabel, nDstIdx, nLen);
+                    }
+                    else if (m_param.data_param.label_type == DataParameter.LABEL_TYPE.ONEHOTVECTOR)
+                    {
+                        m_log.CHECK(datum.data != null, "Currently only byte data is supported as a one-hot-vector label.");
+                        int nDstIdx = i * datum.ItemCount;
+                        Array.Copy(datum.data, 0, rgTopLabel, nDstIdx, datum.ItemCount);
                     }
                     else
                     {
