@@ -27,6 +27,26 @@ namespace MyCaffe.param
             IMAGEDB = 0
         }
 
+        /// <summary>
+        /// Defines the label type.
+        /// </summary>
+        public enum LABEL_TYPE
+        {
+            /// <summary>
+            /// Specifies a single label value, which is the default.
+            /// </summary>
+            SINGLE,
+            /// <summary>
+            /// Specifies multiple values for the label such as are used in segmentation problems, 
+            /// the label's are stored in each Data Item's <i>DataCriteria</i> field.
+            /// </summary>
+            MULTIPLE,
+            /// <summary>
+            /// Specifies that the data is used as the label - as a one-hot-vector of data.
+            /// </summary>
+            ONEHOTVECTOR
+        }
+
         string m_strSource = null;
         uint m_nBatchSize;
         DB m_backend = DB.IMAGEDB;
@@ -34,7 +54,7 @@ namespace MyCaffe.param
         bool? m_bEnableRandomSelection = null;
         bool? m_bEnablePairSelection = null;
         bool m_bDisplayTiming = false;
-        bool m_bLoadMultipleLabels = false;
+        LABEL_TYPE m_labelType = LABEL_TYPE.SINGLE;
         bool m_bPrimaryData = true;
         string m_strSynchronizeWith = null;
         bool m_bSyncTarget = false;
@@ -136,13 +156,13 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// (\b optional, default = false) Specifies whether multiple labels should be loaded or not for each input.  When true, the data criteria is loaded as the multiple label set.  Multiple labels are used in tasks such as segmentation learning.  
+        /// (\b optional, default = SINGLE) Specifies the label type: SINGLE - the default which uses the 'Label' field, MULTIPLE - which uses the 'DataCriteria' field, or ONEHOTVECTOR - which uses the data itself as the label. Multiple labels are used in tasks such as segmentation learning.  One-Hot-Vectors are used in AutoEncoder learning.  
         /// </summary>
-        [Category("Labels"), Description("Specifies whether multiple labels should be loaded or not for each input.When true, the data criteria is loaded as the multiple label set.Multiple labels are used in tasks such as segmentation learning.")]
-        public bool load_multiple_labels
+        [Category("Labels"), Description("Specifies the label type: SINGLE - the default which uses the 'Label' field, MULTIPLE - which uses the 'DataCriteria' field, or ONEHOTVECTOR - which uses the data itself as the label. Multiple labels are used in tasks such as segmentation learning.  One-Hot-Vectors are used in AutoEncoder learning.")]
+        public LABEL_TYPE label_type
         {
-            get { return m_bLoadMultipleLabels; }
-            set { m_bLoadMultipleLabels = value; }
+            get { return m_labelType; }
+            set { m_labelType = value; }
         }
 
         /// <summary>
@@ -202,7 +222,7 @@ namespace MyCaffe.param
             m_bEnableRandomSelection = p.m_bEnableRandomSelection;
             m_bEnablePairSelection = p.m_bEnablePairSelection;
             m_bDisplayTiming = p.m_bDisplayTiming;
-            m_bLoadMultipleLabels = p.m_bLoadMultipleLabels;
+            m_labelType = p.m_labelType;
             m_bPrimaryData = p.m_bPrimaryData;
             m_strSynchronizeWith = p.m_strSynchronizeWith;
             m_bSyncTarget = p.m_bSyncTarget;
@@ -236,8 +256,8 @@ namespace MyCaffe.param
             if (display_timing == true)
                 rgChildren.Add("display_timing", display_timing.ToString());
 
-            if (load_multiple_labels == true)
-                rgChildren.Add("load_multiple_labels", load_multiple_labels.ToString());
+            if (label_type != LABEL_TYPE.SINGLE)
+                rgChildren.Add("label_type", label_type.ToString());
 
             if (primary_data == false)
                 rgChildren.Add("primary_data", primary_data.ToString());
@@ -299,8 +319,26 @@ namespace MyCaffe.param
             if ((strVal = rp.FindValue("display_timing")) != null)
                 p.display_timing = bool.Parse(strVal);
 
-            if ((strVal = rp.FindValue("load_multiple_labels")) != null)
-                p.load_multiple_labels = bool.Parse(strVal);
+            if ((strVal = rp.FindValue("label_type")) != null)
+            {
+                switch (strVal)
+                {
+                    case "SINGLE":
+                        p.label_type = LABEL_TYPE.SINGLE;
+                        break;
+
+                    case "MULTIPLE":
+                        p.label_type = LABEL_TYPE.MULTIPLE;
+                        break;
+
+                    case "ONEHOTVECTOR":
+                        p.label_type = LABEL_TYPE.ONEHOTVECTOR;
+                        break;
+
+                    default:
+                        throw new Exception("Unknown 'label_type' value " + strVal);
+                }
+            }
 
             if ((strVal = rp.FindValue("primary_data")) != null)
                 p.primary_data = bool.Parse(strVal);
