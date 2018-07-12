@@ -86,7 +86,7 @@ class Memory
 		std::vector<HostBuffer<T>*> m_rgActiveHostBuffers;
 		MemoryCollection m_memory;
 		MemoryCollection m_memoryPointers;
-		HandleCollection<MAX_HANDLES> m_hostbuffers;
+		HandleCollection<MAX_HANDLES_MEM> m_hostbuffers;
 		HandleCollection<MAX_HANDLES> m_streams;
 		HandleCollection<MAX_HANDLES> m_tensorDesc;
 		HandleCollection<MAX_HANDLES> m_filterDesc;

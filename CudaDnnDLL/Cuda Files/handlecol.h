@@ -18,6 +18,7 @@
 //	Flags
 //=============================================================================
 
+const int MAX_HANDLES_MEM = 12288;
 const int MAX_HANDLES = 4096;
 const int MIN_HANDLES = 128;
 
