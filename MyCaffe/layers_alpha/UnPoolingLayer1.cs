@@ -10,11 +10,11 @@ using System.Drawing;
 namespace MyCaffe.layers.alpha
 {
     /// <summary>
-    /// <H3>PRE ALPHA</H3>
+    /// <H3>PRE ALPHA - DEPRECIATED</H3>
     /// 
     /// The UnPoolingLayer1 performs CPU based unpooling on the network like Zeiler's paper in ECCV 2014.
     /// 
-    /// This layer is initialized with the MyCaffe.param.PoolingParameter.
+    /// This layer is initialized with the MyCaffe.param.UnPoolingParameter.
     /// </summary>
     /// <remarks>
     /// * Original implementation at: https://github.com/mariolew/caffe-unpooling
@@ -81,11 +81,19 @@ namespace MyCaffe.layers.alpha
         }
 
         /// <summary>
-        /// Returns the required number of bottom (input) Blobs: pool, mask
+        /// Returns the minimum number of required bottom (input) Blobs: input
         /// </summary>
-        public override int ExactNumBottomBlobs
+        public override int MinBottomBlobs
         {
-            get { return 2; }
+            get { return 1; }
+        }
+
+        /// <summary>
+        /// Returns the maximum number of required bottom (input) Blobs: input, mask (only when using MAX)
+        /// </summary>
+        public override int MaxBottomBlobs
+        {
+            get { return (m_param.unpooling_param.pool == PoolingParameter.PoolingMethod.MAX) ? 2 : 1; }
         }
 
         /// <summary>
@@ -242,7 +250,11 @@ namespace MyCaffe.layers.alpha
             colTop[0].SetData(0);
 
             T[] bottom_data = colBottom[0].update_cpu_data();
-            T[] mask = colBottom[1].update_cpu_data();
+            T[] mask = null;
+            
+            if (colBottom.Count > 1)
+                mask = colBottom[1].update_cpu_data();
+
             T[] top_data = colTop[0].mutable_cpu_data;
             int nBottomDataOffset = 0;
             int nTopDataOffset = 0;
@@ -261,16 +273,15 @@ namespace MyCaffe.layers.alpha
                                 for (int pw = 0; pw < m_nWidth; pw++)
                                 {
                                     int nIdx = ph * m_nWidth + pw;
+                                    int nTopIdx = nIdx;
 
 #warning TODO: Bug - nMaskOffset + nIdx exceed length on last row of mask.
-                                    if (nMaskOffset + nIdx < mask.Length)
-                                    {
-                                        int nTopIdx = (int)Convert.ChangeType(mask[nMaskOffset + nIdx], typeof(int));
+                                    if (mask != null && nMaskOffset + nIdx < mask.Length)
+                                        nTopIdx = (int)Convert.ChangeType(mask[nMaskOffset + nIdx], typeof(int));
 
 #warning TODO: Bug - nTopDataOffset + nTopIdx exceed length on last row of data.
-                                        if (nTopDataOffset + nTopIdx < top_data.Length)
-                                            top_data[nTopDataOffset + nTopIdx] = bottom_data[nBottomDataOffset + nIdx];
-                                    }
+                                    if (nTopDataOffset + nTopIdx < top_data.Length)
+                                        top_data[nTopDataOffset + nTopIdx] = bottom_data[nBottomDataOffset + nIdx];
                                 }
                             }
 
