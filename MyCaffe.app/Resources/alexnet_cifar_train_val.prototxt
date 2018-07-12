@@ -139,6 +139,7 @@ layer
       pad: 2
       num_output: 256
       group: 2
+	  cudnn_worspace_allow_on_groups: True
       weight_filler 
       {
          type: "gaussian"
@@ -248,6 +249,7 @@ layer
       pad: 1
       num_output: 384
       group: 2
+	  cudnn_worspace_allow_on_groups: True
       weight_filler 
       {
          type: "gaussian"
@@ -289,6 +291,7 @@ layer
       pad: 1
       num_output: 256
       group: 2
+	  cudnn_worspace_allow_on_groups: True
       weight_filler 
       {
          type: "gaussian"
