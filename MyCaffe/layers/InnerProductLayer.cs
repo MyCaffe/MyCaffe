@@ -204,6 +204,12 @@ namespace MyCaffe.layers
             // and replaced by a single axis with dimensions num_output (N_).
             List<int> rgTopShape = Utility.Clone<int>(colBottom[0].shape(), nAxis + 1);
             rgTopShape[nAxis] = m_nN;
+
+            for (int i = rgTopShape.Count; i < 4; i++)
+            {
+                rgTopShape.Add(1);
+            }
+
             colTop[0].Reshape(rgTopShape);
 
             // Set up the bias multiplier
