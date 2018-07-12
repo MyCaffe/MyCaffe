@@ -28,6 +28,7 @@ namespace MyCaffe.param
         int m_nAxis = 1;
         bool m_bForceNDIm2Col = false;
         int m_nCudnnWorkspaceLimit = 1024 * 1024;   // Used with cuDnn only.
+        bool m_bCudnnWorkspaceAllowOnGroups = false;
 
         /** @copydoc KernelParameter */
         public ConvolutionParameter()
@@ -73,7 +74,21 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Specifies the workspace limit used by cuDnn.  A value of 0 directs cuDNN to use the fasted algorithm possible.
+        /// When true, allows workspace usage on groups > 1 (default = false).
+        /// </summary>
+        /// <remarks>
+        /// Currently using workspaces on groups > 1 can cause cuDnn memory errors and for this reason
+        /// the default to this setting is false.
+        /// </remarks>
+        [Description("Specifies whether or not (default) worspaces are used when the group > 1.  Currently using workspaces on groups > 1 can cause cuDnn errors and for this reason defaults to false.")]
+        public bool cudnn_workspace_allow_on_groups
+        {
+            get { return m_bCudnnWorkspaceAllowOnGroups; }
+            set { m_bCudnnWorkspaceAllowOnGroups = value; }
+        }
+
+        /// <summary>
+        /// Specifies the workspace limit used by cuDnn.  A value of 0 directs cuDNN to use the fastest algorithm possible.
         /// </summary>
         [Description("Specifies the cuDnn workspace limit to use.\n\n - A positive value, greater than zero, directs cuDnn to use the most efficient algorithm within the memory limit specified.\n - A value equal to zero directs cuDnn to use the most memory efficient algorithm.\n\n  The default for this value is 1,048,576 (i.e 1024 * 1024 which is then multiplied by 8 internally). This value is only used by the CUDNN and DEFAULT engines.")]
         [ReadOnly(true)]
@@ -206,6 +221,7 @@ namespace MyCaffe.param
                 m_nAxis = p.m_nAxis;
                 m_bForceNDIm2Col = p.m_bForceNDIm2Col;
                 m_nCudnnWorkspaceLimit = p.m_nCudnnWorkspaceLimit;
+                m_bCudnnWorkspaceAllowOnGroups = p.m_bCudnnWorkspaceAllowOnGroups;
             }
         }
 
@@ -247,6 +263,9 @@ namespace MyCaffe.param
             if (cudnn_workspace_limit != (1024 * 1024))
                 rgChildren.Add("cudnn_workspace_limit", cudnn_workspace_limit.ToString());
 
+            if (cudnn_workspace_allow_on_groups)
+                rgChildren.Add("cudnn_worspace_allow_on_groups", cudnn_workspace_allow_on_groups.ToString());
+
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -283,6 +302,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("cudnn_workspace_limit")) != null)
                 p.cudnn_workspace_limit = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("cudnn_worspace_allow_on_groups")) != null)
+                p.cudnn_workspace_allow_on_groups = bool.Parse(strVal);
 
             return p;
         }
