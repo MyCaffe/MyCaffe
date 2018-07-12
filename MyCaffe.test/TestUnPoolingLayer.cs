@@ -90,10 +90,10 @@ namespace MyCaffe.test
 
         #endregion
 
-        #region CAFFE Tests UnPooling2
+        #region CAFFE Tests UnPooling
 
         [TestMethod]
-        public void TestForwardSquare2()
+        public void TestForwardSquare()
         {
             UnPoolingLayerTest test = new UnPoolingLayerTest(EngineParameter.Engine.CAFFE);
 
@@ -101,7 +101,7 @@ namespace MyCaffe.test
             {
                 foreach (IUnPoolingLayerTest t in test.Tests)
                 {
-                    t.TestForwardSquare(LayerParameter.LayerType.UNPOOLING2);
+                    t.TestForwardSquare(LayerParameter.LayerType.UNPOOLING);
                 }
             }
             finally
@@ -111,7 +111,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardRectHigh2()
+        public void TestForwardRectHigh()
         {
             UnPoolingLayerTest test = new UnPoolingLayerTest(EngineParameter.Engine.CAFFE);
 
@@ -119,7 +119,7 @@ namespace MyCaffe.test
             {
                 foreach (IUnPoolingLayerTest t in test.Tests)
                 {
-                    t.TestForwardRectHigh(LayerParameter.LayerType.UNPOOLING2);
+                    t.TestForwardRectHigh(LayerParameter.LayerType.UNPOOLING);
                 }
             }
             finally
@@ -129,7 +129,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardRectWithPad2()
+        public void TestForwardRectWithPad()
         {
             UnPoolingLayerTest test = new UnPoolingLayerTest(EngineParameter.Engine.CAFFE);
 
@@ -137,7 +137,7 @@ namespace MyCaffe.test
             {
                 foreach (IUnPoolingLayerTest t in test.Tests)
                 {
-                    t.TestForwardRectWithPad(LayerParameter.LayerType.UNPOOLING2);
+                    t.TestForwardRectWithPad(LayerParameter.LayerType.UNPOOLING);
                 }
             }
             finally
@@ -147,7 +147,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestForwardSquareWithPad2()
+        public void TestForwardSquareWithPad()
         {
             UnPoolingLayerTest test = new UnPoolingLayerTest(EngineParameter.Engine.CAFFE);
 
@@ -155,7 +155,7 @@ namespace MyCaffe.test
             {
                 foreach (IUnPoolingLayerTest t in test.Tests)
                 {
-                    t.TestForwardSquareWithPad(LayerParameter.LayerType.UNPOOLING2);
+                    t.TestForwardSquareWithPad(LayerParameter.LayerType.UNPOOLING);
                 }
             }
             finally
@@ -571,9 +571,9 @@ namespace MyCaffe.test
             //  [ 5  8  3]
             //
             // Mask: 2x2 channels of:
-            //  [ 0  1  3]
-            //  [ 5 12  9]
-            //  [15 17 24]
+            //  [ 0  3 10]
+            //  [14 16 19]
+            //  [25 29 33]
             double[] rgBottom = convert(Bottom.mutable_cpu_data);
             double[] rgBottomMask = convert(BottomMask.mutable_cpu_data);
 
@@ -582,24 +582,23 @@ namespace MyCaffe.test
                 rgBottom[i + 0] = 3;
                 rgBottom[i + 1] = 12;
                 rgBottom[i + 2] = 5;
-                rgBottom[i + 3] = 8;
-                rgBottom[i + 4] = 9;
-                rgBottom[i + 5] = 2;
+                rgBottom[i + 3] = 9;
+                rgBottom[i + 4] = 2;
+                rgBottom[i + 5] = 8;
                 rgBottom[i + 6] = 5;
-                rgBottom[i + 7] = 8;
-                rgBottom[i + 8] = 3;
+                rgBottom[i + 7] = 3;
+                rgBottom[i + 8] = 8;
 
                 // For the mask
-
                 rgBottomMask[i + 0] = 0;        
-                rgBottomMask[i + 1] = 1;
-                rgBottomMask[i + 2] = 3;
-                rgBottomMask[i + 3] = 5;
-                rgBottomMask[i + 4] = 12;
-                rgBottomMask[i + 5] = 9;
-                rgBottomMask[i + 6] = 15;
-                rgBottomMask[i + 7] = 17;
-                rgBottomMask[i + 8] = 24;
+                rgBottomMask[i + 1] = 3;
+                rgBottomMask[i + 2] = 10;
+                rgBottomMask[i + 3] = 14;
+                rgBottomMask[i + 4] = 16;
+                rgBottomMask[i + 5] = 19;
+                rgBottomMask[i + 6] = 25;
+                rgBottomMask[i + 7] = 29;
+                rgBottomMask[i + 8] = 33;
             }
             Bottom.mutable_cpu_data = convert(rgBottom);
             BottomMask.mutable_cpu_data = convert(rgBottomMask);
@@ -609,48 +608,65 @@ namespace MyCaffe.test
 
             m_log.CHECK_EQ(nNum, Top.num, "The top num should equal " + nNum.ToString());
             m_log.CHECK_EQ(nChannels, Top.channels, "The top channels should equal " + nChannels.ToString());
-            m_log.CHECK_EQ(5, Top.height, "The top height should equal 5.");
-            m_log.CHECK_EQ(5, Top.width, "The top width should equal 5.");
+            m_log.CHECK_EQ(6, Top.height, "The top height should equal 6.");
+            m_log.CHECK_EQ(6, Top.width, "The top width should equal 6.");
 
             layer.Forward(BottomVec, TopVec);
 
-            // Expected output: 2x2 channels of:                 (   index values   )
-            //  [  .  .  .  .  .  .  .]
-            //  [  .  3 12  0  5  0  .]   eg  [ 3 12][ 0  5][ 0  .]   [ 0  1][ 2  3][ 4  .]
-            //  [  .  8  0  0  0  2  .]      _[ 8  0][ 0  0][ 2  .]_ _[ 5  6][ 7  8][ 9  .]_
-            //  [  .  0  0  9  0  0  .]       [ 0  0][ 9  0][ 0  .]   [10 11][12 13][14  .]
-            //  [  .  5  0  8  0  0  .]      _[ 5  0][ 8  0][ 0  .]_ _[15 16][17 18][19  .]_
-            //  [  .  0  0  0  0  3  .]       [ 0  0][ 0  0][ 3  .]   [20 21][22 23][24  .]
-            //  [  .  .  .  .  .  .  .]       [ .  .][ .  .][ .  .]   [ .  .][ .  .][ .  .]
+            // Expected output: 2x2 channels of:                        (   index values   )
+            //  [.  .  .  .  .  .  . .]
+            //  [.  3  0  0 12  0  0 .]   eg  [ 3  0][ 0 12][ 0  0]   [ 0  1][ 2  3][ 4  5]
+            //  [.  0  0  0  0  5  0 .]      _[ 0  0][ 0  0][ 5  0]_ _[ 6  7][ 8  9][10 11]_
+            //  [.  0  0  9  0  2  0 .]       [ 0  0][ 9  0][ 2  0]   [12 13][14 15][16 17]
+            //  [.  0  8  0  0  0  0 .]      _[ 0  8][ 0  0][ 0  0]_ _[18 19][20 21][22 23]_
+            //  [.  0  5  0  0  0  3 .]       [ 0  5][ 0  0][ 0  3]   [24 25][26 27][28 29]
+            //  [.  0  0  0  8  0  0 .]      _[ 0  0][ 0  8][ 0  0]_ _[30 31][32 33][34 35]_
+            //  [.  .  .  .  .  .  . .]       [ .  .][ .  .][ .  .]   [ .  .][ .  .][ .  .]
 
             double[] rgTop = convert(Top.update_cpu_data());
-            for (int i = 0; i < 25 * nNum * nChannels; i += 25)
+            for (int i = 0; i < 36 * nNum * nChannels; i += 36)
             {
                 m_log.CHECK_EQ(rgTop[i + 0], 3, "The top element at " + (i + 0).ToString() + " should be 3");
-                m_log.CHECK_EQ(rgTop[i + 1], 12, "The top element at " + (i + 1).ToString() + " should be 12");
+                m_log.CHECK_EQ(rgTop[i + 1], 0, "The top element at " + (i + 1).ToString() + " should be 0");
                 m_log.CHECK_EQ(rgTop[i + 2], 0, "The top element at " + (i + 2).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 3], 5, "The top element at " + (i + 3).ToString() + " should be 5");
+                m_log.CHECK_EQ(rgTop[i + 3], 12, "The top element at " + (i + 3).ToString() + " should be 12");
                 m_log.CHECK_EQ(rgTop[i + 4], 0, "The top element at " + (i + 4).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 5], 8, "The top element at " + (i + 5).ToString() + " should be 8");
+                m_log.CHECK_EQ(rgTop[i + 5], 0, "The top element at " + (i + 5).ToString() + " should be 0");
+
                 m_log.CHECK_EQ(rgTop[i + 6], 0, "The top element at " + (i + 6).ToString() + " should be 0");
                 m_log.CHECK_EQ(rgTop[i + 7], 0, "The top element at " + (i + 7).ToString() + " should be 0");
                 m_log.CHECK_EQ(rgTop[i + 8], 0, "The top element at " + (i + 8).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 9],  2, "The top element at " + (i + 9).ToString() + " should be 2");
-                m_log.CHECK_EQ(rgTop[i + 10], 0, "The top element at " + (i + 10).ToString() + " should be 0");
+                m_log.CHECK_EQ(rgTop[i + 9],  0, "The top element at " + (i + 9).ToString() + " should be 0");
+                m_log.CHECK_EQ(rgTop[i + 10], 5, "The top element at " + (i + 10).ToString() + " should be 5");
                 m_log.CHECK_EQ(rgTop[i + 11], 0, "The top element at " + (i + 11).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 12], 9, "The top element at " + (i + 12).ToString() + " should be 0");
+
+                m_log.CHECK_EQ(rgTop[i + 12], 0, "The top element at " + (i + 12).ToString() + " should be 0");
                 m_log.CHECK_EQ(rgTop[i + 13], 0, "The top element at " + (i + 13).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 14], 0, "The top element at " + (i + 14).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 15], 5, "The top element at " + (i + 15).ToString() + " should be 5");
-                m_log.CHECK_EQ(rgTop[i + 16], 0, "The top element at " + (i + 16).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 17], 8, "The top element at " + (i + 17).ToString() + " should be 8");
+                m_log.CHECK_EQ(rgTop[i + 14], 9, "The top element at " + (i + 14).ToString() + " should be 9");
+                m_log.CHECK_EQ(rgTop[i + 15], 0, "The top element at " + (i + 15).ToString() + " should be 0");
+                m_log.CHECK_EQ(rgTop[i + 16], 2, "The top element at " + (i + 16).ToString() + " should be 2");
+                m_log.CHECK_EQ(rgTop[i + 17], 0, "The top element at " + (i + 17).ToString() + " should be 0");
+
                 m_log.CHECK_EQ(rgTop[i + 18], 0, "The top element at " + (i + 18).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 19], 0, "The top element at " + (i + 19).ToString() + " should be 0");
+                m_log.CHECK_EQ(rgTop[i + 19], 8, "The top element at " + (i + 19).ToString() + " should be 8");
                 m_log.CHECK_EQ(rgTop[i + 20], 0, "The top element at " + (i + 20).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 21], 0, "The top element at " + (i + 21).ToString() + " should be 9");
+                m_log.CHECK_EQ(rgTop[i + 21], 0, "The top element at " + (i + 21).ToString() + " should be 0");
                 m_log.CHECK_EQ(rgTop[i + 22], 0, "The top element at " + (i + 22).ToString() + " should be 9");
                 m_log.CHECK_EQ(rgTop[i + 23], 0, "The top element at " + (i + 23).ToString() + " should be 0");
-                m_log.CHECK_EQ(rgTop[i + 24], 3, "The top element at " + (i + 24).ToString() + " should be 3");
+
+                m_log.CHECK_EQ(rgTop[i + 24], 0, "The top element at " + (i + 24).ToString() + " should be 0");
+                m_log.CHECK_EQ(rgTop[i + 25], 5, "The top element at " + (i + 25).ToString() + " should be 5");
+                m_log.CHECK_EQ(rgTop[i + 26], 0, "The top element at " + (i + 26).ToString() + " should be 0");
+                m_log.CHECK_EQ(rgTop[i + 27], 0, "The top element at " + (i + 27).ToString() + " should be 0");
+                m_log.CHECK_EQ(rgTop[i + 28], 0, "The top element at " + (i + 28).ToString() + " should be 0");
+                m_log.CHECK_EQ(rgTop[i + 29], 3, "The top element at " + (i + 29).ToString() + " should be 3");
+
+                m_log.CHECK_EQ(rgTop[i + 30], 0, "The top element at " + (i + 30).ToString() + " should be 0");
+                m_log.CHECK_EQ(rgTop[i + 31], 0, "The top element at " + (i + 31).ToString() + " should be 0");
+                m_log.CHECK_EQ(rgTop[i + 32], 0, "The top element at " + (i + 32).ToString() + " should be 0");
+                m_log.CHECK_EQ(rgTop[i + 33], 8, "The top element at " + (i + 33).ToString() + " should be 8");
+                m_log.CHECK_EQ(rgTop[i + 34], 0, "The top element at " + (i + 34).ToString() + " should be 0");
+                m_log.CHECK_EQ(rgTop[i + 35], 0, "The top element at " + (i + 35).ToString() + " should be 0");
             }
         }
     }
