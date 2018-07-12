@@ -170,7 +170,7 @@
     <Compile Include="layers\SplitLayer.cs" />
     <Compile Include="layers\TanhLayer.cs" />
     <Compile Include="layers_alpha\UnPoolingLayer1.cs" />
-    <Compile Include="layers_alpha\UnPoolingLayer2.cs" />
+    <Compile Include="layers_alpha\UnPoolingLayer.cs" />
     <Compile Include="MyCaffeControl.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -183,6 +183,7 @@
     <Compile Include="param\MemoryDataParameter.cs" />
     <Compile Include="param\DebugParameter.cs" />
     <Compile Include="param\KnnParameter.cs" />
+    <Compile Include="param\UnPoolingParameter.cs" />
     <Compile Include="param\SwishParameter.cs" />
     <Compile Include="param\TripletLossParameter.cs" />
     <Compile Include="param\TripletLossSimpleParameter.cs" />
