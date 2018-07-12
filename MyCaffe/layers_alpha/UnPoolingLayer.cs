@@ -12,7 +12,7 @@ namespace MyCaffe.layers.alpha
     /// <summary>
     /// <H3>PRE ALPHA</H3>
     /// 
-    /// The UnPoolingLayer2 performs GPU based unpooling on the network like Zeiler's paper in ECCV 2014.
+    /// The UnPoolingLayer performs GPU based unpooling on the network like Zeiler's paper in ECCV 2014.
     /// 
     /// This layer is initialized with the MyCaffe.param.PoolingParameter.
     /// </summary>
@@ -24,7 +24,7 @@ namespace MyCaffe.layers.alpha
     /// @see [Decoupled Deep Neural Network for Semi-supervised Semantic Segmentation](https://arxiv.org/abs/1506.04924) by Seunghoon Hong, Hyeonwoo Noh, and Bohyung Han, 2015.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class UnPoolingLayer2<T> : Layer<T>
+    public class UnPoolingLayer<T> : Layer<T>
     {
         int m_nKernelH;
         int m_nKernelW;
@@ -35,8 +35,8 @@ namespace MyCaffe.layers.alpha
         int m_nChannels;
         int m_nHeight;
         int m_nWidth;
-        int m_nUnPooledHeight;
-        int m_nUnPooledWidth;
+        int m_nUnPooledHeight = -1;
+        int m_nUnPooledWidth = -1;
         bool m_bGlobalPooling;
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace MyCaffe.layers.alpha
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="p">
-        /// Uses the same PoolingParameter pooling_param as the PoolingLayer with options:
+        /// Uses the same PoolingParameter unpooling_param as the PoolingLayer with options:
         ///  - num_output. The number of filters.
         ///  
         ///  - kernel_size / kernel_h / kernel_w.  The pooling dimensions, given by
@@ -67,10 +67,10 @@ namespace MyCaffe.layers.alpha
         ///  - engine: convolution has Engine.CAFFE (matrix multiplication) and Engine.CUDNN (library
         ///  kernels + stream parallelism) engines.
         ///  </param>
-        public UnPoolingLayer2(CudaDnn<T> cuda, Log log, LayerParameter p)
+        public UnPoolingLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
             : base(cuda, log, p)
         {
-            m_type = LayerParameter.LayerType.UNPOOLING2;
+            m_type = LayerParameter.LayerType.UNPOOLING;
         }
 
 
@@ -93,7 +93,7 @@ namespace MyCaffe.layers.alpha
         /// </summary>
         public override int MaxBottomBlobs
         {
-            get { return (m_param.pooling_param.pool == PoolingParameter.PoolingMethod.MAX) ? 2 : 1; }
+            get { return (m_param.unpooling_param.pool == PoolingParameter.PoolingMethod.MAX) ? 2 : 1; }
         }
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace MyCaffe.layers.alpha
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            PoolingParameter p = m_param.pooling_param;
+            UnPoolingParameter p = m_param.unpooling_param;
 
             if (p.global_pooling)
             {
@@ -153,6 +153,20 @@ namespace MyCaffe.layers.alpha
             m_log.CHECK_GT(m_nKernelW, 0, "Filter dimensions cannot be zero.");
 
 
+            //---- UnPooling Size Override ----
+
+            if (p.unpool_size.Count > 0)
+            {
+                m_nUnPooledHeight = (int)p.unpool_size[0];
+                m_nUnPooledWidth = (int)p.unpool_size[0];
+            }
+            else
+            {
+                m_nUnPooledHeight = (p.unpool_h.HasValue) ? (int)p.unpool_h.Value : -1;
+                m_nUnPooledWidth = (p.unpool_w.HasValue) ? (int)p.unpool_w.Value : -1;
+            }
+
+
             //---- Pad ----
 
             if (p.pad.Count > 0)
@@ -185,7 +199,7 @@ namespace MyCaffe.layers.alpha
 
             if (m_nPadH != 0 || m_nPadW != 0)
             {
-                m_log.CHECK(m_param.pooling_param.pool == PoolingParameter.PoolingMethod.MAX, "Padding implemented for MAX unpooling only.");
+                m_log.CHECK(m_param.unpooling_param.pool == PoolingParameter.PoolingMethod.MAX, "Padding implemented for MAX unpooling only.");
                 m_log.CHECK_LT(m_nPadH, m_nKernelH, "The pad_h must be <= kernel_h.");
                 m_log.CHECK_LT(m_nPadW, m_nKernelW, "The pad_w must be <= kernel_w.");
             }
@@ -210,36 +224,24 @@ namespace MyCaffe.layers.alpha
                 m_nKernelW = colBottom[0].width;
             }
 
-            m_nUnPooledHeight = (int)(((m_nHeight + m_nPadH) - 1) * m_nStrideH + m_nKernelH - 2 * m_nPadH);
-            m_nUnPooledWidth = (int)(((m_nWidth + m_nPadW) - 1) * m_nStrideW + m_nKernelW - 2 * m_nPadW);
-
-            if (m_nPadH > 0)
-                m_nUnPooledHeight -= 1; // adjust for ceil function
-
-            if (m_nPadW > 0)
-                m_nUnPooledWidth -= 1; // adjust for ceil function
-
-            /*
-            m_nUnPooledHeight = (int)Math.Max((m_nHeight - 1) * m_nStrideH + m_nKernelH - 2 * m_nPadH, m_nHeight * m_nStrideH - m_nPadH + 1); 
-            m_nUnPooledWidth = (int)Math.Max((m_nWidth - 1) * m_nStrideW + m_nKernelW - 2 * m_nPadW, m_nWidth * m_nStrideW - m_nPadW + 1);
-
-            // m_log.CHECK_EQ(m_nPadW, 0, "Only pad=0 is supported at this time.");
-            // m_log.CHECK_EQ(m_nPadH, 0, "Only pad=0 is supported at this time.");
-
-            if (m_nPadH > 0)
+            // Given the original pooling calculation:
+            // (int)Math.Ceiling((double)((nOriginalHeight + 2 * m_nPadH - m_nKernelH) / (double)m_nStrideH)) + 1;
+            // we do not know whether or not the ceiling kicks in for at the unpooling
+            // stage, we do not know the original height.  For this reason, the unpooled 
+            // height will always be >= the original height.
+            // Using the sizing method from HyeonwooNoh at
+            // https://github.com/HyeonwooNoh/caffe/blob/master/src/caffe/layers/unpooling_layer.cpp
+            if (m_nUnPooledHeight < 0)
             {
-                // Must take into account Math.Ceiling function in PoolingLayer
-                if (m_nHeight % 2 != 0)
-                    m_nUnPooledHeight--;
+                m_nUnPooledHeight = Math.Max((m_nHeight - 1) * m_nStrideH + m_nKernelH - 2 * m_nPadH,
+                                              m_nHeight * m_nStrideH - m_nPadH + 1);
             }
 
-            if (m_nPadW > 0)
+            if (m_nUnPooledWidth < 0)
             {
-                // Must take into account Math.Ceiling function in PoolingLayer
-                if (m_nWidth % 2 != 0)
-                    m_nUnPooledWidth--;
+                m_nUnPooledWidth = Math.Max((m_nWidth - 1) * m_nStrideW + m_nKernelW - 2 * m_nPadW,
+                                              m_nWidth * m_nStrideW - m_nPadW + 1);
             }
-            */
 
             if (m_nUnPooledHeight <= 0)
             {
@@ -270,7 +272,7 @@ namespace MyCaffe.layers.alpha
 
             colTop[0].SetData(0);
 
-            switch (m_param.pooling_param.pool)
+            switch (m_param.unpooling_param.pool)
             {
                 case PoolingParameter.PoolingMethod.MAX:
                     if (colBottom.Count > 1)
@@ -283,7 +285,7 @@ namespace MyCaffe.layers.alpha
                     break;
 
                 default:
-                    m_log.FAIL("Unknown pooling method '" + m_param.pooling_param.pool.ToString() + "'");
+                    m_log.FAIL("Unknown pooling method '" + m_param.unpooling_param.pool.ToString() + "'");
                     break;
             }
         }
@@ -306,20 +308,20 @@ namespace MyCaffe.layers.alpha
 
             colBottom[0].SetDiff(0);
 
-            switch (m_param.pooling_param.pool)
+            switch (m_param.unpooling_param.pool)
             {
                 case PoolingParameter.PoolingMethod.MAX:
                     if (colBottom.Count > 1)
                         hBottomMask = colBottom[1].gpu_data;
-                    m_cuda.unpooling_bwd(POOLING_METHOD.MAX, nCount, hTopDiff, colBottom[0].num, m_nChannels, m_nHeight, m_nWidth, m_nUnPooledHeight, m_nUnPooledWidth, m_nKernelH, m_nKernelW, m_nStrideH, m_nStrideW, m_nPadH, m_nPadW, hBottomDiff, hBottomMask);
+                    m_cuda.unpooling_bwd(POOLING_METHOD.MAX, nCount, hTopDiff, colTop[0].num, m_nChannels, m_nHeight, m_nWidth, m_nUnPooledHeight, m_nUnPooledWidth, m_nKernelH, m_nKernelW, m_nStrideH, m_nStrideW, m_nPadH, m_nPadW, hBottomDiff, hBottomMask);
                     break;
 
                 case PoolingParameter.PoolingMethod.AVE:
-                    m_cuda.unpooling_bwd(POOLING_METHOD.AVE, nCount, hTopDiff, colBottom[0].num, m_nChannels, m_nHeight, m_nWidth, m_nUnPooledHeight, m_nUnPooledWidth, m_nKernelH, m_nKernelW, m_nStrideH, m_nStrideW, m_nPadH, m_nPadW, hBottomDiff, 0);
+                    m_cuda.unpooling_bwd(POOLING_METHOD.AVE, nCount, hTopDiff, colTop[0].num, m_nChannels, m_nHeight, m_nWidth, m_nUnPooledHeight, m_nUnPooledWidth, m_nKernelH, m_nKernelW, m_nStrideH, m_nStrideW, m_nPadH, m_nPadW, hBottomDiff, 0);
                     break;
 
                 default:
-                    m_log.FAIL("Unknown pooling method '" + m_param.pooling_param.pool.ToString() + "'");
+                    m_log.FAIL("Unknown pooling method '" + m_param.unpooling_param.pool.ToString() + "'");
                     break;
             }
         }
