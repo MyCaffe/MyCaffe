@@ -4527,7 +4527,8 @@ __global__ void unpooling_fwd_max_kernel(int nCount, T* bottom_data, int num, in
 		if (bottom_mask)
 		{
 			const int mask_index = (int)bottom_mask[i];
-			top_data[mask_index] = bottom_data[i];
+			if (mask_index <= unpooled_index)
+				top_data[mask_index] = bottom_data[i];
 		}
 		else
 		{
@@ -4639,11 +4640,12 @@ __global__ void unpooling_bwd_max_kernel(int nCount, T* top_diff, int num, int c
 		if (bottom_mask)
 		{
 			const int mask_index = (int)bottom_mask[i];
-			bottom_diff[mask_index] = top_diff[i];
+			if (mask_index <= unpooled_index)
+				bottom_diff[i] = top_diff[mask_index];
 		}
 		else
 		{
-			bottom_diff[unpooled_index] = top_diff[i];
+			bottom_diff[i] = top_diff[unpooled_index];
 		}
 	}
 }
@@ -4723,7 +4725,10 @@ long Math<T>::unpooling_bwd(int nMethod, int n, long hTopDiff, int nNum, int nCh
 		return ERROR_PARAM_OUT_OF_RANGE;
 	}
 
-	return cudaStreamSynchronize(0);
+	if (lErr = cudaStreamSynchronize(0))
+		return lErr;
+
+	return 0;
 }
 
 template long Math<double>::unpooling_bwd(int nMethod, int nCount, long hTopDiff, int nNum, int nChannels, int h, int w, int hUnPooled, int wUnPooled, int hKernel, int wKernel, int hStride, int wStride, int hPad, int wPad, long hBottomDiff, long hBottomMask);
