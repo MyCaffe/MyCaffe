@@ -323,11 +323,11 @@ namespace MyCaffe.param
             /// </summary>
             REINFORCEMENT_LOSS,
             /// <summary>
-            /// Initializes a parameter for the UnpoolingLayer1 which uses a CPU based implementation (slower).
+            /// DEPRECIATED - Initializes a parameter for the UnpoolingLayer1 which uses a CPU based implementation (slower).
             /// </summary>
             UNPOOLING1,
             /// <summary>
-            /// Initializes a parameter for the UnpoolingLayer2 which uses a GPU based implementation (faster).
+            /// Initializes a parameter for the UnpoolingLayer which uses a GPU based implementation (faster).
             /// </summary>
             UNPOOLING,
             /// <summary>
