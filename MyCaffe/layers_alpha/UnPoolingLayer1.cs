@@ -45,7 +45,7 @@ namespace MyCaffe.layers.alpha
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="p">
-        /// Uses the same PoolingParameter pooling_param as the PoolingLayer with options:
+        /// Uses the same PoolingParameter unpooling_param as the PoolingLayer with options:
         ///  - num_output. The number of filters.
         ///  
         ///  - kernel_size / kernel_h / kernel_w.  The pooling dimensions, given by
@@ -103,7 +103,7 @@ namespace MyCaffe.layers.alpha
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            PoolingParameter p = m_param.pooling_param;
+            UnPoolingParameter p = m_param.unpooling_param;
 
             if (p.global_pooling)
             {
@@ -177,8 +177,8 @@ namespace MyCaffe.layers.alpha
 
             if (m_nPadH != 0 || m_nPadW != 0)
             {
-                m_log.CHECK(m_param.pooling_param.pool == PoolingParameter.PoolingMethod.AVE ||
-                            m_param.pooling_param.pool == PoolingParameter.PoolingMethod.MAX, "Padding implemented for AVE and MAX pooling only.");
+                m_log.CHECK(m_param.unpooling_param.pool == PoolingParameter.PoolingMethod.AVE ||
+                            m_param.unpooling_param.pool == PoolingParameter.PoolingMethod.MAX, "Padding implemented for AVE and MAX pooling only.");
                 m_log.CHECK_LT(m_nPadH, m_nKernelH, "The pad_h must be <= kernel_h.");
                 m_log.CHECK_LT(m_nPadW, m_nKernelW, "The pad_w must be <= kernel_w.");
             }
@@ -203,25 +203,28 @@ namespace MyCaffe.layers.alpha
                 m_nKernelW = colBottom[0].width;
             }
 
-            m_nUnPooledHeight = (int)(((m_nHeight + m_nPadH) - 1) * m_nStrideH + m_nKernelH - 2 * m_nPadH); 
-            m_nUnPooledWidth = (int)(((m_nWidth + m_nPadW) - 1) * m_nStrideW + m_nKernelW - 2 * m_nPadW);
-
-            if (m_nPadH > 0)
-                m_nUnPooledHeight -= 1; // adjust for ceil function
-
-            if (m_nPadW > 0)
-                m_nUnPooledWidth -= 1; // adjust for ceil function
+            // Given the original pooling calculation:
+            // (int)Math.Ceiling((double)((nOriginalHeight + 2 * m_nPadH - m_nKernelH) / (double)m_nStrideH)) + 1;
+            // we do not know whether or not the ceiling kicks in for at the unpooling
+            // stage, we do not know the original height.  For this reason, the unpooled 
+            // height will always be >= the original height.
+            // Using the sizing method from HyeonwooNoh at
+            // https://github.com/HyeonwooNoh/caffe/blob/master/src/caffe/layers/unpooling_layer.cpp
+            m_nUnPooledHeight = Math.Max((m_nHeight - 1) * m_nStrideH + m_nKernelH - 2 * m_nPadH,
+                                          m_nHeight * m_nStrideH - m_nPadH + 1);
+            m_nUnPooledWidth = Math.Max((m_nWidth - 1) * m_nStrideW + m_nKernelW - 2 * m_nPadW,
+                                          m_nWidth * m_nStrideW - m_nPadW + 1);
 
             if (m_nUnPooledHeight <= 0)
             {
                 m_nUnPooledHeight = 1;
-//                m_log.WriteLine("WARNING: unpooling height was 0, setting to 1.");
+                m_log.WriteLine("WARNING: unpooling height was 0, setting to 1.");
             }
 
             if (m_nUnPooledWidth <= 0)
             {
                 m_nUnPooledWidth = 1;
-//                m_log.WriteLine("WARNING: unpooling width was 0, setting to 1.");
+                m_log.WriteLine("WARNING: unpooling width was 0, setting to 1.");
             }
 
             colTop[0].Reshape(colBottom[0].num, m_nChannels, m_nUnPooledHeight, m_nUnPooledWidth);
@@ -245,7 +248,7 @@ namespace MyCaffe.layers.alpha
             int nTopDataOffset = 0;
             int nMaskOffset = 0;
 
-            switch (m_param.pooling_param.pool)
+            switch (m_param.unpooling_param.pool)
             {
                 case PoolingParameter.PoolingMethod.MAX:
                     // Currently only the CPU version is supported
