@@ -1,0 +1,158 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.ComponentModel;
+using MyCaffe.basecode;
+
+namespace MyCaffe.param
+{
+    /// <summary>
+    /// Specifies the parameters for the PoolingLayer.
+    /// </summary>
+    /// <remarks>
+    /// @see [A guide to convolution arithmetic for deep learning](https://arxiv.org/abs/1603.07285) by Vincent Dumoulin and Francesco Visin, 2016.
+    /// @see [Learning Deep Features for Discriminative Localization](https://arxiv.org/abs/1512.04150) by Bolei Zhou, Aditya Khosla, Agata Lapedriza, Aude Oliva, and Antonio Torralba, 2015.
+    /// @see [Gradient-Based Learning Applied to Document Recognition](http://yann.lecun.com/exdb/publis/pdf/lecun-98.pdf) by Yann LeCun, Léon Bottou, Yoshua Bengio, and Patrick Haffner, 1998.
+    /// </remarks>
+    public class UnPoolingParameter : PoolingParameter 
+    {
+        List<uint> m_rgUnpool = new List<uint>();
+        uint? m_nUnPoolH = null;
+        uint? m_nUnPoolW = null;
+
+        /** @copydoc KernelParameter */
+        public UnPoolingParameter()
+        {
+        }
+
+        /// <summary>
+        /// Returns the reason that Caffe version was used instead of [NVIDIA's cuDnn](https://developer.nvidia.com/cudnn).
+        /// </summary>
+        /// <returns></returns>
+        public new string useCaffeReason()
+        {
+            return "Not supported by cuDNN.";
+        }
+
+        /// <summary>
+        /// Queries whether or not to use [NVIDIA's cuDnn](https://developer.nvidia.com/cudnn).
+        /// </summary>
+        /// <returns>Returns <i>true</i> when cuDnn is to be used, <i>false</i> otherwise.</returns>
+        public new bool useCudnn()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// UnPool size is given as a single value for equal dimensions in all 
+        /// spatial dimensions, or once per spatial dimension.
+        /// </summary>
+        [Description("Specifies unpool size override given as a single value for equal dimensions in all spatial dimensions, or once per spatial dimension.")]
+        public List<uint> unpool_size
+        {
+            get { return m_rgUnpool; }
+            set { m_rgUnpool = value; }
+        }
+
+        /// <summary>
+        /// The unpooling height override (2D only)
+        /// </summary>
+        /// <remarks>
+        /// For 2D only, the H and W versions may also be used to
+        /// specify both spatial dimensions.
+        /// </remarks>
+        [Description("Specifies unpooling height override (2D only).  'unpool_h' and 'unpool_w' are used -or- 'unpool_size' is used, but not both.")]
+        public uint? unpool_h
+        {
+            get { return m_nUnPoolH; }
+            set { m_nUnPoolH = value; }
+        }
+
+        /// <summary>
+        /// The unpooling width override (2D only)
+        /// </summary>
+        /// <remarks>
+        /// For 2D only, the H and W versions may also be used to
+        /// specify both spatial dimensions.
+        /// </remarks>
+        [Description("Specifies unpooling width override (2D only).  'unpool_h' and 'unpool_w' are used -or- 'unpool_size' is used, but not both.")]
+        public uint? unpool_w
+        {
+            get { return m_nUnPoolW; }
+            set { m_nUnPoolW = value; }
+        }
+
+
+        /** @copydoc KernelParameter::Load */
+        public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
+        {
+            RawProto proto = RawProto.Parse(br.ReadString());
+            UnPoolingParameter p = FromProto(proto) as UnPoolingParameter;
+
+            if (p == null)
+                throw new Exception("Expected UnPoolingParameter type!");
+
+            if (!bNewInstance)
+                Copy(p);
+
+            return p;
+        }
+
+        /** @copydoc KernelParameter::Copy */
+        public override void Copy(LayerParameterBase src)
+        {
+            base.Copy(src);
+
+            if (src is UnPoolingParameter)
+            {
+                UnPoolingParameter p = (UnPoolingParameter)src;
+
+                m_rgUnpool = Utility.Clone<uint>(p.m_rgUnpool);
+                m_nUnPoolH = p.m_nUnPoolH;
+                m_nUnPoolW = p.m_nUnPoolW;
+            }
+        }
+
+        /** @copydoc KernelParameter::Clone */
+        public override LayerParameterBase Clone()
+        {
+            UnPoolingParameter p = new UnPoolingParameter();
+            p.Copy(this);
+            return p;
+        }
+
+        /** @copydoc KernelParameter::ToProto */
+        public override RawProto ToProto(string strName)
+        {
+            dilation.Clear();
+            RawProto rpBase = base.ToProto("pooling");
+            RawProtoCollection rgChildren = new RawProtoCollection();
+
+            rgChildren.Add(rpBase.Children);
+            rgChildren.Add<uint>("unpool_size", m_rgUnpool);
+            rgChildren.Add("unpool_h", m_nUnPoolH);
+            rgChildren.Add("unpool_w", m_nUnPoolW);
+
+            return new RawProto(strName, "", rgChildren);
+        }
+
+        /// <summary>
+        /// Parses the parameter from a RawProto.
+        /// </summary>
+        /// <param name="rp">Specifies the RawProto to parse.</param>
+        /// <returns>A new instance of the parameter is returned.</returns>
+        public static new UnPoolingParameter FromProto(RawProto rp)
+        {
+            UnPoolingParameter p = new UnPoolingParameter();           
+
+            ((PoolingParameter)p).Copy(PoolingParameter.FromProto(rp));
+
+            p.m_rgUnpool = rp.FindArray<uint>("unpool_size");
+            p.m_nUnPoolH = (uint?)rp.FindValue("unpool_h", typeof(uint));
+            p.m_nUnPoolW = (uint?)rp.FindValue("unpool_w", typeof(uint));
+
+            return p;
+        }
+    }
+}

@@ -1034,8 +1034,8 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.UNPOOLING1:
                     return new UnPoolingLayer1<T>(cuda, log, p);
 
-                case LayerParameter.LayerType.UNPOOLING2:
-                    return new UnPoolingLayer2<T>(cuda, log, p);
+                case LayerParameter.LayerType.UNPOOLING:
+                    return new UnPoolingLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.POWER:
                     return new PowerLayer<T>(cuda, log, p);

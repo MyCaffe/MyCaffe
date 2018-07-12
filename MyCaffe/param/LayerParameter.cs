@@ -329,7 +329,7 @@ namespace MyCaffe.param
             /// <summary>
             /// Initializes a parameter for the UnpoolingLayer2 which uses a GPU based implementation (faster).
             /// </summary>
-            UNPOOLING2,
+            UNPOOLING,
             /// <summary>
             /// Initializes a parameter for the NormalizationLayer.
             /// </summary>
@@ -850,15 +850,20 @@ namespace MyCaffe.param
                 case LayerType.POOLING:
                     expected_bottom.Add("input");
                     expected_top.Add("pool");
-                    m_rgLayerParameters[LayerType.POOLING] = new PoolingParameter();
+                    expected_top.Add("mask");
+                    m_rgLayerParameters[lt] = new PoolingParameter();
                     break;
 
                 case LayerType.UNPOOLING1:
-                case LayerType.UNPOOLING2:
                     expected_bottom.Add("pool");
-                    expected_bottom.Add("mask");
                     expected_top.Add("unpool");
-                    m_rgLayerParameters[LayerType.POOLING] = new PoolingParameter();
+                    m_rgLayerParameters[LayerType.UNPOOLING] = new UnPoolingParameter();
+                    break;
+
+                case LayerType.UNPOOLING:
+                    expected_bottom.Add("pool");
+                    expected_top.Add("unpool");
+                    m_rgLayerParameters[lt] = new UnPoolingParameter();
                     break;
 
                 case LayerType.POWER:
@@ -1428,6 +1433,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.UNPOOLING
+        /// </summary>
+        public UnPoolingParameter unpooling_param
+        {
+            get { return (UnPoolingParameter)m_rgLayerParameters[LayerType.UNPOOLING]; }
+            set { m_rgLayerParameters[LayerType.UNPOOLING] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.POWER
         /// </summary>
         public PowerParameter power_param
@@ -1857,8 +1871,8 @@ namespace MyCaffe.param
                 case LayerType.UNPOOLING1:
                     return "UnPooling1";
 
-                case LayerType.UNPOOLING2:
-                    return "UnPooling2";
+                case LayerType.UNPOOLING:
+                    return "UnPooling";
 
                 case LayerType.POWER:
                     return "Power";
@@ -2022,6 +2036,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(mvn_param, "mvn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization_param, "normalization_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(pooling_param, "pooling_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(power_param, "power_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(prelu_param, "prelu_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(reduction_param, "reduction_param"));
@@ -2221,6 +2236,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("pooling_param")) != null)
                 p.pooling_param = PoolingParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("unpooling_param")) != null)
+                p.unpooling_param = UnPoolingParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("power_param")) != null)
                 p.power_param = PowerParameter.FromProto(rpp);
@@ -2447,8 +2465,8 @@ namespace MyCaffe.param
                 case "unpooling1":
                     return LayerType.UNPOOLING1;
 
-                case "unpooling2":
-                    return LayerType.UNPOOLING2;
+                case "unpooling":
+                    return LayerType.UNPOOLING;
 
                 case "power":
                     return LayerType.POWER;
