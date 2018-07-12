@@ -12,7 +12,7 @@ namespace MyCaffe.param
     /// </summary>
     public class KnnParameter : LayerParameterBase 
     {
-        int m_nMaxBatchesToStore = 1000;
+        int m_nMaxBatchesToStore = 100;
         int m_nOutput = 10;
         int m_nK = 100;
 
