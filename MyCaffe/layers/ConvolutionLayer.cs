@@ -259,14 +259,14 @@ namespace MyCaffe.layers
 
             // Specify workspace limit for kernels directly until we have a 
             // planning strategy and a rewrite of Caffe's GPU memory management.
-            // default = 1024 * 1024 * 8;
-            long lWorkspaceLimitBytes = m_param.convolution_param.cudnn_workspace_limit * 8;
+            // default = 1024 * 1024 * 16;
+            long lWorkspaceLimitBytes = m_param.convolution_param.cudnn_workspace_limit * 16;
 
             // BUG Work Around
             // With cuDNN 7.0.5 and above we are seeing memory overwrite errors (from CUDA)
             //  when using more than 1 group and the workspace.
-            //  * also confirmed in cuDNN 7.1.4 and CUDA 9.2 on driver 397.64
-            if (m_nGroup > 1)
+            //  * also confirmed in cuDNN 7.1.4 and CUDA 9.2 on driver 397.64, 398.36
+            if (m_nGroup > 1 && !m_param.convolution_param.cudnn_workspace_allow_on_groups)
                 lWorkspaceLimitBytes = 0; // sets option to NO_WORKSPACE for Bwd Filter and Data
 
             for (int i = 0; i < colBottom.Count; i++)
