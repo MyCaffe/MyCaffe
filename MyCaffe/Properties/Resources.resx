@@ -371,6 +371,14 @@
   Some parts of MyCaffe are derived from forks off the Caffe source 
   (such as the GradientScalerLayer, forked at https://github.com/ddtm/caffe)
   which are also bound by the Caffe License above.
+
+  Some parts of MyCaffe are derived from forks off the Caffe source 
+  (such as the UnPoolingLayer, forked at https://github.com/HyeonwooNoh/caffe)
+  which are also bound by the Caffe License above.
+
+  Some parts of MyCaffe are derived from forks off the Caffe source 
+  (such as the UnPoolingLayer1, forked at https://github.com/mariolew/caffe-unpooling)
+  which are also bound by the Caffe License above.
   ** end Caffe License **
 
   Some parts of MyCaffe are derived from the NVCaffe and Caffe SSD under the NVCaffe 
