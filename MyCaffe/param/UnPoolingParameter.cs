@@ -8,7 +8,7 @@ using MyCaffe.basecode;
 namespace MyCaffe.param
 {
     /// <summary>
-    /// Specifies the parameters for the PoolingLayer.
+    /// Specifies the parameters for the UnPoolingLayer.
     /// </summary>
     /// <remarks>
     /// @see [A guide to convolution arithmetic for deep learning](https://arxiv.org/abs/1603.07285) by Vincent Dumoulin and Francesco Visin, 2016.
@@ -21,7 +21,7 @@ namespace MyCaffe.param
         uint? m_nUnPoolH = null;
         uint? m_nUnPoolW = null;
 
-        /** @copydoc KernelParameter */
+        /** @copydoc PoolingParameter */
         public UnPoolingParameter()
         {
         }
@@ -84,7 +84,7 @@ namespace MyCaffe.param
         }
 
 
-        /** @copydoc KernelParameter::Load */
+        /** @copydoc PoolingParameter::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
             RawProto proto = RawProto.Parse(br.ReadString());
@@ -99,7 +99,7 @@ namespace MyCaffe.param
             return p;
         }
 
-        /** @copydoc KernelParameter::Copy */
+        /** @copydoc PoolingParameter::Copy */
         public override void Copy(LayerParameterBase src)
         {
             base.Copy(src);
@@ -114,7 +114,7 @@ namespace MyCaffe.param
             }
         }
 
-        /** @copydoc KernelParameter::Clone */
+        /** @copydoc PoolingParameter::Clone */
         public override LayerParameterBase Clone()
         {
             UnPoolingParameter p = new UnPoolingParameter();
@@ -122,7 +122,7 @@ namespace MyCaffe.param
             return p;
         }
 
-        /** @copydoc KernelParameter::ToProto */
+        /** @copydoc PoolingParameter::ToProto */
         public override RawProto ToProto(string strName)
         {
             dilation.Clear();
