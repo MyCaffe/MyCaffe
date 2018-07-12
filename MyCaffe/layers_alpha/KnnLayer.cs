@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using MyCaffe.basecode;
@@ -25,14 +26,14 @@ namespace MyCaffe.layers.alpha
     /// However, in order to work with the Accuracy, SoftmaxLoss and Softmax layers, the
     /// summed values are normalized to the range between 0 and 1 and then inverted so that
     /// the maximum value is accociated with the nearest neighbor class.
+    /// 
+    /// IMPORTANT: The KNN layer requires that both the training and testing phases use 
+    /// the same batch sizes.
     /// </remarks> 
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class KnnLayer<T> : Layer<T>
     {
-        Blob<T> m_blobItem;
         Blob<T> m_blobCompare;
-        BlobCollection<T> m_rgBatchData = new BlobCollection<T>();
-        List<float[]> m_rgrgLabels = new List<float[]>();
         int m_nBatchSize;
         int m_nMaxBatches;
         int m_nCurrentBatchIdx = 0;
@@ -41,7 +42,6 @@ namespace MyCaffe.layers.alpha
         int m_nK = -1;
         bool m_bBufferFull = false;
         int m_nBatchDataCount = 0;
-        int m_nIteration = 0;
 
         /// <summary>
         /// The KnnLayer constructor.
@@ -64,18 +64,14 @@ namespace MyCaffe.layers.alpha
             m_nNumOutput = p.knn_param.num_output;
             m_nK = p.knn_param.k;
             m_nMaxBatches = p.knn_param.max_stored_batches;
-            m_blobItem = new common.Blob<T>(m_cuda, m_log);
-            m_blobItem.Name = "item";
-            m_blobCompare = new common.Blob<T>(m_cuda, m_log);
+            m_blobCompare = new common.Blob<T>(m_cuda, m_log, false);
             m_blobCompare.Name = "compare";
         }
 
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
-            m_rgBatchData.Dispose();
             m_blobCompare.Dispose();
-            m_blobItem.Dispose();
             base.dispose();
         }
 
@@ -86,7 +82,6 @@ namespace MyCaffe.layers.alpha
             {
                 BlobCollection<T> col = new BlobCollection<T>();
 
-                col.Add(m_blobItem);
                 col.Add(m_blobCompare);
 
                 return col;
@@ -129,20 +124,27 @@ namespace MyCaffe.layers.alpha
 
             m_nBatchSize = colBottom[0].shape(0);
 
-            // Allocate the temp batch storage.
+            // Make sure to not have a diff so as to avoid
+            // being normalized or regularized in the
+            // ApplyUpdate.
+            Blob<T> blobInfo = new Blob<T>(m_cuda, m_log, false);
+            blobInfo.Name = "info";
+            blobInfo.Reshape(1, 1, 1, 1);
+            blobInfo.SetData(0, 0);
+            m_colBlobs.Add(blobInfo);
+
+            // Setup the weights where
+            //  weight[0] stores the last 'max' batches and
+            //  weight[1] stores the last 'max' labels
             for (int i = 0; i < m_nMaxBatches; i++)
             {
-                Blob<T> data = new Blob<T>(m_cuda, m_log, false);
-                data.ReshapeLike(colBottom[0]);
-                m_rgBatchData.Add(data);
+                Blob<T> blobData = new Blob<T>(m_cuda, m_log, false);
+                blobData.Name = "data_" + i.ToString();
+                Blob<T> blobLabel = new Blob<T>(m_cuda, m_log, false);
+                blobLabel.Name = "label_" + i.ToString();
+                m_colBlobs.Add(blobData);
+                m_colBlobs.Add(blobLabel);
             }
-
-            // Setup the weights (which stores the centroid embedding for each class)
-            Blob<T> blobCentroid = new Blob<T>(m_cuda, m_log);
-            List<int> rgShape = Utility.Clone<int>(colBottom[0].shape());
-            rgShape[0] = m_nNumOutput;
-            blobCentroid.Reshape(rgShape);
-            m_colBlobs.Add(blobCentroid);
 
             for (int i = 0; i < colBottom.Count; i++)
             {
@@ -160,24 +162,21 @@ namespace MyCaffe.layers.alpha
             // Reshape the temp batch storage.
             for (int i = 0; i < m_nMaxBatches; i++)
             {
-                m_rgBatchData[i].ReshapeLike(colBottom[0]);
+                m_colBlobs[1 + (i * 2 + 0)].ReshapeLike(colBottom[0]);
+
+                if (colBottom.Count > 1)
+                    m_colBlobs[1 + (i * 2 + 1)].ReshapeLike(colBottom[1]);
             }
 
             // Size the compare blob to one element int a single batch.
             List<int> rgShape = Utility.Clone<int>(colBottom[0].shape());
             rgShape[0] = 1;
             m_blobCompare.Reshape(rgShape);
-            m_blobItem.Reshape(rgShape);
-            m_nVectorDim = m_blobItem.count();
+            m_nVectorDim = m_blobCompare.count();
 
             // Setup the outputs where each item has 'num_output' elements, one per class.
             rgShape = new List<int>() { m_nBatchSize, m_nNumOutput, 1, 1 };
             colTop[0].Reshape(rgShape);
-
-            // Reshape the weights (centroids)
-            rgShape = Utility.Clone<int>(colBottom[0].shape());
-            rgShape[0] = m_nNumOutput;
-            m_colBlobs[0].Reshape(rgShape);
 
             m_nBatchDataCount = (m_bBufferFull) ? m_nMaxBatches : (m_nCurrentBatchIdx + 1);
         }
@@ -193,18 +192,23 @@ namespace MyCaffe.layers.alpha
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            // When training, move the centroids closer to their
-            //  true locations, store in the weights.
-            if (m_phase == Phase.TRAIN || m_param.phase == Phase.TRAIN) 
-                forward_train(colBottom, colTop);
+            if (m_phase == Phase.TRAIN || m_param.phase == Phase.TRAIN)
+            {
+                // Save the last 'max' items.
+                forward_save(colBottom, colTop);
+                return;
+            }
 
-            // Find the closest centroid that matches the class.
+            colTop[0].SetData(0);
+
+            // Find the label with the closest (smallest)
+            // averaged distance.
             forward_test(colBottom, colTop);
         }
 
         /// <summary>
         /// Computes the forward calculation, run during the Phase.TEST cycle to find the 
-        /// closest centroid stored in the internal blob cache.
+        /// closest averaged distance stored in the inernal blobs.
         /// </summary>
         /// <param name="colBottom">bottom input Blob vector (Length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$ the inputs.</param>
@@ -214,36 +218,96 @@ namespace MyCaffe.layers.alpha
         /// </param>
         protected void forward_test(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            List<float> rgFullSet = new List<float>();
+            float fDataCount = convertF(m_colBlobs[0].GetData(0));
+            int nDataCount = (int)fDataCount;
+           
+            if (nDataCount == 0)
+                return;
 
-            for (int i=0; i<m_nBatchSize; i++)
+            Dictionary<int, List<Tuple<int, int>>> rgData = new Dictionary<int, List<Tuple<int, int>>>();
+            float[] rgFullSet = new float[m_nBatchSize * m_nNumOutput];
+
+            // Organize all stored data items by label.
+            for (int i = 0; i < nDataCount; i++)
             {
-                float[] rgDist = new float[m_nNumOutput];
-                float fTotal = 0;
+                Blob<T> blobLabel = m_colBlobs[1 + (i * 2 + 1)];
+                float[] rgLabels1 = convertF(blobLabel.update_cpu_data());
 
-                for (int j = 0; j < m_nNumOutput; j++)
+                for (int j = 0; j < rgLabels1.Length; j++)
                 {
-                    m_cuda.sub(m_blobCompare.count(), colBottom[0].gpu_data, m_colBlobs[0].gpu_data, m_blobCompare.mutable_gpu_data, i * m_nVectorDim, j * m_nVectorDim);
-                    rgDist[j] = m_cuda.dot_float(m_blobCompare.count(), m_blobCompare.gpu_data, m_blobCompare.gpu_data);
-                    fTotal += rgDist[j];
+                    int nLabel = (int)rgLabels1[j];
+
+                    if (!rgData.ContainsKey(nLabel))
+                        rgData.Add(nLabel, new List<Tuple<int, int>>());
+
+                    rgData[nLabel].Add(new Tuple<int, int>(i, j));
+                }
+            }
+
+            // Get the current set of labels.
+            float[] rgLabels = convertF(colBottom[1].update_cpu_data());
+            Stopwatch sw = new Stopwatch();
+
+            sw.Start();
+
+            // Calculate all distances between each item in the current bottom and those in the stored
+            //  blobs 'weight' data (which are actually the last trained 'max' data items and labels).
+            for (int i = 0; i < m_nBatchSize; i++)
+            {
+                int nLabel = (int)rgLabels[i];
+                Dictionary<int, float> rgKDist = new Dictionary<int, float>();
+
+                foreach (KeyValuePair<int, List<Tuple<int, int>>> kvItem in rgData.OrderBy(p => p.Key))
+                {
+                    List<float> rgDist = new List<float>();
+
+                    foreach (Tuple<int, int> offset in kvItem.Value)
+                    {
+                        Blob<T> blobData = m_colBlobs[1 + (offset.Item1 * 2 + 0)];
+                        m_cuda.sub(m_blobCompare.count(), colBottom[0].gpu_data, blobData.gpu_data, m_blobCompare.mutable_gpu_data, i * m_nVectorDim, offset.Item2 * m_nVectorDim);
+                        float fDist1 = m_cuda.dot_float(m_blobCompare.count(), m_blobCompare.gpu_data, m_blobCompare.gpu_data);
+                        float fDist = (float)Math.Sqrt(convertF(m_blobCompare.sumsq_data()));
+                        rgDist.Add(fDist);
+                    }
+
+                    rgDist.Sort();
+                    int k = (m_nK <= 0 || m_nK > rgDist.Count) ? rgDist.Count : m_nK;
+                    float fTotal = 0;
+
+                    for (int j = 0; j < k; j++)
+                    {
+                        fTotal += rgDist[j];
+                    }
+
+                    float fAveDist = fTotal / k;
+                    rgKDist.Add(kvItem.Key, fAveDist);
                 }
 
-                // Normalize and invert so that the shortest distance has the largest value for that class
-                // Softmax and Accuracy layers look for the max.
-                for (int j=0; j<m_nNumOutput; j++)
+                List<KeyValuePair<int, float>> rgKDistSorted = rgKDist.OrderBy(p => p.Key).ToList();
+                float fMax = rgKDistSorted.Max(p => p.Value);
+                float fMin = rgKDistSorted.Min(p => p.Value);
+
+                for (int j = 0; j < rgKDistSorted.Count; j++)
                 {
-                    rgDist[j] = 1.0f - (rgDist[j] / fTotal);
+                    float fVal = (rgKDistSorted[j].Value - fMin)/(fMax - fMin);
+                    fVal = 1.0f - fVal; // invert so that max value is the shortest distance (softmax looks for max);
+                    rgFullSet[i * m_nNumOutput + j] = fVal;
                 }
 
-                rgFullSet.AddRange(rgDist);
+                if (sw.Elapsed.TotalMilliseconds > 1000)
+                {
+                    double dfPct = (double)i / (double)m_nBatchSize;
+                    m_log.WriteLine("KNN testing cycle at " + dfPct.ToString("P") + "...");
+                    sw.Restart();
+                }
             }
 
             colTop[0].mutable_cpu_data = convert(rgFullSet.ToArray());
         }
 
+
         /// <summary>
-        /// Computes the forward calculation, run during the Phase.TRAIN cycle to store the batch
-        /// in the internal cache and calculate the centroids using the nearest neighbors.
+        /// Save the data in the batch storage.
         /// </summary>
         /// <param name="colBottom">bottom input Blob vector (Length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$ the inputs.</param>
@@ -251,7 +315,7 @@ namespace MyCaffe.layers.alpha
         ///  -# @f$ (N \times K \times 1 \times 1) @f$ computed outputs, where @f$ K @f$ equals 
         ///     the <i>num_output</i> parameter. 
         /// </param>
-        protected void forward_train(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        protected bool forward_save(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             m_log.CHECK_EQ(2, colBottom.Count, "When training, the bottom must have both 'data' and 'labels'.");
 
@@ -262,208 +326,21 @@ namespace MyCaffe.layers.alpha
             }
 
             // Copy the data into the batch storage.
-            m_cuda.copy(colBottom[0].count(), colBottom[0].gpu_data, m_rgBatchData[m_nCurrentBatchIdx].mutable_gpu_data);
-
-            // Copy the labels into the label storage on the host side.
-            float[] rgLabels = convertF(colBottom[1].update_cpu_data());
-            if (m_bBufferFull)
-                m_rgrgLabels[m_nCurrentBatchIdx] = rgLabels;
-            else
-                m_rgrgLabels.Add(rgLabels);
-
-            colTop[0].SetData(0.0);
-
-            // Calculate all of the distances between each item within the current batch and
-            // all other items.
-            List<DistItem> rgDistances = new List<DistItem>();
-            for (int j = 0; j < m_nBatchSize; j++)
-            {
-                m_cuda.copy(m_blobItem.count(), m_rgBatchData[m_nCurrentBatchIdx].gpu_data, m_blobItem.mutable_gpu_data, j * m_nVectorDim);
-                int nLabel = (int)m_rgrgLabels[m_nCurrentBatchIdx][j];
-
-                for (int l = 0; l < m_nBatchDataCount; l++)
-                {
-                    if (l != m_nCurrentBatchIdx)
-                    {
-                        for (int m = 0; m < m_nBatchSize; m++)
-                        {
-                            // Only add if we have not already made the distance comparison.
-                            // For example, if a->b distance has been added, don't add b->a.
-                            int nDuplicateCount = rgDistances.Where(p => p.CompareBatchIdx == m_nCurrentBatchIdx && p.CompareItemIdx == j && p.MainBatchIdx == l && p.MainItemIdx == m).Count();
-
-                            if (nDuplicateCount == 0)
-                            {
-                                m_cuda.sub(m_blobCompare.count(), m_blobItem.gpu_data, m_rgBatchData[l].gpu_data, m_blobCompare.mutable_gpu_data, 0, m * m_nVectorDim);
-                                int nCompareLabel = (int)m_rgrgLabels[l][m];
-                                double dfDist = m_cuda.dot_double(m_blobCompare.count(), m_blobCompare.gpu_data, m_blobCompare.gpu_data);
-                                rgDistances.Add(new DistItem(nLabel, nCompareLabel, m_nCurrentBatchIdx, j, l, m, dfDist));
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Make sure to compare at least num_output+1 items to avoid ties.
-            int nCompareCount = m_nK;
-            if (nCompareCount < m_nNumOutput + 1)
-                nCompareCount = m_nNumOutput + 1;
-
-            if (rgDistances.Count >= nCompareCount)
-            {
-                // Sort all, with shortest first.
-                rgDistances = rgDistances.OrderBy(p => p.Distance).ToList();
-
-                // Load K items with the shortest distances into their respective classes.
-                Dictionary<int, List<DistItem>> rgClassItems = new Dictionary<int, List<DistItem>>();
-                for (int i = 0; i < nCompareCount; i++)
-                {
-                    DistItem item = rgDistances[i];
-                    if (!rgClassItems.ContainsKey(item.MainItemLabel))
-                        rgClassItems.Add(item.MainItemLabel, new List<DistItem>());
-
-                    rgClassItems[item.MainItemLabel].Add(item);
-                }
-
-                // Go through the cache of batches and find the most 'centered' point for each class and set
-                //  it as the centroid in the weights - the centered values are used to find the class
-                //  when running in TEST or RUN mode.
-                m_colBlobs[0].SetDiff(0);
-
-                Dictionary<int, CentroidItem<T>> rgCentroids = new Dictionary<int, CentroidItem<T>>();
-                for (int i = 0; i < m_nNumOutput; i++)
-                {
-                    rgCentroids.Add(i, new CentroidItem<T>(m_colBlobs[0], i, m_nVectorDim));
-                }
-
-                // Calculate the average data point for each class.
-                foreach (KeyValuePair<int, List<DistItem>> kv in rgClassItems)
-                {
-                    int nLabel = kv.Key;
-                    CentroidItem<T> centroid = rgCentroids[nLabel];
-                    double dfScale = 1.0 / (double)kv.Value.Count;
-
-                    for (int j = 0; j < kv.Value.Count; j++)
-                    {
-                        int nOffset = kv.Value[j].MainItemIdx * m_nVectorDim;
-                        m_cuda.add(centroid.VectorDim, centroid.Data.gpu_diff, m_rgBatchData[m_nCurrentBatchIdx].gpu_data, centroid.Data.mutable_gpu_diff, 1.0, dfScale, centroid.Offset, nOffset, centroid.Offset);
-                    }
-                }
-
-                // Scale the current centroid by half and add half of the new centroid
-                // to 'move' toward the real centroid.
-                double dfScale1 = (m_nIteration == 0) ? 1.0 : 0.5;
-                m_cuda.add(m_colBlobs[0].count(), m_colBlobs[0].gpu_data, m_colBlobs[0].gpu_diff, m_colBlobs[0].mutable_gpu_data, dfScale1, dfScale1);
-                m_nIteration++;
-            }
-
+            m_cuda.copy(colBottom[0].count(), colBottom[0].gpu_data, m_colBlobs[1 + (m_nCurrentBatchIdx * 2 + 0)].mutable_gpu_data);
+            m_cuda.copy(colBottom[1].count(), colBottom[1].gpu_data, m_colBlobs[1 + (m_nCurrentBatchIdx * 2 + 1)].mutable_gpu_data);
             m_nCurrentBatchIdx++;
-        }
 
+            double dfCount = (m_bBufferFull) ? m_nMaxBatches : m_nCurrentBatchIdx;
+            m_colBlobs[0].SetData(dfCount, 0);
+
+            return m_bBufferFull;
+        }
 
         /// @brief Not implemented - the KNN Layer does not perform backward.
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
             if (rgbPropagateDown[0])
                 throw new NotImplementedException();
-        }
-    }
-
-    class CentroidItem<T> /** @private */
-    {
-        Blob<T> m_blob;
-        int m_nOffset;
-        int m_nVectorDim;
-        int m_nCount;
-
-        public CentroidItem(Blob<T> blob, int nOffset, int nVectorDim)
-        {
-            m_blob = blob;
-            m_nOffset = nOffset * nVectorDim;
-            m_nVectorDim = nVectorDim;
-            m_nCount = 0;
-        }
-
-        public Blob<T> Data
-        {
-            get { return m_blob; }
-        }
-
-        public int Offset
-        {
-            get { return m_nOffset; }
-        }
-
-        public int VectorDim
-        {
-            get { return m_nVectorDim; }
-        }
-
-        public int Count
-        {
-            get { return m_nCount; }
-            set { m_nCount = value; }
-        }
-    }
-
-    class DistItem /** @private */
-    {
-        int m_nMainItemLabel;
-        int m_nMainBatchIdx;
-        int m_nMainItemIdx;
-        int m_nCompareItemLabel;
-        int m_nCompareBatchCacheIdx;
-        int m_nCompareBatchCacheItemIdx;
-        double m_dfDistanceMainToCompare;
-
-        public DistItem(float fMainItemLabel, float fCompareItemLabel, int nMainBatchIdx, int nMainItemIdx, int nCompareBatchIdx, int nCompareDistItemIdx, double dfDistance)
-        {
-            m_nMainItemLabel = (int)fMainItemLabel;
-            m_nMainBatchIdx = nMainBatchIdx;
-            m_nMainItemIdx = nMainItemIdx;
-            m_nCompareItemLabel = (int)fCompareItemLabel;
-            m_nCompareBatchCacheIdx = nCompareBatchIdx;
-            m_nCompareBatchCacheItemIdx = nCompareDistItemIdx;
-            m_dfDistanceMainToCompare = dfDistance;
-        }
-
-        public int MainItemLabel
-        {
-            get { return m_nMainItemLabel; }
-        }
-
-        public int MainBatchIdx
-        {
-            get { return m_nMainBatchIdx; }
-        }
-
-        public int MainItemIdx
-        {
-            get { return m_nMainItemIdx; }
-        }
-
-        public int CompareItemLabel
-        {
-            get { return m_nCompareItemLabel; }
-        }
-
-        public int CompareBatchIdx
-        {
-            get { return m_nCompareBatchCacheIdx; }
-        }
-
-        public int CompareItemIdx
-        {
-            get { return m_nCompareBatchCacheItemIdx; }
-        }
-
-        public double Distance
-        {
-            get { return m_dfDistanceMainToCompare; }
-        }
-
-        public override string ToString()
-        {
-            return "[" + m_nMainItemLabel.ToString() + "](" + m_nMainBatchIdx.ToString() + "," + m_nMainItemIdx.ToString() + ") -> [" + m_nCompareItemLabel.ToString() + "](" + m_nCompareBatchCacheIdx.ToString() + "," + m_nCompareBatchCacheItemIdx.ToString() + ") = " + m_dfDistanceMainToCompare.ToString();
         }
     }
 }
