@@ -11,9 +11,11 @@ namespace MyCaffe.param
     /// Specifies the parameters for the UnPoolingLayer.
     /// </summary>
     /// <remarks>
+    /// @see [A Deep Convolutional Auto-Encoder with Pooling - Unpooling Layers in Caffe](https://arxiv.org/abs/1701.04949) by Volodymyr Turchenko, Eric Chalmers, Artur Luczak, 2017.
     /// @see [A guide to convolution arithmetic for deep learning](https://arxiv.org/abs/1603.07285) by Vincent Dumoulin and Francesco Visin, 2016.
     /// @see [Learning Deep Features for Discriminative Localization](https://arxiv.org/abs/1512.04150) by Bolei Zhou, Aditya Khosla, Agata Lapedriza, Aude Oliva, and Antonio Torralba, 2015.
     /// @see [Gradient-Based Learning Applied to Document Recognition](http://yann.lecun.com/exdb/publis/pdf/lecun-98.pdf) by Yann LeCun, Léon Bottou, Yoshua Bengio, and Patrick Haffner, 1998.
+    /// @see [Decoupled Deep Neural Network for Semi-supervised Semantic Segmentation](https://arxiv.org/abs/1506.04924) by Seunghoon Hong, Hyeonwoo Noh, and Bohyung Han, 2015.
     /// </remarks>
     public class UnPoolingParameter : PoolingParameter 
     {
