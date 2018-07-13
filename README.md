@@ -27,8 +27,10 @@ NOTE: Visual Studio 2017 support noted above currently uses the Platform Toolset
 IMPORTANT: The open-source MyCaffe project on GitHub is considered 'pre-release' and will have bugs.  When you find bugs or other issues, please report them here - or better yet, get involved
 and propose a fix!
 
-MyCaffe now supports source and target datasets and the gradient reversal layer which allow implementing Domain-Adversarial Neural Networks (DANN) as described in [2].  MyCaffe also now supports
-the ResNet-56 on the Cifar-10 dataset as desscribed in [3].
+We have several new models supported by MyCaffe with the train_val and solution prototxt ready to go:
+ - Domain-Adversarial Neural Networks (DANN) as described in [2] with support for source and target datasets.
+ - ResNet-56 on the Cifar-10 dataset as described in [3].
+ - Deep convolutional auto-encoder neural networks with pooling as described in [4].
 
 [1] [Caffe: Convolutional Architecture for Fast Feature Embedding](https://arxiv.org/abs/1408.5093) by Yangqing Jai, Evan Shelhamer, Jeff Donahue, 
 Sergey Karayev, Jonathan Long, Ross Girshick, Sergio Guadarrama, and Trevor Darrell, 2014.
@@ -37,6 +39,8 @@ Sergey Karayev, Jonathan Long, Ross Girshick, Sergio Guadarrama, and Trevor Darr
 Hugo Larochelle, François Laviolette, Mario Marchand, and Victor Lempitsky, 2015.
 
 [3] [ResNet 20/32/44/56/110 for CIFAR10 with caffe](https://github.com/yihui-he/resnet-cifar10-caffe) by Yihui He, 2016.
+
+[4] [A Deep Convolutional Auto-Encoder with Pooling - Unpooling Layers in Caffe](https://arxiv.org/abs/1701.04949) by Volodymyr Turchenko, Eric Chalmers and Artur Luczac, 2017.
 
 For more information on the C++ CAFFE open-source project, please see the following <a href="http://caffe.berkeleyvision.org/">link</a>.
 
