@@ -239,6 +239,7 @@ layer
          value: 0.2
       }
       axis: 1
+      min_top_axes: 4
    }
 }
 layer 
@@ -471,6 +472,10 @@ layer
    bottom: "ip2encode"
    bottom: "label"
    top: "knn1"
+   exclude 
+   {
+      phase: RUN
+   }
    max_bottom_count 
    {
       phase: RUN

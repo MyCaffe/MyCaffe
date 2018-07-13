@@ -28,7 +28,7 @@ namespace MyCaffe.layers.alpha
     /// the maximum value is accociated with the nearest neighbor class.
     /// 
     /// IMPORTANT: The KNN layer requires that both the training and testing phases use 
-    /// the same batch sizes.
+    /// the same batch sizes and requires both the 'data' and 'label' bottom items.
     /// </remarks> 
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class KnnLayer<T> : Layer<T>
@@ -223,6 +223,8 @@ namespace MyCaffe.layers.alpha
            
             if (nDataCount == 0)
                 return;
+
+            m_log.CHECK_EQ(colBottom.Count, 2, "The KNN Layer is used for testing and expects both the 'data' and 'label' bottom items.");
 
             Dictionary<int, List<Tuple<int, int>>> rgData = new Dictionary<int, List<Tuple<int, int>>>();
             float[] rgFullSet = new float[m_nBatchSize * m_nNumOutput];

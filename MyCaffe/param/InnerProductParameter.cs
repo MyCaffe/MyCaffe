@@ -20,6 +20,7 @@ namespace MyCaffe.param
         FillerParameter m_fillerParam_weights = new FillerParameter("xavier");
         FillerParameter m_fillerParam_bias = new FillerParameter("constant", 0.1);
         int m_nAxis = 1;
+        int m_nMinTopAxes = -1;
         bool m_bTranspose = false;
 
         /** @copydoc LayerParameterBase */
@@ -35,6 +36,19 @@ namespace MyCaffe.param
         {
             get { return m_nNumOutput; }
             set { m_nNumOutput = value; }
+        }
+
+        /// <summary>
+        /// Optionally, specifies the minimum top axes (default = -1, which ignores this setting).
+        /// </summary>
+        /// <remarks>
+        /// NOTE: The Deconvolution Layer requires 'min_top_axes' = 4.
+        /// </remarks>
+        [Description("Optionally, specifies the minimum top axes (default = -1, which ignores this setting).  NOTE: Deconvolution requies 'min_top_axes' = 4.")]
+        public int min_top_axes
+        {
+            get { return m_nMinTopAxes; }
+            set { m_nMinTopAxes = value; }
         }
 
         /// <summary>
@@ -122,6 +136,7 @@ namespace MyCaffe.param
 
             m_nAxis = p.m_nAxis;
             m_bTranspose = p.m_bTranspose;
+            m_nMinTopAxes = p.m_nMinTopAxes;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -150,6 +165,9 @@ namespace MyCaffe.param
 
             if (transpose != false)
                 rgChildren.Add("tranpose", transpose.ToString());
+
+            if (min_top_axes != -1)
+                rgChildren.Add("min_top_axes", min_top_axes.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -183,6 +201,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("transpose")) != null)
                 p.transpose = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("min_top_axes")) != null)
+                p.min_top_axes = int.Parse(strVal);
 
             return p;
         }

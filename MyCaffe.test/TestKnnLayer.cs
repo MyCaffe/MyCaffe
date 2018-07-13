@@ -221,12 +221,6 @@ namespace MyCaffe.test
 
                 layer.Forward(BottomVec, TopVec);
             }
-
-            // Verify the data.
-            double[] rgTop = convert(TopVec[0].update_cpu_data());
-
-            // Check the values.
-            verify_top(rgTop);
         }
 
         public void TestForwardTest(KnnLayer<T> layer)
@@ -235,6 +229,7 @@ namespace MyCaffe.test
 
             BottomVec.Clear();
             BottomVec.Add(m_blob_bottom);
+            BottomVec.Add(m_blobBottomLabels);
 
             int nBatchIdx = m_colData.Count - 1;
             m_cuda.copy(m_blob_bottom.count(), m_colData[nBatchIdx].gpu_data, m_blob_bottom.mutable_gpu_data);

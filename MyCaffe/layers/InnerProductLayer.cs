@@ -205,7 +205,8 @@ namespace MyCaffe.layers
             List<int> rgTopShape = Utility.Clone<int>(colBottom[0].shape(), nAxis + 1);
             rgTopShape[nAxis] = m_nN;
 
-            for (int i = rgTopShape.Count; i < 4; i++)
+            // Deconvolution Layer requires min_top_axes = 4
+            for (int i = rgTopShape.Count; i < m_param.inner_product_param.min_top_axes; i++)
             {
                 rgTopShape.Add(1);
             }

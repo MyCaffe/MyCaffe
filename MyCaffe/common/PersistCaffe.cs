@@ -963,7 +963,7 @@ namespace MyCaffe.common
 
             for (int i = 0; i < rg.Length; i++)
             {
-                if (rg[i] > 1)
+                if (rg[i] >= 1)
                 {
                     str += rg[i].ToString();
                     str += " ";

@@ -232,9 +232,9 @@ namespace MyCaffe.test
         public void TestForwardSquare(LayerParameter.LayerType type)
         {
             LayerParameter p = new LayerParameter(type);
-            p.pooling_param.kernel_size.Add(2);
-            p.pooling_param.pool = PoolingParameter.PoolingMethod.MAX;
-            p.pooling_param.engine = m_engine;
+            p.unpooling_param.kernel_size.Add(2);
+            p.unpooling_param.pool = PoolingParameter.PoolingMethod.MAX;
+            p.unpooling_param.engine = m_engine;
             int nNum = 2;
             int nChannels = 2;
 
@@ -310,10 +310,10 @@ namespace MyCaffe.test
         public void TestForwardRectHigh(LayerParameter.LayerType type)
         {
             LayerParameter p = new LayerParameter(type);
-            p.pooling_param.kernel_h = 3;
-            p.pooling_param.kernel_w = 2;
-            p.pooling_param.pool = PoolingParameter.PoolingMethod.MAX;
-            p.pooling_param.engine = m_engine;
+            p.unpooling_param.kernel_h = 3;
+            p.unpooling_param.kernel_w = 2;
+            p.unpooling_param.pool = PoolingParameter.PoolingMethod.MAX;
+            p.unpooling_param.engine = m_engine;
             int nNum = 2;
             int nChannels = 2;
 
@@ -449,11 +449,11 @@ namespace MyCaffe.test
         public void TestForwardRectWithPad(LayerParameter.LayerType type)
         {
             LayerParameter p = new LayerParameter(type);
-            p.pooling_param.kernel_size.Add(3);
-            p.pooling_param.stride.Add(2);
-            p.pooling_param.pad.Add(1);
-            p.pooling_param.pool = PoolingParameter.PoolingMethod.MAX;
-            p.pooling_param.engine = m_engine;
+            p.unpooling_param.kernel_size.Add(3);
+            p.unpooling_param.stride.Add(2);
+            p.unpooling_param.pad.Add(1);
+            p.unpooling_param.pool = PoolingParameter.PoolingMethod.MAX;
+            p.unpooling_param.engine = m_engine;
             int nNum = 2;
             int nChannels = 2;
 
@@ -554,12 +554,12 @@ namespace MyCaffe.test
         public void TestForwardSquareWithPad(LayerParameter.LayerType type)
         {
             LayerParameter p = new LayerParameter(type);
-            p.pooling_param.kernel_h = 2;
-            p.pooling_param.kernel_w = 2;
-            p.pooling_param.stride.Add(2);
-            p.pooling_param.pad.Add(1);
-            p.pooling_param.pool = PoolingParameter.PoolingMethod.MAX;
-            p.pooling_param.engine = m_engine;
+            p.unpooling_param.kernel_h = 2;
+            p.unpooling_param.kernel_w = 2;
+            p.unpooling_param.stride.Add(2);
+            p.unpooling_param.pad.Add(1);
+            p.unpooling_param.pool = PoolingParameter.PoolingMethod.MAX;
+            p.unpooling_param.engine = m_engine;
             int nNum = 2;
             int nChannels = 2;
 

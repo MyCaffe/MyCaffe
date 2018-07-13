@@ -1,0 +1,247 @@
+name: "AutoEncPoolRunNet"
+layer 
+{
+   name: "data"
+   type: "Data"
+   top: "data"
+   top: "label"
+   include 
+   {
+      phase: TRAIN
+   }
+   transform_param 
+   {
+      scale: 0.00390625
+      use_imagedb_mean: True
+      color_order: RGB
+   }
+   data_param 
+   {
+      source: "MNIST.training"
+      batch_size: 128
+      backend: IMAGEDB
+      enable_random_selection: True
+   }
+}
+layer 
+{
+   name: "data"
+   type: "Data"
+   top: "data"
+   top: "label"
+   include 
+   {
+      phase: TEST
+   }
+   transform_param 
+   {
+      scale: 0.00390625
+      use_imagedb_mean: True
+      color_order: RGB
+   }
+   data_param 
+   {
+      source: "MNIST.testing"
+      batch_size: 128
+      backend: IMAGEDB
+      enable_random_selection: True
+   }
+}
+layer 
+{
+   name: "conv1"
+   type: "Convolution"
+   bottom: "data"
+   top: "conv1"
+   convolution_param 
+   {
+      kernel_size: 7
+      stride: 1
+      pad: 0
+      dilation: 1
+      num_output: 36
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.2
+      }
+   }
+}
+layer 
+{
+   name: "bn1"
+   type: "BatchNorm"
+   bottom: "conv1"
+   top: "bn1"
+}
+layer 
+{
+   name: "sigmoid3"
+   type: "Sigmoid"
+   bottom: "bn1"
+   top: "bn1"
+}
+layer 
+{
+   name: "pool1"
+   type: "Pooling"
+   bottom: "bn1"
+   top: "pool1"
+   pooling_param 
+   {
+      kernel_size: 2
+      stride: 2
+      pad: 0
+      pool: MAX
+   }
+}
+layer 
+{
+   name: "conv2"
+   type: "Convolution"
+   bottom: "pool1"
+   top: "conv2"
+   convolution_param 
+   {
+      kernel_size: 7
+      stride: 1
+      pad: 0
+      dilation: 1
+      num_output: 36
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.2
+      }
+   }
+}
+layer 
+{
+   name: "bn2"
+   type: "BatchNorm"
+   bottom: "conv2"
+   top: "bn2"
+}
+layer 
+{
+   name: "sigmoid4"
+   type: "Sigmoid"
+   bottom: "bn2"
+   top: "bn2"
+}
+layer 
+{
+   name: "ip1encode"
+   type: "InnerProduct"
+   bottom: "bn2"
+   top: "ip1encode"
+   inner_product_param 
+   {
+      num_output: 250
+      bias_term: True
+      weight_filler 
+      {
+         type: "gaussian"
+         mean: 0
+         std: 1
+         sparse: 10
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.2
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "sig3en"
+   type: "Sigmoid"
+   bottom: "ip1encode"
+   top: "ip1encode"
+}
+layer 
+{
+   name: "ip2encode"
+   type: "InnerProduct"
+   bottom: "ip1encode"
+   top: "ip2encode"
+   inner_product_param 
+   {
+      num_output: 30
+      bias_term: True
+      weight_filler 
+      {
+         type: "gaussian"
+         mean: 0
+         std: 1
+         sparse: 10
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.2
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "ip1decode"
+   type: "InnerProduct"
+   bottom: "ip2encode"
+   top: "ip1decode"
+   inner_product_param 
+   {
+      num_output: 10
+      bias_term: True
+      weight_filler 
+      {
+         type: "gaussian"
+         mean: 0
+         std: 1
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.2
+      }
+      axis: 1
+      min_top_axes: 4
+   }
+}
+layer 
+{
+   name: "loss1"
+   type: "SoftmaxWithLoss"
+   bottom: "ip1decode"
+   bottom: "label"
+   top: "loss1"
+   loss_param 
+   {
+      normalization: VALID
+   }
+}
+layer 
+{
+   name: "accuracy1"
+   type: "Accuracy"
+   bottom: "ip1decode"
+   bottom: "label"
+   top: "accuracy1"
+   include 
+   {
+      phase: TEST
+   }
+}

@@ -4519,16 +4519,15 @@ __global__ void unpooling_fwd_max_kernel(int nCount, T* bottom_data, int num, in
 		int c = (i / width / height) % channels;
 		int n = i / width / height / channels;
 
-		int uph = max(0, min(ph * stride_h - pad_h, unpooled_height - 1));
-		int upw = max(0, min(pw * stride_w - pad_w, unpooled_width - 1));
+		int uph = max(0, min(ph * stride_h - pad_h, unpooled_height-1));
+		int upw = max(0, min(pw * stride_w - pad_w, unpooled_width-1));
 		int unpooled_index = uph * unpooled_width + upw;
 
 		top_data += (n * channels + c) * unpooled_height * unpooled_width;
 		if (bottom_mask)
 		{
 			const int mask_index = (int)bottom_mask[i];
-			if (mask_index <= unpooled_index)
-				top_data[mask_index] = bottom_data[i];
+			top_data[mask_index] = bottom_data[i];
 		}
 		else
 		{
