@@ -1,0 +1,466 @@
+name: "AutoEncNet"
+layer 
+{
+   name: "data"
+   type: "Data"
+   top: "data"
+   top: "label"
+   include 
+   {
+      phase: TRAIN
+   }
+   transform_param 
+   {
+      scale: 0.00390625
+      use_imagedb_mean: True
+      color_order: RGB
+   }
+   data_param 
+   {
+      source: "MNIST.training"
+      batch_size: 128
+      backend: IMAGEDB
+      enable_random_selection: True
+   }
+}
+layer 
+{
+   name: "data"
+   type: "Data"
+   top: "data"
+   top: "label"
+   include 
+   {
+      phase: TEST
+   }
+   transform_param 
+   {
+      scale: 0.00390625
+      use_imagedb_mean: True
+      color_order: RGB
+   }
+   data_param 
+   {
+      source: "MNIST.testing"
+      batch_size: 128
+      backend: IMAGEDB
+      enable_random_selection: True
+   }
+}
+layer 
+{
+   name: "conv1"
+   type: "Convolution"
+   bottom: "data"
+   top: "conv1"
+   convolution_param 
+   {
+      kernel_size: 9
+      stride: 1
+      pad: 0
+      dilation: 1
+      num_output: 36
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.2
+      }
+   }
+}
+layer 
+{
+   name: "bn1"
+   type: "BatchNorm"
+   bottom: "conv1"
+   top: "bn1"
+}
+layer 
+{
+   name: "sigmoid3"
+   type: "Sigmoid"
+   bottom: "bn1"
+   top: "bn1"
+}
+layer 
+{
+   name: "conv2"
+   type: "Convolution"
+   bottom: "bn1"
+   top: "conv2"
+   convolution_param 
+   {
+      kernel_size: 9
+      stride: 1
+      pad: 0
+      dilation: 1
+      num_output: 36
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.2
+      }
+   }
+}
+layer 
+{
+   name: "bn2"
+   type: "BatchNorm"
+   bottom: "conv2"
+   top: "bn2"
+}
+layer 
+{
+   name: "sigmoid4"
+   type: "Sigmoid"
+   bottom: "bn2"
+   top: "bn2"
+}
+layer 
+{
+   name: "ip1encode"
+   type: "InnerProduct"
+   bottom: "bn2"
+   top: "ip1encode"
+   inner_product_param 
+   {
+      num_output: 250
+      bias_term: True
+      weight_filler 
+      {
+         type: "gaussian"
+         mean: 0
+         std: 1
+         sparse: 10
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.2
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "sig3en"
+   type: "Sigmoid"
+   bottom: "ip1encode"
+   top: "ip1encode"
+}
+layer 
+{
+   name: "ip2encode"
+   type: "InnerProduct"
+   bottom: "ip1encode"
+   top: "ip2encode"
+   inner_product_param 
+   {
+      num_output: 30
+      bias_term: True
+      weight_filler 
+      {
+         type: "gaussian"
+         mean: 0
+         std: 1
+         sparse: 10
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.2
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "debug1"
+   type: "Debug"
+   bottom: "ip2encode"
+   bottom: "label"
+   top: "ip2encode"
+   include 
+   {
+      phase: TRAIN
+   }
+   debug_param 
+   {
+      max_stored_batches: 2000
+   }
+}
+layer 
+{
+   name: "ip1decode"
+   type: "InnerProduct"
+   bottom: "ip2encode"
+   top: "ip1decode"
+   include 
+   {
+      phase: TRAIN
+   }
+   inner_product_param 
+   {
+      num_output: 250
+      bias_term: True
+      weight_filler 
+      {
+         type: "gaussian"
+         mean: 0
+         std: 1
+         sparse: 10
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.2
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "sig3de"
+   type: "Sigmoid"
+   bottom: "ip1decode"
+   top: "ip1decode"
+   include 
+   {
+      phase: TRAIN
+   }
+}
+layer 
+{
+   name: "deconv2"
+   type: "Deconvolution"
+   bottom: "ip1decode"
+   top: "deconv2"
+   include 
+   {
+      phase: TRAIN
+   }
+   convolution_param 
+   {
+      kernel_size: 12
+      stride: 1
+      pad: 0
+      dilation: 1
+      num_output: 36
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.2
+      }
+   }
+}
+layer 
+{
+   name: "bn3"
+   type: "BatchNorm"
+   bottom: "deconv2"
+   top: "bn3"
+   include 
+   {
+      phase: TRAIN
+   }
+}
+layer 
+{
+   name: "sigmoid1"
+   type: "Sigmoid"
+   bottom: "bn3"
+   top: "bn3"
+   include 
+   {
+      phase: TRAIN
+   }
+}
+layer 
+{
+   name: "deconv1"
+   type: "Deconvolution"
+   bottom: "bn3"
+   top: "deconv1"
+   include 
+   {
+      phase: TRAIN
+   }
+   convolution_param 
+   {
+      kernel_size: 17
+      stride: 1
+      pad: 0
+      dilation: 1
+      num_output: 36
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.2
+      }
+   }
+}
+layer 
+{
+   name: "bn4"
+   type: "BatchNorm"
+   bottom: "deconv1"
+   top: "bn4"
+   include 
+   {
+      phase: TRAIN
+   }
+}
+layer 
+{
+   name: "sigmoid2"
+   type: "Sigmoid"
+   bottom: "bn4"
+   top: "bn4"
+   include 
+   {
+      phase: TRAIN
+   }
+}
+layer 
+{
+   name: "deconv1neur"
+   type: "Deconvolution"
+   bottom: "bn4"
+   top: "deconv1neur"
+   param 
+   {
+      lr_mult: 1
+   }
+   param 
+   {
+      lr_mult: 1
+   }
+   include 
+   {
+      phase: TRAIN
+   }
+   convolution_param 
+   {
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      dilation: 1
+      num_output: 1
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.2
+      }
+   }
+}
+layer 
+{
+   name: "bn5"
+   type: "BatchNorm"
+   bottom: "deconv1neur"
+   top: "bn5"
+   include 
+   {
+      phase: TRAIN
+   }
+}
+layer 
+{
+   name: "loss"
+   type: "SigmoidCrossEntropyLoss"
+   bottom: "bn5"
+   bottom: "data"
+   top: "xent_loss"
+   loss_weight: 1
+   include 
+   {
+      phase: TRAIN
+   }
+   loss_param 
+   {
+      normalization: BATCH_SIZE
+   }
+}
+layer 
+{
+   name: "deconv1neursig"
+   type: "Sigmoid"
+   bottom: "bn5"
+   top: "deconv1neursig"
+   include 
+   {
+      phase: TRAIN
+   }
+}
+layer 
+{
+   name: "loss"
+   type: "EuclideanLoss"
+   bottom: "deconv1neursig"
+   bottom: "data"
+   top: "l2_error"
+   loss_weight: 1
+   include 
+   {
+      phase: TRAIN
+   }
+   loss_param 
+   {
+      normalization: VALID
+   }
+}
+layer 
+{
+   name: "knn1"
+   type: "Knn"
+   bottom: "ip2encode"
+   bottom: "label"
+   top: "knn1"
+   max_bottom_count 
+   {
+      phase: RUN
+      count: 1
+   }
+   knn_param 
+   {
+      num_output: 10
+      k: 100
+      max_stored_batches: 10
+   }
+}
+layer 
+{
+   name: "accuracy1"
+   type: "Accuracy"
+   bottom: "knn1"
+   bottom: "label"
+   top: "accuracy1"
+   include 
+   {
+      phase: TEST
+   }
+}
