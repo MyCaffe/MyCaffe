@@ -22,7 +22,7 @@ layer
       backend: IMAGEDB
       prefetch: 6
       enable_random_selection: True
-      load_multiple_labels: True
+      label_type: MULTIPLE
    }
 }
 layer 
@@ -48,7 +48,7 @@ layer
       batch_size: 1
       backend: IMAGEDB
       enable_random_selection: True
-      load_multiple_labels: True
+      label_type: MULTIPLE
    }
 }
 layer {
