@@ -2174,6 +2174,9 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("convolution_param")) != null)
                 p.convolution_param = ConvolutionParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("crop_param")) != null)
+                p.crop_param = CropParameter.FromProto(rpp);
+
             if ((rpp = rp.FindChild("data_param")) != null)
                 p.data_param = DataParameter.FromProto(rpp);
 
