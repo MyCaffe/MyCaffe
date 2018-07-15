@@ -87,7 +87,7 @@ namespace MyCaffe.test
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestQueryPairLoadLimit", "SKIPPED - Assert.AreEqual failed. Expected:<100>. Actual:<10>."));
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestLoadLimitNextSequential", "SKIPPED - currently causes lock-up."));
 
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionLayer", "TestNDAgainst2D", "SKIPPED - currently causes a CUDA map buffer object failure (14) error on some GPU's.  This appears to corrupt the GPU for all subsequent tests fail with CUDA Missing Configuration (1) errors."));
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionLayer", "TestNDAgainst2D", "SKIPPED - FLOAT:CAFFE Values 0.251427710056305 and -0.860932171344757 are NOT within the range 0.01 of one another.  The 2d and ND backward results are not the same at 1"));
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionLayer", "TestGradient3D", "SKIPPED - FLOAT:CAFFE Values 0.107909 and -1.631164 are NOT within the range 0.0016311 of one another."));
 
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestDeconvolutionLayer", "TestNDAgainst2D", "SKIPPED - Values - 8.11466598510742 and - 35.0204658508301 are NOT within the range 0.01 of one another.The backward 2D and ND values at 0 should be equal!"));
