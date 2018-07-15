@@ -2015,6 +2015,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(concat_param, "concat_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(contrastive_loss_param, "contrastive_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(convolution_param, "convolution_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(crop_param, "crop_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(data_param, "data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(debug_param, "debug_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(dropout_param, "dropout_param"));
