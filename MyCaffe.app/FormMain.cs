@@ -916,6 +916,8 @@ namespace MyCaffe.app
 
         private void resNet56CifarAccuracyBugToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            MessageBox.Show("The ResNet56 results will be placed in the 'C:\\ProgramData\\MyCaffe\\test_data\\models\\resnet56\\cifar' directory.", "ResNet56 Results", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
             createMyCaffeToolStripMenuItem.Enabled = false;
             destroyMyCaffeToolStripMenuItem.Enabled = false;
             trainMNISTToolStripMenuItem.Enabled = false;
