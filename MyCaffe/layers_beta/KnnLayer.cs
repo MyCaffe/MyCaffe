@@ -7,10 +7,10 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
 
-namespace MyCaffe.layers.alpha
+namespace MyCaffe.layers.beta
 {
     /// <summary>
-    /// <H3>PRE ALPHA</H3>
+    /// <H3>BETA</H3>
     /// 
     /// Knn Layer - this converts embeddings received into the nearest neighbor and outputs
     /// the inverse sum of distances between the input and all previously received inputs.

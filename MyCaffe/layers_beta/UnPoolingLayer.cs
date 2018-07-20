@@ -7,10 +7,10 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
 
-namespace MyCaffe.layers.alpha
+namespace MyCaffe.layers.beta
 {
     /// <summary>
-    /// <H3>PRE ALPHA</H3>
+    /// <H3>BETA</H3>
     /// 
     /// The UnPoolingLayer performs GPU based unpooling on the network like Zeiler's paper in ECCV 2014.
     /// 

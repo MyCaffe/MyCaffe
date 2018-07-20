@@ -7,10 +7,10 @@ using MyCaffe.param;
 using MyCaffe.basecode;
 using System.Drawing;
 
-namespace MyCaffe.layers.alpha
+namespace MyCaffe.layers.beta
 {
     /// <summary>
-    /// <H3>PRE ALPHA - DEPRECIATED</H3>
+    /// <H3>BETA - DEPRECIATED</H3>
     /// 
     /// The UnPoolingLayer1 performs CPU based unpooling on the network like Zeiler's paper in ECCV 2014.
     /// 

@@ -12,6 +12,7 @@ using MyCaffe.imagedb;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.data;
 using MyCaffe.layers.alpha;
+using MyCaffe.layers.beta;
 
 /// <summary>
 /// Testing the embed knn layer.

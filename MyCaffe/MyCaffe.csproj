@@ -103,7 +103,7 @@
     <Compile Include="layers_alpha\BinaryHashLayer.cs" />
     <Compile Include="layers_alpha\GRNLayer.cs" />
     <Compile Include="layers_alpha\TripletDataLayer.cs" />
-    <Compile Include="layers_alpha\KnnLayer.cs" />
+    <Compile Include="layers_beta\KnnLayer.cs" />
     <Compile Include="layers_alpha\TripletSelectLayer.cs" />
     <Compile Include="layers_alpha\TripletLossLayer.cs" />
     <Compile Include="layers_alpha\TripletLossSimpleLayer.cs" />
@@ -169,8 +169,8 @@
     <Compile Include="layers\SoftmaxLossLayer.cs" />
     <Compile Include="layers\SplitLayer.cs" />
     <Compile Include="layers\TanhLayer.cs" />
-    <Compile Include="layers_alpha\UnPoolingLayer1.cs" />
-    <Compile Include="layers_alpha\UnPoolingLayer.cs" />
+    <Compile Include="layers_beta\UnPoolingLayer1.cs" />
+    <Compile Include="layers_beta\UnPoolingLayer.cs" />
     <Compile Include="MyCaffeControl.cs">
       <SubType>Component</SubType>
     </Compile>
