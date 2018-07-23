@@ -1020,7 +1020,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestGetImagesByDate()
         {
-            Log log = new Log("SortTest");
+            Log log = new Log("GetImagesByDate");
             log.EnableTrace = true;
 
             IXImageDatabase db = new MyCaffeImageDatabase(log);
@@ -1328,6 +1328,120 @@ namespace MyCaffe.test
                 if (sd.ImageID != rgSd[i].ImageID)
                     throw new Exception("The image ordering is not as expected!");
             }
+        }
+
+        [TestMethod]
+        public void TestCreateDatasetOrganizedByTime()
+        {
+            Log log = new Log("CreateDatasetOrganizedByTime");
+            log.EnableTrace = true;
+
+            IXImageDatabase db = new MyCaffeImageDatabase(log);
+            SettingsCaffe settings = new SettingsCaffe();
+            Stopwatch sw = new Stopwatch();
+
+            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+
+            db.InitializeWithDsName(settings, "MNIST");
+            DatasetDescriptor ds = db.GetDatasetByName("MNIST");
+
+            //---------------------------------------------
+            // First add a DateTime to each image, which
+            // with MNIST makes no sense, but is used 
+            // just for testing the sorting.
+            //
+            // At the same time verify that the images
+            // are initially ordered by index.
+            //---------------------------------------------
+
+            Trace.WriteLine("Initializing the dataset with date/time values...");
+            sw.Start();
+
+            List<SimpleDatum> rgSd = new List<SimpleDatum>();
+            DateTime dt = new DateTime(2000, 1, 1);
+            string strDesc = "0";
+
+            for (int i = 0; i < ds.TrainingSource.ImageCount; i++)
+            {
+                if (i % 1000 == 0)
+                    strDesc = i.ToString();
+
+                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                sd.TimeStamp = dt;
+                sd.Description = strDesc;
+                dt += TimeSpan.FromMinutes(1);
+                rgSd.Add(sd);
+
+                if (i < ds.TestingSource.ImageCount)
+                {
+                    sd = db.QueryImage(ds.TestingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    sd.TimeStamp = dt;
+                    sd.Description = strDesc;
+                    dt += TimeSpan.FromMinutes(1);
+                    rgSd.Add(sd);
+                }
+
+                if (sw.Elapsed.TotalMilliseconds > 1000)
+                {
+                    double dfPct = (double)i / (double)ds.TrainingSource.ImageCount;
+                    Trace.WriteLine("Initializing the dataset at " + dfPct.ToString("P"));
+                    sw.Restart();
+                }
+            }
+
+
+            // Order the items in reverse so that we can test 
+            // that the created dataset was actually created
+            // chronologically.
+            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID_DESC);
+            db.Sort(ds.TestingSource.ID, IMGDB_SORT.BYID_DESC);
+
+            // Create the new dataset.
+            int nNewDsId = db.CreateDatasetOranizedByTime(ds.ID);
+
+            if (nNewDsId >= 0)
+                throw new Exception("The new dataset ID should be < 0.");
+
+            DatasetDescriptor dsNew = db.GetDatasetById(nNewDsId);
+            if (dsNew.ID != nNewDsId)
+                throw new Exception("Invalid dataset ID!");
+
+            if (dsNew.TrainingSource.ID >= 0)
+                throw new Exception("The training source ID for the dynamic dataset should be < 0.");
+
+            if (dsNew.TestingSource.ID >= 0)
+                throw new Exception("The testing source ID for the dynamic dataset should be < 0.");
+
+            rgSd = rgSd.OrderBy(p => p.Description).ThenBy(p => p.TimeStamp).ToList();
+
+            List<SimpleDatum> rgSd1 = new List<SimpleDatum>();
+
+            for (int i = 0; i < dsNew.TrainingSource.ImageCount; i++)
+            {
+                SimpleDatum sd = db.QueryImage(dsNew.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                rgSd1.Add(sd);
+            }
+
+            for (int i = 0; i < dsNew.TestingSource.ImageCount; i++)
+            {
+                SimpleDatum sd = db.QueryImage(dsNew.TestingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                rgSd1.Add(sd);
+            }
+
+            // The two lists should be in chronological order.
+            if (rgSd1.Count != rgSd.Count)
+                throw new Exception("The list counts are incorrect!");
+
+            for (int i = 0; i < rgSd.Count; i++)
+            {
+                if (rgSd1[i].TimeStamp != rgSd[i].TimeStamp)
+                    throw new Exception("The time at " + i.ToString() + " is not as expected!");
+
+                if (rgSd1[i].Description != rgSd[i].Description)
+                    throw new Exception("The description at " + i.ToString() + " is not as expected!");
+            }
+
+            db.DeleteCreatedDataset(nNewDsId);
         }
 
         [TestMethod]

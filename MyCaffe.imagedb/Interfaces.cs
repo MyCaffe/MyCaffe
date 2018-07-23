@@ -263,6 +263,20 @@ namespace MyCaffe.imagedb
         bool Sort(int nSrcId, IMGDB_SORT method);
 
         /// <summary>
+        /// Create a dynamic dataset organized by time from a pre-existing dataset.
+        /// </summary>
+        /// <param name="nDsId">Specifies the database ID of the dataset to copy.</param>
+        /// <returns>The dataset ID of the newly created dataset is returned.</returns>
+        int CreateDatasetOranizedByTime(int nDsId);
+
+        /// <summary>
+        /// Delete a dataset created with CreateDatasetOrganizedByTime.
+        /// </summary>
+        /// <param name="nDsId">Specifies the dataset ID of the created dataset.</param>
+        /// <returns>If successful, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        bool DeleteCreatedDataset(int nDsId);
+
+        /// <summary>
         /// Returns a list of LabelDescriptor%s associated with the labels within a data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>

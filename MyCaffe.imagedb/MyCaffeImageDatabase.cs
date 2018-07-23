@@ -602,7 +602,7 @@ namespace MyCaffe.imagedb
         /// <summary>
         /// Sort the internal images.
         /// </summary>
-        /// <param name="nSrcId">Specifies the databse ID of the data source.</param>
+        /// <param name="nSrcId">Specifies the database ID of the data source.</param>
         /// <param name="method">Specifies the sorting method.</param>
         /// <returns>If the sorting is successful, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
         public bool Sort(int nSrcId, IMGDB_SORT method)
@@ -613,6 +613,43 @@ namespace MyCaffe.imagedb
                 return false;
 
             return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).Sort(method);
+        }
+
+        /// <summary>
+        /// Create a dynamic dataset organized by time from a pre-existing dataset.
+        /// </summary>
+        /// <param name="nDsId">Specifies the database ID of the dataset to copy.</param>
+        /// <returns>The dataset ID of the newly created dataset is returned.</returns>
+        public int CreateDatasetOranizedByTime(int nDsId)
+        {
+            int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
+
+            if (nWait == 0)
+                return 0;
+            
+            DatasetEx ds = m_colDatasets[m_nStrIDHashCode].FindDataset(nDsId);
+            DatasetEx dsNew = ds.Clone(true);
+
+            m_colDatasets[m_nStrIDHashCode].Add(dsNew);
+
+            return dsNew.Descriptor.ID;
+        }
+
+        /// <summary>
+        /// Delete a dataset created with CreateDatasetOrganizedByTime.
+        /// </summary>
+        /// <param name="nDsId">Specifies the dataset ID of the created dataset.</param>
+        /// <returns>If successful, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public bool DeleteCreatedDataset(int nDsId)
+        {
+            if (nDsId >= 0)
+                throw new Exception("The dataset specified is not a dynamic dataset.");
+
+            DatasetEx ds = m_colDatasets[m_nStrIDHashCode].FindDataset(nDsId);
+            if (ds == null)
+                return false;
+
+            return m_colDatasets[m_nStrIDHashCode].RemoveDataset(ds);
         }
 
         /// <summary>
