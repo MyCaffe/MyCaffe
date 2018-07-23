@@ -63,6 +63,7 @@ namespace MyCaffe.param
         bool m_bDebugInfo = false;
         bool m_bSnapshotAfterTrain = false;
         string m_strCustomTrainer = null;
+        string m_strCustomTrainerProperties = null;
         bool m_bOutputAverageResults = false;
         bool m_bSnapshotIncludeWeights = true;
         bool m_bSnapshotIncludeState = true;
@@ -218,6 +219,17 @@ namespace MyCaffe.param
         {
             get { return m_strCustomTrainer; }
             set { m_strCustomTrainer = value; }
+        }
+
+        /// <summary>
+        /// Specifies the custom trainer properties (if any) - this is an optional setting used by exteral software to 
+        /// provide the propreties for a customized training process.
+        /// </summary>
+        [Description("Specifies the custom trainer properties (if any) used by an external process to provide the properties for a customized training.")]
+        public string custom_trainer_properties
+        {
+            get { return m_strCustomTrainerProperties; }
+            set { m_strCustomTrainerProperties = value; }
         }
 
         /// <summary>
@@ -894,8 +906,11 @@ namespace MyCaffe.param
             if (snapshot_after_train != true)
                 rgChildren.Add("snapshot_after_train", snapshot_after_train.ToString());
 
-            if (custom_trainer != null && custom_trainer.Length > 0)
+            if (!string.IsNullOrEmpty(custom_trainer))
                 rgChildren.Add("custom_trainer", custom_trainer);
+
+            if (!string.IsNullOrEmpty(custom_trainer_properties))
+                rgChildren.Add("custom_trainer_properties", custom_trainer_properties);
 
             if (output_average_results != false)
                 rgChildren.Add("output_average_results", output_average_results.ToString());
@@ -1076,6 +1091,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("custom_trainer")) != null)
                 p.custom_trainer = strVal;
+
+            if ((strVal = rp.FindValue("custom_trainer_properties")) != null)
+                p.custom_trainer_properties = strVal;
 
             if ((strVal = rp.FindValue("output_average_results")) != null)
                 p.output_average_results = bool.Parse(strVal);

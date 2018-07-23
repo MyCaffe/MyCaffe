@@ -224,17 +224,40 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Returns the custom trainer used by the project (if any).
+        /// Returns the custom trainer and properties used by the project (if any).
         /// </summary>
+        /// <param name="rgProperties">Specifies the properties associated with the custom trainer.  The properties are stored in the solver parameter field 'custom_trainer_propeties' as a list of comma (',') separated key value pairs each separated by ';'</param>
+        /// <remarks>An example set of properties uses the following format: key1,val1;key2,val2;...</remarks>
         /// <returns>The custom trainer name is returned.</returns>
-        public string GetCustomTrainerName()
+        public string GetCustomTrainer(out Dictionary<string, string> rgProperties)
         {
+            rgProperties = new Dictionary<string, string>();
+
             RawProto rp = m_protoSolver.FindChild("custom_trainer");
             if (rp == null)
                 return null;
 
             if (rp.Value == null || rp.Value.Length == 0)
                 return null;
+
+            RawProto rprop = m_protoSolver.FindChild("custom_trainer_properties");
+            if (rprop != null)
+            {
+                if (!string.IsNullOrEmpty(rprop.Value))
+                {
+                    string[] rgstr = rprop.Value.Split(';');
+
+                    for (int i = 0; i < rgstr.Length; i++)
+                    {
+                        string[] rgstr1 = rgstr[i].Split(',');
+                        if (rgstr1.Length == 2)
+                        {
+                            if (!rgProperties.ContainsKey(rgstr1[0]))
+                                rgProperties.Add(rgstr1[0], rgstr1[1]);
+                        }
+                    }
+                }
+            }
 
             return rp.Value;
         }
