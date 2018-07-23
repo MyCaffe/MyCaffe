@@ -772,5 +772,47 @@ namespace MyCaffe.imagedb
                 sd.ResetBoost();
             }
         }
+
+        /// <summary>
+        /// Get a set of images, listed in chronological order starting at the next date greater than or equal to 'dt'.
+        /// </summary>
+        /// <param name="dt">Specifies the start date of the images sought.</param>
+        /// <param name="nImageCount">Specifies the number of images to retrieve.</param>
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <returns>The list of SimpleDatum is returned.</returns>
+        /// <remarks> IMPORTANT: You must call Sort(ByDesc|ByDate) before using this function to ensure all loaded images are ordered by their descriptions then by their time.</remarks>
+        public List<SimpleDatum> GetImages(DateTime dt, int nImageCount, string strFilterVal = null)
+        {
+            if (string.IsNullOrEmpty(strFilterVal))
+                return m_rgImages.Where(p => p.TimeStamp >= dt).Take(nImageCount).ToList();
+            else
+                return m_rgImages.Where(p => p.Description == strFilterVal && p.TimeStamp >= dt).Take(nImageCount).ToList();
+        }
+
+        /// <summary>
+        /// Sort the internal images.
+        /// </summary>
+        /// <param name="method">Specifies the sorting method.</param>
+        /// <returns>If the sorting is successful, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        /// <remarks>NOTE: Sorting only applies to the images currently loaded.</remarks>
+        public bool Sort(IMGDB_SORT method)
+        {
+            if (method == IMGDB_SORT.BYID)
+                m_rgImages = m_rgImages.OrderBy(p => p.ImageID).ToArray();
+            else if (method == IMGDB_SORT.BYID_DESC)
+                m_rgImages = m_rgImages.OrderByDescending(p => p.ImageID).ToArray();
+            else if (method == IMGDB_SORT.BYIDX)
+                m_rgImages = m_rgImages.OrderBy(p => p.Index).ToArray();
+            else if (method == IMGDB_SORT.BYDESC)
+                m_rgImages = m_rgImages.OrderBy(p => p.Description).ToArray();
+            else if (method == IMGDB_SORT.BYTIME)
+                m_rgImages = m_rgImages.OrderBy(p => p.TimeStamp).ToArray();
+            else if ((method & (IMGDB_SORT.BYDESC | IMGDB_SORT.BYTIME)) == (IMGDB_SORT.BYDESC | IMGDB_SORT.BYTIME))
+                m_rgImages = m_rgImages.OrderBy(p => p.Description).ThenBy(p => p.TimeStamp).ToArray();
+            else
+                return false;
+
+            return true;
+        }
     }
 }

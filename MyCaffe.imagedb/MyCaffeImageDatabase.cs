@@ -581,6 +581,41 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Get a set of images, listed in chronological order starting at the next date greater than or equal to 'dt'.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the databse ID of the data source.</param>
+        /// <param name="dt">Specifies the start date of the images sought.</param>
+        /// <param name="nImageCount">Specifies the number of images to retrieve.</param>
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <returns>The list of SimpleDatum is returned.</returns>
+        /// <remarks> IMPORTANT: You must call Sort(ByDesc|ByDate) before using this function to ensure all loaded images are ordered by their descriptions then by their time.</remarks>
+        public List<SimpleDatum> GetImages(int nSrcId, DateTime dt, int nImageCount, string strFilterVal = null)
+        {
+            int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
+
+            if (nWait == 0)
+                return null;
+
+            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImages(dt, nImageCount, strFilterVal);
+        }
+
+        /// <summary>
+        /// Sort the internal images.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the databse ID of the data source.</param>
+        /// <param name="method">Specifies the sorting method.</param>
+        /// <returns>If the sorting is successful, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public bool Sort(int nSrcId, IMGDB_SORT method)
+        {
+            int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
+
+            if (nWait == 0)
+                return false;
+
+            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).Sort(method);
+        }
+
+        /// <summary>
         /// Query an image in a given data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the databse ID of the data source.</param>

@@ -89,6 +89,40 @@ namespace MyCaffe.imagedb
         BOOST = 0x0002
     }
 
+    /// <summary>
+    /// Defines the sorting method.
+    /// </summary>
+    /// <remarks>BYDESC and BYDATE can be compbined which causes the images to be sorted by description first and then by time.  BYID cannot be combined with other sorting methods.</remarks>
+    [Serializable]
+    [DataContract]
+    public enum IMGDB_SORT
+    {
+        /// <summary>
+        /// No sorting performed.
+        /// </summary>
+        NONE = 0x0000,
+        /// <summary>
+        /// Sort by description first.
+        /// </summary>
+        BYDESC = 0x0001,
+        /// <summary>
+        /// Sort by time.
+        /// </summary>
+        BYTIME = 0x0002,
+        /// <summary>
+        /// Sort by image ID.
+        /// </summary>
+        BYID = 0x0004,
+        /// <summary>
+        /// Sort by image ID in decending order.
+        /// </summary>
+        BYID_DESC = 0x0008,
+        /// <summary>
+        /// Sort by image Index.
+        /// </summary>
+        BYIDX = 0x0010
+    }
+
     [ServiceContract]
     public interface IXImageDatabaseEvent /** @private */
     {
@@ -206,6 +240,27 @@ namespace MyCaffe.imagedb
         /// <returns>The SimpleDatum of the image is returned.</returns>
         [OperationContract(IsOneWay = false)]
         SimpleDatum GetImage(int nImageID, params int[] rgSrcId);
+
+        /// <summary>
+        /// Get a set of images, listed in chronological order starting at the next date greater than or equal to 'dt'.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the databse ID of the data source.</param>
+        /// <param name="dt">Specifies the start date of the images sought.</param>
+        /// <param name="nImageCount">Specifies the number of images to retrieve.</param>
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <returns>The list of SimpleDatum is returned.</returns>
+        /// <remarks> IMPORTANT: You must call Sort(ByDesc|ByDate) before using this function to ensure all loaded images are ordered by their descriptions then by their time.</remarks>
+        [OperationContract(IsOneWay = false)]
+        List<SimpleDatum> GetImages(int nSrcId, DateTime dt, int nImageCount, string strFilterVal = null);
+
+        /// <summary>
+        /// Sort the internal images.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the databse ID of the data source.</param>
+        /// <param name="method">Specifies the sorting method.</param>
+        /// <returns>If the sorting is successful, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        bool Sort(int nSrcId, IMGDB_SORT method);
 
         /// <summary>
         /// Returns a list of LabelDescriptor%s associated with the labels within a data source.

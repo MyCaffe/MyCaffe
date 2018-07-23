@@ -1018,6 +1018,319 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestGetImagesByDate()
+        {
+            Log log = new Log("SortTest");
+            log.EnableTrace = true;
+
+            IXImageDatabase db = new MyCaffeImageDatabase(log);
+            SettingsCaffe settings = new SettingsCaffe();
+            Stopwatch sw = new Stopwatch();
+
+            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+
+            db.InitializeWithDsName(settings, "MNIST");
+            DatasetDescriptor ds = db.GetDatasetByName("MNIST");
+
+            //---------------------------------------------
+            // First add a DateTime to each image, which
+            // with MNIST makes no sense, but is used 
+            // just for testing the sorting.
+            //
+            // At the same time verify that the images
+            // are initially ordered by index.
+            //---------------------------------------------
+
+            Trace.WriteLine("Initializing the dataset with date/time values...");
+            sw.Start();
+
+            List<SimpleDatum> rgSd = new List<SimpleDatum>();
+            DateTime dt = new DateTime(2000, 1, 1);
+            string strDesc = "0";
+
+            for (int i = 0; i < ds.TrainingSource.ImageCount; i++)
+            {
+                if (i % 1000 == 0)
+                    strDesc = i.ToString();
+
+                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                sd.TimeStamp = dt;
+                sd.Description = strDesc;
+                dt += TimeSpan.FromMinutes(1);
+
+                if (sw.Elapsed.TotalMilliseconds > 1000)
+                {
+                    double dfPct = (double)i / (double)ds.TrainingSource.ImageCount;
+                    Trace.WriteLine("Initializing the dataset at " + dfPct.ToString("P"));
+                    sw.Restart();
+                }
+
+                rgSd.Add(sd);
+            }
+
+            //---------------------------------------------
+            //  Sort by Desc and Time and verify.
+            //---------------------------------------------
+            rgSd = rgSd.OrderBy(p => p.Description).ThenBy(p => p.TimeStamp).ToList();
+            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYDESC | IMGDB_SORT.BYTIME);
+
+            for (int i = 0; i < rgSd.Count; i++)
+            {
+                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                if (sd.ImageID != rgSd[i].ImageID)
+                    throw new Exception("The image ordering is not as expected!");
+            }
+
+            //---------------------------------------------
+            //  Get images at random starting times and
+            //  verify that they are in sequence.
+            //---------------------------------------------
+
+            // One minute alloted to each image above.
+            Random rand = new Random();
+
+            //---------------------------------------------
+            //  Verify using Filter Value
+            //---------------------------------------------
+            for (int i = 0; i < 60; i++)
+            {
+                dt = new DateTime(2000, 1, 1);
+
+                int nFilterVal = i * 1000;
+                string strFilterVal = nFilterVal.ToString();
+                int nCount = db.ImageCount(ds.TrainingSource.ID, false, strFilterVal);
+                int nSequenceCount = 10 + rand.Next(50);
+                int nRandomStart = rand.Next(nCount - nSequenceCount);
+                DateTime dtStart = dt + TimeSpan.FromMinutes(nRandomStart + i * 1000);
+                List<SimpleDatum> rgSd1 = db.GetImages(ds.TrainingSource.ID, dtStart, nSequenceCount, strFilterVal);
+
+                // Verify the count.
+                if (rgSd1.Count != nSequenceCount)
+                    throw new Exception("Wrong number of images returned!");
+
+                DateTime dt1 = dtStart;
+
+                // Verify that we are in sequence and all have the expected filter value
+                for (int j = 0; j < rgSd1.Count; j++)
+                {
+                    if (rgSd1[j].TimeStamp != dt1)
+                        throw new Exception("Wrong time for item " + j.ToString());
+
+                    if (rgSd1[j].Description != strFilterVal)
+                        throw new Exception("Wrong filter value!");
+
+                    dt1 += TimeSpan.FromMinutes(1);
+                }
+            }
+
+            //---------------------------------------------
+            //  Sort by Time only and verify.
+            //---------------------------------------------
+            rgSd = rgSd.OrderBy(p => p.TimeStamp).ToList();
+            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYTIME);
+
+            for (int i = 0; i < rgSd.Count; i++)
+            {
+                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                if (sd.ImageID != rgSd[i].ImageID)
+                    throw new Exception("The image ordering is not as expected!");
+            }
+
+            //---------------------------------------------
+            //  Get images at random starting times and
+            //  verify that they are in sequence.
+            //---------------------------------------------
+            //---------------------------------------------
+            //  Verify using Filter Value
+            //---------------------------------------------
+            for (int i = 0; i < 60; i++)
+            {
+                dt = new DateTime(2000, 1, 1);
+
+                int nCount = ds.TrainingSource.ImageCount;
+                int nSequenceCount = 10 + rand.Next(50);
+                int nRandomStart = rand.Next(nCount - nSequenceCount);
+                DateTime dtStart = dt + TimeSpan.FromMinutes(nRandomStart);
+                List<SimpleDatum> rgSd1 = db.GetImages(ds.TrainingSource.ID, dtStart, nSequenceCount);
+
+                // Verify the count.
+                if (rgSd1.Count != nSequenceCount)
+                    throw new Exception("Wrong number of images returned!");
+
+                DateTime dt1 = dtStart;
+
+                // Verify that we are in sequence and all have the expected filter value
+                for (int j = 0; j < rgSd1.Count; j++)
+                {
+                    if (rgSd1[j].TimeStamp != dt1)
+                        throw new Exception("Wrong time for item " + j.ToString());
+
+                    dt1 += TimeSpan.FromMinutes(1);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestSort()
+        {
+            Log log = new Log("SortTest");
+            log.EnableTrace = true;
+
+            IXImageDatabase db = new MyCaffeImageDatabase(log);
+            SettingsCaffe settings = new SettingsCaffe();
+            Stopwatch sw = new Stopwatch();
+
+            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+
+            db.InitializeWithDsName(settings, "MNIST");
+            DatasetDescriptor ds = db.GetDatasetByName("MNIST");
+
+            //---------------------------------------------
+            // First add a DateTime to each image, which
+            // with MNIST makes no sense, but is used 
+            // just for testing the sorting.
+            //
+            // At the same time verify that the images
+            // are initially ordered by index.
+            //---------------------------------------------
+
+            Trace.WriteLine("Initializing the dataset with date/time values...");
+            sw.Start();
+
+            List<SimpleDatum> rgSd = new List<SimpleDatum>();
+            DateTime dt = new DateTime(2000, 1, 1);
+            string strDesc = "0";
+
+            for (int i = 0; i < ds.TrainingSource.ImageCount; i++)
+            {
+                if (i % 1000 == 0)
+                    strDesc = i.ToString();
+
+                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                sd.TimeStamp = dt;
+                sd.Description = strDesc;
+                dt += TimeSpan.FromMinutes(1);
+
+                if (sw.Elapsed.TotalMilliseconds > 1000)
+                {
+                    double dfPct = (double)i / (double)ds.TrainingSource.ImageCount;
+                    Trace.WriteLine("Initializing the dataset at " + dfPct.ToString("P"));
+                    sw.Restart();
+                }
+
+                rgSd.Add(sd);
+            }
+
+            rgSd = rgSd.OrderBy(p => p.Index).ToList();
+
+            for (int i = 0; i < rgSd.Count; i++)
+            {
+                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                if (sd.ImageID != rgSd[i].ImageID)
+                    throw new Exception("The image ordering is not as expected!");
+            }
+
+            //---------------------------------------------
+            //  Sort by ID and verify.
+            //---------------------------------------------
+
+            rgSd = rgSd.OrderByDescending(p => p.ImageID).ToList();
+            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID_DESC);
+
+            for (int i = 0; i < rgSd.Count; i++)
+            {
+                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                if (sd.ImageID != rgSd[i].ImageID)
+                    throw new Exception("The image ordering is not as expected!");
+            }
+
+            rgSd = rgSd.OrderBy(p => p.ImageID).ToList();
+            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID);
+
+            for (int i = 0; i < rgSd.Count; i++)
+            {
+                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                if (sd.ImageID != rgSd[i].ImageID)
+                    throw new Exception("The image ordering is not as expected!");
+            }
+
+
+            //---------------------------------------------
+            //  Sort by Desc and verify.
+            //---------------------------------------------
+
+            rgSd = rgSd.OrderByDescending(p => p.ImageID).ToList();
+            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID_DESC);
+
+            for (int i = 0; i < rgSd.Count; i++)
+            {
+                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                if (sd.ImageID != rgSd[i].ImageID)
+                    throw new Exception("The image ordering is not as expected!");
+            }
+
+            rgSd = rgSd.OrderBy(p => p.Description).ToList();
+            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYDESC);
+
+            for (int i = 0; i < rgSd.Count; i++)
+            {
+                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                if (sd.ImageID != rgSd[i].ImageID)
+                    throw new Exception("The image ordering is not as expected!");
+            }
+
+
+            //---------------------------------------------
+            //  Sort by Time and verify.
+            //---------------------------------------------
+
+            rgSd = rgSd.OrderByDescending(p => p.ImageID).ToList();
+            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID_DESC);
+
+            for (int i = 0; i < rgSd.Count; i++)
+            {
+                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                if (sd.ImageID != rgSd[i].ImageID)
+                    throw new Exception("The image ordering is not as expected!");
+            }
+
+            rgSd = rgSd.OrderBy(p => p.TimeStamp).ToList();
+            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYTIME);
+
+            for (int i = 0; i < rgSd.Count; i++)
+            {
+                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                if (sd.ImageID != rgSd[i].ImageID)
+                    throw new Exception("The image ordering is not as expected!");
+            }
+
+
+            //---------------------------------------------
+            //  Sort by Desc and Time and verify.
+            //---------------------------------------------
+
+            rgSd = rgSd.OrderByDescending(p => p.ImageID).ToList();
+            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID_DESC);
+
+            for (int i = 0; i < rgSd.Count; i++)
+            {
+                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                if (sd.ImageID != rgSd[i].ImageID)
+                    throw new Exception("The image ordering is not as expected!");
+            }
+
+            rgSd = rgSd.OrderBy(p => p.Description).ThenBy(p => p.TimeStamp).ToList();
+            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYDESC | IMGDB_SORT.BYTIME);
+
+            for (int i = 0; i < rgSd.Count; i++)
+            {
+                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                if (sd.ImageID != rgSd[i].ImageID)
+                    throw new Exception("The image ordering is not as expected!");
+            }
+        }
+
+        [TestMethod]
         public void TestDbFilePath()
         {
             Database db = new Database();
