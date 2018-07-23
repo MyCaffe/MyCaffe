@@ -25,6 +25,7 @@ namespace MyCaffe.imagedb
         int m_nLastTestingImageIdx = 0;
         int m_nLastTrainingImageIdx = 0;
         List<Guid> m_rgUsers = new List<Guid>();
+        int m_nOriginalDsId = 0;
 
         /// <summary>
         /// The OnCalculateImageMean event is passed to each image set and fires each time the Image set need to calcualte its image mean.
@@ -128,6 +129,7 @@ namespace MyCaffe.imagedb
 
             if (bReOrganizeByTime)
             {
+                ds.m_nOriginalDsId = ds.DatasetID;
                 ds.DatasetID *= -1;
 
                 int nTestingCount = ds.m_TestingImages.Count;
@@ -511,6 +513,14 @@ namespace MyCaffe.imagedb
         {
             get { return m_ds.ID; }
             set { m_ds.ID = value; }
+        }
+
+        /// <summary>
+        /// Returns the original DatsetID if this is a cloned re-organized dataset, otherwise 0 is returned.
+        /// </summary>
+        public int OriginalDatasetID
+        {
+            get { return m_nOriginalDsId; }
         }
 
         /// <summary>
