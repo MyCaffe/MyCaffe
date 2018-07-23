@@ -34,6 +34,25 @@ namespace MyCaffe.imagedb
         }
 
         /// <summary>
+        /// Remove all dynamically created datasets.
+        /// </summary>
+        public void RemoveCreatedDatasets()
+        {
+            List<int> rgIdx = new List<int>();
+
+            for (int i = 0; i < m_rgDatasets.Count; i++)
+            {
+                if (m_rgDatasets[i].Descriptor.ID < 0)
+                    rgIdx.Add(i);
+            }
+
+            for (int i = rgIdx.Count - 1; i >= 0; i--)
+            {
+                m_rgDatasets.RemoveAt(rgIdx[i]);
+            }
+        }
+
+        /// <summary>
         /// Removes a user from the list of users using the DatasetExCollection.
         /// </summary>
         /// <param name="user">Specifies the unique user ID.</param>
