@@ -31,7 +31,6 @@ namespace MyCaffe.imagedb
         /// </summary>
         public event EventHandler<CalculateImageMeanArgs> OnCalculateImageMean;
 
-
         /// <summary>
         /// The DatasetEx constructor.
         /// </summary>
@@ -111,8 +110,9 @@ namespace MyCaffe.imagedb
         /// <summary>
         /// Copy the DatasetEx and its contents.
         /// </summary>
+        /// <param name="bReOrganizeByTime">Optionally, specifies to re-organize the training and testing sources so that they are both organized chronologically.</param>
         /// <returns>The new DatasetEx is returned.</returns>
-        public DatasetEx Clone()
+        public DatasetEx Clone(bool bReOrganizeByTime = false)
         {
             DatasetEx ds = new DatasetEx(Guid.Empty, m_factory);
 
@@ -121,10 +121,45 @@ namespace MyCaffe.imagedb
                 ds.m_rgUsers.Add(g);
             }
 
-            ds.m_ds = m_ds;
+            ds.m_ds = new DatasetDescriptor(m_ds);
             ds.m_TestingImages = m_TestingImages.Clone();
             ds.m_TrainingImages = m_TrainingImages.Clone();
             ds.m_bUseTrainingImagesForTesting = m_bUseTrainingImagesForTesting;
+
+            if (bReOrganizeByTime)
+            {
+                ds.DatasetID *= -1;
+
+                int nTestingCount = ds.m_TestingImages.Count;
+                int nTrainingCount = ds.m_TrainingImages.Count;
+
+                List<SimpleDatum> rgSd = new List<SimpleDatum>();
+
+                rgSd.AddRange(ds.m_TestingImages.Images);
+                rgSd.AddRange(ds.m_TrainingImages.Images);
+
+                rgSd = rgSd.OrderBy(p => p.Description).ThenBy(p => p.TimeStamp).ToList();
+
+                for (int i = 0; i < nTrainingCount; i++)
+                {
+                    ds.m_TrainingImages.Images[i] = rgSd[i];
+                    ds.m_TrainingImages.Images[i].Index = i;
+                }
+
+                for (int i = 0; i < nTestingCount; i++)
+                {
+                    ds.m_TestingImages.Images[i] = rgSd[i + nTrainingCount];
+                    ds.m_TestingImages.Images[i].Index = i;
+                }
+
+                ds.m_TrainingImages.Source.ID *= -1;                
+                ds.m_TestingImages.Source.ID *= -1;
+                ds.Descriptor.TrainingSource.ID *= -1;
+                ds.Descriptor.TestingSource.ID *= -1;
+
+                ds.m_TrainingImages.ReloadLabelSets();
+                ds.m_TestingImages.ReloadLabelSets();
+            }
 
             return ds;
         }
@@ -475,6 +510,7 @@ namespace MyCaffe.imagedb
         public int DatasetID
         {
             get { return m_ds.ID; }
+            set { m_ds.ID = value; }
         }
 
         /// <summary>
