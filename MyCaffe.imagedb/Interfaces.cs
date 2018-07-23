@@ -277,6 +277,11 @@ namespace MyCaffe.imagedb
         bool DeleteCreatedDataset(int nDsId);
 
         /// <summary>
+        /// Delete all datasets created with CreateDatasetOrganizedByTime.
+        /// </summary>
+        void DeleteAllCreatedDatasets();
+
+        /// <summary>
         /// Returns a list of LabelDescriptor%s associated with the labels within a data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>

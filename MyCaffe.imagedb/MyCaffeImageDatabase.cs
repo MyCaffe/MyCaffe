@@ -626,7 +626,15 @@ namespace MyCaffe.imagedb
 
             if (nWait == 0)
                 return 0;
-            
+
+            // If we have already created a re-organized dataset,
+            //  return its DatasetID.
+            foreach (DatasetEx ds1 in m_colDatasets[m_nStrIDHashCode])
+            {
+                if (ds1.OriginalDatasetID == nDsId)
+                    return ds1.DatasetID;
+            }
+
             DatasetEx ds = m_colDatasets[m_nStrIDHashCode].FindDataset(nDsId);
             DatasetEx dsNew = ds.Clone(true);
 
@@ -650,6 +658,14 @@ namespace MyCaffe.imagedb
                 return false;
 
             return m_colDatasets[m_nStrIDHashCode].RemoveDataset(ds);
+        }
+
+        /// <summary>
+        /// Delete all datasets created with CreateDatasetOrganizedByTime
+        /// </summary>
+        public void DeleteAllCreatedDatasets()
+        {
+            m_colDatasets[m_nStrIDHashCode].RemoveCreatedDatasets();
         }
 
         /// <summary>
