@@ -157,7 +157,7 @@ namespace MyCaffe.imagedb
         {
             ImageSet imgSet = new imagedb.ImageSet();
 
-            imgSet.m_src = m_src;
+            imgSet.m_src = new SourceDescriptor(m_src);
             imgSet.m_factory = new imagedb.DatasetFactory(m_factory);
 
             foreach (LabelSet ls in m_rgLabelSet)
@@ -353,6 +353,14 @@ namespace MyCaffe.imagedb
         public int Count
         {
             get { return m_rgImages.Length; }
+        }
+
+        /// <summary>
+        /// Get the array of images.
+        /// </summary>
+        public SimpleDatum[] Images
+        {
+            get { return m_rgImages; }
         }
 
         private IEnumerable<SimpleDatum> getQuery(bool bSuperboostOnly, string strFilterVal = null, int? nBoostVal = null)
