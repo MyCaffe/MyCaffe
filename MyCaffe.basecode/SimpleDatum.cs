@@ -638,6 +638,7 @@ namespace MyCaffe.basecode
         public int Index
         {
             get { return m_nIndex; }
+            set { m_nIndex = value; }
         }
 
         /// <summary>
