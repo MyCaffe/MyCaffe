@@ -23,12 +23,15 @@ namespace MyCaffe.layers
         int m_nChannels;
         int m_nHeight;
         int m_nWidth;
-        int m_nSize;
+        int m_nDataSize;
+        int m_nLabelSize;
         Blob<T> m_blobData;
         Blob<T> m_blobLabel;
         bool m_bHasNewData;
         int m_nPos = 0;
         int m_nN = 1;
+
+        public event EventHandler<MemoryDataLayerGetDataArgs> OnGetData;
 
         /// <summary>
         /// The BaseDataLayer constructor.
@@ -69,15 +72,30 @@ namespace MyCaffe.layers
             m_nChannels = (int)m_param.memory_data_param.channels;
             m_nHeight = (int)m_param.memory_data_param.height;
             m_nWidth = (int)m_param.memory_data_param.width;
-            m_nSize = m_nChannels * m_nHeight * m_nWidth;
+            m_nDataSize = m_nChannels * m_nHeight * m_nWidth;
 
-            m_log.CHECK_GT(m_nBatchSize * m_nSize, 0, "batch_size, channels, height, and width must be specified and positive in memory_data_param.");
+            m_log.CHECK_GT(m_nBatchSize * m_nDataSize, 0, "batch_size, channels, height, and width must be specified and positive in memory_data_param.");
 
-            List<int> rgLabelShape = new List<int>() { m_nBatchSize };
-            colTop[0].Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
+            if (OnGetData != null)
+                OnGetData(this, new MemoryDataLayerGetDataArgs(true));
+
+            List<int> rgLabelShape = Utility.Clone<int>(m_blobLabel.shape());
+            if (rgLabelShape.Count == 0)
+                rgLabelShape.Add(m_nBatchSize);
+            else
+                rgLabelShape[0] = m_nBatchSize;
+
             colTop[1].Reshape(rgLabelShape);
-            m_blobData.Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
-            m_blobLabel.Reshape(rgLabelShape);
+            colTop[0].Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
+
+            if (OnGetData == null)
+            { 
+                m_blobData.Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
+                m_blobLabel.Reshape(rgLabelShape);
+            }
+
+            m_nLabelSize = m_blobLabel.count(1);
+
             m_blobData.update_cpu_data();
             m_blobLabel.update_cpu_data();
         }
@@ -99,28 +117,60 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// This method is used to add a list of Datum%s to the memory.
+        /// This method is used to add a list of Datums to the memory.
         /// </summary>
-        /// <param name="rgDatum">The list of Datum%s to add.</param>
-        public virtual void AddDatumVector(List<Datum> rgDatum)
+        /// <param name="rgData">The list of Data Datums to add.</param>
+        public virtual void AddDatumVector(List<Datum> rgData)
         {
             m_log.CHECK(!m_bHasNewData, "Can't add data until current data has been consumed.");
-            int nNum = rgDatum.Count;
+            int nNum = rgData.Count;
             m_log.CHECK_GT(nNum, 0, "There are no datum to add.");
             m_log.CHECK_EQ(nNum % m_nBatchSize, 0, "The added data must be a multiple of the batch size.");
+
             m_blobData.Reshape(nNum, m_nChannels, m_nHeight, m_nWidth);
-            m_blobLabel.Reshape(nNum, 1, 1, 1);
+
+            // Reshape label blob depending on label type.
+            if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.MULTIPLE)
+            {
+                List<float> rgLbl = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
+                m_blobLabel.Reshape(nNum, rgLbl.Count, 1, 1);
+            }
+            else
+            {
+                m_blobLabel.Reshape(nNum, 1, 1, 1);
+            }
 
             // Apply data transformations (mirror, scale, crop...)
-            m_transformer.Transform(rgDatum, m_blobData, m_cuda, m_log);
+            m_transformer.Transform(rgData, m_blobData, m_cuda, m_log);
 
-            // Copy labels
-            T[] rgLabels = m_blobLabel.mutable_cpu_data;
-            for (int i = 0; i < nNum; i++)
+            // Copy labels - use DataCriteria for MULTIPLE labels
+            if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.MULTIPLE)
             {
-                rgLabels[i] = (T)Convert.ChangeType(rgDatum[i].label, typeof(T));
+                T[] rgLabels = m_blobLabel.mutable_cpu_data;
+                int nIdx = 0;
+
+                for (int i = 0; i < nNum; i++)
+                {
+                    List<float> rgLbl = BinaryData.UnPackFloatList(rgData[i].DataCriteria, rgData[i].DataCriteriaFormat);
+                    for (int j = 0; j < rgLbl.Count; j++)
+                    {
+                        rgLabels[nIdx] = (T)Convert.ChangeType(rgLbl[j], typeof(T));
+                        nIdx++;
+                    }
+                }
+                m_blobLabel.mutable_cpu_data = rgLabels;
             }
-            m_blobData.mutable_cpu_data = rgLabels;
+            // Copy labels - use standard Datum label for SINGLE labels.
+            else
+            {
+                T[] rgLabels = m_blobLabel.mutable_cpu_data;
+                for (int i = 0; i < nNum; i++)
+                {
+                    rgLabels[i] = (T)Convert.ChangeType(rgData[i].label, typeof(T));
+                }
+                m_blobLabel.mutable_cpu_data = rgLabels;
+            }
+
             m_bHasNewData = true;
             m_nN = nNum;
         }
@@ -195,19 +245,46 @@ namespace MyCaffe.layers
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             int nSrcOffset;
-            m_log.CHECK_GT(m_blobData.count(), 0, "MemoryDataLayer needs to be initialized by calling Reset or AddDatumVector.");
-            colTop[0].Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
-            colTop[1].Reshape(m_nBatchSize, 1, 1, 1);
 
-            nSrcOffset = m_nPos * m_nSize;
+            m_log.CHECK_GT(m_blobData.count(), 0, "MemoryDataLayer needs to be initialized by calling Reset or AddDatumVector.");
+
+            List<int> rgLabelShape = Utility.Clone<int>(m_blobLabel.shape());
+            if (rgLabelShape.Count == 0)
+                rgLabelShape.Add(m_nBatchSize);
+            else
+                rgLabelShape[0] = m_nBatchSize;
+
+            colTop[0].Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
+            colTop[1].Reshape(rgLabelShape);
+
+            nSrcOffset = m_nPos * m_nDataSize;
             m_cuda.copy(colTop[0].count(), m_blobData.gpu_data, colTop[0].mutable_gpu_data, nSrcOffset, 0);
 
-            nSrcOffset = m_nPos;
+            nSrcOffset = m_nPos * m_nLabelSize;
             m_cuda.copy(colTop[1].count(), m_blobLabel.gpu_data, colTop[1].mutable_gpu_data, nSrcOffset, 0);
             m_nPos = (m_nPos + m_nBatchSize) % m_nN;
 
             if (m_nPos == 0)
+            {
                 m_bHasNewData = false;
+                if (OnGetData != null)
+                    OnGetData(this, new MemoryDataLayerGetDataArgs(false));
+            }
+        }
+    }
+
+    public class MemoryDataLayerGetDataArgs : EventArgs
+    {
+        bool m_bInitialization = true;
+
+        public MemoryDataLayerGetDataArgs(bool bInit)
+        {
+            m_bInitialization = bInit;
+        }
+
+        public bool Initialization
+        {
+            get { return m_bInitialization; }
         }
     }
 }
