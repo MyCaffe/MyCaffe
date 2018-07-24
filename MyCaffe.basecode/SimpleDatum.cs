@@ -70,7 +70,15 @@ namespace MyCaffe.basecode
             /// Specifies that the data contains an image converted to a byte array using ImageTools.ImageToByteArray.
             /// </summary>
             /// <remarks>To convert back to an image, use the ImageTools.ByteArrayToImage method.</remarks>
-            BITMAP
+            BITMAP,
+            /// <summary>
+            /// Specifies that the data contains a list of double values where the first item is an Int32 which is the count followed by that many double values.
+            /// </summary>
+            LIST_DOUBLE,
+            /// <summary>
+            /// Specifies that the data contains a list of float values where the first item is an Int32 which is the count followed by that many float values.
+            /// </summary>
+            LIST_FLOAT
         }
 
 
