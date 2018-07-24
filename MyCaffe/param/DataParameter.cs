@@ -27,26 +27,6 @@ namespace MyCaffe.param
             IMAGEDB = 0
         }
 
-        /// <summary>
-        /// Defines the label type.
-        /// </summary>
-        public enum LABEL_TYPE
-        {
-            /// <summary>
-            /// Specifies a single label value, which is the default.
-            /// </summary>
-            SINGLE,
-            /// <summary>
-            /// Specifies multiple values for the label such as are used in segmentation problems, 
-            /// the label's are stored in each Data Item's <i>DataCriteria</i> field.
-            /// </summary>
-            MULTIPLE,
-            /// <summary>
-            /// Specifies that the data is used as the label - as a one-hot-vector of data.
-            /// </summary>
-            ONEHOTVECTOR
-        }
-
         string m_strSource = null;
         uint m_nBatchSize;
         DB m_backend = DB.IMAGEDB;
@@ -329,10 +309,6 @@ namespace MyCaffe.param
 
                     case "MULTIPLE":
                         p.label_type = LABEL_TYPE.MULTIPLE;
-                        break;
-
-                    case "ONEHOTVECTOR":
-                        p.label_type = LABEL_TYPE.ONEHOTVECTOR;
                         break;
 
                     default:

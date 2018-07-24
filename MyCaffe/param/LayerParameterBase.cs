@@ -12,7 +12,23 @@ namespace MyCaffe.param
     /// The LayerParameterBase is the base class for all other layer specific parameters.
     /// </summary>
     public abstract class LayerParameterBase : BaseParameter, IBinaryPersist 
-    {       
+    {
+        /// <summary>
+        /// Defines the label type.
+        /// </summary>
+        public enum LABEL_TYPE
+        {
+            /// <summary>
+            /// Specifies a single label value, which is the default.
+            /// </summary>
+            SINGLE,
+            /// <summary>
+            /// Specifies multiple values for the label such as are used in segmentation problems, 
+            /// the label's are stored in each Data Item's <i>DataCriteria</i> field.
+            /// </summary>
+            MULTIPLE
+        }
+
         /** @copydoc BaseParameter */
         public LayerParameterBase()
         {
