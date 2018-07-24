@@ -206,13 +206,6 @@ namespace MyCaffe.layers
                     m_log.CHECK_EQ(nItemSize, 1, "Currently only byte sized labels are supported in multi-label scenarios.");
                     rgLabelShape.Add(nLen);
                 }
-                // When using a onehotvector as the label, resize the label to the data length.
-                else if (m_param.data_param.label_type == DataParameter.LABEL_TYPE.ONEHOTVECTOR)
-                {
-                    rgLabelShape.Add(datum.channels);
-                    rgLabelShape.Add(datum.height);
-                    rgLabelShape.Add(datum.width);
-                }
 
                 colTop[1].Reshape(rgLabelShape);
 
@@ -377,12 +370,6 @@ namespace MyCaffe.layers
 
                         m_log.CHECK_EQ(nItemSize, 1, "Currently only byte sized labels are supported in multi-label scenarios.");
                         Array.Copy(datum.DataCriteria, 0, rgTopLabel, nDstIdx, nLen);
-                    }
-                    else if (m_param.data_param.label_type == DataParameter.LABEL_TYPE.ONEHOTVECTOR)
-                    {
-                        m_log.CHECK(datum.data != null, "Currently only byte data is supported as a one-hot-vector label.");
-                        int nDstIdx = i * datum.ItemCount;
-                        Array.Copy(datum.data, 0, rgTopLabel, nDstIdx, datum.ItemCount);
                     }
                     else
                     {
