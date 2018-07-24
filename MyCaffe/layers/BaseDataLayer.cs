@@ -116,5 +116,13 @@ namespace MyCaffe.layers
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
         }
+
+        /// <summary>
+        /// Returns the data transformer used.
+        /// </summary>
+        public DataTransformer<T> Transformer
+        {
+            get { return m_transformer; }
+        }
     }
 }
