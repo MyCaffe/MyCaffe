@@ -61,6 +61,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BinaryData.cs" />
     <Compile Include="CancelEvent.cs" />
     <Compile Include="ColorMapper.cs" />
     <Compile Include="CryptoRandom.cs" />
