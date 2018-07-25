@@ -12,10 +12,14 @@ namespace MyCaffe.param
     /// </summary>
     public class MemoryDataParameter : LayerParameterBase 
     {
+        string m_strSource = null;
         uint m_nBatchSize;
-        uint m_nChannels;
-        uint m_nHeight;
-        uint m_nWidth;
+        uint m_nDataChannels;
+        uint m_nDataHeight;
+        uint m_nDataWidth;
+        uint m_nLabelChannels = 1;
+        uint m_nLabelHeight = 1;
+        uint m_nLabelWidth = 1;
         LABEL_TYPE m_labelType = LABEL_TYPE.SINGLE;
         bool m_bPrimaryData = true;
 
@@ -35,9 +39,9 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// (\b optional, default = SINGLE) Specifies the label type: SINGLE - the default which uses the 'Label' field, MULTIPLE - which uses the 'DataCriteria' field, or ONEHOTVECTOR - which uses the data itself as the label. Multiple labels are used in tasks such as segmentation learning.  One-Hot-Vectors are used in AutoEncoder learning.  
+        /// (\b optional, default = SINGLE) Specifies the label type: SINGLE - the default which uses the 'Label' field, or MULTIPLE - which uses the 'DataCriteria' field.  
         /// </summary>
-        [Category("Labels"), Description("Specifies the label type: SINGLE - the default which uses the 'Label' field, MULTIPLE - which uses the 'DataCriteria' field, or ONEHOTVECTOR - which uses the data itself as the label. Multiple labels are used in tasks such as segmentation learning.  One-Hot-Vectors are used in AutoEncoder learning.")]
+        [Category("Labels"), Description("Specifies the label type: SINGLE - the default which uses the 'Label' field, or MULTIPLE - which uses the 'DataCriteria' field.")]
         public LABEL_TYPE label_type
         {
             get { return m_labelType; }
@@ -60,8 +64,8 @@ namespace MyCaffe.param
         [Description("The number of channels in the data.")]
         public uint channels
         {
-            get { return m_nChannels; }
-            set { m_nChannels = value; }
+            get { return m_nDataChannels; }
+            set { m_nDataChannels = value; }
         }
 
         /// <summary>
@@ -70,8 +74,8 @@ namespace MyCaffe.param
         [Description("Specifies the height of the data.")]
         public uint height
         {
-            get { return m_nHeight; }
-            set { m_nHeight = value; }
+            get { return m_nDataHeight; }
+            set { m_nDataHeight = value; }
         }
 
         /// <summary>
@@ -80,8 +84,38 @@ namespace MyCaffe.param
         [Description("Specifies the width of the data.")]
         public uint width
         {
-            get { return m_nWidth; }
-            set { m_nWidth = value; }
+            get { return m_nDataWidth; }
+            set { m_nDataWidth = value; }
+        }
+
+        /// <summary>
+        /// The number of channels in the label.
+        /// </summary>
+        [Description("The number of channels in the label (default = 1).")]
+        public uint label_channels
+        {
+            get { return m_nLabelChannels; }
+            set { m_nLabelChannels = value; }
+        }
+
+        /// <summary>
+        /// The height of the label.
+        /// </summary>
+        [Description("Specifies the height of the label (default = 1).")]
+        public uint label_height
+        {
+            get { return m_nLabelHeight; }
+            set { m_nLabelHeight = value; }
+        }
+
+        /// <summary>
+        /// The width of the label.
+        /// </summary>
+        [Description("Specifies the width of the label (default = 1).")]
+        public uint label_width
+        {
+            get { return m_nLabelWidth; }
+            set { m_nLabelWidth = value; }
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -101,9 +135,12 @@ namespace MyCaffe.param
         {
             MemoryDataParameter p = (MemoryDataParameter)src;
             m_nBatchSize = p.m_nBatchSize;
-            m_nChannels = p.m_nChannels;
-            m_nHeight = p.m_nHeight;
-            m_nWidth = p.m_nWidth;
+            m_nDataChannels = p.m_nDataChannels;
+            m_nDataHeight = p.m_nDataHeight;
+            m_nDataWidth = p.m_nDataWidth;
+            m_nLabelChannels = p.m_nLabelChannels;
+            m_nLabelHeight = p.m_nLabelHeight;
+            m_nLabelWidth = p.m_nLabelWidth;
             m_labelType = p.m_labelType;
             m_bPrimaryData = p.m_bPrimaryData;
         }
@@ -125,6 +162,9 @@ namespace MyCaffe.param
             rgChildren.Add("channels", channels.ToString());
             rgChildren.Add("height", height.ToString());
             rgChildren.Add("width", width.ToString());
+            rgChildren.Add("label_channels", label_channels.ToString());
+            rgChildren.Add("label_height", label_height.ToString());
+            rgChildren.Add("label_width", label_width.ToString());
 
             if (label_type != LABEL_TYPE.SINGLE)
                 rgChildren.Add("label_type", label_type.ToString());
@@ -156,6 +196,15 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("width")) != null)
                 p.width = uint.Parse(strVal);
+
+            if ((strVal = rp.FindValue("label_channels")) != null)
+                p.label_channels = uint.Parse(strVal);
+
+            if ((strVal = rp.FindValue("label_height")) != null)
+                p.label_height = uint.Parse(strVal);
+
+            if ((strVal = rp.FindValue("label_width")) != null)
+                p.label_width = uint.Parse(strVal);
 
             if ((strVal = rp.FindValue("label_type")) != null)
             {
