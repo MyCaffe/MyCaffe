@@ -351,6 +351,9 @@ namespace MyCaffe.test
             p.memory_data_param.channels = (uint)ds.TrainingSource.ImageChannels;
             p.memory_data_param.height = (uint)ds.TrainingSource.ImageHeight;
             p.memory_data_param.width = (uint)ds.TrainingSource.ImageWidth;
+            p.memory_data_param.label_channels = 3;
+            p.memory_data_param.label_height = 1;
+            p.memory_data_param.label_width = 1;
             p.memory_data_param.label_type = LayerParameterBase.LABEL_TYPE.MULTIPLE;
             MemoryDataLayer<T> layer = new MemoryDataLayer<T>(m_cuda, m_log, p);
             layer.OnGetData += MemoryDataLayer_OnGetDataMultipleLabel;
