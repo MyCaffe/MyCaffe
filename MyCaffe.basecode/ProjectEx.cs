@@ -226,12 +226,12 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Returns the custom trainer and properties used by the project (if any).
         /// </summary>
-        /// <param name="rgProperties">Specifies the properties associated with the custom trainer.  The properties are stored in the solver parameter field 'custom_trainer_propeties' as a list of comma (',') separated key value pairs each separated by ';'</param>
-        /// <remarks>An example set of properties uses the following format: key1,val1;key2,val2;...</remarks>
+        /// <param name="strProperties">Specifies the properties associated with the custom trainer.  The properties are stored in the solver parameter field 'custom_trainer_propeties' as a list of comma ('=') separated key value pairs each separated by ';'</param>
+        /// <remarks>An example set of properties uses the following format: key1=val1;key2=val2;...</remarks>
         /// <returns>The custom trainer name is returned.</returns>
-        public string GetCustomTrainer(out Dictionary<string, string> rgProperties)
+        public string GetCustomTrainer(out string strProperties)
         {
-            rgProperties = new Dictionary<string, string>();
+            strProperties = "";
 
             RawProto rp = m_protoSolver.FindChild("custom_trainer");
             if (rp == null)
@@ -242,22 +242,7 @@ namespace MyCaffe.basecode
 
             RawProto rprop = m_protoSolver.FindChild("custom_trainer_properties");
             if (rprop != null)
-            {
-                if (!string.IsNullOrEmpty(rprop.Value))
-                {
-                    string[] rgstr = rprop.Value.Split(';');
-
-                    for (int i = 0; i < rgstr.Length; i++)
-                    {
-                        string[] rgstr1 = rgstr[i].Split(',');
-                        if (rgstr1.Length == 2)
-                        {
-                            if (!rgProperties.ContainsKey(rgstr1[0]))
-                                rgProperties.Add(rgstr1[0], rgstr1[1]);
-                        }
-                    }
-                }
-            }
+                strProperties = rprop.Value;
 
             return rp.Value;
         }
@@ -350,6 +335,52 @@ namespace MyCaffe.basecode
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Get a setting from the solver descriptor.
+        /// </summary>
+        /// <param name="strParam">Specifies the setting to retrieve.</param>
+        /// <returns>The setting is returned if found, otherwise <i>null</i> is returned.</returns>
+        public string GetSolverSetting(string strParam)
+        {
+            RawProto proto = m_protoSolver.FindChild(strParam);
+            if (proto == null)
+                return null;
+
+            return proto.Value;
+        }
+
+        /// <summary>
+        /// Get a setting from the solver descriptor as a double value.
+        /// </summary>
+        /// <param name="strParam">Specifies the setting to retrieve.</param>
+        /// <returns>The setting is returned as a double if found, otherwise <i>null</i> is returned.</returns>
+        public double? GetSolverSettingAsNumeric(string strParam)
+        {
+            string strVal = GetSolverSetting(strParam);
+            if (strVal == null)
+                return null;
+
+            double dfVal;
+            if (!double.TryParse(strVal, out dfVal))
+                return null;
+
+            return dfVal;
+        }
+
+        /// <summary>
+        /// Get a setting from the solver descriptor as an integer value.
+        /// </summary>
+        /// <param name="strParam">Specifies the setting to retrieve.</param>
+        /// <returns>The setting is returned as a int if found, otherwise <i>null</i> is returned.</returns>
+        public int? GetSolverSettingAsInt(string strParam)
+        {
+            double? dfVal = GetSolverSettingAsNumeric(strParam);
+            if (!dfVal.HasValue)
+                return null;
+
+            return (int)dfVal.Value;
         }
 
         /// <summary>
