@@ -177,7 +177,6 @@ namespace MyCaffe.layers
 
             // Reshape colTop[0] and prefetch data according to the batch size.
             rgTopShape[0] = nBatchSize;
-
             colTop[0].Reshape(rgTopShape);
 
             for (int i = 0; i < m_rgPrefetch.Length; i++)
@@ -199,12 +198,31 @@ namespace MyCaffe.layers
                     if (datum.DataCriteria == null || datum.DataCriteria.Length == 0)
                         m_log.FAIL("Could not find the multi-label data.  The data source '" + m_param.data_param.source + "' does not appear to have any Image Criteria data.");
 
-                    // Get the number of items and the item size from the end of the data.
-                    int nLen = BitConverter.ToInt32(datum.DataCriteria, datum.DataCriteria.Length - (sizeof(int) * 4));
-                    int nItemSize = BitConverter.ToInt32(datum.DataCriteria, datum.DataCriteria.Length - (sizeof(int) * 3));
+                    if (datum.DataCriteriaFormat == SimpleDatum.DATA_FORMAT.LIST_DOUBLE)
+                    {
+                        List<double> rg = BinaryData.UnPackDoubleList(datum.DataCriteria, datum.DataCriteriaFormat);
+                        int nLen = rg.Count;
+                        rgLabelShape.Add(nLen);
+                        rgLabelShape.Add(1);
+                        rgLabelShape.Add(1);
+                    }
+                    else if (datum.DataCriteriaFormat == SimpleDatum.DATA_FORMAT.LIST_FLOAT)
+                    {
+                        List<float> rg = BinaryData.UnPackFloatList(datum.DataCriteria, datum.DataCriteriaFormat);
+                        int nLen = rg.Count;
+                        rgLabelShape.Add(nLen);
+                        rgLabelShape.Add(1);
+                        rgLabelShape.Add(1);
+                    }
+                    else
+                    {
+                        // Get the number of items and the item size from the end of the data.
+                        int nLen = BitConverter.ToInt32(datum.DataCriteria, datum.DataCriteria.Length - (sizeof(int) * 4));
+                        int nItemSize = BitConverter.ToInt32(datum.DataCriteria, datum.DataCriteria.Length - (sizeof(int) * 3));
 
-                    m_log.CHECK_EQ(nItemSize, 1, "Currently only byte sized labels are supported in multi-label scenarios.");
-                    rgLabelShape.Add(nLen);
+                        rgLabelShape.Add(nLen);
+                        m_log.CHECK_EQ(nItemSize, 1, "Currently only byte sized labels are supported in multi-label scenarios.");
+                    }
                 }
 
                 colTop[1].Reshape(rgLabelShape);
