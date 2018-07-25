@@ -169,12 +169,18 @@ namespace MyCaffe.imagedb
 
             foreach (SimpleDatum sd in m_rgImages)
             {
-                rgSd.Add(new SimpleDatum(sd));
+                if (sd != null)
+                    rgSd.Add(new SimpleDatum(sd));
+                else
+                    rgSd.Add(null);
             }
 
             foreach (SimpleDatum sd in m_rgImagesLimitLoaded)
             {
-                imgSet.m_rgImagesLimitLoaded.Add(sd);
+                if (sd != null)
+                    imgSet.m_rgImagesLimitLoaded.Add(sd);
+                else
+                    imgSet.m_rgImagesLimitLoaded.Add(null);
             }
 
             imgSet.m_rgImages = rgSd.ToArray();
