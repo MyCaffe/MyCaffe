@@ -63,7 +63,9 @@ namespace MyCaffe.data
                 if (m_protoMean == null)
                 {
                     m_imgMean = imgMean;
-                    m_rgMeanData = m_imgMean.GetData<double>();
+
+                    if (m_imgMean != null)
+                        m_rgMeanData = m_imgMean.GetData<double>();
                 }
                 else
                 {
@@ -96,6 +98,15 @@ namespace MyCaffe.data
         public TransformationParameter param
         {
             get { return m_param; }
+        }
+
+        /// <summary>
+        /// Get/set the image mean.
+        /// </summary>
+        public SimpleDatum ImageMean
+        {
+            get { return m_imgMean; }
+            set { m_imgMean = value; }
         }
 
         private BlobProto loadProtoMean(string strFile)
