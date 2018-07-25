@@ -15,19 +15,9 @@ using System.Diagnostics;
 using static MyCaffe.basecode.SimpleDatum;
 
 /// <summary>
-/// Testing the embed knn layer.
+/// Testing the MemoryData layer.
 /// 
-/// EmbedKnn Layer - this converts embeddings received into the nearest neighbor and outputs
-/// the inverse sum of distances between the input and all previously received inputs.
-/// 
-/// For example, when using a 128 item embedding for a 10 class problem, the EmbedKnn layer
-/// takes each input and calculates the distance between the input and all other inputs
-/// collected for each class.  The resulting collection of distances are then summed for
-/// each class.  At this point the class with the lowest sum is the nearest neighbor.
-/// 
-/// However, in order to work with the Accuracy, SoftmaxLoss and Softmax layers, the
-/// summed values are normalized to the range between 0 and 1 and then inverted so that
-/// the maximum value is accociated with the nearest neighbor class.
+/// MemoryData Layer - this layer facilitates a data layer of values stored within memory.
 /// </remarks> 
 namespace MyCaffe.test
 {
