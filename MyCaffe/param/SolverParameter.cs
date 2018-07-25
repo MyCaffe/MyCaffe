@@ -211,8 +211,10 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Specifies the custom trainer (if any) - this is an optional setting used by exteral software to 
-        /// provide a customized training process.
+        /// Specifies the Name of the custom trainer (if any) - this is an optional setting used by exteral software to 
+        /// provide a customized training process.  Each custom trainer must implement the IDnnCustomTraininer interface
+        /// which contains a 'Name'property - the named returned from this property is the value set here as the 
+        /// 'custom_trainer'.
         /// </summary>
         [Description("Specifies the custom trainer (if any) used by an external process to provide customized training.")]
         public string custom_trainer
