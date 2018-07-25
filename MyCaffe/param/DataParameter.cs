@@ -136,9 +136,9 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// (\b optional, default = SINGLE) Specifies the label type: SINGLE - the default which uses the 'Label' field, MULTIPLE - which uses the 'DataCriteria' field, or ONEHOTVECTOR - which uses the data itself as the label. Multiple labels are used in tasks such as segmentation learning.  One-Hot-Vectors are used in AutoEncoder learning.  
+        /// (\b optional, default = SINGLE) Specifies the label type: SINGLE - the default which uses the 'Label' field, or MULTIPLE - which uses the 'DataCriteria' field.  
         /// </summary>
-        [Category("Labels"), Description("Specifies the label type: SINGLE - the default which uses the 'Label' field, MULTIPLE - which uses the 'DataCriteria' field, or ONEHOTVECTOR - which uses the data itself as the label. Multiple labels are used in tasks such as segmentation learning.  One-Hot-Vectors are used in AutoEncoder learning.")]
+        [Category("Labels"), Description("Specifies the label type: SINGLE - the default which uses the 'Label' field, or MULTIPLE - which uses the 'DataCriteria' field.")]
         public LABEL_TYPE label_type
         {
             get { return m_labelType; }
