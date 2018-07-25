@@ -23,6 +23,9 @@ namespace MyCaffe.layers
         int m_nChannels;
         int m_nHeight;
         int m_nWidth;
+        int m_nLabelChannels;
+        int m_nLabelHeight;
+        int m_nLabelWidth;
         int m_nDataSize;
         int m_nLabelSize;
         Blob<T> m_blobData;
@@ -76,25 +79,23 @@ namespace MyCaffe.layers
 
             m_log.CHECK_GT(m_nBatchSize * m_nDataSize, 0, "batch_size, channels, height, and width must be specified and positive in memory_data_param.");
 
+            m_nLabelChannels = (int)m_param.memory_data_param.label_channels;
+            m_nLabelHeight = (int)m_param.memory_data_param.label_height;
+            m_nLabelWidth = (int)m_param.memory_data_param.label_width;
+            m_nLabelSize = m_nLabelChannels * m_nLabelHeight * m_nLabelWidth;
+
+            if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.MULTIPLE)
+                m_log.CHECK_GT(m_nBatchSize * m_nLabelSize, 0, "batch_size, label_channels, label_height, and label_width must be specified and positive in memory_data_param when using label_type = MULTIPLE.");
+
             if (OnGetData != null)
                 OnGetData(this, new MemoryDataLayerGetDataArgs(true));
 
-            List<int> rgLabelShape = Utility.Clone<int>(m_blobLabel.shape());
-            if (rgLabelShape.Count == 0)
-                rgLabelShape.Add(m_nBatchSize);
-            else
-                rgLabelShape[0] = m_nBatchSize;
+            m_log.CHECK_EQ(m_nLabelChannels, m_blobLabel.channels, "The actual label channels (" + m_blobLabel.channels.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelChannels.ToString() + ".");
+            m_log.CHECK_EQ(m_nLabelHeight, m_blobLabel.height, "The actual label channels (" + m_blobLabel.height.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelHeight.ToString() + ".");
+            m_log.CHECK_EQ(m_nLabelWidth, m_blobLabel.width, "The actual label channels (" + m_blobLabel.width.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelWidth.ToString() + ".");
 
-            colTop[1].Reshape(rgLabelShape);
             colTop[0].Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
-
-            if (OnGetData == null)
-            { 
-                m_blobData.Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
-                m_blobLabel.Reshape(rgLabelShape);
-            }
-
-            m_nLabelSize = m_blobLabel.count(1);
+            colTop[1].Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
 
             m_blobData.update_cpu_data();
             m_blobLabel.update_cpu_data();
@@ -206,7 +207,7 @@ namespace MyCaffe.layers
                 m_log.CHECK(!m_bHasNewData, "Can't change the batch size until current data has been consumed.");
                 m_nBatchSize = value;
                 m_blobData.Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
-                m_blobLabel.Reshape(m_nBatchSize, 1, 1, 1);
+                m_blobLabel.Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
             }
         }
 
