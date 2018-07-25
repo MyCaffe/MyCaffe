@@ -88,11 +88,12 @@ namespace MyCaffe.layers
                 m_log.CHECK_GT(m_nBatchSize * m_nLabelSize, 0, "batch_size, label_channels, label_height, and label_width must be specified and positive in memory_data_param when using label_type = MULTIPLE.");
 
             if (OnGetData != null)
+            {
                 OnGetData(this, new MemoryDataLayerGetDataArgs(true));
-
-            m_log.CHECK_EQ(m_nLabelChannels, m_blobLabel.channels, "The actual label channels (" + m_blobLabel.channels.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelChannels.ToString() + ".");
-            m_log.CHECK_EQ(m_nLabelHeight, m_blobLabel.height, "The actual label channels (" + m_blobLabel.height.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelHeight.ToString() + ".");
-            m_log.CHECK_EQ(m_nLabelWidth, m_blobLabel.width, "The actual label channels (" + m_blobLabel.width.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelWidth.ToString() + ".");
+                m_log.CHECK_EQ(m_nLabelChannels, m_blobLabel.channels, "The actual label channels (" + m_blobLabel.channels.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelChannels.ToString() + ".");
+                m_log.CHECK_EQ(m_nLabelHeight, m_blobLabel.height, "The actual label channels (" + m_blobLabel.height.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelHeight.ToString() + ".");
+                m_log.CHECK_EQ(m_nLabelWidth, m_blobLabel.width, "The actual label channels (" + m_blobLabel.width.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelWidth.ToString() + ".");
+            }
 
             colTop[0].Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
             colTop[1].Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
@@ -121,7 +122,7 @@ namespace MyCaffe.layers
         /// This method is used to add a list of Datums to the memory.
         /// </summary>
         /// <param name="rgData">The list of Data Datums to add.</param>
-        public virtual void AddDatumVector(List<Datum> rgData)
+        public virtual void AddDatumVector(List<Datum> rgData, int nLblAxis = 1)
         {
             m_log.CHECK(!m_bHasNewData, "Can't add data until current data has been consumed.");
             int nNum = rgData.Count;
@@ -130,16 +131,23 @@ namespace MyCaffe.layers
 
             m_blobData.Reshape(nNum, m_nChannels, m_nHeight, m_nWidth);
 
+            List<int> rgLblShape = new List<int>();
+            rgLblShape.Add(nNum);
+            rgLblShape.Add(1);
+            rgLblShape.Add(1);
+            rgLblShape.Add(1);
+
             // Reshape label blob depending on label type.
             if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.MULTIPLE)
             {
+                m_log.CHECK_GE(nLblAxis, 1, "The label axis must be greater than or equal to 1.");
+                m_log.CHECK_LE(nLblAxis, 4, "The label axis must be less than 4.");
+
                 List<float> rgLbl = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
-                m_blobLabel.Reshape(nNum, rgLbl.Count, 1, 1);
+                rgLblShape[nLblAxis] = rgLbl.Count;
             }
-            else
-            {
-                m_blobLabel.Reshape(nNum, 1, 1, 1);
-            }
+
+            m_blobLabel.Reshape(rgLblShape);
 
             // Apply data transformations (mirror, scale, crop...)
             m_transformer.Transform(rgData, m_blobData, m_cuda, m_log);
