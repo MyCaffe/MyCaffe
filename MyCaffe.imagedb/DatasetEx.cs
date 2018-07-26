@@ -140,6 +140,10 @@ namespace MyCaffe.imagedb
                 rgSd.AddRange(ds.m_TestingImages.Images);
                 rgSd.AddRange(ds.m_TrainingImages.Images);
 
+                int nCount = rgSd.Where(p => p != null).Count();
+                if (nCount == 0)
+                    throw new Exception("You must first load 'all' images with LOAD_ALL or LOAD_FROM_SERVICE!");
+
                 rgSd = rgSd.OrderBy(p => p.Description).ThenBy(p => p.TimeStamp).ToList();
 
                 for (int i = 0; i < nTrainingCount; i++)
