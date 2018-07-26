@@ -113,6 +113,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestForwardAddVecMultiple3()
+        {
+            MemoryDataLayerTest test = new MemoryDataLayerTest();
+
+            try
+            {
+                foreach (IMemoryDataLayerTest t in test.Tests)
+                {
+                    t.TestForwardAddVecMultiple3();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IMemoryDataLayerTest : ITest
@@ -122,6 +140,7 @@ namespace MyCaffe.test
         void TestForwardAddVecSingle();
         void TestForwardAddVecMultiple();
         void TestForwardAddVecMultiple2();
+        void TestForwardAddVecMultiple3();
     }
 
     class MemoryDataLayerTest : TestBase
@@ -402,6 +421,47 @@ namespace MyCaffe.test
             }
         }
 
+        private void MemoryDataLayer_OnGetDataMultipleLabel(object sender, MemoryDataLayerGetDataArgs e)
+        {
+            if (!e.Initialization)
+                return;
+
+            List<Datum> rgData = new List<Datum>();
+
+            for (int i = 0; i < m_nBatchSize * m_nBatches; i++)
+            {
+                SimpleDatum sd = m_db.QueryImage(m_nSrcId, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+                DATA_FORMAT fmt;
+                sd.DataCriteria = BinaryData.Pack(new List<float>() { sd.Label, sd.Label, sd.Label }, out fmt);
+                sd.DataCriteriaFormat = fmt;
+
+                rgData.Add(new Datum(sd));
+            }
+
+            MemoryDataLayer<T> layer = sender as MemoryDataLayer<T>;
+            layer.AddDatumVector(rgData);
+
+            m_data.Reshape(rgData.Count, rgData[0].channels, rgData[0].height, rgData[0].width);
+            List<float> rgLbl1 = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
+            m_labels.Reshape(rgData.Count, rgLbl1.Count, 1, 1);
+
+            // Get the transformed data so that we can verify it later.
+            layer.Transformer.Transform(rgData, m_data, m_cuda, m_log);
+            List<T> rgLbl = new List<T>();
+
+            for (int i = 0; i < rgData.Count; i++)
+            {
+                rgLbl1 = BinaryData.UnPackFloatList(rgData[i].DataCriteria, rgData[i].DataCriteriaFormat);
+
+                for (int j = 0; j < rgLbl1.Count; j++)
+                {
+                    rgLbl.Add((T)Convert.ChangeType(rgLbl1[j], typeof(T)));
+                }
+            }
+
+            m_labels.mutable_cpu_data = rgLbl.ToArray();
+        }
+
         public void TestForwardAddVecMultiple2()
         {
             m_db = new MyCaffeImageDatabase(m_log);
@@ -460,48 +520,6 @@ namespace MyCaffe.test
             }
         }
 
-        private void MemoryDataLayer_OnGetDataMultipleLabel(object sender, MemoryDataLayerGetDataArgs e)
-        {
-            if (!e.Initialization)
-                return;
-
-            List<Datum> rgData = new List<Datum>();
-
-            for (int i = 0; i < m_nBatchSize * m_nBatches; i++)
-            {
-                SimpleDatum sd = m_db.QueryImage(m_nSrcId, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
-                DATA_FORMAT fmt;
-                sd.DataCriteria = BinaryData.Pack(new List<float>() { sd.Label, sd.Label, sd.Label }, out fmt);
-                sd.DataCriteriaFormat = fmt;
-
-                rgData.Add(new Datum(sd));
-            }
-
-            MemoryDataLayer<T> layer = sender as MemoryDataLayer<T>;
-            layer.AddDatumVector(rgData);
-
-            m_data.Reshape(rgData.Count, rgData[0].channels, rgData[0].height, rgData[0].width);
-            List<float> rgLbl1 = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
-            m_labels.Reshape(rgData.Count, rgLbl1.Count, 1, 1);
-
-            // Get the transformed data so that we can verify it later.
-            layer.Transformer.Transform(rgData, m_data, m_cuda, m_log);
-            List<T> rgLbl = new List<T>();
-
-            for (int i = 0; i < rgData.Count; i++)
-            {
-                rgLbl1 = BinaryData.UnPackFloatList(rgData[i].DataCriteria, rgData[i].DataCriteriaFormat);
-
-                for (int j = 0; j < rgLbl1.Count; j++)
-                {
-                    rgLbl.Add((T)Convert.ChangeType(rgLbl1[j], typeof(T)));
-                }
-            }
-
-            m_labels.mutable_cpu_data = rgLbl.ToArray();
-        }
-
-
         private void MemoryDataLayer_OnGetDataMultipleLabel2(object sender, MemoryDataLayerGetDataArgs e)
         {
             if (!e.Initialization)
@@ -525,6 +543,105 @@ namespace MyCaffe.test
             m_data.Reshape(rgData.Count, rgData[0].channels, rgData[0].height, rgData[0].width);
             List<float> rgLbl1 = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
             m_labels.Reshape(rgData.Count, 1, rgLbl1.Count, 1);
+
+            // Get the transformed data so that we can verify it later.
+            layer.Transformer.Transform(rgData, m_data, m_cuda, m_log);
+            List<T> rgLbl = new List<T>();
+
+            for (int i = 0; i < rgData.Count; i++)
+            {
+                rgLbl1 = BinaryData.UnPackFloatList(rgData[i].DataCriteria, rgData[i].DataCriteriaFormat);
+
+                for (int j = 0; j < rgLbl1.Count; j++)
+                {
+                    rgLbl.Add((T)Convert.ChangeType(rgLbl1[j], typeof(T)));
+                }
+            }
+
+            m_labels.mutable_cpu_data = rgLbl.ToArray();
+        }
+
+        public void TestForwardAddVecMultiple3()
+        {
+            m_db = new MyCaffeImageDatabase(m_log);
+            SettingsCaffe settings = new SettingsCaffe();
+            Stopwatch sw = new Stopwatch();
+
+            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+            m_db.InitializeWithDsName(settings, "MNIST");
+            DatasetDescriptor ds = m_db.GetDatasetByName("MNIST");
+            m_nSrcId = ds.TrainingSource.ID;
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.MEMORYDATA);
+            p.memory_data_param.batch_size = (uint)m_nBatchSize;
+            p.memory_data_param.channels = (uint)ds.TrainingSource.ImageChannels;
+            p.memory_data_param.height = (uint)ds.TrainingSource.ImageHeight;
+            p.memory_data_param.width = (uint)ds.TrainingSource.ImageWidth;
+            p.memory_data_param.label_channels = 1;
+            p.memory_data_param.label_height = 1;
+            p.memory_data_param.label_width = 3;
+            p.memory_data_param.label_type = LayerParameterBase.LABEL_TYPE.MULTIPLE;
+            MemoryDataLayer<T> layer = new MemoryDataLayer<T>(m_cuda, m_log, p);
+            layer.OnGetData += MemoryDataLayer_OnGetDataMultipleLabel3;
+
+            layer.LayerSetUp(BottomVec, TopVec);
+
+            double[] rgData = convert(m_data.update_cpu_data());
+
+            for (int i = 0; i < m_nBatches * 6; i++)
+            {
+                int nBatchNum = i % m_nBatches;
+
+                layer.Forward(BottomVec, TopVec);
+
+                double[] rgDataBlob = convert(m_dataBlob.update_cpu_data());
+
+                for (int j = 0; j < m_dataBlob.count(); j++)
+                {
+                    double df1 = rgDataBlob[j];
+                    int nIdx = m_data.offset(1) * m_nBatchSize * nBatchNum + j;
+                    double df2 = rgData[nIdx];
+
+                    m_log.CHECK_EQ(df1, df2, "The data items should match.");
+                }
+
+                for (int j = 0; j < m_labelBlob.count(); j++)
+                {
+                    double df1 = convert(m_labelBlob.GetData(j));
+                    int nIdx = m_labels.offset(1) * m_nBatchSize * nBatchNum + j;
+                    double df2 = convert(m_labels.GetData(nIdx));
+
+                    m_log.CHECK_EQ(df1, df2, "The label items should match.");
+                }
+
+                double dfPct = (double)i / (double)(m_nBatches * 6);
+                Trace.WriteLine("testing at " + dfPct.ToString("P"));
+            }
+        }
+
+        private void MemoryDataLayer_OnGetDataMultipleLabel3(object sender, MemoryDataLayerGetDataArgs e)
+        {
+            if (!e.Initialization)
+                return;
+
+            List<Datum> rgData = new List<Datum>();
+
+            for (int i = 0; i < m_nBatchSize * m_nBatches; i++)
+            {
+                SimpleDatum sd = m_db.QueryImage(m_nSrcId, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+                DATA_FORMAT fmt;
+                sd.DataCriteria = BinaryData.Pack(new List<float>() { sd.Label, sd.Label, sd.Label }, out fmt);
+                sd.DataCriteriaFormat = fmt;
+
+                rgData.Add(new Datum(sd));
+            }
+
+            MemoryDataLayer<T> layer = sender as MemoryDataLayer<T>;
+            layer.AddDatumVector(rgData, 3);
+
+            m_data.Reshape(rgData.Count, rgData[0].channels, rgData[0].height, rgData[0].width);
+            List<float> rgLbl1 = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
+            m_labels.Reshape(rgData.Count, 1, 1, rgLbl1.Count);
 
             // Get the transformed data so that we can verify it later.
             layer.Transformer.Transform(rgData, m_data, m_cuda, m_log);
