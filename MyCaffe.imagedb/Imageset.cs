@@ -292,7 +292,7 @@ namespace MyCaffe.imagedb
                 {
                     foreach (LabelSet ls in m_rgLabelSet)
                     {
-                        if (ls.Label.ActiveLabel == d.Label)
+                        if (d != null && ls.Label.ActiveLabel == d.Label)
                         {
                             ls.Add(d);
                             break;
