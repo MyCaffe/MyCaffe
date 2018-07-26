@@ -9,7 +9,7 @@ using MyCaffe.param;
 namespace MyCaffe.layers
 {
     /// <summary>
-    /// The ArgMaxLayer computes the indes of the K max values for each datum across
+    /// The ArgMaxLayer computes the index of the K max values for each datum across
     /// all dimensions @f$ (C \times H \times W) @f$.
     /// This layer is initialized with the MyCaffe.param.ArgMaxParameter.
     /// </summary>
