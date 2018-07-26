@@ -34,6 +34,9 @@ namespace MyCaffe.layers
         int m_nPos = 0;
         int m_nN = 1;
 
+        /// <summary>
+        /// The OnGetData event fires on the DataLayerSetup call and each time the data wraps around (e.g. all data as already fed through) during the forward call.
+        /// </summary>
         public event EventHandler<MemoryDataLayerGetDataArgs> OnGetData;
 
         /// <summary>
@@ -122,6 +125,7 @@ namespace MyCaffe.layers
         /// This method is used to add a list of Datums to the memory.
         /// </summary>
         /// <param name="rgData">The list of Data Datums to add.</param>
+        /// <param name="nLblAxis">Optionally, specifies the axis on which the multi-label data is placed.  This field is not used on SINGLE label types.</param>
         public virtual void AddDatumVector(List<Datum> rgData, int nLblAxis = 1)
         {
             m_log.CHECK(!m_bHasNewData, "Can't add data until current data has been consumed.");
@@ -282,15 +286,25 @@ namespace MyCaffe.layers
         }
     }
 
+    /// <summary>
+    /// The MemoryDataLayerGetDataArgs class is passed to the OnGetData event.
+    /// </summary>
     public class MemoryDataLayerGetDataArgs : EventArgs
     {
         bool m_bInitialization = true;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="bInit">Set to <i>true</i> when the event fires from within the DataLayerSetup and <i>false</i> otherwise.</param>
         public MemoryDataLayerGetDataArgs(bool bInit)
         {
             m_bInitialization = bInit;
         }
 
+        /// <summary>
+        /// Returns whether the event was fired during the DataLayerSetup call or not.
+        /// </summary>
         public bool Initialization
         {
             get { return m_bInitialization; }
