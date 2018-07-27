@@ -106,7 +106,11 @@ namespace MyCaffe.data
         public SimpleDatum ImageMean
         {
             get { return m_imgMean; }
-            set { m_imgMean = value; }
+            set
+            {
+                m_imgMean = value;
+                m_rgMeanData = m_imgMean.GetData<double>();
+            }
         }
 
         private BlobProto loadProtoMean(string strFile)
