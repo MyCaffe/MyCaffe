@@ -288,6 +288,9 @@ namespace MyCaffe.basecode
                     if (rp == null)
                         rp = rp1.FindChild("data_param");
 
+                    if (rp == null)
+                        rp = rp1.FindChild("memory_data_param");
+
                     if (rp != null)
                     {
                         rp = rp.FindChild("batch_size");
