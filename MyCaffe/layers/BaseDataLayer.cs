@@ -74,6 +74,15 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Get/set the image mean.
+        /// </summary>
+        public SimpleDatum ImageMean
+        {
+            get { return m_imgMean; }
+            set { m_imgMean = value; }
+        }
+
+        /// <summary>
         /// Implements common data layer setup functionality, and calls 
         /// DataLayerSetUp to do special data layer setup for individual layer types.
         /// </summary>
