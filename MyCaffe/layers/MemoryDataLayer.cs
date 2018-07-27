@@ -259,7 +259,14 @@ namespace MyCaffe.layers
         {
             int nSrcOffset;
 
-            m_log.CHECK_GT(m_blobData.count(), 0, "MemoryDataLayer needs to be initialized by calling Reset or AddDatumVector.");
+            // This is only called if the OnGetData event is connected 'after' loading the 
+            //  network - this should only occur once.
+            if (m_blobData.count() == 0)
+            {
+                m_bHasNewData = false;
+                if (OnGetData != null)
+                    OnGetData(this, new MemoryDataLayerGetDataArgs(true));
+            }
 
             List<int> rgLabelShape = Utility.Clone<int>(m_blobLabel.shape());
             if (rgLabelShape.Count == 0)
@@ -277,6 +284,7 @@ namespace MyCaffe.layers
             m_cuda.copy(colTop[1].count(), m_blobLabel.gpu_data, colTop[1].mutable_gpu_data, nSrcOffset, 0);
             m_nPos = (m_nPos + m_nBatchSize) % m_nN;
 
+            // If we have wrapped around the data, get new data.
             if (m_nPos == 0)
             {
                 m_bHasNewData = false;
