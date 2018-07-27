@@ -827,6 +827,9 @@ namespace MyCaffe.common
                         return ((LabelMappingLayer<T>)layer).GetActualLabelCounts(strSrc);
                 }
 
+                if (string.IsNullOrEmpty(strSrc))
+                    return "n/a";
+
                 return m_db.GetLabelCountsAsTextFromSourceName(strSrc);
             }
         }
