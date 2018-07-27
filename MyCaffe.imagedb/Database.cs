@@ -162,8 +162,13 @@ namespace MyCaffe.imagedb
         public void Close()
         {
             m_src = null;
-            m_entities.Dispose();
-            m_entities = null;
+
+            if (m_entities != null)
+            {
+                m_entities.Dispose();
+                m_entities = null;
+            }
+
             m_strPrimaryImgPath = null;
             m_bEnableFileBasedData = false;
         }
