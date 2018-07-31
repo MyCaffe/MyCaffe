@@ -209,6 +209,23 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Copy the data by copying the src alyer data and label to the parameters specified.
+        /// </summary>
+        /// <param name="src">Specifies the source layer.</param>
+        public void Copy(MemoryDataLayer<T> src)
+        {
+            m_nN = src.m_nN;
+
+            m_blobData.ReshapeLike(src.m_blobData);
+            m_blobLabel.ReshapeLike(src.m_blobLabel);
+
+            m_cuda.copy(src.m_blobData.count(), src.m_blobData.gpu_data, m_blobData.mutable_gpu_data);
+            m_cuda.copy(src.m_blobLabel.count(), src.m_blobLabel.gpu_data, m_blobLabel.mutable_gpu_data);
+
+            m_bHasNewData = true;
+        }
+
+        /// <summary>
         /// Returns the batch size.
         /// </summary>
         public int batch_size
@@ -259,15 +276,6 @@ namespace MyCaffe.layers
         {
             int nSrcOffset;
 
-            // This is only called if the OnGetData event is connected 'after' loading the 
-            //  network - this should only occur once.
-            if (m_blobData.count() == 0)
-            {
-                m_bHasNewData = false;
-                if (OnGetData != null)
-                    OnGetData(this, new MemoryDataLayerGetDataArgs(true));
-            }
-
             List<int> rgLabelShape = Utility.Clone<int>(m_blobLabel.shape());
             if (rgLabelShape.Count == 0)
                 rgLabelShape.Add(m_nBatchSize);
@@ -284,13 +292,8 @@ namespace MyCaffe.layers
             m_cuda.copy(colTop[1].count(), m_blobLabel.gpu_data, colTop[1].mutable_gpu_data, nSrcOffset, 0);
             m_nPos = (m_nPos + m_nBatchSize) % m_nN;
 
-            // If we have wrapped around the data, get new data.
             if (m_nPos == 0)
-            {
                 m_bHasNewData = false;
-                if (OnGetData != null)
-                    OnGetData(this, new MemoryDataLayerGetDataArgs(false));
-            }
         }
     }
 
