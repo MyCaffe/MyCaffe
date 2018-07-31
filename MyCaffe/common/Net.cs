@@ -1345,7 +1345,7 @@ namespace MyCaffe.common
 
             for (int i = nStart; i >= nEnd; i--)
             {
-                if (m_rgbLayerNeedBackward[i])
+                if (m_rgbLayerNeedBackward[i] && !m_rgLayers[i].layer_param.freeze_learning)
                 {
                     m_rgLayers[i].Backward(m_rgcolTopVecs[i], m_rgrgbBottomNeedBackward[i], m_rgcolBottomVecs[i]);
 

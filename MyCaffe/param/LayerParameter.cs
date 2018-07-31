@@ -64,6 +64,7 @@ namespace MyCaffe.param
         int m_nSolverRank = 0;
         List<string> m_rgstrExpectedTop = new List<string>();
         List<string> m_rgstrExpectedBottom = new List<string>();
+        bool m_bFreezeLearning = false;
 
         /// <summary>
         /// Specifies the layer type.
@@ -1082,6 +1083,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Get/set whether or not to freeze the learning for this layer globally.
+        /// </summary>
+        public bool freeze_learning
+        {
+            get { return m_bFreezeLearning; }
+            set { m_bFreezeLearning = value; }
+        }
+
+        /// <summary>
         /// Specifies the loss weight.
         /// </summary>
         public List<double> loss_weight
@@ -1701,6 +1711,7 @@ namespace MyCaffe.param
             p.m_rgbPropagateDown = Utility.Clone<bool>(m_rgbPropagateDown);
             p.m_rgInclude = Utility.Clone<NetStateRule>(m_rgInclude);
             p.m_rgExclude = Utility.Clone<NetStateRule>(m_rgExclude);
+            p.m_bFreezeLearning = m_bFreezeLearning;
 
             p.m_rgLayerParameters = new Dictionary<LayerType, LayerParameterBase>();
 
@@ -1971,6 +1982,9 @@ namespace MyCaffe.param
             rgChildren.Add<string>("top", top);
             rgChildren.Add<double>("loss_weight", loss_weight);
 
+            if (freeze_learning)
+                rgChildren.Add("freeze_learning", freeze_learning.ToString());
+
             foreach (ParamSpec ps in parameters)
             {
                 rgChildren.Add(ps.ToProto("param"));
@@ -2095,6 +2109,9 @@ namespace MyCaffe.param
                 p.phase = parsePhase(strVal);
 
             p.loss_weight = rp.FindArray<double>("loss_weight");
+
+            if ((strVal = rp.FindValue("freeze_learning")) != null)
+                p.freeze_learning = bool.Parse(strVal);
 
             RawProtoCollection rgrp;
 
