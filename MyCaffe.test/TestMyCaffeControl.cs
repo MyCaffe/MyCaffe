@@ -264,7 +264,7 @@ namespace MyCaffe.test
     class MyCaffeControlTest : TestBase
     {
         public MyCaffeControlTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("Caffe Control Test", TestBase.DEFAULT_DEVICE_ID, engine)
+            : base("MyCaffe Control Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
