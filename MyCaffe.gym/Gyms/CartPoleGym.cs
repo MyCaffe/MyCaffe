@@ -1,0 +1,375 @@
+﻿using MyCaffe.basecode;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MyCaffe.gym
+{
+    /// <summary>
+    /// The CartPole Gym provides a simulation of a cart with a balancing pole standing on top of it.
+    /// </summary>
+    /// <remarks>
+    /// This gym is a rewrite of the original gym provided by OpenAi under the MIT license and located
+    /// on GitHub at: https://github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py
+    /// Licence: https://github.com/openai/gym/blob/master/LICENSE.md
+    /// 
+    /// OpenAi notes that their implementation is a 'classic cart-pole system implemented by Rich Sutton et al.'
+    /// copied from http://incompleteideas.net/sutton/book/code/pole.c with permalink: https://perma.cc/C9ZM-652R
+    /// </remarks>
+    public class CartPoleGym : IxMycaffeGym
+    {
+        string m_strName = "Cart Pole";
+        List<int> m_rgActions = new List<int>();
+        object m_objActionSync = new object();
+        double m_dfGravity = 9.8;
+        double m_dfMassCart = 1.0;
+        double m_dfMassPole = 0.1;
+        double m_dfTotalMass;
+        double m_dfLength = 0.5; // actually half the pole's length
+        double m_dfPoleMassLength;
+        double m_dfForceMag = 0.0;
+        double m_dfTau = 0.02; // seconds between state updates.
+        bool m_bDone = false;
+        Dictionary<string, int> m_rgActionSpace;
+        Bitmap m_bmp = null;
+
+        // Angle at which to fail the episode
+        double m_dfThetaThreshold = 90;
+        double m_dfXThreshold = 2.4;
+
+        Random m_random = new Random();
+        CartPoleState m_state = new CartPoleState();
+        int? m_nStepsBeyondDone = null;
+        Log m_log;
+
+        public enum ACTION
+        {
+            NONE,
+            MOVELEFT,
+            MOVERIGHT
+        }
+
+
+        public CartPoleGym()
+        {
+            m_dfTotalMass = m_dfMassCart + m_dfMassPole;
+            m_dfPoleMassLength = m_dfMassPole * m_dfLength;
+
+            m_rgActionSpace = new Dictionary<string, int>();
+            m_rgActionSpace.Add("Nothing", 0);
+            m_rgActionSpace.Add("MoveLeft", 1);
+            m_rgActionSpace.Add("MoveRight", 2);
+        }
+
+        public string Name
+        {
+            get { return m_strName; }
+        }
+
+        public void AddAction(int nAction)
+        {
+            lock (m_objActionSync)
+            {
+                m_rgActions.Add(nAction);
+            }
+        }
+
+        public Dictionary<string, int> GetActionSpace()
+        {
+            return m_rgActionSpace;
+        }
+
+        private int getNextAction()
+        {
+            lock (m_objActionSync)
+            {
+                if (m_rgActions.Count == 0)
+                    return 0;
+
+                int nAction = m_rgActions[0];
+                m_rgActions.RemoveAt(0);
+                return nAction;
+            }
+        }
+
+        private ACTION getNextActionValue()
+        {
+            return (ACTION)getNextAction();
+        }
+
+        private void processActions()
+        {
+            ACTION a = getNextActionValue();
+
+            while (a != ACTION.NONE)
+            {
+                if (a == ACTION.MOVELEFT)
+                    m_dfForceMag -= 10;
+                if (a == ACTION.MOVERIGHT)
+                    m_dfForceMag += 10;
+
+                a = getNextActionValue();
+            }
+        }
+
+        public void Close()
+        {
+        }
+
+        public void Initialize(Log log)
+        {
+            m_log = log;
+            Reset();
+        }
+
+        public Bitmap Render(int nWidth, int nHeight)
+        {
+            Bitmap bmp = new Bitmap(nWidth, nHeight);
+
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                Rectangle rc = new Rectangle(0, 0, bmp.Width, bmp.Height);
+                g.FillRectangle(Brushes.White, rc);
+
+                float fScreenWidth = g.VisibleClipBounds.Width;
+                float fScreenHeight = g.VisibleClipBounds.Height;
+                float fWorldWidth = (float)(m_dfXThreshold * 2);
+                float fScale = fScreenWidth / fWorldWidth;
+                float fCartY = 100; // Top of Cart;
+                float fPoleWidth = 10;
+                float fPoleLen = fScale * 1.0f;
+                float fCartWidth = 50;
+                float fCartHeight = 30;
+
+                float fL = -fCartWidth / 2;
+                float fR = fCartWidth / 2;
+                float fT = fCartHeight / 2;
+                float fB = -fCartHeight / 2;
+                float fAxleOffset = 0;
+                GeomCart cart = new GeomCart(fL, fR, fT, fB, Color.SkyBlue, Color.Black);
+
+                fL = -fPoleWidth / 2;
+                fR = fPoleWidth / 2;
+                fT = fPoleLen - fPoleWidth / 2;
+                fB = --fPoleWidth / 2;
+                GeomPole pole = new GeomPole(fL, fR, fT, fB, Color.Tan, Color.Black);
+
+                fL = 0;
+                fR = fScreenWidth;
+                fT = fCartY;
+                fB = fT;
+                GeomLine track = new GeomLine(fL, fR, fT, fB, Color.Black, Color.Black);
+
+                if (m_state != null)
+                {
+                    float fCartX = (float)m_state.X * fScale + fScreenWidth / 2;   // middle of the cart.
+                    cart.SetLocation(fCartX, fCartY);
+                    pole.SetRotation((float)-m_state.Theta);
+                    cart.Attach(pole, fAxleOffset);
+
+                    GeomView view = new GeomView();
+
+                    Font font = new Font("Century Gothic", 10.0f);
+                    g.DrawString("Current Force = " + m_dfForceMag.ToString(), font, Brushes.Black, new Point(10, 10));
+                    font.Dispose();
+
+                    view.AddObject(track);
+                    view.AddObject(cart);
+                    view.Render(g);
+                }
+
+                m_bmp = bmp;
+
+                return bmp;
+            }
+        }
+
+        public Bitmap Image
+        {
+            get { return m_bmp; }
+        }
+
+        public void Reset()
+        {
+            double dfX = randomUniform(-0.05, 0.05);
+            double dfXDot = randomUniform(-0.05, 0.05);
+            double dfTheta = randomUniform(-0.05, 0.05);
+            double dfThetaDot = randomUniform(-0.05, 0.05);
+            m_dfForceMag = 0;
+            m_nStepsBeyondDone = null;
+            m_bDone = false;
+
+            m_state = new CartPoleState(dfX, dfXDot, dfTheta, dfThetaDot);
+        }
+
+        private double randomUniform(double dfMin, double dfMax)
+        {
+            double dfRange = dfMax - dfMin;
+            return dfMin + (m_random.NextDouble() * dfRange);
+        }
+
+        public Tuple<double[], double, bool> Step()
+        {
+            CartPoleState state = new CartPoleState(m_state);
+            double dfReward = 0;
+
+            if (!m_bDone)
+            {
+                processActions();
+
+                double dfX = state.X;
+                double dfXDot = state.XDot;
+                double dfTheta = state.Theta;
+                double dfThetaDot = state.ThetaDot;
+                double dfForce = m_dfForceMag;
+                double dfCosTheta = Math.Cos(dfTheta);
+                double dfSinTheta = Math.Sin(dfTheta);
+                double dfTemp = (dfForce + m_dfPoleMassLength * dfThetaDot * dfThetaDot * dfSinTheta) / m_dfTotalMass;
+                double dfThetaAcc = (m_dfGravity * dfSinTheta - dfCosTheta * dfTemp) / (m_dfLength * (4.0 / 3.0 - m_dfMassPole * dfCosTheta * dfCosTheta / m_dfTotalMass));
+                double dfXAcc = dfTemp - m_dfPoleMassLength * dfThetaAcc * dfCosTheta / m_dfTotalMass;
+
+                dfX = dfX + m_dfTau * dfXDot;
+                dfXDot = dfXDot + m_dfTau * dfXAcc;
+                dfTheta = dfTheta + m_dfTau * dfThetaDot;
+                dfThetaDot = dfThetaDot + m_dfTau * dfThetaAcc;
+
+                m_state = new CartPoleState(dfX, dfXDot, dfTheta, dfThetaDot);
+
+                if (dfX < -m_dfXThreshold ||
+                    dfX > m_dfXThreshold ||
+                    dfTheta < -m_dfThetaThreshold || 
+                    dfTheta > m_dfThetaThreshold)
+                    m_bDone = true;
+
+                if (!m_bDone)
+                {
+                    dfReward = 1.0;
+                }
+                else if (!m_nStepsBeyondDone.HasValue)
+                {
+                    // Pole just fell!
+                    m_nStepsBeyondDone = 0;
+                }
+                else
+                {
+                    if (m_nStepsBeyondDone.Value == 0)
+                        m_log.WriteLine("You are calling 'step()' even though this environment has already returned done = True.  You should always call 'reset()'");
+                    m_nStepsBeyondDone++;
+                }
+            }
+
+            return new Tuple<double[], double, bool>(m_state.ToArray(), dfReward, m_bDone);
+        }
+    }
+
+    class GeomCart : GeomPolygon
+    {
+        GeomPole m_pole;
+
+        public GeomCart(float fL, float fR, float fT, float fB, Color clrFill, Color clrBorder)
+            : base(fL, fR, fT, fB, clrFill, clrBorder)
+        {
+        }
+
+        public void Attach(GeomPole pole, float fXOffset)
+        {
+            m_pole = pole;
+            m_pole.SetLocation(Location.X + fXOffset, Location.Y);
+        }
+
+        public override void Render(Graphics g)
+        {
+            base.Render(g);
+            m_pole.Render(g);
+        }
+    }
+
+    class GeomPole : GeomPolygon
+    {
+        GeomEllipse m_axis;
+
+        public GeomPole(float fL, float fR, float fT, float fB, Color clrFill, Color clrBorder)
+            : base(fL, fR, fT, fB, clrFill, clrBorder)
+        {
+            float fWid = fR - fL;
+            m_axis = new GeomEllipse(fL, fR, fB - fWid, fB, Color.Brown, Color.Black);
+        }
+
+        public override void SetLocation(float fX, float fY)
+        {
+            m_axis.SetLocation(fX, fY);
+            base.SetLocation(fX, fY);
+        }
+
+        public override void Render(Graphics g)
+        {
+            base.Render(g);
+            m_axis.Render(g);
+        }
+    }
+
+    class CartPoleState : State
+    {
+        double m_dfX = 0;
+        double m_dfXDot = 0;
+        double m_dfTheta = 0;
+        double m_dfThetaDot = 0;
+
+        public CartPoleState(double dfX = 0, double dfXDot = 0, double dfTheta = 0, double dfThetaDot = 0)
+        {
+            m_dfX = dfX;
+            m_dfXDot = dfXDot;
+            m_dfTheta = dfTheta;
+            m_dfThetaDot = dfThetaDot;
+        }
+
+        public CartPoleState(CartPoleState s)
+        {
+            m_dfX = s.m_dfX;
+            m_dfXDot = s.m_dfXDot;
+            m_dfTheta = s.m_dfTheta;
+            m_dfThetaDot = s.m_dfThetaDot;
+        }
+
+        public double X
+        {
+            get { return m_dfX; }
+            set { m_dfX = value; }
+        }
+
+        public double XDot
+        {
+            get { return m_dfXDot; }
+            set { m_dfXDot = value; }
+        }
+
+        public double Theta
+        {
+            get { return m_dfTheta; }
+            set { m_dfTheta = value; }
+        }
+
+        public double ThetaDot
+        {
+            get { return m_dfThetaDot; }
+            set { m_dfThetaDot = value; }
+        }
+
+        public double[] ToArray()
+        {
+            List<double> rg = new List<double>();
+
+            rg.Add(m_dfX);
+            rg.Add(m_dfXDot);
+            rg.Add(m_dfTheta);
+            rg.Add(m_dfThetaDot);
+
+            return rg.ToArray();
+        }
+    }
+}
