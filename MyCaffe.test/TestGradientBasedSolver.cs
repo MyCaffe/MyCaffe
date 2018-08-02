@@ -2068,7 +2068,7 @@ namespace MyCaffe.test
                    "    top: 'targets' " +
                    "  } " +
 
-#warning "MyCaffe requires a separate data layer for training and testing."
+                   // "MyCaffe requires a separate data layer for training and testing."
                    "  layer { " +          
                    "    name: 'data' " +
                    "    type: 'MemoryData' " +         // was 'HDF5Data'
