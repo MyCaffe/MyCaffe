@@ -90,6 +90,7 @@
     <Compile Include="TestCropLayer.cs" />
     <Compile Include="TestDebugLayer.cs" />
     <Compile Include="TestGRNLayer.cs" />
+    <Compile Include="TestMyCaffeGym.cs" />
     <Compile Include="TestPersistCaffe.cs" />
     <Compile Include="TestingProgress.cs" />
     <Compile Include="TestProjectEx.cs" />
@@ -206,6 +207,10 @@
     <ProjectReference Include="..\MyCaffe.extras\MyCaffe.extras.csproj">
       <Project>{9376B860-9896-40E5-8746-8ABF1F0A8B3D}</Project>
       <Name>MyCaffe.extras</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.gym\MyCaffe.gym.csproj">
+      <Project>{C14BEDC8-FF66-4118-BE66-675F26BE7EE0}</Project>
+      <Name>MyCaffe.gym</Name>
     </ProjectReference>
     <ProjectReference Include="..\MyCaffe.imagedb\MyCaffe.imagedb.csproj">
       <Project>{642ba581-59cb-445e-8d7d-81e67b748d77}</Project>
