@@ -1067,6 +1067,7 @@ namespace MyCaffe.test
             Assert.AreEqual(p.top[0], "accuracy");
             Assert.AreEqual(p.include.Count, 1);
             Assert.AreEqual(p.include[0].phase, Phase.TEST);
+            Assert.AreEqual(p.freeze_learning, false);
 
             Assert.AreNotEqual(p.accuracy_param, null);
         }
@@ -1082,6 +1083,7 @@ namespace MyCaffe.test
                          "  bottom: \"inception_3a/5x5\" " + Environment.NewLine +
                          "  bottom: \"inception_3a/pool_proj\" " + Environment.NewLine +
                          "  top: \"inception_3a/output\" " + Environment.NewLine +
+                         "  freeze_learning: False " + Environment.NewLine +
                          "}";
             RawProto proto = RawProto.Parse(str).FindChild("layer");
             LayerParameter p = LayerParameter.FromProto(proto);
@@ -1095,6 +1097,7 @@ namespace MyCaffe.test
             Assert.AreEqual(p.bottom[2], "inception_3a/5x5");
             Assert.AreEqual(p.bottom[3], "inception_3a/pool_proj");
             Assert.AreEqual(p.top[0], "inception_3a/output");
+            Assert.AreEqual(p.freeze_learning, false);
 
             Assert.AreNotEqual(p.concat_param, null);
         }
@@ -1238,6 +1241,32 @@ namespace MyCaffe.test
             Assert.AreEqual(p.top.Count, 1);
             Assert.AreEqual(p.bottom[0], "pool1");
             Assert.AreEqual(p.top[0], "fc6");
+            Assert.AreEqual(p.freeze_learning, false);
+
+            Assert.AreNotEqual(p.inner_product_param, null);
+            Assert.AreEqual(p.inner_product_param.num_output, (uint)4096);
+            Assert.AreNotEqual(p.inner_product_param.weight_filler, null);
+            Assert.AreEqual(p.inner_product_param.weight_filler.type, "gaussian");
+            Assert.AreEqual(p.inner_product_param.weight_filler.std, 0.005);
+            Assert.AreNotEqual(p.inner_product_param.bias_filler, null);
+            Assert.AreEqual(p.inner_product_param.bias_filler.type, "constant");
+            Assert.AreEqual(p.inner_product_param.bias_filler.value, 0.1);
+        }
+
+        [TestMethod]
+        public void TestLayerParameter_InnerProduct_Freeze()
+        {
+            string str = "layer { name: \"fc6\" type: \"InnerProduct\" bottom: \"pool1\" top: \"fc6\" freeze_learning: True param { lr_mult: 1 decay_mult: 1 } param { lr_mult: 1 decay_mult: 0 } inner_product_param { num_output: 4096 weight_filler { type: \"gaussian\" std: 0.005 } bias_filler { type: \"constant\" value: 0.1 } } }";
+            RawProto proto = RawProto.Parse(str).FindChild("layer");
+            LayerParameter p = LayerParameter.FromProto(proto);
+
+            Assert.AreEqual(p.name, "fc6");
+            Assert.AreEqual(p.type, LayerParameter.LayerType.INNERPRODUCT);
+            Assert.AreEqual(p.bottom.Count, 1);
+            Assert.AreEqual(p.top.Count, 1);
+            Assert.AreEqual(p.bottom[0], "pool1");
+            Assert.AreEqual(p.top[0], "fc6");
+            Assert.AreEqual(p.freeze_learning, true);
 
             Assert.AreNotEqual(p.inner_product_param, null);
             Assert.AreEqual(p.inner_product_param.num_output, (uint)4096);
