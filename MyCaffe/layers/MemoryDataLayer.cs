@@ -97,6 +97,11 @@ namespace MyCaffe.layers
                 m_log.CHECK_EQ(m_nLabelHeight, m_blobLabel.height, "The actual label channels (" + m_blobLabel.height.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelHeight.ToString() + ".");
                 m_log.CHECK_EQ(m_nLabelWidth, m_blobLabel.width, "The actual label channels (" + m_blobLabel.width.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelWidth.ToString() + ".");
             }
+            else
+            {
+                m_blobData.Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
+                m_blobLabel.Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
+            }
 
             colTop[0].Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
             colTop[1].Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
