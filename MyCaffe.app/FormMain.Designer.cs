@@ -57,6 +57,7 @@
             this.specialTestsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.alexNetToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.resNet56CifarAccuracyBugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.openGymToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.localHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.onlineHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -73,6 +74,7 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.lblGpu = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
+            this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -154,7 +156,9 @@
             this.abortToolStripMenuItem,
             this.cancelToolStripMenuItem,
             this.toolStripSeparator3,
-            this.specialTestsToolStripMenuItem});
+            this.specialTestsToolStripMenuItem,
+            this.toolStripSeparator4,
+            this.openGymToolStripMenuItem});
             this.testToolStripMenuItem.Name = "testToolStripMenuItem";
             this.testToolStripMenuItem.Size = new System.Drawing.Size(40, 20);
             this.testToolStripMenuItem.Text = "&Test";
@@ -300,6 +304,13 @@
             this.resNet56CifarAccuracyBugToolStripMenuItem.Text = "ResNet56-Cifar Accuracy Bug";
             this.resNet56CifarAccuracyBugToolStripMenuItem.Click += new System.EventHandler(this.resNet56CifarAccuracyBugToolStripMenuItem_Click);
             // 
+            // openGymToolStripMenuItem
+            // 
+            this.openGymToolStripMenuItem.Name = "openGymToolStripMenuItem";
+            this.openGymToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
+            this.openGymToolStripMenuItem.Text = "Open Gym...";
+            this.openGymToolStripMenuItem.Click += new System.EventHandler(this.openGymToolStripMenuItem_Click);
+            // 
             // helpToolStripMenuItem
             // 
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -421,6 +432,11 @@
             this.timerUI.Interval = 1000;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
+            // toolStripSeparator4
+            // 
+            this.toolStripSeparator4.Name = "toolStripSeparator4";
+            this.toolStripSeparator4.Size = new System.Drawing.Size(189, 6);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -490,6 +506,8 @@
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel lblGpu;
         private System.Windows.Forms.Timer timerUI;
+        private System.Windows.Forms.ToolStripMenuItem openGymToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
     }
 }
 

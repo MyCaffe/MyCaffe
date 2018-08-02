@@ -15,6 +15,7 @@ using MyCaffe.common;
 using System.Diagnostics;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.param;
+using MyCaffe.gym;
 using System.IO;
 using System.Net;
 using System.Reflection;
@@ -44,6 +45,9 @@ namespace MyCaffe.app
         int m_nTimingCount = 0;
         Stopwatch m_swGlobalTiming = null;
         string m_strTestLogDir = null;
+        Log m_log;
+
+        delegate void fnSetStatus(string strMsg, STATUS status, bool bBreath);
 
         enum STATUS
         {
@@ -76,9 +80,11 @@ namespace MyCaffe.app
         {
             InitializeComponent();
 
-            Log log = new Log("Test Run");
-            log.OnWriteLine += Log_OnWriteLine;
-            m_caffeRun = new MyCaffeControl<float>(new SettingsCaffe(), log, m_evtCancel);
+            m_log = new Log("Test Run");
+            m_log.OnWriteLine += Log_OnWriteLine;
+            m_caffeRun = new MyCaffeControl<float>(new SettingsCaffe(), m_log, m_evtCancel);
+
+            MyCaffeGymRegistrar.Initialize(this, m_log);
 
             if (lvStatus is ListViewEx)
                 ((ListViewEx)lvStatus).RowHeight = 12;
@@ -409,7 +415,7 @@ namespace MyCaffe.app
 
         private void Log_OnWriteLine(object sender, LogArg e)
         {
-            setStatus(e.Message, STATUS.INFO, true);
+            Invoke(new fnSetStatus(setStatus), e.Message, STATUS.INFO, true);
         }
 
         private void loadMNISTToolStripMenuItem_Click(object sender, EventArgs e)
@@ -801,6 +807,8 @@ namespace MyCaffe.app
                 m_caffeRun = null;
                 m_autoTest.Abort();
             }
+
+            MyCaffeGymRegistrar.Shutdown();
         }
 
         #region Server Based Autotesting
@@ -1143,5 +1151,14 @@ namespace MyCaffe.app
         {
             lblGpu.Text = "Using GPU " + getGpuName();
         }
+
+        #region Test Gyms
+
+        private void openGymToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MyCaffeGymRegistrar.Registry.Open();
+        }
+
+        #endregion
     }
 }
