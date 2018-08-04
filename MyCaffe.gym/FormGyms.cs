@@ -13,7 +13,7 @@ namespace MyCaffe.gym
     public partial class FormGyms : Form
     {
         GymCollection m_col;
-        IxMycaffeGym m_selectedGym;
+        IXMyCaffeGym m_selectedGym;
 
         public FormGyms(GymCollection col = null)
         {
@@ -27,14 +27,14 @@ namespace MyCaffe.gym
             InitializeComponent();
         }
 
-        public IxMycaffeGym SelectedGym
+        public IXMyCaffeGym SelectedGym
         {
             get { return m_selectedGym; }
         }
 
         private void FormGyms_Load(object sender, EventArgs e)
         {
-            foreach (IxMycaffeGym igym in m_col)
+            foreach (IXMyCaffeGym igym in m_col)
             {
                 ListViewItem lvi = new ListViewItem(igym.Name);
                 lvi.Tag = igym;
@@ -53,7 +53,7 @@ namespace MyCaffe.gym
 
         private void btnOpen_Click(object sender, EventArgs e)
         {
-            m_selectedGym = lstItems.SelectedItems[0].Tag as IxMycaffeGym;
+            m_selectedGym = lstItems.SelectedItems[0].Tag as IXMyCaffeGym;
         }
 
         private void lstItems_MouseDoubleClick(object sender, MouseEventArgs e)
@@ -62,7 +62,7 @@ namespace MyCaffe.gym
             if (hti == null)
                 return;
 
-            m_selectedGym = hti.Item.Tag as IxMycaffeGym;
+            m_selectedGym = hti.Item.Tag as IXMyCaffeGym;
             DialogResult = DialogResult.OK;
         }
     }

@@ -16,7 +16,7 @@ namespace MyCaffe.gym
     public partial class MyCaffeGymControl : UserControl
     {
         Log m_log;
-        IxMycaffeGym m_igym;
+        IXMyCaffeGym m_igym;
         Bitmap m_bmp = null;
         Tuple<double[], double, bool> m_state;
         bool m_bStopping = false;
@@ -30,7 +30,7 @@ namespace MyCaffe.gym
             InitializeComponent();
         }
 
-        public void Initialize(IxMycaffeGym igym)
+        public void Initialize(IXMyCaffeGym igym)
         {
             m_igym = igym;
         }
@@ -120,7 +120,7 @@ namespace MyCaffe.gym
         private void m_bwGym_DoWork(object sender, DoWorkEventArgs e)
         {
             BackgroundWorker bw = sender as BackgroundWorker;
-            IxMycaffeGym igym = e.Argument as IxMycaffeGym;
+            IXMyCaffeGym igym = e.Argument as IXMyCaffeGym;
 
             igym.Initialize(m_log);
 

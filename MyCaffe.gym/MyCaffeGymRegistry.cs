@@ -40,7 +40,7 @@ namespace MyCaffe.gym
 
             col.Load();
 
-            foreach (IxMycaffeGym igym in col)
+            foreach (IXMyCaffeGym igym in col)
             {
                 MyCaffeGymControl ctrl = new MyCaffeGymControl(log);
                 ctrl.Initialize(igym);

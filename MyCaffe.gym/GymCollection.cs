@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.gym
 {
-    public class GymCollection : IEnumerable<IxMycaffeGym>
+    public class GymCollection : IEnumerable<IXMyCaffeGym>
     {
-        List<IxMycaffeGym> m_rgGym = new List<IxMycaffeGym>();
+        List<IXMyCaffeGym> m_rgGym = new List<IXMyCaffeGym>();
 
         public GymCollection()
         {
@@ -20,9 +20,9 @@ namespace MyCaffe.gym
             m_rgGym.Add(new CartPoleGym());
         }
 
-        public IxMycaffeGym Find(string strName)
+        public IXMyCaffeGym Find(string strName)
         {
-            foreach (IxMycaffeGym igym in m_rgGym)
+            foreach (IXMyCaffeGym igym in m_rgGym)
             {
                 if (igym.Name == strName)
                     return igym;
@@ -31,7 +31,7 @@ namespace MyCaffe.gym
             return null;
         }
 
-        public IEnumerator<IxMycaffeGym> GetEnumerator()
+        public IEnumerator<IXMyCaffeGym> GetEnumerator()
         {
             return m_rgGym.GetEnumerator();
         }

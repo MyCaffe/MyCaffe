@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.gym
 {
-    public interface IxMycaffeGym
+    public interface IXMyCaffeGym
     {
         void Initialize(Log log);
         void Close();
