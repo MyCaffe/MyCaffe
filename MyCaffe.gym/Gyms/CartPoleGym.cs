@@ -21,7 +21,7 @@ namespace MyCaffe.gym
     /// OpenAi notes that their implementation is a 'classic cart-pole system implemented by Rich Sutton et al.'
     /// copied from http://incompleteideas.net/sutton/book/code/pole.c with permalink: https://perma.cc/C9ZM-652R
     /// </remarks>
-    public class CartPoleGym : IxMycaffeGym
+    public class CartPoleGym : IXMyCaffeGym
     {
         string m_strName = "Cart Pole";
         List<int> m_rgActions = new List<int>();
