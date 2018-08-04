@@ -68,6 +68,7 @@
     <Compile Include="descriptors\DatasetDescriptor.cs" />
     <Compile Include="descriptors\ImageDescriptor.cs" />
     <Compile Include="descriptors\ResultDescriptor.cs" />
+    <Compile Include="GenericList.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="descriptors\GroupDescriptor.cs" />
     <Compile Include="descriptors\LabelDescriptor.cs" />
@@ -89,6 +90,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="PropertySet.cs" />
     <Compile Include="RawProto.cs" />
     <Compile Include="RawProtoCollection.cs" />
     <Compile Include="RawProtoFile.cs" />
