@@ -53,7 +53,7 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <remarks>
         /// Override this method when using the MyCaffeControl that uses the <i>double</i> base type.
-        /// </double></remarks>
+        /// </remarks>
         /// <param name="mycaffe">Specifies the MyCaffeControl used.</param>
         /// <param name="log">Specifies the output log to use.</param>
         /// <param name="evtCancel">Specifies the cancel event to use.</param>
@@ -72,7 +72,7 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <remarks>
         /// Override this method when using the MyCaffeControl that uses the <i>float</i> base type.
-        /// </double></remarks>
+        /// </remarks>
         /// <param name="mycaffe">Specifies the MyCaffeControl used.</param>
         /// <param name="log">Specifies the output log to use.</param>
         /// <param name="evtCancel">Specifies the cancel event to use.</param>
