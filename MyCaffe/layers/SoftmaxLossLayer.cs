@@ -118,7 +118,6 @@ namespace MyCaffe.layers
 
             m_colSoftmaxBottom.Add(colBottom[0]);
             m_colSoftmaxTop.Add(m_blobProb);
-
             m_softmaxLayer.Setup(m_colSoftmaxBottom, m_colSoftmaxTop);
 
             m_nIgnoreLabel = m_param.loss_param.ignore_label;
