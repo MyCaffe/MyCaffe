@@ -1165,6 +1165,10 @@ namespace MyCaffe.basecode
                         rgProtoSoftMaxLoss.Add(layer);
                         bKeepLayer = true;
                     }
+                    else if (strType == "memoryloss")
+                    {
+                        rgRemove.Add(layer);
+                    }
                     else if (strType == "softmax")
                     {
                         protoSoftMax = layer;
