@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyCaffe.basecode.descriptors;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -41,6 +42,17 @@ namespace MyCaffe.gym
         public void Run(int nAction = 0)
         {
             MyCaffeGymRegistrar.Registry.Run(m_strGym, nAction);
+        }
+
+        public void Reset()
+        {
+            MyCaffeGymRegistrar.Registry.Reset(m_strGym);
+        }
+
+        public byte[] GetDataset(string strName, int nType)
+        {
+            DatasetDescriptor ds = MyCaffeGymRegistrar.Registry.GetDataset(strName, nType);
+            return DatasetDescriptor.Serialize(ds);
         }
     }
 }
