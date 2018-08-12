@@ -230,9 +230,9 @@ namespace MyCaffe.common
         /// weights in the new model.  
         /// </remarks>
         /// <param name="colBlobs">Specifies the Blobs to save with the weights.</param>
-        /// <param name="bSaveDiff">Specifies whether or not to save the diff values in addition to the data values.</param>
+        /// <param name="bSaveDiffs">Optionally, specifies to save the diff values - currently this parameter is not used.</param>
         /// <returns>The byte array containing the weights is returned.</returns>
-        public byte[] SaveWeights(BlobCollection<T> colBlobs, bool bSaveDiff)
+        public byte[] SaveWeights(BlobCollection<T> colBlobs, bool bSaveDiffs = false)
         {
             FieldDescriptor fd = FieldDescriptor.CreateNetworkParamFieldDesc();
             ProtoBufWriter writer = new ProtoBufWriter(m_log);
