@@ -1282,7 +1282,7 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Sets a number of items within the Blob.
+        /// Sets a number of items within the Blob's data.
         /// </summary>
         /// <param name="rgData">Specifies the data to set.</param>
         /// <param name="nCount">Optionally, specifies a subset count of items to set.</param>
@@ -1321,6 +1321,17 @@ namespace MyCaffe.common
 
                 m_cuda.set(count(), mutable_gpu_diff, dfVal, nIdx);
             }
+        }
+
+        /// <summary>
+        /// Sets a number of items within the Blob's diff.
+        /// </summary>
+        /// <param name="rgDiff">Specifies the diff to set.</param>
+        /// <param name="nCount">Optionally, specifies a subset count of items to set.</param>
+        /// <param name="bSetCount">Optionally, specifies whether or not to set the count.  The count is always set when re-allocating the buffer.</param>
+        public void SetDiff(T[] rgDiff, int nCount = -1, bool bSetCount = true)
+        {
+            m_diff.SetData(rgDiff, nCount, bSetCount);
         }
 
         /// <summary>
