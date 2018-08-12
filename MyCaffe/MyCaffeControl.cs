@@ -192,6 +192,88 @@ namespace MyCaffe
         }
 
         /// <summary>
+        /// Clone the current instance of the MyCaffeControl creating a second instance.
+        /// </summary>
+        /// <remarks>
+        /// The second instance has the same project loaded and a copy of the first instance's weights.
+        /// </remarks>
+        /// <param name="nGpuID">Specifies the GPUID on which to load the second instance.</param>
+        /// <returns>The new MyCaffeControl instance is returned.</returns>
+        public MyCaffeControl<T> Clone(int nGpuID)
+        {
+            SettingsCaffe s = m_settings.Clone();
+            s.GpuIds = nGpuID.ToString();
+
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, m_evtCancel);
+            mycaffe.Load(Phase.TRAIN, m_project, null, null, false, m_imgDb, (m_imgDb == null) ? false : true);
+
+            Net<T> netSrc = GetInternalNet(Phase.TRAIN);
+            Net<T> netDst = mycaffe.GetInternalNet(Phase.TRAIN);
+
+            m_log.CHECK_EQ(netSrc.learnable_parameters.Count, netDst.learnable_parameters.Count, "The src and dst networks do not have the same number of learnable parameters!");
+
+            for (int i = 0; i < netSrc.learnable_parameters.Count; i++)
+            {
+                Blob<T> bSrc = netSrc.learnable_parameters[i];
+                Blob<T> bDst = netDst.learnable_parameters[i];
+
+                bDst.CopyFrom(bSrc, false, false);
+            }
+
+            return mycaffe;
+        }
+
+        /// <summary>
+        /// Copy the learnable parameter diffs from the source MyCaffeControl into this one.
+        /// </summary>
+        /// <param name="src">Specifies the source MyCaffeControl whos gradients (blob diffs) are to be copied.</param>
+        public void CopyGradientsFrom(MyCaffeControl<T> src)
+        {
+            Net<T> netSrc = src.GetInternalNet(Phase.TRAIN);
+            Net<T> netDst = GetInternalNet(Phase.TRAIN);
+
+            m_log.CHECK_EQ(netSrc.learnable_parameters.Count, netDst.learnable_parameters.Count, "The src and dst networks do not have the same number of learnable parameters!");
+
+            for (int i = 0; i < netSrc.learnable_parameters.Count; i++)
+            {
+                Blob<T> bSrc = netSrc.learnable_parameters[i];
+                Blob<T> bDst = netDst.learnable_parameters[i];
+
+                bDst.CopyFrom(bSrc, true, false);
+            }
+        }
+
+        /// <summary>
+        /// Copy the learnable parameter data from the source MyCaffeControl into this one.
+        /// </summary>
+        /// <param name="src">Specifies the source MyCaffeControl whos gradients (blob data) are to be copied.</param>
+        public void CopyWeightsFrom(MyCaffeControl<T> src)
+        {
+            Net<T> netSrc = src.GetInternalNet(Phase.TRAIN);
+            Net<T> netDst = GetInternalNet(Phase.TRAIN);
+
+            m_log.CHECK_EQ(netSrc.learnable_parameters.Count, netDst.learnable_parameters.Count, "The src and dst networks do not have the same number of learnable parameters!");
+
+            for (int i = 0; i < netSrc.learnable_parameters.Count; i++)
+            {
+                Blob<T> bSrc = netSrc.learnable_parameters[i];
+                Blob<T> bDst = netDst.learnable_parameters[i];
+
+                bDst.CopyFrom(bSrc, false, false);
+            }
+        }
+
+        /// <summary>
+        /// Directs the solver to apply the leanred blob diffs to the weights using the solver's learning rate and
+        /// update algorithm.
+        /// </summary>
+        /// <param name="nIteration">Specifies the current iteration.</param>
+        public void ApplyUpdate(int nIteration)
+        {
+            m_solver.ApplyUpdate(nIteration);
+        }
+
+        /// <summary>
         /// Unload the currently loaded project, if any.
         /// </summary>
         public void Unload(bool bUnloadImageDb = true)
@@ -367,6 +449,14 @@ namespace MyCaffe
         public DataTransformer<T> DataTransformer
         {
             get { return m_dataTransformer; }
+        }
+
+        /// <summary>
+        /// Returns the settings used to create the control.
+        /// </summary>
+        public SettingsCaffe Settings
+        {
+            get { return m_settings; }
         }
 
         /// <summary>
@@ -589,13 +679,14 @@ namespace MyCaffe
         /// <param name="imageSelectionOverride">Optionally, specifies the image selection override (overides the image selection in SettingsCaffe).  The image selection dictates how the images are selected from each label set.</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
         /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
+        /// <param name="bUseImageDb">Optionally, specifies whehter or not to use the image database (default = true).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null)
+        public bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true)
         {
             m_imgDb = imgdb;
             m_bImgDbOwner = false;
 
-            if (m_imgDb == null)
+            if (m_imgDb == null && bUseImageDb)
             {
                 m_imgDb = new MyCaffeImageDatabase(m_log);
                 m_bImgDbOwner = true;
@@ -671,10 +762,10 @@ namespace MyCaffe
                 m_log.WriteLine("Solver created.");
             }
 
-            if (phase == Phase.TRAIN)
+            if (phase == Phase.TRAIN && m_imgDb != null)
                 m_imgDb.UpdateLabelBoosts(p.ID, m_dataSet.TrainingSource.ID);
 
-            if (phase == Phase.TEST)
+            if (phase == Phase.TEST && m_imgDb != null)
                 m_imgDb.UpdateLabelBoosts(p.ID, m_dataSet.TestingSource.ID);
 
             if (p == null)
@@ -683,10 +774,13 @@ namespace MyCaffe
             TransformationParameter tp = null;
             NetParameter netParam = createNetParameterForRunning(p, out tp);
 
+            m_dataTransformer = null;
+
             if (tp != null)
-                m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID));
-            else
-                m_dataTransformer = null;
+            {
+                SimpleDatum sdMean = (m_imgDb == null) ? null : m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID);
+                m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, sdMean);
+            }
 
             if (phase == Phase.RUN)
             {
@@ -717,8 +811,9 @@ namespace MyCaffe
         /// <param name="imageSelectionOverride">Optionally, specifies the image selection override (overides the image selection in SettingsCaffe).  The image selection dictates how the images are selected from each label set.</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
         /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
+        /// <param name="bUseImageDb">Optionally, specifies whehter or not to use the image database (default = true).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null)
+        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true)
         {
             m_imgDb = imgdb;
             m_bImgDbOwner = false;
@@ -731,7 +826,7 @@ namespace MyCaffe
 
             m_dataSet = findDataset(solverParam.net_param);
 
-            if (m_imgDb == null)
+            if (m_imgDb == null && bUseImageDb)
             {
                 m_imgDb = new MyCaffeImageDatabase(m_log);
                 m_bImgDbOwner = true;
@@ -793,10 +888,10 @@ namespace MyCaffe
             TransformationParameter tp = null;
             NetParameter netParam = createNetParameterForRunning(m_dataSet, strModel, out tp);
 
+            m_dataTransformer = null;
+
             if (tp != null)
                 m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID));
-            else
-                m_dataTransformer = null;
 
             if (phase == Phase.RUN)
             {
@@ -984,10 +1079,11 @@ namespace MyCaffe
         /// <param name="nIterationOverride">Optionally, specifies number of iterations to run that override the iterations specified in the solver desctiptor.</param>
         /// <param name="nTrainingTimeLimitInMinutes">Optionally, specifies a maximum number of minutes to train.  When set to 0, this parameter is ignored and no time limit is imposed.</param>
         /// <param name="step">Optionally, specifies whether or not to single step the training on the forward pass, backward pass or both.  The default is <i>TRAIN_STEP.NONE</i> which runs the training to the maximum number of iterations specified.</param>
+        /// <param name="dfLearningRateOverride">Optionally, specifies a learning rate override (default = 0 which ignores this parameter)</param>
         /// <remarks>
         /// Note when single stepping, no testing cycles are performed.  Currently, the single-step parameter is only suppored when running in single GPU mode.
         /// </remarks>
-        public void Train(int nIterationOverride = -1, int nTrainingTimeLimitInMinutes = 0, TRAIN_STEP step = TRAIN_STEP.NONE)
+        public void Train(int nIterationOverride = -1, int nTrainingTimeLimitInMinutes = 0, TRAIN_STEP step = TRAIN_STEP.NONE, double dfLearningRateOverride = 0)
         {
             m_lastPhaseRun = Phase.TRAIN;
 
@@ -998,21 +1094,35 @@ namespace MyCaffe
             m_solver.TrainingIterationOverride = nIterationOverride;
             m_solver.TestingIterationOverride = m_solver.TestingIterationOverride;
 
-            if (m_rgGpu.Count > 1)
-            {
-                if (nTrainingTimeLimitInMinutes > 0)
-                {
-                    m_log.WriteLine("You have a training time-limit of " + nTrainingTimeLimitInMinutes.ToString("N0") + " minutes.  Multi-GPU training is not supported when a training time-limit is imposed.");
-                    return;
-                }
+            if (dfLearningRateOverride > 0)
+                m_solver.LearningRateOverride = dfLearningRateOverride;
 
-                m_log.WriteLine("Starting multi-GPU training on GPUs: " + listToString(m_rgGpu));
-                NCCL<T> nccl = new NCCL<T>(m_cuda, m_log, m_solver, m_rgGpu[0], 0, null);
-                nccl.Run(m_rgGpu, m_solver.TrainingIterationOverride);
-            }
-            else
+            try
             {
-                m_solver.Solve(-1, null, null, step);
+                if (m_rgGpu.Count > 1)
+                {
+                    if (nTrainingTimeLimitInMinutes > 0)
+                    {
+                        m_log.WriteLine("You have a training time-limit of " + nTrainingTimeLimitInMinutes.ToString("N0") + " minutes.  Multi-GPU training is not supported when a training time-limit is imposed.");
+                        return;
+                    }
+
+                    m_log.WriteLine("Starting multi-GPU training on GPUs: " + listToString(m_rgGpu));
+                    NCCL<T> nccl = new NCCL<T>(m_cuda, m_log, m_solver, m_rgGpu[0], 0, null);
+                    nccl.Run(m_rgGpu, m_solver.TrainingIterationOverride);
+                }
+                else
+                {
+                    m_solver.Solve(-1, null, null, step, null);
+                }
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                m_solver.LearningRateOverride = 0;
             }
         }
 
@@ -1577,7 +1687,7 @@ namespace MyCaffe
         /// <returns>The weights are returned.</returns>
         public byte[] GetWeights()
         {
-            return m_net.SaveWeights(false, m_persist);
+            return m_net.SaveWeights(m_persist);
         }
 
         /// <summary>
@@ -1585,7 +1695,7 @@ namespace MyCaffe
         /// </summary>
         public void UpdateRunWeights()
         {
-            loadWeights(m_net, m_solver.net.SaveWeights(false, m_persist));
+            loadWeights(m_net, m_solver.net.SaveWeights(m_persist));
         }
 
         /// <summary>
