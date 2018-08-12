@@ -273,7 +273,7 @@ namespace MyCaffe.gym
             int nW = 1;
             int nC = 4;
 
-            if (dt == DATA_TYPE.IMAGE)
+            if (dt == DATA_TYPE.BLOB)
             {
                 nH = 512;
                 nW = 512;
