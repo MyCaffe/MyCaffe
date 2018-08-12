@@ -79,6 +79,26 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns a property as a boolean value.
+        /// </summary>
+        /// <param name="strName">Specifies the name of the property.</param>
+        /// <param name="bDefault">Specifies the default value returned when the property is not found.</param>
+        /// <returns>The property value is returned.</returns>
+        public bool GetPropertyAsBool(string strName, bool bDefault = false)
+        {
+            string strVal = GetProperty(strName, false);
+            if (strVal == null)
+                return bDefault;
+
+            bool bVal;
+
+            if (!bool.TryParse(strVal, out bVal))
+                throw new Exception("Failed to parse '" + strName + "' as an Boolean.  The value = '" + strVal + "'");
+
+            return bVal;
+        }
+
+        /// <summary>
         /// Returns a property as an integer value.
         /// </summary>
         /// <param name="strName">Specifies the name of the property.</param>
@@ -106,7 +126,7 @@ namespace MyCaffe.basecode
         /// <returns>The property value is returned.</returns>
         public double GetPropertyAsDouble(string strName, double dfDefault = 0)
         {
-            string strVal = GetProperty(strName);
+            string strVal = GetProperty(strName, false);
             if (strVal == null)
                 return dfDefault;
 
