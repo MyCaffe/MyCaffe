@@ -9,7 +9,7 @@ using MyCaffe.param;
 namespace MyCaffe.layers
 {
     /// <summary>
-    /// The SigmoidCrossEntropyLayer computes the corss-entropy (logisitc) loss and is
+    /// The SigmoidCrossEntropyLayer computes the cross-entropy (logisitic) loss and is
     /// often used for predicting targets interpreted as probabilities.
     /// </summary>
     /// <remarks>
@@ -34,6 +34,7 @@ namespace MyCaffe.layers
     {
         SigmoidLayer<T> m_sigmoidLayer;
         Blob<T> m_blobSigmoidOutput;
+        Blob<T> m_blobLoss;
         BlobCollection<T> m_colSigmoidBottomVec = new BlobCollection<T>();
         BlobCollection<T> m_colSigmoidTopVec = new BlobCollection<T>();
 
@@ -58,7 +59,11 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.SIGMOIDCROSSENTROPY_LOSS;
             m_blobSigmoidOutput = new Blob<T>(cuda, log);
-            m_sigmoidLayer = new SigmoidLayer<T>(cuda, log, p);
+            m_blobLoss = new Blob<T>(cuda, log);
+
+            LayerParameter param_sigmoid = p.Clone(false);
+            param_sigmoid.loss_weight.Clear();
+            m_sigmoidLayer = new SigmoidLayer<T>(cuda, log, param_sigmoid);
         }
 
         /** @copydoc Layer::dispose */
@@ -66,7 +71,32 @@ namespace MyCaffe.layers
         {
             m_blobSigmoidOutput.Dispose();
             m_sigmoidLayer.Dispose();
+            m_blobLoss.Dispose();
             base.dispose();
+        }
+
+        /// <summary>
+        /// Returns the exact number of required top (output) Blobs as variable.
+        /// </summary>
+        public override int ExactNumTopBlobs
+        {
+            get { return -1; }
+        }
+
+        /// <summary>
+        /// Returns the minimum number of required top (output) Blobs: loss.
+        /// </summary>
+        public override int MinTopBlobs
+        {
+            get { return 1; }
+        }
+
+        /// <summary>
+        /// Returns the maximum number of required top (output) Blobs: loss, loss values
+        /// </summary>
+        public override int MaxTopBlobs
+        {
+            get { return 2; }
         }
 
         /// <summary>
@@ -148,6 +178,7 @@ namespace MyCaffe.layers
             m_nInnerNum = colBottom[0].count(1); // instance size: |output| == |target|
             m_log.CHECK_EQ(colBottom[0].count(), colBottom[1].count(), "SIGMOID_CROSS_ENTROPY_LOSS layer inputs must have the same count.");
             m_sigmoidLayer.Reshape(m_colSigmoidBottomVec, m_colSigmoidTopVec);
+            m_blobLoss.ReshapeLike(colBottom[0]);
         }
 
         /// <summary>
@@ -189,7 +220,7 @@ namespace MyCaffe.layers
             long hLossData = colBottom[0].mutable_gpu_diff;
             long hCountData = colBottom[1].mutable_gpu_diff;
 
-            m_cuda.sigmoid_cross_entropy_fwd(nCount, hInputData, hTarget, hLossData, m_nIgnoreLabel.HasValue, m_nIgnoreLabel.GetValueOrDefault(-1), hCountData);
+            m_cuda.cross_entropy_fwd(nCount, hInputData, hTarget, hLossData, m_nIgnoreLabel.HasValue, m_nIgnoreLabel.GetValueOrDefault(-1), hCountData);
 
             double dfValidCount = nCount;
             // Only launch another CUDA kernel if we actually need the valid count.
@@ -200,6 +231,13 @@ namespace MyCaffe.layers
             m_dfNormalizer = get_normalizer(m_normalization, (int)dfValidCount);
 
             colTop[0].SetData(dfLoss / m_dfNormalizer, 0);
+
+            // Return the losses in colTop[1] if it exists.
+            if (colTop.Count == 2)
+            {
+                m_cuda.copy(nCount, hLossData, m_blobLoss.mutable_gpu_data);
+                colTop[1].ShareData(m_blobLoss);
+            }
 
             // Clear scratch memory to prevent interfering with the backward pass (see #6202)
             colBottom[0].SetDiff(0);
@@ -256,7 +294,7 @@ namespace MyCaffe.layers
 
                 // Zero out gradient for ignored targets
                 if (m_nIgnoreLabel.HasValue)
-                    m_cuda.sigmoid_cross_entropy_ignore(nCount, m_nIgnoreLabel.Value, hTarget, hBottomDiff);
+                    m_cuda.cross_entropy_ignore(nCount, m_nIgnoreLabel.Value, hTarget, hBottomDiff);
 
                 // Scale down gradient
                 double dfLossWeight = convertD(colTop[0].GetDiff(0)) / m_dfNormalizer;
