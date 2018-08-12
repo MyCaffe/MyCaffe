@@ -204,6 +204,10 @@ namespace MyCaffe.param
             /// </summary>
             MEMORYDATA,
             /// <summary>
+            /// Initializes a parameter for the MemoryLossLayer.
+            /// </summary>
+            MEMORY_LOSS,
+            /// <summary>
             /// Initializes a parameter for the MultinomialLogisticLossLayer.
             /// </summary>
             MULTINOMIALLOGISTIC_LOSS,
@@ -247,6 +251,10 @@ namespace MyCaffe.param
             /// Initializes a parameter for the SigmoidCrossEntropyLossLayer.
             /// </summary>
             SIGMOIDCROSSENTROPY_LOSS,
+            /// <summary>
+            /// Initializes a parameter for the SoftmaxCrossEntropyLossLayer.
+            /// </summary>
+            SOFTMAXCROSSENTROPY_LOSS,
             /// <summary>
             /// Initializes a parameter for the SoftmaxLayer.
             /// </summary>
@@ -829,6 +837,12 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new LRNParameter();
                     break;
 
+                case LayerType.MEMORY_LOSS:
+                    expected_bottom.Add("input");
+                    expected_top.Add("loss");
+                    m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
+                    break;
+
                 case LayerType.MULTINOMIALLOGISTIC_LOSS:
                     expected_bottom.Add("pred");
                     expected_bottom.Add("label");
@@ -922,6 +936,14 @@ namespace MyCaffe.param
                     expected_top.Add("loss");
                     m_rgLayerParameters[LayerType.LOSS] = new LossParameter(LossParameter.NormalizationMode.BATCH_SIZE);
                     m_rgLayerParameters[LayerType.SIGMOID] = new SigmoidParameter();
+                    break;
+
+                case LayerType.SOFTMAXCROSSENTROPY_LOSS:
+                    expected_bottom.Add("scores");
+                    expected_bottom.Add("trgt");
+                    expected_top.Add("loss");
+                    m_rgLayerParameters[LayerType.LOSS] = new LossParameter(LossParameter.NormalizationMode.BATCH_SIZE);
+                    m_rgLayerParameters[LayerType.SOFTMAX] = new SoftmaxParameter();
                     break;
 
                 case LayerType.SILENCE:
@@ -1863,9 +1885,12 @@ namespace MyCaffe.param
 
                 case LayerType.LRN:
                     return "LRN";
-
+               
                 case LayerType.MEMORYDATA:
                     return "MemoryData";
+
+                case LayerType.MEMORY_LOSS:
+                    return "MemoryLoss";
 
                 case LayerType.MULTINOMIALLOGISTIC_LOSS:
                     return "MultinomialLogisticLoss";
@@ -1911,6 +1936,9 @@ namespace MyCaffe.param
 
                 case LayerType.SIGMOIDCROSSENTROPY_LOSS:
                     return "SigmoidCrossEntropyLoss";
+
+                case LayerType.SOFTMAXCROSSENTROPY_LOSS:
+                    return "SoftmaxCrossEntropyLoss";
 
                 case LayerType.SILENCE:
                     return "Silence";
@@ -2470,6 +2498,9 @@ namespace MyCaffe.param
                 case "memorydata":
                     return LayerType.MEMORYDATA;
 
+                case "memoryloss":
+                    return LayerType.MEMORY_LOSS;
+
                 case "multinomiallogisticloss":
                 case "multinomiallogistic_loss":
                     return LayerType.MULTINOMIALLOGISTIC_LOSS;
@@ -2517,6 +2548,10 @@ namespace MyCaffe.param
                 case "sigmoidcrossentropyloss":
                 case "sigmoidcrossentropy_loss":
                     return LayerType.SIGMOIDCROSSENTROPY_LOSS;
+
+                case "softmaxcrossentropyloss":
+                case "softmaxcrossentropy_loss":
+                    return LayerType.SOFTMAXCROSSENTROPY_LOSS;
 
                 case "silence":
                     return LayerType.SILENCE;
