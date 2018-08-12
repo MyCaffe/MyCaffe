@@ -677,7 +677,7 @@ namespace MyCaffe.trainers
                 return false;
 
             setBatchSize(mycaffe, Phase.TEST, nBatchSize);
-            MemoryDataLayer<T> memData = setBatchSize(mycaffe, Phase.TRAIN, nBatchSize);
+            MemoryDataLayer<T> memData = setBatchSize(mycaffe, Phase.TRAIN, nBatchSize, true);
             List<Datum> rgData = new List<Datum>();
 
             foreach (MemoryItem item in mem)
@@ -690,7 +690,7 @@ namespace MyCaffe.trainers
             return true;
         }
 
-        private MemoryDataLayer<T> setBatchSize(MyCaffeControl<T> mycaffe, Phase phase, int nBatchSize)
+        private MemoryDataLayer<T> setBatchSize(MyCaffeControl<T> mycaffe, Phase phase, int nBatchSize, bool bUpdateLast = false)
         {
             Net<T> net = mycaffe.GetInternalNet(phase);
             MemoryDataLayer<T> memData = getLayer(net, LayerParameter.LayerType.MEMORYDATA) as MemoryDataLayer<T>;
@@ -698,7 +698,7 @@ namespace MyCaffe.trainers
             if (memData == null)
                 throw new Exception("Could not find the memory data layer!");
 
-            if (nBatchSize != m_nLastBatchSize)
+            if (bUpdateLast && nBatchSize != m_nLastBatchSize)
             {
                 memData.batch_size = nBatchSize;
                 m_nLastBatchSize = nBatchSize;
