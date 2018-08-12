@@ -38,6 +38,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -46,16 +47,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Batch.cs" />
     <Compile Include="Interfaces.cs" />
+    <Compile Include="Memory.cs" />
+    <Compile Include="MemoryItem.cs" />
     <Compile Include="MyCaffeCustomTrainer.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="MyCaffeCustomTrainer.Designer.cs">
       <DependentUpon>MyCaffeCustomTrainer.cs</DependentUpon>
     </Compile>
-    <Compile Include="Observation.cs" />
-    <Compile Include="ObservationCollection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StateBase.cs" />
     <Compile Include="Trainer.cs" />

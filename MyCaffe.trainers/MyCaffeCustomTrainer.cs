@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MyCaffe.basecode;
+using MyCaffe.common;
 
 namespace MyCaffe.trainers
 {
@@ -15,9 +16,31 @@ namespace MyCaffe.trainers
     public partial class MyCaffeCustomTrainer : Component, IXMyCaffeCustomTrainer
     {
         /// <summary>
+        /// Specifies the training mode to use (A2C = single trainer), (A3C = multi trainer).
+        /// </summary>
+        protected TRAINING_MODE m_trainingMode = TRAINING_MODE.A2C;
+        /// <summary>
+        /// Random number generator used to get initial actions, etc.
+        /// </summary>
+        protected Random m_random = new Random();
+        /// <summary>
         /// Specifies the properties parsed from the key-value pair passed to the Initialize method.
         /// </summary>
         protected PropertySet m_properties = null;
+        /// <summary>
+        /// Specifies the global rewards.
+        /// </summary>
+        protected double m_dfGlobalRewards = 0;
+        /// <summary>
+        /// Specifies the global episode count.
+        /// </summary>
+        protected int m_nGlobalEpisodeCount = 0;
+        /// <summary>
+        /// Specifies the maximum number of global episodes.
+        /// </summary>
+        protected int m_nMaxGlobalEpisodes = 0;
+        object m_syncGlobalEpisodeCount = new object();
+        object m_syncGlobalRewards = new object();
 
         /// <summary>
         /// The constructor.
@@ -54,36 +77,60 @@ namespace MyCaffe.trainers
         /// <remarks>
         /// Override this method when using the MyCaffeControl that uses the <i>double</i> base type.
         /// </remarks>
-        /// <param name="mycaffe">Specifies the MyCaffeControl used.</param>
+        /// <param name="caffe">Specifies the MyCaffeControl used.</param>
         /// <param name="log">Specifies the output log to use.</param>
         /// <param name="evtCancel">Specifies the cancel event to use.</param>
+        /// <param name="nGpuID">Optionally, specifies the GPUID to run the trainer on.</param>
+        /// <param name="nIndex">Optionally, specifies teh index of the trainer.</param>
         /// <returns>The IxTraininer interface implemented by the new trainer is returned.</returns>
-        protected virtual IxTrainer create_trainerD(Component mycaffe, Log log, CancelEvent evtCancel)
+        protected virtual IxTrainer create_trainerD(Component caffe, Log log, CancelEvent evtCancel, int nGpuID = 0, int nIndex = 0)
         {
-            SimpleTrainer<double> trainer = new SimpleTrainer<double>(mycaffe as MyCaffeControl<double>, log, evtCancel, m_properties);
-            trainer.OnInitialize += Trainer_OnInitialize;
-            trainer.OnGetObservations += Trainer_OnGetObservations;
-            trainer.OnProcessObservations += Trainer_OnProcessObservations;
-            return trainer;
+            MyCaffeControl<double> mycaffe = caffe as MyCaffeControl<double>;
+
+            if (m_trainingMode == TRAINING_MODE.A2C)
+            {
+                Trainer<double> trainer = new Trainer<double>(mycaffe, log, evtCancel, m_properties, m_trainingMode, nGpuID, nIndex);
+                trainer.OnInitialize += Trainer_OnInitialize;
+                trainer.OnGetData += Trainer_OnGetData;
+                trainer.OnGetGlobalEpisodeCount += Trainer_OnGetGlobalEpisodeCount;
+                trainer.OnUpdateGlobalRewards += Trainer_OnUpdateGlobalRewards;
+                return trainer;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
         /// Optionally overridden to return a new type of trainer.
         /// </summary>
         /// <remarks>
-        /// Override this method when using the MyCaffeControl that uses the <i>float</i> base type.
+        /// Override this method when using the MyCaffeControl that uses the <i>double</i> base type.
         /// </remarks>
-        /// <param name="mycaffe">Specifies the MyCaffeControl used.</param>
+        /// <param name="caffe">Specifies the MyCaffeControl used.</param>
         /// <param name="log">Specifies the output log to use.</param>
         /// <param name="evtCancel">Specifies the cancel event to use.</param>
+        /// <param name="nGpuID">Optionally, specifies the GPUID to run the trainer on.</param>
+        /// <param name="nIndex">Optionally, specifies teh index of the trainer.</param>
         /// <returns>The IxTraininer interface implemented by the new trainer is returned.</returns>
-        protected virtual IxTrainer create_trainerF(Component mycaffe, Log log, CancelEvent evtCancel)
+        protected virtual IxTrainer create_trainerF(Component caffe, Log log, CancelEvent evtCancel, int nGpuID = 0, int nIndex = 0)
         {
-            SimpleTrainer<float> trainer = new SimpleTrainer<float>(mycaffe as MyCaffeControl<float>, log, evtCancel, m_properties);
-            trainer.OnInitialize += Trainer_OnInitialize;
-            trainer.OnGetObservations += Trainer_OnGetObservations;
-            trainer.OnProcessObservations += Trainer_OnProcessObservations;
-            return trainer;
+            MyCaffeControl<float> mycaffe = caffe as MyCaffeControl<float>;
+
+            if (m_trainingMode == TRAINING_MODE.A2C)
+            {
+                Trainer<float> trainer = new Trainer<float>(mycaffe, log, evtCancel, m_properties, m_trainingMode, nGpuID, nIndex);
+                trainer.OnInitialize += Trainer_OnInitialize;
+                trainer.OnGetData += Trainer_OnGetData;
+                trainer.OnGetGlobalEpisodeCount += Trainer_OnGetGlobalEpisodeCount;
+                trainer.OnUpdateGlobalRewards += Trainer_OnUpdateGlobalRewards;
+                return trainer;
+            }
+            else
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -105,19 +152,10 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
-        /// Override called by the OnGetObservations event fired by the Trainer to retrieve a new set of observation collections making up a set of experiences.
+        /// Override called by the OnGetData event fired by the Trainer to retrieve a new set of observation collections making up a set of experiences.
         /// </summary>
-        /// <param name="e">Specifies the getObservations argments used to return the new observations.</param>
-        protected virtual void getObservations(GetObservationArgs e)
-        {
-        }
-
-        /// <summary>
-        /// Override called by the OnProcessObservations event fired by the Trainer when training the network.  Processing the observations should run the
-        /// network on the data of the observation and determine a new set of actions to take, take those actions and determine the reward.
-        /// </summary>
-        /// <param name="e">Specifies the processObservations arguments that contain the observations and returns the new actions and reward.</param>
-        protected virtual void processObservations(ProcessObservationArgs e)
+        /// <param name="e">Specifies the getData argments used to return the new observations.</param>
+        protected virtual void getData(GetDataArgs e)
         {
         }
 
@@ -161,8 +199,10 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <param name="strProperties">Specifies the key-value pair of properties each separated by ';'.  For example the expected
         /// format is 'key1'='value1';'key2'='value2';...</param>
-        public void Initialize(string strProperties)
+        /// <param name="mode">Specifies the training mode to use A2C (single mode) or A3C (multi mode).</param>
+        public void Initialize(string strProperties, TRAINING_MODE mode)
         {
+            m_trainingMode = mode;
             m_properties = new PropertySet(strProperties);
         }
 
@@ -198,6 +238,10 @@ namespace MyCaffe.trainers
         {
             IxTrainer itrainer;
 
+            m_nMaxGlobalEpisodes = nIterationOverride;
+            m_nGlobalEpisodeCount = 0;
+            m_dfGlobalRewards = 0;
+
             if (mycaffe is MyCaffeControl<double>)
                 itrainer = create_trainerD(mycaffe, log, evtCancel);
             else
@@ -208,45 +252,51 @@ namespace MyCaffe.trainers
             ((IDisposable)itrainer).Dispose();
         }
 
-        /// <summary>
-        /// Defines the event handler used to handle the trainers OnInitialize event.
-        /// </summary>
-        /// <remarks>
-        /// This event fires when the trainer is initialized.
-        /// </remarks>
-        /// <param name="sender">Specifies the sender, which is the trainer.</param>
-        /// <param name="e">Specifies the event arguments.</param>
         private void Trainer_OnInitialize(object sender, InitializeArgs e)
         {
             initialize(e);
         }
 
-        /// <summary>
-        /// Defines the event handler used to handle the trainers OnProcessObservations event.
-        /// </summary>
-        /// <remarks>
-        /// This event fires when the trainer needs to process the observations by running the
-        /// network on each observation, run each new action and determine the new reward for each
-        /// observation.
-        /// </remarks>
-        /// <param name="sender">Specifies the sender, which is the trainer.</param>
-        /// <param name="e">Specifies the event arguments.</param>
-        private void Trainer_OnProcessObservations(object sender, ProcessObservationArgs e)
+        private void Trainer_OnGetData(object sender, GetDataArgs e)
         {
-            processObservations(e);
+            getData(e);
+        }
+
+        private void Trainer_OnGetGlobalEpisodeCount(object sender, GlobalEpisodeCountArgs e)
+        {
+            lock (m_syncGlobalEpisodeCount)
+            {
+                e.GlobalEpisodeCount = m_nGlobalEpisodeCount;
+                e.MaximumGlobalEpisodeCount = m_nMaxGlobalEpisodes;
+                m_nGlobalEpisodeCount++;
+            }
+        }
+
+        private void Trainer_OnUpdateGlobalRewards(object sender, UpdateGlobalRewardArgs e)
+        {
+            lock (m_syncGlobalRewards)
+            {
+                if (m_dfGlobalRewards == 0)
+                    m_dfGlobalRewards = e.Reward;
+                else
+                    m_dfGlobalRewards = m_dfGlobalRewards * 0.99 + e.Reward * 0.01;
+            }
         }
 
         /// <summary>
-        /// Defines the event handler used to handle the trainers OnGetObservations event.
+        /// Returns the global rewards for either the single MyCaffeCustomTrainer (when A2C) or the set of MyCaffeCustomTrainers (when A3C)
         /// </summary>
-        /// <remarks>
-        /// This event fires when the trainer needs to collect a new set of observations.
-        /// </remarks>
-        /// <param name="sender">Specifies the sender, which is the trainer.</param>
-        /// <param name="e">Specifies the event arguments.</param>
-        private void Trainer_OnGetObservations(object sender, GetObservationArgs e)
+        public double GlobalRewards
         {
-            getObservations(e);
+            get { return m_dfGlobalRewards; }
+        }
+
+        /// <summary>
+        /// Returns the global episode count for either the single MyCaffeCustomTrainer (when A2C) or the set of MyCaffeCustomTrainers (when A3C)
+        /// </summary>
+        public int GlobalEpisodeCount
+        {
+            get { return m_nGlobalEpisodeCount; }
         }
 
         #endregion

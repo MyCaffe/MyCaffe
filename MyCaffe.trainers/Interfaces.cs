@@ -8,6 +8,20 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.trainers
 {
+    /// <summary>
+    /// Defines the operating mode.
+    /// </summary>
+    public enum TRAINING_MODE
+    {
+        /// <summary>
+        /// Run in A2C mode where there is only one trainer and the MyCaffeControl passed in acts as the local net.
+        /// </summary>
+        A2C,
+        /// <summary>
+        /// Run in A3C mode where there are multiple trainers and the MyCaffeControl passed in acts as the global net.
+        /// </summary>
+        A3C
+    }
 
     /// <summary>
     /// The IXMyCaffeCustomTrainer interface is used by the MyCaffeCustomTraininer components that
@@ -20,7 +34,8 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <remarks>Use the ProeprtySet object to easily parse the key-value pair properties.</remarks>
         /// <param name="strProperties"></param>
-        void Initialize(string strProperties);
+        /// <param name="mode">Specifies the training mode to use, either A2C (single trainer) or A3C (multi trainer).</param>
+        void Initialize(string strProperties, TRAINING_MODE mode);
         /// <summary>
         /// Clean-up the trainer by releasing all resources used.
         /// </summary>
@@ -53,5 +68,29 @@ namespace MyCaffe.trainers
         /// <param name="evtCancel">Specifies the cancel event used to halt training.</param>
         /// <param name="nIterationOverride">Specifies the iteration override if any.</param>
         void Test(Component mycaffe, Log log, CancelEvent evtCancel, int nIterationOverride);
+    }
+
+    /// <summary>
+    /// The IxTrainer interface is implemented by each Trainer.
+    /// </summary>
+    public interface IxTrainer
+    {
+        /// <summary>
+        /// Initialize the trainer.
+        /// </summary>
+        /// <returns>Returns <i>true</i> on success, <i>false</i> on failure.</returns>
+        bool Initialize();
+        /// <summary>
+        /// Train the network.
+        /// </summary>
+        /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <returns>Returns <i>true</i> on success, <i>false</i> on failure.</returns>
+        bool Train(int nIterations);
+        /// <summary>
+        /// Test the newtork.
+        /// </summary>
+        /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <returns>Returns <i>true</i> on success, <i>false</i> on failure.</returns>
+        bool Test(int nIterations);
     }
 }
