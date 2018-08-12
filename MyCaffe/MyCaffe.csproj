@@ -96,6 +96,8 @@
     <Compile Include="fillers\XavierFiller.cs" />
     <Compile Include="layers\CropLayer.cs" />
     <Compile Include="layers\GradientScaleLayer.cs" />
+    <Compile Include="layers\MemoryLossLayer.cs" />
+    <Compile Include="layers\SoftmaxCrossEntropyLossLayer.cs" />
     <Compile Include="layers\SwishLayer.cs" />
     <Compile Include="layers\MemoryDataLayer.cs" />
     <Compile Include="layers\DebugLayer.cs" />
