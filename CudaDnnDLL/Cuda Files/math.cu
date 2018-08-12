@@ -2396,16 +2396,16 @@ long Math<float>::exp(int n, long hA, long hY, int nAOff, int nYOff, float fBeta
 
 
 template <typename T>
-__global__ void log_kernel(const int n, T* a, T* y, T fBeta)
+__global__ void log_kernel(const int n, T* a, T* y, T fBeta, T fAlpha)
 {
 	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
 	{
-		y[i] = log(fBeta * a[i]);
+		y[i] = log(fBeta * (a[i] + fAlpha));
 	}
 }
 
 template <typename T>
-long Math<T>::log(int n, long hA, long hY, T fBeta)
+long Math<T>::log(int n, long hA, long hY, T fBeta, T fAlpha)
 {
 	LONG lErr;
 	MemoryItem* pA;
@@ -2417,13 +2417,13 @@ long Math<T>::log(int n, long hA, long hY, T fBeta)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	log_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (T*)pA->Data(), (T*)pY->Data(), fBeta);
+	log_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (T*)pA->Data(), (T*)pY->Data(), fBeta, fAlpha);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::log(int n, long hA, long hY, double dfBeta);
-template long Math<float>::log(int n, long hA, long hY, float dfBeta);
+template long Math<double>::log(int n, long hA, long hY, double dfBeta, double dfAlpha);
+template long Math<float>::log(int n, long hA, long hY, float dfBeta, float fAlpha);
 
 
 

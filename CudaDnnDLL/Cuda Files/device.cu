@@ -1499,18 +1499,24 @@ long Device<T>::cuda_log(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 4))
+	if (lErr = verifyInput(lInput, pfInput, 3, 5))
 		return lErr;
 
 	int n = (int)pfInput[0];
 	long hA = (long)pfInput[1];
 	long hY = (long)pfInput[2];
 	T fBeta = 1;
+	T fAlpha = 0;
 
 	if (lInput > 3)
+	{
 		fBeta = pfInput[3];
 
-	return m_math.log(n, hA, hY, fBeta);
+		if (lInput > 4)
+			fAlpha = pfInput[4];
+	}
+
+	return m_math.log(n, hA, hY, fBeta, fAlpha);
 }
 
 template long Device<double>::cuda_log(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
