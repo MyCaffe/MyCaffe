@@ -12,7 +12,6 @@ namespace MyCaffe.param
     /// </summary>
     public class MemoryDataParameter : LayerParameterBase 
     {
-        string m_strSource = null;
         uint m_nBatchSize;
         uint m_nDataChannels;
         uint m_nDataHeight;
@@ -210,6 +209,10 @@ namespace MyCaffe.param
             {
                 switch (strVal)
                 {
+                    case "NONE":
+                        p.label_type = LABEL_TYPE.NONE;
+                        break;
+
                     case "SINGLE":
                         p.label_type = LABEL_TYPE.SINGLE;
                         break;
