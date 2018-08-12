@@ -759,8 +759,8 @@ namespace MyCaffe.common
             CUDA_COEFF_SUM_FWD = 490,
             CUDA_COEFF_SUM_BWD = 491,
 
-            CUDA_SIGMOID_CROSS_ENTROPY_FWD = 496,
-            CUDA_SIGMOID_CROSS_ENTROPY_IGNORE = 497,
+            CUDA_CROSS_ENTROPY_FWD = 496,
+            CUDA_CROSS_ENTROPY_IGNORE = 497,
 
             CUDA_SGD_UPDATE = 500,
             CUDA_NESTEROV_UPDATE = 501,
@@ -4417,7 +4417,7 @@ namespace MyCaffe.common
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
         public void log(int n, long hA, long hY)
         {
-            log(n, hA, hY, 1.0);
+            log(n, hA, hY, 1.0, 0.0);
         }
 
         /// <summary>
@@ -4429,13 +4429,14 @@ namespace MyCaffe.common
         /// <param name="n">Specifies the number of items (not bytes) in the vectors A and Y.</param>
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
-        /// <param name="dfBeta">Specifies the scalar as type <code>double</code></param>
-        public void log(int n, long hA, long hY, double dfBeta)
+        /// <param name="dfBeta">Specifies the scalar as type <code>double</code> that is multiplied with the log.</param>
+        /// <param name="dfAlpha">Optionally, specifies a scalar added to the value before taking the log.</param>
+        public void log(int n, long hA, long hY, double dfBeta, double dfAlpha = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LOG, new double[] { n, hA, hY, dfBeta });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_LOG, new double[] { n, hA, hY, dfBeta, dfAlpha });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LOG, new float[] { n, hA, hY, (float)dfBeta });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LOG, new float[] { n, hA, hY, (float)dfBeta, (float)dfAlpha });
         }
 
         /// <summary>
@@ -6331,12 +6332,12 @@ namespace MyCaffe.common
         /// <param name="bHasIgnoreLabel">Specifies whether or not an ignore label is used.</param>
         /// <param name="nIgnoreLabel">Specifies the ignore label which is used when <i>bHasIgnoreLabel</i> is <code>true</code></param>
         /// <param name="hCountData">Specifies a handle to the count data in GPU memory.</param>
-        public void sigmoid_cross_entropy_fwd(int nCount, long hInput, long hTarget, long hLoss, bool bHasIgnoreLabel, int nIgnoreLabel, long hCountData)
+        public void cross_entropy_fwd(int nCount, long hInput, long hTarget, long hLoss, bool bHasIgnoreLabel, int nIgnoreLabel, long hCountData)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_CROSS_ENTROPY_FWD, new double[] { nCount, hInput, hTarget, hLoss, (bHasIgnoreLabel) ? 1 : 0, nIgnoreLabel, hCountData });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_FWD, new double[] { nCount, hInput, hTarget, hLoss, (bHasIgnoreLabel) ? 1 : 0, nIgnoreLabel, hCountData });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_CROSS_ENTROPY_FWD, new float[] { nCount, hInput, hTarget, hLoss, (bHasIgnoreLabel) ? 1 : 0, nIgnoreLabel, hCountData });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_FWD, new float[] { nCount, hInput, hTarget, hLoss, (bHasIgnoreLabel) ? 1 : 0, nIgnoreLabel, hCountData });
         }
 
         /// <summary>
@@ -6346,12 +6347,12 @@ namespace MyCaffe.common
         /// <param name="nIgnoreLabel">Specifies the label to ignore.</param>
         /// <param name="hTarget">Specifies a handle to the target data in GPU memory.</param>
         /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
-        public void sigmoid_cross_entropy_ignore(int nCount, int nIgnoreLabel, long hTarget, long hBottomDiff)
+        public void cross_entropy_ignore(int nCount, int nIgnoreLabel, long hTarget, long hBottomDiff)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_CROSS_ENTROPY_IGNORE, new double[] { nCount, nIgnoreLabel, hTarget, hBottomDiff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_IGNORE, new double[] { nCount, nIgnoreLabel, hTarget, hBottomDiff });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SIGMOID_CROSS_ENTROPY_IGNORE, new float[] { nCount, nIgnoreLabel, hTarget, hBottomDiff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_IGNORE, new float[] { nCount, nIgnoreLabel, hTarget, hBottomDiff });
         }
 
         public void matrix_set_diagonal(int nCount, int nRows, double dfVal, long hData) /** @private */
