@@ -23,11 +23,11 @@ namespace MyCaffe.layers
         int m_nChannels;
         int m_nHeight;
         int m_nWidth;
-        int m_nLabelChannels;
-        int m_nLabelHeight;
-        int m_nLabelWidth;
+        int m_nLabelChannels = 0;
+        int m_nLabelHeight = 0;
+        int m_nLabelWidth = 0;
         int m_nDataSize;
-        int m_nLabelSize;
+        int m_nLabelSize = 0;
         Blob<T> m_blobData;
         Blob<T> m_blobLabel;
         bool m_bHasNewData;
@@ -82,32 +82,68 @@ namespace MyCaffe.layers
 
             m_log.CHECK_GT(m_nBatchSize * m_nDataSize, 0, "batch_size, channels, height, and width must be specified and positive in memory_data_param.");
 
-            m_nLabelChannels = (int)m_param.memory_data_param.label_channels;
-            m_nLabelHeight = (int)m_param.memory_data_param.label_height;
-            m_nLabelWidth = (int)m_param.memory_data_param.label_width;
-            m_nLabelSize = m_nLabelChannels * m_nLabelHeight * m_nLabelWidth;
+            if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
+            {
+                m_nLabelChannels = (int)m_param.memory_data_param.label_channels;
+                m_nLabelHeight = (int)m_param.memory_data_param.label_height;
+                m_nLabelWidth = (int)m_param.memory_data_param.label_width;
+                m_nLabelSize = m_nLabelChannels * m_nLabelHeight * m_nLabelWidth;
 
-            if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.MULTIPLE)
-                m_log.CHECK_GT(m_nBatchSize * m_nLabelSize, 0, "batch_size, label_channels, label_height, and label_width must be specified and positive in memory_data_param when using label_type = MULTIPLE.");
+                if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.MULTIPLE)
+                    m_log.CHECK_GT(m_nBatchSize * m_nLabelSize, 0, "batch_size, label_channels, label_height, and label_width must be specified and positive in memory_data_param when using label_type = MULTIPLE.");
+            }
 
             if (OnGetData != null)
             {
                 OnGetData(this, new MemoryDataLayerGetDataArgs(true));
-                m_log.CHECK_EQ(m_nLabelChannels, m_blobLabel.channels, "The actual label channels (" + m_blobLabel.channels.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelChannels.ToString() + ".");
-                m_log.CHECK_EQ(m_nLabelHeight, m_blobLabel.height, "The actual label channels (" + m_blobLabel.height.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelHeight.ToString() + ".");
-                m_log.CHECK_EQ(m_nLabelWidth, m_blobLabel.width, "The actual label channels (" + m_blobLabel.width.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelWidth.ToString() + ".");
+
+                if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
+                {
+                    m_log.CHECK_EQ(m_nLabelChannels, m_blobLabel.channels, "The actual label channels (" + m_blobLabel.channels.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelChannels.ToString() + ".");
+                    m_log.CHECK_EQ(m_nLabelHeight, m_blobLabel.height, "The actual label channels (" + m_blobLabel.height.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelHeight.ToString() + ".");
+                    m_log.CHECK_EQ(m_nLabelWidth, m_blobLabel.width, "The actual label channels (" + m_blobLabel.width.ToString() + ") do not match the 'memory_data_param.label_channels' setting of " + m_nLabelWidth.ToString() + ".");
+                }
             }
             else
             {
                 m_blobData.Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
-                m_blobLabel.Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
+
+                if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
+                    m_blobLabel.Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
             }
 
             colTop[0].Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
-            colTop[1].Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
-
             m_blobData.update_cpu_data();
-            m_blobLabel.update_cpu_data();
+
+            if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
+            {
+                colTop[1].Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
+                m_blobLabel.update_cpu_data();
+            }
+        }
+
+        /// <summary>
+        /// Reshape the internal data and outputs.
+        /// </summary>
+        /// <param name="colBottom">Specifies the inputs.</param>
+        /// <param name="colTop">Specifies teh outputs.</param>
+        public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            base.Reshape(colBottom, colTop);
+
+            m_blobData.Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
+
+            if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
+                m_blobLabel.Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
+
+            colTop[0].Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
+            m_blobData.update_cpu_data();
+
+            if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
+            {
+                colTop[1].Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
+                m_blobLabel.update_cpu_data();
+            }
         }
 
         /// <summary>
@@ -123,6 +159,22 @@ namespace MyCaffe.layers
         /// </summary>
         public override int ExactNumTopBlobs
         {
+            get { return -1; }
+        }
+
+        /// <summary>
+        /// Returns the minimum number of top blobs: data
+        /// </summary>
+        public override int MinTopBlobs
+        {
+            get { return 1; }
+        }
+
+        /// <summary>
+        /// Returns the maximum number of top blobs: data, label
+        /// </summary>
+        public override int MaxTopBlobs
+        {
             get { return 2; }
         }
 
@@ -131,62 +183,84 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="rgData">The list of Data Datums to add.</param>
         /// <param name="nLblAxis">Optionally, specifies the axis on which the multi-label data is placed.  This field is not used on SINGLE label types.</param>
-        public virtual void AddDatumVector(List<Datum> rgData, int nLblAxis = 1)
+        /// <param name="bReset">Optionally, specifies to force reset the internal data.</param>
+        public virtual void AddDatumVector(List<Datum> rgData, int nLblAxis = 1, bool bReset = false)
         {
+            if (bReset)
+                m_bHasNewData = false;
+
             m_log.CHECK(!m_bHasNewData, "Can't add data until current data has been consumed.");
             int nNum = rgData.Count;
             m_log.CHECK_GT(nNum, 0, "There are no datum to add.");
+
+            int nNumAligned = (int)Math.Floor((double)rgData.Count / (double)m_nBatchSize) * m_nBatchSize;
+            m_log.CHECK_GT(nNumAligned, 0, "Three are not enough datum to add.");
+
+            if (nNumAligned < nNum)
+            {
+                m_log.WriteLine("WARNING: Clipping batch to batch aligned count of " + nNumAligned.ToString() + ".");
+
+                for (int i = nNumAligned; i < nNum; i++)
+                {
+                    rgData.RemoveAt(rgData.Count - 1);
+                }
+            }
+
+            nNum = nNumAligned;
             m_log.CHECK_EQ(nNum % m_nBatchSize, 0, "The added data must be a multiple of the batch size.");
 
             m_blobData.Reshape(nNum, m_nChannels, m_nHeight, m_nWidth);
 
-            List<int> rgLblShape = new List<int>();
-            rgLblShape.Add(nNum);
-            rgLblShape.Add(1);
-            rgLblShape.Add(1);
-            rgLblShape.Add(1);
-
-            // Reshape label blob depending on label type.
-            if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.MULTIPLE)
-            {
-                m_log.CHECK_GE(nLblAxis, 1, "The label axis must be greater than or equal to 1.");
-                m_log.CHECK_LE(nLblAxis, 4, "The label axis must be less than 4.");
-
-                List<float> rgLbl = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
-                rgLblShape[nLblAxis] = rgLbl.Count;
-            }
-
-            m_blobLabel.Reshape(rgLblShape);
-
             // Apply data transformations (mirror, scale, crop...)
             m_transformer.Transform(rgData, m_blobData, m_cuda, m_log);
 
-            // Copy labels - use DataCriteria for MULTIPLE labels
-            if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.MULTIPLE)
+            if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
             {
-                T[] rgLabels = m_blobLabel.mutable_cpu_data;
-                int nIdx = 0;
+                List<int> rgLblShape = new List<int>();
+                rgLblShape.Add(nNum);
+                rgLblShape.Add(1);
+                rgLblShape.Add(1);
+                rgLblShape.Add(1);
 
-                for (int i = 0; i < nNum; i++)
+                // Reshape label blob depending on label type.
+                if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.MULTIPLE)
                 {
-                    List<float> rgLbl = BinaryData.UnPackFloatList(rgData[i].DataCriteria, rgData[i].DataCriteriaFormat);
-                    for (int j = 0; j < rgLbl.Count; j++)
+                    m_log.CHECK_GE(nLblAxis, 1, "The label axis must be greater than or equal to 1.");
+                    m_log.CHECK_LE(nLblAxis, 4, "The label axis must be less than 4.");
+
+                    List<float> rgLbl = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
+                    rgLblShape[nLblAxis] = rgLbl.Count;
+                }
+
+                m_blobLabel.Reshape(rgLblShape);
+
+                // Copy labels - use DataCriteria for MULTIPLE labels
+                if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.MULTIPLE)
+                {
+                    T[] rgLabels = m_blobLabel.mutable_cpu_data;
+                    int nIdx = 0;
+
+                    for (int i = 0; i < nNum; i++)
                     {
-                        rgLabels[nIdx] = (T)Convert.ChangeType(rgLbl[j], typeof(T));
-                        nIdx++;
+                        List<float> rgLbl = BinaryData.UnPackFloatList(rgData[i].DataCriteria, rgData[i].DataCriteriaFormat);
+                        for (int j = 0; j < rgLbl.Count; j++)
+                        {
+                            rgLabels[nIdx] = (T)Convert.ChangeType(rgLbl[j], typeof(T));
+                            nIdx++;
+                        }
                     }
+                    m_blobLabel.mutable_cpu_data = rgLabels;
                 }
-                m_blobLabel.mutable_cpu_data = rgLabels;
-            }
-            // Copy labels - use standard Datum label for SINGLE labels.
-            else
-            {
-                T[] rgLabels = m_blobLabel.mutable_cpu_data;
-                for (int i = 0; i < nNum; i++)
+                // Copy labels - use standard Datum label for SINGLE labels.
+                else
                 {
-                    rgLabels[i] = (T)Convert.ChangeType(rgData[i].label, typeof(T));
+                    T[] rgLabels = m_blobLabel.mutable_cpu_data;
+                    for (int i = 0; i < nNum; i++)
+                    {
+                        rgLabels[i] = (T)Convert.ChangeType(rgData[i].label, typeof(T));
+                    }
+                    m_blobLabel.mutable_cpu_data = rgLabels;
                 }
-                m_blobLabel.mutable_cpu_data = rgLabels;
             }
 
             m_bHasNewData = true;
@@ -201,16 +275,19 @@ namespace MyCaffe.layers
         /// <param name="n">Specifies the number runs to perform on each batch.</param>
         public void Reset(Blob<T> data, Blob<T> labels, int n)
         {
-            m_log.CHECK_GT(m_blobData.count(), 0, "There is no data.");
-            m_log.CHECK_GT(m_blobLabel.count(), 0, "There are no lables.");
             m_log.CHECK_EQ(n % m_nBatchSize, 0, "'n' must be a multiple of batch size.");
             m_nN = n;
 
+            m_log.CHECK_GT(m_blobData.count(), 0, "There is no data.");
             m_blobData.ReshapeLike(data);
-            m_blobLabel.ReshapeLike(labels);
-
             m_cuda.copy(m_blobData.count(), data.gpu_data, m_blobData.mutable_gpu_data);
-            m_cuda.copy(m_blobLabel.count(), labels.gpu_data, m_blobLabel.mutable_gpu_data);
+
+            if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
+            {
+                m_log.CHECK_GT(m_blobLabel.count(), 0, "There are no lables.");
+                m_blobLabel.ReshapeLike(labels);
+                m_cuda.copy(m_blobLabel.count(), labels.gpu_data, m_blobLabel.mutable_gpu_data);
+            }
         }
 
         /// <summary>
@@ -222,10 +299,13 @@ namespace MyCaffe.layers
             m_nN = src.m_nN;
 
             m_blobData.ReshapeLike(src.m_blobData);
-            m_blobLabel.ReshapeLike(src.m_blobLabel);
-
             m_cuda.copy(src.m_blobData.count(), src.m_blobData.gpu_data, m_blobData.mutable_gpu_data);
-            m_cuda.copy(src.m_blobLabel.count(), src.m_blobLabel.gpu_data, m_blobLabel.mutable_gpu_data);
+
+            if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
+            {
+                m_blobLabel.ReshapeLike(src.m_blobLabel);
+                m_cuda.copy(src.m_blobLabel.count(), src.m_blobLabel.gpu_data, m_blobLabel.mutable_gpu_data);
+            }
 
             m_bHasNewData = true;
         }
@@ -240,8 +320,6 @@ namespace MyCaffe.layers
             {
                 m_log.CHECK(!m_bHasNewData, "Can't change the batch size until current data has been consumed.");
                 m_nBatchSize = value;
-                m_blobData.Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
-                m_blobLabel.Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
             }
         }
 
@@ -281,20 +359,25 @@ namespace MyCaffe.layers
         {
             int nSrcOffset;
 
-            List<int> rgLabelShape = Utility.Clone<int>(m_blobLabel.shape());
-            if (rgLabelShape.Count == 0)
-                rgLabelShape.Add(m_nBatchSize);
-            else
-                rgLabelShape[0] = m_nBatchSize;
-
             colTop[0].Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
-            colTop[1].Reshape(rgLabelShape);
 
             nSrcOffset = m_nPos * m_nDataSize;
             m_cuda.copy(colTop[0].count(), m_blobData.gpu_data, colTop[0].mutable_gpu_data, nSrcOffset, 0);
 
-            nSrcOffset = m_nPos * m_nLabelSize;
-            m_cuda.copy(colTop[1].count(), m_blobLabel.gpu_data, colTop[1].mutable_gpu_data, nSrcOffset, 0);
+            if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
+            {
+                List<int> rgLabelShape = Utility.Clone<int>(m_blobLabel.shape());
+                if (rgLabelShape.Count == 0)
+                    rgLabelShape.Add(m_nBatchSize);
+                else
+                    rgLabelShape[0] = m_nBatchSize;
+
+                colTop[1].Reshape(rgLabelShape);
+
+                nSrcOffset = m_nPos * m_nLabelSize;
+                m_cuda.copy(colTop[1].count(), m_blobLabel.gpu_data, colTop[1].mutable_gpu_data, nSrcOffset, 0);
+            }
+
             m_nPos = (m_nPos + m_nBatchSize) % m_nN;
 
             if (m_nPos == 0)
