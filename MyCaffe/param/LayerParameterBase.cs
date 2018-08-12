@@ -19,6 +19,10 @@ namespace MyCaffe.param
         public enum LABEL_TYPE
         {
             /// <summary>
+            /// Specifies that no label is used.
+            /// </summary>
+            NONE,
+            /// <summary>
             /// Specifies a single label value, which is the default.
             /// </summary>
             SINGLE,
