@@ -1,0 +1,211 @@
+name: "AlexNetCartPole"
+layer 
+{
+   name: "data"
+   type: "MemoryData"
+   top: "data"
+   include 
+   {
+      phase: TRAIN
+   }
+   transform_param 
+   {
+      scale: 1
+   }
+   memory_data_param 
+   {
+      batch_size: 12
+      channels: 4
+      height: 1
+      width: 1
+      label_type: NONE
+   }
+}
+layer 
+{
+   name: "data"
+   type: "MemoryData"
+   top: "data"
+   include 
+   {
+      phase: TEST
+   }
+   transform_param 
+   {
+      scale: 1
+   }
+   memory_data_param 
+   {
+      batch_size: 12
+      channels: 4
+      height: 1
+      width: 1
+      label_type: NONE
+   }
+}
+layer 
+{
+   name: "dense1"
+   type: "InnerProduct"
+   bottom: "data"
+   top: "x"
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 2
+   }
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   inner_product_param 
+   {
+      num_output: 100
+      bias_term: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "relu1"
+   type: "ReLU"
+   bottom: "x"
+   top: "x"
+}
+layer 
+{
+   name: "policy"
+   type: "InnerProduct"
+   bottom: "x"
+   top: "policy"
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 2
+   }
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   inner_product_param 
+   {
+      num_output: 3
+      bias_term: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "softmax1"
+   type: "Softmax"
+   bottom: "policy"
+   top: "softmax1"
+}
+layer 
+{
+   name: "dense2"
+   type: "InnerProduct"
+   bottom: "data"
+   top: "v1"
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 2
+   }
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   inner_product_param 
+   {
+      num_output: 100
+      bias_term: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "relu2"
+   type: "ReLU"
+   bottom: "v1"
+   top: "v1"
+}
+layer 
+{
+   name: "values"
+   type: "InnerProduct"
+   bottom: "v1"
+   top: "value"
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 2
+   }
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   inner_product_param 
+   {
+      num_output: 1
+      bias_term: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "loss1"
+   type: "MemoryLoss"
+   bottom: "policy"
+   bottom: "value"
+   top: "loss1"
+   loss_weight: 1
+   loss_param 
+   {
+      normalization: BATCH_SIZE
+   }
+}
