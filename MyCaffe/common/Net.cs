@@ -2316,10 +2316,10 @@ namespace MyCaffe.common
         /// <summary>
         /// Save the weights to a byte array.
         /// </summary>
-        /// <param name="bSaveDiff">Specifies whether or not to save the diff values in addition to the data values.</param>
         /// <param name="persist">Specifies an interface to the persistance object used to save the weights.</param>
+        /// <param name="bSaveDiff">Specifies to save the diff values.</param>
         /// <returns>The byte array containing the weights is returned.</returns>
-        public byte[] SaveWeights(bool bSaveDiff, IXPersist<T> persist)
+        public byte[] SaveWeights(IXPersist<T> persist, bool bSaveDiff = false)
         {
             foreach (Blob<T> blob in m_colLearnableParams)
             {
@@ -2366,26 +2366,6 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Returns the DebugInformation for the Net.
-        /// </summary>
-        /// <param name="bDetectNans">Specifies whether or not to detect Nan's in the data.</param>
-        /// <returns>The DebugInformation for the Net is returned.</returns>
-        public DebugInformation<T> GetDebugInformation(bool bDetectNans)
-        {
-            if (m_blobWork == null)
-                m_blobWork = new common.Blob<T>(m_cuda, m_log);
- 
-            DebugInformation<T> debugInfo = new DebugInformation<T>(name, m_blobWork, bDetectNans);
-
-            for (int i = 0; i < m_rgLayers.Count; i++)
-            {
-                debugInfo.Add(m_rgLayers[i], m_rgcolBottomVecs[i], m_rgcolTopVecs[i]);
-            }
-
-            return debugInfo;
-        }
-
-        /// <summary>
         /// Finds a Blob in the Net by name.
         /// </summary>
         /// <param name="strName">Specifies the Blob name.</param>
@@ -2414,6 +2394,68 @@ namespace MyCaffe.common
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Returns the collection of bottom blobs for a given layer.
+        /// </summary>
+        /// <param name="strLayer">Specifies the layer name.</param>
+        /// <returns>The collection of bottom blobs is returned.</returns>
+        public BlobCollection<T> FindBottomBlobsOfLayer(string strLayer)
+        {
+            int nLayerIdx = 0;
+
+            for (int i = 0; i < m_rgLayers.Count; i++)
+            {
+                if (m_rgLayers[i].layer_param.name == strLayer)
+                {
+                    nLayerIdx = i;
+                    break;
+                }
+            }
+
+            return m_rgcolBottomVecs[nLayerIdx];
+        }
+
+        /// <summary>
+        /// Returns the collection of top blobs for a given layer.
+        /// </summary>
+        /// <param name="strLayer">Specifies the layer name.</param>
+        /// <returns>The collection of top blobs is returned.</returns>
+        public BlobCollection<T> FindTopBlobsOfLayer(string strLayer)
+        {
+            int nLayerIdx = 0;
+
+            for (int i = 0; i < m_rgLayers.Count; i++)
+            {
+                if (m_rgLayers[i].layer_param.name == strLayer)
+                {
+                    nLayerIdx = i;
+                    break;
+                }
+            }
+
+            return m_rgcolTopVecs[nLayerIdx];
+        }
+
+        /// <summary>
+        /// Returns the DebugInformation for the Net.
+        /// </summary>
+        /// <param name="bDetectNans">Specifies whether or not to detect Nan's in the data.</param>
+        /// <returns>The DebugInformation for the Net is returned.</returns>
+        public DebugInformation<T> GetDebugInformation(bool bDetectNans)
+        {
+            if (m_blobWork == null)
+                m_blobWork = new common.Blob<T>(m_cuda, m_log);
+ 
+            DebugInformation<T> debugInfo = new DebugInformation<T>(name, m_blobWork, bDetectNans);
+
+            for (int i = 0; i < m_rgLayers.Count; i++)
+            {
+                debugInfo.Add(m_rgLayers[i], m_rgcolBottomVecs[i], m_rgcolTopVecs[i]);
+            }
+
+            return debugInfo;
         }
 
         /// <summary>
