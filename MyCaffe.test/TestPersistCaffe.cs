@@ -288,7 +288,7 @@ namespace MyCaffe.test
             net.LoadWeights(rgWeights, persist);
 
             // Save to MyCaffe format.
-            byte[] rgWeights1 = net.SaveWeights(false, persist);
+            byte[] rgWeights1 = net.SaveWeights(persist);
 
             // Reload in MyCaffe format.
             net.LoadWeights(rgWeights1, persist);
@@ -332,11 +332,11 @@ namespace MyCaffe.test
             net1.LoadWeights(rgWeights, persist);
 
             // Save to native format.
-            byte[] rgWeights1 = net1.SaveWeights(false, persist);
+            byte[] rgWeights1 = net1.SaveWeights(persist);
 
             // Reload native format.
             net2.LoadWeights(rgWeights1, persist);
-            byte[] rgWeights2 = net2.SaveWeights(false, persist);
+            byte[] rgWeights2 = net2.SaveWeights(persist);
 
             //--------------------------------------
             //  Compare the weights.
