@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -198,6 +200,36 @@ namespace MyCaffe.basecode.descriptors
         {
             get { return m_colParameters; }
             set { m_colParameters = value; }
+        }
+
+        /// <summary>
+        /// Serialize a dataset descriptor to a byte array.
+        /// </summary>
+        /// <param name="ds">Specifies the dataset descriptor to serialize.</param>
+        /// <returns>A byte array containing the serialized dataset is returned.</returns>
+        public static byte[] Serialize(DatasetDescriptor ds)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                BinaryFormatter bf = new BinaryFormatter();
+                bf.Serialize(ms, ds);
+                ms.Flush();
+                return ms.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Deserialize a dataset descriptor from a byte array.
+        /// </summary>
+        /// <param name="rg">Specifies the byte array.</param>
+        /// <returns>The deserialized dataset descriptor is returned.</returns>
+        public static DatasetDescriptor Deserialize(byte[] rg)
+        {
+            using (MemoryStream ms = new MemoryStream(rg))
+            {
+                BinaryFormatter bf = new BinaryFormatter();
+                return bf.Deserialize(ms) as DatasetDescriptor;
+            }
         }
     }
 }
