@@ -1,4 +1,5 @@
 ﻿using MyCaffe.basecode;
+using MyCaffe.basecode.descriptors;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -39,7 +40,7 @@ namespace MyCaffe.gym
         Bitmap m_bmp = null;
 
         // Angle at which to fail the episode
-        double m_dfThetaThreshold = 90;
+        double m_dfThetaThreshold = 15;
         double m_dfXThreshold = 2.4;
 
         Random m_random = new Random();
@@ -109,9 +110,9 @@ namespace MyCaffe.gym
             while (a != ACTION.NONE)
             {
                 if (a == ACTION.MOVELEFT)
-                    m_dfForceMag -= 10;
+                    m_dfForceMag -= 1;
                 if (a == ACTION.MOVERIGHT)
-                    m_dfForceMag += 10;
+                    m_dfForceMag += 1;
 
                 a = getNextActionValue();
             }
@@ -264,6 +265,26 @@ namespace MyCaffe.gym
             }
 
             return new Tuple<double[], double, bool>(m_state.ToArray(), dfReward, m_bDone);
+        }
+
+        public DatasetDescriptor GetDataset(DATA_TYPE dt)
+        {
+            int nH = 1;
+            int nW = 1;
+            int nC = 4;
+
+            if (dt == DATA_TYPE.IMAGE)
+            {
+                nH = 512;
+                nW = 512;
+                nC = 1;
+            }
+
+            SourceDescriptor srcTrain = new SourceDescriptor(9998, Name + ".training", nW, nH, nC, false, false);
+            SourceDescriptor srcTest = new SourceDescriptor(9999, Name + ".testing", nW, nH, nC, false, false);
+            DatasetDescriptor ds = new DatasetDescriptor(9999, Name, null, null, srcTrain, srcTest, "CartPoleGym", "CartPole Gym");
+
+            return ds;
         }
     }
 
