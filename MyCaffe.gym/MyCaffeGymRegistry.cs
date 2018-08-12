@@ -1,4 +1,5 @@
 ﻿using MyCaffe.basecode;
+using MyCaffe.basecode.descriptors;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -108,6 +109,15 @@ namespace MyCaffe.gym
             return true;
         }
 
+        public DatasetDescriptor GetDataset(string strName, int nType)
+        {
+            FormGym dlg = Find(strName);
+            if (dlg == null)
+                return null;
+
+            return dlg.GymControl.GetDataset(nType);
+        }
+
         public Dictionary<string, int> GetActionSpace(string strName)
         {
             FormGym dlg = Find(strName);
@@ -124,6 +134,16 @@ namespace MyCaffe.gym
                 return false;
 
             dlg.GymControl.RunAction(nAction);
+            return true;
+        }
+
+        public bool Reset(string strName)
+        {
+            FormGym dlg = Find(strName);
+            if (dlg == null)
+                return false;
+
+            dlg.GymControl.Reset();
             return true;
         }
 

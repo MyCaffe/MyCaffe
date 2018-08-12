@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyCaffe.basecode.descriptors;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.ServiceModel;
@@ -28,6 +29,12 @@ namespace MyCaffe.gym
             m_igym.Close();
         }
 
+        public DatasetDescriptor GetDataset(string strName, int nType = 0)
+        {
+            byte[] rgDs = m_igym.GetDataset(strName, nType);
+            return DatasetDescriptor.Deserialize(rgDs);
+        }
+
         public string Name
         {
             get {return m_igym.GetName(); }
@@ -41,6 +48,11 @@ namespace MyCaffe.gym
         public void Run(int nAction)
         {
             m_igym.Run(nAction);
+        }
+
+        public void Reset()
+        {
+            m_igym.Reset();
         }
 
         public Observation GetObservation()

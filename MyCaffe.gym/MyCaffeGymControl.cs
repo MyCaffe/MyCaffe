@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using System.Threading;
 using MyCaffe.basecode;
 using System.Collections;
+using MyCaffe.basecode.descriptors;
 
 namespace MyCaffe.gym
 {
@@ -78,13 +79,18 @@ namespace MyCaffe.gym
 
             if (m_state != null)
             {
-                m_rgObservations.Add(new Observation(m_bmp, m_state.Item1, m_state.Item2, m_state.Item3));
+                m_rgObservations.Add(new Observation(new Bitmap(m_bmp), m_state.Item1, m_state.Item2, m_state.Item3));
 
                 if (OnObservation != null)
                     OnObservation(this, new OnObservationArgs(m_rgObservations));
             }
 
             Invalidate(true);
+        }
+
+        public DatasetDescriptor GetDataset(int nType)
+        {
+            return m_igym.GetDataset((DATA_TYPE)nType);
         }
 
         public void Reset()
