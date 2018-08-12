@@ -61,12 +61,16 @@ namespace MyCaffe.solvers
         /// </summary>
         /// <param name="param_id">Specifies the id of the Blob.</param>
         /// <param name="dfRate">Specifies the learning rate.</param>
-        public override void ComputeUpdateValue(int param_id, double dfRate)
+        /// <param name="nIterationOverride">Optionally, specifies an iteration override, or -1 which is ignored.</param>
+        public override void ComputeUpdateValue(int param_id, double dfRate, int nIterationOverride = -1)
         {
             BlobCollection<T> colNetParams = m_net.learnable_parameters;
 
             if (!colNetParams[param_id].DiffExists)
                 return;
+
+            if (nIterationOverride == -1)
+                nIterationOverride = m_nIter;
 
             List<double?> net_params_lr = m_net.params_lr;
             double dfLocalRate = dfRate * net_params_lr[param_id].GetValueOrDefault(0);
@@ -80,7 +84,7 @@ namespace MyCaffe.solvers
             Blob<T> val_m = m_colHistory[param_id];
             Blob<T> val_v = m_colHistory[param_id + nUpdateHistoryOffset];
 
-            int nT = m_nIter + 1;
+            int nT = nIterationOverride + 1;
             double dfCorrection = Math.Sqrt(1.0 - Math.Pow(dfBeta2, nT)) / (1.0 - Math.Pow(dfBeta1, nT));
             int nN = colNetParams[param_id].count();
             double dfEpsHat = m_param.delta;

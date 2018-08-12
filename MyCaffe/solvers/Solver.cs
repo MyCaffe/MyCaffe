@@ -60,7 +60,6 @@ namespace MyCaffe.solvers
         protected List<double> m_rgLosses = new List<double>();
         AutoResetEvent m_evtCompleted = new AutoResetEvent(false);
         bool m_bEnableTest = true;
-        bool m_bEnableLayerDebugging = false;
         bool m_bEnableBlobDebugging = false;
         bool m_bEnableBreakOnNan = false;
         bool m_bEnableDetailedNanDetection = false;
@@ -82,6 +81,10 @@ namespace MyCaffe.solvers
         /// Specifies the persistance object used to save weight and solver states.
         /// </summary>
         protected IXPersist<T> m_persist;
+        /// <summary>
+        /// Optionally, specifies a learning rate override (default = 0, which ignores this setting).
+        /// </summary>
+        protected double m_dfLearningRateOverride = 0;
         double m_dfLastAccuracy = 0;
         double m_dfLastError = double.MaxValue;
         double m_dfBestAccuracy = 0;
@@ -161,6 +164,15 @@ namespace MyCaffe.solvers
         public void Dispose()
         {
             dispose();
+        }
+
+        /// <summary>
+        /// Get/set the learning rate override.  When 0, this setting is ignored.
+        /// </summary>
+        public double LearningRateOverride
+        {
+            get { return m_dfLearningRateOverride; }
+            set { m_dfLearningRateOverride = value; }
         }
 
         /// <summary>
@@ -977,7 +989,7 @@ namespace MyCaffe.solvers
 
         private void args_OnGetWeights(object sender, GetBytesArgs e)
         {
-            e.Data = m_net.SaveWeights(m_param.snapshot_diff, m_persist);
+            e.Data = m_net.SaveWeights(m_persist, m_param.snapshot_diff);
         }
 
         private void args_OnGetState(object sender, GetBytesArgs e)
@@ -1392,7 +1404,8 @@ namespace MyCaffe.solvers
         /// <summary>
         /// Make and apply the update value for the current iteration.
         /// </summary>
-        protected abstract double ApplyUpdate();
+        /// <param name="nIterationOverride">Optionally, specifies an iteration override, or -1 which is ignored.</param>
+        public abstract double ApplyUpdate(int nIterationOverride = -1);
 
         /// <summary>
         /// Save the current solver state.

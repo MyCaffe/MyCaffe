@@ -121,10 +121,14 @@ namespace MyCaffe.solvers
         /// where base_lr, max_iter, gamma, step, stepvalue and power are defined int the
         /// solver protocol buffer, and iter is the current iteration.
         /// </remarks>
+        /// <param name="nIterationOverride">Optionally, specifies an iteration override, or -1 which is ignored.</param>
         /// <returns>The learning rate value.</returns>
-        public double GetLearningRate()
+        public double GetLearningRate(int nIterationOverride = -1)
         {
             double dfRate = 0;
+
+            if (nIterationOverride == -1)
+                nIterationOverride = m_nIter;
 
             switch (m_param.lr_policy)
             {
@@ -134,39 +138,39 @@ namespace MyCaffe.solvers
 
                 case "step":
                     m_log.CHECK_GT(m_param.stepsize, 0, "The stepsize must be greater than 0.");
-                    m_nCurrentStep = m_nIter / m_param.stepsize;
+                    m_nCurrentStep = nIterationOverride / m_param.stepsize;
                     m_log.CHECK_GE(m_param.gamma, 0, "The gamma must be greater than or equal to 0.");
                     dfRate = m_param.base_lr * Math.Pow(m_param.gamma, m_nCurrentStep);
                     break;
 
                 case "exp":
                     m_log.CHECK_GE(m_param.gamma, 0, "The gamma must be greater than or equal to 0.");
-                    dfRate = m_param.base_lr * Math.Pow(m_param.gamma, m_nIter);
+                    dfRate = m_param.base_lr * Math.Pow(m_param.gamma, nIterationOverride);
                     break;
 
                 case "inv":
                     m_log.CHECK_GE(m_param.gamma, 0, "The gamma must be greater than or equal to 0.");
-                    dfRate = m_param.base_lr * Math.Pow(1.0 + m_param.gamma * m_nIter, -1.0 * m_param.power);
+                    dfRate = m_param.base_lr * Math.Pow(1.0 + m_param.gamma * nIterationOverride, -1.0 * m_param.power);
                     break;
 
                 case "multistep":
-                    if (m_nCurrentStep < m_param.stepvalue.Count && m_nIter >= m_param.stepvalue[m_nCurrentStep])
+                    if (m_nCurrentStep < m_param.stepvalue.Count && nIterationOverride >= m_param.stepvalue[m_nCurrentStep])
                     {
                         m_nCurrentStep++;
-                        m_log.WriteLine("MultiStep Status: Iteration " + m_nIter.ToString() + ", step = " + m_nCurrentStep.ToString());
+                        m_log.WriteLine("MultiStep Status: Iteration " + nIterationOverride.ToString() + ", step = " + m_nCurrentStep.ToString());
                     }
                     m_log.CHECK_GE(m_param.gamma, 0, "The gamma must be greater than or equal to 0.");
                     dfRate = m_param.base_lr * Math.Pow(m_param.gamma, m_nCurrentStep);
                     break;
 
                 case "poly":
-                    dfRate = m_param.base_lr * Math.Pow(1.0 - ((double)m_nIter / (double)m_param.max_iter), m_param.power);
+                    dfRate = m_param.base_lr * Math.Pow(1.0 - ((double)nIterationOverride / (double)m_param.max_iter), m_param.power);
                     break;
 
                 case "sigmoid":
                     m_log.CHECK_GE(m_param.gamma, 0, "The gamma must be greater than or equal to 0.");
                     m_log.CHECK_GT(m_param.stepsize, 0, "The stepsize must be greater than 0.");
-                    dfRate = m_param.base_lr * (1.0 / (1.0 + Math.Exp(-1.0 * m_param.gamma * m_nIter - m_param.stepsize)));
+                    dfRate = m_param.base_lr * (1.0 / (1.0 + Math.Exp(-1.0 * m_param.gamma * nIterationOverride - m_param.stepsize)));
                     break;
 
                 default:
@@ -180,10 +184,14 @@ namespace MyCaffe.solvers
         /// <summary>
         /// Compute the update values and apply them to the training Net.
         /// </summary>
+        /// <param name="nIterationOverride">Optionally, specifies an iteration override, or -1 which is ignored.</param>
         /// <returns>The learning rate used is returned.</returns>
-        protected override double ApplyUpdate()
+        public override double ApplyUpdate(int nIterationOverride = -1)
         {
-            double dfRate = GetLearningRate();
+            double dfRate = GetLearningRate(nIterationOverride);
+
+            if (LearningRateOverride > 0)
+                dfRate = LearningRateOverride;
 
             if (m_param.display > 0 && (m_nIter % m_param.display) == 0)
                 m_log.WriteLine("Iteration " + m_nIter.ToString() + ", lr = " + dfRate.ToString());
@@ -194,7 +202,7 @@ namespace MyCaffe.solvers
             {
                 Normalize(i);
                 Regularize(i);
-                ComputeUpdateValue(i, dfRate);
+                ComputeUpdateValue(i, dfRate, nIterationOverride);
             }
 
             m_net.Update();
@@ -296,7 +304,8 @@ namespace MyCaffe.solvers
         /// </summary>
         /// <param name="param_id">Specifies the id of the Blob.</param>
         /// <param name="dfRate">Specifies the learning rate.</param>
-        public virtual void ComputeUpdateValue(int param_id, double dfRate)
+        /// <param name="nIterationOverride">Optionally, specifies an iteration override, or -1 which is ignored.</param>
+        public virtual void ComputeUpdateValue(int param_id, double dfRate, int nIterationOverride = -1)
         {
             BlobCollection<T> colNetParams = m_net.learnable_parameters;
 

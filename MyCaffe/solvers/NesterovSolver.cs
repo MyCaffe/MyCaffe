@@ -44,7 +44,8 @@ namespace MyCaffe.solvers
         /// </summary>
         /// <param name="param_id">Specifies the id of the Blob.</param>
         /// <param name="dfRate">Specifies the learning rate.</param>
-        public override void ComputeUpdateValue(int param_id, double dfRate)
+        /// <param name="nIterationOverride">Optionally, specifies an iteration override, or -1 which is ignored.</param>
+        public override void ComputeUpdateValue(int param_id, double dfRate, int nIterationOverride = -1)
         {
             BlobCollection<T> colNetParams = m_net.learnable_parameters;
 
