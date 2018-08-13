@@ -50,7 +50,6 @@ namespace MyCaffe.gym
 
         public enum ACTION
         {
-            NONE,
             MOVELEFT,
             MOVERIGHT
         }
@@ -62,9 +61,8 @@ namespace MyCaffe.gym
             m_dfPoleMassLength = m_dfMassPole * m_dfLength;
 
             m_rgActionSpace = new Dictionary<string, int>();
-            m_rgActionSpace.Add("Nothing", 0);
-            m_rgActionSpace.Add("MoveLeft", 1);
-            m_rgActionSpace.Add("MoveRight", 2);
+            m_rgActionSpace.Add("MoveLeft", 0);
+            m_rgActionSpace.Add("MoveRight", 1);
         }
 
         public string Name
@@ -85,12 +83,12 @@ namespace MyCaffe.gym
             return m_rgActionSpace;
         }
 
-        private int getNextAction()
+        private int? getNextAction()
         {
             lock (m_objActionSync)
             {
                 if (m_rgActions.Count == 0)
-                    return 0;
+                    return null;
 
                 int nAction = m_rgActions[0];
                 m_rgActions.RemoveAt(0);
@@ -98,21 +96,21 @@ namespace MyCaffe.gym
             }
         }
 
-        private ACTION getNextActionValue()
+        private ACTION? getNextActionValue()
         {
-            return (ACTION)getNextAction();
+            return (ACTION?)getNextAction();
         }
 
         private void processActions()
         {
-            ACTION a = getNextActionValue();
+            ACTION? a = getNextActionValue();
 
-            while (a != ACTION.NONE)
+            while (a.HasValue)
             {
                 if (a == ACTION.MOVELEFT)
-                    m_dfForceMag -= 1;
+                    m_dfForceMag = -10;
                 if (a == ACTION.MOVERIGHT)
-                    m_dfForceMag += 1;
+                    m_dfForceMag = 10;
 
                 a = getNextActionValue();
             }
