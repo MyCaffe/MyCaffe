@@ -10,7 +10,7 @@ layer
    }
    transform_param 
    {
-      scale: 1
+      color_order: RGB
    }
    memory_data_param 
    {
@@ -18,28 +18,9 @@ layer
       channels: 4
       height: 1
       width: 1
-      label_type: NONE
-   }
-}
-layer 
-{
-   name: "data"
-   type: "MemoryData"
-   top: "data"
-   include 
-   {
-      phase: TEST
-   }
-   transform_param 
-   {
-      scale: 1
-   }
-   memory_data_param 
-   {
-      batch_size: 12
-      channels: 4
-      height: 1
-      width: 1
+      label_channels: 1
+      label_height: 1
+      label_width: 1
       label_type: NONE
    }
 }
@@ -78,8 +59,8 @@ layer
 }
 layer 
 {
-   name: "relu1"
-   type: "ReLU"
+   name: "elu1"
+   type: "ELU"
    bottom: "x"
    top: "x"
 }
@@ -101,7 +82,7 @@ layer
    }
    inner_product_param 
    {
-      num_output: 3
+      num_output: 2
       bias_term: True
       weight_filler 
       {
@@ -158,8 +139,8 @@ layer
 }
 layer 
 {
-   name: "relu2"
-   type: "ReLU"
+   name: "elu2"
+   type: "ELU"
    bottom: "v1"
    top: "v1"
 }
@@ -206,6 +187,6 @@ layer
    loss_weight: 1
    loss_param 
    {
-      normalization: BATCH_SIZE
+      normalization: VALID
    }
 }
