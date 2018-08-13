@@ -35,6 +35,11 @@ namespace MyCaffe.gym
             return DatasetDescriptor.Deserialize(rgDs);
         }
 
+        public Dictionary<string, int> GetActionSpace()
+        {
+            return m_igym.GetActionSpace();
+        }
+
         public string Name
         {
             get {return m_igym.GetName(); }
