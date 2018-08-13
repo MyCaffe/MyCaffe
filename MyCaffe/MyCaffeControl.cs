@@ -274,6 +274,15 @@ namespace MyCaffe
         }
 
         /// <summary>
+        /// Enable/disable testing.  For example reinforcement learning does not use testing.
+        /// </summary>
+        public bool EnableTesting
+        {
+            get { return m_solver.EnableTesting; }
+            set { m_solver.EnableTesting = value; }
+        }
+
+        /// <summary>
         /// Unload the currently loaded project, if any.
         /// </summary>
         public void Unload(bool bUnloadImageDb = true)
