@@ -133,7 +133,7 @@ namespace MyCaffe.test
 
         public void TrainCartPole(bool bShowUi, TRAINING_MODE mode)
         {
-            int nIterations = 10000;
+            int nIterations = 100000;
             m_log.WriteHeader("Test Training Cart-Pole for " + nIterations.ToString("N0") + " iterations.");
             MyCaffeGymClient gym = new MyCaffeGymClient();
             MyCaffeControl<float> mycaffe = new MyCaffeControl<float>(m_settings, m_log, m_evtCancel);
@@ -146,14 +146,17 @@ namespace MyCaffe.test
             // Open the Cart-Pole gym.
             gym.Open("Cart Pole", true, bShowUi);
             // Train the network using the custom trainer
-            //  - random exploration 20% of the time to select actions at random.
-            //  - max global episodes = 10000 (this is the count for the main episode processing loop)
+            //  - Iterations (max global episodes) = 100000 (this is the count for the main episode processing loop)
             //  - max episode steps = 200 (this is the count for the inner episode building loop)
             //     NOTE: the mini-batch size specifed in the project memory data layer as 'batch_size' must be
             //           less than or equal to the episode steps.
-            //  - gamma for discount factory
+            //  - initial random exploration 30% of the time to select actions at random.
+            //  - number of episodes (100) before stepping down the random exploration rate.
+            //  - the step-down factor (0.75) multiplied by the random exploration rate on each step down.
+            //  - gamma for discount factor
             //  - beta for percentage of entropy to use.
-            trainer.Initialize("ExplorationPercent=0.2;MaxEpisodeSteps=200;Gamma=0.9;Beta=0.01;GPUID=1,2", mode);
+            //  - GPUID - only the first GPUID is used when in A2C mode.
+            trainer.Initialize("MaxEpisodeSteps=200;ExplorationPercent=0.0;GlobalExplorationStep=100;ExplorationStepDownFactor=0.75;Gamma=0.9;Beta=0.01;GPUID=0", mode);
             trainer.Train(mycaffe, m_log, m_evtCancel, nIterations);
             trainer.CleanUp();
             // Close the gym.
@@ -217,11 +220,14 @@ namespace MyCaffe.test
                 m_gym.Reset();
 
             if (e.Action >= 0)
+            {
                 m_gym.Run(e.Action);
+                Thread.Sleep(10);
+            }
 
             Observation obs = m_gym.GetObservation();
 
-            e.State = new StateBase(3);
+            e.State = new StateBase(m_gym.GetActionSpace().Count());
             e.State.Reward = obs.Reward;
             e.State.Data = new SimpleDatum(true, obs.State.Count(), 1, 1, -1, DateTime.Now, null, obs.State.ToList(), 0, false, 0);
             e.State.Done = obs.Done;
