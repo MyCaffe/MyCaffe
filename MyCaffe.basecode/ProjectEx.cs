@@ -387,6 +387,20 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Get a setting from the solver descriptor as a boolean value.
+        /// </summary>
+        /// <param name="strParam">Specifies the setting to retrieve.</param>
+        /// <returns>The setting is returned as a bool if found, otherwise <i>null</i> is returned.</returns>
+        public bool? GetSolverSettingAsBool(string strParam)
+        {
+            string strVal = GetSolverSetting(strParam);
+            if (strVal == null)
+                return null;
+
+            return bool.Parse(strVal);
+        }
+
+        /// <summary>
         /// Get/set the Caffe setting to use with the Project.
         /// </summary>
         public SettingsCaffe Settings
