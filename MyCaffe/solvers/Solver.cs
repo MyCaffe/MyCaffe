@@ -1167,7 +1167,7 @@ namespace MyCaffe.solvers
                     dfTotalAccuracy += Test(nIterationOverride, 0);
             }
 
-            double dfAccuracy = dfTotalAccuracy / m_rgTestNets.Count;
+            double dfAccuracy = (m_rgTestNets.Count > 0) ? dfTotalAccuracy / m_rgTestNets.Count : 0;
 
             if (OnTestingIteration != null)
             {
