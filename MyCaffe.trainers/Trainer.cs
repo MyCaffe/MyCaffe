@@ -76,6 +76,8 @@ namespace MyCaffe.trainers
         bool m_bSoftMaxSetup = false;
         bool m_bCrossEntropySetup = false;
         double m_dfExplorationPct = 0.2;
+        int m_nGlobalEpExplorationStep = 100;
+        double m_dfExplorationStepDownFactor = 0.75;
 
         /// <summary>
         /// The OnIntialize event fires when initializing the trainer.
@@ -118,6 +120,21 @@ namespace MyCaffe.trainers
             m_nMaxEpisodeSteps = m_properties.GetPropertyAsInt("MaxEpisodeSteps", 200);
             m_dfGamma = m_properties.GetPropertyAsDouble("Gamma", 0.99);
             m_dfBeta = m_properties.GetPropertyAsDouble("Beta", 0.01);
+            m_nGlobalEpExplorationStep = m_properties.GetPropertyAsInt("GlobalExplorationStep", 100);
+            m_dfExplorationStepDownFactor = m_properties.GetPropertyAsDouble("ExplorationStepDownFactor", 0.75);
+
+            int? nTestIter = m_caffe.CurrentProject.GetSolverSettingAsInt("test_iter");
+            m_log.CHECK(!nTestIter.HasValue, "There should be not 'test_iter' to turn off testing.");
+
+            int? nVal = m_caffe.CurrentProject.GetSolverSettingAsInt("test_interval");
+            if (nVal.HasValue)
+                m_log.CHECK_EQ(nVal.Value, 0, "The solver 'test_interval' must be 0 to turn off testing.");
+
+            bool? bVal = m_caffe.CurrentProject.GetSolverSettingAsBool("test_initialization");
+            if (bVal.HasValue)
+                m_log.CHECK(!bVal.Value, "The solver 'test_initialization' must be False to turn off testing.");
+
+            m_caffe.EnableTesting = false;
 
             m_log.CHECK_GT(m_nMaxEpisodeSteps, 0, "The maximum episode steps (" + m_nMaxEpisodeSteps.ToString() + ") must be greater than zero.");
             m_log.CHECK_LT(m_nMiniBatchSize, m_nMaxEpisodeSteps, "The mini-batch size (" + m_nMiniBatchSize.ToString() + ") must be less than or equal to the MaxEpisodeSteps(" + m_nMaxEpisodeSteps.ToString() + ")");
@@ -250,14 +267,6 @@ namespace MyCaffe.trainers
                 throw new Exception("Coult not find a MemoryLossLayer in the training net!");
 
             memLoss.OnGetLoss += MemLoss_OnGetLoss;
-
-            net = local.GetInternalNet(Phase.TEST);
-            memLoss = getLayer(net, LayerParameter.LayerType.MEMORY_LOSS) as MemoryLossLayer<T>;
-
-            if (memLoss == null)
-                throw new Exception("Coult not find a MemoryLossLayer in the test net!");
-
-            memLoss.OnGetLoss += MemLoss_OnGetLoss;
         }
 
         /// <summary>
@@ -313,6 +322,15 @@ namespace MyCaffe.trainers
                     m_log.Progress = dfPct;
                     m_log.WriteLine("Episode processing loop at " + dfPct.ToString("P") + "...");
                     sw.Restart();
+                }
+
+                if (nGlobalEp % m_nGlobalEpExplorationStep == 0 && nGlobalEp > 0 && m_dfExplorationPct != 0)
+                {
+                    m_dfExplorationPct *= m_dfExplorationStepDownFactor;
+                    Trace.WriteLine("Exploration rate = " + m_dfExplorationPct.ToString("P"));
+
+                    if (m_dfExplorationPct < 0.001)
+                        m_dfExplorationPct = 0;
                 }
 
                 m_memory = new Memory<T>();
@@ -676,7 +694,6 @@ namespace MyCaffe.trainers
             if (mem.Count == 1 && mem[0].State.Done)
                 return false;
 
-            setBatchSize(mycaffe, Phase.TEST, nBatchSize);
             MemoryDataLayer<T> memData = setBatchSize(mycaffe, Phase.TRAIN, nBatchSize, true);
             List<Datum> rgData = new List<Datum>();
 
