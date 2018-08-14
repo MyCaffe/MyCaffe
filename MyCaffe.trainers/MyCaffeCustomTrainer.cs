@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MyCaffe.basecode;
+using MyCaffe.basecode.descriptors;
 using MyCaffe.common;
 
 namespace MyCaffe.trainers
@@ -18,7 +19,7 @@ namespace MyCaffe.trainers
         /// <summary>
         /// Specifies the training mode to use (A2C = single trainer), (A3C = multi trainer).
         /// </summary>
-        protected TRAINING_MODE m_trainingMode = TRAINING_MODE.A2C;
+        protected TRAINING_MODE m_trainingMode = TRAINING_MODE.SINGLE_INSTANCE;
         /// <summary>
         /// Random number generator used to get initial actions, etc.
         /// </summary>
@@ -41,6 +42,7 @@ namespace MyCaffe.trainers
         protected int m_nMaxGlobalEpisodes = 0;
         object m_syncGlobalEpisodeCount = new object();
         object m_syncGlobalRewards = new object();
+        IxTrainer m_itrainer = null;
 
         /// <summary>
         /// The constructor.
@@ -72,6 +74,23 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
+        /// Override when using a training method other than the REINFORCEMENT method (the default).
+        /// </summary>
+        protected virtual TRAINING_CATEGORY category
+        {
+            get { return TRAINING_CATEGORY.REINFORCEMENT; }
+        }
+
+        /// <summary>
+        /// Returns a dataset override to use (if any) instead of the project's dataset.  If there is no dataset override
+        /// <i>null</i> is returned and the project's dataset is used.
+        /// </summary>
+        protected virtual DatasetDescriptor dataset_override
+        {
+            get { return null; }
+        }
+
+        /// <summary>
         /// Optionally overridden to return a new type of trainer.
         /// </summary>
         /// <remarks>
@@ -87,8 +106,9 @@ namespace MyCaffe.trainers
         {
             MyCaffeControl<double> mycaffe = caffe as MyCaffeControl<double>;
 
-            if (m_trainingMode == TRAINING_MODE.A2C)
+            if (m_trainingMode == TRAINING_MODE.SINGLE_INSTANCE)
             {
+                m_nMaxGlobalEpisodes = mycaffe.CurrentProject.GetSolverSettingAsInt("max_iter").GetValueOrDefault(0);
                 Trainer<double> trainer = new Trainer<double>(mycaffe, log, evtCancel, m_properties, m_trainingMode, nGpuID, nIndex);
                 trainer.OnInitialize += Trainer_OnInitialize;
                 trainer.OnGetData += Trainer_OnGetData;
@@ -118,8 +138,9 @@ namespace MyCaffe.trainers
         {
             MyCaffeControl<float> mycaffe = caffe as MyCaffeControl<float>;
 
-            if (m_trainingMode == TRAINING_MODE.A2C)
+            if (m_trainingMode == TRAINING_MODE.SINGLE_INSTANCE)
             {
+                m_nMaxGlobalEpisodes = mycaffe.CurrentProject.GetSolverSettingAsInt("max_iter").GetValueOrDefault(0);
                 Trainer<float> trainer = new Trainer<float>(mycaffe, log, evtCancel, m_properties, m_trainingMode, nGpuID, nIndex);
                 trainer.OnInitialize += Trainer_OnInitialize;
                 trainer.OnGetData += Trainer_OnGetData;
@@ -172,6 +193,23 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
+        /// Returns the training category of the custom trainer (default = REINFORCEMENT).
+        /// </summary>
+        public TRAINING_CATEGORY TrainingCategory
+        {
+            get { return category; }
+        }
+
+        /// <summary>
+        /// Returns a dataset override to use (if any) instead of the project's dataset.  If there is no dataset override
+        /// <i>null</i> is returned and the project's dataset is used.
+        /// </summary>
+        public DatasetDescriptor DatasetOverride
+        {
+            get { return dataset_override; }
+        }
+
+        /// <summary>
         /// Returns whether or not Training is supported.
         /// </summary>
         public bool IsTrainingSupported
@@ -202,8 +240,21 @@ namespace MyCaffe.trainers
         /// <param name="mode">Specifies the training mode to use A2C (single mode) or A3C (multi mode).</param>
         public void Initialize(string strProperties, TRAINING_MODE mode)
         {
-            m_trainingMode = mode;
             m_properties = new PropertySet(strProperties);
+
+            if (mode == TRAINING_MODE.USE_PROPERTIES)
+            {
+                mode = TRAINING_MODE.SINGLE_INSTANCE;
+                string strGpu = m_properties.GetProperty("GPUID", false);
+                if (strGpu != null)
+                {
+                    string[] rgID = strGpu.Split(',');
+                    if (rgID.Length > 1)
+                        mode = TRAINING_MODE.MULTI_INSTANCE;
+                }
+            }
+
+            m_trainingMode = mode;
         }
 
         /// <summary>
@@ -234,23 +285,44 @@ namespace MyCaffe.trainers
         /// <param name="log">Specifies the output log.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nIterationOverride">Specifies the iterations to run if greater than zero.</param>
-        public void Train(Component mycaffe, Log log, CancelEvent evtCancel, int nIterationOverride)
+        /// <param name="step">Optionally, specifies whether or not to step the training for debugging (default = NONE).</param>
+        public void Train(Component mycaffe, Log log, CancelEvent evtCancel, int nIterationOverride, TRAIN_STEP step = TRAIN_STEP.NONE)
         {
-            IxTrainer itrainer;
-
-            m_nMaxGlobalEpisodes = nIterationOverride;
             m_nGlobalEpisodeCount = 0;
             m_dfGlobalRewards = 0;
 
-            if (mycaffe is MyCaffeControl<double>)
-                itrainer = create_trainerD(mycaffe, log, evtCancel);
-            else
-                itrainer = create_trainerF(mycaffe, log, evtCancel);
+            if (step == TRAIN_STEP.NONE)
+            {
+                if (m_itrainer != null)
+                {
+                    ((IDisposable)m_itrainer).Dispose();
+                    m_itrainer = null;
+                }
+            }
 
-            itrainer.Initialize();
-            itrainer.Train(nIterationOverride);
-            ((IDisposable)itrainer).Dispose();
+            if (m_itrainer == null)
+            {
+                if (mycaffe is MyCaffeControl<double>)
+                    m_itrainer = create_trainerD(mycaffe, log, evtCancel);
+                else
+                    m_itrainer = create_trainerF(mycaffe, log, evtCancel);
+
+                m_itrainer.Initialize();
+            }
+
+            if (nIterationOverride > 0)
+                m_nMaxGlobalEpisodes = nIterationOverride;
+
+            m_itrainer.Train(nIterationOverride, step);
+
+            if (step == TRAIN_STEP.NONE)
+            {
+                ((IDisposable)m_itrainer).Dispose();
+                m_itrainer = null;
+            }
         }
+
+        #endregion
 
         private void Trainer_OnInitialize(object sender, InitializeArgs e)
         {
@@ -298,7 +370,5 @@ namespace MyCaffe.trainers
         {
             get { return m_nGlobalEpisodeCount; }
         }
-
-        #endregion
     }
 }

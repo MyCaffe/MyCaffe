@@ -53,7 +53,7 @@ namespace MyCaffe.trainers
         /// <summary>
         /// Specifies the operating mode A2C (single-trainer) or A3C (multi-trainer)
         /// </summary>
-        protected TRAINING_MODE m_mode = TRAINING_MODE.A2C;
+        protected TRAINING_MODE m_mode = TRAINING_MODE.SINGLE_INSTANCE;
         private Random m_random;
         private double m_dfGamma; // discount factor
         private double m_dfBeta; // percent of entropy to use.
@@ -78,6 +78,7 @@ namespace MyCaffe.trainers
         double m_dfExplorationPct = 0.2;
         int m_nGlobalEpExplorationStep = 100;
         double m_dfExplorationStepDownFactor = 0.75;
+        bool m_bEnableLogDuringTraining = false;
 
         /// <summary>
         /// The OnIntialize event fires when initializing the trainer.
@@ -106,7 +107,7 @@ namespace MyCaffe.trainers
         /// <param name="mode">Optionally, specifies either the A2C (single trainer) or A3C (multi-trainer) mode.</param>
         /// <param name="nGpuID">Optionally, specifies the GPU to use (default = 0)</param>
         /// <param name="nIndex">Optionally, specifies the index of this trainer.</param>
-        public Trainer(MyCaffeControl<T> mycaffe, Log log, CancelEvent evtCancel, PropertySet properties, TRAINING_MODE mode = TRAINING_MODE.A2C, int nGpuID = 0, int nIndex = 0)
+        public Trainer(MyCaffeControl<T> mycaffe, Log log, CancelEvent evtCancel, PropertySet properties, TRAINING_MODE mode = TRAINING_MODE.SINGLE_INSTANCE, int nGpuID = 0, int nIndex = 0)
         {
             m_nIndex = nIndex;
             m_random = new Random();
@@ -122,6 +123,8 @@ namespace MyCaffe.trainers
             m_dfBeta = m_properties.GetPropertyAsDouble("Beta", 0.01);
             m_nGlobalEpExplorationStep = m_properties.GetPropertyAsInt("GlobalExplorationStep", 100);
             m_dfExplorationStepDownFactor = m_properties.GetPropertyAsDouble("ExplorationStepDownFactor", 0.75);
+            m_bEnableLogDuringTraining = m_properties.GetPropertyAsBool("EnableLogOnTraining", false);
+
 
             int? nTestIter = m_caffe.CurrentProject.GetSolverSettingAsInt("test_iter");
             m_log.CHECK(!nTestIter.HasValue, "There should be not 'test_iter' to turn off testing.");
@@ -232,7 +235,7 @@ namespace MyCaffe.trainers
                 m_crossentropy = null;
             }
 
-            if (m_mode == TRAINING_MODE.A3C)
+            if (m_mode == TRAINING_MODE.MULTI_INSTANCE)
             {
                 m_local.Dispose();
                 m_local = null;
@@ -254,7 +257,7 @@ namespace MyCaffe.trainers
             local = m_caffe;
             global = null;
 
-            if (mode == TRAINING_MODE.A3C)
+            if (mode == TRAINING_MODE.MULTI_INSTANCE)
             {
                 global = m_caffe;
                 local = global.Clone(nGpuID);
@@ -284,12 +287,23 @@ namespace MyCaffe.trainers
             return true;
         }
 
+        /// <summary>
+        /// Run a test cycle - currently not supported with reinforcement learning.
+        /// </summary>
+        /// <param name="nIterations">Specifies the number of iterations to test.</param>
+        /// <returns>Returns <i>false</i> for testing is currently not supported.</returns>
         public bool Test(int nIterations)
         {
             return false;
         }
 
-        public bool Train(int nIterations)
+        /// <summary>
+        /// Train the network using the A2C method of training.
+        /// </summary>
+        /// <param name="nIterations">Specifies the number of global iterations to run.</param>
+        /// <param name="step">Specifies whether or not we are stepping for debugging.</param>
+        /// <returns>Returns <i>true</i>.</returns>
+        public bool Train(int nIterations, TRAIN_STEP step)
         {
             verifyEvents();
 
@@ -377,10 +391,14 @@ namespace MyCaffe.trainers
                         // train one iteration on the memory data items.
                         if (addInputData(m_local, m_memory, m_nMiniBatchSize))
                         {
-                            m_log.Enable = false;
-                            m_local.Train(1, 0, TRAIN_STEP.NONE, m_dfLocalLearningRate);                           
+                            if (!m_bEnableLogDuringTraining)
+                                m_log.Enable = false;
+
+                            m_local.Train(1, 0, step, m_dfLocalLearningRate);                           
                             setBatchSize(m_local, Phase.TRAIN, m_nMiniBatchSize);
-                            m_log.Enable = true;
+
+                            if (!m_bEnableLogDuringTraining)
+                                m_log.Enable = true;
                         }
 
                         m_memory = new Memory<T>();
@@ -407,6 +425,9 @@ namespace MyCaffe.trainers
 
                 OnGetGlobalEpisodeCount(this, globalEpCount);
                 nGlobalEp = globalEpCount.GlobalEpisodeCount;
+
+                if (step != TRAIN_STEP.NONE)
+                    break;
             }
 
             return true;
@@ -497,6 +518,14 @@ namespace MyCaffe.trainers
             e.Loss = dfTotalLoss;
         }
 
+        /// <summary>
+        /// Calculate the log of the probability of an action occuring given the probability distribution provided in 'blobDist'
+        /// </summary>
+        /// <param name="blobDist">Specifies the batch of probability distributions for the actions.</param>
+        /// <param name="rgActions">Specifies the batch of action values.</param>
+        /// <param name="nValCount">Specifies the number of of batches.</param>
+        /// <param name="nActionCount">Specifies the number of actions per batch item.</param>
+        /// <returns></returns>
         private T[] log_prob(Blob<T> blobDist, T[] rgActions, int nValCount, int nActionCount)
         {
             float[] rgDist = Utility.ConvertVecF<T>(blobDist.update_cpu_data());
@@ -664,7 +693,7 @@ namespace MyCaffe.trainers
 
         private void updateGlobalNet(MyCaffeControl<T> global, MyCaffeControl<T> local, int nIteration)
         {
-            if (m_mode == TRAINING_MODE.A2C)
+            if (m_mode == TRAINING_MODE.SINGLE_INSTANCE)
                 return;
 
             global.CopyGradientsFrom(local);
