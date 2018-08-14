@@ -78,6 +78,7 @@ namespace MyCaffe.basecode
         /// <param name="bError">Specfifies whether or not the output text represents an error (default = false).</param>
         public void WriteLine(string str, bool bOverrideEnabled = false, bool bHeader = false, bool bError = false)
         {
+            // Check for enabled and not overridden
             if (!m_bEnable && !bOverrideEnabled)
                 return;
 
