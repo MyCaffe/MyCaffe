@@ -1,4 +1,6 @@
 ﻿using MyCaffe.basecode;
+using MyCaffe.basecode.descriptors;
+using MyCaffe.common;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,18 +11,38 @@ using System.Threading.Tasks;
 namespace MyCaffe.trainers
 {
     /// <summary>
+    /// Defines the category of training.
+    /// </summary>
+    public enum TRAINING_CATEGORY
+    {
+        /// <summary>
+        /// Defines a purely custom training method.
+        /// </summary>
+        CUSTOM,
+        /// <summary>
+        /// Defines the reinforcement training method such as A2C or A3C.
+        /// </summary>
+        REINFORCEMENT
+    }
+
+    /// <summary>
     /// Defines the operating mode.
     /// </summary>
     public enum TRAINING_MODE
     {
         /// <summary>
-        /// Run in A2C mode where there is only one trainer and the MyCaffeControl passed in acts as the local net.
+        /// Determines the training mode based on the properties used.  If only one GPU is used, the SINGLE_INSTANCE mode is used,
+        /// otherwise the MULTI_INSTANCE mode is used for multi-gpu configurations.
         /// </summary>
-        A2C,
+        USE_PROPERTIES,
         /// <summary>
-        /// Run in A3C mode where there are multiple trainers and the MyCaffeControl passed in acts as the global net.
+        /// Run in singlemode where there is only one trainer and the MyCaffeControl passed in acts as the local net.
         /// </summary>
-        A3C
+        SINGLE_INSTANCE,
+        /// <summary>
+        /// Run in multi-mode where there are multiple trainers and the MyCaffeControl passed in acts as the global net.
+        /// </summary>
+        MULTI_INSTANCE
     }
 
     /// <summary>
@@ -45,6 +67,15 @@ namespace MyCaffe.trainers
         /// </summary>
         string Name { get; }
         /// <summary>
+        /// Returns the training category supported by the implementer of the interface.
+        /// </summary>
+        TRAINING_CATEGORY TrainingCategory { get; }
+        /// <summary>
+        /// Returns a dataset override to use (if any) instead of the project's dataset.  If there is no dataset override
+        /// <i>null</i> is returned and the project's dataset is used.
+        /// </summary>
+        DatasetDescriptor DatasetOverride { get; }
+        /// <summary>
         /// Returns <i>true</i> when the 'Train' method is supported - this should almost always be <i>true</i>. 
         /// </summary>
         bool IsTrainingSupported { get; }
@@ -59,7 +90,8 @@ namespace MyCaffe.trainers
         /// <param name="log">Specifies the output Log object.</param>
         /// <param name="evtCancel">Specifies the cancel event used to halt training.</param>
         /// <param name="nIterationOverride">Specifies the iteration override if any.</param>
-        void Train(Component mycaffe, Log log, CancelEvent evtCancel, int nIterationOverride);
+        /// <param name="step">Specifies whether or not to step the training for debugging.</param>
+        void Train(Component mycaffe, Log log, CancelEvent evtCancel, int nIterationOverride, TRAIN_STEP step);
         /// <summary>
         /// Test the network using the testing technique implemented by this trainer.
         /// </summary>
@@ -84,8 +116,9 @@ namespace MyCaffe.trainers
         /// Train the network.
         /// </summary>
         /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <param name="step">Specifies whether or not to step the training for debugging.</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> on failure.</returns>
-        bool Train(int nIterations);
+        bool Train(int nIterations, TRAIN_STEP step);
         /// <summary>
         /// Test the newtork.
         /// </summary>
