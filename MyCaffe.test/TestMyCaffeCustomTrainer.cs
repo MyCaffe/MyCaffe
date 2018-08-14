@@ -28,7 +28,7 @@ namespace MyCaffe.test
             {
                 foreach (IMyCaffeCustomTrainerTest t in test.Tests)
                 {
-                    t.TrainCartPole(true, TRAINING_MODE.A2C);
+                    t.TrainCartPole(true, TRAINING_MODE.SINGLE_INSTANCE);
                 }
             }
             finally
@@ -46,7 +46,7 @@ namespace MyCaffe.test
             {
                 foreach (IMyCaffeCustomTrainerTest t in test.Tests)
                 {
-                    t.TrainCartPole(false, TRAINING_MODE.A2C);
+                    t.TrainCartPole(false, TRAINING_MODE.SINGLE_INSTANCE);
                 }
             }
             finally
@@ -64,7 +64,7 @@ namespace MyCaffe.test
             {
                 foreach (IMyCaffeCustomTrainerTest t in test.Tests)
                 {
-                    t.TrainCartPole(true, TRAINING_MODE.A3C);
+                    t.TrainCartPole(true, TRAINING_MODE.MULTI_INSTANCE);
                 }
             }
             finally
@@ -82,7 +82,7 @@ namespace MyCaffe.test
             {
                 foreach (IMyCaffeCustomTrainerTest t in test.Tests)
                 {
-                    t.TrainCartPole(false, TRAINING_MODE.A3C);
+                    t.TrainCartPole(false, TRAINING_MODE.MULTI_INSTANCE);
                 }
             }
             finally
@@ -139,14 +139,18 @@ namespace MyCaffe.test
             MyCaffeControl<float> mycaffe = new MyCaffeControl<float>(m_settings, m_log, m_evtCancel);
             MyCaffeCartPoleTrainer trainer = new MyCaffeCartPoleTrainer(gym);
             ProjectEx project = getReinforcementProject(gym, nIterations);
+            DatasetDescriptor ds = trainer.DatasetOverride;
+
+            m_log.CHECK(ds != null, "The MyCaffeCartPoleTrainer should return its dataset override returned by the Gym that it uses.");
 
             // load the project to train (note the project must use the MemoryDataLayer for input).
-            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false);
+            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, (ds == null) ? true : false);
 
             // Open the Cart-Pole gym.
             gym.Open("Cart Pole", true, bShowUi);
             // Train the network using the custom trainer
             //  - Iterations (max global episodes) = 100000 (this is the count for the main episode processing loop)
+            //  - enable log during training = false (only show custom trainer output)
             //  - max episode steps = 200 (this is the count for the inner episode building loop)
             //     NOTE: the mini-batch size specifed in the project memory data layer as 'batch_size' must be
             //           less than or equal to the episode steps.
@@ -156,7 +160,7 @@ namespace MyCaffe.test
             //  - gamma for discount factor
             //  - beta for percentage of entropy to use.
             //  - GPUID - only the first GPUID is used when in A2C mode.
-            trainer.Initialize("MaxEpisodeSteps=200;ExplorationPercent=0.0;GlobalExplorationStep=100;ExplorationStepDownFactor=0.75;Gamma=0.9;Beta=0.01;GPUID=0", mode);
+            trainer.Initialize("EnableLogOnTraining=False;MaxEpisodeSteps=200;ExplorationPercent=0.0;GlobalExplorationStep=100;ExplorationStepDownFactor=0.75;Gamma=0.9;Beta=0.01;GPUID=0", mode);
             trainer.Train(mycaffe, m_log, m_evtCancel, nIterations);
             trainer.CleanUp();
             // Close the gym.
@@ -202,6 +206,11 @@ namespace MyCaffe.test
         protected override string name
         {
             get { return "Cart Pole Trainer"; }
+        }
+
+        protected override DatasetDescriptor dataset_override
+        {
+            get { return m_gym.GetDataset("Cart Pole"); }
         }
 
         protected override void initialize(InitializeArgs e)
