@@ -5,6 +5,7 @@ using System.Text;
 using System.ComponentModel;
 using MyCaffe.basecode;
 using MyCaffe.common;
+using MyCaffe.param.ui;
 
 namespace MyCaffe.param
 {
@@ -228,6 +229,8 @@ namespace MyCaffe.param
         /// provide the propreties for a customized training process.
         /// </summary>
         [Description("Specifies the custom trainer properties (if any) used by an external process to provide the properties for a customized training.")]
+        [Browsable(true)]
+        [EditorAttribute(typeof(DictionaryParamEditor), typeof(System.Drawing.Design.UITypeEditor))]
         public string custom_trainer_properties
         {
             get { return m_strCustomTrainerProperties; }
