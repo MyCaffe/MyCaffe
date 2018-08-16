@@ -1562,6 +1562,7 @@ __global__ void minmax_kernel(const T* d_data, T* d_min, T* d_max, const size_t 
 
 	sharedMin[tid] = MIN;
 	sharedMax[tid] = MAX;
+	__syncthreads();
 
 	while (gid < n)
 	{
@@ -1571,13 +1572,16 @@ __global__ void minmax_kernel(const T* d_data, T* d_min, T* d_max, const size_t 
 	}
 	__syncthreads();
 
-	gid = (blockDim.x * blockIdx.x) + tid;
 	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1)
 	{
-		if (tid < s && gid < n)
+		if (tid < s)
 		{
-			sharedMin[tid] = min(sharedMin[tid], sharedMin[tid + s]);
-			sharedMax[tid] = max(sharedMax[tid], sharedMax[tid + s]);
+			int nIdx = tid + s;
+			if (nIdx < MAX_SH_MEM)
+			{
+				sharedMin[tid] = min(sharedMin[tid], sharedMin[nIdx]);
+				sharedMax[tid] = max(sharedMax[tid], sharedMax[nIdx]);
+			}
 		}
 
 		__syncthreads();
@@ -1644,10 +1648,10 @@ long Math<T>::minmaxval(int n, long hA, long hWork1, long hWork2, T* pMin, T* pM
 	{
 		while (nCount < n)
 		{
-			if (lErr = cudaMemset(w1, 0, nSize))
+			if (lErr = cudaMemset(w1, 0, nSize * sizeof(T)))
 				return lErr;
 
-			if (lErr = cudaMemset(w2, 0, nSize))
+			if (lErr = cudaMemset(w2, 0, nSize * sizeof(T)))
 				return lErr;
 
 			minmax_kernel<T> << <nBlocks, MAX_SH_MEM >> > (a, w1, w2, nSize, fMin, fMax);
@@ -1658,13 +1662,7 @@ long Math<T>::minmaxval(int n, long hA, long hWork1, long hWork2, T* pMin, T* pM
 			if (lErr = cudaMemcpy(&fMin1, w1, sizeof(T), cudaMemcpyDeviceToHost))
 				return lErr;
 
-			if (lErr = cudaStreamSynchronize(0))
-				return lErr;
-
 			if (lErr = cudaMemcpy(&fMax1, w2, sizeof(T), cudaMemcpyDeviceToHost))
-				return lErr;
-
-			if (lErr = cudaStreamSynchronize(0))
 				return lErr;
 
 			fMinFinal = min(fMinFinal, fMin1);
@@ -1683,13 +1681,7 @@ long Math<T>::minmaxval(int n, long hA, long hWork1, long hWork2, T* pMin, T* pM
 		if (lErr = cudaMemcpy(&fMinFinal, a, sizeof(T), cudaMemcpyDeviceToHost))
 			return lErr;
 
-		if (lErr = cudaStreamSynchronize(0))
-			return lErr;
-
 		if (lErr = cudaMemcpy(&fMaxFinal, a, sizeof(T), cudaMemcpyDeviceToHost))
-			return lErr;
-
-		if (lErr = cudaStreamSynchronize(0))
 			return lErr;
 	}
 
@@ -1714,22 +1706,26 @@ __global__ void naninf_kernel(const T* d_data, T* d_nan, T* d_inf, const size_t 
 
 	sharedNan[tid] = 0;
 	sharedInf[tid] = 0;
+	__syncthreads();
 
 	while (gid < n)
 	{
-		sharedNan[tid] = isnan(d_data[gid]);
-		sharedInf[tid] = isinf(d_data[gid]);
+		sharedNan[tid] += isnan(d_data[gid]);
+		sharedInf[tid] += isinf(d_data[gid]);
 		gid += gridDim.x * blockDim.x;
 	}
 	__syncthreads();
 
-	gid = (blockDim.x * blockIdx.x) + tid;
 	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1)
 	{
-		if (tid < s && gid < n)
+		if (tid < s)
 		{
-			sharedNan[tid] = sharedNan[tid] + sharedNan[tid + s];
-			sharedInf[tid] = sharedInf[tid] + sharedInf[tid + s];
+			int nIdx = tid + s;
+			if (nIdx < MAX_SH_MEM)
+			{
+				sharedNan[tid] = sharedNan[tid] + sharedNan[nIdx];
+				sharedInf[tid] = sharedInf[tid] + sharedInf[nIdx];
+			}
 		}
 
 		__syncthreads();
@@ -1793,10 +1789,10 @@ long Math<T>::naninfval(int n, long hA, long hWork1, long hWork2, T* pNan, T* pI
 	{
 		while (nCount < n)
 		{
-			if (lErr = cudaMemset(w1, 0, nSize))
+			if (lErr = cudaMemset(w1, 0, nSize * sizeof(T)))
 				return lErr;
 
-			if (lErr = cudaMemset(w2, 0, nSize))
+			if (lErr = cudaMemset(w2, 0, nSize * sizeof(T)))
 				return lErr;
 
 			naninf_kernel<T> << <nBlocks, MAX_SH_MEM >> > (a, w1, w2, nSize);
@@ -1807,13 +1803,7 @@ long Math<T>::naninfval(int n, long hA, long hWork1, long hWork2, T* pNan, T* pI
 			if (lErr = cudaMemcpy(&fNan1, w1, sizeof(T), cudaMemcpyDeviceToHost))
 				return lErr;
 
-			if (lErr = cudaStreamSynchronize(0))
-				return lErr;
-
 			if (lErr = cudaMemcpy(&fInf1, w2, sizeof(T), cudaMemcpyDeviceToHost))
-				return lErr;
-
-			if (lErr = cudaStreamSynchronize(0))
 				return lErr;
 
 			fNanFinal += fNan1;
