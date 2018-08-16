@@ -40,8 +40,8 @@ namespace MyCaffe.gym
         Bitmap m_bmp = null;
 
         // Angle at which to fail the episode
-        double m_dfThetaThreshold = 15;
-        double m_dfXThreshold = 2.4;
+        double m_dfThetaThreshold = CartPoleState.MAX_THETA;
+        double m_dfXThreshold = CartPoleState.MAX_X;
 
         Random m_random = new Random();
         CartPoleState m_state = new CartPoleState();
@@ -339,6 +339,9 @@ namespace MyCaffe.gym
         double m_dfTheta = 0;
         double m_dfThetaDot = 0;
 
+        public const double MAX_X = 2.4;
+        public const double MAX_THETA = 15;
+
         public CartPoleState(double dfX = 0, double dfXDot = 0, double dfTheta = 0, double dfThetaDot = 0)
         {
             m_dfX = dfX;
@@ -383,10 +386,10 @@ namespace MyCaffe.gym
         {
             List<double> rg = new List<double>();
 
-            rg.Add(m_dfX);
-            rg.Add(m_dfXDot);
-            rg.Add(m_dfTheta);
-            rg.Add(m_dfThetaDot);
+            rg.Add(m_dfX / MAX_X);
+            rg.Add(m_dfXDot / (MAX_X * 3));
+            rg.Add(m_dfTheta / MAX_THETA);
+            rg.Add(m_dfThetaDot / (MAX_THETA * 3));
 
             return rg.ToArray();
         }
