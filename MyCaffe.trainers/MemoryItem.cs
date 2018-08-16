@@ -61,5 +61,14 @@ namespace MyCaffe.trainers
             get { return m_dfTarget; }
             set { m_dfTarget = value; }
         }
+
+        /// <summary>
+        /// Return a string representation of the MemoryItem.
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return "Action=" + m_nAction.ToString() + " Reward=" + m_dfReward.ToString() + " Target=" + m_dfTarget.ToString();
+        }
     }
 }
