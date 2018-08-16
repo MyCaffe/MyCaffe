@@ -181,10 +181,23 @@
     </Compile>
     <Compile Include="param\BinaryHashParameter.cs" />
     <Compile Include="param\CropParameter.cs" />
+    <Compile Include="param.ui\FormProperty.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="param.ui\FormProperty.Designer.cs">
+      <DependentUpon>FormProperty.cs</DependentUpon>
+    </Compile>
     <Compile Include="param\GradientScaleParameter.cs" />
     <Compile Include="param\MemoryDataParameter.cs" />
     <Compile Include="param\DebugParameter.cs" />
     <Compile Include="param\KnnParameter.cs" />
+    <Compile Include="param.ui\DictionaryParamEditor.cs" />
+    <Compile Include="param.ui\DictionaryParameterEditorControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="param.ui\DictionaryParameterEditorControl.Designer.cs">
+      <DependentUpon>DictionaryParameterEditorControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="param\UnPoolingParameter.cs" />
     <Compile Include="param\SwishParameter.cs" />
     <Compile Include="param\TripletLossParameter.cs" />
@@ -266,6 +279,12 @@
   <ItemGroup>
     <EmbeddedResource Include="MyCaffeControl.resx">
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="param.ui\FormProperty.resx">
+      <DependentUpon>FormProperty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="param.ui\DictionaryParameterEditorControl.resx">
+      <DependentUpon>DictionaryParameterEditorControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
