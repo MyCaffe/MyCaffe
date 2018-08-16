@@ -100,6 +100,18 @@ namespace MyCaffe.trainers
         /// <param name="evtCancel">Specifies the cancel event used to halt training.</param>
         /// <param name="nIterationOverride">Specifies the iteration override if any.</param>
         void Test(Component mycaffe, Log log, CancelEvent evtCancel, int nIterationOverride);
+        /// <summary>
+        /// Returns the global rewards.
+        /// </summary>
+        double GlobalRewards { get; }
+        /// <summary>
+        /// Returns the global episode count.
+        /// </summary>
+        int GlobalEpisodeCount { get; }
+        /// <summary>
+        /// Returns the current exploration rate.
+        /// </summary>
+        double ExplorationRate { get; }
     }
 
     /// <summary>

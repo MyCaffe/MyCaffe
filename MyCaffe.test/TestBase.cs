@@ -93,7 +93,6 @@ namespace MyCaffe.test
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestDeconvolutionLayer", "TestNDAgainst2D", "SKIPPED - Values - 8.11466598510742 and - 35.0204658508301 are NOT within the range 0.01 of one another.The backward 2D and ND values at 0 should be equal!"));
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestDeconvolutionLayer", "TestGradient3D", "SKIPPED - Values 1.7575769 and 0 are NOT within the range 0.001757569 of one another."));
 
-//                rgKnownFailures.Add(new Tuple<string, string, string>("TestDeconvolutionLayer", "TestNDAgainst2DCuDnn", "SKIPPED - currently causes a CUDA map buffer object failure (14) error on some GPU's.  This appears to corrupt the GPU for all subsequent tests fail with CUDA Missing Configuration (1) errors."));
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestDeconvolutionLayer", "TestGradient3DCuDnn", "SKIPPED - Values 1.7575769 and 0 are NOT within the range 0.001757569 of one another."));
 
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestSigmoidCrossEntropyLossLayer", "TestForward", "SKIPPED - Values 14.864425 and 3.398046 are NOT within the range 0.01 of one another."));
@@ -103,6 +102,11 @@ namespace MyCaffe.test
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestReinforcementLossLayer", "TestGradientTerminal", "SKIPPED - The current batch size does not equal the size used to load the data!"));
 
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestNeuronLayer", "TestDropoutGradientCuDnn", "SKIPPED - Values 4 and 52.572381 are not within the range of 0.05257 of one another."));
+
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeCustomTrainer", "TrainA2CCartPoleWithUi", "SKIPPED - work-in progress."));
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeCustomTrainer", "TrainA2CCartPoleWithOutUi", "SKIPPED - work-in progress."));
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeCustomTrainer", "TrainA3CCartPoleWithUi", "SKIPPED - work-in progress."));
+                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeCustomTrainer", "TrainA3CCartPoleWithOutUi", "SKIPPED - work-in progress."));
 
                 return rgKnownFailures;
             }

@@ -43,7 +43,7 @@ namespace MyCaffe.trainers
         object m_syncGlobalEpisodeCount = new object();
         object m_syncGlobalRewards = new object();
         IxTrainer m_itrainer = null;
-
+ 
         /// <summary>
         /// The constructor.
         /// </summary>
@@ -178,6 +178,14 @@ namespace MyCaffe.trainers
         /// <param name="e">Specifies the getData argments used to return the new observations.</param>
         protected virtual void getData(GetDataArgs e)
         {
+        }
+
+        /// <summary>
+        /// Override called to get the current explorationr rate.
+        /// </summary>
+        protected virtual double exploration_rate
+        {
+            get { return 0; }
         }
 
         #endregion
@@ -369,6 +377,14 @@ namespace MyCaffe.trainers
         public int GlobalEpisodeCount
         {
             get { return m_nGlobalEpisodeCount; }
+        }
+
+        /// <summary>
+        /// Returns the current exploration rate.
+        /// </summary>
+        public double ExplorationRate
+        {
+            get { return exploration_rate; }
         }
     }
 }

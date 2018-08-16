@@ -151,16 +151,15 @@ namespace MyCaffe.test
             // Train the network using the custom trainer
             //  - Iterations (max global episodes) = 100000 (this is the count for the main episode processing loop)
             //  - enable log during training = false (only show custom trainer output)
-            //  - max episode steps = 200 (this is the count for the inner episode building loop)
+            //  - max episode steps = 256 (this is the count for the inner episode building loop)
             //     NOTE: the mini-batch size specifed in the project memory data layer as 'batch_size' must be
             //           less than or equal to the episode steps.
-            //  - initial random exploration 30% of the time to select actions at random.
-            //  - number of episodes (100) before stepping down the random exploration rate.
-            //  - the step-down factor (0.75) multiplied by the random exploration rate on each step down.
+            //  - initial random exploration 100% of the time to select actions at random.
+            //  - ending random exploration 10% of the time to select actions at random.
             //  - gamma for discount factor
             //  - beta for percentage of entropy to use.
             //  - GPUID - only the first GPUID is used when in A2C mode.
-            trainer.Initialize("EnableLogOnTraining=False;MaxEpisodeSteps=200;ExplorationPercent=0.0;GlobalExplorationStep=100;ExplorationStepDownFactor=0.75;Gamma=0.9;Beta=0.01;GPUID=0", mode);
+            trainer.Initialize("ShowProgress=False;EnableLogOnTraining=False;MaxEpisodeSteps=256;ExplorationStart=0.4;ExplorationEnd=0.1;Gamma=0.9;Beta=0.01;GPUID=0", mode);
             trainer.Train(mycaffe, m_log, m_evtCancel, nIterations);
             trainer.CleanUp();
             // Close the gym.

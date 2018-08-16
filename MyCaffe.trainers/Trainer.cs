@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace MyCaffe.trainers
 {
     /// <summary>
-    /// The TrainerA2C implements the Advantage, Actor-Critic Reinforcement Learning algorithm.
+    /// The Trainer implements the Advantage, Actor-Critic Reinforcement Learning algorithm.
     /// </summary>
     /// <remarks>
     /// @see 1. [Massively Parallel Methods for Deep Reinforcement Learning](https://arxiv.org/abs/1507.04296) by A. Nair, P. Srinivasan, S. Blackwell, C. Alcicek, R. Fearon, A. De Maria, V. Panneershelvam, M. Suleyman, C. Beattie, S. Petersen, S. Legg, V. Mnih, K. Kavukcuoglu and D. Silver, 2015, arXiv:1507.04296
@@ -51,7 +51,7 @@ namespace MyCaffe.trainers
         /// </summary>
         protected PropertySet m_properties;
         /// <summary>
-        /// Specifies the operating mode A2C (single-trainer) or A3C (multi-trainer)
+        /// Specifies the operating mode single-instance (A2C) or multi-instance (A3C)
         /// </summary>
         protected TRAINING_MODE m_mode = TRAINING_MODE.SINGLE_INSTANCE;
         private Random m_random;
@@ -75,10 +75,10 @@ namespace MyCaffe.trainers
         int m_nLastBatchSize = 0;
         bool m_bSoftMaxSetup = false;
         bool m_bCrossEntropySetup = false;
-        double m_dfExplorationPct = 0.2;
-        int m_nGlobalEpExplorationStep = 100;
-        double m_dfExplorationStepDownFactor = 0.75;
+        double m_dfExplorationStartPct = 1.0;
+        double m_dfExplorationEndPct = 0.0;
         bool m_bEnableLogDuringTraining = false;
+        bool m_bShowProgress = true;
 
         /// <summary>
         /// The OnIntialize event fires when initializing the trainer.
@@ -117,13 +117,13 @@ namespace MyCaffe.trainers
             m_evtCancel = evtCancel;
             m_nMiniBatchSize = m_caffe.CurrentProject.GetBatchSize(Phase.TRAIN);
             m_nLastBatchSize = m_nMiniBatchSize;
-            m_dfExplorationPct = m_properties.GetPropertyAsDouble("ExplorationPercent", 0.2);
+            m_dfExplorationStartPct = m_properties.GetPropertyAsDouble("ExplorationStart", 1);
+            m_dfExplorationEndPct = m_properties.GetPropertyAsDouble("ExplorationEnd", 0);
             m_nMaxEpisodeSteps = m_properties.GetPropertyAsInt("MaxEpisodeSteps", 200);
             m_dfGamma = m_properties.GetPropertyAsDouble("Gamma", 0.99);
             m_dfBeta = m_properties.GetPropertyAsDouble("Beta", 0.01);
-            m_nGlobalEpExplorationStep = m_properties.GetPropertyAsInt("GlobalExplorationStep", 100);
-            m_dfExplorationStepDownFactor = m_properties.GetPropertyAsDouble("ExplorationStepDownFactor", 0.75);
             m_bEnableLogDuringTraining = m_properties.GetPropertyAsBool("EnableLogOnTraining", false);
+            m_bShowProgress = m_properties.GetPropertyAsBool("ShowProgress", true);
 
 
             int? nTestIter = m_caffe.CurrentProject.GetSolverSettingAsInt("test_iter");
@@ -321,6 +321,8 @@ namespace MyCaffe.trainers
             int nEpisodes = 0;
             int nMaxEpisode = 0;
             int nTotalStep = 1;
+            double dfMinReward = double.MaxValue;
+            double dfMaxReward = -double.MaxValue;
 
             //-------------------------------------------------------
             //  The Episode Processing Loop
@@ -330,29 +332,22 @@ namespace MyCaffe.trainers
                 if (m_evtCancel.WaitOne(0))
                     return false;
 
-                if (sw.Elapsed.TotalMilliseconds > 1000)
+                double dfPct = ((double)nGlobalEp / (double)nGlobalEpMax);
+                if (m_bShowProgress && sw.Elapsed.TotalMilliseconds > 1000)
                 {
-                    double dfPct = ((double)nGlobalEp / (double)nGlobalEpMax);
                     m_log.Progress = dfPct;
                     m_log.WriteLine("Episode processing loop at " + dfPct.ToString("P") + "...");
                     sw.Restart();
                 }
 
-                if (nGlobalEp % m_nGlobalEpExplorationStep == 0 && nGlobalEp > 0 && m_dfExplorationPct != 0)
-                {
-                    m_dfExplorationPct *= m_dfExplorationStepDownFactor;
-                    Trace.WriteLine("Exploration rate = " + m_dfExplorationPct.ToString("P"));
-
-                    if (m_dfExplorationPct < 0.001)
-                        m_dfExplorationPct = 0;
-                }
+                double dfExplorationPct = (m_dfExplorationEndPct + (m_dfExplorationStartPct - m_dfExplorationEndPct) * (1.0 - dfPct));
 
                 m_memory = new Memory<T>();
                 double dfEpR = 0;
                 bool bDone = false;
 
                 // Get the initial state.
-                GetDataArgs dataArg = new GetDataArgs(m_local, m_nIndex, true);
+                GetDataArgs dataArg = new GetDataArgs(m_local, m_log, m_nIndex, true, dfExplorationPct);
                 OnGetData(this, dataArg);
                 StateBase state = dataArg.State;
 
@@ -361,9 +356,9 @@ namespace MyCaffe.trainers
                 //---------------------------------------------------
                 for (int t=0; t<m_nMaxEpisodeSteps; t++)
                 {
-                    int nAction = getAction(m_local, state);
+                    int nAction = getAction(m_local, state, dfExplorationPct);
 
-                    dataArg = new GetDataArgs(m_local, m_nIndex, false, nAction);
+                    dataArg = new GetDataArgs(m_local, m_log, m_nIndex, false, dfExplorationPct, nAction);
                     OnGetData(this, dataArg);
                     StateBase newState = dataArg.State;
                     bDone = newState.Done;
@@ -388,17 +383,29 @@ namespace MyCaffe.trainers
                             m_memory[i].Target = dfVs;
                         }
 
-                        // train one iteration on the memory data items.
-                        if (addInputData(m_local, m_memory, m_nMiniBatchSize))
+                        if (dfVs > 0 || m_memory.Count > 1)
                         {
-                            if (!m_bEnableLogDuringTraining)
-                                m_log.Enable = false;
+                            // Reward clipping
+                            dfMinReward = Math.Min(dfMinReward, dfVs);
+                            dfMaxReward = Math.Max(dfMaxReward, dfVs);
 
-                            m_local.Train(1, 0, step, m_dfLocalLearningRate);                           
-                            setBatchSize(m_local, Phase.TRAIN, m_nMiniBatchSize);
+                            for (int i = 0; i < m_memory.Count; i++)
+                            {
+                                m_memory[i].Target = (m_memory[i].Target - dfMinReward) / dfMaxReward;
+                            }
 
-                            if (!m_bEnableLogDuringTraining)
-                                m_log.Enable = true;
+                            // train one iteration on the memory data items.
+                            if (addInputData(m_local, m_memory, m_nMiniBatchSize, bDone))
+                            {
+                                if (!m_bEnableLogDuringTraining)
+                                    m_log.Enable = false;
+
+                                m_local.Train(1, 0, step, m_dfLocalLearningRate);
+                                setBatchSize(m_local, Phase.TRAIN, m_nMiniBatchSize);
+
+                                if (!m_bEnableLogDuringTraining)
+                                    m_log.Enable = true;
+                            }
                         }
 
                         m_memory = new Memory<T>();
@@ -484,11 +491,11 @@ namespace MyCaffe.trainers
             BlobCollection<T> colTop = new BlobCollection<T>();
 
             // Calculate the Advantage 'td'
-            m_blobAdvantage.SetData(m_memory.GetTargets(nValueCount));
-            m_cuda.sub(nValueCount, hAdvantage, hValues, hAdvantage);
+            m_blobAdvantage.SetData(m_memory.GetTargets(nValueCount));  // targets 'v_t'
+            m_cuda.sub(nValueCount, hAdvantage, hValues, hAdvantage);   // td = v_t - values
 
             // Calculate the value loss 'c_loss'
-            m_cuda.powx(nValueCount, hAdvantage, 2.0, hValLoss);
+            m_cuda.powx(nValueCount, hAdvantage, 2.0, hValLoss);        // c_loss = td.pow(2)
 
             // Calculate the policy loss.
             // -- get the policy 'probs' --
@@ -501,18 +508,18 @@ namespace MyCaffe.trainers
                 m_bSoftMaxSetup = true;
             }
 
-            m_softmax.Forward(colBottom, colTop);
+            m_softmax.Forward(colBottom, colTop);                       // probs = softmax(logits)
 
             // -- get the entropy 'exp_v' --
-            T[] rgActions = m_memory.GetActions(nValueCount);
+            T[] rgActions = m_memory.GetActions(nValueCount);           // m = distribution(probs)
             T[] rgLogProb = log_prob(m_blobPolicy, rgActions, nValueCount, nActionCount);
             m_blobEntropy.SetData(rgLogProb);
-            m_cuda.mul(nValueCount, hEntropy, hAdvantage, hEntropy);
+            m_cuda.mul(nValueCount, hEntropy, hAdvantage, hEntropy);    // exp_v = m.log_prob(a) * td
 
             // -- calculate the total loss --
-            m_cuda.sub(nValueCount, hValLoss, hEntropy, hPolicyLoss);
+            m_cuda.sub(nValueCount, hValLoss, hEntropy, hPolicyLoss);   // c_loss - exp_v
             double dfAsum = Utility.ConvertVal<T>(m_blobPolicyLoss.asum_data());
-            double dfTotalLoss = dfAsum / nValueCount; // mean
+            double dfTotalLoss = dfAsum / nValueCount;                  // mean
 
             e.application = MemoryLossLayerGetLossArgs<T>.APPLICATION.AS_LOSS_DIRECTLY;
             e.Loss = dfTotalLoss;
@@ -712,7 +719,7 @@ namespace MyCaffe.trainers
             return null;
         }
 
-        private bool addInputData(MyCaffeControl<T> mycaffe, Memory<T> mem, int nBatchSize)
+        private bool addInputData(MyCaffeControl<T> mycaffe, Memory<T> mem, int nBatchSize, bool bDone)
         {
             if (mem.Count < nBatchSize)
                 nBatchSize = mem.Count;
@@ -720,7 +727,7 @@ namespace MyCaffe.trainers
             if (nBatchSize == 0)
                 return false;
 
-            if (mem.Count == 1 && mem[0].State.Done)
+            if (mem.Count == 1 && (mem[0].State.Done || bDone))
                 return false;
 
             MemoryDataLayer<T> memData = setBatchSize(mycaffe, Phase.TRAIN, nBatchSize, true);
@@ -782,12 +789,12 @@ namespace MyCaffe.trainers
             return dfVal;
         }
 
-        private int getAction(MyCaffeControl<T> mycaffe, StateBase state)
+        private int getAction(MyCaffeControl<T> mycaffe, StateBase state, double dfExplorationPct)
         {
             double dfRandomSelection = m_random.NextDouble();
 
             // -- Exploration --
-            if (dfRandomSelection < m_dfExplorationPct)
+            if (dfRandomSelection < dfExplorationPct)
                 return m_random.Next(state.ActionCount);
 
             // -- Learning --
@@ -914,22 +921,36 @@ namespace MyCaffe.trainers
         int m_nIndex;
         int m_nAction;
         bool m_bReset;
+        double m_dfExplorationPct;
         Component m_caffe;
         StateBase m_state = null;
+        Log m_log = null;
 
         /// <summary>
         /// The constructor.
         /// </summary>
         /// <param name="mycaffe">Specifies the MyCaffeControl used.</param>
+        /// <param name="log">Specifies the output log used.</param>
         /// <param name="nIndex">Specifies the index of the trainer.</param>
         /// <param name="bReset">Specifies to reset the environment.</param>
+        /// <param name="dfExplorationPct">Specifies the current exploration percent.</param>
         /// <param name="nAction">Specifies the action to run.  If less than zero this parameter is ignored.</param>
-        public GetDataArgs(Component mycaffe, int nIndex, bool bReset, int nAction = -1)
+        public GetDataArgs(Component mycaffe, Log log, int nIndex, bool bReset, double dfExplorationPct, int nAction = -1)
         {
             m_nIndex = nIndex;
             m_nAction = nAction;
             m_caffe = mycaffe;
             m_bReset = bReset;
+            m_log = log;
+            m_dfExplorationPct = dfExplorationPct;
+        }
+
+        /// <summary>
+        /// Returns the output log.
+        /// </summary>
+        public Log OutputLog
+        {
+            get { return m_log; }
         }
 
         /// <summary>
@@ -947,6 +968,14 @@ namespace MyCaffe.trainers
         {
             get { return m_state; }
             set { m_state = value; }
+        }
+
+        /// <summary>
+        /// Returns the current exploration rate.
+        /// </summary>
+        public double ExplorationRate
+        {
+            get { return m_dfExplorationPct; }
         }
 
         /// <summary>
