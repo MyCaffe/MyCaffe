@@ -1,14 +1,15 @@
-﻿using MyCaffe.basecode;
-using MyCaffe.common;
-using MyCaffe.layers;
-using MyCaffe.param;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using MyCaffe.basecode;
+using MyCaffe.common;
+using MyCaffe.layers;
+using MyCaffe.param;
 
 namespace MyCaffe.trainers
 {
@@ -16,69 +17,20 @@ namespace MyCaffe.trainers
     /// The Trainer implements the Advantage, Actor-Critic Reinforcement Learning algorithm.
     /// </summary>
     /// <remarks>
-    /// @see 1. [Massively Parallel Methods for Deep Reinforcement Learning](https://arxiv.org/abs/1507.04296) by A. Nair, P. Srinivasan, S. Blackwell, C. Alcicek, R. Fearon, A. De Maria, V. Panneershelvam, M. Suleyman, C. Beattie, S. Petersen, S. Legg, V. Mnih, K. Kavukcuoglu and D. Silver, 2015, arXiv:1507.04296
-    /// @see 2. [Asynchronous Methods for Deep Reinforcement Learning](https://arxiv.org/abs/1602.01783) by V. Mnih, A. P. Badia, M. Mirza, A. Graves, T. P. Lillicrap, D. Silver and K. Kavukcuoglu, 2016, arXiv:1602.01783
-    /// @see 3. [GitHub: (A3C) universe-starter-agent](https://github.com/openai/universe-starter-agent) by OpenAi, 2016, GitHub
-    /// @see 4. [Simple Reinforcement Learning with Tensorflow Part 8: Asynchronous Actor-Critic Agents (A3C)](https://medium.com/emergent-future/simple-reinforcement-learning-with-tensorflow-part-8-asynchronous-actor-critic-agents-a3c-c88f72a5e9f2) by Arthur Juliani, 2016, Medium 
-    /// @see 5. [GitHub: Simple implementation of Reinforcement Learning (A3C) using Pytorch](https://github.com/MorvanZhou/pytorch-A3C) by MorvanZhou, 2018, GitHub
-    /// @see 6. [Deep Reinforcement Learning: Playing CartPole through Asynchronous Advantage Actor Critic (A3C) with tf.keras and eager execution](https://medium.com/tensorflow/deep-reinforcement-learning-playing-cartpole-through-asynchronous-advantage-actor-critic-a3c-7eab2eea5296) by R.Yuan, 2018, Medium 
+    /// @see 1. [Let’s make an A3C: Implementation](https://jaromiru.com/2017/03/26/lets-make-an-a3c-implementation/) by Jaromír Janisch, 2017, ヤロミル
+    /// @see 2. [Reinforcement Learning through Asynchronous Advantage Actor-Critic on a GPU](https://arxiv.org/abs/1611.06256) by M. Babaeizadeh, I. Frosio, S. Tyree, J. Clemons, J. Kautz, 2017, arXiv:1611.06256
+    /// @see 3. [Massively Parallel Methods for Deep Reinforcement Learning](https://arxiv.org/abs/1507.04296) by A. Nair, P. Srinivasan, S. Blackwell, C. Alcicek, R. Fearon, A. De Maria, V. Panneershelvam, M. Suleyman, C. Beattie, S. Petersen, S. Legg, V. Mnih, K. Kavukcuoglu and D. Silver, 2015, arXiv:1507.04296
+    /// @see 4. [Asynchronous Methods for Deep Reinforcement Learning](https://arxiv.org/abs/1602.01783) by V. Mnih, A. P. Badia, M. Mirza, A. Graves, T. P. Lillicrap, D. Silver and K. Kavukcuoglu, 2016, arXiv:1602.01783
     /// </remarks>
-    public class Trainer<T> : IxTrainer, IDisposable 
+    public class Trainer<T> : IxTrainer, IDisposable
     {
-        int m_nIndex = 0;
-        /// <summary>
-        /// Specifies the output log used for general text based output.
-        /// </summary>
-        protected Log m_log;
-        /// <summary>
-        /// Specifies the cancellation event.
-        /// </summary>
-        protected CancelEvent m_evtCancel;
-        /// <summary>
-        /// Specifies the unserlying MyCaffeControl with the open project.
-        /// </summary>
-        protected MyCaffeControl<T> m_caffe;
-        /// <summary>
-        /// Specifies the mini batch size to use for the maximum number of items in the experience memory - this is defined by the MemoryDataParameter.
-        /// </summary>
-        protected int m_nMiniBatchSize = 1;
-        /// <summary>
-        /// Specifies the maximum number of episodes within each experience.
-        /// </summary>
-        protected int m_nMaxEpisodeSteps = 1;
-        /// <summary>
-        /// Specifies the general properties initialized from the key-value pair within the string sent to Initialize.
-        /// </summary>
-        protected PropertySet m_properties;
-        /// <summary>
-        /// Specifies the operating mode single-instance (A2C) or multi-instance (A3C)
-        /// </summary>
-        protected TRAINING_MODE m_mode = TRAINING_MODE.SINGLE_INSTANCE;
-        private Random m_random;
-        private double m_dfGamma; // discount factor
-        private double m_dfBeta; // percent of entropy to use.
-        private Memory<T> m_memory = new Memory<T>();
-        private Blob<T> m_blobInput;
-        private Blob<T> m_blobAdvantage;
-        private Blob<T> m_blobValueLoss;
-        private Blob<T> m_blobEntropy;
-        private Blob<T> m_blobPolicy;
-        private Blob<T> m_blobActionOneHot;
-        private Blob<T> m_blobPolicyLoss;
-        private Blob<T> m_blobLoss;
-        private Layer<T> m_softmax;
-        private Layer<T> m_crossentropy;
-        private CudaDnn<T> m_cuda;
-        private MyCaffeControl<T> m_local;
-        private MyCaffeControl<T> m_global;
-        double m_dfLocalLearningRate = 0;
-        int m_nLastBatchSize = 0;
-        bool m_bSoftMaxSetup = false;
-        bool m_bCrossEntropySetup = false;
-        double m_dfExplorationStartPct = 1.0;
-        double m_dfExplorationEndPct = 0.0;
-        bool m_bEnableLogDuringTraining = false;
-        bool m_bShowProgress = true;
+        Random m_random = new Random();
+        Brain<T> m_brain;
+        PropertySet m_properties;
+        int m_nThreads;
+        int m_nOptimizers;
+        int m_nIterations;
+        int m_nGlobalEpisodes = 0;
 
         /// <summary>
         /// The OnIntialize event fires when initializing the trainer.
@@ -89,732 +41,285 @@ namespace MyCaffe.trainers
         /// </summary>
         public event EventHandler<GetDataArgs> OnGetData;
         /// <summary>
-        /// The OnGetGlobalEpisodeCount event fires when the episode processing loop needs to retrieve the global episode count.
+        /// The OnGetStatus event fires on each iteration within the Train method.
         /// </summary>
-        public event EventHandler<GlobalEpisodeCountArgs> OnGetGlobalEpisodeCount;
-        /// <summary>
-        /// The OnUpdateGlobalRewards event fires to add local rewards to the global rewards.
-        /// </summary>
-        public event EventHandler<UpdateGlobalRewardArgs> OnUpdateGlobalRewards;
+        public event EventHandler<GetStatusArgs> OnGetStatus;
 
-        /// <summary>
-        /// The constructor.
-        /// </summary>
-        /// <param name="mycaffe">Specifies the MyCaffeControl with an open project.</param>
-        /// <param name="log">Specifies the output log.</param>
-        /// <param name="evtCancel">Specifies the cancellation event.</param>
-        /// <param name="properties">Specifies the set of key-value properties to use.</param>
-        /// <param name="mode">Optionally, specifies either the A2C (single trainer) or A3C (multi-trainer) mode.</param>
-        /// <param name="nGpuID">Optionally, specifies the GPU to use (default = 0)</param>
-        /// <param name="nIndex">Optionally, specifies the index of this trainer.</param>
-        public Trainer(MyCaffeControl<T> mycaffe, Log log, CancelEvent evtCancel, PropertySet properties, TRAINING_MODE mode = TRAINING_MODE.SINGLE_INSTANCE, int nGpuID = 0, int nIndex = 0)
+        public Trainer(MyCaffeControl<T> mycaffe, PropertySet properties, Random random)
         {
-            m_nIndex = nIndex;
-            m_random = new Random();
             m_properties = properties;
-            m_caffe = mycaffe;
-            m_log = log;
-            m_evtCancel = evtCancel;
-            m_nMiniBatchSize = m_caffe.CurrentProject.GetBatchSize(Phase.TRAIN);
-            m_nLastBatchSize = m_nMiniBatchSize;
-            m_dfExplorationStartPct = m_properties.GetPropertyAsDouble("ExplorationStart", 1);
-            m_dfExplorationEndPct = m_properties.GetPropertyAsDouble("ExplorationEnd", 0);
-            m_nMaxEpisodeSteps = m_properties.GetPropertyAsInt("MaxEpisodeSteps", 200);
-            m_dfGamma = m_properties.GetPropertyAsDouble("Gamma", 0.99);
-            m_dfBeta = m_properties.GetPropertyAsDouble("Beta", 0.01);
-            m_bEnableLogDuringTraining = m_properties.GetPropertyAsBool("EnableLogOnTraining", false);
-            m_bShowProgress = m_properties.GetPropertyAsBool("ShowProgress", true);
-
-
-            int? nTestIter = m_caffe.CurrentProject.GetSolverSettingAsInt("test_iter");
-            m_log.CHECK(!nTestIter.HasValue, "There should be not 'test_iter' to turn off testing.");
-
-            int? nVal = m_caffe.CurrentProject.GetSolverSettingAsInt("test_interval");
-            if (nVal.HasValue)
-                m_log.CHECK_EQ(nVal.Value, 0, "The solver 'test_interval' must be 0 to turn off testing.");
-
-            bool? bVal = m_caffe.CurrentProject.GetSolverSettingAsBool("test_initialization");
-            if (bVal.HasValue)
-                m_log.CHECK(!bVal.Value, "The solver 'test_initialization' must be False to turn off testing.");
-
-            m_caffe.EnableTesting = false;
-
-            m_log.CHECK_GT(m_nMaxEpisodeSteps, 0, "The maximum episode steps (" + m_nMaxEpisodeSteps.ToString() + ") must be greater than zero.");
-            m_log.CHECK_LT(m_nMiniBatchSize, m_nMaxEpisodeSteps, "The mini-batch size (" + m_nMiniBatchSize.ToString() + ") must be less than or equal to the MaxEpisodeSteps(" + m_nMaxEpisodeSteps.ToString() + ")");
-            m_log.CHECK_GE(m_dfGamma, 0, "The gamma value of " + m_dfGamma.ToString() + " (discount factor) must be equal to zero or greater.");
-            m_log.CHECK_LE(m_dfGamma, 1.0, "The gamma value of " + m_dfGamma.ToString() + " (discount factor) must be less than or equal to 1.0");
-            m_log.CHECK_GE(m_dfBeta, 0, "The beta value of " + m_dfBeta.ToString() + " (percent of entropy to use) must be equal to zero or greater.");
-            m_log.CHECK_LE(m_dfBeta, 1.0, "The beta value of " + m_dfBeta.ToString() + " (percent of entropy to use) must be less than or equal to 1.0");
-
-            getNets(nGpuID, mode, out m_local, out m_global, out m_dfLocalLearningRate);
-            m_cuda = m_local.Cuda;
-
-            m_blobInput = new Blob<T>(m_cuda, m_log, false);
-            m_blobAdvantage = new Blob<T>(m_cuda, m_log, false);
-            m_blobValueLoss = new Blob<T>(m_cuda, m_log, false);
-            m_blobPolicy = new Blob<T>(m_cuda, m_log, true);
-            m_blobEntropy = new Blob<T>(m_cuda, m_log, false);
-            m_blobActionOneHot = new Blob<T>(m_cuda, m_log, true);
-            m_blobPolicyLoss = new Blob<T>(m_cuda, m_log, true);
-            m_blobLoss = new Blob<T>(m_cuda, m_log, true);
-
-            LayerParameter p1 = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
-            p1.softmax_param.axis = 1;
-            m_softmax = Layer<T>.Create(m_cuda, m_log, p1, m_evtCancel);
-
-            LayerParameter p2 = new LayerParameter(LayerParameter.LayerType.SOFTMAXCROSSENTROPY_LOSS);
-            p2.softmax_param.axis = 1;
-            p2.loss_weight.Add(1);
-            p2.loss_weight.Add(1);
-            p2.loss_param.normalization = LossParameter.NormalizationMode.BATCH_SIZE;
-            m_crossentropy = Layer<T>.Create(m_cuda, m_log, p2, m_evtCancel);
+            m_brain = new Brain<T>(mycaffe, properties);
+            m_nThreads = properties.GetPropertyAsInt("Threads", 8);
+            m_nOptimizers = properties.GetPropertyAsInt("Optimizers", 2);
+            m_nIterations = mycaffe.CurrentProject.GetSolverSettingAsInt("max_iter").GetValueOrDefault(10000);
         }
 
-        /// <summary>
-        /// Releases all resources used.
-        /// </summary>
         public void Dispose()
         {
-            if (m_blobInput != null)
-            {
-                m_blobInput.Dispose();
-                m_blobInput = null;
-            }
-
-            if (m_blobAdvantage != null)
-            {
-                m_blobAdvantage.Dispose();
-                m_blobAdvantage = null;
-            }
-
-            if (m_blobValueLoss != null)
-            {
-                m_blobValueLoss.Dispose();
-                m_blobValueLoss = null;
-            }
-
-            if (m_blobPolicy != null)
-            {
-                m_blobPolicy.Dispose();
-                m_blobPolicy = null;
-            }
-
-            if (m_blobEntropy != null)
-            {
-                m_blobEntropy.Dispose();
-                m_blobEntropy = null;
-            }
-
-            if (m_blobActionOneHot != null)
-            {
-                m_blobActionOneHot.Dispose();
-                m_blobActionOneHot = null;
-            }
-
-            if (m_blobPolicyLoss != null)
-            {
-                m_blobPolicyLoss.Dispose();
-                m_blobPolicyLoss = null;
-            }
-
-            if (m_blobLoss != null)
-            {
-                m_blobLoss.Dispose();
-                m_blobLoss = null;
-            }
-
-            if (m_softmax != null)
-            {
-                m_softmax.Dispose();
-                m_softmax = null;
-            }
-
-            if (m_crossentropy != null)
-            {
-                m_crossentropy.Dispose();
-                m_crossentropy = null;
-            }
-
-            if (m_mode == TRAINING_MODE.MULTI_INSTANCE)
-            {
-                m_local.Dispose();
-                m_local = null;
-            }
+            m_brain.Dispose();
         }
 
-        /// <summary>
-        /// Returns the index of this trainer.
-        /// </summary>
-        public int Index
-        {
-            get { return m_nIndex; }
-        }
-
-        private void getNets(int nGpuID, TRAINING_MODE mode, out MyCaffeControl<T> local, out MyCaffeControl<T> global, out double dfLocalLr)
-        {
-            m_mode = mode;
-            dfLocalLr = -1;
-            local = m_caffe;
-            global = null;
-
-            if (mode == TRAINING_MODE.MULTI_INSTANCE)
-            {
-                global = m_caffe;
-                local = global.Clone(nGpuID);
-            }
-
-            Net<T> net = local.GetInternalNet(Phase.TRAIN);
-            MemoryLossLayer<T> memLoss = getLayer(net, LayerParameter.LayerType.MEMORY_LOSS) as MemoryLossLayer<T>;
-
-            if (memLoss == null)
-                throw new Exception("Coult not find a MemoryLossLayer in the training net!");
-
-            memLoss.OnGetLoss += MemLoss_OnGetLoss;
-        }
-
-        /// <summary>
-        /// Initialize the trainer.
-        /// </summary>
-        /// <returns>On success <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
         public bool Initialize()
         {
             if (OnInitialize != null)
             {
-                InitializeArgs e = new InitializeArgs(m_caffe, m_nIndex);
+                InitializeArgs e = new InitializeArgs(m_brain.MyCaffeControl);
                 OnInitialize(this, e);
             }
 
             return true;
         }
 
-        /// <summary>
-        /// Run a test cycle - currently not supported with reinforcement learning.
-        /// </summary>
-        /// <param name="nIterations">Specifies the number of iterations to test.</param>
-        /// <returns>Returns <i>false</i> for testing is currently not supported.</returns>
         public bool Test(int nIterations)
         {
             return false;
         }
 
-        /// <summary>
-        /// Train the network using the A2C method of training.
-        /// </summary>
-        /// <param name="nIterations">Specifies the number of global iterations to run.</param>
-        /// <param name="step">Specifies whether or not we are stepping for debugging.</param>
-        /// <returns>Returns <i>true</i>.</returns>
         public bool Train(int nIterations, TRAIN_STEP step)
         {
-            verifyEvents();
+            List<Worker> rgEnvironments = new List<Worker>();
+            List<Worker> rgOptimizers = new List<Worker>();
 
-            GlobalEpisodeCountArgs globalEpCount = new GlobalEpisodeCountArgs();
-            OnGetGlobalEpisodeCount(this, globalEpCount);
-            int nGlobalEp = globalEpCount.GlobalEpisodeCount;
-            int nGlobalEpMax = globalEpCount.MaximumGlobalEpisodeCount;
+            for (int i = 0; i < m_nOptimizers; i++)
+            {
+                Optimizer<T> opt = new Optimizer<T>(m_brain);
+                opt.Start(10);
+                rgOptimizers.Add(opt);
+            }
 
-            if (nGlobalEpMax < nIterations)
-                nGlobalEpMax = nIterations;
+            for (int i = 0; i < m_nThreads; i++)
+            {
+                Environment<T> env = new Environment<T>(m_brain, m_properties, m_random, m_nIterations);
+                env.OnGetData += Env_OnGetData;
+                env.OnGetStatus += Env_OnGetStatus;
+                env.Start(10);
+                rgEnvironments.Add(env);
+            }
 
+            while (!m_brain.MyCaffeControl.CancelEvent.WaitOne(250))
+            {
+                if (m_nGlobalEpisodes >= m_nIterations)
+                    break;
+            }
+
+            foreach (Optimizer<T> opt in rgOptimizers)
+            {
+                opt.Dispose();
+            }
+
+            foreach (Environment<T> env in rgEnvironments)
+            {
+                env.Dispose();
+            }
+
+            return true;
+        }
+
+        private void Env_OnGetStatus(object sender, GetStatusArgs e)
+        {
+            m_nGlobalEpisodes = Math.Max(m_nGlobalEpisodes, e.Frames);
+
+            if (OnGetStatus != null)
+                OnGetStatus(sender, e);
+        }
+
+        private void Env_OnGetData(object sender, GetDataArgs e)
+        {
+            if (OnGetData != null)
+                OnGetData(sender, e);
+        }
+    }
+
+    class Worker /** @private */
+    {
+        protected int m_nIndex = -1;
+        protected AutoResetEvent m_evtCancel = new AutoResetEvent(false);
+        protected Task m_workTask = null;
+
+        public Worker()
+        {
+        }
+
+        protected virtual void doWork(object arg)
+        {
+        }
+
+        public void Start(int nCycleDelay)
+        {
+            if (m_workTask == null)
+                m_workTask = Task.Factory.StartNew(new Action<object>(doWork), nCycleDelay);
+        }
+
+        public void Stop()
+        {
+            m_evtCancel.Set();
+            m_workTask = null;
+        }
+    }
+
+    class Environment<T> : Worker, IDisposable /** @private */
+    {
+        Brain<T> m_brain;
+        Agent<T> m_agent;
+        int m_nIterations = 0;
+
+        public event EventHandler<GetDataArgs> OnGetData;
+        public event EventHandler<GetStatusArgs> OnGetStatus;
+
+
+        public Environment(Brain<T> brain, PropertySet properties, Random random, int nIterations)
+        {
+            m_brain = brain;
+            m_agent = new Agent<T>(m_brain, properties, random);
+            m_nIterations = nIterations;
+        }
+
+        public void Dispose()
+        {
+            Stop();
+        }
+
+        protected override void doWork(object arg)
+        {
+            int nCycleDelay = (int)arg;
             Stopwatch sw = new Stopwatch();
+
             sw.Start();
 
-            int nEpisodes = 0;
-            int nMaxEpisode = 0;
-            int nTotalStep = 1;
-            double dfMinReward = double.MaxValue;
-            double dfMaxReward = -double.MaxValue;
-
-            //-------------------------------------------------------
-            //  The Episode Processing Loop
-            //-------------------------------------------------------
-            while (nGlobalEp < nGlobalEpMax)
+            // Main training loop
+            while (!m_evtCancel.WaitOne(nCycleDelay))
             {
-                if (m_evtCancel.WaitOne(0))
+                if (!runEpisode())
+                    return;
+            }
+        }
+
+        private bool runEpisode()
+        {
+            // Reset the environment and get the initial state.
+            GetDataArgs dataArg = new GetDataArgs(m_brain.MyCaffeControl, m_brain.MyCaffeControl.Log, true, m_nIndex);
+            OnGetData(this, dataArg);
+            StateBase s = dataArg.State;
+            bool bDone = false;
+            double dfR = 0;
+
+            m_nIndex = dataArg.Index;
+
+            while (!bDone)
+            {
+                if (m_brain.MyCaffeControl.CancelEvent.WaitOne(1))
                     return false;
 
-                double dfPct = ((double)nGlobalEp / (double)nGlobalEpMax);
-                if (m_bShowProgress && sw.Elapsed.TotalMilliseconds > 1000)
-                {
-                    m_log.Progress = dfPct;
-                    m_log.WriteLine("Episode processing loop at " + dfPct.ToString("P") + "...");
-                    sw.Restart();
-                }
+                int a = m_agent.act(s);
 
-                double dfExplorationPct = (m_dfExplorationEndPct + (m_dfExplorationStartPct - m_dfExplorationEndPct) * (1.0 - dfPct));
-
-                m_memory = new Memory<T>();
-                double dfEpR = 0;
-                bool bDone = false;
-
-                // Get the initial state.
-                GetDataArgs dataArg = new GetDataArgs(m_local, m_log, m_nIndex, true, dfExplorationPct);
+                dataArg = new GetDataArgs(m_brain.MyCaffeControl, m_brain.MyCaffeControl.Log, false, m_nIndex, a);
                 OnGetData(this, dataArg);
-                StateBase state = dataArg.State;
+                StateBase s_ = dataArg.State;
+                double dfReward = s_.Reward;
 
-                //---------------------------------------------------
-                //  The Episode Building Loop
-                //---------------------------------------------------
-                for (int t=0; t<m_nMaxEpisodeSteps; t++)
+                bDone = s_.Done;
+                if (bDone)
                 {
-                    int nAction = getAction(m_local, state, dfExplorationPct);
-
-                    dataArg = new GetDataArgs(m_local, m_log, m_nIndex, false, dfExplorationPct, nAction);
-                    OnGetData(this, dataArg);
-                    StateBase newState = dataArg.State;
-                    bDone = newState.Done;
-
-                    if (t == m_nMaxEpisodeSteps - 1)
-                        bDone = true;
-
-                    if (bDone)
-                        newState.Reward = -1;
-
-                    dfEpR += newState.Reward;
-                    m_memory.Add(new MemoryItem(state, nAction, newState.Reward));
-
-                    if (nTotalStep % m_nMiniBatchSize == 0 || bDone)
-                    {
-                        double dfVs = (bDone) ? 0 : getValue(m_local, newState);
-
-                        // Calculate the discounted rewards (in reverse)
-                        for (int i = m_memory.Count - 1; i >= 0; i--)
-                        {
-                            dfVs = m_memory[i].Reward + m_dfGamma * dfVs;
-                            m_memory[i].Target = dfVs;
-                        }
-
-                        if (dfVs > 0 || m_memory.Count > 1)
-                        {
-                            // Reward clipping
-                            dfMinReward = Math.Min(dfMinReward, dfVs);
-                            dfMaxReward = Math.Max(dfMaxReward, dfVs);
-
-                            for (int i = 0; i < m_memory.Count; i++)
-                            {
-                                m_memory[i].Target = (m_memory[i].Target - dfMinReward) / dfMaxReward;
-                            }
-
-                            // train one iteration on the memory data items.
-                            if (addInputData(m_local, m_memory, m_nMiniBatchSize, bDone))
-                            {
-                                if (!m_bEnableLogDuringTraining)
-                                    m_log.Enable = false;
-
-                                m_local.Train(1, 0, step, m_dfLocalLearningRate);
-                                setBatchSize(m_local, Phase.TRAIN, m_nMiniBatchSize);
-
-                                if (!m_bEnableLogDuringTraining)
-                                    m_log.Enable = true;
-                            }
-                        }
-
-                        m_memory = new Memory<T>();
-                        updateGlobalNet(m_global, m_local, nGlobalEp);
-
-                        if (bDone)
-                        {
-                            OnUpdateGlobalRewards(this, new UpdateGlobalRewardArgs(dfEpR));
-                            break;
-                        }
-
-                        nEpisodes = t;
-                    }
-
-                    state = newState;
-                    nTotalStep++;
+                    s_ = null;
+                    dfReward = 0;
                 }
 
-                if (nMaxEpisode < nEpisodes)
+                m_agent.train(s, a, dfReward, s_);
+
+                if (!bDone)
                 {
-                    nMaxEpisode = nEpisodes;
-                    Trace.WriteLine("** Max Episode = " + nMaxEpisode.ToString() + " **");
+                    s = s_;
+                    dfR += s_.Reward;
                 }
 
-                OnGetGlobalEpisodeCount(this, globalEpCount);
-                nGlobalEp = globalEpCount.GlobalEpisodeCount;
-
-                if (step != TRAIN_STEP.NONE)
-                    break;
+                if (OnGetStatus != null)
+                    OnGetStatus(this, new GetStatusArgs(Agent<T>.Frames, m_nIterations, dfR, m_agent.epsilon));
             }
 
             return true;
         }
+    }
 
-        /// <summary>
-        /// This event fires during the training of the local net.
-        /// </summary>
-        /// <remarks>
-        /// This loss algorithm is mainly based on [3].
-        /// </remarks>
-        /// <param name="sender">Specifies the instance of the MemoryLossLayer.</param>
-        /// <param name="e">Specifies the arguments.</param>
-        private void MemLoss_OnGetLoss(object sender, MemoryLossLayerGetLossArgs<T> e)
+    class Optimizer<T> : Worker, IDisposable /** @private */
+    {
+        Brain<T> m_brain;
+
+        public Optimizer(Brain<T> brain)
         {
-            Blob<T> blobValues = null;
-            Blob<T> blobLogits = null;
-
-            if (e.Bottom.Count > 2)
-                throw new Exception("Expected only two bottom values: logits(action_size), values(1)");
-
-            for (int i = 0; i < e.Bottom.Count; i++)
-            {
-                if (e.Bottom[i].count(1) == 1)
-                    blobValues = e.Bottom[i];
-                else
-                    blobLogits = e.Bottom[i];
-            }
-
-            if (blobValues == null)
-                throw new Exception("Could not find the values blob collection!");
-
-            m_blobAdvantage.ReshapeLike(blobValues);
-            m_blobValueLoss.ReshapeLike(blobValues);
-            m_blobEntropy.ReshapeLike(blobValues);
-            m_blobPolicyLoss.ReshapeLike(blobValues);
-            m_blobLoss.ReshapeLike(blobValues);
-
-            m_blobPolicy.ReshapeLike(blobLogits);
-            m_blobActionOneHot.ReshapeLike(blobLogits);
-
-            int nValueCount = blobValues.count();
-            long hValues = blobValues.gpu_data;
-            long hAdvantage = m_blobAdvantage.mutable_gpu_data;
-            long hValLoss = m_blobValueLoss.mutable_gpu_data;
-            long hEntropy = m_blobEntropy.mutable_gpu_data;
-            long hPolicyLoss = m_blobPolicyLoss.mutable_gpu_data;
-
-            int nLogitCount = blobLogits.count();
-            long hPolicy = m_blobPolicy.mutable_gpu_data;
-
-            int nActionCount = nLogitCount / nValueCount;
-            BlobCollection<T> colBottom = new BlobCollection<T>();
-            BlobCollection<T> colTop = new BlobCollection<T>();
-
-            // Calculate the Advantage 'td'
-            m_blobAdvantage.SetData(m_memory.GetTargets(nValueCount));  // targets 'v_t'
-            m_cuda.sub(nValueCount, hAdvantage, hValues, hAdvantage);   // td = v_t - values
-
-            // Calculate the value loss 'c_loss'
-            m_cuda.powx(nValueCount, hAdvantage, 2.0, hValLoss);        // c_loss = td.pow(2)
-
-            // Calculate the policy loss.
-            // -- get the policy 'probs' --
-            colBottom.Add(blobLogits);
-            colTop.Add(m_blobPolicy);
-
-            if (!m_bSoftMaxSetup)
-            {
-                m_softmax.Setup(colBottom, colTop);
-                m_bSoftMaxSetup = true;
-            }
-
-            m_softmax.Forward(colBottom, colTop);                       // probs = softmax(logits)
-
-            // -- get the entropy 'exp_v' --
-            T[] rgActions = m_memory.GetActions(nValueCount);           // m = distribution(probs)
-            T[] rgLogProb = log_prob(m_blobPolicy, rgActions, nValueCount, nActionCount);
-            m_blobEntropy.SetData(rgLogProb);
-            m_cuda.mul(nValueCount, hEntropy, hAdvantage, hEntropy);    // exp_v = m.log_prob(a) * td
-
-            // -- calculate the total loss --
-            m_cuda.sub(nValueCount, hValLoss, hEntropy, hPolicyLoss);   // c_loss - exp_v
-            double dfAsum = Utility.ConvertVal<T>(m_blobPolicyLoss.asum_data());
-            double dfTotalLoss = dfAsum / nValueCount;                  // mean
-
-            e.application = MemoryLossLayerGetLossArgs<T>.APPLICATION.AS_LOSS_DIRECTLY;
-            e.Loss = dfTotalLoss;
+            m_brain = brain;
         }
 
-        /// <summary>
-        /// Calculate the log of the probability of an action occuring given the probability distribution provided in 'blobDist'
-        /// </summary>
-        /// <param name="blobDist">Specifies the batch of probability distributions for the actions.</param>
-        /// <param name="rgActions">Specifies the batch of action values.</param>
-        /// <param name="nValCount">Specifies the number of of batches.</param>
-        /// <param name="nActionCount">Specifies the number of actions per batch item.</param>
-        /// <returns></returns>
-        private T[] log_prob(Blob<T> blobDist, T[] rgActions, int nValCount, int nActionCount)
+        public void Dispose()
         {
-            float[] rgDist = Utility.ConvertVecF<T>(blobDist.update_cpu_data());
-            float[] rgfActions = Utility.ConvertVecF<T>(rgActions);
-            List<float> rgLogProb = new List<float>();
-
-            for (int i = 0; i < nValCount; i++)
-            {
-                int nAction = (int)rgfActions[i];
-                float fSum = 0;
-
-                for (int j = 0; j <= nAction; j++)
-                {                    
-                    int nIdx = (i * nActionCount) + j;
-                    fSum += rgDist[nIdx];
-                }
-
-                rgLogProb.Add((float)Math.Log(fSum));
-            }
-
-            return Utility.ConvertVec<T>(rgLogProb.ToArray());
+            Stop();
         }
 
-        /// <summary>
-        /// This event fires during the training of the local net.
-        /// </summary>
-        /// <remarks>
-        /// This loss algorithm is mainly based on [6], however this loss calculation
-        /// tended to blow-up for us after just a few runs.
-        /// </remarks>
-        /// <param name="sender">Specifies the instance of the MemoryLossLayer.</param>
-        /// <param name="e">Specifies the arguments.</param>
-        private void MemLoss_OnGetLoss_6(object sender, MemoryLossLayerGetLossArgs<T> e)
+        protected override void doWork(object arg)
         {
-            Blob<T> blobValues = null;
-            Blob<T> blobLogits = null;
-
-            if (e.Bottom.Count > 2)
-                throw new Exception("Expected only two bottom values: logits(action_size), values(1)");
-
-            for (int i = 0; i < e.Bottom.Count; i++)
+            int nCycleDelay = (int)arg;
+                
+            while (!m_evtCancel.WaitOne(nCycleDelay))
             {
-                if (e.Bottom[i].count(1) == 1)
-                    blobValues = e.Bottom[i];
-                else
-                    blobLogits = e.Bottom[i];
+                m_brain.optimize();
             }
+        }
+    }
 
-            if (blobValues == null)
-                throw new Exception("Could not find the values blob collection!");
+    class Agent<T> : IDisposable /** @private */
+    {
+        static int m_nFrames = 0;   // global
+        Brain<T> m_brain;
+        Random m_random;
+        int m_nEpsSteps = 0;
+        double m_dfEpsStart = 0;
+        double m_dfEpsEnd = 0;
+        double m_dfR = 0;
+        Memory<MemoryItem, T> m_memory = new Memory<MemoryItem, T>();
 
-            m_blobAdvantage.ReshapeLike(blobValues);
-            m_blobValueLoss.ReshapeLike(blobValues);
-            m_blobEntropy.ReshapeLike(blobValues);
-            m_blobPolicyLoss.ReshapeLike(blobValues);
-            m_blobLoss.ReshapeLike(blobValues);
+        public Agent(Brain<T> brain, PropertySet properties, Random random)
+        {
+            m_brain = brain;
+            m_random = random;
 
-            m_blobPolicy.ReshapeLike(blobLogits);
-            m_blobActionOneHot.ReshapeLike(blobLogits);
-
-            int nValueCount = blobValues.count();
-            long hValues = blobValues.gpu_data;
-            long hAdvantage = m_blobAdvantage.mutable_gpu_data;
-            long hValLoss = m_blobValueLoss.mutable_gpu_data;
-            long hEntropy = m_blobEntropy.mutable_gpu_data;
-            long hPolicyLoss = m_blobPolicyLoss.mutable_gpu_data;
-
-            int nLogitCount = blobLogits.count();
-            long hPolicy = m_blobPolicy.mutable_gpu_data;
-            long hPolicyLog = m_blobPolicy.mutable_gpu_diff;
-
-            int nActionCount = nLogitCount / nValueCount;
-            BlobCollection<T> colBottom = new BlobCollection<T>();
-            BlobCollection<T> colTop = new BlobCollection<T>();
-
-            // Calculate the Advantage
-            m_blobAdvantage.SetData(m_memory.GetTargets(nValueCount));
-            m_cuda.sub(nValueCount, hAdvantage, hValues, hAdvantage);
-
-            // Calculate the value loss
-            m_cuda.mul(nValueCount, hAdvantage, hAdvantage, hValLoss);
-
-            // Calculate the policy loss.
-            // -- get the policy --
-            colBottom.Add(blobLogits);
-            colTop.Add(m_blobPolicy);
-
-            if (!m_bSoftMaxSetup)
-            {
-                m_softmax.Setup(colBottom, colTop);
-                m_bSoftMaxSetup = true;
-            }
-
-            m_softmax.Forward(colBottom, colTop);
-
-            // -- get action one-hot vector
-            T[] rgActionOneHot = m_memory.GetActionOneHot(nValueCount, nActionCount);
-            m_blobActionOneHot.SetData(rgActionOneHot);
-
-            // -- get the entropy --
-            m_cuda.log(nLogitCount, hPolicy, hPolicyLog, 1.0, 1e-20);
-            m_cuda.mul(nLogitCount, hPolicy, hPolicyLog, hPolicy);
-
-            T[] rgEntropy = asum(nLogitCount, nValueCount, m_blobPolicy);
-            m_blobEntropy.SetData(rgEntropy);
-
-            // -- get the policy loss
-            colBottom.Clear();
-            colBottom.Add(blobLogits);          // input  (bottom[0])
-            colBottom.Add(m_blobActionOneHot);  // target (bottom[1])
-            colTop.Clear();
-            colTop.Add(m_blobLoss);
-            colTop.Add(m_blobPolicy);
-
-            if (!m_bCrossEntropySetup)
-            {
-                m_crossentropy.Setup(colBottom, colTop);
-                m_bCrossEntropySetup = true;
-            }
-
-            m_crossentropy.Forward(colBottom, colTop);
-
-            T[] rgPolicyLoss = asum(nLogitCount, nValueCount, m_blobPolicy);
-            m_blobPolicyLoss.SetData(rgPolicyLoss);
-
-            // -- add the advantage to the policy loss --
-            m_cuda.mul(nValueCount, hPolicyLoss, hAdvantage, hPolicyLoss);
-
-            // -- subtract the entropy from the policy loss --
-            m_cuda.mul_scalar(nValueCount, m_dfBeta, hEntropy);
-            m_cuda.sub(nValueCount, hPolicyLoss, hEntropy, hPolicyLoss);
-
-            // -- calculate the total loss --
-            m_cuda.mul_scalar(nValueCount, 0.5, hValLoss);
-            m_cuda.add(nValueCount, hValLoss, hPolicyLoss, hPolicyLoss);
-
-            double dfAsum = Utility.ConvertVal<T>(m_blobPolicyLoss.asum_data());
-            double dfTotalLoss = dfAsum / nValueCount; // mean
-
-            e.application = MemoryLossLayerGetLossArgs<T>.APPLICATION.AS_LOSS_DIRECTLY;
-            e.Loss = dfTotalLoss;
+            m_nEpsSteps = properties.GetPropertyAsInt("EpsSteps", 0);
+            m_dfEpsStart = properties.GetPropertyAsDouble("EpsStart", 0);
+            m_dfEpsEnd = properties.GetPropertyAsDouble("EpsEnd", 0);
         }
 
-        private T[] asum(int nCount, int nItems, Blob<T> b)
+        public void Dispose()
         {
-            int nSubItems = nCount / nItems;
-            double[] rgDf = Utility.ConvertVec<T>(b.update_cpu_data());
-            List<double> rgSum = new List<double>();
+        }
 
-            for (int i = 0; i < nItems; i++)
+        public static int Frames
+        {
+            get { return m_nFrames; }
+        }
+
+        public double epsilon
+        {
+            get
             {
-                double dfTotal = 0;
+                if (m_nFrames >= m_nEpsSteps)
+                    return m_dfEpsEnd;
 
-                for (int j = 0; j < nSubItems; j++)
-                {
-                    int nIdx = i * nSubItems + j;
-                    dfTotal += rgDf[nIdx];
-                }
-
-                rgSum.Add(dfTotal);
+                return m_dfEpsStart + m_nFrames * (m_dfEpsEnd - m_dfEpsStart) / m_nEpsSteps;
             }
-
-            return Utility.ConvertVec<T>(rgSum.ToArray());
         }
 
-        private void updateGlobalNet(MyCaffeControl<T> global, MyCaffeControl<T> local, int nIteration)
+        public int act(StateBase s)
         {
-            if (m_mode == TRAINING_MODE.SINGLE_INSTANCE)
-                return;
+            double dfEpsilon = epsilon;
 
-            global.CopyGradientsFrom(local);
-            global.ApplyUpdate(nIteration);
-            local.CopyWeightsFrom(global);
-        }
-
-        private Layer<T> getLayer(Net<T> net, LayerParameter.LayerType type)
-        {
-            foreach (Layer<T> layer in net.layers)
-            {
-                if (layer.layer_param.type == type)
-                    return layer;
-            }
-
-            return null;
-        }
-
-        private bool addInputData(MyCaffeControl<T> mycaffe, Memory<T> mem, int nBatchSize, bool bDone)
-        {
-            if (mem.Count < nBatchSize)
-                nBatchSize = mem.Count;
-
-            if (nBatchSize == 0)
-                return false;
-
-            if (mem.Count == 1 && (mem[0].State.Done || bDone))
-                return false;
-
-            MemoryDataLayer<T> memData = setBatchSize(mycaffe, Phase.TRAIN, nBatchSize, true);
-            List<Datum> rgData = new List<Datum>();
-
-            foreach (MemoryItem item in mem)
-            {
-                rgData.Add(new Datum(item.State.Data));
-            }
-
-            memData.AddDatumVector(rgData, 1, true);
-
-            return true;
-        }
-
-        private MemoryDataLayer<T> setBatchSize(MyCaffeControl<T> mycaffe, Phase phase, int nBatchSize, bool bUpdateLast = false)
-        {
-            Net<T> net = mycaffe.GetInternalNet(phase);
-            MemoryDataLayer<T> memData = getLayer(net, LayerParameter.LayerType.MEMORYDATA) as MemoryDataLayer<T>;
-
-            if (memData == null)
-                throw new Exception("Could not find the memory data layer!");
-
-            if (bUpdateLast && nBatchSize != m_nLastBatchSize)
-            {
-                memData.batch_size = nBatchSize;
-                m_nLastBatchSize = nBatchSize;
-            }
-
-            return memData;
-        }
-
-        private double getValue(MyCaffeControl<T> mycaffe, StateBase state)
-        {
-            m_blobInput.SetData(state.Data, true, true);
-            mycaffe.DataTransformer.SetRange(m_blobInput);
-
-            BlobCollection<T> colBottom = new BlobCollection<T>() { m_blobInput };
-            double dfLoss;
-
-            Net<T> net = mycaffe.GetInternalNet(Phase.RUN);
-            BlobCollection<T> colOutput = net.Forward(colBottom, out dfLoss);
-            Blob<T> blobValues = null;
-
-            foreach (Blob<T> blob in colOutput)
-            {
-                if (blob.count(1) == 1)
-                {
-                    blobValues = blob;
-                    break;
-                }
-            }
-
-            if (blobValues == null)
-                throw new Exception("Could not find the value blob of count() = 1!  This blob should be a bottom blob of the MemoryLossLayer.");
-
-            double dfVal = Utility.ConvertVal<T>(blobValues.GetData(0));
-
-            return dfVal;
-        }
-
-        private int getAction(MyCaffeControl<T> mycaffe, StateBase state, double dfExplorationPct)
-        {
-            double dfRandomSelection = m_random.NextDouble();
+            m_nFrames++;
 
             // -- Exploration --
-            if (dfRandomSelection < dfExplorationPct)
-                return m_random.Next(state.ActionCount);
+            if (m_random.NextDouble() < dfEpsilon)
+                return m_random.Next(s.ActionCount);
 
-            // -- Learning --
-            m_blobInput.SetData(state.Data, true, true);
-            mycaffe.DataTransformer.SetRange(m_blobInput);
+            // -- Prediction --
+            Tuple<float[], float> res = m_brain.predict(s);
 
-            BlobCollection<T> colBottom = new BlobCollection<T>() { m_blobInput };
-            double dfLoss;
-
-            Net<T> net = mycaffe.GetInternalNet(Phase.RUN);
-            net.Forward(colBottom, out dfLoss);
-
-            SoftmaxLayer<T> softmax = getLayer(net, LayerParameter.LayerType.SOFTMAX) as SoftmaxLayer<T>;
-            if (softmax == null)
-                throw new Exception("Could not find the softmax layer!");
-
-            BlobCollection<T> colTop = net.FindTopBlobsOfLayer(softmax.layer_param.name);
-            Blob<T> blobProb = colTop[0];
-            float[] rgProb = Utility.ConvertVecF<T>(blobProb.update_cpu_data());
-
+            float[] rgProb = res.Item1;
             double dfVal = m_random.NextDouble();
             double dfSum = (double)rgProb[0];
 
@@ -833,235 +338,522 @@ namespace MyCaffe.trainers
             throw new Exception("Could not find the action!");
         }
 
-        private void verifyEvents()
+        public MemoryItem get_sample(int n)
         {
-            if (OnGetGlobalEpisodeCount == null)
-                throw new Exception("You must connect the OnGetGlobalEpisodeCount event.");
+            return new MemoryItem(m_memory[0].State0, m_memory[0].Action, m_dfR, m_memory[n - 1].State1);
+        }
 
-            if (OnUpdateGlobalRewards == null)
-                throw new Exception("You must connect the OnUpdateGlobalRewards event.");
+        public void train(StateBase s, int nAction, double dfReward, StateBase s_)
+        {
+            m_memory.Add(new MemoryItem(s, nAction, dfReward, s_));
+            m_dfR = (m_dfR + dfReward * m_brain.GammaN) / m_brain.Gamma;
 
-            if (OnGetData == null)
-                throw new Exception("You must connect the OnGetData event.");
+            if (s_ == null) // we are done
+            {
+                while (m_memory.Count > 0)
+                {
+                    MemoryItem item = get_sample(m_memory.Count);
+                    m_brain.train_push(item);
+
+                    m_dfR = (m_dfR - m_memory[0].Reward) / m_brain.Gamma;
+                    m_memory.RemoveAt(0);
+                }
+
+                m_dfR = 0;
+            }
+
+            if (m_memory.Count >= m_brain.NStepReturn)
+            {
+                MemoryItem item = get_sample(m_brain.NStepReturn);
+                m_brain.train_push(item);
+
+                m_dfR = dfReward - m_memory[0].Reward;
+                m_memory.RemoveAt(0);
+            }
         }
     }
 
-
-    /// <summary>
-    /// The InitializeArgs is passed to the OnInitialize event.
-    /// </summary>
-    public class InitializeArgs : EventArgs
+    class Brain<T> : IDisposable /** @private */
     {
-        int m_nIndex = 0;
-        int m_nOriginalDsId = 0;
-        int m_nDsID = 0;
-        Component m_caffe;
+        MyCaffeControl<T> m_caffe;
+        Memory<MemoryItem, T> m_trainingQueue = new Memory<MemoryItem, T>();
+        int m_nMinBatch = 0;
+        object m_syncQueue = new object();
+        object m_syncTrain = new object();
+        Blob<T> m_blobInput;
+        Blob<T> m_blobR;
+        Blob<T> m_blobSmask;
+        Blob<T> m_blobActionOneHot;
+        Blob<T> m_blobActions;
+        Blob<T> m_blobLogProb;
+        Blob<T> m_blobProb;
+        Blob<T> m_blobAdvantage;
+        Blob<T> m_blobLossPolicy;
+        Blob<T> m_blobLossValue;
+        Blob<T> m_blobEntropy;
+        Blob<T> m_blobWork;
+        Blob<T> m_blobOutVal;
+        Blob<T> m_blobOutProb;
+        Layer<T> m_softmaxloss;
+        bool m_bSoftMaxLossSetup = false;
+        int m_nNStepReturn = 8;
+        double m_dfGamma = 0.99;
+        double m_dfNGamma = 0;
+        double m_dfLossCoefficient = 0.5;
+        double m_dfEntropyCoefficient = 0.01;
+        bool m_bSkipLoss = false;
 
-        /// <summary>
-        /// The constructor.
-        /// </summary>
-        /// <param name="mycaffe">Specifies the MyCaffeControl used.</param>
-        /// <param name="nIndex">Specifies the index of the trainer.</param>
-        public InitializeArgs(Component mycaffe, int nIndex)
+        public Brain(MyCaffeControl<T> mycaffe, PropertySet properties)
         {
-            m_nIndex = nIndex;
             m_caffe = mycaffe;
+            setupNet(m_caffe);
 
-            if (mycaffe is MyCaffeControl<double>)
-            {
-                MyCaffeControl<double> mycaffe1 = mycaffe as MyCaffeControl<double>;
-                m_nOriginalDsId = mycaffe1.CurrentProject.Dataset.ID;
-            }
-            else
-            {
-                MyCaffeControl<float> mycaffe1 = mycaffe as MyCaffeControl<float>;
-                m_nOriginalDsId = mycaffe1.CurrentProject.Dataset.ID;
-            }
+            m_nNStepReturn = properties.GetPropertyAsInt("NStepReturn", 8);
+            m_dfGamma = properties.GetPropertyAsDouble("Gamma", 0.99);
+            m_dfNGamma = m_dfGamma * m_nNStepReturn;
+            m_dfLossCoefficient = properties.GetPropertyAsDouble("LossCoefficient", 0.5);
+            m_dfEntropyCoefficient = properties.GetPropertyAsDouble("EntropyCoefficient", 0.01);
+
+            m_blobInput = new Blob<T>(mycaffe.Cuda, mycaffe.Log, false);
+            m_blobR = new Blob<T>(mycaffe.Cuda, mycaffe.Log, true);
+            m_blobSmask = new Blob<T>(mycaffe.Cuda, mycaffe.Log, false);
+            m_blobActionOneHot = new Blob<T>(mycaffe.Cuda, mycaffe.Log, false);
+            m_blobActions = new Blob<T>(mycaffe.Cuda, mycaffe.Log, true);
+            m_blobLogProb = new Blob<T>(mycaffe.Cuda, mycaffe.Log, false);
+            m_blobProb = new Blob<T>(mycaffe.Cuda, mycaffe.Log, true);
+            m_blobAdvantage = new Blob<T>(mycaffe.Cuda, mycaffe.Log, false);
+            m_blobLossPolicy = new Blob<T>(mycaffe.Cuda, mycaffe.Log, false);
+            m_blobLossValue = new Blob<T>(mycaffe.Cuda, mycaffe.Log, false);
+            m_blobEntropy = new Blob<T>(mycaffe.Cuda, mycaffe.Log, false);
+            m_blobWork = new Blob<T>(mycaffe.Cuda, mycaffe.Log, true);
+            m_blobOutProb = new Blob<T>(mycaffe.Cuda, mycaffe.Log, false);
+            m_blobOutVal = new Blob<T>(mycaffe.Cuda, mycaffe.Log, false);
+
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.SOFTMAXWITH_LOSS);
+            p.softmax_param.axis = 1;
+            p.loss_weight.Add(1);
+            p.loss_weight.Add(1);
+            m_softmaxloss = Layer<T>.Create(mycaffe.Cuda, mycaffe.Log, p, mycaffe.CancelEvent);
         }
 
-        /// <summary>
-        /// Returns the index of the trainer that fires the event.
-        /// </summary>
-        public int Index
+        public void Dispose()
         {
-            get { return m_nIndex; }
+            if (m_blobInput != null)
+            {
+                m_blobInput.Dispose();
+                m_blobInput = null;
+            }
+
+            if (m_blobR != null)
+            {
+                m_blobR.Dispose();
+                m_blobR = null;
+            }
+
+            if (m_blobSmask != null)
+            {
+                m_blobSmask.Dispose();
+                m_blobSmask = null;
+            }
+
+            if (m_blobActionOneHot != null)
+            {
+                m_blobActionOneHot.Dispose();
+                m_blobActionOneHot = null;
+            }
+
+            if (m_blobActions != null)
+            {
+                m_blobActions.Dispose();
+                m_blobActions = null;
+            }
+
+            if (m_blobLogProb != null)
+            {
+                m_blobLogProb.Dispose();
+                m_blobLogProb = null;
+            }
+
+            if (m_blobProb != null)
+            {
+                m_blobProb.Dispose();
+                m_blobProb = null;
+            }
+
+            if (m_blobAdvantage != null)
+            {
+                m_blobAdvantage.Dispose();
+                m_blobAdvantage = null;
+            }
+
+            if (m_blobLossPolicy != null)
+            {
+                m_blobLossPolicy.Dispose();
+                m_blobLossPolicy = null;
+            }
+
+            if (m_blobLossValue != null)
+            {             
+                m_blobLossValue.Dispose();
+                m_blobLossValue = null;
+            }
+
+            if (m_blobEntropy != null)
+            {
+                m_blobEntropy.Dispose();
+                m_blobEntropy = null;
+            }
+
+            if (m_blobWork != null)
+            {
+                m_blobWork.Dispose();
+                m_blobWork = null;
+            }
+
+            if (m_softmaxloss != null)
+            {
+                m_softmaxloss.Dispose();
+                m_softmaxloss = null;
+            }
+
+            if (m_blobOutProb != null)
+            {
+                m_blobOutProb.Dispose();
+                m_blobOutProb = null;
+            }
+
+            if (m_blobOutVal != null)
+            {
+                m_blobOutVal.Dispose();
+                m_blobOutVal = null;
+            }
         }
 
-        /// <summary>
-        /// Returns the MyCaffeControl used.
-        /// </summary>
-        public Component MyCaffe
+        public MyCaffeControl<T> MyCaffeControl
         {
             get { return m_caffe; }
         }
 
-        /// <summary>
-        /// Returns the original Dataset ID of the open project held by the MyCaffeControl.
-        /// </summary>
-        public int OriginalDatasetID
+        public double Gamma
         {
-            get { return m_nOriginalDsId; }
+            get { return m_dfGamma; }
         }
 
-        /// <summary>
-        /// Get/set a new Dataset ID which is actually used. 
-        /// </summary>
-        public int DatasetID
+        public double GammaN
         {
-            get { return m_nDsID; }
-            set { m_nDsID = value; }
-        }
-    }
-
-    /// <summary>
-    /// The GetObservationArgs is passed to the OnGetObservations event.
-    /// </summary>
-    public class GetDataArgs : EventArgs
-    {
-        int m_nIndex;
-        int m_nAction;
-        bool m_bReset;
-        double m_dfExplorationPct;
-        Component m_caffe;
-        StateBase m_state = null;
-        Log m_log = null;
-
-        /// <summary>
-        /// The constructor.
-        /// </summary>
-        /// <param name="mycaffe">Specifies the MyCaffeControl used.</param>
-        /// <param name="log">Specifies the output log used.</param>
-        /// <param name="nIndex">Specifies the index of the trainer.</param>
-        /// <param name="bReset">Specifies to reset the environment.</param>
-        /// <param name="dfExplorationPct">Specifies the current exploration percent.</param>
-        /// <param name="nAction">Specifies the action to run.  If less than zero this parameter is ignored.</param>
-        public GetDataArgs(Component mycaffe, Log log, int nIndex, bool bReset, double dfExplorationPct, int nAction = -1)
-        {
-            m_nIndex = nIndex;
-            m_nAction = nAction;
-            m_caffe = mycaffe;
-            m_bReset = bReset;
-            m_log = log;
-            m_dfExplorationPct = dfExplorationPct;
+            get { return m_dfNGamma; }
         }
 
-        /// <summary>
-        /// Returns the output log.
-        /// </summary>
-        public Log OutputLog
+        public int NStepReturn
         {
-            get { return m_log; }
+            get { return m_nNStepReturn; }
         }
 
-        /// <summary>
-        /// Returns the index of the trainer that fires the event.
-        /// </summary>
-        public int Index
+        private void setupNet(MyCaffeControl<T> mycaffe)
         {
-            get { return m_nIndex; }
+            Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
+            MemoryLossLayer<T> memLoss = getLayer(net, LayerParameter.LayerType.MEMORY_LOSS) as MemoryLossLayer<T>;
+
+            if (memLoss == null)
+                throw new Exception("Could not find a MemoryLossLayer in the training net!");
+
+            memLoss.OnGetLoss += MemLoss_OnGetLoss;
+
+            MemoryDataLayer<T> memData = getLayer(net, LayerParameter.LayerType.MEMORYDATA) as MemoryDataLayer<T>;
+
+            if (memData == null)
+                throw new Exception("Could not find the MemoryDataLayer in the training net!");
+
+            m_nMinBatch = (int)memData.layer_param.memory_data_param.batch_size;
         }
 
-        /// <summary>
-        /// Specifies the state data of the observations.
-        /// </summary>
-        public StateBase State
+        private Layer<T> getLayer(Net<T> net, LayerParameter.LayerType type)
         {
-            get { return m_state; }
-            set { m_state = value; }
+            foreach (Layer<T> layer in net.layers)
+            {
+                if (layer.layer_param.type == type)
+                    return layer;
+            }
+
+            return null;
         }
 
-        /// <summary>
-        /// Returns the current exploration rate.
-        /// </summary>
-        public double ExplorationRate
+        public void train_push(MemoryItem item)
         {
-            get { return m_dfExplorationPct; }
+            lock (m_syncQueue)
+            {
+                m_trainingQueue.Add(item);
+            }
         }
 
-        /// <summary>
-        /// Returns the action to run.  If less than zero, this parameter is ignored.
-        /// </summary>
-        public int Action
+        private Memory<MemoryItem,T> get_batch()
         {
-            get { return m_nAction; }
+            lock (m_syncQueue)
+            {
+                if (m_trainingQueue.Count < m_nMinBatch)
+                {
+                    Thread.Sleep(0);
+                    return null;
+                }
+
+                return m_trainingQueue.Clone(true);
+            }
         }
 
-        /// <summary>
-        /// Returns the MyCaffeControl used.
-        /// </summary>
-        public Component MyCaffe
+        public Tuple<float[], float> predict(StateBase s)
         {
-            get { return m_caffe; }
+            lock (m_syncTrain)
+            {
+                m_blobInput.SetData(s.Data, true, true);
+                m_caffe.DataTransformer.SetRange(m_blobInput);
+
+                BlobCollection<T> colBottom = new BlobCollection<T>() { m_blobInput };
+                double dfLoss;
+
+                Net<T> net = m_caffe.GetInternalNet(Phase.RUN);
+
+                BlobCollection<T> colOut = net.Forward(colBottom, out dfLoss);
+                m_caffe.Log.CHECK_EQ(colOut.Count, 2, "The network should only output 2 blobs: probs and vals.");
+
+                Blob<T> blobVal = null;
+                Blob<T> blobProb = null;
+                for (int i = 0; i < colOut.Count; i++)
+                {
+                    if (colOut[i].count(1) == 1)
+                        blobVal = colOut[i];
+                    else
+                        blobProb = colOut[i];
+                }
+
+                float[] rgProb = Utility.ConvertVecF<T>(blobProb.update_cpu_data());
+                float[] rgVal = Utility.ConvertVecF<T>(blobVal.update_cpu_data());
+
+                return new Tuple<float[], float>(rgProb, rgVal[0]);
+            }
         }
 
-        /// <summary>
-        /// Returns whether or not to reset the observation environment or not.
-        /// </summary>
-        public bool Reset
+        public bool optimize()
         {
-            get { return m_bReset; }
+            Memory<MemoryItem,T> batch = get_batch();
+            if (batch == null)
+                return false;
+
+            Net<T> net = m_caffe.GetInternalNet(Phase.TRAIN);
+            MemoryDataLayer<T> memData = getLayer(net, LayerParameter.LayerType.MEMORYDATA) as MemoryDataLayer<T>;
+            if (memData == null)
+                throw new Exception("Could not find the MemoryDataLayer in the training net!");
+
+            // Get the batch data
+            List<Datum> rgNewStates = batch.GetStates(Memory<MemoryItem,T>.STATE_TYPE.NEW);
+            List<Datum> rgStates = batch.GetStates(Memory<MemoryItem, T>.STATE_TYPE.OLD);
+
+            // predict_v(s_)
+            BlobCollection<T> colOut;
+            double dfLoss;
+            Blob<T> blobProb = null;
+            Blob<T> blobVal = null;
+
+            lock (m_syncTrain)
+            {
+                m_caffe.Log.Enable = false;
+                memData.AddDatumVector(rgNewStates, 1, true);
+
+                // Run the forward but skip the loss for we are not learning on this pass.
+                m_bSkipLoss = true;
+                colOut = net.Forward(out dfLoss);
+                m_bSkipLoss = false;
+                m_caffe.Log.Enable = true;
+
+                // Find the softmax output for the action probabilities.
+                for (int i = 0; i < colOut.Count; i++)
+                {
+                    if (colOut[i].num_axes > 1 && colOut[i].count(1) > 1)
+                    {
+                        m_blobOutProb.CopyFrom(colOut[i], false, true);
+                        break;
+                    }
+                }
+
+                blobProb = m_blobOutProb;
+
+                // Find the value bottom to the memory loss layer.
+                MemoryLossLayer<T> memLoss = getLayer(net, LayerParameter.LayerType.MEMORY_LOSS) as MemoryLossLayer<T>;
+                if (memLoss == null)
+                    throw new Exception("Could not find the MemoryLossLayer in the training net!");
+
+                BlobCollection<T> colBottom = net.FindBottomBlobsOfLayer(memLoss.layer_param.name);
+                for (int i = 0; i < colBottom.Count; i++)
+                {
+                    if (colBottom[i].num_axes > 1 && colBottom[i].count(1) == 1)
+                    {
+                        m_blobOutVal.CopyFrom(colBottom[i], false, true);
+                        break;
+                    }
+                }
+
+                blobVal = m_blobOutVal;
+            }
+
+            // Get more batch data.
+            T[] rgSMask = batch.GetStateMask();
+            m_blobSmask.ReshapeLike(blobVal);
+            m_blobSmask.SetData(rgSMask);
+
+            T[] rgR = batch.GetRewards();
+            m_blobR.ReshapeLike(blobVal);
+            m_blobR.SetData(rgR);
+
+            T[] rgActionOneHot = batch.GetActions(Memory<MemoryItem, T>.VALUE_TYPE.ONEHOT);
+            m_blobActionOneHot.ReshapeLike(blobProb);
+            m_blobActionOneHot.SetData(rgActionOneHot);
+
+            T[] rgAction = batch.GetActions(Memory<MemoryItem, T>.VALUE_TYPE.VALUE);
+            m_blobActions.ReshapeLike(blobVal);
+            m_blobActions.SetData(rgAction);
+
+            // r = r + GAMMA_N * v * s_mask (v set to 0 where s_ is terminal, by AddDatumVector)
+            m_caffe.Cuda.mul(blobVal.count(), blobVal.gpu_data, m_blobSmask.gpu_data, m_blobR.mutable_gpu_diff);
+            m_caffe.Cuda.mul_scalar(m_blobR.count(), m_dfNGamma, m_blobR.mutable_gpu_diff);
+            m_caffe.Cuda.add(m_blobR.count(), m_blobR.gpu_data, m_blobR.gpu_diff, m_blobR.mutable_gpu_data);
+
+            // Train (action one hot used in the loss function fired during the MemoryLossLayer forward)
+            lock (m_syncTrain)
+            {
+                net = m_caffe.GetInternalNet(Phase.TRAIN);
+                memData = getLayer(net, LayerParameter.LayerType.MEMORYDATA) as MemoryDataLayer<T>;
+                if (memData == null)
+                    throw new Exception("Could not find the MemoryDataLayer in the training net!");
+
+                m_caffe.Log.Enable = false;
+                memData.AddDatumVector(rgStates, 1, true);
+                m_caffe.Train(1);
+                m_caffe.Log.Enable = true;
+            }
+
+            return true;
         }
-    }
 
-    /// <summary>
-    /// Specifies the argumetns for the OnGetGlobalEpisodeCount and OnSetGlobalEpisodeCount events.
-    /// </summary>
-    public class GlobalEpisodeCountArgs : EventArgs
-    {
-        int m_nGlobalEpisodeCount = 0;
-        int m_nMaximumGlobalEpisodeCount = 0;
-
-        /// <summary>
-        /// The constructor.
-        /// </summary>
-        /// <param name="nCount">Specifies the new count, if any - used with OnSetGlobalEpisodeCount event.</param>
-        public GlobalEpisodeCountArgs(int nCount = 0)
+        private void MemLoss_OnGetLoss(object sender, MemoryLossLayerGetLossArgs<T> e)
         {
-            m_nGlobalEpisodeCount = nCount;
+            if (m_bSkipLoss)
+                return;
+
+            Blob<T> blobValues = null;
+            Blob<T> blobLogits = null;
+            int nIdxValues = 0;
+            int nIdxLogits = 0;
+
+            if (e.Bottom.Count != 2)
+                throw new Exception("Expected only two bottom values: logits(action_size), values(1)");
+
+            for (int i = 0; i < e.Bottom.Count; i++)
+            {
+                if (e.Bottom[i].count(1) == 1)
+                {
+                    nIdxValues = i;
+                    blobValues = e.Bottom[i];
+                }
+                else
+                {
+                    nIdxLogits = i;
+                    blobLogits = e.Bottom[i];
+                }
+            }
+
+            if (blobValues == null)
+                throw new Exception("Could not find the values blob collection!");
+
+            if (blobLogits == null)
+                throw new Exception("Could not find the values blob collection!");
+
+            int nValueCount = blobValues.count();
+            m_blobLogProb.ReshapeLike(blobValues);
+            m_blobAdvantage.ReshapeLike(blobValues);
+            m_blobLossPolicy.ReshapeLike(blobValues);
+            m_blobLossValue.ReshapeLike(blobValues);
+            m_blobEntropy.ReshapeLike(blobValues);
+
+            int nLogitCount = blobLogits.count();
+            m_blobWork.ReshapeLike(blobLogits);
+            m_blobProb.ReshapeLike(blobLogits);
+
+            // Calculate the softmax of the logits.
+            int nActionCount = nLogitCount / nValueCount;
+            BlobCollection<T> colBottom = new BlobCollection<T>();
+            BlobCollection<T> colTop = new BlobCollection<T>();
+
+            colBottom.Add(blobLogits);
+            colBottom.Add(m_blobActions); // label
+            colTop.Add(m_blobWork);
+            colTop.Add(m_blobProb);   // softmax probabilities.
+
+            if (!m_bSoftMaxLossSetup)
+            {
+                m_softmaxloss.Setup(colBottom, colTop);
+                m_bSoftMaxLossSetup = true;
+            }
+
+            m_softmaxloss.Forward(colBottom, colTop);
+
+            // calculate 'log_prob'
+            m_blobWork.ReshapeLike(blobLogits);
+            m_caffe.Cuda.mul(nLogitCount, m_blobProb.gpu_data, m_blobActionOneHot.gpu_data, m_blobWork.mutable_gpu_data);
+            T[] rgSum = asum(nLogitCount, nValueCount, m_blobWork);
+            m_blobLogProb.SetData(rgSum);
+            m_caffe.Cuda.log(nValueCount, m_blobLogProb.gpu_data, m_blobLogProb.mutable_gpu_data);
+
+            // calculate 'advantage'
+            m_caffe.Cuda.sub(nValueCount, m_blobR.gpu_data, blobValues.gpu_data, m_blobAdvantage.mutable_gpu_data);
+
+            // calculate 'loss_policy'
+            m_caffe.Cuda.mul(nValueCount, m_blobLogProb.gpu_data, m_blobAdvantage.gpu_data, m_blobLossPolicy.mutable_gpu_data);
+            m_caffe.Cuda.mul_scalar(nValueCount, -1.0, m_blobLossPolicy.mutable_gpu_data);
+
+            // calculate 'loss value'
+            m_caffe.Cuda.powx(nValueCount, m_blobAdvantage.gpu_data, 2.0f, m_blobLossValue.mutable_gpu_data);
+            m_caffe.Cuda.mul_scalar(nValueCount, m_dfLossCoefficient, m_blobLossValue.mutable_gpu_data);
+
+            // calculate 'entropy'
+            m_caffe.Cuda.log(nLogitCount, m_blobProb.gpu_data, m_blobWork.mutable_gpu_diff, 1.0, 1e-10);
+            m_caffe.Cuda.mul(nLogitCount, m_blobProb.gpu_data, m_blobWork.gpu_diff, m_blobWork.mutable_gpu_data);
+            rgSum = asum(nLogitCount, nValueCount, m_blobWork);
+            m_blobEntropy.SetData(rgSum);
+            m_caffe.Cuda.mul_scalar(nValueCount, m_dfEntropyCoefficient, m_blobEntropy.mutable_gpu_data);
+
+            // calculate 'total_loss'
+            m_blobWork.ReshapeLike(blobValues);
+            m_caffe.Cuda.add(nValueCount, m_blobLossPolicy.gpu_data, m_blobLossValue.gpu_data, m_blobWork.mutable_gpu_diff);
+            m_caffe.Cuda.add(nValueCount, m_blobEntropy.gpu_data, m_blobWork.gpu_diff, m_blobWork.mutable_gpu_data);
+            double dfAsum = Utility.ConvertVal<T>(m_blobWork.asum_data());
+            double dfTotalLoss = dfAsum / nValueCount;
+
+            blobValues.SetDiff(dfTotalLoss);
+            colTop[0].SetDiff(dfTotalLoss);
+            m_softmaxloss.Backward(colTop, new List<bool>() { true }, colBottom);
+
+            e.Loss = dfTotalLoss;
         }
 
-        /// <summary>
-        /// Get/set the GlobalEpisodeCount value.
-        /// </summary>
-        public int GlobalEpisodeCount
+        private T[] asum(int nCount, int nItems, Blob<T> b, bool bDiff = false)
         {
-            get { return m_nGlobalEpisodeCount; }
-            set { m_nGlobalEpisodeCount = value; }
-        }
+            int nSubItems = nCount / nItems;
+            double[] rgDf = Utility.ConvertVec<T>((bDiff) ? b.update_cpu_diff() : b.update_cpu_data());
+            List<double> rgSum = new List<double>();
 
-        /// <summary>
-        /// Get/set the maximum global episode count allowed.
-        /// </summary>
-        public int MaximumGlobalEpisodeCount
-        {
-            get { return m_nMaximumGlobalEpisodeCount; }
-            set { m_nMaximumGlobalEpisodeCount = value; }
-        }
-    }
+            for (int i = 0; i < nItems; i++)
+            {
+                double dfTotal = 0;
 
-    /// <summary>
-    /// Specifies the arguments used with the UpdateGlobalRewards event.
-    /// </summary>
-    public class UpdateGlobalRewardArgs : EventArgs
-    {
-        double m_dfReward;
+                for (int j = 0; j < nSubItems; j++)
+                {
+                    int nIdx = i * nSubItems + j;
+                    dfTotal += rgDf[nIdx];
+                }
 
-        /// <summary>
-        /// Specifies the 
-        /// </summary>
-        /// <param name="dfReward"></param>
-        public UpdateGlobalRewardArgs(double dfReward = 0)
-        {
-            m_dfReward = dfReward;
-        }
+                rgSum.Add(dfTotal);
+            }
 
-        /// <summary>
-        /// Specifies the local reward.
-        /// </summary>
-        public double Reward
-        {
-            get { return m_dfReward; }
-            set { m_dfReward = value; }
+            return Utility.ConvertVec<T>(rgSum.ToArray());
         }
     }
 }

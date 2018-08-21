@@ -17,10 +17,6 @@ namespace MyCaffe.trainers
     public partial class MyCaffeCustomTrainer : Component, IXMyCaffeCustomTrainer
     {
         /// <summary>
-        /// Specifies the training mode to use (A2C = single trainer), (A3C = multi trainer).
-        /// </summary>
-        protected TRAINING_MODE m_trainingMode = TRAINING_MODE.SINGLE_INSTANCE;
-        /// <summary>
         /// Random number generator used to get initial actions, etc.
         /// </summary>
         protected Random m_random = new Random();
@@ -28,21 +24,11 @@ namespace MyCaffe.trainers
         /// Specifies the properties parsed from the key-value pair passed to the Initialize method.
         /// </summary>
         protected PropertySet m_properties = null;
-        /// <summary>
-        /// Specifies the global rewards.
-        /// </summary>
-        protected double m_dfGlobalRewards = 0;
-        /// <summary>
-        /// Specifies the global episode count.
-        /// </summary>
-        protected int m_nGlobalEpisodeCount = 0;
-        /// <summary>
-        /// Specifies the maximum number of global episodes.
-        /// </summary>
-        protected int m_nMaxGlobalEpisodes = 0;
-        object m_syncGlobalEpisodeCount = new object();
-        object m_syncGlobalRewards = new object();
         IxTrainer m_itrainer = null;
+        double m_dfExplorationRate = 0;
+        double m_dfGlobalRewards = 0;
+        int m_nGlobalEpisodeCount = 0;
+        int m_nGlobalEpisodeMax = 0;
  
         /// <summary>
         /// The constructor.
@@ -97,29 +83,17 @@ namespace MyCaffe.trainers
         /// Override this method when using the MyCaffeControl that uses the <i>double</i> base type.
         /// </remarks>
         /// <param name="caffe">Specifies the MyCaffeControl used.</param>
-        /// <param name="log">Specifies the output log to use.</param>
-        /// <param name="evtCancel">Specifies the cancel event to use.</param>
-        /// <param name="nGpuID">Optionally, specifies the GPUID to run the trainer on.</param>
         /// <param name="nIndex">Optionally, specifies teh index of the trainer.</param>
         /// <returns>The IxTraininer interface implemented by the new trainer is returned.</returns>
-        protected virtual IxTrainer create_trainerD(Component caffe, Log log, CancelEvent evtCancel, int nGpuID = 0, int nIndex = 0)
+        protected virtual IxTrainer create_trainerD(Component caffe)
         {
             MyCaffeControl<double> mycaffe = caffe as MyCaffeControl<double>;
 
-            if (m_trainingMode == TRAINING_MODE.SINGLE_INSTANCE)
-            {
-                m_nMaxGlobalEpisodes = mycaffe.CurrentProject.GetSolverSettingAsInt("max_iter").GetValueOrDefault(0);
-                Trainer<double> trainer = new Trainer<double>(mycaffe, log, evtCancel, m_properties, m_trainingMode, nGpuID, nIndex);
-                trainer.OnInitialize += Trainer_OnInitialize;
-                trainer.OnGetData += Trainer_OnGetData;
-                trainer.OnGetGlobalEpisodeCount += Trainer_OnGetGlobalEpisodeCount;
-                trainer.OnUpdateGlobalRewards += Trainer_OnUpdateGlobalRewards;
-                return trainer;
-            }
-            else
-            {
-                return null;
-            }
+            Trainer<double> trainer = new Trainer<double>(mycaffe, m_properties, m_random);
+            trainer.OnInitialize += Trainer_OnInitialize;
+            trainer.OnGetData += Trainer_OnGetData;
+            trainer.OnGetStatus += Trainer_OnGetStatus;
+            return trainer;
         }
 
         /// <summary>
@@ -129,29 +103,17 @@ namespace MyCaffe.trainers
         /// Override this method when using the MyCaffeControl that uses the <i>double</i> base type.
         /// </remarks>
         /// <param name="caffe">Specifies the MyCaffeControl used.</param>
-        /// <param name="log">Specifies the output log to use.</param>
-        /// <param name="evtCancel">Specifies the cancel event to use.</param>
-        /// <param name="nGpuID">Optionally, specifies the GPUID to run the trainer on.</param>
         /// <param name="nIndex">Optionally, specifies teh index of the trainer.</param>
         /// <returns>The IxTraininer interface implemented by the new trainer is returned.</returns>
-        protected virtual IxTrainer create_trainerF(Component caffe, Log log, CancelEvent evtCancel, int nGpuID = 0, int nIndex = 0)
+        protected virtual IxTrainer create_trainerF(Component caffe)
         {
             MyCaffeControl<float> mycaffe = caffe as MyCaffeControl<float>;
 
-            if (m_trainingMode == TRAINING_MODE.SINGLE_INSTANCE)
-            {
-                m_nMaxGlobalEpisodes = mycaffe.CurrentProject.GetSolverSettingAsInt("max_iter").GetValueOrDefault(0);
-                Trainer<float> trainer = new Trainer<float>(mycaffe, log, evtCancel, m_properties, m_trainingMode, nGpuID, nIndex);
-                trainer.OnInitialize += Trainer_OnInitialize;
-                trainer.OnGetData += Trainer_OnGetData;
-                trainer.OnGetGlobalEpisodeCount += Trainer_OnGetGlobalEpisodeCount;
-                trainer.OnUpdateGlobalRewards += Trainer_OnUpdateGlobalRewards;
-                return trainer;
-            }
-            else
-            {
-                return null;
-            }
+            Trainer<float> trainer = new Trainer<float>(mycaffe, m_properties, m_random);
+            trainer.OnInitialize += Trainer_OnInitialize;
+            trainer.OnGetData += Trainer_OnGetData;
+            trainer.OnGetStatus += Trainer_OnGetStatus;
+            return trainer;
         }
 
         /// <summary>
@@ -178,14 +140,6 @@ namespace MyCaffe.trainers
         /// <param name="e">Specifies the getData argments used to return the new observations.</param>
         protected virtual void getData(GetDataArgs e)
         {
-        }
-
-        /// <summary>
-        /// Override called to get the current explorationr rate.
-        /// </summary>
-        protected virtual double exploration_rate
-        {
-            get { return 0; }
         }
 
         #endregion
@@ -246,44 +200,18 @@ namespace MyCaffe.trainers
         /// <param name="strProperties">Specifies the key-value pair of properties each separated by ';'.  For example the expected
         /// format is 'key1'='value1';'key2'='value2';...</param>
         /// <param name="mode">Specifies the training mode to use A2C (single mode) or A3C (multi mode).</param>
-        public void Initialize(string strProperties, TRAINING_MODE mode)
+        public void Initialize(string strProperties)
         {
             m_properties = new PropertySet(strProperties);
-
-            if (mode == TRAINING_MODE.USE_PROPERTIES)
-            {
-                mode = TRAINING_MODE.SINGLE_INSTANCE;
-                string strGpu = m_properties.GetProperty("GPUID", false);
-                if (strGpu != null)
-                {
-                    string[] rgID = strGpu.Split(',');
-                    if (rgID.Length > 1)
-                        mode = TRAINING_MODE.MULTI_INSTANCE;
-                }
-            }
-
-            m_trainingMode = mode;
         }
 
         /// <summary>
         /// Create a new trainer and use it to run a test cycle.
         /// </summary>
         /// <param name="mycaffe">Specifies the MyCaffeControl to use.</param>
-        /// <param name="log">Specifies the output log.</param>
-        /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nIterationOverride">Specifies the iterations to run if greater than zero.</param>
-        public void Test(Component mycaffe, Log log, CancelEvent evtCancel, int nIterationOverride)
+        public void Test(Component mycaffe, int nIterationOverride)
         {
-            IxTrainer itrainer;
-
-            if (mycaffe is MyCaffeControl<double>)
-                itrainer = create_trainerD(mycaffe, log, evtCancel);
-            else
-                itrainer = create_trainerF(mycaffe, log, evtCancel);
-
-            itrainer.Initialize();
-            itrainer.Test(nIterationOverride);
-            ((IDisposable)itrainer).Dispose();
         }
 
         /// <summary>
@@ -294,40 +222,20 @@ namespace MyCaffe.trainers
         /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nIterationOverride">Specifies the iterations to run if greater than zero.</param>
         /// <param name="step">Optionally, specifies whether or not to step the training for debugging (default = NONE).</param>
-        public void Train(Component mycaffe, Log log, CancelEvent evtCancel, int nIterationOverride, TRAIN_STEP step = TRAIN_STEP.NONE)
+        public void Train(Component mycaffe, int nIterationOverride, TRAIN_STEP step = TRAIN_STEP.NONE)
         {
-            m_nGlobalEpisodeCount = 0;
-            m_dfGlobalRewards = 0;
-
-            if (step == TRAIN_STEP.NONE)
-            {
-                if (m_itrainer != null)
-                {
-                    ((IDisposable)m_itrainer).Dispose();
-                    m_itrainer = null;
-                }
-            }
-
             if (m_itrainer == null)
             {
                 if (mycaffe is MyCaffeControl<double>)
-                    m_itrainer = create_trainerD(mycaffe, log, evtCancel);
+                    m_itrainer = create_trainerD(mycaffe);
                 else
-                    m_itrainer = create_trainerF(mycaffe, log, evtCancel);
+                    m_itrainer = create_trainerF(mycaffe);
 
                 m_itrainer.Initialize();
             }
 
-            if (nIterationOverride > 0)
-                m_nMaxGlobalEpisodes = nIterationOverride;
-
             m_itrainer.Train(nIterationOverride, step);
-
-            if (step == TRAIN_STEP.NONE)
-            {
-                ((IDisposable)m_itrainer).Dispose();
-                m_itrainer = null;
-            }
+            m_itrainer = null;
         }
 
         #endregion
@@ -342,29 +250,16 @@ namespace MyCaffe.trainers
             getData(e);
         }
 
-        private void Trainer_OnGetGlobalEpisodeCount(object sender, GlobalEpisodeCountArgs e)
+        private void Trainer_OnGetStatus(object sender, GetStatusArgs e)
         {
-            lock (m_syncGlobalEpisodeCount)
-            {
-                e.GlobalEpisodeCount = m_nGlobalEpisodeCount;
-                e.MaximumGlobalEpisodeCount = m_nMaxGlobalEpisodes;
-                m_nGlobalEpisodeCount++;
-            }
-        }
-
-        private void Trainer_OnUpdateGlobalRewards(object sender, UpdateGlobalRewardArgs e)
-        {
-            lock (m_syncGlobalRewards)
-            {
-                if (m_dfGlobalRewards == 0)
-                    m_dfGlobalRewards = e.Reward;
-                else
-                    m_dfGlobalRewards = m_dfGlobalRewards * 0.99 + e.Reward * 0.01;
-            }
+            m_dfGlobalRewards = Math.Max(m_dfGlobalRewards, e.Reward);
+            m_dfExplorationRate = e.ExplorationRate;
+            m_nGlobalEpisodeCount = Math.Max(m_nGlobalEpisodeCount, e.Frames);
+            m_nGlobalEpisodeMax = e.MaxFrames;
         }
 
         /// <summary>
-        /// Returns the global rewards for either the single MyCaffeCustomTrainer (when A2C) or the set of MyCaffeCustomTrainers (when A3C)
+        /// Returns the global rewards.
         /// </summary>
         public double GlobalRewards
         {
@@ -372,7 +267,7 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
-        /// Returns the global episode count for either the single MyCaffeCustomTrainer (when A2C) or the set of MyCaffeCustomTrainers (when A3C)
+        /// Returns the global episode count.
         /// </summary>
         public int GlobalEpisodeCount
         {
@@ -380,11 +275,19 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
+        /// Returns the maximum global episode count.
+        /// </summary>
+        public int GlobalEpisodeMax
+        {
+            get { return m_nGlobalEpisodeMax; }
+        }
+
+        /// <summary>
         /// Returns the current exploration rate.
         /// </summary>
         public double ExplorationRate
         {
-            get { return exploration_rate; }
+            get { return m_dfExplorationRate; }
         }
     }
 }
