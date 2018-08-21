@@ -93,10 +93,11 @@ namespace MyCaffe.test
         {
             m_log.WriteHeader("Test Gym - Open");
             MyCaffeGymClient gym = new MyCaffeGymClient();
+            string strName = "Cart Pole";
 
-            gym.Open("Cart Pole", true, bShowUi);
+            int nIdx = gym.Open(strName, true, bShowUi, false);
 
-            Dictionary<string, int> rgActions = gym.ActionSpace;
+            Dictionary<string, int> rgActions = gym.GetActionSpace(strName);
             Assert.AreEqual(rgActions.Count, 3);
             Assert.AreEqual(rgActions.ContainsKey("Nothing"), true);
             Assert.AreEqual(rgActions.ContainsKey("MoveLeft"), true);
@@ -105,13 +106,12 @@ namespace MyCaffe.test
             Assert.AreEqual(rgActions["MoveLeft"], 1);
             Assert.AreEqual(rgActions["MoveRight"], 2);
 
-            gym.Run(0);
-            gym.Run(1);
-            gym.Run(2);
+            gym.Run(strName, nIdx, 0);
+            gym.Run(strName, nIdx, 1);
 
             Thread.Sleep(5000);
 
-            gym.Close();
+            gym.CloseAll(strName);
         }
     }
 }
