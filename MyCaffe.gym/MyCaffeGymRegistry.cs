@@ -16,10 +16,12 @@ namespace MyCaffe.gym
     public partial class MyCaffeGymRegistry : Component
     {
         Control m_ctrlParent;
-        List<FormGym> m_rgGym = new List<FormGym>();
+        Dictionary<string, List<FormGym>> m_rgGym = new Dictionary<string, List<FormGym>>();
+        GymCollection m_gymCollection = new GymCollection();
+        Log m_log;
 
-        delegate bool fnopen(string strName, bool bAutoStart, bool bShowUi);
-        delegate bool fnclose(string strName);
+        delegate int fnopen(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst);
+        delegate bool fnclose(string strName, int nIdx);
 
         public MyCaffeGymRegistry()
         {
@@ -36,51 +38,50 @@ namespace MyCaffe.gym
         public void Initialize(Control ctrlParent, Log log)
         {
             m_ctrlParent = ctrlParent;
-
-            GymCollection col = new GymCollection();
-
-            col.Load();
-
-            foreach (IXMyCaffeGym igym in col)
-            {
-                MyCaffeGymControl ctrl = new MyCaffeGymControl(log);
-                ctrl.Initialize(igym);
-                FormGym dlg = new FormGym(ctrl);
-                m_rgGym.Add(dlg);
-            }
+            m_gymCollection.Load();
+            m_log = log;
         }
 
-        public FormGym Find(string strName)
+        public FormGym Find(string strName, int nIdx)
         {
-            foreach (FormGym dlg in m_rgGym)
-            {
-                if (dlg.GymName == strName)
-                    return dlg;
-            }
+            if (!m_rgGym.ContainsKey(strName))
+                return null;
 
-            return null;
+            if (m_rgGym[strName].Count <= nIdx)
+                return null;
+
+            return m_rgGym[strName][nIdx];
         }
 
-        public void Open()
+        public int Open()
         {
             FormGyms dlg = new FormGyms();
 
             if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                Open(dlg.SelectedGym.Name, false, true);
-            }
+                return Open(dlg.SelectedGym.Name, false, true, false);
+
+            return -1;
         }
 
-        public bool Open(string strName, bool bAutoStart, bool bShowUI)
+        public int Open(string strName, bool bAutoStart, bool bShowUI, bool bShowOnlyFirst)
         {
-            return (bool)m_ctrlParent.Invoke(new fnopen(open), strName, bAutoStart, bShowUI);
+            return (int)m_ctrlParent.Invoke(new fnopen(open), strName, bAutoStart, bShowUI, bShowOnlyFirst);
         }
 
-        private bool open(string strName, bool bAutoStart, bool bShowUi)
+        private int open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst)
         {
-            FormGym dlg = Find(strName);
-            if (dlg == null)
-                return false;
+            IXMyCaffeGym igym = m_gymCollection.Find(strName);
+            if (igym == null)
+                return -1;
+
+            MyCaffeGymControl ctrl = new MyCaffeGymControl(m_log);
+            ctrl.Initialize(igym);
+            FormGym dlg = new FormGym(ctrl);
+
+            if (!m_rgGym.ContainsKey(strName))
+                m_rgGym.Add(strName, new List<FormGym>());
+
+            m_rgGym[strName].Add(dlg);
 
             if (bAutoStart)
             {
@@ -89,19 +90,35 @@ namespace MyCaffe.gym
             }
 
             if (bShowUi)
-                dlg.Show();
+            {
+                if (!bShowOnlyFirst || m_rgGym[strName].Count == 1)
+                    dlg.Show();
+            }
+
+            return m_rgGym[strName].Count-1;
+        }
+
+        public bool CloseAll(string strName)
+        {
+            if (!m_rgGym.ContainsKey(strName))
+                return false;
+
+            for (int i = 0; i < m_rgGym[strName].Count; i++)
+            {
+                Close(strName, i);
+            }
 
             return true;
         }
 
-        public bool Close(string strName)
+        public bool Close(string strName, int nIdx)
         {
-            return (bool)m_ctrlParent.Invoke(new fnclose(close), strName);
+            return (bool)m_ctrlParent.Invoke(new fnclose(close), strName, nIdx);
         }
 
-        private bool close(string strName)
+        private bool close(string strName, int nIdx)
         {
-            FormGym dlg = Find(strName);
+            FormGym dlg = Find(strName, nIdx);
             if (dlg == null)
                 return false;
 
@@ -111,25 +128,25 @@ namespace MyCaffe.gym
 
         public DatasetDescriptor GetDataset(string strName, int nType)
         {
-            FormGym dlg = Find(strName);
-            if (dlg == null)
+            IXMyCaffeGym igym = m_gymCollection.Find(strName);
+            if (igym == null)
                 return null;
 
-            return dlg.GymControl.GetDataset(nType);
+            return igym.GetDataset((DATA_TYPE)nType);
         }
 
         public Dictionary<string, int> GetActionSpace(string strName)
         {
-            FormGym dlg = Find(strName);
-            if (dlg == null)
+            IXMyCaffeGym igym = m_gymCollection.Find(strName);
+            if (igym == null)
                 return null;
 
-            return dlg.GymControl.GetActionSpace();
+            return igym.GetActionSpace();
         }
 
-        public bool Run(string strName, int nAction)
+        public bool Run(string strName, int nIdx, int nAction)
         {
-            FormGym dlg = Find(strName);
+            FormGym dlg = Find(strName, nIdx);
             if (dlg == null)
                 return false;
 
@@ -137,9 +154,9 @@ namespace MyCaffe.gym
             return true;
         }
 
-        public bool Reset(string strName)
+        public bool Reset(string strName, int nIdx)
         {
-            FormGym dlg = Find(strName);
+            FormGym dlg = Find(strName, nIdx);
             if (dlg == null)
                 return false;
 
@@ -147,9 +164,9 @@ namespace MyCaffe.gym
             return true;
         }
 
-        public Observation GetObservation(string strName)
+        public Observation GetObservation(string strName, int nIdx)
         {
-            FormGym dlg = Find(strName);
+            FormGym dlg = Find(strName, nIdx);
             if (dlg == null)
                 return null;
 

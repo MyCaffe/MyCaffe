@@ -14,21 +14,21 @@ namespace MyCaffe.gym
     public interface IXMyCaffeGymService
     {
         [OperationContract]
-        void Open(string strName, bool bAutoStart, bool bShowUi);
+        int Open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst);
         [OperationContract]
-        void Close();
+        void Close(string strName, int nIdx);
+        [OperationContract]
+        void CloseAll(string strName);
         [OperationContract]
         byte[] GetDataset(string strName, int nType);
         [OperationContract]
-        string GetName();
+        Dictionary<string, int> GetActionSpace(string strName);
         [OperationContract]
-        Dictionary<string, int> GetActionSpace();
+        void Run(string strName, int nIdx, int nAction);
         [OperationContract]
-        void Run(int nAction);
+        void Reset(string strName, int nIdx);
         [OperationContract]
-        void Reset();
-        [OperationContract]
-        Observation GetLastObservation();
+        Observation GetLastObservation(string strName, int nIdx);
     }
 
     [DataContract]

@@ -22,6 +22,7 @@ namespace MyCaffe.gym
         Tuple<double[], double, bool> m_state;
         bool m_bStopping = false;
         Observations m_rgObservations = new Observations(10);
+        bool m_bRendering = false;
 
         public event EventHandler<OnObservationArgs> OnObservation;
 
@@ -75,17 +76,32 @@ namespace MyCaffe.gym
 
         public void Render()
         {
-            m_bmp = m_igym.Render(Width, Height);
+            if (m_bRendering)
+                return;
 
-            if (m_state != null)
+            try
             {
-                m_rgObservations.Add(new Observation(new Bitmap(m_bmp), m_state.Item1, m_state.Item2, m_state.Item3));
+                m_bRendering = true;
+                m_bmp = m_igym.Render(Width, Height);
 
-                if (OnObservation != null)
-                    OnObservation(this, new OnObservationArgs(m_rgObservations));
+                if (m_state != null)
+                {
+                    m_rgObservations.Add(new Observation(new Bitmap(m_bmp), m_state.Item1, m_state.Item2, m_state.Item3));
+
+                    if (OnObservation != null)
+                        OnObservation(this, new OnObservationArgs(m_rgObservations));
+                }
+
+                Invalidate(true);
             }
-
-            Invalidate(true);
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                m_bRendering = false;
+            }
         }
 
         public DatasetDescriptor GetDataset(int nType)

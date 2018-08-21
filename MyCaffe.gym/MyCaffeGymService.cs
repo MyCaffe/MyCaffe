@@ -10,43 +10,39 @@ namespace MyCaffe.gym
 {
     public class MyCaffeGymService : IXMyCaffeGymService
     {
-        string m_strGym = null;
-
-        public void Open(string strName, bool bAutoStart, bool bShowUi)
+        public int Open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst)
         {
-            m_strGym = strName;
-            MyCaffeGymRegistrar.Registry.Open(strName, bAutoStart, bShowUi);
+            return MyCaffeGymRegistrar.Registry.Open(strName, bAutoStart, bShowUi, bShowOnlyFirst);
         }
 
-        public void Close()
+        public void Close(string strName, int nIdx)
         {
-            MyCaffeGymRegistrar.Registry.Close(m_strGym);
-            m_strGym = null;
+            MyCaffeGymRegistrar.Registry.Close(strName, nIdx);
         }
 
-        public string GetName()
+        public void CloseAll(string strName)
         {
-            return m_strGym;
+            MyCaffeGymRegistrar.Registry.CloseAll(strName);
         }
 
-        public Dictionary<string, int> GetActionSpace()
+        public Dictionary<string, int> GetActionSpace(string strName)
         {
-            return MyCaffeGymRegistrar.Registry.GetActionSpace(m_strGym);
+            return MyCaffeGymRegistrar.Registry.GetActionSpace(strName);
         }
 
-        public Observation GetLastObservation()
+        public Observation GetLastObservation(string strName, int nIdx)
         {
-            return MyCaffeGymRegistrar.Registry.GetObservation(m_strGym);
+            return MyCaffeGymRegistrar.Registry.GetObservation(strName, nIdx);
         }
 
-        public void Run(int nAction = 0)
+        public void Run(string strName, int nIdx, int nAction = 0)
         {
-            MyCaffeGymRegistrar.Registry.Run(m_strGym, nAction);
+            MyCaffeGymRegistrar.Registry.Run(strName, nIdx, nAction);
         }
 
-        public void Reset()
+        public void Reset(string strName, int nIdx)
         {
-            MyCaffeGymRegistrar.Registry.Reset(m_strGym);
+            MyCaffeGymRegistrar.Registry.Reset(strName, nIdx);
         }
 
         public byte[] GetDataset(string strName, int nType)

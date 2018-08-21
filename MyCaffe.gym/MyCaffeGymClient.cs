@@ -19,14 +19,19 @@ namespace MyCaffe.gym
             m_igym = factory.CreateChannel();
         }
 
-        public void Open(string strName, bool bAutoStart, bool bShowUi)
+        public int Open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnyFirst)
         {
-            m_igym.Open(strName, bAutoStart, bShowUi);
+            return m_igym.Open(strName, bAutoStart, bShowUi, bShowOnyFirst);
         }
 
-        public void Close()
+        public void Close(string strName, int nIdx)
         {
-            m_igym.Close();
+            m_igym.Close(strName, nIdx);
+        }
+
+        public void CloseAll(string strName)
+        {
+            m_igym.CloseAll(strName);
         }
 
         public DatasetDescriptor GetDataset(string strName, int nType = 0)
@@ -35,34 +40,24 @@ namespace MyCaffe.gym
             return DatasetDescriptor.Deserialize(rgDs);
         }
 
-        public Dictionary<string, int> GetActionSpace()
+        public Dictionary<string, int> GetActionSpace(string strName)
         {
-            return m_igym.GetActionSpace();
+            return m_igym.GetActionSpace(strName);
         }
 
-        public string Name
+        public void Run(string strName, int nIdx, int nAction)
         {
-            get {return m_igym.GetName(); }
+            m_igym.Run(strName, nIdx, nAction);
         }
 
-        public Dictionary<string, int> ActionSpace
+        public void Reset(string strName, int nIdx)
         {
-            get { return m_igym.GetActionSpace(); }
+            m_igym.Reset(strName, nIdx);
         }
 
-        public void Run(int nAction)
+        public Observation GetObservation(string strName, int nIdx)
         {
-            m_igym.Run(nAction);
-        }
-
-        public void Reset()
-        {
-            m_igym.Reset();
-        }
-
-        public Observation GetObservation()
-        {
-            return m_igym.GetLastObservation();
+            return m_igym.GetLastObservation(strName, nIdx);
         }
     }
 }
