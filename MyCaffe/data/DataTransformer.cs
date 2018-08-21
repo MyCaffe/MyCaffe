@@ -239,7 +239,12 @@ namespace MyCaffe.data
             for (int i = 0; i < nDatumNum; i++)
             {
                 int nOffset = blobTransformed.offset(i);
-                Transform(rgDatum[i], blobUni);
+
+                if (rgDatum[i] != null)
+                    Transform(rgDatum[i], blobUni);
+                else
+                    blobUni.SetData(0);
+
                 cuda.copy(blobUni.count(), blobUni.gpu_data, blobTransformed.mutable_gpu_data, 0, nOffset);
             }
 
