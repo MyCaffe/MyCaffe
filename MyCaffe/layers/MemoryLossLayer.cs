@@ -23,7 +23,6 @@ namespace MyCaffe.layers
         LossParameter.NormalizationMode m_normalization;
         int m_nOuterNum;
         int m_nInnerNum;
-        MemoryLossLayerGetLossArgs<T>.APPLICATION m_application = MemoryLossLayerGetLossArgs<T>.APPLICATION.AS_LOSS_WEIGHT;
 
         /// <summary>
         /// The OnGetLoss event fires during each forward pass.  The value returned is saved,
@@ -220,16 +219,10 @@ namespace MyCaffe.layers
             if (OnGetLoss == null)
                 m_log.FAIL("The OnGetLoss event must be implemented.  Make sure the SolverParameter 'custom_trainer' points to a trainer that connects the OnGetLoss event.");
 
-            MemoryLossLayerGetLossArgs<T> e = new MemoryLossLayerGetLossArgs<T>(colBottom, m_userState);
-            OnGetLoss(this, e);
-
-            m_application = e.application;
-
             double dfNormalizer = convertD(get_normalizer(m_normalization));
+            MemoryLossLayerGetLossArgs<T> e = new MemoryLossLayerGetLossArgs<T>(colBottom, m_userState, dfNormalizer);
+            OnGetLoss(this, e);
             colTop[0].SetData(e.Loss / dfNormalizer, 0);
-
-            // Clear scratch memory to prevent with interfering with backward pass (see #602)
-            colBottom[0].SetDiff(0);
         }
 
         /// <summary>
@@ -251,22 +244,16 @@ namespace MyCaffe.layers
             if (!rgbPropagateDown[0])
                 return;
 
-            double dfTopLoss = convertD(colTop[0].GetData(0)); // loss
             double dfTopDiff = convertD(colTop[0].GetDiff(0)); // loss weight
             double dfNormalizer = convertD(get_normalizer(m_normalization));
             double dfLossWeight = dfTopDiff / dfNormalizer;
 
-            // Copy the previous loss from the forward pass to each bottom diff.
-            for (int i = 0; i < colBottom.Count; i++)
+            // Apply the loss weight to the bottom diffs.
+            if (dfLossWeight != 1.0)
             {
-                if (m_application == MemoryLossLayerGetLossArgs<T>.APPLICATION.AS_LOSS_WEIGHT)
+                for (int i = 0; i < colBottom.Count; i++)
                 {
-                    colBottom[i].SetDiff(-1);
                     m_cuda.scal(colBottom[i].count(), convert(dfLossWeight), colBottom[i].mutable_gpu_diff);
-                }
-                else
-                {
-                    colBottom[i].SetDiff(dfTopLoss);
                 }
             }
         }
@@ -278,43 +265,20 @@ namespace MyCaffe.layers
     public class MemoryLossLayerGetLossArgs<T> : EventArgs
     {
         object m_userState = null;
+        double m_dfLoss = 0;
+        double m_dfNormalizer = 1;
         BlobCollection<T> m_colBottom;
-        double m_dfLoss;
-        APPLICATION m_application = APPLICATION.AS_LOSS_WEIGHT;
-
-        /// <summary>
-        /// Defines how the loss it to be applied.
-        /// </summary>
-        public enum APPLICATION
-        {
-            /// <summary>
-            /// Treat the loss as a loss weight and use it to scale the actual loss.
-            /// </summary>
-            AS_LOSS_WEIGHT,
-            /// <summary>
-            /// Multiply the loss by -1 and apply the loss directly to each bottom element.
-            /// </summary>
-            AS_LOSS_DIRECTLY
-        }
 
         /// <summary>
         /// The constructor.
         /// </summary>
         /// <param name="colBottom">Specifes the bottom inputs to the forward pass.</param>
         /// <param name="userState">Specifies a user-state.</param>
-        public MemoryLossLayerGetLossArgs(BlobCollection<T> colBottom, object userState)
+        /// <param name="dfNormalizer">Specifies the normalizer value.</param>
+        public MemoryLossLayerGetLossArgs(BlobCollection<T> colBottom, object userState, double dfNormalizer)
         {
             m_userState = userState;
             m_colBottom = colBottom;
-        }
-
-        /// <summary>
-        /// Get/set how the loss is to be applied.
-        /// </summary>
-        public APPLICATION application
-        {
-            get { return m_application; }
-            set { m_application = value; }
         }
 
         /// <summary>
@@ -335,7 +299,15 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Get/set the externally calculated loss.
+        /// Specifies the normalizer.
+        /// </summary>
+        public double Normalizer
+        {
+            get { return m_dfNormalizer; }
+        }
+
+        /// <summary>
+        /// Get/set the externally calculated total loss.
         /// </summary>
         public double Loss
         {
