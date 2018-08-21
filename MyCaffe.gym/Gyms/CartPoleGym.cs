@@ -57,7 +57,7 @@ namespace MyCaffe.gym
 
         public CartPoleGym()
         {
-            m_dfTotalMass = m_dfMassCart + m_dfMassPole;
+            m_dfTotalMass = m_dfMassPole + m_dfMassCart;
             m_dfPoleMassLength = m_dfMassPole * m_dfLength;
 
             m_rgActionSpace = new Dictionary<string, int>();
@@ -386,10 +386,10 @@ namespace MyCaffe.gym
         {
             List<double> rg = new List<double>();
 
-            rg.Add(m_dfX / MAX_X);
-            rg.Add(m_dfXDot / (MAX_X * 3));
-            rg.Add(m_dfTheta / MAX_THETA);
-            rg.Add(m_dfThetaDot / (MAX_THETA * 3));
+            rg.Add(m_dfX);
+            rg.Add(m_dfXDot);
+            rg.Add(m_dfTheta);
+            rg.Add(m_dfThetaDot);
 
             return rg.ToArray();
         }
