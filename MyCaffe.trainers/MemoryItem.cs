@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyCaffe.basecode;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,20 +12,22 @@ namespace MyCaffe.trainers
     /// </summary>
     public class MemoryItem
     {
-        StateBase m_state;
+        StateBase m_state0;
+        StateBase m_state1;
         int m_nAction;
         double m_dfReward = 0;
-        double m_dfTarget = 0;
 
         /// <summary>
         /// The constructor.
         /// </summary>
-        /// <param name="s">Specifies the state information.</param>
+        /// <param name="s0">Specifies the state information.</param>
         /// <param name="nAction">Specifies the action taken.</param>
         /// <param name="dfReward">Specifies the reward for taking the action.</param>
-        public MemoryItem(StateBase s, int nAction, double dfReward)
+        /// <param name="s1">Specifies the new state information.</param>
+        public MemoryItem(StateBase s0, int nAction, double dfReward, StateBase s1)
         {
-            m_state = s;
+            m_state0 = s0;
+            m_state1 = s1;
             m_nAction = nAction;
             m_dfReward = dfReward;
         }
@@ -32,9 +35,17 @@ namespace MyCaffe.trainers
         /// <summary>
         /// Get the state information.
         /// </summary>
-        public StateBase State
+        public StateBase State0
         {
-            get { return m_state; }
+            get { return m_state0; }
+        }
+
+        /// <summary>
+        /// Get the new state information.
+        /// </summary>
+        public StateBase State1
+        {
+            get { return m_state1; }
         }
 
         /// <summary>
@@ -54,21 +65,12 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
-        /// Get/set the target reward.
-        /// </summary>
-        public double Target
-        {
-            get { return m_dfTarget; }
-            set { m_dfTarget = value; }
-        }
-
-        /// <summary>
         /// Return a string representation of the MemoryItem.
         /// </summary>
         /// <returns></returns>
         public override string ToString()
         {
-            return "Action=" + m_nAction.ToString() + " Reward=" + m_dfReward.ToString() + " Target=" + m_dfTarget.ToString();
+            return "Action=" + m_nAction.ToString() + " Reward=" + m_dfReward.ToString();
         }
     }
 }
