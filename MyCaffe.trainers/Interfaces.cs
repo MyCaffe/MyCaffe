@@ -100,6 +100,11 @@ namespace MyCaffe.trainers
         /// <returns>Returns <i>true</i> on success, <i>false</i> on failure.</returns>
         bool Initialize();
         /// <summary>
+        /// Shutdown the trainer.
+        /// </summary>
+        /// <returns></returns>
+        bool Shutdown();
+        /// <summary>
         /// Train the network.
         /// </summary>
         /// <param name="nIterations">Specifies the number of iterations to run.</param>
