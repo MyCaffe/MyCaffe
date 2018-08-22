@@ -203,6 +203,11 @@ namespace MyCaffe.gym
             m_nStepsBeyondDone = null;
             m_bDone = false;
 
+            lock (m_objActionSync)
+            {
+                m_rgActions.Clear();
+            }
+
             m_state = new CartPoleState(dfX, dfXDot, dfTheta, dfThetaDot);
         }
 
@@ -212,7 +217,7 @@ namespace MyCaffe.gym
             return dfMin + (m_random.NextDouble() * dfRange);
         }
 
-        public Tuple<double[], double, bool> Step()
+        public Tuple<Tuple<double,double,double>[], double, bool> Step()
         {
             CartPoleState state = new CartPoleState(m_state);
             double dfReward = 0;
@@ -262,7 +267,7 @@ namespace MyCaffe.gym
                 }
             }
 
-            return new Tuple<double[], double, bool>(m_state.ToArray(), dfReward, m_bDone);
+            return new Tuple<Tuple<double,double,double>[], double, bool>(m_state.ToArray(), dfReward, m_bDone);
         }
 
         public DatasetDescriptor GetDataset(DATA_TYPE dt)
@@ -382,14 +387,14 @@ namespace MyCaffe.gym
             set { m_dfThetaDot = value; }
         }
 
-        public double[] ToArray()
+        public Tuple<double,double,double>[] ToArray()
         {
-            List<double> rg = new List<double>();
+            List<Tuple<double, double, double>> rg = new List<Tuple<double, double, double>>();
 
-            rg.Add(m_dfX);
-            rg.Add(m_dfXDot);
-            rg.Add(m_dfTheta);
-            rg.Add(m_dfThetaDot);
+            rg.Add(new Tuple<double, double, double>(m_dfX, -MAX_X, MAX_X));
+            rg.Add(new Tuple<double, double, double>(m_dfXDot, -MAX_X * 3, MAX_X * 3));
+            rg.Add(new Tuple<double, double, double>(m_dfTheta, -MAX_THETA, MAX_THETA));
+            rg.Add(new Tuple<double, double, double>(m_dfThetaDot, -MAX_THETA * 3, MAX_THETA * 3));
 
             return rg.ToArray();
         }
