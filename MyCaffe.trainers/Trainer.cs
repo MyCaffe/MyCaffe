@@ -45,6 +45,12 @@ namespace MyCaffe.trainers
         /// </summary>
         public event EventHandler<GetStatusArgs> OnGetStatus;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="mycaffe">Specifies the MyCaffeControl to use for learning and prediction.</param>
+        /// <param name="properties">Specifies the property set containing the key/value pairs of property settings.</param>
+        /// <param name="random">Specifies a Random number generator used for random selection.</param>
         public Trainer(MyCaffeControl<T> mycaffe, PropertySet properties, Random random)
         {
             m_properties = properties;
@@ -54,11 +60,18 @@ namespace MyCaffe.trainers
             m_nIterations = mycaffe.CurrentProject.GetSolverSettingAsInt("max_iter").GetValueOrDefault(10000);
         }
 
+        /// <summary>
+        /// Releases all resources uses.
+        /// </summary>
         public void Dispose()
         {
             m_brain.Dispose();
         }
 
+        /// <summary>
+        /// Initialize the trainer.
+        /// </summary>
+        /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
         public bool Initialize()
         {
             if (OnInitialize != null)
@@ -70,11 +83,22 @@ namespace MyCaffe.trainers
             return true;
         }
 
+        /// <summary>
+        /// Run the test cycle - currently this is not implemented.
+        /// </summary>
+        /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
         public bool Test(int nIterations)
         {
             return false;
         }
 
+        /// <summary>
+        /// Train the network using a modified A3C training algorithm optimized for GPU use.
+        /// </summary>
+        /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <param name="step">Specifies the stepping mode to use (when debugging).</param>
+        /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
         public bool Train(int nIterations, TRAIN_STEP step)
         {
             List<Worker> rgEnvironments = new List<Worker>();
@@ -197,7 +221,7 @@ namespace MyCaffe.trainers
         private bool runEpisode()
         {
             // Reset the environment and get the initial state.
-            GetDataArgs dataArg = new GetDataArgs(m_brain.MyCaffeControl, m_brain.MyCaffeControl.Log, true, m_nIndex);
+            GetDataArgs dataArg = new GetDataArgs(m_brain.MyCaffeControl, m_brain.MyCaffeControl.Log, m_brain.MyCaffeControl.CancelEvent, true, m_nIndex);
             OnGetData(this, dataArg);
             StateBase s = dataArg.State;
             bool bDone = false;
@@ -212,10 +236,13 @@ namespace MyCaffe.trainers
 
                 int a = m_agent.act(s);
 
-                dataArg = new GetDataArgs(m_brain.MyCaffeControl, m_brain.MyCaffeControl.Log, false, m_nIndex, a);
+                dataArg = new GetDataArgs(m_brain.MyCaffeControl, m_brain.MyCaffeControl.Log, m_brain.MyCaffeControl.CancelEvent, false, m_nIndex, a);
                 OnGetData(this, dataArg);
                 StateBase s_ = dataArg.State;
                 double dfReward = s_.Reward;
+
+                if (m_brain.MyCaffeControl.CancelEvent.WaitOne(1))
+                    return false;
 
                 bDone = s_.Done;
                 if (bDone)
@@ -827,8 +854,10 @@ namespace MyCaffe.trainers
             double dfAsum = Utility.ConvertVal<T>(m_blobWork.asum_data());
             double dfTotalLoss = dfAsum / nValueCount;
 
+            dfTotalLoss /= e.Normalizer;
+
             blobValues.SetDiff(dfTotalLoss);
-            colTop[0].SetDiff(dfTotalLoss);
+            colTop[0].SetData(dfTotalLoss);
             m_softmaxloss.Backward(colTop, new List<bool>() { true }, colBottom);
 
             e.Loss = dfTotalLoss;
