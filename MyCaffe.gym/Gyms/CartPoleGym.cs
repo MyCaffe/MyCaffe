@@ -38,6 +38,8 @@ namespace MyCaffe.gym
         bool m_bDone = false;
         Dictionary<string, int> m_rgActionSpace;
         Bitmap m_bmp = null;
+        int m_nSteps = 0;
+        int m_nMaxSteps = 0;
 
         // Angle at which to fail the episode
         double m_dfThetaThreshold = CartPoleState.MAX_THETA;
@@ -123,6 +125,7 @@ namespace MyCaffe.gym
         public void Initialize(Log log)
         {
             m_log = log;
+            m_nMaxSteps = 0;
             Reset();
         }
 
@@ -173,10 +176,10 @@ namespace MyCaffe.gym
 
                     GeomView view = new GeomView();
 
-                    Font font = new Font("Century Gothic", 10.0f);
-                    g.DrawString("Current Force = " + m_dfForceMag.ToString(), font, Brushes.Black, new Point(10, 10));
-                    font.Dispose();
+                    view.RenderText(g, "Current Force = " + m_dfForceMag.ToString(), 10, 10);
+                    view.RenderSteps(g, m_nSteps, m_nMaxSteps);
 
+                    // Render the objects.
                     view.AddObject(track);
                     view.AddObject(cart);
                     view.Render(g);
@@ -202,6 +205,7 @@ namespace MyCaffe.gym
             m_dfForceMag = 0;
             m_nStepsBeyondDone = null;
             m_bDone = false;
+            m_nSteps = 0;
 
             lock (m_objActionSync)
             {
@@ -265,6 +269,9 @@ namespace MyCaffe.gym
                         m_log.WriteLine("You are calling 'step()' even though this environment has already returned done = True.  You should always call 'reset()'");
                     m_nStepsBeyondDone++;
                 }
+
+                m_nSteps++;
+                m_nMaxSteps = Math.Max(m_nMaxSteps, m_nSteps);
             }
 
             return new Tuple<Tuple<double,double,double>[], double, bool>(m_state.ToArray(), dfReward, m_bDone);
