@@ -53,6 +53,17 @@ namespace MyCaffe.gym
             return m_rgGym[strName][nIdx];
         }
 
+        public bool RemoveAll(string strName)
+        {
+            if (!m_rgGym.ContainsKey(strName))
+                return false;
+
+            m_rgGym[strName].Clear();
+            m_rgGym.Remove(strName);
+
+            return true;
+        }
+
         public int Open()
         {
             FormGyms dlg = new FormGyms();
@@ -81,7 +92,33 @@ namespace MyCaffe.gym
             if (!m_rgGym.ContainsKey(strName))
                 m_rgGym.Add(strName, new List<FormGym>());
 
-            m_rgGym[strName].Add(dlg);
+            int nIdx = -1;
+            int nLiveCount = 0;
+
+            for (int i = 0; i < m_rgGym[strName].Count; i++)
+            {
+                if (m_rgGym[strName][i] == null)
+                {
+                    if (nIdx == -1)
+                        nIdx = i;
+                }
+                else
+                {
+                    nLiveCount++;
+                }
+            }
+
+            if (nIdx >= 0)
+            {
+                m_rgGym[strName][nIdx] = dlg;
+            }
+            else
+            {
+                m_rgGym[strName].Add(dlg);
+                nIdx = m_rgGym[strName].Count - 1;
+            }
+
+            nLiveCount++;
 
             if (bAutoStart)
             {
@@ -91,11 +128,11 @@ namespace MyCaffe.gym
 
             if (bShowUi)
             {
-                if (!bShowOnlyFirst || m_rgGym[strName].Count == 1)
+                if (!bShowOnlyFirst || nLiveCount == 1)
                     dlg.Show();
             }
 
-            return m_rgGym[strName].Count-1;
+            return nIdx;
         }
 
         public bool CloseAll(string strName)
@@ -103,10 +140,14 @@ namespace MyCaffe.gym
             if (!m_rgGym.ContainsKey(strName))
                 return false;
 
-            for (int i = 0; i < m_rgGym[strName].Count; i++)
+            int nCount = m_rgGym[strName].Count;
+
+            for (int i = 0; i < nCount; i++)
             {
                 Close(strName, i);
             }
+
+            RemoveAll(strName);
 
             return true;
         }
@@ -123,6 +164,16 @@ namespace MyCaffe.gym
                 return false;
 
             dlg.Hide();
+            m_rgGym[strName][nIdx] = null;
+
+            for (int i = 0; i < m_rgGym[strName].Count; i++)
+            {
+                if (m_rgGym[strName][i] != null)
+                    return true;
+            }
+
+            m_rgGym.Remove(strName);
+
             return true;
         }
 
