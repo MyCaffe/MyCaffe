@@ -77,12 +77,6 @@ namespace MyCaffe.gym
 
         public void Render()
         {
-            if (!IsHandleCreated)
-                return;
-
-            if (!Visible)
-                return;
-
             if (m_bRendering)
                 return;
 
@@ -99,7 +93,8 @@ namespace MyCaffe.gym
                         OnObservation(this, new OnObservationArgs(m_rgObservations));
                 }
 
-                Invalidate(true);
+                if (IsHandleCreated && Visible)
+                    Invalidate(true);
             }
             catch (Exception excpt)
             {
