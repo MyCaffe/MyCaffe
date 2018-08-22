@@ -26,6 +26,7 @@ namespace MyCaffe.trainers
     {
         Random m_random = new Random();
         Brain<T> m_brain;
+        MyCaffeControl<T> m_mycaffe;
         PropertySet m_properties;
         int m_nThreads;
         int m_nOptimizers;
@@ -53,8 +54,8 @@ namespace MyCaffe.trainers
         /// <param name="random">Specifies a Random number generator used for random selection.</param>
         public Trainer(MyCaffeControl<T> mycaffe, PropertySet properties, Random random)
         {
+            m_mycaffe = mycaffe;
             m_properties = properties;
-            m_brain = new Brain<T>(mycaffe, properties);
             m_nThreads = properties.GetPropertyAsInt("Threads", 8);
             m_nOptimizers = properties.GetPropertyAsInt("Optimizers", 2);
             m_nIterations = mycaffe.CurrentProject.GetSolverSettingAsInt("max_iter").GetValueOrDefault(10000);
@@ -65,7 +66,11 @@ namespace MyCaffe.trainers
         /// </summary>
         public void Dispose()
         {
-            m_brain.Dispose();
+            if (m_brain != null)
+            {
+                m_brain.Dispose();
+                m_brain = null;
+            }
         }
 
         /// <summary>
@@ -74,10 +79,29 @@ namespace MyCaffe.trainers
         /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
         public bool Initialize()
         {
+            m_mycaffe.CancelEvent.Reset();
+            m_brain = new Brain<T>(m_mycaffe, m_properties);
+
             if (OnInitialize != null)
             {
                 InitializeArgs e = new InitializeArgs(m_brain.MyCaffeControl);
                 OnInitialize(this, e);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Shutdown the trainer.
+        /// </summary>
+        /// <returns></returns>
+        public bool Shutdown()
+        {
+            if (m_brain != null)
+            {
+                m_mycaffe.CancelEvent.Set();
+                m_brain.Dispose();
+                m_brain = null;
             }
 
             return true;
@@ -104,6 +128,8 @@ namespace MyCaffe.trainers
             List<Worker> rgEnvironments = new List<Worker>();
             List<Worker> rgOptimizers = new List<Worker>();
 
+            m_brain.MyCaffeControl.CancelEvent.Reset();
+
             for (int i = 0; i < m_nOptimizers; i++)
             {
                 Optimizer<T> opt = new Optimizer<T>(m_brain);
@@ -125,6 +151,8 @@ namespace MyCaffe.trainers
                 if (m_nGlobalEpisodes >= m_nIterations)
                     break;
             }
+
+            Shutdown();
 
             foreach (Optimizer<T> opt in rgOptimizers)
             {
@@ -158,6 +186,7 @@ namespace MyCaffe.trainers
     {
         protected int m_nIndex = -1;
         protected AutoResetEvent m_evtCancel = new AutoResetEvent(false);
+        protected ManualResetEvent m_evtDone = new ManualResetEvent(false);
         protected Task m_workTask = null;
 
         public Worker()
@@ -174,10 +203,11 @@ namespace MyCaffe.trainers
                 m_workTask = Task.Factory.StartNew(new Action<object>(doWork), nCycleDelay);
         }
 
-        public void Stop()
+        public void Stop(int nWait)
         {
             m_evtCancel.Set();
             m_workTask = null;
+            m_evtDone.WaitOne(nWait);
         }
     }
 
@@ -200,7 +230,7 @@ namespace MyCaffe.trainers
 
         public void Dispose()
         {
-            Stop();
+            Stop(2000);
         }
 
         protected override void doWork(object arg)
@@ -208,14 +238,18 @@ namespace MyCaffe.trainers
             int nCycleDelay = (int)arg;
             Stopwatch sw = new Stopwatch();
 
+            m_evtDone.Reset();
+
             sw.Start();
 
             // Main training loop
             while (!m_evtCancel.WaitOne(nCycleDelay))
             {
                 if (!runEpisode())
-                    return;
+                    break;
             }
+
+            m_evtDone.Set();
         }
 
         private bool runEpisode()
@@ -231,18 +265,19 @@ namespace MyCaffe.trainers
 
             while (!bDone)
             {
-                if (m_brain.MyCaffeControl.CancelEvent.WaitOne(1))
+                if (m_evtCancel.WaitOne(1))
                     return false;
 
                 int a = m_agent.act(s);
 
                 dataArg = new GetDataArgs(m_brain.MyCaffeControl, m_brain.MyCaffeControl.Log, m_brain.MyCaffeControl.CancelEvent, false, m_nIndex, a);
                 OnGetData(this, dataArg);
-                StateBase s_ = dataArg.State;
-                double dfReward = s_.Reward;
 
                 if (m_brain.MyCaffeControl.CancelEvent.WaitOne(1))
                     return false;
+
+                StateBase s_ = dataArg.State;
+                double dfReward = s_.Reward;
 
                 bDone = s_.Done;
                 if (bDone)
@@ -278,17 +313,21 @@ namespace MyCaffe.trainers
 
         public void Dispose()
         {
-            Stop();
+            Stop(2000);
         }
 
         protected override void doWork(object arg)
         {
             int nCycleDelay = (int)arg;
+
+            m_evtDone.Reset();
                 
             while (!m_evtCancel.WaitOne(nCycleDelay))
             {
                 m_brain.optimize();
             }
+
+            m_evtDone.Set();
         }
     }
 
