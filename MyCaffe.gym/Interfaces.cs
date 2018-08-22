@@ -20,6 +20,7 @@ namespace MyCaffe.gym
     {
         void Initialize(Log log);
         void Close();
+        IXMyCaffeGym Clone();
         string Name { get; }
         void Reset();
         Tuple<Tuple<double,double,double>[], double, bool> Step();
