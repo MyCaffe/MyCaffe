@@ -34,12 +34,12 @@ namespace MyCaffe.gym
     [DataContract]
     public class Observation
     {
+        Tuple<double,double,double>[] m_rgState;
         Bitmap m_image;
-        double[] m_rgState;
         double m_dfReward;
         bool m_bDone;
 
-        public Observation(Bitmap img, double[] rgState, double dfReward, bool bDone)
+        public Observation(Bitmap img, Tuple<double,double,double>[] rgState, double dfReward, bool bDone)
         {
             m_image = img;
             m_rgState = rgState;
@@ -47,18 +47,46 @@ namespace MyCaffe.gym
             m_bDone = bDone;
         }
 
+        public Observation Clone()
+        {
+            Bitmap img = new Bitmap(m_image);
+            List<Tuple<double, double, double>> rgVal = new List<Tuple<double, double, double>>();
+
+            foreach (Tuple<double,double,double> item in m_rgState)
+            {
+                rgVal.Add(new Tuple<double, double, double>(item.Item1, item.Item2, item.Item3));
+            }
+
+            return new Observation(img, rgVal.ToArray(), m_dfReward, m_bDone);
+        }
+
+        public static double[] GetValues(Tuple<double,double,double>[] rg, bool bNormalize)
+        {
+            List<double> rgState = new List<double>();
+
+            for (int i = 0; i < rg.Length; i++)
+            {
+                if (bNormalize)
+                    rgState.Add((rg[i].Item1 - rg[i].Item2) / (rg[i].Item3 - rg[i].Item2));
+                else
+                    rgState.Add(rg[i].Item1);
+            }
+
+            return rgState.ToArray();
+        }
+
+        [DataMember]
+        public Tuple<double,double,double>[] State
+        {
+            get { return m_rgState; }
+            set { m_rgState = value; }
+        }
+
         [DataMember]
         public Bitmap Image
         {
             get { return m_image; }
             set { m_image = value; }
-        }
-
-        [DataMember]
-        public double[] State
-        {
-            get { return m_rgState; }
-            set { m_rgState = value; }
         }
 
         [DataMember]

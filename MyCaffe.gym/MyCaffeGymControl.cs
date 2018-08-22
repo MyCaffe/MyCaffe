@@ -19,10 +19,11 @@ namespace MyCaffe.gym
         Log m_log;
         IXMyCaffeGym m_igym;
         Bitmap m_bmp = null;
-        Tuple<double[], double, bool> m_state;
+        Tuple<Tuple<double,double,double>[], double, bool> m_state;
         bool m_bStopping = false;
         Observations m_rgObservations = new Observations(10);
         bool m_bRendering = false;
+        object m_objSync = new object();
 
         public event EventHandler<OnObservationArgs> OnObservation;
 
@@ -76,11 +77,17 @@ namespace MyCaffe.gym
 
         public void Render()
         {
+            if (!IsHandleCreated)
+                return;
+
+            if (!Visible)
+                return;
+
             if (m_bRendering)
                 return;
 
             try
-            {
+            {             
                 m_bRendering = true;
                 m_bmp = m_igym.Render(Width, Height);
 
@@ -111,12 +118,19 @@ namespace MyCaffe.gym
 
         public void Reset()
         {
-            m_igym.Reset();
+            lock (m_objSync)
+            {
+                m_rgObservations.Clear();
+                m_igym.Reset();
+            }
         }
 
         public void RunAction(int nAction)
         {
-            m_igym.AddAction(nAction);
+            lock (m_objSync)
+            {
+                m_igym.AddAction(nAction);
+            }
         }
 
         public Dictionary<string, int> GetActionSpace()
@@ -126,7 +140,10 @@ namespace MyCaffe.gym
 
         public Observation GetLastObservation()
         {
-            return m_rgObservations.LastObservation;
+            lock (m_objSync)
+            {
+                return m_rgObservations.GetLastObservation();
+            }
         }
 
         private void m_bwGym_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -148,7 +165,10 @@ namespace MyCaffe.gym
 
             while (!bw.CancellationPending)
             {
-                m_state = igym.Step();
+                lock (m_objSync)
+                {
+                    m_state = igym.Step();
+                }
                 bw.ReportProgress(1);
                 Thread.Sleep(20);   // roughly 50 frames/second
             }
@@ -202,17 +222,22 @@ namespace MyCaffe.gym
             }
         }
 
-        public Observation LastObservation
+        public void Clear()
         {
-            get
+            lock (m_syncObj)
             {
-                lock (m_syncObj)
-                {
-                    if (m_rgObservation.Count == 0)
-                        return null;
+                m_rgObservation.Clear();
+            }
+        }
 
-                    return m_rgObservation[m_rgObservation.Count - 1];
-                }
+        public Observation GetLastObservation()
+        {
+            lock (m_syncObj)
+            {
+                if (m_rgObservation.Count == 0)
+                    return null;
+
+                return m_rgObservation[m_rgObservation.Count - 1].Clone();
             }
         }
 
