@@ -83,7 +83,6 @@ namespace MyCaffe.trainers
         /// Override this method when using the MyCaffeControl that uses the <i>double</i> base type.
         /// </remarks>
         /// <param name="caffe">Specifies the MyCaffeControl used.</param>
-        /// <param name="nIndex">Optionally, specifies teh index of the trainer.</param>
         /// <returns>The IxTraininer interface implemented by the new trainer is returned.</returns>
         protected virtual IxTrainer create_trainerD(Component caffe)
         {
@@ -103,7 +102,6 @@ namespace MyCaffe.trainers
         /// Override this method when using the MyCaffeControl that uses the <i>double</i> base type.
         /// </remarks>
         /// <param name="caffe">Specifies the MyCaffeControl used.</param>
-        /// <param name="nIndex">Optionally, specifies teh index of the trainer.</param>
         /// <returns>The IxTraininer interface implemented by the new trainer is returned.</returns>
         protected virtual IxTrainer create_trainerF(Component caffe)
         {
@@ -199,7 +197,6 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <param name="strProperties">Specifies the key-value pair of properties each separated by ';'.  For example the expected
         /// format is 'key1'='value1';'key2'='value2';...</param>
-        /// <param name="mode">Specifies the training mode to use A2C (single mode) or A3C (multi mode).</param>
         public void Initialize(string strProperties)
         {
             m_properties = new PropertySet(strProperties);
@@ -218,8 +215,6 @@ namespace MyCaffe.trainers
         /// Create a new trainer and use it to run a training cycle.
         /// </summary>
         /// <param name="mycaffe">Specifies the MyCaffeControl to use.</param>
-        /// <param name="log">Specifies the output log.</param>
-        /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nIterationOverride">Specifies the iterations to run if greater than zero.</param>
         /// <param name="step">Optionally, specifies whether or not to step the training for debugging (default = NONE).</param>
         public void Train(Component mycaffe, int nIterationOverride, TRAIN_STEP step = TRAIN_STEP.NONE)
