@@ -98,13 +98,11 @@ namespace MyCaffe.test
             int nIdx = gym.Open(strName, true, bShowUi, false);
 
             Dictionary<string, int> rgActions = gym.GetActionSpace(strName);
-            Assert.AreEqual(rgActions.Count, 3);
-            Assert.AreEqual(rgActions.ContainsKey("Nothing"), true);
+            Assert.AreEqual(rgActions.Count, 2);
             Assert.AreEqual(rgActions.ContainsKey("MoveLeft"), true);
             Assert.AreEqual(rgActions.ContainsKey("MoveRight"), true);
-            Assert.AreEqual(rgActions["Nothing"], 0);
-            Assert.AreEqual(rgActions["MoveLeft"], 1);
-            Assert.AreEqual(rgActions["MoveRight"], 2);
+            Assert.AreEqual(rgActions["MoveLeft"], 0);
+            Assert.AreEqual(rgActions["MoveRight"], 1);
 
             gym.Run(strName, nIdx, 0);
             gym.Run(strName, nIdx, 1);
