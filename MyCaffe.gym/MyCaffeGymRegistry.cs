@@ -86,7 +86,7 @@ namespace MyCaffe.gym
                 return -1;
 
             MyCaffeGymControl ctrl = new MyCaffeGymControl(m_log);
-            ctrl.Initialize(igym);
+            ctrl.Initialize(igym.Clone());
             FormGym dlg = new FormGym(ctrl);
 
             if (!m_rgGym.ContainsKey(strName))
