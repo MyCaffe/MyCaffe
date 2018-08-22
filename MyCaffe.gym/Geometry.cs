@@ -205,6 +205,60 @@ namespace MyCaffe.gym
             m_rgObj.Add(obj);
         }
 
+        public void RenderText(Graphics g, string str, float fX, float fY)
+        {
+            Font font = new Font("Century Gothic", 10.0f);
+            g.DrawString(str, font, Brushes.Black, new PointF(fX, fY));
+            font.Dispose();
+        }
+
+        public void RenderSteps(Graphics g, int nSteps, int nMax)
+        {
+            RectangleF rc = g.VisibleClipBounds;
+            Font fontStep = new Font("Century Gothic", 7.0f);
+            string strStep = nSteps.ToString();
+            string strMax = nMax.ToString();
+            string strSteps = "Steps";
+            SizeF szStep = g.MeasureString(strStep, fontStep);
+            SizeF szSteps = g.MeasureString(strSteps, fontStep);
+            SizeF szMax = g.MeasureString(strMax, fontStep);
+
+            float fX = 10;
+            float fY = rc.Bottom - (szSteps.Height * 2);
+
+            g.DrawString(strSteps, fontStep, Brushes.Black, new PointF(fX, fY));
+            fX += szSteps.Width;
+
+            float fMaxWid = Math.Max(nMax, nSteps);
+            float fStepWid = nSteps;
+
+            if (fMaxWid + fX + 5 > rc.Width)
+            {
+                fMaxWid = rc.Width - (fX + 5);
+                fStepWid = ((float)nSteps / (float)Math.Max(nMax, nSteps)) * fMaxWid;
+            }
+
+            Rectangle rcMax = new Rectangle((int)fX, (int)fY, (int)fMaxWid, (int)(szStep.Height));
+            Rectangle rcStep = new Rectangle((int)fX, (int)fY, (int)fStepWid, (int)(szStep.Height));
+            Brush br = (nSteps < nMax) ? Brushes.Orange : Brushes.Lime;
+            Pen pen = (nSteps < nMax) ? Pens.Brown : Pens.DarkGreen;
+
+            g.FillRectangle(br, rcStep);
+            g.DrawRectangle(pen, rcMax);
+
+            fX = rcStep.Right - szStep.Width / 2;
+            fY = rcStep.Bottom;
+
+            g.DrawString(strStep, fontStep, Brushes.Brown, new PointF(fX, fY));
+
+            fX = rcMax.Right - szMax.Width / 2;
+            fY = rcMax.Bottom;
+
+            g.DrawString(strMax, fontStep, Brushes.DarkGreen, new PointF(fX, fY));
+
+            fontStep.Dispose();
+        }
+
         public void Render(Graphics g)
         {
             System.Drawing.Drawing2D.GraphicsState gstate = g.Save();
