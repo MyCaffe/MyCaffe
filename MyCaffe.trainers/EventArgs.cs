@@ -21,7 +21,6 @@ namespace MyCaffe.trainers
         /// The constructor.
         /// </summary>
         /// <param name="mycaffe">Specifies the MyCaffeControl used.</param>
-        /// <param name="nIndex">Specifies the index of the trainer.</param>
         public InitializeArgs(Component mycaffe)
         {
             m_caffe = mycaffe;
@@ -132,6 +131,7 @@ namespace MyCaffe.trainers
         bool m_bReset;
         Component m_caffe;
         Log m_log;
+        CancelEvent m_evtCancel;
         StateBase m_state = null;
 
         /// <summary>
@@ -139,15 +139,17 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <param name="mycaffe">Specifies the MyCaffeControl used.</param>
         /// <param name="log">Specifies the output log to use.</param>
+        /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="bReset">Specifies to reset the environment.</param>
         /// <param name="nIndex">Specifies the instance index.</param>
         /// <param name="nAction">Specifies the action to run.  If less than zero this parameter is ignored.</param>
-        public GetDataArgs(Component mycaffe, Log log, bool bReset, int nIndex, int nAction = -1)
+        public GetDataArgs(Component mycaffe, Log log, CancelEvent evtCancel, bool bReset, int nIndex, int nAction = -1)
         {
             m_nIndex = nIndex;
             m_nAction = nAction;
             m_caffe = mycaffe;
             m_log = log;
+            m_evtCancel = evtCancel;
             m_bReset = bReset;
         }
 
@@ -166,6 +168,14 @@ namespace MyCaffe.trainers
         public Log OutputLog
         {
             get { return m_log; }
+        }
+
+        /// <summary>
+        /// Returns the cancel event.
+        /// </summary>
+        public CancelEvent CancelEvent
+        {
+            get { return m_evtCancel; }
         }
 
         /// <summary>
