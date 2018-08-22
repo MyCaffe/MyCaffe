@@ -67,6 +67,11 @@ namespace MyCaffe.gym
             m_rgActionSpace.Add("MoveRight", 1);
         }
 
+        public IXMyCaffeGym Clone()
+        {
+            return new CartPoleGym();
+        }
+
         public string Name
         {
             get { return m_strName; }
