@@ -53,6 +53,7 @@ namespace MyCaffe.basecode
         string m_strMsg;
         object m_tag = null;
         bool m_bError;
+        bool m_bOverrideEnabled = false;
 
         /// <summary>
         /// The LogArg constructor.
@@ -61,11 +62,13 @@ namespace MyCaffe.basecode
         /// <param name="strMsg">Specifies the message written when calling the Log::WriteLine function (which triggers the event).</param>
         /// <param name="dfProgress">Specifies the progress value specifies when setting the Log::Progress value.</param>
         /// <param name="bError">Specifies whether or not the message is the result of a call from Log::WriteError.</param>
-        public LogArg(string strSrc, string strMsg, double dfProgress = 0.0, bool bError = false)
+        /// <param name="bOverrideEnabled">Specifies whether or not the log override was used.</param>
+        public LogArg(string strSrc, string strMsg, double dfProgress = 0.0, bool bError = false, bool bOverrideEnabled = false)
             : base(strSrc, dfProgress)
         {
             m_strMsg = strMsg;
             m_bError = bError;
+            m_bOverrideEnabled = bOverrideEnabled;
         }
 
         /// <summary>
@@ -82,6 +85,14 @@ namespace MyCaffe.basecode
         public bool Error
         {
             get { return m_bError; }
+        }
+
+        /// <summary>
+        /// Returns whether or not the override was enabled or not.
+        /// </summary>
+        public bool OverrideEnabled
+        {
+            get { return m_bOverrideEnabled; }
         }
 
         public object Tag /** @private */
