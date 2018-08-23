@@ -129,6 +129,7 @@ namespace MyCaffe.trainers
         int m_nIndex = -1;
         int m_nAction;
         bool m_bReset;
+        bool m_bAllowUI = true;
         Component m_caffe;
         Log m_log;
         CancelEvent m_evtCancel;
@@ -143,7 +144,8 @@ namespace MyCaffe.trainers
         /// <param name="bReset">Specifies to reset the environment.</param>
         /// <param name="nIndex">Specifies the instance index.</param>
         /// <param name="nAction">Specifies the action to run.  If less than zero this parameter is ignored.</param>
-        public GetDataArgs(Component mycaffe, Log log, CancelEvent evtCancel, bool bReset, int nIndex, int nAction = -1)
+        /// <param name="bAllowUi">Optionally, specifies whether or not to allow the user interface.</param>
+        public GetDataArgs(Component mycaffe, Log log, CancelEvent evtCancel, bool bReset, int nIndex, int nAction = -1, bool bAllowUi = true)
         {
             m_nIndex = nIndex;
             m_nAction = nAction;
@@ -151,6 +153,15 @@ namespace MyCaffe.trainers
             m_log = log;
             m_evtCancel = evtCancel;
             m_bReset = bReset;
+            m_bAllowUI = bAllowUi;
+        }
+
+        /// <summary>
+        /// Returns whether or not to allow the user interface.
+        /// </summary>
+        public bool AllowUi
+        {
+            get { return m_bAllowUI; }
         }
 
         /// <summary>
