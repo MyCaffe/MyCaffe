@@ -21,11 +21,8 @@ namespace MyCaffe.gym
         Bitmap m_bmp = null;
         Tuple<Tuple<double,double,double>[], double, bool> m_state;
         bool m_bStopping = false;
-        Observations m_rgObservations = new Observations(10);
         bool m_bRendering = false;
-        object m_objSync = new object();
-
-        public event EventHandler<OnObservationArgs> OnObservation;
+        Observation m_observation = null;
 
         public MyCaffeGymControl(Log log)
         {
@@ -86,12 +83,7 @@ namespace MyCaffe.gym
                 m_bmp = m_igym.Render(Width, Height);
 
                 if (m_state != null)
-                {
-                    m_rgObservations.Add(new Observation(new Bitmap(m_bmp), m_state.Item1, m_state.Item2, m_state.Item3));
-
-                    if (OnObservation != null)
-                        OnObservation(this, new OnObservationArgs(m_rgObservations));
-                }
+                    m_observation = new Observation(new Bitmap(m_bmp), m_state.Item1, m_state.Item2, m_state.Item3);
 
                 if (IsHandleCreated && Visible)
                     Invalidate(true);
@@ -113,19 +105,13 @@ namespace MyCaffe.gym
 
         public void Reset()
         {
-            lock (m_objSync)
-            {
-                m_rgObservations.Clear();
-                m_igym.Reset();
-            }
+            m_observation = null;
+            m_igym.Reset();
         }
 
         public void RunAction(int nAction)
         {
-            lock (m_objSync)
-            {
-                m_igym.AddAction(nAction);
-            }
+            m_igym.AddAction(nAction);
         }
 
         public Dictionary<string, int> GetActionSpace()
@@ -135,10 +121,7 @@ namespace MyCaffe.gym
 
         public Observation GetLastObservation()
         {
-            lock (m_objSync)
-            {
-                return m_rgObservations.GetLastObservation();
-            }
+            return m_observation;
         }
 
         private void m_bwGym_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -160,10 +143,7 @@ namespace MyCaffe.gym
 
             while (!bw.CancellationPending)
             {
-                lock (m_objSync)
-                {
-                    m_state = igym.Step();
-                }
+                m_state = igym.Step();
                 bw.ReportProgress(1);
                 Thread.Sleep(20);   // roughly 50 frames/second
             }
@@ -175,85 +155,6 @@ namespace MyCaffe.gym
         {
             if (m_bmp != null)
                 e.Graphics.DrawImage(m_bmp, new Point(0, 0));
-        }
-    }
-
-    public class OnObservationArgs : EventArgs
-    {
-        Observations m_rgObservations;
-
-        public OnObservationArgs(Observations rgObs)
-        {
-            m_rgObservations = rgObs;
-        }
-
-        public Observations Observations
-        {
-            get { return m_rgObservations; }
-        }
-    }
-
-    public class Observations : IEnumerable<Observation>
-    {
-        List<Observation> m_rgObservation = new List<Observation>();
-        object m_syncObj = new object();
-        int m_nMax;
-
-        public Observations(int nMax)
-        {
-            m_nMax = nMax;
-        }
-
-        public void Add(Observation obs)
-        {
-            lock (m_syncObj)
-            {
-                m_rgObservation.Add(obs);
-
-                while (m_rgObservation.Count > m_nMax)
-                {
-                    m_rgObservation.RemoveAt(0);
-                }
-            }
-        }
-
-        public void Clear()
-        {
-            lock (m_syncObj)
-            {
-                m_rgObservation.Clear();
-            }
-        }
-
-        public Observation GetLastObservation()
-        {
-            lock (m_syncObj)
-            {
-                if (m_rgObservation.Count == 0)
-                    return null;
-
-                return m_rgObservation[m_rgObservation.Count - 1].Clone();
-            }
-        }
-
-        public IEnumerator<Observation> GetEnumerator()
-        {
-            return m_rgObservation.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return m_rgObservation.GetEnumerator();
-        }
-
-        public int Count
-        {
-            get { return m_rgObservation.Count; }
-        }
-
-        public Observation this[int nIdx]
-        {
-            get { return m_rgObservation[nIdx]; }
         }
     }
 }
