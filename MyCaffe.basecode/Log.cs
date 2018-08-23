@@ -90,7 +90,7 @@ namespace MyCaffe.basecode
                 strLine = str;
 
             if (OnWriteLine != null)
-                OnWriteLine(this, new LogArg(m_strSource, strLine, m_dfProgress, bError));
+                OnWriteLine(this, new LogArg(m_strSource, strLine, m_dfProgress, bError, bOverrideEnabled));
 
             if (m_bEnableTrace)
             {
