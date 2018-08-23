@@ -108,6 +108,30 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
+        /// Run a single cycle on the environment after the delay.
+        /// </summary>
+        /// <param name="nDelay">Specifies a delay to wait before running.</param>
+        /// <returns>The results of the run containing the action are returned.</returns>
+        public ResultCollection Run(int nDelay = 1000)
+        {
+            m_brain.MyCaffeControl.CancelEvent.Reset();
+            Environment<T> env = new Environment<T>(m_brain, m_properties, m_random, 1);
+            env.OnGetData += Env_OnGetData;
+            Tuple<int, int> res = env.Run(nDelay);
+
+            List<KeyValuePair<int, double>> rgActions = new List<KeyValuePair<int, double>>();
+            for (int i = 0; i < res.Item2; i++)
+            {
+                if (res.Item1 == i)
+                    rgActions.Add(new KeyValuePair<int, double>(i, 1.0));
+                else
+                    rgActions.Add(new KeyValuePair<int, double>(i, 0.0));
+            }
+
+            return new ResultCollection(rgActions);
+        }
+
+        /// <summary>
         /// Run the test cycle - currently this is not implemented.
         /// </summary>
         /// <param name="nIterations">Specifies the number of iterations to run.</param>
@@ -299,6 +323,22 @@ namespace MyCaffe.trainers
             }
 
             return true;
+        }
+
+        public Tuple<int, int> Run(int nDelay = 1000)
+        {
+            // Reset the environment and get the initial state.
+            GetDataArgs dataArg = new GetDataArgs(m_brain.MyCaffeControl, m_brain.MyCaffeControl.Log, m_brain.MyCaffeControl.CancelEvent, true, -1, -1, false);
+            OnGetData(this, dataArg);
+
+            Thread.Sleep(nDelay);
+
+            dataArg = new GetDataArgs(m_brain.MyCaffeControl, m_brain.MyCaffeControl.Log, m_brain.MyCaffeControl.CancelEvent, false, dataArg.Index, -1, false);
+            OnGetData(this, dataArg);
+
+            int a = m_agent.act(dataArg.State);
+
+            return new Tuple<int, int>(a, dataArg.State.ActionCount);
         }
     }
 

@@ -186,6 +186,14 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
+        /// Returns whether or not Running is supported.
+        /// </summary>
+        public bool IsRunningSupported
+        {
+            get { return true; }
+        }
+
+        /// <summary>
         /// Releases any resources used by the component.
         /// </summary>
         public void CleanUp()
@@ -200,6 +208,30 @@ namespace MyCaffe.trainers
         public void Initialize(string strProperties)
         {
             m_properties = new PropertySet(strProperties);
+        }
+
+        /// <summary>
+        /// Create a new trainer and use it to run a single run cycle.
+        /// </summary>
+        /// <param name="mycaffe">Specifies the MyCaffeControl to use.</param>
+        /// <param name="nDelay">Specifies a delay to wait before getting the action.</param>
+        /// <returns>The results of the run are returned.</returns>
+        public ResultCollection Run(Component mycaffe, int nDelay = 1000)
+        {
+            if (m_itrainer == null)
+            {
+                if (mycaffe is MyCaffeControl<double>)
+                    m_itrainer = create_trainerD(mycaffe);
+                else
+                    m_itrainer = create_trainerF(mycaffe);
+
+                m_itrainer.Initialize();
+            }
+
+            ResultCollection res = m_itrainer.Run(nDelay);
+            m_itrainer = null;
+
+            return res;
         }
 
         /// <summary>

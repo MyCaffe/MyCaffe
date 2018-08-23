@@ -63,6 +63,10 @@ namespace MyCaffe.trainers
         /// </summary>
         bool IsTestingSupported { get; }
         /// <summary>
+        /// Returns <i>true</i> when the 'Run' method is supported.
+        /// </summary>
+        bool IsRunningSupported { get; }
+        /// <summary>
         /// Train the network using the training technique implemented by this trainer.
         /// </summary>
         /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
@@ -75,6 +79,13 @@ namespace MyCaffe.trainers
         /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
         /// <param name="nIterationOverride">Specifies the iteration override if any.</param>
         void Test(Component mycaffe, int nIterationOverride);
+        /// <summary>
+        /// Run the network using the run technique implemented by this trainer.
+        /// </summary>
+        /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
+        /// <param name="nDelay">Specifies a delay to wait before getting the action.</param>
+        /// <returns>The run results are returned.</returns>
+        ResultCollection Run(Component mycaffe, int nDelay);
         /// <summary>
         /// Returns the global rewards.
         /// </summary>
@@ -117,5 +128,11 @@ namespace MyCaffe.trainers
         /// <param name="nIterations">Specifies the number of iterations to run.</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> on failure.</returns>
         bool Test(int nIterations);
+        /// <summary>
+        /// Run a single cycle on the trainer.
+        /// </summary>
+        /// <param name="nDelay">Specifies a delay to wait before getting the action.</param>
+        /// <returns>The result collection containing the action is returned.</returns>
+        ResultCollection Run(int nDelay = 1000);
     }
 }
