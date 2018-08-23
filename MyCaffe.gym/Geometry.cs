@@ -232,9 +232,9 @@ namespace MyCaffe.gym
             float fMaxWid = Math.Max(nMax, nSteps);
             float fStepWid = nSteps;
 
-            if (fMaxWid + fX + 5 > rc.Width)
+            if (fMaxWid + fX + 20 > rc.Width)
             {
-                fMaxWid = rc.Width - (fX + 5);
+                fMaxWid = rc.Width - (fX + 20);
                 fStepWid = ((float)nSteps / (float)Math.Max(nMax, nSteps)) * fMaxWid;
             }
 
