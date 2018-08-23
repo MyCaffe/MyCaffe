@@ -680,7 +680,7 @@ namespace MyCaffe.solvers
                 m_net.Forward(out dfLoss);
 
                 UpdateSmoothedLoss(dfLoss, start_iter, average_loss);
-                m_log.WriteLine("Iteration " + m_nIter + ", loss = " + m_dfSmoothedLoss.ToString(), true);
+                m_log.WriteLine("Iteration " + m_nIter + ", loss = " + m_dfSmoothedLoss.ToString());
             }
 
             if (m_param.test_interval > 0 && (m_nIter % m_param.test_interval) == 0)
@@ -689,7 +689,7 @@ namespace MyCaffe.solvers
                     TestAll();
             }
 
-            m_log.WriteLine("Optimization done.", true);
+            m_log.WriteLine("Optimization done.");
 
             if (m_blobBatchInputData != null)
             {
