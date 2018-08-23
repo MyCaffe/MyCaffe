@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using MyCaffe.basecode;
@@ -141,6 +142,19 @@ namespace MyCaffe.common
             }
 
             return strOut;
+        }
+
+        /// <summary>
+        /// Converts the result collection into an image.
+        /// </summary>
+        /// <param name="clrMap">Optionally, specifies a colormap to use.</param>
+        /// <returns>The image respresentation of the result collection is returned.</returns>
+        public Image ToImage(ColorMapper clrMap)
+        {
+            int nW = (int)Math.Ceiling(Math.Sqrt(m_rgResultsOriginal.Count));
+            int nH = nW;
+            Size sz = new Size(nW, nH);
+            return ImageData.GetImage(m_rgResultsOriginal, sz, clrMap);
         }
     }
 }
