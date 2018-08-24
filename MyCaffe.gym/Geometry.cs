@@ -207,7 +207,7 @@ namespace MyCaffe.gym
 
         public void RenderText(Graphics g, string str, float fX, float fY)
         {
-            Font font = new Font("Century Gothic", 10.0f);
+            Font font = new Font("Century Gothic", 9.0f);
             g.DrawString(str, font, Brushes.Black, new PointF(fX, fY));
             font.Dispose();
         }
