@@ -305,10 +305,7 @@ namespace MyCaffe.trainers
 
                 bDone = s_.Done;
                 if (bDone)
-                {
                     s_ = null;
-                    dfReward = 0;
-                }
 
                 m_agent.train(s, a, dfReward, s_);
 
