@@ -182,6 +182,8 @@ namespace MyCaffe.gym
                     GeomView view = new GeomView();
 
                     view.RenderText(g, "Current Force = " + m_dfForceMag.ToString(), 10, 10);
+                    view.RenderText(g, "X = " + m_state.X.ToString("N02"), 10, 24);
+                    view.RenderText(g, "Theta = " + m_state.Theta.ToString("N02"), 10, 36);
                     view.RenderSteps(g, m_nSteps, m_nMaxSteps);
 
                     // Render the objects.
@@ -253,10 +255,16 @@ namespace MyCaffe.gym
 
                 m_state = new CartPoleState(dfX, dfXDot, dfTheta, dfThetaDot);
 
-                if (dfX < -m_dfXThreshold ||
-                    dfX > m_dfXThreshold ||
-                    dfTheta < -m_dfThetaThreshold || 
-                    dfTheta > m_dfThetaThreshold)
+                bool bXDone = false;
+                bool bThetaDone = false;
+
+                if (dfX < -m_dfXThreshold || dfX > m_dfXThreshold)
+                    bXDone = true;
+
+                if (dfTheta < -m_dfThetaThreshold || dfTheta > m_dfThetaThreshold)
+                    bThetaDone = true;
+
+                if (bXDone || bThetaDone)
                     m_bDone = true;
 
                 if (!m_bDone)
@@ -265,14 +273,19 @@ namespace MyCaffe.gym
                 }
                 else if (!m_nStepsBeyondDone.HasValue)
                 {
-                    // Pole just fell!
                     m_nStepsBeyondDone = 0;
+
+                    if (bXDone) // ran off track
+                        dfReward = -1;
+                    else // pole fell
+                        dfReward = 0.0;
                 }
                 else
                 {
                     if (m_nStepsBeyondDone.Value == 0)
                         m_log.WriteLine("You are calling 'step()' even though this environment has already returned done = True.  You should always call 'reset()'");
                     m_nStepsBeyondDone++;
+                    dfReward = 0.0;
                 }
 
                 m_nSteps++;
