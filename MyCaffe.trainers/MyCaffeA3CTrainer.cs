@@ -154,6 +154,14 @@ namespace MyCaffe.trainers
         {
         }
 
+        /// <summary>
+        /// Returns <i>true</i> when the training is ready for a snap-shot, <i>false</i> otherwise.
+        /// </summary>
+        protected virtual bool update_snapshot
+        {
+            get { return false; }
+        }
+
         #endregion
 
         #region IXMyCaffeCustomTrainer Interface
@@ -172,6 +180,14 @@ namespace MyCaffe.trainers
         public TRAINING_CATEGORY TrainingCategory
         {
             get { return category; }
+        }
+
+        /// <summary>
+        /// Returns <i>true</i> when the training is ready for a snap-shot, <i>false</i> otherwise.
+        /// </summary>
+        public bool UpdateSnapshot
+        {
+            get { return update_snapshot; }
         }
 
         /// <summary>
