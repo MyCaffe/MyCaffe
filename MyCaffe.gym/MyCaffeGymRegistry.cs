@@ -21,6 +21,7 @@ namespace MyCaffe.gym
         Log m_log;
 
         delegate int fnopen(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst);
+        delegate void fnopenUi(string strName, int nIdx);
         delegate bool fnclose(string strName, int nIdx);
 
         public MyCaffeGymRegistry()
@@ -77,6 +78,19 @@ namespace MyCaffe.gym
         public int Open(string strName, bool bAutoStart, bool bShowUI, bool bShowOnlyFirst)
         {
             return (int)m_ctrlParent.Invoke(new fnopen(open), strName, bAutoStart, bShowUI, bShowOnlyFirst);
+        }
+
+        public void Open(string strName, int nIdx)
+        {
+            m_ctrlParent.Invoke(new fnopenUi(openUi), strName, nIdx);
+        }
+
+        private void openUi(string strName, int nIdx)
+        {
+            FormGym gym = Find(strName, nIdx);
+
+            if (gym != null)
+                gym.Show();
         }
 
         private int open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst)
@@ -163,7 +177,7 @@ namespace MyCaffe.gym
             if (dlg == null)
                 return false;
 
-            dlg.Hide();
+            dlg.Stop();
             m_rgGym[strName][nIdx] = null;
 
             for (int i = 0; i < m_rgGym[strName].Count; i++)

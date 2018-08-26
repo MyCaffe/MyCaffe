@@ -20,6 +20,8 @@ namespace MyCaffe.gym
         [OperationContract]
         void CloseAll(string strName);
         [OperationContract]
+        void OpenUi(string strName, int nIdx);
+        [OperationContract]
         byte[] GetDataset(string strName, int nType);
         [OperationContract]
         Dictionary<string, int> GetActionSpace(string strName);

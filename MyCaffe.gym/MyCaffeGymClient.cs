@@ -34,6 +34,11 @@ namespace MyCaffe.gym
             m_igym.CloseAll(strName);
         }
 
+        public void OpenUi(string strName, int nIndex)
+        {
+            m_igym.OpenUi(strName, nIndex);
+        }
+
         public DatasetDescriptor GetDataset(string strName, int nType = 0)
         {
             byte[] rgDs = m_igym.GetDataset(strName, nType);

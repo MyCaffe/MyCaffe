@@ -25,6 +25,11 @@ namespace MyCaffe.gym
             MyCaffeGymRegistrar.Registry.CloseAll(strName);
         }
 
+        public void OpenUi(string strName, int nIdx)
+        {
+            MyCaffeGymRegistrar.Registry.Open(strName, nIdx);
+        }
+
         public Dictionary<string, int> GetActionSpace(string strName)
         {
             return MyCaffeGymRegistrar.Registry.GetActionSpace(strName);
