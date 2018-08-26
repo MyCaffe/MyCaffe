@@ -57,6 +57,7 @@
             this.specialTestsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.alexNetToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.resNet56CifarAccuracyBugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.openGymToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.localHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -74,7 +75,8 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.lblGpu = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
-            this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
+            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
+            this.startCartPoleTrainerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -285,7 +287,9 @@
             // 
             this.specialTestsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.alexNetToolStripMenuItem,
-            this.resNet56CifarAccuracyBugToolStripMenuItem});
+            this.resNet56CifarAccuracyBugToolStripMenuItem,
+            this.toolStripSeparator5,
+            this.startCartPoleTrainerToolStripMenuItem});
             this.specialTestsToolStripMenuItem.Name = "specialTestsToolStripMenuItem";
             this.specialTestsToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.specialTestsToolStripMenuItem.Text = "Special Tests";
@@ -303,6 +307,11 @@
             this.resNet56CifarAccuracyBugToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
             this.resNet56CifarAccuracyBugToolStripMenuItem.Text = "ResNet56-Cifar Accuracy Bug";
             this.resNet56CifarAccuracyBugToolStripMenuItem.Click += new System.EventHandler(this.resNet56CifarAccuracyBugToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator4
+            // 
+            this.toolStripSeparator4.Name = "toolStripSeparator4";
+            this.toolStripSeparator4.Size = new System.Drawing.Size(189, 6);
             // 
             // openGymToolStripMenuItem
             // 
@@ -432,10 +441,17 @@
             this.timerUI.Interval = 1000;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
-            // toolStripSeparator4
+            // toolStripSeparator5
             // 
-            this.toolStripSeparator4.Name = "toolStripSeparator4";
-            this.toolStripSeparator4.Size = new System.Drawing.Size(189, 6);
+            this.toolStripSeparator5.Name = "toolStripSeparator5";
+            this.toolStripSeparator5.Size = new System.Drawing.Size(238, 6);
+            // 
+            // startCartPoleTrainerToolStripMenuItem
+            // 
+            this.startCartPoleTrainerToolStripMenuItem.Name = "startCartPoleTrainerToolStripMenuItem";
+            this.startCartPoleTrainerToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
+            this.startCartPoleTrainerToolStripMenuItem.Text = "Start Cart-Pole Trainer";
+            this.startCartPoleTrainerToolStripMenuItem.Click += new System.EventHandler(this.startCartPoleTrainerToolStripMenuItem_Click);
             // 
             // FormMain
             // 
@@ -508,6 +524,8 @@
         private System.Windows.Forms.Timer timerUI;
         private System.Windows.Forms.ToolStripMenuItem openGymToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
+        private System.Windows.Forms.ToolStripMenuItem startCartPoleTrainerToolStripMenuItem;
     }
 }
 

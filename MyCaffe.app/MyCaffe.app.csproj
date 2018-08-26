@@ -217,6 +217,10 @@
       <Project>{d0da9b0f-9a50-496e-b6e9-cac5786bbed8}</Project>
       <Name>MyCaffe.test.automated</Name>
     </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.test\MyCaffe.test.csproj">
+      <Project>{fdbaf1bb-fc96-4d73-ba1a-a2b0cea75da1}</Project>
+      <Name>MyCaffe.test</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MyCaffe\MyCaffe.csproj">
       <Project>{28e430dd-bd6c-4a4c-9454-1eeb4ad63a5c}</Project>
       <Name>MyCaffe</Name>

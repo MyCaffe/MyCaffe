@@ -19,6 +19,7 @@ using MyCaffe.gym;
 using System.IO;
 using System.Net;
 using System.Reflection;
+using MyCaffe.test;
 
 namespace MyCaffe.app
 {
@@ -46,6 +47,8 @@ namespace MyCaffe.app
         Stopwatch m_swGlobalTiming = null;
         string m_strTestLogDir = null;
         Log m_log;
+        Task m_ac3Task = null;
+        CancelEvent m_evtCancelA3C = new CancelEvent();
 
         delegate void fnSetStatus(string strMsg, STATUS status, bool bBreath);
 
@@ -808,6 +811,8 @@ namespace MyCaffe.app
                 m_autoTest.Abort();
             }
 
+            m_evtCancelA3C.Set();
+
             MyCaffeGymRegistrar.Shutdown();
         }
 
@@ -1160,5 +1165,49 @@ namespace MyCaffe.app
         }
 
         #endregion
+
+        private void startCartPoleTrainerToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (startCartPoleTrainerToolStripMenuItem.Text.Contains("Start"))
+            {
+                m_log.WriteLine("starting a3c cart-pole test...");
+                m_evtCancelA3C.Reset();
+                m_ac3Task = Task.Factory.StartNew(new Action<object>(a3cTrainerThread), m_evtCancelA3C);
+                startCartPoleTrainerToolStripMenuItem.Text = "Stop Cart-Pole Training";
+            }
+            else
+            {
+                m_log.WriteLine("stopping a3c cart-pole test...");
+                m_evtCancelA3C.Set();                
+                m_ac3Task = null;
+                startCartPoleTrainerToolStripMenuItem.Text = "Start Cart-Pole Training";
+            }
+        }
+
+        private void a3cTrainerThread(object obj)
+        {
+            CancelEvent evtCancel = obj as CancelEvent;
+            MyCaffeCustomTrainerTest<float> test = new MyCaffeCustomTrainerTest<float>("Cart Pole", 0, EngineParameter.Engine.DEFAULT);
+
+            test.Log.OnWriteLine += Log_OnWriteLine1;
+            test.CancelEvent.AddCancelOverride(evtCancel);
+            test.TrainCartPole(true, 5, 500000);
+
+            if (evtCancel.WaitOne(0))
+                test.Log.WriteLine("training aborted.");
+            else
+                test.Log.WriteLine("training done.");
+
+            test.Log.OnWriteLine -= Log_OnWriteLine1;
+            test.Dispose();
+        }
+
+        private void Log_OnWriteLine1(object sender, LogArg e)
+        {
+            if (e.Error)
+                m_log.WriteError(new Exception(e.Message));
+            else
+                m_log.WriteLine(e.Message);
+        }
     }
 }
