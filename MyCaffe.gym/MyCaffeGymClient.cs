@@ -19,9 +19,9 @@ namespace MyCaffe.gym
             m_igym = factory.CreateChannel();
         }
 
-        public int Open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnyFirst)
+        public int Open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnyFirst, double[] rgdfInit)
         {
-            return m_igym.Open(strName, bAutoStart, bShowUi, bShowOnyFirst);
+            return m_igym.Open(strName, bAutoStart, bShowUi, bShowOnyFirst, rgdfInit);
         }
 
         public void Close(string strName, int nIdx)

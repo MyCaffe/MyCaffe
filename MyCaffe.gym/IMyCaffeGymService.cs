@@ -14,7 +14,7 @@ namespace MyCaffe.gym
     public interface IXMyCaffeGymService
     {
         [OperationContract]
-        int Open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst);
+        int Open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst, double[] rgdfInit);
         [OperationContract]
         void Close(string strName, int nIdx);
         [OperationContract]

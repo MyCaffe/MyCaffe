@@ -10,9 +10,9 @@ namespace MyCaffe.gym
 {
     public class MyCaffeGymService : IXMyCaffeGymService
     {
-        public int Open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst)
+        public int Open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst, double[] rgdfInit)
         {
-            return MyCaffeGymRegistrar.Registry.Open(strName, bAutoStart, bShowUi, bShowOnlyFirst);
+            return MyCaffeGymRegistrar.Registry.Open(strName, bAutoStart, bShowUi, bShowOnlyFirst, rgdfInit);
         }
 
         public void Close(string strName, int nIdx)

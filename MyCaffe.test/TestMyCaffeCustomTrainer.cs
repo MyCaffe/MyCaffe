@@ -130,8 +130,10 @@ namespace MyCaffe.test
             //  - Gamma = 0.99, discount factor.
             //  - LossCoefficient = 0.5, use 50% of the Loss Value when calculating total loss.
             //  - EntropyCoefficient = 0.01 = use 1% of the Entropy when calculating total loss.
+            //  - Init1 = default force of 10.
+            //  - Init2 = do not use additive force.
             int nEpsSteps = (int)(nIterations * 0.15);
-            trainer.Initialize("Threads=" + nThreads.ToString() + ";Optimizers=1;EpsSteps=" + nEpsSteps.ToString() + ";EpsStart=0.4;EpsEnd=0.1;NStepReturn=8;Gamma=0.99;LossCoefficient=0.5;EntropyCoefficient=0.01;NormalizeInput=True");
+            trainer.Initialize("Threads=" + nThreads.ToString() + ";Optimizers=1;EpsSteps=" + nEpsSteps.ToString() + ";EpsStart=0.4;EpsEnd=0.1;NStepReturn=8;Gamma=0.99;LossCoefficient=0.5;EntropyCoefficient=0.01;NormalizeInput=True;Init1=10;Init2=False");
             trainer.Train(mycaffe, nIterations);
             trainer.CleanUp();
             // Close the gym.
@@ -204,7 +206,12 @@ namespace MyCaffe.test
             if (e.Reset)
             {
                 if (e.Index == -1)
-                    e.Index = m_gym.Open(m_strName, true, m_bShowUi, true);
+                {
+                    List<double> rgdfInit = new List<double>();
+                    rgdfInit.Add(m_properties.GetPropertyAsDouble("Init1", 10));
+                    rgdfInit.Add(m_properties.GetPropertyAsBool("Init2", false) ? 1 : 0);
+                    e.Index = m_gym.Open(m_strName, true, m_bShowUi, true, null);
+                }
 
                 m_gym.Reset(m_strName, e.Index);
             }

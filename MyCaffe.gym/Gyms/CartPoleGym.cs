@@ -34,6 +34,8 @@ namespace MyCaffe.gym
         double m_dfLength = 0.5; // actually half the pole's length
         double m_dfPoleMassLength;
         double m_dfForceMag = 0.0;
+        double m_dfForce = 10;
+        bool m_bAdditive = false;
         double m_dfTau = 0.02; // seconds between state updates.
         bool m_bDone = false;
         Dictionary<string, int> m_rgActionSpace;
@@ -115,9 +117,9 @@ namespace MyCaffe.gym
             while (a.HasValue)
             {
                 if (a == ACTION.MOVELEFT)
-                    m_dfForceMag = -10;
+                    m_dfForceMag = m_dfForceMag * ((m_bAdditive) ? 1 : 0) + m_dfForce * -1;
                 if (a == ACTION.MOVERIGHT)
-                    m_dfForceMag = 10;
+                    m_dfForceMag = m_dfForceMag * ((m_bAdditive) ? 1 : 0) + m_dfForce * 1;
 
                 a = getNextActionValue();
             }
@@ -127,8 +129,20 @@ namespace MyCaffe.gym
         {
         }
 
-        public void Initialize(Log log)
+        public void Initialize(Log log, double[] rgdfInit)
         {
+            m_dfForce = 10;
+            m_bAdditive = false;
+
+            if (rgdfInit != null)
+            {
+                if (rgdfInit.Length > 0)
+                    m_dfForce = rgdfInit[0];
+
+                if (rgdfInit.Length > 1)
+                    m_bAdditive = (rgdfInit[1] == 0) ? false : true;
+            }
+
             m_log = log;
             m_nMaxSteps = 0;
             Reset();

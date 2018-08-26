@@ -18,7 +18,7 @@ namespace MyCaffe.gym
 
     public interface IXMyCaffeGym
     {
-        void Initialize(Log log);
+        void Initialize(Log log, double[] rgdfInit);
         void Close();
         IXMyCaffeGym Clone();
         string Name { get; }

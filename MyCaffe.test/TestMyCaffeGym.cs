@@ -77,7 +77,7 @@ namespace MyCaffe.test
             MyCaffeGymClient gym = new MyCaffeGymClient();
             string strName = "Cart Pole";
 
-            int nIdx = gym.Open(strName, true, bShowUi, false);
+            int nIdx = gym.Open(strName, true, bShowUi, false, null);
 
             Dictionary<string, int> rgActions = gym.GetActionSpace(strName);
             Assert.AreEqual(rgActions.Count, 2);

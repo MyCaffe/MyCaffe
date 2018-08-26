@@ -23,9 +23,11 @@ namespace MyCaffe.gym
         bool m_bStopping = false;
         bool m_bRendering = false;
         Observation m_observation = null;
+        double[] m_rgdfInit = null;
 
-        public MyCaffeGymControl(Log log)
+        public MyCaffeGymControl(Log log, double[] rgdfInit)
         {
+            m_rgdfInit = rgdfInit;
             m_log = log;
             InitializeComponent();
         }
@@ -139,7 +141,7 @@ namespace MyCaffe.gym
             BackgroundWorker bw = sender as BackgroundWorker;
             IXMyCaffeGym igym = e.Argument as IXMyCaffeGym;
 
-            igym.Initialize(m_log);
+            igym.Initialize(m_log, m_rgdfInit);
 
             while (!bw.CancellationPending)
             {

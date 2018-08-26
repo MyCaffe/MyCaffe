@@ -20,7 +20,7 @@ namespace MyCaffe.gym
         GymCollection m_gymCollection = new GymCollection();
         Log m_log;
 
-        delegate int fnopen(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst);
+        delegate int fnopen(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst, double[] rgdfInit);
         delegate void fnopenUi(string strName, int nIdx);
         delegate bool fnclose(string strName, int nIdx);
 
@@ -70,14 +70,14 @@ namespace MyCaffe.gym
             FormGyms dlg = new FormGyms();
 
             if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                return Open(dlg.SelectedGym.Name, false, true, false);
+                return Open(dlg.SelectedGym.Name, false, true, false, null);
 
             return -1;
         }
 
-        public int Open(string strName, bool bAutoStart, bool bShowUI, bool bShowOnlyFirst)
+        public int Open(string strName, bool bAutoStart, bool bShowUI, bool bShowOnlyFirst, double[] rgdfInit)
         {
-            return (int)m_ctrlParent.Invoke(new fnopen(open), strName, bAutoStart, bShowUI, bShowOnlyFirst);
+            return (int)m_ctrlParent.Invoke(new fnopen(open), strName, bAutoStart, bShowUI, bShowOnlyFirst, rgdfInit);
         }
 
         public void Open(string strName, int nIdx)
@@ -96,13 +96,13 @@ namespace MyCaffe.gym
             }
         }
 
-        private int open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst)
+        private int open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst, double[] rgdfInit)
         {
             IXMyCaffeGym igym = m_gymCollection.Find(strName);
             if (igym == null)
                 return -1;
 
-            MyCaffeGymControl ctrl = new MyCaffeGymControl(m_log);
+            MyCaffeGymControl ctrl = new MyCaffeGymControl(m_log, rgdfInit);
             ctrl.Initialize(igym.Clone());
             FormGym dlg = new FormGym(ctrl);
 
