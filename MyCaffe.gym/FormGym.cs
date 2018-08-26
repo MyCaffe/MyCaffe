@@ -34,6 +34,11 @@ namespace MyCaffe.gym
             get { return (m_ctrl == null) ? "UNKNOWN" : m_ctrl.GymName; }
         }
 
+        public void Stop()
+        {
+            m_ctrl.Stop();
+        }
+
         private void FormGym_Load(object sender, EventArgs e)
         {
             Text += " - " + GymName;
