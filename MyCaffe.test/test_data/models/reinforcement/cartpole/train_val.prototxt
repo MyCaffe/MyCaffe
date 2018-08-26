@@ -42,7 +42,7 @@ layer
    }
    inner_product_param 
    {
-      num_output: 100
+      num_output: 128
       bias_term: True
       weight_filler 
       {
@@ -56,6 +56,13 @@ layer
       }
       axis: 1
    }
+}
+layer 
+{
+   name: "elu1"
+   type: "ELU"
+   bottom: "x"
+   top: "x"
 }
 layer 
 {
@@ -132,17 +139,17 @@ layer
 }
 layer 
 {
-   name: "batchnorm1"
-   type: "BatchNorm"
+   name: "mvn1"
+   type: "MVN"
    bottom: "value"
-   top: "batchnorm1"
+   top: "mvn1"
 }
 layer 
 {
    name: "loss1"
    type: "MemoryLoss"
+   bottom: "mvn1"
    bottom: "actions"
-   bottom: "batchnorm1"
    top: "loss1"
    loss_weight: 1
    loss_param 
