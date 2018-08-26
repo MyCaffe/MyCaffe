@@ -90,7 +90,10 @@ namespace MyCaffe.gym
             FormGym gym = Find(strName, nIdx);
 
             if (gym != null)
+            {
                 gym.Show();
+                gym.BringToFront();
+            }
         }
 
         private int open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst)
