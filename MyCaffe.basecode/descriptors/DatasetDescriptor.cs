@@ -23,6 +23,7 @@ namespace MyCaffe.basecode.descriptors
         ParameterDescriptorCollection m_colParameters = new ParameterDescriptorCollection();
         string m_strCreatorName;
         string m_strDescription;
+        bool m_bGym = false;
 
         /// <summary>
         /// The DatasetDescriptor constructor.
@@ -36,9 +37,12 @@ namespace MyCaffe.basecode.descriptors
         /// <param name="strCreatorName">Specifies the dataset creator name.</param>
         /// <param name="strDescription">Specifies a description of the dataset.</param>
         /// <param name="strOwner">Specifies the identifier of the item's owner.</param>
-        public DatasetDescriptor(int nID, string strName, GroupDescriptor grpModel, GroupDescriptor grpDs, SourceDescriptor srcTrain, SourceDescriptor srcTest, string strCreatorName, string strDescription, string strOwner = null)
+        /// <param name="bGym">Specifies whether or not this dataset is a gym (default = false).</param>
+        public DatasetDescriptor(int nID, string strName, GroupDescriptor grpModel, GroupDescriptor grpDs, SourceDescriptor srcTrain, SourceDescriptor srcTest, string strCreatorName, string strDescription, string strOwner = null, bool bGym = false)
             : base(nID, strName, strOwner)
         {
+            m_bGym = bGym;
+
             if (grpModel != null)
                 m_groupModel = new descriptors.GroupDescriptor(grpModel);
             else
@@ -73,7 +77,7 @@ namespace MyCaffe.basecode.descriptors
         /// </summary>
         /// <param name="d">Specifies another DatasetDesciptor used to create this one.</param>
         public DatasetDescriptor(DatasetDescriptor d)
-            : this(d.ID, d.Name, d.ModelGroup, d.DatasetGroup, d.TrainingSource, d.TestingSource, d.CreatorName, d.Description, d.Owner)
+            : this(d.ID, d.Name, d.ModelGroup, d.DatasetGroup, d.TrainingSource, d.TestingSource, d.CreatorName, d.Description, d.Owner, d.IsGym)
         {
             m_colParameters = new ParameterDescriptorCollection(d.Parameters);
         }
@@ -85,6 +89,8 @@ namespace MyCaffe.basecode.descriptors
         public void Copy(DatasetDescriptor ds)
         {
             base.Copy(ds);
+
+            m_bGym = ds.m_bGym;
 
             if (ds.m_srcTest != null)
                 m_srcTest = new SourceDescriptor(ds.m_srcTest);
@@ -114,6 +120,59 @@ namespace MyCaffe.basecode.descriptors
 
             m_strCreatorName = ds.m_strCreatorName;
             m_strDescription = ds.m_strDescription;
+        }
+
+        /// <summary>
+        /// Returns whether or not this dataset is from a Gym.
+        /// </summary>
+        public bool IsGym
+        {
+            get { return m_bGym; }
+        }
+
+        /// <summary>
+        /// Returns the full name which returns 'GYM:Name:Type' when using a gym based dataset, otherwise just 'Name' is returned.
+        /// </summary>
+        public string FullName
+        {
+            get { return (m_bGym) ? "GYM:" + Name : Name; }
+        }
+
+        /// <summary>
+        /// Returns whether or not the name is from a gym.
+        /// </summary>
+        /// <param name="str">Specifies the name.</param>
+        /// <returns>If the name is from a gym, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public static bool IsGymName(string str)
+        {
+            if (str.IndexOf("GYM:") == 0)
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the actual gym name by parsing off the 'GYM:' if it exists.
+        /// </summary>
+        /// <param name="str">Specifies the name.</param>
+        /// <param name="strType">Specifies the type.</param>
+        /// <returns>The actual gym name is returned.</returns>
+        public static string GetGymName(string str, out string strType)
+        {
+            strType = null;
+
+            int nPos = str.IndexOf("GYM:");
+            if (nPos < 0)
+                return str;
+
+            str = str.Substring(4);
+
+            nPos = str.IndexOf(':');
+            if (nPos < 0)
+                return str;
+
+            strType = str.Substring(nPos + 1);
+            return str.Substring(0, nPos);
         }
 
         /// <summary>
