@@ -51,11 +51,11 @@
     <Compile Include="Interfaces.cs" />
     <Compile Include="Memory.cs" />
     <Compile Include="MemoryItem.cs" />
-    <Compile Include="MyCaffeCustomTrainer.cs">
+    <Compile Include="MyCaffeA3CTrainer.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="MyCaffeCustomTrainer.Designer.cs">
-      <DependentUpon>MyCaffeCustomTrainer.cs</DependentUpon>
+    <Compile Include="MyCaffeA3CTrainer.Designer.cs">
+      <DependentUpon>MyCaffeA3CTrainer.cs</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StateBase.cs" />

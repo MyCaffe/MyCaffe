@@ -1,6 +1,6 @@
 ﻿namespace MyCaffe.trainers
 {
-    partial class MyCaffeCustomTrainer
+    partial class MyCaffeA3CTrainer
     {
         /// <summary>
         /// Required designer variable.

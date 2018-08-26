@@ -12,9 +12,9 @@ using MyCaffe.common;
 namespace MyCaffe.trainers
 {
     /// <summary>
-    /// The MyCaffeCustomTraininer is used to perform custom training tasks like those use when performing reinforcement learning.
+    /// The MyCaffeA3CTraininer is used to perform A3C training tasks which are used for reinforcement learning.
     /// </summary>
-    public partial class MyCaffeCustomTrainer : Component, IXMyCaffeCustomTrainer
+    public partial class MyCaffeA3CTrainer : Component, IXMyCaffeCustomTrainer
     {
         /// <summary>
         /// Random number generator used to get initial actions, etc.
@@ -24,6 +24,10 @@ namespace MyCaffe.trainers
         /// Specifies the properties parsed from the key-value pair passed to the Initialize method.
         /// </summary>
         protected PropertySet m_properties = null;
+        /// <summary>
+        /// Specifies the project ID of the project held by the instance of MyCaffe.
+        /// </summary>
+        protected int m_nProjectID = 0;
         IxTrainer m_itrainer = null;
         double m_dfExplorationRate = 0;
         double m_dfGlobalRewards = 0;
@@ -33,7 +37,7 @@ namespace MyCaffe.trainers
         /// <summary>
         /// The constructor.
         /// </summary>
-        public MyCaffeCustomTrainer()
+        public MyCaffeA3CTrainer()
         {
             InitializeComponent();
         }
@@ -42,7 +46,7 @@ namespace MyCaffe.trainers
         /// The constructor.
         /// </summary>
         /// <param name="container">The container of the component.</param>
-        public MyCaffeCustomTrainer(IContainer container)
+        public MyCaffeA3CTrainer(IContainer container)
         {
             container.Add(this);
 
@@ -56,7 +60,7 @@ namespace MyCaffe.trainers
         /// </summary>
         protected virtual string name
         {
-            get { return "MyCaffe Custom Trainer"; }
+            get { return "MyCaffe A3C Trainer"; }
         }
 
         /// <summary>
@@ -71,9 +75,10 @@ namespace MyCaffe.trainers
         /// Returns a dataset override to use (if any) instead of the project's dataset.  If there is no dataset override
         /// <i>null</i> is returned and the project's dataset is used.
         /// </summary>
-        protected virtual DatasetDescriptor dataset_override
+        /// <param name="nProjectID">Specifies the project ID associated with the trainer (if any)</param>
+        protected virtual DatasetDescriptor get_dataset_override(int nProjectID)
         {
-            get { return null; }
+            return null;
         }
 
         /// <summary>
@@ -87,6 +92,7 @@ namespace MyCaffe.trainers
         protected virtual IxTrainer create_trainerD(Component caffe)
         {
             MyCaffeControl<double> mycaffe = caffe as MyCaffeControl<double>;
+            m_nProjectID = mycaffe.CurrentProject.ID;
 
             Trainer<double> trainer = new Trainer<double>(mycaffe, m_properties, m_random);
             trainer.OnInitialize += Trainer_OnInitialize;
@@ -106,6 +112,7 @@ namespace MyCaffe.trainers
         protected virtual IxTrainer create_trainerF(Component caffe)
         {
             MyCaffeControl<float> mycaffe = caffe as MyCaffeControl<float>;
+            m_nProjectID = mycaffe.CurrentProject.ID;
 
             Trainer<float> trainer = new Trainer<float>(mycaffe, m_properties, m_random);
             trainer.OnInitialize += Trainer_OnInitialize;
@@ -140,6 +147,13 @@ namespace MyCaffe.trainers
         {
         }
 
+        /// <summary>
+        /// Open the Gym UI if one exists.
+        /// </summary>
+        protected virtual void open()
+        {
+        }
+
         #endregion
 
         #region IXMyCaffeCustomTrainer Interface
@@ -164,9 +178,10 @@ namespace MyCaffe.trainers
         /// Returns a dataset override to use (if any) instead of the project's dataset.  If there is no dataset override
         /// <i>null</i> is returned and the project's dataset is used.
         /// </summary>
-        public DatasetDescriptor DatasetOverride
+        /// <param name="nProjectID">Specifies the project ID associated with the trainer (if any)</param>
+        public DatasetDescriptor GetDatasetOverride(int nProjectID)
         {
-            get { return dataset_override; }
+            return get_dataset_override(nProjectID);
         }
 
         /// <summary>
@@ -315,6 +330,14 @@ namespace MyCaffe.trainers
         public double ExplorationRate
         {
             get { return m_dfExplorationRate; }
+        }
+
+        /// <summary>
+        /// Open the GYM UI if one exists.
+        /// </summary>
+        public void Open()
+        {
+            open();   
         }
     }
 }
