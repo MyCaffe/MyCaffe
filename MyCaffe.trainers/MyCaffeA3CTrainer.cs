@@ -96,6 +96,7 @@ namespace MyCaffe.trainers
 
             Trainer<double> trainer = new Trainer<double>(mycaffe, m_properties, m_random);
             trainer.OnInitialize += Trainer_OnInitialize;
+            trainer.OnShutdown += Trainer_OnShutdown;
             trainer.OnGetData += Trainer_OnGetData;
             trainer.OnGetStatus += Trainer_OnGetStatus;
             return trainer;
@@ -116,9 +117,15 @@ namespace MyCaffe.trainers
 
             Trainer<float> trainer = new Trainer<float>(mycaffe, m_properties, m_random);
             trainer.OnInitialize += Trainer_OnInitialize;
+            trainer.OnShutdown += Trainer_OnShutdown;
             trainer.OnGetData += Trainer_OnGetData;
             trainer.OnGetStatus += Trainer_OnGetStatus;
             return trainer;
+        }
+
+        private void Trainer_OnShutdown(object sender, EventArgs e)
+        {
+            shutdown();
         }
 
         /// <summary>
@@ -136,6 +143,13 @@ namespace MyCaffe.trainers
         /// </remarks>
         /// <param name="e">Specifies the initialization arguments.</param>
         protected virtual void initialize(InitializeArgs e)
+        {
+        }
+
+        /// <summary>
+        /// Override called from within the CleanUp method.
+        /// </summary>
+        protected virtual void shutdown()
         {
         }
 
@@ -229,6 +243,13 @@ namespace MyCaffe.trainers
         /// </summary>
         public void CleanUp()
         {
+            if (m_itrainer != null)
+            {
+                m_itrainer.Shutdown(3000);
+                m_itrainer = null;
+            }
+
+            shutdown();
         }
 
         /// <summary>
@@ -241,6 +262,20 @@ namespace MyCaffe.trainers
             m_properties = new PropertySet(strProperties);
         }
 
+        private IxTrainer createTrainer(Component mycaffe)
+        {
+            IxTrainer itrainer = null;
+
+            if (mycaffe is MyCaffeControl<double>)
+                itrainer = create_trainerD(mycaffe);
+            else
+                itrainer = create_trainerF(mycaffe);
+
+            itrainer.Initialize();
+
+            return itrainer;
+        }
+
         /// <summary>
         /// Create a new trainer and use it to run a single run cycle.
         /// </summary>
@@ -250,14 +285,7 @@ namespace MyCaffe.trainers
         public ResultCollection Run(Component mycaffe, int nDelay = 1000)
         {
             if (m_itrainer == null)
-            {
-                if (mycaffe is MyCaffeControl<double>)
-                    m_itrainer = create_trainerD(mycaffe);
-                else
-                    m_itrainer = create_trainerF(mycaffe);
-
-                m_itrainer.Initialize();
-            }
+                m_itrainer = createTrainer(mycaffe);
 
             ResultCollection res = m_itrainer.Run(nDelay);
             m_itrainer = null;
@@ -272,6 +300,11 @@ namespace MyCaffe.trainers
         /// <param name="nIterationOverride">Specifies the iterations to run if greater than zero.</param>
         public void Test(Component mycaffe, int nIterationOverride)
         {
+            if (m_itrainer == null)
+                m_itrainer = createTrainer(mycaffe);
+
+            m_itrainer.Test(nIterationOverride);
+            m_itrainer = null;
         }
 
         /// <summary>
@@ -283,14 +316,7 @@ namespace MyCaffe.trainers
         public void Train(Component mycaffe, int nIterationOverride, TRAIN_STEP step = TRAIN_STEP.NONE)
         {
             if (m_itrainer == null)
-            {
-                if (mycaffe is MyCaffeControl<double>)
-                    m_itrainer = create_trainerD(mycaffe);
-                else
-                    m_itrainer = create_trainerF(mycaffe);
-
-                m_itrainer.Initialize();
-            }
+                m_itrainer = createTrainer(mycaffe);
 
             m_itrainer.Train(nIterationOverride, step);
             m_itrainer = null;

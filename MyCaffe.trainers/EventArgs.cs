@@ -9,6 +9,31 @@ using System.Threading.Tasks;
 namespace MyCaffe.trainers
 {
     /// <summary>
+    /// The WaitArgs is passed to the OnWait event.
+    /// </summary>
+    public class WaitArgs : EventArgs
+    {
+        int m_nWait;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="nWait">The amount of time to wait in milliseconds.</param>
+        public WaitArgs(int nWait)
+        {
+            m_nWait = nWait;
+        }
+
+        /// <summary>
+        /// Returns the amount of time to wait in milliseconds.
+        /// </summary>
+        public int Wait
+        {
+            get { return m_nWait; }
+        }
+    }
+
+    /// <summary>
     /// The InitializeArgs is passed to the OnInitialize event.
     /// </summary>
     public class InitializeArgs : EventArgs

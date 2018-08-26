@@ -122,8 +122,9 @@ namespace MyCaffe.trainers
         /// <summary>
         /// Shutdown the trainer.
         /// </summary>
-        /// <returns></returns>
-        bool Shutdown();
+        /// <param name="nWait">Specifies a wait for the shtudown.</param>
+        /// <returns>Returns <i>true</i>.</returns>
+        bool Shutdown(int nWait);
         /// <summary>
         /// Train the network.
         /// </summary>

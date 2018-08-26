@@ -38,6 +38,10 @@ namespace MyCaffe.trainers
         /// </summary>
         public event EventHandler<InitializeArgs> OnInitialize;
         /// <summary>
+        /// The OnShutdown event fires when shutting down the trainer.
+        /// </summary>
+        public event EventHandler OnShutdown;
+        /// <summary>
         /// The OnGetData event fires from within the Train method and is used to get a new observation data.
         /// </summary>
         public event EventHandler<GetDataArgs> OnGetData;
@@ -45,6 +49,10 @@ namespace MyCaffe.trainers
         /// The OnGetStatus event fires on each iteration within the Train method.
         /// </summary>
         public event EventHandler<GetStatusArgs> OnGetStatus;
+        /// <summary>
+        /// The OnWait event fires when waiting for a shutdown.
+        /// </summary>
+        public event EventHandler<WaitArgs> OnWait;
 
         /// <summary>
         /// The constructor.
@@ -91,18 +99,42 @@ namespace MyCaffe.trainers
             return true;
         }
 
+        private void wait(int nWait)
+        {
+            int nWaitInc = 250;
+            int nTotalWait = 0;
+
+            while (m_brain.ReferenceCount > 0 && nTotalWait < nWait)
+            {
+                if (OnWait != null)
+                    OnWait(this, new WaitArgs(nWaitInc));
+                else
+                    Thread.Sleep(nWaitInc);
+
+                nTotalWait += nWaitInc;
+            }
+        }
+
         /// <summary>
         /// Shutdown the trainer.
         /// </summary>
         /// <returns></returns>
-        public bool Shutdown()
+        public bool Shutdown(int nWait)
         {
             if (m_brain != null)
             {
-                m_mycaffe.CancelEvent.Set();
+                if (m_mycaffe != null)
+                {
+                    m_mycaffe.CancelEvent.Set();
+                    wait(nWait);
+                }
+
                 m_brain.Dispose();
                 m_brain = null;
             }
+
+            if (OnShutdown != null)
+                OnShutdown(this, new EventArgs());
 
             return true;
         }
@@ -176,17 +208,19 @@ namespace MyCaffe.trainers
                     break;
             }
 
-            Shutdown();
-
             foreach (Optimizer<T> opt in rgOptimizers)
             {
+                opt.Stop(1000);
                 opt.Dispose();
             }
 
             foreach (Environment<T> env in rgEnvironments)
             {
+                env.Stop(1000);
                 env.Dispose();
             }
+
+            Shutdown(3000);
 
             return true;
         }
@@ -263,6 +297,7 @@ namespace MyCaffe.trainers
             Stopwatch sw = new Stopwatch();
 
             m_evtDone.Reset();
+            m_brain.ReferenceCount++;
 
             sw.Start();
 
@@ -274,6 +309,7 @@ namespace MyCaffe.trainers
             }
 
             m_evtDone.Set();
+            m_brain.ReferenceCount--;
         }
 
         private bool runEpisode()
@@ -289,7 +325,7 @@ namespace MyCaffe.trainers
 
             while (!bDone)
             {
-                if (m_evtCancel.WaitOne(1))
+                if (m_evtCancel.WaitOne(1) || s == null)
                     return false;
 
                 int a = m_agent.act(s);
@@ -358,6 +394,7 @@ namespace MyCaffe.trainers
             int nCycleDelay = (int)arg;
 
             m_evtDone.Reset();
+            m_brain.ReferenceCount++;
                 
             while (!m_evtCancel.WaitOne(nCycleDelay))
             {
@@ -365,6 +402,7 @@ namespace MyCaffe.trainers
             }
 
             m_evtDone.Set();
+            m_brain.ReferenceCount--;
         }
     }
 
@@ -505,6 +543,7 @@ namespace MyCaffe.trainers
         double m_dfLossCoefficient = 0.5;
         double m_dfEntropyCoefficient = 0.01;
         bool m_bSkipLoss = false;
+        int m_nRefCount = 0;
 
         public Brain(MyCaffeControl<T> mycaffe, PropertySet properties)
         {
@@ -541,6 +580,8 @@ namespace MyCaffe.trainers
 
         public void Dispose()
         {
+            cleanupNet(m_caffe);
+
             if (m_blobInput != null)
             {
                 m_blobInput.Dispose();
@@ -632,6 +673,12 @@ namespace MyCaffe.trainers
             }
         }
 
+        public int ReferenceCount
+        {
+            get { return m_nRefCount; }
+            set { m_nRefCount = value; }
+        }
+
         public MyCaffeControl<T> MyCaffeControl
         {
             get { return m_caffe; }
@@ -668,6 +715,17 @@ namespace MyCaffe.trainers
                 throw new Exception("Could not find the MemoryDataLayer in the training net!");
 
             m_nMinBatch = (int)memData.layer_param.memory_data_param.batch_size;
+        }
+
+        private void cleanupNet(MyCaffeControl<T> mycaffe)
+        {
+            Net<T> net = mycaffe.GetInternalNet(Phase.TRAIN);
+            MemoryLossLayer<T> memLoss = getLayer(net, LayerParameter.LayerType.MEMORY_LOSS) as MemoryLossLayer<T>;
+
+            if (memLoss == null)
+                throw new Exception("Could not find a MemoryLossLayer in the training net!");
+
+            memLoss.OnGetLoss -= MemLoss_OnGetLoss;
         }
 
         private Layer<T> getLayer(Net<T> net, LayerParameter.LayerType type)
