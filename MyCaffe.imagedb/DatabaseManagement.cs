@@ -41,7 +41,12 @@ namespace MyCaffe.imagedb
             get { return m_strName; }
         }
 
-        private string GetConnectionString(string strName)
+        /// <summary>
+        /// Returns the connection string used to connect to the database named 'strName'.
+        /// </summary>
+        /// <param name="strName">Specifies the database name of the database to connect to.</param>
+        /// <returns>The connection string is returned.</returns>
+        protected string GetConnectionString(string strName)
         {
             return "Data Source=" + m_strInstance + ";Initial Catalog=" + strName + ";Integrated Security=True; MultipleActiveResultSets=True;";
         }
