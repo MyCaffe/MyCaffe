@@ -133,7 +133,7 @@ namespace MyCaffe.test
             //  - Init1 = default force of 10.
             //  - Init2 = do not use additive force.
             int nEpsSteps = (int)(nIterations * 0.15);
-            trainer.Initialize("Threads=" + nThreads.ToString() + ";Optimizers=1;EpsSteps=" + nEpsSteps.ToString() + ";EpsStart=0.4;EpsEnd=0.1;NStepReturn=8;Gamma=0.99;LossCoefficient=0.5;EntropyCoefficient=0.01;NormalizeInput=True;Init1=10;Init2=False");
+            trainer.Initialize("Threads=" + nThreads.ToString() + ";Optimizers=1;EpsSteps=" + nEpsSteps.ToString() + ";EpsStart=0.4;EpsEnd=0.1;NStepReturn=8;Gamma=0.99;LossCoefficient=0.5;EntropyCoefficient=0.01;NormalizeInput=True;Init1=10;Init2=0");
             trainer.Train(mycaffe, nIterations);
             trainer.CleanUp();
             // Close the gym.
@@ -209,7 +209,7 @@ namespace MyCaffe.test
                 {
                     List<double> rgdfInit = new List<double>();
                     rgdfInit.Add(m_properties.GetPropertyAsDouble("Init1", 10));
-                    rgdfInit.Add(m_properties.GetPropertyAsBool("Init2", false) ? 1 : 0);
+                    rgdfInit.Add(m_properties.GetPropertyAsDouble("Init2", 0));
                     e.Index = m_gym.Open(m_strName, true, m_bShowUi, true, null);
                 }
 
