@@ -20,24 +20,6 @@ namespace MyCaffe.test
     public class TestMyCaffeCustomTrainer
     {
         [TestMethod]
-        public void TrainA2CCartPoleWithUi()
-        {
-            MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
-
-            try
-            {
-                foreach (IMyCaffeCustomTrainerTest t in test.Tests)
-                {
-                    t.TrainCartPole(true, 1);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
         public void TrainA2CCartPoleWithOutUi()
         {
             MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
@@ -47,23 +29,6 @@ namespace MyCaffe.test
                 foreach (IMyCaffeCustomTrainerTest t in test.Tests)
                 {
                     t.TrainCartPole(false, 1);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-        [TestMethod]
-        public void TrainA3CCartPoleWithUi()
-        {
-            MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
-
-            try
-            {
-                foreach (IMyCaffeCustomTrainerTest t in test.Tests)
-                {
-                    t.TrainCartPole(true, 3);
                 }
             }
             finally
@@ -94,7 +59,7 @@ namespace MyCaffe.test
 
     interface IMyCaffeCustomTrainerTest : ITest
     {
-        void TrainCartPole(bool bShowUi, int nThreads);
+        void TrainCartPole(bool bShowUi, int nThreads, int nIterations = 1000);
     }
 
     class MyCaffeCustomTrainerTest : TestBase
@@ -113,7 +78,7 @@ namespace MyCaffe.test
         }
     }
 
-    class MyCaffeCustomTrainerTest<T> : TestEx<T>, IMyCaffeCustomTrainerTest
+    public class MyCaffeCustomTrainerTest<T> : TestEx<T>, IMyCaffeCustomTrainerTest
     {
         SettingsCaffe m_settings = new SettingsCaffe();
         CancelEvent m_evtCancel = new CancelEvent();
@@ -130,17 +95,21 @@ namespace MyCaffe.test
             base.dispose();
         }
 
-        public void TrainCartPole(bool bShowUi, int nThreads)
+        public CancelEvent CancelEvent
+        {
+            get { return m_evtCancel; }
+        }
+
+        public void TrainCartPole(bool bShowUi, int nThreads, int nIterations = 1000)
         {
             m_evtCancel.Reset();
 
-            int nIterations = 1000;
             m_log.WriteHeader("Test Training Cart-Pole for " + nIterations.ToString("N0") + " iterations.");
             MyCaffeGymClient gym = new MyCaffeGymClient();
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
             MyCaffeCartPoleTrainer trainer = new MyCaffeCartPoleTrainer(gym, bShowUi);
             ProjectEx project = getReinforcementProject(gym, nIterations);
-            DatasetDescriptor ds = trainer.DatasetOverride;
+            DatasetDescriptor ds = trainer.GetDatasetOverride(0);
 
             m_log.CHECK(ds != null, "The MyCaffeCartPoleTrainer should return its dataset override returned by the Gym that it uses.");
 
@@ -154,14 +123,15 @@ namespace MyCaffe.test
             //
             //  - Threads = 1 to 3 envrionment threads (normally this would be much higher such as 8)
             //  - Optimizers = 1 optimizer threads (normally this would be higher sucha s 2)
-            //  - EpsSteps = 750 after which exploration will be set at EpsEnd (normally this would be much higher such as 75000)
+            //  - EpsSteps = 15% of iterations, after which exploration will be set at EpsEnd (normally this would be much higher such as 75000)
             //  - EpsStart = 0.4, start exploration at 40%
             //  - EpsEnd = 0.1, end exploration (and remain at) 10 % after EpsSteps
             //  - NStepReturn = 8, get a sample and calculate reward after 8 steps.
             //  - Gamma = 0.99, discount factor.
             //  - LossCoefficient = 0.5, use 50% of the Loss Value when calculating total loss.
             //  - EntropyCoefficient = 0.01 = use 1% of the Entropy when calculating total loss.
-            trainer.Initialize("Threads=" + nThreads.ToString() + ";Optimizers=1;EpsSteps=750;EpsStart=0.4;EpsEnd=0.0;NStepReturn=8;Gamma=0.99;LossCoefficient=0.5;EntropyCoefficient=0.01;NormalizeInput=True");
+            int nEpsSteps = (int)(nIterations * 0.15);
+            trainer.Initialize("Threads=" + nThreads.ToString() + ";Optimizers=1;EpsSteps=" + nEpsSteps.ToString() + ";EpsStart=0.4;EpsEnd=0.1;NStepReturn=8;Gamma=0.99;LossCoefficient=0.5;EntropyCoefficient=0.01;NormalizeInput=True");
             trainer.Train(mycaffe, nIterations);
             trainer.CleanUp();
             // Close the gym.
@@ -193,7 +163,7 @@ namespace MyCaffe.test
         }
     }
 
-    class MyCaffeCartPoleTrainer : MyCaffeCustomTrainer
+    class MyCaffeCartPoleTrainer : MyCaffeA3CTrainer
     {
         MyCaffeGymClient m_gym;
         Stopwatch m_sw = new Stopwatch();
@@ -213,9 +183,9 @@ namespace MyCaffe.test
             get { return "Cart Pole Trainer"; }
         }
 
-        protected override DatasetDescriptor dataset_override
+        protected override DatasetDescriptor get_dataset_override(int nProjectID)
         {
-            get { return m_gym.GetDataset(m_strName, 0); }
+            return m_gym.GetDataset(m_strName, 0);
         }
 
         protected override void initialize(InitializeArgs e)

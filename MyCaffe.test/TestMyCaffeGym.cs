@@ -19,24 +19,6 @@ namespace MyCaffe.test
     public class TestMyCaffeGym
     {
         [TestMethod]
-        public void TestCartPoleWithUi()
-        {
-            MyCaffeGymTest test = new MyCaffeGymTest();
-
-            try
-            {
-                foreach (IMyCaffeGymTest t in test.Tests)
-                {
-                    t.TestCartPole(true);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
         public void TestCartPoleWithOutUi()
         {
             MyCaffeGymTest test = new MyCaffeGymTest();
