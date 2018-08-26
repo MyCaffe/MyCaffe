@@ -154,17 +154,36 @@ namespace MyCaffe.gym
 
         public bool CloseAll(string strName)
         {
-            if (!m_rgGym.ContainsKey(strName))
-                return false;
-
-            int nCount = m_rgGym[strName].Count;
-
-            for (int i = 0; i < nCount; i++)
+            if (!string.IsNullOrEmpty(strName))
             {
-                Close(strName, i);
+                if (!m_rgGym.ContainsKey(strName))
+                    return false;
             }
 
-            RemoveAll(strName);
+            List<string> rgstrRemove = new List<string>();
+
+            foreach (KeyValuePair<string, List<FormGym>> kv in m_rgGym)
+            {
+                if (string.IsNullOrEmpty(strName) || kv.Key == strName)
+                {
+                    int nCount = kv.Value.Count;
+
+                    for (int i = 0; i < nCount; i++)
+                    {
+                        Close(kv.Key, i);
+                    }
+
+                    rgstrRemove.Add(kv.Key);
+                }
+            }
+
+            foreach (string strRemove in rgstrRemove)
+            {
+                RemoveAll(strRemove);
+            }
+
+            if (string.IsNullOrEmpty(strName))
+                m_rgGym.Clear();
 
             return true;
         }
@@ -181,6 +200,7 @@ namespace MyCaffe.gym
                 return false;
 
             dlg.Stop();
+            dlg.Close();
             m_rgGym[strName][nIdx] = null;
 
             for (int i = 0; i < m_rgGym[strName].Count; i++)
@@ -188,8 +208,6 @@ namespace MyCaffe.gym
                 if (m_rgGym[strName][i] != null)
                     return true;
             }
-
-            m_rgGym.Remove(strName);
 
             return true;
         }

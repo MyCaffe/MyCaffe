@@ -8,15 +8,31 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.gym
 {
-    public class MyCaffeGymClient
+    public class MyCaffeGymClient : IDisposable
     {
+        ChannelFactory<IXMyCaffeGymService> m_factory = null;
         IXMyCaffeGymService m_igym;
 
         public MyCaffeGymClient()
         {
             // Consume the service
-            var factory = new ChannelFactory<IXMyCaffeGymService>(new NetNamedPipeBinding(), new EndpointAddress("net.pipe://localhost/MyCaffeGymService"));
-            m_igym = factory.CreateChannel();
+            m_factory = new ChannelFactory<IXMyCaffeGymService>(new NetNamedPipeBinding(), new EndpointAddress("net.pipe://localhost/MyCaffeGymService"));
+            m_igym = m_factory.CreateChannel();
+        }
+
+        public void Dispose()
+        {
+            if (m_igym != null)
+            {
+                m_igym.CloseAll(null);
+                m_igym = null;
+            }
+
+            if (m_factory != null)
+            {
+                m_factory.Close();
+                m_factory = null;
+            }
         }
 
         public int Open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnyFirst, double[] rgdfInit)
