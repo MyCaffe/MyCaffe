@@ -53,7 +53,8 @@ namespace MyCaffe.trainers
         /// Returns a dataset override to use (if any) instead of the project's dataset.  If there is no dataset override
         /// <i>null</i> is returned and the project's dataset is used.
         /// </summary>
-        DatasetDescriptor DatasetOverride { get; }
+        /// <param name="nProjectID">Specifies the project ID associated with the trainer (if any)</param>
+        DatasetDescriptor GetDatasetOverride(int nProjectID);
         /// <summary>
         /// Returns <i>true</i> when the 'Train' method is supported - this should almost always be <i>true</i>. 
         /// </summary>
@@ -98,6 +99,10 @@ namespace MyCaffe.trainers
         /// Returns the current exploration rate.
         /// </summary>
         double ExplorationRate { get; }
+        /// <summary>
+        /// Open the GYM UI if one exists.
+        /// </summary>
+        void Open();
     }
 
     /// <summary>
