@@ -124,8 +124,8 @@ namespace MyCaffe.test
             //  - Threads = 1 to 3 envrionment threads (normally this would be much higher such as 8)
             //  - Optimizers = 1 optimizer threads (normally this would be higher sucha s 2)
             //  - EpsSteps = 15% of iterations, after which exploration will be set at EpsEnd (normally this would be much higher such as 75000)
-            //  - EpsStart = 0.4, start exploration at 40%
-            //  - EpsEnd = 0.1, end exploration (and remain at) 10 % after EpsSteps
+            //  - EpsStart = 0.1, start exploration at 10%
+            //  - EpsEnd = 0.01, end exploration (and remain at) 1% after EpsSteps
             //  - NStepReturn = 8, get a sample and calculate reward after 8 steps.
             //  - Gamma = 0.99, discount factor.
             //  - LossCoefficient = 0.5, use 50% of the Loss Value when calculating total loss.
@@ -133,7 +133,7 @@ namespace MyCaffe.test
             //  - Init1 = default force of 10.
             //  - Init2 = do not use additive force.
             int nEpsSteps = (int)(nIterations * 0.15);
-            trainer.Initialize("Threads=" + nThreads.ToString() + ";Optimizers=1;EpsSteps=" + nEpsSteps.ToString() + ";EpsStart=0.4;EpsEnd=0.1;NStepReturn=8;Gamma=0.99;LossCoefficient=0.5;EntropyCoefficient=0.01;NormalizeInput=True;Init1=10;Init2=0");
+            trainer.Initialize("Threads=" + nThreads.ToString() + ";Optimizers=1;EpsSteps=" + nEpsSteps.ToString() + ";EpsStart=0.1;EpsEnd=0.01;NStepReturn=8;Gamma=0.99;LossCoefficient=0.5;EntropyCoefficient=0.01;NormalizeInput=True;Init1=10;Init2=0");
             trainer.Train(mycaffe, nIterations);
             trainer.CleanUp();
             // Close the gym.
