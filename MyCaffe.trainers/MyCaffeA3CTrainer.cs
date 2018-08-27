@@ -171,9 +171,13 @@ namespace MyCaffe.trainers
         /// <summary>
         /// Returns <i>true</i> when the training is ready for a snap-shot, <i>false</i> otherwise.
         /// </summary>
-        protected virtual bool update_snapshot
+        /// <param name="nIteration">Specifies the current iteration.</param>
+        /// <param name="dfRewards">Specifies the best rewards to this point.</param>
+        protected virtual bool get_update_snapshot(out int nIteration, out double dfRewards)
         {
-            get { return false; }
+            nIteration = 0;
+            dfRewards = 0;
+            return false;
         }
 
         #endregion
@@ -199,9 +203,11 @@ namespace MyCaffe.trainers
         /// <summary>
         /// Returns <i>true</i> when the training is ready for a snap-shot, <i>false</i> otherwise.
         /// </summary>
-        public bool UpdateSnapshot
+        /// <param name="nIteration">Specifies the current iteration.</param>
+        /// <param name="dfRewards">Specifies the best rewards to this point.</param>
+        public bool GetUpdateSnapshot(out int nIteration, out double dfRewards)
         {
-            get { return update_snapshot; }
+            return get_update_snapshot(out nIteration, out dfRewards);
         }
 
         /// <summary>

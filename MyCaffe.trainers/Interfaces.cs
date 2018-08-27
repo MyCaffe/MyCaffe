@@ -52,7 +52,9 @@ namespace MyCaffe.trainers
         /// <summary>
         /// Returns <i>true</i> when the training is ready for a snap-shot, <i>false</i> otherwise.
         /// </summary>
-        bool UpdateSnapshot { get; }
+        /// <param name="nIteration">Specifies the current iteration.</param>
+        /// <param name="dfRewards">Returns the best rewards to this point.</param>
+        bool GetUpdateSnapshot(out int nIteration, out double dfRewards);
         /// <summary>
         /// Returns a dataset override to use (if any) instead of the project's dataset.  If there is no dataset override
         /// <i>null</i> is returned and the project's dataset is used.
