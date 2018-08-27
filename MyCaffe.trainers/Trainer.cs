@@ -170,7 +170,23 @@ namespace MyCaffe.trainers
         /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
         public bool Test(int nIterations)
         {
-            return false;
+            Environment<T> env = new Environment<T>(m_brain, m_properties, m_random, nIterations);
+            env.OnGetData += Env_OnGetData;
+            env.OnGetStatus += Env_OnGetStatus;
+            env.Start(10);
+
+            while (!m_brain.MyCaffeControl.CancelEvent.WaitOne(250))
+            {
+                if (m_nGlobalEpisodes >= nIterations)
+                    break;
+            }
+
+            env.Stop(1000);
+            env.Dispose();
+
+            Shutdown(3000);
+
+            return true;
         }
 
         /// <summary>
