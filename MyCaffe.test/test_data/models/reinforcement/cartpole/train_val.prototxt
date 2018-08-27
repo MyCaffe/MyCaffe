@@ -14,7 +14,7 @@ layer
    }
    memory_data_param 
    {
-      batch_size: 32
+      batch_size: 64
       channels: 4
       height: 1
       width: 1
@@ -42,7 +42,7 @@ layer
    }
    inner_product_param 
    {
-      num_output: 128
+      num_output: 256
       bias_term: True
       weight_filler 
       {
@@ -56,13 +56,6 @@ layer
       }
       axis: 1
    }
-}
-layer 
-{
-   name: "elu1"
-   type: "ELU"
-   bottom: "x"
-   top: "x"
 }
 layer 
 {
@@ -139,16 +132,16 @@ layer
 }
 layer 
 {
-   name: "mvn1"
-   type: "MVN"
+   name: "batchnorm"
+   type: "BatchNorm"
    bottom: "value"
-   top: "mvn1"
+   top: "valnorm"
 }
 layer 
 {
    name: "loss1"
    type: "MemoryLoss"
-   bottom: "mvn1"
+   bottom: "valnorm"
    bottom: "actions"
    top: "loss1"
    loss_weight: 1
