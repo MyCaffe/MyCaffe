@@ -37,7 +37,7 @@ namespace MyCaffe.basecode
         /// Add a new item to the list.
         /// </summary>
         /// <param name="item">Specifies the item to add.</param>
-        public void Add(T item)
+        public virtual void Add(T item)
         {
             m_rgItems.Add(item);
         }
