@@ -20,9 +20,6 @@ namespace MyCaffe.layers
     public class MemoryLossLayer<T> : LossLayer<T>
     {
         object m_userState = null;
-        LossParameter.NormalizationMode m_normalization;
-        int m_nOuterNum;
-        int m_nInnerNum;
 
         /// <summary>
         /// The OnGetLoss event fires during each forward pass.  The value returned is saved,
@@ -114,10 +111,10 @@ namespace MyCaffe.layers
         {
             base.LayerSetUp(colBottom, colTop);
 
-            if (m_param.loss_param.normalization == LossParameter.NormalizationMode.NONE)
+            if (!m_param.loss_param.normalization.HasValue)
                 m_normalization = (m_param.loss_param.normalize) ? LossParameter.NormalizationMode.VALID : LossParameter.NormalizationMode.BATCH_SIZE;
             else
-                m_normalization = m_param.loss_param.normalization;
+                m_normalization = m_param.loss_param.normalization.Value;
         }
 
         /// <summary>
@@ -160,43 +157,6 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Returns the normalizer used to normalize the loss.
-        /// </summary>
-        /// <param name="normalization_mode">Specifies the normalization mode to use.</param>
-        /// <returns>The normalization value is returned.</returns>
-        protected virtual T get_normalizer(LossParameter.NormalizationMode normalization_mode)
-        {
-            T fNormalizer = convert(0.0);
-
-            switch (normalization_mode)
-            {
-                case LossParameter.NormalizationMode.FULL:
-                    fNormalizer = convert(m_nOuterNum * m_nInnerNum);
-                    break;
-
-                case LossParameter.NormalizationMode.VALID:
-                    fNormalizer = convert(m_nOuterNum * m_nInnerNum);
-                    break;
-
-                case LossParameter.NormalizationMode.BATCH_SIZE:
-                    fNormalizer = convert(m_nOuterNum);
-                    break;
-
-                case LossParameter.NormalizationMode.NONE:
-                    fNormalizer = convert(1.0);
-                    break;
-
-                default:
-                    m_log.FAIL("Unknown normalization mode " + normalization_mode.ToString());
-                    break;
-            }
-
-            // Some users will have no labels for some examples in order to 'turn off' a 
-            // particular loss in a multi-taks setup.  The max prevents Nans in that case.
-            return convert(Math.Max(convertD(fNormalizer), 1.0));
-        }
-
-        /// <summary>
         /// The forward computation.
         /// </summary>
         /// <param name="colBottom">bottom input blob vector (length 2)
@@ -219,7 +179,7 @@ namespace MyCaffe.layers
             if (OnGetLoss == null)
                 m_log.FAIL("The OnGetLoss event must be implemented.  Make sure the SolverParameter 'custom_trainer' points to a trainer that connects the OnGetLoss event.");
 
-            double dfNormalizer = convertD(get_normalizer(m_normalization));
+            double dfNormalizer = get_normalizer(m_normalization, -1);
             MemoryLossLayerGetLossArgs<T> e = new MemoryLossLayerGetLossArgs<T>(colBottom, m_userState, dfNormalizer);
             OnGetLoss(this, e);
             colTop[0].SetData(e.Loss / dfNormalizer, 0);
@@ -245,7 +205,7 @@ namespace MyCaffe.layers
                 return;
 
             double dfTopDiff = convertD(colTop[0].GetDiff(0)); // loss weight
-            double dfNormalizer = convertD(get_normalizer(m_normalization));
+            double dfNormalizer = get_normalizer(m_normalization, -1);
             double dfLossWeight = dfTopDiff / dfNormalizer;
 
             // Apply the loss weight to the bottom diffs.
