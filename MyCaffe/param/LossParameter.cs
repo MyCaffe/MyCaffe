@@ -13,7 +13,7 @@ namespace MyCaffe.param
     public class LossParameter : LayerParameterBase 
     {
         int? m_nIgnoreLabel = null;
-        NormalizationMode m_normalization = NormalizationMode.VALID;
+        NormalizationMode? m_normalization = NormalizationMode.VALID;
         bool m_bNormalize = false;
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace MyCaffe.param
         /// Specifies the normalization mode (default = VALID).
         /// </summary>
         [Description("Specifies the normalization mode to use (default = VALID).")]
-        public NormalizationMode normalization
+        public NormalizationMode? normalization
         {
             get { return m_normalization; }
             set { m_normalization = value; }
