@@ -4,10 +4,12 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using MyCaffe.basecode;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.common;
+using MyCaffe.gym;
 
 namespace MyCaffe.trainers
 {
@@ -28,6 +30,10 @@ namespace MyCaffe.trainers
         /// Specifies the project ID of the project held by the instance of MyCaffe.
         /// </summary>
         protected int m_nProjectID = 0;
+        /// <summary>
+        /// Specifies the observation collection filled by your class that overrides the trainer.
+        /// </summary>
+        protected ObservationReadyCollection m_rgObservations = new ObservationReadyCollection();
         IxTrainer m_itrainer = null;
         double m_dfExplorationRate = 0;
         double m_dfGlobalRewards = 0;
@@ -93,6 +99,7 @@ namespace MyCaffe.trainers
         {
             MyCaffeControl<double> mycaffe = caffe as MyCaffeControl<double>;
             m_nProjectID = mycaffe.CurrentProject.ID;
+            m_rgObservations.CancelEvent = mycaffe.CancelEvent;
 
             Trainer<double> trainer = new Trainer<double>(mycaffe, m_properties, m_random);
             trainer.OnInitialize += Trainer_OnInitialize;
@@ -114,6 +121,7 @@ namespace MyCaffe.trainers
         {
             MyCaffeControl<float> mycaffe = caffe as MyCaffeControl<float>;
             m_nProjectID = mycaffe.CurrentProject.ID;
+            m_rgObservations.CancelEvent = mycaffe.CancelEvent;
 
             Trainer<float> trainer = new Trainer<float>(mycaffe, m_properties, m_random);
             trainer.OnInitialize += Trainer_OnInitialize;
@@ -157,8 +165,10 @@ namespace MyCaffe.trainers
         /// Override called by the OnGetData event fired by the Trainer to retrieve a new set of observation collections making up a set of experiences.
         /// </summary>
         /// <param name="e">Specifies the getData argments used to return the new observations.</param>
-        protected virtual void getData(GetDataArgs e)
+        /// <returns>A value of <i>true</i> is returned when data is retrieved.</returns>
+        protected virtual bool getData(GetDataArgs e)
         {
+            return false;
         }
 
         /// <summary>
@@ -337,7 +347,7 @@ namespace MyCaffe.trainers
 
         private void Trainer_OnGetData(object sender, GetDataArgs e)
         {
-            getData(e);
+            e.Success = getData(e);
         }
 
         private void Trainer_OnGetStatus(object sender, GetStatusArgs e)
@@ -386,6 +396,92 @@ namespace MyCaffe.trainers
         public void Open()
         {
             open();   
+        }
+    }
+
+    public class ObservationReady
+    {
+        AutoResetEvent m_evtReady = new AutoResetEvent(false);
+        Observation m_observation = null;
+
+        public ObservationReady(Observation obs = null)
+        {
+            m_observation = obs;
+
+            if (obs != null)
+                m_evtReady.Set();
+        }
+
+        public bool IsReady(int nWait)
+        {
+            return m_evtReady.WaitOne(nWait);
+        }
+
+        public Observation Observation
+        {
+            set
+            {
+                m_observation = value;
+                m_evtReady.Set();
+            }
+
+            get
+            {
+                Observation obs = m_observation;
+                m_observation = null;
+                return obs;
+            }
+        }
+    }
+
+    public class ObservationReadyCollection
+    {
+        Dictionary<int, ObservationReady> m_rgItems = new Dictionary<int, ObservationReady>();
+        CancelEvent m_evtCancel = null;
+
+        public ObservationReadyCollection()
+        {
+        }
+
+        public CancelEvent CancelEvent
+        {
+            get { return m_evtCancel; }
+            set { m_evtCancel = value; }
+        }
+
+        public void Clear()
+        {
+            m_rgItems.Clear();
+        }
+
+        public void Add(int nIdx, Observation obs)
+        {
+            if (!m_rgItems.ContainsKey(nIdx))
+                m_rgItems.Add(nIdx, new ObservationReady(obs));
+            else
+                m_rgItems[nIdx].Observation = obs;
+        }
+
+        public Observation GetObservation(int nIdx, int nMaxWait)
+        {
+            int nWait = 0;
+
+            while (!m_rgItems.ContainsKey(nIdx))
+            {
+                Thread.Sleep(100);
+                nWait += 100;
+
+                if (nWait >= nMaxWait)
+                    return null;
+
+                if (m_evtCancel != null && m_evtCancel.WaitOne(0))
+                    return null;
+            }
+
+            if (!m_rgItems[nIdx].IsReady(nMaxWait))
+                return null;
+
+            return m_rgItems[nIdx].Observation;
         }
     }
 }
