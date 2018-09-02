@@ -1,4 +1,4 @@
-name: "AlexNetCartPole"
+name: "SimpleNetCartPole"
 layer 
 {
    name: "data"
@@ -26,14 +26,13 @@ layer
 }
 layer 
 {
-   name: "dense1"
+   name: "ip1"
    type: "InnerProduct"
    bottom: "data"
    top: "x"
    param 
    {
       lr_mult: 1
-      decay_mult: 2
    }
    param 
    {
@@ -42,7 +41,7 @@ layer
    }
    inner_product_param 
    {
-      num_output: 256
+      num_output: 64
       bias_term: True
       weight_filler 
       {
@@ -59,6 +58,21 @@ layer
 }
 layer 
 {
+   name: "relu1"
+   type: "PReLU"
+   bottom: "x"
+   top: "x"
+   prelu_param 
+   {
+      filler 
+      {
+         type: "constant"
+         value: 0.25
+      }
+   }
+}
+layer 
+{
    name: "actions"
    type: "InnerProduct"
    bottom: "x"
@@ -66,7 +80,6 @@ layer
    param 
    {
       lr_mult: 1
-      decay_mult: 2
    }
    param 
    {
@@ -106,7 +119,6 @@ layer
    param 
    {
       lr_mult: 1
-      decay_mult: 2
    }
    param 
    {
@@ -132,17 +144,10 @@ layer
 }
 layer 
 {
-   name: "batchnorm"
-   type: "BatchNorm"
-   bottom: "value"
-   top: "valnorm"
-}
-layer 
-{
    name: "loss1"
    type: "MemoryLoss"
-   bottom: "valnorm"
    bottom: "actions"
+   bottom: "value"
    top: "loss1"
    loss_weight: 1
    loss_param 
