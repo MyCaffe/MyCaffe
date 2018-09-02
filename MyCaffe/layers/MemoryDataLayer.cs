@@ -184,7 +184,8 @@ namespace MyCaffe.layers
         /// <param name="rgData">The list of Data Datums to add.</param>
         /// <param name="nLblAxis">Optionally, specifies the axis on which the multi-label data is placed.  This field is not used on SINGLE label types.</param>
         /// <param name="bReset">Optionally, specifies to force reset the internal data.</param>
-        public virtual void AddDatumVector(List<Datum> rgData, int nLblAxis = 1, bool bReset = false)
+        /// <param name="bResizeBatch">Optionally, specifies whether or not to size the batch to the number of rgData.</param>
+        public virtual void AddDatumVector(List<Datum> rgData, int nLblAxis = 1, bool bReset = false, bool bResizeBatch = false)
         {
             if (bReset)
                 m_bHasNewData = false;
@@ -192,6 +193,9 @@ namespace MyCaffe.layers
             m_log.CHECK(!m_bHasNewData, "Can't add data until current data has been consumed.");
             int nNum = rgData.Count;
             m_log.CHECK_GT(nNum, 0, "There are no datum to add.");
+
+            if (bResizeBatch)
+                m_nBatchSize = rgData.Count;
 
             int nNumAligned = (int)Math.Floor((double)rgData.Count / (double)m_nBatchSize) * m_nBatchSize;
             m_log.CHECK_GT(nNumAligned, 0, "Three are not enough datum to add.");
