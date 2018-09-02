@@ -29,7 +29,6 @@ namespace MyCaffe.layers.alpha
     {
         Blob<T> m_blobDiff;
         Blob<T> m_blobSub;
-        int m_nInnerNum;
         int m_nLabelSeparator;
         int m_nBatchSize;
         double m_dfAlpha;
