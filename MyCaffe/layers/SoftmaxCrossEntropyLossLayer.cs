@@ -22,10 +22,7 @@ namespace MyCaffe.layers
         BlobCollection<T> m_colSoftmaxTopVec = new BlobCollection<T>();
 
         // How to normalize the loss.
-        LossParameter.NormalizationMode m_normalization;
         double m_dfNormalizer = 0;
-        int m_nOuterNum;
-        int m_nInnerNum;
 
 
         /// <summary>
@@ -81,50 +78,6 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Read the normalization mode parameter and compute the normalizer based
-        /// on the Blob size.  If normalizeation_mode is VALID, the count of valid
-        /// outputs will be read from valid_count, unless it is -1 in which case
-        /// all outputs are assumed to be valid.
-        /// </summary>
-        /// <param name="normalization_mode">Specifies the normalization mode.</param>
-        /// <param name="valid_count">Specifies the valid count.</param>
-        /// <returns>The normalizer value is returned.</returns>
-        protected virtual double get_normalizer(LossParameter.NormalizationMode normalization_mode, int valid_count)
-        {
-            double dfNormalizer = 0;
-
-            switch (normalization_mode)
-            {
-                case LossParameter.NormalizationMode.FULL:
-                    dfNormalizer = m_nOuterNum * m_nInnerNum;
-                    break;
-
-                case LossParameter.NormalizationMode.VALID:
-                    if (valid_count == -1)
-                        dfNormalizer = m_nOuterNum * m_nInnerNum;
-                    else
-                        dfNormalizer = valid_count;
-                    break;
-
-                case LossParameter.NormalizationMode.BATCH_SIZE:
-                    dfNormalizer = m_nOuterNum;
-                    break;
-
-                case LossParameter.NormalizationMode.NONE:
-                    dfNormalizer = 1;
-                    break;
-
-                default:
-                    m_log.FAIL("Unknown normalization mode: " + normalization_mode.ToString());
-                    break;
-            }
-
-            // Some users will have no labels for some examples in order to 'turn off' a
-            // particular loss in a multi-task setup.  The max prevents NaNs in that case.
-            return Math.Max(1.0, dfNormalizer);
-        }
-
-        /// <summary>
         /// Setup the layer.
         /// </summary>
         /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
@@ -138,11 +91,6 @@ namespace MyCaffe.layers
             m_colSoftmaxTopVec = new BlobCollection<T>();
             m_colSoftmaxTopVec.Add(m_blobSoftmaxOutput);
             m_softmaxLayer.Setup(m_colSoftmaxBottomVec, m_colSoftmaxTopVec);
-
-            if (m_param.loss_param.normalization != LossParameter.NormalizationMode.NONE)
-                m_normalization = m_param.loss_param.normalization;
-            else
-                m_normalization = (m_param.loss_param.normalize) ? LossParameter.NormalizationMode.VALID : LossParameter.NormalizationMode.BATCH_SIZE;
         }
 
         /// <summary>

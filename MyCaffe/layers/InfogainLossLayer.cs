@@ -37,12 +37,7 @@ namespace MyCaffe.layers
         Blob<T> m_blobSumRowsOfH = null;
         // The optional lable indicating that an instance should be ignored.
         int? m_nIgnoreLabel = null;
-        // how to normalize the output loss.
-        LossParameter.NormalizationMode m_normalization = LossParameter.NormalizationMode.NONE;
-
         int m_nInfogainAxis = 0;
-        int m_nOuterNum = 0;
-        int m_nInnerNum = 0;
         int m_nNumLabels = 0;
 
         /// <summary>
@@ -160,46 +155,6 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Read the normalization mode parameter and compute the normalizer based on the blob size.
-        /// If the <i>normalization_mode</i> is VALID, the count of valid outputs will be read from
-        /// <i>valid_count</i>, unless it is -1 in which case all outputs are assumed to be valid.
-        /// </summary>
-        /// <param name="normalization_mode">Specifies the normalization mode to use.</param>
-        /// <param name="nValidCount">Specifies the valid count.</param>
-        /// <returns>The normalization value is returned.</returns>
-        protected virtual double get_normalizer(LossParameter.NormalizationMode normalization_mode, int nValidCount)
-        {
-            double dfNormalizer = 0;
-
-            switch (normalization_mode)
-            {
-                case LossParameter.NormalizationMode.FULL:
-                    dfNormalizer = m_nOuterNum * m_nInnerNum;
-                    break;
-
-                case LossParameter.NormalizationMode.VALID:
-                    dfNormalizer = (nValidCount == -1) ? (m_nOuterNum * m_nInnerNum) : nValidCount;
-                    break;
-
-                case LossParameter.NormalizationMode.BATCH_SIZE:
-                    dfNormalizer = m_nOuterNum;
-                    break;
-
-                case LossParameter.NormalizationMode.NONE:
-                    dfNormalizer = 1;
-                    break;
-
-                default:
-                    m_log.FAIL("Unknown normalization mode: " + normalization_mode.ToString());
-                    break;
-            }
-
-            // Some users will have no labels for some examples in order to 'turn off' a 
-            // particular loss in a multi-task setup.  The max prevents NaNs in that case.
-            return Math.Max(1.0, dfNormalizer);
-        }
-
-        /// <summary>
         /// Fill <i>m_blobSumRowsOfH</i> according to matrix H.
         /// </summary>
         /// <param name="blobH">Specifies the Sum Rows of H blob.</param>
@@ -245,10 +200,6 @@ namespace MyCaffe.layers
 
             // ignore label.
             m_nIgnoreLabel = m_param.loss_param.ignore_label;
-
-            // normalization
-            m_log.CHECK(!m_param.loss_param.normalize, "normalize is drepreciated, use 'normalization'.");
-            m_normalization = m_param.loss_param.normalization;
 
             // matrix H
             if (colBottom.Count < 3)

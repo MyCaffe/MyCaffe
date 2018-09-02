@@ -29,6 +29,12 @@ namespace MyCaffe.layers
         /// Set to <i>true</i> when labels are to be ignored.
         /// </summary>
         protected bool m_bIgnoreLabels = false;
+        /// <summary>
+        /// Specifies the normalization mode used to normalize the loss.
+        /// </summary>
+        protected LossParameter.NormalizationMode m_normalization = LossParameter.NormalizationMode.NONE;
+        protected int m_nOuterNum = 0;
+        protected int m_nInnerNum = 0;
 
         /// <summary>
         /// The LossLayer constructor.
@@ -45,6 +51,54 @@ namespace MyCaffe.layers
             : base(cuda, log, p)
         {
             m_type = LayerParameter.LayerType.LOSS;
+        }
+
+        /// <summary>
+        /// Returns the normalizer used to normalize the loss.
+        /// </summary>
+        /// <param name="normalization_mode">Specifies the normalization mode to use.</param>
+        /// <param name="nValidCount">Specifies the number of valid.</param>
+        /// <returns>The normalization value is returned.</returns>
+        protected virtual double get_normalizer(LossParameter.NormalizationMode normalization_mode, int nValidCount)
+        {
+            double dfNormalizer = 0.0;
+
+            switch (normalization_mode)
+            {
+                case LossParameter.NormalizationMode.FULL:
+                    m_log.CHECK_GT(m_nInnerNum, 0, "The inner number must be set.");
+                    m_log.CHECK_GT(m_nOuterNum, 0, "The outer number must be set.");
+                    dfNormalizer = m_nOuterNum * m_nInnerNum;
+                    break;
+
+                case LossParameter.NormalizationMode.VALID:
+                    if (nValidCount == -1)
+                    {
+                        m_log.CHECK_GT(m_nInnerNum, 0, "The inner number must be set.");
+                        m_log.CHECK_GT(m_nOuterNum, 0, "The outer number must be set.");
+                        dfNormalizer = m_nOuterNum * m_nInnerNum;
+                    }
+                    else
+                        dfNormalizer = nValidCount;
+                    break;
+
+                case LossParameter.NormalizationMode.BATCH_SIZE:
+                    m_log.CHECK_GT(m_nOuterNum, 0, "The outer number must be set.");
+                    dfNormalizer = m_nOuterNum;
+                    break;
+
+                case LossParameter.NormalizationMode.NONE:
+                    dfNormalizer = 1.0;
+                    break;
+
+                default:
+                    m_log.FAIL("Unknown normalization mode " + normalization_mode.ToString());
+                    break;
+            }
+
+            // Some users will have no labels for some examples in order to 'turn off' a 
+            // particular loss in a multi-taks setup.  The max prevents Nans in that case.
+            return Math.Max(dfNormalizer, 1.0);
         }
 
         /// <summary>
@@ -98,6 +152,12 @@ namespace MyCaffe.layers
             // LossLayers have non-zero (1) loss by default.
             if (m_param.loss_weight.Count == 0)
                 m_param.loss_weight.Add(1.0);
+
+            m_log.CHECK(!m_param.loss_param.normalize, "normalize is drepreciated, use 'normalization'.");
+            if (!m_param.loss_param.normalization.HasValue)
+                m_normalization = (m_param.loss_param.normalize) ? LossParameter.NormalizationMode.VALID : LossParameter.NormalizationMode.BATCH_SIZE;
+            else
+                m_normalization = m_param.loss_param.normalization.Value;
         }
 
         /// <summary>

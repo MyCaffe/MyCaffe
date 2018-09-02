@@ -30,10 +30,7 @@ namespace MyCaffe.layers
         BlobCollection<T> m_colSoftmaxBottom;
         BlobCollection<T> m_colSoftmaxTop;
         int? m_nIgnoreLabel = null;
-        LossParameter.NormalizationMode m_normalization;
         int m_nSoftmaxAxis;
-        int m_nOuterNum;
-        int m_nInnerNum;
 
         /// <summary>
         /// Constructor.
@@ -124,11 +121,6 @@ namespace MyCaffe.layers
             m_softmaxLayer.Setup(m_colSoftmaxBottom, m_colSoftmaxTop);
 
             m_nIgnoreLabel = m_param.loss_param.ignore_label;
-
-            if (m_param.loss_param.normalization == LossParameter.NormalizationMode.NONE)
-                m_normalization = (m_param.loss_param.normalize) ? LossParameter.NormalizationMode.VALID : LossParameter.NormalizationMode.BATCH_SIZE;
-            else
-                m_normalization = m_param.loss_param.normalization;
         }
 
         /// <summary>
@@ -155,47 +147,6 @@ namespace MyCaffe.layers
                     colTop[1].ReshapeLike(colBottom[0]);
                 }
             }
-        }
-
-        /// <summary>
-        /// Returns the normalizer used to normalize the loss.
-        /// </summary>
-        /// <param name="normalization_mode">Specifies the normalization mode to use.</param>
-        /// <param name="nValidCount">Specifies the number of valid.</param>
-        /// <returns>The normalization value is returned.</returns>
-        protected virtual T get_normalizer(LossParameter.NormalizationMode normalization_mode, T nValidCount)
-        {
-            T fNormalizer = convert(0.0);
-
-            switch (normalization_mode)
-            {
-                case LossParameter.NormalizationMode.FULL:
-                    fNormalizer = convert(m_nOuterNum * m_nInnerNum);
-                    break;
-
-                case LossParameter.NormalizationMode.VALID:
-                    if (convertD(nValidCount) == -1)
-                        fNormalizer = convert(m_nOuterNum * m_nInnerNum);
-                    else
-                        fNormalizer = nValidCount;
-                    break;
-
-                case LossParameter.NormalizationMode.BATCH_SIZE:
-                    fNormalizer = convert(m_nOuterNum);
-                    break;
-
-                case LossParameter.NormalizationMode.NONE:
-                    fNormalizer = convert(1.0);
-                    break;
-
-                default:
-                    m_log.FAIL("Unknown normalization mode " + normalization_mode.ToString());
-                    break;
-            }
-
-            // Some users will have no labels for some examples in order to 'turn off' a 
-            // particular loss in a multi-taks setup.  The max prevents Nans in that case.
-            return convert(Math.Max(convertD(fNormalizer), 1.0));
         }
 
         /// <summary>
@@ -235,15 +186,15 @@ namespace MyCaffe.layers
 
             m_cuda.softmaxloss_fwd(nCount, hProbData, hLabel, hLossData, m_nOuterNum, nDim, m_nInnerNum, hCounts, m_nIgnoreLabel);
             T fLoss = m_cuda.asum(nCount, hLossData);
-            T fValidCount = convert(-1);
+            double dfValidCount = -1;
 
             // Only launch another cuda kernel if we actually need the count of valid
             // outputs.
             if (m_normalization == LossParameter.NormalizationMode.VALID && m_nIgnoreLabel.HasValue)
-                fValidCount = m_cuda.asum(nCount, hCounts);
+                dfValidCount = convertD(m_cuda.asum(nCount, hCounts));
 
             double dfLoss = convertD(fLoss);
-            double dfNormalizer = convertD(get_normalizer(m_normalization, fValidCount));
+            double dfNormalizer = get_normalizer(m_normalization, (int)dfValidCount);
 
             colTop[0].SetData(dfLoss / dfNormalizer, 0);
 
@@ -305,15 +256,15 @@ namespace MyCaffe.layers
 
             m_cuda.softmaxloss_bwd(nCount, hTopData, hLabel, hBottomDiff, m_nOuterNum, nDim, m_nInnerNum, hCounts, m_nIgnoreLabel);
 
-            T fValidCount = convert(-1);
+            double dfValidCount = -1;
 
             // Only launch another cuda kernel if we acutally need the count of valid
             // outputs.
             if (m_normalization == LossParameter.NormalizationMode.VALID && m_nIgnoreLabel.HasValue)
-                fValidCount = m_cuda.asum(nCount, hCounts);
+                dfValidCount = convertD(m_cuda.asum(nCount, hCounts));
 
             double dfTopDiff = convertD(colTop[0].GetDiff(0));
-            double dfNormalizer = convertD(get_normalizer(m_normalization, fValidCount));
+            double dfNormalizer = get_normalizer(m_normalization, (int)dfValidCount);
             double dfLossWeight = dfTopDiff / dfNormalizer;
 
             m_cuda.scal(m_blobProb.count(), convert(dfLossWeight), hBottomDiff);
