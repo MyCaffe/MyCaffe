@@ -22,10 +22,10 @@ namespace MyCaffe.gym
         void Close();
         IXMyCaffeGym Clone();
         string Name { get; }
-        void Reset();
+        Tuple<Tuple<double, double, double>[], double, bool> Reset();
         Tuple<Tuple<double,double,double>[], double, bool> Step();
         Bitmap Render(int nWidth, int nHeight);
-        void AddAction(int nAction);
+        void Run(int nAction);
         Dictionary<string, int> GetActionSpace();
         DatasetDescriptor GetDataset(DATA_TYPE dt);
     }

@@ -10,27 +10,31 @@ using System.Text;
 
 namespace MyCaffe.gym
 {
-    [ServiceContract]
+    [ServiceContract(SessionMode=SessionMode.Required, CallbackContract=typeof(IXMyCaffeGymCallback))]
     public interface IXMyCaffeGymService
     {
-        [OperationContract]
+        [OperationContract(IsOneWay = false)]
         int Open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst, double[] rgdfInit);
-        [OperationContract]
+        [OperationContract(IsOneWay = true)]
         void Close(string strName, int nIdx);
-        [OperationContract]
+        [OperationContract(IsOneWay = true)]
         void CloseAll(string strName);
-        [OperationContract]
+        [OperationContract(IsOneWay = true)]
         void OpenUi(string strName, int nIdx);
-        [OperationContract]
+        [OperationContract(IsOneWay = false)]
         byte[] GetDataset(string strName, int nType);
-        [OperationContract]
+        [OperationContract(IsOneWay = false)]
         Dictionary<string, int> GetActionSpace(string strName);
-        [OperationContract]
+        [OperationContract(IsOneWay = true)]
         void Run(string strName, int nIdx, int nAction);
-        [OperationContract]
+        [OperationContract(IsOneWay = true)]
         void Reset(string strName, int nIdx);
-        [OperationContract]
-        Observation GetLastObservation(string strName, int nIdx);
+    }
+
+    public interface IXMyCaffeGymCallback
+    {
+        [OperationContract(IsOneWay = true, IsInitiating = false, IsTerminating = false)]
+        void OnObservation(string strName, int nIdx, Observation obs);
     }
 
     [DataContract]

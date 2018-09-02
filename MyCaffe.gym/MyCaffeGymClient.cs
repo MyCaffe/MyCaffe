@@ -8,15 +8,17 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.gym
 {
-    public class MyCaffeGymClient : IDisposable
+    public class MyCaffeGymClient : IDisposable, IXMyCaffeGymCallback
     {
-        ChannelFactory<IXMyCaffeGymService> m_factory = null;
+        DuplexChannelFactory<IXMyCaffeGymService> m_factory = null;
         IXMyCaffeGymService m_igym;
+
+        public event EventHandler<ObservationArgs> OnNewObservation;
 
         public MyCaffeGymClient()
         {
             // Consume the service
-            m_factory = new ChannelFactory<IXMyCaffeGymService>(new NetNamedPipeBinding(), new EndpointAddress("net.pipe://localhost/MyCaffeGymService"));
+            m_factory = new DuplexChannelFactory<IXMyCaffeGymService>(new InstanceContext(this), new NetNamedPipeBinding(), new EndpointAddress("net.pipe://localhost/MyCaffeGymService"));
             m_igym = m_factory.CreateChannel();
         }
 
@@ -76,9 +78,10 @@ namespace MyCaffe.gym
             m_igym.Reset(strName, nIdx);
         }
 
-        public Observation GetObservation(string strName, int nIdx)
+        public void OnObservation(string strName, int nIdx, Observation obs)
         {
-            return m_igym.GetLastObservation(strName, nIdx);
+            if (OnNewObservation != null)
+                OnNewObservation(this, new ObservationArgs(strName, nIdx, obs));
         }
     }
 }

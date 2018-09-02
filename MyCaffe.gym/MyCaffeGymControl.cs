@@ -11,6 +11,7 @@ using System.Threading;
 using MyCaffe.basecode;
 using System.Collections;
 using MyCaffe.basecode.descriptors;
+using System.Diagnostics;
 
 namespace MyCaffe.gym
 {
@@ -24,6 +25,9 @@ namespace MyCaffe.gym
         bool m_bRendering = false;
         Observation m_observation = null;
         double[] m_rgdfInit = null;
+        int m_nIndex = -1;
+
+        public event EventHandler<ObservationArgs> OnObservation;
 
         public MyCaffeGymControl(Log log, double[] rgdfInit)
         {
@@ -35,6 +39,12 @@ namespace MyCaffe.gym
         public void Initialize(IXMyCaffeGym igym)
         {
             m_igym = igym;
+        }
+
+        public int Index
+        {
+            get { return m_nIndex; }
+            set { m_nIndex = value; }
         }
 
         public void Start()
@@ -74,7 +84,7 @@ namespace MyCaffe.gym
         {
         }
 
-        public void Render()
+        public void Render(Bitmap bmp)
         {
             if (m_bRendering)
                 return;
@@ -82,10 +92,7 @@ namespace MyCaffe.gym
             try
             {             
                 m_bRendering = true;
-                m_bmp = m_igym.Render(Width, Height);
-
-                if (m_state != null)
-                    m_observation = new Observation(new Bitmap(m_bmp), m_state.Item1, m_state.Item2, m_state.Item3);
+                m_bmp = bmp;
 
                 if (IsHandleCreated && Visible)
                     Invalidate(true);
@@ -107,13 +114,18 @@ namespace MyCaffe.gym
 
         public void Reset()
         {
-            m_observation = null;
-            m_igym.Reset();
+            m_state = m_igym.Reset();
+
+            if (OnObservation != null)
+            {
+                Bitmap bmp = m_igym.Render(Width, Height);
+                OnObservation(this, new ObservationArgs(m_igym.Name, m_nIndex, new Observation(bmp, m_state.Item1, m_state.Item2, m_state.Item3)));
+            }
         }
 
         public void RunAction(int nAction)
         {
-            m_igym.AddAction(nAction);
+            m_igym.Run(nAction);
         }
 
         public Dictionary<string, int> GetActionSpace()
@@ -121,19 +133,24 @@ namespace MyCaffe.gym
             return m_igym.GetActionSpace();
         }
 
-        public Observation GetLastObservation()
+        public Observation GetLastObservation(bool bReset)
         {
-            return m_observation;
+            Observation obs = m_observation;
+
+            if (bReset)
+                m_observation = null;
+
+            return obs;
         }
 
         private void m_bwGym_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            Render();
         }
 
         private void m_bwGym_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            Render();
+            Bitmap bmp = e.UserState as Bitmap;
+            Render(bmp);
         }
 
         private void m_bwGym_DoWork(object sender, DoWorkEventArgs e)
@@ -143,11 +160,19 @@ namespace MyCaffe.gym
 
             igym.Initialize(m_log, m_rgdfInit);
 
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
             while (!bw.CancellationPending)
             {
                 m_state = igym.Step();
-                bw.ReportProgress(1);
-                Thread.Sleep(20);   // roughly 50 frames/second
+                Bitmap bmp = m_igym.Render(Width, Height);
+
+                if (OnObservation != null)
+                    OnObservation(this, new ObservationArgs(m_igym.Name, m_nIndex, new Observation(bmp, m_state.Item1, m_state.Item2, m_state.Item3)));
+
+                bw.ReportProgress(1, bmp);
+                Thread.Sleep(20); // roughly 50 frames a second.
             }
 
             igym.Close();
@@ -157,6 +182,35 @@ namespace MyCaffe.gym
         {
             if (m_bmp != null)
                 e.Graphics.DrawImage(m_bmp, new Point(0, 0));
+        }
+    }
+
+    public class ObservationArgs : EventArgs
+    {
+        string m_strName;
+        int m_nIdx;
+        Observation m_obs;
+
+        public ObservationArgs(string strName, int nIdx, Observation obs)
+        {
+            m_strName = strName;
+            m_nIdx = nIdx;
+            m_obs = obs;
+        }
+
+        public string Name
+        {
+            get { return m_strName; }
+        }
+
+        public int Index
+        {
+            get { return m_nIdx; }
+        }
+
+        public Observation Observation
+        {
+            get { return m_obs; }
         }
     }
 }

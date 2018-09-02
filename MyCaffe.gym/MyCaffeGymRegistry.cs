@@ -19,6 +19,9 @@ namespace MyCaffe.gym
         Dictionary<string, List<FormGym>> m_rgGym = new Dictionary<string, List<FormGym>>();
         GymCollection m_gymCollection = new GymCollection();
         Log m_log;
+        object m_sync = new object();
+
+        public event EventHandler<ObservationArgs> OnObservation;
 
         delegate int fnopen(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst, double[] rgdfInit);
         delegate void fnopenUi(string strName, int nIdx);
@@ -103,39 +106,18 @@ namespace MyCaffe.gym
                 return -1;
 
             MyCaffeGymControl ctrl = new MyCaffeGymControl(m_log, rgdfInit);
+            ctrl.OnObservation += ctrl_OnObservation;
             ctrl.Initialize(igym.Clone());
             FormGym dlg = new FormGym(ctrl);
 
-            if (!m_rgGym.ContainsKey(strName))
-                m_rgGym.Add(strName, new List<FormGym>());
-
-            int nIdx = -1;
-            int nLiveCount = 0;
-
-            for (int i = 0; i < m_rgGym[strName].Count; i++)
+            lock (m_sync)
             {
-                if (m_rgGym[strName][i] == null)
-                {
-                    if (nIdx == -1)
-                        nIdx = i;
-                }
-                else
-                {
-                    nLiveCount++;
-                }
-            }
+                if (!m_rgGym.ContainsKey(strName))
+                    m_rgGym.Add(strName, new List<FormGym>());
 
-            if (nIdx >= 0)
-            {
-                m_rgGym[strName][nIdx] = dlg;
-            }
-            else
-            {
                 m_rgGym[strName].Add(dlg);
-                nIdx = m_rgGym[strName].Count - 1;
+                ctrl.Index = m_rgGym[strName].Count - 1;
             }
-
-            nLiveCount++;
 
             if (bAutoStart)
             {
@@ -145,11 +127,17 @@ namespace MyCaffe.gym
 
             if (bShowUi)
             {
-                if (!bShowOnlyFirst || nLiveCount == 1)
+                if (!bShowOnlyFirst || ctrl.Index == 0)
                     dlg.Show();
             }
 
-            return nIdx;
+            return ctrl.Index;
+        }
+
+        private void ctrl_OnObservation(object sender, ObservationArgs e)
+        {
+            if (OnObservation != null)
+                OnObservation(sender, e);
         }
 
         public bool CloseAll(string strName)
@@ -250,13 +238,13 @@ namespace MyCaffe.gym
             return true;
         }
 
-        public Observation GetObservation(string strName, int nIdx)
+        public Observation GetObservation(string strName, int nIdx, bool bReset)
         {
             FormGym dlg = Find(strName, nIdx);
             if (dlg == null)
                 return null;
 
-            return dlg.GymControl.GetLastObservation();
+            return dlg.GymControl.GetLastObservation(bReset);
         }
     }
 

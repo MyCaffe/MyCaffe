@@ -8,8 +8,28 @@ using System.Text;
 
 namespace MyCaffe.gym
 {
-    public class MyCaffeGymService : IXMyCaffeGymService
+    [ServiceBehavior(InstanceContextMode = InstanceContextMode.PerSession)]
+    public class MyCaffeGymService : IXMyCaffeGymService, IDisposable
     {
+        IXMyCaffeGymCallback m_icallback = null;
+
+        public MyCaffeGymService()
+        {
+            MyCaffeGymRegistrar.Registry.OnObservation += Registry_OnObservation;
+            m_icallback = OperationContext.Current.GetCallbackChannel<IXMyCaffeGymCallback>();
+        }
+
+        public void Dispose()
+        {
+            MyCaffeGymRegistrar.Registry.OnObservation -= Registry_OnObservation;
+        }
+
+        private void Registry_OnObservation(object sender, ObservationArgs e)
+        {
+            if (m_icallback != null)
+                m_icallback.OnObservation(e.Name, e.Index, e.Observation);
+        }
+
         public int Open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst, double[] rgdfInit)
         {
             return MyCaffeGymRegistrar.Registry.Open(strName, bAutoStart, bShowUi, bShowOnlyFirst, rgdfInit);
@@ -35,12 +55,12 @@ namespace MyCaffe.gym
             return MyCaffeGymRegistrar.Registry.GetActionSpace(strName);
         }
 
-        public Observation GetLastObservation(string strName, int nIdx)
+        public Observation GetLastObservation(string strName, int nIdx, bool bReset)
         {
-            return MyCaffeGymRegistrar.Registry.GetObservation(strName, nIdx);
+            return MyCaffeGymRegistrar.Registry.GetObservation(strName, nIdx, bReset);
         }
 
-        public void Run(string strName, int nIdx, int nAction = 0)
+        public void Run(string strName, int nIdx, int nAction)
         {
             MyCaffeGymRegistrar.Registry.Run(strName, nIdx, nAction);
         }

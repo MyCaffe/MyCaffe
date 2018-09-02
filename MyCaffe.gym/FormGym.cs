@@ -42,7 +42,7 @@ namespace MyCaffe.gym
         private void FormGym_Load(object sender, EventArgs e)
         {
             Text += " - " + GymName;
-            m_ctrl.Render();
+            m_ctrl.Render(null);
         }
 
         private void timerUI_Tick(object sender, EventArgs e)
