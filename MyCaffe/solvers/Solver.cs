@@ -431,6 +431,14 @@ namespace MyCaffe.solvers
             if (is_root_solver)
                 m_log.WriteLine("Solver scaffolding done.");
 
+            Reset();
+        }
+
+        /// <summary>
+        /// Reset the iterations of the net.
+        /// </summary>
+        public void Reset()
+        {
             m_nIter = 0;
             m_nCurrentStep = 0;
         }
@@ -862,7 +870,7 @@ namespace MyCaffe.solvers
                     double dfLastLearningRate = 0;
 
                     if (step != TRAIN_STEP.FORWARD)
-                        dfLastLearningRate = ApplyUpdate();
+                        dfLastLearningRate = ApplyUpdate(m_nIter);
 
                     if (m_evtCancel.WaitOne(0))
                         break;

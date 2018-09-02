@@ -1089,15 +1089,19 @@ namespace MyCaffe
         /// <param name="nTrainingTimeLimitInMinutes">Optionally, specifies a maximum number of minutes to train.  When set to 0, this parameter is ignored and no time limit is imposed.</param>
         /// <param name="step">Optionally, specifies whether or not to single step the training on the forward pass, backward pass or both.  The default is <i>TRAIN_STEP.NONE</i> which runs the training to the maximum number of iterations specified.</param>
         /// <param name="dfLearningRateOverride">Optionally, specifies a learning rate override (default = 0 which ignores this parameter)</param>
+        /// <param name="bReset">Optionally, reset the iterations to zero.</param>
         /// <remarks>
         /// Note when single stepping, no testing cycles are performed.  Currently, the single-step parameter is only suppored when running in single GPU mode.
         /// </remarks>
-        public void Train(int nIterationOverride = -1, int nTrainingTimeLimitInMinutes = 0, TRAIN_STEP step = TRAIN_STEP.NONE, double dfLearningRateOverride = 0)
+        public void Train(int nIterationOverride = -1, int nTrainingTimeLimitInMinutes = 0, TRAIN_STEP step = TRAIN_STEP.NONE, double dfLearningRateOverride = 0, bool bReset = false)
         {
             m_lastPhaseRun = Phase.TRAIN;
 
             if (nIterationOverride == -1)
                 nIterationOverride = m_settings.MaximumIterationOverride;
+
+            if (bReset)
+                m_solver.Reset();
 
             m_solver.TrainingTimeLimitInMinutes = nTrainingTimeLimitInMinutes;
             m_solver.TrainingIterationOverride = nIterationOverride;
