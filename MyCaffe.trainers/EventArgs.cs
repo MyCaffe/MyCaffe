@@ -159,6 +159,7 @@ namespace MyCaffe.trainers
         Log m_log;
         CancelEvent m_evtCancel;
         StateBase m_state = null;
+        bool m_bSuccess = false;
 
         /// <summary>
         /// The constructor.
@@ -179,6 +180,15 @@ namespace MyCaffe.trainers
             m_evtCancel = evtCancel;
             m_bReset = bReset;
             m_bAllowUI = bAllowUi;
+        }
+
+        /// <summary>
+        /// Returns that the data was successfully retrieved.
+        /// </summary>
+        public bool Success
+        {
+            get { return m_bSuccess; }
+            set { m_bSuccess = value; }
         }
 
         /// <summary>
