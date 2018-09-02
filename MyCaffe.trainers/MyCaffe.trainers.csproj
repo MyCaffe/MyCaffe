@@ -50,6 +50,7 @@
     <Compile Include="EventArgs.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="Memory.cs" />
+    <Compile Include="MemoryCollection.cs" />
     <Compile Include="MemoryItem.cs" />
     <Compile Include="MyCaffeA3CTrainer.cs">
       <SubType>Component</SubType>
@@ -68,6 +69,10 @@
     <ProjectReference Include="..\MyCaffe.basecode\MyCaffe.basecode.csproj">
       <Project>{D168418C-CDCC-4F5B-BF55-292A38CC2429}</Project>
       <Name>MyCaffe.basecode</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.gym\MyCaffe.gym.csproj">
+      <Project>{C14BEDC8-FF66-4118-BE66-675F26BE7EE0}</Project>
+      <Name>MyCaffe.gym</Name>
     </ProjectReference>
     <ProjectReference Include="..\MyCaffe.imagedb\MyCaffe.imagedb.csproj">
       <Project>{642BA581-59CB-445E-8D7D-81E67B748D77}</Project>
