@@ -177,17 +177,8 @@ namespace MyCaffe.test
             : base()
         {
             m_gym = gym;
+            m_gym.OnNewObservation += gym_OnNewObservation;
             m_bShowUi = bShowUi;
-        }
-
-        protected override string name
-        {
-            get { return "Cart Pole Trainer"; }
-        }
-
-        protected override DatasetDescriptor get_dataset_override(int nProjectID)
-        {
-            return m_gym.GetDataset(m_strName, 0);
         }
 
         protected override void initialize(InitializeArgs e)
@@ -201,7 +192,22 @@ namespace MyCaffe.test
             base.dispose();
         }
 
-        protected override void getData(GetDataArgs e)
+        protected override string name
+        {
+            get { return "Cart Pole Trainer"; }
+        }
+
+        protected override DatasetDescriptor get_dataset_override(int nProjectID)
+        {
+            return m_gym.GetDataset(m_strName, 0);
+        }
+
+        private void gym_OnNewObservation(object sender, ObservationArgs e)
+        {
+            m_rgObservations.Add(e.Index, e.Observation);
+        }
+
+        protected override bool getData(GetDataArgs e)
         {
             if (e.Reset)
             {
@@ -219,22 +225,10 @@ namespace MyCaffe.test
             if (e.Action >= 0)
                 m_gym.Run(m_strName, e.Index, e.Action);
 
-            Thread.Sleep(30);
-
-            int nRetries = 0;
-            Observation obs = m_gym.GetObservation(m_strName, e.Index);
-            while (obs == null && nRetries < 100)
-            {
-                Thread.Sleep(250);
-                obs = m_gym.GetObservation(m_strName, e.Index);
-                nRetries++;
-
-                if (e.CancelEvent.WaitOne(0))
-                    return;
-            }
-
+            Thread.Sleep(1);
+            Observation obs = m_rgObservations.GetObservation(e.Index, 10000);
             if (obs == null)
-                throw new Exception("Failed to get an observation from gym #" + e.Index.ToString() + "!");
+                return false;
 
             double[] rgState = Observation.GetValues(obs.State, m_bNormalizeInput);
             e.State = new StateBase(m_gym.GetActionSpace(m_strName).Count());
@@ -250,6 +244,8 @@ namespace MyCaffe.test
                 e.OutputLog.WriteLine("(" + dfPct.ToString("P") + ") Global Episode #" + GlobalEpisodeCount.ToString() + "  Global Reward = " + GlobalRewards.ToString() + " Exploration Rate = " + ExplorationRate.ToString("P"));
                 m_sw.Restart();
             }
+
+            return true;
         }
     }
 }
