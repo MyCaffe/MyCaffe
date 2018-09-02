@@ -10,10 +10,11 @@ namespace MyCaffe.trainers
     /// <summary>
     /// Specifies the memory making up an experience.
     /// </summary>
-    class Memory<T, T2> : GenericList<MemoryItem>
+    class Memory<T> : GenericList<MemoryItem>
     {
-        T2 m_tOne = Utility.ConvertVal<T2>(1.0);
-        T2 m_tZero = Utility.ConvertVal<T2>(0.0);
+        T m_tOne = Utility.ConvertVal<T>(1.0);
+        T m_tZero = Utility.ConvertVal<T>(0.0);
+        double m_dfRewardScale = 1.0;
 
         public enum STATE_TYPE
         {
@@ -30,18 +31,20 @@ namespace MyCaffe.trainers
         /// <summary>
         /// The constructor.
         /// </summary>
-        public Memory()
+        public Memory(double dfRewardScale)
         {
+            m_dfRewardScale = dfRewardScale;
         }
+
 
         /// <summary>
         /// Clone the memory into a new memory.
         /// </summary>
         /// <param name="bClear">If <i>true</i>, clear the original memory.</param>
         /// <returns>The cloned memory is returned.</returns>
-        public Memory<T, T2> Clone(bool bClear)
+        public Memory<T> Clone(bool bClear)
         {
-            Memory<T, T2> col = new Memory<T, T2>();
+            Memory<T> col = new Memory<T>(m_dfRewardScale);
 
             col.m_rgItems.AddRange(m_rgItems);
 
@@ -76,9 +79,9 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <param name="type">Specifies the type value or one-hot-vector.</param>
         /// <returns>The array of action values or one hot vectors is returned.</returns>
-        public T2[] GetActions(VALUE_TYPE type)
+        public T[] GetActions(VALUE_TYPE type)
         {
-            List<T2> rg = new List<T2>();
+            List<T> rg = new List<T>();
 
             for (int i = 0; i < m_rgItems.Count; i++)
             {
@@ -89,11 +92,11 @@ namespace MyCaffe.trainers
                     float[] rgOneHot = new float[m_rgItems[i].State0.ActionCount];
                     rgOneHot[nAction] = 1;
 
-                    rg.AddRange(Utility.ConvertVec<T2>(rgOneHot));
+                    rg.AddRange(Utility.ConvertVec<T>(rgOneHot));
                 }
                 else
                 {
-                    rg.Add(Utility.ConvertVal<T2>((double)nAction));
+                    rg.Add(Utility.ConvertVal<T>((double)nAction));
                 }
             }
 
@@ -101,16 +104,25 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
+        /// Returns the total rewards for all items in the memory.
+        /// </summary>
+        public double TotalReward
+        {
+            get { return m_rgItems.Sum(p => p.Reward) * m_dfRewardScale; }
+        }
+
+        /// <summary>
         /// Get all rewards in memory as an array of base types.
         /// </summary>
         /// <returns>The array of rewards is returned.</returns>
-        public T2[] GetRewards()
+        public T[] GetRewards()
         {
-            List<T2> rg = new List<T2>();
+            List<T> rg = new List<T>();
 
             for (int i = 0; i < m_rgItems.Count; i++)
             {
-                rg.Add(Utility.ConvertVal<T2>(m_rgItems[i].Reward));
+                double dfVal = m_rgItems[i].Reward * m_dfRewardScale;
+                rg.Add(Utility.ConvertVal<T>(dfVal));
             }
 
             return rg.ToArray();
@@ -120,9 +132,9 @@ namespace MyCaffe.trainers
         /// Get all state masks (0 for done, 1 for not done) in memory as an array of base types.
         /// </summary>
         /// <returns>The array of state masks is returned.</returns>
-        public T2[] GetStateMask()
+        public T[] GetStateMask()
         {
-            List<T2> rg = new List<T2>();
+            List<T> rg = new List<T>();
 
             for (int i = 0; i < m_rgItems.Count; i++)
             {
