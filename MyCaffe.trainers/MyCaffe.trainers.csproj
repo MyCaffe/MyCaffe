@@ -58,6 +58,8 @@
     <Compile Include="MyCaffeA3CTrainer.Designer.cs">
       <DependentUpon>MyCaffeA3CTrainer.cs</DependentUpon>
     </Compile>
+    <Compile Include="ObservationReady.cs" />
+    <Compile Include="ObservationReadyCollection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StateBase.cs" />
     <Compile Include="Trainer.cs" />
