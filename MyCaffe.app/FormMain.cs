@@ -1187,7 +1187,7 @@ namespace MyCaffe.app
         private void a3cTrainerThread(object obj)
         {
             CancelEvent evtCancel = obj as CancelEvent;
-            MyCaffeCustomTrainerTest<float> test = new MyCaffeCustomTrainerTest<float>("Cart Pole", 0, EngineParameter.Engine.DEFAULT);
+            MyCaffeCustomTrainerTest<float> test = new MyCaffeCustomTrainerTest<float>("Cart-Pole", 0, EngineParameter.Engine.DEFAULT);
 
             test.Log.OnWriteLine += Log_OnWriteLine1;
             test.CancelEvent.AddCancelOverride(evtCancel);

@@ -75,7 +75,7 @@ namespace MyCaffe.test
         {
             m_log.WriteHeader("Test Gym - Open");
             MyCaffeGymClient gym = new MyCaffeGymClient();
-            string strName = "Cart Pole";
+            string strName = "Cart-Pole";
 
             int nIdx = gym.Open(strName, true, bShowUi, false, null);
 
