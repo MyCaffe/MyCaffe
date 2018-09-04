@@ -33,7 +33,13 @@ namespace MyCaffe.layers
         /// Specifies the normalization mode used to normalize the loss.
         /// </summary>
         protected LossParameter.NormalizationMode m_normalization = LossParameter.NormalizationMode.NONE;
+        /// <summary>
+        /// Specifies the outer num, such as the batch count (e.g. count(0, axis)).  Each derivative class must set this value appropriately.
+        /// </summary>
         protected int m_nOuterNum = 0;
+        /// <summary>
+        /// Specifies the inner num, such as the channel + height + width (e.g. count(axis + 1)).  Each derivative class must set this value appropriately.
+        /// </summary>
         protected int m_nInnerNum = 0;
 
         /// <summary>
