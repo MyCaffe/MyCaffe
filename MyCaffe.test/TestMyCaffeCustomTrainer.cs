@@ -119,25 +119,27 @@ namespace MyCaffe.test
             // Train the network using the custom trainer
             //  - Iterations (maximum frames cumulative across all threads) = 1000 (normally this would be much higher such as 500,000)
             //  - Learning rate = 0.005 (defined in solver.prototxt)
-            //  - Min Batch Size = 32 (defined in train_val.prototxt for MemoryDataLayer)
+            //  - Min Batch Size = 64 (defined in train_val.prototxt for MemoryDataLayer)
             //
             //  - Threads = 1 to 3 envrionment threads (normally this would be much higher such as 8)
             //  - Optimizers = 1 optimizer threads (normally this would be higher sucha s 2)
             //  - EpsSteps = 15% of iterations, after which exploration will be set at EpsEnd (normally this would be much higher such as 75000)
-            //  - EpsStart = 0.1, start exploration at 10%
-            //  - EpsEnd = 0.01, end exploration (and remain at) 1% after EpsSteps
+            //  - EpsStart = 0.4, start exploration at 40%
+            //  - EpsEnd = 0.15, end exploration (and remain at) 15% after EpsSteps
             //  - NStepReturn = 8, get a sample and calculate reward after 8 steps.
             //  - Gamma = 0.99, discount factor.
             //  - LossCoefficient = 0.5, use 50% of the Loss Value when calculating total loss.
-            //  - EntropyCoefficient = 0.01 = use 1% of the Entropy when calculating total loss.
+            //  - EntropyCoefficient = 0.01, use 1% of the Entropy when calculating total loss.
+            //  - OptimalEpisodeCoefficient = 0.5, use optimial episodes (with best reward) 50% of the training.
+            //  - NormalizeInput = False, do not normalize the input.
             //  - Init1 = default force of 10.
-            //  - Init2 = do not use additive force.
+            //  - Init2 = do not use additive force.            
             int nEpsSteps = (int)(nIterations * 0.15);
-            trainer.Initialize("Threads=" + nThreads.ToString() + ";Optimizers=1;EpsSteps=" + nEpsSteps.ToString() + ";EpsStart=0.1;EpsEnd=0.01;NStepReturn=8;Gamma=0.99;LossCoefficient=0.5;EntropyCoefficient=0.01;NormalizeInput=True;Init1=10;Init2=0");
+            trainer.Initialize("Threads=" + nThreads.ToString() + ";Optimizers=1;EpsSteps=" + nEpsSteps.ToString() + ";EpsStart=0.4;EpsEnd=0.15;NStepReturn=8;Gamma=0.99;LossCoefficient=0.5;EntropyCoefficient=0.01;OptimalEpisodeCoefficient=0.5;NormalizeInput=False;Init1=10;Init2=0;ValueType=VALUE;InputSize=1");
             trainer.Train(mycaffe, nIterations);
             trainer.CleanUp();
             // Close the gym.
-            gym.CloseAll("Cart Pole");
+            gym.CloseAll("Cart-Pole");
 
             // Release the mycaffe resources.
             mycaffe.Dispose();
@@ -159,7 +161,7 @@ namespace MyCaffe.test
 
             p.SolverDescription = protoS.ToString();
 
-            p.SetDataset(gym.GetDataset("Cart Pole", 0));
+            p.SetDataset(gym.GetDataset("Cart-Pole", 0));
 
             return p;
         }
@@ -169,7 +171,7 @@ namespace MyCaffe.test
     {
         MyCaffeGymClient m_gym;
         Stopwatch m_sw = new Stopwatch();
-        string m_strName = "Cart Pole";
+        string m_strName = "Cart-Pole";
         bool m_bNormalizeInput = false;
         bool m_bShowUi = true;
 
@@ -194,7 +196,7 @@ namespace MyCaffe.test
 
         protected override string name
         {
-            get { return "Cart Pole Trainer"; }
+            get { return "Cart-Pole Trainer"; }
         }
 
         protected override DatasetDescriptor get_dataset_override(int nProjectID)
