@@ -24,7 +24,7 @@ namespace MyCaffe.gym
         string Name { get; }
         Tuple<Tuple<double, double, double>[], double, bool> Reset();
         Tuple<Tuple<double,double,double>[], double, bool> Step();
-        Bitmap Render(int nWidth, int nHeight);
+        Bitmap Render(int nWidth, int nHeight, out Bitmap bmpAction);
         void Run(int nAction);
         Dictionary<string, int> GetActionSpace();
         DatasetDescriptor GetDataset(DATA_TYPE dt);

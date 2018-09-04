@@ -54,6 +54,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FormActionImage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormActionImage.Designer.cs">
+      <DependentUpon>FormActionImage.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormGym.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -97,6 +103,9 @@
     <None Include="mycaffe.gym.pfx" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="FormActionImage.resx">
+      <DependentUpon>FormActionImage.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="FormGym.resx">
       <DependentUpon>FormGym.cs</DependentUpon>
     </EmbeddedResource>

@@ -118,8 +118,9 @@ namespace MyCaffe.gym
 
             if (OnObservation != null)
             {
-                Bitmap bmp = m_igym.Render(Width, Height);
-                OnObservation(this, new ObservationArgs(m_igym.Name, m_nIndex, new Observation(bmp, m_state.Item1, m_state.Item2, m_state.Item3)));
+                Bitmap bmpAction;
+                m_igym.Render(Width, Height, out bmpAction);
+                OnObservation(this, new ObservationArgs(m_igym.Name, m_nIndex, new Observation(bmpAction, m_state.Item1, m_state.Item2, m_state.Item3)));
             }
         }
 
@@ -166,10 +167,11 @@ namespace MyCaffe.gym
             while (!bw.CancellationPending)
             {
                 m_state = igym.Step();
-                Bitmap bmp = m_igym.Render(Width, Height);
+                Bitmap bmpAction;
+                Bitmap bmp = m_igym.Render(Width, Height, out bmpAction);
 
                 if (OnObservation != null)
-                    OnObservation(this, new ObservationArgs(m_igym.Name, m_nIndex, new Observation(bmp, m_state.Item1, m_state.Item2, m_state.Item3)));
+                    OnObservation(this, new ObservationArgs(m_igym.Name, m_nIndex, new Observation(bmpAction, m_state.Item1, m_state.Item2, m_state.Item3)));
 
                 bw.ReportProgress(1, bmp);
                 Thread.Sleep(20); // roughly 50 frames a second.

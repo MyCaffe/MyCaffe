@@ -14,6 +14,7 @@ namespace MyCaffe.gym
     {
         MyCaffeGymControl m_ctrl;
         Dictionary<string, int> m_rgActionSpace;
+        FormActionImage m_dlgActionImage;
 
         public FormGym(MyCaffeGymControl ctrl)
         {
@@ -21,7 +22,24 @@ namespace MyCaffe.gym
             ctrl.Dock = DockStyle.Fill;
             toolStripContainer1.ContentPanel.Controls.Add(ctrl);
             m_ctrl = ctrl;
+            m_ctrl.OnObservation += ctrl_OnObservation;
             m_rgActionSpace = ctrl.GetActionSpace();
+            m_dlgActionImage = new FormActionImage();
+            m_dlgActionImage.FormClosing += dlgActionImage_FormClosing;
+        }
+
+        private void ctrl_OnObservation(object sender, ObservationArgs e)
+        {
+            m_dlgActionImage.SetImage(e.Observation.Image);
+        }
+
+        private void dlgActionImage_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (e.CloseReason == CloseReason.WindowsShutDown)
+                return;
+
+            m_dlgActionImage.Hide();
+            e.Cancel = true;
         }
 
         public MyCaffeGymControl GymControl
@@ -94,6 +112,22 @@ namespace MyCaffe.gym
 
             Hide();
             e.Cancel = true;
+        }
+
+        private void btnShowActionImage_Click(object sender, EventArgs e)
+        {
+            if (btnShowActionImage.Checked)
+            {
+                if (m_dlgActionImage.Visible)
+                    m_dlgActionImage.BringToFront();
+                else
+                    m_dlgActionImage.Show(this);
+            }
+            else
+            {
+                if (m_dlgActionImage.Visible)
+                    m_dlgActionImage.Hide();
+            }
         }
     }
 }

@@ -159,6 +159,13 @@
         AFmGoBtAsiFUdQHJmkEAZgBZmkEApJFszSMOMDAAAC7nX3VlvHsgAAAAAElFTkSuQmCC
 </value>
   </data>
+  <data name="btnShowActionImage.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAA5SURBVDhPYxghYOsz2f/INH0Auq0gmn4uwGU7fVyAz3aY
+        2MAApY0+xNsOUowLQ5WQDijSTEPAwAAARllBNklJJRMAAAAASUVORK5CYII=
+</value>
+  </data>
   <metadata name="timerUI.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>122, 17</value>
   </metadata>

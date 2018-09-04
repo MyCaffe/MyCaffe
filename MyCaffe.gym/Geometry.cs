@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyCaffe.basecode;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -165,6 +166,49 @@ namespace MyCaffe.gym
             Pen p = new Pen(m_clrBorder, 1.0f);
             g.FillEllipse(br, rc);
             g.DrawEllipse(p, rc);
+            p.Dispose();
+            br.Dispose();
+            postrender(g);
+        }
+    }
+
+
+    class GeomRectangle : GeomObj
+    {
+        ColorMapper m_clrMap = null;
+
+        public GeomRectangle(float fL, float fR, float fT, float fB, Color clrFill, Color clrBorder, ColorMapper clrMap = null)
+            : base(fL, fR, fT, fB, clrFill, clrBorder)
+        {
+            m_clrMap = clrMap;
+        }
+
+        public override void Render(Graphics g)
+        {
+            prerender(g);
+            PointF[] rg = m_rgPoints.ToArray();
+            RectangleF rc = new RectangleF(LeftTop(rg).X, LeftTop(rg).Y, Width(rg), Height(rg));
+            Brush br = new SolidBrush(m_clrFill);
+            Pen p = new Pen(m_clrBorder, 1.0f);
+            g.FillRectangle(br, rc);
+
+            if (m_clrMap != null)
+            {
+                float fX = 0;
+                float fWid = rc.Width / 20;
+
+                for (int i = 0; i < 20; i++)
+                {
+                    RectangleF rc2 = new RectangleF(fX, rc.Y, fWid, rc.Height);
+                    Color clr = m_clrMap.GetColor(fX);
+                    Brush br1 = new SolidBrush(clr);
+                    g.FillRectangle(br1, rc2);
+                    br1.Dispose();
+                    fX += rc2.Width;
+                }
+            }
+
+            g.DrawRectangle(p, rc.X, rc.Y, rc.Width, rc.Height);
             p.Dispose();
             br.Dispose();
             postrender(g);

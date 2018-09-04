@@ -39,6 +39,8 @@
             this.btnMoveLeft = new System.Windows.Forms.ToolStripButton();
             this.btnMoveRight = new System.Windows.Forms.ToolStripButton();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
+            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnShowActionImage = new System.Windows.Forms.ToolStripButton();
             this.toolStripContainer1.BottomToolStripPanel.SuspendLayout();
             this.toolStripContainer1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
@@ -53,7 +55,7 @@
             // 
             // toolStripContainer1.ContentPanel
             // 
-            this.toolStripContainer1.ContentPanel.Size = new System.Drawing.Size(512, 512);
+            this.toolStripContainer1.ContentPanel.Size = new System.Drawing.Size(512, 487);
             this.toolStripContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.toolStripContainer1.Location = new System.Drawing.Point(0, 0);
             this.toolStripContainer1.Name = "toolStripContainer1";
@@ -70,10 +72,12 @@
             this.toolStripSeparator1,
             this.btnReset,
             this.btnMoveLeft,
-            this.btnMoveRight});
+            this.btnMoveRight,
+            this.toolStripSeparator2,
+            this.btnShowActionImage});
             this.toolStrip1.Location = new System.Drawing.Point(3, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(133, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(193, 25);
             this.toolStrip1.TabIndex = 0;
             // 
             // btnRun
@@ -140,6 +144,22 @@
             this.timerUI.Interval = 250;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 25);
+            // 
+            // btnShowActionImage
+            // 
+            this.btnShowActionImage.CheckOnClick = true;
+            this.btnShowActionImage.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnShowActionImage.Image = ((System.Drawing.Image)(resources.GetObject("btnShowActionImage.Image")));
+            this.btnShowActionImage.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnShowActionImage.Name = "btnShowActionImage";
+            this.btnShowActionImage.Size = new System.Drawing.Size(23, 22);
+            this.btnShowActionImage.Text = "Show action image";
+            this.btnShowActionImage.Click += new System.EventHandler(this.btnShowActionImage_Click);
+            // 
             // FormGym
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -172,5 +192,7 @@
         private System.Windows.Forms.ToolStripButton btnReset;
         private System.Windows.Forms.ToolStripButton btnMoveLeft;
         private System.Windows.Forms.ToolStripButton btnMoveRight;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
+        private System.Windows.Forms.ToolStripButton btnShowActionImage;
     }
 }
