@@ -838,6 +838,8 @@ namespace MyCaffe.trainers
             Blob<T> blobProb = null;
             Blob<T> blobVal = null;
             List<Datum> rgState = new List<Datum>();
+            bool bProbFound = false;
+            bool bValFound = false;
 
             m_caffe.Log.Enable = false;
             memData.AddDatumVector(rgData, 1, true, true);
@@ -854,6 +856,7 @@ namespace MyCaffe.trainers
                 if (colOut[i].num_axes > 1 && colOut[i].count(1) > 1)
                 {
                     m_blobOutProb.CopyFrom(colOut[i], false, true);
+                    bProbFound = true;
                     break;
                 }
             }
@@ -871,11 +874,18 @@ namespace MyCaffe.trainers
                 if (colBottom[i].num_axes > 1 && colBottom[i].count(1) == 1)
                 {
                     m_blobOutVal.CopyFrom(colBottom[i], false, true);
+                    bValFound = true;
                     break;
                 }
             }
 
             blobVal = m_blobOutVal;
+
+            if (!bProbFound)
+                throw new Exception("Could not find the Softmax output!");
+
+            if (!bValFound)
+                throw new Exception("Could not find the Value output of count() = 1!");
 
             return new Tuple<Blob<T>, Blob<T>>(blobProb, blobVal);
         }
