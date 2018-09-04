@@ -25,7 +25,7 @@ namespace MyCaffe.gym
     /// </remarks>
     public class CartPoleGym : IXMyCaffeGym
     {
-        string m_strName = "Cart Pole";
+        string m_strName = "Cart-Pole";
         int m_nAction = -1;
         double m_dfGravity = 9.8;
         double m_dfMassCart = 1.0;
@@ -42,6 +42,7 @@ namespace MyCaffe.gym
         Bitmap m_bmp = null;
         int m_nSteps = 0;
         int m_nMaxSteps = 0;
+        ColorMapper m_clrMap = null;
 
         // Angle at which to fail the episode
         double m_dfThetaThreshold = CartPoleState.MAX_THETA;
@@ -147,9 +148,11 @@ namespace MyCaffe.gym
             Reset();
         }
 
-        public Bitmap Render(int nWidth, int nHeight)
+        public Bitmap Render(int nWidth, int nHeight, out Bitmap bmpAction)
         {
             Bitmap bmp = new Bitmap(nWidth, nHeight);
+
+            bmpAction = null;
 
             using (Graphics g = Graphics.FromImage(bmp))
             {
@@ -185,6 +188,16 @@ namespace MyCaffe.gym
                 fB = fT;
                 GeomLine track = new GeomLine(fL, fR, fT, fB, Color.Black, Color.Black);
 
+                fL = 0;
+                fR = fScreenWidth;
+                fT = fCartY - 40;
+                fB = fT + 10;
+
+                if (m_clrMap == null)
+                    m_clrMap = new ColorMapper(fL, fR, Color.Fuchsia, Color.Red);
+
+                GeomRectangle posbar = new GeomRectangle(fL, fR, fT, fB, Color.Black, Color.Transparent, m_clrMap);
+
                 if (m_state != null)
                 {
                     float fCartX = (float)m_state.X * fScale + fScreenWidth / 2;   // middle of the cart.
@@ -201,9 +214,12 @@ namespace MyCaffe.gym
                     view.RenderSteps(g, m_nSteps, m_nMaxSteps);
 
                     // Render the objects.
+                    view.AddObject(posbar);
                     view.AddObject(track);
                     view.AddObject(cart);
                     view.Render(g);
+
+                    bmpAction = getActionImage(fCartX, fCartY, bmp);
                 }
 
                 m_bmp = bmp;
@@ -212,9 +228,24 @@ namespace MyCaffe.gym
             }
         }
 
-        public Bitmap Image
+        private Bitmap getActionImage(float fX, float fY, Bitmap bmpSrc)
         {
-            get { return m_bmp; }
+            double dfWid = 156;
+            double dfHt = 156;
+            double dfX = fX - (dfWid * 0.5);
+            double dfY = (bmpSrc.Height - fY) - (dfHt * 0.75);
+
+            RectangleF rc = new RectangleF((float)dfX, (float)dfY, (float)dfWid, (float)dfHt);
+            Bitmap bmp = new Bitmap((int)dfWid, (int)dfHt);
+
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                RectangleF rc1 = new RectangleF(0, 0, (float)dfWid, (float)dfHt);
+                g.FillRectangle(Brushes.Black, rc1);
+                g.DrawImage(bmpSrc, rc1, rc, GraphicsUnit.Pixel);
+            }
+
+            return bmp;
         }
 
         public Tuple<Tuple<double, double, double>[], double, bool> Reset()
@@ -314,9 +345,9 @@ namespace MyCaffe.gym
 
             if (dt == DATA_TYPE.BLOB)
             {
-                nH = 512;
-                nW = 512;
-                nC = 1;
+                nH = 156;
+                nW = 156;
+                nC = 3;
             }
 
             SourceDescriptor srcTrain = new SourceDescriptor(9999998, Name + ".training", nW, nH, nC, false, false);
