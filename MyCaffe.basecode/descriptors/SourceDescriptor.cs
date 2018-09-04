@@ -113,6 +113,19 @@ namespace MyCaffe.basecode.descriptors
         }
 
         /// <summary>
+        /// Resize the testing and training data sources.
+        /// </summary>
+        /// <param name="nChannels">Specifies the new channel size.</param>
+        /// <param name="nHeight">Specifies the new height size.</param>
+        /// <param name="nWidth">Specifies the new width size.</param>
+        public void Resize(int nChannels, int nHeight, int nWidth)
+        {
+            m_nImageCh = nChannels;
+            m_nImageHt = nHeight;
+            m_nImageWd = nWidth;
+        }
+
+        /// <summary>
         /// Gets whether or not the images are saved to the file system (<i>true</i>), or directly to the database (<i>false</i>).
         /// </summary>
         [Description("Specifies whether the images are saved to the file system or directly to the database.")]

@@ -83,6 +83,18 @@ namespace MyCaffe.basecode.descriptors
         }
 
         /// <summary>
+        /// Resize the testing and training data sources.
+        /// </summary>
+        /// <param name="nChannels">Specifies the new channel size.</param>
+        /// <param name="nHeight">Specifies the new height size.</param>
+        /// <param name="nWidth">Specifies the new width size.</param>
+        public void Resize(int nChannels, int nHeight, int nWidth)
+        {
+            m_srcTest.Resize(nChannels, nHeight, nWidth);
+            m_srcTrain.Resize(nChannels, nHeight, nWidth);
+        }
+
+        /// <summary>
         /// Copy another DatasetDesciptor into this one.
         /// </summary>
         /// <param name="ds">Specifies the DatasetDesciptor to copy.</param>
