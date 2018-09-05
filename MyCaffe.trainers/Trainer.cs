@@ -148,7 +148,7 @@ namespace MyCaffe.trainers
         public ResultCollection Run(int nDelay = 1000)
         {
             m_brain.MyCaffeControl.CancelEvent.Reset();
-            Environment<T> env = new Environment<T>(m_brain, m_properties, m_random, 1);
+            Environment<T> env = new Environment<T>(m_brain, m_properties, m_random, 1, Phase.RUN);
             env.OnGetData += Env_OnGetData;
             Tuple<int, int> res = env.Run(nDelay);
 
@@ -171,15 +171,17 @@ namespace MyCaffe.trainers
         /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
         public bool Test(int nIterations)
         {
-            Environment<T> env = new Environment<T>(m_brain, m_properties, m_random, nIterations);
+            Environment<T> env = new Environment<T>(m_brain, m_properties, m_random, nIterations, Phase.TEST);
             env.OnGetData += Env_OnGetData;
             env.OnGetStatus += Env_OnGetStatus;
             env.Start(10);
 
+            m_nGlobalEpisodes = 0;
+            m_brain.MyCaffeControl.CancelEvent.Reset();
+
             while (!m_brain.MyCaffeControl.CancelEvent.WaitOne(250))
             {
-                if (m_nGlobalEpisodes >= nIterations)
-                    break;
+                Thread.Sleep(1);
             }
 
             env.Stop(1000);
@@ -201,6 +203,7 @@ namespace MyCaffe.trainers
             List<Worker> rgEnvironments = new List<Worker>();
             List<Worker> rgOptimizers = new List<Worker>();
 
+            m_nGlobalEpisodes = 0;
             m_brain.MyCaffeControl.CancelEvent.Reset();
 
             for (int i = 0; i < m_nOptimizers; i++)
@@ -212,7 +215,7 @@ namespace MyCaffe.trainers
 
             for (int i = 0; i < m_nThreads; i++)
             {
-                Environment<T> env = new Environment<T>(m_brain, m_properties, m_random, m_nIterations);
+                Environment<T> env = new Environment<T>(m_brain, m_properties, m_random, m_nIterations, Phase.TRAIN);
                 env.OnGetData += Env_OnGetData;
                 env.OnGetStatus += Env_OnGetStatus;
                 env.Start(1);
@@ -291,13 +294,15 @@ namespace MyCaffe.trainers
         Brain<T> m_brain;
         Agent<T> m_agent;
         int m_nIterations = 0;
+        Phase m_phase;
 
         public event EventHandler<GetDataArgs> OnGetData;
         public event EventHandler<GetStatusArgs> OnGetStatus;
 
 
-        public Environment(Brain<T> brain, PropertySet properties, Random random, int nIterations)
+        public Environment(Brain<T> brain, PropertySet properties, Random random, int nIterations, Phase phase)
         {
+            m_phase = phase;
             m_brain = brain;
             m_agent = new Agent<T>(m_brain, properties, random);
             m_nIterations = nIterations;
@@ -314,6 +319,7 @@ namespace MyCaffe.trainers
             Stopwatch sw = new Stopwatch();
 
             m_evtDone.Reset();
+            m_evtCancel.Reset();
             m_brain.ReferenceCount++;
 
             sw.Start();
@@ -364,7 +370,8 @@ namespace MyCaffe.trainers
                 if (bDone)
                     s_ = null;
 
-                m_agent.train(s, a, dfReward, s_);
+                if (m_phase == Phase.TRAIN)
+                    m_agent.train(s, a, dfReward, s_);
 
                 s = s_;
                 dfR += dfReward;
@@ -459,7 +466,7 @@ namespace MyCaffe.trainers
             m_nEpsSteps = properties.GetPropertyAsInt("EpsSteps", 0);
             m_dfEpsStart = properties.GetPropertyAsDouble("EpsStart", 0);
             m_dfEpsEnd = properties.GetPropertyAsDouble("EpsEnd", 0);
-            m_memory = new Memory<T>(brain.RewardScale);
+            m_memory = new Memory<T>(brain.RewardScale, m_nFrames);
         }
 
         public void Dispose()
@@ -512,12 +519,12 @@ namespace MyCaffe.trainers
 
         public MemoryItem get_sample(int n)
         {
-            return new MemoryItem(m_memory[0].State0, m_memory[0].Action, m_dfR, m_memory[n - 1].State1);
+            return new MemoryItem(m_memory[0].State0, m_memory[0].Action, m_dfR, m_memory[n - 1].State1, m_memory[0].FrameIndex);
         }
 
         public void train(StateBase s, int nAction, double dfReward, StateBase s_)
         {
-            m_memory.Add(new MemoryItem(s, nAction, dfReward, s_));
+            m_memory.Add(new MemoryItem(s, nAction, dfReward, s_, m_nFrames));
             m_dfR = (m_dfR + dfReward * m_brain.GammaN) / m_brain.Gamma;
 
             if (s_ == null) // we are done
@@ -572,6 +579,7 @@ namespace MyCaffe.trainers
         double m_dfLossCoefficient = 0.5;
         double m_dfEntropyCoefficient = 0.01;
         double m_dfOptimalEpisodeCoefficient = 0.5;
+        int m_nOptimalEpisodeStart = 5000;
         bool m_bSkipLoss = false;
         int m_nRefCount = 0;
         Random m_random;
@@ -591,6 +599,7 @@ namespace MyCaffe.trainers
             m_dfLossCoefficient = properties.GetPropertyAsDouble("LossCoefficient", 0.5);
             m_dfEntropyCoefficient = properties.GetPropertyAsDouble("EntropyCoefficient", 0.01);
             m_dfOptimalEpisodeCoefficient = properties.GetPropertyAsDouble("OptimalEpisodeCoefficient", 0.5);
+            m_nOptimalEpisodeStart = properties.GetPropertyAsInt("OptimalEpisodeStart", 5000);
             m_dfRewardScale = properties.GetPropertyAsDouble("RewardScale", 1.0);
 
             m_blobInput = new Blob<T>(mycaffe.Cuda, mycaffe.Log, false);
@@ -803,8 +812,11 @@ namespace MyCaffe.trainers
 
             m_rgTrainingQueues.Add(mem);
 
-            if (m_random.NextDouble() < m_dfOptimalEpisodeCoefficient)
-                return m_rgTrainingQueues.GetMemory(m_random);
+            if (mem.FrameIndex >= m_nOptimalEpisodeStart)
+            {
+                if (m_random.NextDouble() < m_dfOptimalEpisodeCoefficient)
+                    return m_rgTrainingQueues.GetMemory(m_random);
+            }
 
             return mem;
         }
