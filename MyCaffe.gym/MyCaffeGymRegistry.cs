@@ -271,17 +271,23 @@ namespace MyCaffe.gym
 
         private static void hostingThread()
         {
-            // Create a service host with an named pipe endpoint
-            using (var host = new ServiceHost(typeof(MyCaffeGymService), new Uri("net.pipe://localhost")))
+            try
             {
-                host.AddServiceEndpoint(typeof(IXMyCaffeGymService), new NetNamedPipeBinding(), "MyCaffeGymService");
-                host.Open();
-
-                while (!m_evtCancel.WaitOne(100))
+                // Create a service host with an named pipe endpoint
+                using (var host = new ServiceHost(typeof(MyCaffeGymService), new Uri("net.pipe://localhost")))
                 {
-                }
+                    host.AddServiceEndpoint(typeof(IXMyCaffeGymService), new NetNamedPipeBinding(), "MyCaffeGymService");
+                    host.Open();
 
-                host.Close();
+                    while (!m_evtCancel.WaitOne(100))
+                    {
+                    }
+
+                    host.Close();
+                }
+            }
+            catch (Exception excpt)
+            {
             }
         }
     }
