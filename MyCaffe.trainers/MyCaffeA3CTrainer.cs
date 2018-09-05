@@ -37,8 +37,10 @@ namespace MyCaffe.trainers
         IxTrainer m_itrainer = null;
         double m_dfExplorationRate = 0;
         double m_dfGlobalRewards = 0;
+        double m_dfGlobalRewardsAve = 0;
         int m_nGlobalEpisodeCount = 0;
         int m_nGlobalEpisodeMax = 0;
+        int m_nThreads = 1;
  
         /// <summary>
         /// The constructor.
@@ -276,6 +278,7 @@ namespace MyCaffe.trainers
         public void Initialize(string strProperties)
         {
             m_properties = new PropertySet(strProperties);
+            m_nThreads = m_properties.GetPropertyAsInt("Threads", 1);
         }
 
         private IxTrainer createTrainer(Component mycaffe)
@@ -352,7 +355,8 @@ namespace MyCaffe.trainers
 
         private void Trainer_OnGetStatus(object sender, GetStatusArgs e)
         {
-            m_dfGlobalRewards = Math.Max(m_dfGlobalRewards, e.Reward);
+            m_dfGlobalRewards = e.Reward;
+            m_dfGlobalRewardsAve = (1.0 / (double)m_nThreads) * e.Reward + ((m_nThreads - 1) / (double)m_nThreads) * m_dfGlobalRewardsAve;
             m_dfExplorationRate = e.ExplorationRate;
             m_nGlobalEpisodeCount = Math.Max(m_nGlobalEpisodeCount, e.Frames);
             m_nGlobalEpisodeMax = e.MaxFrames;
@@ -363,7 +367,7 @@ namespace MyCaffe.trainers
         /// </summary>
         public double GlobalRewards
         {
-            get { return m_dfGlobalRewards; }
+            get { return m_dfGlobalRewardsAve; }
         }
 
         /// <summary>
