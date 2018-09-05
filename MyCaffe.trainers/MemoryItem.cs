@@ -16,6 +16,7 @@ namespace MyCaffe.trainers
         StateBase m_state1;
         int m_nAction;
         double m_dfReward = 0;
+        int m_nFrameIdx;
 
         /// <summary>
         /// The constructor.
@@ -24,12 +25,21 @@ namespace MyCaffe.trainers
         /// <param name="nAction">Specifies the action taken.</param>
         /// <param name="dfReward">Specifies the reward for taking the action.</param>
         /// <param name="s1">Specifies the new state information.</param>
-        public MemoryItem(StateBase s0, int nAction, double dfReward, StateBase s1)
+        public MemoryItem(StateBase s0, int nAction, double dfReward, StateBase s1, int nFrameIdx)
         {
             m_state0 = s0;
             m_state1 = s1;
             m_nAction = nAction;
             m_dfReward = dfReward;
+            m_nFrameIdx = nFrameIdx;
+        }
+
+        /// <summary>
+        /// Return the frame index (episode) under which this memory item belongs.
+        /// </summary>
+        public int FrameIndex
+        {
+            get { return m_nFrameIdx; }
         }
 
         /// <summary>

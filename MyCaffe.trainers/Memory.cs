@@ -15,6 +15,7 @@ namespace MyCaffe.trainers
         T m_tOne = Utility.ConvertVal<T>(1.0);
         T m_tZero = Utility.ConvertVal<T>(0.0);
         double m_dfRewardScale = 1.0;
+        int m_nFrameIdx = 0;
 
         public enum STATE_TYPE
         {
@@ -31,25 +32,39 @@ namespace MyCaffe.trainers
         /// <summary>
         /// The constructor.
         /// </summary>
-        public Memory(double dfRewardScale)
+        /// <param name="dfRewardScale">Specifies the amount of scaling to apply to the rewards (if any).</param>
+        /// <param name="nFrameIdx">Specifies the frame index at the creation.</param>
+        public Memory(double dfRewardScale, int nFrameIdx = 0)
         {
+            m_nFrameIdx = nFrameIdx;
             m_dfRewardScale = dfRewardScale;
         }
 
+        public override void Add(MemoryItem item)
+        {
+            base.Add(item);
+
+            if (m_nFrameIdx == 0)
+                m_nFrameIdx = item.FrameIndex;
+
+        }
 
         /// <summary>
         /// Clone the memory into a new memory.
         /// </summary>
         /// <param name="bClear">If <i>true</i>, clear the original memory.</param>
+        /// <param name="nFrameIdx">Specifies the episode index at the cloning.</param>
         /// <returns>The cloned memory is returned.</returns>
         public Memory<T> Clone(bool bClear)
         {
-            Memory<T> col = new Memory<T>(m_dfRewardScale);
-
+            Memory<T> col = new Memory<T>(m_dfRewardScale, m_nFrameIdx);
             col.m_rgItems.AddRange(m_rgItems);
 
             if (bClear)
+            {
                 m_rgItems.Clear();
+                m_nFrameIdx = 0;
+            }
 
             return col;
         }
@@ -101,6 +116,15 @@ namespace MyCaffe.trainers
             }
 
             return rg.ToArray();
+        }
+
+
+        /// <summary>
+        /// Returns the frame index of this episode.
+        /// </summary>
+        public int FrameIndex
+        {
+            get { return m_nFrameIdx; }
         }
 
         /// <summary>
