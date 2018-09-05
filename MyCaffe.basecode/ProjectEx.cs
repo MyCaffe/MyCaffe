@@ -556,10 +556,13 @@ namespace MyCaffe.basecode
                 {
                     m_protoSolver = RawProto.Parse(value);
 
-                    if (string.IsNullOrEmpty(m_project.Dataset.Name))
-                        setDatasetFromProto(m_protoSolver);
-                    else
-                        setDatasetToProto(m_protoSolver);
+                    if (m_project.Dataset != null)
+                    {
+                        if (string.IsNullOrEmpty(m_project.Dataset.Name))
+                            setDatasetFromProto(m_protoSolver);
+                        else
+                            setDatasetToProto(m_protoSolver);
+                    }
 
                     RawProto rpType = m_protoSolver.FindChild("type");
                     if (rpType != null)
@@ -583,10 +586,13 @@ namespace MyCaffe.basecode
                 {
                     m_protoModel = RawProto.Parse(value);
 
-                    if (string.IsNullOrEmpty(m_project.Dataset.Name))
-                        setDatasetFromProto(m_protoModel);
-                    else
-                        setDatasetToProto(m_protoModel);
+                    if (m_project.Dataset != null)
+                    {
+                        if (string.IsNullOrEmpty(m_project.Dataset.Name))
+                            setDatasetFromProto(m_protoModel);
+                        else
+                            setDatasetToProto(m_protoModel);
+                    }
 
                     RawProto rpName = m_protoModel.FindChild("name");
                     if (rpName != null)
