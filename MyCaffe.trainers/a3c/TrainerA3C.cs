@@ -43,6 +43,7 @@ namespace MyCaffe.trainers.a3c
         /// <param name="mycaffe">Specifies the MyCaffeControl to use for learning and prediction.</param>
         /// <param name="properties">Specifies the property set containing the key/value pairs of property settings.</param>
         /// <param name="random">Specifies a Random number generator used for random selection.</param>
+        /// <param name="icallback">Specifies the callback used to communicate with the parent.</param>
         public TrainerA3C(MyCaffeControl<T> mycaffe, PropertySet properties, Random random, IxTrainerCallback icallback)
         {
             m_icallback = icallback;
