@@ -1,4 +1,5 @@
 ﻿using MyCaffe.basecode;
+using MyCaffe.gym;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -41,6 +42,7 @@ namespace MyCaffe.trainers
         int m_nOriginalDsId = 0;
         int m_nDsID = 0;
         Component m_caffe;
+        Log m_log;
 
         /// <summary>
         /// The constructor.
@@ -53,13 +55,23 @@ namespace MyCaffe.trainers
             if (mycaffe is MyCaffeControl<double>)
             {
                 MyCaffeControl<double> mycaffe1 = mycaffe as MyCaffeControl<double>;
+                m_log = mycaffe1.Log;
                 m_nOriginalDsId = mycaffe1.CurrentProject.Dataset.ID;
             }
             else
             {
                 MyCaffeControl<float> mycaffe1 = mycaffe as MyCaffeControl<float>;
+                m_log = mycaffe1.Log;
                 m_nOriginalDsId = mycaffe1.CurrentProject.Dataset.ID;
             }
+        }
+
+        /// <summary>
+        /// Returns the output log.
+        /// </summary>
+        public Log OutputLog
+        {
+            get { return m_log; }
         }
 
         /// <summary>
@@ -151,61 +163,41 @@ namespace MyCaffe.trainers
     /// </summary>
     public class GetDataArgs : EventArgs
     {
-        int m_nIndex = -1;
         int m_nAction;
         bool m_bReset;
-        bool m_bAllowUI = true;
         Component m_caffe;
         Log m_log;
         CancelEvent m_evtCancel;
         StateBase m_state = null;
-        bool m_bSuccess = false;
+        int m_nIndex = 0;
 
         /// <summary>
         /// The constructor.
         /// </summary>
+        /// <param name="nIdx">Specifies the index of the thread.</param>
         /// <param name="mycaffe">Specifies the MyCaffeControl used.</param>
         /// <param name="log">Specifies the output log to use.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="bReset">Specifies to reset the environment.</param>
-        /// <param name="nIndex">Specifies the instance index.</param>
         /// <param name="nAction">Specifies the action to run.  If less than zero this parameter is ignored.</param>
         /// <param name="bAllowUi">Optionally, specifies whether or not to allow the user interface.</param>
-        public GetDataArgs(Component mycaffe, Log log, CancelEvent evtCancel, bool bReset, int nIndex, int nAction = -1, bool bAllowUi = true)
+        public GetDataArgs(int nIdx, Component mycaffe, Log log, CancelEvent evtCancel, bool bReset, int nAction = -1, bool bAllowUi = true)
         {
-            m_nIndex = nIndex;
+            m_nIndex = nIdx;
             m_nAction = nAction;
             m_caffe = mycaffe;
             m_log = log;
             m_evtCancel = evtCancel;
             m_bReset = bReset;
-            m_bAllowUI = bAllowUi;
         }
 
-        /// <summary>
-        /// Returns that the data was successfully retrieved.
-        /// </summary>
-        public bool Success
-        {
-            get { return m_bSuccess; }
-            set { m_bSuccess = value; }
-        }
 
         /// <summary>
-        /// Returns whether or not to allow the user interface.
-        /// </summary>
-        public bool AllowUi
-        {
-            get { return m_bAllowUI; }
-        }
-
-        /// <summary>
-        /// Returns the index of the trainer that fires the event.
+        /// Returns the index of the thread asking for the gym.
         /// </summary>
         public int Index
         {
             get { return m_nIndex; }
-            set { m_nIndex = value; }
         }
 
         /// <summary>
