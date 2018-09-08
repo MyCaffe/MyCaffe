@@ -477,6 +477,23 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Copy an array.
+        /// </summary>
+        /// <typeparam name="T">Specifies the base type.</typeparam>
+        /// <param name="rg">Specifies the source array.</param>
+        /// <returns>The new array is returned.</returns>
+        public static T[] Clone<T>(T[] rg)
+        {
+            if (rg == null)
+                return null;
+
+            T[] rg1 = new T[rg.Length];
+            Array.Copy(rg, rg1, rg.Length);
+
+            return rg1;
+        }
+
+        /// <summary>
         /// Copy a List up to a maximum count.
         /// </summary>
         /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
