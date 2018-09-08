@@ -143,16 +143,62 @@ namespace MyCaffe.basecode
         /// The SimpleDatum constructor.
         /// </summary>
         /// <param name="d">Specifies a SimpleDatum used to create this new Datum.</param>
-        public SimpleDatum(SimpleDatum d)
+        /// <param name="bCopyData">Specifies whether or not to copy the data, or just share it (default = false, share the data).</param>
+        public SimpleDatum(SimpleDatum d, bool bCopyData = false)
         {
-            Copy(d);
+            Copy(d, bCopyData);
+        }
+
+        /// <summary>
+        /// Zero out all data in the datum but keep the size and other settings.
+        /// </summary>
+        public void Zero()
+        {
+            if (m_rgByteData != null)
+                Array.Clear(m_rgByteData, 0, m_rgByteData.Length);
+
+            if (m_rgRealData != null)
+                Array.Clear(m_rgRealData, 0, m_rgRealData.Length);
+        }
+
+        /// <summary>
+        /// Subtract the data of another SimpleDatum from this one, so this = this - sd.
+        /// </summary>
+        /// <param name="sd">Specifies the other SimpleDatum to subtract.</param>
+        public void Sub(SimpleDatum sd)
+        {
+            if (sd.ItemCount != ItemCount)
+                throw new Exception("Both simple datums must have the same number of elements!");
+
+            if (m_rgByteData != null)
+            {
+                if (sd.m_rgByteData == null)
+                    throw new Exception("Both simple datums must have the same type of data!");
+
+                for (int i = 0; i < m_rgByteData.Length; i++)
+                {
+                    m_rgByteData[i] -= sd.m_rgByteData[i];
+                }
+            }
+
+            if (m_rgRealData != null)
+            {
+                if (sd.m_rgRealData == null)
+                    throw new Exception("Both simple datums must have the same type of data!");
+
+                for (int i = 0; i < m_rgRealData.Length; i++)
+                {
+                    m_rgRealData[i] -= sd.m_rgRealData[i];
+                }
+            }
         }
 
         /// <summary>
         /// Copy another SimpleDatum into this one.
         /// </summary>
         /// <param name="d">Specifies the SimpleDatum to copy.</param>
-        public void Copy(SimpleDatum d)
+        /// <param name="bCopyData">Specifies whether or not to copy the data.</param>
+        public void Copy(SimpleDatum d, bool bCopyData)
         {
             m_bIsRealData = d.m_bIsRealData;
             m_nLabel = d.m_nLabel;
@@ -160,8 +206,8 @@ namespace MyCaffe.basecode
             m_nChannels = d.m_nChannels;
             m_nHeight = d.m_nHeight;
             m_nWidth = d.m_nWidth;
-            m_rgRealData = d.m_rgRealData;
-            m_rgByteData = d.m_rgByteData;
+            m_rgRealData = Utility.Clone<double>(d.m_rgRealData);
+            m_rgByteData = Utility.Clone<byte>(d.m_rgByteData);
             m_dt = d.m_dt;
             m_nOriginalBoost = d.m_nOriginalBoost;
             m_nBoost = d.m_nBoost;
@@ -503,7 +549,7 @@ namespace MyCaffe.basecode
             if (nCount0 != nCount1)
                 throw new Exception("Datum counts do not match!");
 
-            SimpleDatum d1 = new SimpleDatum(d);
+            SimpleDatum d1 = new SimpleDatum(d, false);
 
             d1.m_rgRealData = null;
             d1.m_rgByteData = null;
@@ -556,7 +602,7 @@ namespace MyCaffe.basecode
             if (dfVal == 0)
                 throw new ArgumentOutOfRangeException("dfVal", 0, "Cannot divide the simple datums by zero!");
 
-            SimpleDatum d1 = new SimpleDatum(this);
+            SimpleDatum d1 = new SimpleDatum(this, false);
 
             d1.m_rgRealData = null;
             d1.m_rgByteData = null;
@@ -890,7 +936,7 @@ namespace MyCaffe.basecode
                     rgdfData[n] = dfMean;
                 }
 
-                SimpleDatum d = new SimpleDatum(rgImg[0]);
+                SimpleDatum d = new SimpleDatum(rgImg[0], false);
 
                 if (rgImg[0].ByteData != null)
                     d.SetData(new List<byte>(rgbData), -1, true);
