@@ -104,11 +104,14 @@ namespace MyCaffe.test
         {
             m_evtCancel.Reset();
 
+            GymCollection col = new GymCollection();
+            col.Load();
+            IXMyCaffeGym igym = col.Find("Cart-Pole");
+
             m_log.WriteHeader("Test Training Cart-Pole for " + nIterations.ToString("N0") + " iterations.");
-            MyCaffeGymClient gym = new MyCaffeGymClient();
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
-            MyCaffeCartPoleTrainer trainer = new MyCaffeCartPoleTrainer(gym, bShowUi);
-            ProjectEx project = getReinforcementProject(gym, nIterations);
+            MyCaffeCartPoleTrainer trainer = new MyCaffeCartPoleTrainer();
+            ProjectEx project = getReinforcementProject(igym, nIterations);
             DatasetDescriptor ds = trainer.GetDatasetOverride(0);
 
             m_log.CHECK(ds != null, "The MyCaffeCartPoleTrainer should return its dataset override returned by the Gym that it uses.");
@@ -138,14 +141,12 @@ namespace MyCaffe.test
             trainer.Initialize("Threads=" + nThreads.ToString() + ";Optimizers=1;EpsSteps=" + nEpsSteps.ToString() + ";EpsStart=0.4;EpsEnd=0.15;NStepReturn=8;Gamma=0.99;LossCoefficient=0.5;EntropyCoefficient=0.01;OptimalEpisodeCoefficient=0.5;NormalizeInput=False;Init1=10;Init2=0;ValueType=VALUE;InputSize=1");
             trainer.Train(mycaffe, nIterations);
             trainer.CleanUp();
-            // Close the gym.
-            gym.CloseAll("Cart-Pole");
 
             // Release the mycaffe resources.
             mycaffe.Dispose();
         }
 
-        private ProjectEx getReinforcementProject(MyCaffeGymClient gym, int nIterations)
+        private ProjectEx getReinforcementProject(IXMyCaffeGym igym, int nIterations)
         {
             ProjectEx p = new ProjectEx("test");
 
@@ -160,32 +161,39 @@ namespace MyCaffe.test
             iter.Value = nIterations.ToString();
 
             p.SolverDescription = protoS.ToString();
-
-            p.SetDataset(gym.GetDataset("Cart-Pole", 0));
+            p.SetDataset(igym.GetDataset(DATA_TYPE.VALUES));
 
             return p;
         }
     }
 
-    class MyCaffeCartPoleTrainer : MyCaffeA3CTrainer
+    class MyCaffeCartPoleTrainer : MyCaffeTrainerRL
     {
-        MyCaffeGymClient m_gym;
-        Stopwatch m_sw = new Stopwatch();
-        string m_strName = "Cart-Pole";
+        Stopwatch m_sw = new Stopwatch();        
+        IXMyCaffeGym m_igym;
+        Log m_log;
         bool m_bNormalizeInput = false;
-        bool m_bShowUi = true;
 
-        public MyCaffeCartPoleTrainer(MyCaffeGymClient gym, bool bShowUi) 
+        public MyCaffeCartPoleTrainer() 
             : base()
         {
-            m_gym = gym;
-            m_gym.OnNewObservation += gym_OnNewObservation;
-            m_bShowUi = bShowUi;
         }
 
         protected override void initialize(InitializeArgs e)
         {
+            GymCollection col = new GymCollection();
+            col.Load();
+            m_igym = col.Find("Cart-Pole");
+            m_log = e.OutputLog;
+
             m_bNormalizeInput = m_properties.GetPropertyAsBool("NormalizeInput", false);
+
+            List<double> rgdfInit = new List<double>();
+            rgdfInit.Add(m_properties.GetPropertyAsDouble("Init1", 10));
+            rgdfInit.Add(m_properties.GetPropertyAsDouble("Init2", 0));
+
+            m_igym.Initialize(m_log, rgdfInit.ToArray());
+
             m_sw.Start();
         }
 
@@ -196,44 +204,30 @@ namespace MyCaffe.test
 
         protected override string name
         {
-            get { return "Cart-Pole Trainer"; }
+            get { return "A3C.Trainer"; }
         }
 
         protected override DatasetDescriptor get_dataset_override(int nProjectID)
         {
-            return m_gym.GetDataset(m_strName, 0);
-        }
-
-        private void gym_OnNewObservation(object sender, ObservationArgs e)
-        {
-            m_rgObservations.Add(e.Index, e.Observation);
+            return m_igym.GetDataset(DATA_TYPE.VALUES);
         }
 
         protected override bool getData(GetDataArgs e)
         {
-            if (e.Reset)
-            {
-                if (e.Index == -1)
-                {
-                    List<double> rgdfInit = new List<double>();
-                    rgdfInit.Add(m_properties.GetPropertyAsDouble("Init1", 10));
-                    rgdfInit.Add(m_properties.GetPropertyAsDouble("Init2", 0));
-                    e.Index = m_gym.Open(m_strName, true, m_bShowUi, true, null);
-                }
+            Tuple<State, double, bool> state = null;
 
-                m_gym.Reset(m_strName, e.Index);
-            }
+            if (e.Reset)
+                state = m_igym.Reset();
 
             if (e.Action >= 0)
-                m_gym.Run(m_strName, e.Index, e.Action);
+                state = m_igym.Step(e.Action);
 
-            Thread.Sleep(1);
-            Observation obs = m_rgObservations.GetObservation(e.Index, 10000);
-            if (obs == null)
-                return false;
+            Bitmap bmpAction;
+            Bitmap bmp = m_igym.Render(512, 512, out bmpAction);
+            Observation obs = new Observation(bmpAction, state.Item1.ToArray(), state.Item2, state.Item3);
 
             double[] rgState = Observation.GetValues(obs.State, m_bNormalizeInput);
-            e.State = new StateBase(m_gym.GetActionSpace(m_strName).Count());
+            e.State = new StateBase(m_igym.GetActionSpace().Count());
             e.State.Reward = obs.Reward;
             e.State.Data = new SimpleDatum(true, rgState.Length, 1, 1, -1, DateTime.Now, null, rgState.ToList(), 0, false, 0);
             e.State.Done = obs.Done;

@@ -74,24 +74,32 @@ namespace MyCaffe.test
         public void TestCartPole(bool bShowUi)
         {
             m_log.WriteHeader("Test Gym - Open");
-            MyCaffeGymClient gym = new MyCaffeGymClient();
+            GymCollection col = new GymCollection();
+            col.Load();
+
             string strName = "Cart-Pole";
+            IXMyCaffeGym igym = col.Find(strName);
+            Assert.AreEqual(igym != null, true);
 
-            int nIdx = gym.Open(strName, true, bShowUi, false, null);
+            igym = igym.Clone();
+            Assert.AreEqual(igym != null, true);
 
-            Dictionary<string, int> rgActions = gym.GetActionSpace(strName);
+            igym.Initialize(m_log, null);
+
+            Dictionary<string, int> rgActions = igym.GetActionSpace();
             Assert.AreEqual(rgActions.Count, 2);
             Assert.AreEqual(rgActions.ContainsKey("MoveLeft"), true);
             Assert.AreEqual(rgActions.ContainsKey("MoveRight"), true);
             Assert.AreEqual(rgActions["MoveLeft"], 0);
             Assert.AreEqual(rgActions["MoveRight"], 1);
 
-            gym.Run(strName, nIdx, 0);
-            gym.Run(strName, nIdx, 1);
+            igym.Reset();
+            igym.Step(0);
+            igym.Step(1);
 
             Thread.Sleep(5000);
 
-            gym.CloseAll(strName);
+            igym.Close();
         }
     }
 }
