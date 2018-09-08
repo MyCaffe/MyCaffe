@@ -324,14 +324,6 @@ namespace MyCaffe.param
             /// </summary>
             INPUT,
             /// <summary>
-            /// Initializes a parameter for the BatchDataLayer.
-            /// </summary>
-            BATCHDATA,
-            /// <summary>
-            /// Initializes a parameter for the ReinforcementLossLayer.
-            /// </summary>
-            REINFORCEMENT_LOSS,
-            /// <summary>
             /// DEPRECIATED - Initializes a parameter for the UnpoolingLayer1 which uses a CPU based implementation (slower).
             /// </summary>
             UNPOOLING1,
@@ -485,8 +477,8 @@ namespace MyCaffe.param
                     transform_param = (TransformationParameter)p.transform_param.Clone();
                     break;
 
-                case LayerType.BATCHDATA:
-                    batch_data_param = (BatchDataParameter)p.batch_data_param.Clone();
+                case LayerType.MEMORYDATA:
+                    memory_data_param = (MemoryDataParameter)p.memory_data_param.Clone();
                     transform_param = (TransformationParameter)p.transform_param.Clone();
                     break;
             }
@@ -619,14 +611,6 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("max");
                     m_rgLayerParameters[lt] = new ArgMaxParameter();
-                    break;
-
-                case LayerType.BATCHDATA:
-                    expected_bottom.Add("imgidx");
-                    expected_top.Add("data");
-                    expected_top.Add("label");
-                    m_rgLayerParameters[LayerType.TRANSFORM] = new TransformationParameter();
-                    m_rgLayerParameters[lt] = new BatchDataParameter();
                     break;
 
                 case LayerType.BATCHNORM:
@@ -899,13 +883,6 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("reduction");
                     m_rgLayerParameters[lt] = new ReductionParameter();
-                    break;
-
-                case LayerType.REINFORCEMENT_LOSS:
-                    expected_bottom.Add("pred");
-                    expected_bottom.Add("label");
-                    expected_top.Add("loss");
-                    m_rgLayerParameters[lt] = new ReinforcementLossParameter();
                     break;
 
                 case LayerType.RELU:
@@ -1206,15 +1183,6 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Returns the parameter set when initialized with LayerType.BATCHDATA
-        /// </summary>
-        public BatchDataParameter batch_data_param
-        {
-            get { return (BatchDataParameter)m_rgLayerParameters[LayerType.BATCHDATA]; }
-            set { m_rgLayerParameters[LayerType.BATCHDATA] = value; }
-        }
-
-        /// <summary>
         /// Returns the parameter set when initialized with LayerType.BATCHNORM
         /// </summary>
         public BatchNormParameter batch_norm_param
@@ -1503,15 +1471,6 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Returns the parameter set when initialized with LayerType.REINFORCEMENT_LOSS
-        /// </summary>
-        public ReinforcementLossParameter reinforcement_loss_param
-        {
-            get { return (ReinforcementLossParameter)m_rgLayerParameters[LayerType.REINFORCEMENT_LOSS]; }
-            set { m_rgLayerParameters[LayerType.REINFORCEMENT_LOSS] = value; }
-        }
-
-        /// <summary>
         /// Returns the parameter set when initialized with LayerType.RELU
         /// </summary>
         public ReLUParameter relu_param
@@ -1789,9 +1748,6 @@ namespace MyCaffe.param
                 case LayerType.ARGMAX:
                     return "ArgMax";
 
-                case LayerType.BATCHDATA:
-                    return "BatchData";
-
                 case LayerType.BATCHNORM:
                     return "BatchNorm";
 
@@ -1921,9 +1877,6 @@ namespace MyCaffe.param
                 case LayerType.REDUCTION:
                     return "Reduction";
 
-                case LayerType.REINFORCEMENT_LOSS:
-                    return "ReinforcementLoss";
-
                 case LayerType.RELU:
                     return "ReLU";
 
@@ -2052,7 +2005,6 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter,string>(loss_param, "loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter,string>(accuracy_param, "accuracy_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(argmax_param, "argmax_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(batch_data_param, "batch_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(batch_norm_param, "batch_norm_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(bias_param, "bias_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(binary_hash_param, "binaryhash_param"));
@@ -2085,7 +2037,6 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(power_param, "power_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(prelu_param, "prelu_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(reduction_param, "reduction_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(reinforcement_loss_param, "reinforcement_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(relu_param, "relu_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(reshape_param, "reshape_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(scale_param, "scale_param"));
@@ -2201,9 +2152,6 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("argmax_param")) != null)
                 p.argmax_param = ArgMaxParameter.FromProto(rpp);
 
-            if ((rpp = rp.FindChild("batch_data_param")) != null)
-                p.batch_data_param = BatchDataParameter.FromProto(rpp);
-
             if ((rpp = rp.FindChild("batch_norm_param")) != null)
                 p.batch_norm_param = BatchNormParameter.FromProto(rpp);
 
@@ -2300,9 +2248,6 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("reduction_param")) != null)
                 p.reduction_param = ReductionParameter.FromProto(rpp);
 
-            if ((rpp = rp.FindChild("reinforcement_loss_param")) != null)
-                p.reinforcement_loss_param = ReinforcementLossParameter.FromProto(rpp);
-
             if ((rpp = rp.FindChild("relu_param")) != null)
                 p.relu_param = ReLUParameter.FromProto(rpp);
 
@@ -2386,9 +2331,6 @@ namespace MyCaffe.param
 
                 case "argmax":
                     return LayerType.ARGMAX;
-
-                case "batchdata":
-                    return LayerType.BATCHDATA;
 
                 case "batchnorm":
                     return LayerType.BATCHNORM;
@@ -2530,10 +2472,6 @@ namespace MyCaffe.param
 
                 case "reduction":
                     return LayerType.REDUCTION;
-
-                case "reinforcementloss":
-                case "reinforcement_loss":
-                    return LayerType.REINFORCEMENT_LOSS;
 
                 case "relu":
                     return LayerType.RELU;

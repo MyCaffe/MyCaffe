@@ -126,7 +126,6 @@
     <Compile Include="layers\AbsValLayer.cs" />
     <Compile Include="layers\BatchNormLayer.cs" />
     <Compile Include="layers\AccuracyLayer.cs" />
-    <Compile Include="layers_alpha\BatchDataLayer.cs" />
     <Compile Include="layers\LSTMUnitLayer.cs" />
     <Compile Include="layers\ArgMaxLayer.cs" />
     <Compile Include="layers\BaseConvolutionLayer.cs" />
@@ -167,7 +166,6 @@
     <Compile Include="layers\SigmoidLayer.cs" />
     <Compile Include="layers\SilenceLayer.cs" />
     <Compile Include="layers\SliceLayer.cs" />
-    <Compile Include="layers_alpha\ReinforcementLossLayer.cs" />
     <Compile Include="layers\SoftmaxLossLayer.cs" />
     <Compile Include="layers\SplitLayer.cs" />
     <Compile Include="layers\TanhLayer.cs" />
@@ -214,7 +212,6 @@
     <Compile Include="param\ConcatParameter.cs" />
     <Compile Include="param\ContrastiveLossParameter.cs" />
     <Compile Include="param\ConvolutionParameter.cs" />
-    <Compile Include="param\BatchDataParameter.cs" />
     <Compile Include="param\InputParameter.cs" />
     <Compile Include="param\LabelMappingParameter.cs" />
     <Compile Include="param\DataParameter.cs" />
@@ -252,7 +249,6 @@
     <Compile Include="param\ScaleParameter.cs" />
     <Compile Include="param\SigmoidParameter.cs" />
     <Compile Include="param\SliceParameter.cs" />
-    <Compile Include="param\ReinforcementLossParameter.cs" />
     <Compile Include="param\SoftmaxParameter.cs" />
     <Compile Include="param\SolverParameter.cs" />
     <Compile Include="param\SolverState.cs" />

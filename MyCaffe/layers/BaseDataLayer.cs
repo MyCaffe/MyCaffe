@@ -55,8 +55,6 @@ namespace MyCaffe.layers
                 if (p.type == LayerParameter.LayerType.DATA ||
                     p.type == LayerParameter.LayerType.TRIPLET_DATA)
                     m_src = m_imgdb.GetSourceByName(p.data_param.source);
-                else if (p.type == LayerParameter.LayerType.BATCHDATA)
-                    m_src = m_imgdb.GetSourceByName(p.batch_data_param.source);
 
                 if (p.transform_param.use_imagedb_mean)
                 {

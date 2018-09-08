@@ -979,18 +979,13 @@ namespace MyCaffe
                         return null;
                 }
                 else if (lp.type == LayerParameter.LayerType.DATA ||
-                         lp.type == LayerParameter.LayerType.TRIPLET_DATA ||
-                         lp.type == LayerParameter.LayerType.BATCHDATA)
+                         lp.type == LayerParameter.LayerType.TRIPLET_DATA)
                 {
                     switch (lp.type)
                     {
                         case LayerParameter.LayerType.DATA:
                         case LayerParameter.LayerType.TRIPLET_DATA:
                             strSrc = lp.data_param.source;
-                            break;
-
-                        case LayerParameter.LayerType.BATCHDATA:
-                            strSrc = lp.batch_data_param.source;
                             break;
                     }
                 }
@@ -1016,8 +1011,7 @@ namespace MyCaffe
             foreach (LayerParameter lp in p.layer)
             {
                 if (lp.type == LayerParameter.LayerType.DATA ||
-                    lp.type == LayerParameter.LayerType.TRIPLET_DATA ||
-                    lp.type == LayerParameter.LayerType.BATCHDATA)
+                    lp.type == LayerParameter.LayerType.TRIPLET_DATA)
                 {
                     string strSrc = null;
 
@@ -1026,10 +1020,6 @@ namespace MyCaffe
                         case LayerParameter.LayerType.DATA:
                         case LayerParameter.LayerType.TRIPLET_DATA:
                             strSrc = lp.data_param.source;
-                            break;
-
-                        case LayerParameter.LayerType.BATCHDATA:
-                            strSrc = lp.batch_data_param.source;
                             break;
                     }
 
@@ -1126,7 +1116,7 @@ namespace MyCaffe
                 }
                 else
                 {
-                    m_solver.Solve(-1, null, null, step, null);
+                    m_solver.Solve(-1, null, null, step);
                 }
             }
             catch (Exception excpt)
@@ -1286,119 +1276,6 @@ namespace MyCaffe
                     m_log.WriteLine("Label #" + kv.Key.ToString() + " had " + dfCorrectPct.ToString("P") + " correct detections out of " + nCount.ToString("N0") + " items with this label.");
                 }
             }
-        }
-
-        /// <summary>
-        /// Train a batch of information described by the BatchInformationCollection.
-        /// </summary>
-        /// <param name="col">Specifies the mini batch information to train on.</param>
-        /// <param name="bEnableTesting">When <i>true</i>, testing is performed, otherwise it is not.</param>
-        /// <returns></returns>
-        public bool TrainBatch(BatchInformationCollection col, bool bEnableTesting)
-        {
-            try
-            {
-                m_solver.EnableTesting = bEnableTesting;
-                m_solver.Solve(-1, null, null, TRAIN_STEP.NONE, col);
-
-                if (m_evtCancel.WaitOne(0))
-                    return false;
-
-                return true;
-            }
-            finally
-            {
-                m_solver.EnableTesting = true;
-            }
-        }
-
-        /// <summary>
-        /// Run on a given mini batch.
-        /// </summary>
-        /// <param name="col">Specifies the mini batch information to run.</param>
-        /// <returns></returns>
-        public bool RunBatch(BatchInformationCollection col)
-        {
-            Stopwatch sw = new Stopwatch();
-
-
-            m_log.WriteLine("Running " + col.Count.ToString("N0") + " batches...");
-            sw.Start();
-
-            int nBatchCount = col.Count;
-            int nBatchSize = col[0].Count;
-            List<T> rgImageIdx = new List<T>();
-
-            for (int i = 0; i < nBatchCount; i++)
-            {
-                for (int j = 0; j < nBatchSize; j++)
-                {
-                    rgImageIdx.Add((T)Convert.ChangeType(col[i][j].ImageIndex1, typeof(T)));
-                }
-            }
-
-            Blob<T> blobInput = new Blob<T>(m_cuda, m_log, nBatchCount, nBatchSize, 1, 1);
-            blobInput.mutable_cpu_data = rgImageIdx.ToArray();
-
-            BlobCollection<T> colBottom = new common.BlobCollection<T>();
-            colBottom.Add(blobInput);
-
-            m_solver.CancelEvent.Reset();
-            List<WaitHandle> rgWait = new List<WaitHandle>();
-            rgWait.AddRange(m_solver.CancelEvent.Handles);
-            rgWait.Add(m_solver.CompletedEvent);
-            int nWait;
-            int nBatchIdx = 0;
-
-            while ((nWait = WaitHandle.WaitAny(rgWait.ToArray(), 0)) == WaitHandle.WaitTimeout)
-            {
-                double dfLoss;
-                BlobCollection<T> colResults = m_solver.TrainingNet.Forward(colBottom, out dfLoss);
-                T[] rgData = colResults[0].update_cpu_data();
-                int nOutputCount = rgData.Length / nBatchSize;
-
-                for (int i = 0; i < nBatchSize; i++)
-                {
-                    double dfMax = -double.MaxValue;
-                    int nMaxIdx = -1;
-
-                    for (int j = 0; j < nOutputCount; j++)
-                    {
-                        double dfVal;
-                        int nIdx = (i * nOutputCount) + j;
-
-                        if (typeof(T) == typeof(float))
-                            dfVal = (float)Convert.ChangeType(rgData[nIdx], typeof(float));
-                        else
-                            dfVal = (double)Convert.ChangeType(rgData[nIdx], typeof(double));
-
-                        if (dfVal > dfMax)
-                        {
-                            dfMax = dfVal;
-                            nMaxIdx = j;
-                        }
-                    }
-
-                    col[nBatchIdx][i].QMax1 = dfMax;
-                    col[nBatchIdx][i].Label = nMaxIdx;
-                }
-
-                if (sw.Elapsed.TotalMilliseconds > 1000)
-                {
-                    double dfPct = (double)nBatchIdx / (double)nBatchCount;
-                    m_log.WriteLine("Batch #" + (nBatchIdx + 1).ToString() + " - calculating q-values (" + dfPct.ToString("P") + ")...");
-                    sw.Restart();
-                }
-
-                nBatchIdx++;
-            }
-
-            blobInput.Dispose();
-
-            if (nWait < rgWait.Count-1)
-                return false;
-
-            return true;
         }
 
         /// <summary>
@@ -1780,6 +1657,15 @@ namespace MyCaffe
                 return m_solver.TrainingNet;
 
             return m_net;
+        }
+
+        /// <summary>
+        /// Get the internal solver.
+        /// </summary>
+        /// <returns></returns>
+        public Solver<T> GetInternalSolver()
+        {
+            return m_solver;
         }
 
         /// <summary>

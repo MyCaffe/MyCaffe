@@ -325,20 +325,6 @@ namespace MyCaffe.common
                     if (layer_param.propagate_down.Count > 0)
                         m_log.CHECK_EQ(layer_param.propagate_down.Count, layer_param.bottom.Count, "propagate_down param must be specified either 0 or bottom.Count times.");
 
-
-                    //-------------------------------------------
-                    //  Set the training completed event for any
-                    //  layers that use it, such as the BATCHDATA
-                    //  layer.
-                    //-------------------------------------------
-                    switch (layer_param.type)
-                    {
-                        case LayerParameter.LayerType.BATCHDATA:
-                            if (layer_param.batch_data_param.CompletedEvent == null)
-                                layer_param.batch_data_param.CompletedEvent = evtTrainingCompleted;
-                            break;
-                    }
-
                     //-------------------------------------------
                     //  When sharing the blobs of another net
                     //  (e.g. The run net does this when also
@@ -366,29 +352,6 @@ namespace MyCaffe.common
                     m_log.WriteLine("Creating layer " + layer_param.name);
 
                     bool need_backward = false;
-
-                    //-------------------------------------------
-                    // Add input bottom blob for batch data.
-                    //-------------------------------------------
-                    if (layer_param.type == LayerParameter.LayerType.BATCHDATA)
-                    {
-                        Blob<T> blobInput = new Blob<T>(m_cuda, m_log);
-                        blobInput.Name = "_batchdata_input_";
-                        m_colBlobs.Add(blobInput);
-                        m_rgstrBlobNames.Add(blobInput.Name);
-                        m_rgbBlobNeedBackward.Add(false);
-                        int blob_id = blobs.Count - 1;
-
-                        m_rgBlobNamesIndex.Add(blobInput.Name, blob_id);
-                        m_log.WriteLine(m_rgstrLayerNames[layer_id] + " <- " + blobInput.Name);
-
-                        m_rgcolBottomVecs[layer_id].Add(m_colBlobs[blob_id]);
-                        m_rgrgnBottomIdVecs[layer_id].Add(blob_id);
-                        m_rgrgbBottomNeedBackward[layer_id].Add(false);
-
-                        m_rgnNetInputBlobIndices.Add(blob_id);
-                        m_colNetInputBlobs.Add(blobs[blob_id]);
-                    }
 
                     // Figure out this layer's input and output
                     for (int bottom_id = 0; bottom_id < layer_param.bottom.Count; bottom_id++)
@@ -820,9 +783,6 @@ namespace MyCaffe.common
                         layer.type == LayerParameter.LayerType.TRIPLET_DATA)
                         strSrc = layer.layer_param.data_param.source;
 
-                    else if (layer.type == LayerParameter.LayerType.BATCHDATA)
-                        strSrc = layer.layer_param.batch_data_param.source;
-
                     else if (layer.type == LayerParameter.LayerType.LABELMAPPING)
                         return ((LabelMappingLayer<T>)layer).GetActualLabelCounts(strSrc);
                 }
@@ -847,19 +807,6 @@ namespace MyCaffe.common
             {
                 layer.SetEnablePassthrough(bEnable);
             }   
-        }
-
-        /// <summary>
-        /// Set the reinforcement information on each ReinforcementLossLayer - this is used during reinforcement training.
-        /// </summary>
-        /// <param name="col"></param>
-        public void SetReinforcementInformation(BatchInformationCollection col)
-        {
-            for (int i = m_rgLayers.Count - 1; i >= 0; i--)
-            {
-                if (m_rgLayers[i] is ReinforcementLossLayer<T>)
-                    m_rgLayers[i].layer_param.reinforcement_loss_param.BatchInfoCollection = col;
-            }
         }
 
         private BatchInput getInput()
@@ -1317,12 +1264,7 @@ namespace MyCaffe.common
             // Copy bottom to internal bottom
             for (int i = 0; i < colBottom.Count; i++)
             {
-                bool bReshape = false;
-
-                if (m_rgLayers.Count > 0 && m_rgLayers[0].type == LayerParameter.LayerType.BATCHDATA)
-                    bReshape = true;
-
-                m_colNetInputBlobs[i].CopyFrom(colBottom[i], false, bReshape);
+                m_colNetInputBlobs[i].CopyFrom(colBottom[i], false, false);
             }
 
             return Forward(out dfLoss);
@@ -2469,9 +2411,6 @@ namespace MyCaffe.common
                 if (lp.type == LayerParameter.LayerType.DATA ||
                     lp.type == LayerParameter.LayerType.TRIPLET_DATA)
                     return lp.data_param.source;
-
-                if (lp.type == LayerParameter.LayerType.BATCHDATA)
-                    return lp.batch_data_param.source;
             }
 
             return null;
@@ -2500,6 +2439,35 @@ namespace MyCaffe.common
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Find the layer with the matching type, name and or both.
+        /// </summary>
+        /// <param name="type">Specifies the layer type.</param>
+        /// <param name="strName">Specifies the layer name.</param>
+        /// <returns>The layer found (if any) is returned, otherwise <i>null</i> is returned.</returns>
+        public Layer<T> FindLayer(LayerParameter.LayerType? type, string strName)
+        {
+            if (!type.HasValue && string.IsNullOrEmpty(strName))
+                throw new Exception("You must specify either a layer type or name, or both.");
+
+            foreach (Layer<T> layer in m_rgLayers)
+            {
+                bool bTypeMatch = !type.HasValue;
+                bool bNameMatch = string.IsNullOrEmpty(strName);
+
+                if (type.HasValue && layer.type == type.Value)
+                    bTypeMatch = true;
+
+                if (!string.IsNullOrEmpty(strName) && layer.layer_param.name == strName)
+                    bNameMatch = true;
+
+                if (bTypeMatch && bNameMatch)
+                    return layer;
+            }
+
+            return null;
         }
     }
 }

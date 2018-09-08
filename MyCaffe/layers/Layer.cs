@@ -921,9 +921,6 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.ARGMAX:
                     return new ArgMaxLayer<T>(cuda, log, p);
 
-                case LayerParameter.LayerType.BATCHDATA:
-                    return new BatchDataLayer<T>(cuda, log, p, imgDb, evtCancel, (trxinput != null) ? trxinput.Set : null);
-
                 case LayerParameter.LayerType.BATCHNORM:
                     return new BatchNormLayer<T>(cuda, log, p);
 
@@ -1049,9 +1046,6 @@ namespace MyCaffe.layers
 
                 case LayerParameter.LayerType.REDUCTION:
                     return new ReductionLayer<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.REINFORCEMENT_LOSS:
-                    return new ReinforcementLossLayer<T>(cuda, log, p, (trxinput != null) ? trxinput.Get : null);
 
                 case LayerParameter.LayerType.RELU:
                     return new ReLULayer<T>(cuda, log, p);
