@@ -343,34 +343,6 @@ namespace MyCaffe.solvers
             set { m_bEnableSingleStep = value; }
         }
 
-        private Blob<T> getBatchInputData(BatchInformationCollection col)
-        {
-            if (col == null || col.Count == 0)
-                return null;
-
-            if (m_blobBatchInputData != null)
-                return m_blobBatchInputData;
-
-            Blob<T> blob = new Blob<T>(m_cuda, m_log);
-            blob.Reshape(col.Count, col[0].Count, 1, 1);
-
-            List<T> rgInput = new List<T>();
-
-            for (int i = 0; i < col.Count; i++)
-            {
-                for (int j = 0; j < col[i].Count; j++)
-                {
-                    rgInput.Add((T)Convert.ChangeType(col[i][j].ImageIndex0, typeof(float)));
-                }
-            }
-
-            blob.mutable_cpu_data = rgInput.ToArray();
-
-            m_blobBatchInputData = blob;
-
-            return blob;
-        }
-
         /// <summary>
         /// Get/set when the weights have been updated.
         /// </summary>
@@ -644,8 +616,7 @@ namespace MyCaffe.solvers
         /// <param name="rgWeights">Optionally, specifies weights to load via the Restore method.  The default is <i>null</i> which ignores the parameter.</param>
         /// <param name="rgState">Optionally, specifies the state to load via the Restore method.  The default is <i>null</i> which ignores the parameter.</param>
         /// <param name="step">Optionally, specifies to single step the training pass - typically this is used during debugging. The default = <i>TRAIN_STEP.NONE</i> which runs the solver in the normal manner.</param>
-        /// <param name="col">Optionally, specifies batch information used when using reinforcement learning.  The default is <i>null</i> which ignores the parameter.</param>
-        public virtual void Solve(int nIterationOverride = -1, byte[] rgWeights = null, byte[] rgState = null, TRAIN_STEP step = TRAIN_STEP.NONE, BatchInformationCollection col = null)
+        public virtual void Solve(int nIterationOverride = -1, byte[] rgWeights = null, byte[] rgState = null, TRAIN_STEP step = TRAIN_STEP.NONE)
         {
             m_log.CHECK(is_root_solver, "Solve is only supported by the root solver.");
             m_log.WriteLine("Solving " + m_net.name);
@@ -661,7 +632,7 @@ namespace MyCaffe.solvers
             if (nIterationOverride <= 0)
                 nIterationOverride = TrainingIterations;
 
-            if (!Step(nIterationOverride, step, col))
+            if (!Step(nIterationOverride, step))
                 return;
 
             // If we haven't already, save a snapshot after optimization, unless
@@ -711,31 +682,18 @@ namespace MyCaffe.solvers
         /// </summary>
         /// <param name="nIters">Specifies the number of steps to iterate.</param>
         /// <param name="step">Optionally, specifies to single step the training pass - typically this is used during debugging. The default = <i>TRAIN_STEP.NONE</i> for no stepping.</param>
-        /// <param name="col">Optionally, specifies a collection of BatchInformation used when performing custom training. The default = <i>null</i>.</param>
+        /// <param name="bAccumulateGradients">Optionally, specifies whether or not to accumulate the gradients (default = false).  NOTE: When accumulating gradients, ApplyUpdate must be called separately.</param>
         /// <returns></returns>
-        public bool Step(int nIters, TRAIN_STEP step = TRAIN_STEP.NONE, BatchInformationCollection col = null)
+        public bool Step(int nIters, TRAIN_STEP step = TRAIN_STEP.NONE, bool bAccumulateGradients = false)
         {
             Exception err = null;
 
             try
             {
-                Blob<T> blobBatchInput = getBatchInputData(col);
                 BlobCollection<T> colBottom = new BlobCollection<T>();
                 int start_iter = m_nIter;
                 int stop_iter = m_nIter + nIters;
                 int average_loss = m_param.average_loss;
-
-                if (m_net.layers[0].type == LayerParameter.LayerType.BATCHDATA)
-                {
-                    m_log.CHECK(blobBatchInput != null, "There is no batch input data!");
-                    colBottom.Add(blobBatchInput);
-                }
-                else
-                {
-                    m_log.CHECK(blobBatchInput == null, "The blob batch input data is only supported with networks using the BATCHDATA layer.");
-                }
-
-                m_net.SetReinforcementInformation(col);
 
                 m_rgLosses.Clear();
                 m_dfSmoothedLoss = 0;
@@ -757,7 +715,8 @@ namespace MyCaffe.solvers
                 while (m_nIter < stop_iter && !m_evtCompleted.WaitOne(0))
                 {
                     // zero-init the params.
-                    m_net.ClearParamDiffs();
+                    if (!bAccumulateGradients)
+                        m_net.ClearParamDiffs();
 
                     if (OnStart != null)
                         OnStart(this, new EventArgs());
@@ -869,7 +828,7 @@ namespace MyCaffe.solvers
 
                     double dfLastLearningRate = 0;
 
-                    if (step != TRAIN_STEP.FORWARD)
+                    if (step != TRAIN_STEP.FORWARD && !bAccumulateGradients)
                         dfLastLearningRate = ApplyUpdate(m_nIter);
 
                     if (m_evtCancel.WaitOne(0))
