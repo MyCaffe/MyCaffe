@@ -43,8 +43,9 @@ namespace MyCaffe.basecode
         /// The Datum constructor.
         /// </summary>
         /// <param name="d">Specifies a SimpleDatum used to create this new Datum.</param>
-        public Datum(SimpleDatum d)
-            : base(d)
+        /// <param name="bCopyData">Specifies whether or not to copy the data, or just share it.</param>
+        public Datum(SimpleDatum d, bool bCopyData = false)
+            : base(d, bCopyData)
         {
         }
 
@@ -52,8 +53,9 @@ namespace MyCaffe.basecode
         /// The Datum constructor.
         /// </summary>
         /// <param name="d">Specifies another Datum to copy when creating this Datum.</param>
-        public Datum(Datum d)
-            : base(d)
+        /// <param name="bCopyData">Specifies whether or not to copy the data, or just share it.</param>
+        public Datum(Datum d, bool bCopyData = false)
+            : base(d, bCopyData)
         {
         }
 
@@ -135,9 +137,10 @@ namespace MyCaffe.basecode
         /// Copies another Datum into this one.
         /// </summary>
         /// <param name="d">Specifies the other Datum to copy.</param>
-        public void Copy(Datum d)
+        /// <param name="bCopyData">Specifies whether to copy the data, or just share it.</param>
+        public void Copy(Datum d, bool bCopyData)
         {
-            base.Copy(d);
+            base.Copy(d, bCopyData);
             m_tag = d.Tag;
             m_strTagName = d.m_strTagName;
         }
