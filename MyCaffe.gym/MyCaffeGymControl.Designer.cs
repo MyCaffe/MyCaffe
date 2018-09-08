@@ -28,16 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.m_bwGym = new System.ComponentModel.BackgroundWorker();
             this.SuspendLayout();
-            // 
-            // m_bwGym
-            // 
-            this.m_bwGym.WorkerReportsProgress = true;
-            this.m_bwGym.WorkerSupportsCancellation = true;
-            this.m_bwGym.DoWork += new System.ComponentModel.DoWorkEventHandler(this.m_bwGym_DoWork);
-            this.m_bwGym.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bwGym_ProgressChanged);
-            this.m_bwGym.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bwGym_RunWorkerCompleted);
             // 
             // MyCaffeGymControl
             // 
@@ -54,7 +45,5 @@
         }
 
         #endregion
-
-        private System.ComponentModel.BackgroundWorker m_bwGym;
     }
 }

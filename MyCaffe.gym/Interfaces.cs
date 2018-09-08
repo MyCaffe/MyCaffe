@@ -22,18 +22,20 @@ namespace MyCaffe.gym
         void Close();
         IXMyCaffeGym Clone();
         string Name { get; }
-        Tuple<Tuple<double, double, double>[], double, bool> Reset();
-        Tuple<Tuple<double,double,double>[], double, bool> Step();
+        Tuple<State, double, bool> Reset();
+        Tuple<State, double, bool> Step(int nAction);
         Bitmap Render(int nWidth, int nHeight, out Bitmap bmpAction);
-        void Run(int nAction);
         Dictionary<string, int> GetActionSpace();
         DatasetDescriptor GetDataset(DATA_TYPE dt);
     }
 
-    public class State
+    public abstract class State
     {
         public State()
         {
         }
+
+        public abstract State Clone();
+        public abstract Tuple<double, double, double>[] ToArray();
     }
 }

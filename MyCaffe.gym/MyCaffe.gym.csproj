@@ -77,20 +77,12 @@
     <Compile Include="Gyms\CartPoleGym.cs" />
     <Compile Include="IMyCaffeGymService.cs" />
     <Compile Include="Interfaces.cs" />
-    <Compile Include="MyCaffeGymClient.cs" />
     <Compile Include="MyCaffeGymControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="MyCaffeGymControl.Designer.cs">
       <DependentUpon>MyCaffeGymControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="MyCaffeGymRegistry.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="MyCaffeGymRegistry.Designer.cs">
-      <DependentUpon>MyCaffeGymRegistry.cs</DependentUpon>
-    </Compile>
-    <Compile Include="MyCaffeGymService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>

@@ -10,60 +10,44 @@ using System.Text;
 
 namespace MyCaffe.gym
 {
-    [ServiceContract(SessionMode=SessionMode.Required, CallbackContract=typeof(IXMyCaffeGymCallback))]
+    [ServiceContract(SessionMode=SessionMode.Required)]
     public interface IXMyCaffeGymService
     {
-        [OperationContract(IsOneWay = false)]
-        int Open(string strName, bool bAutoStart, bool bShowUi, bool bShowOnlyFirst, double[] rgdfInit);
         [OperationContract(IsOneWay = true)]
-        void Close(string strName, int nIdx);
+        void Open(string strName);
         [OperationContract(IsOneWay = true)]
-        void CloseAll(string strName);
+        void Close();
         [OperationContract(IsOneWay = true)]
-        void OpenUi(string strName, int nIdx);
-        [OperationContract(IsOneWay = false)]
-        byte[] GetDataset(string strName, int nType);
-        [OperationContract(IsOneWay = false)]
-        Dictionary<string, int> GetActionSpace(string strName);
-        [OperationContract(IsOneWay = true)]
-        void Run(string strName, int nIdx, int nAction);
-        [OperationContract(IsOneWay = true)]
-        void Reset(string strName, int nIdx);
-    }
-
-    public interface IXMyCaffeGymCallback
-    {
-        [OperationContract(IsOneWay = true, IsInitiating = false, IsTerminating = false)]
-        void OnObservation(string strName, int nIdx, Observation obs);
+        void Render(Observation obs);
     }
 
     [DataContract]
     public class Observation
     {
-        Tuple<double,double,double>[] m_rgState;
-        Bitmap m_image;
+        Tuple<double, double, double>[] m_rgState;
         double m_dfReward;
         bool m_bDone;
+        Bitmap m_image;
 
         public Observation(Bitmap img, Tuple<double,double,double>[] rgState, double dfReward, bool bDone)
         {
-            m_image = img;
             m_rgState = rgState;
             m_dfReward = dfReward;
             m_bDone = bDone;
+            m_image = img;
         }
 
         public Observation Clone()
         {
-            Bitmap img = new Bitmap(m_image);
-            List<Tuple<double, double, double>> rgVal = new List<Tuple<double, double, double>>();
+            Bitmap bmp = (m_image == null) ? null : new Bitmap(m_image);
 
-            foreach (Tuple<double,double,double> item in m_rgState)
+            List<Tuple<double, double, double>> rgState = new List<Tuple<double, double, double>>();
+            foreach (Tuple<double, double, double> item in m_rgState)
             {
-                rgVal.Add(new Tuple<double, double, double>(item.Item1, item.Item2, item.Item3));
+                rgState.Add(new Tuple<double, double, double>(item.Item1, item.Item2, item.Item3));
             }
 
-            return new Observation(img, rgVal.ToArray(), m_dfReward, m_bDone);
+            return new Observation(bmp, rgState.ToArray(), m_dfReward, m_bDone);
         }
 
         public static double[] GetValues(Tuple<double,double,double>[] rg, bool bNormalize)
