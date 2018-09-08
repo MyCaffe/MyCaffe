@@ -20,6 +20,7 @@ namespace MyCaffe.layers
     public class MemoryLossLayer<T> : LossLayer<T>
     {
         object m_userState = null;
+        bool m_bEnableLoss = true;
 
         /// <summary>
         /// The OnGetLoss event fires during each forward pass.  The value returned is saved,
@@ -182,6 +183,9 @@ namespace MyCaffe.layers
             double dfNormalizer = get_normalizer(m_normalization, -1);
             MemoryLossLayerGetLossArgs<T> e = new MemoryLossLayerGetLossArgs<T>(colBottom, m_userState, dfNormalizer);
             OnGetLoss(this, e);
+
+            m_bEnableLoss = e.EnableLossUpdate;
+
             colTop[0].SetData(e.Loss / dfNormalizer, 0);
         }
 
@@ -201,8 +205,10 @@ namespace MyCaffe.layers
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            if (!rgbPropagateDown[0])
+            if (!rgbPropagateDown[0] || !m_bEnableLoss)
                 return;
+
+            m_cuda.copy(colTop[0].count(), colTop[0].gpu_data, colTop[0].mutable_gpu_diff);
 
             double dfTopDiff = convertD(colTop[0].GetDiff(0)); // loss weight
             double dfNormalizer = get_normalizer(m_normalization, -1);
@@ -228,6 +234,7 @@ namespace MyCaffe.layers
         double m_dfLoss = 0;
         double m_dfNormalizer = 1;
         BlobCollection<T> m_colBottom;
+        bool m_bEnableLossUpdate = true;
 
         /// <summary>
         /// The constructor.
@@ -273,6 +280,15 @@ namespace MyCaffe.layers
         {
             get { return m_dfLoss; }
             set { m_dfLoss = value; }
+        }
+
+        /// <summary>
+        /// Get/set enabling the loss update within the backpropagation pass.
+        /// </summary>
+        public bool EnableLossUpdate
+        {
+            get { return m_bEnableLossUpdate; }
+            set { m_bEnableLossUpdate = value; }
         }
     }
 }
