@@ -122,7 +122,6 @@
     <Compile Include="TestFilterLayer.cs" />
     <Compile Include="TestFlattenLayer.cs" />
     <Compile Include="TestBatchNormLayer.cs" />
-    <Compile Include="TestBatchDataLayer.cs" />
     <Compile Include="TestMVNLayer.cs" />
     <Compile Include="TestHingeLossLayer.cs" />
     <Compile Include="TestUnPoolingLayer.cs" />
@@ -162,7 +161,6 @@
     <Compile Include="TestSigmoidCrossEntropyLossLayer.cs" />
     <Compile Include="TestSliceLayer.cs" />
     <Compile Include="TestSoftmaxLayer.cs" />
-    <Compile Include="TestReinforcementLossLayer.cs" />
     <Compile Include="TestSoftmaxLossLayer.cs" />
     <Compile Include="TestSolver.cs" />
     <Compile Include="TestSplitLayer.cs" />
