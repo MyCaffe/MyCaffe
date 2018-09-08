@@ -70,5 +70,24 @@ namespace MyCaffe.trainers
             get { return m_data; }
             set { m_data = value; }
         }
+
+        /// <summary>
+        /// Return the string representation of the state.
+        /// </summary>
+        /// <returns>The string representation is returned.</returns>
+        public override string ToString()
+        {
+            double[] rgData = m_data.GetData<double>();
+
+            string str = "{";
+            for (int i = 0; i < rgData.Length && i < 5; i++)
+            {
+                str += rgData[i].ToString("N4") + ",";
+            }
+            str = str.TrimEnd(',');
+            str += "}";
+
+            return "State = " + str + " Done = " + m_bDone.ToString();
+        }
     }
 }
