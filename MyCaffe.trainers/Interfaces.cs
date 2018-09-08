@@ -1,6 +1,7 @@
 ﻿using MyCaffe.basecode;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.common;
+using MyCaffe.gym;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -35,7 +36,7 @@ namespace MyCaffe.trainers
         /// Initialize the trainer passing in a set of key-value pairs as properties.
         /// </summary>
         /// <remarks>Use the ProeprtySet object to easily parse the key-value pair properties.</remarks>
-        /// <param name="strProperties"></param>
+        /// <param name="strProperties">Specifies the properties.</param>
         void Initialize(string strProperties);
         /// <summary>
         /// Clean-up the trainer by releasing all resources used.
@@ -146,5 +147,33 @@ namespace MyCaffe.trainers
         /// <param name="nDelay">Specifies a delay to wait before getting the action.</param>
         /// <returns>The result collection containing the action is returned.</returns>
         ResultCollection Run(int nDelay = 1000);
+    }
+
+    /// <summary>
+    /// The IxTrainerCallback provides functions used by each trainer to 'call-back' to the parent for information and updates.
+    /// </summary>
+    /// <remarks>The IxTrainerCallback is passed to each trainer.</remarks>
+    public interface IxTrainerCallback
+    {
+        /// <summary>
+        /// The OnIntialize callback fires when initializing the trainer.
+        /// </summary>
+        void OnInitialize(InitializeArgs e);
+        /// <summary>
+        /// The OnShutdown callback fires when shutting down the trainer.
+        /// </summary>
+        void OnShutdown();
+        /// <summary>
+        /// The OnGetData callback fires from within the Train method and is used to get a new observation data.
+        /// </summary>
+        void OnGetData(GetDataArgs e);
+        /// <summary>
+        /// The OnGetStatus callback fires on each iteration within the Train method.
+        /// </summary>
+        void OnUpdateStatus(GetStatusArgs e);
+        /// <summary>
+        /// The OnWait callback fires when waiting for a shutdown.
+        /// </summary>
+        void OnWait(WaitArgs e);
     }
 }
