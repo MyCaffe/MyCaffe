@@ -1642,6 +1642,29 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Get the string representation containing up to the first 'nMax' items.
+        /// </summary>
+        /// <param name="nMax">Specifies the maximum number of data items to return.</param>
+        /// <param name="bDiff">Specifies to returive the diff when <i>true</i>.</param>
+        /// <returns>The string representation is returned.</returns>
+        public string ToString(int nMax, bool bDiff = false)
+        {
+            double[] rg = Utility.ConvertVec<T>((bDiff) ? update_cpu_diff() : update_cpu_data());
+            string str = "{";
+
+            for (int i = 0; i < rg.Length && i < nMax; i++)
+            {
+                str += rg[i].ToString("N4");
+                str += ",";
+            }
+
+            str = str.TrimEnd(',');
+            str += "}";
+
+            return str;
+        }
+
+        /// <summary>
         /// Returns the minimum value in the data of the Blob.
         /// </summary>
         public double min_data
@@ -1903,6 +1926,44 @@ namespace MyCaffe.common
             newBlob.mutable_cpu_data = Utility.ConvertVec<T>(rgDataNewF);
 
             return newBlob;
+        }
+
+        /// <summary>
+        /// Normalize the blob data by subtracting the mean and dividing by the standard deviation.
+        /// </summary>
+        public void NormalizeData()
+        {
+            int nCount = count();
+            double dfAsum = Utility.ConvertVal<T>(asum_data());
+            double dfMean = dfAsum / nCount;
+            m_cuda.add_scalar(nCount, -dfMean, mutable_gpu_data);
+            double dfStd = std(dfMean);
+            m_cuda.mul_scalar(nCount, 1.0 / dfStd, mutable_gpu_data);
+        }
+
+        /// <summary>
+        /// Calculate the standard deviation of the blob data.
+        /// </summary>
+        /// <param name="dfMean">Optionally, specifies the blob mean.</param>
+        /// <returns>The standard deviation of the bob data is returned.</returns>
+        public double std(double? dfMean = null)
+        {
+            if (!dfMean.HasValue)
+            {
+                int nCount = count();
+                double dfAsum = Utility.ConvertVal<T>(asum_data());
+                dfMean = dfAsum / nCount;
+            }
+
+            double[] rgDf = Utility.ConvertVec<T>(update_cpu_data());
+            double dfSum = 0;
+
+            for (int i = 0; i < rgDf.Length; i++)
+            {
+                dfSum += Math.Pow(rgDf[i] - dfMean.Value, 2);
+            }
+
+            return Math.Sqrt(dfSum / rgDf.Length);
         }
     }
 }
