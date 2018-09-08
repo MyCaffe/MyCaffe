@@ -49,20 +49,19 @@
   <ItemGroup>
     <Compile Include="EventArgs.cs" />
     <Compile Include="Interfaces.cs" />
-    <Compile Include="Memory.cs" />
-    <Compile Include="MemoryCollection.cs" />
-    <Compile Include="MemoryItem.cs" />
-    <Compile Include="MyCaffeA3CTrainer.cs">
+    <Compile Include="a3c\Memory.cs" />
+    <Compile Include="a3c\MemoryCollection.cs" />
+    <Compile Include="a3c\MemoryItem.cs" />
+    <Compile Include="MyCaffeTrainerRL.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="MyCaffeA3CTrainer.Designer.cs">
-      <DependentUpon>MyCaffeA3CTrainer.cs</DependentUpon>
+    <Compile Include="MyCaffeTrainerRL.Designer.cs">
+      <DependentUpon>MyCaffeTrainerRL.cs</DependentUpon>
     </Compile>
-    <Compile Include="ObservationReady.cs" />
-    <Compile Include="ObservationReadyCollection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StateBase.cs" />
-    <Compile Include="Trainer.cs" />
+    <Compile Include="a3c\TrainerA3C.cs" />
+    <Compile Include="pg\TrainerPG.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="mycaffe.trainers.pfx" />
