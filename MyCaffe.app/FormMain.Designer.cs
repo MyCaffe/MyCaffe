@@ -57,8 +57,8 @@
             this.specialTestsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.alexNetToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.resNet56CifarAccuracyBugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
-            this.openGymToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
+            this.startCartPoleTrainerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.localHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.onlineHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -75,8 +75,6 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.lblGpu = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
-            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
-            this.startCartPoleTrainerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -158,9 +156,7 @@
             this.abortToolStripMenuItem,
             this.cancelToolStripMenuItem,
             this.toolStripSeparator3,
-            this.specialTestsToolStripMenuItem,
-            this.toolStripSeparator4,
-            this.openGymToolStripMenuItem});
+            this.specialTestsToolStripMenuItem});
             this.testToolStripMenuItem.Name = "testToolStripMenuItem";
             this.testToolStripMenuItem.Size = new System.Drawing.Size(40, 20);
             this.testToolStripMenuItem.Text = "&Test";
@@ -308,17 +304,17 @@
             this.resNet56CifarAccuracyBugToolStripMenuItem.Text = "ResNet56-Cifar Accuracy Bug";
             this.resNet56CifarAccuracyBugToolStripMenuItem.Click += new System.EventHandler(this.resNet56CifarAccuracyBugToolStripMenuItem_Click);
             // 
-            // toolStripSeparator4
+            // toolStripSeparator5
             // 
-            this.toolStripSeparator4.Name = "toolStripSeparator4";
-            this.toolStripSeparator4.Size = new System.Drawing.Size(189, 6);
+            this.toolStripSeparator5.Name = "toolStripSeparator5";
+            this.toolStripSeparator5.Size = new System.Drawing.Size(238, 6);
             // 
-            // openGymToolStripMenuItem
+            // startCartPoleTrainerToolStripMenuItem
             // 
-            this.openGymToolStripMenuItem.Name = "openGymToolStripMenuItem";
-            this.openGymToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
-            this.openGymToolStripMenuItem.Text = "Open Gym...";
-            this.openGymToolStripMenuItem.Click += new System.EventHandler(this.openGymToolStripMenuItem_Click);
+            this.startCartPoleTrainerToolStripMenuItem.Name = "startCartPoleTrainerToolStripMenuItem";
+            this.startCartPoleTrainerToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
+            this.startCartPoleTrainerToolStripMenuItem.Text = "Start Cart-Pole Trainer";
+            this.startCartPoleTrainerToolStripMenuItem.Click += new System.EventHandler(this.startCartPoleTrainerToolStripMenuItem_Click);
             // 
             // helpToolStripMenuItem
             // 
@@ -441,18 +437,6 @@
             this.timerUI.Interval = 1000;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
-            // toolStripSeparator5
-            // 
-            this.toolStripSeparator5.Name = "toolStripSeparator5";
-            this.toolStripSeparator5.Size = new System.Drawing.Size(238, 6);
-            // 
-            // startCartPoleTrainerToolStripMenuItem
-            // 
-            this.startCartPoleTrainerToolStripMenuItem.Name = "startCartPoleTrainerToolStripMenuItem";
-            this.startCartPoleTrainerToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
-            this.startCartPoleTrainerToolStripMenuItem.Text = "Start Cart-Pole Trainer";
-            this.startCartPoleTrainerToolStripMenuItem.Click += new System.EventHandler(this.startCartPoleTrainerToolStripMenuItem_Click);
-            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -522,8 +506,6 @@
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel lblGpu;
         private System.Windows.Forms.Timer timerUI;
-        private System.Windows.Forms.ToolStripMenuItem openGymToolStripMenuItem;
-        private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
         private System.Windows.Forms.ToolStripMenuItem startCartPoleTrainerToolStripMenuItem;
     }

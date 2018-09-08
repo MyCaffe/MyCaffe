@@ -87,8 +87,6 @@ namespace MyCaffe.app
             m_log.OnWriteLine += Log_OnWriteLine;
             m_caffeRun = new MyCaffeControl<float>(new SettingsCaffe(), m_log, m_evtCancel);
 
-            MyCaffeGymRegistrar.Initialize(this, m_log);
-
             if (lvStatus is ListViewEx)
                 ((ListViewEx)lvStatus).RowHeight = 12;
         }
@@ -812,8 +810,6 @@ namespace MyCaffe.app
             }
 
             m_evtCancelA3C.Set();
-
-            MyCaffeGymRegistrar.Shutdown();
         }
 
         #region Server Based Autotesting
@@ -1156,15 +1152,6 @@ namespace MyCaffe.app
         {
             lblGpu.Text = "Using GPU " + getGpuName();
         }
-
-        #region Test Gyms
-
-        private void openGymToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            MyCaffeGymRegistrar.Registry.Open();
-        }
-
-        #endregion
 
         private void startCartPoleTrainerToolStripMenuItem_Click(object sender, EventArgs e)
         {
