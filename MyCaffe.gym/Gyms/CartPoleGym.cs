@@ -26,7 +26,6 @@ namespace MyCaffe.gym
     public class CartPoleGym : IXMyCaffeGym
     {
         string m_strName = "Cart-Pole";
-        int m_nAction = -1;
         double m_dfGravity = 9.8;
         double m_dfMassCart = 1.0;
         double m_dfMassPole = 0.1;
@@ -37,7 +36,6 @@ namespace MyCaffe.gym
         double m_dfForce = 10;
         bool m_bAdditive = false;
         double m_dfTau = 0.02; // seconds between state updates.
-        bool m_bDone = false;
         Dictionary<string, int> m_rgActionSpace;
         Bitmap m_bmp = null;
         int m_nSteps = 0;
@@ -59,7 +57,6 @@ namespace MyCaffe.gym
             MOVERIGHT
         }
 
-
         public CartPoleGym()
         {
             m_dfTotalMass = m_dfMassPole + m_dfMassCart;
@@ -72,7 +69,15 @@ namespace MyCaffe.gym
 
         public IXMyCaffeGym Clone()
         {
-            return new CartPoleGym();
+            CartPoleGym gym = new CartPoleGym();
+
+            List<double> rgdfInit = new List<double>();
+            rgdfInit.Add(m_dfForce);
+            rgdfInit.Add((m_bAdditive) ? 1 : 0);
+
+            gym.Initialize(m_log, rgdfInit.ToArray());
+
+            return gym;
         }
 
         public string Name
@@ -80,36 +85,13 @@ namespace MyCaffe.gym
             get { return m_strName; }
         }
 
-        public void Run(int nAction)
-        {
-            m_nAction = nAction;
-        }
-
         public Dictionary<string, int> GetActionSpace()
         {
             return m_rgActionSpace;
         }
 
-        private int getNextAction()
+        private void processAction(ACTION? a)
         {
-            int nAction =  m_nAction;
-            m_nAction = -1;
-            return nAction;
-        }
-
-        private ACTION? getNextActionValue()
-        {
-            int nAction = getNextAction();
-            if (nAction < 0)
-                return null;
-
-            return (ACTION?)nAction;
-        }
-
-        private void processAction()
-        {
-            ACTION? a = getNextActionValue();
-
             if (a.HasValue)
             {
                 switch (a)
@@ -248,7 +230,7 @@ namespace MyCaffe.gym
             return bmp;
         }
 
-        public Tuple<Tuple<double, double, double>[], double, bool> Reset()
+        public Tuple<State, double, bool> Reset()
         {
             double dfX = randomUniform(-0.05, 0.05);
             double dfXDot = randomUniform(-0.05, 0.05);
@@ -256,12 +238,10 @@ namespace MyCaffe.gym
             double dfThetaDot = randomUniform(-0.05, 0.05);
             m_dfForceMag = 0;
             m_nStepsBeyondDone = null;
-            m_bDone = false;
             m_nSteps = 0;
-            m_nAction = -1;
 
             m_state = new CartPoleState(dfX, dfXDot, dfTheta, dfThetaDot);
-            return new Tuple<Tuple<double, double, double>[], double, bool>(m_state.ToArray(), 1, false);
+            return new Tuple<State, double, bool>(m_state.Clone(), 1, false);
         }
 
         private double randomUniform(double dfMin, double dfMax)
@@ -270,71 +250,60 @@ namespace MyCaffe.gym
             return dfMin + (m_random.NextDouble() * dfRange);
         }
 
-        public Tuple<Tuple<double,double,double>[], double, bool> Step()
+        public Tuple<State, double, bool> Step(int nAction)
         {
             CartPoleState state = new CartPoleState(m_state);
             double dfReward = 0;
 
-            if (!m_bDone)
+            processAction((ACTION)nAction);
+
+            double dfX = state.X;
+            double dfXDot = state.XDot;
+            double dfTheta = state.Theta;
+            double dfThetaDot = state.ThetaDot;
+            double dfForce = m_dfForceMag;
+            double dfCosTheta = Math.Cos(dfTheta);
+            double dfSinTheta = Math.Sin(dfTheta);
+            double dfTemp = (dfForce + m_dfPoleMassLength * dfThetaDot * dfThetaDot * dfSinTheta) / m_dfTotalMass;
+            double dfThetaAcc = (m_dfGravity * dfSinTheta - dfCosTheta * dfTemp) / (m_dfLength * ((4.0 / 3.0) - m_dfMassPole * dfCosTheta * dfCosTheta / m_dfTotalMass));
+            double dfXAcc = dfTemp - m_dfPoleMassLength * dfThetaAcc * dfCosTheta / m_dfTotalMass;
+
+            dfX += m_dfTau * dfXDot;
+            dfXDot += m_dfTau * dfXAcc;
+            dfTheta += m_dfTau * dfThetaDot;
+            dfThetaDot += m_dfTau * dfThetaAcc;
+
+            m_state = new CartPoleState(dfX, dfXDot, dfTheta, dfThetaDot);
+
+            bool bDone = false;
+
+            if (dfX < -m_dfXThreshold || dfX > m_dfXThreshold ||
+                dfTheta < -m_dfThetaThreshold || dfTheta > m_dfThetaThreshold)
+                bDone = true;
+
+            if (!bDone)
             {
-                processAction();
+                dfReward = 1.0;
+            }
+            else if (!m_nStepsBeyondDone.HasValue)
+            {
+                // Pole just fell!
+                m_nStepsBeyondDone = 0;
+                dfReward = 1.0;
+            }
+            else
+            {
+                if (m_nStepsBeyondDone.Value == 0)
+                    m_log.WriteLine("WARNING: You are calling 'step()' even though this environment has already returned done = True.  You should always call 'reset()'");
 
-                double dfX = state.X;
-                double dfXDot = state.XDot;
-                double dfTheta = state.Theta;
-                double dfThetaDot = state.ThetaDot;
-                double dfForce = m_dfForceMag;
-                double dfCosTheta = Math.Cos(dfTheta);
-                double dfSinTheta = Math.Sin(dfTheta);
-                double dfTemp = (dfForce + m_dfPoleMassLength * dfThetaDot * dfThetaDot * dfSinTheta) / m_dfTotalMass;
-                double dfThetaAcc = (m_dfGravity * dfSinTheta - dfCosTheta * dfTemp) / (m_dfLength * ((4.0 / 3.0) - m_dfMassPole * dfCosTheta * dfCosTheta / m_dfTotalMass));
-                double dfXAcc = dfTemp - m_dfPoleMassLength * dfThetaAcc * dfCosTheta / m_dfTotalMass;
-
-                dfX += m_dfTau * dfXDot;
-                dfXDot += m_dfTau * dfXAcc;
-                dfTheta += m_dfTau * dfThetaDot;
-                dfThetaDot += m_dfTau * dfThetaAcc;
-
-                m_state = new CartPoleState(dfX, dfXDot, dfTheta, dfThetaDot);
-
-                bool bXDone = false;
-                bool bThetaDone = false;
-
-                if (dfX < -m_dfXThreshold || dfX > m_dfXThreshold)
-                    bXDone = true;
-
-                if (dfTheta < -m_dfThetaThreshold || dfTheta > m_dfThetaThreshold)
-                    bThetaDone = true;
-
-                if (bXDone || bThetaDone)
-                    m_bDone = true;
-
-                if (!m_bDone)
-                {
-                    dfReward = 1.0;
-                }
-                else if (!m_nStepsBeyondDone.HasValue)
-                {
-                    m_nStepsBeyondDone = 0;
-
-                    if (bXDone) // ran off track
-                        dfReward = -1;
-                    else // pole fell
-                        dfReward = 0.0;
-                }
-                else
-                {
-                    if (m_nStepsBeyondDone.Value == 0)
-                        m_log.WriteLine("You are calling 'step()' even though this environment has already returned done = True.  You should always call 'reset()'");
-                    m_nStepsBeyondDone++;
-                    dfReward = 0.0;
-                }
-
-                m_nSteps++;
-                m_nMaxSteps = Math.Max(m_nMaxSteps, m_nSteps);
+                m_nStepsBeyondDone++;
+                dfReward = 0.0;
             }
 
-            return new Tuple<Tuple<double,double,double>[], double, bool>(m_state.ToArray(), dfReward, m_bDone);
+            m_nSteps++;
+            m_nMaxSteps = Math.Max(m_nMaxSteps, m_nSteps);
+
+            return new Tuple<State, double, bool>(m_state.Clone(), dfReward, bDone);
         }
 
         public DatasetDescriptor GetDataset(DATA_TYPE dt)
@@ -412,7 +381,7 @@ namespace MyCaffe.gym
         double m_dfThetaDot = 0;
 
         public const double MAX_X = 2.4;
-        public const double MAX_THETA = 30 * (Math.PI/180);
+        public const double MAX_THETA = 20 * (Math.PI/180);
 
         public CartPoleState(double dfX = 0, double dfXDot = 0, double dfTheta = 0, double dfThetaDot = 0)
         {
@@ -462,7 +431,12 @@ namespace MyCaffe.gym
             }
         }
 
-        public Tuple<double,double,double>[] ToArray()
+        public override State Clone()
+        {
+            return new CartPoleState(this);
+        }
+
+        public override Tuple<double,double,double>[] ToArray()
         {
             List<Tuple<double, double, double>> rg = new List<Tuple<double, double, double>>();
             int nScale = 4;
