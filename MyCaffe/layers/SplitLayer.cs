@@ -70,14 +70,14 @@ namespace MyCaffe.layers
                 // the backward pass.  (Technically, it should be possible to share the diff
                 // blob of the first split output with the input, but this seems to cause
                 // some strange effects in practice...)
-                m_log.CHECK(colTop[i] != colBottom[0], "Layer does not allow in-place computation.");
+                m_log.CHECK(colTop[i].gpu_data != colBottom[0].gpu_data, "Layer does not allow in-place computation.");
                 colTop[i].ReshapeLike(colBottom[0]);
                 m_log.CHECK_EQ(m_nCount, colTop[i].count(), "The count should equal the top[i].count().");
             }
         }
 
         /// <summary>
-        /// Computes the forward calculation sharing the bottom Blbos with all of the top Blobs.
+        /// Computes the forward calculation copying the bottom Blbos with all of the top Blobs.
         /// </summary>
         /// <param name="colBottom">bottom input Blob vector (Length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$ the inputs.</param>
@@ -87,9 +87,12 @@ namespace MyCaffe.layers
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            int nCount = colBottom[0].count();
+            long hBottom = colBottom[0].gpu_data;
+
             for (int i = 0; i < colTop.Count; i++)
             {
-                colTop[i].ShareData(colBottom[0]);
+                m_cuda.copy(nCount, hBottom, colTop[i].mutable_gpu_data);
             }
         }
 
