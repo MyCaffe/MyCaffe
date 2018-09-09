@@ -26,7 +26,6 @@ namespace MyCaffe.trainers.pg
         CryptoRandom m_random = new CryptoRandom(true);
         MyCaffeControl<T> m_mycaffe;
         PropertySet m_properties;
-        bool m_bWindowOpen = false;
 
         /// <summary>
         /// The constructor.
@@ -99,6 +98,9 @@ namespace MyCaffe.trainers.pg
         public ResultCollection Run(int nDelay = 1000)
         {
             m_mycaffe.CancelEvent.Reset();
+            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN);
+            agent.Run(Phase.RUN, 1);
+            agent.Dispose();
             return null;
         }
 
@@ -110,6 +112,9 @@ namespace MyCaffe.trainers.pg
         public bool Test(int nIterations)
         {
             m_mycaffe.CancelEvent.Reset();
+            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TEST);
+            agent.Run(Phase.TEST, nIterations);
+            agent.Dispose();
             return false;
         }
 
@@ -123,7 +128,7 @@ namespace MyCaffe.trainers.pg
         {
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN);
-            agent.Run(Phase.TRAIN);
+            agent.Run(Phase.TRAIN, nIterations);
             agent.Dispose();
 
             return false;
@@ -178,7 +183,8 @@ namespace MyCaffe.trainers.pg
         /// 4.) train on experiences
         /// </summary>
         /// <param name="phase">Specifies the phae.</param>
-        public void Run(Phase phase)
+        /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        public void Run(Phase phase, int nIterations)
         {
             MemoryCollection m_rgMemory = new MemoryCollection();
             double? dfRunningReward = null;
@@ -187,7 +193,7 @@ namespace MyCaffe.trainers.pg
 
             StateBase s = getData(-1);
           
-            while (!m_brain.Cancel.WaitOne(0))
+            while (!m_brain.Cancel.WaitOne(0) && nEpisodeNumber < nIterations)
             {
                 // Preprocess the observation.
                 SimpleDatum x = m_brain.Preprocess(s);
@@ -200,42 +206,49 @@ namespace MyCaffe.trainers.pg
                 StateBase s_ = getData(action);
                 dfRewardSum += s_.Reward;
 
-                // Build up episode memory, using reward for taking the action.
-                m_rgMemory.Add(new MemoryItem(s, x, action, fAprob, (float)s_.Reward));
-
-                // An episode has finished.
-                if (s_.Done)
+                if (phase == Phase.TRAIN)
                 {
-                    nEpisodeNumber++;
+                    // Build up episode memory, using reward for taking the action.
+                    m_rgMemory.Add(new MemoryItem(s, x, action, fAprob, (float)s_.Reward));
 
-                    m_brain.Reshape(m_rgMemory);
+                    // An episode has finished.
+                    if (s_.Done)
+                    {
+                        nEpisodeNumber++;
 
-                    // Compute the discounted reward (backwards through time)
-                    float[] rgDiscountedR = m_rgMemory.GetDiscountedRewards(m_fGamma);
-                    // Rewards are standardized when set to be unit normal (helps control the gradient estimator variance)
-                    m_brain.SetDiscountedR(rgDiscountedR);
+                        m_brain.Reshape(m_rgMemory);
 
-                    // Modulate the gradient with the advantage (PG magic happens right here.)
-                    float[] rgDlogp = m_rgMemory.GetPolicyGradients();
-                    // discounted R applied to policy agradient within loss function, just before the backward pass.
-                    m_brain.SetPolicyGradients(rgDlogp);
+                        // Compute the discounted reward (backwards through time)
+                        float[] rgDiscountedR = m_rgMemory.GetDiscountedRewards(m_fGamma);
+                        // Rewards are standardized when set to be unit normal (helps control the gradient estimator variance)
+                        m_brain.SetDiscountedR(rgDiscountedR);
 
-                    // Train for one iteration, which triggers the loss function.
-                    List<Datum> rgData = m_rgMemory.GetData();
-                    m_brain.SetData(rgData);
-                    m_brain.Train(nEpisodeNumber);
+                        // Modulate the gradient with the advantage (PG magic happens right here.)
+                        float[] rgDlogp = m_rgMemory.GetPolicyGradients();
+                        // discounted R applied to policy agradient within loss function, just before the backward pass.
+                        m_brain.SetPolicyGradients(rgDlogp);
 
-                    // Update reward running
-                    if (!dfRunningReward.HasValue)
-                        dfRunningReward = dfRewardSum;
+                        // Train for one iteration, which triggers the loss function.
+                        List<Datum> rgData = m_rgMemory.GetData();
+                        m_brain.SetData(rgData);
+                        m_brain.Train(nEpisodeNumber);
+
+                        // Update reward running
+                        if (!dfRunningReward.HasValue)
+                            dfRunningReward = dfRewardSum;
+                        else
+                            dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
+
+                        updateStatus(nEpisodeNumber, dfRewardSum, dfRunningReward.Value);
+                        dfRewardSum = 0;
+
+                        s = getData(-1);
+                        m_rgMemory.Clear();
+                    }
                     else
-                        dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
-
-                    updateStatus(nEpisodeNumber, dfRewardSum, dfRunningReward.Value);
-                    dfRewardSum = 0;
-
-                    s = getData(-1);
-                    m_rgMemory.Clear();
+                    {
+                        s = s_;
+                    }
                 }
                 else
                 {
