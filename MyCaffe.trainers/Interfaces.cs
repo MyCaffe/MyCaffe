@@ -107,9 +107,13 @@ namespace MyCaffe.trainers
         /// </summary>
         double ExplorationRate { get; }
         /// <summary>
-        /// Open the GYM UI if one exists.
+        /// Returns information describing the trainer, such as the gym used if any.
         /// </summary>
-        void Open();
+        string Information { get; }
+        /// <summary>
+        /// Open the user interface if one exists for the trainer.
+        /// </summary>
+        void OpenUi();
     }
 
     /// <summary>
