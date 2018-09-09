@@ -21,6 +21,7 @@ namespace MyCaffe.layers
     {
         object m_userState = null;
         bool m_bEnableLoss = true;
+        bool m_bWarningMade = false;
 
         /// <summary>
         /// The OnGetLoss event fires during each forward pass.  The value returned is saved,
@@ -116,6 +117,8 @@ namespace MyCaffe.layers
                 m_normalization = (m_param.loss_param.normalize) ? LossParameter.NormalizationMode.VALID : LossParameter.NormalizationMode.BATCH_SIZE;
             else
                 m_normalization = m_param.loss_param.normalization.Value;
+
+            m_bWarningMade = false;
         }
 
         /// <summary>
@@ -141,7 +144,12 @@ namespace MyCaffe.layers
 
             if (!bUniformSize)
             {
-                m_log.WriteLine("WARNING: The MemoryDataLayer bottoms are not of uniform size, so the normalization will be set to NONE.");
+                if (!m_bWarningMade)
+                {
+                    m_log.WriteLine("WARNING: The MemoryDataLayer bottoms are not of uniform size, so the normalization will be set to NONE.");
+                    m_bWarningMade = true;
+                }
+
                 m_normalization = LossParameter.NormalizationMode.NONE;
                 m_nOuterNum = 0;
                 m_nInnerNum = 0;
