@@ -25,8 +25,10 @@ namespace MyCaffe.gym
         Tuple<State, double, bool> Reset();
         Tuple<State, double, bool> Step(int nAction);
         Bitmap Render(int nWidth, int nHeight, out Bitmap bmpAction);
+        Bitmap Render(int nWidth, int nHeight, double[] rgData, out Bitmap bmpAction);
         Dictionary<string, int> GetActionSpace();
         DatasetDescriptor GetDataset(DATA_TYPE dt);
+        int UiDelay { get; }
     }
 
     public abstract class State
@@ -36,6 +38,6 @@ namespace MyCaffe.gym
         }
 
         public abstract State Clone();
-        public abstract Tuple<double, double, double>[] ToArray();
+        public abstract Tuple<double, double, double, bool>[] ToArray();
     }
 }

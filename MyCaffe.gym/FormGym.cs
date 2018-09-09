@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -12,12 +13,19 @@ namespace MyCaffe.gym
 {
     public partial class FormGym : Form
     {
+        string m_strName;
         MyCaffeGymControl m_ctrl;
         FormActionImage m_dlgActionImage;
 
-        public FormGym(MyCaffeGymControl ctrl)
+        public FormGym(string strName, MyCaffeGymControl ctrl = null)
         {
             InitializeComponent();
+
+            m_strName = strName;
+
+            if (ctrl == null)
+                ctrl = new MyCaffeGymControl();
+
             ctrl.Dock = DockStyle.Fill;
             toolStripContainer1.ContentPanel.Controls.Add(ctrl);
             m_ctrl = ctrl;
@@ -25,10 +33,37 @@ namespace MyCaffe.gym
             m_dlgActionImage.FormClosing += dlgActionImage_FormClosing;
         }
 
-        public void Render(string strName, Bitmap bmp, Bitmap bmpAction)
+        public string GymName
         {
-            m_ctrl.Render(strName, bmp);
-            m_dlgActionImage.SetImage(bmpAction);
+            get { return m_strName; }
+        }
+
+        public void Render(Bitmap bmp, Bitmap bmpAction)
+        {
+            m_ctrl.Render(m_strName, bmp);
+
+            if (bmp == null)
+            {
+                btnShowActionImage.Enabled = false;
+            }
+            else
+            {
+                btnShowActionImage.Enabled = true;
+                m_dlgActionImage.SetImage(bmpAction);
+            }
+        }
+
+        public void Render(double[] rgData, Bitmap bmp)
+        {
+            m_ctrl.Render(m_strName, rgData);
+
+            if (bmp == null)
+                btnShowActionImage.Enabled = false;
+            else
+            {
+                btnShowActionImage.Enabled = true;
+                m_dlgActionImage.SetImage(bmp);
+            }
         }
 
         private void dlgActionImage_FormClosing(object sender, FormClosingEventArgs e)
@@ -46,7 +81,7 @@ namespace MyCaffe.gym
 
         private void FormGym_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (e.CloseReason == CloseReason.WindowsShutDown)
+            if (e.CloseReason == CloseReason.WindowsShutDown || e.CloseReason == CloseReason.ApplicationExitCall)
                 return;
 
             Hide();

@@ -68,6 +68,7 @@
             // 
             this.btnShowActionImage.CheckOnClick = true;
             this.btnShowActionImage.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnShowActionImage.Enabled = false;
             this.btnShowActionImage.Image = ((System.Drawing.Image)(resources.GetObject("btnShowActionImage.Image")));
             this.btnShowActionImage.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.btnShowActionImage.Name = "btnShowActionImage";

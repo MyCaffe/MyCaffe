@@ -19,10 +19,12 @@ namespace MyCaffe.gym
     {
         string m_strName = "";
         Bitmap m_bmp = null;
+        GymCollection m_colGym = new GymCollection();
 
         public MyCaffeGymControl()
         {
             InitializeComponent();
+            m_colGym.Load();
         }
 
         public string GymName
@@ -42,6 +44,18 @@ namespace MyCaffe.gym
         {
             m_strName = strName;
             m_bmp = new Bitmap(bmp);
+
+            if (IsHandleCreated && Visible)
+                Invalidate(true);
+        }
+
+        public void Render(string strName, double[] rgData)
+        {
+            m_strName = strName;
+
+            IXMyCaffeGym igym = m_colGym.Find(strName);
+            Bitmap bmp;
+            m_bmp = igym.Render(Width, Height, rgData, out bmp);
 
             if (IsHandleCreated && Visible)
                 Invalidate(true);
