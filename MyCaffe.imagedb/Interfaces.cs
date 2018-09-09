@@ -251,7 +251,7 @@ namespace MyCaffe.imagedb
         /// <returns>The list of SimpleDatum is returned.</returns>
         /// <remarks> IMPORTANT: You must call Sort(ByDesc|ByDate) before using this function to ensure all loaded images are ordered by their descriptions then by their time.</remarks>
         [OperationContract(IsOneWay = false)]
-        List<SimpleDatum> GetImages(int nSrcId, DateTime dt, int nImageCount, string strFilterVal = null);
+        List<SimpleDatum> GetImagesByDate(int nSrcId, DateTime dt, int nImageCount, string strFilterVal = null);
 
         /// <summary>
         /// Sort the internal images.

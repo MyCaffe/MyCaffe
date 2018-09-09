@@ -589,7 +589,7 @@ namespace MyCaffe.imagedb
         /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <returns>The list of SimpleDatum is returned.</returns>
         /// <remarks> IMPORTANT: You must call Sort(ByDesc|ByDate) before using this function to ensure all loaded images are ordered by their descriptions then by their time.</remarks>
-        public List<SimpleDatum> GetImages(int nSrcId, DateTime dt, int nImageCount, string strFilterVal = null)
+        public List<SimpleDatum> GetImagesByDate(int nSrcId, DateTime dt, int nImageCount, string strFilterVal = null)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
 

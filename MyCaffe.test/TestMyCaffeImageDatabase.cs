@@ -1102,7 +1102,7 @@ namespace MyCaffe.test
                 int nSequenceCount = 10 + rand.Next(50);
                 int nRandomStart = rand.Next(nCount - nSequenceCount);
                 DateTime dtStart = dt + TimeSpan.FromMinutes(nRandomStart + i * 1000);
-                List<SimpleDatum> rgSd1 = db.GetImages(ds.TrainingSource.ID, dtStart, nSequenceCount, strFilterVal);
+                List<SimpleDatum> rgSd1 = db.GetImagesByDate(ds.TrainingSource.ID, dtStart, nSequenceCount, strFilterVal);
 
                 // Verify the count.
                 if (rgSd1.Count != nSequenceCount)
@@ -1151,7 +1151,7 @@ namespace MyCaffe.test
                 int nSequenceCount = 10 + rand.Next(50);
                 int nRandomStart = rand.Next(nCount - nSequenceCount);
                 DateTime dtStart = dt + TimeSpan.FromMinutes(nRandomStart);
-                List<SimpleDatum> rgSd1 = db.GetImages(ds.TrainingSource.ID, dtStart, nSequenceCount);
+                List<SimpleDatum> rgSd1 = db.GetImagesByDate(ds.TrainingSource.ID, dtStart, nSequenceCount);
 
                 // Verify the count.
                 if (rgSd1.Count != nSequenceCount)
