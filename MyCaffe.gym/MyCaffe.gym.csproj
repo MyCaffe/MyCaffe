@@ -75,7 +75,7 @@
     <Compile Include="Geometry.cs" />
     <Compile Include="GymCollection.cs" />
     <Compile Include="Gyms\CartPoleGym.cs" />
-    <Compile Include="IMyCaffeGymService.cs" />
+    <Compile Include="IMyCaffeGymUiService.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="MyCaffeGymControl.cs">
       <SubType>UserControl</SubType>
@@ -83,6 +83,9 @@
     <Compile Include="MyCaffeGymControl.Designer.cs">
       <DependentUpon>MyCaffeGymControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="MyCaffeGymUiProxy.cs" />
+    <Compile Include="MyCaffeGymUiService.cs" />
+    <Compile Include="MyCaffeGymUiServiceHost.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
