@@ -13,6 +13,7 @@ using MyCaffe.imagedb;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.gym;
 using MyCaffe.trainers;
+using System.ServiceModel;
 
 namespace MyCaffe.test
 {
@@ -20,7 +21,7 @@ namespace MyCaffe.test
     public class TestMyCaffeCustomTrainer
     {
         [TestMethod]
-        public void TrainA2CCartPoleWithOutUi()
+        public void TrainPGCartPoleWithOutUi()
         {
             MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
 
@@ -28,25 +29,7 @@ namespace MyCaffe.test
             {
                 foreach (IMyCaffeCustomTrainerTest t in test.Tests)
                 {
-                    t.TrainCartPole(false, 1);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TrainA3CCartPoleWithOutUi()
-        {
-            MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
-
-            try
-            {
-                foreach (IMyCaffeCustomTrainerTest t in test.Tests)
-                {
-                    t.TrainCartPole(false, 3);
+                    t.TrainCartPolePG(false, 1);
                 }
             }
             finally
@@ -59,7 +42,7 @@ namespace MyCaffe.test
 
     interface IMyCaffeCustomTrainerTest : ITest
     {
-        void TrainCartPole(bool bShowUi, int nThreads, int nIterations = 1000);
+        void TrainCartPolePG(bool bShowUi, int nIterations = 1000);
     }
 
     class MyCaffeCustomTrainerTest : TestBase
@@ -100,7 +83,7 @@ namespace MyCaffe.test
             get { return m_evtCancel; }
         }
 
-        public void TrainCartPole(bool bShowUi, int nThreads, int nIterations = 1000)
+        public void TrainCartPolePG(bool bShowUi, int nIterations = 1000)
         {
             m_evtCancel.Reset();
 
@@ -121,24 +104,19 @@ namespace MyCaffe.test
 
             // Train the network using the custom trainer
             //  - Iterations (maximum frames cumulative across all threads) = 1000 (normally this would be much higher such as 500,000)
-            //  - Learning rate = 0.005 (defined in solver.prototxt)
-            //  - Min Batch Size = 64 (defined in train_val.prototxt for MemoryDataLayer)
+            //  - Learning rate = 0.001 (defined in solver.prototxt)
+            //  - Mini Batch Size = 10 (defined in train_val.prototxt for MemoryDataLayer)
             //
-            //  - Threads = 1 to 3 envrionment threads (normally this would be much higher such as 8)
-            //  - Optimizers = 1 optimizer threads (normally this would be higher sucha s 2)
-            //  - EpsSteps = 15% of iterations, after which exploration will be set at EpsEnd (normally this would be much higher such as 75000)
-            //  - EpsStart = 0.4, start exploration at 40%
-            //  - EpsEnd = 0.15, end exploration (and remain at) 15% after EpsSteps
-            //  - NStepReturn = 8, get a sample and calculate reward after 8 steps.
-            //  - Gamma = 0.99, discount factor.
-            //  - LossCoefficient = 0.5, use 50% of the Loss Value when calculating total loss.
-            //  - EntropyCoefficient = 0.01, use 1% of the Entropy when calculating total loss.
-            //  - OptimalEpisodeCoefficient = 0.5, use optimial episodes (with best reward) 50% of the training.
-            //  - NormalizeInput = False, do not normalize the input.
+            //  - TraingerType = PG (use Policy Gradient trainer)
+            //  - RewardType = VAL (display the actual rewards, other options are MAX and AVE)
+            //  - Gamma = 0.99 (discounting factor)
             //  - Init1 = default force of 10.
-            //  - Init2 = do not use additive force.            
-            int nEpsSteps = (int)(nIterations * 0.15);
-            trainer.Initialize("Threads=" + nThreads.ToString() + ";Optimizers=1;EpsSteps=" + nEpsSteps.ToString() + ";EpsStart=0.4;EpsEnd=0.15;NStepReturn=8;Gamma=0.99;LossCoefficient=0.5;EntropyCoefficient=0.01;OptimalEpisodeCoefficient=0.5;NormalizeInput=False;Init1=10;Init2=0;ValueType=VALUE;InputSize=1");
+            //  - Init2 = do not use additive force.                    
+            trainer.Initialize("TrainerType=PG;RewardType=VAL;Gamma=0.99;Init1=10;Init2=0;");
+
+            if (bShowUi)
+                trainer.OpenUi();
+
             trainer.Train(mycaffe, nIterations);
             trainer.CleanUp();
 
@@ -167,23 +145,26 @@ namespace MyCaffe.test
         }
     }
 
-    class MyCaffeCartPoleTrainer : MyCaffeTrainerRL
+    class MyCaffeCartPoleTrainer : MyCaffeTrainerRL, IXMyCaffeGymUiCallback
     {
         Stopwatch m_sw = new Stopwatch();        
         IXMyCaffeGym m_igym;
         Log m_log;
         bool m_bNormalizeInput = false;
+        int m_nUiId = -1;
+        MyCaffeGymUiProxy m_gymui = null;
+        string m_strName = "Cart-Pole";
+        GymCollection m_colGyms = new GymCollection();
 
         public MyCaffeCartPoleTrainer() 
             : base()
         {
+            m_colGyms.Load();
         }
 
         protected override void initialize(InitializeArgs e)
         {
-            GymCollection col = new GymCollection();
-            col.Load();
-            m_igym = col.Find("Cart-Pole");
+            m_igym = m_colGyms.Find(m_strName);
             m_log = e.OutputLog;
 
             m_bNormalizeInput = m_properties.GetPropertyAsBool("NormalizeInput", false);
@@ -197,6 +178,15 @@ namespace MyCaffe.test
             m_sw.Start();
         }
 
+        protected override void shutdown()
+        {
+            if (m_igym != null)
+            {
+                m_igym.Close();
+                m_igym = null;
+            }
+        }
+
         protected override void dispose()
         {
             base.dispose();
@@ -204,11 +194,14 @@ namespace MyCaffe.test
 
         protected override string name
         {
-            get { return "A3C.Trainer"; }
+            get { return "RL.Trainer"; }
         }
 
         protected override DatasetDescriptor get_dataset_override(int nProjectID)
         {
+            if (m_igym == null)
+                m_igym = m_colGyms.Find(m_strName);
+
             return m_igym.GetDataset(DATA_TYPE.VALUES);
         }
 
@@ -233,6 +226,12 @@ namespace MyCaffe.test
             e.State.Done = obs.Done;
             e.State.IsValid = true;
 
+            if (m_gymui != null && m_nUiId >= 0)
+            {
+                m_gymui.Render(m_nUiId, obs);
+                Thread.Sleep(m_igym.UiDelay);
+            }
+
             if (m_sw.Elapsed.TotalMilliseconds > 1000)
             {
                 double dfPct = (double)GlobalEpisodeCount / (double)GlobalEpisodeMax;
@@ -242,6 +241,20 @@ namespace MyCaffe.test
             }
 
             return true;
+        }
+
+        protected override void openUi()
+        {
+            m_gymui = new MyCaffeGymUiProxy(new InstanceContext(this));
+            m_gymui.Open();
+            m_nUiId = m_gymui.OpenUi(m_strName, m_nUiId);
+        }
+
+        public void Closing()
+        {
+            m_nUiId = -1;
+            m_gymui.Close();
+            m_gymui = null;
         }
     }
 }

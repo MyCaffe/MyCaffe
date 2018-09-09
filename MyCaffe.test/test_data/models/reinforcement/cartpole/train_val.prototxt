@@ -14,7 +14,7 @@ layer
    }
    memory_data_param 
    {
-      batch_size: 64
+      batch_size: 10
       channels: 4
       height: 1
       width: 1
@@ -26,13 +26,15 @@ layer
 }
 layer 
 {
-   name: "dense1"
+   name: "ip1"
    type: "InnerProduct"
    bottom: "data"
    top: "x"
    param 
    {
+      share_mode: PERMISSIVE
       lr_mult: 1
+      decay_mult: 0
    }
    param 
    {
@@ -41,8 +43,8 @@ layer
    }
    inner_product_param 
    {
-      num_output: 64
-      bias_term: True
+      num_output: 200
+      bias_term: False
       weight_filler 
       {
          type: "xavier"
@@ -51,7 +53,7 @@ layer
       bias_filler 
       {
          type: "constant"
-         value: 0.1
+         value: 0
       }
       axis: 1
    }
@@ -59,7 +61,7 @@ layer
 layer 
 {
    name: "relu1"
-   type: "PReLU"
+   type: "ReLU"
    bottom: "x"
    top: "x"
    prelu_param 
@@ -69,6 +71,10 @@ layer
          type: "constant"
          value: 0.25
       }
+   }
+   relu_param 
+   {
+      engine: CAFFE
    }
 }
 layer 
@@ -80,45 +86,7 @@ layer
    param 
    {
       lr_mult: 1
-   }
-   param 
-   {
-      lr_mult: 1
       decay_mult: 0
-   }
-   inner_product_param 
-   {
-      num_output: 2
-      bias_term: True
-      weight_filler 
-      {
-         type: "xavier"
-         variance_norm: FAN_IN
-      }
-      bias_filler 
-      {
-         type: "constant"
-         value: 0.1
-      }
-      axis: 1
-   }
-}
-layer 
-{
-   name: "softmax1"
-   type: "Softmax"
-   bottom: "actions"
-   top: "softmax1"
-}
-layer 
-{
-   name: "values"
-   type: "InnerProduct"
-   bottom: "x"
-   top: "value"
-   param 
-   {
-      lr_mult: 1
    }
    param 
    {
@@ -128,7 +96,7 @@ layer
    inner_product_param 
    {
       num_output: 1
-      bias_term: True
+      bias_term: False
       weight_filler 
       {
          type: "xavier"
@@ -137,17 +105,27 @@ layer
       bias_filler 
       {
          type: "constant"
-         value: 0.1
+         value: 0
       }
       axis: 1
    }
 }
 layer 
 {
-   name: "loss1"
+   name: "sigmoid"
+   type: "Sigmoid"
+   bottom: "actions"
+   top: "sigmoid"
+   sigmoid_param 
+   {
+      engine: CAFFE
+   }
+}
+layer 
+{
+   name: "loss"
    type: "MemoryLoss"
    bottom: "actions"
-   bottom: "value"
    top: "loss1"
    loss_weight: 1
    loss_param 
