@@ -40,11 +40,11 @@ namespace MyCaffe.trainers
         int m_nThreads = 1;
         REWARD_TYPE m_rewardType = REWARD_TYPE.MAXIMUM;
         TRAINER_TYPE m_trainerType = TRAINER_TYPE.PG;
+        int m_nItertions = -1;
 
         enum TRAINER_TYPE
         {
-            PG,
-            A3C
+            PG
         }
 
         enum REWARD_TYPE
@@ -122,11 +122,16 @@ namespace MyCaffe.trainers
         {
             MyCaffeControl<double> mycaffe = caffe as MyCaffeControl<double>;
             m_nProjectID = mycaffe.CurrentProject.ID;
+            int.TryParse(mycaffe.CurrentProject.GetSolverSetting("max_iter"), out m_nItertions);
 
-            if (m_trainerType == TRAINER_TYPE.A3C)
-                return new a3c.TrainerA3C<double>(mycaffe, m_properties, m_random, this);
+            switch (m_trainerType)
+            {
+                case TRAINER_TYPE.PG:
+                    return new pg.TrainerPG<double>(mycaffe, m_properties, m_random, this);
 
-            return new pg.TrainerPG<double>(mycaffe, m_properties, m_random, this);
+                default:
+                    throw new Exception("Unknown trainer type '" + m_trainerType.ToString() + "'!");
+            }
         }
 
         /// <summary>
@@ -141,11 +146,16 @@ namespace MyCaffe.trainers
         {
             MyCaffeControl<float> mycaffe = caffe as MyCaffeControl<float>;
             m_nProjectID = mycaffe.CurrentProject.ID;
+            int.TryParse(mycaffe.CurrentProject.GetSolverSetting("max_iter"), out m_nItertions);
 
-            if (m_trainerType == TRAINER_TYPE.A3C)
-                return new a3c.TrainerA3C<float>(mycaffe, m_properties, m_random, this);
+            switch (m_trainerType)
+            {
+                case TRAINER_TYPE.PG:
+                    return new pg.TrainerPG<float>(mycaffe, m_properties, m_random, this);
 
-            return new pg.TrainerPG<float>(mycaffe, m_properties, m_random, this);
+                default:
+                    throw new Exception("Unknown trainer type '" + m_trainerType.ToString() + "'!");
+            }
         }
 
         /// <summary>
@@ -297,8 +307,16 @@ namespace MyCaffe.trainers
                 m_rewardType = REWARD_TYPE.AVERAGE;
 
             string strTrainerType = m_properties.GetProperty("TrainerType");
-            if (strTrainerType == "A3C")
-                m_trainerType = TRAINER_TYPE.A3C;
+
+            switch (strTrainerType)
+            {
+                case "PG":
+                    m_trainerType = TRAINER_TYPE.PG;
+                    break;
+
+                default:
+                    throw new Exception("Unknown trainer type '" + strTrainerType + "'!");
+            }
         }
 
         private IxTrainer createTrainer(Component mycaffe)
@@ -343,6 +361,9 @@ namespace MyCaffe.trainers
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe);
 
+            if (nIterationOverride == -1)
+                nIterationOverride = m_nItertions;
+
             m_itrainer.Test(nIterationOverride);
             m_itrainer.Shutdown(500);
             m_itrainer = null;
@@ -358,6 +379,9 @@ namespace MyCaffe.trainers
         {
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe);
+
+            if (nIterationOverride == -1)
+                nIterationOverride = m_nItertions;
 
             m_itrainer.Train(nIterationOverride, step);
             m_itrainer.Shutdown(1000);
