@@ -18,13 +18,15 @@ namespace MyCaffe.trainers.pg
     /// </summary>
     /// @see 1. [Deep Reinforcement Learning: Pong from Pixels](http://karpathy.github.io/2016/05/31/rl/), by Andrej Karpathy, 2016, Github.io
     /// @see 2. [GitHub: karpathy/pg-pong.py](https://gist.github.com/karpathy/a4166c7fe253700972fcbc77e4ea32c5), by Andrej Karpathy, 2016, Github
+    /// @see 3. [CS231n Convolution Neural Networks for Visual Recognition](http://cs231n.github.io/neural-networks-2/#losses) by Karpathy, Stanford
     /// <remarks></remarks>
     public class TrainerPG<T> : IxTrainer, IDisposable
     {
         IxTrainerCallback m_icallback;
-        Random m_random = new Random();
+        CryptoRandom m_random = new CryptoRandom(true);
         MyCaffeControl<T> m_mycaffe;
         PropertySet m_properties;
+        bool m_bWindowOpen = false;
 
         /// <summary>
         /// The constructor.
@@ -133,10 +135,10 @@ namespace MyCaffe.trainers.pg
         IxTrainerCallback m_icallback;
         Brain<T> m_brain;
         PropertySet m_properties;
-        Random m_random;
+        CryptoRandom m_random;
         float m_fGamma;
 
-        public Agent(IxTrainerCallback icallback, MyCaffeControl<T> mycaffe, PropertySet properties, Random random, Phase phase)
+        public Agent(IxTrainerCallback icallback, MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase)
         {
             m_icallback = icallback;
             m_brain = new Brain<T>(mycaffe, properties, random, phase);
@@ -168,6 +170,14 @@ namespace MyCaffe.trainers.pg
             m_icallback.OnUpdateStatus(args);
         }
 
+        /// <summary>
+        /// The Run method provides the main 'actor' loop that performs the following steps:
+        /// 1.) get state
+        /// 2.) build experience
+        /// 3.) create policy gradients
+        /// 4.) train on experiences
+        /// </summary>
+        /// <param name="phase">Specifies the phae.</param>
         public void Run(Phase phase)
         {
             MemoryCollection m_rgMemory = new MemoryCollection();
@@ -191,7 +201,7 @@ namespace MyCaffe.trainers.pg
                 dfRewardSum += s_.Reward;
 
                 // Build up episode memory, using reward for taking the action.
-                m_rgMemory.Add(new MemoryItem(s, action, fAprob, (float)s_.Reward));
+                m_rgMemory.Add(new MemoryItem(s, x, action, fAprob, (float)s_.Reward));
 
                 // An episode has finished.
                 if (s_.Done)
@@ -243,14 +253,14 @@ namespace MyCaffe.trainers.pg
         MemoryDataLayer<T> m_memData;
         MemoryLossLayer<T> m_memLoss;
         PropertySet m_properties;
-        Random m_random;
+        CryptoRandom m_random;
         Blob<T> m_blobDiscountedR;
         Blob<T> m_blobPolicyGradient;
         bool m_bSkipLoss;
         int m_nMiniBatch = 10;
         SimpleDatum m_sdLast = null;
 
-        public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, Random random, Phase phase)
+        public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase)
         {
             m_mycaffe = mycaffe;
             m_net = mycaffe.GetInternalNet(phase);
@@ -294,9 +304,9 @@ namespace MyCaffe.trainers.pg
         public void Reshape(MemoryCollection col)
         {
             int nNum = col.Count;
-            int nChannels = col[0].State.Data.Channels;
-            int nHeight = col[0].State.Data.Height;
-            int nWidth = col[0].State.Data.Height;
+            int nChannels = col[0].Data.Channels;
+            int nHeight = col[0].Data.Height;
+            int nWidth = col[0].Data.Height;
 
             m_blobDiscountedR.Reshape(nNum, 1, 1, 1);
             m_blobPolicyGradient.Reshape(nNum, 1, 1, 1);
@@ -442,7 +452,7 @@ namespace MyCaffe.trainers.pg
 
             for (int i = 0; i < m_rgItems.Count; i++)
             {
-                rgData.Add(new Datum(m_rgItems[i].State.Data));
+                rgData.Add(new Datum(m_rgItems[i].Data));
             }
 
             return rgData;
@@ -451,20 +461,27 @@ namespace MyCaffe.trainers.pg
 
     class MemoryItem /** @private */
     {
-        StateBase m_x;
+        StateBase m_state;
+        SimpleDatum m_x;
         int m_nAction;
         float m_fAprob;
         float m_fReward;
 
-        public MemoryItem(StateBase s, int nAction, float fAprob, float fReward)
+        public MemoryItem(StateBase s, SimpleDatum x, int nAction, float fAprob, float fReward)
         {
-            m_x = s;
+            m_state = s;
+            m_x = x;
             m_nAction = nAction;
             m_fAprob = fAprob;
             m_fReward = fReward;
         }
 
         public StateBase State
+        {
+            get { return m_state; }
+        }
+
+        public SimpleDatum Data
         {
             get { return m_x; }
         }
@@ -479,6 +496,12 @@ namespace MyCaffe.trainers.pg
             get { return m_fReward; }
         }
 
+        /// <summary>
+        /// Gradient that encourages the action that was taken to be taken.
+        /// </summary>
+        /// <remarks>
+        /// @see [CS231n Convolution Neural Networks for Visual Recognition](http://cs231n.github.io/neural-networks-2/#losses) by Karpathy, Stanford
+        /// </remarks>
         public float dlogps
         {
             get
@@ -490,6 +513,11 @@ namespace MyCaffe.trainers.pg
 
                 return fY - m_fAprob;
             }
+        }
+
+        public override string ToString()
+        {
+            return "action = " + m_nAction.ToString() + " reward = " + m_fReward.ToString("N2") + " aprob = " + m_fAprob.ToString("N5") + " dlogps = " + dlogps.ToString("N5");
         }
     }
 }
