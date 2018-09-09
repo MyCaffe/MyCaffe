@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -98,8 +99,8 @@ namespace MyCaffe.trainers.pg
         public ResultCollection Run(int nDelay = 1000)
         {
             m_mycaffe.CancelEvent.Reset();
-            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN);
-            agent.Run(Phase.RUN, 1);
+            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN);
+            agent.Run(Phase.TEST, 1);
             agent.Dispose();
             return null;
         }
@@ -112,7 +113,7 @@ namespace MyCaffe.trainers.pg
         public bool Test(int nIterations)
         {
             m_mycaffe.CancelEvent.Reset();
-            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TEST);
+            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN);
             agent.Run(Phase.TEST, nIterations);
             agent.Dispose();
             return false;
@@ -142,6 +143,7 @@ namespace MyCaffe.trainers.pg
         PropertySet m_properties;
         CryptoRandom m_random;
         float m_fGamma;
+        bool m_bUseRawInput = false;
 
         public Agent(IxTrainerCallback icallback, MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase)
         {
@@ -151,6 +153,7 @@ namespace MyCaffe.trainers.pg
             m_random = random;
 
             m_fGamma = (float)properties.GetPropertyAsDouble("Gamma", 0.99);
+            m_bUseRawInput = properties.GetPropertyAsBool("UseRawInput", false);
         }
 
         public void Dispose()
@@ -190,13 +193,14 @@ namespace MyCaffe.trainers.pg
             double? dfRunningReward = null;
             double dfRewardSum = 0;
             int nEpisodeNumber = 0;
+            int nIteration = 0;
 
             StateBase s = getData(-1);
           
-            while (!m_brain.Cancel.WaitOne(0) && nEpisodeNumber < nIterations)
+            while (!m_brain.Cancel.WaitOne(0) && (nIterations == -1 || nIteration < nIterations))
             {
                 // Preprocess the observation.
-                SimpleDatum x = m_brain.Preprocess(s);
+                SimpleDatum x = m_brain.Preprocess(s, m_bUseRawInput);
 
                 // Forward the policy network and sample an action.
                 float fAprob;
@@ -215,6 +219,7 @@ namespace MyCaffe.trainers.pg
                     if (s_.Done)
                     {
                         nEpisodeNumber++;
+                        nIteration++;
 
                         m_brain.Reshape(m_rgMemory);
 
@@ -253,6 +258,7 @@ namespace MyCaffe.trainers.pg
                 else
                 {
                     s = s_;
+                    nIteration++;
                 }
             }
         }
@@ -357,9 +363,12 @@ namespace MyCaffe.trainers.pg
             get { return m_mycaffe.CancelEvent; }
         }
 
-        public SimpleDatum Preprocess(StateBase s)
+        public SimpleDatum Preprocess(StateBase s, bool bUseRawInput)
         {
             SimpleDatum sd = new SimpleDatum(s.Data, true);
+
+            if (bUseRawInput)
+                return sd;
 
             if (m_sdLast == null)
                 sd.Zero();
