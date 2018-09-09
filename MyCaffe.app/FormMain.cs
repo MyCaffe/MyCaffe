@@ -47,8 +47,9 @@ namespace MyCaffe.app
         Stopwatch m_swGlobalTiming = null;
         string m_strTestLogDir = null;
         Log m_log;
-        Task m_ac3Task = null;
-        CancelEvent m_evtCancelA3C = new CancelEvent();
+        Task m_pgTask = null;
+        CancelEvent m_evtCancelPG = new CancelEvent();
+        MyCaffeGymUiServiceHost m_gymHost;
 
         delegate void fnSetStatus(string strMsg, STATUS status, bool bBreath);
 
@@ -175,6 +176,18 @@ namespace MyCaffe.app
                 m_bwInit.RunWorkerAsync();
                 m_dlgWait.ShowDialog();
                 m_bwUrlCheck.RunWorkerAsync();
+
+                m_gymHost = new MyCaffeGymUiServiceHost();
+
+                try
+                {
+                    m_gymHost.Open();
+                }
+                catch (Exception excpt)
+                {
+                    setStatus(excpt.Message, STATUS.ERROR);
+                    m_gymHost = null;
+                }
             }
             catch (Exception excpt)
             {
@@ -809,7 +822,7 @@ namespace MyCaffe.app
                 m_autoTest.Abort();
             }
 
-            m_evtCancelA3C.Set();
+            m_evtCancelPG.Set();
         }
 
         #region Server Based Autotesting
@@ -1157,28 +1170,28 @@ namespace MyCaffe.app
         {
             if (startCartPoleTrainerToolStripMenuItem.Text.Contains("Start"))
             {
-                m_log.WriteLine("starting a3c cart-pole test...");
-                m_evtCancelA3C.Reset();
-                m_ac3Task = Task.Factory.StartNew(new Action<object>(a3cTrainerThread), m_evtCancelA3C);
+                m_log.WriteLine("starting policy gradient cart-pole test...");
+                m_evtCancelPG.Reset();
+                m_pgTask = Task.Factory.StartNew(new Action<object>(pgTrainerThread), m_evtCancelPG);
                 startCartPoleTrainerToolStripMenuItem.Text = "Stop Cart-Pole Training";
             }
             else
             {
-                m_log.WriteLine("stopping a3c cart-pole test...");
-                m_evtCancelA3C.Set();                
-                m_ac3Task = null;
+                m_log.WriteLine("stopping policy gradient cart-pole test...");
+                m_evtCancelPG.Set();                
+                m_pgTask = null;
                 startCartPoleTrainerToolStripMenuItem.Text = "Start Cart-Pole Training";
             }
         }
 
-        private void a3cTrainerThread(object obj)
+        private void pgTrainerThread(object obj)
         {
             CancelEvent evtCancel = obj as CancelEvent;
             MyCaffeCustomTrainerTest<float> test = new MyCaffeCustomTrainerTest<float>("Cart-Pole", 0, EngineParameter.Engine.DEFAULT);
 
             test.Log.OnWriteLine += Log_OnWriteLine1;
             test.CancelEvent.AddCancelOverride(evtCancel);
-            test.TrainCartPole(true, 5, 500000);
+            test.TrainCartPolePG(true, 500000);
 
             if (evtCancel.WaitOne(0))
                 test.Log.WriteLine("training aborted.");
