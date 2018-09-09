@@ -50,7 +50,8 @@ namespace MyCaffe.param.ui
             {
                 string[] rgstrVal = rgstrItem[i].Split('=');
 
-                dgvItems.Rows.Add(rgstrVal[0], rgstrVal[1]);
+                if (rgstrVal.Count() == 2)
+                    dgvItems.Rows.Add(rgstrVal[0], rgstrVal[1]);
             }
         }
     }
