@@ -18,6 +18,8 @@ namespace MyCaffe.trainers
         double m_dfReward = 0;
         int m_nActionCount = 0;
         SimpleDatum m_data = null;
+        double[] m_rgState = null;
+        Image m_img = null;
 
         /// <summary>
         /// The constructor.
@@ -69,6 +71,42 @@ namespace MyCaffe.trainers
         {
             get { return m_data; }
             set { m_data = value; }
+        }
+
+        /// <summary>
+        /// Get/set the raw state data.
+        /// </summary>
+        public double[] RawState
+        {
+            get { return m_rgState; }
+            set { m_rgState = value; }
+        }
+
+        /// <summary>
+        /// Get/set the image (if any exists)
+        /// </summary>
+        public Image RawImage
+        {
+            get { return m_img; }
+            set { m_img = value; }
+        }
+
+        /// <summary>
+        /// Copy the state base information.
+        /// </summary>
+        /// <returns>A new state base is returned.</returns>
+        public virtual StateBase Clone()
+        {
+            StateBase s = new StateBase(m_nActionCount);
+
+            s.m_bDone = m_bDone;
+            s.m_bValid = m_bValid;
+            s.m_dfReward = m_dfReward;
+            s.m_data = new SimpleDatum(m_data, true);
+            s.m_rgState = Utility.Clone<double>(m_rgState);
+            s.m_img = (m_img == null) ? null : new Bitmap(m_img);
+
+            return s;
         }
 
         /// <summary>
