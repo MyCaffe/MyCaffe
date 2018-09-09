@@ -32,7 +32,6 @@ namespace MyCaffe.gym
         double m_dfTotalMass;
         double m_dfLength = 0.5; // actually half the pole's length
         double m_dfPoleMassLength;
-        double m_dfForceMag = 0.0;
         double m_dfForce = 10;
         bool m_bAdditive = false;
         double m_dfTau = 0.02; // seconds between state updates.
@@ -85,6 +84,11 @@ namespace MyCaffe.gym
             get { return m_strName; }
         }
 
+        public int UiDelay
+        {
+            get { return 20; }
+        }
+
         public Dictionary<string, int> GetActionSpace()
         {
             return m_rgActionSpace;
@@ -97,11 +101,11 @@ namespace MyCaffe.gym
                 switch (a)
                 {
                     case ACTION.MOVELEFT:
-                        m_dfForceMag = (m_dfForceMag * ((m_bAdditive) ? 1 : 0)) + m_dfForce * -1;
+                        m_state.ForceMag = (m_state.ForceMag * ((m_bAdditive) ? 1 : 0)) + m_dfForce * -1;
                         break;
 
                     case ACTION.MOVERIGHT:
-                        m_dfForceMag = (m_dfForceMag * ((m_bAdditive) ? 1 : 0)) + m_dfForce * 1;
+                        m_state.ForceMag = (m_state.ForceMag * ((m_bAdditive) ? 1 : 0)) + m_dfForce * 1;
                         break;
                 }
             }
@@ -132,9 +136,27 @@ namespace MyCaffe.gym
 
         public Bitmap Render(int nWidth, int nHeight, out Bitmap bmpAction)
         {
+            List<double> rgData = new List<double>();
+
+            rgData.Add(m_state.X);
+            rgData.Add(m_state.XDot);
+            rgData.Add(m_state.Theta);
+            rgData.Add(m_state.ThetaDot);
+            rgData.Add(m_state.ForceMag);
+
+            return Render(nWidth, nHeight, rgData.ToArray(), out bmpAction);
+        }
+
+        public Bitmap Render(int nWidth, int nHeight, double[] rgData, out Bitmap bmpAction)
+        { 
             Bitmap bmp = new Bitmap(nWidth, nHeight);
 
             bmpAction = null;
+
+            double dfX = rgData[0];
+            double dfTheta = rgData[2];
+            double dfThetaInDegrees = dfTheta * (180.0 / Math.PI);
+            double dfForceMag = rgData[4];
 
             using (Graphics g = Graphics.FromImage(bmp))
             {
@@ -180,29 +202,26 @@ namespace MyCaffe.gym
 
                 GeomRectangle posbar = new GeomRectangle(fL, fR, fT, fB, Color.Black, Color.Transparent, m_clrMap);
 
-                if (m_state != null)
-                {
-                    float fCartX = (float)m_state.X * fScale + fScreenWidth / 2;   // middle of the cart.
-                    cart.SetLocation(fCartX, fCartY);
-                    pole.SetRotation((float)-m_state.ThetaInDegrees);
-                    cart.Attach(pole, fAxleOffset);
+                float fCartX = (float)dfX * fScale + fScreenWidth / 2;   // middle of the cart.
+                cart.SetLocation(fCartX, fCartY);
+                pole.SetRotation((float)-dfThetaInDegrees);
+                cart.Attach(pole, fAxleOffset);
 
-                    GeomView view = new GeomView();
+                GeomView view = new GeomView();
 
-                    view.RenderText(g, "Current Force = " + m_dfForceMag.ToString(), 10, 10);
-                    view.RenderText(g, "X = " + m_state.X.ToString("N02"), 10, 24);
-                    view.RenderText(g, "Theta = " + m_state.Theta.ToString("N02") + " radians", 10, 36);
-                    view.RenderText(g, "Theta = " + m_state.ThetaInDegrees.ToString("N02") + " degrees", 10, 48);
-                    view.RenderSteps(g, m_nSteps, m_nMaxSteps);
+                view.RenderText(g, "Current Force = " + dfForceMag.ToString(), 10, 10);
+                view.RenderText(g, "X = " + dfX.ToString("N02"), 10, 24);
+                view.RenderText(g, "Theta = " + dfTheta.ToString("N02") + " radians", 10, 36);
+                view.RenderText(g, "Theta = " + dfThetaInDegrees.ToString("N02") + " degrees", 10, 48);
+                view.RenderSteps(g, m_nSteps, m_nMaxSteps);
 
-                    // Render the objects.
-                    view.AddObject(posbar);
-                    view.AddObject(track);
-                    view.AddObject(cart);
-                    view.Render(g);
+                // Render the objects.
+                view.AddObject(posbar);
+                view.AddObject(track);
+                view.AddObject(cart);
+                view.Render(g);
 
-                    bmpAction = getActionImage(fCartX, fCartY, bmp);
-                }
+                bmpAction = getActionImage(fCartX, fCartY, bmp);
 
                 m_bmp = bmp;
 
@@ -236,7 +255,6 @@ namespace MyCaffe.gym
             double dfXDot = randomUniform(-0.05, 0.05);
             double dfTheta = randomUniform(-0.05, 0.05);
             double dfThetaDot = randomUniform(-0.05, 0.05);
-            m_dfForceMag = 0;
             m_nStepsBeyondDone = null;
             m_nSteps = 0;
 
@@ -261,7 +279,7 @@ namespace MyCaffe.gym
             double dfXDot = state.XDot;
             double dfTheta = state.Theta;
             double dfThetaDot = state.ThetaDot;
-            double dfForce = m_dfForceMag;
+            double dfForce = m_state.ForceMag;
             double dfCosTheta = Math.Cos(dfTheta);
             double dfSinTheta = Math.Sin(dfTheta);
             double dfTemp = (dfForce + m_dfPoleMassLength * dfThetaDot * dfThetaDot * dfSinTheta) / m_dfTotalMass;
@@ -379,6 +397,8 @@ namespace MyCaffe.gym
         double m_dfXDot = 0;
         double m_dfTheta = 0;
         double m_dfThetaDot = 0;
+        double m_dfForceMag = 0;
+       
 
         public const double MAX_X = 2.4;
         public const double MAX_THETA = 20 * (Math.PI/180);
@@ -389,6 +409,7 @@ namespace MyCaffe.gym
             m_dfXDot = dfXDot;
             m_dfTheta = dfTheta;
             m_dfThetaDot = dfThetaDot;
+            m_dfForceMag = 0;
         }
 
         public CartPoleState(CartPoleState s)
@@ -397,6 +418,13 @@ namespace MyCaffe.gym
             m_dfXDot = s.m_dfXDot;
             m_dfTheta = s.m_dfTheta;
             m_dfThetaDot = s.m_dfThetaDot;
+            m_dfForceMag = s.m_dfForceMag;
+        }
+
+        public double ForceMag
+        {
+            get { return m_dfForceMag; }
+            set { m_dfForceMag = value; }
         }
 
         public double X
@@ -436,15 +464,16 @@ namespace MyCaffe.gym
             return new CartPoleState(this);
         }
 
-        public override Tuple<double,double,double>[] ToArray()
+        public override Tuple<double,double,double, bool>[] ToArray()
         {
-            List<Tuple<double, double, double>> rg = new List<Tuple<double, double, double>>();
+            List<Tuple<double, double, double, bool>> rg = new List<Tuple<double, double, double, bool>>();
             int nScale = 4;
 
-            rg.Add(new Tuple<double, double, double>(m_dfX, -MAX_X, MAX_X));
-            rg.Add(new Tuple<double, double, double>(m_dfXDot, -MAX_X * nScale, MAX_X * nScale));
-            rg.Add(new Tuple<double, double, double>(m_dfTheta, -MAX_THETA, MAX_THETA));
-            rg.Add(new Tuple<double, double, double>(m_dfThetaDot, -MAX_THETA * nScale * 2, MAX_THETA * nScale * 2));
+            rg.Add(new Tuple<double, double, double, bool>(m_dfX, -MAX_X, MAX_X, true));
+            rg.Add(new Tuple<double, double, double, bool>(m_dfXDot, -MAX_X * nScale, MAX_X * nScale, true));
+            rg.Add(new Tuple<double, double, double, bool>(m_dfTheta, -MAX_THETA, MAX_THETA, true));
+            rg.Add(new Tuple<double, double, double, bool>(m_dfThetaDot, -MAX_THETA * nScale * 2, MAX_THETA * nScale * 2, true));
+            rg.Add(new Tuple<double, double, double, bool>(m_dfForceMag, -100, 100, false));
 
             return rg.ToArray();
         }
