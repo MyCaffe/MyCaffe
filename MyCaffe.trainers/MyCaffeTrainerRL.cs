@@ -102,6 +102,15 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
+        /// Returns information describing the specific trainer, such as the gym used, if any.
+        /// </summary>
+        /// <returns>The string describing the trainer is returned.</returns>
+        protected virtual string get_information()
+        {
+            return "";
+        }
+
+        /// <summary>
         /// Optionally overridden to return a new type of trainer.
         /// </summary>
         /// <remarks>
@@ -175,13 +184,6 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
-        /// Open the Gym UI if one exists.
-        /// </summary>
-        protected virtual void open()
-        {
-        }
-
-        /// <summary>
         /// Returns <i>true</i> when the training is ready for a snap-shot, <i>false</i> otherwise.
         /// </summary>
         /// <param name="nIteration">Specifies the current iteration.</param>
@@ -191,6 +193,13 @@ namespace MyCaffe.trainers
             nIteration = 0;
             dfRewards = 0;
             return false;
+        }
+
+        /// <summary>
+        /// Called by OpenUi, override this when a UI (via WCF) should be displayed.
+        /// </summary>
+        protected virtual void openUi()
+        {
         }
 
         #endregion
@@ -318,6 +327,7 @@ namespace MyCaffe.trainers
                 m_itrainer = createTrainer(mycaffe);
 
             ResultCollection res = m_itrainer.Run(nDelay);
+            m_itrainer.Shutdown(50);
             m_itrainer = null;
 
             return res;
@@ -334,6 +344,7 @@ namespace MyCaffe.trainers
                 m_itrainer = createTrainer(mycaffe);
 
             m_itrainer.Test(nIterationOverride);
+            m_itrainer.Shutdown(500);
             m_itrainer = null;
         }
 
@@ -349,6 +360,7 @@ namespace MyCaffe.trainers
                 m_itrainer = createTrainer(mycaffe);
 
             m_itrainer.Train(nIterationOverride, step);
+            m_itrainer.Shutdown(1000);
             m_itrainer = null;
         }
 
@@ -451,11 +463,19 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
-        /// Open the GYM UI if one exists.
+        /// Returns information describing the trainer.
         /// </summary>
-        public void Open()
+        public string Information
         {
-            open();   
+            get { return get_information(); }
+        }
+
+        /// <summary>
+        /// Open the user interface for the trainer, of one exists.
+        /// </summary>
+        public void OpenUi()
+        {
+            openUi();
         }
     }
 }
