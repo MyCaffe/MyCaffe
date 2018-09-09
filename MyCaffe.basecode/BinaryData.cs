@@ -79,8 +79,8 @@ namespace MyCaffe.basecode
             {
                 DATA_FORMAT fmt1 = (DATA_FORMAT)br.ReadInt32();
 
-                if (fmtExpected != DATA_FORMAT.LIST_FLOAT)
-                    throw new Exception("The format expected should be DATA_FORMAT.LIST_FLOAT, but instead it is '" + fmtExpected.ToString() + "'.");
+                if (fmtExpected != DATA_FORMAT.LIST_DOUBLE)
+                    throw new Exception("The format expected should be DATA_FORMAT.LIST_DOUBLE, but instead it is '" + fmtExpected.ToString() + "'.");
 
                 if (fmt1 != fmtExpected)
                     throw new Exception("Invalid data format, expected '" + fmtExpected.ToString() + "' but found '" + fmt1.ToString() + "'.");
