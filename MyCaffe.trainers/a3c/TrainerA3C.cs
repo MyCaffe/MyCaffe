@@ -35,6 +35,7 @@ namespace MyCaffe.trainers.a3c
         int m_nOptimizers;
         int m_nIterations;
         int m_nGlobalEpisodes = 0;
+        bool m_bWindowOpen = false;
 
 
         /// <summary>
@@ -52,6 +53,9 @@ namespace MyCaffe.trainers.a3c
             m_nThreads = properties.GetPropertyAsInt("Threads", 8);
             m_nOptimizers = properties.GetPropertyAsInt("Optimizers", 2);
             m_nIterations = mycaffe.CurrentProject.GetSolverSettingAsInt("max_iter").GetValueOrDefault(10000);
+
+#warning "AC3 Trainer - work in progress."
+            mycaffe.Log.WriteLine("WARNING: The A3C trainer is a work in progress, use the PG trainer instead.");
         }
 
         /// <summary>
@@ -217,6 +221,19 @@ namespace MyCaffe.trainers.a3c
             Shutdown(3000);
 
             return true;
+        }
+
+        /// <summary>
+        /// Get/set whether or not an informational window is open or not.
+        /// </summary>
+        /// <remarks>
+        /// When an informational window is open, the training process is delayed so as to show the state of the training visually.
+        /// For example, when a gym window is open, the training is slowed down to show the gym simulation visually.
+        /// </remarks>
+        public bool WindowOpen
+        {
+            get { return m_bWindowOpen; }
+            set { m_bWindowOpen = true; }
         }
 
         private void Env_OnGetStatus(object sender, GetStatusArgs e)
