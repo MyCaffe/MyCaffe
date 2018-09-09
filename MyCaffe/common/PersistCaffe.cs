@@ -723,7 +723,7 @@ namespace MyCaffe.common
                     if (pbData == null || (lDataCount != lCount && !bSizeToFit))
                         m_log.FAIL("Could not find the weights matching the data size '" + strShapeB + "'!");
 
-                    if (bSizeToFit && !compareShapes(strShapeB, strShapeW, 2))
+                    if (bSizeToFit && !compareShapes(strShapeB, strShapeW, 4))
                         m_log.FAIL("Could not find the weights matching the first two items of the shape '" + strShapeB + "'!");
 
                     T[] rgData = copyData(pbData, type, lDataCount, rgBlobShape);
