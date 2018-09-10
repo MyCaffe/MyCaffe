@@ -10,7 +10,8 @@ namespace MyCaffe.gym
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.PerSession)]
     public class MyCaffeGymUiService : IXMyCaffeGymUiService
     {
-        Dictionary<int, FormGym> m_rgGyms = new Dictionary<int, FormGym>();
+        static Dictionary<int, FormGym> m_rgGyms = new Dictionary<int, FormGym>();
+        static object m_syncObjGym = new object();
         IXMyCaffeGymUiCallback m_callback;
 
 
@@ -35,19 +36,22 @@ namespace MyCaffe.gym
 
         public int OpenUi(string strName, int nId)
         {
-            if (m_rgGyms.ContainsKey(nId))
+            lock (m_syncObjGym)
             {
-                m_rgGyms[nId].BringToFront();
-                return nId;
+                if (m_rgGyms.ContainsKey(nId))
+                {
+                    m_rgGyms[nId].BringToFront();
+                    return nId;
+                }
+
+                FormGym dlg = new FormGym(strName);
+                dlg.FormClosing += dlg_FormClosing;
+                dlg.Show();
+                dlg.BringToFront();
+
+                nId = m_rgGyms.Count;
+                m_rgGyms.Add(nId, dlg);
             }
-
-            FormGym dlg = new FormGym(strName);
-            dlg.FormClosing += dlg_FormClosing;
-            dlg.Show();
-            dlg.BringToFront();
-
-            nId = m_rgGyms.Count;
-            m_rgGyms.Add(nId, dlg);
 
             return nId;
         }
