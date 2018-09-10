@@ -26,25 +26,7 @@ namespace MyCaffe.test
             {
                 foreach (IMyCaffeControlTest t in test.Tests)
                 {
-                    t.TestLoad(false);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestLoadReinforcement()
-        {
-            MyCaffeControlTest test = new MyCaffeControlTest();
-
-            try
-            {
-                foreach (IMyCaffeControlTest t in test.Tests)
-                {
-                    t.TestLoad(true);
+                    t.TestLoad();
                 }
             }
             finally
@@ -251,7 +233,7 @@ namespace MyCaffe.test
 
     interface IMyCaffeControlTest : ITest
     {
-        void TestLoad(bool bReinforcement);
+        void TestLoad();
         void TestGetTestImage();
         void TestTrain();
         void TestTrainMultiGpu(params int[] rgGpu);
@@ -320,136 +302,6 @@ namespace MyCaffe.test
             string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\mnist\\lenet_solver.prototxt");
 
             p.LoadModelFile(strModelFile);
-            RawProto proto = RawProtoFile.LoadFromFile(strSolverFile);
-
-            RawProto iter = proto.FindChild("max_iter");
-            iter.Value = "1000";
-
-            p.SolverDescription = proto.ToString();
-
-            return p;
-        }
-
-        private ProjectEx getReinforcementProject()
-        {
-            string strModel = "name: MNIST_reinforcement " + Environment.NewLine +
-                "layer { " + Environment.NewLine +
-                " name: \"data\" " + Environment.NewLine +
-                " type: \"BatchData\" " + Environment.NewLine +
-                " top: \"data\" " + Environment.NewLine +
-                " include { phase: TRAIN } " + Environment.NewLine +
-                " transform_param { scale: 0.00390625 use_image_mean: True } " + Environment.NewLine +
-                " batch_data_param { source: \"MNIST.training\" iterations: 1 batch_set_count: 1000 batch_size: 32 backend: IMAGEDB } " + Environment.NewLine +
-                "} " + Environment.NewLine +
-                "layer { " + Environment.NewLine +
-                " name: \"data\" " + Environment.NewLine +
-                " type: \"BatchData\" " + Environment.NewLine +
-                " top: \"data\" " + Environment.NewLine +
-                " include { phase: TEST } " + Environment.NewLine +
-                " transform_param { scale: 0.00390625 use_image_mean: True } " + Environment.NewLine +
-                " batch_data_param { source: \"MNIST.training\" iterations: 1 batch_set_count: 100 batch_size: 32 backend: IMAGEDB } " + Environment.NewLine +
-                " data_param { source: \"MNIST.testing\" batch_size: 0 backend: IMAGEDB enable_random_selection: True } " + Environment.NewLine +
-                "} " + Environment.NewLine +
-                "layer { " + Environment.NewLine +
-                " name: \"conv1\" " + Environment.NewLine +
-                " type: \"Convolution\" " + Environment.NewLine +
-                " bottom: \"data\" " + Environment.NewLine +
-                " top: \"conv1\" " + Environment.NewLine +
-                " param { lr_mult: 1 } " + Environment.NewLine +
-                " param { lr_mult: 2 } " + Environment.NewLine +
-                " convolution_param { kernel_size: 8 stride: 4 pad: 0 dilation: 1 num_output: 32 weight_filler { type: \"xavier\" variance_norm: FAN_IN } bias_filler { type: \"constant\" value: 0 } } " + Environment.NewLine +
-                "} " + Environment.NewLine +
-                "layer { " + Environment.NewLine +
-                " name: \"relu1\" " + Environment.NewLine +
-                " type: \"ReLU\" " + Environment.NewLine +
-                " bottom: \"conv1\" " + Environment.NewLine +
-                " top: \"conv1\" " + Environment.NewLine +
-                "} " + Environment.NewLine +
-                "layer { " + Environment.NewLine +
-                " name: \"conv2\" " + Environment.NewLine +
-                " type: \"Convolution\" " + Environment.NewLine +
-                " bottom: \"conv1\" " + Environment.NewLine +
-                " top: \"conv2\" " + Environment.NewLine +
-                " param { lr_mult: 1 } " + Environment.NewLine +
-                " param { lr_mult: 2 } " + Environment.NewLine +
-                " convolution_param { kernel_size: 4 stride: 2 pad: 1 dilation: 1 num_output: 64 weight_filler { type: \"xavier\" variance_norm: FAN_IN } bias_filler { type: \"constant\" value: 0 } } " + Environment.NewLine +
-                "} " + Environment.NewLine +
-                "layer { " + Environment.NewLine +
-                " name: \"relu2\" " + Environment.NewLine +
-                " type: \"ReLU\" " + Environment.NewLine +
-                " bottom: \"conv2\" " + Environment.NewLine +
-                " top: \"conv2\" " + Environment.NewLine +
-                "} " + Environment.NewLine +
-                "layer { " + Environment.NewLine +
-                " name: \"conv3\" " + Environment.NewLine +
-                " type: \"Convolution\" " + Environment.NewLine +
-                " bottom: \"conv2\" " + Environment.NewLine +
-                " top: \"conv3\" " + Environment.NewLine +
-                " param { lr_mult: 1 } " + Environment.NewLine +
-                " param { lr_mult: 2 decay_mult: 0 } " + Environment.NewLine +
-                " convolution_param { kernel_size: 3 stride: 2 pad: 0 dilation: 1 num_output: 64 weight_filler { type: \"xavier\" variance_norm: FAN_IN } bias_filler { type: \"constant\" value: 0.1 } } " + Environment.NewLine +
-                "} " + Environment.NewLine +
-                "layer { " + Environment.NewLine +
-                " name: \"relu3\" " + Environment.NewLine +
-                " type: \"ReLU\" " + Environment.NewLine +
-                " bottom: \"conv3\" " + Environment.NewLine +
-                " top: \"conv3\" " + Environment.NewLine +
-                "} " + Environment.NewLine +
-                "layer { " + Environment.NewLine +
-                " name: \"lrn1\" " + Environment.NewLine +
-                " type: \"LRN\" " + Environment.NewLine +
-                " bottom: \"conv3\" " + Environment.NewLine +
-                " top: \"lrn3\" " + Environment.NewLine +
-                " lrn_param { local_size: 5 alpha: 1 beta: 0.75 norm_region: ACROSS_CHANNELS k: 1 } " + Environment.NewLine +
-                "} " + Environment.NewLine +
-                "layer { " + Environment.NewLine +
-                " name: \"ip1\" " + Environment.NewLine +
-                " type: \"InnerProduct\" " + Environment.NewLine +
-                " bottom: \"lrn3\" " + Environment.NewLine +
-                " top: \"ip1\" " + Environment.NewLine +
-                " param { lr_mult: 1 } " + Environment.NewLine +
-                " param { lr_mult: 2 } " + Environment.NewLine +
-                " inner_product_param { num_output: 512 bias_term: True weight_filler { type: \"xavier\" variance_norm: FAN_IN } bias_filler { type: \"constant\" value: 0 } } " + Environment.NewLine +
-                " axis: 1 " + Environment.NewLine +
-                " transpose: False " + Environment.NewLine +
-                "} " + Environment.NewLine +
-                "layer { " + Environment.NewLine +
-                " name: \"relu4\" " + Environment.NewLine +
-                " type: \"ReLU\" " + Environment.NewLine +
-                " bottom: \"ip1\" " + Environment.NewLine +
-                " top: \"ip1\" " + Environment.NewLine +
-                "} " + Environment.NewLine +
-                "layer { " + Environment.NewLine +
-                " name: \"ip2\" " + Environment.NewLine +
-                " type: \"InnerProduct\" " + Environment.NewLine +
-                " bottom: \"ip1\" " + Environment.NewLine +
-                " top: \"ip2\" " + Environment.NewLine +
-                " param { lr_mult: 1 } " + Environment.NewLine +
-                " param { lr_mult: 2 } " + Environment.NewLine +
-                " inner_product_param { num_output: 512 bias_term: True weight_filler { type: \"xavier\" variance_norm: FAN_IN } bias_filler { type: \"constant\" value: 0 } } " + Environment.NewLine +
-                " axis: 1 " + Environment.NewLine +
-                " transpose: False " + Environment.NewLine +
-                "} " + Environment.NewLine +
-                "layer { " + Environment.NewLine +
-                " name: \"loss\" " + Environment.NewLine +
-                " type: \"ReinforcementLoss\" " + Environment.NewLine +
-                " bottom: \"ip2\" " + Environment.NewLine +
-                " top: \"loss\" " + Environment.NewLine +
-                " reinforcement_loss_param { exploration_rate_start: 0.4 exploration_rate_end: 0.1 training_step: 1 } " + Environment.NewLine +
-                "} ";
-
-            ProjectEx p = new ProjectEx("test");
-
-            DatasetFactory factory = new DatasetFactory();
-            p.SetDataset(factory.LoadDataset("MNIST"));
-
-            p.ModelDescription = strModel;
-
-            p.OnOverrideModel += new EventHandler<OverrideProjectArgs>(project_OnOverrideModel);
-            p.OnOverrideSolver += new EventHandler<OverrideProjectArgs>(project_OnOverrideSolver);
-
-            string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\mnist\\lenet_solver.prototxt");
-
             RawProto proto = RawProtoFile.LoadFromFile(strSolverFile);
 
             RawProto iter = proto.FindChild("max_iter");
@@ -529,17 +381,14 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestLoad(bool bReinforcement)
+        public void TestLoad()
         {
             m_log.WriteHeader(m_dt.ToString() + " - Test Load");
 
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
             ProjectEx project;
 
-            if (bReinforcement)
-                project = getReinforcementProject();
-            else
-                project = getProject();
+            project = getProject();
 
             ctrl.Load(Phase.NONE, project, imagedb.IMGDB_LABEL_SELECTION_METHOD.NONE, imagedb.IMGDB_IMAGE_SELECTION_METHOD.NONE);
 
