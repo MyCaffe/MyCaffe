@@ -1046,7 +1046,12 @@ namespace MyCaffe
                 return null;
 
             DatasetFactory factory = new DatasetFactory();
-            return factory.LoadDataset(strTestSrc, strTrainSrc);
+            DatasetDescriptor ds = factory.LoadDataset(strTestSrc, strTrainSrc);
+
+            if (ds == null)
+                throw new Exception("The datset sources '" + strTestSrc + "' and '" + strTrainSrc + "' do not exist in the database - do you need to load them?");
+
+            return ds;
         }
 
         private void loadWeights(Net<T> net, byte[] rgWeights)
