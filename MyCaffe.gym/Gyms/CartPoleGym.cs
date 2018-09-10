@@ -143,6 +143,7 @@ namespace MyCaffe.gym
             rgData.Add(m_state.Theta);
             rgData.Add(m_state.ThetaDot);
             rgData.Add(m_state.ForceMag);
+            rgData.Add(m_nSteps);
 
             return Render(nWidth, nHeight, rgData.ToArray(), out bmpAction);
         }
@@ -157,6 +158,10 @@ namespace MyCaffe.gym
             double dfTheta = rgData[2];
             double dfThetaInDegrees = dfTheta * (180.0 / Math.PI);
             double dfForceMag = rgData[4];
+            int nSteps = (int)rgData[5];
+
+            m_nSteps = nSteps;
+            m_nMaxSteps = Math.Max(nSteps, m_nMaxSteps);
 
             using (Graphics g = Graphics.FromImage(bmp))
             {
@@ -291,6 +296,7 @@ namespace MyCaffe.gym
             dfTheta += m_dfTau * dfThetaDot;
             dfThetaDot += m_dfTau * dfThetaAcc;
 
+            CartPoleState stateOut = m_state;
             m_state = new CartPoleState(dfX, dfXDot, dfTheta, dfThetaDot);
 
             bool bDone = false;
@@ -321,7 +327,8 @@ namespace MyCaffe.gym
             m_nSteps++;
             m_nMaxSteps = Math.Max(m_nMaxSteps, m_nSteps);
 
-            return new Tuple<State, double, bool>(m_state.Clone(), dfReward, bDone);
+            stateOut.Steps = m_nSteps;
+            return new Tuple<State, double, bool>(stateOut.Clone(), dfReward, bDone);
         }
 
         public DatasetDescriptor GetDataset(DATA_TYPE dt)
@@ -398,7 +405,7 @@ namespace MyCaffe.gym
         double m_dfTheta = 0;
         double m_dfThetaDot = 0;
         double m_dfForceMag = 0;
-       
+        int m_nSteps = 0;
 
         public const double MAX_X = 2.4;
         public const double MAX_THETA = 20 * (Math.PI/180);
@@ -419,6 +426,13 @@ namespace MyCaffe.gym
             m_dfTheta = s.m_dfTheta;
             m_dfThetaDot = s.m_dfThetaDot;
             m_dfForceMag = s.m_dfForceMag;
+            m_nSteps = s.m_nSteps;
+        }
+
+        public int Steps
+        {
+            get { return m_nSteps; }
+            set { m_nSteps = value; }
         }
 
         public double ForceMag
@@ -474,6 +488,7 @@ namespace MyCaffe.gym
             rg.Add(new Tuple<double, double, double, bool>(m_dfTheta, -MAX_THETA, MAX_THETA, true));
             rg.Add(new Tuple<double, double, double, bool>(m_dfThetaDot, -MAX_THETA * nScale * 2, MAX_THETA * nScale * 2, true));
             rg.Add(new Tuple<double, double, double, bool>(m_dfForceMag, -100, 100, false));
+            rg.Add(new Tuple<double, double, double, bool>(m_nSteps, -1, 1, false));
 
             return rg.ToArray();
         }
