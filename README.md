@@ -31,7 +31,7 @@ We have several new models supported by MyCaffe with the train_val and solution 
  - Domain-Adversarial Neural Networks (DANN) as described in [2] with support for source and target datasets.
  - ResNet-56 on the Cifar-10 dataset as described in [3].
  - Deep convolutional auto-encoder neural networks with pooling as described in [4].
- - Policy Gradient Reinforcement Learning networks as described in [5]
+ - Policy Gradient Reinforcement Learning networks as described in [5].
 
 [1] [Caffe: Convolutional Architecture for Fast Feature Embedding](https://arxiv.org/abs/1408.5093) by Yangqing Jai, Evan Shelhamer, Jeff Donahue, 
 Sergey Karayev, Jonathan Long, Ross Girshick, Sergio Guadarrama, and Trevor Darrell, 2014.
