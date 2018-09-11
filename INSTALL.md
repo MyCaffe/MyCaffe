@@ -4,9 +4,9 @@ To install and run <b>MyCaffe</b> you will need to do the following steps.  As a
 <H3>I. CUDA - Install NVIDIA CUDA and cuDNN Libraries</H3>
 Install CUDA 9.2 as shown below.
 <H4>A. CUDA 9.2 - Install NVIDIA CUDA and cuDNN Libraries</H4>
-1.) Install the NVIDIA CUDA 9.2 Toolkit for Windows 10 from https://developer.nvidia.com/cuda-downloads. 
-</br>2.) Install the NVIDIA cuDNN 7.1.4 Accelerated Libraries for CUDA 9.2 on Windows 10 from https://developer.nvidia.com/cuDNN.
-</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V9_2)</i></b> installation location named <b><i>cudann_9.2-win-v7.1.4</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
+1.) Install the NVIDIA CUDA 9.2.148 Toolkit for Windows 10 from https://developer.nvidia.com/cuda-downloads. 
+</br>2.) Install the NVIDIA cuDNN 7.2.1 Accelerated Libraries for CUDA 9.2 on Windows 10 from https://developer.nvidia.com/cuDNN.
+</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V9_2)</i></b> installation location named <b><i>cudann_9.2-win-v7.2.1</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
 </br>4.) Copy the <b><i>cudnn64_7.dll</i></b> file into the <b><i>$(CUDA_PATH_V9_2)\bin</i></b> directory.
 </br>5.) Install the NVIDIA NVAPI (r396) from https://developer.nvidia.com/nvapi.
 </br>6.) Create anew directory off your <b><i>$(CUDA_PATH_V9_2)</i></b> installation location named <b><i>nvapi_396</i></b> and copy the NVAPI header and library files into it.

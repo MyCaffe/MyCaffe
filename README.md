@@ -18,8 +18,8 @@ maintaining compatibility with CAFFE's solver descriptions, model descriptions a
 The C# based MyCaffe open-source project is independently maintained by <a href="http://www.signalpop.com">SignalPop LLC</a> and made 
 available under the Apache 2.0 License.
 <h3>Supported Development Environments:</h3>
-* Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 9.2</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.1.4</a> (currently uses VS2015 compile)</br>
-* Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 9.2</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.1.4</a> </br>
+* Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 9.2.148</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.2.1</a> (currently uses VS2015 compile)</br>
+* Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 9.2.148</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.2.1</a> </br>
 </br>
 
 NOTE: Visual Studio 2017 support noted above currently uses the Platform Toolset "Visual Studio 2015 (v140)" build setting.
@@ -31,6 +31,7 @@ We have several new models supported by MyCaffe with the train_val and solution 
  - Domain-Adversarial Neural Networks (DANN) as described in [2] with support for source and target datasets.
  - ResNet-56 on the Cifar-10 dataset as described in [3].
  - Deep convolutional auto-encoder neural networks with pooling as described in [4].
+ - Policy Gradient Reinforcement Learning networks as described in [5]
 
 [1] [Caffe: Convolutional Architecture for Fast Feature Embedding](https://arxiv.org/abs/1408.5093) by Yangqing Jai, Evan Shelhamer, Jeff Donahue, 
 Sergey Karayev, Jonathan Long, Ross Girshick, Sergio Guadarrama, and Trevor Darrell, 2014.
@@ -41,6 +42,8 @@ Hugo Larochelle, François Laviolette, Mario Marchand, and Victor Lempitsky, 2015
 [3] [ResNet 20/32/44/56/110 for CIFAR10 with caffe](https://github.com/yihui-he/resnet-cifar10-caffe) by Yihui He, 2016.
 
 [4] [A Deep Convolutional Auto-Encoder with Pooling - Unpooling Layers in Caffe](https://arxiv.org/abs/1701.04949) by Volodymyr Turchenko, Eric Chalmers and Artur Luczac, 2017.
+
+[5] [Deep Reinforcement Learning: Pong from Pixels](http://karpathy.github.io/2016/05/31/rl/) by Andrej Karpathy, 2015.
 
 For more information on the C++ CAFFE open-source project, please see the following <a href="http://caffe.berkeleyvision.org/">link</a>.
 
