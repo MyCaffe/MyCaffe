@@ -108,11 +108,11 @@ namespace MyCaffe.test
             //  - Mini Batch Size = 10 (defined in train_val.prototxt for MemoryDataLayer)
             //
             //  - TraingerType = PG (use Policy Gradient trainer)
-            //  - RewardType = VAL (display the actual rewards, other options are MAX and AVE)
+            //  - RewardType = MAX (display the maximum rewards received, a setting of VAL displays the actual reward received)
             //  - Gamma = 0.99 (discounting factor)
             //  - Init1 = default force of 10.
             //  - Init2 = do not use additive force.                    
-            trainer.Initialize("TrainerType=PG;RewardType=VAL;Gamma=0.99;Init1=10;Init2=0;");
+            trainer.Initialize("TrainerType=PG;RewardType=MAX;Gamma=0.99;Init1=10;Init2=0;");
 
             if (bShowUi)
                 trainer.OpenUi();
