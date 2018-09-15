@@ -44,7 +44,8 @@ namespace MyCaffe.trainers
 
         enum TRAINER_TYPE
         {
-            PG
+            PG,
+            PG_SIMPLE
         }
 
         enum REWARD_TYPE
@@ -126,6 +127,9 @@ namespace MyCaffe.trainers
 
             switch (m_trainerType)
             {
+                case TRAINER_TYPE.PG_SIMPLE:
+                    return new pg.simple.TrainerPG<double>(mycaffe, m_properties, m_random, this);
+
                 case TRAINER_TYPE.PG:
                     return new pg.TrainerPG<double>(mycaffe, m_properties, m_random, this);
 
@@ -150,6 +154,9 @@ namespace MyCaffe.trainers
 
             switch (m_trainerType)
             {
+                case TRAINER_TYPE.PG_SIMPLE:
+                    return new pg.simple.TrainerPG<float>(mycaffe, m_properties, m_random, this);
+
                 case TRAINER_TYPE.PG:
                     return new pg.TrainerPG<float>(mycaffe, m_properties, m_random, this);
 
@@ -310,6 +317,10 @@ namespace MyCaffe.trainers
 
             switch (strTrainerType)
             {
+                case "PG_SIMPLE":
+                    m_trainerType = TRAINER_TYPE.PG_SIMPLE;
+                    break;
+
                 case "PG":
                     m_trainerType = TRAINER_TYPE.PG;
                     break;
