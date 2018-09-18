@@ -545,6 +545,7 @@ namespace MyCaffe.common
             FREEHOSTBUFFER = 26,
             GETHOSTMEM = 27,
             SETHOSTMEM = 28,
+            GETHOSTBUFFERCAPACITY = 29,
 
             CREATE_STREAM = 30,
             FREE_STREAM = 31,
@@ -1651,6 +1652,25 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREEHOSTBUFFER, new double[] { hMem });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREEHOSTBUFFER, new float[] { hMem });
+        }
+
+        /// <summary>
+        /// Returns the host memory capacity.
+        /// </summary>
+        /// <param name="hMem">Specfies the host memory.</param>
+        /// <returns>The current host memory capacity is returned.</returns>
+        public long GetHostBufferCapacity(long hMem)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETHOSTBUFFERCAPACITY, new double[] { hMem });
+                return (long)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETHOSTBUFFERCAPACITY, new float[] { hMem });
+                return (long)rg[0];
+            }
         }
 
         /// <summary>
