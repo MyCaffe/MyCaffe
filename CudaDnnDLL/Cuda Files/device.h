@@ -101,6 +101,7 @@ class Device
 		
 		long AllocHostBuffer(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long FreeHostBuffer(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long GetHostBufferCapacity(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long GetHostMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SetHostMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 

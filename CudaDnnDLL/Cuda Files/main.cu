@@ -98,6 +98,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_FREEHOSTBUFFER:
 			return m_device.FreeHostBuffer(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_GETHOSTBUFFERCAPACITY:
+			return m_device.GetHostBufferCapacity(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_GETHOSTMEM:
 			return m_device.GetHostMemory(lCount, pfInput, plCount, ppfOutput);
 

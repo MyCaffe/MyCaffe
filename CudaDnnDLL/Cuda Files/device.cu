@@ -755,6 +755,29 @@ template long Device<double>::FreeHostBuffer(long lInput, double* pfInput, long*
 template long Device<float>::FreeHostBuffer(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
 
 
+template <class T>
+long Device<T>::GetHostBufferCapacity(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+
+	HostBuffer<T>* pbuf = m_memory.GetHostBuffer(hHandle);
+	if (pbuf == NULL)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	if (lErr = setOutput((T)pbuf->Count(), plOutput, ppfOutput))
+		return lErr;
+
+	return 0;
+}
+
+template long Device<double>::GetHostBufferCapacity(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::GetHostBufferCapacity(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
 
 template <class T>
 long Device<T>::GetHostMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
