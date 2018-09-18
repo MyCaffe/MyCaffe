@@ -683,8 +683,9 @@ namespace MyCaffe.solvers
         /// <param name="nIters">Specifies the number of steps to iterate.</param>
         /// <param name="step">Optionally, specifies to single step the training pass - typically this is used during debugging. The default = <i>TRAIN_STEP.NONE</i> for no stepping.</param>
         /// <param name="bAccumulateGradients">Optionally, specifies whether or not to accumulate the gradients (default = false).  NOTE: When accumulating gradients, ApplyUpdate must be called separately.</param>
+        /// <param name="bDisableOutput">Optionally, disable the output to the log.</param>
         /// <returns></returns>
-        public bool Step(int nIters, TRAIN_STEP step = TRAIN_STEP.NONE, bool bAccumulateGradients = false)
+        public bool Step(int nIters, TRAIN_STEP step = TRAIN_STEP.NONE, bool bAccumulateGradients = false, bool bDisableOutput = false)
         {
             Exception err = null;
 
@@ -735,7 +736,7 @@ namespace MyCaffe.solvers
                     }
 
                     // on_start currently not used, so no event added.
-                    bool bDisplay = (is_root_solver && m_param.display > 0 && (m_nIter % m_param.display) == 0) ? true : false;
+                    bool bDisplay = (is_root_solver && m_param.display > 0 && (m_nIter % m_param.display) == 0 && !bDisableOutput) ? true : false;
                     m_net.set_debug_info(bDisplay && m_param.debug_info);
 
                     // accumulate the loss and gradient
