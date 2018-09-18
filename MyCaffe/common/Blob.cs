@@ -591,7 +591,11 @@ namespace MyCaffe.common
         /// <param name="bReshape">If false, require this Blob to be pre-shaped to the shape
         /// of other (and die otherwise); If true, Reshape this Blob to other's shape if
         /// necessary.</param>
-        public void CopyFrom(Blob<T> src, bool bCopyDiff = false, bool bReshape = false)
+        /// <param name="hDstHostBuffer">Optionally, specifies the host buffer of the destination.</param>
+        /// <returns>
+        /// When used, the host buffer handle is returned.
+        /// </returns>
+        public long CopyFrom(Blob<T> src, bool bCopyDiff = false, bool bReshape = false, long hDstHostBuffer = 0)
         {
             if (src.count() != m_nCount || !Utility.Compare<int>(src.m_rgShape, m_rgShape))
             {
@@ -602,9 +606,9 @@ namespace MyCaffe.common
             }
 
             if (bCopyDiff)
-                m_diff.Copy(src.diff);
+                return m_diff.Copy(src.diff, hDstHostBuffer);
             else
-                m_data.Copy(src.data);
+                return m_data.Copy(src.data, hDstHostBuffer);
         }
 
         /// <summary>

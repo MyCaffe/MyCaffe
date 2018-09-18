@@ -169,12 +169,14 @@ namespace MyCaffe.common
         /// Copy another SyncedMemory into this one.
         /// </summary>
         /// <param name="src">Specifies the SyncedMemory to copy.</param>
-        public void Copy(SyncedMemory<T> src)
+        /// <param name="hDstHostBuffer">Optionally, specifies a host buffer used to copy between kernels (default = 0, not used).</param>
+        /// <returns>When used the dst host buffer handle is returned.</returns>
+        public long Copy(SyncedMemory<T> src, long hDstHostBuffer = 0)
         {
             if (src == null)
             {
                 m_lCount = 0;
-                return;
+                return hDstHostBuffer;
             }
 
             if (m_lCapacity < src.m_lCount)
@@ -184,9 +186,32 @@ namespace MyCaffe.common
 
             if (m_lCount > 0)
             {
-                check_device();
-                m_cuda.copy((int)m_lCount, src.m_hGpuData, m_hGpuData);
+                if (m_cuda.KernelHandle == src.m_cuda.KernelHandle)
+                {
+                    check_device();
+                    m_cuda.copy((int)m_lCount, src.m_hGpuData, m_hGpuData);
+                }
+                else
+                {
+                    if (hDstHostBuffer == 0)
+                    {
+                        hDstHostBuffer = m_cuda.AllocHostBuffer(m_lCount);
+                    }
+                    else
+                    {
+                        long lCount = m_cuda.GetHostBufferCapacity(hDstHostBuffer);
+                        if (lCount < m_lCount)
+                        {
+                            m_cuda.FreeHostBuffer(hDstHostBuffer);
+                            hDstHostBuffer = m_cuda.AllocHostBuffer(m_lCount);
+                        }
+                    }
+
+                    src.m_cuda.KernelCopy((int)m_lCount, src.m_hGpuData, 0, m_cuda.KernelHandle, m_hGpuData, 0, hDstHostBuffer, m_cuda.KernelHandle);
+                }
             }
+
+            return hDstHostBuffer;
         }
 
         /// <summary>
