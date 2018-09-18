@@ -10,6 +10,53 @@ using System.Threading.Tasks;
 namespace MyCaffe.trainers
 {
     /// <summary>
+    /// The ApplyUpdateArgs is passed to the OnApplyUpdates event.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class ApplyUpdateArgs<T> : EventArgs
+    {
+        MyCaffeControl<T> m_mycaffeWorker;
+        int m_nIteration;
+        double m_dfLearningRate;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="nIteration">Specifies the iteration from which the gradients are to be applied.</param>
+        /// <param name="mycaffeWorker">Specifies the MyCaffe worker instance whos gradients are to be applied.</param>
+        public ApplyUpdateArgs(int nIteration, MyCaffeControl<T> mycaffeWorker)
+        {
+            m_nIteration = nIteration;
+            m_mycaffeWorker = mycaffeWorker;
+        }
+
+        /// <summary>
+        /// Returns the MyCaffe worker instance whos gradients are to be applied.
+        /// </summary>
+        public MyCaffeControl<T> MyCaffeWorker
+        {
+            get { return m_mycaffeWorker; }
+        }
+
+        /// <summary>
+        /// Returns the iteration from which the gradients are to be applied.
+        /// </summary>
+        public int Iteration
+        {
+            get { return m_nIteration; }
+        }
+
+        /// <summary>
+        /// Returns the learning rate at the time the gradients were applied.
+        /// </summary>
+        public double LearningRate
+        {
+            get { return m_dfLearningRate; }
+            set { m_dfLearningRate = value; }
+        }
+    }
+
+    /// <summary>
     /// The WaitArgs is passed to the OnWait event.
     /// </summary>
     public class WaitArgs : EventArgs
@@ -105,10 +152,14 @@ namespace MyCaffe.trainers
     /// </summary>
     public class GetStatusArgs : EventArgs
     {
+        int m_nNewFrameCount = 0;
         int m_nTotalFrames = 0;
         int m_nMaxFrames = 0;
         double m_dfTotalReward = 0;
         double m_dfExplorationRate = 0;
+        double m_dfOptimalCoeff = 0;
+        double m_dfLoss = 0;
+        double m_dfLearningRate = 0;
 
         /// <summary>
         /// The constructor.
@@ -117,12 +168,27 @@ namespace MyCaffe.trainers
         /// <param name="nMaxFrames">Specifies the maximum number of frames across all agents.</param>
         /// <param name="dfR">Specifies the total reward.</param>
         /// <param name="dfExplorationRate">Specifies the current exploration rate.</param>
-        public GetStatusArgs(int nFrames, int nMaxFrames, double dfR, double dfExplorationRate)
+        /// <param name="dfOptimalCoeff">Specifies the current optimal selection coefficient.</param>
+        /// <param name="dfLoss">Specifies the loss.</param>
+        /// <param name="dfLearningRate">Specifies the learning rate.</param>
+        public GetStatusArgs(int nFrames, int nMaxFrames, double dfR, double dfExplorationRate, double dfOptimalCoeff, double dfLoss, double dfLearningRate)
         {
             m_nTotalFrames = nFrames;
             m_nMaxFrames = nMaxFrames;
             m_dfTotalReward = dfR;
             m_dfExplorationRate = dfExplorationRate;
+            m_dfOptimalCoeff = dfOptimalCoeff;
+            m_dfLoss = dfLoss;
+            m_dfLearningRate = dfLearningRate;
+        }
+
+        /// <summary>
+        /// Get/set the new frame count.
+        /// </summary>
+        public int NewFrameCount
+        {
+            get { return m_nNewFrameCount; }
+            set { m_nNewFrameCount = value; }
         }
 
         /// <summary>
@@ -142,6 +208,22 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
+        /// Returns the loss value.
+        /// </summary>
+        public double Loss
+        {
+            get { return m_dfLoss; }
+        }
+
+        /// <summary>
+        /// Returns the current learning rate.
+        /// </summary>
+        public double LearningRate
+        {
+            get { return m_dfLearningRate; }
+        }
+
+        /// <summary>
         /// Returns the total rewards.
         /// </summary>
         public double Reward
@@ -155,6 +237,14 @@ namespace MyCaffe.trainers
         public double ExplorationRate
         {
             get { return m_dfExplorationRate; }
+        }
+
+        /// <summary>
+        /// Returns the optimal selection coefficient.
+        /// </summary>
+        public double OptimalSelectionCoefficient
+        {
+            get { return m_dfOptimalCoeff; }
         }
     }
 
