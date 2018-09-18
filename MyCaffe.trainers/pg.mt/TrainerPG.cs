@@ -123,7 +123,7 @@ namespace MyCaffe.trainers.pg.mt
         public ResultCollection Run(int nDelay = 1000)
         {
             m_mycaffe.CancelEvent.Reset();
-            Agent<T> agent = new Agent<T>(0, m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN, 0, 1);
+            Agent<T> agent = new Agent<T>(0, m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN, 0, 1);
             Tuple<int,int> res = agent.Run(nDelay);
 
             List<KeyValuePair<int, double>> rgActions = new List<KeyValuePair<int, double>>();
@@ -156,7 +156,7 @@ namespace MyCaffe.trainers.pg.mt
             {
                 int nGpuID = m_rgGpuID[nGpuIdx];
 
-                rgAgents.Add(new Agent<T>(i, m_icallback, m_mycaffe, m_properties, m_random, Phase.TEST, nGpuID, m_nThreads));
+                rgAgents.Add(new Agent<T>(i, m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN, nGpuID, m_nThreads));
 
                 nGpuIdx++;
                 if (nGpuIdx == m_rgGpuID.Count)
@@ -551,6 +551,9 @@ namespace MyCaffe.trainers.pg.mt
 
             StateBase state = getData(m_nIndex, -1, false);
             float[] rgfAprob;
+
+            m_brain.Create();
+
             int a = m_brain.act(state.Data, out rgfAprob);
 
             return new Tuple<int, int>(a, state.ActionCount);
@@ -678,6 +681,7 @@ namespace MyCaffe.trainers.pg.mt
         Phase m_phase;
         int m_nGpuID = 0;
         int m_nThreadCount = 1;
+        bool m_bCreated = false;
 
         /// <summary>
         /// The OnApplyUpdate event fires when the Brain needs to apply its gradients to the primary instance of MyCaffe.
@@ -713,6 +717,9 @@ namespace MyCaffe.trainers.pg.mt
         /// </summary>
         public void Create()
         {
+            if (m_bCreated)
+                return;
+
             if (m_nThreadCount == 1)
                 m_mycaffeWorker = m_mycaffePrimary;
             else
@@ -748,6 +755,8 @@ namespace MyCaffe.trainers.pg.mt
                 p.loss_param.normalization = LossParameter.NormalizationMode.NONE;
                 m_softmaxCe = new SoftmaxCrossEntropyLossLayer<T>(m_mycaffeWorker.Cuda, m_mycaffeWorker.Log, p);
             }
+
+            m_bCreated = true;
         }
 
         private void dispose(ref Blob<T> b)
