@@ -89,6 +89,7 @@ namespace MyCaffe
         PersistCaffe<T> m_persist;
         BlobShape m_inputShape = null;
         Phase m_lastPhaseRun = Phase.NONE;
+        long m_hCopyBuffer = 0;
 
 
         /// <summary>
@@ -176,6 +177,12 @@ namespace MyCaffe
             if (m_evtCancel != null)
                 m_evtCancel.Set();
 
+            if (m_hCopyBuffer != 0)
+            {
+                m_cuda.FreeHostBuffer(m_hCopyBuffer);
+                m_hCopyBuffer = 0;
+            }
+
             Unload();
 
             if (m_cuda != null)
@@ -204,7 +211,7 @@ namespace MyCaffe
             SettingsCaffe s = m_settings.Clone();
             s.GpuIds = nGpuID.ToString();
 
-            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, m_evtCancel);
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, m_evtCancel, null, null, null, null, m_strCudaPath);
             mycaffe.Load(Phase.TRAIN, m_project, null, null, false, m_imgDb, (m_imgDb == null) ? false : true);
 
             Net<T> netSrc = GetInternalNet(Phase.TRAIN);
@@ -217,7 +224,7 @@ namespace MyCaffe
                 Blob<T> bSrc = netSrc.learnable_parameters[i];
                 Blob<T> bDst = netDst.learnable_parameters[i];
 
-                bDst.CopyFrom(bSrc, false, false);
+                mycaffe.m_hCopyBuffer = bDst.CopyFrom(bSrc, false, false, mycaffe.m_hCopyBuffer);
             }
 
             return mycaffe;
@@ -239,7 +246,7 @@ namespace MyCaffe
                 Blob<T> bSrc = netSrc.learnable_parameters[i];
                 Blob<T> bDst = netDst.learnable_parameters[i];
 
-                bDst.CopyFrom(bSrc, true, false);
+                m_hCopyBuffer = bDst.CopyFrom(bSrc, true, false, m_hCopyBuffer);
             }
         }
 
@@ -259,7 +266,7 @@ namespace MyCaffe
                 Blob<T> bSrc = netSrc.learnable_parameters[i];
                 Blob<T> bDst = netDst.learnable_parameters[i];
 
-                bDst.CopyFrom(bSrc, false, false);
+                m_hCopyBuffer = bDst.CopyFrom(bSrc, false, false, m_hCopyBuffer);
             }
         }
 
@@ -268,9 +275,10 @@ namespace MyCaffe
         /// update algorithm.
         /// </summary>
         /// <param name="nIteration">Specifies the current iteration.</param>
-        public void ApplyUpdate(int nIteration)
+        /// <returns>The learning rate used is returned.</returns>
+        public double ApplyUpdate(int nIteration)
         {
-            m_solver.ApplyUpdate(nIteration);
+            return m_solver.ApplyUpdate(nIteration);
         }
 
         /// <summary>
