@@ -55,7 +55,8 @@
     <Compile Include="MyCaffeTrainerRL.Designer.cs">
       <DependentUpon>MyCaffeTrainerRL.cs</DependentUpon>
     </Compile>
-    <Compile Include="pg\TrainerPG.cs" />
+    <Compile Include="pg.mt\TrainerPG.cs" />
+    <Compile Include="pg.st\TrainerPG.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StateBase.cs" />
     <Compile Include="pg.simple\TrainerPG.cs" />

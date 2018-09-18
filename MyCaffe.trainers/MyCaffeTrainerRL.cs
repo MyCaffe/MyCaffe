@@ -16,6 +16,33 @@ namespace MyCaffe.trainers
     /// <summary>
     /// The MyCaffeTraininerRL is used to perform reinforcement learning training tasks on an instance of the MyCaffeControl.
     /// </summary>
+    /// <remarks>
+    /// Currently, the MyCaffeTrainerRL supports the following trainers, each of which are selected with the 'TrainerType=type' property
+    /// value within the property set specified when calling the Initialize method.
+    /// 
+    /// TrainerType=PG.SIMPLE - creates the initial simple policy gradient trainer that only supports single-threaded Sigmoid based models.
+    /// TrainerType=PG.ST - creates a single-threaded policy gradient trainer that supports both Sigmoid and Softmax based models.
+    /// TrainerType=PG.MT - creates a multi-threaded policy gradient trainer that supports both Sigmoid and Softmax based models and can train across GPU's.
+    /// 
+    /// Other intitialization properties include:
+    /// 
+    /// RewardType=VAL - reports the actual reward values.
+    /// RewardType=MAX - reports the maximum reward value observed (recommended setting)
+    /// 
+    /// Threads=# - specifies the number of threads.
+    /// 
+    /// GPUs=#,#,... - specifies the GPU's on which to run each thread.  The GPU IDs may be the same as the open project or other GPU's in the system.  GPU
+    /// selection starts with the first GPUID in the list, continues to the end, and then wraps back around to the start of the list.  For example if you
+    /// specifiy to use 3 thread with GPUIDs=0,1 the GPUs will be assigned to each thread as follows: Thread0 => GPUID0, Thread1 => GPUID1, Thread2 => GPUID0
+    /// 
+    /// Gamma - specifies the discount rate (default = 0.99)
+    /// UseRawInput - when <i>true</i> the actual input is used directly, otherwise a difference between the current and previous input is used (default = <i>false</i>).
+    /// 
+    /// The following settings are used from the Model and Solver descriptions:
+    /// 
+    /// Solver: base_lr - specifies the learning rate used.
+    /// Model: batch_size - specifies how often accumulated gradients are applied.
+    /// </remarks>
     public partial class MyCaffeTrainerRL : Component, IXMyCaffeCustomTrainer, IxTrainerCallback
     {
         /// <summary>
@@ -32,19 +59,23 @@ namespace MyCaffe.trainers
         protected int m_nProjectID = 0;
         IxTrainer m_itrainer = null;
         double m_dfExplorationRate = 0;
+        double m_dfOptimalSelectionRate = 0;
         double m_dfGlobalRewards = 0;
         double m_dfGlobalRewardsAve = 0;
         double m_dfGlobalRewardsMax = 0;
         int m_nGlobalEpisodeCount = 0;
         int m_nGlobalEpisodeMax = 0;
+        double m_dfLoss = 0;
         int m_nThreads = 1;
         REWARD_TYPE m_rewardType = REWARD_TYPE.MAXIMUM;
-        TRAINER_TYPE m_trainerType = TRAINER_TYPE.PG;
+        TRAINER_TYPE m_trainerType = TRAINER_TYPE.PG_ST;
         int m_nItertions = -1;
+        IXMyCaffeCustomTrainerCallback m_icallback = null;
 
         enum TRAINER_TYPE
         {
-            PG,
+            PG_MT,
+            PG_ST,
             PG_SIMPLE
         }
 
@@ -130,8 +161,11 @@ namespace MyCaffe.trainers
                 case TRAINER_TYPE.PG_SIMPLE:
                     return new pg.simple.TrainerPG<double>(mycaffe, m_properties, m_random, this);
 
-                case TRAINER_TYPE.PG:
-                    return new pg.TrainerPG<double>(mycaffe, m_properties, m_random, this);
+                case TRAINER_TYPE.PG_ST:
+                    return new pg.st.TrainerPG<double>(mycaffe, m_properties, m_random, this);
+
+                case TRAINER_TYPE.PG_MT:
+                    return new pg.mt.TrainerPG<double>(mycaffe, m_properties, m_random, this);
 
                 default:
                     throw new Exception("Unknown trainer type '" + m_trainerType.ToString() + "'!");
@@ -157,8 +191,11 @@ namespace MyCaffe.trainers
                 case TRAINER_TYPE.PG_SIMPLE:
                     return new pg.simple.TrainerPG<float>(mycaffe, m_properties, m_random, this);
 
-                case TRAINER_TYPE.PG:
-                    return new pg.TrainerPG<float>(mycaffe, m_properties, m_random, this);
+                case TRAINER_TYPE.PG_ST:
+                    return new pg.st.TrainerPG<float>(mycaffe, m_properties, m_random, this);
+
+                case TRAINER_TYPE.PG_MT:
+                    return new pg.mt.TrainerPG<float>(mycaffe, m_properties, m_random, this);
 
                 default:
                     throw new Exception("Unknown trainer type '" + m_trainerType.ToString() + "'!");
@@ -302,8 +339,10 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <param name="strProperties">Specifies the key-value pair of properties each separated by ';'.  For example the expected
         /// format is 'key1'='value1';'key2'='value2';...</param>
-        public void Initialize(string strProperties)
+        /// <param name="icallback">Specifies the parent callback.</param>
+        public void Initialize(string strProperties, IXMyCaffeCustomTrainerCallback icallback)
         {
+            m_icallback = icallback;
             m_properties = new PropertySet(strProperties);
             m_nThreads = m_properties.GetPropertyAsInt("Threads", 1);
 
@@ -317,12 +356,16 @@ namespace MyCaffe.trainers
 
             switch (strTrainerType)
             {
-                case "PG_SIMPLE":
+                case "PG.SIMPLE":   // bare bones model (Sigmoid only)
                     m_trainerType = TRAINER_TYPE.PG_SIMPLE;
                     break;
 
-                case "PG":
-                    m_trainerType = TRAINER_TYPE.PG;
+                case "PG.ST":       // single thread (Sigmoid and Softmax)
+                    m_trainerType = TRAINER_TYPE.PG_ST;
+                    break;
+
+                case "PG.MT":       // multi-thread (Sigmoid and Softmax)
+                    m_trainerType = TRAINER_TYPE.PG_MT;
                     break;
 
                 default:
@@ -434,8 +477,20 @@ namespace MyCaffe.trainers
             m_dfGlobalRewardsMax = Math.Max(m_dfGlobalRewardsMax, e.Reward);
             m_dfGlobalRewardsAve = (1.0 / (double)m_nThreads) * e.Reward + ((m_nThreads - 1) / (double)m_nThreads) * m_dfGlobalRewardsAve;
             m_dfExplorationRate = e.ExplorationRate;
-            m_nGlobalEpisodeCount = Math.Max(m_nGlobalEpisodeCount, e.Frames);
+            m_dfOptimalSelectionRate = e.OptimalSelectionCoefficient;
+
+            if (m_nThreads > 1)
+                m_nGlobalEpisodeCount++;
+            else
+                m_nGlobalEpisodeCount = e.Frames;
+
             m_nGlobalEpisodeMax = e.MaxFrames;
+            m_dfLoss = e.Loss;
+
+            if (m_icallback != null && m_nThreads > 1)
+                m_icallback.Update(GlobalEpisodeCount, GlobalRewards, GlobalLoss, e.LearningRate);
+
+            e.NewFrameCount = m_nGlobalEpisodeCount;
         }
 
         /// <summary>
@@ -474,6 +529,14 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
+        /// Return the global loss.
+        /// </summary>
+        public double GlobalLoss
+        {
+            get { return m_dfLoss; }
+        }
+
+        /// <summary>
         /// Returns the global episode count.
         /// </summary>
         public int GlobalEpisodeCount
@@ -495,6 +558,14 @@ namespace MyCaffe.trainers
         public double ExplorationRate
         {
             get { return m_dfExplorationRate; }
+        }
+
+        /// <summary>
+        /// Returns the rate of selection from the optimal set with the highest reward (this setting is optional, default = 0).
+        /// </summary>
+        public double OptimalSelectionRate
+        {
+            get { return m_dfOptimalSelectionRate; }
         }
 
         /// <summary>
