@@ -21,7 +21,7 @@ namespace MyCaffe.test
     public class TestMyCaffeCustomTrainer
     {
         [TestMethod]
-        public void TrainPGCartPoleWithOutUi()
+        public void Train_PGSIMPLE_CartPoleWithOutUi()
         {
             MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
 
@@ -29,7 +29,43 @@ namespace MyCaffe.test
             {
                 foreach (IMyCaffeCustomTrainerTest t in test.Tests)
                 {
-                    t.TrainCartPolePG(false, 1);
+                    t.TrainCartPolePG(false, "PG.SIMPLE", 100);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void Train_PGST_CartPoleWithOutUi()
+        {
+            MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
+
+            try
+            {
+                foreach (IMyCaffeCustomTrainerTest t in test.Tests)
+                {
+                    t.TrainCartPolePG(false, "PG.ST", 100);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void Train_PGMT_CartPoleWithOutUi()
+        {
+            MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
+
+            try
+            {
+                foreach (IMyCaffeCustomTrainerTest t in test.Tests)
+                {
+                    t.TrainCartPolePG(false, "PG.MT", 100);
                 }
             }
             finally
@@ -42,7 +78,7 @@ namespace MyCaffe.test
 
     interface IMyCaffeCustomTrainerTest : ITest
     {
-        void TrainCartPolePG(bool bShowUi, int nIterations = 1000);
+        void TrainCartPolePG(bool bShowUi, string strTrainerType, int nIterations = 1000);
     }
 
     class MyCaffeCustomTrainerTest : TestBase
@@ -83,7 +119,7 @@ namespace MyCaffe.test
             get { return m_evtCancel; }
         }
 
-        public void TrainCartPolePG(bool bShowUi, int nIterations = 1000)
+        public void TrainCartPolePG(bool bShowUi, string strTrainerType, int nIterations = 1000)
         {
             m_evtCancel.Reset();
 
@@ -107,12 +143,13 @@ namespace MyCaffe.test
             //  - Learning rate = 0.001 (defined in solver.prototxt)
             //  - Mini Batch Size = 10 (defined in train_val.prototxt for MemoryDataLayer)
             //
-            //  - TraingerType = PG (use Policy Gradient trainer)
+            //  - TraingerType = 'strTrainerType' ('PG.MT' = use multi-threaded Policy Gradient trainer, 'PG.ST' = single-threaded trainer, 'PG.SIMPLE' = basic trainer with Sigmoid output support only)
             //  - RewardType = MAX (display the maximum rewards received, a setting of VAL displays the actual reward received)
             //  - Gamma = 0.99 (discounting factor)
             //  - Init1 = default force of 10.
             //  - Init2 = do not use additive force.                    
-            trainer.Initialize("TrainerType=PG;RewardType=MAX;Gamma=0.99;Init1=10;Init2=0;");
+            //  - Threads = 1 (only use 1 thread if multi-threading is supported)
+            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=MAX;Gamma=0.99;Init1=10;Init2=0;Threads=1", null);
 
             if (bShowUi)
                 trainer.OpenUi();
@@ -236,7 +273,7 @@ namespace MyCaffe.test
             {
                 double dfPct = (double)GlobalEpisodeCount / (double)GlobalEpisodeMax;
                 e.OutputLog.Progress = dfPct;
-                e.OutputLog.WriteLine("(" + dfPct.ToString("P") + ") Global Episode #" + GlobalEpisodeCount.ToString() + "  Global Reward = " + GlobalRewards.ToString() + " Exploration Rate = " + ExplorationRate.ToString("P"));
+                e.OutputLog.WriteLine("(" + dfPct.ToString("P") + ") Global Episode #" + GlobalEpisodeCount.ToString() + "  Global Reward = " + GlobalRewards.ToString() + " Exploration Rate = " + ExplorationRate.ToString("P") + " Optimal Selection Rate = " + OptimalSelectionRate.ToString("P"));
                 m_sw.Restart();
             }
 
