@@ -1191,7 +1191,7 @@ namespace MyCaffe.app
 
             test.Log.OnWriteLine += Log_OnWriteLine1;
             test.CancelEvent.AddCancelOverride(evtCancel);
-            test.TrainCartPolePG(true, 500000);
+            test.TrainCartPolePG(true, "PG.MT", 500000);
 
             if (evtCancel.WaitOne(0))
                 test.Log.WriteLine("training aborted.");
