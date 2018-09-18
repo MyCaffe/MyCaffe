@@ -37,7 +37,8 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <remarks>Use the ProeprtySet object to easily parse the key-value pair properties.</remarks>
         /// <param name="strProperties">Specifies the properties.</param>
-        void Initialize(string strProperties);
+        /// <param name="icallback">Specifies the parent callback for updates.</param>
+        void Initialize(string strProperties, IXMyCaffeCustomTrainerCallback icallback);
         /// <summary>
         /// Clean-up the trainer by releasing all resources used.
         /// </summary>
@@ -114,6 +115,21 @@ namespace MyCaffe.trainers
         /// Open the user interface if one exists for the trainer.
         /// </summary>
         void OpenUi();
+    }
+
+    /// <summary>
+    /// The IXMyCaffeCustomTrainerCallback interface is used to call back to the parent running the custom trainer.
+    /// </summary>
+    public interface IXMyCaffeCustomTrainerCallback
+    {
+        /// <summary>
+        /// The Update method updates the parent with the global iteration, reward and loss.
+        /// </summary>
+        /// <param name="nIteration">Specifies the current global episode.</param>
+        /// <param name="dfGlobalReward">Specifies the current global reward.</param>
+        /// <param name="dfGlobalLoss">Specifies the current global loss.</param>
+        /// <param name="dfLearningRate">Specifies the current learning rate used.</param>
+        void Update(int nIteration, double dfGlobalReward, double dfGlobalLoss, double dfLearningRate);
     }
 
     /// <summary>
