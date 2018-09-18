@@ -12,7 +12,7 @@ using MyCaffe.layers;
 using MyCaffe.param;
 using MyCaffe.solvers;
 
-namespace MyCaffe.trainers.pg
+namespace MyCaffe.trainers.pg.st
 {
     /// <summary>
     /// The TrainerPG implements a simple Policy Gradient trainer inspired by Andrej Karpathy's blog posed referenced. 
@@ -174,7 +174,7 @@ namespace MyCaffe.trainers.pg
 
         private void updateStatus(int nEpisodeCount, double dfRewardSum, double dfRunningReward)
         {
-            GetStatusArgs args = new GetStatusArgs(nEpisodeCount, 1000000, dfRunningReward, 0);
+            GetStatusArgs args = new GetStatusArgs(nEpisodeCount, 1000000, dfRunningReward, 0, 0, 0, 0);
             m_icallback.OnUpdateStatus(args);
         }
 

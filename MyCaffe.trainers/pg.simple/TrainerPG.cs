@@ -174,7 +174,7 @@ namespace MyCaffe.trainers.pg.simple
 
         private void updateStatus(int nEpisodeCount, double dfRewardSum, double dfRunningReward)
         {
-            GetStatusArgs args = new GetStatusArgs(nEpisodeCount, 1000000, dfRunningReward, 0);
+            GetStatusArgs args = new GetStatusArgs(nEpisodeCount, 1000000, dfRunningReward, 0, 0, 0, 0);
             m_icallback.OnUpdateStatus(args);
         }
 
