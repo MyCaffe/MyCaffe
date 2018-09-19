@@ -2,8 +2,6 @@
 #include "stdafx.h"
 #include "Cuda Files\main.h"
 
-const int MAX_KERNELS = 2048;
-
 HMODULE g_hModule = NULL;
 Kernel<double>* g_rgdwDoubleKernelTable[MAX_KERNELS];
 Kernel<float>* g_rgdwFloatKernelTable[MAX_KERNELS];
