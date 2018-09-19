@@ -17,6 +17,8 @@
 //	Defines
 //=============================================================================
 
+const int MAX_KERNELS = 2048;
+
 const int CUDA_DLL_KERNEL_COPY_NCCL = -10;
 const int CUDA_DLL_CREATEKERNEL		= -9;
 const int CUDA_DLL_DESTROYKERNEL	= -8;
