@@ -545,6 +545,12 @@ LONG copyMemKernelToKernel(Kernel<float>* pSrcKernel, LONG lInput, float* pInput
 	long lHostKernelIdx = (long)pInput[7];
 	long hStream = (long)pInput[8];
 
+	if (lHostKernelIdx >= MAX_KERNELS)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	if (lDstKernelIdx >= MAX_KERNELS)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
 	Kernel<float>* pDstKernel; 
 	if ((pDstKernel = g_rgdwFloatKernelTable[lDstKernelIdx]) == NULL)
 		return ERROR_PARAM_NULL;
@@ -557,6 +563,15 @@ LONG copyMemKernelToKernel(Kernel<float>* pSrcKernel, LONG lInput, float* pInput
 
 	if (lErr = pDstKernel->GetMemory(hDst, &pDst))
 		return lErr;
+
+
+	int nSrcSize = (nSrcOffset + nCount) * sizeof(float);
+	if (nSrcSize > pSrc->Size())
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	int nDstSize = (nDstOffset + nCount) * sizeof(float);
+	if (nDstSize > pDst->Size())
+		return ERROR_PARAM_OUT_OF_RANGE;
 
 	float* src = (float*)(pSrc->Data());
 	float* dst = (float*)(pDst->Data());
@@ -571,11 +586,30 @@ LONG copyMemKernelToKernel(Kernel<float>* pSrcKernel, LONG lInput, float* pInput
 	if (nSrcDeviceID == nDstDeviceID)
 	{
 		if (hStream < 0)
+		{
 			lErr = cudaMemcpy(dst, src, nSize, cudaMemcpyDeviceToDevice);
+			if (lErr)
+				return lErr;
+
+			return cudaStreamSynchronize(0);
+		}
 		else if (hStream == 0)
+		{
 			lErr = cudaMemcpyAsync(dst, src, nSize, cudaMemcpyDeviceToDevice, cudaStreamDefault);
+			if (lErr)
+				return lErr;
+
+			return cudaStreamSynchronize(cudaStreamDefault);
+		}
 		else
-			lErr = cudaMemcpyAsync(dst, src, nSize, cudaMemcpyDeviceToDevice, pSrcKernel->GetStream(hStream));
+		{
+			cudaStream_t strm = pSrcKernel->GetStream(hStream);
+			lErr = cudaMemcpyAsync(dst, src, nSize, cudaMemcpyDeviceToDevice, strm);
+			if (lErr)
+				return lErr;
+
+			return cudaStreamSynchronize(strm);
+		}
 	}
 	else
 	{
@@ -606,11 +640,30 @@ LONG copyMemKernelToKernel(Kernel<float>* pSrcKernel, LONG lInput, float* pInput
 			}
 
 			if (hStream < 0)
+			{
 				lErr = cudaMemcpyPeer(dst, nDstDeviceID, src, nSrcDeviceID, nSize);
+				if (lErr)
+					return lErr;
+
+				return cudaStreamSynchronize(0);
+			}
 			else if (hStream == 0)
+			{
 				lErr = cudaMemcpyPeerAsync(dst, nDstDeviceID, src, nSrcDeviceID, nSize, cudaStreamDefault);
+				if (lErr)
+					return lErr;
+
+				return cudaStreamSynchronize(cudaStreamDefault);
+			}
 			else
-				lErr = cudaMemcpyPeerAsync(dst, nDstDeviceID, src, nSrcDeviceID, nSize, pSrcKernel->GetStream(hStream));
+			{
+				cudaStream_t strm = pSrcKernel->GetStream(hStream);
+				lErr = cudaMemcpyPeerAsync(dst, nDstDeviceID, src, nSrcDeviceID, nSize, strm);
+				if (lErr)
+					return lErr;
+
+				return cudaStreamSynchronize(strm);
+			}
 
 			if (nCurrentDeviceID != nSrcDeviceID)
 			{
@@ -632,12 +685,34 @@ LONG copyMemKernelToKernel(Kernel<float>* pSrcKernel, LONG lInput, float* pInput
 			if (lErr = cudaMemcpy(pHost, src, nSize, cudaMemcpyDeviceToHost))
 				return lErr;
 
+			if (lErr = cudaStreamSynchronize(0))
+				return lErr;
+
 			if (hStream < 0)
+			{
 				lErr = cudaMemcpy(dst, pHost, nSize, cudaMemcpyHostToDevice);
+				if (lErr)
+					return lErr;
+
+				return cudaStreamSynchronize(0);
+			}
 			else if (hStream == 0)
+			{
 				lErr = cudaMemcpyAsync(dst, pHost, nSize, cudaMemcpyHostToDevice, cudaStreamDefault);
+				if (lErr)
+					return lErr;
+
+				return cudaStreamSynchronize(cudaStreamDefault);
+			}
 			else
-				lErr = cudaMemcpyAsync(dst, pHost, nSize, cudaMemcpyHostToDevice, pSrcKernel->GetStream(hStream));
+			{
+				cudaStream_t strm = pSrcKernel->GetStream(hStream);
+				lErr = cudaMemcpyAsync(dst, pHost, nSize, cudaMemcpyHostToDevice, strm);
+				if (lErr)
+					return lErr;
+
+				return cudaStreamSynchronize(strm);
+			}
 		}
 	}
 
@@ -720,7 +795,13 @@ LONG copyMemKernelToKernel(Kernel<double>* pSrcKernel, LONG lInput, double* pInp
 	long lHostKernelIdx = (long)pInput[7];
 	long hStream = (long)pInput[8];
 
-	Kernel<double>* pDstKernel; 
+	if (lHostKernelIdx >= MAX_KERNELS)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	if (lDstKernelIdx >= MAX_KERNELS)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	Kernel<double>* pDstKernel;
 	if ((pDstKernel = g_rgdwDoubleKernelTable[lDstKernelIdx]) == NULL)
 		return ERROR_PARAM_NULL;
 
@@ -733,12 +814,20 @@ LONG copyMemKernelToKernel(Kernel<double>* pSrcKernel, LONG lInput, double* pInp
 	if (lErr = pDstKernel->GetMemory(hDst, &pDst))
 		return lErr;
 
+	int nSrcSize = (nSrcOffset + nCount) * sizeof(double);
+	if (nSrcSize > pSrc->Size())
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	int nDstSize = (nDstOffset + nCount) * sizeof(double);
+	if (nDstSize > pDst->Size())
+		return ERROR_PARAM_OUT_OF_RANGE;
+
 	double* src = (double*)(pSrc->Data());
 	double* dst = (double*)(pDst->Data());
 
 	src += nSrcOffset;
 	dst += nDstOffset;
-		
+
 	int nSrcDeviceID = pSrcKernel->GetDevice();
 	int nDstDeviceID = pDstKernel->GetDevice();
 	int nSize = nCount * sizeof(double);
@@ -746,11 +835,30 @@ LONG copyMemKernelToKernel(Kernel<double>* pSrcKernel, LONG lInput, double* pInp
 	if (nSrcDeviceID == nDstDeviceID)
 	{
 		if (hStream < 0)
+		{
 			lErr = cudaMemcpy(dst, src, nSize, cudaMemcpyDeviceToDevice);
+			if (lErr)
+				return lErr;
+
+			return cudaStreamSynchronize(0);
+		}
 		else if (hStream == 0)
+		{
 			lErr = cudaMemcpyAsync(dst, src, nSize, cudaMemcpyDeviceToDevice, cudaStreamDefault);
+			if (lErr)
+				return lErr;
+
+			return cudaStreamSynchronize(cudaStreamDefault);
+		}
 		else
-			lErr = cudaMemcpyAsync(dst, src, nSize, cudaMemcpyDeviceToDevice, pSrcKernel->GetStream(hStream));
+		{
+			cudaStream_t strm = pSrcKernel->GetStream(hStream);
+			lErr = cudaMemcpyAsync(dst, src, nSize, cudaMemcpyDeviceToDevice, strm);
+			if (lErr)
+				return lErr;
+
+			return cudaStreamSynchronize(strm);
+		}
 	}
 	else
 	{
@@ -777,15 +885,34 @@ LONG copyMemKernelToKernel(Kernel<double>* pSrcKernel, LONG lInput, double* pInp
 				if (lErr != cudaErrorPeerAccessAlreadyEnabled)
 					return lErr;
 				else
-					cudaGetLastError(); // clear the last error.
+					cudaGetLastError(); // clear the error.
 			}
 
 			if (hStream < 0)
+			{
 				lErr = cudaMemcpyPeer(dst, nDstDeviceID, src, nSrcDeviceID, nSize);
+				if (lErr)
+					return lErr;
+
+				return cudaStreamSynchronize(0);
+			}
 			else if (hStream == 0)
+			{
 				lErr = cudaMemcpyPeerAsync(dst, nDstDeviceID, src, nSrcDeviceID, nSize, cudaStreamDefault);
+				if (lErr)
+					return lErr;
+
+				return cudaStreamSynchronize(cudaStreamDefault);
+			}
 			else
-				lErr = cudaMemcpyPeerAsync(dst, nDstDeviceID, src, nSrcDeviceID, nSize, pSrcKernel->GetStream(hStream));
+			{
+				cudaStream_t strm = pSrcKernel->GetStream(hStream);
+				lErr = cudaMemcpyPeerAsync(dst, nDstDeviceID, src, nSrcDeviceID, nSize, strm);
+				if (lErr)
+					return lErr;
+
+				return cudaStreamSynchronize(strm);
+			}
 
 			if (nCurrentDeviceID != nSrcDeviceID)
 			{
@@ -807,12 +934,34 @@ LONG copyMemKernelToKernel(Kernel<double>* pSrcKernel, LONG lInput, double* pInp
 			if (lErr = cudaMemcpy(pHost, src, nSize, cudaMemcpyDeviceToHost))
 				return lErr;
 
+			if (lErr = cudaStreamSynchronize(0))
+				return lErr;
+
 			if (hStream < 0)
+			{
 				lErr = cudaMemcpy(dst, pHost, nSize, cudaMemcpyHostToDevice);
+				if (lErr)
+					return lErr;
+
+				return cudaStreamSynchronize(0);
+			}
 			else if (hStream == 0)
+			{
 				lErr = cudaMemcpyAsync(dst, pHost, nSize, cudaMemcpyHostToDevice, cudaStreamDefault);
+				if (lErr)
+					return lErr;
+
+				return cudaStreamSynchronize(cudaStreamDefault);
+			}
 			else
-				lErr = cudaMemcpyAsync(dst, pHost, nSize, cudaMemcpyHostToDevice, pSrcKernel->GetStream(hStream));
+			{
+				cudaStream_t strm = pSrcKernel->GetStream(hStream);
+				lErr = cudaMemcpyAsync(dst, pHost, nSize, cudaMemcpyHostToDevice, strm);
+				if (lErr)
+					return lErr;
+
+				return cudaStreamSynchronize(strm);
+			}
 		}
 	}
 
