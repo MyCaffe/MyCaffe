@@ -459,6 +459,7 @@ namespace MyCaffe.trainers.pg.mt
         CryptoRandom m_random;
         float m_fGamma;
         bool m_bUseRawInput = false;
+        static object m_syncObj = new object();
 
         /// <summary>
         /// The OnApplyUpdates event fires each time the Agent needs to apply its updates to the primary instance of MyCaffe.
@@ -515,7 +516,11 @@ namespace MyCaffe.trainers.pg.mt
         {
             WorkerStartArgs args = arg as WorkerStartArgs;
 
-            m_brain.Create();
+            lock (m_syncObj)
+            {
+                m_brain.Create();
+            }
+
             m_evtDone.Reset();
             m_evtCancel.Reset();           
             Run(args.Phase, args.Iterations);
