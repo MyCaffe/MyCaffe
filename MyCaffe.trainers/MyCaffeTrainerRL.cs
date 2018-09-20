@@ -71,6 +71,8 @@ namespace MyCaffe.trainers
         TRAINER_TYPE m_trainerType = TRAINER_TYPE.PG_ST;
         int m_nItertions = -1;
         IXMyCaffeCustomTrainerCallback m_icallback = null;
+        int m_nSnapshot = 0;
+        bool m_bSnapshot = false;
 
         enum TRAINER_TYPE
         {
@@ -155,6 +157,7 @@ namespace MyCaffe.trainers
             MyCaffeControl<double> mycaffe = caffe as MyCaffeControl<double>;
             m_nProjectID = mycaffe.CurrentProject.ID;
             int.TryParse(mycaffe.CurrentProject.GetSolverSetting("max_iter"), out m_nItertions);
+            int.TryParse(mycaffe.CurrentProject.GetSolverSetting("snapshot"), out m_nSnapshot);
 
             switch (m_trainerType)
             {
@@ -185,6 +188,7 @@ namespace MyCaffe.trainers
             MyCaffeControl<float> mycaffe = caffe as MyCaffeControl<float>;
             m_nProjectID = mycaffe.CurrentProject.ID;
             int.TryParse(mycaffe.CurrentProject.GetSolverSetting("max_iter"), out m_nItertions);
+            int.TryParse(mycaffe.CurrentProject.GetSolverSetting("snapshot"), out m_nSnapshot);
 
             switch (m_trainerType)
             {
@@ -244,8 +248,15 @@ namespace MyCaffe.trainers
         /// <param name="dfRewards">Specifies the best rewards to this point.</param>
         protected virtual bool get_update_snapshot(out int nIteration, out double dfRewards)
         {
-            nIteration = 0;
-            dfRewards = 0;
+            nIteration = GlobalEpisodeCount;
+            dfRewards = GlobalRewards;
+
+            if (m_bSnapshot)
+            {
+                m_bSnapshot = false;
+                return true;
+            }
+
             return false;
         }
 
@@ -491,6 +502,9 @@ namespace MyCaffe.trainers
                 m_icallback.Update(GlobalEpisodeCount, GlobalRewards, GlobalLoss, e.LearningRate);
 
             e.NewFrameCount = m_nGlobalEpisodeCount;
+
+            if (m_nSnapshot > 0 && m_nGlobalEpisodeCount > 0 && (m_nGlobalEpisodeCount % m_nSnapshot) == 0)
+                m_bSnapshot = true;
         }
 
         /// <summary>
