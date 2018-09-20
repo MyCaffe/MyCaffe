@@ -908,7 +908,7 @@ namespace MyCaffe.param
             if (debug_info != false)
                 rgChildren.Add("debug_info", debug_info.ToString());
    
-            if (snapshot_after_train != true)
+            if (snapshot_after_train != false)
                 rgChildren.Add("snapshot_after_train", snapshot_after_train.ToString());
 
             if (!string.IsNullOrEmpty(custom_trainer))
