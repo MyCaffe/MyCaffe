@@ -773,7 +773,7 @@ namespace MyCaffe.solvers
                     // average the loss across iterations for smoothed reporting
                     UpdateSmoothedLoss(dfLoss, start_iter, average_loss);
 
-                    if (!bDisplay && sw.ElapsedMilliseconds > 2000)
+                    if (!bDisplay && sw.ElapsedMilliseconds > 2000 && !bDisableOutput)
                     {
                         bDisplay = true;
                         sw.Restart();
