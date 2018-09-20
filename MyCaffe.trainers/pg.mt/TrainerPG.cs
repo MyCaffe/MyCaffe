@@ -409,7 +409,9 @@ namespace MyCaffe.trainers.pg.mt
             while (nWait == 0)
             {
                 m_mycaffePrimary.CopyGradientsFrom(m_mycaffeWorker);
+                m_mycaffePrimary.Log.Enable = false;
                 m_dfLearningRate = m_mycaffePrimary.ApplyUpdate(m_nIteration);
+                m_mycaffePrimary.Log.Enable = true;
                 m_mycaffeWorker.CopyWeightsFrom(m_mycaffePrimary);
                 m_evtDoneApplying.Set();
 
@@ -725,10 +727,14 @@ namespace MyCaffe.trainers.pg.mt
             if (m_bCreated)
                 return;
 
+            m_mycaffePrimary.Log.Enable = false;
+
             if (m_nThreadCount == 1)
                 m_mycaffeWorker = m_mycaffePrimary;
             else
                 m_mycaffeWorker = m_mycaffePrimary.Clone(m_nGpuID);
+
+            m_mycaffePrimary.Log.Enable = true;
 
             m_mycaffeWorker.Cuda.SetDeviceID();
 
@@ -1011,7 +1017,6 @@ namespace MyCaffe.trainers.pg.mt
         /// <param name="nIteration">Specifies the current iterations.  NOTE: at each 'MiniBatch' (specified as the <i>batch_size</i> in the model), the accumulated gradients are applied.</param>
         public void Train(int nIteration)
         {
-            m_mycaffeWorker.Log.Enable = false;          
             m_solver.Step(1, TRAIN_STEP.NONE, true, true);
 
             if (nIteration % m_nMiniBatch == 0)
@@ -1029,8 +1034,6 @@ namespace MyCaffe.trainers.pg.mt
 
                 m_net.ClearParamDiffs();
             }
-
-            m_mycaffeWorker.Log.Enable = true;
         }
 
         /// <summary>
