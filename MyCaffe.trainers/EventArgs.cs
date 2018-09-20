@@ -152,6 +152,7 @@ namespace MyCaffe.trainers
     /// </summary>
     public class GetStatusArgs : EventArgs
     {
+        int m_nIndex = 0;
         int m_nNewFrameCount = 0;
         int m_nTotalFrames = 0;
         int m_nMaxFrames = 0;
@@ -164,6 +165,7 @@ namespace MyCaffe.trainers
         /// <summary>
         /// The constructor.
         /// </summary>
+        /// <param name="nIndex">Specifies the index of the caller.</param>
         /// <param name="nFrames">Specifies the total number of frames across all agents.</param>
         /// <param name="nMaxFrames">Specifies the maximum number of frames across all agents.</param>
         /// <param name="dfR">Specifies the total reward.</param>
@@ -171,8 +173,9 @@ namespace MyCaffe.trainers
         /// <param name="dfOptimalCoeff">Specifies the current optimal selection coefficient.</param>
         /// <param name="dfLoss">Specifies the loss.</param>
         /// <param name="dfLearningRate">Specifies the learning rate.</param>
-        public GetStatusArgs(int nFrames, int nMaxFrames, double dfR, double dfExplorationRate, double dfOptimalCoeff, double dfLoss, double dfLearningRate)
+        public GetStatusArgs(int nIndex, int nFrames, int nMaxFrames, double dfR, double dfExplorationRate, double dfOptimalCoeff, double dfLoss, double dfLearningRate)
         {
+            m_nIndex = nIndex;
             m_nTotalFrames = nFrames;
             m_nMaxFrames = nMaxFrames;
             m_dfTotalReward = dfR;
@@ -180,6 +183,14 @@ namespace MyCaffe.trainers
             m_dfOptimalCoeff = dfOptimalCoeff;
             m_dfLoss = dfLoss;
             m_dfLearningRate = dfLearningRate;
+        }
+
+        /// <summary>
+        /// Returns the index of the caller.
+        /// </summary>
+        public int Index
+        {
+            get { return m_nIndex; }
         }
 
         /// <summary>

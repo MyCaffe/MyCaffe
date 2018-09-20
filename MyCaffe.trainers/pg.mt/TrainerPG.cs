@@ -540,7 +540,7 @@ namespace MyCaffe.trainers.pg.mt
 
         private int updateStatus(int nEpisodeCount, double dfRunningReward, double dfLoss, double dfLearningRate)
         {
-            GetStatusArgs args = new GetStatusArgs(nEpisodeCount, 1000000, dfRunningReward, 0, 0, dfLoss, dfLearningRate);
+            GetStatusArgs args = new GetStatusArgs(m_nIndex, nEpisodeCount, 1000000, dfRunningReward, 0, 0, dfLoss, dfLearningRate);
             m_icallback.OnUpdateStatus(args);
             return args.NewFrameCount;
         }

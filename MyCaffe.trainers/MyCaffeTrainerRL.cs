@@ -503,7 +503,7 @@ namespace MyCaffe.trainers
 
             e.NewFrameCount = m_nGlobalEpisodeCount;
 
-            if (m_nSnapshot > 0 && m_nGlobalEpisodeCount > 0 && (m_nGlobalEpisodeCount % m_nSnapshot) == 0)
+            if (e.Index == 0 && m_nSnapshot > 0 && m_nGlobalEpisodeCount > 0 && (m_nGlobalEpisodeCount % m_nSnapshot) == 0)
                 m_bSnapshot = true;
         }
 
