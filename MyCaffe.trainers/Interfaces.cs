@@ -96,6 +96,10 @@ namespace MyCaffe.trainers
         /// <returns>The run results are returned.</returns>
         ResultCollection Run(Component mycaffe, int nDelay);
         /// <summary>
+        /// Returns the global loss.
+        /// </summary>
+        double GlobalLoss { get; }
+        /// <summary>
         /// Returns the global rewards.
         /// </summary>
         double GlobalRewards { get; }
