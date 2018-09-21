@@ -375,6 +375,7 @@ namespace MyCaffe.trainers
                     m_trainerType = TRAINER_TYPE.PG_ST;
                     break;
 
+                case "PG":
                 case "PG.MT":       // multi-thread (Sigmoid and Softmax)
                     m_trainerType = TRAINER_TYPE.PG_MT;
                     break;
