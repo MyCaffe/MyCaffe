@@ -676,6 +676,8 @@ namespace MyCaffe.trainers.pg.mt
         bool m_bSoftmaxCeSetup = false;
         PropertySet m_properties;
         CryptoRandom m_random;
+        BlobCollection<T> m_colAccumulatedGradients = new BlobCollection<T>();
+        int m_nAccumulationIteration = 0;
         Blob<T> m_blobDiscountedR;
         Blob<T> m_blobPolicyGradient;
         Blob<T> m_blobActionOneHot;
@@ -733,7 +735,7 @@ namespace MyCaffe.trainers.pg.mt
                 m_mycaffeWorker = m_mycaffePrimary;
             else
                 m_mycaffeWorker = m_mycaffePrimary.Clone(m_nGpuID);
-
+            
             m_mycaffePrimary.Log.Enable = true;
 
             m_mycaffeWorker.Cuda.SetDeviceID();
@@ -767,6 +769,8 @@ namespace MyCaffe.trainers.pg.mt
                 m_softmaxCe = new SoftmaxCrossEntropyLossLayer<T>(m_mycaffeWorker.Cuda, m_mycaffeWorker.Log, p);
             }
 
+            m_colAccumulatedGradients = m_net.learnable_parameters.Clone();
+
             m_bCreated = true;
         }
 
@@ -789,6 +793,12 @@ namespace MyCaffe.trainers.pg.mt
             dispose(ref m_blobPolicyGradient);
             dispose(ref m_blobActionOneHot);
             dispose(ref m_blobLoss);
+
+            if (m_colAccumulatedGradients != null)
+            {
+                m_colAccumulatedGradients.Dispose();
+                m_colAccumulatedGradients = null;
+            }
 
             if (m_mycaffeWorker != m_mycaffePrimary && m_mycaffeWorker != null)
                 m_mycaffeWorker.Dispose();
@@ -1011,16 +1021,61 @@ namespace MyCaffe.trainers.pg.mt
             return rgfAprob.Length - 1;
         }
 
+        private void copy_gradients(BlobCollection<T> src, BlobCollection<T> dst, bool bZeroSrc = false)
+        {
+            if (src.Count != dst.Count)
+                throw new Exception("The source and destination should have the same count.");
+
+            for (int i = 0; i < src.Count; i++)
+            {
+                dst[i].CopyFrom(src[i], true, true);
+
+                if (bZeroSrc)
+                    src[i].SetDiff(0);
+            }
+        }
+
+        private void accumulate_gradients(BlobCollection<T> src, BlobCollection<T> dst)
+        {
+            if (src.Count != dst.Count)
+                throw new Exception("The source and destination should have the same count.");
+
+            if (m_nAccumulationIteration == 0)
+            {
+                copy_gradients(src, dst);
+            }
+            else
+            {
+                for (int i = 0; i < src.Count; i++)
+                {
+                    Blob<T> bSrc = src[i];
+                    Blob<T> bDst = dst[i];
+                    int nSrcCount = bSrc.count();
+                    int nDstCount = bDst.count();
+
+                    if (nSrcCount != nDstCount)
+                        throw new Exception("The src and dst blobs at index #" + i.ToString() + " have different sizes!");
+
+                    m_mycaffeWorker.Cuda.add(nSrcCount, bSrc.gpu_diff, bDst.gpu_diff, bDst.mutable_gpu_diff);
+                }
+            }
+
+            m_nAccumulationIteration++;
+        }
+
         /// <summary>
         /// Train the model at the current iteration.
         /// </summary>
         /// <param name="nIteration">Specifies the current iterations.  NOTE: at each 'MiniBatch' (specified as the <i>batch_size</i> in the model), the accumulated gradients are applied.</param>
         public void Train(int nIteration)
         {
-            m_solver.Step(1, TRAIN_STEP.NONE, true, true);
+            m_solver.Step(1, TRAIN_STEP.NONE, false, true);
+            accumulate_gradients(m_net.learnable_parameters, m_colAccumulatedGradients);
 
             if (nIteration % m_nMiniBatch == 0)
             {
+                copy_gradients(m_colAccumulatedGradients, m_net.learnable_parameters, true);
+
                 if (m_mycaffePrimary == m_mycaffeWorker)
                 {
                     m_dfLearningRate = m_solver.ApplyUpdate(nIteration);
@@ -1033,6 +1088,7 @@ namespace MyCaffe.trainers.pg.mt
                 }
 
                 m_net.ClearParamDiffs();
+                m_nAccumulationIteration = 0;
             }
         }
 

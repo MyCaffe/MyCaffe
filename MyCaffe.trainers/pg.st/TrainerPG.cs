@@ -283,6 +283,8 @@ namespace MyCaffe.trainers.pg.st
         bool m_bSoftmaxCeSetup = false;
         PropertySet m_properties;
         CryptoRandom m_random;
+        BlobCollection<T> m_colAccumulatedGradients = new BlobCollection<T>();
+        int m_nAccumulationIteration = 0;
         Blob<T> m_blobDiscountedR;
         Blob<T> m_blobPolicyGradient;
         Blob<T> m_blobActionOneHot;
@@ -325,6 +327,8 @@ namespace MyCaffe.trainers.pg.st
                 m_softmaxCe = new SoftmaxCrossEntropyLossLayer<T>(mycaffe.Cuda, mycaffe.Log, p);
             }
 
+            m_colAccumulatedGradients = m_net.learnable_parameters.Clone();
+
             m_nMiniBatch = mycaffe.CurrentProject.GetBatchSize(phase);
         }
 
@@ -344,6 +348,12 @@ namespace MyCaffe.trainers.pg.st
             dispose(ref m_blobPolicyGradient);
             dispose(ref m_blobActionOneHot);
             dispose(ref m_blobLoss);
+
+            if (m_colAccumulatedGradients != null)
+            {
+                m_colAccumulatedGradients.Dispose();
+                m_colAccumulatedGradients = null;
+            }
         }
 
         public int Reshape(MemoryCollection col)
@@ -490,13 +500,57 @@ namespace MyCaffe.trainers.pg.st
             return rgfAprob.Length - 1;
         }
 
+        private void copy_gradients(BlobCollection<T> src, BlobCollection<T> dst, bool bZeroSrc = false)
+        {
+            if (src.Count != dst.Count)
+                throw new Exception("The source and destination should have the same count.");
+
+            for (int i = 0; i < src.Count; i++)
+            {
+                dst[i].CopyFrom(src[i], true, true);
+
+                if (bZeroSrc)
+                    src[i].SetDiff(0);
+            }
+        }
+
+        private void accumulate_gradients(BlobCollection<T> src, BlobCollection<T> dst)
+        {
+            if (src.Count != dst.Count)
+                throw new Exception("The source and destination should have the same count.");
+
+            if (m_nAccumulationIteration == 0)
+            {
+                copy_gradients(src, dst);
+            }
+            else
+            {
+                for (int i = 0; i < src.Count; i++)
+                {
+                    Blob<T> bSrc = src[i];
+                    Blob<T> bDst = dst[i];
+                    int nSrcCount = bSrc.count();
+                    int nDstCount = bDst.count();
+
+                    if (nSrcCount != nDstCount)
+                        throw new Exception("The src and dst blobs at index #" + i.ToString() + " have different sizes!");
+
+                    m_mycaffe.Cuda.add(nSrcCount, bSrc.gpu_diff, bDst.gpu_diff, bDst.mutable_gpu_diff);
+                }
+            }
+
+            m_nAccumulationIteration++;
+        }
+
         public void Train(int nIteration)
         {
             m_mycaffe.Log.Enable = false;
-            m_solver.Step(1, TRAIN_STEP.NONE, true);
+            m_solver.Step(1, TRAIN_STEP.NONE, false, true);
+            accumulate_gradients(m_net.learnable_parameters, m_colAccumulatedGradients);
 
             if (nIteration % m_nMiniBatch == 0)
             {
+                copy_gradients(m_colAccumulatedGradients, m_net.learnable_parameters, true);
                 m_solver.ApplyUpdate(nIteration);
                 m_net.ClearParamDiffs();
             }
