@@ -1,0 +1,8 @@
+LIBRARY	"CudaDnnDLL.10.0"
+
+STACKSIZE 8000000
+
+EXPORTS
+	DLL_InvokeFloat @1
+	DLL_InvokeDouble @2
+	DLL_QueryString @3
