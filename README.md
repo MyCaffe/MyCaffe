@@ -18,13 +18,11 @@ maintaining compatibility with CAFFE's solver descriptions, model descriptions a
 The C# based MyCaffe open-source project is independently maintained by <a href="http://www.signalpop.com">SignalPop LLC</a> and made 
 available under the Apache 2.0 License.
 <h3>Supported Development Environments:</h3>
-* Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 9.2.148</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.2.1</a> (currently uses VS2015 compile)</br>
-* Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 9.2.148</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.2.1</a> </br>
+* Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 10.0.130</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.3</a> </br>
+* Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 10.0.130</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.3</a> </br>
 </br>
 
-NOTE: Visual Studio 2017 support noted above currently uses the Platform Toolset "Visual Studio 2015 (v140)" build setting.
-
-IMPORTANT: The open-source MyCaffe project on GitHub is considered 'pre-release' and will have bugs.  When you find bugs or other issues, please report them here - or better yet, get involved
+IMPORTANT: The open-source MyCaffe project on GitHub is considered 'pre-release' and may have bugs.  When you find bugs or other issues, please report them here - or better yet, get involved
 and propose a fix!
 
 We have several new models supported by MyCaffe with the train_val and solution prototxt ready to go:
