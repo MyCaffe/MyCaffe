@@ -1151,7 +1151,7 @@ namespace MyCaffe.trainers.pg.mt
                 m_mycaffeWorker.Cuda.add(nCount, hActionOneHot, hPolicyGrad, hPolicyGrad);  // gradient = ((a=0)?1:0) - Aprob
                 dfLoss = Utility.ConvertVal<T>(m_blobPolicyGradient.sumsq_data());
 
-                m_mycaffeWorker.Cuda.mul_scalar(nCount, -1.0, hPolicyGrad); // invert for we ApplyUpdate subtracts the gradients
+                m_mycaffeWorker.Cuda.mul_scalar(nCount, -1.0, hPolicyGrad); // invert for ApplyUpdate subtracts the gradients
             }
 
             // Modulate the gradient with the advantage (PG magic happens right here.)
