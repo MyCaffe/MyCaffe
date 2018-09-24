@@ -163,7 +163,7 @@ namespace MyCaffe.trainers.pg.mt
                     nGpuIdx = 0;
             }
 
-            WorkerStartArgs args = new WorkerStartArgs(1, Phase.TEST, nIterations);
+            WorkerStartArgs args = new WorkerStartArgs(1, Phase.TEST, nIterations, TRAIN_STEP.NONE);
             foreach (Agent<T> agent in rgAgents)
             {
                 agent.Start(args);
@@ -185,7 +185,7 @@ namespace MyCaffe.trainers.pg.mt
         }
 
         /// <summary>
-        /// Train the network using a modified A3C training algorithm optimized for GPU use.
+        /// Train the network using a modified PG training algorithm optimized for GPU use.
         /// </summary>
         /// <param name="nIterations">Specifies the number of iterations to run.</param>
         /// <param name="step">Specifies the stepping mode to use (when debugging).</param>
@@ -214,9 +214,9 @@ namespace MyCaffe.trainers.pg.mt
             }
 
             if (m_optimizer != null)
-                m_optimizer.Start(new WorkerStartArgs(0, Phase.TRAIN, nIterations));
+                m_optimizer.Start(new WorkerStartArgs(0, Phase.TRAIN, nIterations, step));
 
-            WorkerStartArgs args = new WorkerStartArgs(1, Phase.TRAIN, nIterations);            
+            WorkerStartArgs args = new WorkerStartArgs(1, Phase.TRAIN, nIterations, step);            
             foreach (Agent<T> agent in rgAgents)
             {
                 agent.Start(args);
@@ -259,6 +259,7 @@ namespace MyCaffe.trainers.pg.mt
         int m_nCycleDelay;
         Phase m_phase;
         int m_nIterations;
+        TRAIN_STEP m_step = TRAIN_STEP.NONE;
 
         /// <summary>
         /// The constructor.
@@ -266,11 +267,21 @@ namespace MyCaffe.trainers.pg.mt
         /// <param name="nCycleDelay">Specifies the cycle delay specifies the amount of time to wait for a cancel on each training loop.</param>
         /// <param name="phase">Specifies the phase on which to run.</param>
         /// <param name="nIterations">Specifies the maximum number of episodes to run.</param>
-        public WorkerStartArgs(int nCycleDelay, Phase phase, int nIterations)
+        /// <param name="step">Specifies a training step, if any - this is used during debugging.</param>
+        public WorkerStartArgs(int nCycleDelay, Phase phase, int nIterations, TRAIN_STEP step)
         {
             m_nCycleDelay = nCycleDelay;
             m_phase = phase;
             m_nIterations = nIterations;
+            m_step = step;
+        }
+
+        /// <summary>
+        /// Returns the training step to take (if any).  This is used for debugging.
+        /// </summary>
+        public TRAIN_STEP Step
+        {
+            get { return m_step; }
         }
 
         /// <summary>
@@ -398,6 +409,8 @@ namespace MyCaffe.trainers.pg.mt
         /// <param name="arg">Specifies the argument to the thread.</param>
         protected override void doWork(object arg)
         {
+            WorkerStartArgs args = arg as WorkerStartArgs;
+
             m_mycaffePrimary.Cuda.SetDeviceID();
 
             List<WaitHandle> rgWait = new List<WaitHandle>();
@@ -408,14 +421,21 @@ namespace MyCaffe.trainers.pg.mt
 
             while (nWait == 0)
             {
-                m_mycaffePrimary.CopyGradientsFrom(m_mycaffeWorker);
-                m_mycaffePrimary.Log.Enable = false;
-                m_dfLearningRate = m_mycaffePrimary.ApplyUpdate(m_nIteration);
-                m_mycaffePrimary.Log.Enable = true;
-                m_mycaffeWorker.CopyWeightsFrom(m_mycaffePrimary);
+                if (args.Step != TRAIN_STEP.FORWARD)
+                {
+                    m_mycaffePrimary.CopyGradientsFrom(m_mycaffeWorker);
+                    m_mycaffePrimary.Log.Enable = false;
+                    m_dfLearningRate = m_mycaffePrimary.ApplyUpdate(m_nIteration);
+                    m_mycaffePrimary.Log.Enable = true;
+                    m_mycaffeWorker.CopyWeightsFrom(m_mycaffePrimary);
+                }
+
                 m_evtDoneApplying.Set();
 
                 nWait = WaitHandle.WaitAny(rgWait.ToArray());
+
+                if (args.Step != TRAIN_STEP.NONE)
+                    break;
             }
         }
 
@@ -525,7 +545,7 @@ namespace MyCaffe.trainers.pg.mt
 
             m_evtDone.Reset();
             m_evtCancel.Reset();           
-            Run(args.Phase, args.Iterations);
+            Run(args.Phase, args.Iterations, args.Step);
             m_evtDone.Set();
 
             m_brain.Cancel.Set();
@@ -575,7 +595,8 @@ namespace MyCaffe.trainers.pg.mt
         /// </summary>
         /// <param name="phase">Specifies the phae.</param>
         /// <param name="nIterations">Specifies the number of iterations to run.</param>
-        public void Run(Phase phase, int nIterations)
+        /// <param name="step">Specifies the training step to take, if any.  This is only used when debugging.</param>
+        public void Run(Phase phase, int nIterations, TRAIN_STEP step)
         {
             Memory m_rgMemory = new Memory();
             double? dfRunningReward = null;
@@ -613,16 +634,20 @@ namespace MyCaffe.trainers.pg.mt
 
                         // Compute the discounted reward (backwards through time)
                         float[] rgDiscountedR = m_rgMemory.GetDiscountedRewards(m_fGamma);
-                        // Rewards are standardized when set to be unit normal (helps control the gradient estimator variance)
+                        // Rewards are normalized when set to be unit normal (helps control the gradient estimator variance)
                         m_brain.SetDiscountedR(rgDiscountedR);
 
-                        // Get the action probabilities.
-                        float[] rgfAprobSet = m_rgMemory.GetActionProbabilities();
-                        // The action probabilities are used to calculate the initial gradient within the loss function.
-                        m_brain.SetActionProbabilities(rgfAprobSet);
+                        // Sigmoid models, set the probabilities up font.
+                        if (!m_brain.UsesSoftMax)
+                        {
+                            // Get the action probabilities.
+                            float[] rgfAprobSet = m_rgMemory.GetActionProbabilities();
+                            // The action probabilities are used to calculate the initial gradient within the loss function.
+                            m_brain.SetActionProbabilities(rgfAprobSet);
+                        }
 
                         // Get the action one-hot vectors.  When using Softmax, this contains the one-hot vector containing
-                        // eac action set (e.g. 3 actions with action 0 set would return a vector <1,0,0>).  
+                        // each action set (e.g. 3 actions with action 0 set would return a vector <1,0,0>).  
                         // When using a binary probability (e.g. with Sigmoid), the each action set only contains a
                         // single element which is set to the action value itself (e.g. 0 for action '0' and 1 for action '1')
                         float[] rgfAonehotSet = m_rgMemory.GetActionOneHotVectors();
@@ -631,7 +656,7 @@ namespace MyCaffe.trainers.pg.mt
                         // Train for one iteration, which triggers the loss function.
                         List<Datum> rgData = m_rgMemory.GetData();
                         m_brain.SetData(rgData);
-                        m_brain.Train(nEpisodeNumber);
+                        m_brain.Train(nEpisodeNumber, step);
 
                         // Update reward running
                         if (!dfRunningReward.HasValue)
@@ -644,6 +669,9 @@ namespace MyCaffe.trainers.pg.mt
 
                         s = getData(m_nIndex, -1);
                         m_rgMemory.Clear();
+
+                        if (step != TRAIN_STEP.NONE)
+                            return;
                     }
                     else
                     {
@@ -691,6 +719,7 @@ namespace MyCaffe.trainers.pg.mt
         int m_nGpuID = 0;
         int m_nThreadCount = 1;
         bool m_bCreated = false;
+        bool m_bUseAcceleratedTraining = true;
 
         /// <summary>
         /// The OnApplyUpdate event fires when the Brain needs to apply its gradients to the primary instance of MyCaffe.
@@ -715,10 +744,12 @@ namespace MyCaffe.trainers.pg.mt
             m_nThreadCount = nThreadCount;
             m_mycaffePrimary = mycaffe;
             m_nMiniBatch = mycaffe.CurrentProject.GetBatchSize(phase);
-            
+
             double? dfRate = mycaffe.CurrentProject.GetSolverSettingAsNumeric("base_lr");
             if (dfRate.HasValue)
                 m_dfLearningRate = dfRate.Value;
+
+            m_bUseAcceleratedTraining = properties.GetPropertyAsBool("UseAcceleratedTraining", true);
         }
 
         /// <summary>
@@ -735,7 +766,7 @@ namespace MyCaffe.trainers.pg.mt
                 m_mycaffeWorker = m_mycaffePrimary;
             else
                 m_mycaffeWorker = m_mycaffePrimary.Clone(m_nGpuID);
-            
+
             m_mycaffePrimary.Log.Enable = true;
 
             m_mycaffeWorker.Cuda.SetDeviceID();
@@ -807,11 +838,11 @@ namespace MyCaffe.trainers.pg.mt
         }
 
         /// <summary>
-        /// Sets the device ID to the worker MyCaffe instance's device ID.
+        /// Returns <i>true</i> if the current model uses a SoftMax, <i>false</i> otherwise.
         /// </summary>
-        public void SetDeviceID()
+        public bool UsesSoftMax
         {
-            m_mycaffeWorker.Cuda.SetDeviceID();
+            get { return (m_softmax == null) ? false : true; }
         }
 
         /// <summary>
@@ -1056,7 +1087,8 @@ namespace MyCaffe.trainers.pg.mt
                     if (nSrcCount != nDstCount)
                         throw new Exception("The src and dst blobs at index #" + i.ToString() + " have different sizes!");
 
-                    m_mycaffeWorker.Cuda.add(nSrcCount, bSrc.gpu_diff, bDst.gpu_diff, bDst.mutable_gpu_diff);
+                    if (bSrc.DiffExists && bDst.DiffExists)
+                        m_mycaffeWorker.Cuda.add(nSrcCount, bSrc.gpu_diff, bDst.gpu_diff, bDst.mutable_gpu_diff);
                 }
             }
 
@@ -1067,12 +1099,13 @@ namespace MyCaffe.trainers.pg.mt
         /// Train the model at the current iteration.
         /// </summary>
         /// <param name="nIteration">Specifies the current iterations.  NOTE: at each 'MiniBatch' (specified as the <i>batch_size</i> in the model), the accumulated gradients are applied.</param>
-        public void Train(int nIteration)
+        /// <param name="step">Specifies the training step to use (if any).  This is only used for debugging.</param>
+        public void Train(int nIteration, TRAIN_STEP step)
         {
-            m_solver.Step(1, TRAIN_STEP.NONE, false, true);
+            m_solver.Step(1, step, true, m_bUseAcceleratedTraining, true);
             accumulate_gradients(m_net.learnable_parameters, m_colAccumulatedGradients);
 
-            if (nIteration % m_nMiniBatch == 0)
+            if (nIteration % m_nMiniBatch == 0 || step == TRAIN_STEP.BACKWARD || step == TRAIN_STEP.BOTH)
             {
                 copy_gradients(m_colAccumulatedGradients, m_net.learnable_parameters, true);
 
