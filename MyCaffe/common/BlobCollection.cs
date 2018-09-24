@@ -149,6 +149,76 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Copy the data or diff from another BlobCollection into this one.
+        /// </summary>
+        /// <param name="bSrc">Specifies the src BlobCollection to copy.</param>
+        /// <param name="bCopyDiff">Optionally, specifies to copy the diff instead of the data (default = <i>false</i>).</param>
+        public void CopyFrom(BlobCollection<T> bSrc, bool bCopyDiff = false)
+        {
+            if (Count != bSrc.Count)
+                throw new Exception("The source and destination should have the same count.");
+
+            for (int i = 0; i < bSrc.Count; i++)
+            {
+                m_rgBlobs[i].CopyFrom(bSrc[i], bCopyDiff, true);
+            }
+        }
+
+        /// <summary>
+        /// Accumulate the diffs from one BlobCollection into another.
+        /// </summary>
+        /// <param name="cuda">Specifies the CudaDnn instance used to add the blobs into this collection.</param>
+        /// <param name="src">Specifies the source BlobCollection to add into this one.</param>
+        /// <param name="bAccumulateDiff">Specifies to accumulate diffs when <i>true</i>, and the data otherwise.</param>
+        public void Accumulate(CudaDnn<T> cuda, BlobCollection<T> src, bool bAccumulateDiff)
+        {
+            for (int i = 0; i < src.Count; i++)
+            {
+                Blob<T> bSrc = src[i];
+                Blob<T> bDst = m_rgBlobs[i];
+                int nSrcCount = bSrc.count();
+                int nDstCount = bDst.count();
+
+                if (nSrcCount != nDstCount)
+                    throw new Exception("The src and dst blobs at index #" + i.ToString() + " have different sizes!");
+
+                if (bAccumulateDiff)
+                {
+                    if (bSrc.DiffExists && bDst.DiffExists)
+                        cuda.add(nSrcCount, bSrc.gpu_diff, bDst.gpu_diff, bDst.mutable_gpu_diff);
+                }
+                else
+                {
+                    cuda.add(nSrcCount, bSrc.gpu_data, bDst.gpu_data, bDst.mutable_gpu_data);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Set all blob diff to the value specified.
+        /// </summary>
+        /// <param name="df">Specifies the value to set all blob diff to.</param>
+        public void SetDiff(double df)
+        {
+            for (int i = 0; i < m_rgBlobs.Count; i++)
+            {
+                m_rgBlobs[i].SetDiff(df);
+            }
+        }
+
+        /// <summary>
+        /// Set all blob data to the value specified.
+        /// </summary>
+        /// <param name="df">Specifies the value to set all blob data to.</param>
+        public void SetData(double df)
+        {
+            for (int i = 0; i < m_rgBlobs.Count; i++)
+            {
+                m_rgBlobs[i].SetData(df);
+            }
+        }
+
+        /// <summary>
         /// Create a new collection of cloned Blobs created by calling MathSub to subtract the Blobs in this collection from another collection.
         /// </summary>
         /// <remarks>

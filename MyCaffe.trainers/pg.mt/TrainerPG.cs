@@ -705,7 +705,6 @@ namespace MyCaffe.trainers.pg.mt
         PropertySet m_properties;
         CryptoRandom m_random;
         BlobCollection<T> m_colAccumulatedGradients = new BlobCollection<T>();
-        int m_nAccumulationIteration = 0;
         Blob<T> m_blobDiscountedR;
         Blob<T> m_blobPolicyGradient;
         Blob<T> m_blobActionOneHot;
@@ -801,6 +800,7 @@ namespace MyCaffe.trainers.pg.mt
             }
 
             m_colAccumulatedGradients = m_net.learnable_parameters.Clone();
+            m_colAccumulatedGradients.SetDiff(0);
 
             m_bCreated = true;
         }
@@ -1052,49 +1052,6 @@ namespace MyCaffe.trainers.pg.mt
             return rgfAprob.Length - 1;
         }
 
-        private void copy_gradients(BlobCollection<T> src, BlobCollection<T> dst, bool bZeroSrc = false)
-        {
-            if (src.Count != dst.Count)
-                throw new Exception("The source and destination should have the same count.");
-
-            for (int i = 0; i < src.Count; i++)
-            {
-                dst[i].CopyFrom(src[i], true, true);
-
-                if (bZeroSrc)
-                    src[i].SetDiff(0);
-            }
-        }
-
-        private void accumulate_gradients(BlobCollection<T> src, BlobCollection<T> dst)
-        {
-            if (src.Count != dst.Count)
-                throw new Exception("The source and destination should have the same count.");
-
-            if (m_nAccumulationIteration == 0)
-            {
-                copy_gradients(src, dst);
-            }
-            else
-            {
-                for (int i = 0; i < src.Count; i++)
-                {
-                    Blob<T> bSrc = src[i];
-                    Blob<T> bDst = dst[i];
-                    int nSrcCount = bSrc.count();
-                    int nDstCount = bDst.count();
-
-                    if (nSrcCount != nDstCount)
-                        throw new Exception("The src and dst blobs at index #" + i.ToString() + " have different sizes!");
-
-                    if (bSrc.DiffExists && bDst.DiffExists)
-                        m_mycaffeWorker.Cuda.add(nSrcCount, bSrc.gpu_diff, bDst.gpu_diff, bDst.mutable_gpu_diff);
-                }
-            }
-
-            m_nAccumulationIteration++;
-        }
-
         /// <summary>
         /// Train the model at the current iteration.
         /// </summary>
@@ -1103,11 +1060,12 @@ namespace MyCaffe.trainers.pg.mt
         public void Train(int nIteration, TRAIN_STEP step)
         {
             m_solver.Step(1, step, true, m_bUseAcceleratedTraining, true);
-            accumulate_gradients(m_net.learnable_parameters, m_colAccumulatedGradients);
+            m_colAccumulatedGradients.Accumulate(m_mycaffeWorker.Cuda, m_net.learnable_parameters, true);
 
             if (nIteration % m_nMiniBatch == 0 || step == TRAIN_STEP.BACKWARD || step == TRAIN_STEP.BOTH)
             {
-                copy_gradients(m_colAccumulatedGradients, m_net.learnable_parameters, true);
+                m_net.learnable_parameters.CopyFrom(m_colAccumulatedGradients, true);
+                m_colAccumulatedGradients.SetDiff(0);
 
                 if (m_mycaffePrimary == m_mycaffeWorker)
                 {
@@ -1121,7 +1079,6 @@ namespace MyCaffe.trainers.pg.mt
                 }
 
                 m_net.ClearParamDiffs();
-                m_nAccumulationIteration = 0;
             }
         }
 
