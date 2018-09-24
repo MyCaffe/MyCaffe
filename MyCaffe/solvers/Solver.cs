@@ -682,10 +682,11 @@ namespace MyCaffe.solvers
         /// </summary>
         /// <param name="nIters">Specifies the number of steps to iterate.</param>
         /// <param name="step">Optionally, specifies to single step the training pass - typically this is used during debugging. The default = <i>TRAIN_STEP.NONE</i> for no stepping.</param>
-        /// <param name="bAccumulateGradients">Optionally, specifies whether or not to accumulate the gradients (default = false).  NOTE: When accumulating gradients, ApplyUpdate must be called separately.</param>
+        /// <param name="bZeroDiffs">Optionally, specifies whether or not to zero out the gradient diffs (default = <i>true</i>).</param>
+        /// <param name="bApplyUpdates">Optionally, specifies to apply the gradient updates to the weights (default = <i>true</i>).</param>
         /// <param name="bDisableOutput">Optionally, disable the output to the log.</param>
         /// <returns></returns>
-        public bool Step(int nIters, TRAIN_STEP step = TRAIN_STEP.NONE, bool bAccumulateGradients = false, bool bDisableOutput = false)
+        public bool Step(int nIters, TRAIN_STEP step = TRAIN_STEP.NONE, bool bZeroDiffs = true, bool bApplyUpdates = true, bool bDisableOutput = false)
         {
             Exception err = null;
 
@@ -716,7 +717,7 @@ namespace MyCaffe.solvers
                 while (m_nIter < stop_iter && !m_evtCompleted.WaitOne(0))
                 {
                     // zero-init the params.
-                    if (!bAccumulateGradients)
+                    if (bZeroDiffs)
                         m_net.ClearParamDiffs();
 
                     if (OnStart != null)
@@ -829,7 +830,7 @@ namespace MyCaffe.solvers
 
                     double dfLastLearningRate = 0;
 
-                    if (step != TRAIN_STEP.FORWARD && !bAccumulateGradients)
+                    if (step != TRAIN_STEP.FORWARD && bApplyUpdates)
                         dfLastLearningRate = ApplyUpdate(m_nIter);
 
                     if (m_evtCancel.WaitOne(0))
