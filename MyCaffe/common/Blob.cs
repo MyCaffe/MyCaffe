@@ -606,9 +606,19 @@ namespace MyCaffe.common
             }
 
             if (bCopyDiff)
+            {
+                if (m_diff == null)
+                    return hDstHostBuffer;
+
                 return m_diff.Copy(src.diff, hDstHostBuffer);
+            }
             else
+            {
+                if (m_data == null)
+                    return hDstHostBuffer;
+
                 return m_data.Copy(src.data, hDstHostBuffer);
+            }
         }
 
         /// <summary>
