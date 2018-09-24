@@ -120,13 +120,16 @@ namespace MyCaffe.trainers.pg.st
         }
 
         /// <summary>
-        /// Train the network using a modified A3C training algorithm optimized for GPU use.
+        /// Train the network using a modified PG training algorithm optimized for GPU use.
         /// </summary>
         /// <param name="nIterations">Specifies the number of iterations to run.</param>
         /// <param name="step">Specifies the stepping mode to use (when debugging).</param>
         /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
         public bool Train(int nIterations, TRAIN_STEP step)
         {
+            if (step != TRAIN_STEP.NONE)
+                throw new Exception("The single threaded traininer does not support stepping - use the 'PG.MT' trainer instead.");
+
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN);
             agent.Run(Phase.TRAIN, nIterations);
@@ -535,7 +538,8 @@ namespace MyCaffe.trainers.pg.st
                     if (nSrcCount != nDstCount)
                         throw new Exception("The src and dst blobs at index #" + i.ToString() + " have different sizes!");
 
-                    m_mycaffe.Cuda.add(nSrcCount, bSrc.gpu_diff, bDst.gpu_diff, bDst.mutable_gpu_diff);
+                    if (bSrc.DiffExists && bDst.DiffExists)
+                        m_mycaffe.Cuda.add(nSrcCount, bSrc.gpu_diff, bDst.gpu_diff, bDst.mutable_gpu_diff);
                 }
             }
 
@@ -545,7 +549,7 @@ namespace MyCaffe.trainers.pg.st
         public void Train(int nIteration)
         {
             m_mycaffe.Log.Enable = false;
-            m_solver.Step(1, TRAIN_STEP.NONE, false, true);
+            m_solver.Step(1, TRAIN_STEP.NONE, true, false, true);
             accumulate_gradients(m_net.learnable_parameters, m_colAccumulatedGradients);
 
             if (nIteration % m_nMiniBatch == 0)
