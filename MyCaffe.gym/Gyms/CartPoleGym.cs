@@ -40,6 +40,7 @@ namespace MyCaffe.gym
         int m_nSteps = 0;
         int m_nMaxSteps = 0;
         ColorMapper m_clrMap = null;
+        DATA_TYPE m_dt = DATA_TYPE.VALUES;
 
         // Angle at which to fail the episode
         double m_dfThetaThreshold = CartPoleState.MAX_THETA;
@@ -66,17 +67,24 @@ namespace MyCaffe.gym
             m_rgActionSpace.Add("MoveRight", 1);
         }
 
-        public IXMyCaffeGym Clone()
+        public IXMyCaffeGym Clone(bool bInitialize = true)
         {
             CartPoleGym gym = new CartPoleGym();
 
-            List<double> rgdfInit = new List<double>();
-            rgdfInit.Add(m_dfForce);
-            rgdfInit.Add((m_bAdditive) ? 1 : 0);
-
-            gym.Initialize(m_log, rgdfInit.ToArray());
+            if (bInitialize)
+            {
+                List<double> rgdfInit = new List<double>();
+                rgdfInit.Add(m_dfForce);
+                rgdfInit.Add((m_bAdditive) ? 1 : 0);
+                gym.Initialize(m_log, null, rgdfInit.ToArray());
+            }
 
             return gym;
+        }
+
+        public DATA_TYPE SelectedDataType
+        {
+            get { return m_dt; }
         }
 
         public string Name
@@ -115,7 +123,7 @@ namespace MyCaffe.gym
         {
         }
 
-        public void Initialize(Log log, double[] rgdfInit)
+        public void Initialize(Log log, string strParam, double[] rgdfInit)
         {
             m_dfForce = 10;
             m_bAdditive = false;
@@ -337,6 +345,9 @@ namespace MyCaffe.gym
             int nW = 1;
             int nC = 4;
 
+            if (dt == DATA_TYPE.DEFAULT)
+                dt = DATA_TYPE.VALUES;
+
             if (dt == DATA_TYPE.BLOB)
             {
                 nH = 156;
@@ -347,6 +358,8 @@ namespace MyCaffe.gym
             SourceDescriptor srcTrain = new SourceDescriptor(9999998, Name + ".training", nW, nH, nC, false, false);
             SourceDescriptor srcTest = new SourceDescriptor(9999999, Name + ".testing", nW, nH, nC, false, false);
             DatasetDescriptor ds = new DatasetDescriptor(9999999, Name, null, null, srcTrain, srcTest, "CartPoleGym", "CartPole Gym", null, true);
+
+            m_dt = dt;
 
             return ds;
         }
