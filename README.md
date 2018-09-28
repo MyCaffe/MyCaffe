@@ -31,7 +31,7 @@ We have several new models supported by MyCaffe with the train_val and solution 
  - Deep convolutional auto-encoder neural networks with pooling as described in [4].
  - Policy Gradient Reinforcement Learning networks as described in [5].
 
-[1] [Caffe: Convolutional Architecture for Fast Feature Embedding](https://arxiv.org/abs/1408.5093) by Yangqing Jai, Evan Shelhamer, Jeff Donahue, 
+[1] [CAFFE: Convolutional Architecture for Fast Feature Embedding](https://arxiv.org/abs/1408.5093) by Yangqing Jai, Evan Shelhamer, Jeff Donahue, 
 Sergey Karayev, Jonathan Long, Ross Girshick, Sergio Guadarrama, and Trevor Darrell, 2014.
 
 [2] [Domain-Adversarial Training of Neural Networks](https://arxiv.org/abs/1505.07818) by Yaroslav Ganin, Evgeniya Ustinova, Hana Ajakan, Pascal Germain, 
