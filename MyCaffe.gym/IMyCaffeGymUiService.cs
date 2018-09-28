@@ -34,18 +34,21 @@ namespace MyCaffe.gym
         double m_dfReward;
         bool m_bDone;
         Bitmap m_image;
+        Bitmap m_imgDisplay;
 
-        public Observation(Bitmap img, Tuple<double,double,double, bool>[] rgState, double dfReward, bool bDone)
+        public Observation(Bitmap imgDisp, Bitmap img, Tuple<double,double,double, bool>[] rgState, double dfReward, bool bDone)
         {
             m_rgState = rgState;
             m_dfReward = dfReward;
             m_bDone = bDone;
             m_image = img;
+            m_imgDisplay = imgDisp;
         }
 
         public Observation Clone()
         {
             Bitmap bmp = (m_image == null) ? null : new Bitmap(m_image);
+            Bitmap bmpDisp = (m_imgDisplay == null) ? null : new Bitmap(m_imgDisplay);
 
             List<Tuple<double, double, double, bool>> rgState = new List<Tuple<double, double, double, bool>>();
             foreach (Tuple<double, double, double, bool> item in m_rgState)
@@ -53,7 +56,7 @@ namespace MyCaffe.gym
                 rgState.Add(new Tuple<double, double, double, bool>(item.Item1, item.Item2, item.Item3, item.Item4));
             }
 
-            return new Observation(bmp, rgState.ToArray(), m_dfReward, m_bDone);
+            return new Observation(bmpDisp, bmp, rgState.ToArray(), m_dfReward, m_bDone);
         }
 
         public static double[] GetValues(Tuple<double,double,double, bool>[] rg, bool bNormalize, bool bGetAllData = false)
@@ -86,6 +89,13 @@ namespace MyCaffe.gym
         {
             get { return m_image; }
             set { m_image = value; }
+        }
+
+        [DataMember]
+        public Bitmap ImageDisplay
+        {
+            get { return m_imgDisplay; }
+            set { m_imgDisplay = value; }
         }
 
         [DataMember]

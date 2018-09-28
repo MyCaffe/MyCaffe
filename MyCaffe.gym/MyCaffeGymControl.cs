@@ -49,13 +49,16 @@ namespace MyCaffe.gym
                 Invalidate(true);
         }
 
-        public void Render(string strName, double[] rgData)
+        public void Render(string strName, double[] rgData, Bitmap bmp)
         {
             m_strName = strName;
 
             IXMyCaffeGym igym = m_colGym.Find(strName);
-            Bitmap bmp;
-            m_bmp = igym.Render(Width, Height, rgData, out bmp);
+
+            if (bmp != null)
+                m_bmp = bmp;
+            else
+               m_bmp = igym.Render(Width, Height, rgData, out bmp);
 
             if (IsHandleCreated && Visible)
                 Invalidate(true);
