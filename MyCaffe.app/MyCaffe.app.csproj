@@ -187,6 +187,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="MainIcon.ico" />
+    <None Include="Resources\ALE_license_cain.txt" />
     <Content Include="SqlServerTypes\readme.htm" />
     <Content Include="SqlServerTypes\x64\msvcr120.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
