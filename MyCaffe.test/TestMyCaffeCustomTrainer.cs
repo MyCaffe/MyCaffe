@@ -83,7 +83,7 @@ namespace MyCaffe.test
             {
                 foreach (IMyCaffeCustomTrainerTest t in test.Tests)
                 {
-                    t.TrainAtariPG(false, 100);
+                    t.TrainAtariPG(false, 10);
                 }
             }
             finally
@@ -180,7 +180,7 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TrainAtariPG(bool bShowUi, int nIterations = 1000)
+        public void TrainAtariPG(bool bShowUi, int nIterations = 100)
         {
             m_evtCancel.Reset();
 
@@ -211,7 +211,7 @@ namespace MyCaffe.test
             //  - Gamma = 0.99 (discounting factor)
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
             //  - GameROM = 'path to game ROM'
-            trainer.Initialize("TrainerType=PG.MT;RewardType=MAX;Gamma=0.99;Init1=10;GameROM=" + strRom, null);
+            trainer.Initialize("TrainerType=PG.MT;RewardType=VAL;Gamma=0.99;Init1=10;GameROM=" + strRom, null);
 
             if (bShowUi)
                 trainer.OpenUi();
