@@ -228,7 +228,7 @@ namespace MyCaffe.gym
 
             for (int i = 0; i < nNumSkip; i++)
             {
-                dfReward += m_ale.Act((ACTION)nAction);                
+                dfReward += m_ale.Act(action);                
             }
 
             return new Tuple<State, double, bool>(new AtariState(), dfReward, m_ale.GameOver);
