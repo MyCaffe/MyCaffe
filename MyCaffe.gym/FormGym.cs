@@ -53,16 +53,16 @@ namespace MyCaffe.gym
             }
         }
 
-        public void Render(double[] rgData, Bitmap bmp)
+        public void Render(double[] rgData, Bitmap bmp, Bitmap bmpAction)
         {
-            m_ctrl.Render(m_strName, rgData);
+            m_ctrl.Render(m_strName, rgData, bmp);
 
             if (bmp == null)
                 btnShowActionImage.Enabled = false;
             else
             {
                 btnShowActionImage.Enabled = true;
-                m_dlgActionImage.SetImage(bmp);
+                m_dlgActionImage.SetImage(bmpAction);
             }
         }
 
