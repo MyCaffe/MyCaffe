@@ -61,6 +61,24 @@ namespace MyCaffe.app.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to --------------------------------------------------------------------------
+        ///The following describes the licenses and copyrights related to the AleControl
+        ///--------------------------------------------------------------------------
+        ///
+        ///The AleControl is Copyright (C) 2018 SignalPop LLC and licensed under the 
+        ///Apache 2.0 License (http://www.apache.org/licenses/) and made available
+        ///on GitHub at https://github.com/MyCaffe/AleControl and also on NuGet
+        ///at https://www.nuget.org/packages?q=AleControl
+        ///
+        ///The AleCon [rest of string was truncated]&quot;;.
+        /// </summary>
+        internal static string ALE_license_cain {
+            get {
+                return ResourceManager.GetString("ALE_license_cain", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
         internal static byte[] alexnet_cifar_solver {

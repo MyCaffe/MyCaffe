@@ -1,0 +1,44 @@
+-------------------------------------------------------------------------
+ The following describes the licenses and copyrights related to the AleControl
+  ------------------------------------------------------------------------
+
+The AleControl is Copyright (C) 2018 SignalPop LLC and licensed under the 
+Apache 2.0 License (http://www.apache.org/licenses/) and made available
+on GitHub at https://github.com/MyCaffe/AleControl and also on NuGet
+at https://www.nuget.org/packages?q=AleControl
+
+The AleControl uses the Windows 64-bit ale_interface.dll, which was built from 
+source code from the open-source 'mgbellemare/Arcade-Learning-Envrionment' is 
+licensed under the GNU GPL License with Copyright (C) 1995-2012 Bradford W. Mott, 
+Stephen Anthony and the Stella Team, and Copyright (C) 2009-2012 Yavar Naddaf, 
+Marc G. Bellemare, Joel Veness and the Artificial Intelligence Laboratory at 
+the University of Alberta, and Copyright (C) 2018 SignalPop LLC for slight
+modifications.
+
+The open-source 'mgbellemare/Arcade-Learning-Envronment' available on GitHub
+at https://github.com/mgbellemare/Arcade-Learning-Environment (based on the
+Stella open-source project) is licensed under the GNU GPL License at
+https://raw.githubusercontent.com/mgbellemare/Arcade-Learning-Environment/master/License.txt
+with Copyright (C) 1995-2012 Bradford W. Mott, Stephen Anthony and the Stella Team, 
+and Copyright (C) 2009-2012 Yavar Naddaf, Marc G. Bellemare, Joel Veness and 
+the Artificial Intelligence Laboratory at the University of Alberta
+https://github.com/mgbellemare/Arcade-Learning-Environment/blob/master/Copyright.txt
+
+The open-source Stella project is available on Github at https://github.com/stella-emu/stella
+and is licensed under the GNU GPL License at 
+https://github.com/stella-emu/stella/blob/master/License.txt
+with Copyright (C) 1995-2012 Bradford W. Mott, Stephen Anthony and the Stella Team
+
+The Stella project, Arcade-Learning-Enviornment and the ale_interface.dll use
+the SDL runtime envrionment.  The Simple DirectMedia Layer (SDL for short) is 
+a cross-platform library designed to make it easy to write multi-media software, 
+such as games and emulators.  The Simple DirectMedia Layer library source code is
+available from: http://www.libsdl.org/  This library is distributed under the 
+terms of the GNU LGPL license: http://www.gnu.org/copyleft/lesser.html
+
+The ATARI roms, provided by OpenAI, are made avaiable on Github
+at https://github.com/openai/atari-py/tree/master/atari_py/atari_roms are distributed
+under the GNU GPL License at
+https://github.com/openai/atari-py/blob/master/License.txt
+
+***
