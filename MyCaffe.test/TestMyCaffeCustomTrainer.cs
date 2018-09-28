@@ -278,12 +278,7 @@ namespace MyCaffe.test
             m_log = e.OutputLog;
 
             m_bNormalizeInput = m_properties.GetPropertyAsBool("NormalizeInput", false);
-
-            List<double> rgdfInit = new List<double>();
-            rgdfInit.Add(m_properties.GetPropertyAsDouble("Init1", 10));
-            rgdfInit.Add(m_properties.GetPropertyAsDouble("Init2", 0));
-
-            m_igym.Initialize(m_log, null, rgdfInit.ToArray());
+            m_igym.Initialize(m_log, m_properties);
 
             m_sw.Start();
         }
@@ -390,12 +385,7 @@ namespace MyCaffe.test
             m_igym = m_colGyms.Find(m_strName);
             m_log = e.OutputLog;
 
-            List<double> rgdfInit = new List<double>();
-            rgdfInit.Add(m_properties.GetPropertyAsDouble("Init1", 10));
-            rgdfInit.Add(m_properties.GetPropertyAsDouble("Init2", 0));
-
-            string strROM = m_properties.GetProperty("GameROM");
-            m_igym.Initialize(m_log, strROM, rgdfInit.ToArray());
+            m_igym.Initialize(m_log, m_properties);
 
             m_sw.Start();
         }

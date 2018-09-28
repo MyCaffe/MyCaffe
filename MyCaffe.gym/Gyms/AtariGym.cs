@@ -39,7 +39,6 @@ namespace MyCaffe.gym
     public class AtariGym : IXMyCaffeGym, IDisposable
     {
         string m_strName = "ATARI";
-        string m_strParam = "";
         IALE m_ale = null;
         AtariState m_state = new AtariState();
         Log m_log;
@@ -63,7 +62,7 @@ namespace MyCaffe.gym
             }
         }
 
-        public void Initialize(Log log, string strParameter, double[] rgdfInit)
+        public void Initialize(Log log, PropertySet properties)
         {
             m_log = log;
 
@@ -82,11 +81,14 @@ namespace MyCaffe.gym
             m_ale.EnableColorAveraging = true;
             m_ale.RandomSeed = DateTime.Now.Millisecond;
 
-            if (!File.Exists(strParameter))
-                throw new Exception("Could not find the game ROM file specified '" + strParameter + "'!");
+            if (properties == null)
+                throw new Exception("The properties must be specified with the 'GameROM' set the the Game ROM file path.");
 
-            m_strParam = strParameter;
-            m_ale.Load(m_strParam);
+            string strROM = properties.GetProperty("GameROM");
+            if (!File.Exists(strROM))
+                throw new Exception("Could not find the game ROM file specified '" + strROM + "'!");
+
+            m_ale.Load(strROM);
             m_rgActionsRaw = m_ale.ActionSpace;
             m_random = new CryptoRandom();
 
@@ -103,15 +105,12 @@ namespace MyCaffe.gym
         }
 
 
-        public IXMyCaffeGym Clone(bool bInitialize)
+        public IXMyCaffeGym Clone(PropertySet properties = null)
         {
             AtariGym gym = new AtariGym();
 
-            if (bInitialize)
-            {
-                List<double> rgdfInit = new List<double>();
-                gym.Initialize(m_log, m_strParam, rgdfInit.ToArray());
-            }
+            if (properties != null)
+                gym.Initialize(m_log, properties);
 
             return gym;
         }
@@ -119,6 +118,11 @@ namespace MyCaffe.gym
         public DATA_TYPE SelectedDataType
         {
             get { return m_dt; }
+        }
+
+        public DATA_TYPE[] SupportedDataType
+        {
+            get { return new DATA_TYPE[] { DATA_TYPE.BLOB }; }
         }
 
         public string Name

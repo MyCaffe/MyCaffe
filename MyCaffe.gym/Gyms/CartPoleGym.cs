@@ -67,17 +67,12 @@ namespace MyCaffe.gym
             m_rgActionSpace.Add("MoveRight", 1);
         }
 
-        public IXMyCaffeGym Clone(bool bInitialize = true)
+        public IXMyCaffeGym Clone(PropertySet properties = null)
         {
             CartPoleGym gym = new CartPoleGym();
 
-            if (bInitialize)
-            {
-                List<double> rgdfInit = new List<double>();
-                rgdfInit.Add(m_dfForce);
-                rgdfInit.Add((m_bAdditive) ? 1 : 0);
-                gym.Initialize(m_log, null, rgdfInit.ToArray());
-            }
+            if (properties != null)
+                gym.Initialize(m_log, properties);
 
             return gym;
         }
@@ -85,6 +80,11 @@ namespace MyCaffe.gym
         public DATA_TYPE SelectedDataType
         {
             get { return m_dt; }
+        }
+
+        public DATA_TYPE[] SupportedDataType
+        {
+            get { return new DATA_TYPE[] { DATA_TYPE.VALUES, DATA_TYPE.BLOB }; }
         }
 
         public string Name
@@ -123,18 +123,15 @@ namespace MyCaffe.gym
         {
         }
 
-        public void Initialize(Log log, string strParam, double[] rgdfInit)
+        public void Initialize(Log log, PropertySet properties)
         {
             m_dfForce = 10;
             m_bAdditive = false;
 
-            if (rgdfInit != null)
+            if (properties != null)
             {
-                if (rgdfInit.Length > 0)
-                    m_dfForce = rgdfInit[0];
-
-                if (rgdfInit.Length > 1)
-                    m_bAdditive = (rgdfInit[1] == 0) ? false : true;
+                m_dfForce = properties.GetPropertyAsDouble("Init1", 10);
+                m_bAdditive = (properties.GetPropertyAsDouble("Init2", 0) == 0) ? false : true;
             }
 
             m_log = log;

@@ -19,9 +19,9 @@ namespace MyCaffe.gym
 
     public interface IXMyCaffeGym
     {
-        void Initialize(Log log, string strParam, double[] rgdfInit);
+        void Initialize(Log log, PropertySet properties);
         void Close();
-        IXMyCaffeGym Clone(bool bInitialize = true);
+        IXMyCaffeGym Clone(PropertySet properties = null);
         string Name { get; }
         Tuple<State, double, bool> Reset();
         Tuple<State, double, bool> Step(int nAction);
@@ -31,6 +31,8 @@ namespace MyCaffe.gym
         DatasetDescriptor GetDataset(DATA_TYPE dt);
         int UiDelay { get; }
         DATA_TYPE SelectedDataType { get; }
+
+        DATA_TYPE[] SupportedDataType { get; }
     }
 
     public abstract class State

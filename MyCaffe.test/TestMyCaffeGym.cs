@@ -84,7 +84,7 @@ namespace MyCaffe.test
             igym = igym.Clone();
             Assert.AreEqual(igym != null, true);
 
-            igym.Initialize(m_log, null, null);
+            igym.Initialize(m_log, null);
 
             Dictionary<string, int> rgActions = igym.GetActionSpace();
             Assert.AreEqual(rgActions.Count, 2);
