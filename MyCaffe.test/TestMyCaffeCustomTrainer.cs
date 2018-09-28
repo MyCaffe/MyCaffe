@@ -211,7 +211,10 @@ namespace MyCaffe.test
             //  - Gamma = 0.99 (discounting factor)
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
             //  - GameROM = 'path to game ROM'
-            trainer.Initialize("TrainerType=PG.MT;RewardType=VAL;Gamma=0.99;Init1=10;GameROM=" + strRom, null);
+            //  - EpsSteps = 1000 (run exploration for 200 episodes)
+            //  - EspStart = 0.8 (start random exploration at 80%)
+            //  - EpsEnd = 0 (end random exploration at 0%)
+            trainer.Initialize("TrainerType=PG.MT;RewardType=VAL;Gamma=0.99;EpsSteps=200;EpsStart=0.8;EpsEnd=0;GameROM=" + strRom, null);
 
             if (bShowUi)
                 trainer.OpenUi();

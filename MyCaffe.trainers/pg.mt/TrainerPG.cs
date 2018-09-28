@@ -481,6 +481,10 @@ namespace MyCaffe.trainers.pg.mt
         CryptoRandom m_random;
         float m_fGamma;
         bool m_bUseRawInput = false;
+        int m_nEpsSteps = 0;
+        double m_dfEpsStart = 0;
+        double m_dfEpsEnd = 0;
+        double m_dfExplorationRate = 0;
         static object m_syncObj = new object();
 
         /// <summary>
@@ -510,6 +514,18 @@ namespace MyCaffe.trainers.pg.mt
 
             m_fGamma = (float)properties.GetPropertyAsDouble("Gamma", 0.99);
             m_bUseRawInput = properties.GetPropertyAsBool("UseRawInput", false);
+            m_nEpsSteps = properties.GetPropertyAsInt("EpsSteps", 0);
+            m_dfEpsStart = properties.GetPropertyAsDouble("EpsStart", 0);
+            m_dfEpsEnd = properties.GetPropertyAsDouble("EpsEnd", 0);
+
+            if (m_dfEpsStart < 0 || m_dfEpsStart > 1)
+                throw new Exception("The 'EpsStart' is out of range - please specify a real number in the range [0,1]");
+
+            if (m_dfEpsEnd < 0 || m_dfEpsEnd > 1)
+                throw new Exception("The 'EpsEnd' is out of range - please specify a real number in the range [0,1]");
+
+            if (m_dfEpsEnd > m_dfEpsStart)
+                throw new Exception("The 'EpsEnd' must be less than the 'EpsStart' value.");
         }
 
         private void brain_OnApplyUpdate(object sender, ApplyUpdateArgs<T> e)
@@ -551,6 +567,14 @@ namespace MyCaffe.trainers.pg.mt
             m_brain.Cancel.Set();
         }
 
+        private double getEpsilon(int nEpisode)
+        {
+            if (nEpisode >= m_nEpsSteps)
+                return m_dfEpsEnd;
+
+            return m_dfEpsStart + (double)(nEpisode * (m_dfEpsEnd - m_dfEpsStart)/m_nEpsSteps);
+        }
+
         private StateBase getData(int nIdx, int nAction, bool? bResetOverride = null)
         {
             GetDataArgs args = m_brain.getDataArgs(nIdx, nAction, bResetOverride);
@@ -558,9 +582,24 @@ namespace MyCaffe.trainers.pg.mt
             return args.State;
         }
 
+        private int getAction(int nEpisode, SimpleDatum sd, int nActionCount, out float[] rgfAprob)
+        {
+            m_dfExplorationRate = getEpsilon(nEpisode);
+
+            if (m_random.NextDouble() < m_dfExplorationRate)
+            {
+                rgfAprob = new float[nActionCount];
+                int nAction = m_random.Next(nActionCount);
+                rgfAprob[nAction] = 1.0f;
+                return nAction;
+            }
+
+            return m_brain.act(sd, out rgfAprob);
+        }
+
         private int updateStatus(int nEpisodeCount, double dfRunningReward, double dfLoss, double dfLearningRate)
         {
-            GetStatusArgs args = new GetStatusArgs(m_nIndex, nEpisodeCount, 1000000, dfRunningReward, 0, 0, dfLoss, dfLearningRate);
+            GetStatusArgs args = new GetStatusArgs(m_nIndex, nEpisodeCount, 1000000, dfRunningReward, m_dfExplorationRate, 0, dfLoss, dfLearningRate);
             m_icallback.OnUpdateStatus(args);
             return args.NewFrameCount;
         }
@@ -613,7 +652,7 @@ namespace MyCaffe.trainers.pg.mt
 
                 // Forward the policy network and sample an action.
                 float[] rgfAprob;
-                int action = m_brain.act(x, out rgfAprob);
+                int action = getAction(nEpisodeNumber, x, s.ActionCount, out rgfAprob);
 
                 // Take the next step using the action
                 StateBase s_ = getData(m_nIndex, action);
@@ -835,6 +874,14 @@ namespace MyCaffe.trainers.pg.mt
                 m_mycaffeWorker.Dispose();
 
             m_mycaffeWorker = null;
+        }
+
+        /// <summary>
+        /// Returns the primary MyCaffe output log for writing output information.
+        /// </summary>
+        public Log OutputLog
+        {
+            get { return m_mycaffePrimary.Log; }
         }
 
         /// <summary>
