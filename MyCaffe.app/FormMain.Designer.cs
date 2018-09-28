@@ -75,6 +75,7 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.lblGpu = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
+            this.startAtariTrainerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -285,7 +286,8 @@
             this.alexNetToolStripMenuItem,
             this.resNet56CifarAccuracyBugToolStripMenuItem,
             this.toolStripSeparator5,
-            this.startCartPoleTrainerToolStripMenuItem});
+            this.startCartPoleTrainerToolStripMenuItem,
+            this.startAtariTrainerToolStripMenuItem});
             this.specialTestsToolStripMenuItem.Name = "specialTestsToolStripMenuItem";
             this.specialTestsToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.specialTestsToolStripMenuItem.Text = "Special Tests";
@@ -437,6 +439,13 @@
             this.timerUI.Interval = 1000;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
+            // startAtariTrainerToolStripMenuItem
+            // 
+            this.startAtariTrainerToolStripMenuItem.Name = "startAtariTrainerToolStripMenuItem";
+            this.startAtariTrainerToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
+            this.startAtariTrainerToolStripMenuItem.Text = "Start Atari Trainer";
+            this.startAtariTrainerToolStripMenuItem.Click += new System.EventHandler(this.startAtariTrainerToolStripMenuItem_Click);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -508,6 +517,7 @@
         private System.Windows.Forms.Timer timerUI;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
         private System.Windows.Forms.ToolStripMenuItem startCartPoleTrainerToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem startAtariTrainerToolStripMenuItem;
     }
 }
 

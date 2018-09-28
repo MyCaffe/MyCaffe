@@ -1172,7 +1172,8 @@ namespace MyCaffe.app
             {
                 m_log.WriteLine("starting policy gradient cart-pole test...");
                 m_evtCancelPG.Reset();
-                m_pgTask = Task.Factory.StartNew(new Action<object>(pgTrainerThread), m_evtCancelPG);
+                m_pgTask = Task.Factory.StartNew(new Action<object>(pgTrainerThread), new Tuple<CancelEvent, string>(m_evtCancelPG, "Cart-Pole"));
+                startAtariTrainerToolStripMenuItem.Enabled = false;
                 startCartPoleTrainerToolStripMenuItem.Text = "Stop Cart-Pole Training";
             }
             else
@@ -1180,18 +1181,46 @@ namespace MyCaffe.app
                 m_log.WriteLine("stopping policy gradient cart-pole test...");
                 m_evtCancelPG.Set();                
                 m_pgTask = null;
+                startAtariTrainerToolStripMenuItem.Enabled = true;
                 startCartPoleTrainerToolStripMenuItem.Text = "Start Cart-Pole Training";
+            }
+        }
+
+        private void startAtariTrainerToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (startAtariTrainerToolStripMenuItem.Text.Contains("Start"))
+            {
+                m_log.WriteLine("starting policy gradient ATARI test...");
+                m_evtCancelPG.Reset();
+                m_pgTask = Task.Factory.StartNew(new Action<object>(pgTrainerThread), new Tuple<CancelEvent, string>(m_evtCancelPG, "ATARI"));
+                startCartPoleTrainerToolStripMenuItem.Enabled = false;
+                startAtariTrainerToolStripMenuItem.Text = "Stop ATARI Training";
+            }
+            else
+            {
+                m_log.WriteLine("stopping policy gradient ATARI test...");
+                m_evtCancelPG.Set();
+                m_pgTask = null;
+                startCartPoleTrainerToolStripMenuItem.Enabled = true;
+                startAtariTrainerToolStripMenuItem.Text = "Start ATARI Training";
             }
         }
 
         private void pgTrainerThread(object obj)
         {
-            CancelEvent evtCancel = obj as CancelEvent;
-            MyCaffeCustomTrainerTest<float> test = new MyCaffeCustomTrainerTest<float>("Cart-Pole", 0, EngineParameter.Engine.DEFAULT);
+            Tuple<CancelEvent, string> arg = obj as Tuple<CancelEvent, string>;
+            CancelEvent evtCancel = arg.Item1;
+            string strGym = arg.Item2;
+            MyCaffeCustomTrainerTest<float> test = new MyCaffeCustomTrainerTest<float>(strGym, 0, EngineParameter.Engine.DEFAULT);
+            int nIterations = 500000;
 
             test.Log.OnWriteLine += Log_OnWriteLine1;
             test.CancelEvent.AddCancelOverride(evtCancel);
-            test.TrainCartPolePG(true, "PG.MT", 500000);
+
+            if (strGym == "Cart-Pole")
+                test.TrainCartPolePG(true, "PG.MT", nIterations);
+            else if (strGym == "ATARI")
+                test.TrainAtariPG(true, nIterations);
 
             if (evtCancel.WaitOne(0))
                 test.Log.WriteLine("training aborted.");
