@@ -12,15 +12,16 @@ namespace MyCaffe.gym
 {
     public enum DATA_TYPE
     {
+        DEFAULT,
         VALUES,
         BLOB
     }
 
     public interface IXMyCaffeGym
     {
-        void Initialize(Log log, double[] rgdfInit);
+        void Initialize(Log log, string strParam, double[] rgdfInit);
         void Close();
-        IXMyCaffeGym Clone();
+        IXMyCaffeGym Clone(bool bInitialize = true);
         string Name { get; }
         Tuple<State, double, bool> Reset();
         Tuple<State, double, bool> Step(int nAction);
@@ -29,6 +30,7 @@ namespace MyCaffe.gym
         Dictionary<string, int> GetActionSpace();
         DatasetDescriptor GetDataset(DATA_TYPE dt);
         int UiDelay { get; }
+        DATA_TYPE SelectedDataType { get; }
     }
 
     public abstract class State
