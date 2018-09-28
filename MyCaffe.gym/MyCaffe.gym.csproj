@@ -58,7 +58,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AleSample.cs" />
     <Compile Include="FormActionImage.cs">
       <SubType>Form</SubType>
     </Compile>
