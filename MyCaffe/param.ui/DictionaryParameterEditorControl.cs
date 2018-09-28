@@ -33,7 +33,10 @@ namespace MyCaffe.param.ui
                 {
                     if (row.Cells[0].Value != null)
                     {
-                        string strItem = row.Cells[0].Value.ToString() + "=" + row.Cells[1].Value.ToString();
+                        string strItem = row.Cells[0].Value.ToString() + "=";
+                        if (row.Cells[1].Value != null)
+                            strItem += row.Cells[1].Value.ToString();
+
                         m_strVal += strItem + ";";
                     }
                 }
