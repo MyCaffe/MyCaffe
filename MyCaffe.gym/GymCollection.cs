@@ -18,6 +18,7 @@ namespace MyCaffe.gym
         public void Load()
         {
             m_rgGym.Add(new CartPoleGym());
+            m_rgGym.Add(new AtariGym());
         }
 
         public IXMyCaffeGym Find(string strName)
