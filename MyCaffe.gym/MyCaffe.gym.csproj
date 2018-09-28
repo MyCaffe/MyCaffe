@@ -40,6 +40,10 @@
     <ApplicationIcon>MainIcon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AleControlLib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f59a5464a77ea1ad, processorArchitecture=MSIL">
+      <HintPath>..\packages\AleControl.0.10.0.28-beta1\lib\net40\AleControlLib.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -54,6 +58,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AleSample.cs" />
     <Compile Include="FormActionImage.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -74,6 +79,7 @@
     </Compile>
     <Compile Include="Geometry.cs" />
     <Compile Include="GymCollection.cs" />
+    <Compile Include="Gyms\AtariGym.cs" />
     <Compile Include="Gyms\CartPoleGym.cs" />
     <Compile Include="IMyCaffeGymUiService.cs" />
     <Compile Include="Interfaces.cs" />
@@ -96,6 +102,10 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="mycaffe.gym.pfx" />
+    <None Include="packages.config" />
+    <None Include="roms\defender.bin" />
+    <None Include="roms\pong.bin" />
+    <None Include="roms\space_invaders.bin" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="FormActionImage.resx">
