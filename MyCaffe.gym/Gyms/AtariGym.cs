@@ -6,8 +6,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -48,6 +50,8 @@ namespace MyCaffe.gym
         Dictionary<string, int> m_rgActions = new Dictionary<string, int>();
         List<KeyValuePair<string, int>> m_rgActionSet;
         DATA_TYPE m_dt = DATA_TYPE.BLOB;
+        COLORTYPE m_ct = COLORTYPE.CT_COLOR;
+        bool m_bPreprocess = true;
 
         public AtariGym()
         {
@@ -79,7 +83,8 @@ namespace MyCaffe.gym
             m_ale.EnableColorData = false;
             m_ale.EnableRestrictedActionSet = true;
             m_ale.EnableColorAveraging = true;
-            m_ale.RandomSeed = DateTime.Now.Millisecond;
+            m_ale.RandomSeed = (int)DateTime.Now.Ticks;
+            m_ale.RepeatActionProbability = 0.0f; // disable action repeatability
 
             if (properties == null)
                 throw new Exception("The properties must be specified with the 'GameROM' set the the Game ROM file path.");
@@ -87,6 +92,11 @@ namespace MyCaffe.gym
             string strROM = properties.GetProperty("GameROM");
             if (!File.Exists(strROM))
                 throw new Exception("Could not find the game ROM file specified '" + strROM + "'!");
+
+            if (properties.GetPropertyAsBool("UseGrayscale", false))
+                m_ct = COLORTYPE.CT_GRAYSCALE;
+
+            m_bPreprocess = properties.GetPropertyAsBool("Preprocess", true);
 
             m_ale.Load(strROM);
             m_rgActionsRaw = m_ale.ActionSpace;
@@ -157,50 +167,78 @@ namespace MyCaffe.gym
 
         public Bitmap Render(int nWidth, int nHeight, double[] rgData, out Bitmap bmpAction)
         {
-            COLORTYPE ct = COLORTYPE.CT_COLOR;
             float fWid;
             float fHt;
 
             m_ale.GetScreenDimensions(out fWid, out fHt);
-            byte[] rgRawData = m_ale.GetScreenData(ct);
+            byte[] rgRawData = m_ale.GetScreenData(m_ct);
 
-            Bitmap bmp = getBitmap(ct, (int)fWid, (int)fHt, rgRawData);
-            int nSize = Math.Min((int)fWid, (int)fHt);
-            bmpAction = new Bitmap(nSize, nSize);
+            Tuple<DirectBitmap, DirectBitmap> bmps = getBitmaps(m_ct, (int)fWid, (int)fHt, 35, 2, rgRawData);
 
-            using (Graphics g = Graphics.FromImage(bmpAction))
+            if (m_bPreprocess)
             {
-                int nY = 0;
-                if (fHt > fWid)
-                    nY = (int)(fHt - fWid);
+                DirectBitmap bmpRawAction = bmps.Item2;
 
-                Rectangle rcDst = new Rectangle(0, 0, nSize, nSize);
-                Rectangle rcSrc = new Rectangle(0, nY, nSize, nSize);
+                for (int y = 0; y < bmpRawAction.Height; y++)
+                {
+                    for (int x = 0; x < bmpRawAction.Width; x++)
+                    {
+                        Color clr = bmpRawAction.GetPixel(x, y);
+                        int nR = clr.R;
 
-                g.DrawImage(bmp, rcDst, rcSrc, GraphicsUnit.Pixel);
+                        if (nR == 144 || nR == 109)
+                            nR = 0;       // erase background (type 1 and 2)
+                        else if (nR != 0)
+                            nR = 255;     // everything else (paddles, ball) just set to 1
+
+                        bmpRawAction.SetPixel(x, y, Color.FromArgb(nR, nR, nR));
+                    }
+                }
             }
 
-            if (bmpAction.Width != 80 || bmpAction.Height != 80)
-                bmpAction = ImageTools.ResizeImage(bmpAction, 80, 80);
+            Bitmap bmp;
+            if (bmps.Item1.Bitmap.Width != nWidth || bmps.Item1.Bitmap.Height != nHeight)
+                bmp = ImageTools.ResizeImage(bmps.Item1.Bitmap, nWidth, nHeight);
+            else
+                bmp = new Bitmap(bmps.Item1.Bitmap);
 
-            if (bmp.Width != nWidth || bmp.Height != nHeight)
-                bmp = ImageTools.ResizeImage(bmp, nWidth, nHeight);
+            bmpAction = new Bitmap(bmps.Item2.Bitmap);
+
+            bmps.Item1.Dispose();
+            bmps.Item2.Dispose();
 
             return bmp;
         }
 
-        private Bitmap getBitmap(COLORTYPE ct, int nWid, int nHt, byte[] rg)
+        private Tuple<DirectBitmap, DirectBitmap> getBitmaps(COLORTYPE ct, int nWid, int nHt, int nOffset, int nDownsample, byte[] rg)
         {
-            Bitmap bmp = new Bitmap(nWid, nHt);
+            int nSize = Math.Min(nWid, nHt);
+            int nDsSize = nSize / nDownsample;
+            int nX = 0;
+            int nY = 0;
+            bool bY = false;
+            bool bX = false;
+            DirectBitmap bmp = new DirectBitmap(nWid, nHt);
+            DirectBitmap bmpA = new DirectBitmap(nDsSize, nDsSize);
 
             for (int y = 0; y < nHt; y++)
             {
+                if (y % nDownsample == 0 && y > nOffset && y < nOffset + nSize)
+                    bY = true;
+                else
+                    bY = false;
+
                 for (int x = 0; x < nWid; x++)
                 {
                     int nIdx = (y * nWid) + x;
                     int nR = rg[nIdx];
                     int nG = nR;
                     int nB = nR;
+
+                    if (x % nDownsample == 0)
+                        bX = true;
+                    else
+                        bX = false;
 
                     if (ct == COLORTYPE.CT_COLOR)
                     {
@@ -210,10 +248,22 @@ namespace MyCaffe.gym
 
                     Color clr = Color.FromArgb(nR, nG, nB);
                     bmp.SetPixel(x, y, clr);
+
+                    if (bY && bX)
+                    {
+                        bmpA.SetPixel(nX, nY, clr);
+                        nX++;
+                    }
+                }
+
+                if (bY)
+                {
+                    nX = 0;
+                    nY++;
                 }
             }
 
-            return bmp;
+            return new Tuple<DirectBitmap, DirectBitmap>(bmp, bmpA);
         }
 
         public Tuple<State, double, bool> Reset()
@@ -279,6 +329,57 @@ namespace MyCaffe.gym
         {
             List<Tuple<double, double, double, bool>> rg = new List<Tuple<double, double, double, bool>>();
             return rg.ToArray();
+        }
+    }
+
+    /// <summary>
+    /// See https://stackoverflow.com/questions/24701703/c-sharp-faster-alternatives-to-setpixel-and-getpixel-for-bitmaps-for-windows-f
+    /// </summary>
+    public class DirectBitmap : IDisposable
+    {
+        public Bitmap Bitmap { get; private set; }
+        public Int32[] Bits { get; private set; }
+        public bool Disposed { get; private set; }
+        public int Height { get; private set; }
+        public int Width { get; private set; }
+
+        protected GCHandle BitsHandle { get; private set; }
+
+        public DirectBitmap(int width, int height)
+        {
+            Width = width;
+            Height = height;
+            Bits = new Int32[width * height];
+            BitsHandle = GCHandle.Alloc(Bits, GCHandleType.Pinned);
+            Bitmap = new Bitmap(width, height, width * 4, PixelFormat.Format32bppPArgb, BitsHandle.AddrOfPinnedObject());
+        }
+
+        public void SetPixel(int x, int y, Color colour)
+        {
+            int index = x + (y * Width);
+            int col = colour.ToArgb();
+
+            Bits[index] = col;
+        }
+
+        public Color GetPixel(int x, int y)
+        {
+            int index = x + (y * Width);
+            int col = Bits[index];
+            Color result = Color.FromArgb(col);
+
+            return result;
+        }
+
+        public void Dispose()
+        {
+            if (Disposed) return;
+            Disposed = true;
+
+            if (Bitmap != null)
+                Bitmap.Dispose();
+
+            BitsHandle.Free();
         }
     }
 }
