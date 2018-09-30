@@ -31,6 +31,9 @@ We have several new models supported by MyCaffe with the train_val and solution 
  - Deep convolutional auto-encoder neural networks with pooling as described in [4].
  - Policy Gradient Reinforcement Learning networks as described in [5].
 
+ MyCaffe now supports the Arcade-Learning-Environment by [6] based on the Stella Atari-2600 emulator from [7], via the AleControl from SignalPop.  
+ For more information, get the <a href="https://www.nuget.org/packages?q=AleControl">AleControl on Nuget</a>, or visit the <a href="https://github.com/MyCaffe/AleControl">AleControl on Github</a>.
+
 [1] [CAFFE: Convolutional Architecture for Fast Feature Embedding](https://arxiv.org/abs/1408.5093) by Yangqing Jai, Evan Shelhamer, Jeff Donahue, 
 Sergey Karayev, Jonathan Long, Ross Girshick, Sergio Guadarrama, and Trevor Darrell, 2014.
 
@@ -42,6 +45,12 @@ Hugo Larochelle, François Laviolette, Mario Marchand, and Victor Lempitsky, 2015
 [4] [A Deep Convolutional Auto-Encoder with Pooling - Unpooling Layers in Caffe](https://arxiv.org/abs/1701.04949) by Volodymyr Turchenko, Eric Chalmers and Artur Luczac, 2017.
 
 [5] [Deep Reinforcement Learning: Pong from Pixels](http://karpathy.github.io/2016/05/31/rl/) by Andrej Karpathy, 2015.
+
+[6] [The Arcade Learning Environment: An Evaluation Platform for General Agents](https://arxiv.org/abs/1207.4708) by Marc G. Bellemare, 
+Yavar Naddaf, Joel Veness and Michael Bowling, 2012-2013.  Source code available on GitHub at <a href="https://github.com/mgbellemare/Arcade-Learning-Environment">mgbellemare/Arcade-Learning-Envrionment</a>
+
+[7] [Stella - A multi-platform Atari 2600 VCS emulator](https://stella-emu.github.io/) by Bradford W. Mott, Stephen Anthony and The Stella Team, 1995-2018
+Source code available on GitHub at <a href="https://github.com/stella-emu/stella">stella-emu/stella</a>
 
 For more information on the C++ CAFFE open-source project, please see the following <a href="http://caffe.berkeleyvision.org/">link</a>.
 
