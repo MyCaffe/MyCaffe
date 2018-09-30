@@ -19,6 +19,8 @@ namespace MyCaffe.gym
         void CloseUi(int nId);
         [OperationContract(IsOneWay = true)]
         void Render(int nId, Observation obs);
+        [OperationContract(IsOneWay = false)]
+        bool IsOpen(int nId);
     }
 
     public interface IXMyCaffeGymUiCallback
@@ -35,14 +37,16 @@ namespace MyCaffe.gym
         bool m_bDone;
         Bitmap m_image;
         Bitmap m_imgDisplay;
+        bool m_bRequireDisplayImage = false;
 
-        public Observation(Bitmap imgDisp, Bitmap img, Tuple<double,double,double, bool>[] rgState, double dfReward, bool bDone)
+        public Observation(Bitmap imgDisp, Bitmap img, bool bRequireDisplayImg, Tuple<double,double,double, bool>[] rgState, double dfReward, bool bDone)
         {
             m_rgState = rgState;
             m_dfReward = dfReward;
             m_bDone = bDone;
             m_image = img;
             m_imgDisplay = imgDisp;
+            m_bRequireDisplayImage = bRequireDisplayImg;
         }
 
         public Observation Clone()
@@ -56,7 +60,7 @@ namespace MyCaffe.gym
                 rgState.Add(new Tuple<double, double, double, bool>(item.Item1, item.Item2, item.Item3, item.Item4));
             }
 
-            return new Observation(bmpDisp, bmp, rgState.ToArray(), m_dfReward, m_bDone);
+            return new Observation(bmpDisp, bmp, m_bRequireDisplayImage, rgState.ToArray(), m_dfReward, m_bDone);
         }
 
         public static double[] GetValues(Tuple<double,double,double, bool>[] rg, bool bNormalize, bool bGetAllData = false)
@@ -96,6 +100,13 @@ namespace MyCaffe.gym
         {
             get { return m_imgDisplay; }
             set { m_imgDisplay = value; }
+        }
+
+        [DataMember]
+        public bool RequireDisplayImage
+        {
+            get { return m_bRequireDisplayImage; }
+            set { m_bRequireDisplayImage = value; }
         }
 
         [DataMember]

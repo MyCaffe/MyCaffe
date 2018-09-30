@@ -52,6 +52,8 @@ namespace MyCaffe.gym
         DATA_TYPE m_dt = DATA_TYPE.BLOB;
         COLORTYPE m_ct = COLORTYPE.CT_COLOR;
         bool m_bPreprocess = true;
+        DirectBitmap m_bmpRaw = null;
+        DirectBitmap m_bmpActionRaw = null;
 
         public AtariGym()
         {
@@ -63,6 +65,18 @@ namespace MyCaffe.gym
             {
                 m_ale.Shutdown();
                 m_ale = null;               
+            }
+
+            if (m_bmpRaw != null)
+            {
+                m_bmpRaw.Dispose();
+                m_bmpRaw = null;
+            }
+
+            if (m_bmpActionRaw != null)
+            {
+                m_bmpActionRaw.Dispose();
+                m_bmpActionRaw = null;
             }
         }
 
@@ -159,13 +173,13 @@ namespace MyCaffe.gym
             }
         }
 
-        public Bitmap Render(int nWidth, int nHeight, out Bitmap bmpAction)
+        public Bitmap Render(bool bShowUi, int nWidth, int nHeight, out Bitmap bmpAction)
         {
             List<double> rgData = new List<double>();
-            return Render(nWidth, nHeight, rgData.ToArray(), out bmpAction);
+            return Render(bShowUi, nWidth, nHeight, rgData.ToArray(), out bmpAction);
         }
 
-        public Bitmap Render(int nWidth, int nHeight, double[] rgData, out Bitmap bmpAction)
+        public Bitmap Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, out Bitmap bmpAction)
         {
             float fWid;
             float fHt;
@@ -173,44 +187,23 @@ namespace MyCaffe.gym
             m_ale.GetScreenDimensions(out fWid, out fHt);
             byte[] rgRawData = m_ale.GetScreenData(m_ct);
 
-            Tuple<DirectBitmap, DirectBitmap> bmps = getBitmaps(m_ct, (int)fWid, (int)fHt, 35, 2, rgRawData);
+            Tuple<DirectBitmap, DirectBitmap> bmps = getBitmaps(m_ct, (int)fWid, (int)fHt, 35, 2, rgRawData, m_bPreprocess);
+            Bitmap bmp = null;
 
-            if (m_bPreprocess)
+            if (bShowUi)
             {
-                DirectBitmap bmpRawAction = bmps.Item2;
-
-                for (int y = 0; y < bmpRawAction.Height; y++)
-                {
-                    for (int x = 0; x < bmpRawAction.Width; x++)
-                    {
-                        Color clr = bmpRawAction.GetPixel(x, y);
-                        int nR = clr.R;
-
-                        if (nR == 144 || nR == 109)
-                            nR = 0;       // erase background (type 1 and 2)
-                        else if (nR != 0)
-                            nR = 255;     // everything else (paddles, ball) just set to 1
-
-                        bmpRawAction.SetPixel(x, y, Color.FromArgb(nR, nR, nR));
-                    }
-                }
+                if (bmps.Item1.Bitmap.Width != nWidth || bmps.Item1.Bitmap.Height != nHeight)
+                    bmp = ImageTools.ResizeImage(bmps.Item1.Bitmap, nWidth, nHeight);
+                else
+                    bmp = new Bitmap(bmps.Item1.Bitmap);
             }
 
-            Bitmap bmp;
-            if (bmps.Item1.Bitmap.Width != nWidth || bmps.Item1.Bitmap.Height != nHeight)
-                bmp = ImageTools.ResizeImage(bmps.Item1.Bitmap, nWidth, nHeight);
-            else
-                bmp = new Bitmap(bmps.Item1.Bitmap);
-
             bmpAction = new Bitmap(bmps.Item2.Bitmap);
-
-            bmps.Item1.Dispose();
-            bmps.Item2.Dispose();
 
             return bmp;
         }
 
-        private Tuple<DirectBitmap, DirectBitmap> getBitmaps(COLORTYPE ct, int nWid, int nHt, int nOffset, int nDownsample, byte[] rg)
+        private Tuple<DirectBitmap, DirectBitmap> getBitmaps(COLORTYPE ct, int nWid, int nHt, int nOffset, int nDownsample, byte[] rg, bool bPreprocess)
         {
             int nSize = Math.Min(nWid, nHt);
             int nDsSize = nSize / nDownsample;
@@ -218,8 +211,27 @@ namespace MyCaffe.gym
             int nY = 0;
             bool bY = false;
             bool bX = false;
-            DirectBitmap bmp = new DirectBitmap(nWid, nHt);
-            DirectBitmap bmpA = new DirectBitmap(nDsSize, nDsSize);
+
+            if (m_bmpRaw != null && (m_bmpRaw.Width != nWid || m_bmpRaw.Height != nHt))
+            {
+                m_bmpRaw.Dispose();
+                m_bmpRaw = null;
+            }
+
+            if (m_bmpActionRaw != null && (m_bmpActionRaw.Width != nDsSize || m_bmpActionRaw.Height != nDsSize))
+            {
+                m_bmpActionRaw.Dispose();
+                m_bmpActionRaw = null;
+            }
+
+            if (m_bmpRaw == null)
+                m_bmpRaw = new DirectBitmap(nWid, nHt);
+
+            if (m_bmpActionRaw == null)
+                m_bmpActionRaw = new DirectBitmap(nDsSize, nDsSize);
+
+            DirectBitmap bmp = m_bmpRaw;
+            DirectBitmap bmpA = m_bmpActionRaw;
 
             for (int y = 0; y < nHt; y++)
             {
@@ -251,6 +263,19 @@ namespace MyCaffe.gym
 
                     if (bY && bX)
                     {
+                        if (bPreprocess)
+                        {
+                            if (nR == 144 || nR == 109)
+                                nR = 0;
+                            else if (nR != 0)
+                                nR = 255;
+
+                            nG = nR;
+                            nB = nR;
+
+                            clr = Color.FromArgb(nR, nG, nB);
+                        }
+
                         bmpA.SetPixel(nX, nY, clr);
                         nX++;
                     }

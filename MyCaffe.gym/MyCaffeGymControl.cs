@@ -49,7 +49,7 @@ namespace MyCaffe.gym
                 Invalidate(true);
         }
 
-        public void Render(string strName, double[] rgData, Bitmap bmp)
+        public void Render(bool bShowUi, string strName, double[] rgData, Bitmap bmp)
         {
             m_strName = strName;
 
@@ -58,7 +58,7 @@ namespace MyCaffe.gym
             if (bmp != null)
                 m_bmp = bmp;
             else
-               m_bmp = igym.Render(Width, Height, rgData, out bmp);
+                m_bmp = igym.Render(bShowUi, Width, Height, rgData, out bmp);
 
             if (IsHandleCreated && Visible)
                 Invalidate(true);

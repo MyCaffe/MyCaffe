@@ -30,5 +30,10 @@ namespace MyCaffe.gym
         {
             Channel.Render(nId, obs);
         }
+
+        public bool IsOpen(int nId)
+        {
+            return Channel.IsOpen(nId);
+        }
     }
 }

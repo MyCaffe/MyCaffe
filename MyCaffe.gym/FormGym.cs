@@ -55,7 +55,7 @@ namespace MyCaffe.gym
 
         public void Render(double[] rgData, Bitmap bmp, Bitmap bmpAction)
         {
-            m_ctrl.Render(m_strName, rgData, bmp);
+            m_ctrl.Render(true, m_strName, rgData, bmp);
 
             if (bmp == null)
                 btnShowActionImage.Enabled = false;

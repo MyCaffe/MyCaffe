@@ -139,7 +139,7 @@ namespace MyCaffe.gym
             Reset();
         }
 
-        public Bitmap Render(int nWidth, int nHeight, out Bitmap bmpAction)
+        public Bitmap Render(bool bShowUi, int nWidth, int nHeight, out Bitmap bmpAction)
         {
             List<double> rgData = new List<double>();
 
@@ -150,10 +150,10 @@ namespace MyCaffe.gym
             rgData.Add(m_state.ForceMag);
             rgData.Add(m_nSteps);
 
-            return Render(nWidth, nHeight, rgData.ToArray(), out bmpAction);
+            return Render(bShowUi, nWidth, nHeight, rgData.ToArray(), out bmpAction);
         }
 
-        public Bitmap Render(int nWidth, int nHeight, double[] rgData, out Bitmap bmpAction)
+        public Bitmap Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, out Bitmap bmpAction)
         { 
             Bitmap bmp = new Bitmap(nWidth, nHeight);
 

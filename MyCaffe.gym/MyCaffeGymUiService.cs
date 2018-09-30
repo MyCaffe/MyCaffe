@@ -64,9 +64,20 @@ namespace MyCaffe.gym
             if (!m_rgGyms[nId].Visible)
                 return;
 
+            if (obs.RequireDisplayImage && obs.ImageDisplay == null)
+                return;
+
             double[] rgData = obs.State.Select(p => p.Item1).ToArray();
 
             m_rgGyms[nId].Render(rgData, obs.ImageDisplay, obs.Image);
+        }
+
+        public bool IsOpen(int nId)
+        {
+            if (!m_rgGyms.ContainsKey(nId))
+                return false;
+
+            return m_rgGyms[nId].Visible;
         }
     }
 }
