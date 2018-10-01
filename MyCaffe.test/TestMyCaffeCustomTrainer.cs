@@ -326,7 +326,7 @@ namespace MyCaffe.test
             bool bIsOpen = (m_nUiId >= 0) ? true : false;
             Bitmap bmpAction;
             Bitmap bmp = m_igym.Render(bIsOpen, 512, 512, out bmpAction);
-            Observation obs = new Observation(null, bmpAction, false, state.Item1.ToArray(), state.Item2, state.Item3);
+            Observation obs = new Observation(null, bmpAction, m_igym.RequiresDisplayImage, state.Item1.ToArray(), state.Item2, state.Item3);
 
             double[] rgState = Observation.GetValues(obs.State, m_bNormalizeInput);
             e.State = new StateBase(m_igym.GetActionSpace().Count());
@@ -436,7 +436,7 @@ namespace MyCaffe.test
             bool bIsOpen = (m_nUiId >= 0) ? true : false;
             Bitmap bmpAction;
             Bitmap bmp = m_igym.Render(bIsOpen, 512, 512, out bmpAction);
-            Observation obs = new Observation(bmp, bmpAction, true, state.Item1.ToArray(), state.Item2, state.Item3);
+            Observation obs = new Observation(bmp, bmpAction, m_igym.RequiresDisplayImage, state.Item1.ToArray(), state.Item2, state.Item3);
 
             int nC = m_ds.TestingSource.ImageChannels;
             int nH = m_ds.TestingSource.ImageHeight;
