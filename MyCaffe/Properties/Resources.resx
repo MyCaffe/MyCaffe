@@ -512,7 +512,7 @@ license and copyright terms herein.
   University of Illinois / NCSA
   Open Source License
 
-  Copyright © 2009, University of Illinois.All rights reserved.
+  Copyright Â© 2009, University of Illinois.All rights reserved.
 
   Developed by :
 
@@ -588,7 +588,7 @@ license and copyright terms herein.
   ** begin ResNet-56 License **
   MIT License
   
-  Copyright (c) 2016 Yihui He 何宜晖
+  Copyright (c) 2016 Yihui He ä½•å®œæ™–
   
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -638,14 +638,14 @@ license and copyright terms herein.
   ** end OpenAi 'Gym' License**
 
   Some portions of the MyCaffe (MyCaffe.trainers) were re-written using the open-source 
-  A3C implementation from Jaromír Janisch located at
+  A3C implementation from JaromÃ­r Janisch located at
   https://github.com/jaara/AI-blog/blob/master/CartPole-A3C.py and licensed under the
   MIT License (https://github.com/jaara/AI-blog/blob/master/LICENSE):
 
   ** begin Janisch 'A3C' License**
   MIT License
 
-  Copyright (c) 2018 Jaromír Janisch
+  Copyright (c) 2018 JaromÃ­r Janisch
   
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"), to deal
@@ -665,6 +665,12 @@ license and copyright terms herein.
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
   SOFTWARE.
   ** end Janisch 'A3C' License**
+
+  The LockBitmap.cs file is provided by Vano Maisuradze, from 'Work with Bitmaps
+  Faster in C#' from Code Project at:
+  https://www.codeproject.com/Tips/240428/Work-with-Bitmaps-Faster-in-Csharp-3 
+  and is used and distributed under The Code Project Open License (CPOL) 1.02 
+  (https://www.codeproject.com/info/cpol10.aspx)
 
   $$OTHERLICENSES$$
 
