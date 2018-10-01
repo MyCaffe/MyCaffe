@@ -62,7 +62,7 @@ namespace MyCaffe.trainers
         double m_dfOptimalSelectionRate = 0;
         double m_dfGlobalRewards = 0;
         double m_dfGlobalRewardsAve = 0;
-        double m_dfGlobalRewardsMax = 0;
+        double m_dfGlobalRewardsMax = -double.MaxValue;
         int m_nGlobalEpisodeCount = 0;
         int m_nGlobalEpisodeMax = 0;
         double m_dfLoss = 0;
@@ -538,7 +538,7 @@ namespace MyCaffe.trainers
                         return m_dfGlobalRewardsAve;
 
                     default:
-                        return m_dfGlobalRewardsMax;
+                        return (m_dfGlobalRewardsMax == -double.MaxValue) ? 0 : m_dfGlobalRewardsMax;
                 }
             }
         }
