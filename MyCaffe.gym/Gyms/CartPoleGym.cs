@@ -144,7 +144,7 @@ namespace MyCaffe.gym
             Reset();
         }
 
-        public Bitmap Render(bool bShowUi, int nWidth, int nHeight, out Bitmap bmpAction)
+        public Tuple<Bitmap, SimpleDatum> Render(bool bShowUi, int nWidth, int nHeight, bool bGetAction)
         {
             List<double> rgData = new List<double>();
 
@@ -155,14 +155,12 @@ namespace MyCaffe.gym
             rgData.Add(m_state.ForceMag);
             rgData.Add(m_nSteps);
 
-            return Render(bShowUi, nWidth, nHeight, rgData.ToArray(), out bmpAction);
+            return Render(bShowUi, nWidth, nHeight, rgData.ToArray(), bGetAction);
         }
 
-        public Bitmap Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, out Bitmap bmpAction)
+        public Tuple<Bitmap, SimpleDatum> Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, bool bGetAction)
         { 
             Bitmap bmp = new Bitmap(nWidth, nHeight);
-
-            bmpAction = null;
 
             double dfX = rgData[0];
             double dfTheta = rgData[2];
@@ -236,15 +234,18 @@ namespace MyCaffe.gym
                 view.AddObject(cart);
                 view.Render(g);
 
-                bmpAction = getActionImage(fCartX, fCartY, bmp);
+                SimpleDatum sdAction = null;
+
+                if (bGetAction)
+                    sdAction = getActionData(fCartX, fCartY, bmp);
 
                 m_bmp = bmp;
 
-                return bmp;
+                return new Tuple<Bitmap, SimpleDatum>(bmp, sdAction);
             }
         }
 
-        private Bitmap getActionImage(float fX, float fY, Bitmap bmpSrc)
+        private SimpleDatum getActionData(float fX, float fY, Bitmap bmpSrc)
         {
             double dfWid = 156;
             double dfHt = 156;
@@ -261,7 +262,7 @@ namespace MyCaffe.gym
                 g.DrawImage(bmpSrc, rc1, rc, GraphicsUnit.Pixel);
             }
 
-            return bmp;
+            return ImageData.GetImageData(bmp, 3, false, -1);
         }
 
         public Tuple<State, double, bool> Reset()

@@ -178,13 +178,13 @@ namespace MyCaffe.gym
             }
         }
 
-        public Bitmap Render(bool bShowUi, int nWidth, int nHeight, out Bitmap bmpAction)
+        public Tuple<Bitmap, SimpleDatum> Render(bool bShowUi, int nWidth, int nHeight, bool bGetAction)
         {
             List<double> rgData = new List<double>();
-            return Render(bShowUi, nWidth, nHeight, rgData.ToArray(), out bmpAction);
+            return Render(bShowUi, nWidth, nHeight, rgData.ToArray(), bGetAction);
         }
 
-        public Bitmap Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, out Bitmap bmpAction)
+        public Tuple<Bitmap, SimpleDatum> Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, bool bGetAction)
         {
             float fWid;
             float fHt;
@@ -192,24 +192,23 @@ namespace MyCaffe.gym
             m_ale.GetScreenDimensions(out fWid, out fHt);
             byte[] rgRawData = m_ale.GetScreenData(m_ct);
 
-            Tuple<DirectBitmap, DirectBitmap> bmps = getBitmaps(m_ct, (int)fWid, (int)fHt, 35, 2, rgRawData, m_bPreprocess);
+            Tuple<DirectBitmap, SimpleDatum> data = getData(m_ct, (int)fWid, (int)fHt, 35, 2, rgRawData, m_bPreprocess, bGetAction);
             Bitmap bmp = null;
 
             if (bShowUi)
             {
-                if (bmps.Item1.Bitmap.Width != nWidth || bmps.Item1.Bitmap.Height != nHeight)
-                    bmp = ImageTools.ResizeImage(bmps.Item1.Bitmap, nWidth, nHeight);
+                if (data.Item1.Bitmap.Width != nWidth || data.Item1.Bitmap.Height != nHeight)
+                    bmp = ImageTools.ResizeImage(data.Item1.Bitmap, nWidth, nHeight);
                 else
-                    bmp = new Bitmap(bmps.Item1.Bitmap);
+                    bmp = new Bitmap(data.Item1.Bitmap);
             }
 
-            bmpAction = new Bitmap(bmps.Item2.Bitmap);
-
-            return bmp;
+            return new Tuple<Bitmap, SimpleDatum>(bmp, data.Item2);
         }
 
-        private Tuple<DirectBitmap, DirectBitmap> getBitmaps(COLORTYPE ct, int nWid, int nHt, int nOffset, int nDownsample, byte[] rg, bool bPreprocess)
+        private Tuple<DirectBitmap, SimpleDatum> getData(COLORTYPE ct, int nWid, int nHt, int nOffset, int nDownsample, byte[] rg, bool bPreprocess, bool bGetAction)
         {
+            int nChannels = (bPreprocess) ? 1 : 3;
             int nSize = Math.Min(nWid, nHt);
             int nDsSize = nSize / nDownsample;
             int nX = 0;
@@ -236,7 +235,10 @@ namespace MyCaffe.gym
                 m_bmpActionRaw = new DirectBitmap(nDsSize, nDsSize);
 
             DirectBitmap bmp = m_bmpRaw;
-            DirectBitmap bmpA = m_bmpActionRaw;
+            Bytemap data = null;
+
+            if (bGetAction)
+                data = new Bytemap(nChannels, nDsSize, nDsSize);
 
             for (int y = 0; y < nHt; y++)
             {
@@ -266,22 +268,18 @@ namespace MyCaffe.gym
                     Color clr = Color.FromArgb(nR, nG, nB);
                     bmp.SetPixel(x, y, clr);
 
-                    if (bY && bX)
+                    if (bY && bX && data != null)
                     {
                         if (bPreprocess)
                         {
-                            if (nR == 144 || nR == 109)
-                                nR = 0;
-                            else if (nR != 0)
-                                nR = 255;
-
-                            nG = nR;
-                            nB = nR;
-
-                            clr = Color.FromArgb(nR, nG, nB);
+                            if (nR != 144 && nR != 109 && nR != 0)
+                                data.SetPixel(nX, nY, (byte)nR);
+                        }
+                        else
+                        {
+                            data.SetPixel(x, y, clr);
                         }
 
-                        bmpA.SetPixel(nX, nY, clr);
                         nX++;
                     }
                 }
@@ -293,7 +291,7 @@ namespace MyCaffe.gym
                 }
             }
 
-            return new Tuple<DirectBitmap, DirectBitmap>(bmp, bmpA);
+            return new Tuple<DirectBitmap, SimpleDatum>(bmp, (data == null) ? null : new SimpleDatum(data));
         }
 
         public Tuple<State, double, bool> Reset()
