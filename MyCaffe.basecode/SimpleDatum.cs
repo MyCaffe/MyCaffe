@@ -142,6 +142,22 @@ namespace MyCaffe.basecode
         /// <summary>
         /// The SimpleDatum constructor.
         /// </summary>
+        /// <param name="data">Specifies the byte data to fill the SimpleDatum with.</param>
+        public SimpleDatum(Bytemap data)
+        {
+            m_nChannels = data.Channels;
+            m_nWidth = data.Width;
+            m_nHeight = data.Height;
+            m_nOriginalLabel = -1;
+            m_nLabel = -1;
+            m_bIsRealData = false;
+
+            m_rgByteData = data.Bytes;
+        }
+
+        /// <summary>
+        /// The SimpleDatum constructor.
+        /// </summary>
         /// <param name="d">Specifies a SimpleDatum used to create this new Datum.</param>
         /// <param name="bCopyData">Specifies whether or not to copy the data, or just share it (default = false, share the data).</param>
         public SimpleDatum(SimpleDatum d, bool bCopyData = false)
@@ -865,6 +881,20 @@ namespace MyCaffe.basecode
         public override string ToString()
         {
             return "Idx = " + m_nIndex.ToString("N0");
+        }
+
+        /// <summary>
+        /// Return the SimpleData data as a Bytemap.
+        /// </summary>
+        /// <remarks>
+        /// This function is only suported on byte based SimpleDatum's.
+        /// </remarks>
+        /// <returns>The Bytemap data is returned.</returns>
+        public Bytemap ToBytemap()
+        {
+            if (m_rgByteData == null)
+                throw new Exception("Bytemaps are only supported with byte based data.");
+            return new Bytemap(m_nChannels, m_nHeight, m_nWidth, m_rgByteData);
         }
 
         /// <summary>

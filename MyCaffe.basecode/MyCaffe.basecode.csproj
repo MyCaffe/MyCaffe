@@ -62,6 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BinaryData.cs" />
+    <Compile Include="Bytemap.cs" />
     <Compile Include="CancelEvent.cs" />
     <Compile Include="ColorMapper.cs" />
     <Compile Include="CryptoRandom.cs" />
