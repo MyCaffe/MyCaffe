@@ -143,26 +143,26 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Converts a Datum into an image, optionally using a ColorMapper.
+        /// Converts a SimplDatum (or Datum) into an image, optionally using a ColorMapper.
         /// </summary>
         /// <param name="d">Specifies the Datum to use.</param>
         /// <param name="clrMap">Optionally, specifies a color mapper to use when converting each value into a color (default = null, not used).</param>
         /// <param name="rgClrOrder">Optionally, specifies the color ordering. Note, this list must have the same number of elements as there are channels.</param>
         /// <returns>The Image of the data is returned.</returns>
-        public static Image GetImage(Datum d, ColorMapper clrMap = null, List<int> rgClrOrder = null)
+        public static Bitmap GetImage(SimpleDatum d, ColorMapper clrMap = null, List<int> rgClrOrder = null)
         {
-            if (d.channels != 1 && d.channels != 3)
+            if (d.Channels != 1 && d.Channels != 3)
                 throw new Exception("Standard images only support either 1 or 3 channels.");
 
-            Bitmap bmp = new Bitmap(d.width, d.height);
-            List<byte>[] rgrgByteData = new List<byte>[d.channels];
-            List<double>[] rgrgRealData = new List<double>[d.channels];
+            Bitmap bmp = new Bitmap(d.Width, d.Height);
+            List<byte>[] rgrgByteData = new List<byte>[d.Channels];
+            List<double>[] rgrgRealData = new List<double>[d.Channels];
             int nOffset = 0;
-            int nCount = d.height * d.width;
-            bool bDataIsReal = (d.float_data != null && d.float_data.Length > 0) ? true : false;
+            int nCount = d.Height * d.Width;
+            bool bDataIsReal = (d.RealData != null && d.RealData.Length > 0) ? true : false;
 
 
-            for (int i = 0; i < d.channels; i++)
+            for (int i = 0; i < d.Channels; i++)
             {
                 List<byte> rgByteData = new List<byte>();
                 List<double> rgRealData = new List<double>();
@@ -175,7 +175,7 @@ namespace MyCaffe.basecode
                 {
                     for (int j = 0; j < nCount; j++)
                     {
-                        rgRealData.Add(d.float_data[nOffset + j]);
+                        rgRealData.Add(d.RealData[nOffset + j]);
                     }
 
                     rgrgRealData[nChIdx] = rgRealData;
@@ -184,7 +184,7 @@ namespace MyCaffe.basecode
                 {
                     for (int j = 0; j < nCount; j++)
                     {
-                        rgByteData.Add(d.data[nOffset + j]);
+                        rgByteData.Add(d.ByteData[nOffset + j]);
                     }
 
                     rgrgByteData[nChIdx] = rgByteData;
@@ -206,7 +206,7 @@ namespace MyCaffe.basecode
                         Color clr;
                         int nIdx = (y * bmp1.Width) + x;
 
-                        if (d.channels == 1)
+                        if (d.Channels == 1)
                         {
                             if (bDataIsReal)
                             {
@@ -256,7 +256,7 @@ namespace MyCaffe.basecode
         /// <param name="sz">Specifies the size of the image.</param>
         /// <param name="clrMap">Specifies a color mapper to use when converting each value into a color.</param>
         /// <returns>The Image of the data is returned.</returns>
-        public static Image GetImage(List<KeyValuePair<int, double>> rg, Size sz, ColorMapper clrMap)
+        public static Bitmap GetImage(List<KeyValuePair<int, double>> rg, Size sz, ColorMapper clrMap)
         {
             Bitmap bmp = new Bitmap(sz.Width, sz.Height);
             int nSize = (int)Math.Ceiling(Math.Sqrt(rg.Count));
