@@ -211,10 +211,7 @@ namespace MyCaffe.test
             //  - Gamma = 0.99 (discounting factor)
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
             //  - GameROM = 'path to game ROM'
-            //  - EpsSteps = 1000 (run exploration for 200 episodes)
-            //  - EspStart = 0.8 (start random exploration at 80%)
-            //  - EpsEnd = 0 (end random exploration at 0%)
-            trainer.Initialize("TrainerType=PG.MT;RewardType=VAL;Gamma=0.99;EpsSteps=200;EpsStart=0.8;EpsEnd=0;GameROM=" + strRom, null);
+            trainer.Initialize("TrainerType=PG.MT;RewardType=VAL;Gamma=0.99;GameROM=" + strRom, null);
 
             if (bShowUi)
                 trainer.OpenUi();
@@ -324,9 +321,8 @@ namespace MyCaffe.test
                 state = m_igym.Step(e.Action);
 
             bool bIsOpen = (m_nUiId >= 0) ? true : false;
-            Bitmap bmpAction;
-            Bitmap bmp = m_igym.Render(bIsOpen, 512, 512, out bmpAction);
-            Observation obs = new Observation(null, bmpAction, m_igym.RequiresDisplayImage, state.Item1.ToArray(), state.Item2, state.Item3);
+            Tuple<Bitmap, SimpleDatum> data = m_igym.Render(bIsOpen, 512, 512, true);
+            Observation obs = new Observation(null, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, state.Item1.ToArray(), state.Item2, state.Item3);
 
             double[] rgState = Observation.GetValues(obs.State, m_bNormalizeInput);
             e.State = new StateBase(m_igym.GetActionSpace().Count());
@@ -343,7 +339,7 @@ namespace MyCaffe.test
 
             if (m_sw.Elapsed.TotalMilliseconds > 1000)
             {
-                double dfPct = (double)GlobalEpisodeCount / (double)GlobalEpisodeMax;
+                double dfPct = (GlobalEpisodeMax == 0) ? 0 : (double)GlobalEpisodeCount / (double)GlobalEpisodeMax;
                 e.OutputLog.Progress = dfPct;
                 e.OutputLog.WriteLine("(" + dfPct.ToString("P") + ") Global Episode #" + GlobalEpisodeCount.ToString() + "  Global Reward = " + GlobalRewards.ToString() + " Exploration Rate = " + ExplorationRate.ToString("P") + " Optimal Selection Rate = " + OptimalSelectionRate.ToString("P"));
                 m_sw.Restart();
@@ -434,17 +430,12 @@ namespace MyCaffe.test
                 state = m_igym.Step(e.Action);
 
             bool bIsOpen = (m_nUiId >= 0) ? true : false;
-            Bitmap bmpAction;
-            Bitmap bmp = m_igym.Render(bIsOpen, 512, 512, out bmpAction);
-            Observation obs = new Observation(bmp, bmpAction, m_igym.RequiresDisplayImage, state.Item1.ToArray(), state.Item2, state.Item3);
-
-            int nC = m_ds.TestingSource.ImageChannels;
-            int nH = m_ds.TestingSource.ImageHeight;
-            int nW = m_ds.TestingSource.ImageWidth;
+            Tuple<Bitmap, SimpleDatum> data = m_igym.Render(bIsOpen, 512, 512, true);
+            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, state.Item1.ToArray(), state.Item2, state.Item3);
 
             e.State = new StateBase(m_igym.GetActionSpace().Count());
             e.State.Reward = obs.Reward;
-            e.State.Data = ImageData.GetImageData(obs.Image, nC, false, 0);
+            e.State.Data = data.Item2;
             e.State.Done = obs.Done;
             e.State.IsValid = true;
 
@@ -456,7 +447,7 @@ namespace MyCaffe.test
 
             if (m_sw.Elapsed.TotalMilliseconds > 1000)
             {
-                double dfPct = (double)GlobalEpisodeCount / (double)GlobalEpisodeMax;
+                double dfPct = (GlobalEpisodeMax == 0) ? 0 : (double)GlobalEpisodeCount / (double)GlobalEpisodeMax;
                 e.OutputLog.Progress = dfPct;
                 e.OutputLog.WriteLine("(" + dfPct.ToString("P") + ") Global Episode #" + GlobalEpisodeCount.ToString() + "  Global Reward = " + GlobalRewards.ToString() + " Exploration Rate = " + ExplorationRate.ToString("P") + " Optimal Selection Rate = " + OptimalSelectionRate.ToString("P"));
                 m_sw.Restart();
