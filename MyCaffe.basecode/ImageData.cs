@@ -33,35 +33,49 @@ namespace MyCaffe.basecode
                 rgrgRealData[i] = new List<double>();
             }
 
-            for (int y = 0; y < bmp.Height; y++)
-            {
-                for (int x = 0; x < bmp.Width; x++)
-                {
-                    Color clr = bmp.GetPixel(x, y);
+            LockBitmap bmp1 = new LockBitmap(bmp);
 
-                    if (nChannels == 1)
+            try
+            {
+                bmp1.LockBits();
+                for (int y = 0; y < bmp1.Height; y++)
+                {
+                    for (int x = 0; x < bmp1.Width; x++)
                     {
-                        if (bDataIsReal)
-                            rgrgRealData[0].Add(clr.ToArgb());
-                        else
-                            rgrgByteData[0].Add((byte)((clr.R * 0.3) + (clr.G * 0.59) + (clr.B * 0.11)));
-                    }
-                    else
-                    {
-                        if (bDataIsReal)
+                        Color clr = bmp1.GetPixel(x, y);
+
+                        if (nChannels == 1)
                         {
-                            rgrgRealData[0].Add(clr.R);
-                            rgrgRealData[1].Add(clr.G);
-                            rgrgRealData[2].Add(clr.B);
+                            if (bDataIsReal)
+                                rgrgRealData[0].Add(clr.ToArgb());
+                            else
+                                rgrgByteData[0].Add((byte)((clr.R * 0.3) + (clr.G * 0.59) + (clr.B * 0.11)));
                         }
                         else
                         {
-                            rgrgByteData[0].Add(clr.R);
-                            rgrgByteData[1].Add(clr.G);
-                            rgrgByteData[2].Add(clr.B);
+                            if (bDataIsReal)
+                            {
+                                rgrgRealData[0].Add(clr.R);
+                                rgrgRealData[1].Add(clr.G);
+                                rgrgRealData[2].Add(clr.B);
+                            }
+                            else
+                            {
+                                rgrgByteData[0].Add(clr.R);
+                                rgrgByteData[1].Add(clr.G);
+                                rgrgByteData[2].Add(clr.B);
+                            }
                         }
                     }
                 }
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                bmp1.UnlockBits();
             }
 
             List<byte> rgByteData = new List<byte>();
@@ -179,42 +193,57 @@ namespace MyCaffe.basecode
                 nOffset += nCount;
             }
 
-            for (int y = 0; y < bmp.Height; y++)
+            LockBitmap bmp1 = new LockBitmap(bmp);
+
+            try
             {
-                for (int x = 0; x < bmp.Width; x++)
+                bmp1.LockBits();
+
+                for (int y = 0; y < bmp1.Height; y++)
                 {
-                    Color clr;
-                    int nIdx = (y * bmp.Width) + x;
-
-                    if (d.channels == 1)
+                    for (int x = 0; x < bmp1.Width; x++)
                     {
-                        if (bDataIsReal)
-                        {
-                            clr = Color.FromArgb((int)rgrgRealData[0][nIdx]);
+                        Color clr;
+                        int nIdx = (y * bmp1.Width) + x;
 
-                            if (clrMap != null)
-                                clr = clrMap.GetColor(clr.ToArgb());
+                        if (d.channels == 1)
+                        {
+                            if (bDataIsReal)
+                            {
+                                clr = Color.FromArgb((int)rgrgRealData[0][nIdx]);
+
+                                if (clrMap != null)
+                                    clr = clrMap.GetColor(clr.ToArgb());
+                            }
+                            else
+                            {
+                                clr = Color.FromArgb((int)rgrgByteData[0][nIdx], (int)rgrgByteData[0][nIdx], (int)rgrgByteData[0][nIdx]);
+                            }
                         }
                         else
                         {
-                            clr = Color.FromArgb((int)rgrgByteData[0][nIdx], (int)rgrgByteData[0][nIdx], (int)rgrgByteData[0][nIdx]);
-                        }
-                    }
-                    else
-                    {
-                        if (bDataIsReal)
-                        {
-                            clr = Color.FromArgb((int)rgrgRealData[0][nIdx], (int)rgrgRealData[1][nIdx], (int)rgrgRealData[2][nIdx]);
+                            if (bDataIsReal)
+                            {
+                                clr = Color.FromArgb((int)rgrgRealData[0][nIdx], (int)rgrgRealData[1][nIdx], (int)rgrgRealData[2][nIdx]);
 
-                            if (clrMap != null)
-                                clr = clrMap.GetColor(clr.ToArgb());
+                                if (clrMap != null)
+                                    clr = clrMap.GetColor(clr.ToArgb());
+                            }
+                            else
+                                clr = Color.FromArgb((int)rgrgByteData[0][nIdx], (int)rgrgByteData[1][nIdx], (int)rgrgByteData[2][nIdx]);
                         }
-                        else
-                            clr = Color.FromArgb((int)rgrgByteData[0][nIdx], (int)rgrgByteData[1][nIdx], (int)rgrgByteData[2][nIdx]);
-                    }
 
-                    bmp.SetPixel(x, y, clr);
+                        bmp1.SetPixel(x, y, clr);
+                    }
                 }
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                bmp1.UnlockBits();
             }
 
             return bmp;
