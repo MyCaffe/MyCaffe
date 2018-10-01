@@ -619,5 +619,30 @@ namespace MyCaffe.basecode
 
             return 0;
         }
+
+        /// <summary>
+        /// Replaces each instance of one character with another character in a given string.
+        /// </summary>
+        /// <param name="str">Specifies the string.</param>
+        /// <param name="ch1">Specifies the character to find.</param>
+        /// <param name="ch2">Specifies the character replacement.</param>
+        /// <returns>The new string is returned.</returns>
+        public static string Replace(string str, char ch1, char ch2)
+        {
+            if (str == null)
+                return null;
+
+            string strOut = "";
+
+            foreach (char ch in str)
+            {
+                if (ch == ch1)
+                    strOut += ch2;
+                else
+                    strOut += ch;
+            }
+
+            return strOut;
+        }
     }
 }

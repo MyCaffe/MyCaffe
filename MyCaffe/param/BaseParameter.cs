@@ -21,7 +21,6 @@ namespace MyCaffe.param
         {
         }
 
-
         /// <summary>
         /// Convert the parameter into a RawProto.
         /// </summary>

@@ -228,13 +228,15 @@ namespace MyCaffe.param
         /// Specifies the custom trainer properties (if any) - this is an optional setting used by exteral software to 
         /// provide the propreties for a customized training process.
         /// </summary>
+        /// <remarks>
+        /// Note all spaces are replaced with '~' characters to avoid parsing errors.</remarks>
         [Description("Specifies the custom trainer properties (if any) used by an external process to provide the properties for a customized training.")]
         [Browsable(true)]
         [EditorAttribute(typeof(DictionaryParamEditor), typeof(System.Drawing.Design.UITypeEditor))]
         public string custom_trainer_properties
         {
             get { return m_strCustomTrainerProperties; }
-            set { m_strCustomTrainerProperties = value; }
+            set { m_strCustomTrainerProperties = Utility.Replace(value, ' ', '~'); }
         }
 
         /// <summary>
