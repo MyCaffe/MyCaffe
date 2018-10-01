@@ -546,6 +546,12 @@ license and copyright terms herein.
   SOFTWARE.
   ** end Janisch 'A3C' License**
 
+  The LockBitmap.cs file is provided by Vano Maisuradze, from 'Work with Bitmaps
+  Faster in C#' from Code Project at:
+  https://www.codeproject.com/Tips/240428/Work-with-Bitmaps-Faster-in-Csharp-3 
+  and is used and distributed under The Code Project Open License (CPOL) 1.02 
+  (https://www.codeproject.com/info/cpol10.aspx)
+
   $$OTHERLICENSES$$
 
   SignalPOP LLC at https://www.signalpop.com is the curator of the MyCaffe code.
