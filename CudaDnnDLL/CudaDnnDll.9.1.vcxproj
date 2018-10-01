@@ -137,7 +137,6 @@
     </CudaCompile>
     <PostBuildEvent>
       <Command>xcopy /s /y $(TargetPath) $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)
-
 xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
