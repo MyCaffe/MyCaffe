@@ -71,9 +71,9 @@ namespace MyCaffe.gym
         /// <param name="bShowUi">Specifies whether or not the gym rendering is intended for the user interface.</param>
         /// <param name="nWidth">Specifies the width of the user interface.</param>
         /// <param name="nHeight">Specifies the height of the user interface.</param>
-        /// <param name="bmpAction">Specifies the action area of the rendering.</param>
-        /// <returns>The image showing the gym is returned.</returns>
-        Bitmap Render(bool bShowUi, int nWidth, int nHeight, out Bitmap bmpAction);
+        /// <param name="bGetAction">Specifies to get the action data.</param>
+        /// <returns>A tuple containing image showing the gym and the action data is returned.</returns>
+        Tuple<Bitmap, SimpleDatum> Render(bool bShowUi, int nWidth, int nHeight, bool bGetAction);
         /// <summary>
         /// Render the gym on a bitmap.
         /// </summary>
@@ -81,9 +81,9 @@ namespace MyCaffe.gym
         /// <param name="nWidth">Specifies the width of the user interface.</param>
         /// <param name="nHeight">Specifies the height of the user interface.</param>
         /// <param name="rgData">Specifies the state information of the gym.</param>
-        /// <param name="bmpAction">Specifies the action area of the rendering.</param>
-        /// <returns>The image showing the gym is returned.</returns>
-        Bitmap Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, out Bitmap bmpAction);
+        /// <param name="bGetAction">Specifies to collect the action data.</param>
+        /// <returns>A tuple containing image showing the gym and the action data is returned.</returns>
+        Tuple<Bitmap, SimpleDatum> Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, bool bGetAction);
         /// <summary>
         /// Returns a dictionary containing the action space where each entry contains the action name and action value.
         /// </summary>

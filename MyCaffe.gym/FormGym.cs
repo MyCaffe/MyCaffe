@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyCaffe.basecode;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -38,7 +39,7 @@ namespace MyCaffe.gym
             get { return m_strName; }
         }
 
-        public void Render(Bitmap bmp, Bitmap bmpAction)
+        public void Render(Image bmp, Image bmpAction)
         {
             m_ctrl.Render(m_strName, bmp);
 
@@ -53,7 +54,7 @@ namespace MyCaffe.gym
             }
         }
 
-        public void Render(double[] rgData, Bitmap bmp, Bitmap bmpAction)
+        public void Render(double[] rgData, Image bmp, Image bmpAction)
         {
             m_ctrl.Render(true, m_strName, rgData, bmp);
 

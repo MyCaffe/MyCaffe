@@ -40,7 +40,7 @@ namespace MyCaffe.gym
         {
         }
 
-        public void Render(string strName, Bitmap bmp)
+        public void Render(string strName, Image bmp)
         {
             m_strName = strName;
             m_bmp = new Bitmap(bmp);
@@ -49,16 +49,16 @@ namespace MyCaffe.gym
                 Invalidate(true);
         }
 
-        public void Render(bool bShowUi, string strName, double[] rgData, Bitmap bmp)
+        public void Render(bool bShowUi, string strName, double[] rgData, Image bmp)
         {
             m_strName = strName;
 
             IXMyCaffeGym igym = m_colGym.Find(strName);
 
             if (bmp != null)
-                m_bmp = bmp;
+                m_bmp = new Bitmap(bmp);
             else
-                m_bmp = igym.Render(bShowUi, Width, Height, rgData, out bmp);
+                m_bmp = igym.Render(bShowUi, Width, Height, rgData, false).Item1;
 
             if (IsHandleCreated && Visible)
                 Invalidate(true);

@@ -22,7 +22,7 @@ namespace MyCaffe.gym
 
         }
 
-        public void SetImage(Bitmap bmp)
+        public void SetImage(Image bmp)
         {
             pictureBox1.Image = bmp;
         }

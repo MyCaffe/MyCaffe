@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyCaffe.basecode;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -35,7 +36,7 @@ namespace MyCaffe.gym
         Tuple<double, double, double, bool>[] m_rgState;
         double m_dfReward;
         bool m_bDone;
-        Bitmap m_image;
+        Bitmap m_img;
         Bitmap m_imgDisplay;
         bool m_bRequireDisplayImage = false;
 
@@ -44,14 +45,14 @@ namespace MyCaffe.gym
             m_rgState = rgState;
             m_dfReward = dfReward;
             m_bDone = bDone;
-            m_image = img;
+            m_img = img;
             m_imgDisplay = imgDisp;
             m_bRequireDisplayImage = bRequireDisplayImg;
         }
 
         public Observation Clone()
         {
-            Bitmap bmp = (m_image == null) ? null : new Bitmap(m_image);
+            Bitmap bmp = (m_img == null) ? null : new Bitmap(m_img);
             Bitmap bmpDisp = (m_imgDisplay == null) ? null : new Bitmap(m_imgDisplay);
 
             List<Tuple<double, double, double, bool>> rgState = new List<Tuple<double, double, double, bool>>();
@@ -91,8 +92,8 @@ namespace MyCaffe.gym
         [DataMember]
         public Bitmap Image
         {
-            get { return m_image; }
-            set { m_image = value; }
+            get { return m_img; }
+            set { m_img = value; }
         }
 
         [DataMember]
