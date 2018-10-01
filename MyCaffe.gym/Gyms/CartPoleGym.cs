@@ -77,6 +77,11 @@ namespace MyCaffe.gym
             return gym;
         }
 
+        public bool RequiresDisplayImage
+        {
+            get { return false; }
+        }
+
         public DATA_TYPE SelectedDataType
         {
             get { return m_dt; }
@@ -336,7 +341,7 @@ namespace MyCaffe.gym
             return new Tuple<State, double, bool>(stateOut.Clone(), dfReward, bDone);
         }
 
-        public DatasetDescriptor GetDataset(DATA_TYPE dt)
+        public DatasetDescriptor GetDataset(DATA_TYPE dt, Log log = null)
         {
             int nH = 1;
             int nW = 1;
