@@ -210,8 +210,9 @@ namespace MyCaffe.test
             //  - RewardType = MAX (display the maximum rewards received, a setting of VAL displays the actual reward received)
             //  - Gamma = 0.99 (discounting factor)
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
+            //  - UseAcceleratedTraining = False (disable accelerated training).
             //  - GameROM = 'path to game ROM'
-            trainer.Initialize("TrainerType=PG.MT;RewardType=VAL;Gamma=0.99;GameROM=" + strRom, null);
+            trainer.Initialize("TrainerType=PG.MT;RewardType=VAL;Gamma=0.99;UseAcceleratedTraining=False;GameROM=" + strRom, null);
 
             if (bShowUi)
                 trainer.OpenUi();
