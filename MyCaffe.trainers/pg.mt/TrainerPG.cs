@@ -757,7 +757,7 @@ namespace MyCaffe.trainers.pg.mt
         int m_nGpuID = 0;
         int m_nThreadCount = 1;
         bool m_bCreated = false;
-        bool m_bUseAcceleratedTraining = true;
+        bool m_bUseAcceleratedTraining = false;
 
         /// <summary>
         /// The OnApplyUpdate event fires when the Brain needs to apply its gradients to the primary instance of MyCaffe.
@@ -787,7 +787,7 @@ namespace MyCaffe.trainers.pg.mt
             if (dfRate.HasValue)
                 m_dfLearningRate = dfRate.Value;
 
-            m_bUseAcceleratedTraining = properties.GetPropertyAsBool("UseAcceleratedTraining", true);
+            m_bUseAcceleratedTraining = properties.GetPropertyAsBool("UseAcceleratedTraining", false);
         }
 
         /// <summary>

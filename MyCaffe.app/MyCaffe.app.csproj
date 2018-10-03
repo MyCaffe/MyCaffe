@@ -118,6 +118,12 @@
     <Compile Include="FormWait.Designer.cs">
       <DependentUpon>FormWait.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormCustomTraining.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormCustomTraining.Designer.cs">
+      <DependentUpon>FormCustomTraining.cs</DependentUpon>
+    </Compile>
     <Compile Include="ListViewEx.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -151,6 +157,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormWait.resx">
       <DependentUpon>FormWait.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormCustomTraining.resx">
+      <DependentUpon>FormCustomTraining.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
