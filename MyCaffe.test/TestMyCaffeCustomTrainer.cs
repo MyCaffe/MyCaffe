@@ -83,7 +83,43 @@ namespace MyCaffe.test
             {
                 foreach (IMyCaffeCustomTrainerTest t in test.Tests)
                 {
-                    t.TrainAtariPG(false, 10);
+                    t.TrainAtariPG(false, "PG.MT", 10);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void Train_PGST_AtariWithOutUi()
+        {
+            MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
+
+            try
+            {
+                foreach (IMyCaffeCustomTrainerTest t in test.Tests)
+                {
+                    t.TrainAtariPG(false, "PG.ST", 10);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void Train_PGSIMPLE_AtariWithOutUi()
+        {
+            MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
+
+            try
+            {
+                foreach (IMyCaffeCustomTrainerTest t in test.Tests)
+                {
+                    t.TrainAtariPG(false, "PG.SIMPLE", 10);
                 }
             }
             finally
@@ -96,8 +132,8 @@ namespace MyCaffe.test
 
     interface IMyCaffeCustomTrainerTest : ITest
     {
-        void TrainCartPolePG(bool bShowUi, string strTrainerType, int nIterations = 1000);
-        void TrainAtariPG(bool bShowUi, int nIterations = 1000);
+        void TrainCartPolePG(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false);
+        void TrainAtariPG(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false);
     }
 
     class MyCaffeCustomTrainerTest : TestBase
@@ -138,7 +174,7 @@ namespace MyCaffe.test
             get { return m_evtCancel; }
         }
 
-        public void TrainCartPolePG(bool bShowUi, string strTrainerType, int nIterations = 1000)
+        public void TrainCartPolePG(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false)
         {
             m_evtCancel.Reset();
 
@@ -147,6 +183,7 @@ namespace MyCaffe.test
             IXMyCaffeGym igym = col.Find("Cart-Pole");
 
             m_log.WriteHeader("Test Training Cart-Pole for " + nIterations.ToString("N0") + " iterations.");
+            m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + ((bUseAcceleratedTraining) ? "ON" : "OFF"));
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
             MyCaffeCartPoleTrainer trainer = new MyCaffeCartPoleTrainer();
             ProjectEx project = getReinforcementProject(igym, nIterations);
@@ -168,7 +205,7 @@ namespace MyCaffe.test
             //  - Init1 = default force of 10.
             //  - Init2 = do not use additive force.                    
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
-            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=MAX;Gamma=0.99;Init1=10;Init2=0;Threads=1", null);
+            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=MAX;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1", null);
 
             if (bShowUi)
                 trainer.OpenUi();
@@ -180,7 +217,7 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TrainAtariPG(bool bShowUi, int nIterations = 100)
+        public void TrainAtariPG(bool bShowUi, string strTrainerType, int nIterations = 100, bool bUseAcceleratedTraining = false)
         {
             m_evtCancel.Reset();
 
@@ -189,7 +226,8 @@ namespace MyCaffe.test
             IXMyCaffeGym igym = col.Find("ATARI");
             DATA_TYPE dt = DATA_TYPE.BLOB;
 
-            m_log.WriteHeader("Test Training Atari for " + nIterations.ToString("N0") + " iterations.");
+            m_log.WriteHeader("Test Training ATARI for " + nIterations.ToString("N0") + " iterations.");
+            m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + ((bUseAcceleratedTraining) ? "ON" : "OFF"));
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
             MyCaffeAtariTrainer trainer = new MyCaffeAtariTrainer();
             ProjectEx project = getReinforcementProject(igym, nIterations, dt);
@@ -212,7 +250,7 @@ namespace MyCaffe.test
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
             //  - UseAcceleratedTraining = False (disable accelerated training).
             //  - GameROM = 'path to game ROM'
-            trainer.Initialize("TrainerType=PG.MT;RewardType=VAL;Gamma=0.99;UseAcceleratedTraining=False;GameROM=" + strRom, null);
+            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";Gamma=0.99;GameROM=" + strRom, null);
 
             if (bShowUi)
                 trainer.OpenUi();
