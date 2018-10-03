@@ -158,6 +158,22 @@ namespace MyCaffe.basecode
         /// <summary>
         /// The SimpleDatum constructor.
         /// </summary>
+        /// <param name="data">Specifies the valuse data to fill the SimpleDatum with.</param>
+        public SimpleDatum(Valuemap data)
+        {
+            m_nChannels = data.Channels;
+            m_nWidth = data.Width;
+            m_nHeight = data.Height;
+            m_nOriginalLabel = -1;
+            m_nLabel = -1;
+            m_bIsRealData = true;
+
+            m_rgRealData = data.Values;
+        }
+
+        /// <summary>
+        /// The SimpleDatum constructor.
+        /// </summary>
         /// <param name="d">Specifies a SimpleDatum used to create this new Datum.</param>
         /// <param name="bCopyData">Specifies whether or not to copy the data, or just share it (default = false, share the data).</param>
         public SimpleDatum(SimpleDatum d, bool bCopyData = false)
