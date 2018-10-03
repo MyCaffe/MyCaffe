@@ -10,7 +10,7 @@ layer
    }
    transform_param 
    {
-      scale: 0.00390625
+      scale: 1
       color_order: RGB
    }
    memory_data_param 
