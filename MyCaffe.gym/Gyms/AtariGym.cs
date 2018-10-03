@@ -121,8 +121,9 @@ namespace MyCaffe.gym
                 m_rgFrameSkip.Add(i);
             }
 
-            m_rgActions.Add(ACTION.ACT_PLAYER_A_LEFT.ToString(), (int)ACTION.ACT_PLAYER_A_LEFT);
             m_rgActions.Add(ACTION.ACT_PLAYER_A_RIGHT.ToString(), (int)ACTION.ACT_PLAYER_A_RIGHT);
+            m_rgActions.Add(ACTION.ACT_PLAYER_A_LEFT.ToString(), (int)ACTION.ACT_PLAYER_A_LEFT);
+
             m_rgActionSet = m_rgActions.ToList();
 
             Reset();
@@ -235,10 +236,16 @@ namespace MyCaffe.gym
                 m_bmpActionRaw = new DirectBitmap(nDsSize, nDsSize);
 
             DirectBitmap bmp = m_bmpRaw;
-            Bytemap data = null;
+            Valuemap dataV = null;
+            Bytemap dataB = null;
 
             if (bGetAction)
-                data = new Bytemap(nChannels, nDsSize, nDsSize);
+            {
+                if (m_bPreprocess)
+                    dataV = new Valuemap(nChannels, nDsSize, nDsSize);
+                else
+                    dataB = new Bytemap(nChannels, nDsSize, nDsSize);
+            }
 
             for (int y = 0; y < nHt; y++)
             {
@@ -268,16 +275,16 @@ namespace MyCaffe.gym
                     Color clr = Color.FromArgb(nR, nG, nB);
                     bmp.SetPixel(x, y, clr);
 
-                    if (bY && bX && data != null)
+                    if (bY && bX && (dataB != null || dataV != null))
                     {
                         if (bPreprocess)
                         {
                             if (nR != 144 && nR != 109 && nR != 0)
-                                data.SetPixel(nX, nY, (byte)nR);
+                                dataV.SetPixel(nX, nY, 1.0);
                         }
                         else
                         {
-                            data.SetPixel(x, y, clr);
+                            dataB.SetPixel(x, y, clr);
                         }
 
                         nX++;
@@ -291,7 +298,20 @@ namespace MyCaffe.gym
                 }
             }
 
-            return new Tuple<DirectBitmap, SimpleDatum>(bmp, (data == null) ? null : new SimpleDatum(data));
+            SimpleDatum sd = null;
+
+            if (m_bPreprocess)
+            {
+                if (dataV != null)
+                    sd = new SimpleDatum(dataV);
+            }
+            else
+            {
+                if (dataB != null)
+                    sd = new SimpleDatum(dataB);
+            }
+
+            return new Tuple<DirectBitmap, SimpleDatum>(bmp, sd);
         }
 
         public Tuple<State, double, bool> Reset()
