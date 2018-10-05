@@ -1947,30 +1947,51 @@ namespace MyCaffe.common
         /// </summary>
         public void NormalizeData()
         {
-            int nCount = count();
-            double dfAsum = Utility.ConvertVal<T>(asum_data());
-            double dfMean = dfAsum / nCount;
-            m_cuda.add_scalar(nCount, -dfMean, mutable_gpu_data);
-            double dfStd = std(dfMean);
-            m_cuda.mul_scalar(nCount, 1.0 / dfStd, mutable_gpu_data);
+            float[] rgF = Utility.ConvertVecF<T>(update_cpu_data());
+            double dfMean = mean(rgF);
+            double dfStd = std(dfMean, rgF);
+
+            if (dfMean != 0)
+                m_cuda.add_scalar(count(), -1 * dfMean, mutable_gpu_data);
+
+            if (dfStd != 0 && dfStd != 1.0)
+                m_cuda.mul_scalar(count(), 1.0 / dfStd, mutable_gpu_data);
+        }
+
+        /// <summary>
+        /// Calculate the mean of the blob data.
+        /// </summary>
+        /// <param name="rgDf">Optionally specifies the CPU data.</param>
+        /// <returns>The mean is returned.</returns>
+        public double mean(float[] rgDf = null)
+        {
+            double dfSum = 0;
+
+            if (rgDf == null)
+                rgDf = Utility.ConvertVecF<T>(update_cpu_data());
+
+            for (int i = 0; i < rgDf.Length; i++)
+            {
+                dfSum += rgDf[i];
+            }
+
+            return dfSum / rgDf.Length;
         }
 
         /// <summary>
         /// Calculate the standard deviation of the blob data.
         /// </summary>
-        /// <param name="dfMean">Optionally, specifies the blob mean.</param>
+        /// <param name="dfMean">Specifies the mean.</param>
         /// <returns>The standard deviation of the bob data is returned.</returns>
-        public double std(double? dfMean = null)
+        public double std(double? dfMean = null, float[] rgDf = null)
         {
-            if (!dfMean.HasValue)
-            {
-                int nCount = count();
-                double dfAsum = Utility.ConvertVal<T>(asum_data());
-                dfMean = dfAsum / nCount;
-            }
-
-            double[] rgDf = Utility.ConvertVec<T>(update_cpu_data());
             double dfSum = 0;
+
+            if (rgDf == null)
+                rgDf = Utility.ConvertVecF<T>(update_cpu_data());
+
+            if (!dfMean.HasValue)
+                dfMean = mean(rgDf);
 
             for (int i = 0; i < rgDf.Length; i++)
             {
