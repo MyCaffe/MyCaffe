@@ -20,6 +20,7 @@ namespace MyCaffe.trainers.pg.st
     /// @see 1. [Deep Reinforcement Learning: Pong from Pixels](http://karpathy.github.io/2016/05/31/rl/), by Andrej Karpathy, 2016, Github.io
     /// @see 2. [GitHub: karpathy/pg-pong.py](https://gist.github.com/karpathy/a4166c7fe253700972fcbc77e4ea32c5), by Andrej Karpathy, 2016, Github
     /// @see 3. [CS231n Convolution Neural Networks for Visual Recognition](http://cs231n.github.io/neural-networks-2/#losses) by Karpathy, Stanford
+    /// @see 4. [MyCaffe: A Complete C# Re-Write of Caffe with Reinforcement Learning](https://arxiv.org/abs/1810.02272) by D. Brown, 2018, arXiv
     /// <remarks></remarks>
     public class TrainerPG<T> : IxTrainer, IDisposable
     {
@@ -146,6 +147,7 @@ namespace MyCaffe.trainers.pg.st
         PropertySet m_properties;
         CryptoRandom m_random;
         float m_fGamma;
+        bool m_bAllowDiscountReset = false;
         bool m_bUseRawInput = false;
 
         public Agent(IxTrainerCallback icallback, MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase)
@@ -156,6 +158,7 @@ namespace MyCaffe.trainers.pg.st
             m_random = random;
 
             m_fGamma = (float)properties.GetPropertyAsDouble("Gamma", 0.99);
+            m_bAllowDiscountReset = properties.GetPropertyAsBool("AllowDiscountReset", false);
             m_bUseRawInput = properties.GetPropertyAsBool("UseRawInput", false);
         }
 
@@ -227,7 +230,7 @@ namespace MyCaffe.trainers.pg.st
                         m_brain.Reshape(m_rgMemory);
 
                         // Compute the discounted reward (backwards through time)
-                        float[] rgDiscountedR = m_rgMemory.GetDiscountedRewards(m_fGamma);
+                        float[] rgDiscountedR = m_rgMemory.GetDiscountedRewards(m_fGamma, m_bAllowDiscountReset);
                         // Rewards are standardized when set to be unit normal (helps control the gradient estimator variance)
                         m_brain.SetDiscountedR(rgDiscountedR);
 
@@ -597,7 +600,7 @@ namespace MyCaffe.trainers.pg.st
         {
         }
 
-        public float[] GetDiscountedRewards(float fGamma)
+        public float[] GetDiscountedRewards(float fGamma, bool bAllowReset)
         {
             float fRunningAdd = 0;
             float[] rgR = m_rgItems.Select(p => p.Reward).ToArray();
@@ -605,7 +608,7 @@ namespace MyCaffe.trainers.pg.st
 
             for (int t = Count - 1; t >= 0; t--)
             {
-                if (rgR[t] == 0)
+                if (bAllowReset && rgR[t] != 0)
                     fRunningAdd = 0;
 
                 fRunningAdd = fRunningAdd * fGamma + rgR[t];
