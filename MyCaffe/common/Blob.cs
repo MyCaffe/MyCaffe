@@ -1945,17 +1945,23 @@ namespace MyCaffe.common
         /// <summary>
         /// Normalize the blob data by subtracting the mean and dividing by the standard deviation.
         /// </summary>
-        public void NormalizeData()
+        /// <param name="dfMean">Optionally, specifies a mean value to use (default = <i>null</i>).</param>
+        /// <param name="dfStd">Optionally, specifies a std value to use (default = <i>null</i>).</param>
+        public void NormalizeData(double? dfMean = null, double? dfStd = null)
         {
-            float[] rgF = Utility.ConvertVecF<T>(update_cpu_data());
-            double dfMean = mean(rgF);
-            double dfStd = std(dfMean, rgF);
+            if (!dfMean.HasValue || !dfStd.HasValue)
+            {
+                float[] rgF = Utility.ConvertVecF<T>(update_cpu_data());
 
-            if (dfMean != 0)
-                m_cuda.add_scalar(count(), -1 * dfMean, mutable_gpu_data);
+                dfMean = mean(rgF);
+                dfStd = std(dfMean.Value, rgF);
+            }
 
-            if (dfStd != 0 && dfStd != 1.0)
-                m_cuda.mul_scalar(count(), 1.0 / dfStd, mutable_gpu_data);
+            if (dfMean.Value != 0)
+                m_cuda.add_scalar(count(), -1 * dfMean.Value, mutable_gpu_data);
+
+            if (dfStd.Value != 0 && dfStd.Value != 1.0)
+                m_cuda.mul_scalar(count(), 1.0 / dfStd.Value, mutable_gpu_data);
         }
 
         /// <summary>
