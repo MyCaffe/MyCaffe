@@ -1172,6 +1172,7 @@ namespace MyCaffe.app
             {
                 bool bShowUi = false;
                 bool bUseAccelTrain = false;
+                bool bAllowDiscountReset = false;
                 string strTrainer = "SIMPLE";
 
                 FormCustomTraining dlg = new FormCustomTraining("Cart-Pole");
@@ -1180,11 +1181,12 @@ namespace MyCaffe.app
 
                 bShowUi = dlg.ShowUserInterface;
                 bUseAccelTrain = dlg.UseAcceleratedTraining;
+                bAllowDiscountReset = dlg.AllowDiscountReset;
                 strTrainer = dlg.Trainer;
 
                 m_log.WriteLine("starting policy gradient cart-pole test...");
                 m_evtCancelPG.Reset();
-                m_pgTask = Task.Factory.StartNew(new Action<object>(pgTrainerThread), new Tuple<CancelEvent, string, bool, bool, string>(m_evtCancelPG, "Cart-Pole", bShowUi, bUseAccelTrain, strTrainer));
+                m_pgTask = Task.Factory.StartNew(new Action<object>(pgTrainerThread), new Tuple<CancelEvent, string, bool, bool, bool, string>(m_evtCancelPG, "Cart-Pole", bShowUi, bUseAccelTrain, bAllowDiscountReset, strTrainer));
                 startAtariTrainerToolStripMenuItem.Enabled = false;
                 startCartPoleTrainerToolStripMenuItem.Text = "Stop Cart-Pole Training";
             }
@@ -1204,6 +1206,7 @@ namespace MyCaffe.app
             {
                 bool bShowUi = false;
                 bool bUseAccelTrain = false;
+                bool bAllowDiscountReset = false;
                 string strTrainer = "SIMPLE";
 
                 FormCustomTraining dlg = new FormCustomTraining("ATARI");
@@ -1212,11 +1215,12 @@ namespace MyCaffe.app
 
                 bShowUi = dlg.ShowUserInterface;
                 bUseAccelTrain = dlg.UseAcceleratedTraining;
+                bAllowDiscountReset = dlg.AllowDiscountReset;
                 strTrainer = dlg.Trainer;
 
                 m_log.WriteLine("starting policy gradient ATARI test...");
                 m_evtCancelPG.Reset();
-                m_pgTask = Task.Factory.StartNew(new Action<object>(pgTrainerThread), new Tuple<CancelEvent, string, bool, bool, string>(m_evtCancelPG, "ATARI", bShowUi, bUseAccelTrain, strTrainer));
+                m_pgTask = Task.Factory.StartNew(new Action<object>(pgTrainerThread), new Tuple<CancelEvent, string, bool, bool, bool, string>(m_evtCancelPG, "ATARI", bShowUi, bUseAccelTrain, bAllowDiscountReset, strTrainer));
                 startCartPoleTrainerToolStripMenuItem.Enabled = false;
                 startAtariTrainerToolStripMenuItem.Text = "Stop ATARI Training";
             }
@@ -1232,22 +1236,23 @@ namespace MyCaffe.app
 
         private void pgTrainerThread(object obj)
         {
-            Tuple<CancelEvent, string, bool, bool, string> arg = obj as Tuple<CancelEvent, string, bool, bool, string>;
+            Tuple<CancelEvent, string, bool, bool, bool, string> arg = obj as Tuple<CancelEvent, string, bool, bool, bool, string>;
             CancelEvent evtCancel = arg.Item1;
             string strGym = arg.Item2;
             MyCaffeCustomTrainerTest<float> test = new MyCaffeCustomTrainerTest<float>(strGym, 0, EngineParameter.Engine.DEFAULT);
             int nIterations = 500000;
             bool bShowUi = arg.Item3;
             bool bUseAccelTrain = arg.Item4;
-            string strTrainer = arg.Item5;
+            bool bAllowDiscountReset = arg.Item5;
+            string strTrainer = arg.Item6;
 
             test.Log.OnWriteLine += Log_OnWriteLine1;
             test.CancelEvent.AddCancelOverride(evtCancel);
 
             if (strGym == "Cart-Pole")
-                test.TrainCartPolePG(bShowUi, "PG." + strTrainer, nIterations, bUseAccelTrain);
+                test.TrainCartPolePG(bShowUi, "PG." + strTrainer, nIterations, bUseAccelTrain, bAllowDiscountReset);
             else if (strGym == "ATARI")
-                test.TrainAtariPG(bShowUi, "PG." + strTrainer, nIterations, bUseAccelTrain);
+                test.TrainAtariPG(bShowUi, "PG." + strTrainer, nIterations, bUseAccelTrain, bAllowDiscountReset);
 
             if (evtCancel.WaitOne(0))
                 test.Log.WriteLine("training aborted.");
