@@ -132,8 +132,8 @@ namespace MyCaffe.test
 
     interface IMyCaffeCustomTrainerTest : ITest
     {
-        void TrainCartPolePG(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false);
-        void TrainAtariPG(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false);
+        void TrainCartPolePG(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
+        void TrainAtariPG(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
     }
 
     class MyCaffeCustomTrainerTest : TestBase
@@ -174,7 +174,7 @@ namespace MyCaffe.test
             get { return m_evtCancel; }
         }
 
-        public void TrainCartPolePG(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false)
+        public void TrainCartPolePG(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
         {
             m_evtCancel.Reset();
 
@@ -205,7 +205,7 @@ namespace MyCaffe.test
             //  - Init1 = default force of 10.
             //  - Init2 = do not use additive force.                    
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
-            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=MAX;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1", null);
+            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=MAX;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1", null);
 
             if (bShowUi)
                 trainer.OpenUi();
@@ -217,7 +217,7 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TrainAtariPG(bool bShowUi, string strTrainerType, int nIterations = 100, bool bUseAcceleratedTraining = false)
+        public void TrainAtariPG(bool bShowUi, string strTrainerType, int nIterations = 100, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
         {
             m_evtCancel.Reset();
 
@@ -250,7 +250,7 @@ namespace MyCaffe.test
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
             //  - UseAcceleratedTraining = False (disable accelerated training).
             //  - GameROM = 'path to game ROM'
-            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";Gamma=0.99;GameROM=" + strRom, null);
+            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;GameROM=" + strRom, null);
 
             if (bShowUi)
                 trainer.OpenUi();
