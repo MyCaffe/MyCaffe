@@ -1967,7 +1967,7 @@ namespace MyCaffe.common
         /// <summary>
         /// Calculate the mean of the blob data.
         /// </summary>
-        /// <param name="rgDf">Optionally specifies the CPU data.</param>
+        /// <param name="rgDf">Optionally, specifies the CPU data to use (default = <i>null</i>).</param>
         /// <returns>The mean is returned.</returns>
         public double mean(float[] rgDf = null)
         {
@@ -1987,7 +1987,8 @@ namespace MyCaffe.common
         /// <summary>
         /// Calculate the standard deviation of the blob data.
         /// </summary>
-        /// <param name="dfMean">Specifies the mean.</param>
+        /// <param name="dfMean">Optionally, specifies the mean to use (default = <i>null</i>).</param>
+        /// <param name="rgDf">Optionally, specifies the CPU data to calculate the std on (default = <i>null</i>).</param>
         /// <returns>The standard deviation of the bob data is returned.</returns>
         public double std(double? dfMean = null, float[] rgDf = null)
         {
