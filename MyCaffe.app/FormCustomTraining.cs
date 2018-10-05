@@ -15,6 +15,7 @@ namespace MyCaffe.app
         string m_strName;
         bool m_bShowUi = false;
         bool m_bUseAcceleratedTraining = false;
+        bool m_bAllowDiscountReset = false;
         string m_strTrainer = "";
 
         public FormCustomTraining(string strName)
@@ -42,6 +43,7 @@ namespace MyCaffe.app
 
             chkShowUi.Checked = m_bShowUi;
             chkUseAcceleratedTraining.Checked = m_bUseAcceleratedTraining;
+            chkAllowDiscountReset.Checked = m_bAllowDiscountReset;
 
             if (m_strTrainer == "SIMPLE")
                 radSimple.Checked = true;
@@ -55,6 +57,7 @@ namespace MyCaffe.app
         {
             m_bShowUi = chkShowUi.Checked;
             m_bUseAcceleratedTraining = chkUseAcceleratedTraining.Checked;
+            m_bAllowDiscountReset = chkAllowDiscountReset.Checked;
 
             if (radSimple.Checked)
                 m_strTrainer = "SIMPLE";
@@ -72,6 +75,11 @@ namespace MyCaffe.app
         public bool UseAcceleratedTraining
         {
             get { return m_bUseAcceleratedTraining; }
+        }
+
+        public bool AllowDiscountReset
+        {
+            get { return m_bAllowDiscountReset; }
         }
 
         public string Trainer
