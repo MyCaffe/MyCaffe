@@ -181,9 +181,14 @@ namespace MyCaffe.test
             GymCollection col = new GymCollection();
             col.Load();
             IXMyCaffeGym igym = col.Find("Cart-Pole");
+            string strAccelTrain = (bUseAcceleratedTraining) ? "ON" : "OFF";
+            string strAllowReset = (bAllowDiscountReset) ? "YES" : "NO";
+
+            if (strTrainerType != "PG.MT")
+                strAccelTrain = "NOT SUPPORTED";
 
             m_log.WriteHeader("Test Training Cart-Pole for " + nIterations.ToString("N0") + " iterations.");
-            m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + ((bUseAcceleratedTraining) ? "ON" : "OFF"));
+            m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain + ", AllowDiscountReset = " + strAllowReset);
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
             MyCaffeCartPoleTrainer trainer = new MyCaffeCartPoleTrainer();
             ProjectEx project = getReinforcementProject(igym, nIterations);
@@ -205,7 +210,7 @@ namespace MyCaffe.test
             //  - Init1 = default force of 10.
             //  - Init2 = do not use additive force.                    
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
-            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=MAX;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1", null);
+            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1", null);
 
             if (bShowUi)
                 trainer.OpenUi();
@@ -225,9 +230,14 @@ namespace MyCaffe.test
             col.Load();
             IXMyCaffeGym igym = col.Find("ATARI");
             DATA_TYPE dt = DATA_TYPE.BLOB;
+            string strAccelTrain = (bUseAcceleratedTraining) ? "ON" : "OFF";
+            string strAllowReset = (bAllowDiscountReset) ? "YES" : "NO";
+
+            if (strTrainerType != "PG.MT")
+                strAccelTrain = "NOT SUPPORTED";
 
             m_log.WriteHeader("Test Training ATARI for " + nIterations.ToString("N0") + " iterations.");
-            m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + ((bUseAcceleratedTraining) ? "ON" : "OFF"));
+            m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain + ", AllowDiscountReset = " + strAllowReset);
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
             MyCaffeAtariTrainer trainer = new MyCaffeAtariTrainer();
             ProjectEx project = getReinforcementProject(igym, nIterations, dt);
