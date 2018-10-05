@@ -31,8 +31,10 @@ We have several new models supported by MyCaffe with the train_val and solution 
  - Deep convolutional auto-encoder neural networks with pooling as described in [4].
  - Policy Gradient Reinforcement Learning networks as described in [5].
 
- MyCaffe now supports the Arcade-Learning-Environment by [6] based on the Stella Atari-2600 emulator from [7], via the AleControl from SignalPop.  
- For more information, get the <a href="https://www.nuget.org/packages?q=AleControl">AleControl on Nuget</a>, or visit the <a href="https://github.com/MyCaffe/AleControl">AleControl on Github</a>.
+For more information on the MyCaffe implementation of Policy Gradient Reinforcement Learning, see [MyCaffe: A Complete C# Re-Write of Caffe with Reinforcement Learning](https://arxiv.org/abs/1810.02272) by D. Brown, 2018. 
+
+MyCaffe now supports the Arcade-Learning-Environment by [6] based on the Stella Atari-2600 emulator from [7], via the AleControl from SignalPop.  
+For more information, get the <a href="https://www.nuget.org/packages?q=AleControl">AleControl on Nuget</a>, or visit the <a href="https://github.com/MyCaffe/AleControl">AleControl on Github</a>.
 
 [1] [CAFFE: Convolutional Architecture for Fast Feature Embedding](https://arxiv.org/abs/1408.5093) by Yangqing Jai, Evan Shelhamer, Jeff Donahue, 
 Sergey Karayev, Jonathan Long, Ross Girshick, Sergio Guadarrama, and Trevor Darrell, 2014.
