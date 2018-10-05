@@ -28,12 +28,14 @@ namespace MyCaffe.app
                 m_strTrainer = "SIMPLE";
                 m_bShowUi = false;
                 m_bUseAcceleratedTraining = false;
+                m_bAllowDiscountReset = true;
             }
             else
             {
                 m_strTrainer = "MT";
                 m_bShowUi = false;
                 m_bUseAcceleratedTraining = true;
+                m_bAllowDiscountReset = false;
             }
         }
 
