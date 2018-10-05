@@ -343,8 +343,10 @@ namespace MyCaffe.trainers.pg.simple
 
         public void SetDiscountedR(float[] rg)
         {
+            double dfMean = m_blobDiscountedR.mean(rg);
+            double dfStd = m_blobDiscountedR.std(dfMean, rg);
             m_blobDiscountedR.SetData(Utility.ConvertVec<T>(rg));
-            m_blobDiscountedR.NormalizeData();
+            m_blobDiscountedR.NormalizeData(dfMean, dfStd);
         }
 
         public void SetPolicyGradients(float[] rg)

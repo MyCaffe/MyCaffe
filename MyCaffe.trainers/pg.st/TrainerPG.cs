@@ -412,8 +412,10 @@ namespace MyCaffe.trainers.pg.st
                 rg = rgR.ToArray();
             }
 
+            double dfMean = m_blobDiscountedR.mean(rg);
+            double dfStd = m_blobDiscountedR.std(dfMean, rg);
             m_blobDiscountedR.SetData(Utility.ConvertVec<T>(rg));
-            m_blobDiscountedR.NormalizeData();
+            m_blobDiscountedR.NormalizeData(dfMean, dfStd);
         }
 
         public void SetActionProbabilities(float[] rg)
