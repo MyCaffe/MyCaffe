@@ -394,6 +394,8 @@ namespace MyCaffe.trainers.pg.st
 
         public void SetDiscountedR(float[] rg)
         {
+            double dfMean = m_blobDiscountedR.mean(rg);
+            double dfStd = m_blobDiscountedR.std(dfMean, rg);
             int nC = m_blobDiscountedR.channels;
 
             // Fill all items in each channel with the same discount value.
@@ -412,8 +414,6 @@ namespace MyCaffe.trainers.pg.st
                 rg = rgR.ToArray();
             }
 
-            double dfMean = m_blobDiscountedR.mean(rg);
-            double dfStd = m_blobDiscountedR.std(dfMean, rg);
             m_blobDiscountedR.SetData(Utility.ConvertVec<T>(rg));
             m_blobDiscountedR.NormalizeData(dfMean, dfStd);
         }
