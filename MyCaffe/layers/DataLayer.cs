@@ -418,7 +418,10 @@ namespace MyCaffe.layers
             }
 
             if (m_param.data_param.synchronize_target)
-                m_rgBatchLabels.Done();
+            {
+                if (m_rgBatchLabels != null)
+                    m_rgBatchLabels.Done();
+            }
 
             if (OnBatchLoad != null)
                 OnBatchLoad(this, new LastBatchLoadedArgs(rgLabels));
