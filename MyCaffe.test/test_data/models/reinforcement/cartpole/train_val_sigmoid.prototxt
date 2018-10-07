@@ -1,0 +1,135 @@
+name: "SimpleNetCartPole"
+layer 
+{
+   name: "data"
+   type: "MemoryData"
+   top: "data"
+   include 
+   {
+      phase: TRAIN
+   }
+   transform_param 
+   {
+      color_order: RGB
+   }
+   memory_data_param 
+   {
+      batch_size: 10
+      channels: 4
+      height: 1
+      width: 1
+      label_channels: 1
+      label_height: 1
+      label_width: 1
+      label_type: NONE
+   }
+}
+layer 
+{
+   name: "ip1"
+   type: "InnerProduct"
+   bottom: "data"
+   top: "x"
+   param 
+   {
+      share_mode: PERMISSIVE
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   inner_product_param 
+   {
+      num_output: 200
+      bias_term: False
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "relu1"
+   type: "ReLU"
+   bottom: "x"
+   top: "x"
+   prelu_param 
+   {
+      filler 
+      {
+         type: "constant"
+         value: 0.25
+      }
+   }
+   relu_param 
+   {
+      engine: CAFFE
+   }
+}
+layer 
+{
+   name: "actions"
+   type: "InnerProduct"
+   bottom: "x"
+   top: "actions"
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   inner_product_param 
+   {
+      num_output: 1
+      bias_term: False
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "sigmoid"
+   type: "Sigmoid"
+   bottom: "actions"
+   top: "sigmoid"
+   sigmoid_param 
+   {
+      engine: CAFFE
+   }
+}
+layer 
+{
+   name: "loss"
+   type: "MemoryLoss"
+   bottom: "actions"
+   top: "loss1"
+   loss_weight: 1
+   loss_param 
+   {
+      normalization: VALID
+   }
+}
