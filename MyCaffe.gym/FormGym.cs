@@ -43,7 +43,7 @@ namespace MyCaffe.gym
         {
             m_ctrl.Render(m_strName, bmp);
 
-            if (bmp == null)
+            if (bmpAction == null)
             {
                 btnShowActionImage.Enabled = false;
             }
@@ -58,8 +58,10 @@ namespace MyCaffe.gym
         {
             m_ctrl.Render(true, m_strName, rgData, bmp);
 
-            if (bmp == null)
+            if (bmpAction == null)
+            {
                 btnShowActionImage.Enabled = false;
+            }
             else
             {
                 btnShowActionImage.Enabled = true;
