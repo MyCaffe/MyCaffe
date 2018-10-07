@@ -160,6 +160,8 @@ namespace MyCaffe.basecode
             int nOffset = 0;
             int nCount = d.Height * d.Width;
             bool bDataIsReal = (d.RealData != null && d.RealData.Length > 0) ? true : false;
+            double dfMin = 1;
+            double dfMax = 0;
 
 
             for (int i = 0; i < d.Channels; i++)
@@ -175,7 +177,10 @@ namespace MyCaffe.basecode
                 {
                     for (int j = 0; j < nCount; j++)
                     {
-                        rgRealData.Add(d.RealData[nOffset + j]);
+                        double dfVal = d.RealData[nOffset + j];
+                        dfMin = Math.Min(dfMin, dfVal);
+                        dfMax = Math.Max(dfMax, dfVal);
+                        rgRealData.Add(dfVal);
                     }
 
                     rgrgRealData[nChIdx] = rgRealData;
@@ -210,7 +215,20 @@ namespace MyCaffe.basecode
                         {
                             if (bDataIsReal)
                             {
-                                clr = Color.FromArgb((int)rgrgRealData[0][nIdx]);
+                                if (dfMin >= 0 && dfMax <= 1.0)
+                                {
+                                    int nG = (int)(rgrgRealData[0][nIdx] * 255.0);
+                                    if (nG < 0)
+                                        nG = 0;
+                                    if (nG > 255)
+                                        nG = 255;
+
+                                    clr = Color.FromArgb(nG, nG, nG);
+                                }
+                                else
+                                {
+                                    clr = Color.FromArgb((int)rgrgRealData[0][nIdx]);
+                                }
 
                                 if (clrMap != null)
                                     clr = clrMap.GetColor(clr.ToArgb());
