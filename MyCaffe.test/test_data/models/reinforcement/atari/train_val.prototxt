@@ -62,12 +62,16 @@ layer
 layer 
 {
    name: "relu1"
-   type: "ReLU"
+   type: "PReLU"
    bottom: "x"
    top: "x"
-   relu_param 
+   prelu_param 
    {
-      engine: CAFFE
+      filler 
+      {
+         type: "constant"
+         value: 0.25
+      }
    }
 }
 layer 
