@@ -14,7 +14,7 @@ layer
    }
    memory_data_param 
    {
-      batch_size: 10
+      batch_size: 32
       channels: 4
       height: 1
       width: 1
@@ -61,7 +61,7 @@ layer
 layer 
 {
    name: "relu1"
-   type: "ReLU"
+   type: "ELU"
    bottom: "x"
    top: "x"
    prelu_param 
@@ -71,10 +71,6 @@ layer
          type: "constant"
          value: 0.25
       }
-   }
-   relu_param 
-   {
-      engine: CAFFE
    }
 }
 layer 
@@ -95,7 +91,7 @@ layer
    }
    inner_product_param 
    {
-      num_output: 1
+      num_output: 2
       bias_term: False
       weight_filler 
       {
@@ -112,14 +108,10 @@ layer
 }
 layer 
 {
-   name: "sigmoid"
-   type: "Sigmoid"
+   name: "softmax1"
+   type: "Softmax"
    bottom: "actions"
-   top: "sigmoid"
-   sigmoid_param 
-   {
-      engine: CAFFE
-   }
+   top: "softmax1"
 }
 layer 
 {
