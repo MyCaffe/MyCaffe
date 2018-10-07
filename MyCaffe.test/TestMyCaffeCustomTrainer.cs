@@ -191,7 +191,7 @@ namespace MyCaffe.test
             m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain + ", AllowDiscountReset = " + strAllowReset);
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
             MyCaffeCartPoleTrainer trainer = new MyCaffeCartPoleTrainer();
-            ProjectEx project = getReinforcementProject(igym, nIterations);
+            ProjectEx project = getReinforcementProject(igym, nIterations, DATA_TYPE.VALUES, strTrainerType.Contains("SIMPLE"));
             DatasetDescriptor ds = trainer.GetDatasetOverride(0);
 
             m_log.CHECK(ds != null, "The MyCaffeCartPoleTrainer should return its dataset override returned by the Gym that it uses.");
@@ -272,12 +272,15 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        private ProjectEx getReinforcementProject(IXMyCaffeGym igym, int nIterations, DATA_TYPE dt = DATA_TYPE.VALUES)
+        private ProjectEx getReinforcementProject(IXMyCaffeGym igym, int nIterations, DATA_TYPE dt = DATA_TYPE.VALUES, bool bForceSimple = false)
         {
             ProjectEx p = new ProjectEx("test");
 
             string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\reinforcement\\cartpole\\train_val.prototxt");
             string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\reinforcement\\cartpole\\solver.prototxt");
+
+            if (bForceSimple)
+                strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\reinforcement\\cartpole\\train_val_sigmoid.prototxt");
 
             if (dt == DATA_TYPE.BLOB)
             {
