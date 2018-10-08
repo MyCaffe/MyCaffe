@@ -137,5 +137,22 @@ namespace MyCaffe.basecode
 
             return dfVal;
         }
+
+        /// <summary>
+        /// Returns the string representation of the properties.
+        /// </summary>
+        /// <returns>The string representation of the properties is returned.</returns>
+        public override string ToString()
+        {
+            string str = "";
+
+            foreach (KeyValuePair<string, string> kv in m_rgProperties)
+            {
+                str += kv.Key + "=" + kv.Value;
+                str += ";";
+            }
+
+            return str;
+        }
     }
 }
