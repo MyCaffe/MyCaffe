@@ -148,41 +148,21 @@ namespace MyCaffe.trainers.pg.mt
         /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
         public bool Test(int nIterations)
         {
-            List<Agent<T>> rgAgents = new List<Agent<T>>();
-            int nGpuIdx = 0;
+            int nDelay = 1000;
+            string strProp = m_properties.ToString();
+
+            // Turn off the num-skip to run at normal speed.
+            strProp += "EnableNumSkip=False;";
+            PropertySet properties = new PropertySet(strProp);
 
             m_mycaffe.CancelEvent.Reset();
+            Agent<T> agent = new Agent<T>(0, m_icallback, m_mycaffe, properties, m_random, Phase.TRAIN, 0, 1);           
+            agent.Run(Phase.TEST, nIterations, TRAIN_STEP.NONE);
 
-            for (int i = 0; i < m_nThreads; i++)
-            {
-                int nGpuID = m_rgGpuID[nGpuIdx];
+            agent.Dispose();
+            Shutdown(nDelay);
 
-                rgAgents.Add(new Agent<T>(i, m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN, nGpuID, m_nThreads));
-
-                nGpuIdx++;
-                if (nGpuIdx == m_rgGpuID.Count)
-                    nGpuIdx = 0;
-            }
-
-            WorkerStartArgs args = new WorkerStartArgs(1, Phase.TEST, nIterations, TRAIN_STEP.NONE);
-            foreach (Agent<T> agent in rgAgents)
-            {
-                agent.Start(args);
-            }
-
-            while (!m_mycaffe.CancelEvent.WaitOne(250))
-            {
-            }
-
-            foreach (Agent<T> agent in rgAgents)
-            {
-                agent.Stop(1000);
-                agent.Dispose();
-            }
-
-            Shutdown(3000);
-
-            return false;
+            return true;
         }
 
         /// <summary>
@@ -646,6 +626,8 @@ namespace MyCaffe.trainers.pg.mt
             int nEpisodeNumber = 0;
             int nIteration = 0;
 
+            m_brain.Create();
+
             StateBase s = getData(m_nIndex, -1);
           
             while (!m_brain.Cancel.WaitOne(0) && (nIterations == -1 || nIteration < nIterations))
@@ -722,7 +704,26 @@ namespace MyCaffe.trainers.pg.mt
                 }
                 else
                 {
-                    s = s_;
+                    if (s_.Done)
+                    {
+                        nEpisodeNumber++;
+
+                        // Update reward running
+                        if (!dfRunningReward.HasValue)
+                            dfRunningReward = dfRewardSum;
+                        else
+                            dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
+
+                        nEpisodeNumber = updateStatus(nEpisodeNumber, dfRunningReward.Value, m_brain.LastLoss, m_brain.LearningRate);
+                        dfRewardSum = 0;
+
+                        s = getData(m_nIndex, -1);
+                    }
+                    else
+                    {
+                        s = s_;
+                    }
+
                     nIteration++;
                 }
             }

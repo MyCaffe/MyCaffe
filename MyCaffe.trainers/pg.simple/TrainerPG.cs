@@ -113,11 +113,21 @@ namespace MyCaffe.trainers.pg.simple
         /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
         public bool Test(int nIterations)
         {
+            int nDelay = 1000;
+            string strProp = m_properties.ToString();
+
+            // Turn off the num-skip to run at normal speed.
+            strProp += "EnableNumSkip=False;";
+            PropertySet properties = new PropertySet(strProp);
+
             m_mycaffe.CancelEvent.Reset();
-            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN);
+            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, properties, m_random, Phase.TRAIN);
             agent.Run(Phase.TEST, nIterations);
+
             agent.Dispose();
-            return false;
+            Shutdown(nDelay);
+
+            return true;
         }
 
         /// <summary>
@@ -263,7 +273,26 @@ namespace MyCaffe.trainers.pg.simple
                 }
                 else
                 {
-                    s = s_;
+                    if (s_.Done)
+                    {
+                        nEpisodeNumber++;
+
+                        // Update reward running
+                        if (!dfRunningReward.HasValue)
+                            dfRunningReward = dfRewardSum;
+                        else
+                            dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
+
+                        updateStatus(nEpisodeNumber, dfRewardSum, dfRunningReward.Value);
+                        dfRewardSum = 0;
+
+                        s = getData(-1);
+                    }
+                    else
+                    {
+                        s = s_;
+                    }
+
                     nIteration++;
                 }
             }
