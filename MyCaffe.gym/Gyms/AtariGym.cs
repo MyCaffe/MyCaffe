@@ -54,6 +54,7 @@ namespace MyCaffe.gym
         bool m_bPreprocess = true;
         DirectBitmap m_bmpRaw = null;
         DirectBitmap m_bmpActionRaw = null;
+        bool m_bEnableNumSkip = true;
 
         public AtariGym()
         {
@@ -111,6 +112,7 @@ namespace MyCaffe.gym
                 m_ct = COLORTYPE.CT_GRAYSCALE;
 
             m_bPreprocess = properties.GetPropertyAsBool("Preprocess", true);
+            m_bEnableNumSkip = properties.GetPropertyAsBool("EnableNumSkip", true);
 
             m_ale.Load(strROM);
             m_rgActionsRaw = m_ale.ActionSpace;
@@ -325,12 +327,16 @@ namespace MyCaffe.gym
         {
             ACTION action = (ACTION)m_rgActionSet[nAction].Value;
             double dfReward = m_ale.Act(action);
-            int nIdx = m_random.Next(m_rgFrameSkip.Count);
-            int nNumSkip = m_rgFrameSkip[nIdx];
 
-            for (int i = 0; i < nNumSkip; i++)
+            if (m_bEnableNumSkip)
             {
-                dfReward += m_ale.Act(action);                
+                int nIdx = m_random.Next(m_rgFrameSkip.Count);
+                int nNumSkip = m_rgFrameSkip[nIdx];
+
+                for (int i = 0; i < nNumSkip; i++)
+                {
+                    dfReward += m_ale.Act(action);
+                }
             }
 
             return new Tuple<State, double, bool>(new AtariState(), dfReward, m_ale.GameOver);
