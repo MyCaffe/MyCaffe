@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MyCaffe.param;
-using MyCaffe.imagedb;
+using MyCaffe.db.image;
 using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.layers;

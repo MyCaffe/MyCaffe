@@ -9,7 +9,7 @@ using MyCaffe.common;
 using MyCaffe.fillers;
 using MyCaffe.layers;
 using System.Diagnostics;
-using MyCaffe.imagedb;
+using MyCaffe.db.image;
 using System.Drawing;
 using System.Threading.Tasks;
 using System.Threading;

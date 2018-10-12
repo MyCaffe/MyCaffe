@@ -10,7 +10,7 @@ using MyCaffe.fillers;
 using MyCaffe.layers;
 using MyCaffe.solvers;
 using System.Threading;
-using MyCaffe.imagedb;
+using MyCaffe.db.image;
 
 namespace MyCaffe.test
 {

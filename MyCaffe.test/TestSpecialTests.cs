@@ -8,7 +8,7 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.fillers;
 using MyCaffe.layers;
-using MyCaffe.imagedb;
+using MyCaffe.db.image;
 using MyCaffe.basecode.descriptors;
 using System.Diagnostics;
 

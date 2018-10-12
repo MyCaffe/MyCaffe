@@ -9,7 +9,7 @@ using System.Threading;
 using MyCaffe.common;
 using System.Drawing;
 using System.Diagnostics;
-using MyCaffe.imagedb;
+using MyCaffe.db.image;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.gym;
 using MyCaffe.trainers;
