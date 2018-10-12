@@ -1,6 +1,6 @@
 ﻿using MyCaffe.basecode;
 using MyCaffe.basecode.descriptors;
-using MyCaffe.imagedb;
+using MyCaffe.db.image;
 using MyCaffe.param;
 using System;
 using System.Collections.Generic;

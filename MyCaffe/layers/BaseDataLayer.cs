@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using MyCaffe.basecode;
 using MyCaffe.basecode.descriptors;
-using MyCaffe.imagedb;
 using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.data;
+using MyCaffe.db.image;
 
 namespace MyCaffe.layers
 {

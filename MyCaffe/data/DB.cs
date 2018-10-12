@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using MyCaffe.imagedb;
+using MyCaffe.db.image;
 using MyCaffe.basecode;
 using MyCaffe.basecode.descriptors;
 

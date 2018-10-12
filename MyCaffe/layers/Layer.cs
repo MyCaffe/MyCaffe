@@ -6,7 +6,7 @@ using System.Threading;
 using System.Drawing;
 using System.Diagnostics;
 using MyCaffe.basecode;
-using MyCaffe.imagedb;
+using MyCaffe.db.image;
 using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.layers.alpha;
