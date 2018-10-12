@@ -1,0 +1,630 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+    <Schema Namespace="DNNModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2008" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityType Name="DatasetCreators">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Name" Type="varchar" MaxLength="256" />
+          <Property Name="Path" Type="varchar" MaxLength="1024" />
+        </EntityType>
+        <EntityType Name="DatasetGroups">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Name" Type="varchar" MaxLength="128" />
+          <Property Name="DatasetCreatorID" Type="int" />
+          <Property Name="OwnerID" Type="nvarchar" MaxLength="60" />
+        </EntityType>
+        <EntityType Name="DatasetParameters">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="256" />
+          <Property Name="Value" Type="nvarchar" MaxLength="1024" />
+          <Property Name="DatasetID" Type="int" />
+        </EntityType>
+        <EntityType Name="Datasets">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="512" />
+          <Property Name="TrainingSourceID" Type="int" />
+          <Property Name="TestingSourceID" Type="int" />
+          <Property Name="DatasetGroupID" Type="int" />
+          <Property Name="DatasetCreatorID" Type="int" />
+          <Property Name="ModelGroupID" Type="int" />
+          <Property Name="ImageHeight" Type="int" />
+          <Property Name="ImageWidth" Type="int" />
+          <Property Name="ImageChannels" Type="int" />
+          <Property Name="ImageEncoded" Type="bit" />
+          <Property Name="TrainingTotal" Type="int" />
+          <Property Name="TestingTotal" Type="int" />
+          <Property Name="TestingPercent" Type="numeric" Precision="12" Scale="5" />
+          <Property Name="Relabeled" Type="bit" />
+          <Property Name="OwnerID" Type="nvarchar" MaxLength="60" />
+          <Property Name="Description" Type="text" />
+        </EntityType>
+        <EntityType Name="LabelBoosts">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="ProjectID" Type="int" />
+          <Property Name="ActiveLabel" Type="int" />
+          <Property Name="Boost" Type="numeric" Precision="12" Scale="5" />
+          <Property Name="SourceID" Type="int" />
+        </EntityType>
+        <EntityType Name="Labels">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Label" Type="int" />
+          <Property Name="Name" Type="nvarchar" MaxLength="128" />
+          <Property Name="SourceID" Type="int" />
+          <Property Name="ImageCount" Type="int" />
+          <Property Name="ActiveLabel" Type="int" />
+        </EntityType>
+        <EntityType Name="ModelGroups">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Name" Type="varchar" MaxLength="512" />
+          <Property Name="OwnerID" Type="nvarchar" MaxLength="60" />
+        </EntityType>
+        <EntityType Name="RawImageGroups">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Idx" Type="int" />
+          <Property Name="StartDate" Type="smalldatetime" />
+          <Property Name="EndDate" Type="smalldatetime" />
+          <Property Name="Property1" Type="numeric" Precision="12" Scale="5" />
+          <Property Name="Property2" Type="numeric" Precision="12" Scale="5" />
+          <Property Name="Property3" Type="numeric" Precision="12" Scale="5" />
+          <Property Name="Property4" Type="numeric" Precision="12" Scale="5" />
+          <Property Name="Property5" Type="numeric" Precision="12" Scale="5" />
+          <Property Name="Rating" Type="numeric" Precision="12" Scale="5" />
+          <Property Name="RawData" Type="image" />
+        </EntityType>
+        <EntityType Name="RawImageMeans">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Height" Type="int" />
+          <Property Name="Width" Type="int" />
+          <Property Name="Channels" Type="int" />
+          <Property Name="Data" Type="image" />
+          <Property Name="Encoded" Type="bit" />
+          <Property Name="SourceID" Type="int" />
+        </EntityType>
+        <EntityType Name="RawImageParameters">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="256" />
+          <Property Name="Value" Type="image" />
+          <Property Name="SourceID" Type="int" />
+          <Property Name="RawImageID" Type="int" />
+          <Property Name="TextValue" Type="nvarchar" MaxLength="1024" />
+        </EntityType>
+        <EntityType Name="RawImageResults">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Idx" Type="int" />
+          <Property Name="Label" Type="int" />
+          <Property Name="ResultCount" Type="int" />
+          <Property Name="Results" Type="image" />
+          <Property Name="SourceID" Type="int" />
+          <Property Name="TimeStamp" Type="datetime" />
+        </EntityType>
+        <EntityType Name="RawImages">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Height" Type="int" />
+          <Property Name="Width" Type="int" />
+          <Property Name="Channels" Type="int" />
+          <Property Name="Data" Type="image" />
+          <Property Name="DebugData" Type="image" />
+          <Property Name="TimeStamp" Type="datetime" />
+          <Property Name="Encoded" Type="bit" />
+          <Property Name="SourceID" Type="int" />
+          <Property Name="Idx" Type="int" />
+          <Property Name="GroupID" Type="int" />
+          <Property Name="OriginalBoost" Type="smallint" />
+          <Property Name="ActiveBoost" Type="smallint" />
+          <Property Name="AutoLabel" Type="bit" />
+          <Property Name="VirtualID" Type="int" />
+          <Property Name="RawData" Type="image" />
+          <Property Name="DataCriteria" Type="image" />
+          <Property Name="OriginalLabel" Type="int" />
+          <Property Name="ActiveLabel" Type="int" />
+          <Property Name="Active" Type="bit" />
+          <Property Name="Description" Type="nvarchar" MaxLength="64" />
+          <Property Name="DebugDataFormatID" Type="tinyint" />
+          <Property Name="DataCriteriaFormatID" Type="tinyint" />
+          <Property Name="OriginalSourceID" Type="int" />
+        </EntityType>
+        <EntityType Name="SourceParameters">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="256" />
+          <Property Name="Value" Type="nvarchar" MaxLength="1024" />
+          <Property Name="SourceID" Type="int" />
+        </EntityType>
+        <EntityType Name="Sources">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Name" Type="nvarchar" MaxLength="512" />
+          <Property Name="ImageHeight" Type="int" />
+          <Property Name="ImageWidth" Type="int" />
+          <Property Name="ImageChannels" Type="int" />
+          <Property Name="ImageEncoded" Type="bit" />
+          <Property Name="ImageCount" Type="int" />
+          <Property Name="OwnerID" Type="nvarchar" MaxLength="60" />
+          <Property Name="SaveImagesToFile" Type="bit" />
+          <Property Name="CopyOfSourceID" Type="int" />
+        </EntityType>
+        <EntityContainer Name="DNNModelStoreContainer">
+          <EntitySet Name="DatasetCreators" EntityType="Self.DatasetCreators" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="DatasetGroups" EntityType="Self.DatasetGroups" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="DatasetParameters" EntityType="Self.DatasetParameters" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Datasets" EntityType="Self.Datasets" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="LabelBoosts" EntityType="Self.LabelBoosts" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Labels" EntityType="Self.Labels" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="ModelGroups" EntityType="Self.ModelGroups" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="RawImageGroups" EntityType="Self.RawImageGroups" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="RawImageMeans" EntityType="Self.RawImageMeans" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="RawImageParameters" EntityType="Self.RawImageParameters" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="RawImageResults" EntityType="Self.RawImageResults" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="RawImages" EntityType="Self.RawImages" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="SourceParameters" EntityType="Self.SourceParameters" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Sources" EntityType="Self.Sources" Schema="dbo" store:Type="Tables" />
+        </EntityContainer>
+      </Schema></edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="DNNModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+        <EntityType Name="DatasetGroup">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" MaxLength="128" FixedLength="false" Unicode="false" />
+          <Property Name="DatasetCreatorID" Type="Int32" />
+          <Property Name="OwnerID" Type="String" MaxLength="60" FixedLength="false" Unicode="true" />
+        </EntityType>
+        <EntityType Name="DatasetParameter">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" MaxLength="256" FixedLength="false" Unicode="true" />
+          <Property Name="Value" Type="String" MaxLength="1024" FixedLength="false" Unicode="true" />
+          <Property Name="DatasetID" Type="Int32" />
+        </EntityType>
+        <EntityType Name="LabelBoost">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="ProjectID" Type="Int32" />
+          <Property Name="ActiveLabel" Type="Int32" />
+          <Property Name="Boost" Type="Decimal" Precision="12" Scale="5" />
+          <Property Name="SourceID" Type="Int32" />
+        </EntityType>
+        <EntityType Name="Label">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Label1" Type="Int32" />
+          <Property Name="Name" Type="String" MaxLength="128" FixedLength="false" Unicode="true" />
+          <Property Name="SourceID" Type="Int32" />
+          <Property Name="ImageCount" Type="Int32" />
+          <Property Name="ActiveLabel" Type="Int32" />
+        </EntityType>
+        <EntityType Name="RawImageGroup">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Idx" Type="Int32" />
+          <Property Name="StartDate" Type="DateTime" Precision="0" />
+          <Property Name="EndDate" Type="DateTime" Precision="0" />
+          <Property Name="Property1" Type="Decimal" Precision="12" Scale="5" />
+          <Property Name="Property2" Type="Decimal" Precision="12" Scale="5" />
+          <Property Name="Property3" Type="Decimal" Precision="12" Scale="5" />
+          <Property Name="Property4" Type="Decimal" Precision="12" Scale="5" />
+          <Property Name="Property5" Type="Decimal" Precision="12" Scale="5" />
+          <Property Name="Rating" Type="Decimal" Precision="12" Scale="5" />
+          <Property Name="RawData" Type="Binary" MaxLength="Max" FixedLength="false" />
+        </EntityType>
+        <EntityType Name="RawImageMean">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Height" Type="Int32" />
+          <Property Name="Width" Type="Int32" />
+          <Property Name="Channels" Type="Int32" />
+          <Property Name="Data" Type="Binary" MaxLength="Max" FixedLength="false" />
+          <Property Name="Encoded" Type="Boolean" />
+          <Property Name="SourceID" Type="Int32" />
+        </EntityType>
+        <EntityType Name="RawImageParameter">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" MaxLength="256" FixedLength="false" Unicode="true" />
+          <Property Name="Value" Type="Binary" MaxLength="Max" FixedLength="false" />
+          <Property Name="SourceID" Type="Int32" />
+          <Property Name="RawImageID" Type="Int32" />
+          <Property Name="TextValue" Type="String" MaxLength="1024" FixedLength="false" Unicode="true" />
+        </EntityType>
+        <EntityType Name="RawImageResult">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Idx" Type="Int32" />
+          <Property Name="Label" Type="Int32" />
+          <Property Name="ResultCount" Type="Int32" />
+          <Property Name="Results" Type="Binary" MaxLength="Max" FixedLength="false" />
+          <Property Name="SourceID" Type="Int32" />
+          <Property Name="TimeStamp" Type="DateTime" Precision="3" />
+        </EntityType>
+        <EntityType Name="SourceParameter">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" MaxLength="256" FixedLength="false" Unicode="true" />
+          <Property Name="Value" Type="String" MaxLength="1024" FixedLength="false" Unicode="true" />
+          <Property Name="SourceID" Type="Int32" />
+        </EntityType>
+        <EntityType Name="Source">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" MaxLength="512" FixedLength="false" Unicode="true" />
+          <Property Name="ImageHeight" Type="Int32" />
+          <Property Name="ImageWidth" Type="Int32" />
+          <Property Name="ImageChannels" Type="Int32" />
+          <Property Name="ImageEncoded" Type="Boolean" />
+          <Property Name="ImageCount" Type="Int32" />
+          <Property Name="OwnerID" Type="String" MaxLength="60" FixedLength="false" Unicode="true" />
+          <Property Name="SaveImagesToFile" Type="Boolean" />
+          <Property Name="CopyOfSourceID" Type="Int32" />
+        </EntityType>
+        <EntityContainer Name="DNNEntities" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="DatasetGroups" EntityType="Self.DatasetGroup" />
+          <EntitySet Name="DatasetParameters" EntityType="Self.DatasetParameter" />
+          <EntitySet Name="LabelBoosts" EntityType="Self.LabelBoost" />
+          <EntitySet Name="Labels" EntityType="Self.Label" />
+          <EntitySet Name="RawImageGroups" EntityType="Self.RawImageGroup" />
+          <EntitySet Name="RawImageMeans" EntityType="Self.RawImageMean" />
+          <EntitySet Name="RawImageParameters" EntityType="Self.RawImageParameter" />
+          <EntitySet Name="RawImageResults" EntityType="Self.RawImageResult" />
+          <EntitySet Name="SourceParameters" EntityType="Self.SourceParameter" />
+          <EntitySet Name="Sources" EntityType="Self.Source" />
+          <EntitySet Name="DatasetCreators" EntityType="DNNModel.DatasetCreator" />
+          <EntitySet Name="ModelGroups" EntityType="DNNModel.ModelGroup" />
+          <EntitySet Name="Datasets" EntityType="DNNModel.Dataset" />
+          <EntitySet Name="RawImages" EntityType="DNNModel.RawImage" />
+        </EntityContainer>
+        <EntityType Name="DatasetCreator">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" MaxLength="256" FixedLength="false" Unicode="false" />
+          <Property Name="Path" Type="String" MaxLength="1024" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <EntityType Name="ModelGroup">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" MaxLength="512" FixedLength="false" Unicode="false" />
+          <Property Name="OwnerID" Type="String" MaxLength="60" FixedLength="false" Unicode="true" />
+        </EntityType>
+        <EntityType Name="Dataset">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" MaxLength="512" FixedLength="false" Unicode="true" />
+          <Property Name="TrainingSourceID" Type="Int32" />
+          <Property Name="TestingSourceID" Type="Int32" />
+          <Property Name="DatasetGroupID" Type="Int32" />
+          <Property Name="DatasetCreatorID" Type="Int32" />
+          <Property Name="ModelGroupID" Type="Int32" />
+          <Property Name="ImageHeight" Type="Int32" />
+          <Property Name="ImageWidth" Type="Int32" />
+          <Property Name="ImageChannels" Type="Int32" />
+          <Property Name="ImageEncoded" Type="Boolean" />
+          <Property Name="TrainingTotal" Type="Int32" />
+          <Property Name="TestingTotal" Type="Int32" />
+          <Property Name="TestingPercent" Type="Decimal" Precision="12" Scale="5" />
+          <Property Name="Relabeled" Type="Boolean" />
+          <Property Name="OwnerID" Type="String" MaxLength="60" FixedLength="false" Unicode="true" />
+          <Property Name="Description" Type="String" MaxLength="Max" FixedLength="false" Unicode="false" />
+        </EntityType>
+        <EntityType Name="RawImage">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Height" Type="Int32" />
+          <Property Name="Width" Type="Int32" />
+          <Property Name="Channels" Type="Int32" />
+          <Property Name="Data" Type="Binary" MaxLength="Max" FixedLength="false" />
+          <Property Name="DebugData" Type="Binary" MaxLength="Max" FixedLength="false" />
+          <Property Name="TimeStamp" Type="DateTime" Precision="3" />
+          <Property Name="Encoded" Type="Boolean" />
+          <Property Name="SourceID" Type="Int32" />
+          <Property Name="Idx" Type="Int32" />
+          <Property Name="GroupID" Type="Int32" />
+          <Property Name="OriginalBoost" Type="Int16" />
+          <Property Name="ActiveBoost" Type="Int16" />
+          <Property Name="AutoLabel" Type="Boolean" />
+          <Property Name="VirtualID" Type="Int32" />
+          <Property Name="RawData" Type="Binary" MaxLength="Max" FixedLength="false" />
+          <Property Name="DataCriteria" Type="Binary" MaxLength="Max" FixedLength="false" />
+          <Property Name="OriginalLabel" Type="Int32" />
+          <Property Name="ActiveLabel" Type="Int32" />
+          <Property Name="Active" Type="Boolean" />
+          <Property Name="Description" Type="String" MaxLength="64" FixedLength="false" Unicode="true" />
+          <Property Name="DebugDataFormatID" Type="Byte" />
+          <Property Name="DataCriteriaFormatID" Type="Byte" />
+          <Property Name="OriginalSourceID" Type="Int32" />
+        </EntityType>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="DNNModelStoreContainer" CdmEntityContainer="DNNEntities">
+          <EntitySetMapping Name="DatasetGroups">
+            <EntityTypeMapping TypeName="DNNModel.DatasetGroup">
+              <MappingFragment StoreEntitySet="DatasetGroups">
+                <ScalarProperty Name="ID" ColumnName="ID" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="DatasetCreatorID" ColumnName="DatasetCreatorID" />
+                <ScalarProperty Name="OwnerID" ColumnName="OwnerID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="DatasetParameters">
+            <EntityTypeMapping TypeName="DNNModel.DatasetParameter">
+              <MappingFragment StoreEntitySet="DatasetParameters">
+                <ScalarProperty Name="ID" ColumnName="ID" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Value" ColumnName="Value" />
+                <ScalarProperty Name="DatasetID" ColumnName="DatasetID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="LabelBoosts">
+            <EntityTypeMapping TypeName="DNNModel.LabelBoost">
+              <MappingFragment StoreEntitySet="LabelBoosts">
+                <ScalarProperty Name="ID" ColumnName="ID" />
+                <ScalarProperty Name="ProjectID" ColumnName="ProjectID" />
+                <ScalarProperty Name="ActiveLabel" ColumnName="ActiveLabel" />
+                <ScalarProperty Name="Boost" ColumnName="Boost" />
+                <ScalarProperty Name="SourceID" ColumnName="SourceID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Labels">
+            <EntityTypeMapping TypeName="DNNModel.Label">
+              <MappingFragment StoreEntitySet="Labels">
+                <ScalarProperty Name="ID" ColumnName="ID" />
+                <ScalarProperty Name="Label1" ColumnName="Label" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="SourceID" ColumnName="SourceID" />
+                <ScalarProperty Name="ImageCount" ColumnName="ImageCount" />
+                <ScalarProperty Name="ActiveLabel" ColumnName="ActiveLabel" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="RawImageGroups">
+            <EntityTypeMapping TypeName="DNNModel.RawImageGroup">
+              <MappingFragment StoreEntitySet="RawImageGroups">
+                <ScalarProperty Name="ID" ColumnName="ID" />
+                <ScalarProperty Name="Idx" ColumnName="Idx" />
+                <ScalarProperty Name="StartDate" ColumnName="StartDate" />
+                <ScalarProperty Name="EndDate" ColumnName="EndDate" />
+                <ScalarProperty Name="Property1" ColumnName="Property1" />
+                <ScalarProperty Name="Property2" ColumnName="Property2" />
+                <ScalarProperty Name="Property3" ColumnName="Property3" />
+                <ScalarProperty Name="Property4" ColumnName="Property4" />
+                <ScalarProperty Name="Property5" ColumnName="Property5" />
+                <ScalarProperty Name="Rating" ColumnName="Rating" />
+                <ScalarProperty Name="RawData" ColumnName="RawData" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="RawImageMeans">
+            <EntityTypeMapping TypeName="DNNModel.RawImageMean">
+              <MappingFragment StoreEntitySet="RawImageMeans">
+                <ScalarProperty Name="ID" ColumnName="ID" />
+                <ScalarProperty Name="Height" ColumnName="Height" />
+                <ScalarProperty Name="Width" ColumnName="Width" />
+                <ScalarProperty Name="Channels" ColumnName="Channels" />
+                <ScalarProperty Name="Data" ColumnName="Data" />
+                <ScalarProperty Name="Encoded" ColumnName="Encoded" />
+                <ScalarProperty Name="SourceID" ColumnName="SourceID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="RawImageParameters">
+            <EntityTypeMapping TypeName="DNNModel.RawImageParameter">
+              <MappingFragment StoreEntitySet="RawImageParameters">
+                <ScalarProperty Name="ID" ColumnName="ID" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Value" ColumnName="Value" />
+                <ScalarProperty Name="SourceID" ColumnName="SourceID" />
+                <ScalarProperty Name="RawImageID" ColumnName="RawImageID" />
+                <ScalarProperty Name="TextValue" ColumnName="TextValue" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="RawImageResults">
+            <EntityTypeMapping TypeName="DNNModel.RawImageResult">
+              <MappingFragment StoreEntitySet="RawImageResults">
+                <ScalarProperty Name="ID" ColumnName="ID" />
+                <ScalarProperty Name="Idx" ColumnName="Idx" />
+                <ScalarProperty Name="Label" ColumnName="Label" />
+                <ScalarProperty Name="ResultCount" ColumnName="ResultCount" />
+                <ScalarProperty Name="Results" ColumnName="Results" />
+                <ScalarProperty Name="SourceID" ColumnName="SourceID" />
+                <ScalarProperty Name="TimeStamp" ColumnName="TimeStamp" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="SourceParameters">
+            <EntityTypeMapping TypeName="DNNModel.SourceParameter">
+              <MappingFragment StoreEntitySet="SourceParameters">
+                <ScalarProperty Name="ID" ColumnName="ID" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="Value" ColumnName="Value" />
+                <ScalarProperty Name="SourceID" ColumnName="SourceID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Sources">
+            <EntityTypeMapping TypeName="DNNModel.Source">
+              <MappingFragment StoreEntitySet="Sources">
+                <ScalarProperty Name="CopyOfSourceID" ColumnName="CopyOfSourceID" />
+                <ScalarProperty Name="SaveImagesToFile" ColumnName="SaveImagesToFile" />
+                <ScalarProperty Name="OwnerID" ColumnName="OwnerID" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="ImageHeight" ColumnName="ImageHeight" />
+                <ScalarProperty Name="ImageWidth" ColumnName="ImageWidth" />
+                <ScalarProperty Name="ImageChannels" ColumnName="ImageChannels" />
+                <ScalarProperty Name="ImageEncoded" ColumnName="ImageEncoded" />
+                <ScalarProperty Name="ImageCount" ColumnName="ImageCount" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="DatasetCreators">
+            <EntityTypeMapping TypeName="DNNModel.DatasetCreator">
+              <MappingFragment StoreEntitySet="DatasetCreators">
+                <ScalarProperty Name="Path" ColumnName="Path" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="ModelGroups">
+            <EntityTypeMapping TypeName="DNNModel.ModelGroup">
+              <MappingFragment StoreEntitySet="ModelGroups">
+                <ScalarProperty Name="OwnerID" ColumnName="OwnerID" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="Datasets">
+            <EntityTypeMapping TypeName="DNNModel.Dataset">
+              <MappingFragment StoreEntitySet="Datasets">
+                <ScalarProperty Name="Description" ColumnName="Description" />
+                <ScalarProperty Name="OwnerID" ColumnName="OwnerID" />
+                <ScalarProperty Name="Relabeled" ColumnName="Relabeled" />
+                <ScalarProperty Name="TestingPercent" ColumnName="TestingPercent" />
+                <ScalarProperty Name="TestingTotal" ColumnName="TestingTotal" />
+                <ScalarProperty Name="TrainingTotal" ColumnName="TrainingTotal" />
+                <ScalarProperty Name="ImageEncoded" ColumnName="ImageEncoded" />
+                <ScalarProperty Name="ImageChannels" ColumnName="ImageChannels" />
+                <ScalarProperty Name="ImageWidth" ColumnName="ImageWidth" />
+                <ScalarProperty Name="ImageHeight" ColumnName="ImageHeight" />
+                <ScalarProperty Name="ModelGroupID" ColumnName="ModelGroupID" />
+                <ScalarProperty Name="DatasetCreatorID" ColumnName="DatasetCreatorID" />
+                <ScalarProperty Name="DatasetGroupID" ColumnName="DatasetGroupID" />
+                <ScalarProperty Name="TestingSourceID" ColumnName="TestingSourceID" />
+                <ScalarProperty Name="TrainingSourceID" ColumnName="TrainingSourceID" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="RawImages">
+            <EntityTypeMapping TypeName="DNNModel.RawImage">
+              <MappingFragment StoreEntitySet="RawImages">
+                <ScalarProperty Name="OriginalSourceID" ColumnName="OriginalSourceID" />
+                <ScalarProperty Name="DataCriteriaFormatID" ColumnName="DataCriteriaFormatID" />
+                <ScalarProperty Name="DebugDataFormatID" ColumnName="DebugDataFormatID" />
+                <ScalarProperty Name="Description" ColumnName="Description" />
+                <ScalarProperty Name="Active" ColumnName="Active" />
+                <ScalarProperty Name="ActiveLabel" ColumnName="ActiveLabel" />
+                <ScalarProperty Name="OriginalLabel" ColumnName="OriginalLabel" />
+                <ScalarProperty Name="DataCriteria" ColumnName="DataCriteria" />
+                <ScalarProperty Name="RawData" ColumnName="RawData" />
+                <ScalarProperty Name="VirtualID" ColumnName="VirtualID" />
+                <ScalarProperty Name="AutoLabel" ColumnName="AutoLabel" />
+                <ScalarProperty Name="ActiveBoost" ColumnName="ActiveBoost" />
+                <ScalarProperty Name="OriginalBoost" ColumnName="OriginalBoost" />
+                <ScalarProperty Name="GroupID" ColumnName="GroupID" />
+                <ScalarProperty Name="Idx" ColumnName="Idx" />
+                <ScalarProperty Name="SourceID" ColumnName="SourceID" />
+                <ScalarProperty Name="Encoded" ColumnName="Encoded" />
+                <ScalarProperty Name="TimeStamp" ColumnName="TimeStamp" />
+                <ScalarProperty Name="DebugData" ColumnName="DebugData" />
+                <ScalarProperty Name="Data" ColumnName="Data" />
+                <ScalarProperty Name="Channels" ColumnName="Channels" />
+                <ScalarProperty Name="Width" ColumnName="Width" />
+                <ScalarProperty Name="Height" ColumnName="Height" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="true" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="true" />
+        <DesignerProperty Name="UseLegacyProvider" Value="false" />
+        <DesignerProperty Name="CodeGenerationStrategy" Value="None" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams></Diagrams>
+  </Designer>
+</edmx:Edmx>
