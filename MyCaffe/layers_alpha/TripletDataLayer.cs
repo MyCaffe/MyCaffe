@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Diagnostics;
 using MyCaffe.basecode;
-using MyCaffe.imagedb;
+using MyCaffe.db.image;
 using MyCaffe.param;
 using MyCaffe.common;
 using MyCaffe.data;

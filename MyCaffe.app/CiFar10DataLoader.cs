@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MyCaffe.basecode;
-using MyCaffe.imagedb;
+using MyCaffe.db.image;
 using System.Drawing;
 using MyCaffe.basecode.descriptors;
 using System.Threading;

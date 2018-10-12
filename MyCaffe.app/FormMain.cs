@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using MyCaffe.basecode;
-using MyCaffe.imagedb;
+using MyCaffe.db.image;
 using MyCaffe.test.automated;
 using MyCaffe.common;
 using System.Diagnostics;

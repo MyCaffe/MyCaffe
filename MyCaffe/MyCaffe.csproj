@@ -295,9 +295,9 @@
       <Project>{d168418c-cdcc-4f5b-bf55-292a38cc2429}</Project>
       <Name>MyCaffe.basecode</Name>
     </ProjectReference>
-    <ProjectReference Include="..\MyCaffe.imagedb\MyCaffe.imagedb.csproj">
+    <ProjectReference Include="..\MyCaffe.db.image\MyCaffe.db.image.csproj">
       <Project>{642ba581-59cb-445e-8d7d-81e67b748d77}</Project>
-      <Name>MyCaffe.imagedb</Name>
+      <Name>MyCaffe.db.image</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

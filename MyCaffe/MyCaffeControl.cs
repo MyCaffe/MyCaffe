@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using System.IO;
 using MyCaffe.basecode;
 using MyCaffe.basecode.descriptors;
-using MyCaffe.imagedb;
+using MyCaffe.db.image;
 using MyCaffe.solvers;
 using MyCaffe.common;
 using MyCaffe.param;

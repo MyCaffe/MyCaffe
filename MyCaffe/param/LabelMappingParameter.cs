@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.ComponentModel;
-using MyCaffe.imagedb;
+using MyCaffe.db.image;
 using MyCaffe.basecode;
 
 namespace MyCaffe.param

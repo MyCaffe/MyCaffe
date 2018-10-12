@@ -7,7 +7,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Collections;
 using MyCaffe.basecode;
-using MyCaffe.imagedb;
+using MyCaffe.db.image;
 using MyCaffe.common;
 using MyCaffe.param;
 
