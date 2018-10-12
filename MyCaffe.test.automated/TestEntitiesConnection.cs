@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Data.SqlClient;
 using System.Data.EntityClient;
-using MyCaffe.imagedb;
+using MyCaffe.db.image;
 
 namespace MyCaffe.test.automated
 {

@@ -73,10 +73,6 @@
       <Project>{C14BEDC8-FF66-4118-BE66-675F26BE7EE0}</Project>
       <Name>MyCaffe.gym</Name>
     </ProjectReference>
-    <ProjectReference Include="..\MyCaffe.imagedb\MyCaffe.imagedb.csproj">
-      <Project>{642BA581-59CB-445E-8D7D-81E67B748D77}</Project>
-      <Name>MyCaffe.imagedb</Name>
-    </ProjectReference>
     <ProjectReference Include="..\MyCaffe\MyCaffe.csproj">
       <Project>{28E430DD-BD6C-4A4C-9454-1EEB4AD63A5C}</Project>
       <Name>MyCaffe</Name>
