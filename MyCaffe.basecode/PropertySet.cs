@@ -34,11 +34,14 @@ namespace MyCaffe.basecode
 
             foreach (string strP in rgstr)
             {
-                string[] rgstrItem = strP.Split('=');
-                if (rgstrItem.Length == 2)
+                if (strP.Length > 0)
                 {
-                    if (!m_rgProperties.ContainsKey(rgstrItem[0]))
-                        m_rgProperties.Add(rgstrItem[0], rgstrItem[1]);
+                    string[] rgstrItem = strP.Split('=');
+                    if (rgstrItem.Length == 2)
+                    {
+                        if (!m_rgProperties.ContainsKey(rgstrItem[0]))
+                            m_rgProperties.Add(rgstrItem[0], rgstrItem[1]);
+                    }
                 }
             }
         }
