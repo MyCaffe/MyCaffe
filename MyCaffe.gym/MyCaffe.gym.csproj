@@ -58,7 +58,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AleSample.cs" />
     <Compile Include="FormActionImage.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -103,9 +102,6 @@
     <None Include="app.config" />
     <None Include="mycaffe.gym.pfx" />
     <None Include="packages.config" />
-    <None Include="roms\defender.bin" />
-    <None Include="roms\pong.bin" />
-    <None Include="roms\space_invaders.bin" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="FormActionImage.resx">
