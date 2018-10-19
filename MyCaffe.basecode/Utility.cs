@@ -644,5 +644,29 @@ namespace MyCaffe.basecode
 
             return strOut;
         }
+
+        /// <summary>
+        /// Convert a date time into minutes since 1/1/1980
+        /// </summary>
+        /// <param name="dt">Specifies the datetime to convert.</param>
+        /// <returns>The minutes since 1/1/1980 is returned.</returns>
+        public static double ConvertTimeToMinutes(DateTime dt)
+        {
+            DateTime dt1 = new DateTime(1980, 1, 1);
+            TimeSpan ts = dt - dt1;
+            return ts.TotalMinutes;
+        }
+
+        /// <summary>
+        /// Convert a number of minutes into the date time equivalent to 1/1/1980 + the minutes.
+        /// </summary>
+        /// <param name="dfMin">Specifies the minutes since 1/1/1980.</param>
+        /// <returns>The datetime is returned.</returns>
+        public static DateTime ConvertTimeFromMinutes(double dfMin)
+        {
+            DateTime dt1 = new DateTime(1980, 1, 1);
+            TimeSpan ts = TimeSpan.FromMinutes(dfMin);
+            return dt1 + ts;
+        }
     }
 }
