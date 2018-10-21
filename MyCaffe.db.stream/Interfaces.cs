@@ -71,12 +71,13 @@ namespace MyCaffe.db.stream
     /// to specifically query the tables of the underlying database.
     /// </summary>
     /// <remarks>
-    /// Each Custom Query implementation DLL must be placed within the '.\CustomQuery' directory that
+    /// Each Custom Query implementation DLL must be placed within the \code{.cpp}'./CustomQuery'\endcode directory that
     /// is relative to the MyCaffe.db.stream.dll file location. For example, see the following directory
     /// structure:
-    /// 
-    /// c:\temp\MyCaffe.db.stream.dll
-    /// c:\temp\CustomQuery\mycustomquery.dll  - implements the IXCustomQuery interface.
+    /// \code{.cpp}
+    /// c:/temp/MyCaffe.db.stream.dll
+    /// c:/temp/CustomQuery/mycustomquery.dll  - implements the IXCustomQuery interface.
+    /// \endcode
     /// </remarks>
     public interface IXCustomQuery
     {
@@ -117,14 +118,27 @@ namespace MyCaffe.db.stream
         void Reset();
     }
 
+    /// <summary>
+    /// The ParamPacker is use to pack and unpack parameters sent to each custom query.
+    /// </summary>
     public class ParamPacker
     {
+        /// <summary>
+        /// Pack the custom query parameters.
+        /// </summary>
+        /// <param name="str">Specifies the parameters.</param>
+        /// <returns>The packed parameters are returned.</returns>
         public static string Pack(string str)
         {
             str = Utility.Replace(str, ';', '|');
             return Utility.Replace(str, '=', '~');
         }
 
+        /// <summary>
+        /// Unpack the custom query parameters.
+        /// </summary>
+        /// <param name="str">Specifies the parameters.</param>
+        /// <returns>The unpacked parameters are returned.</returns>
         public static string UnPack(string str)
         {
             str = Utility.Replace(str, '|', ';');

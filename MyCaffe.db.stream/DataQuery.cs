@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.db.stream
 {
+    /// <summary>
+    /// The DataQuery manages a custom query interface and queues data from the custom query via an internal query thread.
+    /// </summary>
     public class DataQuery : IDisposable
     {
         CancelEvent m_evtCancel = new CancelEvent();
@@ -24,6 +27,14 @@ namespace MyCaffe.db.stream
         int m_nMaxCount = 0;
         int m_nSegmentSize = 1;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="iquery">Specifies the custom query managed.</param>
+        /// <param name="dtStart">Specifies the start date for queries.</param>
+        /// <param name="tsInc">Specifies the time increment between data items within a query.</param>
+        /// <param name="nSegmentSize">Specifies the number of items to collect on each query.</param>
+        /// <param name="nMaxCount">Specifies the maximum number of items to store in memory.</param>
         public DataQuery(IXCustomQuery iquery, DateTime dtStart, TimeSpan tsInc, int nSegmentSize, int nMaxCount)
         {
             m_nSegmentSize = nSegmentSize;
@@ -35,21 +46,33 @@ namespace MyCaffe.db.stream
             m_queryTask = Task.Factory.StartNew(new Action(queryThread));
         }
 
+        /// <summary>
+        /// Release all resources used and shutdown.
+        /// </summary>
         public void Dispose()
         {
             Shutdown();
         }
 
+        /// <summary>
+        /// Stop the internal query thread.
+        /// </summary>
         public void Shutdown()
         {
             m_evtCancel.Set();
         }
 
+        /// <summary>
+        /// Returns the number of fields (including the sync field) that this query manages.
+        /// </summary>
         public int FieldCount
         {
             get { return m_iquery.FieldCount; }
         }
 
+        /// <summary>
+        /// Enable/disable the internal query thread.
+        /// </summary>
         public bool EnableQueueThread
         {
             get
@@ -68,11 +91,19 @@ namespace MyCaffe.db.stream
             }
         }
 
+        /// <summary>
+        /// Returns the number of items in the data queue.
+        /// </summary>
         public int Count
         {
             get { return m_rgDataQueue.Count; }
         }
 
+        /// <summary>
+        /// Returns <i>true</i> when data is ready, <i>false</i> otherwise.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items in the data queue required to consider the data 'ready'.</param>
+        /// <returns></returns>
         public bool DataReady(int nCount)
         {
             if (m_rgDataQueue.Count < nCount)
@@ -81,11 +112,20 @@ namespace MyCaffe.db.stream
             return true;
         }
 
+        /// <summary>
+        /// Returns <i>true</i> when there is no more data to query.
+        /// </summary>
+        /// <returns>Returns <i>true</i> when there is no more data to query.</returns>
         public bool DataDone()
         {
             return m_bQueryEnd;
         }
 
+        /// <summary>
+        /// Returns data at an index within the queue without removing it, or <i>null</i> if no data exists at the index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index to check.</param>
+        /// <returns>The data at the index is returned, or <i>null</i> if not data exists at that index.</returns>
         public double[] PeekDataAt(int nIdx)
         {
             if (nIdx >= m_rgDataQueue.Count)
@@ -94,12 +134,22 @@ namespace MyCaffe.db.stream
             return m_rgDataQueue.ElementAt(nIdx);
         }
 
+        /// <summary>
+        /// Returns data at an index and field within the queue without removing it.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index to check.</param>
+        /// <param name="nFieldIdx">Specifies the field to check.</param>
+        /// <returns>The data at the index and field is returned.</returns>
         public double PeekDataAt(int nIdx, int nFieldIdx)
         {
             double[] rg = m_rgDataQueue.ElementAt(nIdx);
             return rg[nFieldIdx];
         }
 
+        /// <summary>
+        /// Returns the next data and removes it from the queue.
+        /// </summary>
+        /// <returns>The next data is returned.  When no data exists, <i>null</i> is returned.</returns>
         public double[] GetNextData()
         {
             lock (m_objSync)
@@ -111,6 +161,10 @@ namespace MyCaffe.db.stream
             }
         }
 
+        /// <summary>
+        /// Reset the data query to and offset from the start date.
+        /// </summary>
+        /// <param name="nStartOffset">Specifies the offset to use.</param>
         public void Reset(int nStartOffset)
         {
             m_evtQueryEnabled.Reset();
@@ -126,6 +180,9 @@ namespace MyCaffe.db.stream
             m_evtQueryEnabled.Set();
         }
 
+        /// <summary>
+        /// The query thread is where all data is collected from the underlying custom query managed.
+        /// </summary>
         private void queryThread()
         {
             try

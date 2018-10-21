@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.db.stream
 {
+    /// <summary>
+    /// The DataItemCollection contains the collection of synchronized data items collected from all custom queries.
+    /// </summary>
     public class DataItemCollection
     {
         object m_objSync = new object();
@@ -19,26 +22,45 @@ namespace MyCaffe.db.stream
         CancelEvent m_evtCancel = new CancelEvent();
         int m_nAtCount = 0;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="nAtCount">Specifies the number of items that trigger the 'AtCount' event.</param>
         public DataItemCollection(int nAtCount)
         {
             m_nAtCount = nAtCount;
         }
 
+        /// <summary>
+        /// Returns the number of items in the queue.
+        /// </summary>
         public int Count
         {
             get { return m_rgItems.Count; }
         }
 
+        /// <summary>
+        /// Cancels the internal WaitForCount.
+        /// </summary>
         public CancelEvent Cancel
         {
             get { return m_evtCancel; }
         }
 
+        /// <summary>
+        /// The QueryEnd is set when the data reaches the data end.
+        /// </summary>
         public ManualResetEvent QueryEnd
         {
             get { return m_evtQueryEnd; }
         }
 
+        /// <summary>
+        /// The WaitForCount function waits for the data queue to either fill to a given number of items (e.g. the 'at count'), or 
+        /// if no items remain in the queue and the query end has been reached, or the cancel event has been set.
+        /// </summary>
+        /// <param name="nWait">Specifies the maximum amount of time to wait.</param>
+        /// <returns><i>true</i> is returned if there is an 'at count' amount of data in the queue, otherwise <i>false</i> is returned.</returns>
         public bool WaitForCount(int nWait)
         {          
             List<WaitHandle> rgWait = new List<WaitHandle>();
@@ -78,6 +100,10 @@ namespace MyCaffe.db.stream
             return false;
         }
 
+        /// <summary>
+        /// Add a new data item to the queue.
+        /// </summary>
+        /// <param name="di">Specifies the synchronized data item.</param>
         public void Add(DataItem di)
         {
             lock (m_objSync)
@@ -90,6 +116,11 @@ namespace MyCaffe.db.stream
             }
         }
 
+        /// <summary>
+        /// Returns the next data item from the back of the queue.
+        /// </summary>
+        /// <param name="nWait">Specifies the amount of time to wait for the data.</param>
+        /// <returns>The synchronized data item is returned.</returns>
         public DataItem GetData(int nWait)
         {
             if (!m_evtDataReady.WaitOne(nWait))
@@ -110,11 +141,19 @@ namespace MyCaffe.db.stream
             }
         }
 
+        /// <summary>
+        /// The WaitData function waits a given amount of time for data to be ready.
+        /// </summary>
+        /// <param name="nWait">Specifies the amount of time to wait.</param>
+        /// <returns>When data is ready, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
         public bool WaitData(int nWait)
         {
             return m_evtDataReady.WaitOne(nWait);
         }
 
+        /// <summary>
+        /// The Clear method removes all data from the data queue.
+        /// </summary>
         public void Clear()
         {
             lock (m_objSync)

@@ -9,24 +9,43 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.db.stream
 {
+    /// <summary>
+    /// The CustomQueryCollection manages the external Custom Queries placed in the \code{.cpp}'/CustomQuery'\endcode directory relative to the 
+    /// streaming database assembly.
+    /// </summary>
     public class CustomQueryCollection
     {
         GenericList<IXCustomQuery> m_rgCustomQueries = new GenericList<IXCustomQuery>();
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
         public CustomQueryCollection()
         {
         }
 
+        /// <summary>
+        /// Loads all custom query DLL's (if found).
+        /// </summary>
         public void Load()
         {
             addCustomQueries();
         }
 
+        /// <summary>
+        /// Directly adds a custom query to the list.
+        /// </summary>
+        /// <param name="iqry">Specifies the custom query interface.</param>
         public void Add(IXCustomQuery iqry)
         {
             m_rgCustomQueries.Add(iqry);
         }
 
+        /// <summary>
+        /// Locates a custom query by name and returns it.
+        /// </summary>
+        /// <param name="strName">Specifies the custom query name.</param>
+        /// <returns>When found the custom query interface is returned, otherwise <i>null</i> is returned.</returns>
         public IXCustomQuery Find(string strName)
         {
             foreach (IXCustomQuery iqry in m_rgCustomQueries)
