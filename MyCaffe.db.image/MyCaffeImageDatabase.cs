@@ -10,15 +10,15 @@ using MyCaffe.basecode;
 using MyCaffe.basecode.descriptors;
 
 /// <summary>
-/// The MyCaffe.db.image namespace contains all classes used to create the CaffeImageDatabase in-memory database.
+/// The MyCaffe.db.image namespace contains all classes used to create the MyCaffeImageDatabase in-memory database.
 /// </summary>
 namespace MyCaffe.db.image
 {
     /// <summary>
-    /// The CaffeImageDatabase provides an enhanced in-memory image database used for quick image retrieval.
+    /// The MyCaffeImageDatabase provides an enhanced in-memory image database used for quick image retrieval.
     /// </summary>
     /// <remarks>
-    /// The CaffeImageDatbase manages a set of data sets, where each data sets comprise a pair of data sources: one source 
+    /// The MyCaffeImageDatbase manages a set of data sets, where each data sets comprise a pair of data sources: one source 
     /// for training and another source for testing.  Each data source contains a list of images and a list of label sets
     /// that point back into the list of images.  This organization allows for quick image selection by image or by label
     /// set and then by image from within the label set.
@@ -49,12 +49,12 @@ namespace MyCaffe.db.image
         Guid m_userGuid;
 
         /// <summary>
-        /// The OnCalculateImageMean event fires each time the CaffeImageDatabase wants to access the image mean for a data set.
+        /// The OnCalculateImageMean event fires each time the MyCaffeImageDatabase wants to access the image mean for a data set.
         /// </summary>
         public event EventHandler<CalculateImageMeanArgs> OnCalculateImageMean;
 
         /// <summary>
-        /// The CaffeImageDatabase constructor.
+        /// The MyCaffeImageDatabase constructor.
         /// </summary>
         /// <param name="log">The Log for output.</param>
         /// <param name="strId">Specifies an identifier for this in memory database instance (default = "default").</param>
@@ -68,7 +68,7 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
-        /// The CaffeImageDatabase constructor.
+        /// The MyCaffeImageDatabase constructor.
         /// </summary>
         /// <param name="container">Specifies a container.</param>
         public MyCaffeImageDatabase(IContainer container)
