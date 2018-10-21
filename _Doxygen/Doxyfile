@@ -38,7 +38,7 @@ PROJECT_NAME           = MyCaffe
 # could be handy for archiving the generated documentation or if some version
 # control system is used.
 
-PROJECT_NUMBER         = 0.10.0.76-beta1
+PROJECT_NUMBER         = 0.10.0.85-beta1
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer a
@@ -792,9 +792,10 @@ WARN_LOGFILE           =
 
 INPUT                  = ../MyCaffe \
                          ../MyCaffe.basecode \
-                         ../MyCaffe.imagedb \
                          ../MyCaffe.extras \
-                         ../MyCaffe.trainers
+                         ../MyCaffe.trainers \
+                         ../MyCaffe.db.image \
+                         ../MyCaffe.db.stream
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -878,25 +879,27 @@ RECURSIVE              = YES
 # run.
 
 EXCLUDE                = ..\MyCaffe\MyCaffeControl.Designer.cs \
-                         ..\MyCaffe.imagedb\Dataset.cs \
-                         ..\MyCaffe.imagedb\DatasetCreator.cs \
-                         ..\MyCaffe.imagedb\DatasetGroup.cs \
-                         ..\MyCaffe.imagedb\DatasetParameter.cs \
-                         ..\MyCaffe.imagedb\DNNModel.cs \
-                         ..\MyCaffe.imagedb\DNNModel.tt \
-                         ..\MyCaffe.imagedb\DNNModel.Context.tt \
-                         ..\MyCaffe.imagedb\DNNModel.Context.cs \
-                         ..\MyCaffe.imagedb\DNNModel.Designer.cs \
-                         ..\MyCaffe.imagedb\Label.cs \
-                         ..\MyCaffe.imagedb\LabelBoost.cs \
-                         ..\MyCaffe.imagedb\ModelGroup.cs \
-                         ..\MyCaffe.imagedb\RawImage.cs \
-                         ..\MyCaffe.imagedb\RawImageGroup.cs \
-                         ..\MyCaffe.imagedb\RawImageMean.cs \
-                         ..\MyCaffe.imagedb\RawImageParameter.cs \
-                         ..\MyCaffe.imagedb\RawImageResult.cs \
-                         ..\MyCaffe.imagedb\Source.cs \
-                         ..\MyCaffe.imagedb\SourceParameter.cs \
+                         ..\MyCaffe.db.stream\MyCaffeStreamDatabase.Designer.cs \
+                         ..\MyCaffe.db.image\MyCaffeStreamDatabase.Designer.cs \
+                         ..\MyCaffe.db.image\Dataset.cs \
+                         ..\MyCaffe.db.image\DatasetCreator.cs \
+                         ..\MyCaffe.db.image\DatasetGroup.cs \
+                         ..\MyCaffe.db.image\DatasetParameter.cs \
+                         ..\MyCaffe.db.image\DNNModel.cs \
+                         ..\MyCaffe.db.image\DNNModel.tt \
+                         ..\MyCaffe.db.image\DNNModel.Context.tt \
+                         ..\MyCaffe.db.image\DNNModel.Context.cs \
+                         ..\MyCaffe.db.image\DNNModel.Designer.cs \
+                         ..\MyCaffe.db.image\Label.cs \
+                         ..\MyCaffe.db.image\LabelBoost.cs \
+                         ..\MyCaffe.db.image\ModelGroup.cs \
+                         ..\MyCaffe.db.image\RawImage.cs \
+                         ..\MyCaffe.db.image\RawImageGroup.cs \
+                         ..\MyCaffe.db.image\RawImageMean.cs \
+                         ..\MyCaffe.db.image\RawImageParameter.cs \
+                         ..\MyCaffe.db.image\RawImageResult.cs \
+                         ..\MyCaffe.db.image\Source.cs \
+                         ..\MyCaffe.db.image\SourceParameter.cs \
                          ..\MyCaffe.extras\_in_progress\StyleTransfer.cs \
                          ..\MyCaffe\MyCaffe.trainers\MyCaffeCustomTrainer.Designer.cs
 
