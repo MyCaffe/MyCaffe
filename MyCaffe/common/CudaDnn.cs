@@ -575,6 +575,10 @@ namespace MyCaffe.common
             FREE_FILTERDESC = 61,
             SET_FILTERDESC = 62,
 
+            CREATE_EXTENSION = 67,
+            FREE_EXTENSION = 68,
+            EXTENSION_RUN = 69,
+
             CREATE_CONVDESC = 70,
             FREE_CONVDESC = 71,
             SET_CONVDESC = 72,
@@ -2333,6 +2337,70 @@ namespace MyCaffe.common
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.NCCL_ALLREDUCE, new float[] { hNccl, hStream, hX, nCount, (int)op, (float)dfScale });
         }
+
+
+        /// <summary>
+        /// Create an instance of an Extension DLL.
+        /// </summary>
+        /// <param name="strExtensionDllPat">Specifies the file path to the extension DLL.</param>
+        /// <returns>The handle to a new instance of Extension is returned.</returns>
+        public long CreateExtension(string strExtensionDllPath)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDoubleEx((int)m_hKernel, (int)CUDAFN.CREATE_EXTENSION, null, strExtensionDllPath);
+                return (long)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloatEx((int)m_hKernel, (int)CUDAFN.CREATE_EXTENSION, null, strExtensionDllPath);
+                return (long)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Free an instance of an Extension.
+        /// </summary>
+        /// <param name="hExtension">Specifies the handle to the Extension.</param>
+        public void FreeExtension(long hExtension)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_EXTENSION, new double[] { hExtension });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_EXTENSION, new float[] { hExtension });
+        }
+
+        /// <summary>
+        /// Run a function on the extension specified.
+        /// </summary>
+        /// <param name="hExtension">Specifies the handle to the extension created with CreateExtension.</param>
+        /// <param name="lfnIdx">Specifies the extension function to run.</param>
+        /// <param name="rgParam">Specifies the parameters to pass to the extension.</param>
+        /// <returns>The values returned by the extension are returned.</returns>
+        public T[] ExtensionRun(long hExtension, long lfnIdx, T[] rgParam)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                List<double> rgdf = new List<double>() { hExtension, lfnIdx };
+
+                if (rgParam != null)
+                    rgdf.AddRange(Utility.ConvertVec<T>(rgParam));
+
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.EXTENSION_RUN, rgdf.ToArray());
+                return Utility.ConvertVec<T>(rg);
+            }
+            else
+            {
+                List<float> rgf = new List<float>() { hExtension, lfnIdx };
+
+                if (rgParam != null)
+                    rgf.AddRange(Utility.ConvertVecF<T>(rgParam));
+
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.EXTENSION_RUN, rgf.ToArray());
+                return Utility.ConvertVec<T>(rg);
+            }
+        }
+
 
         /// <summary>
         /// Create a new instance of a tensor descriptor for use with [NVIDIA's cuDnn](https://developer.nvidia.com/cudnn).
