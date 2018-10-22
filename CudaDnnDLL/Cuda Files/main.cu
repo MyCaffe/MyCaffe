@@ -152,6 +152,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_NCCL_ALLREDUCE:
 			return m_device.NcclAllReduce(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_FREE_EXTENSION:
+			return m_device.FreeExtension(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDNN_FN_CREATE_CUDNN:
 			return m_device.CreateCuDNN(lCount, pfInput, plCount, ppfOutput);
 
@@ -733,6 +736,56 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 template long Kernel<double>::Run(long lfnIdx, double* pfInput, long lCount, double** ppfOutput, long* plCount);
 template long Kernel<float>::Run(long lfnIdx, float* pfInput, long lCount, float** ppfOutput, long* plCount);
 
+
+template <class T>
+long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LPTSTR pszInput, T** ppfOutput, long* plCount)
+{
+	cudaGetLastError();
+
+#ifdef _DEBUG
+#ifdef _TRACEAPI
+	snprintf(s_msgbuf, 256, "calling CudaDnnDLL FunctionID (%ld) %s\n", lfnIdx, GetApiName(lfnIdx));
+	OutputDebugStringA(s_msgbuf);
+#endif
+#endif
+
+	switch (lfnIdx)
+	{
+		default:
+			return ERROR_NOT_SUPPORTED;
+	}
+}
+
+template long Kernel<double>::Run(long lfnIdx, double* pfInput, long lCount, LPTSTR pszInput, double** ppfOutput, long* plCount);
+template long Kernel<float>::Run(long lfnIdx, float* pfInput, long lCount, LPTSTR pszInput, float** ppfOutput, long* plCount);
+
+
+template <class T>
+long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* plCount, LPTSTR szErr, long lMaxErr)
+{
+	cudaGetLastError();
+
+#ifdef _DEBUG
+#ifdef _TRACEAPI
+	snprintf(s_msgbuf, 256, "calling CudaDnnDLL FunctionID (%ld) %s\n", lfnIdx, GetApiName(lfnIdx));
+	OutputDebugStringA(s_msgbuf);
+#endif
+#endif
+
+	switch (lfnIdx)
+	{
+		case CUDA_FN_EXTENSION_RUN:
+			return m_device.ExtensionRun(lCount, pfInput, plCount, ppfOutput, szErr, lMaxErr);
+
+		default:
+			return ERROR_PARAM_OUT_OF_RANGE;
+	}
+}
+
+template long Kernel<double>::Run(long lfnIdx, double* pfInput, long lCount, double** ppfOutput, long* plCount, LPTSTR szErr, long lMaxErr);
+template long Kernel<float>::Run(long lfnIdx, float* pfInput, long lCount, float** ppfOutput, long* plCount, LPTSTR szErr, long lMaxErr);
+
+
 #ifdef _DEBUG
 #ifdef _TRACEAPI
 char* GetApiName(long lfnIdx)
@@ -843,6 +896,15 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_NCCL_ALLREDUCE:
 		return "CUDA_FN_NCCL_ALLREDUCE";
+
+	case CUDA_FN_CREATE_EXTENSION:
+		return "CUDA_FN_CREATE_EXTENSION";
+
+	case CUDA_FN_FREE_EXTENSION:
+		return "CUDA_FN_FREE_EXTENSION";
+
+	case CUDA_FN_EXTENSION_RUN:
+		return "CUDA_FN_EXTENSION_RUN";
 
 	case CUDNN_FN_CREATE_CUDNN:
 		return "CUDNN_FN_CREATE_CUDNN";

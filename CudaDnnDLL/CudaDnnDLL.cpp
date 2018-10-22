@@ -50,7 +50,84 @@ void getError(long lErr, LPTSTR szErr, LONG lszErrMax);
 
 
 //=============================================================================
-//	Main DLL Function
+//	Internal DLL Functions used by extensions.
+//=============================================================================
+
+extern "C" LONG WINAPI Internal_GetPointerFloat(HANDLE_TYPE ht, LONG lKernelIdx, LONG hHandle, LONG* plPtr)
+{
+	Kernel<float>* pKernel = NULL;
+	LONG lErr = 0;
+
+
+	if (lKernelIdx < 0 || lKernelIdx >= (LONG)g_dwMaxKernelCount)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
+	{
+		lErr = ERROR_PARAM_NULL;
+		return lErr;
+	}
+
+	return pKernel->GetPointer(ht, hHandle, plPtr);
+}
+
+extern "C" LONG WINAPI Internal_GetPointerDouble(HANDLE_TYPE ht, LONG lKernelIdx, LONG hHandle, LONG* plPtr)
+{
+	Kernel<double>* pKernel = NULL;
+	LONG lErr = 0;
+
+
+	if (lKernelIdx < 0 || lKernelIdx >= (LONG)g_dwMaxKernelCount)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
+	{
+		lErr = ERROR_PARAM_NULL;
+		return lErr;
+	}
+
+	return pKernel->GetPointer(ht, hHandle, plPtr);
+}
+
+extern "C" LONG WINAPI Internal_AllocHostFloat(LONG lKernelIdx, LONG lCount, float** ppfDst, float* pfSrc, bool bSrcOnDevice)
+{
+	Kernel<float>* pKernel = NULL;
+	LONG lErr = 0;
+
+
+	if (lKernelIdx < 0 || lKernelIdx >= (LONG)g_dwMaxKernelCount)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
+	{
+		lErr = ERROR_PARAM_NULL;
+		return lErr;
+	}
+
+	return pKernel->AllocHost(lCount, ppfDst, pfSrc, bSrcOnDevice);
+}
+
+extern "C" LONG WINAPI Internal_AllocHostDouble(LONG lKernelIdx, LONG lCount, double** ppfDst, double* pfSrc, bool bSrcOnDevice)
+{
+	Kernel<double>* pKernel = NULL;
+	LONG lErr = 0;
+
+
+	if (lKernelIdx < 0 || lKernelIdx >= (LONG)g_dwMaxKernelCount)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
+	{
+		lErr = ERROR_PARAM_NULL;
+		return lErr;
+	}
+
+	return pKernel->AllocHost(lCount, ppfDst, pfSrc, bSrcOnDevice);
+}
+
+
+//=============================================================================
+//	Main DLL Functions
 //=============================================================================
 
 extern "C" LONG WINAPI DLL_InvokeFloat(LONG lKernelIdx,
@@ -200,6 +277,18 @@ extern "C" LONG WINAPI DLL_InvokeFloat(LONG lKernelIdx,
 					return lErr;
 				}
 			}
+			break;
+
+		case CUDA_FN_EXTENSION_RUN:
+			if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
+			{
+				lErr = ERROR_PARAM_NULL;
+				getError(lErr, szErr, lszErrMax);
+				return lErr;
+			}
+
+			if (lErr = pKernel->Run(lFunctionIdx, pInput, lInput, ppOutput, plOutput, szErr, lszErrMax))
+				return lErr;
 			break;
 
 		default:
@@ -369,6 +458,18 @@ extern "C" LONG WINAPI DLL_InvokeDouble(LONG lKernelIdx,
 			}
 			break;
 
+		case CUDA_FN_EXTENSION_RUN:
+			if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
+			{
+				lErr = ERROR_PARAM_NULL;
+				getError(lErr, szErr, lszErrMax);
+				return lErr;
+			}
+
+			if (lErr = pKernel->Run(lFunctionIdx, pInput, lInput, ppOutput, plOutput, szErr, lszErrMax))
+				return lErr;
+			break;
+
 		default:
 			if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
 			{
@@ -468,6 +569,91 @@ extern "C" LONG WINAPI DLL_QueryString(LONG lKernelIdx,
 	return lErr;
 }
 
+extern "C" LONG WINAPI DLL_InvokeFloatEx(LONG lKernelIdx,
+										LONG lFunctionIdx,
+										float* pInput, LONG lInput,
+										LPTSTR pszInput,
+										float** ppOutput, LONG* plOutput,
+										LPTSTR szErr, LONG lszErrMax)
+{
+	Kernel<float>* pKernel = NULL;
+	LONG lErr = 0;
+
+
+	if (lKernelIdx < 0 || lKernelIdx >= (LONG)g_dwMaxKernelCount)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+
+	//-------------------------------------------
+	//	Process the requested function.
+	//-------------------------------------------
+
+	switch (lFunctionIdx)
+	{
+		case CUDA_FN_CREATE_EXTENSION:
+			if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
+			{
+				lErr = ERROR_PARAM_NULL;
+				getError(lErr, szErr, lszErrMax);
+				return lErr;
+			}
+
+			if (lErr = pKernel->CreateExtensionFloat(g_hModule, lKernelIdx, pszInput, ppOutput, plOutput))
+			{
+				getError(lErr, szErr, lszErrMax);
+				return lErr;
+			}
+			break;
+
+		default:
+			return ERROR_NOT_SUPPORTED;
+	}
+
+	return lErr;
+}
+
+extern "C" LONG WINAPI DLL_InvokeDoubleEx(LONG lKernelIdx,
+	LONG lFunctionIdx,
+	double* pInput, LONG lInput,
+	LPTSTR pszInput,
+	double** ppOutput, LONG* plOutput,
+	LPTSTR szErr, LONG lszErrMax)
+{
+	Kernel<double>* pKernel = NULL;
+	LONG lErr = 0;
+
+
+	if (lKernelIdx < 0 || lKernelIdx >= (LONG)g_dwMaxKernelCount)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+
+	//-------------------------------------------
+	//	Process the requested function.
+	//-------------------------------------------
+
+	switch (lFunctionIdx)
+	{
+		case CUDA_FN_CREATE_EXTENSION:
+			if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
+			{
+				lErr = ERROR_PARAM_NULL;
+				getError(lErr, szErr, lszErrMax);
+				return lErr;
+			}
+
+			if (lErr = pKernel->CreateExtensionDouble(g_hModule, lKernelIdx, pszInput, ppOutput, plOutput))
+			{
+				getError(lErr, szErr, lszErrMax);
+				return lErr;
+			}
+			break;
+
+		default:
+			return ERROR_NOT_SUPPORTED;
+	}
+
+	return lErr;
+}
 
 LONG addKernelToKernel(Kernel<float>* pSrcKernel, LONG lInput, float* pInput)
 {

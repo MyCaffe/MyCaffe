@@ -62,6 +62,11 @@ class Device
 		long ResetDevice();
 		long SynchronizeDevice();
 
+		long GetPointer(HANDLE_TYPE ht, long hHandle, long* plPtr)
+		{
+			return m_memory.GetPointer(ht, hHandle, plPtr);
+		}
+
 		long GetMemory(long hHandle, MemoryItem** ppItem)
 		{
 			return m_memory.GetMemory(hHandle, ppItem);
@@ -144,6 +149,11 @@ class Device
 		long NcclInitMultiProcess(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long NcclBroadcast(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long NcclAllReduce(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
+		long CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, long* plOutput, T** ppfOutput, LPTSTR pszInput);
+		long CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, long* plOutput, T** ppfOutput, LPTSTR pszInput);
+		long FreeExtension(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long ExtensionRun(long lInput, T* pfInput, long* plOutput, T** ppfOutput, LPTSTR szErr, long lErrMax);
 
 		long CreateCuDNN(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long FreeCuDNN(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -2226,6 +2236,70 @@ inline long Device<T>::NcclAllReduce(long lInput, T* pfInput, long* plOutput, T*
 	return m_memory.NcclAllReduce(hNccl, hStream, hX, nCount, op, fScale);
 }
 
+template <class T>
+inline long Device<T>::CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, long* plOutput, T** ppfOutput, LPTSTR pszInput)
+{
+	LONG lErr;
+	long hHandle = 0;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	if (lErr = m_memory.CreateExtensionFloat(hParent, lKernelIdx, pszInput, &hHandle))
+		return lErr;
+
+	return setOutput(hHandle, plOutput, ppfOutput);
+}
+
+template <class T>
+inline long Device<T>::CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, long* plOutput, T** ppfOutput, LPTSTR pszInput)
+{
+	LONG lErr;
+	long hHandle = 0;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	if (lErr = m_memory.CreateExtensionDouble(hParent, lKernelIdx, pszInput, &hHandle))
+		return lErr;
+
+	return setOutput(hHandle, plOutput, ppfOutput);
+}
+
+template <class T>
+inline long Device<T>::FreeExtension(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	long hExtension = (long)pfInput[0];
+
+	return m_memory.FreeExtension(hExtension);
+}
+
+
+template <class T>
+inline long Device<T>::ExtensionRun(long lInput, T* pfInput, long* plOutput, T** ppfOutput, LPTSTR szErr, long lErrMax)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 2, INT_MAX))
+		return lErr;
+
+	long hExtension = (long)pfInput[0];
+	long lfnIdx = (long)pfInput[1];
+
+	lInput -= 2;
+	
+	if (lInput == 0)
+		pfInput = NULL;
+	else
+		pfInput = &pfInput[2];
+
+	return m_memory.ExtensionRun(hExtension, lfnIdx, pfInput, lInput, ppfOutput, plOutput, szErr, lErrMax);
+}
 
 template <class T>
 inline long Device<T>::cuda_sigmoid_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)

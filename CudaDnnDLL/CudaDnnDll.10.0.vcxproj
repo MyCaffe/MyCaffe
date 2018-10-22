@@ -230,6 +230,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Cuda Files\device.h" />
+    <ClInclude Include="Cuda Files\extension.h" />
     <ClInclude Include="Cuda Files\handlecol.h" />
     <ClInclude Include="Cuda Files\math.h" />
     <ClInclude Include="Cuda Files\memory.h" />
@@ -240,6 +241,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     <ClInclude Include="Cuda Files\tsne_g.h" />
     <ClInclude Include="Cuda Files\tsne_gp.h" />
     <ClInclude Include="Cuda Files\util.h" />
+    <ClInclude Include="inc\FunctionIDs.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -247,6 +249,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Cuda Files\device.cu" />
+    <CudaCompile Include="Cuda Files\extension.cu" />
     <CudaCompile Include="Cuda Files\main.cu" />
     <CudaCompile Include="Cuda Files\math.cu" />
     <CudaCompile Include="Cuda Files\memory.cu" />
@@ -264,10 +267,10 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     <CudaCompile Include="Cuda Files\util.cu" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="CudaDnnDLL.9.2.def" />
+    <ResourceCompile Include="Resource.10.0.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Resource.10.0.rc" />
+    <None Include="CudaDnnDLL.10.0.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

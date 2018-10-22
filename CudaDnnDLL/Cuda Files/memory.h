@@ -14,9 +14,10 @@
 #include "tsne_gp.h"
 #include "tsne_g.h"
 #include "nccl.h"
+#include "extension.h"
 #include <vector>
 #include <algorithm>
-
+#include "..\inc\FunctionIDs.h"
 
 //=============================================================================
 //	Flags
@@ -99,6 +100,7 @@ class Memory
 		HandleCollection<MIN_HANDLES> m_tsneg;
 		HandleCollection<MIN_HANDLES> m_memtest;
 		HandleCollection<MIN_HANDLES> m_nccl;
+		HandleCollection<MIN_HANDLES> m_extensions;
 		T m_tOne;
 		T m_tZero;
 #ifdef CUDNN_5
@@ -123,6 +125,8 @@ class Memory
 		{
 			return &m_streams;
 		}
+
+		long GetPointer(HANDLE_TYPE ht, long hHandle, long* plPtr);
 
 		long CheckMemoryAttributes(long hSrc, int nSrcDeviceID, long hDst, int nDstDeviceID, bool* pbResult);
 		long GetDeviceMemory(int nDeviceID, T* plTotal, T* plFree, T* plUsed, bool* pbEstimate);
@@ -263,6 +267,12 @@ class Memory
 		long NcclInitMultiProcess(long lBufferCount, long hNccl);
 		long NcclBroadcast(long hNccl, long hStream, long hX, int nCount);
 		long NcclAllReduce(long hNccl, long hStream, long hX, int nCount, NCCL_OP op, T fScale);
+
+		long CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
+		long CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
+		long FreeExtension(long hHandle);
+		extensionHandle<T>* GetExtension(long hHandle);
+		long ExtensionRun(long hHandle, long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* plCount, LPTSTR pszErr, LONG lErrMax);
 };
 
 
@@ -274,6 +284,22 @@ class Memory
 //-----------------------------------------------------------------------------
 //	Memory
 //-----------------------------------------------------------------------------
+
+template <class T>
+inline long Memory<T>::GetPointer(HANDLE_TYPE ht, long hHandle, long* plPtr)
+{
+	switch (ht)
+	{
+		case HT_MEMORY:
+			MemoryItem* pmi;
+			m_memory.GetData(hHandle, &pmi);
+			*plPtr = (LONG)pmi->Data();
+			break;
+
+		default:
+			return ERROR_NOT_SUPPORTED;
+	}
+}
 
 template <class T>
 inline long Memory<T>::CheckMemoryAttributes(long hSrc, int nSrcDeviceID, long hDst, int nDstDeviceID, bool* pbResult)
@@ -1100,5 +1126,90 @@ inline long Memory<T>::NcclAllReduce(long hNccl, long hStream, long hX, int nCou
 {
 	return GetNCCL(hNccl)->AllReduce(hStream, hX, nCount, op, fScale);
 }
+
+template <class T>
+inline long Memory<T>::CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle)
+{
+	LONG lErr;
+	extensionHandle<T>* extension = NULL;
+
+	if (phHandle == NULL)
+		return ERROR_PARAM_NULL;
+
+	if ((extension = new extensionHandle<T>()) == NULL)
+		return ERROR_MEMORY_OUT;
+
+	if (lErr = extension->InitializeFloat(hParent, lKernelIdx, pszDllPath))
+	{
+		delete extension;
+		return lErr;
+	}
+
+	long hHandle = m_extensions.Allocate(extension);
+	if (hHandle < 0)
+	{
+		delete extension;
+		return ERROR_MEMORY_OUT;
+	}
+
+	*phHandle = hHandle;
+	return 0;
+}
+
+template <class T>
+inline long Memory<T>::CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle)
+{
+	LONG lErr;
+	extensionHandle<T>* extension = NULL;
+
+	if (phHandle == NULL)
+		return ERROR_PARAM_NULL;
+
+	if ((extension = new extensionHandle<T>()) == NULL)
+		return ERROR_MEMORY_OUT;
+
+	if (lErr = extension->InitializeDouble(hParent, lKernelIdx, pszDllPath))
+	{
+		delete extension;
+		return lErr;
+	}
+
+	long hHandle = m_extensions.Allocate(extension);
+	if (hHandle < 0)
+	{
+		delete extension;
+		return ERROR_MEMORY_OUT;
+	}
+
+	*phHandle = hHandle;
+	return 0;
+}
+
+template <class T>
+inline long Memory<T>::FreeExtension(long hHandle)
+{
+	extensionHandle<T>* extension = (extensionHandle<T>*)m_extensions.Free(hHandle);
+
+	if (extension != NULL)
+	{
+		extension->CleanUp();
+		delete extension;
+	}
+
+	return 0;
+}
+
+template <class T>
+inline extensionHandle<T>* Memory<T>::GetExtension(long hHandle)
+{
+	return (extensionHandle<T>*)m_extensions.GetData(hHandle);
+}
+
+template <class T>
+inline long Memory<T>::ExtensionRun(long hHandle, long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* plCount, LPTSTR pszErr, LONG lErrMax)
+{
+	return GetExtension(hHandle)->Run(lfnIdx, pfInput, lCount, ppfOutput, plCount, pszErr, lErrMax);
+}
+
 
 #endif // __MEMORY_CU__
