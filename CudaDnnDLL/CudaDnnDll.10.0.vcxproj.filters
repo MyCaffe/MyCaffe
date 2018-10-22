@@ -74,6 +74,12 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Cuda Files\extension.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\FunctionIDs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Cuda Files\main.cu">
@@ -109,15 +115,18 @@
     <CudaCompile Include="Cuda Files\nccl.cu">
       <Filter>Cuda Files</Filter>
     </CudaCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="CudaDnnDLL.9.2.def">
-      <Filter>Source Files</Filter>
-    </None>
+    <CudaCompile Include="Cuda Files\extension.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.10.0.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="CudaDnnDLL.10.0.def">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

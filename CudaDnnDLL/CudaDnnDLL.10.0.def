@@ -6,3 +6,9 @@ EXPORTS
 	DLL_InvokeFloat @1
 	DLL_InvokeDouble @2
 	DLL_QueryString @3
+	DLL_InvokeFloatEx @4
+	DLL_InvokeDoubleEx @5
+	Internal_GetPointerFloat @100
+	Internal_GetPointerDouble @101
+	Internal_AllocHostFloat @102
+	Internal_AllocHostDouble @103
