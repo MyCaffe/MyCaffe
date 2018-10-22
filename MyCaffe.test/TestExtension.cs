@@ -93,7 +93,7 @@ namespace MyCaffe.test
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
 
             List<double> rgdf = new List<double>() { 1, 2, 3 };
-            T[] rg1 = m_cuda.ExtensionRun(hExtension, 1, Utility.ConvertVec<T>(rgdf.ToArray()));
+            T[] rg1 = m_cuda.RunExtension(hExtension, 1, Utility.ConvertVec<T>(rgdf.ToArray()));
             double[] rgdf1 = Utility.ConvertVec<T>(rg1);
 
             m_log.CHECK_EQ(rgdf1.Length, 3, "There should be three items returned.");
@@ -103,7 +103,7 @@ namespace MyCaffe.test
             }
 
             List<float> rgf = new List<float>() { 1, 2, 3 };
-            T[] rg2 = m_cuda.ExtensionRun(hExtension, 2, Utility.ConvertVec<T>(rgf.ToArray()));
+            T[] rg2 = m_cuda.RunExtension(hExtension, 2, Utility.ConvertVec<T>(rgf.ToArray()));
             double[] rgdf2 = Utility.ConvertVec<T>(rg2);
 
             m_log.CHECK_EQ(rgdf1.Length, 3, "There should be three items returned.");
