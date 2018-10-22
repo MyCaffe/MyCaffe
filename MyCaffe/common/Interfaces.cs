@@ -440,4 +440,47 @@ namespace MyCaffe.common
         /// <returns>The results of the run are returned.</returns>
         ResultCollection Run(SimpleDatum d, bool bSort = true);
     }
+
+    /// <summary>
+    /// The IXMyCaffeExtension interface allows for easy extension management of the low-level software that interacts directly with CUDA.
+    /// </summary>
+    /// <typeparam name="T">Specifies the base type of <i>float</i> or <i>double</i>.</typeparam>
+    public interface IXMyCaffeExtension<T>
+    {
+        /// <summary>
+        /// Create and load a new extension DLL.
+        /// </summary>
+        /// <param name="strExtensionDLLPath">Specifies the path to the extension DLL.</param>
+        /// <returns>The handle to the extension is returned.</returns>
+        long CreateExtension(string strExtensionDLLPath);
+        /// <summary>
+        /// Free an existing extension and unload it.
+        /// </summary>
+        /// <param name="hExtension">Specifies the handle to the extension to free.</param>
+        void FreeExtension(long hExtension);
+        /// <summary>
+        /// Run a function on an existing extension.
+        /// </summary>
+        /// <param name="hExtension">Specifies the extension.</param>
+        /// <param name="lfnIdx">Specifies the function to run on the extension.</param>
+        /// <param name="rgParam">Specifies the parameters.</param>
+        /// <returns>The return values of the function are returned.</returns>
+        T[] RunExtension(long hExtension, long lfnIdx,  T[] rgParam);
+        /// <summary>
+        /// Run a function on an existing extension using the <i>double</i> base type.
+        /// </summary>
+        /// <param name="hExtension">Specifies the extension.</param>
+        /// <param name="lfnIdx">Specifies the function to run on the extension.</param>
+        /// <param name="rgParam">Specifies the parameters.</param>
+        /// <returns>The return values of the function are returned.</returns>
+        double[] RunExtensionD(long hExtension, long lfnIdx, double[] rgParam);
+        /// <summary>
+        /// Run a function on an existing extension using the <i>float</i> base type.
+        /// </summary>
+        /// <param name="hExtension">Specifies the extension.</param>
+        /// <param name="lfnIdx">Specifies the function to run on the extension.</param>
+        /// <param name="rgParam">Specifies the parameters.</param>
+        /// <returns>The return values of the function are returned.</returns>
+        float[] RunExtensionF(long hExtension, long lfnIdx, float[] rgParam);
+    }
 }

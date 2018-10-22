@@ -2377,7 +2377,7 @@ namespace MyCaffe.common
         /// <param name="lfnIdx">Specifies the extension function to run.</param>
         /// <param name="rgParam">Specifies the parameters to pass to the extension.</param>
         /// <returns>The values returned by the extension are returned.</returns>
-        public T[] ExtensionRun(long hExtension, long lfnIdx, T[] rgParam)
+        public T[] RunExtension(long hExtension, long lfnIdx, T[] rgParam)
         {
             if (m_dt == DataType.DOUBLE)
             {

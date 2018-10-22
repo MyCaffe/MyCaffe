@@ -26,7 +26,7 @@ namespace MyCaffe
     /// The MyCaffeControl is the main object used to manage all training, testing and running of the MyCaffe system.
     /// </summary>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public partial class MyCaffeControl<T> : Component, IXMyCaffeState<T>, IXMyCaffe<T>, IXMyCaffeNoDb<T>, IDisposable
+    public partial class MyCaffeControl<T> : Component, IXMyCaffeState<T>, IXMyCaffe<T>, IXMyCaffeNoDb<T>, IXMyCaffeExtension<T>, IDisposable
     {
         /// <summary>
         /// The settings used to configure the control.
@@ -1760,6 +1760,70 @@ namespace MyCaffe
             }
 
             return strOut;
+        }
+
+        /// <summary>
+        /// Create and load a new extension DLL.
+        /// </summary>
+        /// <param name="strExtensionDLLPath">Specifies the path to the extension DLL.</param>
+        /// <returns>The handle to the extension is returned.</returns>
+        public long CreateExtension(string strExtensionDLLPath)
+        {
+            return m_cuda.CreateExtension(strExtensionDLLPath);
+        }
+
+        /// <summary>
+        /// Free an existing extension and unload it.
+        /// </summary>
+        /// <param name="hExtension">Specifies the handle to the extension to free.</param>
+        public void FreeExtension(long hExtension)
+        {
+            m_cuda.FreeExtension(hExtension);
+        }
+        /// <summary>
+        /// Run a function on an existing extension.
+        /// </summary>
+        /// <param name="hExtension">Specifies the extension.</param>
+        /// <param name="lfnIdx">Specifies the function to run on the extension.</param>
+        /// <param name="rgParam">Specifies the parameters.</param>
+        /// <returns>The return values of the function are returned.</returns>
+        public T[] RunExtension(long hExtension, long lfnIdx, T[] rgParam)
+        {
+            return m_cuda.RunExtension(hExtension, lfnIdx, rgParam);
+        }
+        /// <summary>
+        /// Run a function on an existing extension using the <i>double</i> base type.
+        /// </summary>
+        /// <param name="hExtension">Specifies the extension.</param>
+        /// <param name="lfnIdx">Specifies the function to run on the extension.</param>
+        /// <param name="rgParam">Specifies the parameters.</param>
+        /// <returns>The return values of the function are returned.</returns>
+        public double[] RunExtensionD(long hExtension, long lfnIdx, double[] rgParam)
+        {
+            T[] rgP = (rgParam == null) ? null : Utility.ConvertVec<T>(rgParam);
+            T[] rg = m_cuda.RunExtension(hExtension, lfnIdx, rgP);
+
+            if (rg == null)
+                return null;
+
+            return Utility.ConvertVec<T>(rg);
+        }
+        /// <summary>
+        /// Run a function on an existing extension using the <i>float</i> base type.
+        /// </summary>
+        /// <param name="hExtension">Specifies the extension.</param>
+        /// <param name="lfnIdx">Specifies the function to run on the extension.</param>
+        /// <param name="rgParam">Specifies the parameters.</param>
+        /// <returns>The return values of the function are returned.</returns>
+        public float[] RunExtensionF(long hExtension, long lfnIdx, float[] rgParam)
+        {
+            T[] rgP = (rgParam == null) ? null : Utility.ConvertVec<T>(rgParam);
+            T[] rg = m_cuda.RunExtension(hExtension, lfnIdx, rgP);
+
+            if (rg == null)
+                return null;
+
+            return Utility.ConvertVecF<T>(rg);
         }
     }
 }
