@@ -3521,11 +3521,11 @@ namespace MyCaffe.common
         /// <param name="nM">Specifies the data width (number of rows).</param>
         /// <param name="nN">Specifies the data height (number of columns).</param>
         /// <param name="nK">Specifies the number of components (K less than or equal to N).</param>
-        /// <param name="hData">Specifies a handle to the data allocated using <see cref="AllocatePCAData">AllocatePCAData</see>.</param>
-        /// <param name="hScoresResult">Specifies a handle to the data allocated using <see cref="AllocatePCAScores">AllocatePCAScores</see>.</param>
-        /// <param name="hLoadsResult">Specifies a handle to the data allocated using <see cref="AllocatePCALoads">AllocatePCALoads</see>.</param>
-        /// <param name="hResiduals">Specifies a handle to the data allocated using <see cref="AllocatePCAData">AllocatePCAData</see>.</param>
-        /// <param name="hEigenvalues">Specifies a handle to the data allocated using <see cref="AllocatePCAEigenvalues">AllocatePCAEigenvalues</see>.</param>
+        /// <param name="hData">Specifies a handle to the data allocated using AllocatePCAData.</param>
+        /// <param name="hScoresResult">Specifies a handle to the data allocated using AllocatePCAScores.</param>
+        /// <param name="hLoadsResult">Specifies a handle to the data allocated using AllocatePCALoads.</param>
+        /// <param name="hResiduals">Specifies a handle to the data allocated using AllocatePCAData.</param>
+        /// <param name="hEigenvalues">Specifies a handle to the data allocated using AllocatePCAEigenvalues.</param>
         /// <returns></returns>
         public long CreatePCA(int nMaxIterations, int nM, int nN, int nK, long hData, long hScoresResult, long hLoadsResult, long hResiduals = 0, long hEigenvalues = 0)
         {

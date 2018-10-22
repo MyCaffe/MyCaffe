@@ -20,9 +20,8 @@ namespace MyCaffe.param
     /// @f$ progress = \min(iter / max\_iter, 1) @f$ corresponds to the current transition
     /// state (the @f$ iter @f$ is the current iteration of the solver).
     /// 
-    /// The GradientScaleLayer can be used to implement
-    /// gradient reversals.
-    ///
+    /// The GradientScaleLayer can be used to implement gradient reversals.
+    /// 
     /// @see [Domain-Adversarial Training of Neural Networks](https://arxiv.org/abs/1505.07818) by Ganin et al., 2015, v4 in 2016.
     /// @see [Github\ddtm\caffe](https://github.com/ddtm/caffe) for original source.
     /// </remarks> 
