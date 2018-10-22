@@ -2342,7 +2342,7 @@ namespace MyCaffe.common
         /// <summary>
         /// Create an instance of an Extension DLL.
         /// </summary>
-        /// <param name="strExtensionDllPat">Specifies the file path to the extension DLL.</param>
+        /// <param name="strExtensionDllPath">Specifies the file path to the extension DLL.</param>
         /// <returns>The handle to a new instance of Extension is returned.</returns>
         public long CreateExtension(string strExtensionDllPath)
         {
@@ -3520,7 +3520,7 @@ namespace MyCaffe.common
         /// <param name="nMaxIterations">Specifies the number of iterations to run.</param>
         /// <param name="nM">Specifies the data width (number of rows).</param>
         /// <param name="nN">Specifies the data height (number of columns).</param>
-        /// <param name="nK">Specifies the number of components (K <= N).</param>
+        /// <param name="nK">Specifies the number of components (K less than or equal to N).</param>
         /// <param name="hData">Specifies a handle to the data allocated using <see cref="AllocatePCAData">AllocatePCAData</see>.</param>
         /// <param name="hScoresResult">Specifies a handle to the data allocated using <see cref="AllocatePCAScores">AllocatePCAScores</see>.</param>
         /// <param name="hLoadsResult">Specifies a handle to the data allocated using <see cref="AllocatePCALoads">AllocatePCALoads</see>.</param>
