@@ -3551,7 +3551,7 @@ namespace MyCaffe.common
         /// <param name="nSteps">Specifies the number of steps to run.</param>
         /// <param name="nCurrentK">Returns the current component value.</param>
         /// <param name="nCurrentIteration">Returns the current iteration.</param>
-        /// <returns><code>true</code> is returned when the maximum number of iterations have been run as specified in <see cref="AllocatePCAData">CreatePCA</see>.</returns>
+        /// <returns><code>true</code> is returned when the maximum number of iterations have been run as specified in CreatePCA.</returns>
         public bool RunPCA(long hPCA, int nSteps, out int nCurrentK, out int nCurrentIteration)
         {
             bool bDone = false;
