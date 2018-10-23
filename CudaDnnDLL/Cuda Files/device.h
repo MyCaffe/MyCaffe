@@ -62,9 +62,9 @@ class Device
 		long ResetDevice();
 		long SynchronizeDevice();
 
-		long GetPointer(HANDLE_TYPE ht, long hHandle, long* plPtr)
+		long GetPointer(HANDLE_TYPE ht, long hHandle, void** ppPtr)
 		{
-			return m_memory.GetPointer(ht, hHandle, plPtr);
+			return m_memory.GetPointer(ht, hHandle, ppPtr);
 		}
 
 		long GetMemory(long hHandle, MemoryItem** ppItem)
