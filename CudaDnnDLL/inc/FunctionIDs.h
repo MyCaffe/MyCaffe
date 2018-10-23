@@ -23,8 +23,8 @@ typedef LONG(WINAPI *LPFNINTERNAL_INVOKEDOUBLE)(LONG lKernelIdx,
 	double* pInput, LONG lInput,
 	double** ppOutput, LONG* plOutput,
 	LPTSTR szErr, LONG lszErrMax);
-typedef LONG(WINAPI *LPFNINTERNAL_GETPTRFLOAT)(HANDLE_TYPE ht, LONG lKernelIdx, LONG hHandle, LONG* plPtr);
-typedef LONG(WINAPI *LPFNINTERNAL_GETPTRDOUBLE)(HANDLE_TYPE ht, LONG lKernelIdx, LONG hHandle, LONG* plPtr);
+typedef LONG(WINAPI *LPFNINTERNAL_GETPTRFLOAT)(HANDLE_TYPE ht, LONG lKernelIdx, LONG hHandle, void** ppPtr);
+typedef LONG(WINAPI *LPFNINTERNAL_GETPTRDOUBLE)(HANDLE_TYPE ht, LONG lKernelIdx, LONG hHandle, void** ppPtr);
 typedef LONG(WINAPI *LPFNINTERNAL_ALLOCHOSTFLOAT)(LONG lKernelIdx, LONG lCount, float**pfDst, float* pfSrc, bool bSrcOnDevice);
 typedef LONG(WINAPI *LPFNINTERNAL_ALLOCHOSTDOUBLE)(LONG lKernelIdx, LONG lCount, double**pfDst, double* pfSrc, bool bSrcOnDevice);
 
