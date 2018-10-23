@@ -126,7 +126,7 @@ class Memory
 			return &m_streams;
 		}
 
-		long GetPointer(HANDLE_TYPE ht, long hHandle, long* plPtr);
+		long GetPointer(HANDLE_TYPE ht, long hHandle, void** ppPtr);
 
 		long CheckMemoryAttributes(long hSrc, int nSrcDeviceID, long hDst, int nDstDeviceID, bool* pbResult);
 		long GetDeviceMemory(int nDeviceID, T* plTotal, T* plFree, T* plUsed, bool* pbEstimate);
@@ -286,14 +286,14 @@ class Memory
 //-----------------------------------------------------------------------------
 
 template <class T>
-inline long Memory<T>::GetPointer(HANDLE_TYPE ht, long hHandle, long* plPtr)
+inline long Memory<T>::GetPointer(HANDLE_TYPE ht, long hHandle, void** ppPtr)
 {
 	switch (ht)
 	{
 		case HT_MEMORY:
 			MemoryItem* pmi;
 			m_memory.GetData(hHandle, &pmi);
-			*plPtr = (LONG)pmi->Data();
+			*ppPtr = pmi->Data();
 			break;
 
 		default:

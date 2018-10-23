@@ -76,9 +76,9 @@ public:
 		return m_device.GetDevice();
 	}
 
-	long GetPointer(HANDLE_TYPE ht, long hHandle, long* plPtr)
+	long GetPointer(HANDLE_TYPE ht, long hHandle, void** ppPtr)
 	{
-		return m_device.GetPointer(ht, hHandle, plPtr);
+		return m_device.GetPointer(ht, hHandle, ppPtr);
 	}
 
 	HostBuffer<T>* GetHostBuffer(long hHandle)
