@@ -299,6 +299,8 @@ inline long Memory<T>::GetPointer(HANDLE_TYPE ht, long hHandle, void** ppPtr)
 		default:
 			return ERROR_NOT_SUPPORTED;
 	}
+
+	return 0;
 }
 
 template <class T>
