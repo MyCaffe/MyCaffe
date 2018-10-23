@@ -1401,14 +1401,18 @@ long Device<T>::cuda_mul_scalar(long lInput, T* pfInput, long* plOutput, T** ppf
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+	if (lErr = verifyInput(lInput, pfInput, 3, 4))
 		return lErr;
 
 	int n = (int)pfInput[0];
 	T fAlpha = pfInput[1];
 	long hY = (long)pfInput[2];
+	int nYOff = 0;
 
-	return m_math.mul_scalar(n, fAlpha, hY);
+	if (lInput > 3)
+		nYOff = (int)pfInput[3];
+
+	return m_math.mul_scalar(n, fAlpha, hY, nYOff);
 }
 
 template long Device<double>::cuda_mul_scalar(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
