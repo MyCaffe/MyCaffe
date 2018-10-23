@@ -2113,7 +2113,7 @@ __global__ void mul_scalar_kernel(const int n, const T alpha, T* y)
 }
 
 template <>
-long Math<double>::mul_scalar(int n, double fAlpha, long hY)
+long Math<double>::mul_scalar(int n, double fAlpha, long hY, int nYOff)
 {
 	LONG lErr;
 	MemoryItem* pY;
@@ -2121,13 +2121,17 @@ long Math<double>::mul_scalar(int n, double fAlpha, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	mul_scalar_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, (double*)pY->Data());
+	double* y = (double*)pY->Data();
+	if (nYOff > 0)
+		y += nYOff;
+
+	mul_scalar_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, y);
 
 	return cudaStreamSynchronize(0);
 }
 
 template <>
-long Math<float>::mul_scalar(int n, float fAlpha, long hY)
+long Math<float>::mul_scalar(int n, float fAlpha, long hY, int nYOff)
 {
 	LONG lErr;
 	MemoryItem* pY;
@@ -2135,7 +2139,11 @@ long Math<float>::mul_scalar(int n, float fAlpha, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	mul_scalar_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, (float*)pY->Data());
+	float* y = (float*)pY->Data();
+	if (nYOff > 0)
+		y += nYOff;
+
+	mul_scalar_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, y);
 
 	return cudaStreamSynchronize(0);
 }
