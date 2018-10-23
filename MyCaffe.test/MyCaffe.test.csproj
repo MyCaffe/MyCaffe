@@ -90,6 +90,7 @@
     <Compile Include="TestDeepDraw.cs" />
     <Compile Include="TestCropLayer.cs" />
     <Compile Include="TestDebugLayer.cs" />
+    <Compile Include="TestMyCaffePreProcessor.cs" />
     <Compile Include="TestGRNLayer.cs" />
     <Compile Include="TestMyCaffeCustomTrainer.cs" />
     <Compile Include="TestMyCaffeGym.cs" />
@@ -221,6 +222,10 @@
     <ProjectReference Include="..\MyCaffe.gym\MyCaffe.gym.csproj">
       <Project>{C14BEDC8-FF66-4118-BE66-675F26BE7EE0}</Project>
       <Name>MyCaffe.gym</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.preprocessor\MyCaffe.preprocessor.csproj">
+      <Project>{94643CDE-A28A-473B-8A50-86471A47D33D}</Project>
+      <Name>MyCaffe.preprocessor</Name>
     </ProjectReference>
     <ProjectReference Include="..\MyCaffe.trainers\MyCaffe.trainers.csproj">
       <Project>{53A34E74-35E4-4E30-888B-CD0705A41BFE}</Project>
