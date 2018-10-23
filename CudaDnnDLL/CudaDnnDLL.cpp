@@ -53,7 +53,7 @@ void getError(long lErr, LPTSTR szErr, LONG lszErrMax);
 //	Internal DLL Functions used by extensions.
 //=============================================================================
 
-extern "C" LONG WINAPI Internal_GetPointerFloat(HANDLE_TYPE ht, LONG lKernelIdx, LONG hHandle, LONG* plPtr)
+extern "C" LONG WINAPI Internal_GetPointerFloat(HANDLE_TYPE ht, LONG lKernelIdx, LONG hHandle, void** ppPtr)
 {
 	Kernel<float>* pKernel = NULL;
 	LONG lErr = 0;
@@ -68,10 +68,10 @@ extern "C" LONG WINAPI Internal_GetPointerFloat(HANDLE_TYPE ht, LONG lKernelIdx,
 		return lErr;
 	}
 
-	return pKernel->GetPointer(ht, hHandle, plPtr);
+	return pKernel->GetPointer(ht, hHandle, ppPtr);
 }
 
-extern "C" LONG WINAPI Internal_GetPointerDouble(HANDLE_TYPE ht, LONG lKernelIdx, LONG hHandle, LONG* plPtr)
+extern "C" LONG WINAPI Internal_GetPointerDouble(HANDLE_TYPE ht, LONG lKernelIdx, LONG hHandle, void** ppPtr)
 {
 	Kernel<double>* pKernel = NULL;
 	LONG lErr = 0;
@@ -86,7 +86,7 @@ extern "C" LONG WINAPI Internal_GetPointerDouble(HANDLE_TYPE ht, LONG lKernelIdx
 		return lErr;
 	}
 
-	return pKernel->GetPointer(ht, hHandle, plPtr);
+	return pKernel->GetPointer(ht, hHandle, ppPtr);
 }
 
 extern "C" LONG WINAPI Internal_AllocHostFloat(LONG lKernelIdx, LONG lCount, float** ppfDst, float* pfSrc, bool bSrcOnDevice)
