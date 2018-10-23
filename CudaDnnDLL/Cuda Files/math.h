@@ -121,7 +121,7 @@ class Math
 		long abs(int n, long hA, long hY);
 		long exp(int n, long hA, long hY, int nAOff = 0, int nYOff = 0, T fBeta = 1);
 		long log(int n, long hA, long hY, T fBeta = 1, T fAlpha = 0);
-		long powx(int n, long hA, T fAlpha, long hY);
+		long powx(int n, long hA, T fAlpha, long hY, int nAOff = 0, int nYOff = 0);
 		long sign(int n, long hX, long hY, int nXOff = 0, int nYOff = 0);
 		long sqrt(int n, long hX, long hY);
 		long reciprocol(int n, long hX, long hY);

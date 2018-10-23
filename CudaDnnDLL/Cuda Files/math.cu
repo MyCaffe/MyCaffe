@@ -2435,7 +2435,7 @@ __global__ void powx_kernel(const int n, T* a, T fAlpha, T* y)
 }
 
 template <>
-long Math<double>::powx(int n, long hA, double fAlpha, long hY)
+long Math<double>::powx(int n, long hA, double fAlpha, long hY, int nAOff, int nYOff)
 {
 	LONG lErr;
 	MemoryItem* pA;
@@ -2447,13 +2447,21 @@ long Math<double>::powx(int n, long hA, double fAlpha, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	powx_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (double*)pA->Data(), fAlpha, (double*)pY->Data());
+	double* a = (double*)pA->Data();
+	if (nAOff > 0)
+		a += nAOff;
+
+	double* y = (double*)pY->Data();
+	if (nYOff > 0)
+		y += nYOff;
+
+	powx_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, fAlpha, y);
 
 	return cudaStreamSynchronize(0);
 }
 
 template <>
-long Math<float>::powx(int n, long hA, float fAlpha, long hY)
+long Math<float>::powx(int n, long hA, float fAlpha, long hY, int nAOff, int nYOff)
 {
 	LONG lErr;
 	MemoryItem* pA;
@@ -2465,7 +2473,16 @@ long Math<float>::powx(int n, long hA, float fAlpha, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	powx_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (float*)pA->Data(), fAlpha, (float*)pY->Data());
+
+	float* a = (float*)pA->Data();
+	if (nAOff > 0)
+		a += nAOff;
+
+	float* y = (float*)pY->Data();
+	if (nYOff > 0)
+		y += nYOff;
+
+	powx_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, fAlpha, y);
 
 	return cudaStreamSynchronize(0);
 }

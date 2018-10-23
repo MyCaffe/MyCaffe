@@ -1555,15 +1555,23 @@ long Device<T>::cuda_powx(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+	if (lErr = verifyInput(lInput, pfInput, 4, 6))
 		return lErr;
 
 	int n = (int)pfInput[0];
 	long hA = (long)pfInput[1];
 	T fAlpha = pfInput[2];
 	long hY = (long)pfInput[3];
+	int nAOff = 0;
+	int nYOff = 0;
 
-	return m_math.powx(n, hA, fAlpha, hY);
+	if (lInput > 4)
+		nAOff = (int)pfInput[4];
+
+	if (lInput > 5)
+		nYOff = (int)pfInput[5];
+
+	return m_math.powx(n, hA, fAlpha, hY, nAOff, nYOff);
 }
 
 template long Device<double>::cuda_powx(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
