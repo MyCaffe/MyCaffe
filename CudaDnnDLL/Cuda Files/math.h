@@ -115,7 +115,7 @@ class Math
 
 		long sub(int n, long hA, long hB, long hY, int nAOff = 0, int nBOff = 0, int nYOff = 0);
 		long sub_and_dot(int n, int nN, int nLen, long hA, long hB, long hY, int nAOff = 0, int nBOff = 0, int nYOff = 0);
-		long mul_scalar(int n, T fAlpha, long hY);
+		long mul_scalar(int n, T fAlpha, long hY, int nYOff = 0);
 		long mul(int n, long hA, long hB, long hY, int nAOff = 0, int nBOff = 0, int nYOff = 0);
 		long div(int n, long hA, long hB, long hY);
 		long abs(int n, long hA, long hY);
