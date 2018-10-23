@@ -116,7 +116,8 @@ namespace MyCaffe
         /// <param name="evtPause">Optionally, specifies an auto reset event used to pause training.</param>
         /// <param name="rgGpuId">Optionally, specfies a set of GPU ID's that override those specified in the SettingsCaffe object.</param>
         /// <param name="strCudaPath">Optionally, specifies the path to the low-lever CudaDnnDll.DLL file.  Note, when not set, the system looks in the same directory of the executing assembly for the low-level DLL.</param>
-        public MyCaffeControl(SettingsCaffe settings, Log log, CancelEvent evtCancel, AutoResetEvent evtSnapshot = null, AutoResetEvent evtForceTest = null, ManualResetEvent evtPause = null, List<int> rgGpuId = null, string strCudaPath = "")
+        /// <param name="bCreateCudaDnn">Optionally, specififies create the connection to CUDA (default = false, causing the creation to occur during Load).</param>
+        public MyCaffeControl(SettingsCaffe settings, Log log, CancelEvent evtCancel, AutoResetEvent evtSnapshot = null, AutoResetEvent evtForceTest = null, ManualResetEvent evtPause = null, List<int> rgGpuId = null, string strCudaPath = "", bool bCreateCudaDnn = false)
         {
             m_guidUser = Guid.NewGuid();
 
@@ -162,6 +163,9 @@ namespace MyCaffe
 
             m_strCudaPath = strCudaPath;
             m_persist = new common.PersistCaffe<T>(m_log, false);
+
+            if (bCreateCudaDnn)
+                m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath, false);
         }
 
         /// <summary>
@@ -754,6 +758,7 @@ namespace MyCaffe
                 m_cuda.Dispose();
 
             m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath, bResetFirst);
+
             m_log.WriteLine("Cuda Connection created using '" + m_cuda.Path + "'.");
 
             if (phase == Phase.TEST || phase == Phase.TRAIN)
