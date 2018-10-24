@@ -29,7 +29,6 @@ namespace MyCaffe.gym
         /// <summary>
         /// Close the user interface of a Gym.
         /// </summary>
-        /// <param name="strName">Specifies the Gym name who's user-interface is to be displayed.</param>
         /// <param name="nId">Specifies the Gym id (used when multiple Gym's of the same name are used).</param>
         [OperationContract(IsOneWay = true)]
         void CloseUi(int nId);

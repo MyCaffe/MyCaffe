@@ -13,6 +13,9 @@ using System.Collections;
 using MyCaffe.basecode.descriptors;
 using System.Diagnostics;
 
+/// <summary>
+/// The MyCaffe.gym namespace contains all classes related to the Gym's supported by MyCaffe.
+/// </summary>
 namespace MyCaffe.gym
 {
     /// <summary>

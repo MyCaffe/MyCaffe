@@ -10,6 +10,9 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.db.stream;
 
+/// <summary>
+/// The MyCaffe.preprocessor namespace contains all classes of the data preprocessors supported by MyCaffe.
+/// </summary>
 namespace MyCaffe.preprocessor
 {
     /// <summary>
