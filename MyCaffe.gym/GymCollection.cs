@@ -9,14 +9,27 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.gym
 {
+    /// <summary>
+    /// The GymCollection contains the available Gyms.
+    /// </summary>
     public class GymCollection : IEnumerable<IXMyCaffeGym>
     {
         List<IXMyCaffeGym> m_rgGym = new List<IXMyCaffeGym>();
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
         public GymCollection()
         {
         }
 
+        /// <summary>
+        /// Loads the default and dynamic gyms.
+        /// </summary>
+        /// <remarks>
+        /// Each dynamic Gym must implement a DLL with the IXMyCaffeGym interface implemented.  When loading dynamic
+        /// Gym's, this class looks for these DLL's in the \code ./CustomGyms \endcode directory relative to the
+        /// location of the MyCaffe.gym assembly.</remarks>
         public void Load()
         {
             m_rgGym.Add(new CartPoleGym());
@@ -58,7 +71,6 @@ namespace MyCaffe.gym
             {
                 Assembly a = Assembly.LoadFile(strFile);
                 AssemblyName aName = a.GetName();
-                IXMyCaffeGym igym = null;
 
                 foreach (Type t in a.GetTypes())
                 {
@@ -83,6 +95,11 @@ namespace MyCaffe.gym
             }
         }
 
+        /// <summary>
+        /// Search for a given Gym by its name.
+        /// </summary>
+        /// <param name="strName">Specifies the name of the Gym to look for.</param>
+        /// <returns>If found the Gym IXMyCaffeGym interface is returned, otherwise <i>null</i> is returned.</returns>
         public IXMyCaffeGym Find(string strName)
         {
             foreach (IXMyCaffeGym igym in m_rgGym)
@@ -94,11 +111,19 @@ namespace MyCaffe.gym
             return null;
         }
 
+        /// <summary>
+        /// Returns the collections enumerator.
+        /// </summary>
+        /// <returns>The enumerator is returned.</returns>
         public IEnumerator<IXMyCaffeGym> GetEnumerator()
         {
             return m_rgGym.GetEnumerator();
         }
 
+        /// <summary>
+        /// Returns the collections enumerator.
+        /// </summary>
+        /// <returns>The enumerator is returned.</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
             return m_rgGym.GetEnumerator();

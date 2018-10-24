@@ -8,16 +8,42 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.gym
 {
-
+    /// <summary>
+    /// The GoomObj is the base class for all other gometric objects used to draw Gym objects.
+    /// </summary>
     abstract class GeomObj
     {
+        /// <summary>
+        /// Specifies the location of the object.
+        /// </summary>
         protected PointF m_location = new PointF(0, 0);
+        /// <summary>
+        /// Specifies the points of the object.
+        /// </summary>
         protected List<PointF> m_rgPoints = new List<PointF>();
+        /// <summary>
+        /// Specifies the fill color of the object.
+        /// </summary>
         protected Color m_clrFill = Color.LightGray;
+        /// <summary>
+        /// Specifies the border color of the object.
+        /// </summary>
         protected Color m_clrBorder = Color.Black;
+        /// <summary>
+        /// Specifies the rotation of the object.
+        /// </summary>
         protected float m_fRotation = 0;
         System.Drawing.Drawing2D.GraphicsState m_gstate = null;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="fL">Specifies the left position.</param>
+        /// <param name="fR">Specifies the right position.</param>
+        /// <param name="fT">Specifies the top position.</param>
+        /// <param name="fB">Specifies the bottom position.</param>
+        /// <param name="clrFill">Specifies the fill color.</param>
+        /// <param name="clrBorder">Specifies the border color.</param>
         public GeomObj(float fL, float fR, float fT, float fB, Color clrFill, Color clrBorder)
         {
             m_rgPoints.Add(new PointF(fL, fB));
@@ -29,6 +55,10 @@ namespace MyCaffe.gym
             m_clrBorder = clrBorder;
         }
 
+        /// <summary>
+        /// Called just before rendering the object.
+        /// </summary>
+        /// <param name="g">Specifies the Graphics used to render.</param>
         protected void prerender(Graphics g)
         {
             m_gstate = g.Save();
@@ -36,6 +66,10 @@ namespace MyCaffe.gym
             g.RotateTransform(m_fRotation);
         }
 
+        /// <summary>
+        /// Called just after rendering the object.
+        /// </summary>
+        /// <param name="g">Specifies the Graphics used to render.</param>
         protected void postrender(Graphics g)
         {
             if (m_gstate != null)
@@ -45,6 +79,11 @@ namespace MyCaffe.gym
             }
         }
 
+        /// <summary>
+        /// Returns the width of the points.
+        /// </summary>
+        /// <param name="rg">Optionally, specifies the override points.</param>
+        /// <returns>The width is returned.</returns>
         public float Width(PointF[] rg)
         {
             if (rg == null)
@@ -53,6 +92,11 @@ namespace MyCaffe.gym
             return rg[2].X - rg[0].X;
         }
 
+        /// <summary>
+        /// Returns the height of the points.
+        /// </summary>
+        /// <param name="rg">Optionally, specifies the override points.</param>
+        /// <returns>The height is returned.</returns>
         public float Height(PointF[] rg)
         {
             if (rg == null)
@@ -61,6 +105,11 @@ namespace MyCaffe.gym
             return rg[0].Y - rg[1].Y;
         }
 
+        /// <summary>
+        /// Returns the left bottom.
+        /// </summary>
+        /// <param name="rg">Optionally, specifies the override points.</param>
+        /// <returns>The left-bottom is returned.</returns>
         public PointF LeftBottom(PointF[] rg = null)
         {
             if (rg == null)
@@ -69,6 +118,10 @@ namespace MyCaffe.gym
             return rg[0];
         }
 
+        /// Returns the left top.
+        /// </summary>
+        /// <param name="rg">Optionally, specifies the override points.</param>
+        /// <returns>The left-top is returned.</returns>
         public PointF LeftTop(PointF[] rg = null)
         {
             if (rg == null)
@@ -77,6 +130,10 @@ namespace MyCaffe.gym
             return rg[1];
         }
 
+        /// Returns the right top.
+        /// </summary>
+        /// <param name="rg">Optionally, specifies the override points.</param>
+        /// <returns>The right-top is returned.</returns>
         public PointF RightTop(PointF[] rg = null)
         {
             if (rg == null)
@@ -85,6 +142,11 @@ namespace MyCaffe.gym
             return rg[2];
         }
 
+        /// <summary>
+        /// Returns the right bottom.
+        /// </summary>
+        /// <param name="rg">Optionally, specifies the override points.</param>
+        /// <returns>The right-bottom is returned.</returns>
         public PointF RightBottom(PointF[] rg = null)
         {
             if (rg == null)
@@ -93,52 +155,95 @@ namespace MyCaffe.gym
             return rg[3];
         }
 
+        /// <summary>
+        /// Returns the location of the object.
+        /// </summary>
         public PointF Location
         {
             get { return m_location; }
         }
 
+        /// <summary>
+        /// Returns the rotation of the object.
+        /// </summary>
         public float Rotation
         {
             get { return m_fRotation; }
         }
 
+        /// <summary>
+        /// Sets the object location.
+        /// </summary>
+        /// <param name="fX">Specifies the location x coordinate.</param>
+        /// <param name="fY">Specifies the location y coordinate.</param>
         public virtual void SetLocation(float fX, float fY)
         {
             m_location = new PointF(fX, fY);
         }
 
+        /// <summary>
+        /// Sets the rotation of the object.
+        /// </summary>
+        /// <param name="fR">Specifies the rotation.</param>
         public virtual void SetRotation(float fR)
         {
             m_fRotation = fR;
         }
 
+        /// <summary>
+        /// Returns the bounds as a Polygon.
+        /// </summary>
         public List<PointF> Polygon
         {
             get { return m_rgPoints; }
         }
 
+        /// <summary>
+        /// Returns the fill color.
+        /// </summary>
         public Color FillColor
         {
             get { return m_clrFill; }
         }
 
+        /// <summary>
+        /// Returns the border color.
+        /// </summary>
         public Color BorderColor
         {
             get { return m_clrBorder; }
         }
 
+        /// <summary>
+        /// Override used to render the object.
+        /// </summary>
+        /// <param name="g"></param>
         public abstract void Render(Graphics g);
     }
 
-
+    /// <summary>
+    /// The GeomLine object is used to render a line.
+    /// </summary>
     class GeomLine : GeomObj
     {
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="fL">Specifies the left position.</param>
+        /// <param name="fR">Specifies the right position.</param>
+        /// <param name="fT">Specifies the top position.</param>
+        /// <param name="fB">Specifies the bottom position.</param>
+        /// <param name="clrFill">Specifies the fill color.</param>
+        /// <param name="clrBorder">Specifies the border color.</param>
         public GeomLine(float fL, float fR, float fT, float fB, Color clrFill, Color clrBorder)
             : base(fL, fR, fT, fB, clrFill, clrBorder)
         {
         }
 
+        /// <summary>
+        /// Renders the line on the Graphics specified.
+        /// </summary>
+        /// <param name="g">Specifies the Graphics used to draw.</param>
         public override void Render(Graphics g)
         {
             prerender(g);
@@ -150,13 +255,29 @@ namespace MyCaffe.gym
         }
     }
 
+    /// <summary>
+    /// The GeomEllipse object is used to render an ellipse.
+    /// </summary>
     class GeomEllipse : GeomObj
     {
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="fL">Specifies the left position.</param>
+        /// <param name="fR">Specifies the right position.</param>
+        /// <param name="fT">Specifies the top position.</param>
+        /// <param name="fB">Specifies the bottom position.</param>
+        /// <param name="clrFill">Specifies the fill color.</param>
+        /// <param name="clrBorder">Specifies the border color.</param>
         public GeomEllipse(float fL, float fR, float fT, float fB, Color clrFill, Color clrBorder)
             : base(fL, fR, fT, fB, clrFill, clrBorder)
         {
         }
 
+        /// <summary>
+        /// Renders the ellipse on the Graphics specified.
+        /// </summary>
+        /// <param name="g">Specifies the Graphics used to draw.</param>
         public override void Render(Graphics g)
         {
             prerender(g);
@@ -172,17 +293,33 @@ namespace MyCaffe.gym
         }
     }
 
-
+    /// <summary>
+    /// The GeomEllipse object is used to render an rectangle.
+    /// </summary>
     class GeomRectangle : GeomObj
     {
         ColorMapper m_clrMap = null;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="fL">Specifies the left position.</param>
+        /// <param name="fR">Specifies the right position.</param>
+        /// <param name="fT">Specifies the top position.</param>
+        /// <param name="fB">Specifies the bottom position.</param>
+        /// <param name="clrFill">Specifies the fill color.</param>
+        /// <param name="clrBorder">Specifies the border color.</param>
+        /// <param name="clrMap">Optionally, specifies a color-map used to color the rectangle based on the x position of the object.</param>
         public GeomRectangle(float fL, float fR, float fT, float fB, Color clrFill, Color clrBorder, ColorMapper clrMap = null)
             : base(fL, fR, fT, fB, clrFill, clrBorder)
         {
             m_clrMap = clrMap;
         }
 
+        /// <summary>
+        /// Renders the rectangle on the Graphics specified.
+        /// </summary>
+        /// <param name="g">Specifies the Graphics used to draw.</param>
         public override void Render(Graphics g)
         {
             prerender(g);
@@ -215,13 +352,29 @@ namespace MyCaffe.gym
         }
     }
 
+    /// <summary>
+    /// The GeomEllipse object is used to render an polygon.
+    /// </summary>
     class GeomPolygon : GeomObj
     {
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="fL">Specifies the left position.</param>
+        /// <param name="fR">Specifies the right position.</param>
+        /// <param name="fT">Specifies the top position.</param>
+        /// <param name="fB">Specifies the bottom position.</param>
+        /// <param name="clrFill">Specifies the fill color.</param>
+        /// <param name="clrBorder">Specifies the border color.</param>
         public GeomPolygon(float fL, float fR, float fT, float fB, Color clrFill, Color clrBorder)
             : base(fL, fR, fT, fB, clrFill, clrBorder)
         {
         }
 
+        /// <summary>
+        /// Renders the rectangle on the Graphics specified.
+        /// </summary>
+        /// <param name="g">Specifies the Graphics used to draw.</param>
         public override void Render(Graphics g)
         {
             prerender(g);
@@ -236,19 +389,36 @@ namespace MyCaffe.gym
         }
     }
 
+    /// <summary>
+    /// The GeomView manages and renders a collection of Geometric objects.
+    /// </summary>
     class GeomView
     {
         List<GeomObj> m_rgObj = new List<GeomObj>();
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
         public GeomView()
         {
         }
 
+        /// <summary>
+        /// Add a new geometric object to the view.
+        /// </summary>
+        /// <param name="obj">Specifies the object to add.</param>
         public void AddObject(GeomObj obj)
         {
             m_rgObj.Add(obj);
         }
 
+        /// <summary>
+        /// Render text at a location.
+        /// </summary>
+        /// <param name="g">Specifies the Graphics used to draw.</param>
+        /// <param name="str">Specifies the text to draw.</param>
+        /// <param name="fX">Specifies the left most x-coordinate where the text is drawn.</param>
+        /// <param name="fY">Specifies the top most y-coordinate where the text is drawn.</param>
         public void RenderText(Graphics g, string str, float fX, float fY)
         {
             Font font = new Font("Century Gothic", 9.0f);
@@ -256,6 +426,12 @@ namespace MyCaffe.gym
             font.Dispose();
         }
 
+        /// <summary>
+        /// Renders the Gym step information.
+        /// </summary>
+        /// <param name="g">Specifies the Graphics used to draw.</param>
+        /// <param name="nSteps">Specifies the current steps.</param>
+        /// <param name="nMax">Specifies the maximum number of steps.</param>
         public void RenderSteps(Graphics g, int nSteps, int nMax)
         {
             RectangleF rc = g.VisibleClipBounds;
@@ -303,6 +479,10 @@ namespace MyCaffe.gym
             fontStep.Dispose();
         }
 
+        /// <summary>
+        /// Renders the view.
+        /// </summary>
+        /// <param name="g">Specifies the Graphics used to draw.</param>
         public void Render(Graphics g)
         {
             System.Drawing.Drawing2D.GraphicsState gstate = g.Save();

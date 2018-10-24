@@ -51,12 +51,24 @@ namespace MyCaffe.gym
         int? m_nStepsBeyondDone = null;
         Log m_log;
 
+        /// <summary>
+        /// Defines the actions to perform.
+        /// </summary>
         public enum ACTION
         {
+            /// <summary>
+            /// Move the cart left.
+            /// </summary>
             MOVELEFT,
+            /// <summary>
+            /// Move the cart right.
+            /// </summary>
             MOVERIGHT
         }
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
         public CartPoleGym()
         {
             m_dfTotalMass = m_dfMassPole + m_dfMassCart;
@@ -67,6 +79,38 @@ namespace MyCaffe.gym
             m_rgActionSpace.Add("MoveRight", 1);
         }
 
+        /// <summary>
+        /// Initialize the gym with the specified properties.
+        /// </summary>
+        /// <param name="log">Specifies the output log to use.</param>
+        /// <param name="properties">Specifies the properties containing Gym specific initialization parameters.</param>
+        /// <remarks>
+        /// The AtariGym uses the following initialization properties.
+        ///   Init1=value - specifies the default force to use.
+        ///   Init2=value - specifies whether to use an additive force (1) or not (0).
+        /// </remarks>
+        public void Initialize(Log log, PropertySet properties)
+        {
+            m_dfForce = 10;
+            m_bAdditive = false;
+
+            if (properties != null)
+            {
+                m_dfForce = properties.GetPropertyAsDouble("Init1", 10);
+                m_bAdditive = (properties.GetPropertyAsDouble("Init2", 0) == 0) ? false : true;
+            }
+
+            m_log = log;
+            m_nMaxSteps = 0;
+            Reset();
+        }
+
+
+        /// <summary>
+        /// Create a new copy of the gym.
+        /// </summary>
+        /// <param name="properties">Optionally, specifies the properties to initialize the new copy with.</param>
+        /// <returns>The new Gym copy is returned.</returns>
         public IXMyCaffeGym Clone(PropertySet properties = null)
         {
             CartPoleGym gym = new CartPoleGym();
@@ -77,31 +121,50 @@ namespace MyCaffe.gym
             return gym;
         }
 
+        /// <summary>
+        /// Returns <i>false</i> indicating that this Gym does not require a display image.
+        /// </summary>
         public bool RequiresDisplayImage
         {
             get { return false; }
         }
 
+        /// <summary>
+        /// Returns the selected data type.
+        /// </summary>
         public DATA_TYPE SelectedDataType
         {
             get { return m_dt; }
         }
 
+        /// <summary>
+        /// Returns the data types supported by this gym.
+        /// </summary>
         public DATA_TYPE[] SupportedDataType
         {
             get { return new DATA_TYPE[] { DATA_TYPE.VALUES, DATA_TYPE.BLOB }; }
         }
 
+        /// <summary>
+        /// Returns the gym's name.
+        /// </summary>
         public string Name
         {
             get { return m_strName; }
         }
 
+        /// <summary>
+        /// Returns the delay to use (if any) when the user-display is visible.
+        /// </summary>
         public int UiDelay
         {
             get { return 20; }
         }
 
+        /// <summary>
+        /// Returns the action space as a dictionary of name,actionid pairs.
+        /// </summary>
+        /// <returns>The action space is returned.</returns>
         public Dictionary<string, int> GetActionSpace()
         {
             return m_rgActionSpace;
@@ -124,26 +187,21 @@ namespace MyCaffe.gym
             }
         }
 
+        /// <summary>
+        /// Shutdown and close the gym.
+        /// </summary>
         public void Close()
         {
         }
 
-        public void Initialize(Log log, PropertySet properties)
-        {
-            m_dfForce = 10;
-            m_bAdditive = false;
-
-            if (properties != null)
-            {
-                m_dfForce = properties.GetPropertyAsDouble("Init1", 10);
-                m_bAdditive = (properties.GetPropertyAsDouble("Init2", 0) == 0) ? false : true;
-            }
-
-            m_log = log;
-            m_nMaxSteps = 0;
-            Reset();
-        }
-
+        /// <summary>
+        /// Render the gym's current state on a bitmap and SimpleDatum.
+        /// </summary>
+        /// <param name="bShowUi">When <i>true</i> the Bitmap is drawn.</param>
+        /// <param name="nWidth">Specifies the width used to size the Bitmap.</param>
+        /// <param name="nHeight">Specifies the height used to size the Bitmap.</param>
+        /// <param name="bGetAction">When <i>true</i> the action data is returned as a SimpleDatum.</param>
+        /// <returns>A tuple optionally containing a Bitmap and/or Simpledatum is returned.</returns>
         public Tuple<Bitmap, SimpleDatum> Render(bool bShowUi, int nWidth, int nHeight, bool bGetAction)
         {
             List<double> rgData = new List<double>();
@@ -158,6 +216,15 @@ namespace MyCaffe.gym
             return Render(bShowUi, nWidth, nHeight, rgData.ToArray(), bGetAction);
         }
 
+        /// <summary>
+        /// Render the gyms specified data.
+        /// </summary>
+        /// <param name="bShowUi">When <i>true</i> the Bitmap is drawn.</param>
+        /// <param name="nWidth">Specifies the width used to size the Bitmap.</param>
+        /// <param name="nHeight">Specifies the height used to size the Bitmap.</param>
+        /// <param name="rgData">Specifies the gym data to render.</param>
+        /// <param name="bGetAction">When <i>true</i> the action data is returned as a SimpleDatum.</param>
+        /// <returns>A tuple optionally containing a Bitmap and/or Simpledatum is returned.</returns>
         public Tuple<Bitmap, SimpleDatum> Render(bool bShowUi, int nWidth, int nHeight, double[] rgData, bool bGetAction)
         { 
             Bitmap bmp = new Bitmap(nWidth, nHeight);
@@ -265,6 +332,10 @@ namespace MyCaffe.gym
             return ImageData.GetImageData(bmp, 3, false, -1);
         }
 
+        /// <summary>
+        /// Reset the state of the gym.
+        /// </summary>
+        /// <returns>A tuple containing state data, the reward, and the done state is returned.</returns>
         public Tuple<State, double, bool> Reset()
         {
             double dfX = randomUniform(-0.05, 0.05);
@@ -284,6 +355,11 @@ namespace MyCaffe.gym
             return dfMin + (m_random.NextDouble() * dfRange);
         }
 
+        /// <summary>
+        /// Step the gym one step in its simulation.
+        /// </summary>
+        /// <param name="nAction">Specifies the action to run on the gym.</param>
+        /// <returns>A tuple containing state data, the reward, and the done state is returned.</returns>
         public Tuple<State, double, bool> Step(int nAction)
         {
             CartPoleState state = new CartPoleState(m_state);
@@ -342,6 +418,12 @@ namespace MyCaffe.gym
             return new Tuple<State, double, bool>(stateOut.Clone(), dfReward, bDone);
         }
 
+        /// <summary>
+        /// Returns the dataset descriptor of the dynamic dataset produced by the Gym.
+        /// </summary>
+        /// <param name="dt">Specifies the data-type to use.</param>
+        /// <param name="log">Optionally, specifies the output log to use (default = <i>null</i>).</param>
+        /// <returns>The dataset descriptor is returned.</returns>
         public DatasetDescriptor GetDataset(DATA_TYPE dt, Log log = null)
         {
             int nH = 1;
@@ -368,7 +450,7 @@ namespace MyCaffe.gym
         }
     }
 
-    class GeomCart : GeomPolygon
+    class GeomCart : GeomPolygon /** @private */
     {
         GeomPole m_pole;
 
@@ -390,7 +472,7 @@ namespace MyCaffe.gym
         }
     }
 
-    class GeomPole : GeomPolygon
+    class GeomPole : GeomPolygon /** @private */
     {
         GeomEllipse m_axis;
 
@@ -414,7 +496,7 @@ namespace MyCaffe.gym
         }
     }
 
-    class CartPoleState : State
+    class CartPoleState : State /** @private */
     {
         double m_dfX = 0;
         double m_dfXDot = 0;

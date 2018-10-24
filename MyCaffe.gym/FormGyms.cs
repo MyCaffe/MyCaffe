@@ -10,11 +10,18 @@ using System.Windows.Forms;
 
 namespace MyCaffe.gym
 {
+    /// <summary>
+    /// The FormGyms dialog displays the available gyms.
+    /// </summary>
     public partial class FormGyms : Form
     {
         GymCollection m_col;
         IXMyCaffeGym m_selectedGym;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="col">Specifies the GymCollection of gyms to display.</param>
         public FormGyms(GymCollection col = null)
         {
             if (col == null)
@@ -27,6 +34,9 @@ namespace MyCaffe.gym
             InitializeComponent();
         }
 
+        /// <summary>
+        /// Returns the selected Gym.
+        /// </summary>
         public IXMyCaffeGym SelectedGym
         {
             get { return m_selectedGym; }

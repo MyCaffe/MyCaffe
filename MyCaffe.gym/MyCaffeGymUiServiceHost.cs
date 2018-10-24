@@ -7,8 +7,14 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.gym
 {
+    /// <summary>
+    /// The MyCaffeGymUiServiceHost provides the hosting service that listens for users of the user interface service.
+    /// </summary>
     public class MyCaffeGymUiServiceHost : ServiceHost
     {
+        /// <summary>
+        /// The constructor.
+        /// </summary>
         public MyCaffeGymUiServiceHost()
             : base(typeof(MyCaffeGymUiService), new Uri[] { new Uri("net.pipe://localhost/MyCaffeGym") })
         {

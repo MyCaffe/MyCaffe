@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.gym
 {
+    /// <summary>
+    /// The MyCaffeGymUiService provides the service used to show the Gym visualizations.
+    /// </summary>
     [ServiceBehavior(InstanceContextMode = InstanceContextMode.PerSession)]
     public class MyCaffeGymUiService : IXMyCaffeGymUiService
     {
@@ -14,7 +17,9 @@ namespace MyCaffe.gym
         static object m_syncObjGym = new object();
         IXMyCaffeGymUiCallback m_callback;
 
-
+        /// <summary>
+        /// The constructor.
+        /// </summary>
         public MyCaffeGymUiService()
         {
             m_callback = OperationContext.Current.GetCallbackChannel<IXMyCaffeGymUiCallback>();
@@ -25,6 +30,10 @@ namespace MyCaffe.gym
             m_callback.Closing();
         }
 
+        /// <summary>
+        /// Close the user interface of a Gym.
+        /// </summary>
+        /// <param name="nId">Specifies the Gym id (used when multiple Gym's of the same name are used).</param>
         public void CloseUi(int nId)
         {
             if (!m_rgGyms.ContainsKey(nId))
@@ -34,6 +43,12 @@ namespace MyCaffe.gym
             m_callback.Closing();
         }
 
+        /// <summary>
+        /// Open the Gym user interface.
+        /// </summary>
+        /// <param name="strName">Specifies the Gym name.</param>
+        /// <param name="nId">Specifies the ID of the Gym.</param>
+        /// <returns>The ID of the Gym opened is returned.</returns>
         public int OpenUi(string strName, int nId)
         {
             lock (m_syncObjGym)
@@ -56,6 +71,11 @@ namespace MyCaffe.gym
             return nId;
         }
 
+        /// <summary>
+        /// Render an observation on the Gym user-interface.
+        /// </summary>
+        /// <param name="nId">Specifies the Gym ID.</param>
+        /// <param name="obs">Specifies the Observation to visualize.</param>
         public void Render(int nId, Observation obs)
         {
             if (!m_rgGyms.ContainsKey(nId))
@@ -72,6 +92,11 @@ namespace MyCaffe.gym
             m_rgGyms[nId].Render(rgData, obs.ImageDisplay, obs.Image);
         }
 
+        /// <summary>
+        /// Returns <i>true</i> when the visualization is open, <i>false</i> otherwise.
+        /// </summary>
+        /// <param name="nId">Specifies the Gym ID.</param>
+        /// <returns>Returns <i>true</i> when the visualization is open, <i>false</i> otherwise.</returns>
         public bool IsOpen(int nId)
         {
             if (!m_rgGyms.ContainsKey(nId))

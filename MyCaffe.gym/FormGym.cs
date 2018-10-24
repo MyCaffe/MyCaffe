@@ -12,12 +12,20 @@ using System.Windows.Forms;
 
 namespace MyCaffe.gym
 {
+    /// <summary>
+    /// The FormGym displays the gym visualization.
+    /// </summary>
     public partial class FormGym : Form
     {
         string m_strName;
         MyCaffeGymControl m_ctrl;
         FormActionImage m_dlgActionImage;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="strName">Specifies the name of the Gym.</param>
+        /// <param name="ctrl">Specifies the MyCaffeGymControl instance to use.</param>
         public FormGym(string strName, MyCaffeGymControl ctrl = null)
         {
             InitializeComponent();
@@ -34,11 +42,19 @@ namespace MyCaffe.gym
             m_dlgActionImage.FormClosing += dlgActionImage_FormClosing;
         }
 
+        /// <summary>
+        /// Returns the Gym name.
+        /// </summary>
         public string GymName
         {
             get { return m_strName; }
         }
 
+        /// <summary>
+        /// Renders the bitmap and action image (if exists).
+        /// </summary>
+        /// <param name="bmp">Specifies the gym visualization.</param>
+        /// <param name="bmpAction">Optionally, specifies the action image.</param>
         public void Render(Image bmp, Image bmpAction)
         {
             m_ctrl.Render(m_strName, bmp);
@@ -54,6 +70,12 @@ namespace MyCaffe.gym
             }
         }
 
+        /// <summary>
+        /// Renders the bitmap and action image (if exists).
+        /// </summary>
+        /// <param name="rgData">Specifies the gym data used to render the visualization.</param>
+        /// <param name="bmp">Specifies the gym visualization.</param>
+        /// <param name="bmpAction">Optionally, specifies the action image.</param>
         public void Render(double[] rgData, Image bmp, Image bmpAction)
         {
             m_ctrl.Render(true, m_strName, rgData, bmp);

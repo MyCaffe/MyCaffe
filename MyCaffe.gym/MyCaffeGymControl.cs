@@ -15,18 +15,27 @@ using System.Diagnostics;
 
 namespace MyCaffe.gym
 {
+    /// <summary>
+    /// The MyCaffeGymControl displays the actual Gym visualizations.
+    /// </summary>
     public partial class MyCaffeGymControl : UserControl
     {
         string m_strName = "";
         Bitmap m_bmp = null;
         GymCollection m_colGym = new GymCollection();
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
         public MyCaffeGymControl()
         {
             InitializeComponent();
             m_colGym.Load();
         }
 
+        /// <summary>
+        /// Returns the GymName.
+        /// </summary>
         public string GymName
         {
             get { return m_strName; }
@@ -40,6 +49,11 @@ namespace MyCaffe.gym
         {
         }
 
+        /// <summary>
+        /// Renders the Gym visualization.
+        /// </summary>
+        /// <param name="strName">Specifies the Gym Name.</param>
+        /// <param name="bmp">Specifies the Gym image to visualize.</param>
         public void Render(string strName, Image bmp)
         {
             m_strName = strName;
@@ -49,6 +63,13 @@ namespace MyCaffe.gym
                 Invalidate(true);
         }
 
+        /// <summary>
+        /// Renders the Gym visualizations.
+        /// </summary>
+        /// <param name="bShowUi">Specifies whether or not to render for the user interface.</param>
+        /// <param name="strName">Specifies the Gym name.</param>
+        /// <param name="rgData">Specifies the Gym data.</param>
+        /// <param name="bmp">Specifies the Gym image to use.</param>
         public void Render(bool bShowUi, string strName, double[] rgData, Image bmp)
         {
             m_strName = strName;

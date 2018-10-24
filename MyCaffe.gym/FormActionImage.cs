@@ -10,8 +10,14 @@ using System.Windows.Forms;
 
 namespace MyCaffe.gym
 {
+    /// <summary>
+    /// The FormActionImage displays the action image (if one exists)
+    /// </summary>
     public partial class FormActionImage : Form
     {
+        /// <summary>
+        /// The constructor.
+        /// </summary>
         public FormActionImage()
         {
             InitializeComponent();
@@ -22,6 +28,10 @@ namespace MyCaffe.gym
 
         }
 
+        /// <summary>
+        /// Set the image to display.
+        /// </summary>
+        /// <param name="bmp"></param>
         public void SetImage(Image bmp)
         {
             pictureBox1.Image = bmp;
