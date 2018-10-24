@@ -9,6 +9,10 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.preprocessor
 {
+    /// <summary>
+    /// The MgrPreprocessor manages the operations of the data pre-processor.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     public class MgrPreprocessor<T> : IDisposable
     {
         Extension<T> m_extension;
@@ -17,6 +21,11 @@ namespace MyCaffe.preprocessor
         Blob<T> m_blobInput = null;
         Blob<T> m_blobOutput = null;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="imycaffe">Specifies the instance of the MyCaffeControl to use.</param>
+        /// <param name="idb">Specifies the instance of the streaming database to use.</param>
         public MgrPreprocessor(IXMyCaffe<T> imycaffe, IXStreamDatabase idb)
         {
             m_mycaffe = (MyCaffeControl<T>)imycaffe;
@@ -26,6 +35,9 @@ namespace MyCaffe.preprocessor
             m_blobOutput = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log);
         }
 
+        /// <summary>
+        /// Release all resources used.
+        /// </summary>
         public void Dispose()
         {
             if (m_blobInput != null)
@@ -41,6 +53,12 @@ namespace MyCaffe.preprocessor
             }
         }
 
+        /// <summary>
+        /// Initialize the pre-processor.
+        /// </summary>
+        /// <param name="strExtPath">Specifies the path to the pre-processor extension DLL to use.</param>
+        /// <param name="nFields">Specifies the number of fields that the pre-processor uses.</param>
+        /// <param name="nDepth">Specifies the depth of the pre-processor.</param>
         public void Initialize(string strExtPath, int nFields, int nDepth)
         {
             List<float> rgParam;
@@ -50,6 +68,7 @@ namespace MyCaffe.preprocessor
             rgParam = new List<float>();
             rgParam.Add(nFields);
             rgParam.Add(nDepth);
+            rgParam.Add(1);     // call ProcessData after AddData within the pre-processor DLL.
             float[] rgOut = m_extension.Run(Extension<T>.FUNCTION.INITIALIZE, rgParam.ToArray());
             int nOutputFields = (int)rgOut[0];
 
@@ -68,9 +87,24 @@ namespace MyCaffe.preprocessor
             m_extension.Run(Extension<T>.FUNCTION.SETMEMORY, rgParam.ToArray());
         }
 
-        public Blob<T> Step()
+        /// <summary>
+        /// Reset the streaming database to the data start or an offset from the start.
+        /// </summary>
+        /// <param name="nStartOffset">Specifies the offset from the start to use.</param>
+        public void Reset(int nStartOffset)
         {
-            SimpleDatum sd = m_idb.Query();
+            m_idb.Reset(nStartOffset);
+        }
+
+        /// <summary>
+        /// Step to the next data in the streaming database and process it.
+        /// </summary>
+        /// <param name="bGetSimpleDatum">When <i>true</i>, specifies to create the SimpleDatum for data visualization.</param>
+        /// <param name="nWait">Specifies the amount of time in ms. to wait for data.</param>
+        /// <returns>A tuple containing the output data Blob and optionally a SimpleDatum for visualization is returned.</returns>
+        public Tuple<Blob<T>, SimpleDatum> Step(bool bGetSimpleDatum, int nWait)
+        {
+            SimpleDatum sd = m_idb.Query(nWait);
             if (sd == null)
                 return null;
 
@@ -84,7 +118,7 @@ namespace MyCaffe.preprocessor
                 m_extension.Run(Extension<T>.FUNCTION.ADDDATA, sd.RealData);
             }
 
-            return m_blobOutput;
+            return new Tuple<Blob<T>, SimpleDatum>(m_blobOutput, null);
         }
     }
 }
