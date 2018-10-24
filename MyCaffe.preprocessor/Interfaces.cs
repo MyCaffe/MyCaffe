@@ -15,7 +15,7 @@ namespace MyCaffe.preprocessor
     /// The IXPreprocessor interface is used to query pre-processed data from a streaming database.
     /// </summary>
     [ServiceContract(CallbackContract = typeof(IXStreamDatabaseEvent), SessionMode = SessionMode.Required)]
-    public interface IXPreprocessor<T>
+    public interface IXMyCaffePreprocessor<T>
     {
         /// <summary>
         /// Initialize the pre-processor with an existing instance of MyCaffe and a streaming database.
@@ -23,7 +23,8 @@ namespace MyCaffe.preprocessor
         /// <param name="imycaffe">Specifies the MyCaffe instance to use.</param>
         /// <param name="istrm">Specifies the streaming database instance to use.</param>
         /// <param name="strPreProcessorDLLPath">Specifies the path to the pre-processor DLL to use so that pre-processing can occur using CUDA.</param>
-        void Initialize(IXMyCaffe<T> imycaffe, IXStreamDatabase istrm, string strPreProcessorDLLPath);
+        /// <param name="properties">Specifies the initialization properties.</param>
+        void Initialize(IXMyCaffe<T> imycaffe, IXStreamDatabase istrm, string strPreProcessorDLLPath, PropertySet properties);
         /// <summary>
         /// Shutdown any internal threads used.
         /// </summary>
