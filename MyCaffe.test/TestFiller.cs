@@ -889,25 +889,25 @@ namespace MyCaffe.test
         public void TestFill(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
         {
             List<int> rgShape = new List<int>() { 2, 3, 4, 5 };
-            test_params(rgShape);
+            test_params(rgShape, 3);
         }
 
         public void TestFill1D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
         {
-            List<int> rgShape = new List<int>() { 15 };
-            test_params(rgShape);
+            List<int> rgShape = new List<int>() { 1, 125 };
+            test_params(rgShape, 3);
         }
 
         public void TestFill2D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
         {
-            List<int> rgShape = new List<int>() { 8, 3 };
-            test_params(rgShape);
+            List<int> rgShape = new List<int>() { 8, 15 };
+            test_params(rgShape, 3);
         }
 
         public void TestFill5D(FillerParameter.VarianceNorm varNorm = FillerParameter.VarianceNorm.AVERAGE, double dfN = 0)
         {
             List<int> rgShape = new List<int>() { 2, 3, 4, 5, 2 };
-            test_params(rgShape);
+            test_params(rgShape, 2);
         }
     }
 
