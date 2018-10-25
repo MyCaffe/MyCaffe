@@ -695,6 +695,9 @@ namespace MyCaffe.common
             CUDA_EMBED_FWD = 390,
             CUDA_EMBED_BWD = 391,
 
+            CUDA_CLIP_FWD = 394,
+            CUDA_CLIP_BWD = 395,
+
             CUDA_POOL_FWD = 400,
             CUDA_POOL_BWD = 401,
 
@@ -5420,6 +5423,42 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Performs a Clip forward pass in Cuda.
+        /// </summary>
+        /// <remarks>
+        /// Calculation @f$ Y[i] = \max(min, \min(max,X[i])) @f$
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items in the bottom and top data.</param>
+        /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
+        /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
+        /// <param name="dfMin">Specifies the bottom value to clip to.</param>
+        /// <param name="dfMax">Specifies the top value to clip to.</param>
+        public void clip_fwd(int nCount, long hBottomData, long hTopData, T fMin, T fMax)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CLIP_FWD, new double[] { nCount, hBottomData, hTopData, convertD1(fMin), convertD1(fMax) });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CLIP_FWD, new float[] { nCount, hBottomData, hTopData, convertF1(fMin), convertF1(fMax) });
+        }
+
+        /// <summary>
+        /// Performs a Clip backward pass in Cuda.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
+        /// <param name="hBottomData">Specifies a handle to the bottom data in GPU memory.</param>
+        /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
+        /// <param name="dfMin">Specifies the bottom value to clip to.</param>
+        /// <param name="dfMax">Specifies the top value to clip to.</param>
+        public void clip_bwd(int nCount, long hTopDiff, long hBottomData, long hBottomDiff, T fMin, T fMax)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CLIP_BWD, new double[] { nCount, hTopDiff, hBottomData, hBottomDiff, convertD1(fMin), convertD1(fMax) });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CLIP_BWD, new float[] { nCount, hTopDiff, hBottomData, hBottomDiff, convertF1(fMin), convertF1(fMax) });
+        }
+
+        /// <summary>
         /// Performs a TanH forward pass in Cuda.
         /// </summary>
         /// <remarks>
@@ -6885,6 +6924,11 @@ namespace MyCaffe.common
             return rgt;
         }
 
+        private float convertF1(T f)
+        {
+            return (float)Convert.ChangeType(f, typeof(float));
+        }
+
         private float[] convertF(T[] rg, int nCount = -1)
         {
             if (rg == null)
@@ -6900,6 +6944,11 @@ namespace MyCaffe.common
             Array.Copy(Array.ConvertAll(rg, p => Convert.ToSingle(p)), rgf, rg.Length);
 
             return rgf;
+        }
+
+        private double convertD1(T df)
+        {
+            return (double)Convert.ChangeType(df, typeof(double));
         }
 
         private double[] convertD(T[] rg, int nCount = -1)

@@ -171,6 +171,9 @@ class Math
 		long unpooling_fwd(int nMethod, int nCount, long hBottomData, int nNum, int nChannels, int h, int w, int hUnPooled, int wUnPooled, int hKernel, int wKernel, int hStride, int wStride, int hPad, int wPad, long hTopData, long hBottomMask);
 		long unpooling_bwd(int nMethod, int nCount, long hTopDiff, int nNum, int nChannels, int h, int w, int hUnPooled, int wUnPooled, int hKernel, int wKernel, int hStride, int wStride, int hPad, int wPad, long hBottomDiff, long hBottomMask);
 
+		long clip_fwd(int nCount, long hBottomData, long hTopData, T fMin, T fMax);
+		long clip_bwd(int nCount, long hTopDiff, long hBottomData, long hBottomDiff, T fMin, T fMax);
+
 		long tanh_fwd(int nCount, long hBottomData, long hTopData);
 		long tanh_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff);
 

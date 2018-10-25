@@ -308,6 +308,9 @@ class Device
 		long cuda_unpooling_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_unpooling_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
+		long cuda_clip_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_clip_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
 		long cuda_tanh_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_tanh_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
@@ -1773,6 +1776,41 @@ inline long Device<T>::EluBackward(long lInput, T* pfInput, long* plOutput, T** 
 	long hBottomDiff = (long)pfInput[10];
 
 	return m_memory.EluBackward(hHandle, fAlpha, hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, hBottomDataDesc, hBottomData, fBeta, hBottomDiffDesc, hBottomDiff);
+}
+
+template <class T>
+inline long Device<T>::cuda_clip_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hBottomData = (long)pfInput[1];
+	long hTopData = (long)pfInput[2];
+	T fMin = (long)pfInput[3];
+	T fMax = (long)pfInput[4];
+
+	return m_math.clip_fwd(nCount, hBottomData, hTopData, fMin, fMax);
+}
+
+template <class T>
+inline long Device<T>::cuda_clip_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hTopDiff = (long)pfInput[1];
+	long hBottomData = (long)pfInput[2];
+	long hBottomDiff = (long)pfInput[3];
+	T fMin = (long)pfInput[4];
+	T fMax = (long)pfInput[5];
+
+	return m_math.clip_bwd(nCount, hTopDiff, hBottomData, hBottomDiff, fMin, fMax);
 }
 
 template <class T>

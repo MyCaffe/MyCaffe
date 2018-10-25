@@ -936,6 +936,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.BINARYHASH:
                     return new BinaryHashLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.CLIP:
+                    return new ClipLayer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.CONCAT:
                     return new ConcatLayer<T>(cuda, log, p);
 

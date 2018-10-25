@@ -4039,6 +4039,11 @@ __global__ void embed_fwd_kernel(int nCount, const T* bottom_data, const T* weig
 		const int n = top_index / N;
 		const int d = top_index % N;
 		const int index = (int)bottom_data[n];
+#ifdef DEBUG
+		assert(index >= 0);
+		assert(index < K);
+		assert(static_cast<T>(index) == bottom_data[n]);
+#endif
 		const int weight_index = index * N + d;
 		top_data[top_index] = weight[weight_index];
 	}
@@ -4747,6 +4752,79 @@ long Math<T>::unpooling_bwd(int nMethod, int n, long hTopDiff, int nNum, int nCh
 
 template long Math<double>::unpooling_bwd(int nMethod, int nCount, long hTopDiff, int nNum, int nChannels, int h, int w, int hUnPooled, int wUnPooled, int hKernel, int wKernel, int hStride, int wStride, int hPad, int wPad, long hBottomDiff, long hBottomMask);
 template long Math<float>::unpooling_bwd(int nMethod, int nCount, long hTopDiff, int nNum, int nChannels, int h, int w, int hUnPooled, int wUnPooled, int hKernel, int wKernel, int hStride, int wStride, int hPad, int wPad, long hBottomDiff, long hBottomMask);
+
+
+template<typename T>
+__global__ void clip_fwd_kernel(int n, T* in, T* out, const T dfMin, const T dfMax)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		out[i] = fmax(dfMin, fmin(in[i], dfMax));
+	}
+}
+
+template <class T>
+long Math<T>::clip_fwd(int n, long hBottomData, long hTopData, T fMin, T fMax)
+{
+	LONG lErr;
+	MemoryItem* pBottomData;
+	MemoryItem* pTopData;
+
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hTopData, &pTopData))
+		return lErr;
+
+	T* bottom_data = (T*)pBottomData->Data();
+	T* top_data = (T*)pTopData->Data();
+
+	clip_fwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, bottom_data, top_data, fMin, fMax);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::clip_fwd(int nCount, long hBottomData, long hTopData, double dfMin, double dfMax);
+template long Math<float>::clip_fwd(int nCount, long hBottomData, long hTopData, float fMin, float fMax);
+
+
+template<typename T>
+__global__ void clip_bwd_kernel(int n, T* in_diff, T* in_data, T* out_diff, const T dfMin, const T dfMax)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		out_diff[i] = in_diff[i] * (in_data[i] >= dfMin && in_data[i] <= dfMax);
+	}
+}
+
+template <class T>
+long Math<T>::clip_bwd(int n, long hTopDiff, long hBottomData, long hBottomDiff, T fMin, T fMax)
+{
+	LONG lErr;
+	MemoryItem* pTopDiff;
+	MemoryItem* pBottomData;
+	MemoryItem* pBottomDiff;
+
+	if (lErr = m_pMemCol->GetData(hTopDiff, &pTopDiff))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomData, &pBottomData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hBottomDiff, &pBottomDiff))
+		return lErr;
+
+	T* top_diff = (T*)pTopDiff->Data();
+	T* bottom_data = (T*)pBottomData->Data();
+	T* bottom_diff = (T*)pBottomDiff->Data();
+
+	clip_bwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, top_diff, bottom_data, bottom_diff, fMin, fMax);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::clip_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, double dfMin, double dfMax);
+template long Math<float>::clip_bwd(int nCount, long hTopDiff, long hTopData, long hBottomDiff, float fMin, float fMax);
 
 
 template<typename T>

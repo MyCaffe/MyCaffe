@@ -216,6 +216,9 @@ const int CUDA_FN_BATCHREIDX_BWD = 387;
 const int CUDA_FN_EMBED_FWD = 390;
 const int CUDA_FN_EMBED_BWD = 391;
 
+const int CUDA_FN_CLIP_FWD = 394;
+const int CUDA_FN_CLIP_BWD = 395;
+
 const int CUDA_FN_POOL_FWD = 400;
 const int CUDA_FN_POOL_BWD = 401;
 

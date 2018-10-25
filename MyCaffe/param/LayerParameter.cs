@@ -100,6 +100,10 @@ namespace MyCaffe.param
             /// </summary>
             BNLL,
             /// <summary>
+            /// Initializes a parameter for the ClipLayer.
+            /// </summary>
+            CLIP,
+            /// <summary>
             /// Initializes a parameter for the ConcatLayer.
             /// </summary>
             CONCAT,
@@ -644,6 +648,12 @@ namespace MyCaffe.param
                 case LayerType.BNLL:
                     expected_bottom.Add("input");
                     expected_top.Add("bnll");
+                    break;
+
+                case LayerType.CLIP:
+                    expected_bottom.Add("input");
+                    expected_top.Add("clip");
+                    m_rgLayerParameters[lt] = new ClipParameter();
                     break;
 
                 case LayerType.CONCAT:
@@ -1210,6 +1220,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.CLIP
+        /// </summary>
+        public ClipParameter clip_param
+        {
+            get { return (ClipParameter)m_rgLayerParameters[LayerType.CLIP]; }
+            set { m_rgLayerParameters[LayerType.CLIP] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.CONCAT
         /// </summary>
         public ConcatParameter concat_param
@@ -1763,6 +1782,9 @@ namespace MyCaffe.param
                 case LayerType.BNLL:
                     return "BNLL";
 
+                case LayerType.CLIP:
+                    return "Clip";
+
                 case LayerType.CONCAT:
                     return "Concat";
 
@@ -2008,6 +2030,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(batch_norm_param, "batch_norm_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(bias_param, "bias_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(binary_hash_param, "binaryhash_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(clip_param, "clip_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(concat_param, "concat_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(contrastive_loss_param, "contrastive_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(convolution_param, "convolution_param"));
@@ -2160,6 +2183,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("binaryhash_param")) != null)
                 p.binary_hash_param = BinaryHashParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("clip_param")) != null)
+                p.clip_param = ClipParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("concat_param")) != null)
                 p.concat_param = ConcatParameter.FromProto(rpp);
@@ -2346,6 +2372,9 @@ namespace MyCaffe.param
 
                 case "bnll":
                     return LayerType.BNLL;
+
+                case "clip":
+                    return LayerType.CLIP;
 
                 case "concat":
                     return LayerType.CONCAT;

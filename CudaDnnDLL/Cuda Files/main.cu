@@ -515,6 +515,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_UNPOOL_BWD:
 			return m_device.cuda_unpooling_bwd(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_CLIP_FWD:
+			return m_device.cuda_clip_fwd(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_CLIP_BWD:
+			return m_device.cuda_clip_bwd(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_TANH_FWD:
 			return m_device.cuda_tanh_fwd(lCount, pfInput, plCount, ppfOutput);
 
