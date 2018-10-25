@@ -125,6 +125,43 @@ namespace MyCaffe.test
 
 
         [TestMethod]
+        public void TestClip()
+        {
+            ClipLayerTest test = new ClipLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (INeuronLayerTest t in test.Tests)
+                {
+                    t.TestForward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestClipGradient()
+        {
+            ClipLayerTest test = new ClipLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (INeuronLayerTest t in test.Tests)
+                {
+                    t.TestGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
         public void TestSwish()
         {
             SwishLayerTest test = new SwishLayerTest(EngineParameter.Engine.CAFFE);
@@ -1619,6 +1656,112 @@ namespace MyCaffe.test
             checker.CheckGradientEltwise(layer, BottomVec, TopVec);
         }
     }
+
+    class ClipLayerTest : TestBase
+    {
+        public ClipLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+            : base("Clip Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
+        {
+        }
+
+        protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
+        {
+            if (dt == common.DataType.DOUBLE)
+                return new ClipLayerTest<double>(strName, nDeviceID, engine);
+            else
+                return new ClipLayerTest<float>(strName, nDeviceID, engine);
+        }
+    }
+
+    class ClipLayerTest<T> : TestEx<T>, INeuronLayerTest
+    {
+        public ClipLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
+            : base(strName, new List<int>() { 2, 3, 4, 5 }, nDeviceID)
+        {
+            m_engine = engine;
+        }
+
+        protected override void dispose()
+        {
+            base.dispose();
+        }
+
+        protected override FillerParameter getFillerParam()
+        {
+            FillerParameter p = new FillerParameter("uniform");
+            return p;
+        }
+
+        public void TestForward()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CLIP);
+            p.clip_param.min = -1;
+            p.clip_param.max = 2;
+            ClipLayer<T> layer = new ClipLayer<T>(m_cuda, m_log, p);
+
+            layer.Setup(BottomVec, TopVec);
+            layer.Forward(BottomVec, TopVec);
+
+            // Now, check values
+            double[] rgBottomData = convert(Bottom.update_cpu_data());
+            double[] rgTopData = convert(Top.update_cpu_data());
+
+            for (int i = 0; i < Bottom.count(); i++)
+            {
+                m_log.CHECK_GE(rgTopData[i], -1, "The top data should be >= -1");
+                m_log.CHECK_LE(rgTopData[i], 2, "The top data should be <= 2");
+                m_log.CHECK(rgBottomData[i] > -1 || rgTopData[i] == -1, "The data is incorrect.");
+                m_log.CHECK(rgBottomData[i] < 2 || rgTopData[i] == 2, "The data is incorrect.");
+                m_log.CHECK(!(rgBottomData[i] >= -1 && rgBottomData[i] <= 2) || rgTopData[i] == rgBottomData[i], "The data is incorrect.");
+            }
+        }
+
+        public void TestGradient()
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.CLIP);
+            p.clip_param.min = -1;
+            p.clip_param.max = 2;
+            ClipLayer<T> layer = new ClipLayer<T>(m_cuda, m_log, p);
+
+            // Unfortunately, it might happen that an input value lands exactly within
+            // the discontinuity region of the Clip function.  In this case the numeric
+            // gradient is likely to differ significantly (i.e. by a value larger than
+            // checker tolerance) from the computed gradient.  To handle such cases, we
+            // eliminate such values from the input blob before the gradient check.
+            double dfEpsilon = 1e-2;
+            double dfMinRangeStart = p.clip_param.min - dfEpsilon;
+            double dfMinRangeEnd = p.clip_param.min + dfEpsilon;
+            double dfMaxRangeStart = p.clip_param.max - dfEpsilon;
+            double dfMaxRangeEnd = p.clip_param.max + dfEpsilon;
+
+            // The input blob is owned by the TestBase object, so we begin with
+            // creating a temporary blob and copying the input data there.
+            Blob<T> temp_bottom = new Blob<T>(m_cuda, m_log);
+            temp_bottom.CopyFrom(Bottom, false, true);
+            double[] rgBottomData = convert(Bottom.update_cpu_data());
+            double[] rgTempData = convert(temp_bottom.mutable_cpu_data);
+
+            for (int i = 0; i < Bottom.count(); i++)
+            {
+                if (rgBottomData[i] >= dfMinRangeStart && rgBottomData[i] <= dfMinRangeEnd)
+                {
+                    rgTempData[i] = rgBottomData[i] - dfEpsilon;
+                }
+                else if (rgBottomData[i] >= dfMaxRangeStart && rgBottomData[i] <= dfMaxRangeEnd)
+                {
+                    rgTempData[i] = rgBottomData[i] + dfEpsilon;
+                }
+            }
+            temp_bottom.mutable_cpu_data = convert(rgTempData);
+
+            BlobCollection<T> TempBottomVec = new BlobCollection<T>();
+            TempBottomVec.Add(temp_bottom);
+
+            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, dfEpsilon, 1e-3);
+            checker.CheckGradientEltwise(layer, TempBottomVec, TopVec);
+        }
+    }
+
 
     class TanhLayerTest : TestBase
     {
