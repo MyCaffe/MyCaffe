@@ -836,9 +836,6 @@ namespace MyCaffe.solvers
                     if (m_evtCancel.WaitOne(0))
                         break;
 
-                    // Increment the internal iter_ counter -- its value should always indicate
-                    // the number of times the weights have been updated.
-                    m_nIter++;
                     m_log.Progress = (double)m_nIter / (double)stop_iter;
 
                     bool bSnapshotTaken = false;

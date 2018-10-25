@@ -207,6 +207,10 @@ namespace MyCaffe.solvers
 
             m_net.Update();
 
+            // Increment the internal iter_ counter -- its value should always indicate
+            // the number of times the weights have been updated.
+            m_nIter++;
+
             return dfRate;
         }
 
