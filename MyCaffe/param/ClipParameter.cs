@@ -10,7 +10,7 @@ namespace MyCaffe.param
     /// <summary>
     /// Stores the parameters used by the ClipLayer
     /// </summary>
-    public class ClipParameter : EngineParameter
+    public class ClipParameter : LayerParameterBase
     {
         double m_dfMin;
         double m_dfMax;
@@ -27,10 +27,7 @@ namespace MyCaffe.param
         /// <returns>The reason for using Caffe is returned.</returns>
         public string useCaffeReason()
         {
-            if (engine == Engine.CAFFE)
-                return "This layer is curently only supported in Caffe.";
-
-            return "";
+            return "This layer is curently only supported in Caffe.";
         }
 
         /// <summary>
@@ -39,10 +36,7 @@ namespace MyCaffe.param
         /// <returns>Returns <i>true</i> when cuDnn is to be used, <i>false</i> otherwise.</returns>
         public bool useCudnn()
         {
-            if (engine == EngineParameter.Engine.CAFFE)
-                return false;
-
-            return true;
+            return false;
         }
 
         /// <summary>
@@ -80,8 +74,6 @@ namespace MyCaffe.param
         /** @copydoc LayerParameterBase::Copy */
         public override void Copy(LayerParameterBase src)
         {
-            base.Copy(src);
-
             if (src is ClipParameter)
             {
                 ClipParameter p = (ClipParameter)src;
@@ -101,10 +93,7 @@ namespace MyCaffe.param
         /** @copydoc LayerParameterBase::ToProto */
         public override RawProto ToProto(string strName)
         {
-            RawProto rpBase = base.ToProto("engine");
             RawProtoCollection rgChildren = new RawProtoCollection();
-
-            rgChildren.Add(rpBase.Children);
 
             rgChildren.Add("min", min.ToString());
             rgChildren.Add("max", min.ToString());
