@@ -890,6 +890,9 @@ namespace MyCaffe.solvers
                         m_log.WriteLine("A training time-limit of " + m_nTrainingTimeLimitInMinutes.ToString("N0") + " minutes has been exceeded - training will now stop.");
                         return true;
                     }
+
+                    if (!bApplyUpdates)
+                        break;
                 }
 
                 return true;
