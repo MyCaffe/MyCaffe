@@ -98,6 +98,7 @@
     <Compile Include="layers\GradientScaleLayer.cs" />
     <Compile Include="layers\MemoryLossLayer.cs" />
     <Compile Include="layers\SoftmaxCrossEntropyLossLayer.cs" />
+    <Compile Include="layers\ClipLayer.cs" />
     <Compile Include="layers\SwishLayer.cs" />
     <Compile Include="layers\MemoryDataLayer.cs" />
     <Compile Include="layers\DebugLayer.cs" />
@@ -196,6 +197,7 @@
     <Compile Include="param.ui\DictionaryParameterEditorControl.Designer.cs">
       <DependentUpon>DictionaryParameterEditorControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="param\ClipParameter.cs" />
     <Compile Include="param\UnPoolingParameter.cs" />
     <Compile Include="param\SwishParameter.cs" />
     <Compile Include="param\TripletLossParameter.cs" />
