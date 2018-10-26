@@ -576,19 +576,28 @@ namespace MyCaffe.gym
             return new CartPoleState(this);
         }
 
-        public override Tuple<double,double,double, bool>[] ToArray()
+        public override SimpleDatum GetData(bool bNormalize, out int nDataLen)
         {
-            List<Tuple<double, double, double, bool>> rg = new List<Tuple<double, double, double, bool>>();
             int nScale = 4;
+            nDataLen = 4;
+            Valuemap data = new Valuemap(1, 6, 1);
 
-            rg.Add(new Tuple<double, double, double, bool>(m_dfX, -MAX_X, MAX_X, true));
-            rg.Add(new Tuple<double, double, double, bool>(m_dfXDot, -MAX_X * nScale, MAX_X * nScale, true));
-            rg.Add(new Tuple<double, double, double, bool>(m_dfTheta, -MAX_THETA, MAX_THETA, true));
-            rg.Add(new Tuple<double, double, double, bool>(m_dfThetaDot, -MAX_THETA * nScale * 2, MAX_THETA * nScale * 2, true));
-            rg.Add(new Tuple<double, double, double, bool>(m_dfForceMag, -100, 100, false));
-            rg.Add(new Tuple<double, double, double, bool>(m_nSteps, -1, 1, false));
+            data.SetPixel(0, 0, getValue(m_dfX, -MAX_X, MAX_X, bNormalize));
+            data.SetPixel(0, 1, getValue(m_dfXDot, -MAX_X * nScale, MAX_X * nScale, bNormalize));
+            data.SetPixel(0, 2, getValue(m_dfTheta, -MAX_THETA, MAX_THETA, bNormalize));
+            data.SetPixel(0, 3, getValue(m_dfThetaDot, -MAX_THETA * nScale * 2, MAX_THETA * nScale * 2, bNormalize));
+            data.SetPixel(0, 4, getValue(m_dfForceMag, -100, 100, bNormalize));
+            data.SetPixel(0, 5, m_nSteps);
 
-            return rg.ToArray();
+            return new SimpleDatum(data);
+        }
+
+        private double getValue(double dfVal, double dfMin, double dfMax, bool bNormalize)
+        {
+            if (!bNormalize)
+                return dfVal;
+
+            return (dfVal - dfMin) / (dfMax - dfMin);
         }
     }
 }

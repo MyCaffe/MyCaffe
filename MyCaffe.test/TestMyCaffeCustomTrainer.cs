@@ -374,12 +374,13 @@ namespace MyCaffe.test
 
             bool bIsOpen = (m_nUiId >= 0) ? true : false;
             Tuple<Bitmap, SimpleDatum> data = m_igym.Render(bIsOpen, 512, 512, true);
-            Observation obs = new Observation(null, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, state.Item1.ToArray(), state.Item2, state.Item3);
+            int nDataLen = 0;
+            SimpleDatum stateData = state.Item1.GetData(m_bNormalizeInput, out nDataLen);
+            Observation obs = new Observation(null, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, stateData.RealData, state.Item2, state.Item3);
 
-            double[] rgState = Observation.GetValues(obs.State, m_bNormalizeInput);
             e.State = new StateBase(m_igym.GetActionSpace().Count());
             e.State.Reward = obs.Reward;
-            e.State.Data = new SimpleDatum(true, rgState.Length, 1, 1, -1, DateTime.Now, null, rgState.ToList(), 0, false, 0);
+            e.State.Data = new SimpleDatum(true, nDataLen, 1, 1, -1, DateTime.Now, null, stateData.RealData.ToList(), 0, false, 0);
             e.State.Done = obs.Done;
             e.State.IsValid = true;
 
@@ -483,7 +484,9 @@ namespace MyCaffe.test
 
             bool bIsOpen = (m_nUiId >= 0) ? true : false;
             Tuple<Bitmap, SimpleDatum> data = m_igym.Render(bIsOpen, 512, 512, true);
-            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, state.Item1.ToArray(), state.Item2, state.Item3);
+            int nDataLen = 0;
+            SimpleDatum stateData = state.Item1.GetData(false, out nDataLen);
+            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, stateData.RealData, state.Item2, state.Item3);
 
             e.State = new StateBase(m_igym.GetActionSpace().Count());
             e.State.Reward = obs.Reward;

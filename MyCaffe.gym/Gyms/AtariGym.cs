@@ -462,10 +462,10 @@ namespace MyCaffe.gym
             return new AtariState(this);
         }
 
-        public override Tuple<double,double,double, bool>[] ToArray()
+        public override SimpleDatum GetData(bool bNormalize, out int nDataLen)
         {
-            List<Tuple<double, double, double, bool>> rg = new List<Tuple<double, double, double, bool>>();
-            return rg.ToArray();
+            nDataLen = 0;
+            return new SimpleDatum();
         }
     }
 }

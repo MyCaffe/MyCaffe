@@ -66,7 +66,7 @@ namespace MyCaffe.gym
     [DataContract]
     public class Observation
     {
-        Tuple<double, double, double, bool>[] m_rgState;
+        double[] m_rgState;
         double m_dfReward;
         bool m_bDone;
         Bitmap m_img;
@@ -82,7 +82,7 @@ namespace MyCaffe.gym
         /// <param name="rgState">Specifies state data of the Gym.</param>
         /// <param name="dfReward">Specifies the reward.</param>
         /// <param name="bDone">Specifies the done state of the Gym.</param>
-        public Observation(Bitmap imgDisp, Bitmap img, bool bRequireDisplayImg, Tuple<double,double,double, bool>[] rgState, double dfReward, bool bDone)
+        public Observation(Bitmap imgDisp, Bitmap img, bool bRequireDisplayImg, double[] rgState, double dfReward, bool bDone)
         {
             m_rgState = rgState;
             m_dfReward = dfReward;
@@ -100,46 +100,17 @@ namespace MyCaffe.gym
         {
             Bitmap bmp = (m_img == null) ? null : new Bitmap(m_img);
             Bitmap bmpDisp = (m_imgDisplay == null) ? null : new Bitmap(m_imgDisplay);
+            double[] rgState = new double[m_rgState.Length];
+            Array.Copy(m_rgState, rgState, rgState.Length);
 
-            List<Tuple<double, double, double, bool>> rgState = new List<Tuple<double, double, double, bool>>();
-            foreach (Tuple<double, double, double, bool> item in m_rgState)
-            {
-                rgState.Add(new Tuple<double, double, double, bool>(item.Item1, item.Item2, item.Item3, item.Item4));
-            }
-
-            return new Observation(bmpDisp, bmp, m_bRequireDisplayImage, rgState.ToArray(), m_dfReward, m_bDone);
-        }
-
-        /// <summary>
-        /// The GetValues method returns state values, optionally normalized.
-        /// </summary>
-        /// <param name="rg">Specifies the state values.</param>
-        /// <param name="bNormalize">Specifies to normalize when <i>true</i>.</param>
-        /// <param name="bGetAllData">Optionally, specifies to get all data (default = false).</param>
-        /// <returns></returns>
-        public static double[] GetValues(Tuple<double,double,double, bool>[] rg, bool bNormalize, bool bGetAllData = false)
-        {
-            List<double> rgState = new List<double>();
-
-            for (int i = 0; i < rg.Length; i++)
-            {
-                if (rg[i].Item4 || bGetAllData)
-                {
-                    if (bNormalize)
-                        rgState.Add((rg[i].Item1 - rg[i].Item2) / (rg[i].Item3 - rg[i].Item2));
-                    else
-                        rgState.Add(rg[i].Item1);
-                }
-            }
-
-            return rgState.ToArray();
+            return new Observation(bmpDisp, bmp, m_bRequireDisplayImage, rgState, m_dfReward, m_bDone);
         }
 
         /// <summary>
         /// Get/set the state data.
         /// </summary>
         [DataMember]
-        public Tuple<double,double,double, bool>[] State
+        public double[] State
         {
             get { return m_rgState; }
             set { m_rgState = value; }

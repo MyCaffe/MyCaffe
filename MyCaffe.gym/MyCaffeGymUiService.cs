@@ -87,7 +87,7 @@ namespace MyCaffe.gym
             if (obs.RequireDisplayImage && obs.ImageDisplay == null)
                 return;
 
-            double[] rgData = obs.State.Select(p => p.Item1).ToArray();
+            double[] rgData = obs.State;
 
             m_rgGyms[nId].Render(rgData, obs.ImageDisplay, obs.Image);
         }

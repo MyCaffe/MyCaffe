@@ -131,9 +131,11 @@ namespace MyCaffe.gym
         /// <returns>The new state information and gym data is returned.</returns>
         public abstract State Clone();
         /// <summary>
-        /// Convert the state into an array of tuples that contain the value, minimum and maximum for the value.
+        /// Get the data.
         /// </summary>
-        /// <returns>The array of state information is returned.</returns>
-        public abstract Tuple<double, double, double, bool>[] ToArray();
+        /// <param name="bNormalize">Specifies to normalize the data.</param>
+        /// <param name="nDataLen">Returns the non-render data length (the actual data used in training)</param>
+        /// <returns>A tuple with the SimpleDatum containing the data and the non rendering data length is returned.</returns>
+        public abstract SimpleDatum GetData(bool bNormalize, out int nDataLen);
     }
 }
