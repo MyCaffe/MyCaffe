@@ -12,6 +12,7 @@ using System.Diagnostics;
 using MyCaffe.db.image;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.gym;
+using MyCaffe.db.stream;
 
 namespace MyCaffe.test
 {
@@ -35,12 +36,30 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+        [TestMethod]
+        public void TestDataGym_General()
+        {
+            MyCaffeGymTest test = new MyCaffeGymTest();
+
+            try
+            {
+                foreach (IMyCaffeGymTest t in test.Tests)
+                {
+                    t.TestDataGymGeneral(false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
     interface IMyCaffeGymTest : ITest
     {
         void TestCartPole(bool bShowUi);
+        void TestDataGymGeneral(bool bShowUi);
     }
 
     class MyCaffeGymTest : TestBase
@@ -98,6 +117,56 @@ namespace MyCaffe.test
             igym.Step(1);
 
             Thread.Sleep(5000);
+
+            igym.Close();
+        }
+
+        public void TestDataGymGeneral(bool bShowUi)
+        {
+            m_log.WriteHeader("Test Gym - DataGeneral");
+            GymCollection col = new GymCollection();
+            col.Load();
+
+            string strName = "DataGeneral";
+            IXMyCaffeGym igym = col.Find(strName);
+            Assert.AreEqual(igym != null, true);
+
+            igym = igym.Clone();
+            Assert.AreEqual(igym != null, true);
+
+            string strSchema = "ConnectionCount=1;";
+            string strDataPath = getTestPath("\\MyCaffe\\test_data\\data\\char-rnn", true);
+            string strParam = "FilePath=" + strDataPath + ";";
+
+            strParam = ParamPacker.Pack(strParam);
+            strSchema += "Connection0_CustomQueryName=StdTextFileQuery;";
+            strSchema += "Connection0_CustomQueryParam=" + strParam + ";";
+
+            PropertySet ps = new PropertySet(strSchema);
+            igym.Initialize(m_log, ps);
+
+            Dictionary<string, int> rgActions = igym.GetActionSpace();
+            Assert.AreEqual(rgActions.Count, 0);
+
+            igym.Reset();
+            Tuple<State, double, bool> data0 = igym.Step(0);
+            m_log.CHECK(data0.Item3 != true, "We should not be done just yet.");
+            m_log.CHECK_EQ(data0.Item2, 0, "The general data gyms do not have reward values.");
+
+            int nDataLen;
+            SimpleDatum sd = data0.Item1.GetData(false, out nDataLen);
+            m_log.CHECK(sd != null, "The data should not be null.");
+            m_log.CHECK_EQ(sd.ItemCount, nDataLen, "The data length should be the SimpleDatum ItemCount.");
+            m_log.CHECK_GT(sd.ItemCount, 0, "There should be data in the SimpleDatum.");
+
+            Tuple<State, double, bool> data1 = igym.Step(1);
+            m_log.CHECK(data1.Item3 == true, "We should now be done.");
+            m_log.CHECK_EQ(data1.Item2, 0, "The general data gyms do not have reward values.");
+
+            int nDataLen1;
+            SimpleDatum sd1 = data1.Item1.GetData(false, out nDataLen1);
+            m_log.CHECK(sd1 == null, "The data should be null.");
+            m_log.CHECK_EQ(nDataLen1, 0, "The data length should be zero.");
 
             igym.Close();
         }
