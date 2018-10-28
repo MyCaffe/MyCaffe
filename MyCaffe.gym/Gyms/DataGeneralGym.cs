@@ -17,7 +17,8 @@ using System.Threading.Tasks;
 namespace MyCaffe.gym
 {
     /// <summary>
-    /// The Data Gym provides access to the MyCaffe Streaming Database.
+    /// The DataGeneral Gym provides access to the MyCaffe Streaming Database with GENERAL query types.
+    /// </summary>
     public class DataGeneralGym : IXMyCaffeGym, IDisposable
     {
         string m_strName = "DataGeneral";
