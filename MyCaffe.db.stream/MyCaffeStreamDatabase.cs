@@ -51,7 +51,6 @@ namespace MyCaffe.db.stream
         /// The Initialize method initializes the streaming database component, preparing it for data queries.
         /// </summary>
         /// <param name="qt">Specifies the query type to use (see remarks).</param>
-        /// <param name="strSettings">Specifies the query settings to use (see remarks.)</param>
         /// <param name="strSchema">Specifies the query schema to use.</param>
         /// <remarks>
         /// Additional settings for each query type are specified in the 'strSettings' parameter as a set
