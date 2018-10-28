@@ -78,6 +78,7 @@
     </Compile>
     <Compile Include="Geometry.cs" />
     <Compile Include="GymCollection.cs" />
+    <Compile Include="Gyms\DataGeneralGym.cs" />
     <Compile Include="Gyms\AtariGym.cs" />
     <Compile Include="Gyms\CartPoleGym.cs" />
     <Compile Include="IMyCaffeGymUiService.cs" />
@@ -128,6 +129,10 @@
     <ProjectReference Include="..\MyCaffe.basecode\MyCaffe.basecode.csproj">
       <Project>{D168418C-CDCC-4F5B-BF55-292A38CC2429}</Project>
       <Name>MyCaffe.basecode</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.db.stream\MyCaffe.db.stream.csproj">
+      <Project>{3ca0b2f3-0efe-4324-b1d2-fe4a15ac72e8}</Project>
+      <Name>MyCaffe.db.stream</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
