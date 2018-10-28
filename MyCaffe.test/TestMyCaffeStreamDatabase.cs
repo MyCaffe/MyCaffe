@@ -34,7 +34,9 @@ namespace MyCaffe.test
             strSchema += "Connection0_CustomQueryParam=" + strParam + ";";
 
             ((MyCaffeStreamDatabase)db).AddDirectQuery(new CustomQuery1());
-            db.Initialize(5, DateTime.Today, 1000 * 60, 1, 10, strSchema);
+
+            string strSettings = "QueryCount=5;Start=" + DateTime.Today.ToShortDateString() + ";TimeSpanInMs=60000;SegmentSize=1;MaxCount=10;";            
+            db.Initialize(QUERY_TYPE.SYNCHRONIZED, strSchema + strSettings);
         }
 
         [TestMethod]
@@ -52,8 +54,10 @@ namespace MyCaffe.test
             strSchema += "Connection0_CustomQueryParam=" + strParam + ";";
 
             ((MyCaffeStreamDatabase)db).AddDirectQuery(new CustomQuery1());
+
             DateTime dt = DateTime.Today;
-            db.Initialize(5, dt, 1000 * 60, 1, 10, strSchema);
+            string strSettings = "QueryCount=5;Start=" + DateTime.Today.ToShortDateString() + ";TimeSpanInMs=60000;SegmentSize=1;MaxCount=10;";
+            db.Initialize(QUERY_TYPE.SYNCHRONIZED, strSchema + strSettings);
 
             int[] rgSize = db.QuerySize();
             log.CHECK(rgSize != null, "The Query size should not be null.");
@@ -112,7 +116,8 @@ namespace MyCaffe.test
             ((MyCaffeStreamDatabase)db).AddDirectQuery(new CustomQuery1());
             ((MyCaffeStreamDatabase)db).AddDirectQuery(new CustomQuery2());
             DateTime dt = DateTime.Today;
-            db.Initialize(5, dt, 1000 * 60, 1, 10, strSchema);
+            string strSettings = "QueryCount=5;Start=" + dt.ToShortDateString() + ";TimeSpanInMs=60000;SegmentSize=1;MaxCount=10;";
+            db.Initialize(QUERY_TYPE.SYNCHRONIZED, strSchema + strSettings);
 
             int[] rgSize = db.QuerySize();
             log.CHECK(rgSize != null, "The Query size should not be null.");
@@ -176,7 +181,8 @@ namespace MyCaffe.test
             ((MyCaffeStreamDatabase)db).AddDirectQuery(new CustomQuery1());
             ((MyCaffeStreamDatabase)db).AddDirectQuery(new CustomQuery2());
             DateTime dt = DateTime.Today;
-            db.Initialize(5, dt, 1000 * 60, 1, 10, strSchema);
+            string strSettings = "QueryCount=5;Start=" + dt.ToShortDateString() + ";TimeSpanInMs=60000;SegmentSize=1;MaxCount=10;";
+            db.Initialize(QUERY_TYPE.SYNCHRONIZED, strSchema + strSettings);
 
             int[] rgSize = db.QuerySize();
             log.CHECK(rgSize != null, "The Query size should not be null.");
@@ -250,7 +256,8 @@ namespace MyCaffe.test
             ((MyCaffeStreamDatabase)db).AddDirectQuery(new CustomQuery1());
             ((MyCaffeStreamDatabase)db).AddDirectQuery(new CustomQuery2());
             DateTime dt = DateTime.Today;
-            db.Initialize(5, dt, 1000 * 60, 1, 10, strSchema);
+            string strSettings = "QueryCount=5;Start=" + dt.ToShortDateString() + ";TimeSpanInMs=60000;SegmentSize=1;MaxCount=10;";
+            db.Initialize(QUERY_TYPE.SYNCHRONIZED, strSchema + strSettings);
 
             int[] rgSize = db.QuerySize();
             log.CHECK(rgSize != null, "The Query size should not be null.");
@@ -322,7 +329,8 @@ namespace MyCaffe.test
             ((MyCaffeStreamDatabase)db).AddDirectQuery(new CustomQuery1());
             ((MyCaffeStreamDatabase)db).AddDirectQuery(new CustomQuery2());
             DateTime dt = DateTime.Today;
-            db.Initialize(5, dt, 1000 * 60, 1, 10, strSchema);
+            string strSettings = "QueryCount=5;Start=" + dt.ToShortDateString() + ";TimeSpanInMs=60000;SegmentSize=1;MaxCount=10;";
+            db.Initialize(QUERY_TYPE.SYNCHRONIZED, strSchema + strSettings);
 
             int[] rgSize = db.QuerySize();
             log.CHECK(rgSize != null, "The Query size should not be null.");
@@ -399,7 +407,8 @@ namespace MyCaffe.test
             ((MyCaffeStreamDatabase)db).AddDirectQuery(new CustomQuery1());
             ((MyCaffeStreamDatabase)db).AddDirectQuery(new CustomQuery2());
             DateTime dt = DateTime.Today;
-            db.Initialize(5, dt, 1000 * 60, 1, 10, strSchema);
+            string strSettings = "QueryCount=5;Start=" + dt.ToShortDateString() + ";TimeSpanInMs=60000;SegmentSize=1;MaxCount=10;";
+            db.Initialize(QUERY_TYPE.SYNCHRONIZED, strSchema + strSettings);
 
             int[] rgSize = db.QuerySize();
             log.CHECK(rgSize != null, "The Query size should not be null.");
@@ -477,7 +486,8 @@ namespace MyCaffe.test
             ((MyCaffeStreamDatabase)db).AddDirectQuery(new CustomQuery2());
             ((MyCaffeStreamDatabase)db).AddDirectQuery(new CustomQuery3());
             DateTime dt = DateTime.Today;
-            db.Initialize(5, dt, 1000 * 60, 1, 1000000, strSchema);
+            string strSettings = "QueryCount=5;Start=" + dt.ToShortDateString() + ";TimeSpanInMs=60000;SegmentSize=1;MaxCount=10;";
+            db.Initialize(QUERY_TYPE.SYNCHRONIZED, strSchema + strSettings);
 
             int[] rgSize = db.QuerySize();
             log.CHECK(rgSize != null, "The Query size should not be null.");
@@ -493,7 +503,7 @@ namespace MyCaffe.test
 
             List<SimpleDatum> rgSd = new List<SimpleDatum>();
             Stopwatch sw = new Stopwatch();
-            int nIter = 100000;
+            int nIter = 10000;
 
             sw.Start();
 
@@ -581,6 +591,62 @@ namespace MyCaffe.test
                 log.CHECK_EQ(i, rgdf[i], "The data item at index #" + i.ToString() + " is incorrect.");
             }
         }
+
+        protected string getTestPath(string strItem, bool bPathOnly = false, bool bCreateIfMissing = false, bool bUserData = false)
+        {
+            return TestBase.GetTestPath(strItem, bPathOnly, bCreateIfMissing, bUserData);
+        }
+
+        [TestMethod]
+        public void TestQueryGeneralText()
+        {
+            Log log = new Log("Test streaming database with general data");
+            log.EnableTrace = true;
+
+            IXStreamDatabase db = new MyCaffeStreamDatabase(log);
+            string strSchema = "ConnectionCount=1;";
+
+            string strDataPath = getTestPath("\\MyCaffe\\test_data\\data\\char-rnn", true);
+            string strParam = "FilePath=" + strDataPath + ";";
+
+            strParam = ParamPacker.Pack(strParam);
+            strSchema += "Connection0_CustomQueryName=StdTextFileQuery;";
+            strSchema += "Connection0_CustomQueryParam=" + strParam + ";";
+
+            DateTime dt = DateTime.Today;
+            string strSettings = "";
+            db.Initialize(QUERY_TYPE.GENERAL, strSchema + strSettings);
+
+            int[] rgSize = db.QuerySize();
+            log.CHECK(rgSize != null, "The Query size should not be null.");
+            log.CHECK_EQ(rgSize.Length, 3, "The query size should have 3 items.");
+            log.CHECK_EQ(rgSize[0], 1, "The query size item 0 should be 1.");
+            log.CHECK_EQ(rgSize[1], 1, "The query size item 1 should be 1 for the number of files.");
+            log.CHECK_EQ(rgSize[2], 4572882, "The query size item 2 should be 10000 for the maximum number of characters in each of the the files.");
+
+            int nH = rgSize[1];
+            int nW = rgSize[2];
+            int nCount = nH * nW;
+
+            Stopwatch sw = new Stopwatch();
+
+            sw.Start();
+
+            SimpleDatum sd = db.Query(int.MaxValue);
+            SimpleDatum sdEnd = db.Query(int.MaxValue);
+
+            sw.Stop();
+
+            double dfMs = sw.Elapsed.TotalMilliseconds;
+
+            log.WriteLine("Total Time = " + dfMs.ToString() + " ms.");
+
+            log.CHECK(sdEnd == null, "The last query should be null to show no more data exists.");
+            log.CHECK_EQ(sd.ItemCount, 4572882, "There should be more than one item in the data.");
+            log.CHECK(!sd.IsRealData, "The data should be byte data, not real.");
+
+            db.Shutdown();
+        }
     }
 
     class CustomQuery1 : IXCustomQuery
@@ -602,6 +668,11 @@ namespace MyCaffe.test
                 m_strField = ps.GetProperty("Field");
                 m_nEndIdx = ps.GetPropertyAsInt("EndIdx", int.MaxValue);
             }
+        }
+
+        public CUSTOM_QUERY_TYPE QueryType
+        {
+            get { return CUSTOM_QUERY_TYPE.TIME; }
         }
 
         public string Name
@@ -645,6 +716,16 @@ namespace MyCaffe.test
             return rg;
         }
 
+        public byte[] QueryBytes()
+        {
+            throw new NotImplementedException();
+        }
+
+        public int GetQuerySize()
+        {
+            return 1;
+        }
+
         public void Reset()
         {
             m_nIdx = 0;
@@ -670,6 +751,11 @@ namespace MyCaffe.test
                 m_strField = ps.GetProperty("Field");
                 m_nEndIdx = ps.GetPropertyAsInt("EndIdx", int.MaxValue);
             }
+        }
+
+        public CUSTOM_QUERY_TYPE QueryType
+        {
+            get { return CUSTOM_QUERY_TYPE.TIME; }
         }
 
         public string Name
@@ -713,6 +799,16 @@ namespace MyCaffe.test
             return rg;
         }
 
+        public byte[] QueryBytes()
+        {
+            throw new NotImplementedException();
+        }
+
+        public int GetQuerySize()
+        {
+            return 1;
+        }
+
         public void Reset()
         {
             m_nIdx = 0;
@@ -726,6 +822,11 @@ namespace MyCaffe.test
         string m_strField;
         int m_nIdx = 0;
         int m_nEndIdx = int.MaxValue;
+
+        public CUSTOM_QUERY_TYPE QueryType
+        {
+            get { return CUSTOM_QUERY_TYPE.TIME; }
+        }
 
         public CustomQuery3(string strParam = null)
         {
@@ -781,6 +882,16 @@ namespace MyCaffe.test
             }
 
             return rg;
+        }
+
+        public byte[] QueryBytes()
+        {
+            throw new NotImplementedException();
+        }
+
+        public int GetQuerySize()
+        {
+            return 1;
         }
 
         public void Reset()
