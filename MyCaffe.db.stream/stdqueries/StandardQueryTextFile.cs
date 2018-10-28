@@ -8,12 +8,19 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.db.stream.stdqueries
 {
+    /// <summary>
+    /// The StandardQueryTextFile provides queries that read text (*.txt) files residing in a given directory.
+    /// </summary>
     class StandardQueryTextFile : IXCustomQuery
     {
         string m_strPath;
         string[] m_rgstrFiles;
         int m_nFileIdx = 0;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="strParam">Specifies the parameters which shold contains the 'FilePath'=path key=value pair.</param>
         public StandardQueryTextFile(string strParam = null)
         {
             if (strParam != null)
@@ -24,32 +31,52 @@ namespace MyCaffe.db.stream.stdqueries
             }
         }
 
+        /// <summary>
+        /// Returns the QUERY_TYPE of BYTE.
+        /// </summary>
         public CUSTOM_QUERY_TYPE QueryType
         {
             get { return CUSTOM_QUERY_TYPE.BYTE; }
         }
 
+        /// <summary>
+        /// Returns the custom query name 'StdTextFileQuery'.
+        /// </summary>
         public string Name
         {
             get { return "StdTextFileQuery"; }
         }
 
+        /// <summary>
+        /// Returns the field count of 1.
+        /// </summary>
         public int FieldCount
         {
             get { return 1; }  // data
         }
 
+        /// <summary>
+        /// Clone the custom query returning a new copy.
+        /// </summary>
+        /// <param name="strParam">Optionally, initialize the new copy with these parameters.</param>
+        /// <returns>The new copy is returned.</returns>
         public IXCustomQuery Clone(string strParam)
         {
             return new StandardQueryTextFile(strParam);
         }
 
+        /// <summary>
+        /// Close the custom query.
+        /// </summary>
         public void Close()
         {
             m_rgstrFiles = null;
             m_nFileIdx = 0;
         }
 
+        /// <summary>
+        /// Open the custom query.  The query must be opened before calling QueryBytes.
+        /// </summary>
         public void Open()
         {
             string[] rgstrFiles = Directory.GetFiles(m_strPath);
@@ -71,11 +98,22 @@ namespace MyCaffe.db.stream.stdqueries
                 throw new Exception("The CustomTextQuery could not find any text (*.txt) files to load.");
         }
 
+        /// <summary>
+        /// The QueryByTime method is not implemented.
+        /// </summary>
+        /// <param name="dt">not used.</param>
+        /// <param name="ts">non used.</param>
+        /// <param name="nCount">not used.</param>
+        /// <returns>not used.</returns>
         public double[] QueryByTime(DateTime dt, TimeSpan ts, int nCount)
         {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// The QueryBytes method returns the bytes of the next file in the directory.
+        /// </summary>
+        /// <returns>All bytes of the file are returned.</returns>
         public byte[] QueryBytes()
         {
             if (m_nFileIdx == m_rgstrFiles.Length)
@@ -88,6 +126,10 @@ namespace MyCaffe.db.stream.stdqueries
             }
         }
 
+        /// <summary>
+        /// The GetQuerySize method returns the size of the query as {1,1,filesize}.
+        /// </summary>
+        /// <returns>The query size is returned.</returns>
         public int GetQuerySize()
         {
             if (m_nFileIdx == m_rgstrFiles.Length)
@@ -97,6 +139,9 @@ namespace MyCaffe.db.stream.stdqueries
             return (int)fi.Length;
         }
 
+        /// <summary>
+        /// Reset the file index to the first file.
+        /// </summary>
         public void Reset()
         {
             m_nFileIdx = 0;
