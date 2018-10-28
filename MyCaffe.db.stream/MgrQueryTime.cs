@@ -12,10 +12,10 @@ using System.Threading.Tasks;
 namespace MyCaffe.db.stream
 {
     /// <summary>
-    /// The MgrQuery class manages the collection of data queries, and the internal data queue that contains all synchronized data items from
+    /// The MgrQueryTime class manages the collection of data queries, and the internal data queue that contains all synchronized data items from
     /// the data queries, all fused together.
     /// </summary>
-    public class MgrQuery
+    public class MgrQueryTime : IXQuery
     {
         CustomQueryCollection m_colCustomQuery = new CustomQueryCollection();
         DataQueryCollection m_colDataQuery = new DataQueryCollection();
@@ -30,14 +30,7 @@ namespace MyCaffe.db.stream
         int m_nFieldCount = 0;
 
         /// <summary>
-        /// The constructro.
-        /// </summary>
-        public MgrQuery()
-        {
-        }
-
-        /// <summary>
-        /// The Initialize method initializes the streaming database component, preparing it for data queries.
+        /// The constructor.
         /// </summary>
         /// <param name="nQueryCount">Specifies the size of each query.</param>
         /// <param name="dtStart">Specifies the state date used for data collection.</param>
@@ -45,6 +38,7 @@ namespace MyCaffe.db.stream
         /// <param name="nSegmentSize">Specifies the amount of data to query on the back-end from each custom query.</param>
         /// <param name="nMaxCount">Specifies the maximum number of items to allow in memory.</param>
         /// <param name="strSchema">Specifies the database schema.</param>
+        /// <param name="rgCustomQueries">Optionally, specifies any custom queries to add directly.</param>
         /// <remarks>
         /// The database schema defines the number of custom queries to use along with their names.  A simple key=value; list
         /// defines the streaming database schema using the following format:
@@ -58,7 +52,7 @@ namespace MyCaffe.db.stream
         /// Each param_string specifies the parameters of the custom query and may include the database connection string, database
         /// table, and database fields to query.
         /// </remarks>
-        public void Initialize(int nQueryCount, DateTime dtStart, int nTimeSpanInMs, int nSegmentSize, int nMaxCount, string strSchema)
+        public MgrQueryTime(int nQueryCount, DateTime dtStart, int nTimeSpanInMs, int nSegmentSize, int nMaxCount, string strSchema, List<IXCustomQuery> rgCustomQueries)
         {
             m_colCustomQuery.Load();
             m_colData = new DataItemCollection(nQueryCount);
@@ -66,6 +60,11 @@ namespace MyCaffe.db.stream
             m_nSegmentSize = nSegmentSize;
 
             m_schema = new PropertySet(strSchema);
+
+            foreach (IXCustomQuery icustomquery in rgCustomQueries)
+            {
+                m_colCustomQuery.Add(icustomquery);
+            }
 
             int nConnections = m_schema.GetPropertyAsInt("ConnectionCount");
             for (int i = 0; i < nConnections; i++)
@@ -77,6 +76,9 @@ namespace MyCaffe.db.stream
                 IXCustomQuery iqry = m_colCustomQuery.Find(strCustomQuery);
                 if (iqry == null)
                     throw new Exception("Could not find the custom query '" + strCustomQuery + "'!");
+
+                if (iqry.QueryType != CUSTOM_QUERY_TYPE.TIME)
+                    throw new Exception("The custom query '" + iqry.Name + "' does not support the 'CUSTOM_QUERY_TYPE.TIME'!");
 
                 DataQuery dq = new DataQuery(iqry.Clone(strCustomQueryParam), dtStart, TimeSpan.FromMilliseconds(nTimeSpanInMs), nSegmentSize, nMaxCount);
                 m_colDataQuery.Add(dq);

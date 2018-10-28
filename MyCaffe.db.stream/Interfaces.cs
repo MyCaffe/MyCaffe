@@ -20,6 +20,17 @@ namespace MyCaffe.db.stream
     }
 
     /// <summary>
+    /// Defines the query type to use.
+    /// </summary>
+    [Serializable]
+    [DataContract]
+    public enum QUERY_TYPE
+    {
+        GENERAL,
+        SYNCHRONIZED
+    }
+
+    /// <summary>
     /// The IXStreamDatabase interface is the main interface to the MyCaffe Streaing Database.
     /// </summary>
     [ServiceContract(CallbackContract = typeof(IXStreamDatabaseEvent), SessionMode = SessionMode.Required)]
@@ -28,14 +39,25 @@ namespace MyCaffe.db.stream
         /// <summary>
         /// Initialize the streaming database by loading the initial queues.
         /// </summary>
-        /// <param name="nQueryCount">Specifies the number of items to include in each query.</param>
-        /// <param name="dtStart">Specifies the start date of the stream.</param>
-        /// <param name="nTimeSpanInMs">Specifies the time increment between data items in the stream in milliseconds.</param>
-        /// <param name="nSegmentSize">Specifies the segment size of data queried from the database.</param>
-        /// <param name="nMaxCount">Specifies the maximum number of items to load into memory for each custom query.</param>
+        /// <param name="qt">Specifies the query type to use (see remarks).</param>
         /// <param name="strSchema">Specifies the query schema to use.</param>
+        /// <remarks>
+        /// Additional settings for each query type are specified in the 'strSchema' parameter as a set
+        /// of key=value pairs for each of the settings.  The following are the query specific settings
+        /// that are expected for each QUERY_TYPE.
+        /// 
+        /// qt = TIME:
+        ///    'QueryCount' - Specifies the number of items to include in each query.
+        ///    'Start' - Specifies the start date of the stream.
+        ///    'TimeSpanInMs' - Specifies the time increment between data items in the stream in milliseconds.
+        ///    'SegmentSize' - Specifies the segment size of data queried from the database.
+        ///    'MaxCount' - Specifies the maximum number of items to load into memory for each custom query.
+        ///    
+        /// qt = GENERAL:
+        ///    none at this time.
+        /// </remarks>
         [OperationContract(IsOneWay = false)]
-        void Initialize(int nQueryCount, DateTime dtStart, int nTimeSpanInMs, int nSegmentSize, int nMaxCount, string strSchema);
+        void Initialize(QUERY_TYPE qt, string strSchema);
 
         /// <summary>
         /// Shutdown the database.
@@ -67,6 +89,34 @@ namespace MyCaffe.db.stream
     }
 
     /// <summary>
+    /// The IXQuery interface is implemented by each MgrQuery within the MyCaffeStreamDatabase.
+    /// </summary>
+    public interface IXQuery /** @private */
+    {
+        void AddDirectQuery(IXCustomQuery iqry);
+        void Reset(int nStartOffset);
+        void Shutdown();
+        List<int> GetQuerySize();
+        SimpleDatum Query(int nWait);
+    }
+
+    /// <summary>
+    /// Defines the custom query type to use.
+    /// </summary>
+    public enum CUSTOM_QUERY_TYPE
+    {
+        /// <summary>
+        /// Each custom query supporting the BYTE query, must implement the QueryByte function.
+        /// </summary>
+        BYTE,
+        /// <summary>
+        /// Each custom query supporting the TIME query, must implement the QueryByTime funtion.
+        /// </summary>
+        TIME
+    }
+
+
+    /// <summary>
     /// The custom query interface defines the functions implemented by each Custom Query object used
     /// to specifically query the tables of the underlying database.
     /// </summary>
@@ -81,6 +131,10 @@ namespace MyCaffe.db.stream
     /// </remarks>
     public interface IXCustomQuery
     {
+        /// <summary>
+        /// Returns the custom query type supported by the custom query.
+        /// </summary>
+        CUSTOM_QUERY_TYPE QueryType { get; }
         /// <summary>
         /// Returns the name of the Custom Query.
         /// </summary>
@@ -98,6 +152,11 @@ namespace MyCaffe.db.stream
         /// </summary>
         void Close();
         /// <summary>
+        /// Returns the query count for the current query.
+        /// </summary>
+        /// <returns></returns>
+        int GetQuerySize();
+        /// <summary>
         /// Query the fields specified (in the Open function) starting from the date-time specified.
         /// </summary>
         /// <remarks>Items are returned in column-major format (e.g. datetime, val1, val2, datetime, val1, val2...)</remarks>
@@ -106,6 +165,11 @@ namespace MyCaffe.db.stream
         /// <param name="nCount">Specifies the number of items to query.</param>
         /// <returns>A two dimensional array is returned containing the items for each field queried.</returns>
         double[] QueryByTime(DateTime dt, TimeSpan ts, int nCount);
+        /// <summary>
+        /// Query the raw bytes.
+        /// </summary>
+        /// <returns></returns>
+        byte[] QueryBytes();
         /// <summary>
         /// Return a new instance of the custom query.
         /// </summary>
