@@ -1043,6 +1043,8 @@ namespace MyCaffe.param
                     break;
 
                 case LayerType.INPUT:
+                    expected_top.Add("data");
+                    expected_top.Add("label");
                     m_rgLayerParameters[LayerType.INPUT] = new InputParameter();
                     break;
             }
@@ -1851,6 +1853,9 @@ namespace MyCaffe.param
                 case LayerType.INNERPRODUCT:
                     return "InnerProduct";
 
+                case LayerType.INPUT:
+                    return "Input";
+
                 case LayerType.KNN:
                     return "Knn";
 
@@ -1968,9 +1973,6 @@ namespace MyCaffe.param
                 case LayerType.LSTM:
                     return "Lstm";
 
-                case LayerType.INPUT:
-                    return "Input";
-
                 default:
                     return "Unknown";
             }
@@ -2048,6 +2050,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(hinge_loss_param, "hinge_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(infogain_loss_param, "infogain_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(inner_product_param, "inner_product_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(input_param, "input_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(knn_param, "knn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(labelmapping_param, "labelmapping_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(log_param, "log_param"));
@@ -2237,6 +2240,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("inner_product_param")) != null)
                 p.inner_product_param = InnerProductParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("input_param")) != null)
+                p.input_param = InputParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("knn_param")) != null)
                 p.knn_param = KnnParameter.FromProto(rpp);
@@ -2456,6 +2462,9 @@ namespace MyCaffe.param
                 case "inner_product":
                     return LayerType.INNERPRODUCT;
 
+                case "input":
+                    return LayerType.INPUT;
+
                 case "knn":
                     return LayerType.KNN;
 
@@ -2582,9 +2591,6 @@ namespace MyCaffe.param
 
                 case "lstm":
                     return LayerType.LSTM;
-
-                case "input":
-                    return LayerType.INPUT;
 
                 default:
                     throw new Exception("Unknown 'layertype' value: " + str);
