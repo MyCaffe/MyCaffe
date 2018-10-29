@@ -128,6 +128,10 @@ namespace MyCaffe.solvers
         /// When specifies, the OnTest event fires during a TestAll and overrides the call to Test.
         /// </summary>
         public event EventHandler<TestArgs> OnTest;
+        /// <summary>
+        /// The OnTestStart event fires at the start of each testing iteration.
+        /// </summary>
+        public event EventHandler OnTestStart;
 
         /// <summary>
         /// The Solver constructor.
@@ -1190,6 +1194,9 @@ namespace MyCaffe.solvers
                 // Check to see if stoppage of testing/training has been requested.
                 if (m_evtCancel.WaitOne(0))
                     break;
+
+                if (OnTestStart != null)
+                    OnTestStart(this, new EventArgs());
 
                 swTiming.Restart();
 
