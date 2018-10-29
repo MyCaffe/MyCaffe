@@ -25,7 +25,7 @@ namespace MyCaffe.gym
         Log m_log;
         CryptoRandom m_random;
         Dictionary<string, int> m_rgActions = new Dictionary<string, int>();
-        DATA_TYPE m_dt = DATA_TYPE.VALUES;
+        DATA_TYPE m_dt = DATA_TYPE.BLOB;
         DataState m_state = null;
         MyCaffeStreamDatabase m_db;
 
@@ -60,8 +60,7 @@ namespace MyCaffe.gym
             m_random = new CryptoRandom();
             m_db = new MyCaffeStreamDatabase(m_log);
             m_db.Initialize(QUERY_TYPE.GENERAL, properties.ToString());
-
-            Reset();
+            m_db.Reset();
         }
 
         /// <summary>
@@ -100,7 +99,7 @@ namespace MyCaffe.gym
         /// </summary>
         public DATA_TYPE[] SupportedDataType
         {
-            get { return new DATA_TYPE[] { DATA_TYPE.VALUES }; }
+            get { return new DATA_TYPE[] { DATA_TYPE.BLOB }; }
         }
 
         /// <summary>
@@ -170,9 +169,8 @@ namespace MyCaffe.gym
         /// <returns>A tuple containing state data, the reward, and the done state is returned.</returns>
         public Tuple<State, double, bool> Reset()
         {
-            m_state = new DataState();
             m_db.Reset();
-            return new Tuple<State, double, bool>(m_state.Clone(), 1, false);
+            return Step(-1);
         }
 
         /// <summary>
@@ -214,9 +212,9 @@ namespace MyCaffe.gym
                 dt = DATA_TYPE.BLOB;
             }
 
-            int nH = 80;
-            int nW = 80;
             int nC = 1;
+            int nH = 1;
+            int nW = 0;
 
             SourceDescriptor srcTrain = new SourceDescriptor(9999978, Name + ".training", nW, nH, nC, false, false);
             SourceDescriptor srcTest = new SourceDescriptor(9999979, Name + ".testing", nW, nH, nC, false, false);
