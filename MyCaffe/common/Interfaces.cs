@@ -288,8 +288,9 @@ namespace MyCaffe.common
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
         /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
         /// <param name="bUseImageDb">Optionally, specifies whehter or not to use the image database (default = true).</param>
+        /// <param name="bCreateRunNet">Optionally, specifies whether or not to create the Run net.</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true);
+        bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true);
         /// <summary>
         /// Load a project and optionally the MyCaffeImageDatabase.
         /// </summary>
@@ -305,8 +306,9 @@ namespace MyCaffe.common
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
         /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
         /// <param name="bUseImageDb">Optionally, specifies whehter or not to use the image database (default = true).</param>
+        /// <param name="bCreateRunNet">Optionally, specifies whether or not to create the Run net.</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true);
+        bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true);
         /// <summary>
         /// Unload the currently loaded project.
         /// </summary>

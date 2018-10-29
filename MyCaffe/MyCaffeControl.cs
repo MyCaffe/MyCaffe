@@ -701,8 +701,9 @@ namespace MyCaffe
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
         /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
         /// <param name="bUseImageDb">Optionally, specifies whehter or not to use the image database (default = true).</param>
+        /// <param name="bCreateRunNet">Optionally, specifies whether or not to create the Run net.</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true)
+        public bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true)
         {
             m_imgDb = imgdb;
             m_bImgDbOwner = false;
@@ -790,7 +791,10 @@ namespace MyCaffe
             if (phase == Phase.TEST && m_imgDb != null)
                 m_imgDb.UpdateLabelBoosts(p.ID, m_dataSet.TestingSource.ID);
 
-            if (p == null)
+            if (phase == Phase.RUN && !bCreateRunNet)
+                throw new Exception("You cannot opt out of creating the Run net when using the RUN phase.");
+
+            if (p == null || !bCreateRunNet)
                 return true;
 
             TransformationParameter tp = null;
@@ -834,8 +838,9 @@ namespace MyCaffe
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
         /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
         /// <param name="bUseImageDb">Optionally, specifies whehter or not to use the image database (default = true).</param>
+        /// <param name="bCreateRunNet">Optionally, specifies whether or not to create the Run net (default = true).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true)
+        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true)
         {
             m_imgDb = imgdb;
             m_bImgDbOwner = false;
@@ -905,6 +910,14 @@ namespace MyCaffe
                 m_solver.OnTrainingIteration += new EventHandler<TrainingIterationArgs<T>>(m_solver_OnTrainingIteration);
                 m_solver.OnTestingIteration += new EventHandler<TestingIterationArgs<T>>(m_solver_OnTestingIteration);
                 m_log.WriteLine("Solver created.");
+            }
+
+            if (!bCreateRunNet)
+            {
+                if (phase == Phase.RUN)
+                    throw new Exception("You cannot opt out of creating the Run net when using the RUN phase.");
+
+                return true;
             }
 
             TransformationParameter tp = null;
@@ -1336,6 +1349,9 @@ namespace MyCaffe
         {
             Blob<T> blob = null;
 
+            if (m_net == null)
+                throw new Exception("The Run net has not been created!");
+
             if (m_dataTransformer == null)
             {
                 blob = new Blob<T>(m_cuda, m_log, d, true);
@@ -1389,6 +1405,9 @@ namespace MyCaffe
         protected List<ResultCollection> Run(List<SimpleDatum> rgSd, bool bSort = true, bool bUseSolverNet = false)
         {
             m_log.CHECK(m_dataTransformer != null, "The data transformer is not initialized!");
+
+            if (m_net == null)
+                throw new Exception("The Run net has not been created!");
 
             List<ResultCollection> rgFinalResults = new List<ResultCollection>();
             int nBatchSize = rgSd.Count;
@@ -1457,6 +1476,9 @@ namespace MyCaffe
         /// <returns>The results of the run are returned.</returns>
         public ResultCollection Run(Bitmap img, bool bSort = true)
         {
+            if (m_net == null)
+                throw new Exception("The Run net has not been created!");
+
             int nChannels = m_inputShape.dim[1];
             return Run(ImageData.GetImageData(img, nChannels, false, -1), bSort, false);
         }
