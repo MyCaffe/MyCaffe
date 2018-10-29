@@ -306,11 +306,50 @@ namespace MyCaffe.basecode
             List<RawProto> rgParent = new List<RawProto>() { new RawProto("root", "") };
             RawProto child = new RawProto("", "");
 
+            str = Utility.Replace(str, '\t', ' ');
+            str = strip_comments(str);
+
             List<KeyValuePair<string, int>> rgstrTokens = tokenize(str);
 
             parse(rgParent, child, rgstrTokens, 0, STATE.NAME);
 
             return rgParent[0];
+        }
+
+        private static string strip_comments(string str)
+        {
+            List<string> rgstr = new List<string>();
+            int nPos = str.IndexOf('\n');
+
+            while (nPos >= 0)
+            {
+                string strLine = str.Substring(0, nPos);
+                strLine = strLine.Trim('\n', '\r');
+
+                int nPosComment = strLine.IndexOf('#');
+                if (nPosComment >= 0)
+                    strLine = strLine.Substring(0, nPosComment);
+
+                if (strLine.Length > 0)
+                    rgstr.Add(strLine);
+
+                str = str.Substring(nPos + 1);
+                nPos = str.IndexOf('\n');
+            }
+
+            str = str.Trim('\n', '\r');
+            if (str.Length > 0)
+                rgstr.Add(str);
+
+            str = "";
+
+            foreach (string strLine in rgstr)
+            {
+                str += strLine;
+                str += " \r\n";
+            }
+
+            return str;
         }
 
         private static List<KeyValuePair<string, int>> tokenize(string str)
