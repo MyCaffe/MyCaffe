@@ -805,7 +805,18 @@ namespace MyCaffe
             if (tp != null)
             {
                 SimpleDatum sdMean = (m_imgDb == null) ? null : m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID);
-                m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, sdMean);
+                int nC = m_project.Dataset.TrainingSource.ImageChannels;
+                int nH = m_project.Dataset.TrainingSource.ImageHeight;
+                int nW = m_project.Dataset.TrainingSource.ImageWidth;
+
+                if (sdMean != null)
+                {
+                    m_log.CHECK_EQ(nC, sdMean.Channels, "The mean channel count does not match the datasets channel count.");
+                    m_log.CHECK_EQ(nH, sdMean.Height, "The mean height count does not match the datasets height count.");
+                    m_log.CHECK_EQ(nW, sdMean.Width, "The mean width count does not match the datasets width count.");
+                }
+
+                m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, nC, nH, nW, sdMean);
             }
 
             if (phase == Phase.RUN)
@@ -926,7 +937,21 @@ namespace MyCaffe
             m_dataTransformer = null;
 
             if (tp != null)
-                m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID));
+            {
+                SimpleDatum sdMean = (m_imgDb == null) ? null : m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID);
+                int nC = m_project.Dataset.TrainingSource.ImageChannels;
+                int nH = m_project.Dataset.TrainingSource.ImageHeight;
+                int nW = m_project.Dataset.TrainingSource.ImageWidth;
+
+                if (sdMean != null)
+                {
+                    m_log.CHECK_EQ(nC, sdMean.Channels, "The mean channel count does not match the datasets channel count.");
+                    m_log.CHECK_EQ(nH, sdMean.Height, "The mean height count does not match the datasets height count.");
+                    m_log.CHECK_EQ(nW, sdMean.Width, "The mean width count does not match the datasets width count.");
+                }
+
+                m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, nC, nH, nW, sdMean);
+            }
 
             if (phase == Phase.RUN)
             {
@@ -982,7 +1007,7 @@ namespace MyCaffe
                 if (tp.use_imagedb_mean && sdMean == null)
                     throw new Exception("The transformer expects an image mean, yet the sdMean parameter is null!");
 
-                m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, sdMean);
+                m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, sdMean.Channels, sdMean.Height, sdMean.Width, sdMean);
             }
             else
             {
