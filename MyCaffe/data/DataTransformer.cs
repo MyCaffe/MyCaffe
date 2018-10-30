@@ -39,15 +39,18 @@ namespace MyCaffe.data
         /// <param name="log">Specifies the Log used for output.</param>
         /// <param name="p">Specifies the TransformationParameter used to create the DataTransformer.</param>
         /// <param name="phase">Specifies the Phase under which the DataTransformer is run.</param>
+        /// <param name="nC">Specifies the channels.</param>
+        /// <param name="nH">Specifies the height.</param>
+        /// <param name="nW">Specifies the width.</param>
         /// <param name="imgMean">Optionally, specifies the image mean to use.</param>
-        public DataTransformer(Log log, TransformationParameter p, Phase phase, SimpleDatum imgMean = null)
+        public DataTransformer(Log log, TransformationParameter p, Phase phase, int nC, int nH, int nW, SimpleDatum imgMean = null)
         {
             m_log = log;
 
             if (p.mean_file != null)
                 m_protoMean = loadProtoMean(p.mean_file);
 
-            int nDataSize = 56 * 56 * 3;
+            int nDataSize = nC * nH * nW;
 
             if (imgMean != null)
                 nDataSize = imgMean.Channels * imgMean.Height * imgMean.Width;
