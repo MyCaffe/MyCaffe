@@ -1102,56 +1102,120 @@ namespace MyCaffe.basecode
             int nInputInsertIdx = -1;
             int nInputShapeInsertIdx = -1;
 
+            protoTransform = null;
+
             nNameIdx++;
             if (nNameIdx < 0)
                 nNameIdx = 0;
 
+            List<Tuple<string, int, int, int, int>> rgInputs = new List<Tuple<string, int, int, int, int>>();
+            rgInputs.Add(new Tuple<string, int, int, int, int>(strName, nNum, nChannels, nHeight, nWidth));
+
+            RawProtoCollection rgLayers = proto.FindChildren("layer");
+            foreach (RawProto layer in rgLayers)
+            {
+                RawProto type = layer.FindChild("type");
+                if (type != null)
+                {
+                    string strType = type.Value.ToLower();
+                    if (strType == "input")
+                    {
+                        rgInputs.Clear();
+
+                        RawProtoCollection rgTop = layer.FindChildren("top");
+                        RawProto input_param = layer.FindChild("input_param");
+                        if (input_param != null)
+                        {
+                            RawProtoCollection rgShape = input_param.FindChildren("shape");
+
+                            if (rgTop.Count == rgShape.Count)
+                            {
+                                for (int i = 0; i < rgTop.Count; i++)
+                                {
+                                    if (rgTop[i].Value.ToLower() != "label")
+                                    {
+                                        List<int> rgVal = new List<int>();
+                                        RawProtoCollection rgDim = rgShape[i].FindChildren("dim");
+                                        foreach (RawProto dim in rgDim)
+                                        {
+                                            rgVal.Add(int.Parse(dim.Value));
+                                        }
+
+                                        nNum = (rgVal.Count > 0) ? rgVal[0] : 1;
+                                        nChannels = (rgVal.Count > 1) ? rgVal[1] : 1;
+                                        nHeight = (rgVal.Count > 2) ? rgVal[2] : 1;
+                                        nWidth = (rgVal.Count > 3) ? rgVal[3] : 1;
+
+                                        rgInputs.Add(new Tuple<string, int, int, int, int>(rgTop[i].Value, nNum, nChannels, nHeight, nWidth));
+                                    }
+                                }
+                            }
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            RawProtoCollection rgInput = new RawProtoCollection();
+            RawProtoCollection rgInputShape = new RawProtoCollection();
+
             RawProto input = proto.FindChild("input");
             if (input != null)
             {
-                input.Value = strName;
+                input.Value = rgInputs[0].Item1;
             }
             else
             {
-                input = new RawProto("input", strName, null, RawProto.TYPE.STRING);
-                nInputInsertIdx = nNameIdx;
-                nNameIdx++;
+                for (int i = 0; i < rgInputs.Count; i++)
+                {
+                    input = new RawProto("input", rgInputs[i].Item1, null, RawProto.TYPE.STRING);
+                    rgInput.Add(input);
+                    nInputInsertIdx = nNameIdx;
+                    nNameIdx++;
+                }
             }
-
-            protoTransform = null;
-
+            
             RawProto input_shape = proto.FindChild("input_shape");
             if (input_shape != null)
             {
                 RawProtoCollection colDim = input_shape.FindChildren("dim");
-
+            
                 if (colDim.Count > 0)
-                    colDim[0].Value = nNum.ToString();
-
+                    colDim[0].Value = rgInputs[0].Item2.ToString();
+            
                 if (colDim.Count > 1)
-                    colDim[1].Value = nChannels.ToString();
-
+                    colDim[1].Value = rgInputs[0].Item3.ToString();
+            
                 if (colDim.Count > 2)
-                    colDim[2].Value = nHeight.ToString();
-
+                    colDim[2].Value = rgInputs[0].Item4.ToString();
+            
                 if (colDim.Count > 3)
-                    colDim[3].Value = nWidth.ToString();
+                    colDim[3].Value = rgInputs[0].Item5.ToString();
             }
             else
             {
-                input_shape = new RawProto("input_shape", "");
-                input_shape.Children.Add(new RawProto("dim", nNum.ToString()));
-                input_shape.Children.Add(new RawProto("dim", nChannels.ToString()));
-                input_shape.Children.Add(new RawProto("dim", nHeight.ToString()));
-                input_shape.Children.Add(new RawProto("dim", nWidth.ToString()));
-                nInputShapeInsertIdx = nNameIdx;
+                for (int i = 0; i < rgInputs.Count; i++)
+                {
+                    input_shape = new RawProto("input_shape", "");
+                    input_shape.Children.Add(new RawProto("dim", nNum.ToString()));
+                    input_shape.Children.Add(new RawProto("dim", nChannels.ToString()));
+
+                    if (nHeight > 1 || nWidth > 1)
+                    {
+                        input_shape.Children.Add(new RawProto("dim", nHeight.ToString()));
+                        input_shape.Children.Add(new RawProto("dim", nWidth.ToString()));
+                    }
+
+                    rgInputShape.Add(input_shape);
+                    nInputShapeInsertIdx = nNameIdx;
+                }
             }
 
             RawProto net_name = proto.FindChild("name");
             if (net_name != null)
                 net_name.Value += " - Live";
 
-            RawProtoCollection rgLayers = proto.FindChildren("layer");
             RawProtoCollection rgRemove = new RawProtoCollection();
 
             List<RawProto> rgProtoSoftMaxLoss = new List<basecode.RawProto>();
@@ -1175,10 +1239,18 @@ namespace MyCaffe.basecode
                     if (rgExclude != null)
                         rgPhaseExclude = getPhases(rgExclude);
 
-                    if (strType == "data" || strType == "batchdata")
+                    if (rgPhaseExclude.Contains(Phase.RUN))
+                    {
+                        rgRemove.Add(layer);
+                    }
+                    else if (strType == "data" || strType == "batchdata")
                     {
                         if (rgPhaseInclude.Contains(Phase.TEST))
                             protoTransform = layer.FindChild("transform_param");
+                    }
+                    else if (strType == "input")
+                    {
+                        rgRemove.Add(layer);
                     }
                     else if (strType == "softmaxwithloss")
                     {
@@ -1271,17 +1343,18 @@ namespace MyCaffe.basecode
                 proto.RemoveChild(layer);
             }
 
-            int nIdx = (nInputInsertIdx < 0) ? 0 : nInputInsertIdx;
-            RawProto protoBtm = proto.Children[nIdx].FindChild("bottom");
+            if (input != null && input_shape != null)
+            {
+                for (int i = rgInputShape.Count - 1; i >= 0; i--)
+                {
+                    proto.Children.Insert(0, rgInputShape[i]);
+                }
 
-            if (protoBtm != null)
-                input.Value = protoBtm.Value;
-
-            if (nInputInsertIdx >= 0)   
-                proto.Children.Insert(nInputInsertIdx, input);
-
-            if (nInputShapeInsertIdx >= 0)
-                proto.Children.Insert(nInputShapeInsertIdx, input_shape);
+                for (int i = rgInput.Count - 1; i >= 0; i--)
+                {
+                    proto.Children.Insert(0, rgInput[i]);
+                }
+            }
 
             return proto;
         }
