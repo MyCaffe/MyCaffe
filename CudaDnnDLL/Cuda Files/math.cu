@@ -4042,7 +4042,7 @@ __global__ void embed_fwd_kernel(int nCount, const T* bottom_data, const T* weig
 #ifdef DEBUG
 		assert(index >= 0);
 		assert(index < K);
-		assert(static_cast<T>(index) == bottom_data[n]);
+		assert(static_cast<T>(index) == bottom_data[n]);  // non integer input.
 #endif
 		const int weight_index = index * N + d;
 		top_data[top_index] = weight[weight_index];
