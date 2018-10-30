@@ -96,7 +96,7 @@ namespace MyCaffe.layers
             else
                 m_bOutputLabels = true;
 
-            m_transformer = new DataTransformer<T>(m_log, m_param.transform_param, m_param.phase, m_imgMean);
+            m_transformer = new DataTransformer<T>(m_log, m_param.transform_param, m_param.phase, m_imgMean.Channels, m_imgMean.Height, m_imgMean.Width, m_imgMean);
             m_transformer.InitRand();
 
             // The subclasses should setup the size of bottom and top.
