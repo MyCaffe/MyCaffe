@@ -144,6 +144,7 @@ namespace MyCaffe.layers
                 // fill the weights
                 Filler<T> weight_filler = Filler<T>.Create(m_cuda, m_log, m_param.embed_param.weight_filler);
                 weight_filler.Fill(m_colBlobs[0]);
+                m_colBlobs[0].Name = "weights";
 
                 // If necessary, initialize and fill the bias term
                 if (m_bBiasTerm)
@@ -153,6 +154,7 @@ namespace MyCaffe.layers
 
                     Filler<T> bias_filler = Filler<T>.Create(m_cuda, m_log, m_param.embed_param.bias_filler);
                     bias_filler.Fill(m_colBlobs[1]);
+                    m_colBlobs[1].Name = "bias";
                 }
             }
 
