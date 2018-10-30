@@ -504,7 +504,7 @@ namespace MyCaffe.layers
         {
             // Hacky fix for test time... reshare all the shared blobs.
             // TODO: somehow make this work non-hackily.
-            if (m_phase == Phase.TEST)
+            if (m_phase == Phase.TEST || m_phase == Phase.RUN)
                 m_unrolledNet.ShareWeights();
 
             m_log.CHECK_EQ(m_colRecurInputBlobs.Count, m_colRecurOutputBlobs.Count, "The recurrent input and output blobs must have the same count.");
