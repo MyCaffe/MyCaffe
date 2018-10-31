@@ -1143,6 +1143,7 @@ namespace MyCaffe.layers
     {
         BlobCollection<T> m_colSharedBlobs = null;
         BlobCollection<T> m_colLayerBlobs = new BlobCollection<T>();
+        Layer<T> m_layer;
 
         /// <summary>
         /// The LayerParameterEx constructor.
@@ -1150,11 +1151,21 @@ namespace MyCaffe.layers
         /// <param name="p">Specifies the original LayerParameter that is wrapped.</param>
         /// <param name="colBlobs">Specifies the Net parameter Blobs to share.</param>
         /// <param name="colLayerBlobs">Specifies the Net layer Blobs to share.</param>
-        public LayerParameterEx(LayerParameter p, BlobCollection<T> colBlobs, BlobCollection<T> colLayerBlobs)
+        /// <param name="sharedLayer">Specifies the shared Net layer matching this one that we are creating.</param>
+        public LayerParameterEx(LayerParameter p, BlobCollection<T> colBlobs, BlobCollection<T> colLayerBlobs, Layer<T> sharedLayer)
             : base(p)
         {
             m_colSharedBlobs = colBlobs;
             m_colLayerBlobs = colLayerBlobs;
+            m_layer = sharedLayer;
+        }
+
+        /// <summary>
+        /// Returns the layer in the shared Net that matches this one.
+        /// </summary>
+        public Layer<T> SharedLayer
+        {
+            get { return m_layer; }
         }
 
         /// <summary>
@@ -1180,7 +1191,7 @@ namespace MyCaffe.layers
         /// <returns></returns>
         public override LayerParameter Clone(bool bCloneBlobs)
         {
-            return new LayerParameterEx<T>(base.Clone(bCloneBlobs), m_colSharedBlobs, m_colLayerBlobs);
+            return new LayerParameterEx<T>(base.Clone(bCloneBlobs), m_colSharedBlobs, m_colLayerBlobs, m_layer);
         }
     }
 }
