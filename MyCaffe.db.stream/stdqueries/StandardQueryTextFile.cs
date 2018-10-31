@@ -146,5 +146,30 @@ namespace MyCaffe.db.stream.stdqueries
         {
             m_nFileIdx = 0;
         }
+
+        /// <summary>
+        /// Converts the output values into the native type used by the CustomQuery.
+        /// </summary>
+        /// <param name="rg">Specifies the raw output data.</param>
+        /// <param name="type">Returns the output type.</param>
+        /// <returns>The converted output data is returned as a byte stream.</returns>
+        public byte[] ConvertOutput(float[] rg, out Type type)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                type = typeof(string);
+
+                for (int i = 0; i < rg.Length; i++)
+                {
+                    int nVal = (int)Convert.ChangeType(rg[i], typeof(int));
+                    char ch = (char)nVal;
+                    ms.WriteByte((byte)ch);
+                }
+
+                ms.WriteByte(0);
+
+                return ms.ToArray();
+            }
+        }
     }
 }

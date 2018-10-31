@@ -1,6 +1,7 @@
 ﻿using MyCaffe.basecode;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.ServiceModel;
@@ -98,6 +99,7 @@ namespace MyCaffe.db.stream
         void Shutdown();
         List<int> GetQuerySize();
         SimpleDatum Query(int nWait);
+        byte[] ConvertOutput(float[] rg, out Type type);
     }
 
     /// <summary>
@@ -180,6 +182,13 @@ namespace MyCaffe.db.stream
         /// Reset the custom query.
         /// </summary>
         void Reset();
+        /// <summary>
+        /// Converts the output values into the native type used by the CustomQuery.
+        /// </summary>
+        /// <param name="rg">Specifies the raw output data.</param>
+        /// <param name="type">Returns the output type.</param>
+        /// <returns>The converted output data is returned as a byte stream.</returns>
+        byte[] ConvertOutput(float[] rg, out Type type);
     }
 
     /// <summary>

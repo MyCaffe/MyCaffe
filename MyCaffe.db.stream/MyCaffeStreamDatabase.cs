@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -156,6 +157,17 @@ namespace MyCaffe.db.stream
         public void Reset(int nStartOffset = 0)
         {
             m_iquery.Reset(nStartOffset);
+        }
+
+        /// <summary>
+        /// Converts the output values into the native type used by the first CustomQuery.
+        /// </summary>
+        /// <param name="rg">Specifies the raw output data.</param>
+        /// <param name="type">Returns the output type.</param>
+        /// <returns>The converted output data is returned as a byte stream.</returns>
+        public byte[] ConvertOutput(float[] rg, out Type type)
+        {
+            return m_iquery.ConvertOutput(rg, out type);
         }
     }
 }

@@ -48,6 +48,9 @@ namespace MyCaffe.db.stream
         /// <returns>When found the custom query interface is returned, otherwise <i>null</i> is returned.</returns>
         public IXCustomQuery Find(string strName)
         {
+            if (strName == "OutputConverter")
+                return m_rgCustomQueries[0];
+
             foreach (IXCustomQuery iqry in m_rgCustomQueries)
             {
                 if (strName == iqry.Name)
