@@ -227,7 +227,6 @@ namespace MyCaffe.trainers.rnn.simple
         Blob<T> m_blobData;
         Blob<T> m_blobClip;
         Blob<T> m_blobLabel;
-        Blob<T> m_blobOutput;
         int m_nSequenceLength;
         int m_nBatchSize;
         int m_nVocabSize;
@@ -244,7 +243,7 @@ namespace MyCaffe.trainers.rnn.simple
         public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase)
         {
             m_mycaffe = mycaffe;
-            m_net = mycaffe.GetInternalNet((phase == Phase.RUN) ? Phase.TRAIN : phase);         
+            m_net = mycaffe.GetInternalNet(phase);         
             m_properties = properties;
             m_random = random;
 
@@ -256,12 +255,12 @@ namespace MyCaffe.trainers.rnn.simple
             if ((m_blobClip = m_net.FindBlob("clip")) == null)
                 throw new Exception("Could not find the 'Input' layer top named 'clip'!");
 
-            if ((m_blobOutput = m_net.FindBlob("ip1")) == null)
-                throw new Exception("Could not find the 'Output' layer top named 'ip1'!");
+            Layer<T> layer = m_net.FindLastLayer(LayerParameter.LayerType.INNERPRODUCT);
+            m_mycaffe.Log.CHECK(layer != null, "Could not find an ending INNERPRODUCT layer!");
 
+            m_nVocabSize = (int)layer.layer_param.inner_product_param.num_output;
             m_nSequenceLength = m_blobData.shape(0);
             m_nBatchSize = m_blobData.shape(1);
-            m_nVocabSize = m_blobOutput.shape(1);
 
             m_mycaffe.Log.CHECK(m_nVocabSize == 128 || m_nVocabSize == 256, "The vocab size (EMBED input_dim) must be 128 or 256 for the ASCII characters.");
             m_mycaffe.Log.CHECK_EQ(m_blobData.count(), m_blobClip.count(), "The data and clip blobs must have the same count!");
@@ -366,7 +365,6 @@ namespace MyCaffe.trainers.rnn.simple
             Array.Copy(s.Data.ByteData, nTrainLen, m_rgTestData, 0, nTestLen);
 
             m_solver.Solve(nIterations, null, null, step);
-//            m_mycaffe.UpdateRunWeights();
         }
 
         private void m_solver_OnStart(object sender, EventArgs e)
@@ -436,9 +434,8 @@ namespace MyCaffe.trainers.rnn.simple
                 m_blobData.mutable_cpu_data = rgInputVector;
 
                 double dfLoss;
-                m_net.Forward(out dfLoss);
-
-                int nPrediction = getLastPrediction();
+                BlobCollection<T> colResults = m_net.Forward(out dfLoss);
+                int nPrediction = getLastPrediction(colResults[0]);
 
                 //Add the new prediction and discard the oldest one
                 rgInput.Add(nPrediction);
@@ -457,9 +454,9 @@ namespace MyCaffe.trainers.rnn.simple
             return rgPredictions;
         }
 
-        private int getLastPrediction()
+        private int getLastPrediction(Blob<T> blobOutput)
         {
-            float[] rgData = Utility.ConvertVecF<T>(m_blobOutput.update_cpu_data());
+            float[] rgData = Utility.ConvertVecF<T>(blobOutput.update_cpu_data());
 
             // Get the probabilities for the last character of the first sequence in the batch
             int nOffset = (m_nSequenceLength - 1) * m_nBatchSize * m_nVocabSize;
