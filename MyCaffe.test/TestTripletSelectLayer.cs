@@ -161,7 +161,7 @@ namespace MyCaffe.test
         {
             TransformationParameter transform_param = new TransformationParameter();
             SourceDescriptor src = m_ds.TrainingSource;
-            DataTransformer<T> transformer = new DataTransformer<T>(m_log, transform_param, Phase.TRAIN);
+            DataTransformer<T> transformer = new DataTransformer<T>(m_log, transform_param, Phase.TRAIN, m_ds.TrainingSource.ImageChannels, m_ds.TrainingSource.ImageHeight, m_ds.TrainingSource.ImageWidth);
             SimpleDatum sdAnchor = m_db.QueryImage(src.ID, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
             List<T> rgAnchors = new List<T>();
             List<T> rgPositives = new List<T>();

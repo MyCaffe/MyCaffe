@@ -297,7 +297,7 @@ namespace MyCaffe.test
         public void TestSetRangeNone()
         {
             TransformationParameter p = new TransformationParameter();
-            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, Phase.TRAIN);
+            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, Phase.TRAIN, 3, 56, 56);
 
             double[] rgData = convert(m_blob_bottom.mutable_cpu_data);
             double dfVal = -5;
@@ -331,7 +331,7 @@ namespace MyCaffe.test
         {
             TransformationParameter p = new TransformationParameter();
             p.forced_positive_range_max = 10.0;
-            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, Phase.TRAIN);
+            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, Phase.TRAIN, 3, 56, 56);
 
             double[] rgData = convert(m_blob_bottom.mutable_cpu_data);
             double dfVal = -5;
@@ -368,8 +368,7 @@ namespace MyCaffe.test
         {
             TransformationParameter p = new TransformationParameter();
             p.forced_positive_range_max = 10.0;
-            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, Phase.TRAIN);
-
+            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, Phase.TRAIN, 3, 56, 56);
             Blob<T> b = new Blob<T>(m_cuda, m_log, 128, 3, 56, 56);
 
             double[] rgData = convert(b.mutable_cpu_data);
@@ -426,7 +425,7 @@ namespace MyCaffe.test
         {
             // Get crop sequence with Caffe seed 1701
             p.random_seed = 1701;
-            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, phase);
+            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, phase, d.channels, d.height, d.width);
             int nCropSize = (int)p.crop_size;
 
             transformer.InitRand();
@@ -475,7 +474,7 @@ namespace MyCaffe.test
 
             Datum datum = CreateDatum(nLabel, nChannels, nHeight, nWidth, unique_pixels);
             Blob<T> blob = new Blob<T>(m_cuda, m_log, 1, nChannels, nHeight, nWidth);
-            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, Phase.TEST);
+            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, Phase.TEST, nChannels, nHeight, nWidth);
             transformer.InitRand();
             transformer.Transform(datum, blob);
 
@@ -506,7 +505,7 @@ namespace MyCaffe.test
 
             Datum datum = CreateDatum(nLabel, nChannels, nHeight, nWidth, unique_pixels);
             Blob<T> blob = new Blob<T>(m_cuda, m_log, 1, nChannels, nHeight, nWidth);
-            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, Phase.TEST);
+            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, Phase.TEST, nChannels, nHeight, nWidth);
             transformer.InitRand();
             transformer.Transform(datum, blob);
 
@@ -539,7 +538,7 @@ namespace MyCaffe.test
             p.crop_size = (uint)nCropSize;
             Datum datum = CreateDatum(nLabel, nChannels, nHeight, nWidth, unique_pixels);
             Blob<T> blob = new Blob<T>(m_cuda, m_log, 1, nChannels, nCropSize, nCropSize);
-            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, Phase.TEST);
+            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, Phase.TEST, nChannels, nHeight, nWidth);
             transformer.InitRand();
 
             for (int i = 0; i < m_nNumIter; i++)
@@ -690,7 +689,7 @@ namespace MyCaffe.test
             p.mean_value.Add(nMeanValue);
             Datum datum = CreateDatum(nLabel, nChannels, nHeight, nWidth, unique_pixels);
             Blob<T> blob = new Blob<T>(m_cuda, m_log, 1, nChannels, nHeight, nWidth);
-            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, Phase.TEST);
+            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, Phase.TEST, nChannels, nHeight, nWidth);
             transformer.InitRand();
             blob.mutable_cpu_data = transformer.Transform(datum);
 
@@ -718,7 +717,7 @@ namespace MyCaffe.test
             p.mean_value.Add(2);
             Datum datum = CreateDatum(nLabel, nChannels, nHeight, nWidth, unique_pixels);
             Blob<T> blob = new Blob<T>(m_cuda, m_log, 1, nChannels, nHeight, nWidth);
-            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, Phase.TEST);
+            DataTransformer<T> transformer = new DataTransformer<T>(m_log, p, Phase.TEST, nChannels, nHeight, nWidth);
             transformer.InitRand();
             blob.mutable_cpu_data = transformer.Transform(datum);
 
