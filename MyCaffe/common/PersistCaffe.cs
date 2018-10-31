@@ -907,7 +907,12 @@ namespace MyCaffe.common
             if (type == FieldDescriptor.TYPE.FLOAT)
                 Array.Copy(pb.FloatValues, rgData, lCount);
             else
-                Array.Copy(pb.DoubleValues, rgData, lCount);
+            {
+                if (typeof(T) == typeof(double))
+                    Array.Copy(pb.DoubleValues, rgData, lCount);
+                else
+                    return Utility.ConvertVec<T>(pb.DoubleValues);
+            }
 
             return rgData;
         }
