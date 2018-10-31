@@ -109,6 +109,22 @@ namespace MyCaffe.trainers.rnn.simple
         }
 
         /// <summary>
+        /// <summary>
+        /// Run a single cycle on the environment after the delay.
+        /// </summary>
+        /// <param name="nN">specifies the number of samples to run.</param>
+        /// <returns>The results of the run containing the action are returned.</returns>
+        public byte[] Run(int nN, out Type type)
+        {
+            m_mycaffe.CancelEvent.Reset();
+            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN);
+            byte[] rgResults = agent.Run(nN, out type);
+            agent.Dispose();
+
+            return rgResults;
+        }
+
+        /// <summary>
         /// Run the test cycle - currently this is not implemented.
         /// </summary>
         /// <param name="nIterations">Specifies the number of iterations to run.</param>
@@ -215,6 +231,26 @@ namespace MyCaffe.trainers.rnn.simple
         public float[] Run(int nN)
         {
             return m_brain.Run(nN);
+        }
+
+        /// <summary>
+        /// The Run method provides the main 'actor' that runs data through the trained network.
+        /// </summary>
+        /// <param name="nN">specifies the number of samples to run.</param>
+        /// <returns>The results of the run are returned in the native format used by the CustomQuery.</returns>
+        public byte[] Run(int nN, out Type type)
+        {
+            float[] rgResults = m_brain.Run(nN);
+
+            ConvertOutputArgs args = new ConvertOutputArgs(rgResults);
+            IxTrainerCallbackRNN icallback = m_icallback as IxTrainerCallbackRNN;
+            if (icallback == null)
+                throw new Exception("The Run method requires an IxTrainerCallbackRNN interface to convert the results into the native format!");
+
+            icallback.OnConvertOutput(args);
+
+            type = args.RawType;
+            return args.RawOutput;
         }
     }
 

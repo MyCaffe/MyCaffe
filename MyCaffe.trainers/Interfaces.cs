@@ -141,12 +141,20 @@ namespace MyCaffe.trainers
     public interface IXMyCaffeCustomTrainerRNN : IXMyCaffeCustomTrainer
     {
         /// <summary>
-        /// Run the network u sing the run technique implemented by this trainer.
+        /// Run the network using the run technique implemented by this trainer.
         /// </summary>
         /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
         /// <param name="nN">specifies the number of samples to run.</param>
         /// <returns>The run results are returned.</returns>
         float[] Run(Component mycaffe, int nN);
+        /// <summary>
+        /// Run the network using the run technique implemented by this trainer.
+        /// </summary>
+        /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
+        /// <param name="nN">Specifies the number of samples to run.</param>
+        /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
+        /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
+        byte[] Run(Component mycaffe, int nN, out Type type);
     }
 
     /// <summary>
@@ -212,11 +220,20 @@ namespace MyCaffe.trainers
     public interface IxTrainerRNN : IxTrainer
     {
         /// <summary>
-        /// Run a single cycle on the trainer.
+        /// Run a number of 'nN' cycles on the trainer.
         /// </summary>
         /// <param name="nN">specifies the number of samples to run.</param>
         /// <returns>The result collection containing the action is returned.</returns>
         float[] Run(int nN);
+
+        /// <summary>
+        /// Run a number of 'nN' cycles on the trainer.
+        /// </summary>
+        /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
+        /// <param name="nN">Specifies the number of samples to run.</param>
+        /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
+        /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
+        byte[] Run(int nN, out Type type);
     }
 
     /// <summary>
@@ -245,5 +262,18 @@ namespace MyCaffe.trainers
         /// The OnWait callback fires when waiting for a shutdown.
         /// </summary>
         void OnWait(WaitArgs e);
+    }
+
+    /// <summary>
+    /// The IxTrainerCallbackRNN provides functions used by each trainer to 'call-back' to the parent for information and updates.
+    /// </summary>
+    /// <remarks>The IxTrainerCallbackRNN is passed to each RNN trainer.</remarks>
+    public interface IxTrainerCallbackRNN : IxTrainerCallback
+    {
+        /// <summary>
+        /// The OnConvertOutput callback fires from within the Run method and is used to convert the network's output into the native format used by the CustomQuery.
+        /// </summary>
+        /// <param name="e"></param>
+        void OnConvertOutput(ConvertOutputArgs e);
     }
 }
