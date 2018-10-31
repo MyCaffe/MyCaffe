@@ -43,7 +43,7 @@ namespace MyCaffe.trainers
     /// Solver: base_lr - specifies the learning rate used.
     /// Model: batch_size - specifies how often accumulated gradients are applied.
     /// </remarks>
-    public partial class MyCaffeTrainerRL : Component, IXMyCaffeCustomTrainer, IxTrainerCallback
+    public partial class MyCaffeTrainerRL : Component, IXMyCaffeCustomTrainerRL, IxTrainerCallback
     {
         /// <summary>
         /// Random number generator used to get initial actions, etc.
@@ -57,7 +57,7 @@ namespace MyCaffe.trainers
         /// Specifies the project ID of the project held by the instance of MyCaffe.
         /// </summary>
         protected int m_nProjectID = 0;
-        IxTrainer m_itrainer = null;
+        IxTrainerRL m_itrainer = null;
         double m_dfExplorationRate = 0;
         double m_dfOptimalSelectionRate = 0;
         double m_dfGlobalRewards = 0;
@@ -152,7 +152,7 @@ namespace MyCaffe.trainers
         /// </remarks>
         /// <param name="caffe">Specifies the MyCaffeControl used.</param>
         /// <returns>The IxTraininer interface implemented by the new trainer is returned.</returns>
-        protected virtual IxTrainer create_trainerD(Component caffe)
+        protected virtual IxTrainerRL create_trainerD(Component caffe)
         {
             MyCaffeControl<double> mycaffe = caffe as MyCaffeControl<double>;
             m_nProjectID = mycaffe.CurrentProject.ID;
@@ -183,7 +183,7 @@ namespace MyCaffe.trainers
         /// </remarks>
         /// <param name="caffe">Specifies the MyCaffeControl used.</param>
         /// <returns>The IxTraininer interface implemented by the new trainer is returned.</returns>
-        protected virtual IxTrainer create_trainerF(Component caffe)
+        protected virtual IxTrainerRL create_trainerF(Component caffe)
         {
             MyCaffeControl<float> mycaffe = caffe as MyCaffeControl<float>;
             m_nProjectID = mycaffe.CurrentProject.ID;
@@ -245,11 +245,11 @@ namespace MyCaffe.trainers
         /// Returns <i>true</i> when the training is ready for a snap-shot, <i>false</i> otherwise.
         /// </summary>
         /// <param name="nIteration">Specifies the current iteration.</param>
-        /// <param name="dfRewards">Specifies the best rewards to this point.</param>
-        protected virtual bool get_update_snapshot(out int nIteration, out double dfRewards)
+        /// <param name="dfAccuracy">Specifies the current rewards.</param>
+        protected virtual bool get_update_snapshot(out int nIteration, out double dfAccuracy)
         {
             nIteration = GlobalEpisodeCount;
-            dfRewards = GlobalRewards;
+            dfAccuracy = GlobalRewards;
 
             if (m_bSnapshot)
             {
@@ -291,10 +291,10 @@ namespace MyCaffe.trainers
         /// Returns <i>true</i> when the training is ready for a snap-shot, <i>false</i> otherwise.
         /// </summary>
         /// <param name="nIteration">Specifies the current iteration.</param>
-        /// <param name="dfRewards">Specifies the best rewards to this point.</param>
-        public bool GetUpdateSnapshot(out int nIteration, out double dfRewards)
+        /// <param name="dfAccuracy">Specifies the current rewards.</param>
+        public bool GetUpdateSnapshot(out int nIteration, out double dfAccuracy)
         {
-            return get_update_snapshot(out nIteration, out dfRewards);
+            return get_update_snapshot(out nIteration, out dfAccuracy);
         }
 
         /// <summary>
@@ -385,9 +385,9 @@ namespace MyCaffe.trainers
             }
         }
 
-        private IxTrainer createTrainer(Component mycaffe)
+        private IxTrainerRL createTrainer(Component mycaffe)
         {
-            IxTrainer itrainer = null;
+            IxTrainerRL itrainer = null;
 
             if (mycaffe is MyCaffeControl<double>)
                 itrainer = create_trainerD(mycaffe);
@@ -500,7 +500,14 @@ namespace MyCaffe.trainers
             m_dfLoss = e.Loss;
 
             if (m_icallback != null && m_nThreads > 1)
-                m_icallback.Update(GlobalEpisodeCount, GlobalRewards, GlobalLoss, e.LearningRate);
+            {
+                Dictionary<string, double> rgValues = new Dictionary<string, double>();
+                rgValues.Add("GlobalIteration", GlobalEpisodeCount);
+                rgValues.Add("GlobalLoss", GlobalLoss);
+                rgValues.Add("LearningRate", e.LearningRate);
+                rgValues.Add("GlobalAccuracy", GlobalRewards);
+                m_icallback.Update(TrainingCategory, rgValues);
+            }
 
             e.NewFrameCount = m_nGlobalEpisodeCount;
 
@@ -514,6 +521,27 @@ namespace MyCaffe.trainers
         public void OnWait(WaitArgs e)
         {
             Thread.Sleep(e.Wait);
+        }
+
+        public double GetProperty(string strProp)
+        {
+            switch (strProp)
+            {
+                case "GlobalLoss":
+                    return GlobalLoss;
+
+                case "GlobalRewards":
+                    return GlobalRewards;
+
+                case "GlobalEpisodeCount":
+                    return GlobalEpisodeCount;
+
+                case "ExplorationRate":
+                    return ExplorationRate;
+
+                default:
+                    throw new Exception("The property '" + strProp + "' is not supported by the MyCaffeTrainerRNN.");
+            }
         }
 
         /// <summary>
