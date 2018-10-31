@@ -14,6 +14,8 @@ using MyCaffe.basecode.descriptors;
 using MyCaffe.gym;
 using MyCaffe.trainers;
 using System.ServiceModel;
+using MyCaffe.db.stream;
+using System.IO;
 
 namespace MyCaffe.test
 {
@@ -127,6 +129,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void Train_RNNSIMPLE_CharRNN()
+        {
+            MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
+
+            try
+            {
+                foreach (IMyCaffeCustomTrainerTest t in test.Tests)
+                {
+                    t.TrainCharRNN(false, "RNN.SIMPLE", 100000);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -134,6 +154,7 @@ namespace MyCaffe.test
     {
         void TrainCartPolePG(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
         void TrainAtariPG(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
+        void TrainCharRNN(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
     }
 
     class MyCaffeCustomTrainerTest : TestBase
@@ -156,6 +177,7 @@ namespace MyCaffe.test
     {
         SettingsCaffe m_settings = new SettingsCaffe();
         CancelEvent m_evtCancel = new CancelEvent();
+        string m_strTestPath;
 
         public MyCaffeCustomTrainerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
@@ -197,7 +219,7 @@ namespace MyCaffe.test
             m_log.CHECK(ds != null, "The MyCaffeCartPoleTrainer should return its dataset override returned by the Gym that it uses.");
 
             // load the project to train (note the project must use the MemoryDataLayer for input).
-            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, (ds == null) ? true : false);
+            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false);
 
             // Train the network using the custom trainer
             //  - Iterations (maximum frames cumulative across all threads) = 1000 (normally this would be much higher such as 500,000)
@@ -247,14 +269,14 @@ namespace MyCaffe.test
             m_log.CHECK(ds != null, "The MyCaffeAtariTrainer should return its dataset override returned by the Gym that it uses.");
 
             // load the project to train (note the project must use the MemoryDataLayer for input).
-            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, (ds == null) ? true : false);
+            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false);
 
             // Train the network using the custom trainer
             //  - Iterations (maximum frames cumulative across all threads) = 1000 (normally this would be much higher such as 500,000)
             //  - Learning rate = 0.001 (defined in solver.prototxt)
             //  - Mini Batch Size = 10 (defined in train_val.prototxt for MemoryDataLayer)
             //
-            //  - TraingerType = 'PG.MT' ('PG.MT' = use multi-threaded Policy Gradient trainer)
+            //  - TrainerType = 'PG.MT' ('PG.MT' = use multi-threaded Policy Gradient trainer)
             //  - RewardType = MAX (display the maximum rewards received, a setting of VAL displays the actual reward received)
             //  - Gamma = 0.99 (discounting factor)
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
@@ -270,6 +292,115 @@ namespace MyCaffe.test
 
             // Release the mycaffe resources.
             mycaffe.Dispose();
+        }
+
+        public void TrainCharRNN(bool bShowUi, string strTrainerType, int nIterations = 100, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
+        {
+            m_evtCancel.Reset();
+
+            GymCollection col = new GymCollection();
+            col.Load();
+            IXMyCaffeGym igym = col.Find("DataGeneral");
+            string strAccelTrain = (bUseAcceleratedTraining) ? "ON" : "OFF";
+
+            if (strTrainerType != "RNN.SIMPLE")
+                throw new Exception("Currently, only the RNN.SIMPLE is supported.");
+
+            m_log.WriteHeader("Test Training CharRNN for " + nIterations.ToString("N0") + " iterations.");
+            m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain);
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
+            mycaffe.OnSnapshot += Mycaffe_OnSnapshot;
+
+            MyCaffeDataGeneralTrainer trainer = new MyCaffeDataGeneralTrainer();
+            ProjectEx project = getCharRNNProject(igym, nIterations);
+            DatasetDescriptor ds = trainer.GetDatasetOverride(0);
+
+            m_log.CHECK(ds != null, "The MyCaffeDataTrainer should return its dataset override returned by the Gym that it uses.");
+
+            string strDataPath = getTestPath("\\MyCaffe\\test_data\\data\\char-rnn", true);
+            m_strTestPath = strDataPath;
+
+            string strWeights = strDataPath + "\\weights.mycaffe";
+            if (File.Exists(strWeights))
+            {
+                using (FileStream fs = File.OpenRead(strWeights))
+                using (BinaryReader bw = new BinaryReader(fs))
+                {
+                    if (fs.Length > 0)
+                    {
+                        byte[] rgWeights = new byte[fs.Length];
+                        bw.Read(rgWeights, 0, (int)fs.Length);
+                        project.WeightsState = rgWeights;
+                    }
+                }
+            }
+
+            // load the project to train (note the project must use the InputLayer for input).
+            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false);
+
+            // Train the network using the custom trainer
+            //  - Iterations (maximum frames cumulative across all threads) = 1000 (normally this would be much higher such as 500,000)
+            //  - Learning rate = 0.01 (defined in solver.prototxt)
+            //  - Mini Batch Size = 25 (defined in train_val.prototxt for InputLayer)
+            //
+            //  - TrainerType = 'RNN.SIMPLE' (currently only one supported)
+            //  - UseAcceleratedTraining = False (disable accelerated training).
+            //  - ConnectionCount=1 (using one query)
+            //  - Connection0_CustomQueryName=StdTextFileQuery (using standard text file query to read the text files)
+            //  - Connection0_CustomQueryParam=params (set the custom query parameters to the packed parameters containing the FilePath where the text files are to be loaded).
+            string strSchema = "ConnectionCount=1;";
+            string strParam = "FilePath=" + strDataPath + ";";
+
+            strParam = ParamPacker.Pack(strParam);
+            strSchema += "Connection0_CustomQueryName=StdTextFileQuery;";
+            strSchema += "Connection0_CustomQueryParam=" + strParam + ";";
+
+            trainer.Initialize("TrainerType=" + strTrainerType + ";UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";Temperature=0.5;" + strSchema, null);
+
+            if (bShowUi)
+                trainer.OpenUi();
+
+            trainer.Train(mycaffe, nIterations);
+
+            int nN = 10000;
+            float[] rgOutput = trainer.Run(mycaffe, nN);
+            string strOut = convertToString(rgOutput);
+            m_log.WriteLine(strOut);
+
+            trainer.CleanUp();
+
+            // Release the mycaffe resources.
+            mycaffe.Dispose();
+        }
+
+        private void Mycaffe_OnSnapshot(object sender, SnapshotArgs e)
+        {
+            byte[] rgWeights = e.UpdateWeights();
+
+            string strWeights = m_strTestPath + "\\weights.mycaffe";
+
+            if (File.Exists(strWeights))
+                File.Delete(strWeights);
+
+            using (FileStream fs = File.Open(strWeights, FileMode.OpenOrCreate))
+            using (BinaryWriter bw = new BinaryWriter(fs))
+            {
+                bw.Write(rgWeights);
+            }
+        }
+
+        private string convertToString(float[] rg)
+        {
+            string strOut = "";
+
+            for (int i = 0; i < rg.Length; i++)
+            {
+                int nVal = (int)Convert.ChangeType(rg[i], typeof(int));
+                char ch = (char)nVal;
+                strOut += ch;
+            }
+
+            return strOut;
         }
 
         private ProjectEx getReinforcementProject(IXMyCaffeGym igym, int nIterations, DATA_TYPE dt = DATA_TYPE.VALUES, bool bForceSimple = false)
@@ -304,6 +435,26 @@ namespace MyCaffe.test
         private string getRomPath(string strRom)
         {
             return getTestPath("\\MyCaffe\\test_data\\roms\\" + strRom);
+        }
+
+        private ProjectEx getCharRNNProject(IXMyCaffeGym igym, int nIterations)
+        {
+            ProjectEx p = new ProjectEx("test");
+
+            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\char_rnn\\train_val.prototxt");
+            string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\char_rnn\\solver.prototxt");
+
+            RawProto protoM = RawProtoFile.LoadFromFile(strModelFile);
+            p.ModelDescription = protoM.ToString();
+
+            RawProto protoS = RawProtoFile.LoadFromFile(strSolverFile);
+            RawProto iter = protoS.FindChild("max_iter");
+            iter.Value = nIterations.ToString();
+
+            p.SolverDescription = protoS.ToString();
+            p.SetDataset(igym.GetDataset(DATA_TYPE.BLOB));
+
+            return p;
         }
     }
 
@@ -523,6 +674,103 @@ namespace MyCaffe.test
             m_nUiId = -1;
             m_gymui.Close();
             m_gymui = null;
+        }
+    }
+
+    class MyCaffeDataGeneralTrainer : MyCaffeTrainerRNN, IXMyCaffeGymUiCallback
+    {
+        Stopwatch m_sw = new Stopwatch();
+        IXMyCaffeGym m_igym;
+        Log m_log;
+        int m_nUiId = -1;
+        string m_strName = "DataGeneral";
+        GymCollection m_colGyms = new GymCollection();
+        DatasetDescriptor m_ds;
+
+        public MyCaffeDataGeneralTrainer()
+            : base()
+        {
+            m_colGyms.Load();
+        }
+
+        protected override void initialize(InitializeArgs e)
+        {
+            m_igym = m_colGyms.Find(m_strName);
+            m_log = e.OutputLog;
+
+            m_igym.Initialize(m_log, m_properties);
+
+            m_sw.Start();
+        }
+
+        protected override void shutdown()
+        {
+            if (m_igym != null)
+            {
+                m_igym.Close();
+                m_igym = null;
+            }
+        }
+
+        protected override void dispose()
+        {
+            base.dispose();
+        }
+
+        protected override string name
+        {
+            get { return "RNN.Trainer"; }
+        }
+
+        protected override DatasetDescriptor get_dataset_override(int nProjectID)
+        {
+            if (m_igym == null)
+                m_igym = m_colGyms.Find(m_strName);
+
+            m_ds = m_igym.GetDataset(DATA_TYPE.BLOB);
+
+            return m_ds;
+        }
+
+        protected override bool getData(GetDataArgs e)
+        {
+            Tuple<State, double, bool> state = null;
+
+            if (e.Reset)
+                state = m_igym.Reset();
+
+            if (e.Action >= 0)
+                state = m_igym.Step(e.Action);
+
+            bool bIsOpen = (m_nUiId >= 0) ? true : false;
+            int nDataLen = 0;
+            SimpleDatum stateData = state.Item1.GetData(false, out nDataLen);
+
+            e.State = new StateBase(m_igym.GetActionSpace().Count());
+            e.State.Reward = 0;
+            e.State.Data = stateData;
+            e.State.Done = state.Item3;
+            e.State.IsValid = true;
+
+            if (m_sw.Elapsed.TotalMilliseconds > 1000)
+            {
+                int nMax = (int)GetProperty("GlobalMaxIterations");
+                int nIteration = (int)GetProperty("GlobalIteration");
+                double dfPct = (nMax == 0) ? 0 : (double)nIteration / (double)nMax;
+                e.OutputLog.Progress = dfPct;
+                e.OutputLog.WriteLine("(" + dfPct.ToString("P") + ") Global Iteration #" + nIteration.ToString());
+                m_sw.Restart();
+            }
+
+            return true;
+        }
+
+        protected override void openUi()
+        {
+        }
+
+        public void Closing()
+        {
         }
     }
 }
