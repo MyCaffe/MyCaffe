@@ -139,7 +139,9 @@ namespace MyCaffe.test
             {
                 foreach (IMyCaffeCustomTrainerTest t in test.Tests)
                 {
-                    t.TrainCharRNN(false, "RNN.SIMPLE", 100000);
+                    // NOTE: 1000 iterations is quite short, for real training
+                    // 100,000+ is a more common iteration to use.
+                    t.TrainCharRNN(false, "RNN.SIMPLE", 1000);
                 }
             }
             finally
@@ -362,9 +364,9 @@ namespace MyCaffe.test
 
             trainer.Train(mycaffe, nIterations);
 
-            int nN = 10000;
+            int nN = 1000; // Note: see iterations used, for real training the iterations should be 100,000+
             float[] rgOutput = trainer.Run(mycaffe, nN);
-            string strOut = convertToString(rgOutput);
+            string strOut = convertToString(rgOutput);            
             m_log.WriteLine(strOut);
 
             trainer.CleanUp();
