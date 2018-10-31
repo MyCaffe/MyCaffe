@@ -1,0 +1,20 @@
+test_iter: 1000
+test_interval: 100
+test_compute_loss: False
+test_initialization: False
+base_lr: 0.05
+display: 1000
+average_loss: 1
+max_iter: 100000
+lr_policy: fixed
+momentum: 0.9
+weight_decay: 0.0005
+regularization_type: L2
+snapshot: 15000
+snapshot_prefix: caffe_char_rnn
+snapshot_format: BINARYPROTO
+device_id: 0
+type: SGD
+snapshot_include_weights: True
+snapshot_include_state: True
+
