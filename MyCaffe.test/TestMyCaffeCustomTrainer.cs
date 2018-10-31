@@ -179,7 +179,7 @@ namespace MyCaffe.test
     {
         SettingsCaffe m_settings = new SettingsCaffe();
         CancelEvent m_evtCancel = new CancelEvent();
-        string m_strTestPath;
+        string m_strModelPath;
 
         public MyCaffeCustomTrainerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
@@ -321,10 +321,8 @@ namespace MyCaffe.test
 
             m_log.CHECK(ds != null, "The MyCaffeDataTrainer should return its dataset override returned by the Gym that it uses.");
 
-            string strDataPath = getTestPath("\\MyCaffe\\test_data\\data\\char-rnn", true);
-            m_strTestPath = strDataPath;
-
-            string strWeights = strDataPath + "\\weights.mycaffe";
+            string strModelPath = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\char_rnn", true);
+            string strWeights = strModelPath + "\\weights.mycaffe";
             if (File.Exists(strWeights))
             {
                 using (FileStream fs = File.OpenRead(strWeights))
@@ -338,6 +336,7 @@ namespace MyCaffe.test
                     }
                 }
             }
+            m_strModelPath = strModelPath;
 
             // load the project to train (note the project must use the InputLayer for input).
             mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false);
@@ -353,6 +352,7 @@ namespace MyCaffe.test
             //  - Connection0_CustomQueryName=StdTextFileQuery (using standard text file query to read the text files)
             //  - Connection0_CustomQueryParam=params (set the custom query parameters to the packed parameters containing the FilePath where the text files are to be loaded).
             string strSchema = "ConnectionCount=1;";
+            string strDataPath = getTestPath("\\MyCaffe\\test_data\\data\\char-rnn", true);
             string strParam = "FilePath=" + strDataPath + ";";
 
             strParam = ParamPacker.Pack(strParam);
@@ -389,7 +389,7 @@ namespace MyCaffe.test
         {
             byte[] rgWeights = e.UpdateWeights();
 
-            string strWeights = m_strTestPath + "\\weights.mycaffe";
+            string strWeights = m_strModelPath + "\\weights.mycaffe";
 
             if (File.Exists(strWeights))
                 File.Delete(strWeights);
