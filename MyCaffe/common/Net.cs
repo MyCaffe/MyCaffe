@@ -2472,5 +2472,21 @@ namespace MyCaffe.common
 
             return null;
         }
+
+        /// <summary>
+        /// Find the last layer with the matching type.
+        /// </summary>
+        /// <param name="type">Specifies the layer type.</param>
+        /// <returns>The layer found (if any) is returned, otherwise <i>null</i> is returned.</returns>
+        public Layer<T> FindLastLayer(LayerParameter.LayerType type)
+        {
+            for (int i = m_rgLayers.Count - 1; i >= 0; i--)
+            {
+                if (m_rgLayers[i].type == type)
+                    return m_rgLayers[i];
+            }
+
+            return null;
+        }
     }
 }
