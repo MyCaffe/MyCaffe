@@ -122,21 +122,25 @@ namespace MyCaffe.layers
             {
                 m_colBlobs = new BlobCollection<T>();
 
-                if (m_bChannelShared)
-                    m_colBlobs.Add(new Blob<T>(m_cuda, m_log, new List<int>()));
-                else
-                    m_colBlobs.Add(new Blob<T>(m_cuda, m_log, new List<int>() { nChannels }));
+                List<int> rgSlopeShape = new List<int>();
+                if (!m_bChannelShared)
+                    rgSlopeShape.Add(nChannels);
 
-                m_colBlobs[0].Name = "slope";
+                Blob<T> blobSlope = new Blob<T>(m_cuda, m_log);
+                blobSlope.Name = "slope";
 
-                FillerParameter fp = p.filler;
+                if (!shareParameter(blobSlope, rgSlopeShape))
+                {
+                    blobSlope.Reshape(rgSlopeShape);
+                    FillerParameter fp = p.filler;
 
-                if (fp == null)
-                    fp = new FillerParameter("constant", 0.25);
+                    if (fp == null)
+                        fp = new FillerParameter("constant", 0.25);
 
-                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
-
-                filler.Fill(m_colBlobs[0]);
+                    Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+                    filler.Fill(blobSlope);
+                }
+                m_colBlobs.Add(blobSlope);
             }
 
             if (m_bChannelShared)

@@ -140,16 +140,20 @@ namespace MyCaffe.layers
                     rgBiasShape.Add(colBottom[0].shape(i));
                 }
 
-                Blob<T> blobBias = new Blob<T>(m_cuda, m_log, rgBiasShape);
+                Blob<T> blobBias = new Blob<T>(m_cuda, m_log);
                 blobBias.Name = "bias";
+                blobBias.type = Blob<T>.BLOB_TYPE.WEIGHT;
 
-                FillerParameter fp = p.filler;
-                if (fp == null)
-                    fp = new FillerParameter("constant", 0.0);
+                if (!shareParameter(blobBias, rgBiasShape))
+                {
+                    blobBias.Reshape(rgBiasShape);
+                    FillerParameter fp = p.filler;
+                    if (fp == null)
+                        fp = new FillerParameter("constant", 0.0);
 
-                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
-                filler.Fill(blobBias);
-
+                    Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+                    filler.Fill(blobBias);
+                }
                 m_colBlobs.Add(blobBias);
             }
 

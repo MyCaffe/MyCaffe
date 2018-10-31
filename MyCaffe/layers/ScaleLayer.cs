@@ -185,17 +185,21 @@ namespace MyCaffe.layers
                     rgShape.Add(colBottom[0].shape(i));
                 }
 
-                Blob<T> blobScale = new Blob<T>(m_cuda, m_log, rgShape);
+                Blob<T> blobScale = new Blob<T>(m_cuda, m_log);
                 blobScale.Name = "scale";
-                FillerParameter fp = p.filler;
 
-                // Default to unit (1) filler for identity operation.
-                if (fp == null)
-                    fp = new FillerParameter("constant", 1.0);
+                if (!shareParameter(blobScale, rgShape))
+                {
+                    blobScale.Reshape(rgShape);
+                    FillerParameter fp = p.filler;
 
-                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
-                filler.Fill(blobScale);
+                    // Default to unit (1) filler for identity operation.
+                    if (fp == null)
+                        fp = new FillerParameter("constant", 1.0);
 
+                    Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+                    filler.Fill(blobScale);
+                }
                 m_colBlobs.Add(blobScale);
             }
 
@@ -211,6 +215,9 @@ namespace MyCaffe.layers
 
                 m_biasLayer = new BiasLayer<T>(m_cuda, m_log, pb);
                 m_biasLayer.Setup(m_colBiasBottomVec, colTop);
+
+                shareLayerBlobs(m_biasLayer);
+
                 m_nBiasParamId = m_colBlobs.Count;
                 m_colBlobs.Add(m_biasLayer.blobs[0]);
                 m_rgbBiasPropagateDown = Utility.Create<bool>(1, false);

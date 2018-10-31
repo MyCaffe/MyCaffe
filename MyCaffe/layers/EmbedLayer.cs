@@ -139,22 +139,36 @@ namespace MyCaffe.layers
                 // Initialize the weights --
                 // transposed from InnerProductLayer for spacial locality.
                 List<int> rgWeightShape = new List<int>() { m_nK, m_nN };
-                m_colBlobs.Add(new common.Blob<T>(m_cuda, m_log, rgWeightShape));
+                Blob<T> blobWeight = new Blob<T>(m_cuda, m_log);
+                blobWeight.Name = "weights";
+                blobWeight.type = Blob<T>.BLOB_TYPE.WEIGHT;
 
-                // fill the weights
-                Filler<T> weight_filler = Filler<T>.Create(m_cuda, m_log, m_param.embed_param.weight_filler);
-                weight_filler.Fill(m_colBlobs[0]);
-                m_colBlobs[0].Name = "weights";
+                if (!shareParameter(blobWeight, rgWeightShape))
+                {
+                    blobWeight.Reshape(rgWeightShape);
+
+                    // fill the weights
+                    Filler<T> weight_filler = Filler<T>.Create(m_cuda, m_log, m_param.embed_param.weight_filler);
+                    weight_filler.Fill(blobWeight);
+                }
+                m_colBlobs.Add(blobWeight);
+
 
                 // If necessary, initialize and fill the bias term
                 if (m_bBiasTerm)
                 {
                     List<int> rgBiasShape = new List<int>() { m_nN };
-                    m_colBlobs.Add(new common.Blob<T>(m_cuda, m_log, rgBiasShape));
+                    Blob<T> blobBias = new Blob<T>(m_cuda, m_log);
+                    blobBias.Name = m_param.name + " bias";
+                    blobBias.type = Blob<T>.BLOB_TYPE.WEIGHT;
 
-                    Filler<T> bias_filler = Filler<T>.Create(m_cuda, m_log, m_param.embed_param.bias_filler);
-                    bias_filler.Fill(m_colBlobs[1]);
-                    m_colBlobs[1].Name = "bias";
+                    if (!shareParameter(blobBias, rgBiasShape))
+                    {
+                        blobBias.Reshape(rgBiasShape);
+                        Filler<T> bias_filler = Filler<T>.Create(m_cuda, m_log, m_param.embed_param.bias_filler);
+                        bias_filler.Fill(blobBias);
+                    }
+                    m_colBlobs.Add(blobBias);
                 }
             }
 

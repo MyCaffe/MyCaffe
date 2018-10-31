@@ -201,22 +201,43 @@ namespace MyCaffe.layers
 
                 // input-to-hidden weights
                 // Initialize the weight.
-                Blob<T> blobWeights_I_H = new Blob<T>(m_cuda, m_log, new List<int>() { 4 * m_nH, m_nI });
+                List<int> rgShape1 = new List<int>() { 4 * m_nH, m_nI };
+                Blob<T> blobWeights_I_H = new Blob<T>(m_cuda, m_log);
                 blobWeights_I_H.Name = "weights I to H";
-                weight_filler.Fill(blobWeights_I_H);
+                blobWeights_I_H.type = Blob<T>.BLOB_TYPE.WEIGHT;
+
+                if (!shareParameter(blobWeights_I_H, rgShape1))
+                {
+                    blobWeights_I_H.Reshape(rgShape1);
+                    weight_filler.Fill(blobWeights_I_H);
+                }
                 m_colBlobs.Add(blobWeights_I_H);
 
                 // hidden-to-hidden weights
                 // Initialize the weight.
-                Blob<T> blobWeights_H_H = new Blob<T>(m_cuda, m_log, new List<int>() { 4 * m_nH, m_nH });
+                List<int> rgShape2 = new List<int>() { 4 * m_nH, m_nH };
+                Blob<T> blobWeights_H_H = new Blob<T>(m_cuda, m_log);
                 blobWeights_H_H.Name = "weights H to H";
-                weight_filler.Fill(blobWeights_H_H);
+                blobWeights_H_H.type = Blob<T>.BLOB_TYPE.WEIGHT;
+
+                if (!shareParameter(blobWeights_H_H, rgShape2))
+                {
+                    blobWeights_H_H.Reshape(rgShape2);
+                    weight_filler.Fill(blobWeights_H_H);
+                }
                 m_colBlobs.Add(blobWeights_H_H);
 
                 // If necessary, initialize and fill the bias term.
-                Blob<T> blobBias = new Blob<T>(m_cuda, m_log, new List<int>() { 4 * m_nH });
+                List<int> rgShape3 = new List<int>() { 4 * m_nH };
+                Blob<T> blobBias = new Blob<T>(m_cuda, m_log);
                 blobBias.Name = "bias weights";
-                bias_filler.Fill(blobBias);
+                blobBias.type = Blob<T>.BLOB_TYPE.WEIGHT;
+
+                if (!shareParameter(blobBias, rgShape3))
+                {
+                    blobBias.Reshape(rgShape3);
+                    bias_filler.Fill(blobBias);
+                }
                 m_colBlobs.Add(blobBias);
 
                 // Initialize the bias for the forget gate to 5.0 as described in the
