@@ -688,6 +688,61 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Attempts to share the Layer blobs and internal_blobs with matching names and sizes with those in another matching layer.
+        /// </summary>
+        /// <param name="layer">Specifies the layer who will use the shared blobs and internal blobs from the shared layer.</param>
+        /// <returns>If the layer blobs and internal blobs are shared successfully <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        protected bool shareLayerBlobs(Layer<T> layer)
+        {
+            LayerParameterEx<T> paramEx = m_param as LayerParameterEx<T>;
+            if (paramEx == null)
+                return false;
+
+            if (paramEx.SharedLayer == null)
+                return false;
+
+            if (paramEx.SharedLayer.blobs.Count != layer.blobs.Count)
+                return false;
+
+            for (int i = 0; i < paramEx.SharedLayer.blobs.Count; i++)
+            {
+                Blob<T> bSrc = paramEx.SharedLayer.blobs[i];
+                Blob<T> bDst = layer.blobs[i];
+
+                string strSrc = bSrc.shape_string;
+                string strDst = bDst.shape_string;
+                if (strSrc != strDst)
+                {
+                    m_log.WriteLine("WARNING: Cannot share blob '" + bSrc.Name + "'(" + strSrc + ") with blob '" + bDst.Name + "'(" + strDst + ") because the sizes differ!");
+                    return false;
+                }
+
+                bSrc.Share(bDst);
+            }
+
+            if (paramEx.SharedLayer.internal_blobs.Count != layer.internal_blobs.Count)
+                return false;
+
+            for (int i = 0; i < paramEx.SharedLayer.internal_blobs.Count; i++)
+            {
+                Blob<T> bSrc = paramEx.SharedLayer.internal_blobs[i];
+                Blob<T> bDst = layer.internal_blobs[i];
+
+                string strSrc = bSrc.shape_string;
+                string strDst = bDst.shape_string;
+                if (strSrc != strDst)
+                {
+                    m_log.WriteLine("WARNING: Cannot share internal blob '" + bSrc.Name + "'(" + strSrc + ") with internal blob '" + bDst.Name + "'(" + strDst + ") because the sizes differ!");
+                    return false;
+                }
+
+                bSrc.Share(bDst);
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Returns the timing of the last forward pass in milliseconds.
         /// </summary>
         public double forward_timing
