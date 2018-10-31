@@ -197,7 +197,15 @@ namespace MyCaffe.layers
             }
 
             // Create the unrolled net.
-            m_unrolledNet = new Net<T>(m_cuda, m_log, net_param, m_evtCancel, null);
+            Net<T> sharedNet = null;
+            if (m_param is LayerParameterEx<T>)
+            {
+                RecurrentLayer<T> sharedLayer = ((LayerParameterEx<T>)m_param).SharedLayer as RecurrentLayer<T>;
+                if (sharedLayer != null)
+                    sharedNet = sharedLayer.m_unrolledNet;
+            }
+
+            m_unrolledNet = new Net<T>(m_cuda, m_log, net_param, m_evtCancel, null, Phase.NONE, null, sharedNet);
             m_unrolledNet.set_debug_info(m_param.recurrent_param.debug_info);
 
             // Setup pointers to the inputs.
