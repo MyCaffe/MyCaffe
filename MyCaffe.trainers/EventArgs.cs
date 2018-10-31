@@ -260,6 +260,60 @@ namespace MyCaffe.trainers
     }
 
     /// <summary>
+    /// The ConvertOutputArgs is passed to the OnConvertOutput event.
+    /// </summary>
+    public class ConvertOutputArgs : EventArgs
+    {
+        float[] m_rgOutput;
+        Type m_type;
+        byte[] m_rgRawOutput;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="rgOutput">Specifies the output to convert.</param>
+        public ConvertOutputArgs(float[] rgOutput)
+        {
+            m_rgOutput = rgOutput;
+        }
+
+        /// <summary>
+        /// Specifies the output to convert.
+        /// </summary>
+        public float[] Output
+        {
+            get { return m_rgOutput; }
+        }
+
+        /// <summary>
+        /// Specifies the type of the raw output byte stream.
+        /// </summary>
+        public Type RawType
+        {
+            get { return m_type; }
+        }
+
+        /// <summary>
+        /// Specifies the raw output byte stream.
+        /// </summary>
+        public byte[] RawOutput
+        {
+            get { return m_rgRawOutput; }
+        }
+
+        /// <summary>
+        /// Sets the raw output byte stream and type.
+        /// </summary>
+        /// <param name="rgData">Specifies the raw output byte stream.</param>
+        /// <param name="type">Specifies the raw output type.</param>
+        public void SetRawOutput(byte[] rgData, Type type)
+        {
+            m_rgRawOutput = rgData;
+            m_type = type;
+        }
+    }
+
+    /// <summary>
     /// The GetDataArgs is passed to the OnGetData event.
     /// </summary>
     public class GetDataArgs : EventArgs

@@ -27,7 +27,7 @@ namespace MyCaffe.trainers
     /// Solver: base_lr - specifies the learning rate used.
     /// Model: batch_size - specifies how often accumulated gradients are applied.
     /// </remarks>
-    public partial class MyCaffeTrainerRNN : Component, IXMyCaffeCustomTrainerRNN, IxTrainerCallback
+    public partial class MyCaffeTrainerRNN : Component, IXMyCaffeCustomTrainerRNN, IxTrainerCallbackRNN
     {
         /// <summary>
         /// Specifies the properties parsed from the key-value pair passed to the Initialize method.
@@ -195,6 +195,16 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
+        /// Override called by the OnConvertOutput event fired by the Trainer to convert the network output into its native format.
+        /// </summary>
+        /// <param name="e">Specifies the event arguments.</param>
+        /// <returns>When handled this function retunrs <i>true</i>, otherwise it returns <i>false</i>.</returns>
+        protected virtual bool convertOutput(ConvertOutputArgs e)
+        {
+            return false;
+        }
+
+        /// <summary>
         /// Returns <i>true</i> when the training is ready for a snap-shot, <i>false</i> otherwise.
         /// </summary>
         /// <param name="nIteration">Specifies the current iteration.</param>
@@ -340,7 +350,7 @@ namespace MyCaffe.trainers
         /// Create a new trainer and use it to run a single run cycle.
         /// </summary>
         /// <param name="mycaffe">Specifies the MyCaffeControl to use.</param>
-        /// <param name="nN">specifies the number of samples to run.</param>
+        /// <param name="nN">Specifies the number of samples to run.</param>
         /// <returns>The results of the run are returned.</returns>
         public float[] Run(Component mycaffe, int nN)
         {
@@ -348,6 +358,25 @@ namespace MyCaffe.trainers
                 m_itrainer = createTrainer(mycaffe);
 
             float[] rgResults = m_itrainer.Run(nN);
+            m_itrainer.Shutdown(0);
+            m_itrainer = null;
+
+            return rgResults;
+        }
+
+        /// <summary>
+        /// Run the network using the run technique implemented by this trainer.
+        /// </summary>
+        /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
+        /// <param name="nN">Specifies the number of samples to run.</param>
+        /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
+        /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
+        public byte[] Run(Component mycaffe, int nN, out Type type)
+        {
+            if (m_itrainer == null)
+                m_itrainer = createTrainer(mycaffe);
+
+            byte[] rgResults = m_itrainer.Run(nN, out type);
             m_itrainer.Shutdown(0);
             m_itrainer = null;
 
@@ -415,6 +444,15 @@ namespace MyCaffe.trainers
         public void OnGetData(GetDataArgs e)
         {
             getData(e);
+        }
+
+        /// <summary>
+        /// The OnConvertOutput callback fires from within the Run method and is used to convert the network output into its native format.
+        /// </summary>
+        /// <param name="e">Specifies the event arguments.</param>
+        public void OnConvertOutput(ConvertOutputArgs e)
+        {
+            convertOutput(e);
         }
 
         /// <summary>
