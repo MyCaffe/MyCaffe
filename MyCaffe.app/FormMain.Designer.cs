@@ -59,11 +59,12 @@
             this.resNet56CifarAccuracyBugToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.startCartPoleTrainerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.startAtariTrainerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.localHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.onlineHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.gPUToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.gpuToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialogAutoTests = new System.Windows.Forms.OpenFileDialog();
             this.m_bwLoadMnistDatabase = new System.ComponentModel.BackgroundWorker();
             this.m_bwProcess = new System.ComponentModel.BackgroundWorker();
@@ -75,7 +76,6 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.lblGpu = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
-            this.startAtariTrainerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -87,7 +87,7 @@
             this.databaseToolStripMenuItem,
             this.testToolStripMenuItem,
             this.helpToolStripMenuItem,
-            this.gPUToolStripMenuItem});
+            this.gpuToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Size = new System.Drawing.Size(957, 24);
@@ -318,6 +318,13 @@
             this.startCartPoleTrainerToolStripMenuItem.Text = "Start Cart-Pole Trainer";
             this.startCartPoleTrainerToolStripMenuItem.Click += new System.EventHandler(this.startCartPoleTrainerToolStripMenuItem_Click);
             // 
+            // startAtariTrainerToolStripMenuItem
+            // 
+            this.startAtariTrainerToolStripMenuItem.Name = "startAtariTrainerToolStripMenuItem";
+            this.startAtariTrainerToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
+            this.startAtariTrainerToolStripMenuItem.Text = "Start Atari Trainer";
+            this.startAtariTrainerToolStripMenuItem.Click += new System.EventHandler(this.startAtariTrainerToolStripMenuItem_Click);
+            // 
             // helpToolStripMenuItem
             // 
             this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -351,11 +358,11 @@
             this.aboutToolStripMenuItem.Text = "&About";
             this.aboutToolStripMenuItem.Click += new System.EventHandler(this.aboutToolStripMenuItem_Click);
             // 
-            // gPUToolStripMenuItem
+            // gpuToolStripMenuItem
             // 
-            this.gPUToolStripMenuItem.Name = "gPUToolStripMenuItem";
-            this.gPUToolStripMenuItem.Size = new System.Drawing.Size(42, 20);
-            this.gPUToolStripMenuItem.Text = "GPU";
+            this.gpuToolStripMenuItem.Name = "gpuToolStripMenuItem";
+            this.gpuToolStripMenuItem.Size = new System.Drawing.Size(42, 20);
+            this.gpuToolStripMenuItem.Text = "GPU";
             // 
             // openFileDialogAutoTests
             // 
@@ -439,13 +446,6 @@
             this.timerUI.Interval = 1000;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
-            // startAtariTrainerToolStripMenuItem
-            // 
-            this.startAtariTrainerToolStripMenuItem.Name = "startAtariTrainerToolStripMenuItem";
-            this.startAtariTrainerToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
-            this.startAtariTrainerToolStripMenuItem.Text = "Start Atari Trainer";
-            this.startAtariTrainerToolStripMenuItem.Click += new System.EventHandler(this.startAtariTrainerToolStripMenuItem_Click);
-            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -503,7 +503,7 @@
         private System.Windows.Forms.ToolStripMenuItem localHelpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem onlineHelpToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem cancelToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem gPUToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem gpuToolStripMenuItem;
         private System.ComponentModel.BackgroundWorker m_bwInit;
         private System.ComponentModel.BackgroundWorker m_bwUrlCheck;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;

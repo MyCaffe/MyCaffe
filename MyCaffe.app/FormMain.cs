@@ -233,6 +233,7 @@ namespace MyCaffe.app
             else
             {
                 List<string> rgstrGpu = e.Result as List<string>;
+                int nGpu = Properties.Settings.Default.GPU;
 
                 if (rgstrGpu != null)
                 {
@@ -243,10 +244,10 @@ namespace MyCaffe.app
                         menu.Tag = i;
                         menu.Click += menuGpu_Click;
 
-                        if (i == 0)
+                        if (i == nGpu)
                             menu.Checked = true;
 
-                        gPUToolStripMenuItem.DropDownItems.Add(menu);
+                        gpuToolStripMenuItem.DropDownItems.Add(menu);
                     }
                 }
             }
@@ -256,7 +257,7 @@ namespace MyCaffe.app
         {
             ToolStripMenuItem menu = sender as ToolStripMenuItem;
 
-            foreach (ToolStripMenuItem item in gPUToolStripMenuItem.DropDownItems)
+            foreach (ToolStripMenuItem item in gpuToolStripMenuItem.DropDownItems)
             {
                 item.Checked = false;
             }
@@ -266,7 +267,7 @@ namespace MyCaffe.app
 
         private int getGpu()
         {
-            foreach (ToolStripMenuItem menu in gPUToolStripMenuItem.DropDownItems)
+            foreach (ToolStripMenuItem menu in gpuToolStripMenuItem.DropDownItems)
             {
                 if (menu.Checked)
                     return (int)menu.Tag;
@@ -277,7 +278,7 @@ namespace MyCaffe.app
 
         private string getGpuName()
         {
-            foreach (ToolStripMenuItem menu in gPUToolStripMenuItem.DropDownItems)
+            foreach (ToolStripMenuItem menu in gpuToolStripMenuItem.DropDownItems)
             {
                 if (menu.Checked)
                     return ((int)menu.Tag).ToString() + ": " + menu.Text;
@@ -821,6 +822,9 @@ namespace MyCaffe.app
                 m_caffeRun = null;
                 m_autoTest.Abort();
             }
+
+            Properties.Settings.Default.GPU = getGpu();
+            Properties.Settings.Default.Save();
 
             m_evtCancelPG.Set();
         }
