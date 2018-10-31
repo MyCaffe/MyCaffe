@@ -730,6 +730,11 @@ namespace MyCaffe.test
         {
             m_nIdx = 0;
         }
+
+        public byte[] ConvertOutput(float[] rg, out Type type)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     class CustomQuery2 : IXCustomQuery
@@ -812,6 +817,11 @@ namespace MyCaffe.test
         public void Reset()
         {
             m_nIdx = 0;
+        }
+
+        public byte[] ConvertOutput(float[] rg, out Type type)
+        {
+            throw new NotImplementedException();
         }
     }
 
@@ -897,6 +907,11 @@ namespace MyCaffe.test
         public void Reset()
         {
             m_nIdx = 0;
+        }
+
+        public byte[] ConvertOutput(float[] rg, out Type type)
+        {
+            throw new NotImplementedException();
         }
     }
 }

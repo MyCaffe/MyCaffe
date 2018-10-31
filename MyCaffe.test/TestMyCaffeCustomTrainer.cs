@@ -302,7 +302,9 @@ namespace MyCaffe.test
 
             GymCollection col = new GymCollection();
             col.Load();
-            IXMyCaffeGym igym = col.Find("DataGeneral");
+            IXMyCaffeGymData igym = col.Find("DataGeneral") as IXMyCaffeGymData;
+            m_log.CHECK(igym != null, "The 'DataGeneral' gym should implement the IXMyCaffeGymData interface.");
+
             string strAccelTrain = (bUseAcceleratedTraining) ? "ON" : "OFF";
 
             if (strTrainerType != "RNN.SIMPLE")
@@ -364,9 +366,17 @@ namespace MyCaffe.test
 
             trainer.Train(mycaffe, nIterations);
 
+            Type type;
             int nN = 1000; // Note: see iterations used, for real training the iterations should be 100,000+
-            float[] rgOutput = trainer.Run(mycaffe, nN);
-            string strOut = convertToString(rgOutput);            
+            byte[] rgOutput = trainer.Run(mycaffe, nN, out type);
+            m_log.CHECK(type == typeof(string), "The output type should be a string type!");
+            string strOut;
+
+            using (MemoryStream ms = new MemoryStream(rgOutput))
+            {
+                strOut = Encoding.ASCII.GetString(ms.ToArray());
+            }
+
             m_log.WriteLine(strOut);
 
             trainer.CleanUp();
@@ -389,20 +399,6 @@ namespace MyCaffe.test
             {
                 bw.Write(rgWeights);
             }
-        }
-
-        private string convertToString(float[] rg)
-        {
-            string strOut = "";
-
-            for (int i = 0; i < rg.Length; i++)
-            {
-                int nVal = (int)Convert.ChangeType(rg[i], typeof(int));
-                char ch = (char)nVal;
-                strOut += ch;
-            }
-
-            return strOut;
         }
 
         private ProjectEx getReinforcementProject(IXMyCaffeGym igym, int nIterations, DATA_TYPE dt = DATA_TYPE.VALUES, bool bForceSimple = false)
@@ -763,6 +759,19 @@ namespace MyCaffe.test
                 e.OutputLog.WriteLine("(" + dfPct.ToString("P") + ") Global Iteration #" + nIteration.ToString());
                 m_sw.Restart();
             }
+
+            return true;
+        }
+
+        protected override bool convertOutput(ConvertOutputArgs e)
+        {
+            IXMyCaffeGymData igym = m_igym as IXMyCaffeGymData;
+            if (igym == null)
+                throw new Exception("Output data conversion requires a gym that implements the IXMyCaffeGymData interface.");
+
+            Type type;
+            byte[] rgOutput = igym.ConvertOutput(e.Output, out type);
+            e.SetRawOutput(rgOutput, type);
 
             return true;
         }
