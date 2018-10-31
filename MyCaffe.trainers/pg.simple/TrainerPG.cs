@@ -22,7 +22,7 @@ namespace MyCaffe.trainers.pg.simple
     /// @see 3. [CS231n Convolution Neural Networks for Visual Recognition](http://cs231n.github.io/neural-networks-2/#losses) by Karpathy, Stanford
     /// @see 4. [MyCaffe: A Complete C# Re-Write of Caffe with Reinforcement Learning](https://arxiv.org/abs/1810.02272) by D. Brown, 2018, arXiv
     /// <remarks></remarks>
-    public class TrainerPG<T> : IxTrainer, IDisposable
+    public class TrainerPG<T> : IxTrainerRL, IDisposable
     {
         IxTrainerCallback m_icallback;
         CryptoRandom m_random = new CryptoRandom(true);
