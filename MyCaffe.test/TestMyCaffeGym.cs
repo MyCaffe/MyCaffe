@@ -148,8 +148,7 @@ namespace MyCaffe.test
             Dictionary<string, int> rgActions = igym.GetActionSpace();
             Assert.AreEqual(rgActions.Count, 0);
 
-            igym.Reset();
-            Tuple<State, double, bool> data0 = igym.Step(0);
+            Tuple<State, double, bool> data0 = igym.Reset();
             m_log.CHECK(data0.Item3 != true, "We should not be done just yet.");
             m_log.CHECK_EQ(data0.Item2, 0, "The general data gyms do not have reward values.");
 
