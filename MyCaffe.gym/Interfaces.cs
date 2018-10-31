@@ -3,6 +3,7 @@ using MyCaffe.basecode.descriptors;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
@@ -112,6 +113,20 @@ namespace MyCaffe.gym
         /// Returns whether or not the gym requires the display image.
         /// </summary>
         bool RequiresDisplayImage { get; }
+    }
+
+    /// <summary>
+    /// The IXMyCaffeGym interface is used to interact with each Gym.
+    /// </summary>
+    public interface IXMyCaffeGymData : IXMyCaffeGym
+    {
+        /// <summary>
+        /// Converts the output values into the native type used by the Gym during queries.
+        /// </summary>
+        /// <param name="rg">Specifies the raw output data.</param>
+        /// <param name="type">Returns the output type.</param>
+        /// <returns>The converted output data is returned.</returns>
+        byte[] ConvertOutput(float[] rg, out Type type);
     }
 
     /// <summary>

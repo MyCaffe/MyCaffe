@@ -19,14 +19,13 @@ namespace MyCaffe.gym
     /// <summary>
     /// The DataGeneral Gym provides access to the MyCaffe Streaming Database with GENERAL query types.
     /// </summary>
-    public class DataGeneralGym : IXMyCaffeGym, IDisposable
+    public class DataGeneralGym : IXMyCaffeGymData, IDisposable
     {
         string m_strName = "DataGeneral";
         Log m_log;
         CryptoRandom m_random;
         Dictionary<string, int> m_rgActions = new Dictionary<string, int>();
         DATA_TYPE m_dt = DATA_TYPE.BLOB;
-        DataState m_state = null;
         MyCaffeStreamDatabase m_db;
 
         /// <summary>
@@ -223,6 +222,18 @@ namespace MyCaffe.gym
             m_dt = dt;
 
             return ds;
+        }
+
+        /// <summary>
+        /// Converts the output values into the native type used by the Gym during queries.
+        /// </summary>
+        /// <param name="rg">Specifies the raw output data.</param>
+        /// <param name="type">Returns the output type.</param>
+        /// <returns>The converted output data is returned in a byte stream.</returns>
+        /// <remarks>Note: Currently, only data gym's implement this function.</remarks>
+        public byte[] ConvertOutput(float[] rg, out Type type)
+        {
+            return m_db.ConvertOutput(rg, out type);
         }
     }
 
