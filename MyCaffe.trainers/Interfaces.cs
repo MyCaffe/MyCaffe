@@ -21,9 +21,13 @@ namespace MyCaffe.trainers
         /// </summary>
         CUSTOM,
         /// <summary>
-        /// Defines the reinforcement training method such as A2C or A3C.
+        /// Defines the reinforcement training method such as PG.
         /// </summary>
-        REINFORCEMENT
+        REINFORCEMENT,
+        /// <summary>
+        /// Defines the recurrent training method.
+        /// </summary>
+        RECURRENT
     }
 
     /// <summary>
@@ -55,8 +59,8 @@ namespace MyCaffe.trainers
         /// Returns <i>true</i> when the training is ready for a snap-shot, <i>false</i> otherwise.
         /// </summary>
         /// <param name="nIteration">Specifies the current iteration.</param>
-        /// <param name="dfRewards">Returns the best rewards to this point.</param>
-        bool GetUpdateSnapshot(out int nIteration, out double dfRewards);
+        /// <param name="dfAccuracy">Specifies the current accuracy or rewards for Reinforcement trainers.</param>
+        bool GetUpdateSnapshot(out int nIteration, out double dfAccuracy);
         /// <summary>
         /// Returns a dataset override to use (if any) instead of the project's dataset.  If there is no dataset override
         /// <i>null</i> is returned and the project's dataset is used.
@@ -89,36 +93,60 @@ namespace MyCaffe.trainers
         /// <param name="nIterationOverride">Specifies the iteration override if any.</param>
         void Test(Component mycaffe, int nIterationOverride);
         /// <summary>
-        /// Run the network using the run technique implemented by this trainer.
+        /// Returns a specific property value.
         /// </summary>
-        /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
-        /// <param name="nDelay">Specifies a delay to wait before getting the action.</param>
-        /// <returns>The run results are returned.</returns>
-        ResultCollection Run(Component mycaffe, int nDelay);
-        /// <summary>
-        /// Returns the global loss.
-        /// </summary>
-        double GlobalLoss { get; }
-        /// <summary>
-        /// Returns the global rewards.
-        /// </summary>
-        double GlobalRewards { get; }
-        /// <summary>
-        /// Returns the global episode count.
-        /// </summary>
-        int GlobalEpisodeCount { get; }
-        /// <summary>
-        /// Returns the current exploration rate.
-        /// </summary>
-        double ExplorationRate { get; }
-        /// <summary>
-        /// Returns information describing the trainer, such as the gym used if any.
+        /// <param name="strName">Specifies the property to get.</param>
+        /// <returns>The property value is returned.</returns>
+        /// <remarks>
+        /// The following properties are supported by all trainers:
+        ///     'GlobalLoss'
+        ///     
+        /// The following properties are supported by the RL trainers:
+        ///     'GlobalRewards'
+        ///     'GlobalEpisodeCount'
+        ///     'ExplorationRate'
+        ///    
+        /// The following properties are supported by the RNN trainers:
+        ///     'GlobalIteration'
+        /// </remarks>
+        double GetProperty(string strName);
         /// </summary>
         string Information { get; }
         /// <summary>
         /// Open the user interface if one exists for the trainer.
         /// </summary>
         void OpenUi();
+    }
+
+    /// <summary>
+    /// The IXMyCaffeCustomTrainer interface is used by the MyCaffeCustomTraininer components that
+    /// provide various training techniques such as Reinforcement Training.
+    /// </summary>
+    public interface IXMyCaffeCustomTrainerRL : IXMyCaffeCustomTrainer
+    {
+        /// <summary>
+        /// Run the network using the run technique implemented by this trainer.
+        /// </summary>
+        /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
+        /// <param name="nDelay">Specifies a delay to wait before getting the action.</param>
+        /// <returns>The run results are returned.</returns>
+        ResultCollection Run(Component mycaffe, int nDelay);
+    }
+
+
+    /// <summary>
+    /// The IXMyCaffeCustomTrainer interface is used by the MyCaffeCustomTraininer components that
+    /// provide various training techniques such as Reinforcement Training.
+    /// </summary>
+    public interface IXMyCaffeCustomTrainerRNN : IXMyCaffeCustomTrainer
+    {
+        /// <summary>
+        /// Run the network u sing the run technique implemented by this trainer.
+        /// </summary>
+        /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
+        /// <param name="nN">specifies the number of samples to run.</param>
+        /// <returns>The run results are returned.</returns>
+        float[] Run(Component mycaffe, int nN);
     }
 
     /// <summary>
@@ -129,11 +157,9 @@ namespace MyCaffe.trainers
         /// <summary>
         /// The Update method updates the parent with the global iteration, reward and loss.
         /// </summary>
-        /// <param name="nIteration">Specifies the current global episode.</param>
-        /// <param name="dfGlobalReward">Specifies the current global reward.</param>
-        /// <param name="dfGlobalLoss">Specifies the current global loss.</param>
-        /// <param name="dfLearningRate">Specifies the current learning rate used.</param>
-        void Update(int nIteration, double dfGlobalReward, double dfGlobalLoss, double dfLearningRate);
+        /// <param name="cat">Specifies the category of the trainer used.</param>
+        /// <param name="rgValues">Specifies a dictionary of values that contains 'GlobalIteration', 'GlobalLoss', "LearningRate' and 'GlobalReward' (PG trainers only) values.</param>
+        void Update(TRAINING_CATEGORY cat, Dictionary<string, double> rgValues);
     }
 
     /// <summary>
@@ -165,12 +191,32 @@ namespace MyCaffe.trainers
         /// <param name="nIterations">Specifies the number of iterations to run.</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> on failure.</returns>
         bool Test(int nIterations);
+    }
+
+    /// <summary>
+    /// The IxTrainerRL interface is implemented by each RL Trainer.
+    /// </summary>
+    public interface IxTrainerRL : IxTrainer
+    {
         /// <summary>
         /// Run a single cycle on the trainer.
         /// </summary>
         /// <param name="nDelay">Specifies a delay to wait before getting the action.</param>
         /// <returns>The result collection containing the action is returned.</returns>
         ResultCollection Run(int nDelay = 1000);
+    }
+
+    /// <summary>
+    /// The IxTrainerRL interface is implemented by each RL Trainer.
+    /// </summary>
+    public interface IxTrainerRNN : IxTrainer
+    {
+        /// <summary>
+        /// Run a single cycle on the trainer.
+        /// </summary>
+        /// <param name="nN">specifies the number of samples to run.</param>
+        /// <returns>The result collection containing the action is returned.</returns>
+        float[] Run(int nN);
     }
 
     /// <summary>

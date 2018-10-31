@@ -49,6 +49,12 @@
   <ItemGroup>
     <Compile Include="EventArgs.cs" />
     <Compile Include="Interfaces.cs" />
+    <Compile Include="MyCaffeTrainerRNN.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="MyCaffeTrainerRNN.Designer.cs">
+      <DependentUpon>MyCaffeTrainerRNN.cs</DependentUpon>
+    </Compile>
     <Compile Include="MyCaffeTrainerRL.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -58,6 +64,7 @@
     <Compile Include="pg.mt\TrainerPG.cs" />
     <Compile Include="pg.st\TrainerPG.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="rnn.simple\TrainerRNN.cs" />
     <Compile Include="StateBase.cs" />
     <Compile Include="pg.simple\TrainerPG.cs" />
   </ItemGroup>
