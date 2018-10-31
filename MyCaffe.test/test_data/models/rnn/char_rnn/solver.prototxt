@@ -1,0 +1,14 @@
+test_iter: 0
+device_id: 1
+type: SGD
+net: "caffe_char_rnn.prototxt"
+base_lr: 0.05
+momentum: 0.9
+lr_policy: "fixed"
+
+display: 1000
+max_iter: 100000
+
+snapshot: 1000
+snapshot_prefix: "caffe_char_rnn"
+
