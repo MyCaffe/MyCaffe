@@ -462,11 +462,16 @@ namespace MyCaffe.trainers
         {
             if (m_icallback != null)
             {
+                m_dfLoss = e.Loss;
+                m_nIteration = e.Frames;
+                m_nIterations = e.MaxFrames;
+                m_dfAccuracy = e.Reward;
+
                 Dictionary<string, double> rgValues = new Dictionary<string, double>();
-                rgValues.Add("GlobalIteration", m_nIteration);
-                rgValues.Add("GlobalLoss", m_dfLoss);
+                rgValues.Add("GlobalIteration", e.Frames);
+                rgValues.Add("GlobalLoss", e.Loss);
                 rgValues.Add("LearningRate", e.LearningRate);
-                rgValues.Add("GlobalAccuracy", m_dfAccuracy);
+                rgValues.Add("GlobalAccuracy", e.Reward);
                 m_icallback.Update(TrainingCategory, rgValues);
             }
         }

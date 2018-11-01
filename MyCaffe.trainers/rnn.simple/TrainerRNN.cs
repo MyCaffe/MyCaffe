@@ -173,7 +173,7 @@ namespace MyCaffe.trainers.rnn.simple
         public Agent(IxTrainerCallback icallback, MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase)
         {
             m_icallback = icallback;
-            m_brain = new Brain<T>(mycaffe, properties, random, phase);
+            m_brain = new Brain<T>(mycaffe, properties, random, icallback as IxTrainerCallbackRNN, phase);
             m_properties = properties;
             m_random = random;
         }
@@ -194,11 +194,6 @@ namespace MyCaffe.trainers.rnn.simple
             return args.State;
         }
 
-        private void updateStatus(int nEpisodeCount, double dfRewardSum, double dfRunningReward)
-        {
-            GetStatusArgs args = new GetStatusArgs(0, nEpisodeCount, 1000000, dfRunningReward, 0, 0, 0, 0);
-            m_icallback.OnUpdateStatus(args);
-        }
 
         /// <summary>
         /// The Run method provides the main 'actor' loop that performs the following steps:
@@ -256,6 +251,7 @@ namespace MyCaffe.trainers.rnn.simple
 
     class Brain<T> : IDisposable /** @private */
     {
+        IxTrainerCallbackRNN m_icallback;
         MyCaffeControl<T> m_mycaffe;
         Net<T> m_net;
         Solver<T> m_solver;
@@ -276,16 +272,20 @@ namespace MyCaffe.trainers.rnn.simple
         byte[] m_rgTestData;
         byte[] m_rgTrainData;
         string m_strSeed = null;
+        Stopwatch m_sw = new Stopwatch();
+        double m_dfLastLoss = 0;
+        double m_dfLastLearningRate = 0;
 
-        public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase)
+        public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallbackRNN icallback, Phase phase)
         {
+            m_icallback = icallback;
             m_mycaffe = mycaffe;
             m_net = mycaffe.GetInternalNet(phase);         
             m_properties = properties;
             m_random = random;
 
             m_dfTemperature = m_properties.GetPropertyAsDouble("Temperature", 0);
-            m_strSeed = m_properties.GetProperty("Seed", false);
+            m_strSeed = Utility.Replace(m_properties.GetProperty("Seed", false), "[sp]", ' ');
 
             if ((m_blobData = m_net.FindBlob("data")) == null)
                 throw new Exception("Could not find the 'Input' layer top named 'data'!");
@@ -321,6 +321,8 @@ namespace MyCaffe.trainers.rnn.simple
                 m_solver = mycaffe.GetInternalSolver();
                 m_solver.OnStart += m_solver_OnStart;
                 m_solver.OnTestStart += m_solver_OnTestStart;
+                m_solver.OnTestingIteration += m_solver_OnTestingIteration;
+                m_solver.OnTrainingIteration += m_solver_OnTrainingIteration;
 
                 if ((m_blobLabel = m_net.FindBlob("label")) == null)
                     throw new Exception("Could not find the 'Input' layer top named 'label'!");
@@ -340,6 +342,26 @@ namespace MyCaffe.trainers.rnn.simple
             }
         }
 
+        private void m_solver_OnTrainingIteration(object sender, TrainingIterationArgs<T> e)
+        {
+            if (m_sw.Elapsed.TotalMilliseconds > 1000)
+            {
+                m_dfLastLoss = e.SmoothedLoss;
+                m_dfLastLearningRate = e.LearningRate;
+                updateStatus(e.Iteration, m_solver.MaximumIteration, e.Accuracy, e.SmoothedLoss, e.LearningRate);
+                m_sw.Restart();
+            }
+        }
+
+        private void m_solver_OnTestingIteration(object sender, TestingIterationArgs<T> e)
+        {
+            if (m_sw.Elapsed.TotalMilliseconds > 1000)
+            {
+                updateStatus(e.Iteration, m_solver.MaximumIteration, e.Accuracy, m_dfLastLoss, m_dfLastLearningRate);
+                m_sw.Restart();
+            }
+        }
+
         private void dispose(ref Blob<T> b)
         {
             if (b != null)
@@ -351,6 +373,12 @@ namespace MyCaffe.trainers.rnn.simple
 
         public void Dispose()
         {
+        }
+
+        private void updateStatus(int nIteration, int nMaxIteration, double dfAccuracy, double dfLoss, double dfLearningRate)
+        {
+            GetStatusArgs args = new GetStatusArgs(0, nIteration, nMaxIteration, dfAccuracy, 0, 0, dfLoss, dfLearningRate);
+            m_icallback.OnUpdateStatus(args);
         }
 
         public GetDataArgs getDataArgs(int nAction)
@@ -384,6 +412,7 @@ namespace MyCaffe.trainers.rnn.simple
             m_rgTestData = new byte[nTestLen];
             Array.Copy(s.Data.ByteData, nTrainLen, m_rgTestData, 0, nTestLen);
 
+            m_sw.Start();
             m_solver.TestAll(nIterations);
         }
 
@@ -402,6 +431,7 @@ namespace MyCaffe.trainers.rnn.simple
             Array.Copy(s.Data.ByteData, 0, m_rgTrainData, 0, nTrainLen);
             Array.Copy(s.Data.ByteData, nTrainLen, m_rgTestData, 0, nTestLen);
 
+            m_sw.Start();
             m_solver.Solve(nIterations, null, null, step);
         }
 
