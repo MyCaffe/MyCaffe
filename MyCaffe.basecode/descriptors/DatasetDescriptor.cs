@@ -23,7 +23,7 @@ namespace MyCaffe.basecode.descriptors
         ParameterDescriptorCollection m_colParameters = new ParameterDescriptorCollection();
         string m_strCreatorName;
         string m_strDescription;
-        bool m_bGym = false;
+        GYM_TYPE m_gymType = GYM_TYPE.NONE;
 
         /// <summary>
         /// The DatasetDescriptor constructor.
@@ -38,10 +38,10 @@ namespace MyCaffe.basecode.descriptors
         /// <param name="strDescription">Specifies a description of the dataset.</param>
         /// <param name="strOwner">Specifies the identifier of the item's owner.</param>
         /// <param name="bGym">Specifies whether or not this dataset is a gym (default = false).</param>
-        public DatasetDescriptor(int nID, string strName, GroupDescriptor grpModel, GroupDescriptor grpDs, SourceDescriptor srcTrain, SourceDescriptor srcTest, string strCreatorName, string strDescription, string strOwner = null, bool bGym = false)
+        public DatasetDescriptor(int nID, string strName, GroupDescriptor grpModel, GroupDescriptor grpDs, SourceDescriptor srcTrain, SourceDescriptor srcTest, string strCreatorName, string strDescription, string strOwner = null, GYM_TYPE gym = GYM_TYPE.NONE)
             : base(nID, strName, strOwner)
         {
-            m_bGym = bGym;
+            m_gymType = gym;
 
             if (grpModel != null)
                 m_groupModel = new descriptors.GroupDescriptor(grpModel);
@@ -77,7 +77,7 @@ namespace MyCaffe.basecode.descriptors
         /// </summary>
         /// <param name="d">Specifies another DatasetDesciptor used to create this one.</param>
         public DatasetDescriptor(DatasetDescriptor d)
-            : this(d.ID, d.Name, d.ModelGroup, d.DatasetGroup, d.TrainingSource, d.TestingSource, d.CreatorName, d.Description, d.Owner, d.IsGym)
+            : this(d.ID, d.Name, d.ModelGroup, d.DatasetGroup, d.TrainingSource, d.TestingSource, d.CreatorName, d.Description, d.Owner, d.GymType)
         {
             m_colParameters = new ParameterDescriptorCollection(d.Parameters);
         }
@@ -102,7 +102,7 @@ namespace MyCaffe.basecode.descriptors
         {
             base.Copy(ds);
 
-            m_bGym = ds.m_bGym;
+            m_gymType = ds.m_gymType;
 
             if (ds.m_srcTest != null)
                 m_srcTest = new SourceDescriptor(ds.m_srcTest);
@@ -139,7 +139,15 @@ namespace MyCaffe.basecode.descriptors
         /// </summary>
         public bool IsGym
         {
-            get { return m_bGym; }
+            get { return (m_gymType == GYM_TYPE.NONE) ? false : true; }
+        }
+
+        /// <summary>
+        /// Returns the Gym type, if any.
+        /// </summary>
+        public GYM_TYPE GymType
+        {
+            get { return m_gymType; }
         }
 
         /// <summary>
@@ -147,7 +155,7 @@ namespace MyCaffe.basecode.descriptors
         /// </summary>
         public string FullName
         {
-            get { return (m_bGym) ? "GYM:" + Name : Name; }
+            get { return (IsGym) ? "GYM:" + Name : Name; }
         }
 
         /// <summary>
