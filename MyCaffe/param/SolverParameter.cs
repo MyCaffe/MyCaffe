@@ -236,7 +236,7 @@ namespace MyCaffe.param
         public string custom_trainer_properties
         {
             get { return m_strCustomTrainerProperties; }
-            set { m_strCustomTrainerProperties = Utility.Replace(value, ' ', '~'); }
+            set { m_strCustomTrainerProperties = Utility.Replace(value, ' ', "[sp]"); }
         }
 
         /// <summary>
