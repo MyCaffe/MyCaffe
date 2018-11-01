@@ -1027,17 +1027,15 @@ namespace MyCaffe.param
                     break;
 
                 case LayerType.RNN:
-                    expected_bottom.Add("time");
-                    expected_bottom.Add("seq");
-                    expected_bottom.Add("stat");
+                    expected_bottom.Add("time_seq");
+                    expected_bottom.Add("clip");
                     expected_top.Add("rnn");
                     m_rgLayerParameters[LayerType.RECURRENT] = new RecurrentParameter();
                     break;
 
                 case LayerType.LSTM:
-                    expected_bottom.Add("time");
-                    expected_bottom.Add("seq");
-                    expected_bottom.Add("stat");
+                    expected_bottom.Add("time_seq");
+                    expected_bottom.Add("clip");
                     expected_top.Add("lstm");
                     m_rgLayerParameters[LayerType.RECURRENT] = new RecurrentParameter();
                     break;
