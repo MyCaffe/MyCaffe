@@ -220,16 +220,15 @@ namespace MyCaffe.trainers
     public interface IxTrainerRNN : IxTrainer
     {
         /// <summary>
-        /// Run a number of 'nN' cycles on the trainer.
+        /// Run a number of 'nN' samples on the trainer.
         /// </summary>
         /// <param name="nN">specifies the number of samples to run.</param>
         /// <returns>The result collection containing the action is returned.</returns>
         float[] Run(int nN);
 
         /// <summary>
-        /// Run a number of 'nN' cycles on the trainer.
+        /// Run a number of 'nN' samples on the trainer.
         /// </summary>
-        /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
         /// <param name="nN">Specifies the number of samples to run.</param>
         /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
         /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
