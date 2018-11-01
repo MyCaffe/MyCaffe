@@ -646,6 +646,64 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Replaces each instance of one character with another string in a given string.
+        /// </summary>
+        /// <param name="str">Specifies the string.</param>
+        /// <param name="ch1">Specifies the character to find.</param>
+        /// <param name="str2">Specifies the string replacement.</param>
+        /// <returns>The new string is returned.</returns>
+        public static string Replace(string str, char ch1, string str2)
+        {
+            if (str == null)
+                return null;
+
+            string strOut = "";
+
+            foreach (char ch in str)
+            {
+                if (ch == ch1)
+                    strOut += str2;
+                else
+                    strOut += ch;
+            }
+
+            return strOut;
+        }
+
+        /// <summary>
+        /// Replaces each instance of one character with another string in a given string.
+        /// </summary>
+        /// <param name="str">Specifies the string.</param>
+        /// <param name="str1">Specifies the string to find.</param>
+        /// <param name="ch2">Specifies the char replacement.</param>
+        /// <returns>The new string is returned.</returns>
+        public static string Replace(string str, string str1, char ch2)
+        {
+            if (str == null)
+                return null;
+
+            string strOut = "";
+
+            while (str.Length > 0)
+            {
+                int nPos = str.IndexOf(str1);
+                if (nPos >= 0)
+                {
+                    strOut += str.Substring(0, nPos);
+                    strOut += ch2;
+                    str = str.Substring(nPos + str1.Length);
+                }
+                else
+                {
+                    strOut += str;
+                    str = "";
+                }
+            }
+
+            return strOut;
+        }
+
+        /// <summary>
         /// Convert a date time into minutes since 1/1/1980
         /// </summary>
         /// <param name="dt">Specifies the datetime to convert.</param>
