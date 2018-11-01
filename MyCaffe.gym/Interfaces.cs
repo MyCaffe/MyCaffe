@@ -11,6 +11,27 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.gym
 {
+    public enum GYM_DS_ID
+    {
+        CARTPOLE = 99990001,
+        ATARI = 99990002,
+        DATAGENERAL = 99991001,
+    }
+
+    public enum GYM_SRC_TRAIN_ID
+    {
+        CARTPOLE = 99995001,
+        ATARI = 99995002,
+        DATAGENERAL = 99996001
+    }
+
+    public enum GYM_SRC_TEST_ID
+    {
+        CARTPOLE = 99997001,
+        ATARI = 99997002,
+        DATAGENERAL = 99998001
+    }
+
     /// <summary>
     /// Defines the gym data type.
     /// </summary>

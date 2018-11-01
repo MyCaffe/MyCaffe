@@ -442,9 +442,9 @@ namespace MyCaffe.gym
             int nW = 80;
             int nC = 1;
 
-            SourceDescriptor srcTrain = new SourceDescriptor(9999988, Name + ".training", nW, nH, nC, false, false);
-            SourceDescriptor srcTest = new SourceDescriptor(9999989, Name + ".testing", nW, nH, nC, false, false);
-            DatasetDescriptor ds = new DatasetDescriptor(9999989, Name, null, null, srcTrain, srcTest, "AtariGym", "Atari Gym", null, true);
+            SourceDescriptor srcTrain = new SourceDescriptor((int)GYM_DS_ID.ATARI, Name + ".training", nW, nH, nC, false, false);
+            SourceDescriptor srcTest = new SourceDescriptor((int)GYM_SRC_TEST_ID.ATARI, Name + ".testing", nW, nH, nC, false, false);
+            DatasetDescriptor ds = new DatasetDescriptor((int)GYM_SRC_TRAIN_ID.ATARI, Name, null, null, srcTrain, srcTest, "AtariGym", "Atari Gym", null, GYM_TYPE.DYNAMIC);
 
             m_dt = dt;
 

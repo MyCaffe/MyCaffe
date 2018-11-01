@@ -215,9 +215,9 @@ namespace MyCaffe.gym
             int nH = 1;
             int nW = 0;
 
-            SourceDescriptor srcTrain = new SourceDescriptor(9999978, Name + ".training", nW, nH, nC, false, false);
-            SourceDescriptor srcTest = new SourceDescriptor(9999979, Name + ".testing", nW, nH, nC, false, false);
-            DatasetDescriptor ds = new DatasetDescriptor(9999979, Name, null, null, srcTrain, srcTest, "DataGym", "Data Gym", null, true);
+            SourceDescriptor srcTrain = new SourceDescriptor((int)GYM_DS_ID.DATAGENERAL, Name + ".training", nW, nH, nC, false, false);
+            SourceDescriptor srcTest = new SourceDescriptor((int)GYM_SRC_TEST_ID.DATAGENERAL, Name + ".testing", nW, nH, nC, false, false);
+            DatasetDescriptor ds = new DatasetDescriptor((int)GYM_SRC_TRAIN_ID.DATAGENERAL, Name, null, null, srcTrain, srcTest, "DataGym", "Data Gym", null, GYM_TYPE.DATA);
 
             m_dt = dt;
 

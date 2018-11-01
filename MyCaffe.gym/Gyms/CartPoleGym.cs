@@ -440,9 +440,9 @@ namespace MyCaffe.gym
                 nC = 3;
             }
 
-            SourceDescriptor srcTrain = new SourceDescriptor(9999998, Name + ".training", nW, nH, nC, false, false);
-            SourceDescriptor srcTest = new SourceDescriptor(9999999, Name + ".testing", nW, nH, nC, false, false);
-            DatasetDescriptor ds = new DatasetDescriptor(9999999, Name, null, null, srcTrain, srcTest, "CartPoleGym", "CartPole Gym", null, true);
+            SourceDescriptor srcTrain = new SourceDescriptor((int)GYM_DS_ID.CARTPOLE, Name + ".training", nW, nH, nC, false, false);
+            SourceDescriptor srcTest = new SourceDescriptor((int)GYM_SRC_TEST_ID.CARTPOLE, Name + ".testing", nW, nH, nC, false, false);
+            DatasetDescriptor ds = new DatasetDescriptor((int)GYM_SRC_TRAIN_ID.CARTPOLE, Name, null, null, srcTrain, srcTest, "CartPoleGym", "CartPole Gym", null, GYM_TYPE.DYNAMIC);
 
             m_dt = dt;
 
