@@ -382,7 +382,7 @@ namespace MyCaffe.test
 
             m_log.WriteLine(strOut);
 
-            string strOutputFile = strDataPath + "\\output" + ((typeof(T) == typeof(float)) ? "F" : "D") + ".txt";
+            string strOutputFile = strModelPath + "\\output" + ((typeof(T) == typeof(float)) ? "F" : "D") + ".txt";
             if (File.Exists(strOutputFile))
                 File.Delete(strOutputFile);
 
