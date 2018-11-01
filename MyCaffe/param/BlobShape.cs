@@ -168,5 +168,25 @@ namespace MyCaffe.param
         {
             return new BlobShape(rp.FindArray<int>("dim"));
         }
+
+        /// <summary>
+        /// Return the string representation of the shape.
+        /// </summary>
+        /// <returns>The string representation is returned.</returns>
+        public override string ToString()
+        {
+            string strOut = "{";
+
+            for (int i = 0; i < m_rgDim.Count; i++)
+            {
+                strOut += m_rgDim[i].ToString();
+                strOut += ",";
+            }
+
+            strOut = strOut.TrimEnd(',');
+            strOut += "}";
+
+            return strOut;
+        }
     }
 }
