@@ -33,6 +33,25 @@ namespace MyCaffe.basecode
     }
 
     /// <summary>
+    /// Defines the gym type (if any).
+    /// </summary>
+    public enum GYM_TYPE
+    {
+        /// <summary>
+        /// Specifies that the type is not a gym.
+        /// </summary>
+        NONE,
+        /// <summary>
+        /// Specifies a dynamic gym type that dynamically produces its data.
+        /// </summary>
+        DYNAMIC,
+        /// <summary>
+        /// Specifies a data gym that collects data from a data source, such as a database.
+        /// </summary>
+        DATA
+    }
+
+    /// <summary>
     /// Defines how to laod the images into the image database.
     /// </summary>
     public enum IMAGEDB_LOAD_METHOD
