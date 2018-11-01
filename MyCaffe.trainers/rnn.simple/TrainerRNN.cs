@@ -275,6 +275,7 @@ namespace MyCaffe.trainers.rnn.simple
         List<int> m_rgCorrectLengthSequence = null;
         byte[] m_rgTestData;
         byte[] m_rgTrainData;
+        string m_strSeed = null;
 
         public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase)
         {
@@ -284,6 +285,7 @@ namespace MyCaffe.trainers.rnn.simple
             m_random = random;
 
             m_dfTemperature = m_properties.GetPropertyAsDouble("Temperature", 0);
+            m_strSeed = m_properties.GetProperty("Seed", false);
 
             if ((m_blobData = m_net.FindBlob("data")) == null)
                 throw new Exception("Could not find the 'Input' layer top named 'data'!");
@@ -455,8 +457,19 @@ namespace MyCaffe.trainers.rnn.simple
                 rgInput.Add(m_rgCorrectLengthSequence[i]);
             }
 
-            sw.Start();
+            if (m_strSeed != null)
+            {
+                int nStart = m_rgCorrectLengthSequence.Count - m_strSeed.Length;
+                if (nStart < 0)
+                    nStart = 0;
 
+                for (int i = nStart; i < m_rgCorrectLengthSequence.Count; i++)
+                {
+                    m_rgCorrectLengthSequence[i] = m_strSeed[i - nStart];
+                }
+            }
+
+            sw.Start();
 
             for (int i = 0; i < nN; i++)
             {

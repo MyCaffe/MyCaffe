@@ -348,18 +348,21 @@ namespace MyCaffe.test
             //
             //  - TrainerType = 'RNN.SIMPLE' (currently only one supported)
             //  - UseAcceleratedTraining = False (disable accelerated training).
+            //  - Temperature = 0.5 (determines how precisely to use the output probabilities when selecting the output characters)
+            //  - Seed = 'To be, or not to be: that is the question:'
             //  - ConnectionCount=1 (using one query)
             //  - Connection0_CustomQueryName=StdTextFileQuery (using standard text file query to read the text files)
             //  - Connection0_CustomQueryParam=params (set the custom query parameters to the packed parameters containing the FilePath where the text files are to be loaded).
             string strSchema = "ConnectionCount=1;";
             string strDataPath = getTestPath("\\MyCaffe\\test_data\\data\\char-rnn", true);
             string strParam = "FilePath=" + strDataPath + ";";
+            string strSeed = "To be, or not to be: that is the question:";
 
             strParam = ParamPacker.Pack(strParam);
             strSchema += "Connection0_CustomQueryName=StdTextFileQuery;";
             strSchema += "Connection0_CustomQueryParam=" + strParam + ";";
 
-            trainer.Initialize("TrainerType=" + strTrainerType + ";UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";Temperature=0.5;" + strSchema, null);
+            trainer.Initialize("TrainerType=" + strTrainerType + ";UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";Temperature=0.5;Seed=" + strSeed + ";" + strSchema, null);
 
             if (bShowUi)
                 trainer.OpenUi();
@@ -367,7 +370,7 @@ namespace MyCaffe.test
             trainer.Train(mycaffe, nIterations);
 
             Type type;
-            int nN = 1000; // Note: see iterations used, for real training the iterations should be 100,000+
+            int nN = 10000; // Note: see iterations used, for real training the iterations should be 100,000+
             byte[] rgOutput = trainer.Run(mycaffe, nN, out type);
             m_log.CHECK(type == typeof(string), "The output type should be a string type!");
             string strOut;
@@ -378,6 +381,15 @@ namespace MyCaffe.test
             }
 
             m_log.WriteLine(strOut);
+
+            string strOutputFile = strDataPath + "\\output" + ((typeof(T) == typeof(float)) ? "F" : "D") + ".txt";
+            if (File.Exists(strOutputFile))
+                File.Delete(strOutputFile);
+
+            using (StreamWriter sw = new StreamWriter(strOutputFile))
+            {
+                sw.Write(strOut);
+            }
 
             trainer.CleanUp();
 
