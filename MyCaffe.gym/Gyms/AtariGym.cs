@@ -119,7 +119,12 @@ namespace MyCaffe.gym
             if (properties == null)
                 throw new Exception("The properties must be specified with the 'GameROM' set the the Game ROM file path.");
 
-            string strROM = Utility.Replace(properties.GetProperty("GameROM"), '~', ' ');
+            string strROM = properties.GetProperty("GameROM");
+            if (strROM.Contains('~'))
+                strROM = Utility.Replace(strROM, '~', ' ');
+            else
+                strROM = Utility.Replace(strROM, "[sp]", ' ');
+
             if (!File.Exists(strROM))
                 throw new Exception("Could not find the game ROM file specified '" + strROM + "'!");
 
