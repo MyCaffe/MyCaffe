@@ -525,9 +525,13 @@ namespace MyCaffe.trainers.rnn.simple
                 if (sw.Elapsed.TotalMilliseconds > 1000)
                 {
                     double dfPct = (double)i / (double)nN;
+                    m_mycaffe.Log.Progress = dfPct;
                     m_mycaffe.Log.WriteLine("Running at " + dfPct.ToString("P") + " complete...");
                     sw.Restart();
                 }
+
+                if (m_mycaffe.CancelEvent.WaitOne(0))
+                    break;
             }
 
             return rgPredictions;
