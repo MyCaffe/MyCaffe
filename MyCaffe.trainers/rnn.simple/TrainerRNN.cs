@@ -112,8 +112,9 @@ namespace MyCaffe.trainers.rnn.simple
         /// <summary>
         /// Run a single cycle on the environment after the delay.
         /// </summary>
-        /// <param name="nN">specifies the number of samples to run.</param>
-        /// <returns>The results of the run containing the action are returned.</returns>
+        /// <param name="nN">Specifies the number of samples to run.</param>
+        /// <param name="type">Returns the data type contained in the byte stream.</param>
+        /// <returns>The results of the run containing the action are returned as a byte stream.</returns>
         public byte[] Run(int nN, out Type type)
         {
             m_mycaffe.CancelEvent.Reset();

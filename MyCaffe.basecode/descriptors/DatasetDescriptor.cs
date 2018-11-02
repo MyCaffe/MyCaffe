@@ -37,7 +37,7 @@ namespace MyCaffe.basecode.descriptors
         /// <param name="strCreatorName">Specifies the dataset creator name.</param>
         /// <param name="strDescription">Specifies a description of the dataset.</param>
         /// <param name="strOwner">Specifies the identifier of the item's owner.</param>
-        /// <param name="bGym">Specifies whether or not this dataset is a gym (default = false).</param>
+        /// <param name="gymType">Optionally, specifies the gym type to use if any (default = NONE).</param>
         public DatasetDescriptor(int nID, string strName, GroupDescriptor grpModel, GroupDescriptor grpDs, SourceDescriptor srcTrain, SourceDescriptor srcTest, string strCreatorName, string strDescription, string strOwner = null, GYM_TYPE gym = GYM_TYPE.NONE)
             : base(nID, strName, strOwner)
         {

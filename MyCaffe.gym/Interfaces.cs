@@ -11,24 +11,60 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.gym
 {
+    /// <summary>
+    /// Defines the Standard GYM Dataset ID's.
+    /// </summary>
     public enum GYM_DS_ID
     {
+        /// <summary>
+        /// Specifies the Standard CARTPOLE GYM Dataset ID.
+        /// </summary>
         CARTPOLE = 99990001,
+        /// <summary>
+        /// Specifies the Standard ATARI GYM Dataset ID.
+        /// </summary>
         ATARI = 99990002,
+        /// <summary>
+        /// Specifies the Standard DATAGENERAL GYM Dataset ID.
+        /// </summary>
         DATAGENERAL = 99991001,
     }
 
+    /// <summary>
+    /// Defines the Standard GYM Training Data Source ID's.
+    /// </summary>
     public enum GYM_SRC_TRAIN_ID
     {
+        /// <summary>
+        /// Specifies the Standard CARTPOLE GYM Training Dataset ID.
+        /// </summary>
         CARTPOLE = 99995001,
+        /// <summary>
+        /// Specifies the Standard ATARI GYM Training Dataset ID.
+        /// </summary>
         ATARI = 99995002,
+        /// <summary>
+        /// Specifies the Standard DATAGENERAL GYM Training Dataset ID.
+        /// </summary>
         DATAGENERAL = 99996001
     }
 
+    /// <summary>
+    /// Defines the Standard GYM Testing Data Source ID's.
+    /// </summary>
     public enum GYM_SRC_TEST_ID
     {
+        /// <summary>
+        /// Specifies the Standard CARTPOLE GYM Testing Dataset ID.
+        /// </summary>
         CARTPOLE = 99997001,
+        /// <summary>
+        /// Specifies the Standard ATARI GYM Testing Dataset ID.
+        /// </summary>
         ATARI = 99997002,
+        /// <summary>
+        /// Specifies the Standard DATAGENERAL GYM Testing Dataset ID.
+        /// </summary>
         DATAGENERAL = 99998001
     }
 
