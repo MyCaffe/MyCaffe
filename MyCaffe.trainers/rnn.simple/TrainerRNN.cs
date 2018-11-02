@@ -28,6 +28,7 @@ namespace MyCaffe.trainers.rnn.simple
         MyCaffeControl<T> m_mycaffe;
         PropertySet m_properties;
         CryptoRandom m_random;
+        List<int> m_rgVocabulary;
 
         /// <summary>
         /// The constructor.
@@ -93,16 +94,27 @@ namespace MyCaffe.trainers.rnn.simple
         }
 
         /// <summary>
+        /// Returns the vocabulary built up during training.
+        /// </summary>
+        public List<int> Vocabulary
+        {
+            get { return m_rgVocabulary; }
+        }
+
+        /// <summary>
         /// <summary>
         /// Run a single cycle on the environment after the delay.
         /// </summary>
         /// <param name="nN">specifies the number of samples to run.</param>
+        /// <param name="rgVocabulary">Specifies the vocabulary used to build the initial input.</param>
+        /// <param name="rgRawInput">Optionally specifies an input seed used to build the initial input.</param>
+        /// <param name="strInputType">Specifies the type of the input seed.</param>
         /// <returns>The results of the run containing the action are returned.</returns>
-        public float[] Run(int nN)
+        public float[] Run(int nN, List<int> rgVocabulary, byte[] rgRawInput, string strInputType)
         {
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN);
-            float[] rgResults = agent.Run(nN);
+            float[] rgResults = agent.Run(nN, rgVocabulary, rgRawInput, strInputType);
             agent.Dispose();
 
             return rgResults;
@@ -113,13 +125,16 @@ namespace MyCaffe.trainers.rnn.simple
         /// Run a single cycle on the environment after the delay.
         /// </summary>
         /// <param name="nN">Specifies the number of samples to run.</param>
+        /// <param name="rgVocabulary">Specifies the vocabulary used to build the initial input.</param>
+        /// <param name="rgRawInput">Optionally specifies an input seed used to build the initial input.</param>
+        /// <param name="strInputType">Specifies the type of the input seed.</param>
         /// <param name="type">Returns the data type contained in the byte stream.</param>
         /// <returns>The results of the run containing the action are returned as a byte stream.</returns>
-        public byte[] Run(int nN, out Type type)
+        public byte[] Run(int nN, List<int> rgVocabulary, byte[] rgRawInput, string strInputType, out Type type)
         {
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN);
-            byte[] rgResults = agent.Run(nN, out type);
+            byte[] rgResults = agent.Run(nN, rgVocabulary, rgRawInput, strInputType, out type);
             agent.Dispose();
 
             return rgResults;
@@ -136,7 +151,16 @@ namespace MyCaffe.trainers.rnn.simple
 
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TEST);
-            agent.Run(Phase.TEST, nIterations);
+            List<int> rgVocab = agent.Run(Phase.TEST, nIterations);
+
+            if (m_rgVocabulary == null)
+                m_rgVocabulary = new List<int>();
+
+            foreach (int nVal in rgVocab)
+            {
+                if (!m_rgVocabulary.Contains(nVal))
+                    m_rgVocabulary.Add(nVal);
+            }
 
             agent.Dispose();
             Shutdown(nDelay);
@@ -157,7 +181,17 @@ namespace MyCaffe.trainers.rnn.simple
 
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN);
-            agent.Run(Phase.TRAIN, nIterations);
+            List<int> rgVocab = agent.Run(Phase.TRAIN, nIterations);
+
+            if (m_rgVocabulary == null)
+                m_rgVocabulary = new List<int>();
+
+            foreach (int nVal in rgVocab)
+            {
+                if (!m_rgVocabulary.Contains(nVal))
+                    m_rgVocabulary.Add(nVal);
+            }
+
             agent.Dispose();
 
             return false;
@@ -204,39 +238,57 @@ namespace MyCaffe.trainers.rnn.simple
         /// </summary>
         /// <param name="phase">Specifies the phae.</param>
         /// <param name="nIterations">Specifies the number of iterations to run.</param>
-        public void Run(Phase phase, int nIterations)
+        /// <returns>The vocabulary built up during training and testing is returned.</returns>
+        public List<int> Run(Phase phase, int nIterations)
         {
             StateBase s = getData(-1);
-          
+            List<int> rgVocabulary = new List<int>();
+
             while (!m_brain.Cancel.WaitOne(0) && !s.Done)
             {
+                List<int> rgVocab = new List<int>();
+
                 if (phase == Phase.TEST)
-                    m_brain.Test(s, nIterations);
+                    rgVocab = m_brain.Test(s, nIterations);
                 else if (phase == Phase.TRAIN)
-                    m_brain.Train(s, nIterations, TRAIN_STEP.NONE);
+                    rgVocab = m_brain.Train(s, nIterations, TRAIN_STEP.NONE);
+
+                foreach (int nVal in rgVocab)
+                {
+                    if (!rgVocabulary.Contains(nVal))
+                        rgVocabulary.Add(nVal);
+                }
 
                 s = getData(1);
             }
+
+            return rgVocabulary;
         }
 
         /// <summary>
         /// The Run method provides the main 'actor' that runs data through the trained network.
         /// </summary>
         /// <param name="nN">specifies the number of samples to run.</param>
+        /// <param name="rgVocabulary">Specifies the vocabulary used to build the initial input.</param>
+        /// <param name="rgRawInput">Optionally specifies an input seed used to build the initial input.</param>
+        /// <param name="strInputType">Specifies the type of the input seed.</param>
         /// <returns>The results of the run are returned.</returns>
-        public float[] Run(int nN)
+        public float[] Run(int nN, List<int> rgVocabulary, byte[] rgRawInput, string strInputType)
         {
-            return m_brain.Run(nN);
+            return m_brain.Run(nN, rgVocabulary, rgRawInput, strInputType);
         }
 
         /// <summary>
         /// The Run method provides the main 'actor' that runs data through the trained network.
         /// </summary>
         /// <param name="nN">specifies the number of samples to run.</param>
+        /// <param name="rgVocabulary">Specifies the vocabulary used to build the initial input.</param>
+        /// <param name="rgRawInput">Optionally specifies an input seed used to build the initial input.</param>
+        /// <param name="strInputType">Specifies the type of the input seed.</param>
         /// <returns>The results of the run are returned in the native format used by the CustomQuery.</returns>
-        public byte[] Run(int nN, out Type type)
+        public byte[] Run(int nN, List<int> rgVocabulary, byte[] rgRawInput, string strInputType, out Type type)
         {
-            float[] rgResults = m_brain.Run(nN);
+            float[] rgResults = m_brain.Run(nN, rgVocabulary, rgRawInput, strInputType);
 
             ConvertOutputArgs args = new ConvertOutputArgs(rgResults);
             IxTrainerCallbackRNN icallback = m_icallback as IxTrainerCallbackRNN;
@@ -269,13 +321,12 @@ namespace MyCaffe.trainers.rnn.simple
         T m_tZero;
         T m_tOne;
         double m_dfTemperature = 0;
-        List<int> m_rgCorrectLengthSequence = null;
         byte[] m_rgTestData;
         byte[] m_rgTrainData;
-        string m_strSeed = null;
         Stopwatch m_sw = new Stopwatch();
         double m_dfLastLoss = 0;
         double m_dfLastLearningRate = 0;
+        List<int> m_rgVocabulary = new List<int>();
 
         public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallbackRNN icallback, Phase phase)
         {
@@ -286,7 +337,6 @@ namespace MyCaffe.trainers.rnn.simple
             m_random = random;
 
             m_dfTemperature = m_properties.GetPropertyAsDouble("Temperature", 0);
-            m_strSeed = Utility.Replace(m_properties.GetProperty("Seed", false), "[sp]", ' ');
 
             if ((m_blobData = m_net.FindBlob("data")) == null)
                 throw new Exception("Could not find the 'Input' layer top named 'data'!");
@@ -331,15 +381,6 @@ namespace MyCaffe.trainers.rnn.simple
                 m_mycaffe.Log.CHECK_EQ(m_blobData.count(), m_blobLabel.count(), "The data and label blobs must have the same count!");
 
                 m_rgLabelInput = new T[m_nSequenceLength * m_nBatchSize];
-            }
-            else
-            {
-                m_rgCorrectLengthSequence = new List<int>();
-
-                for (int i = 0; i < m_nSequenceLength; i++)
-                {
-                    m_rgCorrectLengthSequence.Add((int)m_random.Next(m_nVocabSize));
-                }
             }
         }
 
@@ -398,7 +439,7 @@ namespace MyCaffe.trainers.rnn.simple
             get { return m_mycaffe.CancelEvent; }
         }
 
-        public void Test(StateBase s, int nIterations)
+        public List<int> Test(StateBase s, int nIterations)
         {
             if (nIterations <= 0)
             {
@@ -413,8 +454,17 @@ namespace MyCaffe.trainers.rnn.simple
             m_rgTestData = new byte[nTestLen];
             Array.Copy(s.Data.ByteData, nTrainLen, m_rgTestData, 0, nTestLen);
 
+            List<int> rgVocab = new List<int>();
+            foreach (byte b in m_rgTestData)
+            {
+                if (!rgVocab.Contains((int)b))
+                    rgVocab.Add(b);
+            }
+
             m_sw.Start();
             m_solver.TestAll(nIterations);
+
+            return rgVocab;
         }
 
         private void m_solver_OnTestStart(object sender, EventArgs e)
@@ -422,7 +472,7 @@ namespace MyCaffe.trainers.rnn.simple
             FeedNet(false);
         }
 
-        public void Train(StateBase s, int nIterations, TRAIN_STEP step)
+        public List<int> Train(StateBase s, int nIterations, TRAIN_STEP step)
         {
             int nTestLen = (int)(s.Data.ItemCount * 0.2);
             int nTrainLen = s.Data.ItemCount - nTestLen;
@@ -432,8 +482,17 @@ namespace MyCaffe.trainers.rnn.simple
             Array.Copy(s.Data.ByteData, 0, m_rgTrainData, 0, nTrainLen);
             Array.Copy(s.Data.ByteData, nTrainLen, m_rgTestData, 0, nTestLen);
 
+            List<int> rgVocab = new List<int>();
+            foreach (byte b in s.Data.ByteData)
+            {
+                if (!rgVocab.Contains((int)b))
+                    rgVocab.Add(b);
+            }
+
             m_sw.Start();
             m_solver.Solve(nIterations, null, null, step);
+
+            return rgVocab;
         }
 
         private void m_solver_OnStart(object sender, EventArgs e)
@@ -477,27 +536,48 @@ namespace MyCaffe.trainers.rnn.simple
             m_blobLabel.mutable_cpu_data = m_rgLabelInput;
         }
 
-        public float[] Run(int nN)
+        public float[] Run(int nN, List<int> rgVocabulary, byte[] rgRawInput, string strInputType)
         {
             float[] rgPredictions = new float[nN];
             List<int> rgInput = new List<int>();
             Stopwatch sw = new Stopwatch();
+            int[] rgCorrectLengthSequence = new int[m_nSequenceLength];
 
-            for (int i = 0; i < m_rgCorrectLengthSequence.Count; i++)
+            // Set the initialization sequence to random characters.
+            for (int i = 0; i < m_nSequenceLength; i++)
             {
-                rgInput.Add(m_rgCorrectLengthSequence[i]);
+                if (rgVocabulary != null && rgVocabulary.Count > 0)
+                {
+                    int nIdx = m_random.Next(rgVocabulary.Count);
+                    rgCorrectLengthSequence[i] = rgVocabulary[nIdx];
+                }
+                else
+                {
+                    rgCorrectLengthSequence[i] = (int)m_random.Next(m_nVocabSize);
+                }
             }
 
-            if (m_strSeed != null)
+            // If a seed is specified, add it to the end of the sequence.
+            if (rgRawInput != null && rgRawInput.Length > 0)
             {
-                int nStart = m_rgCorrectLengthSequence.Count - m_strSeed.Length;
-                if (nStart < 0)
-                    nStart = 0;
-
-                for (int i = nStart; i < m_rgCorrectLengthSequence.Count; i++)
+                if (strInputType == typeof(string).ToString())
                 {
-                    m_rgCorrectLengthSequence[i] = m_strSeed[i - nStart];
+                    string strSeed = Encoding.ASCII.GetString(rgRawInput);
+
+                    int nStart = rgCorrectLengthSequence.Length - strSeed.Length;
+                    if (nStart < 0)
+                        nStart = 0;
+
+                    for (int i = nStart; i < rgCorrectLengthSequence.Length; i++)
+                    {
+                        rgCorrectLengthSequence[i] = strSeed[i - nStart];
+                    }
                 }
+            }
+
+            for (int i = 0; i < rgCorrectLengthSequence.Length; i++)
+            {
+                rgInput.Add(rgCorrectLengthSequence[i]);
             }
 
             sw.Start();

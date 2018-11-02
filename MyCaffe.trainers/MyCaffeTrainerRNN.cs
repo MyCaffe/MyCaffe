@@ -357,7 +357,18 @@ namespace MyCaffe.trainers
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe);
 
-            float[] rgResults = m_itrainer.Run(nN);
+            List<int> rgVocabulary = null;
+            byte[] rgRawInput = null;
+            string strRawInputType = null;
+
+            IXMyCaffeCustomTrainerCallbackRNN icallback = m_icallback as IXMyCaffeCustomTrainerCallbackRNN;
+            if (icallback != null)
+            {
+                rgVocabulary = icallback.GetVocabulary();
+                rgRawInput = icallback.GetSeed(out strRawInputType);
+            }
+
+            float[] rgResults = m_itrainer.Run(nN, rgVocabulary, rgRawInput, strRawInputType);
             m_itrainer.Shutdown(0);
             m_itrainer = null;
 
@@ -376,7 +387,18 @@ namespace MyCaffe.trainers
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe);
 
-            byte[] rgResults = m_itrainer.Run(nN, out type);
+            List<int> rgVocabulary = null;
+            byte[] rgRawInput = null;
+            string strRawInputType = null;
+
+            IXMyCaffeCustomTrainerCallbackRNN icallback = m_icallback as IXMyCaffeCustomTrainerCallbackRNN;
+            if (icallback != null)
+            {
+                rgVocabulary = icallback.GetVocabulary();
+                rgRawInput = icallback.GetSeed(out strRawInputType);
+            }
+
+            byte[] rgResults = m_itrainer.Run(nN, rgVocabulary, rgRawInput, strRawInputType, out type);
             m_itrainer.Shutdown(0);
             m_itrainer = null;
 
@@ -416,6 +438,11 @@ namespace MyCaffe.trainers
                 nIterationOverride = m_nIterations;
 
             m_itrainer.Train(nIterationOverride, step);
+
+            IXMyCaffeCustomTrainerCallbackRNN icallback = m_icallback as IXMyCaffeCustomTrainerCallbackRNN;
+            if (icallback != null)
+                icallback.SetVocabulary(m_itrainer.Vocabulary);
+
             m_itrainer.Shutdown(0);
             m_itrainer = null;
         }

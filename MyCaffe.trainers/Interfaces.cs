@@ -171,6 +171,28 @@ namespace MyCaffe.trainers
     }
 
     /// <summary>
+    /// The IXMyCaffeCustomTrainerCallbackRNN interface is used to call back to the parent running the custom RNN trainer.
+    /// </summary>
+    public interface IXMyCaffeCustomTrainerCallbackRNN : IXMyCaffeCustomTrainerCallback
+    {
+        /// <summary>
+        /// The GetVocabulary method is used to query the vocabulary returned during the Training session, and used during Running.
+        /// </summary>
+        List<int> GetVocabulary();
+        /// <summary>
+        /// The SetVocabulary method is used to set the vocabulary built durin training.
+        /// </summary>
+        /// <param name="rgVocabulary">Specifies the vocabulary.</param>
+        void SetVocabulary(List<int> rgVocabulary);
+        /// <summary>
+        /// The GetSeed method is used to qeury the seed used when Running, if any.
+        /// </summary>
+        /// <param name="strType">Specifies the type of the Seed byte stream.</param>
+        /// <returns>The seed raw byte stream is returned.</returns>
+        byte[] GetSeed(out string strType);
+    }
+
+    /// <summary>
     /// The IxTrainer interface is implemented by each Trainer.
     /// </summary>
     public interface IxTrainer
@@ -223,16 +245,27 @@ namespace MyCaffe.trainers
         /// Run a number of 'nN' samples on the trainer.
         /// </summary>
         /// <param name="nN">specifies the number of samples to run.</param>
+        /// <param name="rgVocabulary">Specifies the vocabulary to use on the Run (built up and returned after training).</param>
+        /// <param name="rgRawInput">Optionally, specifies an input seed in a raw byte stream.</param>
+        /// <param name="strInputType">Specifies the type of the raw input byte stream.</param>
         /// <returns>The result collection containing the action is returned.</returns>
-        float[] Run(int nN);
+        float[] Run(int nN, List<int> rgVocabulary, byte[] rgRawInput, string strInputType);
 
         /// <summary>
         /// Run a number of 'nN' samples on the trainer.
         /// </summary>
         /// <param name="nN">Specifies the number of samples to run.</param>
+        /// <param name="rgVocabulary">Specifies the vocabulary to use on the Run (built up and returned after training).</param>
+        /// <param name="rgRawInput">Optionally, specifies an input seed in a raw byte stream.</param>
+        /// <param name="strInputType">Specifies the type of the raw input byte stream.</param>
         /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
         /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
-        byte[] Run(int nN, out Type type);
+        byte[] Run(int nN, List<int> rgVocabulary, byte[] rgRawInput, string strInputType, out Type type);
+
+        /// <summary>
+        /// Returns the vocabulary built up from the training and testing data.
+        /// </summary>
+        List<int> Vocabulary { get;  }
     }
 
     /// <summary>
