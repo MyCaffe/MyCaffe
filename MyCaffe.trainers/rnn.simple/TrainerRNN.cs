@@ -37,6 +37,7 @@ namespace MyCaffe.trainers.rnn.simple
         /// <param name="properties">Specifies the property set containing the key/value pairs of property settings.</param>
         /// <param name="random">Specifies the random number generator to use.</param>
         /// <param name="icallback">Specifies the callback for parent notifications and queries.</param>
+        /// <param name="rgVocabulary">Specifies the vocabulary to use.</param>
         public TrainerRNN(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallback icallback, List<int> rgVocabulary)
         {
             m_icallback = icallback;
