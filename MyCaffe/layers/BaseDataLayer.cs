@@ -96,7 +96,47 @@ namespace MyCaffe.layers
             else
                 m_bOutputLabels = true;
 
-            m_transformer = new DataTransformer<T>(m_log, m_param.transform_param, m_param.phase, m_imgMean.Channels, m_imgMean.Height, m_imgMean.Width, m_imgMean);
+            int nC = 1;
+            int nH = 1;
+            int nW = 1;
+
+            if (m_src != null)
+            {
+                nC = m_src.ImageChannels;
+                nH = m_src.ImageHeight;
+                nW = m_src.ImageWidth;
+            }
+            else if (m_imgMean != null)
+            {
+                nC = m_imgMean.Channels;
+                nH = m_imgMean.Height;
+                nW = m_imgMean.Width;
+            }
+            else if (m_param.type == LayerParameter.LayerType.MEMORYDATA)
+            {
+                nC = (int)m_param.memory_data_param.channels;
+                nH = (int)m_param.memory_data_param.height;
+                nW = (int)m_param.memory_data_param.width;
+            }
+            else if (m_param.type == LayerParameter.LayerType.DUMMYDATA)
+            {
+                nC = (int)m_param.dummy_data_param.channels[0];
+                nH = (int)m_param.dummy_data_param.height[0];
+                nW = (int)m_param.dummy_data_param.height[0];
+            }
+            else if (m_param.type == LayerParameter.LayerType.INPUT)
+            {
+                if (m_param.input_param.shape[0].dim.Count > 1)
+                    nC = (int)m_param.input_param.shape[0].dim[1];
+
+                if (m_param.input_param.shape[0].dim.Count > 2)
+                    nH = (int)m_param.input_param.shape[0].dim[2];
+
+                if (m_param.input_param.shape[0].dim.Count > 3)
+                    nW = (int)m_param.input_param.shape[0].dim[3];
+            }
+
+            m_transformer = new DataTransformer<T>(m_log, m_param.transform_param, m_param.phase, nC, nH, nW, m_imgMean);
             m_transformer.InitRand();
 
             // The subclasses should setup the size of bottom and top.
