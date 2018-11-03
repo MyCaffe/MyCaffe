@@ -629,6 +629,16 @@ namespace MyCaffe.test.automated
             m_swTiming.Reset();
             m_swTiming.Start();
 
+            string strSrcStart = "MyCaffe Automated Test Start";
+            string strSrcResult = "MyCaffe Automated Test Result";
+            string strLog = "Application";
+
+            EventLog eventLogStart = new EventLog(strLog);
+            eventLogStart.Source = strSrcStart;
+
+            EventLog eventLogResult = new EventLog(strLog);
+            eventLogResult.Source = strSrcResult;
+
             try
             {
                 foreach (TestClass tc in m_rgClasses)
@@ -653,7 +663,14 @@ namespace MyCaffe.test.automated
                             }
                             else
                             {
+                                eventLogStart.WriteEntry("Starting " + tc.Name + "::" + mi.Name + " test.");
+
                                 mi.Invoke(tc.Instance, nGpuId);
+
+                                if (mi.Status == MethodInfoEx.STATUS.Failed)
+                                    eventLogResult.WriteEntry("ERROR " + tc.Name + "::" + mi.Name + " test - " + mi.Status.ToString() + " Error Information: " + mi.ErrorInfo.FullErrorString, EventLogEntryType.Warning);
+                                else
+                                    eventLogResult.WriteEntry("Completed " + tc.Name + "::" + mi.Name + " test - " + mi.Status.ToString(), EventLogEntryType.Information);
                             }
 
                             if (mi.Status != MethodInfoEx.STATUS.Aborted)
@@ -669,6 +686,8 @@ namespace MyCaffe.test.automated
                 SaveToDatabase(tcCurrent, miCurrent, excpt);
                 tcCurrent.InvokeDispose();
 
+                eventLogStart.WriteEntry("Test Exception Thrown! " + excpt.Message, EventLogEntryType.Error);
+
                 throw excpt;
             }
             finally
@@ -677,6 +696,9 @@ namespace MyCaffe.test.automated
 
                 if (OnRunCompleted != null)
                     OnRunCompleted(this, new EventArgs());
+
+                eventLogStart.Close();
+                eventLogResult.Close();
             }
         }
 
