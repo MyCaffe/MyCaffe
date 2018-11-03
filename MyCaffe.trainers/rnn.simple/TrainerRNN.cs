@@ -154,12 +154,16 @@ namespace MyCaffe.trainers.rnn.simple
             List<int> rgVocab = agent.Run(Phase.TEST, nIterations);
 
             if (m_rgVocabulary == null)
-                m_rgVocabulary = new List<int>();
-
-            foreach (int nVal in rgVocab)
             {
-                if (!m_rgVocabulary.Contains(nVal))
-                    m_rgVocabulary.Add(nVal);
+                m_rgVocabulary = rgVocab;
+            }
+            else
+            {
+                foreach (int nVal in rgVocab)
+                {
+                    if (!m_rgVocabulary.Contains(nVal))
+                        m_rgVocabulary.Add(nVal);
+                }
             }
 
             agent.Dispose();
@@ -184,12 +188,16 @@ namespace MyCaffe.trainers.rnn.simple
             List<int> rgVocab = agent.Run(Phase.TRAIN, nIterations);
 
             if (m_rgVocabulary == null)
-                m_rgVocabulary = new List<int>();
-
-            foreach (int nVal in rgVocab)
             {
-                if (!m_rgVocabulary.Contains(nVal))
-                    m_rgVocabulary.Add(nVal);
+                m_rgVocabulary = rgVocab;
+            }
+            else
+            {
+                foreach (int nVal in rgVocab)
+                {
+                    if (!m_rgVocabulary.Contains(nVal))
+                        m_rgVocabulary.Add(nVal);
+                }
             }
 
             agent.Dispose();
