@@ -1007,7 +1007,7 @@ namespace MyCaffe
                 if (tp.use_imagedb_mean && sdMean == null)
                     throw new Exception("The transformer expects an image mean, yet the sdMean parameter is null!");
 
-                m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, sdMean.Channels, sdMean.Height, sdMean.Width, sdMean);
+                m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, shape.dim[1], shape.dim[2], shape.dim[3], sdMean);
             }
             else
             {
