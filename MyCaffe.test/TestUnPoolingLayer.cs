@@ -323,13 +323,13 @@ namespace MyCaffe.test
             //  [35 32 26 27 27]
             //  [32 33 33 27 27]
             //  [31 34 34 27 27]
-            //  [32 32 27 18 18]
+            //  [36 36 34 18 18]
             //
             // Mask: 2x2 channels of:
-            //  [  1  8  4 17 17]
-            //  [  8 21 21 17 17]
-            //  [ 13 27 27 17 17]
-            //  [ 32 32 27 35 35]
+            //  [  1  7  3 16 16]
+            //  [  7 20 20 16 16]
+            //  [ 12 26 26 16 16]
+            //  [ 31 31 26 34 34]
             double[] rgBottom = convert(Bottom.mutable_cpu_data);
             double[] rgBottomMask = convert(BottomMask.mutable_cpu_data);
 
@@ -341,7 +341,7 @@ namespace MyCaffe.test
                 rgBottom[i + 3] = 27;
                 rgBottom[i + 4] = 27;
                 rgBottom[i + 5] = 32;
-                rgBottom[i + 6] = 32;
+                rgBottom[i + 6] = 33;
                 rgBottom[i + 7] = 33;
                 rgBottom[i + 8] = 27;
                 rgBottom[i + 9] = 27;
