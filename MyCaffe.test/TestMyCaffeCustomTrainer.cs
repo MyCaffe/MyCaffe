@@ -338,9 +338,6 @@ namespace MyCaffe.test
             }
             m_strModelPath = strModelPath;
 
-            // load the project to train (note the project must use the InputLayer for input).
-            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false);
-
             // Train the network using the custom trainer
             //  - Iterations (maximum frames cumulative across all threads) = 1000 (normally this would be much higher such as 500,000)
             //  - Learning rate = 0.01 (defined in solver.prototxt)
@@ -362,7 +359,14 @@ namespace MyCaffe.test
             strSchema += "Connection0_CustomQueryName=StdTextFileQuery;";
             strSchema += "Connection0_CustomQueryParam=" + strParam + ";";
 
-            trainer.Initialize("TrainerType=" + strTrainerType + ";UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";Temperature=0.5;Seed=" + strSeed + ";" + strSchema, null);
+            string strProp = "TrainerType=" + strTrainerType + ";UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";Temperature=0.5;Seed=" + strSeed + ";" + strSchema;
+            trainer.Initialize(strProp, null);
+
+            List<int> rgVocabulary = trainer.PreloadData(m_log, 0);
+            project.ModelDescription = trainer.ResizeModel(project.ModelDescription, rgVocabulary);
+
+            // load the project to train (note the project must use the InputLayer for input).
+            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false);
 
             if (bShowUi)
                 trainer.OpenUi();
@@ -370,7 +374,7 @@ namespace MyCaffe.test
             trainer.Train(mycaffe, nIterations);
 
             Type type;
-            int nN = 10000; // Note: see iterations used, for real training the iterations should be 100,000+
+            int nN = 1000; // Note: see iterations used, for real training the iterations should be 100,000+
             byte[] rgOutput = trainer.Run(mycaffe, nN, out type);
             m_log.CHECK(type == typeof(string), "The output type should be a string type!");
             string strOut;
@@ -696,6 +700,7 @@ namespace MyCaffe.test
         string m_strName = "DataGeneral";
         GymCollection m_colGyms = new GymCollection();
         DatasetDescriptor m_ds;
+        Tuple<State, double, bool> m_firststate = null;
 
         public MyCaffeDataGeneralTrainer()
             : base()
@@ -705,12 +710,18 @@ namespace MyCaffe.test
 
         protected override void initialize(InitializeArgs e)
         {
-            m_igym = m_colGyms.Find(m_strName);
-            m_log = e.OutputLog;
-
-            m_igym.Initialize(m_log, m_properties);
-
+            initialize(e.OutputLog);
             m_sw.Start();
+        }
+
+        private void initialize(Log log)
+        {
+            if (m_igym == null)
+            {
+                m_log = log;
+                m_igym = m_colGyms.Find(m_strName);
+                m_igym.Initialize(m_log, m_properties);
+            }
         }
 
         protected override void shutdown()
@@ -734,10 +745,12 @@ namespace MyCaffe.test
 
         protected override DatasetDescriptor get_dataset_override(int nProjectID)
         {
-            if (m_igym == null)
-                m_igym = m_colGyms.Find(m_strName);
+            IXMyCaffeGym igym = m_igym;
 
-            m_ds = m_igym.GetDataset(DATA_TYPE.BLOB);
+            if (igym == null)
+                igym = m_colGyms.Find(m_strName);
+
+            m_ds = igym.GetDataset(DATA_TYPE.BLOB);
 
             return m_ds;
         }
@@ -747,7 +760,17 @@ namespace MyCaffe.test
             Tuple<State, double, bool> state = null;
 
             if (e.Reset)
-                state = m_igym.Reset();
+            {
+                if (m_firststate != null)
+                {
+                    state = m_firststate;
+                    m_firststate = null;
+                }
+                else
+                {
+                    state = m_igym.Reset();
+                }
+            }
 
             if (e.Action >= 0)
                 state = m_igym.Step(e.Action);
@@ -790,6 +813,28 @@ namespace MyCaffe.test
 
         protected override void openUi()
         {
+        }
+
+        protected override List<int> preloaddata(Log log, int nProjectID)
+        {
+            initialize(log);
+            IXMyCaffeGymData igym = m_igym as IXMyCaffeGymData;
+            Tuple<State, double, bool> state = igym.Reset();
+            List<int> rgVocabulary = new List<int>();
+            int nDataLen;
+            SimpleDatum sd = state.Item1.GetData(false, out nDataLen);
+
+            for (int i = 0; i < sd.ByteData.Length; i++)
+            {
+                int nVal = (int)sd.ByteData[i];
+
+                if (!rgVocabulary.Contains(nVal))
+                    rgVocabulary.Add(nVal);
+            }
+
+            m_firststate = state;
+
+            return rgVocabulary;
         }
 
         public void Closing()
