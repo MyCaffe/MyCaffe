@@ -10,6 +10,7 @@ using MyCaffe.basecode;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.common;
 using MyCaffe.gym;
+using MyCaffe.param;
 
 namespace MyCaffe.trainers
 {
@@ -47,6 +48,7 @@ namespace MyCaffe.trainers
         double m_dfAccuracy = 0;
         int m_nIteration = 0;
         int m_nIterations = -1;
+        List<int> m_rgVocabulary = null;
 
         enum TRAINER_TYPE
         {
@@ -127,7 +129,7 @@ namespace MyCaffe.trainers
             switch (m_trainerType)
             {
                 case TRAINER_TYPE.RNN_SIMPLE:
-                    return new rnn.simple.TrainerRNN<double>(mycaffe, m_properties, m_random, this);
+                    return new rnn.simple.TrainerRNN<double>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
 
                 default:
                     throw new Exception("Unknown trainer type '" + m_trainerType.ToString() + "'!");
@@ -152,7 +154,7 @@ namespace MyCaffe.trainers
             switch (m_trainerType)
             {
                 case TRAINER_TYPE.RNN_SIMPLE:
-                    return new rnn.simple.TrainerRNN<float>(mycaffe, m_properties, m_random, this);
+                    return new rnn.simple.TrainerRNN<float>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
 
                 default:
                     throw new Exception("Unknown trainer type '" + m_trainerType.ToString() + "'!");
@@ -228,6 +230,17 @@ namespace MyCaffe.trainers
         /// </summary>
         protected virtual void openUi()
         {
+        }
+
+        /// <summary>
+        /// The preloaddata method gives the custom trainer an opportunity to pre-load any data.
+        /// </summary>
+        /// <param name="log">Specifies the output log to use.</param>
+        /// <param name="nProjectID">Specifies the project ID if any.</param>
+        /// <returns>When data is pre-loaded the discovered vocabulary is returned.</returns>
+        protected virtual List<int> preloaddata(Log log, int nProjectID)
+        {
+            return null;
         }
 
         #endregion
@@ -357,18 +370,14 @@ namespace MyCaffe.trainers
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe);
 
-            List<int> rgVocabulary = null;
             byte[] rgRawInput = null;
             string strRawInputType = null;
 
             IXMyCaffeCustomTrainerCallbackRNN icallback = m_icallback as IXMyCaffeCustomTrainerCallbackRNN;
             if (icallback != null)
-            {
-                rgVocabulary = icallback.GetVocabulary();
                 rgRawInput = icallback.GetSeed(out strRawInputType);
-            }
 
-            float[] rgResults = m_itrainer.Run(nN, rgVocabulary, rgRawInput, strRawInputType);
+            float[] rgResults = m_itrainer.Run(nN, rgRawInput, strRawInputType);
             m_itrainer.Shutdown(0);
             m_itrainer = null;
 
@@ -387,18 +396,14 @@ namespace MyCaffe.trainers
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe);
 
-            List<int> rgVocabulary = null;
             byte[] rgRawInput = null;
             string strRawInputType = null;
 
             IXMyCaffeCustomTrainerCallbackRNN icallback = m_icallback as IXMyCaffeCustomTrainerCallbackRNN;
             if (icallback != null)
-            {
-                rgVocabulary = icallback.GetVocabulary();
                 rgRawInput = icallback.GetSeed(out strRawInputType);
-            }
 
-            byte[] rgResults = m_itrainer.Run(nN, rgVocabulary, rgRawInput, strRawInputType, out type);
+            byte[] rgResults = m_itrainer.Run(nN, rgRawInput, strRawInputType, out type);
             m_itrainer.Shutdown(0);
             m_itrainer = null;
 
@@ -438,10 +443,6 @@ namespace MyCaffe.trainers
                 nIterationOverride = m_nIterations;
 
             m_itrainer.Train(nIterationOverride, step);
-
-            IXMyCaffeCustomTrainerCallbackRNN icallback = m_icallback as IXMyCaffeCustomTrainerCallbackRNN;
-            if (icallback != null)
-                icallback.SetVocabulary(m_itrainer.Vocabulary);
 
             m_itrainer.Shutdown(0);
             m_itrainer = null;
@@ -555,6 +556,56 @@ namespace MyCaffe.trainers
         public void OpenUi()
         {
             openUi();
+        }
+
+        /// <summary>
+        /// The PreloadData method gives the custom trainer an opportunity to pre-load any data.
+        /// </summary>
+        /// <param name="log">Specifies the output log to use.</param>
+        /// <param name="nProjectID">Specifies the project ID used, if any.</param>
+        /// <returns>When data is pre-loaded the discovered vocabulary is returned.</returns>
+        public List<int> PreloadData(Log log, int nProjectID)
+        {
+            return preloaddata(log, nProjectID);
+        }
+
+        /// <summary>
+        /// The ResizeModel method gives the custom trainer the opportunity to resize the model if needed.
+        /// </summary>
+        /// <param name="strModel">Specifies the model descriptor.</param>
+        /// <param name="rgVocabulary">Specifies the vocabulary.</param>
+        /// <returns>A new model discriptor is returned (or the same 'strModel' if no changes were made).</returns>
+        /// <remarks>Note, this method is called after PreloadData.</remarks>
+        public string ResizeModel(string strModel, List<int> rgVocabulary)
+        {
+            if (rgVocabulary == null || rgVocabulary.Count == 0)
+                return strModel;
+
+            NetParameter p = NetParameter.FromProto(RawProto.Parse(strModel));
+            EmbedParameter embed = null;
+            InnerProductParameter ip = null;
+
+            foreach (LayerParameter layer in p.layer)
+            {
+                if (layer.type == LayerParameter.LayerType.EMBED)
+                {
+                    embed = layer.embed_param;
+                }
+                else if (layer.type == LayerParameter.LayerType.INNERPRODUCT)
+                {
+                    ip = layer.inner_product_param;
+                }
+            }
+
+            if (embed != null)
+                embed.input_dim = (uint)rgVocabulary.Count;
+
+            ip.num_output = (uint)rgVocabulary.Count;
+
+            m_rgVocabulary = rgVocabulary;
+
+            RawProto proto = p.ToProto("root");
+            return proto.ToString();
         }
     }
 }

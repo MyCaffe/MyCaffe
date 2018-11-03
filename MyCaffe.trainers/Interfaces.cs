@@ -133,7 +133,6 @@ namespace MyCaffe.trainers
         ResultCollection Run(Component mycaffe, int nDelay);
     }
 
-
     /// <summary>
     /// The IXMyCaffeCustomTrainer interface is used by the MyCaffeCustomTraininer components that
     /// provide various training techniques such as Reinforcement Training.
@@ -155,6 +154,21 @@ namespace MyCaffe.trainers
         /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
         /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
         byte[] Run(Component mycaffe, int nN, out Type type);
+        /// <summary>
+        /// The PreloadData method gives the custom trainer an opportunity to pre-load any data.
+        /// </summary>
+        /// <param name="log">Specifies the output log to use.</param>
+        /// <param name="nProjectID">Specifies the ProjectID if any.</param>
+        /// <returns>When data is pre-loaded the vocabulary discovered is returned.</returns>
+        List<int> PreloadData(Log log, int nProjectID);
+        /// <summary>
+        /// The ResizeModel method gives the custom trainer the opportunity to resize the model if needed.
+        /// </summary>
+        /// <param name="strModel">Specifies the model descriptor.</param>
+        /// <param name="rgVocabulary">Specifies the vocabulary, if any.</param>
+        /// <returns>A new model discriptor is returned (or the same 'strModel' if no changes were made).</returns>
+        /// <remarks>Note, this method is called after PreloadData.</remarks>
+        string ResizeModel(string strModel, List<int> rgVocabulary);
     }
 
     /// <summary>
@@ -175,15 +189,6 @@ namespace MyCaffe.trainers
     /// </summary>
     public interface IXMyCaffeCustomTrainerCallbackRNN : IXMyCaffeCustomTrainerCallback
     {
-        /// <summary>
-        /// The GetVocabulary method is used to query the vocabulary returned during the Training session, and used during Running.
-        /// </summary>
-        List<int> GetVocabulary();
-        /// <summary>
-        /// The SetVocabulary method is used to set the vocabulary built durin training.
-        /// </summary>
-        /// <param name="rgVocabulary">Specifies the vocabulary.</param>
-        void SetVocabulary(List<int> rgVocabulary);
         /// <summary>
         /// The GetSeed method is used to qeury the seed used when Running, if any.
         /// </summary>
@@ -245,27 +250,20 @@ namespace MyCaffe.trainers
         /// Run a number of 'nN' samples on the trainer.
         /// </summary>
         /// <param name="nN">specifies the number of samples to run.</param>
-        /// <param name="rgVocabulary">Specifies the vocabulary to use on the Run (built up and returned after training).</param>
         /// <param name="rgRawInput">Optionally, specifies an input seed in a raw byte stream.</param>
         /// <param name="strInputType">Specifies the type of the raw input byte stream.</param>
         /// <returns>The result collection containing the action is returned.</returns>
-        float[] Run(int nN, List<int> rgVocabulary, byte[] rgRawInput, string strInputType);
+        float[] Run(int nN, byte[] rgRawInput, string strInputType);
 
         /// <summary>
         /// Run a number of 'nN' samples on the trainer.
         /// </summary>
         /// <param name="nN">Specifies the number of samples to run.</param>
-        /// <param name="rgVocabulary">Specifies the vocabulary to use on the Run (built up and returned after training).</param>
         /// <param name="rgRawInput">Optionally, specifies an input seed in a raw byte stream.</param>
         /// <param name="strInputType">Specifies the type of the raw input byte stream.</param>
         /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
         /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
-        byte[] Run(int nN, List<int> rgVocabulary, byte[] rgRawInput, string strInputType, out Type type);
-
-        /// <summary>
-        /// Returns the vocabulary built up from the training and testing data.
-        /// </summary>
-        List<int> Vocabulary { get;  }
+        byte[] Run(int nN, byte[] rgRawInput, string strInputType, out Type type);
     }
 
     /// <summary>
