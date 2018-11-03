@@ -96,9 +96,9 @@ namespace MyCaffe.layers
             else
                 m_bOutputLabels = true;
 
-            int nC = 1;
-            int nH = 1;
-            int nW = 1;
+            int nC = 0;
+            int nH = 0;
+            int nW = 0;
 
             if (m_src != null)
             {
@@ -135,6 +135,18 @@ namespace MyCaffe.layers
                 if (m_param.input_param.shape[0].dim.Count > 3)
                     nW = (int)m_param.input_param.shape[0].dim[3];
             }
+
+            if (nC == 0 && nH == 0 && nW == 0)
+                throw new Exception("The sizing of C, H, W cannot be zero for all three!");
+
+            if (nC == 0)
+                nC = 1;
+
+            if (nH == 0)
+                nH = 1;
+
+            if (nW == 0)
+                nW = 1;
 
             m_transformer = new DataTransformer<T>(m_log, m_param.transform_param, m_param.phase, nC, nH, nW, m_imgMean);
             m_transformer.InitRand();
