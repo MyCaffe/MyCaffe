@@ -1021,7 +1021,8 @@ namespace MyCaffe.param
                     break;
 
                 case LayerType.LSTM_SIMPLE:
-                    expected_bottom.Add("input");
+                    expected_bottom.Add("time_seq");
+                    expected_bottom.Add("clip");
                     expected_top.Add("lstm");
                     m_rgLayerParameters[LayerType.LSTM_SIMPLE] = new LSTMSimpleParameter();
                     break;
