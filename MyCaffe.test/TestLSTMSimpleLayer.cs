@@ -173,7 +173,7 @@ namespace MyCaffe.test
                     Stopwatch sw = new Stopwatch();
 
                     sw.Start();
-                    t.TestTraining(960, 0, 23, 1, m_bShortModel);
+                    t.TestTraining(960, 23, 1, m_bShortModel);
                     sw.Stop();
 
                     if (m_log != null)
@@ -194,7 +194,7 @@ namespace MyCaffe.test
         void TestGradientBatchDefault();
         void TestGradientClipMask();
         void TestGradientBatchClipMask();
-        void TestTraining(int nTotalDataLength, int nDeviceID, int nNumOutput, int nBatch, bool bShortModel, int nMaxIter = 10000);
+        void TestTraining(int nTotalDataLength, int nNumOutput, int nBatch, bool bShortModel, int nMaxIter = 10000);
     }
 
     class LSTMSimpleLayerTest : TestBase
@@ -265,7 +265,7 @@ namespace MyCaffe.test
             if (m_blob_top != null)
                 m_blob_top.Dispose();
 
-            if (nDeviceID != 1)
+            if (nDeviceID != m_cuda.GetDeviceID())
             {
                 if (m_cuda != null)
                     m_cuda.Dispose();
@@ -464,14 +464,11 @@ namespace MyCaffe.test
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
         }
 
-        public void TestTraining(int nTotalDataLength, int nDeviceID, int nNumOutput, int nBatch, bool bShortModel, int nMaxIter)
+        public void TestTraining(int nTotalDataLength, int nNumOutput, int nBatch, bool bShortModel, int nMaxIter)
         {
             if (m_strParams != null)
             {
                 string[] rgstr = m_strParams.Split(',');
-
-                if (rgstr.Length > 0)
-                    nDeviceID = int.Parse(rgstr[0].Trim(','));
 
                 if (rgstr.Length > 1)
                     nMaxIter = int.Parse(rgstr[1].Trim(','));
@@ -481,10 +478,9 @@ namespace MyCaffe.test
 
                 if (rgstr.Length > 3)
                     nBatch = int.Parse(rgstr[3].Trim(','));
-
-                if (nDeviceID != 1)
-                    initialize(nDeviceID);
             }
+
+            int nDeviceID = m_cuda.GetDeviceID();
 
             string strSolver = getSolver(nMaxIter);
             string strModel = (bShortModel) ? getModelShort(nNumOutput, nBatch) : getModel(nNumOutput, nBatch);
@@ -493,7 +489,6 @@ namespace MyCaffe.test
             solver_param.device_id = nDeviceID;
 
             // Set device id
-
             m_log.WriteLine("Running test on " + m_cuda.GetDeviceName(solver_param.device_id) + " with ID = " + solver_param.device_id.ToString());
             m_log.WriteLine("type: " + typeof(T).ToString() + " num_output: " + nNumOutput.ToString() + " batch: " + nBatch.ToString() + " MaxIter: " + nMaxIter.ToString());
             m_cuda.SetDeviceID(solver_param.device_id);
