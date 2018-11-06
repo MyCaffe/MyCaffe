@@ -99,7 +99,7 @@ namespace MyCaffe.db.stream.stdqueries
         }
 
         /// <summary>
-        /// The QueryByTime method is not implemented.
+        /// The QueryByTime method is not implemented for this custom query.
         /// </summary>
         /// <param name="dt">not used.</param>
         /// <param name="ts">non used.</param>
@@ -127,11 +127,32 @@ namespace MyCaffe.db.stream.stdqueries
         }
 
         /// <summary>
+        /// The QueryReal method is not implemented for this custom query.
+        /// </summary>
+        /// <returns>not used.</returns>
+        public List<double[]> QueryReal()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// The Query information returns information about the data queried such as header information.
+        /// </summary>
+        /// <returns>The information about the data is returned.</returns>
+        public Dictionary<string, float> QueryInfo()
+        {
+            return null;
+        }
+
+        /// <summary>
         /// The GetQuerySize method returns the size of the query as {1,1,filesize}.
         /// </summary>
-        /// <returns>The query size is returned.</returns>
-        public int GetQuerySize()
+        /// <param name="nHeight">The height of the data is 1.</param>
+        /// <returns>The query size is returned as the width.</returns>
+        public int GetQuerySize(out int nHeight)
         {
+            nHeight = 1;
+
             if (m_nFileIdx == m_rgstrFiles.Length)
                 return 0;
 

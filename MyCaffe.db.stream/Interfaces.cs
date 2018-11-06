@@ -87,6 +87,12 @@ namespace MyCaffe.db.stream
         /// <returns>The data size is returned.</returns>
         [OperationContract(IsOneWay = false)]
         int[] QuerySize();
+
+        /// The Query information returns information about the data queried such as header information.
+        /// </summary>
+        /// <returns>The information about the data is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        Dictionary<string, float> QueryInfo();
     }
 
     /// <summary>
@@ -100,6 +106,7 @@ namespace MyCaffe.db.stream
         List<int> GetQuerySize();
         SimpleDatum Query(int nWait);
         byte[] ConvertOutput(float[] rg, out Type type);
+        Dictionary<string, float> QueryInfo();
     }
 
     /// <summary>
@@ -111,6 +118,10 @@ namespace MyCaffe.db.stream
         /// Each custom query supporting the BYTE query, must implement the QueryByte function.
         /// </summary>
         BYTE,
+        /// <summary>
+        /// Each custom query supporting the REAL query, must implement the QueryReal function.
+        /// </summary>
+        REAL,
         /// <summary>
         /// Each custom query supporting the TIME query, must implement the QueryByTime funtion.
         /// </summary>
@@ -156,8 +167,9 @@ namespace MyCaffe.db.stream
         /// <summary>
         /// Returns the query count for the current query.
         /// </summary>
-        /// <returns></returns>
-        int GetQuerySize();
+        /// <param name="nHeight">Returns the height of the data.</param>
+        /// <returns>The width of the data is returned.</returns>
+        int GetQuerySize(out int nHeight);
         /// <summary>
         /// Query the fields specified (in the Open function) starting from the date-time specified.
         /// </summary>
@@ -172,6 +184,16 @@ namespace MyCaffe.db.stream
         /// </summary>
         /// <returns></returns>
         byte[] QueryBytes();
+        /// <summary>
+        /// Query the data as a set one or more float arrays.
+        /// </summary>
+        /// <returns></returns>
+        List<double[]> QueryReal();
+        /// <summary>
+        /// The Query information returns information about the data queried such as header information.
+        /// </summary>
+        /// <returns>The information about the data is returned.</returns>
+        Dictionary<string, float> QueryInfo();
         /// <summary>
         /// Return a new instance of the custom query.
         /// </summary>
