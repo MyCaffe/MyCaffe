@@ -301,5 +301,14 @@ namespace MyCaffe.db.stream
             IXCustomQuery iqry = m_colCustomQuery.Find("OutputConverter");
             return iqry.ConvertOutput(rg, out type);
         }
+
+        /// The Query information returns information about the data queried such as header information.
+        /// </summary>
+        /// <returns>The information about the data is returned.</returns>
+        public Dictionary<string, float> QueryInfo()
+        {
+            IXCustomQuery iqry = m_colCustomQuery.Find("Info");
+            return iqry.QueryInfo();
+        }
     }
 }
