@@ -139,8 +139,8 @@ namespace MyCaffe.test
             {
                 foreach (IMyCaffeCustomTrainerTest t in test.Tests)
                 {
-                    // NOTE: 1000 iterations is quite short, for real training
-                    // 100,000+ is a more common iteration to use.
+                    // NOTE: 1000 iterations is quite short and may not produce results,
+                    // for real training 100,000+ is a more common iteration to use.
                     t.TrainCharRNN(false, "RNN.SIMPLE", 1000);
                 }
             }
@@ -175,7 +175,7 @@ namespace MyCaffe.test
         }
     }
 
-    public class MyCaffeCustomTrainerTest<T> : TestEx<T>, IMyCaffeCustomTrainerTest
+    public class MyCaffeCustomTrainerTest<T> : TestEx<T>, IMyCaffeCustomTrainerTest, IXMyCaffeCustomTrainerCallbackRNN
     {
         SettingsCaffe m_settings = new SettingsCaffe();
         CancelEvent m_evtCancel = new CancelEvent();
@@ -360,7 +360,7 @@ namespace MyCaffe.test
             strSchema += "Connection0_CustomQueryParam=" + strParam + ";";
 
             string strProp = "TrainerType=" + strTrainerType + ";UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";Temperature=0.5;Seed=" + strSeed + ";" + strSchema;
-            trainer.Initialize(strProp, null);
+            trainer.Initialize(strProp, this);
 
             List<int> rgVocabulary = trainer.PreloadData(m_log, 0);
             project.ModelDescription = trainer.ResizeModel(project.ModelDescription, rgVocabulary);
@@ -469,6 +469,15 @@ namespace MyCaffe.test
             p.SetDataset(igym.GetDataset(DATA_TYPE.BLOB));
 
             return p;
+        }
+
+        public string GetRunProperties()
+        {
+            return "PhaseOnRun=TRAIN;OutputBlob=ip1;";
+        }
+
+        public void Update(TRAINING_CATEGORY cat, Dictionary<string, double> rgValues)
+        {
         }
     }
 
