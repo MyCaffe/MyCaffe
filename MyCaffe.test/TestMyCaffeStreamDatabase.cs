@@ -600,7 +600,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQueryGeneralText()
         {
-            Log log = new Log("Test streaming database with general data");
+            Log log = new Log("Test streaming database with general Text data");
             log.EnableTrace = true;
 
             IXStreamDatabase db = new MyCaffeStreamDatabase(log);
@@ -620,9 +620,9 @@ namespace MyCaffe.test
             int[] rgSize = db.QuerySize();
             log.CHECK(rgSize != null, "The Query size should not be null.");
             log.CHECK_EQ(rgSize.Length, 3, "The query size should have 3 items.");
-            log.CHECK_EQ(rgSize[0], 1, "The query size item 0 should be 1.");
-            log.CHECK_EQ(rgSize[1], 1, "The query size item 1 should be 1 for the number of files.");
-            log.CHECK_EQ(rgSize[2], 4572882, "The query size item 2 should be 10000 for the maximum number of characters in each of the the files.");
+            log.CHECK_EQ(rgSize[0], 1, "The query size item 1 should be 1 for the number of files.");
+            log.CHECK_EQ(rgSize[1], 1, "The query size item 0 should be 1.");
+            log.CHECK_EQ(rgSize[2], 4572882, "The query size item 2 should be 4572882 for the maximum number of characters in each of the the files.");
 
             int nH = rgSize[1];
             int nW = rgSize[2];
@@ -644,6 +644,57 @@ namespace MyCaffe.test
             log.CHECK(sdEnd == null, "The last query should be null to show no more data exists.");
             log.CHECK_EQ(sd.ItemCount, 4572882, "There should be more than one item in the data.");
             log.CHECK(!sd.IsRealData, "The data should be byte data, not real.");
+
+            db.Shutdown();
+        }
+
+        [TestMethod]
+        public void TestQueryGeneralWAV()
+        {
+            Log log = new Log("Test streaming database with general WAV data");
+            log.EnableTrace = true;
+
+            IXStreamDatabase db = new MyCaffeStreamDatabase(log);
+            string strSchema = "ConnectionCount=1;";
+
+            string strDataPath = getTestPath("\\MyCaffe\\test_data\\data\\wav", true);
+            string strParam = "FilePath=" + strDataPath + ";";
+
+            strParam = ParamPacker.Pack(strParam);
+            strSchema += "Connection0_CustomQueryName=StdWAVFileQuery;";
+            strSchema += "Connection0_CustomQueryParam=" + strParam + ";";
+
+            DateTime dt = DateTime.Today;
+            string strSettings = "";
+            db.Initialize(QUERY_TYPE.GENERAL, strSchema + strSettings);
+
+            int[] rgSize = db.QuerySize();
+            log.CHECK(rgSize != null, "The Query size should not be null.");
+            log.CHECK_EQ(rgSize.Length, 3, "The query size should have 3 items.");
+            log.CHECK_EQ(rgSize[0], 1, "The query size item 1 should be 1 for the number of files.");
+            log.CHECK_GE(rgSize[1], 1, "The query size item 0 (the channel count) should be greater than or equal to 1.");
+            log.CHECK_GE(rgSize[2], 1000, "The query size item 2 should be the number of samples in the query.");
+
+            int nH = rgSize[1];
+            int nW = rgSize[2];
+            int nCount = nH * nW;
+
+            Stopwatch sw = new Stopwatch();
+
+            sw.Start();
+
+            SimpleDatum sd = db.Query(int.MaxValue);
+            SimpleDatum sdEnd = db.Query(int.MaxValue);
+
+            sw.Stop();
+
+            double dfMs = sw.Elapsed.TotalMilliseconds;
+
+            log.WriteLine("Total Time = " + dfMs.ToString() + " ms.");
+
+            log.CHECK(sdEnd == null, "The last query should be null to show no more data exists.");
+            log.CHECK_GE(sd.ItemCount, 1000, "There should be more than one item in the data.");
+            log.CHECK(sd.IsRealData, "The data should be real data, not byte.");
 
             db.Shutdown();
         }
@@ -721,8 +772,9 @@ namespace MyCaffe.test
             throw new NotImplementedException();
         }
 
-        public int GetQuerySize()
+        public int GetQuerySize(out int nHeight)
         {
+            nHeight = 1;
             return 1;
         }
 
@@ -734,6 +786,16 @@ namespace MyCaffe.test
         public byte[] ConvertOutput(float[] rg, out Type type)
         {
             throw new NotImplementedException();
+        }
+
+        public List<double[]> QueryReal()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Dictionary<string, float> QueryInfo()
+        {
+            return null;
         }
     }
 
@@ -809,8 +871,9 @@ namespace MyCaffe.test
             throw new NotImplementedException();
         }
 
-        public int GetQuerySize()
+        public int GetQuerySize(out int nHeight)
         {
+            nHeight = 1;
             return 1;
         }
 
@@ -822,6 +885,16 @@ namespace MyCaffe.test
         public byte[] ConvertOutput(float[] rg, out Type type)
         {
             throw new NotImplementedException();
+        }
+
+        public List<double[]> QueryReal()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Dictionary<string, float> QueryInfo()
+        {
+            return null;
         }
     }
 
@@ -899,8 +972,9 @@ namespace MyCaffe.test
             throw new NotImplementedException();
         }
 
-        public int GetQuerySize()
+        public int GetQuerySize(out int nHeight)
         {
+            nHeight = 1;
             return 1;
         }
 
@@ -912,6 +986,16 @@ namespace MyCaffe.test
         public byte[] ConvertOutput(float[] rg, out Type type)
         {
             throw new NotImplementedException();
+        }
+
+        public List<double[]> QueryReal()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Dictionary<string, float> QueryInfo()
+        {
+            return null;
         }
     }
 }
