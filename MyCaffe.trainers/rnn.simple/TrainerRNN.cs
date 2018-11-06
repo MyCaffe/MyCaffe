@@ -100,14 +100,13 @@ namespace MyCaffe.trainers.rnn.simple
         /// Run a single cycle on the environment after the delay.
         /// </summary>
         /// <param name="nN">specifies the number of samples to run.</param>
-        /// <param name="rgRawInput">Optionally specifies an input seed used to build the initial input.</param>
-        /// <param name="strInputType">Specifies the type of the input seed.</param>
+        /// <param name="strRunProperties">Optionally specifies properties to use when running.</param>
         /// <returns>The results of the run containing the action are returned.</returns>
-        public float[] Run(int nN, byte[] rgRawInput, string strInputType)
+        public float[] Run(int nN, string strRunProperties)
         {
             m_mycaffe.CancelEvent.Reset();
-            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN, m_rgVocabulary);
-            float[] rgResults = agent.Run(nN, rgRawInput, strInputType);
+            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN, m_rgVocabulary, strRunProperties);
+            float[] rgResults = agent.Run(nN);
             agent.Dispose();
 
             return rgResults;
@@ -118,15 +117,14 @@ namespace MyCaffe.trainers.rnn.simple
         /// Run a single cycle on the environment after the delay.
         /// </summary>
         /// <param name="nN">Specifies the number of samples to run.</param>
-        /// <param name="rgRawInput">Optionally specifies an input seed used to build the initial input.</param>
-        /// <param name="strInputType">Specifies the type of the input seed.</param>
+        /// <param name="strRunProperties">Optionally specifies properties to use when running.</param>
         /// <param name="type">Returns the data type contained in the byte stream.</param>
         /// <returns>The results of the run containing the action are returned as a byte stream.</returns>
-        public byte[] Run(int nN, byte[] rgRawInput, string strInputType, out Type type)
+        public byte[] Run(int nN, string strRunProperties, out Type type)
         {
             m_mycaffe.CancelEvent.Reset();
-            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN, m_rgVocabulary);
-            byte[] rgResults = agent.Run(nN, rgRawInput, strInputType, out type);
+            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN, m_rgVocabulary, strRunProperties);
+            byte[] rgResults = agent.Run(nN, out type);
             agent.Dispose();
 
             return rgResults;
@@ -179,10 +177,10 @@ namespace MyCaffe.trainers.rnn.simple
         PropertySet m_properties;
         CryptoRandom m_random;
 
-        public Agent(IxTrainerCallback icallback, MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase, List<int> rgVocabulary)
+        public Agent(IxTrainerCallback icallback, MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase, List<int> rgVocabulary, string strRunProperties = null)
         {
             m_icallback = icallback;
-            m_brain = new Brain<T>(mycaffe, properties, random, icallback as IxTrainerCallbackRNN, phase, rgVocabulary);
+            m_brain = new Brain<T>(mycaffe, properties, random, icallback as IxTrainerCallbackRNN, phase, rgVocabulary, strRunProperties);
             m_properties = properties;
             m_random = random;
         }
@@ -232,24 +230,20 @@ namespace MyCaffe.trainers.rnn.simple
         /// The Run method provides the main 'actor' that runs data through the trained network.
         /// </summary>
         /// <param name="nN">specifies the number of samples to run.</param>
-        /// <param name="rgRawInput">Optionally specifies an input seed used to build the initial input.</param>
-        /// <param name="strInputType">Specifies the type of the input seed.</param>
         /// <returns>The results of the run are returned.</returns>
-        public float[] Run(int nN, byte[] rgRawInput, string strInputType)
+        public float[] Run(int nN)
         {
-            return m_brain.Run(nN, rgRawInput, strInputType);
+            return m_brain.Run(nN);
         }
 
         /// <summary>
         /// The Run method provides the main 'actor' that runs data through the trained network.
         /// </summary>
         /// <param name="nN">specifies the number of samples to run.</param>
-        /// <param name="rgRawInput">Optionally specifies an input seed used to build the initial input.</param>
-        /// <param name="strInputType">Specifies the type of the input seed.</param>
         /// <returns>The results of the run are returned in the native format used by the CustomQuery.</returns>
-        public byte[] Run(int nN, byte[] rgRawInput, string strInputType, out Type type)
+        public byte[] Run(int nN, out Type type)
         {
-            float[] rgResults = m_brain.Run(nN, rgRawInput, strInputType);
+            float[] rgResults = m_brain.Run(nN);
 
             ConvertOutputArgs args = new ConvertOutputArgs(rgResults);
             IxTrainerCallbackRNN icallback = m_icallback as IxTrainerCallbackRNN;
@@ -270,9 +264,11 @@ namespace MyCaffe.trainers.rnn.simple
         Net<T> m_net;
         Solver<T> m_solver;
         PropertySet m_properties;
+        PropertySet m_runProperties = null;
         Blob<T> m_blobData;
         Blob<T> m_blobClip;
         Blob<T> m_blobLabel;
+        Blob<T> m_blobOutput = null;
         int m_nSequenceLength;
         int m_nBatchSize;
         int m_nVocabSize;
@@ -288,17 +284,62 @@ namespace MyCaffe.trainers.rnn.simple
         double m_dfLastLoss = 0;
         double m_dfLastLearningRate = 0;
         List<int> m_rgVocabulary = null;
+        Phase m_phaseOnRun = Phase.NONE;
 
-        public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallbackRNN icallback, Phase phase, List<int> rgVocabulary)
+        public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallbackRNN icallback, Phase phase, List<int> rgVocabulary, string strRunProperties = null)
         {
+            string strOutputBlob = null;
+
+            if (strRunProperties != null)
+                m_runProperties = new PropertySet(strRunProperties);
+
             m_icallback = icallback;
             m_mycaffe = mycaffe;
-            m_net = mycaffe.GetInternalNet(phase);         
             m_properties = properties;
             m_random = random;
             m_rgVocabulary = rgVocabulary;
 
-            m_dfTemperature = m_properties.GetPropertyAsDouble("Temperature", 0);
+            if (m_runProperties != null)
+            {
+                m_dfTemperature = m_runProperties.GetPropertyAsDouble("Temperature", 0);
+                string strPhaseOnRun = m_runProperties.GetProperty("PhaseOnRun", false);
+                switch (strPhaseOnRun)
+                {
+                    case "RUN":
+                        m_phaseOnRun = Phase.RUN;
+                        break;
+
+                    case "TEST":
+                        m_phaseOnRun = Phase.TEST;
+                        break;
+
+                    case "TRAIN":
+                        m_phaseOnRun = Phase.TRAIN;
+                        break;
+                }
+
+                if (phase == Phase.RUN && m_phaseOnRun != Phase.NONE)
+                {
+                    if (m_phaseOnRun != Phase.RUN)
+                        m_mycaffe.Log.WriteLine("Warning: Running on the '" + m_phaseOnRun.ToString() + "' network.");
+
+                    strOutputBlob = m_runProperties.GetProperty("OutputBlob", false);
+                    if (strOutputBlob == null)
+                        throw new Exception("You must specify the 'OutputBlob' when Running with a phase other than RUN.");
+
+                    strOutputBlob = Utility.Replace(strOutputBlob, '~', ';');
+
+                    phase = m_phaseOnRun;
+                }
+            }
+
+            m_net = mycaffe.GetInternalNet(phase);
+
+            if (m_phaseOnRun != Phase.NONE && m_phaseOnRun != Phase.RUN && strOutputBlob != null)
+            {
+                if ((m_blobOutput = m_net.FindBlob(strOutputBlob)) == null)
+                    throw new Exception("Could not find the 'Output' layer top named '" + strOutputBlob + "'!");
+            }
 
             if ((m_blobData = m_net.FindBlob("data")) == null)
                 throw new Exception("Could not find the 'Input' layer top named 'data'!");
@@ -498,7 +539,7 @@ namespace MyCaffe.trainers.rnn.simple
             return m_rgVocabulary.Count - 1;
         }
 
-        public float[] Run(int nN, byte[] rgRawInput, string strInputType)
+        public float[] Run(int nN)
         {
             float[] rgPredictions = new float[nN];
             List<int> rgInput = new List<int>();
@@ -512,11 +553,12 @@ namespace MyCaffe.trainers.rnn.simple
             }
 
             // If a seed is specified, add it to the end of the sequence.
-            if (rgRawInput != null && rgRawInput.Length > 0)
+            if (m_runProperties != null)
             {
-                if (strInputType == typeof(string).ToString())
+                string strSeed = m_runProperties.GetProperty("Seed", false);
+                if (!string.IsNullOrEmpty(strSeed))
                 {
-                    string strSeed = Encoding.ASCII.GetString(rgRawInput);
+                    strSeed = Utility.Replace(strSeed, '~', ';');
 
                     int nStart = rgCorrectLengthSequence.Length - strSeed.Length;
                     if (nStart < 0)
@@ -579,6 +621,9 @@ namespace MyCaffe.trainers.rnn.simple
 
         private int getLastPrediction(Blob<T> blobOutput, List<int> rgVocabulary)
         {
+            if (m_blobOutput != null)
+                blobOutput = m_blobOutput;
+
             float[] rgData = Utility.ConvertVecF<T>(blobOutput.update_cpu_data());
 
             // Get the probabilities for the last character of the first sequence in the batch

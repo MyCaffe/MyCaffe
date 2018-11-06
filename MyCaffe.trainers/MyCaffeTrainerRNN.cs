@@ -370,14 +370,12 @@ namespace MyCaffe.trainers
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe);
 
-            byte[] rgRawInput = null;
-            string strRawInputType = null;
-
+            string strRunProperties = null;
             IXMyCaffeCustomTrainerCallbackRNN icallback = m_icallback as IXMyCaffeCustomTrainerCallbackRNN;
             if (icallback != null)
-                rgRawInput = icallback.GetSeed(out strRawInputType);
+                strRunProperties = icallback.GetRunProperties();
 
-            float[] rgResults = m_itrainer.Run(nN, rgRawInput, strRawInputType);
+            float[] rgResults = m_itrainer.Run(nN, strRunProperties);
             m_itrainer.Shutdown(0);
             m_itrainer = null;
 
@@ -396,14 +394,12 @@ namespace MyCaffe.trainers
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe);
 
-            byte[] rgRawInput = null;
-            string strRawInputType = null;
-
+            string strRunProperties = null;
             IXMyCaffeCustomTrainerCallbackRNN icallback = m_icallback as IXMyCaffeCustomTrainerCallbackRNN;
             if (icallback != null)
-                rgRawInput = icallback.GetSeed(out strRawInputType);
+                strRunProperties = icallback.GetRunProperties();
 
-            byte[] rgResults = m_itrainer.Run(nN, rgRawInput, strRawInputType, out type);
+            byte[] rgResults = m_itrainer.Run(nN, strRunProperties, out type);
             m_itrainer.Shutdown(0);
             m_itrainer = null;
 

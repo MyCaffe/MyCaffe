@@ -190,11 +190,10 @@ namespace MyCaffe.trainers
     public interface IXMyCaffeCustomTrainerCallbackRNN : IXMyCaffeCustomTrainerCallback
     {
         /// <summary>
-        /// The GetSeed method is used to qeury the seed used when Running, if any.
+        /// The GetRunProperties method is used to qeury the properties used when Running, if any.
         /// </summary>
-        /// <param name="strType">Specifies the type of the Seed byte stream.</param>
-        /// <returns>The seed raw byte stream is returned.</returns>
-        byte[] GetSeed(out string strType);
+        /// <returns>The property string is returned.</returns>
+        string GetRunProperties();
     }
 
     /// <summary>
@@ -250,20 +249,18 @@ namespace MyCaffe.trainers
         /// Run a number of 'nN' samples on the trainer.
         /// </summary>
         /// <param name="nN">specifies the number of samples to run.</param>
-        /// <param name="rgRawInput">Optionally, specifies an input seed in a raw byte stream.</param>
-        /// <param name="strInputType">Specifies the type of the raw input byte stream.</param>
+        /// <param name="strRunProperties">Optionally specifies properties to use when running.</param>
         /// <returns>The result collection containing the action is returned.</returns>
-        float[] Run(int nN, byte[] rgRawInput, string strInputType);
+        float[] Run(int nN, string strRunProperties);
 
         /// <summary>
         /// Run a number of 'nN' samples on the trainer.
         /// </summary>
         /// <param name="nN">Specifies the number of samples to run.</param>
-        /// <param name="rgRawInput">Optionally, specifies an input seed in a raw byte stream.</param>
-        /// <param name="strInputType">Specifies the type of the raw input byte stream.</param>
+        /// <param name="strRunProperties">Optionally specifies properties to use when running.</param>
         /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
         /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
-        byte[] Run(int nN, byte[] rgRawInput, string strInputType, out Type type);
+        byte[] Run(int nN, string strRunProperties, out Type type);
     }
 
     /// <summary>
