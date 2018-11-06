@@ -700,6 +700,15 @@ license and copyright terms herein.
   and is used and distributed under The Code Project Open License (CPOL) 1.02 
   (https://www.codeproject.com/info/cpol10.aspx)
 
+  The WAVReader.cs and WAVWriter.cs files were inspired by the WAVReader provided
+  with the Spectogram Generation in SampleTagger found on Code Project at
+  https://www.codeproject.com/Articles/806042/Spectrogram-generation-in-SampleTagger
+  and distributed under The Code Project Open License (CPOL) 1.02
+  (https://www.codeproject.com/info/cpol10.aspx)
+
+  The sample WAV file 'How_I_Feel.16.wav' is distributed with permission from 
+  CLOV15 Tunes LLC.  For more information on CLOV15, see https://soundcloud.com/clov15.
+
   $$OTHERLICENSES$$
 
   SignalPOP LLC at https://www.signalpop.com is the curator of the MyCaffe code.</value>
