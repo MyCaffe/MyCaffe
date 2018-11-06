@@ -471,6 +471,14 @@ namespace MyCaffe.test
             return p;
         }
 
+        /// <summary>
+        /// Get the properties to use during each call to Run.
+        /// </summary>
+        /// <returns>The properties are returned as a set of key=value pairs.</returns>
+        /// <remarks>
+        /// For now, the TRAIN phase is used during the Run (e.g. the TRAIN network)
+        /// due to a bug in sharing the weights between the TRAIN and TEST/RUN networks.
+        /// </remarks>
         public string GetRunProperties()
         {
             return "PhaseOnRun=TRAIN;OutputBlob=ip1;";
