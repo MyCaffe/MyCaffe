@@ -150,6 +150,14 @@ namespace MyCaffe.db.stream
             return rg.ToArray();
         }
 
+        /// The Query information returns information about the data queried such as header information.
+        /// </summary>
+        /// <returns>The information about the data is returned.</returns>
+        public Dictionary<string, float> QueryInfo()
+        {
+            return m_iquery.QueryInfo();
+        }
+
         /// <summary>
         /// Reset the query to the start date used in Initialize, optionally with an offset from the start.
         /// </summary>
