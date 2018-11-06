@@ -205,7 +205,7 @@ namespace MyCaffe.layers
                     sharedNet = sharedLayer.m_unrolledNet;
             }
 
-            m_unrolledNet = new Net<T>(m_cuda, m_log, net_param, m_evtCancel, null, Phase.NONE, null, sharedNet);
+            m_unrolledNet = new Net<T>(m_cuda, m_log, net_param, m_evtCancel, null, m_phase, null, sharedNet);
             m_unrolledNet.set_debug_info(m_param.recurrent_param.debug_info);
 
             // Setup pointers to the inputs.
@@ -240,7 +240,7 @@ namespace MyCaffe.layers
 
             // This layer's parameters are any parameters in the layers of the unrolled 
             // net.  We only want one copy of each parameter, so check that the parameter
-            // is 'owned' by the layer, father than shared with another.
+            // is 'owned' by the layer, rather than shared with another.
             blobs.Clear();
             for (int i = 0; i < m_unrolledNet.parameters.Count; i++)
             {
