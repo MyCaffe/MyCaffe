@@ -11,7 +11,7 @@ namespace MyCaffe.db.stream.stdqueries
     /// <summary>
     /// The StandardQueryTextFile provides queries that read text (*.txt) files residing in a given directory.
     /// </summary>
-    class StandardQueryTextFile : IXCustomQuery
+    public class StandardQueryTextFile : IXCustomQuery
     {
         string m_strPath;
         string[] m_rgstrFiles;
@@ -147,17 +147,21 @@ namespace MyCaffe.db.stream.stdqueries
         /// <summary>
         /// The GetQuerySize method returns the size of the query as {1,1,filesize}.
         /// </summary>
-        /// <param name="nHeight">The height of the data is 1.</param>
-        /// <returns>The query size is returned as the width.</returns>
-        public int GetQuerySize(out int nHeight)
+        /// <returns>The query size is returned.</returns>
+        public List<int> GetQuerySize()
         {
-            nHeight = 1;
-
             if (m_nFileIdx == m_rgstrFiles.Length)
-                return 0;
+                return null;
+
+            List<int> rgSize = new List<int>();
+
+            rgSize.Add(1);
+            rgSize.Add(1);
 
             FileInfo fi = new FileInfo(m_rgstrFiles[m_nFileIdx]);
-            return (int)fi.Length;
+            rgSize.Add((int)fi.Length);
+
+            return rgSize;
         }
 
         /// <summary>
@@ -172,13 +176,13 @@ namespace MyCaffe.db.stream.stdqueries
         /// Converts the output values into the native type used by the CustomQuery.
         /// </summary>
         /// <param name="rg">Specifies the raw output data.</param>
-        /// <param name="type">Returns the output type.</param>
+        /// <param name="strType">Returns the output type.</param>
         /// <returns>The converted output data is returned as a byte stream.</returns>
-        public byte[] ConvertOutput(float[] rg, out Type type)
+        public byte[] ConvertOutput(float[] rg, out string strType)
         {
             using (MemoryStream ms = new MemoryStream())
             {
-                type = typeof(string);
+                strType = "String";
 
                 for (int i = 0; i < rg.Length; i++)
                 {

@@ -12,7 +12,7 @@ namespace MyCaffe.db.stream.stdqueries
     /// <summary>
     /// The StandardQueryWAVFile provides queries that read sound frequencies from (*.WAV) files residing in a given directory.
     /// </summary>
-    class StandardQueryWAVFile : IXCustomQuery
+    public class StandardQueryWAVFile : IXCustomQuery
     {
         string m_strPath;
         string[] m_rgstrFiles;
@@ -154,7 +154,27 @@ namespace MyCaffe.db.stream.stdqueries
         /// <returns>The information about the data is returned.</returns>
         public Dictionary<string, float> QueryInfo()
         {
-            return m_rgInfo;
+            if (m_rgInfo != null && m_rgInfo.Count > 0)
+                return m_rgInfo;
+
+            if (m_nFileIdx == m_rgstrFiles.Length)
+                throw new Exception("Invalid field index.");
+
+            using (FileStream fs = File.OpenRead(m_rgstrFiles[m_nFileIdx]))
+            using (WAVReader wav = new WAVReader(fs))
+            {
+                wav.ReadToEnd(true);
+
+                m_rgInfo = new Dictionary<string, float>();
+                m_rgInfo.Add("AveBytesPerSec", wav.Format.nAvgBytesPerSec);
+                m_rgInfo.Add("BlockAlign", wav.Format.nBlockAlign);
+                m_rgInfo.Add("Channels", wav.Format.nChannels);
+                m_rgInfo.Add("SamplesPerSec", wav.Format.nSamplesPerSec);
+                m_rgInfo.Add("BitsPerSample", wav.Format.wBitsPerSample);
+                m_rgInfo.Add("FormatTag", wav.Format.wFormatTag);
+
+                return m_rgInfo;
+            }
         }
 
         /// <summary>
@@ -194,7 +214,7 @@ namespace MyCaffe.db.stream.stdqueries
         /// <param name="rg">Specifies the byte stream.</param>
         /// <param name="fmt">Returns the WAV file format.</param>
         /// <returns>Returns the WAV file samples.</returns>
-        public static List<float[]> UnPackBytes(byte[] rg, out WaveFormat fmt)
+        public static List<double[]> UnPackBytes(byte[] rg, out WaveFormat fmt)
         {
             using (MemoryStream ms = new MemoryStream(rg))
             using (BinaryReader br = new BinaryReader(ms))
@@ -205,10 +225,10 @@ namespace MyCaffe.db.stream.stdqueries
                 int nCh = br.ReadInt32();
                 int nS = br.ReadInt32();
 
-                List<float[]> rgData = new List<float[]>();
+                List<double[]> rgData = new List<double[]>();
                 for (int i = 0; i < nCh; i++)
                 {
-                    rgData.Add(new float[nS]);
+                    rgData.Add(new double[nS]);
                 }
 
                 for (int i = 0; i < nS; i++)
@@ -227,18 +247,20 @@ namespace MyCaffe.db.stream.stdqueries
         /// <summary>
         /// The GetQuerySize method returns the size of the query as {1,1,filesize}.
         /// </summary>
-        /// <param name="nHeight">The height of the data is 1.</param>
-        /// <returns>The query size is returned as the width.</returns>
-        public int GetQuerySize(out int nHeight)
+        /// <returns>The query size is returned.</returns>
+        public List<int> GetQuerySize()
         {
-            nHeight = 1;
+            List<int> rgSize = new List<int>();
 
             using (FileStream fs = File.OpenRead(m_rgstrFiles[m_nFileIdx]))
             using (WAVReader wav = new WAVReader(fs))
             {
                 wav.ReadToEnd(true);
-                nHeight = (int)wav.Format.nChannels;
-                return wav.SampleCount;
+                rgSize.Add(1);
+                rgSize.Add((int)wav.Format.nChannels);
+                rgSize.Add(wav.SampleCount);
+
+                return rgSize;
             }
         }
 
@@ -254,25 +276,28 @@ namespace MyCaffe.db.stream.stdqueries
         /// Converts the output values into the native type used by the CustomQuery.
         /// </summary>
         /// <param name="rg">Specifies the raw output data.</param>
-        /// <param name="type">Returns the output type.</param>
+        /// <param name="strType">Returns the output type.</param>
         /// <returns>The converted output data is returned as a byte stream.</returns>
-        public byte[] ConvertOutput(float[] rg, out Type type)
+        public byte[] ConvertOutput(float[] rg, out string strType)
         {
-            using (MemoryStream ms = new MemoryStream())
+            strType = "WAV";
+            Dictionary<string, float> rgInfo = QueryInfo();
+            WaveFormat fmt = new WaveFormat();
+
+            fmt.nAvgBytesPerSec = (uint)rgInfo["AveBytesPerSec"];
+            fmt.nBlockAlign = (ushort)rgInfo["BlockAlign"];
+            fmt.nChannels = (ushort)rgInfo["Channels"];
+            fmt.nSamplesPerSec = (uint)rgInfo["SamplesPerSec"];
+            fmt.wBitsPerSample = (ushort)rgInfo["BitsPerSample"];
+            fmt.wFormatTag = (ushort)rgInfo["FormatTag"];
+
+            List<float[]> rgrgSamples = new List<float[]>();
+            for (int i = 0; i < fmt.nChannels; i++)
             {
-                type = typeof(string);
-
-                for (int i = 0; i < rg.Length; i++)
-                {
-                    int nVal = (int)Convert.ChangeType(rg[i], typeof(int));
-                    char ch = (char)nVal;
-                    ms.WriteByte((byte)ch);
-                }
-
-                ms.WriteByte(0);
-
-                return ms.ToArray();
+                rgrgSamples.Add(rg);
             }
+
+            return PackBytes(fmt, rgrgSamples);
         }
     }
 }
