@@ -16,8 +16,6 @@ using MyCaffe.trainers;
 using System.ServiceModel;
 using MyCaffe.db.stream;
 using System.IO;
-using MyCaffe.db.stream.stdqueries.wav;
-using MyCaffe.db.stream.stdqueries;
 
 namespace MyCaffe.test
 {

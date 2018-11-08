@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyCaffe.db.stream.stdqueries
+namespace MyCaffe.db.stream
 {
     /// <summary>
     /// The StandardQueryTextFile provides queries that read text (*.txt) files residing in a given directory.

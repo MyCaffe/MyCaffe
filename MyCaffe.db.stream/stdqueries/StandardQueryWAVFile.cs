@@ -1,5 +1,4 @@
 ﻿using MyCaffe.basecode;
-using MyCaffe.db.stream.stdqueries.wav;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyCaffe.db.stream.stdqueries
+namespace MyCaffe.db.stream
 {
     /// <summary>
     /// The StandardQueryWAVFile provides queries that read sound frequencies from (*.WAV) files residing in a given directory.
