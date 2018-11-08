@@ -16,6 +16,8 @@ using MyCaffe.trainers;
 using System.ServiceModel;
 using MyCaffe.db.stream;
 using System.IO;
+using MyCaffe.db.stream.stdqueries.wav;
+using MyCaffe.db.stream.stdqueries;
 
 namespace MyCaffe.test
 {
@@ -149,6 +151,26 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void Train_RNNSIMPLE_WavRNN()
+        {
+            MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
+
+            try
+            {
+                foreach (IMyCaffeCustomTrainerTest t in test.Tests)
+                {
+                    // NOTE: 1000 iterations is quite short and may not produce results,
+                    // for real training 100,000+ is a more common iteration to use.
+                    t.TrainWavRNN(false, "RNN.SIMPLE", 1000);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -157,6 +179,7 @@ namespace MyCaffe.test
         void TrainCartPolePG(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
         void TrainAtariPG(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
         void TrainCharRNN(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
+        void TrainWavRNN(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
     }
 
     class MyCaffeCustomTrainerTest : TestBase
@@ -322,7 +345,7 @@ namespace MyCaffe.test
             m_log.CHECK(ds != null, "The MyCaffeDataTrainer should return its dataset override returned by the Gym that it uses.");
 
             string strModelPath = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\char_rnn", true);
-            string strWeights = strModelPath + "\\weights.mycaffe";
+            string strWeights = strModelPath + "\\weights.mycaffemodel";
             if (File.Exists(strWeights))
             {
                 using (FileStream fs = File.OpenRead(strWeights))
@@ -345,24 +368,21 @@ namespace MyCaffe.test
             //
             //  - TrainerType = 'RNN.SIMPLE' (currently only one supported)
             //  - UseAcceleratedTraining = False (disable accelerated training).
-            //  - Temperature = 0.5 (determines how precisely to use the output probabilities when selecting the output characters)
-            //  - Seed = 'To be, or not to be: that is the question:'
             //  - ConnectionCount=1 (using one query)
             //  - Connection0_CustomQueryName=StdTextFileQuery (using standard text file query to read the text files)
             //  - Connection0_CustomQueryParam=params (set the custom query parameters to the packed parameters containing the FilePath where the text files are to be loaded).
             string strSchema = "ConnectionCount=1;";
             string strDataPath = getTestPath("\\MyCaffe\\test_data\\data\\char-rnn", true);
             string strParam = "FilePath=" + strDataPath + ";";
-            string strSeed = "To be, or not to be: that is the question:";
 
             strParam = ParamPacker.Pack(strParam);
             strSchema += "Connection0_CustomQueryName=StdTextFileQuery;";
             strSchema += "Connection0_CustomQueryParam=" + strParam + ";";
 
-            string strProp = "TrainerType=" + strTrainerType + ";UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";Temperature=0.5;Seed=" + strSeed + ";" + strSchema;
+            string strProp = "TrainerType=" + strTrainerType + ";UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";" + strSchema;
             trainer.Initialize(strProp, this);
 
-            List<int> rgVocabulary = trainer.PreloadData(m_log, 0);
+            BucketCollection rgVocabulary = trainer.PreloadData(m_log, m_evtCancel, 0);
             project.ModelDescription = trainer.ResizeModel(project.ModelDescription, rgVocabulary);
 
             // load the project to train (note the project must use the InputLayer for input).
@@ -373,10 +393,10 @@ namespace MyCaffe.test
 
             trainer.Train(mycaffe, nIterations);
 
-            Type type;
+            string type;
             int nN = 1000; // Note: see iterations used, for real training the iterations should be 100,000+
-            byte[] rgOutput = trainer.Run(mycaffe, nN, out type);
-            m_log.CHECK(type == typeof(string), "The output type should be a string type!");
+            byte[] rgOutput = trainer.Run(mycaffe, nN, out type); // For Run Parameters, see GetRunProperties() callback below.
+            m_log.CHECK(type == "String", "The output type should be a string type!");
             string strOut;
 
             using (MemoryStream ms = new MemoryStream(rgOutput))
@@ -401,11 +421,108 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
+        public void TrainWavRNN(bool bShowUi, string strTrainerType, int nIterations = 100, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
+        {
+            m_evtCancel.Reset();
+
+            GymCollection col = new GymCollection();
+            col.Load();
+            IXMyCaffeGymData igym = col.Find("DataGeneral") as IXMyCaffeGymData;
+            m_log.CHECK(igym != null, "The 'DataGeneral' gym should implement the IXMyCaffeGymData interface.");
+
+            string strAccelTrain = (bUseAcceleratedTraining) ? "ON" : "OFF";
+
+            if (strTrainerType != "RNN.SIMPLE")
+                throw new Exception("Currently, only the RNN.SIMPLE is supported.");
+
+            m_log.WriteHeader("Test Training CharRNN for " + nIterations.ToString("N0") + " iterations.");
+            m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain);
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
+            mycaffe.OnSnapshot += Mycaffe_OnSnapshot;
+
+            MyCaffeDataGeneralTrainer trainer = new MyCaffeDataGeneralTrainer();
+            ProjectEx project = getCharRNNProject(igym, nIterations);
+            DatasetDescriptor ds = trainer.GetDatasetOverride(0);
+
+            m_log.CHECK(ds != null, "The MyCaffeDataTrainer should return its dataset override returned by the Gym that it uses.");
+
+            string strModelPath = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\wav", true);
+            string strWeights = strModelPath + "\\weights.mycaffemodel";
+            if (File.Exists(strWeights))
+            {
+                using (FileStream fs = File.OpenRead(strWeights))
+                using (BinaryReader bw = new BinaryReader(fs))
+                {
+                    if (fs.Length > 0)
+                    {
+                        byte[] rgWeights = new byte[fs.Length];
+                        bw.Read(rgWeights, 0, (int)fs.Length);
+                        project.WeightsState = rgWeights;
+                    }
+                }
+            }
+            m_strModelPath = strModelPath;
+
+            // Train the network using the custom trainer
+            //  - Iterations (maximum frames cumulative across all threads) = 1000 (normally this would be much higher such as 500,000)
+            //  - Learning rate = 0.01 (defined in solver.prototxt)
+            //  - Mini Batch Size = 25 (defined in train_val.prototxt for InputLayer)
+            //
+            //  - TrainerType = 'RNN.SIMPLE' (currently only one supported)
+            //  - UseAcceleratedTraining = False (disable accelerated training).
+            //  - ConnectionCount=1 (using one query)
+            //  - Connection0_CustomQueryName=StdWAVFileQuery (using standard text file query to read the text files)
+            //  - Connection0_CustomQueryParam=params (set the custom query parameters to the packed parameters containing the FilePath where the text files are to be loaded).
+            string strSchema = "ConnectionCount=1;";
+            string strDataPath = getTestPath("\\MyCaffe\\test_data\\data\\wav", true);
+            string strParam = "FilePath=" + strDataPath + ";";
+
+            strParam = ParamPacker.Pack(strParam);
+            strSchema += "Connection0_CustomQueryName=StdWAVFileQuery;";
+            strSchema += "Connection0_CustomQueryParam=" + strParam + ";";
+
+            string strProp = "TrainerType=" + strTrainerType + ";UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";Temperature=0.5;" + strSchema;
+            trainer.Initialize(strProp, this);
+
+            BucketCollection rgVocabulary = trainer.PreloadData(m_log, m_evtCancel, 0);
+            project.ModelDescription = trainer.ResizeModel(project.ModelDescription, rgVocabulary);
+
+            // load the project to train (note the project must use the InputLayer for input).
+            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false);
+
+            if (bShowUi)
+                trainer.OpenUi();
+
+            trainer.Train(mycaffe, nIterations);
+
+            string type;
+            int nN = 1000; // Note: see iterations used, for real training the iterations should be 100,000+
+            byte[] rgOutput = trainer.Run(mycaffe, nN, out type);  // For Run Parameters, see GetRunProperties() callback below.
+            m_log.CHECK(type == "WAV", "The output type should be a WAV type!");
+
+            WaveFormat fmt;
+            List<double[]> rgrgSamples = StandardQueryWAVFile.UnPackBytes(rgOutput, out fmt);
+
+            string strOutputFile = strModelPath + "\\output.wav";
+            using (FileStream fs = File.OpenWrite(strOutputFile))
+            using (WAVWriter wav = new WAVWriter(fs))
+            {
+                wav.Format = fmt;
+                wav.Samples = rgrgSamples;
+                wav.WriteAll();
+            }
+
+            trainer.CleanUp();
+
+            // Release the mycaffe resources.
+            mycaffe.Dispose();
+        }
+
         private void Mycaffe_OnSnapshot(object sender, SnapshotArgs e)
         {
             byte[] rgWeights = e.UpdateWeights();
 
-            string strWeights = m_strModelPath + "\\weights.mycaffe";
+            string strWeights = m_strModelPath + "\\weights.mycaffemodel";
 
             if (File.Exists(strWeights))
                 File.Delete(strWeights);
@@ -821,7 +938,7 @@ namespace MyCaffe.test
             if (igym == null)
                 throw new Exception("Output data conversion requires a gym that implements the IXMyCaffeGymData interface.");
 
-            Type type;
+            string type;
             byte[] rgOutput = igym.ConvertOutput(e.Output, out type);
             e.SetRawOutput(rgOutput, type);
 
@@ -832,26 +949,40 @@ namespace MyCaffe.test
         {
         }
 
-        protected override List<int> preloaddata(Log log, int nProjectID)
+        protected override BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID)
         {
             initialize(log);
             IXMyCaffeGymData igym = m_igym as IXMyCaffeGymData;
             Tuple<State, double, bool> state = igym.Reset();
-            List<int> rgVocabulary = new List<int>();
             int nDataLen;
             SimpleDatum sd = state.Item1.GetData(false, out nDataLen);
+            BucketCollection rgBucketCollection = null;
 
-            for (int i = 0; i < sd.ByteData.Length; i++)
+            if (sd.IsRealData)
             {
-                int nVal = (int)sd.ByteData[i];
+                // Create the vocabulary bucket collection.
+                rgBucketCollection = BucketCollection.Bucketize("Building vocabulary", 128, sd, log, evtCancel);
+                if (rgBucketCollection == null)
+                    return null;
+            }
+            else
+            {
+                List<int> rgVocabulary = new List<int>();
 
-                if (!rgVocabulary.Contains(nVal))
-                    rgVocabulary.Add(nVal);
+                for (int i = 0; i < sd.ByteData.Length; i++)
+                {
+                    int nVal = (int)sd.ByteData[i];
+
+                    if (!rgVocabulary.Contains(nVal))
+                        rgVocabulary.Add(nVal);
+                }
+
+                rgBucketCollection = new BucketCollection(rgVocabulary);
             }
 
             m_firststate = state;
 
-            return rgVocabulary;
+            return rgBucketCollection;
         }
 
         public void Closing()
