@@ -48,7 +48,7 @@ namespace MyCaffe.trainers
         double m_dfAccuracy = 0;
         int m_nIteration = 0;
         int m_nIterations = -1;
-        List<int> m_rgVocabulary = null;
+        BucketCollection m_rgVocabulary = null;
 
         enum TRAINER_TYPE
         {
@@ -236,9 +236,10 @@ namespace MyCaffe.trainers
         /// The preloaddata method gives the custom trainer an opportunity to pre-load any data.
         /// </summary>
         /// <param name="log">Specifies the output log to use.</param>
+        /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nProjectID">Specifies the project ID if any.</param>
-        /// <returns>When data is pre-loaded the discovered vocabulary is returned.</returns>
-        protected virtual List<int> preloaddata(Log log, int nProjectID)
+        /// <returns>When data is pre-loaded the discovered vocabulary is returned as a bucket collection.</returns>
+        protected virtual BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID)
         {
             return null;
         }
@@ -389,7 +390,7 @@ namespace MyCaffe.trainers
         /// <param name="nN">Specifies the number of samples to run.</param>
         /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
         /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
-        public byte[] Run(Component mycaffe, int nN, out Type type)
+        public byte[] Run(Component mycaffe, int nN, out string type)
         {
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe);
@@ -558,11 +559,12 @@ namespace MyCaffe.trainers
         /// The PreloadData method gives the custom trainer an opportunity to pre-load any data.
         /// </summary>
         /// <param name="log">Specifies the output log to use.</param>
+        /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nProjectID">Specifies the project ID used, if any.</param>
-        /// <returns>When data is pre-loaded the discovered vocabulary is returned.</returns>
-        public List<int> PreloadData(Log log, int nProjectID)
+        /// <returns>When data is pre-loaded the discovered vocabulary is returned as a BucketCollection.</returns>
+        public BucketCollection PreloadData(Log log, CancelEvent evtCancel, int nProjectID)
         {
-            return preloaddata(log, nProjectID);
+            return preloaddata(log, evtCancel, nProjectID);
         }
 
         /// <summary>
@@ -572,11 +574,12 @@ namespace MyCaffe.trainers
         /// <param name="rgVocabulary">Specifies the vocabulary.</param>
         /// <returns>A new model discriptor is returned (or the same 'strModel' if no changes were made).</returns>
         /// <remarks>Note, this method is called after PreloadData.</remarks>
-        public string ResizeModel(string strModel, List<int> rgVocabulary)
+        public string ResizeModel(string strModel, BucketCollection rgVocabulary)
         {
             if (rgVocabulary == null || rgVocabulary.Count == 0)
                 return strModel;
 
+            int nVocabCount = rgVocabulary.Count;
             NetParameter p = NetParameter.FromProto(RawProto.Parse(strModel));
             EmbedParameter embed = null;
             InnerProductParameter ip = null;
@@ -594,9 +597,9 @@ namespace MyCaffe.trainers
             }
 
             if (embed != null)
-                embed.input_dim = (uint)rgVocabulary.Count;
+                embed.input_dim = (uint)nVocabCount;
 
-            ip.num_output = (uint)rgVocabulary.Count;
+            ip.num_output = (uint)nVocabCount;
 
             m_rgVocabulary = rgVocabulary;
 

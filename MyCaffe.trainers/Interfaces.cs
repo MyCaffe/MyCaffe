@@ -153,14 +153,15 @@ namespace MyCaffe.trainers
         /// <param name="nN">Specifies the number of samples to run.</param>
         /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
         /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
-        byte[] Run(Component mycaffe, int nN, out Type type);
+        byte[] Run(Component mycaffe, int nN, out string type);
         /// <summary>
         /// The PreloadData method gives the custom trainer an opportunity to pre-load any data.
         /// </summary>
         /// <param name="log">Specifies the output log to use.</param>
+        /// <param name="evtCancel">Specifies the event used to cancel the pre-load.</param>
         /// <param name="nProjectID">Specifies the ProjectID if any.</param>
-        /// <returns>When data is pre-loaded the vocabulary discovered is returned.</returns>
-        List<int> PreloadData(Log log, int nProjectID);
+        /// <returns>When data is pre-loaded the vocabulary discovered is returned as a Bucket Collection.</returns>
+        BucketCollection PreloadData(Log log, CancelEvent evtCancel, int nProjectID);
         /// <summary>
         /// The ResizeModel method gives the custom trainer the opportunity to resize the model if needed.
         /// </summary>
@@ -168,7 +169,7 @@ namespace MyCaffe.trainers
         /// <param name="rgVocabulary">Specifies the vocabulary, if any.</param>
         /// <returns>A new model discriptor is returned (or the same 'strModel' if no changes were made).</returns>
         /// <remarks>Note, this method is called after PreloadData.</remarks>
-        string ResizeModel(string strModel, List<int> rgVocabulary);
+        string ResizeModel(string strModel, BucketCollection rgVocabulary);
     }
 
     /// <summary>
@@ -260,7 +261,7 @@ namespace MyCaffe.trainers
         /// <param name="strRunProperties">Optionally specifies properties to use when running.</param>
         /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
         /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
-        byte[] Run(int nN, string strRunProperties, out Type type);
+        byte[] Run(int nN, string strRunProperties, out string type);
     }
 
     /// <summary>

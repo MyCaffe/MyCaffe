@@ -265,7 +265,7 @@ namespace MyCaffe.trainers
     public class ConvertOutputArgs : EventArgs
     {
         float[] m_rgOutput;
-        Type m_type;
+        string m_type;
         byte[] m_rgRawOutput;
 
         /// <summary>
@@ -288,7 +288,7 @@ namespace MyCaffe.trainers
         /// <summary>
         /// Specifies the type of the raw output byte stream.
         /// </summary>
-        public Type RawType
+        public string RawType
         {
             get { return m_type; }
         }
@@ -306,7 +306,7 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <param name="rgData">Specifies the raw output byte stream.</param>
         /// <param name="type">Specifies the raw output type.</param>
-        public void SetRawOutput(byte[] rgData, Type type)
+        public void SetRawOutput(byte[] rgData, string type)
         {
             m_rgRawOutput = rgData;
             m_type = type;
