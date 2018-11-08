@@ -67,6 +67,7 @@
     <Compile Include="stdqueries\StandardQueryWAVFile.cs" />
     <Compile Include="stdqueries\StandardQueryTextFile.cs" />
     <Compile Include="stdqueries\wav\WAVReader.cs" />
+    <Compile Include="stdqueries\wav\WAVProcessor.cs" />
     <Compile Include="stdqueries\wav\WAVWriter.cs" />
   </ItemGroup>
   <ItemGroup>
