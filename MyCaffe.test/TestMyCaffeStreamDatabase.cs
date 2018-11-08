@@ -672,7 +672,7 @@ namespace MyCaffe.test
             log.CHECK(rgSize != null, "The Query size should not be null.");
             log.CHECK_EQ(rgSize.Length, 3, "The query size should have 3 items.");
             log.CHECK_EQ(rgSize[0], 1, "The query size item 1 should be 1 for the number of files.");
-            log.CHECK_GE(rgSize[1], 1, "The query size item 0 (the channel count) should be greater than or equal to 1.");
+            log.CHECK_GE(rgSize[1], 2, "The query size item 0 (the channel count) should be greater than or equal to 1.");
             log.CHECK_GE(rgSize[2], 1000, "The query size item 2 should be the number of samples in the query.");
 
             int nH = rgSize[1];
@@ -693,7 +693,7 @@ namespace MyCaffe.test
             log.WriteLine("Total Time = " + dfMs.ToString() + " ms.");
 
             log.CHECK(sdEnd == null, "The last query should be null to show no more data exists.");
-            log.CHECK_GE(sd.ItemCount, 1000, "There should be more than one item in the data.");
+            log.CHECK_EQ(sd.ItemCount, nCount, "There should be the same number in the data as the size[1] * size[2] returned by QuerySize.");
             log.CHECK(sd.IsRealData, "The data should be real data, not byte.");
 
             db.Shutdown();
@@ -772,10 +772,9 @@ namespace MyCaffe.test
             throw new NotImplementedException();
         }
 
-        public int GetQuerySize(out int nHeight)
+        public List<int> GetQuerySize()
         {
-            nHeight = 1;
-            return 1;
+            return new List<int>() { 1, 1, 1 };
         }
 
         public void Reset()
@@ -783,7 +782,7 @@ namespace MyCaffe.test
             m_nIdx = 0;
         }
 
-        public byte[] ConvertOutput(float[] rg, out Type type)
+        public byte[] ConvertOutput(float[] rg, out string type)
         {
             throw new NotImplementedException();
         }
@@ -871,10 +870,9 @@ namespace MyCaffe.test
             throw new NotImplementedException();
         }
 
-        public int GetQuerySize(out int nHeight)
+        public List<int> GetQuerySize()
         {
-            nHeight = 1;
-            return 1;
+            return new List<int>() { 1, 1, 1 };
         }
 
         public void Reset()
@@ -882,7 +880,7 @@ namespace MyCaffe.test
             m_nIdx = 0;
         }
 
-        public byte[] ConvertOutput(float[] rg, out Type type)
+        public byte[] ConvertOutput(float[] rg, out string type)
         {
             throw new NotImplementedException();
         }
@@ -972,10 +970,9 @@ namespace MyCaffe.test
             throw new NotImplementedException();
         }
 
-        public int GetQuerySize(out int nHeight)
+        public List<int> GetQuerySize()
         {
-            nHeight = 1;
-            return 1;
+            return new List<int>() { 1, 1, 1 };
         }
 
         public void Reset()
@@ -983,7 +980,7 @@ namespace MyCaffe.test
             m_nIdx = 0;
         }
 
-        public byte[] ConvertOutput(float[] rg, out Type type)
+        public byte[] ConvertOutput(float[] rg, out string type)
         {
             throw new NotImplementedException();
         }
