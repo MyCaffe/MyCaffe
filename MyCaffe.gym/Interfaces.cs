@@ -183,7 +183,7 @@ namespace MyCaffe.gym
         /// <param name="rg">Specifies the raw output data.</param>
         /// <param name="type">Returns the output type.</param>
         /// <returns>The converted output data is returned.</returns>
-        byte[] ConvertOutput(float[] rg, out Type type);
+        byte[] ConvertOutput(float[] rg, out string type);
     }
 
     /// <summary>

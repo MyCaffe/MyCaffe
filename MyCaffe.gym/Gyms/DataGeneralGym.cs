@@ -231,7 +231,7 @@ namespace MyCaffe.gym
         /// <param name="type">Returns the output type.</param>
         /// <returns>The converted output data is returned in a byte stream.</returns>
         /// <remarks>Note: Currently, only data gym's implement this function.</remarks>
-        public byte[] ConvertOutput(float[] rg, out Type type)
+        public byte[] ConvertOutput(float[] rg, out string type)
         {
             return m_db.ConvertOutput(rg, out type);
         }
