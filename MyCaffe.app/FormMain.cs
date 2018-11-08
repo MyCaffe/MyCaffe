@@ -414,6 +414,13 @@ namespace MyCaffe.app
 
             lvStatus.Items.Add(lvi);
 
+            if (lvi.BackColor == Color.Salmon && str.Contains("storage instruction"))
+            {
+                lvi = new ListViewItem("CUDA storage instruction errors can corrupt the current application's GPU state - Please restart this application.");
+                lvi.BackColor = Color.Yellow;
+                lvStatus.Items.Add(lvi);
+            }
+
             while (lvStatus.Items.Count > nMaxLines)
             {
                 lvStatus.Items.RemoveAt(0);
