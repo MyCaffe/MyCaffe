@@ -939,16 +939,25 @@ namespace MyCaffe
             if (tp != null)
             {
                 SimpleDatum sdMean = (m_imgDb == null) ? null : m_imgDb.QueryImageMean(m_dataSet.TrainingSource.ID);
-                int nC = m_project.Dataset.TrainingSource.ImageChannels;
-                int nH = m_project.Dataset.TrainingSource.ImageHeight;
-                int nW = m_project.Dataset.TrainingSource.ImageWidth;
+                int nC = 0;
+                int nH = 0;
+                int nW = 0;
 
                 if (sdMean != null)
                 {
-                    m_log.CHECK_EQ(nC, sdMean.Channels, "The mean channel count does not match the datasets channel count.");
-                    m_log.CHECK_EQ(nH, sdMean.Height, "The mean height count does not match the datasets height count.");
-                    m_log.CHECK_EQ(nW, sdMean.Width, "The mean width count does not match the datasets width count.");
+                    nC = sdMean.Channels;
+                    nH = sdMean.Height;
+                    nW = sdMean.Width;
                 }
+                else if (m_project != null)
+                {
+                    nC = m_project.Dataset.TrainingSource.ImageChannels;
+                    nH = m_project.Dataset.TrainingSource.ImageHeight;
+                    nW = m_project.Dataset.TrainingSource.ImageWidth;
+                }
+
+                if (nC == 0 || nH == 0 || nW == 0)
+                    throw new Exception("Unable to size the Data Transformer for there is no Mean or Project to gather the sizing information from.");
 
                 m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, nC, nH, nW, sdMean);
             }
