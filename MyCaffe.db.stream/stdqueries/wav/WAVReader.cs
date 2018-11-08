@@ -10,35 +10,97 @@ using System.Threading.Tasks;
 /// Modified from https://www.codeproject.com/Articles/806042/Spectrogram-generation-in-SampleTagger
 /// License: https://www.codeproject.com/info/cpol10.aspx
 /// </summary>
-namespace MyCaffe.db.stream.stdqueries.wav
+namespace MyCaffe.db.stream
 {
+    /// <summary>
+    /// The WaveFormatExtensible structure describes the extended set of information of a WAV file.
+    /// </summary>
+    /// <remarks>
+    /// @see [WAVE PCM soundfile format](http://soundfile.sapp.org/doc/WaveFormat/)
+    /// </remarks>
     [StructLayout(LayoutKind.Sequential)]
-    public struct WaveFormatExtensible
+    public struct WaveFormatExtensible 
     {
+        /// <summary>
+        /// Specifies the AudioFormat where PCM = 1 for Linear quantization.
+        /// </summary>
         public ushort wFormatTag;
+        /// <summary>
+        /// Specifies the number of channels in the data where Mono = 1 and Stero = 2.
+        /// </summary>
         public ushort nChannels;
+        /// <summary>
+        /// Specifies the sample rate (e.g. 8000, 44100, etc.)
+        /// </summary>
         public uint nSamplesPerSec;
+        /// <summary>
+        /// Specifies the average byte rate per second (nSamplesPerSec * Channels * BitsPerSample / 8)
+        /// </summary>
         public uint nAvgBytesPerSec;
+        /// <summary>
+        /// Specifies the block alignment (Channels * BitsPerSample / 8)
+        /// </summary>
         public ushort nBlockAlign;
+        /// <summary>
+        /// Specifies the number of bits per sample (8, 16, 32, etc.)
+        /// </summary>
         public ushort wBitsPerSample;
+        /// <summary>
+        /// Specifies the extera parameter size.
+        /// </summary>
         public ushort cbSize;
-
+        /// <summary>
+        /// Specifies the valid bits per sample.
+        /// </summary>
         public ushort wValidBitsPerSample;
+        /// <summary>
+        /// Specifies the channel mask.
+        /// </summary>
         public uint dwChannelMask;
+        /// <summary>
+        /// Specifies the sub format GUID.
+        /// </summary>
         public Guid SubFormat;
     }
 
+    /// <summary>
+    /// The WaveFormat structure describes the header information of a WAV file.
+    /// </summary>
+    /// <remarks>
+    /// @see [WAVE PCM soundfile format](http://soundfile.sapp.org/doc/WaveFormat/)
+    /// </remarks>
     [StructLayout(LayoutKind.Sequential)]
     public struct WaveFormat
     {
+        /// <summary>
+        /// Specifies the AudioFormat where PCM = 1 for Linear quantization.
+        /// </summary>
         public ushort wFormatTag;
+        /// <summary>
+        /// Specifies the number of channels in the data where Mono = 1 and Stero = 2.
+        /// </summary>
         public ushort nChannels;
+        /// <summary>
+        /// Specifies the sample rate (e.g. 8000, 44100, etc.)
+        /// </summary>
         public uint nSamplesPerSec;
+        /// <summary>
+        /// Specifies the average byte rate per second (nSamplesPerSec * Channels * BitsPerSample / 8)
+        /// </summary>
         public uint nAvgBytesPerSec;
+        /// <summary>
+        /// Specifies the block alignment (Channels * BitsPerSample / 8)
+        /// </summary>
         public ushort nBlockAlign;
+        /// <summary>
+        /// Specifies the number of bits per sample (8, 16, 32, etc.)
+        /// </summary>
         public ushort wBitsPerSample;
     }
 
+    /// <summary>
+    /// The WAVReader is an extension of the BinaryReader and is used to read WAV files.
+    /// </summary>
     public class WAVReader : BinaryReader
     {
         Stream m_stream;
@@ -48,26 +110,44 @@ namespace MyCaffe.db.stream.stdqueries.wav
         int m_nDataSize;
         List<double[]> m_rgrgSamples;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="stream">Specifies the data stream to read.</param>
         public WAVReader(Stream stream) : base(stream)
         {
             m_stream = stream;
         }
 
+        /// <summary>
+        /// Returns the WAV file header information.
+        /// </summary>
         public WaveFormat Format
         {
             get { return m_format; }
         }
 
+        /// <summary>
+        /// Returns the frequency samples of the WAV file.
+        /// </summary>
         public List<double[]> Samples
         {
             get { return m_rgrgSamples; }
         }
 
+        /// <summary>
+        /// Returns the WAV file header information in a key=value format.
+        /// </summary>
         public Dictionary<string, List<string>> ExtraInformation
         {
             get { return m_rgInfo; }
         }
 
+        /// <summary>
+        /// Reads the WAV file data.
+        /// </summary>
+        /// <param name="bReadHeaderOnly">Optionally, specifies to only read the header information.</param>
+        /// <returns>If read successfully this function returns <i>true</i>, otherwise <i>false</i>.</returns>
         public bool ReadToEnd(bool bReadHeaderOnly = false)
         {
             if (!readContent())
@@ -82,6 +162,9 @@ namespace MyCaffe.db.stream.stdqueries.wav
             return true;
         }
 
+        /// <summary>
+        /// Returns the number of samples.
+        /// </summary>
         public int SampleCount
         {
             get { return m_nDataSize / m_format.nBlockAlign; }
@@ -284,6 +367,12 @@ namespace MyCaffe.db.stream.stdqueries.wav
             }
         }
 
+        /// <summary>
+        /// Converts a byte array to a structure.
+        /// </summary>
+        /// <typeparam name="T">Specifies the structure type.</typeparam>
+        /// <param name="bytes">Specifies the byte array.</param>
+        /// <returns>The structure is returned.</returns>
         protected static T ByteArrayToStructure<T>(byte[] bytes) where T : struct
         {
             GCHandle handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);

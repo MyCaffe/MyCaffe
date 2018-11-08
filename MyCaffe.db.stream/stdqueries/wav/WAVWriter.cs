@@ -10,8 +10,11 @@ using System.Threading.Tasks;
 /// Modified from https://www.codeproject.com/Articles/806042/Spectrogram-generation-in-SampleTagger
 /// License: https://www.codeproject.com/info/cpol10.aspx
 /// </summary>
-namespace MyCaffe.db.stream.stdqueries.wav
+namespace MyCaffe.db.stream
 {
+    /// <summary>
+    /// The WAVWriter is a special BinaryWriter used to write WAV files.
+    /// </summary>
     public class WAVWriter : BinaryWriter
     {
         Stream m_stream;
@@ -21,23 +24,38 @@ namespace MyCaffe.db.stream.stdqueries.wav
         List<double[]> m_rgrgSamples;
         int m_nSampleStep = 1;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="stream">Specifies the output stream.</param>
         public WAVWriter(Stream stream) : base(stream)
         {
             m_stream = stream;
         }
 
+        /// <summary>
+        /// Get/set the WaveFormat.
+        /// </summary>
         public WaveFormat Format
         {
             get { return m_format; }
             set { m_format = value; }
         }
 
+        /// <summary>
+        /// Get/set the frequency samples.
+        /// </summary>
         public List<double[]> Samples
         {
             get { return m_rgrgSamples; }
             set { m_rgrgSamples = value; }
         }
 
+        /// <summary>
+        /// The WriteAll method writes all WAV file data to the file.
+        /// </summary>
+        /// <param name="nNewSampleRate">Optionally, specifies a new sample rate to use, if any (default = 0, ignoring this parameter).</param>
+        /// <returns>On success, <i>true</i> is returned, otherwise <i>false</i>.</returns>
         public bool WriteAll(int nNewSampleRate = 0)
         {
             if (m_rgrgSamples == null)
@@ -195,6 +213,12 @@ namespace MyCaffe.db.stream.stdqueries.wav
             return true;
         }
 
+        /// <summary>
+        /// Converts a byte array into a structure.
+        /// </summary>
+        /// <typeparam name="T">Specifies the structure type.</typeparam>
+        /// <param name="bytes">Specifies the byte array.</param>
+        /// <returns>The structure is returned.</returns>
         public static T ByteArrayToStructure<T>(byte[] bytes) where T : struct
         {
             GCHandle handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
@@ -204,6 +228,12 @@ namespace MyCaffe.db.stream.stdqueries.wav
             return stuff;
         }
 
+        /// <summary>
+        /// Converts a structure into a byte array.
+        /// </summary>
+        /// <typeparam name="T">Specifies the structure type.</typeparam>
+        /// <param name="val">Specifies the structure.</param>
+        /// <returns>The byte array is returned.</returns>
         public static byte[] StructureToByteArray<T>(T val)
         {
             int size = Marshal.SizeOf(val);

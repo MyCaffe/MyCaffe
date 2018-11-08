@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.basecode
 {
+    /// <summary>
+    /// The Bucket class contains the information describing a single range of values within a BucketCollection.
+    /// </summary>
     public class Bucket
     {
         double m_fMin;
@@ -15,12 +18,22 @@ namespace MyCaffe.basecode
         double m_fSum;
         int m_nCount;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="fMin">The minimum value in the range.</param>
+        /// <param name="fMax">The maximum value in the range.</param>
         public Bucket(double fMin, double fMax)
         {
             m_fMin = fMin;
             m_fMax = fMax;
         }
 
+        /// <summary>
+        /// Tests to see if the Bucket range contains the value.
+        /// </summary>
+        /// <param name="fVal">Specifies the value to test.</param>
+        /// <returns>Returns 0 if the Bucket contains the value, -1 if the value is less than the Bucket range and 1 if the value is greater.</returns>
         public int Contains(double fVal)
         {
             if (fVal < m_fMin)
@@ -32,6 +45,12 @@ namespace MyCaffe.basecode
             return 0;
         }
 
+        /// <summary>
+        /// Attempts to add a new value to the Bucket.
+        /// </summary>
+        /// <param name="fVal">Specifies the value to add.</param>
+        /// <param name="bForce">Optionally, forces adding the value to the Bucket.</param>
+        /// <returns>Returns 0 if the value falls within the Buckets range and is added, -1 if the value is less than the Bucket range and 1 if the value is greater.</returns>
         public int Add(double fVal, bool bForce = false)
         {
             if (!bForce)
@@ -47,21 +66,35 @@ namespace MyCaffe.basecode
             return 0;
         }
 
+        /// <summary>
+        /// Returns the number of items added to the Bucket.
+        /// </summary>
         public int Count
         {
             get { return m_nCount; }
         }
 
+        /// <summary>
+        /// Returns the average value of all values added to the Bucket.
+        /// </summary>
         public double Average
         {
             get { return m_fSum / m_nCount; }
         }
 
+        /// <summary>
+        /// Returns a string representation of the Bucket.
+        /// </summary>
+        /// <returns>The string representation is returned.</returns>
         public override string ToString()
         {
             return "[" + m_fMin.ToString() + "," + m_fMax.ToString() + "]-> " + m_nCount.ToString("N0");
         }
 
+        /// <summary>
+        /// Save the Bucket to a BinaryWriter.
+        /// </summary>
+        /// <param name="bw">Specifies the BinaryWriter.</param>
         public void Save(BinaryWriter bw)
         {
             bw.Write(m_nCount);
@@ -70,6 +103,11 @@ namespace MyCaffe.basecode
             bw.Write(m_fMax);
         }
 
+        /// <summary>
+        /// Load a Bucket from a BinaryReader.
+        /// </summary>
+        /// <param name="br">Specifies the BinaryReader.</param>
+        /// <returns>The newly loaded Bucket is returned.</returns>
         public static Bucket Load(BinaryReader br)
         {
             int nCount = br.ReadInt32();
@@ -85,11 +123,20 @@ namespace MyCaffe.basecode
         }
     }
 
+    /// <summary>
+    /// The BucketCollection contains a set of Buckets.
+    /// </summary>
     public class BucketCollection
     {
         List<Bucket> m_rgBuckets = new List<Bucket>();
         bool m_bIsDataReal = false;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="fMin">Specifies the overall minimum of all Buckets.</param>
+        /// <param name="fMax">Specifies the overall maximum of all Buckets.</param>
+        /// <param name="nCount">Specifies the number of Buckets to use.</param>
         public BucketCollection(double fMin, double fMax, int nCount)
         {
             double fRange = fMax - fMin;
@@ -105,6 +152,10 @@ namespace MyCaffe.basecode
             m_bIsDataReal = true;
         }
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="rgVocab">Specifies an array of vocabulary values to add into Buckets.</param>
         public BucketCollection(List<int> rgVocab)
         {
             rgVocab.Sort();
@@ -120,21 +171,35 @@ namespace MyCaffe.basecode
             m_bIsDataReal = false;
         }
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="bIsReal">Specifies that the Buckets are to hold Real values.</param>
         public BucketCollection(bool bIsReal)
         {
             m_bIsDataReal = bIsReal;
         }
 
+        /// <summary>
+        /// Returns whehter or not the Buckets hold Real values or not.
+        /// </summary>
         public bool IsDataReal
         {
             get { return m_bIsDataReal; }
         }
 
+        /// <summary>
+        /// Returns the number of Buckets.
+        /// </summary>
         public int Count
         {
             get { return m_rgBuckets.Count; }
         }
 
+        /// <summary>
+        /// Finds the correct Bucket and adds the value to it.
+        /// </summary>
+        /// <param name="fVal">Specifies the value to add.</param>
         public void Add(double fVal)
         {
             for (int i = 0; i < m_rgBuckets.Count; i++)
@@ -148,6 +213,11 @@ namespace MyCaffe.basecode
             }
         }
 
+        /// <summary>
+        /// Finds the Bucket associated with the value and returns the Bucket's average value.
+        /// </summary>
+        /// <param name="fVal">Specifies the value to find.</param>
+        /// <returns>The Bucket average is returned.</returns>
         public double Translate(double fVal)
         {
             for (int i = 0; i < m_rgBuckets.Count; i++)
@@ -159,6 +229,11 @@ namespace MyCaffe.basecode
             return m_rgBuckets[m_rgBuckets.Count - 1].Average;
         }
 
+        /// <summary>
+        /// Finds the index of the Bucket containing the value.
+        /// </summary>
+        /// <param name="dfVal">Specifies the value to look for.</param>
+        /// <returns>The Bucket index is returned.</returns>
         public int FindIndex(double dfVal)
         {
             for (int i = 0; i < m_rgBuckets.Count; i++)
@@ -170,11 +245,27 @@ namespace MyCaffe.basecode
             return m_rgBuckets.Count - 1;
         }
 
+        /// <summary>
+        /// Returns the average of the Bucket at a given index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index.</param>
+        /// <returns>The Bucket average is returned.</returns>
         public double GetValueAt(int nIdx)
         {
             return m_rgBuckets[nIdx].Average;
         }
 
+        /// <summary>
+        /// The Bucketize method adds all values within a SimpleDatum to a new BucketCollection.
+        /// </summary>
+        /// <param name="strName">Specifies the name to use when writing status information.</param>
+        /// <param name="nBucketCount">Specifies the number of Buckets to use.</param>
+        /// <param name="sd">Specifies the SimpleDatum containing the data to add.</param>
+        /// <param name="log">Specifies the output log.</param>
+        /// <param name="evtCancel">Specifies the CancelEvent used to cancel the bucketizing process.</param>
+        /// <param name="dfMin">Optionally, specifies a overall minimum to use in the BucketCollection, when missing this is calculated from the SimpleDatum.</param>
+        /// <param name="dfMax">Optionally, specifies a overall maximum to use in the BucketCollection, when missing this is calculated from the SimpleDatum.</param>
+        /// <returns></returns>
         public static BucketCollection Bucketize(string strName, int nBucketCount, SimpleDatum sd, Log log, CancelEvent evtCancel, double? dfMin = null, double? dfMax = null)
         {
             int nIdx = 0;
@@ -245,7 +336,14 @@ namespace MyCaffe.basecode
             return col;
         }
 
-
+        /// <summary>
+        /// The UnBucketize method converts all Data received into their respective Bucket average values.
+        /// </summary>
+        /// <param name="strName">Specifies the name to use when writing status information.</param>
+        /// <param name="rgrgData">Specifies the data to unbucketize.</param>
+        /// <param name="log">Specifies the output log.</param>
+        /// <param name="evtCancel">Specifies the CancelEvent used to cancel the unbucketizing process.</param>
+        /// <returns>On success, <i>true</i> is returned, otherwise <i>false</i>.</returns>
         public bool UnBucketize(string strName, List<double[]> rgrgData, Log log, CancelEvent evtCancel)
         {
             int nIdx = 0;
@@ -279,6 +377,10 @@ namespace MyCaffe.basecode
             return true;
         }
 
+        /// <summary>
+        /// Converts the BucketCollection into a byte stream.
+        /// </summary>
+        /// <returns>The byte stream is returned.</returns>
         public byte[] ToByteStream()
         {
             using (MemoryStream ms = new MemoryStream())
@@ -296,6 +398,11 @@ namespace MyCaffe.basecode
             }
         }
 
+        /// <summary>
+        /// Converts a byte stream into a BucketCollection.
+        /// </summary>
+        /// <param name="rg">Specifies the byte stream.</param>
+        /// <returns>The new BucketCollection is returned.</returns>
         public static BucketCollection FromByteStream(byte[] rg)
         {
             using (MemoryStream ms = new MemoryStream())
