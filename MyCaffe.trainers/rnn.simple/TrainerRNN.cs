@@ -28,7 +28,7 @@ namespace MyCaffe.trainers.rnn.simple
         MyCaffeControl<T> m_mycaffe;
         PropertySet m_properties;
         CryptoRandom m_random;
-        List<int> m_rgVocabulary = null;
+        BucketCollection m_rgVocabulary = null;
 
         /// <summary>
         /// The constructor.
@@ -38,7 +38,7 @@ namespace MyCaffe.trainers.rnn.simple
         /// <param name="random">Specifies the random number generator to use.</param>
         /// <param name="icallback">Specifies the callback for parent notifications and queries.</param>
         /// <param name="rgVocabulary">Specifies the vocabulary to use.</param>
-        public TrainerRNN(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallback icallback, List<int> rgVocabulary)
+        public TrainerRNN(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallback icallback, BucketCollection rgVocabulary)
         {
             m_icallback = icallback;
             m_mycaffe = mycaffe;
@@ -120,7 +120,7 @@ namespace MyCaffe.trainers.rnn.simple
         /// <param name="strRunProperties">Optionally specifies properties to use when running.</param>
         /// <param name="type">Returns the data type contained in the byte stream.</param>
         /// <returns>The results of the run containing the action are returned as a byte stream.</returns>
-        public byte[] Run(int nN, string strRunProperties, out Type type)
+        public byte[] Run(int nN, string strRunProperties, out string type)
         {
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN, m_rgVocabulary, strRunProperties);
@@ -177,7 +177,7 @@ namespace MyCaffe.trainers.rnn.simple
         PropertySet m_properties;
         CryptoRandom m_random;
 
-        public Agent(IxTrainerCallback icallback, MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase, List<int> rgVocabulary, string strRunProperties = null)
+        public Agent(IxTrainerCallback icallback, MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase, BucketCollection rgVocabulary, string strRunProperties = null)
         {
             m_icallback = icallback;
             m_brain = new Brain<T>(mycaffe, properties, random, icallback as IxTrainerCallbackRNN, phase, rgVocabulary, strRunProperties);
@@ -241,7 +241,7 @@ namespace MyCaffe.trainers.rnn.simple
         /// </summary>
         /// <param name="nN">specifies the number of samples to run.</param>
         /// <returns>The results of the run are returned in the native format used by the CustomQuery.</returns>
-        public byte[] Run(int nN, out Type type)
+        public byte[] Run(int nN, out string type)
         {
             float[] rgResults = m_brain.Run(nN);
 
@@ -278,15 +278,18 @@ namespace MyCaffe.trainers.rnn.simple
         T m_tZero;
         T m_tOne;
         double m_dfTemperature = 0;
-        byte[] m_rgTestData;
-        byte[] m_rgTrainData;
+        byte[] m_rgTestData = null;
+        byte[] m_rgTrainData = null;
+        double[] m_rgdfTestData = null;
+        double[] m_rgdfTrainData = null;
+        bool m_bIsDataReal = false;
         Stopwatch m_sw = new Stopwatch();
         double m_dfLastLoss = 0;
         double m_dfLastLearningRate = 0;
-        List<int> m_rgVocabulary = null;
+        BucketCollection m_rgVocabulary = null;
         Phase m_phaseOnRun = Phase.NONE;
 
-        public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallbackRNN icallback, Phase phase, List<int> rgVocabulary, string strRunProperties = null)
+        public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallbackRNN icallback, Phase phase, BucketCollection rgVocabulary, string strRunProperties = null)
         {
             string strOutputBlob = null;
 
@@ -351,7 +354,7 @@ namespace MyCaffe.trainers.rnn.simple
             m_mycaffe.Log.CHECK(layer != null, "Could not find an ending INNERPRODUCT layer!");
 
             m_nVocabSize = (int)layer.layer_param.inner_product_param.num_output;
-            if (rgVocabulary != null && rgVocabulary.Count > 0)
+            if (rgVocabulary != null)
                 m_mycaffe.Log.CHECK_EQ(m_nVocabSize, rgVocabulary.Count, "The vocabulary count and last inner product output count should match!");
 
             m_nSequenceLength = m_blobData.shape(0);
@@ -456,8 +459,19 @@ namespace MyCaffe.trainers.rnn.simple
 
             int nTestLen = (int)(s.Data.ItemCount * 0.2);
             int nTrainLen = s.Data.ItemCount - nTestLen;
-            m_rgTestData = new byte[nTestLen];
-            Array.Copy(s.Data.ByteData, nTrainLen, m_rgTestData, 0, nTestLen);
+
+            if (s.Data.IsRealData)
+            {
+                m_bIsDataReal = true;
+                m_rgdfTestData = new double[nTestLen];
+                Array.Copy(s.Data.RealData, nTrainLen, m_rgdfTestData, 0, nTestLen);
+            }
+            else
+            {
+                m_bIsDataReal = false;
+                m_rgTestData = new byte[nTestLen];
+                Array.Copy(s.Data.ByteData, nTrainLen, m_rgTestData, 0, nTestLen);
+            }
 
             m_sw.Start();
             m_solver.TestAll(nIterations);
@@ -472,11 +486,25 @@ namespace MyCaffe.trainers.rnn.simple
         {
             int nTestLen = (int)(s.Data.ItemCount * 0.2);
             int nTrainLen = s.Data.ItemCount - nTestLen;
-            m_rgTestData = new byte[nTestLen];
-            m_rgTrainData = new byte[nTrainLen];
 
-            Array.Copy(s.Data.ByteData, 0, m_rgTrainData, 0, nTrainLen);
-            Array.Copy(s.Data.ByteData, nTrainLen, m_rgTestData, 0, nTestLen);
+            if (s.Data.IsRealData)
+            {
+                m_bIsDataReal = true;
+                m_rgdfTestData = new double[nTestLen];
+                m_rgdfTrainData = new double[nTrainLen];
+
+                Array.Copy(s.Data.RealData, 0, m_rgdfTrainData, 0, nTrainLen);
+                Array.Copy(s.Data.RealData, nTrainLen, m_rgdfTestData, 0, nTestLen);
+            }
+            else
+            {
+                m_bIsDataReal = false;
+                m_rgTestData = new byte[nTestLen];
+                m_rgTrainData = new byte[nTrainLen];
+
+                Array.Copy(s.Data.ByteData, 0, m_rgTrainData, 0, nTrainLen);
+                Array.Copy(s.Data.ByteData, nTrainLen, m_rgTestData, 0, nTestLen);
+            }
 
             m_sw.Start();
             m_solver.Solve(nIterations, null, null, step);
@@ -489,30 +517,62 @@ namespace MyCaffe.trainers.rnn.simple
 
         public void FeedNet(bool bTrain)
         {
-            byte[] rgData = (bTrain) ? m_rgTrainData : m_rgTestData;
-
-            // Create input data, the data must be in the order
-            // seq1_char1, seq2_char1, ..., seqBatch_Size_char1, seq1_char2, seq2_char2, ..., seqBatch_Size_charSequence_Length
-            // As seq1_charSequence_Length == seq2_charSequence_Length-1 == seq3_charSequence_Length-2 == ... we can perform block copy for efficientcy.
-            // Labels are the same with an offset of +1
-
-            // Re-order the data according to caffe input specification for LSTM layer.
-            for (int i = 0; i < m_nBatchSize; i++)
+            // Real Data (real data does not use a vocabulary)
+            if (m_bIsDataReal)
             {
-                int nCurrentCharIdx = m_random.Next(rgData.Length - m_nSequenceLength - 2);
+                double[] rgdfData = (bTrain) ? m_rgdfTrainData : m_rgdfTestData;
+                // Create input data, the data must be in the order
+                // seq1_val1, seq2_val1, ..., seqBatch_Size_val1, seq1_val2, seq2_val2, ..., seqBatch_Size_valSequence_Length
+                // As seq1_valSequence_Length == seq2_valSequence_Length-1 == seq3_valSequence_Length-2 == ... we can perform block copy for efficientcy.
+                // Labels are the same with an offset of +1
 
-                for (int j = 0; j < m_nSequenceLength; j++)
+                // Re-order the data according to caffe input specification for LSTM layer.
+                for (int i = 0; i < m_nBatchSize; i++)
                 {
-                    byte bData = rgData[nCurrentCharIdx + j];
-                    byte bLabel = rgData[nCurrentCharIdx + j + 1]; // predict next character
-                    bool bFound;
-                    float fDataIdx = findIndex(bData, out bFound);
-                    float fLabelIdx = findIndex(bLabel, out bFound);
+                    int nCurrentValIdx = m_random.Next(rgdfData.Length - m_nSequenceLength - 2);
 
-                    // Feed the net with input data and labels (clips are always the same)
-                    int nIdx = m_nBatchSize * j + i;
-                    m_rgDataInput[nIdx] = (T)Convert.ChangeType(fDataIdx, typeof(T));
-                    m_rgLabelInput[nIdx] = (T)Convert.ChangeType(fLabelIdx, typeof(T));
+                    for (int j = 0; j < m_nSequenceLength; j++)
+                    {
+                        double dfData = rgdfData[nCurrentValIdx + j];
+                        double dfLabel = rgdfData[nCurrentValIdx + j + 1]; // predict next character
+                        bool bFound;
+                        float fDataIdx = findIndex(dfData, out bFound);
+                        float fLabelIdx = findIndex(dfLabel, out bFound);
+
+                        // Feed the net with input data and labels (clips are always the same)
+                        int nIdx = m_nBatchSize * j + i;
+                        m_rgDataInput[nIdx] = (T)Convert.ChangeType(fDataIdx, typeof(T));
+                        m_rgLabelInput[nIdx] = (T)Convert.ChangeType(fLabelIdx, typeof(T));
+                    }
+                }
+            }
+            // Byte Data (uses a vocabulary if available)
+            else
+            {
+                byte[] rgData = (bTrain) ? m_rgTrainData : m_rgTestData;
+                // Create input data, the data must be in the order
+                // seq1_char1, seq2_char1, ..., seqBatch_Size_char1, seq1_char2, seq2_char2, ..., seqBatch_Size_charSequence_Length
+                // As seq1_charSequence_Length == seq2_charSequence_Length-1 == seq3_charSequence_Length-2 == ... we can perform block copy for efficientcy.
+                // Labels are the same with an offset of +1
+
+                // Re-order the data according to caffe input specification for LSTM layer.
+                for (int i = 0; i < m_nBatchSize; i++)
+                {
+                    int nCurrentCharIdx = m_random.Next(rgData.Length - m_nSequenceLength - 2);
+
+                    for (int j = 0; j < m_nSequenceLength; j++)
+                    {
+                        byte bData = rgData[nCurrentCharIdx + j];
+                        byte bLabel = rgData[nCurrentCharIdx + j + 1]; // predict next character
+                        bool bFound;
+                        float fDataIdx = findIndex(bData, out bFound);
+                        float fLabelIdx = findIndex(bLabel, out bFound);
+
+                        // Feed the net with input data and labels (clips are always the same)
+                        int nIdx = m_nBatchSize * j + i;
+                        m_rgDataInput[nIdx] = (T)Convert.ChangeType(fDataIdx, typeof(T));
+                        m_rgLabelInput[nIdx] = (T)Convert.ChangeType(fLabelIdx, typeof(T));
+                    }
                 }
             }
 
@@ -527,33 +587,31 @@ namespace MyCaffe.trainers.rnn.simple
             if (m_rgVocabulary == null)
                 return b;
 
-            for (int i = 0; i < m_rgVocabulary.Count; i++)
-            {
-                if ((int)b == m_rgVocabulary[i])
-                {
-                    bFound = true;
-                    return i;
-                }
-            }
-
-            return m_rgVocabulary.Count - 1;
+            return m_rgVocabulary.FindIndex(b);
         }
 
-        public float[] Run(int nN)
+        private float findIndex(double df, out bool bFound)
         {
-            float[] rgPredictions = new float[nN];
-            List<int> rgInput = new List<int>();
-            Stopwatch sw = new Stopwatch();
-            int[] rgCorrectLengthSequence = new int[m_nSequenceLength];
+            bFound = false;
 
-            // Set the initialization sequence to random characters.
+            if (m_rgVocabulary == null)
+                return (float)df;
+
+            return m_rgVocabulary.FindIndex(df);
+        }
+
+        private List<T> getInitialInput(bool bIsReal)
+        {
+            List<T> rgInput = new List<T>();
+            float[] rgCorrectLengthSequence = new float[m_nSequenceLength];
+
             for (int i = 0; i < m_nSequenceLength; i++)
             {
                 rgCorrectLengthSequence[i] = (int)m_random.Next(m_nVocabSize);
             }
 
             // If a seed is specified, add it to the end of the sequence.
-            if (m_runProperties != null)
+            if (!bIsReal && m_runProperties != null)
             {
                 string strSeed = m_runProperties.GetProperty("Seed", false);
                 if (!string.IsNullOrEmpty(strSeed))
@@ -578,8 +636,22 @@ namespace MyCaffe.trainers.rnn.simple
 
             for (int i = 0; i < rgCorrectLengthSequence.Length; i++)
             {
-                rgInput.Add(rgCorrectLengthSequence[i]);
+                rgInput.Add((T)Convert.ChangeType(rgCorrectLengthSequence[i], typeof(T)));
             }
+
+            return rgInput;
+        }
+
+        public float[] Run(int nN)
+        {
+            m_bIsDataReal = false;
+
+            if (m_rgVocabulary != null)
+                m_bIsDataReal = m_rgVocabulary.IsDataReal;
+
+            Stopwatch sw = new Stopwatch();
+            float[] rgPredictions = new float[nN];
+            List<T> rgInput = getInitialInput(m_bIsDataReal);
 
             sw.Start();
 
@@ -589,20 +661,24 @@ namespace MyCaffe.trainers.rnn.simple
                 T[] rgInputVector = new T[m_nSequenceLength * m_nBatchSize];
                 for (int j = 0; j < m_nSequenceLength; j++)
                 {
-                    rgInputVector[j * m_nBatchSize] = (T)Convert.ChangeType(rgInput[j], typeof(T));
+                    rgInputVector[j * m_nBatchSize] = rgInput[j];
                 }
 
                 m_blobData.mutable_cpu_data = rgInputVector;
 
                 double dfLoss;
                 BlobCollection<T> colResults = m_net.Forward(out dfLoss);
-                int nPrediction = getLastPrediction(colResults[0], m_rgVocabulary);
+
+                float fPrediction = getLastPrediction(colResults[0], m_rgVocabulary);
 
                 //Add the new prediction and discard the oldest one
-                rgInput.Add(nPrediction);
+                rgInput.Add((T)Convert.ChangeType(fPrediction, typeof(T)));
                 rgInput.RemoveAt(0);
 
-                rgPredictions[i] = (m_rgVocabulary != null) ? m_rgVocabulary[nPrediction] : nPrediction;
+                if (m_rgVocabulary == null)
+                    rgPredictions[i] = fPrediction;
+                else
+                    rgPredictions[i] = (float)m_rgVocabulary.GetValueAt((int)fPrediction);
 
                 if (sw.Elapsed.TotalMilliseconds > 1000)
                 {
@@ -619,7 +695,7 @@ namespace MyCaffe.trainers.rnn.simple
             return rgPredictions;
         }
 
-        private int getLastPrediction(Blob<T> blobOutput, List<int> rgVocabulary)
+        private int getLastPrediction(Blob<T> blobOutput, BucketCollection rgVocabulary)
         {
             if (m_blobOutput != null)
                 blobOutput = m_blobOutput;
@@ -632,36 +708,42 @@ namespace MyCaffe.trainers.rnn.simple
 
             // If no temperature, return directly the character with the best score
             if (m_dfTemperature == 0)
-                return ArgMax(rgData, nOffset, m_nVocabSize);
-
-            // Otherwise, compute the probabilities with the temperature and select the character according to the probabilities.
-            double[] rgAccumulatedProba = new double[m_nVocabSize];
-            double[] rgProba = new double[m_nVocabSize];
-            double dfExpoSum = 0;
-
-            for (int i = 0; i < m_nVocabSize; i++)
             {
-                // The max value is subtracted for numerical stability
-                rgProba[i] = Math.Exp((rgData[nOffset + i] - (m_nVocabSize - 1)) / m_dfTemperature);
-                dfExpoSum += rgProba[i];
+                nIdx = ArgMax(rgData, nOffset, m_nVocabSize);
+            }
+            else
+            {
+                // Otherwise, compute the probabilities with the temperature and select the character according to the probabilities.
+                double[] rgAccumulatedProba = new double[m_nVocabSize];
+                double[] rgProba = new double[m_nVocabSize];
+                double dfExpoSum = 0;
+
+                for (int i = 0; i < m_nVocabSize; i++)
+                {
+                    // The max value is subtracted for numerical stability
+                    rgProba[i] = Math.Exp((rgData[nOffset + i] - (m_nVocabSize - 1)) / m_dfTemperature);
+                    dfExpoSum += rgProba[i];
+                }
+
+                rgProba[0] /= dfExpoSum;
+                rgAccumulatedProba[0] = rgProba[0];
+
+                double dfRandom = m_random.NextDouble();
+
+                for (int i = 1; i < rgProba.Length; i++)
+                {
+                    // Return the first index for which the accumulated probability is bigger than the random number.
+                    if (rgAccumulatedProba[i - 1] > dfRandom)
+                        return i - 1;
+
+                    rgProba[i] /= dfExpoSum;
+                    rgAccumulatedProba[i] = rgAccumulatedProba[i - 1] + rgProba[i];
+                }
             }
 
-            rgProba[0] /= dfExpoSum;
-            rgAccumulatedProba[0] = rgProba[0];
+            if (nIdx < 0 || nIdx > rgVocabulary.Count)
+                throw new Exception("Invalid index - out of the vocabulary range of [0," + rgVocabulary.Count.ToString() + "]");
 
-            double dfRandom = m_random.NextDouble();
-
-            for (int i = 1; i < rgProba.Length; i++)
-            {
-                // Return the first index for which the accumulated probability is bigger than the random number.
-                if (rgAccumulatedProba[i - 1] > dfRandom)
-                    return i - 1;
-
-                rgProba[i] /= dfExpoSum;
-                rgAccumulatedProba[i] = rgAccumulatedProba[i - 1] + rgProba[i];
-            }
-
-            // If we are here, its the last character.
             return nIdx;
         }
 
@@ -670,8 +752,8 @@ namespace MyCaffe.trainers.rnn.simple
             if (nCount == 0)
                 return -1;
 
-            int nMaxIdx = 0;
-            float fMax = rg[0];
+            int nMaxIdx = nOffset;
+            float fMax = rg[nOffset];
 
             for (int i = nOffset; i < nOffset + nCount; i++)
             {
