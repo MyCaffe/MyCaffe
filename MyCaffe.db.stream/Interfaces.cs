@@ -105,7 +105,7 @@ namespace MyCaffe.db.stream
         void Shutdown();
         List<int> GetQuerySize();
         SimpleDatum Query(int nWait);
-        byte[] ConvertOutput(float[] rg, out Type type);
+        byte[] ConvertOutput(float[] rg, out string type);
         Dictionary<string, float> QueryInfo();
     }
 
@@ -167,9 +167,8 @@ namespace MyCaffe.db.stream
         /// <summary>
         /// Returns the query count for the current query.
         /// </summary>
-        /// <param name="nHeight">Returns the height of the data.</param>
-        /// <returns>The width of the data is returned.</returns>
-        int GetQuerySize(out int nHeight);
+        /// <returns>The query size is returned..</returns>
+        List<int> GetQuerySize();
         /// <summary>
         /// Query the fields specified (in the Open function) starting from the date-time specified.
         /// </summary>
@@ -208,9 +207,9 @@ namespace MyCaffe.db.stream
         /// Converts the output values into the native type used by the CustomQuery.
         /// </summary>
         /// <param name="rg">Specifies the raw output data.</param>
-        /// <param name="type">Returns the output type.</param>
+        /// <param name="strType">Returns the output type.</param>
         /// <returns>The converted output data is returned as a byte stream.</returns>
-        byte[] ConvertOutput(float[] rg, out Type type);
+        byte[] ConvertOutput(float[] rg, out string strType);
     }
 
     /// <summary>

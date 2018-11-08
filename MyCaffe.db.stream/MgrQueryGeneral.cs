@@ -115,16 +115,7 @@ namespace MyCaffe.db.stream
         /// <returns>The query size is returned.</returns>
         public List<int> GetQuerySize()
         {
-            List<int> rg = new List<int>();
-
-            int nHeight = 1;
-            int nWidth = m_iquery.GetQuerySize(out nHeight);
-
-            rg.Add(1);
-            rg.Add(nHeight);
-            rg.Add(nWidth);
-
-            return rg;
+            return m_iquery.GetQuerySize();
         }
 
         /// <summary>
@@ -150,7 +141,7 @@ namespace MyCaffe.db.stream
                     nOffset += rgData[i].Length;
                 }
 
-                return new SimpleDatum(true, 1, rgData[0].Length, rgData.Count, -1, DateTime.MinValue, null,  rgFullData.ToList(), 0, false, -1);
+                return new SimpleDatum(true, rgData.Count, 1, rgData[0].Length, -1, DateTime.MinValue, null,  rgFullData.ToList(), 0, false, -1);
             }
             else
             {
@@ -169,7 +160,7 @@ namespace MyCaffe.db.stream
         /// <param name="rg">Specifies the raw output data.</param>
         /// <param name="type">Returns the output type.</param>
         /// <returns>The converted output data is returned as a byte stream.</returns>
-        public byte[] ConvertOutput(float[] rg, out Type type)
+        public byte[] ConvertOutput(float[] rg, out string type)
         {
             return m_iquery.ConvertOutput(rg, out type);
         }
