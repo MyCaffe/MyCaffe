@@ -128,7 +128,7 @@ namespace MyCaffe.layers.beta
             // being normalized or regularized in the
             // ApplyUpdate.
             Blob<T> blobInfo = new Blob<T>(m_cuda, m_log, false);
-            blobInfo.Name = "info";
+            blobInfo.Name = m_param.name + " info";
             blobInfo.Reshape(1, 1, 1, 1);
             blobInfo.SetData(0, 0);
             m_colBlobs.Add(blobInfo);
@@ -139,9 +139,9 @@ namespace MyCaffe.layers.beta
             for (int i = 0; i < m_nMaxBatches; i++)
             {
                 Blob<T> blobData = new Blob<T>(m_cuda, m_log, false);
-                blobData.Name = "data_" + i.ToString();
+                blobData.Name = m_param.name + " data_" + i.ToString();
                 Blob<T> blobLabel = new Blob<T>(m_cuda, m_log, false);
-                blobLabel.Name = "label_" + i.ToString();
+                blobLabel.Name = m_param.name + " label_" + i.ToString();
                 m_colBlobs.Add(blobData);
                 m_colBlobs.Add(blobLabel);
             }
