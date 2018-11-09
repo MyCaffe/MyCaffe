@@ -37,11 +37,11 @@ namespace MyCaffe.layers
             m_type = LayerParameter.LayerType.CONCAT;
 
             m_blobOffsets = new common.Blob<T>(m_cuda, m_log);
-            m_blobOffsets.Name = "offsets";
+            m_blobOffsets.Name = m_param.name + "offsets";
             m_blobSrcStrides = new common.Blob<T>(m_cuda, m_log);
-            m_blobSrcStrides.Name = "src strides";
+            m_blobSrcStrides.Name = m_param.name + "src strides";
             m_blobDstStrides = new common.Blob<T>(m_cuda, m_log);
-            m_blobDstStrides.Name = "dst strides";
+            m_blobDstStrides.Name = m_param.name + "dst strides";
         }
 
         /** @copydoc Layer::dispose */

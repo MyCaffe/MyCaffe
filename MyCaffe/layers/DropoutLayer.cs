@@ -59,6 +59,7 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.DROPOUT;
             m_blobRand = new Blob<T>(cuda, log);
+            m_blobRand.Name = m_param.name + " rand";
         }
 
         /** @copydoc Layer::dispose */

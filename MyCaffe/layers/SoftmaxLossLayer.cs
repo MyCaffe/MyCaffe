@@ -49,7 +49,7 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.SOFTMAXWITH_LOSS;
             m_blobProb = new Blob<T>(cuda, log);
-            m_blobProb.Name = "prob";
+            m_blobProb.Name = m_param.name + " prob";
         }
 
         /** @copydoc Layer::dispose */

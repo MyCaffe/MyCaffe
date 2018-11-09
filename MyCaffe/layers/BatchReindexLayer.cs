@@ -35,11 +35,11 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.BATCHREINDEX;
             m_blobCounts = new common.Blob<T>(cuda, log);
-            m_blobCounts.Name = "bri_counts";
+            m_blobCounts.Name = m_param.name + "counts";
             m_blobBegins = new common.Blob<T>(cuda, log);
-            m_blobBegins.Name = "bri_begins";
+            m_blobBegins.Name = m_param.name + "begins";
             m_blobTopIndexes = new common.Blob<T>(cuda, log);
-            m_blobTopIndexes.Name = "bri_topidx";
+            m_blobTopIndexes.Name = m_param.name + "topidx";
         }
 
         /** @copydoc Layer::dispose */

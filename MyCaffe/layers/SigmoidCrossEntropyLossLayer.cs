@@ -55,7 +55,9 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.SIGMOIDCROSSENTROPY_LOSS;
             m_blobSigmoidOutput = new Blob<T>(cuda, log);
+            m_blobSigmoidOutput.Name = m_param.name + " sigmoid out";
             m_blobLoss = new Blob<T>(cuda, log);
+            m_blobLoss.Name = m_param.name + " loss";
 
             LayerParameter param_sigmoid = p.Clone(false);
             param_sigmoid.loss_weight.Clear();

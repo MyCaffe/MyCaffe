@@ -49,7 +49,7 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.EMBED;
             m_blobBiasMultiplier = new common.Blob<T>(cuda, log);
-            m_blobBiasMultiplier.Name = "embed_biasmult";
+            m_blobBiasMultiplier.Name = m_param.name + " biasmult";
         }
 
         /** @copydoc Layer::dispose */

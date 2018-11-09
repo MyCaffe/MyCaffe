@@ -44,13 +44,13 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.MVN;
             m_blobMean = new common.Blob<T>(cuda, log);
-            m_blobMean.Name = "mvn_mean";
+            m_blobMean.Name = m_param.name + " mean";
             m_blobVariance = new common.Blob<T>(cuda, log);
-            m_blobVariance.Name = "mvn_variance";
+            m_blobVariance.Name = m_param.name + " variance";
             m_blobTemp = new Blob<T>(cuda, log);
-            m_blobTemp.Name = "mvn_temp";
+            m_blobTemp.Name = m_param.name + " temp";
             m_blobSumMultiplier = new Blob<T>(cuda, log);
-            m_blobSumMultiplier.Name = "mvn_summult";
+            m_blobSumMultiplier.Name = m_param.name + " summult";
         }
 
         /** @copydoc Layer::dispose */

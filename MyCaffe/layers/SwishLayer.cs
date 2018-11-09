@@ -41,7 +41,9 @@ namespace MyCaffe.layers
             m_type = LayerParameter.LayerType.SWISH;
 
             m_blobSigmoidInput = new Blob<T>(cuda, log);
+            m_blobSigmoidInput.Name = m_param.name + " sigmoid in";
             m_blobSigmoidOutput = new Blob<T>(cuda, log);
+            m_blobSigmoidOutput.Name = m_param.name + " sigmoid out";
 
             LayerParameter sigmoidParam = new LayerParameter(LayerParameter.LayerType.SIGMOID);
             sigmoidParam.sigmoid_param.engine = p.swish_param.engine;

@@ -53,11 +53,11 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.SCALE;
             m_blobSumMultiplier = new Blob<T>(cuda, log);
-            m_blobSumMultiplier.Name = "scale_summult";
+            m_blobSumMultiplier.Name = m_param.name + " summult";
             m_blobSumResult = new Blob<T>(cuda, log);
-            m_blobSumResult.Name = "scale_sumres";
+            m_blobSumResult.Name = m_param.name + " sumres";
             m_blobTemp = new Blob<T>(cuda, log);
-            m_blobTemp.Name = "scale_sumres";
+            m_blobTemp.Name = m_param.name + " temp";
         }
 
         /** @copydoc Layer::dispose */
@@ -186,7 +186,7 @@ namespace MyCaffe.layers
                 }
 
                 Blob<T> blobScale = new Blob<T>(m_cuda, m_log);
-                blobScale.Name = "scale";
+                blobScale.Name = m_param.name + " scale";
 
                 if (!shareParameter(blobScale, rgShape))
                 {

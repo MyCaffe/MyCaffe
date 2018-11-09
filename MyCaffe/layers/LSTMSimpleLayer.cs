@@ -77,27 +77,27 @@ namespace MyCaffe.layers
             m_type = LayerParameter.LayerType.LSTM_SIMPLE;
 
             m_blobBiasMultiplier = new Blob<T>(m_cuda, m_log);
-            m_blobBiasMultiplier.Name = "lstms_biasmult";
+            m_blobBiasMultiplier.Name = m_param.name + " biasmult";
             m_blobTop = new Blob<T>(m_cuda, m_log);
-            m_blobTop.Name = "lstms_top";
+            m_blobTop.Name = m_param.name + " top";
             m_blobCell = new Blob<T>(m_cuda, m_log);
-            m_blobCell.Name = "lstms_cell";
+            m_blobCell.Name = m_param.name + " cell";
             m_blobPreGate = new Blob<T>(m_cuda, m_log);
-            m_blobPreGate.Name = "lsmts_pregate";
+            m_blobPreGate.Name = m_param.name + " pregate";
             m_blobGate = new Blob<T>(m_cuda, m_log);
-            m_blobGate.Name = "lstms_gate";
+            m_blobGate.Name = m_param.name + " gate";
             m_blob_C_0 = new Blob<T>(m_cuda, m_log);
-            m_blob_C_0.Name = "lstms_c_0";
+            m_blob_C_0.Name = m_param.name + " c_0";
             m_blob_H_0 = new Blob<T>(m_cuda, m_log);
-            m_blob_H_0.Name = "lstms_h_0";
+            m_blob_H_0.Name = m_param.name + " h_0";
             m_blob_C_T = new Blob<T>(m_cuda, m_log);
-            m_blob_C_T.Name = "lstms_c_t";
+            m_blob_C_T.Name = m_param.name + " c_t";
             m_blob_H_T = new Blob<T>(m_cuda, m_log);
-            m_blob_H_T.Name = "lstms_h_t";
+            m_blob_H_T.Name = m_param.name + " h_t";
             m_blob_H_to_Gate = new Blob<T>(m_cuda, m_log);
-            m_blob_H_to_Gate.Name = "lstms_h_to_gate";
+            m_blob_H_to_Gate.Name = m_param.name + "h_to_gate";
             m_blob_H_to_H = new Blob<T>(m_cuda, m_log);
-            m_blob_H_to_H.Name = "lstms_h_to_h";
+            m_blob_H_to_H.Name = m_param.name + " h_to_h";
         }
 
         /** @copydoc Layer::dispose */
@@ -203,7 +203,7 @@ namespace MyCaffe.layers
                 // Initialize the weight.
                 List<int> rgShape1 = new List<int>() { 4 * m_nH, m_nI };
                 Blob<T> blobWeights_I_H = new Blob<T>(m_cuda, m_log);
-                blobWeights_I_H.Name = "weights I to H";
+                blobWeights_I_H.Name = m_param.name + " weights I to H";
                 blobWeights_I_H.type = Blob<T>.BLOB_TYPE.WEIGHT;
 
                 if (!shareParameter(blobWeights_I_H, rgShape1))
@@ -217,7 +217,7 @@ namespace MyCaffe.layers
                 // Initialize the weight.
                 List<int> rgShape2 = new List<int>() { 4 * m_nH, m_nH };
                 Blob<T> blobWeights_H_H = new Blob<T>(m_cuda, m_log);
-                blobWeights_H_H.Name = "weights H to H";
+                blobWeights_H_H.Name = m_param.name + " weights H to H";
                 blobWeights_H_H.type = Blob<T>.BLOB_TYPE.WEIGHT;
 
                 if (!shareParameter(blobWeights_H_H, rgShape2))
@@ -230,7 +230,7 @@ namespace MyCaffe.layers
                 // If necessary, initialize and fill the bias term.
                 List<int> rgShape3 = new List<int>() { 4 * m_nH };
                 Blob<T> blobBias = new Blob<T>(m_cuda, m_log);
-                blobBias.Name = "bias weights";
+                blobBias.Name = m_param.name + " bias weights";
                 blobBias.type = Blob<T>.BLOB_TYPE.WEIGHT;
 
                 if (!shareParameter(blobBias, rgShape3))

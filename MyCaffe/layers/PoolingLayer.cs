@@ -75,9 +75,9 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.POOLING;
             m_blobRandIdx = new Blob<T>(cuda, log);
-            m_blobRandIdx.Name = "pool_randidx";
+            m_blobRandIdx.Name = m_param.name + " randidx";
             m_blobMaxIdx = new Blob<T>(cuda, log);
-            m_blobMaxIdx.Name = "pool_maxidx";
+            m_blobMaxIdx.Name = m_param.name + " maxidx";
         }
 
         /** @copydoc Layer::dispose */

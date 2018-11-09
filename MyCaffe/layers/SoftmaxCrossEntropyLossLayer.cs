@@ -37,7 +37,9 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.SOFTMAXCROSSENTROPY_LOSS;
             m_blobSoftmaxOutput = new Blob<T>(cuda, log);
+            m_blobSoftmaxOutput.Name = m_param.name + " softmax out";
             m_blobLoss = new Blob<T>(cuda, log);
+            m_blobLoss.Name = m_param.name + " loss";
 
             LayerParameter param_softmax = p.Clone(false);
             param_softmax.loss_weight.Clear();

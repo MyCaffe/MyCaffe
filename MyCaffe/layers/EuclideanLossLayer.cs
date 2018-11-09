@@ -43,6 +43,7 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.EUCLIDEAN_LOSS;
             m_blobDiff = new Blob<T>(cuda, log);
+            m_blobDiff.Name = m_param.name + " diff";
         }
 
         /** @copydoc Layer::dispose */

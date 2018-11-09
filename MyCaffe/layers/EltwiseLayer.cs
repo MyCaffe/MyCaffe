@@ -45,7 +45,7 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.ELTWISE;
             m_blobMaxIdx = new Blob<T>(cuda, log);
-            m_blobMaxIdx.Name = "elt_maxidx";
+            m_blobMaxIdx.Name = m_param.name + " maxidx";
         }
 
         /** @copydoc Layer::dispose */

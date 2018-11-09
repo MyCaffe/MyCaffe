@@ -46,9 +46,9 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.SOFTMAX;
             m_blobSumMultiplier = new Blob<T>(cuda, log);
-            m_blobSumMultiplier.Name = "sftmax_summult";
+            m_blobSumMultiplier.Name = m_param.name + " summult";
             m_blobScale = new Blob<T>(cuda, log);
-            m_blobScale.Name = "sftmax_scale";
+            m_blobScale.Name = m_param.name + " scale";
         }
 
         /** @copydoc Layer::dispose */

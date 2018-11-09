@@ -48,9 +48,13 @@ namespace MyCaffe.layers
             m_type = LayerParameter.LayerType.CONTRASTIVE_LOSS;
 
             m_blobDiff = new Blob<T>(cuda, log);
+            m_blobDiff.Name = m_param.name + " diff";
             m_blobDistSq = new Blob<T>(cuda, log);
+            m_blobDistSq.Name = m_param.name + " distsq";
             m_blobDiffSq = new Blob<T>(cuda, log);
+            m_blobDiffSq.Name = m_param.name + " diffsq";
             m_blobSummerVec = new Blob<T>(cuda, log);
+            m_blobSummerVec.Name = m_param.name + " sum";
         }
 
         /** @copydoc Layer::dispose */

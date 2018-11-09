@@ -86,17 +86,17 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.LRN;
             m_blobScale = new Blob<T>(cuda, log);
-            m_blobScale.Name = "lrn_scale";
+            m_blobScale.Name = m_param.name + " scale";
             m_blobSquareInput = new Blob<T>(cuda, log);
-            m_blobSquareInput.Name = "lrn_sqin";
+            m_blobSquareInput.Name = m_param.name + " sqin";
             m_blobSquareOutput = new Blob<T>(cuda, log);
-            m_blobSquareOutput.Name = "lrn_sqout";
+            m_blobSquareOutput.Name = m_param.name + " sqout";
             m_blobPoolOutput = new Blob<T>(cuda, log);
-            m_blobPoolOutput.Name = "lrn_poolout";
+            m_blobPoolOutput.Name = m_param.name + " poolout";
             m_blobPowerOutput = new Blob<T>(cuda, log);
-            m_blobPowerOutput.Name = "lrn_powout";
+            m_blobPowerOutput.Name = m_param.name + " powout";
             m_blobProductInput = new Blob<T>(cuda, log);
-            m_blobProductInput.Name = "lrn_prodin";
+            m_blobProductInput.Name = m_param.name + " prodin";
         }
 
         /** @copydoc Layer::dispose */

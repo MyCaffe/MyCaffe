@@ -61,7 +61,7 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.REDUCTION;
             m_blobSumMultiplier = new Blob<T>(cuda, log);
-            m_blobSumMultiplier.Name = "reduct_summult";
+            m_blobSumMultiplier.Name = m_param.name + " summult";
         }
 
         /** @copydoc Layer::dispose */

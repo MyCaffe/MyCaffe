@@ -58,7 +58,9 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.MEMORYDATA;
             m_blobData = new Blob<T>(cuda, log);
+            m_blobData.Name = m_param.name + " data";
             m_blobLabel = new Blob<T>(cuda, log);
+            m_blobLabel.Name = m_param.name + " label";
         }
 
         /** @copydoc Layer::dispose */

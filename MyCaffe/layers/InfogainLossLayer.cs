@@ -59,11 +59,11 @@ namespace MyCaffe.layers
             m_type = LayerParameter.LayerType.INFOGAIN_LOSS;
 
             m_blobProb = new Blob<T>(m_cuda, m_log);
-            m_blobProb.Name = "softmax prob";
+            m_blobProb.Name = m_param.name + " prob";
             m_blobInfoGain = new Blob<T>(m_cuda, m_log);
-            m_blobInfoGain.Name = "infogain";
+            m_blobInfoGain.Name = m_param.name + " infogain";
             m_blobSumRowsOfH = new Blob<T>(m_cuda, m_log);
-            m_blobSumRowsOfH.Name = "sum rows of H";
+            m_blobSumRowsOfH.Name = m_param.name + " sum rows of H";
         }
 
         /** @copydoc Layer::dispose */

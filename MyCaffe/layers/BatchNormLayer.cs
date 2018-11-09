@@ -86,33 +86,33 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.BATCHNORM;
             m_blobMean = new common.Blob<T>(cuda, log);
-            m_blobMean.Name = "bn_mean";
+            m_blobMean.Name = m_param.name + " mean";
             m_blobVariance = new common.Blob<T>(cuda, log);
-            m_blobVariance.Name = "bn_variance";
+            m_blobVariance.Name = m_param.name + " variance";
             m_blobTemp = new common.Blob<T>(cuda, log);
-            m_blobTemp.Name = "bn_temp";
+            m_blobTemp.Name = m_param.name + " temp";
             m_blobXNorm = new common.Blob<T>(cuda, log);
-            m_blobXNorm.Name = "bn_xnorm";
+            m_blobXNorm.Name = m_param.name + " xnorm";
             m_blobBatchSumMultiplier = new common.Blob<T>(cuda, log);
-            m_blobBatchSumMultiplier.Name = "bn_summult";
+            m_blobBatchSumMultiplier.Name = m_param.name + " summult";
             m_blobNumByChans = new common.Blob<T>(cuda, log);
-            m_blobNumByChans.Name = "bn_numbychan";
+            m_blobNumByChans.Name = m_param.name + "numbychan";
             m_blobSpaitalSumMultiplier = new common.Blob<T>(cuda, log);
-            m_blobSpaitalSumMultiplier.Name = "bn_spatialsummult";
+            m_blobSpaitalSumMultiplier.Name = m_param.name + "spatialsummult";
 
             if (p.batch_norm_param.useCudnn())
             {
-                m_blobMean.Name = "save mean";
-                m_blobVariance.Name = "save var";
+                m_blobMean.Name = m_param.name + "save mean";
+                m_blobVariance.Name = m_param.name + "save var";
 
                 m_blobPrivateTop = new Blob<T>(cuda, log);
-                m_blobPrivateTop.Name = "private top";
+                m_blobPrivateTop.Name = m_param.name + "private top";
                 m_blobPrivateBottom = new Blob<T>(cuda, log);
-                m_blobPrivateBottom.Name = "private bottom";
+                m_blobPrivateBottom.Name = m_param.name + "private bottom";
                 m_blobScaleOnes = new Blob<T>(cuda, log);
-                m_blobScaleOnes.Name = "scale ones";
+                m_blobScaleOnes.Name = m_param.name + "scale ones";
                 m_blobBiasZeros = new Blob<T>(cuda, log);
-                m_blobBiasZeros.Name = "bias zeros";
+                m_blobBiasZeros.Name = m_param.name + "bias zeros";
             }
         }
 

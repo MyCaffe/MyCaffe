@@ -50,7 +50,7 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.INNERPRODUCT;
             m_blobBiasMultiplier = new Blob<T>(cuda, log);
-            m_blobBiasMultiplier.Name = "ip_biasmult";
+            m_blobBiasMultiplier.Name = m_param.name + " biasmult";
         }
 
         /** @copydoc Layer::dispose */

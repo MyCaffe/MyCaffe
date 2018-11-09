@@ -31,7 +31,7 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.LSTM_UNIT;
             m_blobXActs = new Blob<T>(cuda, log);
-            m_blobXActs.Name = "lstmu_xacts";
+            m_blobXActs.Name = m_param.name + " xacts";
         }
 
         /** @copydoc Layer::dispose */

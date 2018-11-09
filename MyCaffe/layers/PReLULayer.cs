@@ -51,11 +51,11 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.PRELU;
             m_blobMultiplier = new Blob<T>(cuda, log);
-            m_blobMultiplier.Name = "prelu_mult";
+            m_blobMultiplier.Name = m_param.name + " mult";
             m_blobBackwardBuff = new Blob<T>(cuda, log);
-            m_blobBackwardBuff.Name = "prelu_backbuf";
+            m_blobBackwardBuff.Name = m_param.name + " backbuf";
             m_blobBottomMemory = new Blob<T>(cuda, log);
-            m_blobBottomMemory.Name = "prelu_btmmem";
+            m_blobBottomMemory.Name = m_param.name + " btmmem";
         }
 
         /** @copydoc Layer::dispose */
@@ -127,7 +127,7 @@ namespace MyCaffe.layers
                     rgSlopeShape.Add(nChannels);
 
                 Blob<T> blobSlope = new Blob<T>(m_cuda, m_log);
-                blobSlope.Name = "slope";
+                blobSlope.Name = m_param.name + " slope";
 
                 if (!shareParameter(blobSlope, rgSlopeShape))
                 {
@@ -146,7 +146,7 @@ namespace MyCaffe.layers
             if (m_bChannelShared)
                 m_log.CHECK_EQ(m_colBlobs[0].count(), 1, "Negative slope size is inconsistent with prototxt config.");
             else
-                m_log.CHECK_EQ(m_colBlobs[0].count(), nChannels, "Negative slope size is inconsistent wtih prototxt config.");
+                m_log.CHECK_EQ(m_colBlobs[0].count(), nChannels, "Negative slope size is inconsistent with prototxt config.");
 
             // Propagate gradients to the parameters (as directed by backward pass)
             m_rgbParamPropagateDown = new DictionaryMap<bool>(m_colBlobs.Count, true);
