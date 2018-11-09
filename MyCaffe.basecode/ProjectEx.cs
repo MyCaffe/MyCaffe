@@ -444,6 +444,30 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns the training category of the project, or NONE if no custom trainer is used.
+        /// </summary>
+        public TRAINING_CATEGORY TrainingCategory
+        {
+            get
+            {
+                if (m_protoSolver == null)
+                    return TRAINING_CATEGORY.NONE;
+
+                string strCustomTrainer = GetSolverSetting("custom_trainer");
+                if (string.IsNullOrEmpty(strCustomTrainer))
+                    return TRAINING_CATEGORY.NONE;
+
+                if (strCustomTrainer == "RL.Trainer")
+                    return TRAINING_CATEGORY.REINFORCEMENT;
+
+                if (strCustomTrainer == "RNN.Trainer")
+                    return TRAINING_CATEGORY.RECURRENT;
+
+                return TRAINING_CATEGORY.CUSTOM;
+            }
+        }
+
+        /// <summary>
         /// Get/set the super boost probability used by the Project.
         /// </summary>
         public double SuperBoostProbability
