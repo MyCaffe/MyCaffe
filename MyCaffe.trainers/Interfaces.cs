@@ -12,25 +12,6 @@ using System.Threading.Tasks;
 namespace MyCaffe.trainers
 {
     /// <summary>
-    /// Defines the category of training.
-    /// </summary>
-    public enum TRAINING_CATEGORY
-    {
-        /// <summary>
-        /// Defines a purely custom training method.
-        /// </summary>
-        CUSTOM,
-        /// <summary>
-        /// Defines the reinforcement training method such as PG.
-        /// </summary>
-        REINFORCEMENT,
-        /// <summary>
-        /// Defines the recurrent training method.
-        /// </summary>
-        RECURRENT
-    }
-
-    /// <summary>
     /// The IXMyCaffeCustomTrainer interface is used by the MyCaffeCustomTraininer components that
     /// provide various training techniques such as Reinforcement Training.
     /// </summary>

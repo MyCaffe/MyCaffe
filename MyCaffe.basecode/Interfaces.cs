@@ -6,6 +6,29 @@ using System.Text;
 namespace MyCaffe.basecode
 {
     /// <summary>
+    /// Defines the category of training.
+    /// </summary>
+    public enum TRAINING_CATEGORY
+    {
+        /// <summary>
+        /// No training category specified.
+        /// </summary>
+        NONE,
+        /// <summary>
+        /// Defines a purely custom training method.
+        /// </summary>
+        CUSTOM,
+        /// <summary>
+        /// Defines the reinforcement training method such as PG.
+        /// </summary>
+        REINFORCEMENT,
+        /// <summary>
+        /// Defines the recurrent training method.
+        /// </summary>
+        RECURRENT
+    }
+
+    /// <summary>
     /// Defines the Phase under which to run a Net.
     /// </summary>
     public enum Phase
