@@ -666,7 +666,7 @@ namespace MyCaffe.layers
             if (paramEx.SharedBlobs == null)
                 return false;
 
-            return paramEx.SharedBlobs.Share(b, rgMinShape, true);
+            return paramEx.SharedBlobs.Share(b, rgMinShape, false);
         }
 
         /// <summary>
