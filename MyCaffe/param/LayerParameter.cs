@@ -1972,6 +1972,9 @@ namespace MyCaffe.param
                 case LayerType.LSTM:
                     return "Lstm";
 
+                case LayerType.LSTM_UNIT:
+                    return "Lstm_Unit";
+
                 default:
                     return "Unknown";
             }
@@ -2590,6 +2593,9 @@ namespace MyCaffe.param
 
                 case "lstm":
                     return LayerType.LSTM;
+
+                case "lstm_unit":
+                    return LayerType.LSTM_UNIT;
 
                 default:
                     throw new Exception("Unknown 'layertype' value: " + str);
