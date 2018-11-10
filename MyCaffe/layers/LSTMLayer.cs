@@ -175,9 +175,9 @@ namespace MyCaffe.layers
 
             LayerParameter input_layer_param = new LayerParameter(LayerParameter.LayerType.INPUT);
             input_layer_param.top.Add("c_0");
-            input_layer_param.input_param.shape.Add(rgInputShapes[0]);
+            input_layer_param.input_param.shape.Add(rgInputShapes[0].Clone());
             input_layer_param.top.Add("h_0");
-            input_layer_param.input_param.shape.Add(rgInputShapes[1]);
+            input_layer_param.input_param.shape.Add(rgInputShapes[1].Clone());
             net_param.layer.Add(input_layer_param);
 
             LayerParameter cont_slice_param = slice_param.Clone(false);
@@ -316,7 +316,7 @@ namespace MyCaffe.layers
                 LayerParameter c_T_copy_param = split_param.Clone(false);
                 c_T_copy_param.bottom.Add("c_" + m_nT.ToString());
                 c_T_copy_param.top.Add("c_T");
-                net_param.layer.Add(c_T_copy_param);
+                net_param.layer.Add(c_T_copy_param); 
             }
 
             net_param.layer.Add(output_concat_layer.Clone(false));
