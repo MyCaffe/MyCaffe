@@ -251,6 +251,7 @@ namespace MyCaffe.layers
                 //                        0 otherwise.
                 {
                     LayerParameter cont_h_param = scale_param.Clone(false);
+                    cont_h_param.group_start = true;
                     cont_h_param.name = "h_conted_" + tm1s;
                     cont_h_param.bottom.Add("h_" + tm1s);
                     cont_h_param.bottom.Add("cont_" + ts);

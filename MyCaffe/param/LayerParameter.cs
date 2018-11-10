@@ -21,6 +21,8 @@ namespace MyCaffe.param
         List<string> m_rgstrBottom = new List<string>();
         // The name of each top blob.
         List<string> m_rgstrTop = new List<string>();
+        // Used for rendering models only.
+        bool m_bGroupStart = false;
 
         // The train/test phase for computation.
         Phase m_phase;
@@ -430,6 +432,7 @@ namespace MyCaffe.param
             m_rgLayerParameters = p.m_rgLayerParameters;
             m_nSolverCount = p.m_nSolverCount;
             m_nSolverRank = p.m_nSolverRank;
+            m_bGroupStart = p.m_bGroupStart;
         }
 
         /// <summary>
@@ -1158,6 +1161,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Specifies whether or not this node is the start of a new group - this is only used when rendering models.
+        /// </summary>
+        public bool group_start
+        {
+            get { return m_bGroupStart; }
+            set { m_bGroupStart = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.TRANSFORM
         /// </summary>
         public TransformationParameter transform_param
@@ -1728,6 +1740,7 @@ namespace MyCaffe.param
 
             p.m_nSolverCount = m_nSolverCount;
             p.m_nSolverRank = m_nSolverRank;
+            p.m_bGroupStart = m_bGroupStart;
 
             return p;
         }
@@ -1991,6 +2004,9 @@ namespace MyCaffe.param
             rgChildren.Add<string>("top", top);
             rgChildren.Add<double>("loss_weight", loss_weight);
 
+            if (group_start)
+                rgChildren.Add("group_start", group_start.ToString());
+
             if (freeze_learning)
                 rgChildren.Add("freeze_learning", freeze_learning.ToString());
 
@@ -2118,6 +2134,9 @@ namespace MyCaffe.param
                 p.phase = parsePhase(strVal);
 
             p.loss_weight = rp.FindArray<double>("loss_weight");
+
+            if ((strVal = rp.FindValue("group_start")) != null)
+                p.group_start = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("freeze_learning")) != null)
                 p.freeze_learning = bool.Parse(strVal);
