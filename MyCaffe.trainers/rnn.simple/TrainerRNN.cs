@@ -587,6 +587,8 @@ namespace MyCaffe.trainers.rnn.simple
             if (m_rgVocabulary == null)
                 return b;
 
+            bFound = true;
+
             return m_rgVocabulary.FindIndex(b);
         }
 
