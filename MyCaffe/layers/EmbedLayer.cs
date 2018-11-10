@@ -140,7 +140,7 @@ namespace MyCaffe.layers
                 // transposed from InnerProductLayer for spacial locality.
                 List<int> rgWeightShape = new List<int>() { m_nK, m_nN };
                 Blob<T> blobWeight = new Blob<T>(m_cuda, m_log);
-                blobWeight.Name = m_param.name + "weights";
+                blobWeight.Name = m_param.name + " weights";
                 blobWeight.type = Blob<T>.BLOB_TYPE.WEIGHT;
 
                 if (!shareParameter(blobWeight, rgWeightShape))
