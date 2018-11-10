@@ -134,8 +134,8 @@ namespace MyCaffe.layers
             // Create a NetParameter; setup the inputs that aren't unique to particular
             // recurrent architectures.
             NetParameter net_param = new NetParameter();
-            LayerParameter input_layer = new LayerParameter(LayerParameter.LayerType.INPUT);
 
+            LayerParameter input_layer = new LayerParameter(LayerParameter.LayerType.INPUT);
             input_layer.top.Add("x");
             BlobShape input_shape1 = new param.BlobShape();
             for (int i = 0; i < colBottom[0].num_axes; i++)
@@ -143,7 +143,6 @@ namespace MyCaffe.layers
                 input_shape1.dim.Add(colBottom[0].shape(i));
             }
             input_layer.input_param.shape.Add(input_shape1);
-
 
             input_layer.top.Add("cont");
             BlobShape input_shape2 = new param.BlobShape();
@@ -165,7 +164,6 @@ namespace MyCaffe.layers
             }
 
             net_param.layer.Add(input_layer);
-
 
             // Call the child's FillUnrolledNet implementation to specify the unrolled
             // recurrent architecture.
@@ -512,8 +510,8 @@ namespace MyCaffe.layers
         {
             // Hacky fix for test time... reshare all the shared blobs.
             // TODO: somehow make this work non-hackily.
-            if (m_phase == Phase.TEST || m_phase == Phase.RUN)
-                m_unrolledNet.ShareWeights();
+            //if (m_phase == Phase.TEST || m_phase == Phase.RUN)
+            //    m_unrolledNet.ShareWeights();
 
             m_log.CHECK_EQ(m_colRecurInputBlobs.Count, m_colRecurOutputBlobs.Count, "The recurrent input and output blobs must have the same count.");
 
