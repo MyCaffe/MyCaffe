@@ -131,7 +131,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void Train_RNNSIMPLE_CharRNN()
+        public void Train_RNNSIMPLE_CharRNN_LSTM()
         {
             MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
 
@@ -141,7 +141,7 @@ namespace MyCaffe.test
                 {
                     // NOTE: 1000 iterations is quite short and may not produce results,
                     // for real training 100,000+ is a more common iteration to use.
-                    t.TrainCharRNN(false, "RNN.SIMPLE", 1000);
+                    t.TrainCharRNN(false, "RNN.SIMPLE", LayerParameter.LayerType.LSTM, 1000);
                 }
             }
             finally
@@ -151,7 +151,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void Train_RNNSIMPLE_WavRNN()
+        public void Train_RNNSIMPLE_CharRNN_LSTMSIMPLE()
         {
             MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
 
@@ -161,7 +161,47 @@ namespace MyCaffe.test
                 {
                     // NOTE: 1000 iterations is quite short and may not produce results,
                     // for real training 100,000+ is a more common iteration to use.
-                    t.TrainWavRNN(false, "RNN.SIMPLE", 1000);
+                    t.TrainCharRNN(false, "RNN.SIMPLE", LayerParameter.LayerType.LSTM_SIMPLE, 1000);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void Train_RNNSIMPLE_WavRNN_LSTM()
+        {
+            MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
+
+            try
+            {
+                foreach (IMyCaffeCustomTrainerTest t in test.Tests)
+                {
+                    // NOTE: 1000 iterations is quite short and may not produce results,
+                    // for real training 100,000+ is a more common iteration to use.
+                    t.TrainWavRNN(false, "RNN.SIMPLE", LayerParameter.LayerType.LSTM, 1000);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void Train_RNNSIMPLE_WavRNN_LSTMSIMPLE()
+        {
+            MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
+
+            try
+            {
+                foreach (IMyCaffeCustomTrainerTest t in test.Tests)
+                {
+                    // NOTE: 1000 iterations is quite short and may not produce results,
+                    // for real training 100,000+ is a more common iteration to use.
+                    t.TrainWavRNN(false, "RNN.SIMPLE", LayerParameter.LayerType.LSTM_SIMPLE, 1000);
                 }
             }
             finally
@@ -176,8 +216,8 @@ namespace MyCaffe.test
     {
         void TrainCartPolePG(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
         void TrainAtariPG(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
-        void TrainCharRNN(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
-        void TrainWavRNN(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
+        void TrainCharRNN(bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
+        void TrainWavRNN(bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
     }
 
     class MyCaffeCustomTrainerTest : TestBase
@@ -317,7 +357,7 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TrainCharRNN(bool bShowUi, string strTrainerType, int nIterations = 100, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
+        public void TrainCharRNN(bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 100, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
         {
             m_evtCancel.Reset();
 
@@ -336,13 +376,14 @@ namespace MyCaffe.test
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
             mycaffe.OnSnapshot += Mycaffe_OnSnapshot;
 
+            string strModelPath = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\char_rnn\\" + lstm.ToString().ToLower(), true);
+
             MyCaffeDataGeneralTrainer trainer = new MyCaffeDataGeneralTrainer();
-            ProjectEx project = getCharRNNProject(igym, nIterations);
+            ProjectEx project = getCharRNNProject(igym, nIterations, strModelPath);
             DatasetDescriptor ds = trainer.GetDatasetOverride(0);
 
             m_log.CHECK(ds != null, "The MyCaffeDataTrainer should return its dataset override returned by the Gym that it uses.");
 
-            string strModelPath = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\char_rnn", true);
             string strWeights = strModelPath + "\\weights.mycaffemodel";
             if (File.Exists(strWeights))
             {
@@ -361,8 +402,8 @@ namespace MyCaffe.test
 
             // Train the network using the custom trainer
             //  - Iterations (maximum frames cumulative across all threads) = 1000 (normally this would be much higher such as 500,000)
-            //  - Learning rate = 0.01 (defined in solver.prototxt)
-            //  - Mini Batch Size = 25 (defined in train_val.prototxt for InputLayer)
+            //  - Learning rate = 0.05 (defined in solver.prototxt)
+            //  - Mini Batch Size = 25 for LSTM, 1 for LSTM_SIMPLE (defined in train_val.prototxt for InputLayer)
             //
             //  - TrainerType = 'RNN.SIMPLE' (currently only one supported)
             //  - UseAcceleratedTraining = False (disable accelerated training).
@@ -419,7 +460,7 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TrainWavRNN(bool bShowUi, string strTrainerType, int nIterations = 100, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
+        public void TrainWavRNN(bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 100, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
         {
             m_evtCancel.Reset();
 
@@ -438,13 +479,14 @@ namespace MyCaffe.test
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
             mycaffe.OnSnapshot += Mycaffe_OnSnapshot;
 
+            string strModelPath = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\wav\\" + lstm.ToString().ToLower(), true);
+
             MyCaffeDataGeneralTrainer trainer = new MyCaffeDataGeneralTrainer();
-            ProjectEx project = getCharRNNProject(igym, nIterations);
+            ProjectEx project = getCharRNNProject(igym, nIterations, strModelPath);
             DatasetDescriptor ds = trainer.GetDatasetOverride(0);
 
             m_log.CHECK(ds != null, "The MyCaffeDataTrainer should return its dataset override returned by the Gym that it uses.");
 
-            string strModelPath = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\wav", true);
             string strWeights = strModelPath + "\\weights.mycaffemodel";
             if (File.Exists(strWeights))
             {
@@ -463,8 +505,8 @@ namespace MyCaffe.test
 
             // Train the network using the custom trainer
             //  - Iterations (maximum frames cumulative across all threads) = 1000 (normally this would be much higher such as 500,000)
-            //  - Learning rate = 0.01 (defined in solver.prototxt)
-            //  - Mini Batch Size = 25 (defined in train_val.prototxt for InputLayer)
+            //  - Learning rate = 0.05 (defined in solver.prototxt)
+            //  - Mini Batch Size = 25 for LSTM, 1 for LSTM_SIMPLE (defined in train_val.prototxt for InputLayer)
             //
             //  - TrainerType = 'RNN.SIMPLE' (currently only one supported)
             //  - UseAcceleratedTraining = False (disable accelerated training).
@@ -566,12 +608,12 @@ namespace MyCaffe.test
             return getTestPath("\\MyCaffe\\test_data\\roms\\" + strRom);
         }
 
-        private ProjectEx getCharRNNProject(IXMyCaffeGym igym, int nIterations)
+        private ProjectEx getCharRNNProject(IXMyCaffeGym igym, int nIterations, string strPath)
         {
             ProjectEx p = new ProjectEx("test");
 
-            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\char_rnn\\train_val.prototxt");
-            string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\char_rnn\\solver.prototxt");
+            string strModelFile = strPath + "\\train_val.prototxt";
+            string strSolverFile = strPath + "\\solver.prototxt";
 
             RawProto protoM = RawProtoFile.LoadFromFile(strModelFile);
             p.ModelDescription = protoM.ToString();
