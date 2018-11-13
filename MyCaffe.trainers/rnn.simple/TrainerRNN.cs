@@ -288,6 +288,7 @@ namespace MyCaffe.trainers.rnn.simple
         double m_dfLastLearningRate = 0;
         BucketCollection m_rgVocabulary = null;
         Phase m_phaseOnRun = Phase.NONE;
+        LayerParameter.LayerType m_lstmType = LayerParameter.LayerType.LSTM;
 
         public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallbackRNN icallback, Phase phase, BucketCollection rgVocabulary, string strRunProperties = null)
         {
@@ -338,6 +339,29 @@ namespace MyCaffe.trainers.rnn.simple
 
             m_net = mycaffe.GetInternalNet(phase);
 
+            // Find the first LSTM layer to determine how to load the data.
+            // NOTE: Only LSTM has a special loading order, other layers use the standard N, C, H, W ordering.
+            LSTMLayer<T> lstmLayer = null;
+            LSTMSimpleLayer<T> lstmSimpleLayer = null;
+            foreach (Layer<T> layer1 in m_net.layers)
+            {
+                if (layer1.layer_param.type == LayerParameter.LayerType.LSTM)
+                {
+                    lstmLayer = layer1 as LSTMLayer<T>;
+                    m_lstmType = LayerParameter.LayerType.LSTM;
+                    break;
+                }
+                else if (layer1.layer_param.type == LayerParameter.LayerType.LSTM_SIMPLE)
+                {
+                    lstmSimpleLayer = layer1 as LSTMSimpleLayer<T>;
+                    m_lstmType = LayerParameter.LayerType.LSTM_SIMPLE;
+                    break;
+                }
+            }
+
+            if (lstmLayer == null && lstmSimpleLayer == null)
+                throw new Exception("Could not find the required LSTM or LSTM_SIMPLE layer!");
+
             if (m_phaseOnRun != Phase.NONE && m_phaseOnRun != Phase.RUN && strOutputBlob != null)
             {
                 if ((m_blobOutput = m_net.FindBlob(strOutputBlob)) == null)
@@ -357,8 +381,26 @@ namespace MyCaffe.trainers.rnn.simple
             if (rgVocabulary != null)
                 m_mycaffe.Log.CHECK_EQ(m_nVocabSize, rgVocabulary.Count, "The vocabulary count and last inner product output count should match!");
 
-            m_nSequenceLength = m_blobData.shape(0);
-            m_nBatchSize = m_blobData.shape(1);
+            if (m_lstmType == LayerParameter.LayerType.LSTM)
+            {
+                m_nSequenceLength = m_blobData.shape(0);
+                m_nBatchSize = m_blobData.shape(1);
+            }
+            else
+            {
+                m_nBatchSize = (int)lstmSimpleLayer.layer_param.lstm_simple_param.batch_size;
+                m_nSequenceLength = m_blobData.shape(0) / m_nBatchSize;
+
+                if (phase == Phase.RUN)
+                {
+                    m_nBatchSize = 1;
+
+                    List<int> rgNewShape = new List<int>() { m_nSequenceLength, 1 };
+                    m_blobData.Reshape(rgNewShape);
+                    m_blobClip.Reshape(rgNewShape);
+                    m_net.Reshape();
+                }
+            }
 
             m_mycaffe.Log.CHECK_EQ(m_blobData.count(), m_blobClip.count(), "The data and clip blobs must have the same count!");
 
@@ -370,7 +412,10 @@ namespace MyCaffe.trainers.rnn.simple
 
             for (int i = 0; i < rgClipInput.Length; i++)
             {
-                rgClipInput[i] = (i < m_nBatchSize) ? m_tZero : m_tOne;
+                if (m_lstmType == LayerParameter.LayerType.LSTM)
+                    rgClipInput[i] = (i < m_nBatchSize) ? m_tZero : m_tOne;
+                else
+                    rgClipInput[i] = (i % m_nSequenceLength == 0) ? m_tZero : m_tOne;
             }
 
             m_blobClip.mutable_cpu_data = rgClipInput;
@@ -386,9 +431,8 @@ namespace MyCaffe.trainers.rnn.simple
                 if ((m_blobLabel = m_net.FindBlob("label")) == null)
                     throw new Exception("Could not find the 'Input' layer top named 'label'!");
 
-                m_mycaffe.Log.CHECK_EQ(m_blobData.count(), m_blobLabel.count(), "The data and label blobs must have the same count!");
-
                 m_rgLabelInput = new T[m_nSequenceLength * m_nBatchSize];
+                m_mycaffe.Log.CHECK_EQ(m_blobData.count(), m_blobLabel.count(), "The data and label blobs must have the same count!");
             }
         }
 
@@ -447,42 +491,7 @@ namespace MyCaffe.trainers.rnn.simple
             get { return m_mycaffe.CancelEvent; }
         }
 
-        public void Test(StateBase s, int nIterations)
-        {
-            if (nIterations <= 0)
-            {
-                nIterations = 20;
-
-                if (m_solver.parameter.test_iter.Count > 0)
-                    nIterations = m_solver.parameter.test_iter[0];
-            }
-
-            int nTestLen = (int)(s.Data.ItemCount * 0.2);
-            int nTrainLen = s.Data.ItemCount - nTestLen;
-
-            if (s.Data.IsRealData)
-            {
-                m_bIsDataReal = true;
-                m_rgdfTestData = new double[nTestLen];
-                Array.Copy(s.Data.RealData, nTrainLen, m_rgdfTestData, 0, nTestLen);
-            }
-            else
-            {
-                m_bIsDataReal = false;
-                m_rgTestData = new byte[nTestLen];
-                Array.Copy(s.Data.ByteData, nTrainLen, m_rgTestData, 0, nTestLen);
-            }
-
-            m_sw.Start();
-            m_solver.TestAll(nIterations);
-        }
-
-        private void m_solver_OnTestStart(object sender, EventArgs e)
-        {
-            FeedNet(false);
-        }
-
-        public void Train(StateBase s, int nIterations, TRAIN_STEP step)
+        private void getRawData(StateBase s)
         {
             int nTestLen = (int)(s.Data.ItemCount * 0.2);
             int nTrainLen = s.Data.ItemCount - nTestLen;
@@ -505,7 +514,34 @@ namespace MyCaffe.trainers.rnn.simple
                 Array.Copy(s.Data.ByteData, 0, m_rgTrainData, 0, nTrainLen);
                 Array.Copy(s.Data.ByteData, nTrainLen, m_rgTestData, 0, nTestLen);
             }
+        }
 
+        public void Test(StateBase s, int nIterations)
+        {
+            if (nIterations <= 0)
+            {
+                nIterations = 20;
+
+                if (m_solver.parameter.test_iter.Count > 0)
+                    nIterations = m_solver.parameter.test_iter[0];
+            }
+
+            getRawData(s);
+            m_sw.Start();
+            m_solver.TestAll(nIterations);
+        }
+
+        private void m_solver_OnTestStart(object sender, EventArgs e)
+        {
+            FeedNet(false);
+        }
+
+        public void Train(StateBase s, int nIterations, TRAIN_STEP step)
+        {
+            if (nIterations <= 0)
+                nIterations = m_solver.parameter.max_iter;
+
+            getRawData(s);
             m_sw.Start();
             m_solver.Solve(nIterations, null, null, step);
         }
@@ -517,14 +553,13 @@ namespace MyCaffe.trainers.rnn.simple
 
         public void FeedNet(bool bTrain)
         {
+            bool bFound;
+            int nIdx;
+
             // Real Data (real data does not use a vocabulary)
             if (m_bIsDataReal)
             {
                 double[] rgdfData = (bTrain) ? m_rgdfTrainData : m_rgdfTestData;
-                // Create input data, the data must be in the order
-                // seq1_val1, seq2_val1, ..., seqBatch_Size_val1, seq1_val2, seq2_val2, ..., seqBatch_Size_valSequence_Length
-                // As seq1_valSequence_Length == seq2_valSequence_Length-1 == seq3_valSequence_Length-2 == ... we can perform block copy for efficientcy.
-                // Labels are the same with an offset of +1
 
                 // Re-order the data according to caffe input specification for LSTM layer.
                 for (int i = 0; i < m_nBatchSize; i++)
@@ -533,14 +568,23 @@ namespace MyCaffe.trainers.rnn.simple
 
                     for (int j = 0; j < m_nSequenceLength; j++)
                     {
+                        // Feed the net with input data and labels (clips are always the same)
                         double dfData = rgdfData[nCurrentValIdx + j];
+                        // Labels are the same with an offset of +1
                         double dfLabel = rgdfData[nCurrentValIdx + j + 1]; // predict next character
-                        bool bFound;
                         float fDataIdx = findIndex(dfData, out bFound);
                         float fLabelIdx = findIndex(dfLabel, out bFound);
 
-                        // Feed the net with input data and labels (clips are always the same)
-                        int nIdx = m_nBatchSize * j + i;
+                        // LSTM: Create input data, the data must be in the order
+                        // seq1_val1, seq2_val1, ..., seqBatch_Size_val1, seq1_val2, seq2_val2, ..., seqBatch_Size_valSequence_Length
+                        if (m_lstmType == LayerParameter.LayerType.LSTM)
+                            nIdx = m_nBatchSize * j + i;
+
+                        // LSTM_SIMPLE: Create input data, the data must be in the order
+                        // seq1_val1, seq1_val2, ..., seq1_valSequence_Length, seq2_val1, seq2_val2, ..., seqBatch_Size_valSequence_Length
+                        else
+                            nIdx = i * m_nBatchSize + j;
+
                         m_rgDataInput[nIdx] = (T)Convert.ChangeType(fDataIdx, typeof(T));
                         m_rgLabelInput[nIdx] = (T)Convert.ChangeType(fLabelIdx, typeof(T));
                     }
@@ -562,14 +606,23 @@ namespace MyCaffe.trainers.rnn.simple
 
                     for (int j = 0; j < m_nSequenceLength; j++)
                     {
+                        // Feed the net with input data and labels (clips are always the same)
                         byte bData = rgData[nCurrentCharIdx + j];
+                        // Labels are the same with an offset of +1
                         byte bLabel = rgData[nCurrentCharIdx + j + 1]; // predict next character
-                        bool bFound;
                         float fDataIdx = findIndex(bData, out bFound);
                         float fLabelIdx = findIndex(bLabel, out bFound);
 
-                        // Feed the net with input data and labels (clips are always the same)
-                        int nIdx = m_nBatchSize * j + i;
+                        // LSTM: Create input data, the data must be in the order
+                        // seq1_val1, seq2_val1, ..., seqBatch_Size_val1, seq1_val2, seq2_val2, ..., seqBatch_Size_valSequence_Length
+                        if (m_lstmType == LayerParameter.LayerType.LSTM)
+                            nIdx = m_nBatchSize * j + i;
+
+                        // LSTM_SIMPLE: Create input data, the data must be in the order
+                        // seq1_val1, seq1_val2, ..., seq1_valSequence_Length, seq2_val1, seq2_val2, ..., seqBatch_Size_valSequence_Length
+                        else
+                            nIdx = i * m_nBatchSize + j;
+
                         m_rgDataInput[nIdx] = (T)Convert.ChangeType(fDataIdx, typeof(T));
                         m_rgLabelInput[nIdx] = (T)Convert.ChangeType(fLabelIdx, typeof(T));
                     }
@@ -651,6 +704,7 @@ namespace MyCaffe.trainers.rnn.simple
             if (m_rgVocabulary != null)
                 m_bIsDataReal = m_rgVocabulary.IsDataReal;
 
+            int nIdx = 0;
             Stopwatch sw = new Stopwatch();
             float[] rgPredictions = new float[nN];
             List<T> rgInput = getInitialInput(m_bIsDataReal);
@@ -659,18 +713,18 @@ namespace MyCaffe.trainers.rnn.simple
 
             for (int i = 0; i < nN; i++)
             {
-                // The batch is filled with 0 except for the first sequence which is the one we want to use for prediction.
-                T[] rgInputVector = new T[m_nSequenceLength * m_nBatchSize];
+                T[] rgInputVector = new T[m_blobData.count()];
                 for (int j = 0; j < m_nSequenceLength; j++)
                 {
-                    rgInputVector[j * m_nBatchSize] = rgInput[j];
+                    // The batch is filled with 0 except for the first sequence which is the one we want to use for prediction.
+                    nIdx = j * m_nBatchSize;
+                    rgInputVector[nIdx] = rgInput[j];
                 }
 
                 m_blobData.mutable_cpu_data = rgInputVector;
 
                 double dfLoss;
                 BlobCollection<T> colResults = m_net.Forward(out dfLoss);
-
                 float fPrediction = getLastPrediction(colResults[0], m_rgVocabulary);
 
                 //Add the new prediction and discard the oldest one
@@ -702,16 +756,27 @@ namespace MyCaffe.trainers.rnn.simple
             if (m_blobOutput != null)
                 blobOutput = m_blobOutput;
 
-            float[] rgData = Utility.ConvertVecF<T>(blobOutput.update_cpu_data());
-
             // Get the probabilities for the last character of the first sequence in the batch
             int nOffset = (m_nSequenceLength - 1) * m_nBatchSize * m_nVocabSize;
+            float[] rgDataRaw = Utility.ConvertVecF<T>(blobOutput.update_cpu_data());
+            float[] rgData = new float[m_nVocabSize];
+
+            for (int i = 0; i < rgData.Length; i++)
+            {
+                rgData[i] = rgDataRaw[nOffset + i];
+            }
+
+            return getLastPrediction(rgData, rgVocabulary);
+        }
+
+        private int getLastPrediction(float[] rgData, BucketCollection rgVocabulary)
+        {
             int nIdx = m_nVocabSize - 1;
 
             // If no temperature, return directly the character with the best score
             if (m_dfTemperature == 0)
             {
-                nIdx = ArgMax(rgData, nOffset, m_nVocabSize);
+                nIdx = ArgMax(rgData, 0, m_nVocabSize);
             }
             else
             {
@@ -723,7 +788,7 @@ namespace MyCaffe.trainers.rnn.simple
                 for (int i = 0; i < m_nVocabSize; i++)
                 {
                     // The max value is subtracted for numerical stability
-                    rgProba[i] = Math.Exp((rgData[nOffset + i] - (m_nVocabSize - 1)) / m_dfTemperature);
+                    rgProba[i] = Math.Exp((rgData[i] - (m_nVocabSize - 1)) / m_dfTemperature);
                     dfExpoSum += rgProba[i];
                 }
 
