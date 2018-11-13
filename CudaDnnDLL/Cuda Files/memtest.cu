@@ -168,7 +168,7 @@ long memtestHandle<T>::Initialize(Memory<T>* pMem, T fPctToAllocate, size_t* psz
 		// need to leave a little headroom or later calls will fail
 		m_szTotalNumBlocks = prop.totalGlobalMem / BLOCKSIZE - 16;
 
-		if (lErr = cudaThreadSynchronize())
+		if (lErr = cudaStreamSynchronize(0))
 			throw lErr;
 
 		if (lErr = allocate_small_mem())
@@ -582,7 +582,9 @@ long memtestHandle<T>::move_inv_test(size_t szStartOffset, size_t szCount, unsig
 			size_t szOffset = i * BLOCKSIZE;
 
 			kernel_move_inv_write<T> << <grid, 1 >> > (ptr + szOffset, end_ptr, p1);
-			cudaThreadSynchronize();
+			if (lErr = cudaStreamSynchronize(0))
+				return lErr;
+
 			if (lErr = cudaGetLastError())
 				return lErr;
 		}
@@ -595,7 +597,9 @@ long memtestHandle<T>::move_inv_test(size_t szStartOffset, size_t szCount, unsig
 			size_t szOffset = i * BLOCKSIZE;
 
 			kernel_move_inv_readwrite<T> << <grid, 1 >> > (ptr + szOffset, end_ptr, p1, p2, m_perr_count, m_rgerr_addr, m_rgerr_expect, m_rgerr_current, m_rgerr_second_read);
-			cudaThreadSynchronize();
+			if (lErr = cudaStreamSynchronize(0))
+				return lErr;
+
 			if (lErr = cudaGetLastError())
 				return lErr;
 
@@ -613,7 +617,9 @@ long memtestHandle<T>::move_inv_test(size_t szStartOffset, size_t szCount, unsig
 			size_t szOffset = i * BLOCKSIZE;
 
 			kernel_move_inv_read<T> << <grid, 1 >> > (ptr + szOffset, end_ptr, p2, m_perr_count, m_rgerr_addr, m_rgerr_expect, m_rgerr_current, m_rgerr_second_read);
-			cudaThreadSynchronize();
+			if (lErr = cudaStreamSynchronize(0))
+				return lErr;
+
 			if (lErr = cudaGetLastError())
 				return lErr;
 
