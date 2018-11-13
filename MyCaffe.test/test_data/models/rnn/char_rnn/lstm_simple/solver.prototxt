@@ -1,5 +1,6 @@
-test_iter: 0
-device_id: 1
+test_iter: 100
+test_interval: 1000
+device_id: 0
 type: SGD
 net: "caffe_char_rnn.prototxt"
 base_lr: 0.05
