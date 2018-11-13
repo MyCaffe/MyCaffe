@@ -693,7 +693,7 @@ namespace MyCaffe.test
                                "lr_policy: \"fixed\"               " +
                                "display: 200                       " +
                                "max_iter: " + nMaxIter.ToString() + " " +
-                               "solver_mode: CPU                   " +
+                               "solver_mode: GPU                   " +
                                "average_loss: 200";        
 
             return strSolver;
