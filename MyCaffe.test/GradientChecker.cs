@@ -266,18 +266,41 @@ namespace MyCaffe.test
         /// </summary>
         public void CheckGradientEltwise(Layer<T> layer, BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            Stopwatch sw = new Stopwatch();
             layer.Setup(colBottom, colTop);
 
             m_log.CHECK_GT(colTop.Count, 0, "Eltwise mode requires at least one top blob.");
-            
+            sw.Start();
+
             int nCheckBottom = -1;
             bool bElementWise = true;
+
+            int nTotal = 0;
+            int nIdx = 0;
+
+            for (int i = 0; i < colTop.Count; i++)
+            {
+                nTotal += colTop[i].count();
+            }
+
+            TestingProgressSet progress = new TestingProgressSet();
 
             for (int i = 0; i < colTop.Count; i++)
             {
                 for (int j = 0; j < colTop[i].count(); j++)
                 {
                     CheckGradientSingle(layer, colBottom, colTop, nCheckBottom, i, j, bElementWise);
+                    nIdx++;
+
+                    if (sw.Elapsed.TotalMilliseconds > 1000)
+                    {
+                        double dfPct = (double)nIdx / (double)nTotal;
+                        Trace.WriteLine(m_strBaseType + ": Check gradient eltwise at " + dfPct.ToString("P") + "...");
+
+                        progress.SetProgress(dfPct);
+
+                        sw.Restart();
+                    }
                 }
             }
         }

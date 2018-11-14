@@ -596,6 +596,7 @@ namespace MyCaffe.test
 
             swStatus.Start();
 
+            TestingProgressSet progress = new TestingProgressSet();
             double dfTotalTime = 0;
 
             while (iter < solver_param.max_iter)
@@ -624,6 +625,8 @@ namespace MyCaffe.test
                     swStatus.Stop();
                     swStatus.Reset();
                     swStatus.Start();
+
+                    progress.SetProgress(m_log.Progress);
                 }
 
                 if (m_evtCancel.WaitOne(0))

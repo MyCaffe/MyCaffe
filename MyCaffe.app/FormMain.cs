@@ -50,6 +50,7 @@ namespace MyCaffe.app
         Task m_pgTask = null;
         CancelEvent m_evtCancelPG = new CancelEvent();
         MyCaffeGymUiServiceHost m_gymHost;
+        TestingProgressGet m_progress = new TestingProgressGet();
 
         delegate void fnSetStatus(string strMsg, STATUS status, bool bBreath);
 
@@ -87,6 +88,7 @@ namespace MyCaffe.app
             m_log = new Log("Test Run");
             m_log.OnWriteLine += Log_OnWriteLine;
             m_caffeRun = new MyCaffeControl<float>(new SettingsCaffe(), m_log, m_evtCancel);
+            m_progress.Initialize();
 
             if (lvStatus is ListViewEx)
                 ((ListViewEx)lvStatus).RowHeight = 12;

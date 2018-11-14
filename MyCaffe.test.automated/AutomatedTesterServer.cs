@@ -121,11 +121,14 @@ namespace MyCaffe.test.automated
 
             colTests.Run(m_evtCancel, false, true, param.GpuId);
 
+            TestingProgressGet progress = new TestingProgressGet();
+
+            string strLast = null;
             while (!bw.CancellationPending && colTests.IsRunning)
             {
                 Thread.Sleep(1000);
                 string strCurrent = colTests.CurrentTest;
-                double? dfProgress = TestingProgressGet.GetProgress();
+                double? dfProgress = progress.GetProgress();
 
                 if (strCurrent.Length > 0)
                     strCurrent = " [" + strCurrent + "]";
@@ -135,6 +138,8 @@ namespace MyCaffe.test.automated
 
                 pi.Set(colTests.PercentComplete, colTests.TotalTestTimingString + " completed " + colTests.TotalTestRunCount.ToString("N0") + " of " + colTests.TotalTestCount.ToString("N0") + " (" + colTests.TotalTestFailureCount.ToString("N0") + " failed)." + strCurrent);
                 bw.ReportProgress((int)(pi.Progress * 100), pi);
+
+                strLast = strCurrent;
             }
 
             colTests.SaveToDatabase();

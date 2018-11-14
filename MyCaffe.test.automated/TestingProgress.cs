@@ -4,21 +4,28 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MyCaffe.test.automated
 {
     public class TestingProgressGet
     {
-        static bool m_bNoProgress = false;
+        EventWaitHandle m_evtEnabled = null;
 
         public TestingProgressGet()
         {
+            EventWaitHandle.TryOpenExisting("__TestingProgressEnabled__", out m_evtEnabled);
         }
 
-        public static double? GetProgress()
+        public void Initialize()
         {
-            if (m_bNoProgress)
+            m_evtEnabled = new EventWaitHandle(false, EventResetMode.ManualReset, "__TestingProgressEnabled__");
+        }
+
+        public double? GetProgress()
+        {
+            if (m_evtEnabled != null && !m_evtEnabled.WaitOne(0))
                 return null;
 
             MemoryMappedFile mmf = null;
@@ -40,7 +47,6 @@ namespace MyCaffe.test.automated
             }
             catch (Exception)
             {
-                m_bNoProgress = true;
                 return null;
             }
             finally

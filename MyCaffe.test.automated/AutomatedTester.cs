@@ -22,6 +22,7 @@ namespace MyCaffe.test.automated
         AutoResetEvent m_evtCancel = new AutoResetEvent(false);
         EventWaitHandle m_evtGlobalCancel = new EventWaitHandle(false, EventResetMode.AutoReset, "__GRADIENT_CHECKER_CancelEvent__");
         ListViewColumnSorter m_lstSorter = new ListViewColumnSorter();
+        TestingProgressGet m_progress = new TestingProgressGet();
         FileInfo m_fiPath;
         int m_nGpuId = 0;
         bool m_bSkip = false;
@@ -138,6 +139,7 @@ namespace MyCaffe.test.automated
         public void UpdateStatus()
         {
             int nProgressCount = 0;
+            MethodInfoEx miLast = null;
 
             foreach (ListViewItem lvi in lstTests.Items)
             {
@@ -159,13 +161,17 @@ namespace MyCaffe.test.automated
                         lvi.EnsureVisible();
                 }
 
-                if (mi.Progress.HasValue)
+                double? dfProgress = mi.Progress;
+                if (!dfProgress.HasValue)
+                    dfProgress = m_progress.GetProgress();
+
+                if (dfProgress.HasValue)
                 {
                     nProgressCount++;
                     tsItemProgress.Visible = true;
                     pbItemProgress.Visible = true;
-                    tsItemProgress.Text = mi.Progress.Value.ToString("P");
-                    pbItemProgress.Value = (int)(mi.Progress.Value * 100.0);
+                    tsItemProgress.Text = dfProgress.Value.ToString("P");
+                    pbItemProgress.Value = (int)(dfProgress.Value * 100.0);
                 }
 
                 if (mi.ErrorInfo.Error != null && lvi.SubItems[4].Text.Length == 0)
@@ -173,6 +179,8 @@ namespace MyCaffe.test.automated
                     lvi.SubItems[4].Text = mi.ErrorInfo.ShortErrorString;
                     lvi.SubItems[4].Tag = mi.ErrorInfo;
                 }
+
+                miLast = mi;
             }
 
             if (nProgressCount == 0)
@@ -1252,9 +1260,11 @@ namespace MyCaffe.test.automated
 
         private void status()
         {
+            TestingProgressGet progress = new TestingProgressGet();
+
             while (!m_evtStatusCancel.WaitOne(1000))
             {
-                m_dfProgress = TestingProgressGet.GetProgress();
+                m_dfProgress = progress.GetProgress();
             }
         }
 

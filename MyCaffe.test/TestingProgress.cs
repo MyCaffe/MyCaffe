@@ -4,12 +4,14 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MyCaffe.test
 {
     public class TestingProgressSet : IDisposable
     {
+        EventWaitHandle m_evtEnabled = null;
         MemoryMappedFile m_mmf = null;
         MemoryMappedViewStream m_mmvStrm = null;
 
@@ -17,10 +19,19 @@ namespace MyCaffe.test
         {
             m_mmf = MemoryMappedFile.CreateOrOpen("__TestProgress__", 8);
             m_mmvStrm = m_mmf.CreateViewStream(0, 8);
+
+            if (EventWaitHandle.TryOpenExisting("__TestingProgressEnabled__", out m_evtEnabled))
+                m_evtEnabled.Set();
         }
 
         public void Dispose()
         {
+            if (m_evtEnabled != null)
+            {
+                m_evtEnabled.Reset();
+                m_evtEnabled.Dispose();
+            }
+
             if (m_mmvStrm != null)
             {
                 m_mmvStrm.Dispose();
