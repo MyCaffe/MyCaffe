@@ -241,6 +241,9 @@ namespace MyCaffe.test
         SettingsCaffe m_settings = new SettingsCaffe();
         CancelEvent m_evtCancel = new CancelEvent();
         string m_strModelPath;
+        TestingProgressSet m_progress = new TestingProgressSet();
+        int m_nMaxIteration = 0;
+
 
         public MyCaffeCustomTrainerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
@@ -251,6 +254,7 @@ namespace MyCaffe.test
 
         protected override void dispose()
         {
+            m_progress.Dispose();
             base.dispose();
         }
 
@@ -295,11 +299,12 @@ namespace MyCaffe.test
             //  - Init1 = default force of 10.
             //  - Init2 = do not use additive force.                    
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
-            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1", null);
+            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1", this);
 
             if (bShowUi)
                 trainer.OpenUi();
 
+            m_nMaxIteration = nIterations;
             trainer.Train(mycaffe, nIterations);
             trainer.CleanUp();
 
@@ -345,11 +350,12 @@ namespace MyCaffe.test
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
             //  - UseAcceleratedTraining = False (disable accelerated training).
             //  - GameROM = 'path to game ROM'
-            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;GameROM=" + strRom, null);
+            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;GameROM=" + strRom, this);
 
             if (bShowUi)
                 trainer.OpenUi();
 
+            m_nMaxIteration = nIterations;
             trainer.Train(mycaffe, nIterations);
             trainer.CleanUp();
 
@@ -430,6 +436,7 @@ namespace MyCaffe.test
             if (bShowUi)
                 trainer.OpenUi();
 
+            m_nMaxIteration = nIterations;
             trainer.Train(mycaffe, nIterations);
 
             string type;
@@ -533,6 +540,7 @@ namespace MyCaffe.test
             if (bShowUi)
                 trainer.OpenUi();
 
+            m_nMaxIteration = nIterations;
             trainer.Train(mycaffe, nIterations);
 
             string type;
@@ -643,6 +651,16 @@ namespace MyCaffe.test
 
         public void Update(TRAINING_CATEGORY cat, Dictionary<string, double> rgValues)
         {
+            if (rgValues.ContainsKey("GlobalIteration"))
+            {
+                int nIteration = (int)rgValues["GlobalIteration"];
+
+                if (m_nMaxIteration > 0)
+                {
+                    double dfProgress = (int)nIteration / (double)m_nMaxIteration;
+                    m_progress.SetProgress(dfProgress);
+                }
+            }
         }
     }
 

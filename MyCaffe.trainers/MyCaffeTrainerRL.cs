@@ -499,13 +499,14 @@ namespace MyCaffe.trainers
             m_nGlobalEpisodeMax = e.MaxFrames;
             m_dfLoss = e.Loss;
 
-            if (m_icallback != null && m_nThreads > 1)
+            if (m_icallback != null)
             {
                 Dictionary<string, double> rgValues = new Dictionary<string, double>();
                 rgValues.Add("GlobalIteration", GlobalEpisodeCount);
                 rgValues.Add("GlobalLoss", GlobalLoss);
                 rgValues.Add("LearningRate", e.LearningRate);
                 rgValues.Add("GlobalAccuracy", GlobalRewards);
+                rgValues.Add("Threads", m_nThreads);
                 m_icallback.Update(TrainingCategory, rgValues);
             }
 
