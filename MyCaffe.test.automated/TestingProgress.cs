@@ -47,6 +47,9 @@ namespace MyCaffe.test.automated
             }
             catch (Exception)
             {
+                if (m_evtEnabled != null)
+                    m_evtEnabled.Reset();
+
                 return null;
             }
             finally
