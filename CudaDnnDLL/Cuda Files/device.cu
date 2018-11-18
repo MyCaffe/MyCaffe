@@ -903,6 +903,92 @@ template long Device<float>::SetTensorDesc(long lInput, float* pfInput, long* pl
 
 
 template <class T>
+long Device<T>::SetTensorNdDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 2, MAX_ARG, true))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+	int nCount = (int)pfInput[1];
+
+	if (nCount > MAX_DIM || nCount < 0 || nCount > (lInput - 2)/2)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	int* rgDim = (int*)malloc(sizeof(int) * nCount);
+	if (rgDim == NULL)
+		return ERROR_OUTOFMEMORY;
+
+	int* rgStride = (int*)malloc(sizeof(int) * nCount);
+	if (rgStride == NULL)
+	{
+		free(rgDim);
+		return ERROR_OUTOFMEMORY;
+	}
+
+	int nIdx = 2;
+	for (int i = 0; i < nCount; i++)
+	{
+		rgDim[i] = (int)pfInput[nIdx];
+		nIdx++;
+	}
+
+	for (int i = 0; i < nCount; i++)
+	{
+		rgStride[i] = (int)pfInput[nIdx];
+		nIdx++;
+	}
+
+	lErr = m_memory.SetTensorDesc(hHandle, rgDim, rgStride, nCount);
+
+	free(rgDim);
+	free(rgStride);
+
+	return lErr;
+}
+
+template long Device<double>::SetTensorNdDesc(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::SetTensorNdDesc(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
+long Device<T>::SetFilterNdDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 2, MAX_ARG, true))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+	int nCount = (int)pfInput[1];
+
+	if (nCount > MAX_DIM || nCount < 0 || nCount >(lInput - 2) / 2)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	int* rgDim = (int*)malloc(sizeof(int) * nCount);
+	if (rgDim == NULL)
+		return ERROR_OUTOFMEMORY;
+
+	int nIdx = 2;
+	for (int i = 0; i < nCount; i++)
+	{
+		rgDim[i] = (int)pfInput[nIdx];
+		nIdx++;
+	}
+
+	lErr = m_memory.SetFilterDesc(hHandle, rgDim, nCount);
+
+	free(rgDim);
+
+	return lErr;
+}
+
+template long Device<double>::SetFilterNdDesc(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::SetFilterNdDesc(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::GetDropoutInfo(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;	

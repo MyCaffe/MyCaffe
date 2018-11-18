@@ -12,7 +12,7 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies the parameters used by the RecurrentLayer.
     /// </summary>
-    public class RecurrentParameter : LayerParameterBase
+    public class RecurrentParameter : EngineParameter
     {
         uint m_nNumOutput = 0;
         FillerParameter m_weight_filler = new FillerParameter("xavier");
@@ -20,10 +20,39 @@ namespace MyCaffe.param
         bool m_bDebugInfo = false;
         bool m_bExposeHidden = false;
 
+
         /** @copydoc LayerParameterBase */
         public RecurrentParameter()
         {            
         }
+
+        /// <summary>
+        /// Returns the reason that Caffe version was used instead of [NVIDIA's cuDnn](https://developer.nvidia.com/cudnn).
+        /// </summary>
+        /// <returns></returns>
+        public string useCaffeReason()
+        {
+            if (engine != Engine.CAFFE)
+                return "The engine setting is set on DEFAULT or CAFFE.";
+
+            if (m_bExposeHidden)
+                return "Exposing hidden is currently only offered by CAFFE.";
+
+            return "";
+        }
+
+        /// <summary>
+        /// Queries whether or not to use [NVIDIA's cuDnn](https://developer.nvidia.com/cudnn).
+        /// </summary>
+        /// <returns>Returns <i>true</i> when cuDnn is to be used, <i>false</i> otherwise.</returns>
+        public bool useCudnn()
+        {
+            if (engine == EngineParameter.Engine.CUDNN && !m_bExposeHidden)
+                return true;
+
+            return false;
+        }
+
 
         /// <summary>
         /// The dimension of the output (and usually hidden state) representation --
@@ -102,19 +131,26 @@ namespace MyCaffe.param
         /** @copydoc LayerParameterBase::Copy */
         public override void Copy(LayerParameterBase src)
         {
-            RecurrentParameter p = (RecurrentParameter)src;
-            m_nNumOutput = p.num_output;
-            m_weight_filler = p.weight_filler.Clone();
-            m_bias_filler = p.bias_filler.Clone();
-            m_bDebugInfo = p.debug_info;
-            m_bExposeHidden = p.expose_hidden;
+            base.Copy(src);
+
+            if (src is RecurrentParameter)
+            {
+                RecurrentParameter p = (RecurrentParameter)src;
+                m_nNumOutput = p.num_output;
+                m_weight_filler = p.weight_filler.Clone();
+                m_bias_filler = p.bias_filler.Clone();
+                m_bDebugInfo = p.debug_info;
+                m_bExposeHidden = p.expose_hidden;
+            }
         }
 
         /** @copydoc LayerParameterBase::ToProto */
         public override RawProto ToProto(string strName)
         {
+            RawProto rpBase = base.ToProto("engine");
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add(rpBase.Children);
             rgChildren.Add("num_output", num_output.ToString());
 
             if (weight_filler != null)
@@ -134,10 +170,12 @@ namespace MyCaffe.param
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static RecurrentParameter FromProto(RawProto rp)
+        public static new RecurrentParameter FromProto(RawProto rp)
         {
             string strVal;
             RecurrentParameter p = new RecurrentParameter();
+
+            ((EngineParameter)p).Copy(EngineParameter.FromProto(rp));
 
             if ((strVal = rp.FindValue("num_output")) != null)
                 p.num_output = uint.Parse(strVal);

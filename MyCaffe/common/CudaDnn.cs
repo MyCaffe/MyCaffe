@@ -174,6 +174,40 @@ namespace MyCaffe.common
     }
 
     /// <summary>
+    /// Specifies the RNN mode to use with the Recurrent Layer when using the cuDNN engine.
+    /// </summary>
+    public enum RNN_MODE
+    {
+        /// <summary>
+        /// Specifies to use a single RelU gate Recurrent Learning unit.
+        /// </summary>
+        RNN_RELU = 0,
+        /// <summary>
+        /// Specifies to use a single TanH gate Recurrent Learning unit.
+        /// </summary>
+        RNN_TANH = 1,
+        /// <summary>
+        /// Specifies to use a 4 gate LSTM Recurrent Learning unit.
+        /// </summary>
+        LSTM = 2
+    }
+
+    /// <summary>
+    /// Specifies the RNN data layout of the data input.
+    /// </summary>
+    public enum RNN_DATALAYOUT
+    {
+        /// <summary>
+        /// Specifies ordering with sequence major ordering.
+        /// </summary>
+        RNN_SEQ_MAJOR = 0,
+        /// <summary>
+        /// Specifies ordering with batch major ordering.
+        /// </summary>
+        RNN_BATCH_MAJOR = 2
+    }
+
+    /// <summary>
     /// Specifies certain device properties to query from Cuda.
     /// </summary>
     public enum DEVPROP
@@ -352,6 +386,7 @@ namespace MyCaffe.common
 
         long CreateTensorDesc();
         void FreeTensorDesc(long h);
+        void SetTensorNdDesc(long hHandle, int[] rgDim, int[] rgStride);
         void SetTensorDesc(long hHandle, int n, int c, int h, int w);
         void SetTensorDesc(long hHandle, int n, int c, int h, int w, int nStride, int cStride, int hStride, int wStride);
         void AddTensor(long hHandle, long hSrcDesc, long hSrc, int nSrcOffset, long hDstDesc, long hDst, int nDstOffset);
@@ -360,6 +395,7 @@ namespace MyCaffe.common
 
         long CreateFilterDesc();
         void FreeFilterDesc(long h);
+        void SetFilterNdDesc(long hHandle, int[] rgDim);
         void SetFilterDesc(long hHandle, int n, int c, int h, int w);
 
         long CreateConvolutionDesc();
@@ -373,6 +409,20 @@ namespace MyCaffe.common
         long CreateLRNDesc();
         void FreeLRNDesc(long h);
         void SetLRNDesc(long hHandle, uint nSize, double fAlpha, double fBeta, double fK);
+
+        long CreateRnnDataDesc();
+        void FreeRnnDataDesc(long h);
+        void SetRnnDataDesc(long hRnnDataDesc, RNN_DATALAYOUT layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int[] rgSeqLen);
+
+        long CreateRnnDesc();
+        void FreeRnnDesc(long h);
+        void SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenSize, int nNumLayers, long hDropoutDesc, RNN_MODE mode);
+        int GetRnnParamCount(long hHandle, long hRnnDesc, long hXDesc);
+        int GetRnnWorkspaceCount(long hHandle, long hRnnDesc, int nSeqLen, long[] rghXDesc, out int nReservedCount);
+        void GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, long hXDesc, long hWtDesc, long hWtData, int nLinLayer, out int nWtCount, out long hWt, out int nBiasCount, out long hBias);
+        void RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, int nWsCount, long hReserved, int hResCount, bool bTraining);
+        void RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, int nWsCount, long hReserved, int nResCount);
+        void RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, int nWsCount, long hWtDesc, long hWtDiff, long hReserved, int nResCount);
     }
 
     /// <summary>
@@ -570,10 +620,12 @@ namespace MyCaffe.common
             FREE_TENSORDESC = 51,
             SET_TENSORDESC = 52,
             ADD_TENSOR = 53,
+            SET_TENSORNDDESC = 54,
 
             CREATE_FILTERDESC = 60,
             FREE_FILTERDESC = 61,
             SET_FILTERDESC = 62,
+            SET_FILTERNDDESC = 63,
 
             CREATE_EXTENSION = 67,
             FREE_EXTENSION = 68,
@@ -628,6 +680,20 @@ namespace MyCaffe.common
             LRN_CC_BWD = 121,
             LCN_CC_FWD = 122,
             LCN_CC_BWD = 123,
+
+            CREATE_RNN_DATA_DESC = 130,
+            FREE_RNN_DATA_DESC = 131,
+            SET_RNN_DATA_DESC = 132,
+
+            CREATE_RNN_DESC = 140,
+            FREE_RNN_DESC = 141,
+            SET_RNN_DESC = 142,
+            GET_RNN_PARAMCOUNT = 143,
+            GET_RNN_WORKSPACECOUNT = 144,
+            GET_RNN_LINLAYERPARAMS = 145,
+            FWD_RNN = 146,
+            BWD_RNN_DATA = 147,
+            BWD_RNN_WTS = 148,
 
             CUDA_SET = 200,
             CUDA_GET = 201,
@@ -687,7 +753,7 @@ namespace MyCaffe.common
             CUDA_RNG_SETSEED = 349,
             CUDA_RNG_UNIFORM = 350,
             CUDA_RNG_GAUSSIAN = 351,
-            //            CUDA_RNG_BERNOULLI = 352,   // Not implemented yet.
+            // CUDA_RNG_BERNOULLI = 352,   // Not implemented yet.
 
             CUDA_BATCHREIDX_FWD = 386,
             CUDA_BATCHREIDX_BWD = 387,
@@ -2439,6 +2505,48 @@ namespace MyCaffe.common
         /// Sets the values of a tensor descriptor.
         /// </summary>
         /// <param name="hHandle">Specifies the handle to the tensor descriptor.</param>
+        /// <param name="rgDim">Specifies the dimensions of the data.</param>
+        /// <param name="rgStride">Specifies the stride of the data.</param>
+        public void SetTensorNdDesc(long hHandle, int[] rgDim, int[] rgStride)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                List<double> rgArg = new List<double>() { hHandle, rgDim.Length, rgStride.Length };
+
+                for (int i = 0; i < rgDim.Length; i++)
+                {
+                    rgArg.Add(rgDim[i]);
+                }
+
+                for (int i = 0; i < rgStride.Length; i++)
+                {
+                    rgArg.Add(rgStride[i]);
+                }
+
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_TENSORNDDESC, rgArg.ToArray());
+            }
+            else
+            {
+                List<float> rgArg = new List<float>() { hHandle, rgDim.Length, rgStride.Length };
+
+                for (int i = 0; i < rgDim.Length; i++)
+                {
+                    rgArg.Add(rgDim[i]);
+                }
+
+                for (int i = 0; i < rgStride.Length; i++)
+                {
+                    rgArg.Add(rgStride[i]);
+                }
+
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_TENSORNDDESC, rgArg.ToArray());
+            }
+        }
+
+        /// <summary>
+        /// Sets the values of a tensor descriptor.
+        /// </summary>
+        /// <param name="hHandle">Specifies the handle to the tensor descriptor.</param>
         /// <param name="n">Specifies the number of items.</param>
         /// <param name="c">Specifies the number of channels in each item.</param>
         /// <param name="h">Specifies the height of each item.</param>
@@ -2535,6 +2643,37 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_FILTERDESC, new double[] { h });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_FILTERDESC, new float[] { h });
+        }
+
+        /// <summary>
+        /// Sets the values of a filter descriptor.
+        /// </summary>
+        /// <param name="hHandle">Specifies the handle to the filter descriptor.</param>
+        /// <param name="rgDim">Specifies the dimensions of the data.</param>
+        public void SetFilterNdDesc(long hHandle, int[] rgDim)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                List<double> rgArg = new List<double>() { hHandle, rgDim.Length };
+
+                for (int i = 0; i < rgDim.Length; i++)
+                {
+                    rgArg.Add(rgDim[i]);
+                }
+
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_FILTERNDDESC, rgArg.ToArray());
+            }
+            else
+            {
+                List<float> rgArg = new List<float>() { hHandle, rgDim.Length };
+
+                for (int i = 0; i < rgDim.Length; i++)
+                {
+                    rgArg.Add(rgDim[i]);
+                }
+
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_FILTERNDDESC, rgArg.ToArray());
+            }
         }
 
         /// <summary>
@@ -3445,6 +3584,469 @@ namespace MyCaffe.common
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SOFTMAX_BWD, new float[] { hCuDnn, convertF(fAlpha), hTopDataDesc, hTopData, hTopDiffDesc, hTopDiff, convertF(fBeta), hBottomDiffDesc, hBottomDiff });
         }
+
+        /// <summary>
+        /// Create the RNN Data Descriptor.
+        /// </summary>
+        /// <returns>A handle to the RNN Data descriptor is returned.</returns>
+        public long CreateRnnDataDesc()
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CREATE_RNN_DATA_DESC, null);
+                return (long)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CREATE_RNN_DATA_DESC, null);
+                return (long)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Free an existing RNN Data descriptor.
+        /// </summary>
+        /// <param name="h">Specifies the handle to the RNN Data descriptor created with CreateRnnDataDesc</param>
+        public void FreeRnnDataDesc(long h)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_RNN_DATA_DESC, new double[] { h });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_RNN_DATA_DESC, new float[] { h });
+        }
+
+        /// <summary>
+        /// Sets the RNN Data Descriptor values.
+        /// </summary>
+        /// <param name="hRnnDataDesc">Specifies the handle to the RNN descriptor created with CreateRnnDesc</param>
+        /// <param name="layout">Specifies the input data layout (either SEQUENCE major or BATCH major).</param>
+        /// <param name="nMaxSeqLen">Specifies the maximum sequence length.</param>
+        /// <param name="nBatchSize">Specifies the batch count.</param>
+        /// <param name="nVectorSize">Specifies the input vector count.</param>
+        /// <param name="rgSeqLen">Specifies the sequence lengths.</param>
+        public void SetRnnDataDesc(long hRnnDataDesc, RNN_DATALAYOUT layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int[] rgSeqLen)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                List<double> rgArg = new List<double>() { hRnnDataDesc, (double)layout, nMaxSeqLen, nBatchSize, nVectorSize };
+
+                for (int i = 0; i < rgSeqLen.Length; i++)
+                {
+                    rgArg.Add(rgSeqLen[i]);
+                }
+
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_RNN_DATA_DESC, rgArg.ToArray());
+            }
+            else
+            {
+                List<float> rgArg = new List<float>() { hRnnDataDesc, (float)layout, nMaxSeqLen, nBatchSize, nVectorSize };
+
+                for (int i = 0; i < rgSeqLen.Length; i++)
+                {
+                    rgArg.Add(rgSeqLen[i]);
+                }
+
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_RNN_DATA_DESC, rgArg.ToArray());
+            }
+        }
+
+
+        /// <summary>
+        /// Create the RNN Descriptor.
+        /// </summary>
+        /// <returns>A handle to the RNN descriptor is returned.</returns>
+        public long CreateRnnDesc()
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CREATE_RNN_DESC, null);
+                return (long)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CREATE_RNN_DESC, null);
+                return (long)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Free an existing RNN descriptor.
+        /// </summary>
+        /// <param name="h">Specifies the handle to the RNN descriptor created with CreateRnnDesc</param>
+        public void FreeRnnDesc(long h)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_RNN_DESC, new double[] { h });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_RNN_DESC, new float[] { h });
+        }
+
+        /// <summary>
+        /// Sets the RNN Descriptor values.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="hRnnDesc">Specifies the handle to the RNN descriptor created with CreateRnnDesc</param>
+        /// <param name="nHiddenCount">Specifies the hidden input (typically the input) count.</param>
+        /// <param name="nNumLayers">Specifies the number of layers.</param>
+        /// <param name="hDropoutDesc">Specifies the handle to the Droput descriptor (or 0 to ignore).  The droput descriptor is only used with two or more layers.</param>
+        /// <param name="mode">Specifies the RNN_MODE (LSTM, RNN_RELU, RNN_TANH) to use.</param>
+        public void SetRnnDesc(long hCuDnn, long hRnnDesc, int nHiddenCount, int nNumLayers, long hDropoutDesc, RNN_MODE mode)
+        {           
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_RNN_DESC, new double[] { hCuDnn, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (int)mode });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_RNN_DESC, new float[] { hCuDnn, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (int)mode });
+        }
+
+        /// <summary>
+        /// Returns the RNN parameter count.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="hRnnDesc">Specifies the handle to the RNN descriptor created with CreateRnnDesc</param>
+        /// <param name="hXDesc">Specifies the handle to the first X descriptor.</param>
+        /// <returns>The number of parameters (weights) is returned.</returns>
+        public int GetRnnParamCount(long hCuDnn, long hRnnDesc, long hXDesc)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_RNN_PARAMCOUNT, new double[] { hCuDnn, hRnnDesc, hXDesc });
+                return (int)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_RNN_PARAMCOUNT, new float[] { hCuDnn, hRnnDesc, hXDesc });
+                return (int)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Returns the workspace and reserved counts.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="hRnnDesc">Specifies the handle to the RNN descriptor created with CreateRnnDesc</param>
+        /// <param name="nSeqLen">Specifies the sequence length.</param>
+        /// <param name="rghXDesc">Specifies an array of descriptors for each value within the sequence.</param>
+        /// <param name="nReservedCount">Returns the reserved count needed.</param>
+        /// <returns>Returns the workspace count needed.</returns>
+        public int GetRnnWorkspaceCount(long hCuDnn, long hRnnDesc, int nSeqLen, long[] rghXDesc, out int nReservedCount)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                List<double> rgArg = new List<double>() { hCuDnn, hRnnDesc, nSeqLen };
+
+                for (int i = 0; i < rghXDesc.Length; i++)
+                {
+                    rgArg.Add(rghXDesc[i]);
+                }
+
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_RNN_WORKSPACECOUNT, rgArg.ToArray());
+                nReservedCount = (int)rg[1];
+                return (int)rg[0];
+            }
+            else
+            {
+                List<float> rgArg = new List<float>() { hCuDnn, hRnnDesc, nSeqLen };
+
+                for (int i = 0; i < rghXDesc.Length; i++)
+                {
+                    rgArg.Add(rghXDesc[i]);
+                }
+
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_RNN_WORKSPACECOUNT, rgArg.ToArray());
+                nReservedCount = (int)rg[1];
+                return (int)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Returns the linear layer parameters (weights).
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="hRnnDesc">Specifies the handle to the RNN descriptor created with CreateRnnDesc</param>
+        /// <param name="nLayer">Specifies the current layer index.</param>
+        /// <param name="hXDesc">Specifies the input data elelement descriptor.</param>
+        /// <param name="hWtDesc">Specifies the weight descriptor.</param>
+        /// <param name="hWtData">Specifies the weight memory containing all weights.</param>
+        /// <param name="nLinLayer">Specifies the linear layer index (e.g. LSTM has 8 linear layers, RNN has 2)</param>
+        /// <param name="nWtCount">Returns the number of weight items.</param>
+        /// <param name="hWt">Returns a handle to the weight GPU memory.</param>
+        /// <param name="nBiasCount">Returns the number of bias items.</param>
+        /// <param name="hBias">Returns a handle to the bias GPU memory.</param>
+        public void GetRnnLinLayerParams(long hCuDnn, long hRnnDesc, int nLayer, long hXDesc, long hWtDesc, long hWtData, int nLinLayer, out int nWtCount, out long hWt, out int nBiasCount, out long hBias)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_RNN_LINLAYERPARAMS, new double[] { hCuDnn, hRnnDesc, nLayer, hXDesc, hWtDesc, hWtData, nLinLayer });
+                nWtCount = (int)rg[0];
+                hWt = (long)rg[1];
+                nBiasCount = (int)rg[2];
+                hBias = (long)rg[3];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_RNN_LINLAYERPARAMS, new float[] { hCuDnn, hRnnDesc, nLayer, hXDesc, hWtDesc, hWtData, nLinLayer });
+                nWtCount = (int)rg[0];
+                hWt = (long)rg[1];
+                nBiasCount = (int)rg[2];
+                hBias = (long)rg[3];
+            }
+        }
+
+        /// <summary>
+        /// Run the RNN through a forward pass.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="hRnnDesc">Specifies the handle to the RNN descriptor created with CreateRnnDesc</param>
+        /// <param name="hXDesc">Specifies a handle to the input data descriptor.</param>
+        /// <param name="hXData">Specifies a handle to the input GPU data.</param>
+        /// <param name="hHxDesc">Specifies a handle to the hidden data descriptor.</param>
+        /// <param name="hHxData">Specifies a handle to the hidden GPU data.</param>
+        /// <param name="hCxDesc">Specifies a handle to the cont data descriptor.</param>
+        /// <param name="hCxData">Specifies a handle to the cont GPU data.</param>
+        /// <param name="hWtDesc">Specifies a handle to the weight descriptor.</param>
+        /// <param name="hWtData">Specifies a handle to the weight data.</param>
+        /// <param name="hYDesc">Specifies a handle to the output data descriptor.</param>
+        /// <param name="hYData">Specifies a handle to the output GPU data.</param>
+        /// <param name="hHyDesc">Specifies a handle to the output hidden descriptor.</param>
+        /// <param name="hHyData">Specifies a handle to the output hidden data.</param>
+        /// <param name="hCyDesc">Specifies a handle to the output cont descriptor.</param>
+        /// <param name="hCyData">Specifies a handle to the output cont data.</param>
+        /// <param name="hWorkspace">Specifies a handle to the workspace GPU memory.</param>
+        /// <param name="nWsCount">Specifies the number of items within the workspace.</param>
+        /// <param name="hReserved">Specifies a handle to the reserved GPU memory.</param>
+        /// <param name="nResCount">Specifies the number of items within the reserved memory.</param>
+        /// <param name="bTraining">Specifies the whether the forward pass is during taining or not.</param>
+        public void RnnForward(long hCuDnn, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, int nWsCount, long hReserved, int nResCount, bool bTraining)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                List<double> rgArg = new List<double>() { hCuDnn, hRnnDesc };
+
+                rgArg.Add(hXDesc);
+                rgArg.Add(hXData);
+
+                rgArg.Add(hHxDesc);
+                rgArg.Add(hHxData);
+                rgArg.Add(hCxDesc);
+                rgArg.Add(hCxData);
+
+                rgArg.Add(hWtDesc);
+                rgArg.Add(hWtData);
+
+                rgArg.Add(hYDesc);
+                rgArg.Add(hYData);
+
+                rgArg.Add(hHyDesc);
+                rgArg.Add(hHyData);
+                rgArg.Add(hCyDesc);
+                rgArg.Add(hCyData);
+
+                rgArg.Add(hWorkspace);
+                rgArg.Add(nWsCount);
+                rgArg.Add(hReserved);
+                rgArg.Add(nResCount);
+                rgArg.Add((bTraining) ? 1 : 0);
+
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FWD_RNN, rgArg.ToArray());
+            }
+            else
+            {
+                List<float> rgArg = new List<float>() { hCuDnn, hRnnDesc };
+
+                rgArg.Add(hXDesc);
+                rgArg.Add(hXData);
+
+                rgArg.Add(hHxDesc);
+                rgArg.Add(hHxData);
+                rgArg.Add(hCxDesc);
+                rgArg.Add(hCxData);
+
+                rgArg.Add(hWtDesc);
+                rgArg.Add(hWtData);
+
+                rgArg.Add(hYDesc);
+                rgArg.Add(hYData);
+
+                rgArg.Add(hHyDesc);
+                rgArg.Add(hHyData);
+                rgArg.Add(hCyDesc);
+                rgArg.Add(hCyData);
+
+                rgArg.Add(hWorkspace);
+                rgArg.Add(nWsCount);
+                rgArg.Add(hReserved);
+                rgArg.Add(nResCount);
+                rgArg.Add((bTraining) ? 1 : 0);
+
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FWD_RNN, rgArg.ToArray());
+            }
+        }
+
+        /// <summary>
+        /// Run the RNN backward pass through the data.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="hRnnDesc">Specifies the handle to the RNN descriptor created with CreateRnnDesc</param>
+        /// <param name="hYDesc">Specifies a handle to the output data descriptor.</param>
+        /// <param name="hYData">Specifies a handle to the output GPU data.</param>
+        /// <param name="hYDiff">Specifies a handle to the output GPU gradients.</param>
+        /// <param name="hHyDesc">Specifies a handle to the output hidden descriptor.</param>
+        /// <param name="hHyDiff">Specifies a handle to the output hidden gradients.</param>
+        /// <param name="hCyDesc">Specifies a handle to the output cont descriptor.</param>
+        /// <param name="hCyDiff">Specifies a handle to the output cont gradients.</param>
+        /// <param name="hWtDesc">Specifies a handle to the weight descriptor.</param>
+        /// <param name="hWtData">Specifies a handle to the weight data.</param>
+        /// <param name="hHxDesc">Specifies a handle to the hidden data descriptor.</param>
+        /// <param name="hHxData">Specifies a handle to the hidden GPU data.</param>
+        /// <param name="hCxDesc">Specifies a handle to the cont data descriptor.</param>
+        /// <param name="hCxData">Specifies a handle to the cont GPU data.</param>
+        /// <param name="hXDesc">Specifies a handle to the input data descriptor.</param>
+        /// <param name="hXDiff">Specifies a handle to the input GPU gradients.</param>
+        /// <param name="hdHxDesc">Specifies a handle to the input hidden descriptor for the gradients.</param>
+        /// <param name="hHxDiff">Specifis a handle to the input hidden GPU gradients.</param>
+        /// <param name="hdCxDesc">Specifies a handle to the input cont descriptor of the gradients.</param>
+        /// <param name="hCxDiff">Specifies a handle to the input cont GPU gradients.</param>
+        /// <param name="hWorkspace">Specifies a handle to the workspace GPU memory.</param>
+        /// <param name="nWsCount">Specifies the number of items within the workspace.</param>
+        /// <param name="hReserved">Specifies a handle to the reserved GPU memory.</param>
+        /// <param name="nResCount">Specifies the number of items within the reserved memory.</param>
+        public void RnnBackwardData(long hCuDnn, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, int nWsCount, long hReserved, int nResCount)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                List<double> rgArg = new List<double>() { hCuDnn, hRnnDesc };
+
+                rgArg.Add(hYDesc);
+                rgArg.Add(hYData);
+                rgArg.Add(hYDiff);
+
+                rgArg.Add(hHxDesc);
+                rgArg.Add(hHxDiff);
+                rgArg.Add(hCxDesc);
+                rgArg.Add(hCxDiff);
+
+                rgArg.Add(hWtDesc);
+                rgArg.Add(hWtData);
+
+                rgArg.Add(hHxDesc);
+                rgArg.Add(hHxData);
+                rgArg.Add(hCxDesc);
+                rgArg.Add(hCxData);
+
+                rgArg.Add(hXDesc);
+                rgArg.Add(hXDiff);
+
+                rgArg.Add(hdHxDesc);
+                rgArg.Add(hHxDiff);
+                rgArg.Add(hdCxDesc);
+                rgArg.Add(hCxDiff);
+
+                rgArg.Add(hWorkspace);
+                rgArg.Add(nWsCount);
+                rgArg.Add(hReserved);
+                rgArg.Add(nResCount);
+
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_RNN_DATA, rgArg.ToArray());
+            }
+            else
+            {
+                List<float> rgArg = new List<float>() { hCuDnn, hRnnDesc };
+
+                rgArg.Add(hYDesc);
+                rgArg.Add(hYData);
+                rgArg.Add(hYDiff);
+
+                rgArg.Add(hHxDesc);
+                rgArg.Add(hHxDiff);
+                rgArg.Add(hCxDesc);
+                rgArg.Add(hCxDiff);
+
+                rgArg.Add(hWtDesc);
+                rgArg.Add(hWtData);
+
+                rgArg.Add(hHxDesc);
+                rgArg.Add(hHxData);
+                rgArg.Add(hCxDesc);
+                rgArg.Add(hCxData);
+
+                rgArg.Add(hXDesc);
+                rgArg.Add(hXDiff);
+
+                rgArg.Add(hdHxDesc);
+                rgArg.Add(hHxDiff);
+                rgArg.Add(hdCxDesc);
+                rgArg.Add(hCxDiff);
+
+                rgArg.Add(hWorkspace);
+                rgArg.Add(nWsCount);
+                rgArg.Add(hReserved);
+                rgArg.Add(nResCount);
+
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_RNN_DATA, rgArg.ToArray());
+            }
+        }
+
+        /// <summary>
+        /// Run the RNN backward pass on the weights.
+        /// </summary>
+        /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
+        /// <param name="hRnnDesc">Specifies the handle to the RNN descriptor created with CreateRnnDesc</param>
+        /// <param name="hXDesc">Specifies a handle to the input data descriptor.</param>
+        /// <param name="hXData">Specifies a handle to the input GPU data.</param>
+        /// <param name="hHxDesc">Specifies a handle to the hidden data descriptor.</param>
+        /// <param name="hHxData">Specifies a handle to the hidden GPU data.</param>
+        /// <param name="hYDesc">Specifies a handle to the output data descriptor.</param>
+        /// <param name="hYData">Specifies a handle to the output GPU data.</param>
+        /// <param name="hWorkspace">Specifies a handle to the workspace GPU memory.</param>
+        /// <param name="nWsCount">Specifies the number of items within the workspace.</param>
+        /// <param name="hWtDesc">Specifies a handle to the weight descriptor.</param>
+        /// <param name="hWtDiff">Specifies a handle to the weight gradients.</param>
+        /// <param name="hReserved">Specifies a handle to the reserved GPU memory.</param>
+        /// <param name="nResCount">Specifies the number of items within the reserved memory.</param>
+        public void RnnBackwardWeights(long hCuDnn, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, int nWsCount, long hWtDesc, long hWtDiff, long hReserved, int nResCount)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                List<double> rgArg = new List<double>() { hCuDnn, hRnnDesc };
+
+                rgArg.Add(hXDesc);
+                rgArg.Add(hXData);
+
+                rgArg.Add(hHxDesc);
+                rgArg.Add(hHxData);
+
+                rgArg.Add(hYDesc);
+                rgArg.Add(hYData);
+
+                rgArg.Add(hWorkspace);
+                rgArg.Add(nWsCount);
+                rgArg.Add(hReserved);
+                rgArg.Add(nResCount);
+
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_RNN_WTS, rgArg.ToArray());
+            }
+            else
+            {
+                List<float> rgArg = new List<float>() { hCuDnn, hRnnDesc };
+
+                rgArg.Add(hXDesc);
+                rgArg.Add(hXData);
+
+                rgArg.Add(hHxDesc);
+                rgArg.Add(hHxData);
+
+                rgArg.Add(hYDesc);
+                rgArg.Add(hYData);
+
+                rgArg.Add(hWorkspace);
+                rgArg.Add(nWsCount);
+                rgArg.Add(hReserved);
+                rgArg.Add(nResCount);
+
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_RNN_WTS, rgArg.ToArray());
+            }
+        }
+
 
         /// <summary>
         /// Allocates the GPU memory for the PCA Data.

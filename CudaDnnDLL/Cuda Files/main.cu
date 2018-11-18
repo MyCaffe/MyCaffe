@@ -170,6 +170,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDNN_FN_SET_TENSORDESC:
 			return m_device.SetTensorDesc(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDNN_FN_SET_TENSORNDDESC:
+			return m_device.SetTensorNdDesc(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDNN_FN_ADD_TENSOR:
 			return m_device.AddTensor(lCount, pfInput, plCount, ppfOutput);
 
@@ -181,6 +184,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 
 		case CUDNN_FN_SET_FILTERDESC:	
 			return m_device.SetFilterDesc(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_SET_FILTERNDDESC:
+			return m_device.SetFilterNdDesc(lCount, pfInput, plCount, ppfOutput);
 
 		case CUDNN_FN_CREATE_CONVDESC:
 			return m_device.CreateConvolutionDesc(lCount, pfInput, plCount, ppfOutput);
@@ -286,6 +292,42 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 
 		case CUDNN_FN_SOFTMAX_BWD:	
 			return m_device.SoftmaxBackward(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_CREATE_RNN_DATA_DESC:
+			return m_device.CreateRnnDataDesc(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_FREE_RNN_DATA_DESC:
+			return m_device.FreeRnnDataDesc(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_SET_RNN_DATA_DESC:
+			return m_device.SetRnnDataDesc(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_CREATE_RNN_DESC:
+			return m_device.CreateRnnDesc(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_FREE_RNN_DESC:
+			return m_device.FreeRnnDesc(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_SET_RNN_DESC:
+			return m_device.SetRnnDesc(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_GET_RNN_PARAMCOUNT:
+			return m_device.GetRnnParamCount(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_GET_RNN_WORKSPACECOUNT:
+			return m_device.GetRnnWorkspaceCount(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_GET_RNN_LINLAYERPARAMS:
+			return m_device.GetRnnLinLayerParams(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_RNN_FWD:
+			return m_device.RnnForward(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_RNN_BWD_DATA:
+			return m_device.RnnBackwardData(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_RNN_BWD_WTS:
+			return m_device.RnnBackwardWeights(lCount, pfInput, plCount, ppfOutput);
 
 		case CUDNN_FN_LRN_CC_FWD:
 			return m_device.LRNForwardCC(lCount, pfInput, plCount, ppfOutput);
@@ -1028,6 +1070,42 @@ char* GetApiName(long lfnIdx)
 
 	case CUDNN_FN_SOFTMAX_BWD:
 		return "CUDNN_FN_SOFTMAX_BWD";
+
+	case CUDNN_FN_CREATE_RNN_DATA_DESC:
+		return "CUDNN_FN_CREATE_RNN_DATA_DESC";
+
+	case CUDNN_FN_FREE_RNN_DATA_DESC:
+		return "CUDNN_FN_FREE_RNN_DATA_DESC";
+
+	case CUDNN_FN_SET_RNN_DATA_DESC:
+		return "CUDNN_FN_SET_RNN_DATA_DESC";
+
+	case CUDNN_FN_CREATE_RNN_DESC:
+		return "CUDNN_FN_CREATE_RNN_DESC";
+
+	case CUDNN_FN_FREE_RNN_DESC:
+		return "CUDNN_FN_FREE_RNN_DESC";
+
+	case CUDNN_FN_SET_RNN_DESC:
+		return "CUDNN_FN_SET_RNN_DESC";
+
+	case CUDNN_FN_GET_RNN_PARAMCOUNT:
+		return "CUDNN_FN_GET_RNN_PARAMCOUNT";
+
+	case CUDNN_FN_GET_RNN_WORKSPACECOUNT:
+		return "CUDNN_FN_GET_RNN_WORKSPACECOUNT";
+
+	case CUDNN_FN_GET_RNN_LINLAYERPARAMS:
+		return "CUDNN_FN_GET_RNN_LINLAYERPARAMS";
+
+	case CUDNN_FN_RNN_FWD:
+		return "CUDNN_FN_RNN_FWD";
+
+	case CUDNN_FN_RNN_BWD_DATA:
+		return "CUDNN_FN_RNN_BWD_DATA";
+
+	case CUDNN_FN_RNN_BWD_WTS:
+		return "CUDNN_FN_RNN_BWD_WTS";
 
 	case CUDNN_FN_LRN_CC_FWD:
 		return "CUDNN_FN_LRN_CC_FWD";

@@ -11,7 +11,7 @@
 //=============================================================================
 
 template <class T>
-Memory<T>::Memory() : m_memory(), m_memoryPointers(), m_hostbuffers(), m_streams(), m_tensorDesc(), m_filterDesc(), m_convDesc(), m_poolDesc(), m_lrnDesc(), m_cudnn(), m_pca(), m_tsnegp(), m_tsneg(), m_memtest(), m_nccl()
+Memory<T>::Memory() : m_memory(), m_memoryPointers(), m_hostbuffers(), m_streams(), m_tensorDesc(), m_filterDesc(), m_convDesc(), m_poolDesc(), m_rnnDesc(), m_rnnDataDesc(), m_lrnDesc(), m_cudnn(), m_pca(), m_tsnegp(), m_tsneg(), m_memtest(), m_nccl()
 {
 	m_memory.SetMemoryPointers(&m_memoryPointers);
 
@@ -65,6 +65,16 @@ Memory<T>::~Memory()
 	for (int i=0; i<m_poolDesc.GetCount(); i++)
 	{
 		FreePoolingDesc(i);
+	}
+
+	for (int i = 0; i < m_rnnDesc.GetCount(); i++)
+	{
+		FreeRnnDesc(i);
+	}
+
+	for (int i = 0; i < m_rnnDataDesc.GetCount(); i++)
+	{
+		FreeRnnDataDesc(i);
 	}
 
 	for (int i=0; i<m_lrnDesc.GetCount(); i++)
@@ -1903,6 +1913,503 @@ template long Memory<double>::SoftmaxBackward(long hHandle, double dfAlpha, long
 template long Memory<float>::SoftmaxBackward(long hHandle, float fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, float fBeta, long hBottomDiffDesc, long hBottomDiff);
 
 
+template <class T>
+long Memory<T>::CreateRnnDataDesc(long* phHandle)
+{
+	LONG lErr;
+	cudnnRNNDataDescriptor_t desc = NULL;
 
+	if (phHandle == NULL)
+		return ERROR_PARAM_NULL;
+
+	if (lErr = cudnnCreateRNNDataDescriptor(&desc))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	long hHandle = m_rnnDataDesc.Allocate(desc);
+	if (hHandle < 0)
+	{
+		cudnnDestroyRNNDataDescriptor(desc);
+		return ERROR_MEMORY_OUT;
+	}
+
+	*phHandle = hHandle;
+	return 0;
+}
+
+template long Memory<double>::CreateRnnDataDesc(long* phHandle);
+template long Memory<float>::CreateRnnDataDesc(long* phHandle);
+
+
+template <class T>
+long Memory<T>::CreateRnnDesc(long* phHandle)
+{
+	LONG lErr;
+	cudnnRNNDescriptor_t desc = NULL;
+
+	if (phHandle == NULL)
+		return ERROR_PARAM_NULL;
+
+	if (lErr = cudnnCreateRNNDescriptor(&desc))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	long hHandle = m_rnnDesc.Allocate(desc);
+	if (hHandle < 0)
+	{
+		cudnnDestroyRNNDescriptor(desc);
+		return ERROR_MEMORY_OUT;
+	}
+
+	*phHandle = hHandle;
+	return 0;
+}
+
+template long Memory<double>::CreateRnnDesc(long* phHandle);
+template long Memory<float>::CreateRnnDesc(long* phHandle);
+
+
+template <class T>
+long Memory<T>::GetRnnParamCount(long hHandle, long hRnnDesc, long hXDesc, int* pnCount)
+{
+	LONG lErr;
+	cudnnHandle_t cudnn = GetCuDNN(hHandle);
+	cudnnRNNDescriptor_t desc = (cudnnRNNDescriptor_t)m_rnnDesc.GetData(hRnnDesc);
+	cudnnTensorDescriptor_t descX = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hXDesc);
+	cudnnDataType_t type = (sizeof(T) == 4) ? CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
+
+	if (pnCount == NULL)
+		return ERROR_PARAM_NULL;
+
+	size_t sizeInBytes;
+	if (lErr = cudnnGetRNNParamsSize(cudnn, desc, descX, &sizeInBytes, type))
+		return lErr;
+
+	int nCount = (int)((long)sizeInBytes / sizeof(T));
+	*pnCount = nCount;
+
+	return 0;
+}
+
+template long Memory<double>::GetRnnParamCount(long hHandle, long hRnnDesc, long hXDesc, int* pnCount);
+template long Memory<float>::GetRnnParamCount(long hHandle, long hRnnDesc, long hXDesc, int* pnCount);
+
+
+template <class T>
+long Memory<T>::GetRnnWorkspaceCount(long hHandle, long hRnnDesc, int nSeqLen, long* rghXDesc, int* pnWsCount, int* pnResCount)
+{
+	LONG lErr;
+	cudnnHandle_t cudnn = GetCuDNN(hHandle);
+	cudnnRNNDescriptor_t desc = (cudnnRNNDescriptor_t)m_rnnDesc.GetData(hRnnDesc);
+	cudnnDataType_t type = (sizeof(T) == 4) ? CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
+
+	if (pnWsCount == NULL || pnResCount == NULL)
+		return ERROR_PARAM_NULL;
+
+	cudnnTensorDescriptor_t* rgDescX = (cudnnTensorDescriptor_t*)malloc(sizeof(cudnnTensorDescriptor_t) * nSeqLen);
+	if (rgDescX == NULL)
+		return ERROR_OUTOFMEMORY;
+
+	for (int i = 0; i < nSeqLen; i++)
+	{
+		rgDescX[i] = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(rghXDesc[i]);
+	}
+
+	size_t sizeInBytes;
+	if (lErr = cudnnGetRNNWorkspaceSize(cudnn, desc, nSeqLen, rgDescX, &sizeInBytes))
+	{
+		free(rgDescX);
+		return lErr;
+	}
+
+	int nWsCount = (int)((long)sizeInBytes / sizeof(T)) + 1;
+
+	if (lErr = cudnnGetRNNTrainingReserveSize(cudnn, desc, nSeqLen, rgDescX, &sizeInBytes))
+	{
+		free(rgDescX);
+		return lErr;
+	}
+
+	int nResCount = (int)((long)sizeInBytes / sizeof(T)) + 1;
+
+	*pnWsCount = nWsCount;
+	*pnResCount = nResCount;
+
+	free(rgDescX);
+
+	return 0;
+}
+
+template long Memory<double>::GetRnnWorkspaceCount(long hHandle, long hRnnDesc, int nSeqLen, long* rghXDesc, int* pnWsCount, int* pnResCount);
+template long Memory<float>::GetRnnWorkspaceCount(long hHandle, long hRnnDesc, int nSeqLen, long* rghXDesc, int* pnWsCount, int* pnResCount);
+
+
+template <class T>
+long Memory<T>::GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, long hXDesc, long hWtDesc, long hWtData, int nLinLayer, int* pnWtCount, long* phWt, int* pnBiasCount, long* phBias)
+{
+	LONG lErr;
+	cudnnHandle_t cudnn = GetCuDNN(hHandle);
+	cudnnRNNDescriptor_t desc = (cudnnRNNDescriptor_t)m_rnnDesc.GetData(hRnnDesc);
+	cudnnTensorDescriptor_t descX = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hXDesc);
+	cudnnFilterDescriptor_t descWt = (cudnnFilterDescriptor_t)m_filterDesc.GetData(hWtDesc);
+	MemoryItem* pWtData;
+
+	if (lErr = m_memory.GetData(hWtData, &pWtData))
+		return lErr;
+
+	if (pnWtCount == NULL || phWt == NULL || pnBiasCount == NULL || phBias == NULL)
+		return ERROR_PARAM_NULL;
+
+	// Get the Weight Counts
+	cudnnFilterDescriptor_t filterWts;
+	if (lErr = cudnnCreateFilterDescriptor(&filterWts))
+		return lErr;
+
+	void* pWtDevMem;
+	if (lErr = cudnnGetRNNLinLayerMatrixParams(cudnn, desc, nLayer, descX, descWt, pWtData->Data(), nLinLayer, filterWts, &pWtDevMem))
+	{
+		cudnnDestroyFilterDescriptor(filterWts);
+		return lErr;
+	}
+
+	cudnnDataType_t type;
+	cudnnTensorFormat_t fmt;
+	int nbDims;
+	int rgDimA[3];
+
+	if (lErr = cudnnGetFilterNdDescriptor(filterWts, 3, &type, &fmt, &nbDims, rgDimA))
+	{
+		cudnnDestroyFilterDescriptor(filterWts);
+		return lErr;
+	}
+
+	int nWtCount = rgDimA[0] * rgDimA[1] * rgDimA[2];
+
+	cudnnDestroyFilterDescriptor(filterWts);
+
+
+	// Get the Bias Counts
+	cudnnFilterDescriptor_t filterBias;
+	if (lErr = cudnnCreateFilterDescriptor(&filterBias))
+		return lErr;
+
+	void* pBiasDevMem;
+	if (lErr = cudnnGetRNNLinLayerBiasParams(cudnn, desc, nLayer, descX, descWt, pWtData->Data(), nLinLayer, filterBias, &pBiasDevMem))
+	{
+		cudnnDestroyFilterDescriptor(filterBias);
+		return lErr;
+	}
+
+	if (lErr = cudnnGetFilterNdDescriptor(filterBias, 3, &type, &fmt, &nbDims, rgDimA))
+	{
+		cudnnDestroyFilterDescriptor(filterBias);
+		return lErr;
+	}
+
+	int nBiasCount = rgDimA[0] * rgDimA[1] * rgDimA[2];
+
+	cudnnDestroyFilterDescriptor(filterBias);
+
+	
+	// Create the memory pointer handles.
+	long hWtMemPtr;
+	long lWtSize = nWtCount * sizeof(T);
+	if (lErr = m_memoryPointers.Allocate(pWtData->DeviceID(), pWtDevMem, lWtSize, &hWtMemPtr))
+		return lErr;
+
+	long hBiasMemPtr;
+	long lBiasSize = nBiasCount * sizeof(T);
+	if (lErr = m_memoryPointers.Allocate(pWtData->DeviceID(), pBiasDevMem, lBiasSize, &hBiasMemPtr))
+		return lErr;
+
+	*pnWtCount = nWtCount;
+	*phWt = hWtMemPtr;
+	*pnBiasCount = nBiasCount;
+	*phBias = hBiasMemPtr;
+
+	return 0;
+}
+
+template long Memory<double>::GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, long hXDesc, long hWtDesc, long hWtData, int nLinLayer, int* pnWtCount, long* phWt, int* pnBiasCount, long* phBias);
+template long Memory<float>::GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, long hXDesc, long hWtDesc, long hWtData, int nLinLayer, int* pnWtCount, long* phWt, int* pnBiasCount, long* phBias);
+
+
+template <class T>
+long Memory<T>::RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspaceData, int nWsCount, long hReservedData, int nResCount, bool bTraining)
+{
+	LONG lErr;
+	cudnnHandle_t cudnn = GetCuDNN(hHandle);
+	cudnnRNNDescriptor_t desc = (cudnnRNNDescriptor_t)m_rnnDesc.GetData(hRnnDesc);
+	cudnnRNNDataDescriptor_t descX = (cudnnRNNDataDescriptor_t)m_rnnDataDesc.GetData(hXDesc);
+	cudnnRNNDataDescriptor_t descY = (cudnnRNNDataDescriptor_t)m_rnnDataDesc.GetData(hYDesc);
+	cudnnTensorDescriptor_t descHx = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hHxDesc);
+	cudnnTensorDescriptor_t descCx = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hCxDesc);
+	cudnnFilterDescriptor_t descWt = (cudnnFilterDescriptor_t)m_filterDesc.GetData(hWtDesc);
+	cudnnTensorDescriptor_t descHy = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hHyDesc);
+	cudnnTensorDescriptor_t descCy = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hCyDesc);
+	MemoryItem* pXData;
+	MemoryItem* pHxData;
+	MemoryItem* pCxData;
+	MemoryItem* pWtData;
+	MemoryItem* pYData;
+	MemoryItem* pHyData;
+	MemoryItem* pCyData;
+	MemoryItem* pWorkspaceData;
+	MemoryItem* pReservedData;
+
+	if (lErr = m_memory.GetData(hXData, &pXData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hHxData, &pHxData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hCxData, &pCxData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hWtData, &pWtData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hYData, &pYData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hHyData, &pHyData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hCyData, &pCyData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hWorkspaceData, &pWorkspaceData))
+		return lErr;
+
+	if (bTraining)
+	{
+		if (lErr = m_memory.GetData(hReservedData, &pReservedData))
+			return lErr;
+	}
+
+	if (bTraining)
+	{
+		lErr = cudnnRNNForwardInferenceEx(cudnn,
+										desc,
+										descX,
+										pXData->Data(),
+										descHx,
+										pHxData->Data(),
+										descCx,
+										pCxData->Data(),
+										descWt,
+										pWtData->Data(),
+										descY,
+										pYData->Data(),
+										descHy,
+										pHyData->Data(),
+										descCy,
+										pCyData->Data(),
+			                            NULL,
+			                            NULL,
+			                            NULL,
+			                            NULL,
+			                            NULL,
+			                            NULL,
+			                            NULL,
+			                            NULL,
+										pWorkspaceData->Data(),
+										pWorkspaceData->Size());
+	}
+	else
+	{
+		lErr = cudnnRNNForwardTrainingEx(cudnn,
+										desc,
+										descX,
+										pXData->Data(),
+										descHx,
+										pHxData->Data(),
+										descCx,
+										pCxData->Data(),
+										descWt,
+										pWtData->Data(),
+										descY,
+										pYData->Data(),
+										descHy,
+										pHyData->Data(),
+										descCy,
+										pCyData->Data(),
+										NULL,
+										NULL,
+										NULL,
+										NULL,
+										NULL,
+										NULL,
+										NULL,
+										NULL,
+										pWorkspaceData->Data(),
+										pWorkspaceData->Size(),
+										pReservedData->Data(),
+										pReservedData->Size());
+
+	}
+
+	return lErr;
+}
+
+template long Memory<double>::RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, int nWsCount, long hReserved, int nResCount, bool bTraining);
+template long Memory<float>::RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, int nWsCount, long hReserved, int nResCount, bool bTraining);
+
+
+template <class T>
+long Memory<T>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspaceData, int nWsCount, long hReservedData, int nResCount)
+{
+	LONG lErr;
+	cudnnHandle_t cudnn = GetCuDNN(hHandle);
+	cudnnRNNDescriptor_t desc = (cudnnRNNDescriptor_t)m_rnnDesc.GetData(hRnnDesc);
+	cudnnRNNDataDescriptor_t descX = (cudnnRNNDataDescriptor_t)m_rnnDataDesc.GetData(hXDesc);
+	cudnnRNNDataDescriptor_t descY = (cudnnRNNDataDescriptor_t)m_rnnDataDesc.GetData(hYDesc);
+	cudnnTensorDescriptor_t descHy = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hHyDesc);
+	cudnnTensorDescriptor_t descCy = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hCyDesc);
+	cudnnFilterDescriptor_t descWt = (cudnnFilterDescriptor_t)m_tensorDesc.GetData(hWtDesc);
+	cudnnTensorDescriptor_t descHx = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hHxDesc);
+	cudnnTensorDescriptor_t descCx = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hCxDesc);
+	cudnnTensorDescriptor_t descHxd = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hdHxDesc);
+	cudnnTensorDescriptor_t descCxd = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hdCxDesc);
+	MemoryItem* pYData;
+	MemoryItem* pYDiff;
+	MemoryItem* pHyDiff;
+	MemoryItem* pCyDiff;
+	MemoryItem* pWtData;
+	MemoryItem* pHxData;
+	MemoryItem* pCxData;
+	MemoryItem* pXDiff;
+	MemoryItem* pHxDiff;
+	MemoryItem* pCxDiff;
+	MemoryItem* pWorkspaceData;
+	MemoryItem* pReservedData;
+
+	if (lErr = m_memory.GetData(hYData, &pYData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hYDiff, &pYDiff))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hHyDiff, &pHyDiff))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hCyDiff, &pCyDiff))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hWtData, &pWtData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hHxData, &pHxData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hCxData, &pCxData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hXDiff, &pXDiff))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hHxDiff, &pHxDiff))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hCxDiff, &pCxDiff))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hWorkspaceData, &pWorkspaceData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hReservedData, &pReservedData))
+		return lErr;
+
+	lErr = cudnnRNNBackwardDataEx(cudnn,
+								desc,
+								descY,
+								pYData->Data(),
+								descY,
+								pYDiff->Data(),
+		                        NULL,
+		                        NULL,
+								descHy,
+								pHyDiff->Data(),
+								descCy,
+								pCyDiff->Data(),
+								descWt,
+								pWtData->Data(),
+								descHx,
+								pHxData->Data(),
+								descCx,
+								pCxData->Data(),
+								descX,
+								pXDiff->Data(),
+								descHxd,
+								pHxDiff->Data(),
+								descCxd,
+								pCxDiff->Data(),
+		                        NULL,
+		                        NULL,
+								pWorkspaceData->Data(),
+								pWorkspaceData->Size(),
+								pReservedData->Data(),
+								pReservedData->Size());
+
+	return lErr;
+}
+
+template long Memory<double>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, int nWsCount, long hReserved, int nResCount);
+template long Memory<float>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, int nWsCount, long hReserved, int nResCount);
+
+
+template <class T>
+long Memory<T>::RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspaceData, int nWsCount, long hWtDesc, long hWtDiff, long hReservedData, int nResCount)
+{
+	LONG lErr;
+	cudnnHandle_t cudnn = GetCuDNN(hHandle);
+	cudnnRNNDescriptor_t desc = (cudnnRNNDescriptor_t)m_rnnDesc.GetData(hRnnDesc);
+	cudnnRNNDataDescriptor_t descX = (cudnnRNNDataDescriptor_t)m_rnnDataDesc.GetData(hXDesc);
+	cudnnRNNDataDescriptor_t descY = (cudnnRNNDataDescriptor_t)m_rnnDataDesc.GetData(hYDesc);
+	cudnnTensorDescriptor_t descHx = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hHxDesc);
+	cudnnFilterDescriptor_t descWt = (cudnnFilterDescriptor_t)m_tensorDesc.GetData(hWtDesc);
+	MemoryItem* pXData;
+	MemoryItem* pHxData;
+	MemoryItem* pYData;
+	MemoryItem* pWtDiff;
+	MemoryItem* pWorkspaceData;
+	MemoryItem* pReservedData;
+
+	if (lErr = m_memory.GetData(hXData, &pXData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hHxData, &pHxData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hYData, &pYData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hWtDiff, &pWtDiff))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hWorkspaceData, &pWorkspaceData))
+		return lErr;
+
+	if (lErr = m_memory.GetData(hReservedData, &pReservedData))
+		return lErr;
+
+	lErr = cudnnRNNBackwardWeightsEx(cudnn,
+									desc,
+									descX,
+									pXData->Data(),
+									descHx,
+									pHxData->Data(),
+									descY,
+									pYData->Data(),
+									pWorkspaceData->Data(),
+									pWorkspaceData->Size(),
+									descWt,
+									pWtDiff->Data(),
+									pReservedData->Data(),
+									pReservedData->Size());
+
+	return lErr;
+}
+
+template long Memory<double>::RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, int nWsCount, long hWtDesc, long hWtDiff, long hReserved, int nResCount);
+template long Memory<float>::RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, int nWsCount, long hWtDesc, long hWtDiff, long hReserved, int nResCount);
 
 //end memory.cu

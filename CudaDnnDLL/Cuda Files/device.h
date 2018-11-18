@@ -26,6 +26,9 @@ const int DEVPROP_DEVICECOUNT			= 1;
 const int DEVPROP_NAME					= 2;
 const int DEVPROP_MULTIGPUBOARDGROUPID	= 3;
 
+const int MAX_ARG = 4096 * 10;
+const int MAX_DIM = 4096 * 10;
+
 
 //-----------------------------------------------------------------------------
 //	Device Class
@@ -161,11 +164,13 @@ class Device
 		long CreateTensorDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long FreeTensorDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SetTensorDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long SetTensorNdDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long AddTensor(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long CreateFilterDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long FreeFilterDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SetFilterDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long SetFilterNdDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long CreateConvolutionDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long FreeConvolutionDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -217,6 +222,20 @@ class Device
 
 		long LCNForwardCC(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long LCNBackwardCC(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
+		long CreateRnnDataDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long FreeRnnDataDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long SetRnnDataDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
+		long CreateRnnDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long FreeRnnDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long SetRnnDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long GetRnnParamCount(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long GetRnnWorkspaceCount(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long GetRnnLinLayerParams(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long RnnForward(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long RnnBackwardData(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long RnnBackwardWeights(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long CreatePCA(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long FreePCA(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -1330,6 +1349,370 @@ inline long Device<T>::BatchNormBackward(long lInput, T* pfInput, long* plOutput
 	long hSaveVar = (long)pfInput[18];
 
 	return m_memory.BatchNormBackward(hHandle, mode, fAlphaDiff, fBetaDiff, fAlphaParamDiff, fBetaParamDiff, hBtmBottomDesc, hBottomData, hTopDiffDesc, hTopDiff, hBottomDiffDesc, hBottomDiff, hBwdScaleBiasMeanVarDesc, hScaleData, hScaleDiff, hBiasDiff, fEps, hSaveMean, hSaveVar);
+}
+
+
+template <class T>
+inline long Device<T>::CreateRnnDataDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+	long hHandle = 0;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	if (lErr = m_memory.CreateRnnDataDesc(&hHandle))
+		return lErr;
+
+	return setOutput(hHandle, plOutput, ppfOutput);
+}
+
+template <class T>
+inline long Device<T>::FreeRnnDataDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+
+	return m_memory.FreeRnnDataDesc(hHandle);
+}
+
+template <class T>
+inline long Device<T>::SetRnnDataDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 6, MAX_ARG))
+		return lErr;
+
+	long hRnnDataDesc = (long)pfInput[0];
+	int layout = (int)pfInput[1];
+	int nMaxSeqLen = (int)pfInput[2];
+	int nBatchSize = (int)pfInput[3];
+	long nVectorSize = (long)pfInput[4];
+
+	int* rgSeqLen = (int*)malloc(sizeof(int) * nBatchSize);
+	if (rgSeqLen == NULL)
+		return ERROR_OUTOFMEMORY;
+
+	lErr = m_memory.SetRnnDataDesc(hRnnDataDesc, (RnnDataLayout)layout, nMaxSeqLen, nBatchSize, nVectorSize, rgSeqLen);
+
+	free(rgSeqLen);
+
+	return lErr;
+}
+
+template <class T>
+inline long Device<T>::CreateRnnDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+	long hHandle = 0;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	if (lErr = m_memory.CreateRnnDesc(&hHandle))
+		return lErr;
+
+	return setOutput(hHandle, plOutput, ppfOutput);
+}
+
+template <class T>
+inline long Device<T>::FreeRnnDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+
+	return m_memory.FreeRnnDesc(hHandle);
+}
+
+template <class T>
+inline long Device<T>::SetRnnDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+	long hRnnDesc = (long)pfInput[1];
+	int nHiddenCount = (int)pfInput[2];
+	int nNumLayers = (int)pfInput[3];
+	long hDropoutDesc = (long)pfInput[4];
+	int mode = (int)pfInput[5];
+
+	return m_memory.SetRnnDesc(hHandle, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (RnnMode)mode);
+}
+
+template <class T>
+inline long Device<T>::GetRnnParamCount(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+	long hRnnDesc = (long)pfInput[1];
+	long hXDesc = (long)pfInput[2];
+	int nCount;
+
+	if (lErr = m_memory.GetRnnParamCount(hHandle, hRnnDesc, hXDesc, &nCount))
+		return lErr;
+
+	setOutput((T)nCount, plOutput, ppfOutput);
+
+	return 0;
+}
+
+template <class T>
+inline long Device<T>::GetRnnWorkspaceCount(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 4, MAX_ARG))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+	long hRnnDesc = (long)pfInput[1];
+	int nSeqLen = (int)pfInput[2];
+
+	if (nSeqLen < 1 || nSeqLen > (lInput - 3))
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	long* rghXDesc = (long*)malloc(sizeof(long) * nSeqLen);
+	if (rghXDesc == NULL)
+		return ERROR_OUTOFMEMORY;
+
+	for (int i = 0; i < nSeqLen; i++)
+	{
+		rghXDesc[i] = (long)pfInput[i + 3];
+	}
+
+	int nWsCount = 0;
+	int nResCount = 0;
+
+	lErr = m_memory.GetRnnWorkspaceCount(hHandle, hRnnDesc, nSeqLen, rghXDesc, &nWsCount, &nResCount);
+
+	free(rghXDesc);
+
+	T* pOutput = NULL;
+	if (lErr = m_memory.AllocHost(2, &pOutput, NULL, false))
+		return lErr;
+
+	pOutput[0] = (T)nWsCount;
+	pOutput[1] = (T)nResCount;
+
+	*plOutput = 2;
+	*ppfOutput = pOutput;
+
+	return lErr;
+}
+
+template <class T>
+inline long Device<T>::GetRnnLinLayerParams(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+	long hRnnDesc = (long)pfInput[1];
+	int nLayer = (int)pfInput[2];
+	long hXDesc = (long)pfInput[3];
+	long hWtDesc = (long)pfInput[4];
+	long hWtData = (long)pfInput[5];
+	int nLinLayer = (int)pfInput[6];
+	int nWtCount = 0;
+	long hWt = 0;
+	int nBiasCount = 0;
+	long hBias = 0;
+
+	if (lErr = m_memory.GetRnnLinLayerParams(hHandle, hRnnDesc, nLayer, hXDesc, hWtDesc, hWtData, nLinLayer, &nWtCount, &hWt, &nBiasCount, &hBias))
+		return lErr;
+
+	T* pOutput = NULL;
+	if (lErr = m_memory.AllocHost(4, &pOutput, NULL, false))
+		return lErr;
+
+	pOutput[0] = (T)nWtCount;
+	pOutput[1] = (T)hWt;
+	pOutput[2] = (T)nBiasCount;
+	pOutput[3] = (T)hBias;
+
+	*plOutput = 4;
+	*ppfOutput = pOutput;
+
+	return 0;
+}
+
+template <class T>
+inline long Device<T>::RnnForward(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 21, 21))
+		return lErr;
+	
+	long hHandle = (long)pfInput[0];
+	long hRnnDesc = (long)pfInput[1];
+	long hXDesc = (long)pfInput[2];
+
+	int nIdx = 3;
+	long hXData = (long)pfInput[nIdx];
+	nIdx++;
+	long hHxDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hHxData = (long)pfInput[nIdx];
+	nIdx++;
+	long hCxDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hCxData = (long)pfInput[nIdx];
+	nIdx++;
+	long hWtDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hWtData = (long)pfInput[nIdx];
+	nIdx++;
+	long hYDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hYData = (long)pfInput[nIdx];
+	nIdx++;
+	long hHyDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hHyData = (long)pfInput[nIdx];
+	nIdx++;
+	long hCyDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hCyData = (long)pfInput[nIdx];
+	nIdx++;
+	long hWorkspace = (long)pfInput[nIdx];
+	nIdx++;
+	int nWsCount = (int)pfInput[nIdx];
+	nIdx++;
+	long hReserved = (long)pfInput[nIdx];
+	nIdx++;
+	int nResCount = (int)pfInput[nIdx];
+	nIdx++;
+	bool bTraining = (pfInput[nIdx] == 0) ? false : true;
+
+	return m_memory.RnnForward(hHandle, hRnnDesc, hXDesc, hXData, hHxDesc, hHxData, hCxDesc, hCxData, hWtDesc, hWtData, hYDesc, hYData, hHyDesc, hHyData, hCyDesc, hCyData, hWorkspace, nWsCount, hReserved, nResCount, bTraining);
+}
+
+template <class T>
+inline long Device<T>::RnnBackwardData(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 25, 25))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+	long hRnnDesc = (long)pfInput[1];
+	long hYDesc = (int)pfInput[2];
+
+	int nIdx = 3;
+	long hYData = (long)pfInput[nIdx];
+	nIdx++;
+	long hYDiff = (long)pfInput[nIdx];
+	nIdx++;
+
+	long hHyDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hHyDiff = (long)pfInput[nIdx];
+	nIdx++;
+	long hCyDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hCyDiff = (long)pfInput[nIdx];
+	nIdx++;
+
+	long hWtDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hWtData = (long)pfInput[nIdx];
+	nIdx++;
+
+	long hHxDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hHxData = (long)pfInput[nIdx];
+	nIdx++;
+	long hCxDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hCxData = (long)pfInput[nIdx];
+	nIdx++;
+	long hXDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hXDiff = (long)pfInput[nIdx];
+	nIdx++;
+
+	long hdHxDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hHxDiff = (long)pfInput[nIdx];
+	nIdx++;
+	long hdCxDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hCxDiff = (long)pfInput[nIdx];
+	nIdx++;
+
+	long hWorkspace = (long)pfInput[nIdx];
+	nIdx++;
+	int nWsCount = (int)pfInput[nIdx];
+	nIdx++;
+	long hReserved = (long)pfInput[nIdx];
+	nIdx++;
+	int nResCount = (int)pfInput[nIdx];
+
+	return m_memory.RnnBackwardData(hHandle, hRnnDesc, hYDesc, hYData, hYDiff, hHyDesc, hHyDiff, hCyDesc, hCyDiff, hWtDesc, hWtData, hHxDesc, hHxData, hCxDesc, hCxData, hXDesc, hXDiff, hdHxDesc, hHxDiff, hdCxDesc, hCxDiff, hWorkspace, nWsCount, hReserved, nResCount);
+}
+
+
+template <class T>
+inline long Device<T>::RnnBackwardWeights(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 14, 14))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+	long hRnnDesc = (long)pfInput[1];
+	long hXDesc = (long)pfInput[2];
+
+	int nIdx = 3;
+	long hXData = (long)pfInput[nIdx];
+	nIdx++;
+
+	long hHxDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hHxData = (long)pfInput[nIdx];
+	nIdx++;
+
+	long hYDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hYData = (long)pfInput[nIdx];
+	nIdx++;
+
+	long hWorkspace = (long)pfInput[nIdx];
+	nIdx++;
+	int nWsCount = (int)pfInput[nIdx];
+	nIdx++;
+
+	long hWtDesc = (long)pfInput[nIdx];
+	nIdx++;
+	long hWtDiff = (long)pfInput[nIdx];
+	nIdx++;
+
+	long hReserved = (long)pfInput[nIdx];
+	nIdx++;
+	int nResCount = (int)pfInput[nIdx];
+
+	return m_memory.RnnBackwardWeights(hHandle, hRnnDesc, hXDesc, hXData, hHxDesc, hHxData, hYDesc, hYData, hWorkspace, nWsCount, hWtDesc, hWtDiff, hReserved, nResCount);
 }
 
 template <class T>
