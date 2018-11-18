@@ -32,14 +32,19 @@ namespace MyCaffe.fillers
         }
 
         /// <summary>
-        /// Fill the blob with random numbers from a guassian distribution.
+        /// Fill the memory with random numbers from a guassian distribution.
         /// </summary>
-        /// <param name="b">Specifies the blob to fill.</param>
-        public override void Fill(Blob<T> b)
+        /// <param name="nCount">Specifies the number of items to fill.</param>
+        /// <param name="hMem">Specifies the handle to GPU memory to fill.</param>
+        /// <param name="nNumAxes">Optionally, specifies the number of axes (default = 1).</param>
+        /// <param name="nNumOutputs">Optionally, specifies the number of outputs (default = 1).</param>
+        /// <param name="nNumChannels">Optionally, specifies the number of channels (default = 1).</param>
+        /// <param name="nHeight">Optionally, specifies the height (default = 1).</param>
+        /// <param name="nWidth">Optionally, specifies the width (default = 1).</param>
+        public override void Fill(int nCount, long hMem, int nNumAxes = 1, int nNumOutputs = 1, int nNumChannels = 1, int nHeight = 1, int nWidth = 1)
         {
-            int nCount = b.count();
             m_log.CHECK(nCount > 0, "There is no data to fill!");
-            m_cuda.rng_gaussian(nCount, m_param.mean, m_param.std, b.mutable_gpu_data);
+            m_cuda.rng_gaussian(nCount, m_param.mean, m_param.std, hMem);
 
             int nSparse = m_param.sparse;
             m_log.CHECK_GE(nSparse, -1, "The sparse value should be >= -1.");
@@ -50,15 +55,14 @@ namespace MyCaffe.fillers
                 // These have num == channels == 1; width is number of inputs; height is
                 // number of outputs.  The 'sparse' variable specifies the mean number
                 // of non-zero input weights for a given output.
-                m_log.CHECK_GE(b.num_axes, 1, "The blob must have at least one axis.");
+                m_log.CHECK_GE(nNumAxes, 1, "The blob must have at least one axis.");
 
-                int nNumOutputs = b.shape(0);
                 double dfNonZeroProbability = (double)nSparse / (double)nNumOutputs;
                 T fNonZeroProbability = (T)Convert.ChangeType(dfNonZeroProbability, typeof(T));
 
-                m_randVec.Allocate(b.count());
-                m_cuda.rng_bernoulli(b.count(), fNonZeroProbability, m_randVec.gpu_data);
-                m_cuda.mul(b.count(), b.gpu_data, m_randVec.gpu_data, b.mutable_gpu_data);
+                m_randVec.Allocate(nCount);
+                m_cuda.rng_bernoulli(nCount, fNonZeroProbability, m_randVec.gpu_data);
+                m_cuda.mul(nCount, hMem, m_randVec.gpu_data, hMem);
             }
         }
     }

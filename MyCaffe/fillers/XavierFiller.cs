@@ -37,19 +37,24 @@ namespace MyCaffe.fillers
         }
 
         /// <summary>
-        /// Fill the blob with random numbers from a xavier distribution.
+        /// Fill the memory with random numbers from a xavier distribution.
         /// </summary>
-        /// <param name="b">Specifies the blob to fill.</param>
-        public override void Fill(Blob<T> b)
+        /// <param name="nCount">Specifies the number of items to fill.</param>
+        /// <param name="hMem">Specifies the handle to GPU memory to fill.</param>
+        /// <param name="nNumAxes">Optionally, specifies the number of axes (default = 1).</param>
+        /// <param name="nNumOutputs">Optionally, specifies the number of outputs (default = 1).</param>
+        /// <param name="nNumChannels">Optionally, specifies the number of channels (default = 1).</param>
+        /// <param name="nHeight">Optionally, specifies the height (default = 1).</param>
+        /// <param name="nWidth">Optionally, specifies the width (default = 1).</param>
+        public override void Fill(int nCount, long hMem, int nNumAxes = 1, int nNumOutputs = 1, int nNumChannels = 1, int nHeight = 1, int nWidth = 1)
         {
-            int nCount = b.count();
             m_log.CHECK(nCount > 0, "There is no data to fill!");
 
-            int nFanIn = nCount / b.shape(0);
+            int nFanIn = nCount / nNumOutputs;
             // Compatibility with ND blobs
-            int nFanOut = b.num_axes > 1 ?
-                          b.count() / b.shape(1) :
-                          b.count();
+            int nFanOut = nNumAxes > 1 ?
+                          nCount / nNumChannels :
+                          nCount;
             double dfN = nFanIn; // default to fan_in
 
             if (m_param.variance_norm == FillerParameter.VarianceNorm.AVERAGE)
@@ -60,7 +65,7 @@ namespace MyCaffe.fillers
             double dfScale = Math.Sqrt(3.0 / dfN);
             T fPosScale = (T)Convert.ChangeType(dfScale, typeof(T));
             T fNegScale = (T)Convert.ChangeType(-dfScale, typeof(T));
-            m_cuda.rng_uniform(nCount, fNegScale, fPosScale, b.mutable_gpu_data);
+            m_cuda.rng_uniform(nCount, fNegScale, fPosScale, hMem);
 
             m_log.CHECK_EQ(-1, m_param.sparse, "Sparsity not supported by this Filler.");
         }

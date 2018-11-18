@@ -47,7 +47,26 @@ namespace MyCaffe.fillers
         /// Fill the blob with values based on the actual filler used.
         /// </summary>
         /// <param name="b">Specifies the blob to fill.</param>
-        public abstract void Fill(Blob<T> b);
+        public void Fill(Blob<T> b)
+        {
+            int nNumChannels = (b.num_axes > 1) ? b.shape(1) : 1;
+            int nHeight = (b.num_axes > 2) ? b.shape(2) : 1;
+            int nWidth = (b.num_axes > 3) ? b.shape(3) : 1;
+            Fill(b.count(), b.mutable_gpu_data, b.num_axes, b.shape(0), nNumChannels, nHeight, nWidth);
+        }
+
+
+        /// <summary>
+        /// Fill the memory with values based on the actual filler used.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items to fill.</param>
+        /// <param name="hMem">Specifies the handle to GPU memory to fill.</param>
+        /// <param name="nNumAxes">Optionally, specifies the number of axes (default = 1).</param>
+        /// <param name="nNumOutputs">Optionally, specifies the number of outputs (default = 1).</param>
+        /// <param name="nNumChannels">Optionally, specifies the number of channels (default = 1).</param>
+        /// <param name="nHeight">Optionally, specifies the height (default = 1).</param>
+        /// <param name="nWidth">Optionally, specifies the width (default = 1).</param>
+        public abstract void Fill(int nCount, long hMem, int nNumAxes = 1, int nNumOutputs = 1, int nNumChannels = 1, int nHeight = 1, int nWidth = 1);
 
         /// <summary>
         /// Create a new Filler instance.

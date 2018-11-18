@@ -29,14 +29,19 @@ namespace MyCaffe.fillers
         }
 
         /// <summary>
-        /// Fill the blob with random numbers from a uniform distribution.
+        /// Fill the memory with random numbers from a uniform distribution.
         /// </summary>
-        /// <param name="b">Specifies the blob to fill.</param>
-        public override void Fill(Blob<T> b)
+        /// <param name="nCount">Specifies the number of items to fill.</param>
+        /// <param name="hMem">Specifies the handle to GPU memory to fill.</param>
+        /// <param name="nNumAxes">Optionally, specifies the number of axes (default = 1).</param>
+        /// <param name="nNumOutputs">Optionally, specifies the number of outputs (default = 1).</param>
+        /// <param name="nNumChannels">Optionally, specifies the number of channels (default = 1).</param>
+        /// <param name="nHeight">Optionally, specifies the height (default = 1).</param>
+        /// <param name="nWidth">Optionally, specifies the width (default = 1).</param>
+        public override void Fill(int nCount, long hMem, int nNumAxes = 1, int nNumOutputs = 1, int nNumChannels = 1, int nHeight = 1, int nWidth = 1)
         {
-            int nCount = b.count();
             m_log.CHECK(nCount > 0, "There is no data to fill!");
-            m_cuda.rng_uniform(nCount, m_param.min, m_param.max, b.mutable_gpu_data);
+            m_cuda.rng_uniform(nCount, m_param.min, m_param.max, hMem);
         }
     }
 }

@@ -61,28 +61,34 @@ namespace MyCaffe.fillers
         }
 
         /// <summary>
-        /// Fill a blob with bilinear values.
+        /// Fill a memory with bilinear values.
         /// </summary>
-        /// <param name="b">Specifies the blob to fill.</param>
-        public override void Fill(Blob<T> b)
+        /// <param name="nCount">Specifies the number of items to fill.</param>
+        /// <param name="hMem">Specifies the handle to GPU memory to fill.</param>
+        /// <param name="nNumAxes">Optionally, specifies the number of axes (default = 1).</param>
+        /// <param name="nNumOutputs">Optionally, specifies the number of outputs (default = 1).</param>
+        /// <param name="nNumChannels">Optionally, specifies the number of channels (default = 1).</param>
+        /// <param name="nHeight">Optionally, specifies the height (default = 1).</param>
+        /// <param name="nWidth">Optionally, specifies the width (default = 1).</param>
+        public override void Fill(int nCount, long hMem, int nNumAxes = 1, int nNumOutputs = 1, int nNumChannels = 1, int nHeight = 1, int nWidth = 1)
         {
-            m_log.CHECK_EQ(b.num_axes, 4, "Blob must be 4 dim.");
-            m_log.CHECK_EQ(b.width, b.height, "Filter must be square.");
+            m_log.CHECK_EQ(nNumAxes, 4, "Blob must be 4 dim.");
+            m_log.CHECK_EQ(nWidth, nHeight, "Filter must be square.");
 
-            T[] rgData = b.mutable_cpu_data;
-            int nF = (int)Math.Ceiling(b.width / 2.0);
-            double dfC = (b.width - 1) / (2.0 * nF);
+            T[] rgData = m_cuda.GetMemory(hMem);
+            int nF = (int)Math.Ceiling(nWidth / 2.0);
+            double dfC = (nWidth - 1) / (2.0 * nF);
 
-            for (int i = 0; i < b.count(); i++)
+            for (int i = 0; i < nCount; i++)
             {
-                double dfX = i % b.width;
-                double dfY = (i / b.width) % b.height;
+                double dfX = i % nWidth;
+                double dfY = (i / nWidth) % nHeight;
                 double dfVal = (1 - Math.Abs(dfX / nF - dfC)) * (1 - Math.Abs(dfY / nF - dfC));
 
                 rgData[i] = (T)Convert.ChangeType(dfVal, typeof(T));
             }
 
-            b.mutable_cpu_data = rgData;
+            m_cuda.SetMemory(hMem, rgData);
 
             m_log.CHECK_EQ(-1, m_param.sparse, "Sparsity not supported by this Filler.");
         }
