@@ -226,7 +226,6 @@ namespace MyCaffe.layers
 
             try
             {
-                m_nInputSize = 1;
                 m_nHiddenSize = m_nInputSize;
                 m_nNumLayers = 1;
 
@@ -319,13 +318,13 @@ namespace MyCaffe.layers
                 // Setup parameters - do this after the rnn descriptor is set
                 // otherwise we will not know how many parameters we have to allocate.
                 int nCount = m_cuda.GetRnnParamCount(m_hCuDnn, m_hRnnDesc, rghXDesc[0]);
-                List<int> rgWtShape = new List<int>() { nCount };
+                List<int> rgWtShape = new List<int>() { nCount, 1, 1 };
                 m_blobWts.Reshape(rgWtShape);
 
                 int[] rgDimW = new int[3];
                 rgDimW[0] = nCount;
                 rgDimW[1] = 1;
-                rgDimW[1] = 1;
+                rgDimW[2] = 1;
 
                 m_cuda.SetFilterNdDesc(m_hWeightDesc, rgDimW);
 
