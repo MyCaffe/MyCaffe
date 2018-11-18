@@ -1393,10 +1393,20 @@ inline long Device<T>::SetRnnDataDesc(long lInput, T* pfInput, long* plOutput, T
 	int nMaxSeqLen = (int)pfInput[2];
 	int nBatchSize = (int)pfInput[3];
 	long nVectorSize = (long)pfInput[4];
+	int nIdx = 5;
+
+	if (lInput < nIdx + nBatchSize)
+		return ERROR_PARAM_OUT_OF_RANGE;
 
 	int* rgSeqLen = (int*)malloc(sizeof(int) * nBatchSize);
 	if (rgSeqLen == NULL)
 		return ERROR_OUTOFMEMORY;
+
+	for (int i = 0; i < nBatchSize; i++)
+	{
+		rgSeqLen[i] = (int)pfInput[nIdx];
+		nIdx++;
+	}
 
 	lErr = m_memory.SetRnnDataDesc(hRnnDataDesc, (RnnDataLayout)layout, nMaxSeqLen, nBatchSize, nVectorSize, rgSeqLen);
 
