@@ -18,8 +18,8 @@ maintaining compatibility with CAFFE's solver descriptions, model descriptions a
 The C# based MyCaffe open-source project is independently maintained by <a href="http://www.signalpop.com">SignalPop LLC</a> and made 
 available under the Apache 2.0 License.
 <h3>Supported Development Environments:</h3>
-* Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 10.0.130</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.3.1</a> </br>
-* Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 10.0.130</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.3.1</a> </br>
+* Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 10.0.130</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.4.1</a> </br>
+* Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 10.0.130</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.4.1</a> </br>
 </br>
 
 IMPORTANT: The open-source MyCaffe project on GitHub is considered 'pre-release' and may have bugs.  When you find bugs or other issues, please report them here - or better yet, get involved
@@ -30,6 +30,7 @@ We have several new models supported by MyCaffe with the train_val and solution 
  - ResNet-56 on the Cifar-10 dataset as described in [3].
  - Deep convolutional auto-encoder neural networks with pooling as described in [4].
  - Policy Gradient Reinforcement Learning networks as described in [5].
+ - Recurrent Learning of Char-RNN as described in [8] and [9].
 
 For more information on the MyCaffe implementation of Policy Gradient Reinforcement Learning, see [MyCaffe: A Complete C# Re-Write of Caffe with Reinforcement Learning](https://arxiv.org/abs/1810.02272) by D. Brown, 2018. 
 
@@ -53,6 +54,10 @@ Yavar Naddaf, Joel Veness and Michael Bowling, 2012-2013.  Source code available
 
 [7] [Stella - A multi-platform Atari 2600 VCS emulator](https://stella-emu.github.io/) by Bradford W. Mott, Stephen Anthony and The Stella Team, 1995-2018
 Source code available on GitHub at <a href="https://github.com/stella-emu/stella">stella-emu/stella</a>
+
+[8] [The Unreasonable Effectiveness of Recurrent Neural Networks](http://karpathy.github.io/2015/05/21/rnn-effectiveness/) by Andrej Karpathy, 2015.
+
+[9] [adepierre/caffe-char-rnn Github](https://github.com/adepierre/caffe-char-rnn) by adepierre, 2017.
 
 For more information on the C++ CAFFE open-source project, please see the following <a href="http://caffe.berkeleyvision.org/">link</a>.
 
