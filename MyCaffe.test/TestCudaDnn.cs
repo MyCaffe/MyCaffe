@@ -1281,7 +1281,7 @@ namespace MyCaffe.test
                 foreach (ITest t in test.Tests)
                 {
                     hDesc = t.Cuda.CreateRnnDataDesc();
-                    t.Log.CHECK_NE(0, hDesc, "The hDesc handle is null!");
+                    t.Log.CHECK_NE(0, hDesc, "The hDesc handle should not be null!");
 
                     int nMaxSeqLen = 10;
                     int nBatchLen = 5;
