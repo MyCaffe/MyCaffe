@@ -49,10 +49,11 @@ namespace MyCaffe.fillers
         /// <param name="b">Specifies the blob to fill.</param>
         public void Fill(Blob<T> b)
         {
+            int nNum = (b.num_axes > 0) ? b.shape(0) : 1;
             int nNumChannels = (b.num_axes > 1) ? b.shape(1) : 1;
             int nHeight = (b.num_axes > 2) ? b.shape(2) : 1;
             int nWidth = (b.num_axes > 3) ? b.shape(3) : 1;
-            Fill(b.count(), b.mutable_gpu_data, b.num_axes, b.shape(0), nNumChannels, nHeight, nWidth);
+            Fill(b.count(), b.mutable_gpu_data, b.num_axes, nNum, nNumChannels, nHeight, nWidth);
         }
 
 
