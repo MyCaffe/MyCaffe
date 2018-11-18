@@ -176,6 +176,60 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestSetupCuDnn()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestSetup();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardCuDnn()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestForward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientCuDnn()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ILSTMLayerTest : ITest
@@ -304,6 +358,7 @@ namespace MyCaffe.test
 
         public void TestSetup()
         {
+            m_param.recurrent_param.engine = m_engine;
             LSTMLayer<T> layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
 
             layer.Setup(BottomVec, TopVec);
@@ -346,6 +401,7 @@ namespace MyCaffe.test
             m_cuda.rng_setseed(1);
             sequence_filler.Fill(m_blob_bottom);
 
+            m_param.recurrent_param.engine = m_engine;
             LSTMLayer<T> layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
             m_cuda.rng_setseed(1701);
             layer.Setup(BottomVec, TopVec);
@@ -483,6 +539,7 @@ namespace MyCaffe.test
 
         public void TestGradient()
         {
+            m_param.recurrent_param.engine = m_engine;
             LSTMLayer<T> layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
