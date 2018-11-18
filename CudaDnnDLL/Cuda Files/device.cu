@@ -907,13 +907,13 @@ long Device<T>::SetTensorNdDesc(long lInput, T* pfInput, long* plOutput, T** ppf
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 2, MAX_ARG, true))
+	if (lErr = verifyInput(lInput, pfInput, 3, MAX_ARG))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
 	int nCount = (int)pfInput[1];
 
-	if (nCount > MAX_DIM || nCount < 0 || nCount > (lInput - 2)/2)
+	if (nCount > MAX_DIM || nCount <= 0 || nCount > (lInput - 2)/2)
 		return ERROR_PARAM_OUT_OF_RANGE;
 
 	int* rgDim = (int*)malloc(sizeof(int) * nCount);
@@ -957,13 +957,13 @@ long Device<T>::SetFilterNdDesc(long lInput, T* pfInput, long* plOutput, T** ppf
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 2, MAX_ARG, true))
+	if (lErr = verifyInput(lInput, pfInput, 3, MAX_ARG))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
 	int nCount = (int)pfInput[1];
 
-	if (nCount > MAX_DIM || nCount < 0 || nCount >(lInput - 2) / 2)
+	if (nCount > MAX_DIM || nCount <= 0 || nCount > (lInput - 2))
 		return ERROR_PARAM_OUT_OF_RANGE;
 
 	int* rgDim = (int*)malloc(sizeof(int) * nCount);
