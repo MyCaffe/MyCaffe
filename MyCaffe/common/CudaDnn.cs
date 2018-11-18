@@ -366,6 +366,8 @@ namespace MyCaffe.common
         void FreeHostBuffer(long hMem);
         double[] GetHostMemoryDouble(long hMem);
         float[] GetHostMemoryFloat(long hMem);
+        long CreateMemoryPointer(long hData, long lOffset, long lCount);
+        void FreeMemoryPointer(long hMem);
     }
 
     /// <summary>
@@ -2509,9 +2511,12 @@ namespace MyCaffe.common
         /// <param name="rgStride">Specifies the stride of the data.</param>
         public void SetTensorNdDesc(long hHandle, int[] rgDim, int[] rgStride)
         {
+            if (rgDim.Length != rgStride.Length)
+                throw new Exception("The stride and dim arrays must have the same length.");
+
             if (m_dt == DataType.DOUBLE)
             {
-                List<double> rgArg = new List<double>() { hHandle, rgDim.Length, rgStride.Length };
+                List<double> rgArg = new List<double>() { hHandle, rgDim.Length };
 
                 for (int i = 0; i < rgDim.Length; i++)
                 {
@@ -2527,7 +2532,7 @@ namespace MyCaffe.common
             }
             else
             {
-                List<float> rgArg = new List<float>() { hHandle, rgDim.Length, rgStride.Length };
+                List<float> rgArg = new List<float>() { hHandle, rgDim.Length };
 
                 for (int i = 0; i < rgDim.Length; i++)
                 {

@@ -176,7 +176,6 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
-
     }
 
     interface ILSTMLayerTest : ITest

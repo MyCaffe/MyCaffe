@@ -2112,12 +2112,12 @@ long Memory<T>::GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, lo
 	// Create the memory pointer handles.
 	long hWtMemPtr;
 	long lWtSize = nWtCount * sizeof(T);
-	if (lErr = m_memoryPointers.Allocate(pWtData->DeviceID(), pWtDevMem, lWtSize, &hWtMemPtr))
+	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), (T*)pWtDevMem, lWtSize, &hWtMemPtr))
 		return lErr;
 
 	long hBiasMemPtr;
 	long lBiasSize = nBiasCount * sizeof(T);
-	if (lErr = m_memoryPointers.Allocate(pWtData->DeviceID(), pBiasDevMem, lBiasSize, &hBiasMemPtr))
+	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), (T*)pBiasDevMem, lBiasSize, &hBiasMemPtr))
 		return lErr;
 
 	*pnWtCount = nWtCount;

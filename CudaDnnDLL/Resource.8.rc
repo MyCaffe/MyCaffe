@@ -51,8 +51,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,10,0,122
- PRODUCTVERSION 0,10,0,122
+ FILEVERSION 0,10,0,125
+ PRODUCTVERSION 0,10,0,125
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -69,12 +69,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "SignalPop LLC"
             VALUE "FileDescription", "MyCaffe Cuda/cuDnn Interface Library for CUDA 8.0"
-            VALUE "FileVersion", "0.10.0.122"
+            VALUE "FileVersion", "0.10.0.125"
             VALUE "InternalName", "CudaDnnDll.8.dll"
             VALUE "LegalCopyright", "Copyright (C) 2016-2017 SignalPop LLC and Contributors (see LICENSE). All rights reserved."
             VALUE "OriginalFilename", "CudaDnnDll.8.dll"
             VALUE "ProductName", "MyCaffe"
-            VALUE "ProductVersion", "0.10.0.122"
+            VALUE "ProductVersion", "0.10.0.125"
         END
     END
     BLOCK "VarFileInfo"

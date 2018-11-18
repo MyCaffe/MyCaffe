@@ -167,6 +167,7 @@ class Memory
 		long AllocHost(LPTSTR* ppDst, LPTSTR pSrc);
 		long FreeHost(LPTSTR pDst);
 
+		long CreateMemoryPointer(int nDeviceID, T* pData, long lSize, long* phHandle);
 		long CreateMemoryPointer(long hData, long lOffset, long lCount, long* phHandle);
 		long FreeMemoryPointer(long hData);
 
@@ -368,24 +369,33 @@ inline long Memory<T>::CheckMemoryAttributes(long hSrc, int nSrcDeviceID, long h
 
 
 template <class T>
-long Memory<T>::CreateMemoryPointer(long hData, long lOffset, long lCount, long* phHandle)
+inline long Memory<T>::CreateMemoryPointer(long hData, long lOffset, long lCount, long* phHandle)
 {
 	long lErr;
 	long lSize = m_memory.GetSize(lCount, sizeof(T));
-	long lSizeOffset = m_memory.GetSize(lOffset, sizeof(T));
 	MemoryItem* pData = NULL;
 
-	if (m_memory.GetData(hData, &pData))
-		return NULL;
+	if (lErr = m_memory.GetData(hData, &pData))
+		return lErr;
 
 	T* data = (T*)pData->Data();
 
 	if (lOffset > 0)
 		data += lOffset;
 
+	return CreateMemoryPointer(pData->DeviceID(), data, lSize, phHandle);
+}
+
+template <class T>
+inline long Memory<T>::CreateMemoryPointer(int nDeviceID, T* data, long lSize, long* phHandle)
+{
+	long lErr;
 	long hHandle = 0;
-	
-	if (lErr = m_memoryPointers.Allocate(pData->DeviceID(), data, lSize, &hHandle))
+
+	if (phHandle == NULL)
+		return ERROR_PARAM_NULL;
+
+	if (lErr = m_memoryPointers.Allocate(nDeviceID, data, lSize, &hHandle))
 		return lErr;
 
 	// Move the handle into the range [MAX_HANDLES, MAX_HANDLES*2]
@@ -397,7 +407,7 @@ long Memory<T>::CreateMemoryPointer(long hData, long lOffset, long lCount, long*
 }
 
 template <class T>
-long Memory<T>::FreeMemoryPointer(long hData)
+inline long Memory<T>::FreeMemoryPointer(long hData)
 {
 	return m_memoryPointers.Free(hData - MAX_ITEMS);
 }
