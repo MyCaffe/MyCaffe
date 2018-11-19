@@ -222,17 +222,18 @@ namespace MyCaffe.layers
 
         private void layerSetUpCuDnn(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            long[] rghXDesc = null;
-
             try
             {
-                m_nHiddenSize = m_nInputSize;
+                m_nHiddenSize = (int)m_param.recurrent_param.num_output;
                 m_nNumLayers = 1;
 
                 m_hCuDnn = m_cuda.CreateCuDNN();
 
-                m_blobX = colBottom[0];
-                m_blobY = colTop[0];
+                m_blobX = new Blob<T>(m_cuda, m_log);
+                m_blobX.Name = m_param.name + " x";
+                m_blobY = new Blob<T>(m_cuda, m_log);
+                m_blobY.Name = m_param.name + " y";
+
                 m_blobHx = new Blob<T>(m_cuda, m_log);
                 m_blobHx.Name = m_param.name + " hx";
                 m_blobCx = new Blob<T>(m_cuda, m_log);
@@ -243,8 +244,6 @@ namespace MyCaffe.layers
                 m_blobCy.Name = m_param.name + " cy";
                 m_blobWts = new Blob<T>(m_cuda, m_log);
                 m_blobWts.Name = m_param.name + " weights";
-
-                m_log.CHECK_EQ(m_blobX.count(), m_nT * m_nN * m_nInputSize, "The input should be Sequence * Batch * InputSize in length.");
 
                 m_hXDesc = m_cuda.CreateRnnDataDesc();
                 m_hYDesc = m_cuda.CreateRnnDataDesc();
@@ -263,42 +262,24 @@ namespace MyCaffe.layers
                 //  Start reshape here.
                 //------------------------------------
 
-                m_blobHx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
-                m_blobCx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
+                m_blobX.ReshapeLike(colBottom[0]);
+                m_blobX.ShareData(colBottom[0]);
+                m_blobX.ShareDiff(colBottom[0]);
+                m_log.CHECK_EQ(m_blobX.count(), m_nT * m_nN * m_nInputSize, "The input should be Sequence * Batch * InputSize in length.");
 
-                m_blobY.Reshape(m_nT, m_nN, m_nInputSize, 1);
+                m_blobHx.Reshape(m_nNumLayers, m_nN, m_nInputSize, 1);
+                m_blobCx.Reshape(m_nNumLayers, m_nN, m_nInputSize, 1);
+
+                m_blobY.Reshape(m_nT, m_nN, m_nHiddenSize, 1);
                 m_blobHy.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
                 m_blobCy.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
 
                 // Set the input/output data descriptors
-                int[] rgSeqLen = new int[m_nN];
-                for (int i = 0; i < rgSeqLen.Length; i++)
-                {
-                    rgSeqLen[i] = m_nT;
-                }
-
-                m_cuda.SetRnnDataDesc(m_hXDesc, RNN_DATALAYOUT.RNN_BATCH_MAJOR, m_nT, m_nN, m_nInputSize, rgSeqLen);
-                m_cuda.SetRnnDataDesc(m_hYDesc, RNN_DATALAYOUT.RNN_BATCH_MAJOR, m_nT, m_nN, (int)m_param.recurrent_param.num_output, rgSeqLen);
+                m_cuda.SetRnnDataDesc(m_hXDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, m_nT, m_nN, m_nInputSize);
+                m_cuda.SetRnnDataDesc(m_hYDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, m_nT, m_nN, m_nHiddenSize);
 
                 int[] rgDimA = new int[3];
                 int[] rgStrideA = new int[3];
-                rghXDesc = new long[m_nT];
-
-                // rgDimA is constant across the entire sequence.
-                for (int i = 0; i < m_nT; i++)
-                {
-                    rghXDesc[i] = m_cuda.CreateTensorDesc();
-
-                    rgDimA[0] = m_nN; // mini batch.
-                    rgDimA[1] = m_nInputSize;
-                    rgDimA[2] = 1;
-
-                    rgStrideA[0] = rgDimA[2] * rgDimA[1];
-                    rgStrideA[1] = rgDimA[2];
-                    rgStrideA[2] = 1;
-
-                    m_cuda.SetTensorNdDesc(rghXDesc[i], rgDimA, rgStrideA);
-                }
 
                 rgDimA[0] = m_nNumLayers; // Currently, only unidirectional.
                 rgDimA[1] = m_nN; // mini batch.
@@ -317,7 +298,7 @@ namespace MyCaffe.layers
 
                 // Setup parameters - do this after the rnn descriptor is set
                 // otherwise we will not know how many parameters we have to allocate.
-                int nCount = m_cuda.GetRnnParamCount(m_hCuDnn, m_hRnnDesc, rghXDesc[0]);
+                int nCount = m_cuda.GetRnnParamCount(m_hCuDnn, m_hRnnDesc, m_hXDesc);
                 List<int> rgWtShape = new List<int>() { nCount, 1, 1 };
                 m_blobWts.Reshape(rgWtShape);
 
@@ -329,7 +310,7 @@ namespace MyCaffe.layers
                 m_cuda.SetFilterNdDesc(m_hWeightDesc, rgDimW);
 
                 // Setup the workspace and reserved memory.
-                m_nWorkspaceCount = m_cuda.GetRnnWorkspaceCount(m_hCuDnn, m_hRnnDesc, m_nT, rghXDesc, out m_nReservedCount);
+                m_nWorkspaceCount = m_cuda.GetRnnWorkspaceCount(m_hCuDnn, m_hRnnDesc, m_hXDesc, out m_nReservedCount);
                 m_hWorkspace = m_cuda.AllocMemory(m_nWorkspaceCount);
                 m_hReserved = m_cuda.AllocMemory(m_nReservedCount);
 
@@ -346,15 +327,40 @@ namespace MyCaffe.layers
                 {
                     for (int j = 0; j < nNumLinearLayers; j++)
                     {
-                        m_cuda.GetRnnLinLayerParams(m_hCuDnn, m_hRnnDesc, i, rghXDesc[0], m_hWeightDesc, m_blobWts.gpu_data, j, out nWtCount, out hWt, out nBiasCount, out hBias);
+                        m_cuda.GetRnnLinLayerParams(m_hCuDnn, m_hRnnDesc, i, m_hXDesc, m_hWeightDesc, m_blobWts.gpu_data, j, out nWtCount, out hWt, out nBiasCount, out hBias);
 
-                        fillerWt.Fill(nWtCount, hWt);
-                        fillerBias.Fill(nBiasCount, hBias);
+                        if (nWtCount % 2 != 0)
+                        {
+                            // Since, some fillers (gaussian) require an even number of items,
+                            // we can temporarily use the all weight diff area and then copy 
+                            // the non-even number of items into the layer weights.
+                            fillerWt.Fill(nWtCount + 1, m_blobWts.mutable_gpu_diff);
+                            m_cuda.copy(nWtCount, m_blobWts.mutable_gpu_diff, hWt);
+                        }
+                        else
+                        {
+                            fillerWt.Fill(nWtCount, hWt);
+                        }
+
+                        if (nBiasCount % 2 != 0)
+                        {
+                            // Since, some fillers (gaussian) require an even number of items,
+                            // we can temporarily use the all weight diff area and then copy 
+                            // the non-even number of items into the layer bias.
+                            fillerBias.Fill(nBiasCount + 1, m_blobWts.mutable_gpu_diff);
+                            m_cuda.copy(nBiasCount, m_blobWts.mutable_gpu_diff, hBias);
+                        }
+                        else
+                        {
+                            fillerBias.Fill(nBiasCount, hBias);
+                        }
 
                         m_cuda.FreeMemoryPointer(hWt);
                         m_cuda.FreeMemoryPointer(hBias);
                     }
                 }
+
+                m_blobWts.SetDiff(0);
             }
             catch (Exception excpt)
             {
@@ -362,13 +368,6 @@ namespace MyCaffe.layers
             }
             finally
             {
-                if (rghXDesc != null)
-                {
-                    for (int i = 0; i < rghXDesc.Length; i++)
-                    {
-                        free_tensor(ref rghXDesc[i]);
-                    }
-                }
             }
         }
 
@@ -565,7 +564,9 @@ namespace MyCaffe.layers
 
         private void reshapeCuDnn(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            // cuDnn reshaping takes place in layer setup.
+            colTop[0].ReshapeLike(m_blobY);
+            colTop[0].ShareData(m_blobY);
+            colTop[0].ShareDiff(m_blobY);
         }
 
         private void reshapeCaffe(BlobCollection<T> colBottom, BlobCollection<T> colTop)
