@@ -226,6 +226,9 @@ class Device
 		long CreateRnnDataDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long FreeRnnDataDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SetRnnDataDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long CreateRnnDataDescEx(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long FreeRnnDataDescEx(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long SetRnnDataDescEx(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long CreateRnnDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long FreeRnnDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -1361,7 +1364,7 @@ inline long Device<T>::CreateRnnDataDesc(long lInput, T* pfInput, long* plOutput
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	if (lErr = m_memory.CreateRnnDataDesc(&hHandle))
+	if (lErr = m_memory.CreateRnnDataDesc1(&hHandle))
 		return lErr;
 
 	return setOutput(hHandle, plOutput, ppfOutput);
@@ -1377,11 +1380,88 @@ inline long Device<T>::FreeRnnDataDesc(long lInput, T* pfInput, long* plOutput, 
 
 	long hHandle = (long)pfInput[0];
 
-	return m_memory.FreeRnnDataDesc(hHandle);
+	return m_memory.FreeRnnDataDesc1(hHandle);
 }
 
 template <class T>
 inline long Device<T>::SetRnnDataDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 5, MAX_ARG))
+		return lErr;
+
+	long hRnnDataDesc = (long)pfInput[0];
+	int layout = (int)pfInput[1];
+	int nMaxSeqLen = (int)pfInput[2];
+	int nBatchSize = (int)pfInput[3];
+	long nVectorSize = (long)pfInput[4];
+	int* rgSeqLen = NULL;
+	int nIdx = 5;
+
+	if (lInput != nIdx && lInput < nIdx + nBatchSize)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	if (lInput > nIdx)
+	{
+		rgSeqLen = (int*)malloc(sizeof(int) * nBatchSize);
+		if (rgSeqLen == NULL)
+			return ERROR_OUTOFMEMORY;
+
+		for (int i = 0; i < nBatchSize; i++)
+		{
+			rgSeqLen[i] = (int)pfInput[nIdx];
+
+			// All sequences must be the same length.
+			if (rgSeqLen[i] != nMaxSeqLen)
+			{
+				free(rgSeqLen);
+				return ERROR_PARAM_OUT_OF_RANGE;
+			}
+
+			nIdx++;
+		}
+	}
+
+	lErr = m_memory.SetRnnDataDesc1(hRnnDataDesc, (RnnDataLayout)layout, nMaxSeqLen, nBatchSize, nVectorSize, rgSeqLen);
+
+	if (rgSeqLen != NULL)
+		free(rgSeqLen);
+
+	return lErr;
+}
+
+
+template <class T>
+inline long Device<T>::CreateRnnDataDescEx(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+	long hHandle = 0;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	if (lErr = m_memory.CreateRnnDataDesc2(&hHandle))
+		return lErr;
+
+	return setOutput(hHandle, plOutput, ppfOutput);
+}
+
+template <class T>
+inline long Device<T>::FreeRnnDataDescEx(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+
+	return m_memory.FreeRnnDataDesc2(hHandle);
+}
+
+template <class T>
+inline long Device<T>::SetRnnDataDescEx(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
@@ -1408,7 +1488,7 @@ inline long Device<T>::SetRnnDataDesc(long lInput, T* pfInput, long* plOutput, T
 		nIdx++;
 	}
 
-	lErr = m_memory.SetRnnDataDesc(hRnnDataDesc, (RnnDataLayout)layout, nMaxSeqLen, nBatchSize, nVectorSize, rgSeqLen);
+	lErr = m_memory.SetRnnDataDesc2(hRnnDataDesc, (RnnDataLayout)layout, nMaxSeqLen, nBatchSize, nVectorSize, rgSeqLen);
 
 	free(rgSeqLen);
 
@@ -1466,16 +1546,28 @@ inline long Device<T>::GetRnnParamCount(long lInput, T* pfInput, long* plOutput,
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+	if (lErr = verifyInput(lInput, pfInput, 3, 4))
 		return lErr;
 
+	int nCount;
 	long hHandle = (long)pfInput[0];
 	long hRnnDesc = (long)pfInput[1];
 	long hXDesc = (long)pfInput[2];
-	int nCount;
 
-	if (lErr = m_memory.GetRnnParamCount(hHandle, hRnnDesc, hXDesc, &nCount))
-		return lErr;
+	bool bUseExtendedVersion = false;	// When true, requires that hXDesc and hYDesc be a handle to cudnnRnnDataDesc_t (created with CreateRnnDataDescEx)
+	if (lInput > 3)
+		bUseExtendedVersion = (pfInput[3] != 0) ? true : false;
+
+	if (bUseExtendedVersion)
+	{
+		if (lErr = m_memory.GetRnnParamCountEx(hHandle, hRnnDesc, hXDesc, &nCount))
+			return lErr;
+	}
+	else
+	{
+		if (lErr = m_memory.GetRnnParamCount(hHandle, hRnnDesc, hXDesc, &nCount))
+			return lErr;
+	}
 
 	setOutput((T)nCount, plOutput, ppfOutput);
 
@@ -1487,31 +1579,44 @@ inline long Device<T>::GetRnnWorkspaceCount(long lInput, T* pfInput, long* plOut
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, MAX_ARG))
+	if (lErr = verifyInput(lInput, pfInput, 3, MAX_ARG))
 		return lErr;
-
-	long hHandle = (long)pfInput[0];
-	long hRnnDesc = (long)pfInput[1];
-	int nSeqLen = (int)pfInput[2];
-
-	if (nSeqLen < 1 || nSeqLen > (lInput - 3))
-		return ERROR_PARAM_OUT_OF_RANGE;
-
-	long* rghXDesc = (long*)malloc(sizeof(long) * nSeqLen);
-	if (rghXDesc == NULL)
-		return ERROR_OUTOFMEMORY;
-
-	for (int i = 0; i < nSeqLen; i++)
-	{
-		rghXDesc[i] = (long)pfInput[i + 3];
-	}
 
 	int nWsCount = 0;
 	int nResCount = 0;
+	long hHandle = (long)pfInput[0];
+	long hRnnDesc = (long)pfInput[1];
 
-	lErr = m_memory.GetRnnWorkspaceCount(hHandle, hRnnDesc, nSeqLen, rghXDesc, &nWsCount, &nResCount);
+	if (lInput == 3)
+	{
+		long hXDesc = (long)pfInput[2];
+		
+		if (lErr = m_memory.GetRnnWorkspaceCount(hHandle, hRnnDesc, hXDesc, &nWsCount, &nResCount))
+			return lErr;
+	}
+	else
+	{
+		int nSeqLen = (int)pfInput[2];
 
-	free(rghXDesc);
+		if (nSeqLen < 1 || nSeqLen >(lInput - 3))
+			return ERROR_PARAM_OUT_OF_RANGE;
+
+		long* rghXDesc = (long*)malloc(sizeof(long) * nSeqLen);
+		if (rghXDesc == NULL)
+			return ERROR_OUTOFMEMORY;
+
+		for (int i = 0; i < nSeqLen; i++)
+		{
+			rghXDesc[i] = (long)pfInput[i + 3];
+		}
+
+		lErr = m_memory.GetRnnWorkspaceCountEx(hHandle, hRnnDesc, nSeqLen, rghXDesc, &nWsCount, &nResCount);
+		
+		free(rghXDesc);
+
+		if (lErr)
+			return lErr;
+	}
 
 	T* pOutput = NULL;
 	if (lErr = m_memory.AllocHost(2, &pOutput, NULL, false))
@@ -1531,7 +1636,7 @@ inline long Device<T>::GetRnnLinLayerParams(long lInput, T* pfInput, long* plOut
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+	if (lErr = verifyInput(lInput, pfInput, 7, 8))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
@@ -1541,13 +1646,26 @@ inline long Device<T>::GetRnnLinLayerParams(long lInput, T* pfInput, long* plOut
 	long hWtDesc = (long)pfInput[4];
 	long hWtData = (long)pfInput[5];
 	int nLinLayer = (int)pfInput[6];
+
+	bool bUseExtendedVersion = false;	// When true, requires that hXDesc and hYDesc be a handle to cudnnRnnDataDesc_t (created with CreateRnnDataDescEx)
+	if (lInput > 7)
+		bUseExtendedVersion = (pfInput[7] != 0) ? true : false;
+
 	int nWtCount = 0;
 	long hWt = 0;
 	int nBiasCount = 0;
 	long hBias = 0;
 
-	if (lErr = m_memory.GetRnnLinLayerParams(hHandle, hRnnDesc, nLayer, hXDesc, hWtDesc, hWtData, nLinLayer, &nWtCount, &hWt, &nBiasCount, &hBias))
-		return lErr;
+	if (bUseExtendedVersion)
+	{
+		if (lErr = m_memory.GetRnnLinLayerParamsEx(hHandle, hRnnDesc, nLayer, hXDesc, hWtDesc, hWtData, nLinLayer, &nWtCount, &hWt, &nBiasCount, &hBias))
+			return lErr;
+	}
+	else
+	{
+		if (lErr = m_memory.GetRnnLinLayerParams(hHandle, hRnnDesc, nLayer, hXDesc, hWtDesc, hWtData, nLinLayer, &nWtCount, &hWt, &nBiasCount, &hBias))
+			return lErr;
+	}
 
 	T* pOutput = NULL;
 	if (lErr = m_memory.AllocHost(4, &pOutput, NULL, false))
@@ -1569,7 +1687,7 @@ inline long Device<T>::RnnForward(long lInput, T* pfInput, long* plOutput, T** p
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 21, 21))
+	if (lErr = verifyInput(lInput, pfInput, 21, 22))
 		return lErr;
 	
 	long hHandle = (long)pfInput[0];
@@ -1612,6 +1730,14 @@ inline long Device<T>::RnnForward(long lInput, T* pfInput, long* plOutput, T** p
 	int nResCount = (int)pfInput[nIdx];
 	nIdx++;
 	bool bTraining = (pfInput[nIdx] == 0) ? false : true;
+	nIdx++;
+
+	bool bUseExtendedVersion = false;	// When true, requires that hXDesc and hYDesc be a handle to cudnnRnnDataDesc_t (created with CreateRnnDataDescEx)
+	if (nIdx < lInput)
+		bUseExtendedVersion = (pfInput[nIdx] != 0) ? true : false;
+
+	if (bUseExtendedVersion)
+		return m_memory.RnnForwardEx(hHandle, hRnnDesc, hXDesc, hXData, hHxDesc, hHxData, hCxDesc, hCxData, hWtDesc, hWtData, hYDesc, hYData, hHyDesc, hHyData, hCyDesc, hCyData, hWorkspace, nWsCount, hReserved, nResCount, bTraining);
 
 	return m_memory.RnnForward(hHandle, hRnnDesc, hXDesc, hXData, hHxDesc, hHxData, hCxDesc, hCxData, hWtDesc, hWtData, hYDesc, hYData, hHyDesc, hHyData, hCyDesc, hCyData, hWorkspace, nWsCount, hReserved, nResCount, bTraining);
 }
@@ -1621,7 +1747,7 @@ inline long Device<T>::RnnBackwardData(long lInput, T* pfInput, long* plOutput, 
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 25, 25))
+	if (lErr = verifyInput(lInput, pfInput, 25, 26))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
@@ -1677,17 +1803,24 @@ inline long Device<T>::RnnBackwardData(long lInput, T* pfInput, long* plOutput, 
 	long hReserved = (long)pfInput[nIdx];
 	nIdx++;
 	int nResCount = (int)pfInput[nIdx];
+	nIdx++;
+
+	bool bUseExtendedVersion = false;	// When true, requires that hXDesc and hYDesc be a handle to cudnnRnnDataDesc_t (created with CreateRnnDataDescEx)
+	if (nIdx < lInput)
+		bUseExtendedVersion = (pfInput[nIdx] != 0) ? true : false;
+
+	if (bUseExtendedVersion)
+		return m_memory.RnnBackwardDataEx(hHandle, hRnnDesc, hYDesc, hYData, hYDiff, hHyDesc, hHyDiff, hCyDesc, hCyDiff, hWtDesc, hWtData, hHxDesc, hHxData, hCxDesc, hCxData, hXDesc, hXDiff, hdHxDesc, hHxDiff, hdCxDesc, hCxDiff, hWorkspace, nWsCount, hReserved, nResCount);
 
 	return m_memory.RnnBackwardData(hHandle, hRnnDesc, hYDesc, hYData, hYDiff, hHyDesc, hHyDiff, hCyDesc, hCyDiff, hWtDesc, hWtData, hHxDesc, hHxData, hCxDesc, hCxData, hXDesc, hXDiff, hdHxDesc, hHxDiff, hdCxDesc, hCxDiff, hWorkspace, nWsCount, hReserved, nResCount);
 }
-
 
 template <class T>
 inline long Device<T>::RnnBackwardWeights(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 14, 14))
+	if (lErr = verifyInput(lInput, pfInput, 14, 15))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
@@ -1721,6 +1854,14 @@ inline long Device<T>::RnnBackwardWeights(long lInput, T* pfInput, long* plOutpu
 	long hReserved = (long)pfInput[nIdx];
 	nIdx++;
 	int nResCount = (int)pfInput[nIdx];
+	nIdx++;
+
+	bool bUseExtendedVersion = false;	// When true, requires that hXDesc and hYDesc be a handle to cudnnRnnDataDesc_t (created with CreateRnnDataDescEx)
+	if (nIdx < lInput)
+		bUseExtendedVersion = (pfInput[nIdx] != 0) ? true : false;
+
+	if (bUseExtendedVersion)
+		return m_memory.RnnBackwardWeightsEx(hHandle, hRnnDesc, hXDesc, hXData, hHxDesc, hHxData, hYDesc, hYData, hWorkspace, nWsCount, hWtDesc, hWtDiff, hReserved, nResCount);
 
 	return m_memory.RnnBackwardWeights(hHandle, hRnnDesc, hXDesc, hXData, hHxDesc, hHxData, hYDesc, hYData, hWorkspace, nWsCount, hWtDesc, hWtDiff, hReserved, nResCount);
 }
