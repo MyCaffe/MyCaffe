@@ -80,6 +80,9 @@
     <ClInclude Include="inc\FunctionIDs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Cuda Files\rnnData.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Cuda Files\main.cu">
@@ -116,6 +119,9 @@
       <Filter>Cuda Files</Filter>
     </CudaCompile>
     <CudaCompile Include="Cuda Files\extension.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\rnnData.cu">
       <Filter>Cuda Files</Filter>
     </CudaCompile>
   </ItemGroup>

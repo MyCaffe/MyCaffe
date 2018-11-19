@@ -11,6 +11,7 @@
 #include "memorycol.h"
 #include "memtest.h"
 #include "pca.h"
+#include "rnnData.h"
 #include "tsne_gp.h"
 #include "tsne_g.h"
 #include "nccl.h"
@@ -105,10 +106,11 @@ class Memory
 		HandleCollection<MAX_HANDLES> m_filterDesc;
 		HandleCollection<MAX_HANDLES> m_convDesc;
 		HandleCollection<MAX_HANDLES> m_poolDesc;
-		HandleCollection<MAX_HANDLES> m_rnnDesc;
-		HandleCollection<MAX_HANDLES> m_rnnDataDesc;
 		HandleCollection<MAX_HANDLES> m_lrnDesc;
-		HandleCollection<MAX_HANDLES> m_cudnn;
+		HandleCollection<MID_HANDLES> m_rnnDesc;
+		HandleCollection<MID_HANDLES> m_rnnDataDesc1;
+		HandleCollection<MID_HANDLES> m_rnnDataDesc2;
+		HandleCollection<MID_HANDLES> m_cudnn;
 		HandleCollection<MIN_HANDLES> m_pca;
 		HandleCollection<MIN_HANDLES> m_tsnegp;
 		HandleCollection<MIN_HANDLES> m_tsneg;
@@ -255,21 +257,32 @@ class Memory
 		long SoftmaxForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, T fBeta, long hTopDesc, long hTopData);
 		long SoftmaxBackward(long hHandle, T fAlpha, long hTopDataDesc, long hTopData, long hTopDiffDesc, long hTopDiff, T fBeta, long hBottomDiffDesc, long hBottomDiff);
 
-		long CreateRnnDataDesc(long* phHandle);
-		long FreeRnnDataDesc(long hHandle);
-		cudnnRNNDataDescriptor_t GetRnnDataDesc(long hHandle);
-		long SetRnnDataDesc(long hRnnDataDesc, RnnDataLayout layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int* rgSeqLen);
+		long CreateRnnDataDesc1(long* phHandle);
+		long FreeRnnDataDesc1(long hHandle);
+		rnnDataHandle<T>* GetRnnDataDesc1(long hHandle);
+		long SetRnnDataDesc1(long hRnnDataDesc, RnnDataLayout layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int* rgSeqLen);
+
+		long CreateRnnDataDesc2(long* phHandle);
+		long FreeRnnDataDesc2(long hHandle);
+		cudnnRNNDataDescriptor_t GetRnnDataDesc2(long hHandle);
+		long SetRnnDataDesc2(long hRnnDataDesc, RnnDataLayout layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int* rgSeqLen);
 
 		long CreateRnnDesc(long* phHandle);
 		long FreeRnnDesc(long hHandle);
 		cudnnRNNDescriptor_t GetRnnDesc(long hHandle);
 		long SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenCount, int nNumLayers, long hDropoutDesc, RnnMode nMode);
 		long GetRnnParamCount(long hHandle, long hRnnDesc, long hXDesc, int* pnCount);
-		long GetRnnWorkspaceCount(long hHandle, long hRnnDesc, int nSeqLen, long* rghXDesc, int* pnWsCount, int* pnResCount);
+		long GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, int* pnWsCount, int* pnResCount);
+		long GetRnnParamCountEx(long hHandle, long hRnnDesc, long hXDesc, int* pnCount);
+		long GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, int nSeqLen, long* rghXDesc, int* pnWsCount, int* pnResCount);
 		long GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, long hXDesc, long hWtDesc, long hWtData, int nLinLayer, int* pnWtCount, long* phWt, int* pnBiasCount, long* phBias);
+		long GetRnnLinLayerParamsEx(long hHandle, long hRnnDesc, int nLayer, long hXDesc, long hWtDesc, long hWtData, int nLinLayer, int* pnWtCount, long* phWt, int* pnBiasCount, long* phBias);
 		long RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, int nWsCount, long hReserved, int nResCount, bool bTraining);
 		long RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, int nWsCount, long hReserved, int nResCount);
 		long RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, int nWsCount, long hWtDesc, long hWtDiff, long hReserved, int nResCount);
+		long RnnForwardEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, int nWsCount, long hReserved, int nResCount, bool bTraining);
+		long RnnBackwardDataEx(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, int nWsCount, long hReserved, int nResCount);
+		long RnnBackwardWeightsEx(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hYDesc, long hYData, long hWorkspace, int nWsCount, long hWtDesc, long hWtDiff, long hReserved, int nResCount);
 
 		long CreatePCA(int nMaxIterations, int nM, int nN, int nK, long hData, long hScoresResult, long hLoadsResult, long hResiduals, long hEigenvalues, Math<T>* pMath, long* phHandle);
 		long FreePCA(long hHandle);
@@ -875,10 +888,44 @@ inline long Memory<T>::SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenCount,
 	return CUDNN_STATUS_SUCCESS;
 }
 
+
 template <class T>
-inline long Memory<T>::FreeRnnDataDesc(long hHandle)
+inline long Memory<T>::FreeRnnDataDesc1(long hHandle)
 {
-	cudnnRNNDataDescriptor_t desc = (cudnnRNNDataDescriptor_t)m_rnnDataDesc.Free(hHandle);
+	rnnDataHandle<T>* desc = (rnnDataHandle<T>*)m_rnnDataDesc1.Free(hHandle);
+
+	if (desc != NULL)
+	{
+		desc->CleanUp();
+		delete desc;
+	}
+
+	return 0;
+}
+
+template <class T>
+inline rnnDataHandle<T>* Memory<T>::GetRnnDataDesc1(long hHandle)
+{
+	return (rnnDataHandle<T>*)m_rnnDataDesc1.GetData(hHandle);
+}
+
+template <class T>
+inline long Memory<T>::SetRnnDataDesc1(long hRnnDataDesc, RnnDataLayout layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int* rgSeqLen)
+{
+	LONG lErr;
+	rnnDataHandle<T>* desc = (rnnDataHandle<T>*)m_rnnDataDesc1.GetData(hRnnDataDesc);
+	cudnnDataType_t computeType = (sizeof(T) == sizeof(double)) ? CUDNN_DATA_DOUBLE : CUDNN_DATA_FLOAT;
+
+	if (lErr = desc->Set(computeType, (cudnnRNNDataLayout_t)layout, nMaxSeqLen, nBatchSize, nVectorSize, rgSeqLen))
+		return lErr | ERROR_CUDNN_OFFSET;
+
+	return CUDNN_STATUS_SUCCESS;
+}
+
+template <class T>
+inline long Memory<T>::FreeRnnDataDesc2(long hHandle)
+{
+	cudnnRNNDataDescriptor_t desc = (cudnnRNNDataDescriptor_t)m_rnnDataDesc2.Free(hHandle);
 
 	if (desc != NULL)
 		cudnnDestroyRNNDataDescriptor(desc);
@@ -887,16 +934,16 @@ inline long Memory<T>::FreeRnnDataDesc(long hHandle)
 }
 
 template <class T>
-inline cudnnRNNDataDescriptor_t Memory<T>::GetRnnDataDesc(long hHandle)
+inline cudnnRNNDataDescriptor_t Memory<T>::GetRnnDataDesc2(long hHandle)
 {
-	return (cudnnRNNDataDescriptor_t)m_rnnDataDesc.GetData(hHandle);
+	return (cudnnRNNDataDescriptor_t)m_rnnDataDesc2.GetData(hHandle);
 }
 
 template <class T>
-inline long Memory<T>::SetRnnDataDesc(long hRnnDataDesc, RnnDataLayout layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int* rgSeqLen)
+inline long Memory<T>::SetRnnDataDesc2(long hRnnDataDesc, RnnDataLayout layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int* rgSeqLen)
 {
 	LONG lErr;
-	cudnnRNNDataDescriptor_t desc = (cudnnRNNDataDescriptor_t)m_rnnDataDesc.GetData(hRnnDataDesc);
+	cudnnRNNDataDescriptor_t desc = (cudnnRNNDataDescriptor_t)m_rnnDataDesc2.GetData(hRnnDataDesc);
 	cudnnDataType_t computeType = (sizeof(T) == sizeof(double)) ? CUDNN_DATA_DOUBLE : CUDNN_DATA_FLOAT;
 
 	if (lErr = cudnnSetRNNDataDescriptor(desc, computeType, (cudnnRNNDataLayout_t)layout, nMaxSeqLen, nBatchSize, nVectorSize, rgSeqLen, NULL))

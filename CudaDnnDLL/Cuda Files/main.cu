@@ -302,6 +302,15 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDNN_FN_SET_RNN_DATA_DESC:
 			return m_device.SetRnnDataDesc(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDNN_FN_CREATE_RNN_DATA_DESCEX:
+			return m_device.CreateRnnDataDescEx(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_FREE_RNN_DATA_DESCEX:
+			return m_device.FreeRnnDataDescEx(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDNN_FN_SET_RNN_DATA_DESCEX:
+			return m_device.SetRnnDataDescEx(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDNN_FN_CREATE_RNN_DESC:
 			return m_device.CreateRnnDesc(lCount, pfInput, plCount, ppfOutput);
 
@@ -969,6 +978,9 @@ char* GetApiName(long lfnIdx)
 	case CUDNN_FN_SET_TENSORDESC:
 		return "CUDNN_FN_SET_TENSORDESC";
 
+	case CUDNN_FN_SET_TENSORNDDESC:
+		return "CUDNN_FN_SET_TENSORNDDESC";
+
 	case CUDNN_FN_ADD_TENSOR:
 		return "CUDNN_FN_ADD_TENSOR";
 
@@ -980,6 +992,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDNN_FN_SET_FILTERDESC:
 		return "CUDNN_FN_SET_FILTERDESC";
+
+	case CUDNN_FN_SET_FILTERNDDESC:
+		return "CUDNN_FN_SET_FILTERNDDESC";
 
 	case CUDNN_FN_CREATE_CONVDESC:
 		return "CUDNN_FN_CREATE_CONVDESC";
@@ -1079,6 +1094,15 @@ char* GetApiName(long lfnIdx)
 
 	case CUDNN_FN_SET_RNN_DATA_DESC:
 		return "CUDNN_FN_SET_RNN_DATA_DESC";
+
+	case CUDNN_FN_CREATE_RNN_DATA_DESCEX:
+		return "CUDNN_FN_CREATE_RNN_DATA_DESCEX";
+
+	case CUDNN_FN_FREE_RNN_DATA_DESCEX:
+		return "CUDNN_FN_FREE_RNN_DATA_DESCEX";
+
+	case CUDNN_FN_SET_RNN_DATA_DESCEX:
+		return "CUDNN_FN_SET_RNN_DATA_DESCEX";
 
 	case CUDNN_FN_CREATE_RNN_DESC:
 		return "CUDNN_FN_CREATE_RNN_DESC";
