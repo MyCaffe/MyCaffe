@@ -414,13 +414,13 @@ namespace MyCaffe.common
 
         long CreateRnnDataDesc();
         void FreeRnnDataDesc(long h);
-        void SetRnnDataDesc(long hRnnDataDesc, RNN_DATALAYOUT layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int[] rgSeqLen);
+        void SetRnnDataDesc(long hRnnDataDesc, RNN_DATALAYOUT layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int[] rgSeqLen = null);
 
         long CreateRnnDesc();
         void FreeRnnDesc(long h);
         void SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenSize, int nNumLayers, long hDropoutDesc, RNN_MODE mode);
         int GetRnnParamCount(long hHandle, long hRnnDesc, long hXDesc);
-        int GetRnnWorkspaceCount(long hHandle, long hRnnDesc, int nSeqLen, long[] rghXDesc, out int nReservedCount);
+        int GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, out int nReservedCount);
         void GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, long hXDesc, long hWtDesc, long hWtData, int nLinLayer, out int nWtCount, out long hWt, out int nBiasCount, out long hBias);
         void RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, int nWsCount, long hReserved, int hResCount, bool bTraining);
         void RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long hYData, long hYDiff, long hHyDesc, long hHyDiff, long hCyDesc, long hCyDiff, long hWtDesc, long hWtData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hXDesc, long hXDiff, long hdHxDesc, long hHxDiff, long hdCxDesc, long hCxDiff, long hWorkspace, int nWsCount, long hReserved, int nResCount);
@@ -537,6 +537,7 @@ namespace MyCaffe.common
         bool m_bGhostMemoryEnabled = false;
         bool m_bOwner = true;
         object m_memSync = new object();
+        bool m_bEnableRnnExtendedVersion = false;
 
         /// <summary>
         /// Specifies the type of string information to quer from the Cuda C++ layer.
@@ -686,6 +687,10 @@ namespace MyCaffe.common
             CREATE_RNN_DATA_DESC = 130,
             FREE_RNN_DATA_DESC = 131,
             SET_RNN_DATA_DESC = 132,
+
+            CREATE_RNN_DATA_DESCEX = 135,
+            FREE_RNN_DATA_DESCEX = 136,
+            SET_RNN_DATA_DESCEX = 137,
 
             CREATE_RNN_DESC = 140,
             FREE_RNN_DESC = 141,
@@ -3596,14 +3601,16 @@ namespace MyCaffe.common
         /// <returns>A handle to the RNN Data descriptor is returned.</returns>
         public long CreateRnnDataDesc()
         {
+            int nFn = (m_bEnableRnnExtendedVersion) ? (int)CUDAFN.CREATE_RNN_DATA_DESCEX : (int)CUDAFN.CREATE_RNN_DATA_DESC;
+
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CREATE_RNN_DATA_DESC, null);
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, nFn, null);
                 return (long)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CREATE_RNN_DATA_DESC, null);
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, nFn, null);
                 return (long)rg[0];
             }
         }
@@ -3614,10 +3621,12 @@ namespace MyCaffe.common
         /// <param name="h">Specifies the handle to the RNN Data descriptor created with CreateRnnDataDesc</param>
         public void FreeRnnDataDesc(long h)
         {
+            int nFn = (m_bEnableRnnExtendedVersion) ? (int)CUDAFN.FREE_RNN_DATA_DESCEX : (int)CUDAFN.FREE_RNN_DATA_DESC;
+
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_RNN_DATA_DESC, new double[] { h });
+                m_cuda.RunDouble((int)m_hKernel, nFn, new double[] { h });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_RNN_DATA_DESC, new float[] { h });
+                m_cuda.RunFloat((int)m_hKernel, nFn, new float[] { h });
         }
 
         /// <summary>
@@ -3628,33 +3637,43 @@ namespace MyCaffe.common
         /// <param name="nMaxSeqLen">Specifies the maximum sequence length.</param>
         /// <param name="nBatchSize">Specifies the batch count.</param>
         /// <param name="nVectorSize">Specifies the input vector count.</param>
-        /// <param name="rgSeqLen">Specifies the sequence lengths.</param>
-        public void SetRnnDataDesc(long hRnnDataDesc, RNN_DATALAYOUT layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int[] rgSeqLen)
+        /// <param name="rgSeqLen">Specifies the sequence lengths - currently this should be <i>null</i> which sets all sequence lengths to nMaxSeqLen.</param>
+        public void SetRnnDataDesc(long hRnnDataDesc, RNN_DATALAYOUT layout, int nMaxSeqLen, int nBatchSize, int nVectorSize, int[] rgSeqLen = null)
         {
+            if (!m_bEnableRnnExtendedVersion && layout != RNN_DATALAYOUT.RNN_SEQ_MAJOR)
+                throw new Exception("The non-extended functions only support RNN_SEQ_MAJOR ordering.");
+
+            int nFn = (m_bEnableRnnExtendedVersion) ? (int)CUDAFN.SET_RNN_DATA_DESCEX : (int)CUDAFN.SET_RNN_DATA_DESC;
+
             if (m_dt == DataType.DOUBLE)
             {
                 List<double> rgArg = new List<double>() { hRnnDataDesc, (double)layout, nMaxSeqLen, nBatchSize, nVectorSize };
 
-                for (int i = 0; i < rgSeqLen.Length; i++)
+                if (rgSeqLen != null)
                 {
-                    rgArg.Add(rgSeqLen[i]);
+                    for (int i = 0; i < rgSeqLen.Length; i++)
+                    {
+                        rgArg.Add(rgSeqLen[i]);
+                    }
                 }
 
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_RNN_DATA_DESC, rgArg.ToArray());
+                m_cuda.RunDouble((int)m_hKernel, nFn, rgArg.ToArray());
             }
             else
             {
                 List<float> rgArg = new List<float>() { hRnnDataDesc, (float)layout, nMaxSeqLen, nBatchSize, nVectorSize };
 
-                for (int i = 0; i < rgSeqLen.Length; i++)
+                if (rgSeqLen != null)
                 {
-                    rgArg.Add(rgSeqLen[i]);
+                    for (int i = 0; i < rgSeqLen.Length; i++)
+                    {
+                        rgArg.Add(rgSeqLen[i]);
+                    }
                 }
 
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_RNN_DATA_DESC, rgArg.ToArray());
+                m_cuda.RunFloat((int)m_hKernel, nFn, rgArg.ToArray());
             }
         }
-
 
         /// <summary>
         /// Create the RNN Descriptor.
@@ -3729,34 +3748,24 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
         /// <param name="hRnnDesc">Specifies the handle to the RNN descriptor created with CreateRnnDesc</param>
-        /// <param name="nSeqLen">Specifies the sequence length.</param>
-        /// <param name="rghXDesc">Specifies an array of descriptors for each value within the sequence.</param>
+        /// <param name="hXDesc">Specifies a handle to the data descriptor created with CreateRnnDataDesc.</param>
         /// <param name="nReservedCount">Returns the reserved count needed.</param>
         /// <returns>Returns the workspace count needed.</returns>
-        public int GetRnnWorkspaceCount(long hCuDnn, long hRnnDesc, int nSeqLen, long[] rghXDesc, out int nReservedCount)
+        public int GetRnnWorkspaceCount(long hCuDnn, long hRnnDesc, long hXDesc, out int nReservedCount)
         {
+            if (m_bEnableRnnExtendedVersion)
+                throw new NotImplementedException("Currently the RNN extended version is not supported for GetRnnWorkspaceCount.");
+
             if (m_dt == DataType.DOUBLE)
             {
-                List<double> rgArg = new List<double>() { hCuDnn, hRnnDesc, nSeqLen };
-
-                for (int i = 0; i < rghXDesc.Length; i++)
-                {
-                    rgArg.Add(rghXDesc[i]);
-                }
-
+                List<double> rgArg = new List<double>() { hCuDnn, hRnnDesc, hXDesc };
                 double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_RNN_WORKSPACECOUNT, rgArg.ToArray());
                 nReservedCount = (int)rg[1];
                 return (int)rg[0];
             }
             else
             {
-                List<float> rgArg = new List<float>() { hCuDnn, hRnnDesc, nSeqLen };
-
-                for (int i = 0; i < rghXDesc.Length; i++)
-                {
-                    rgArg.Add(rghXDesc[i]);
-                }
-
+                List<float> rgArg = new List<float>() { hCuDnn, hRnnDesc, hXDesc };
                 float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_RNN_WORKSPACECOUNT, rgArg.ToArray());
                 nReservedCount = (int)rg[1];
                 return (int)rg[0];
@@ -3781,7 +3790,7 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_RNN_LINLAYERPARAMS, new double[] { hCuDnn, hRnnDesc, nLayer, hXDesc, hWtDesc, hWtData, nLinLayer });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_RNN_LINLAYERPARAMS, new double[] { hCuDnn, hRnnDesc, nLayer, hXDesc, hWtDesc, hWtData, nLinLayer, (m_bEnableRnnExtendedVersion) ? 1 : 0 });
                 nWtCount = (int)rg[0];
                 hWt = (long)rg[1];
                 nBiasCount = (int)rg[2];
@@ -3789,7 +3798,7 @@ namespace MyCaffe.common
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_RNN_LINLAYERPARAMS, new float[] { hCuDnn, hRnnDesc, nLayer, hXDesc, hWtDesc, hWtData, nLinLayer });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_RNN_LINLAYERPARAMS, new float[] { hCuDnn, hRnnDesc, nLayer, hXDesc, hWtDesc, hWtData, nLinLayer, (m_bEnableRnnExtendedVersion) ? 1 : 0 });
                 nWtCount = (int)rg[0];
                 hWt = (long)rg[1];
                 nBiasCount = (int)rg[2];
@@ -3852,6 +3861,9 @@ namespace MyCaffe.common
                 rgArg.Add(nResCount);
                 rgArg.Add((bTraining) ? 1 : 0);
 
+                if (m_bEnableRnnExtendedVersion)
+                    rgArg.Add(1);
+
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FWD_RNN, rgArg.ToArray());
             }
             else
@@ -3882,6 +3894,9 @@ namespace MyCaffe.common
                 rgArg.Add(hReserved);
                 rgArg.Add(nResCount);
                 rgArg.Add((bTraining) ? 1 : 0);
+
+                if (m_bEnableRnnExtendedVersion)
+                    rgArg.Add(1);
 
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FWD_RNN, rgArg.ToArray());
             }
@@ -3951,6 +3966,9 @@ namespace MyCaffe.common
                 rgArg.Add(hReserved);
                 rgArg.Add(nResCount);
 
+                if (m_bEnableRnnExtendedVersion)
+                    rgArg.Add(1);
+
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_RNN_DATA, rgArg.ToArray());
             }
             else
@@ -3986,6 +4004,9 @@ namespace MyCaffe.common
                 rgArg.Add(nWsCount);
                 rgArg.Add(hReserved);
                 rgArg.Add(nResCount);
+
+                if (m_bEnableRnnExtendedVersion)
+                    rgArg.Add(1);
 
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_RNN_DATA, rgArg.ToArray());
             }
@@ -4028,6 +4049,9 @@ namespace MyCaffe.common
                 rgArg.Add(hReserved);
                 rgArg.Add(nResCount);
 
+                if (m_bEnableRnnExtendedVersion)
+                    rgArg.Add(1);
+
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_RNN_WTS, rgArg.ToArray());
             }
             else
@@ -4047,6 +4071,9 @@ namespace MyCaffe.common
                 rgArg.Add(nWsCount);
                 rgArg.Add(hReserved);
                 rgArg.Add(nResCount);
+
+                if (m_bEnableRnnExtendedVersion)
+                    rgArg.Add(1);
 
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.BWD_RNN_WTS, rgArg.ToArray());
             }
