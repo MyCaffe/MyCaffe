@@ -1287,13 +1287,7 @@ namespace MyCaffe.test
                     int nBatchLen = 5;
                     int nVectorLen = 2;
 
-                    int[] rgSeqLen = new int[nBatchLen];
-                    for (int i = 0; i < nBatchLen; i++)
-                    {
-                        rgSeqLen[i] = nMaxSeqLen;
-                    }
-
-                    t.Cuda.SetRnnDataDesc(hDesc, RNN_DATALAYOUT.RNN_BATCH_MAJOR, nMaxSeqLen, nBatchLen, nVectorLen, rgSeqLen);
+                    t.Cuda.SetRnnDataDesc(hDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nMaxSeqLen, nBatchLen, nVectorLen);
                     t.Cuda.FreeRnnDataDesc(hDesc);
                 }
             }
@@ -1337,8 +1331,8 @@ namespace MyCaffe.test
         {
             CudaDnnTest test = new CudaDnnTest();
             long hDesc = 0;
+            long hDataDesc = 0;
             long hCudnn = 0;
-            long hTensor = 0;
 
             try
             {
@@ -1346,29 +1340,20 @@ namespace MyCaffe.test
                 {
                     hCudnn = t.Cuda.CreateCuDNN();
                     hDesc = t.Cuda.CreateRnnDesc();
-                    hTensor = t.Cuda.CreateTensorDesc();
+                    hDataDesc = t.Cuda.CreateRnnDataDesc();
 
                     int nHiddenSize = 10;
+                    int nSeqLen = 10;
                     int nBatchSize = 5;
                     int nNumLayers = 1;
-                    int[] rgDim = new int[3];
-                    int[] rgStride = new int[3];
 
-                    rgDim[0] = nBatchSize;
-                    rgDim[1] = nHiddenSize;
-                    rgDim[2] = 1;
-
-                    rgStride[0] = rgDim[2] * rgDim[1];
-                    rgStride[1] = rgDim[2];
-                    rgStride[2] = 1;
-
-                    t.Cuda.SetTensorNdDesc(hTensor, rgDim, rgStride);
                     t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM);
+                    t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
 
-                    int nCount = t.Cuda.GetRnnParamCount(hCudnn, hDesc, hTensor);
+                    int nCount = t.Cuda.GetRnnParamCount(hCudnn, hDesc, hDataDesc);
 
                     t.Cuda.FreeRnnDesc(hDesc);
-                    t.Cuda.FreeTensorDesc(hTensor);
+                    t.Cuda.FreeRnnDataDesc(hDataDesc);
                     t.Cuda.FreeCuDNN(hCudnn);
                 }
             }
@@ -1383,6 +1368,7 @@ namespace MyCaffe.test
         {
             CudaDnnTest test = new CudaDnnTest();
             long hDesc = 0;
+            long hDataDesc = 0;
             long hCudnn = 0;
 
             try
@@ -1391,40 +1377,21 @@ namespace MyCaffe.test
                 {
                     hCudnn = t.Cuda.CreateCuDNN();
                     hDesc = t.Cuda.CreateRnnDesc();
+                    hDataDesc = t.Cuda.CreateRnnDataDesc();
 
                     int nSeqLen = 10;
                     int nHiddenSize = 3;
                     int nBatchSize = 5;
                     int nNumLayers = 1;
-                    int[] rgDim = new int[3];
-                    int[] rgStride = new int[3];
-                    long[] rghTensor = new long[nSeqLen];
-
-                    for (int i = 0; i < nSeqLen; i++)
-                    {
-                        rgDim[0] = nBatchSize;
-                        rgDim[1] = nHiddenSize;
-                        rgDim[2] = 1;
-
-                        rgStride[0] = rgDim[2] * rgDim[1];
-                        rgStride[1] = rgDim[2];
-                        rgStride[2] = 1;
-
-                        rghTensor[i] = t.Cuda.CreateTensorDesc();
-                        t.Cuda.SetTensorNdDesc(rghTensor[i], rgDim, rgStride);
-                    }
 
                     t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM);
+                    t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
 
                     int nReservedCount;
-                    int nWorkspaceCount = t.Cuda.GetRnnWorkspaceCount(hCudnn, hDesc, nSeqLen, rghTensor, out nReservedCount);
-
-                    for (int i = 0; i < rghTensor.Length; i++)
-                    {
-                        t.Cuda.FreeTensorDesc(rghTensor[i]);
-                    }
+                    int nWorkspaceCount = t.Cuda.GetRnnWorkspaceCount(hCudnn, hDesc, hDataDesc, out nReservedCount);
 
                     t.Cuda.FreeRnnDesc(hDesc);
+                    t.Cuda.FreeRnnDataDesc(hDataDesc);
                     t.Cuda.FreeCuDNN(hCudnn);
                 }
             }
@@ -1440,10 +1407,10 @@ namespace MyCaffe.test
         {
             CudaDnnTest test = new CudaDnnTest();
             long hDesc = 0;
+            long hDataDesc = 0;
             long hCudnn = 0;
             long hWtData = 0;
             long hWtDesc = 0;
-            long[] rghTensor = null;
 
             try
             {
@@ -1451,32 +1418,17 @@ namespace MyCaffe.test
                 {
                     hCudnn = t.Cuda.CreateCuDNN();
                     hDesc = t.Cuda.CreateRnnDesc();
+                    hDataDesc = t.Cuda.CreateRnnDataDesc();
 
                     int nSeqLen = 10;
                     int nHiddenSize = 3;
                     int nBatchSize = 5;
                     int nNumLayers = 1;
-                    int[] rgDim = new int[3];
-                    int[] rgStride = new int[3];
-                    rghTensor = new long[nSeqLen];
-
-                    for (int i = 0; i < nSeqLen; i++)
-                    {
-                        rgDim[0] = nBatchSize;
-                        rgDim[1] = nHiddenSize;
-                        rgDim[2] = 1;
-
-                        rgStride[0] = rgDim[2] * rgDim[1];
-                        rgStride[1] = rgDim[2];
-                        rgStride[2] = 1;
-
-                        rghTensor[i] = t.Cuda.CreateTensorDesc();
-                        t.Cuda.SetTensorNdDesc(rghTensor[i], rgDim, rgStride);
-                    }
 
                     t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM);
+                    t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
 
-                    int nAllWtCount = t.Cuda.GetRnnParamCount(hCudnn, hDesc, rghTensor[0]);
+                    int nAllWtCount = t.Cuda.GetRnnParamCount(hCudnn, hDesc, hDataDesc);
                     hWtDesc = t.Cuda.CreateFilterDesc();
                     hWtData = t.Cuda.AllocMemory(nAllWtCount);
 
@@ -1500,7 +1452,7 @@ namespace MyCaffe.test
                                 int nBiasCount;
                                 long hBias;
 
-                                t.Cuda.GetRnnLinLayerParams(hCudnn, hDesc, i, rghTensor[0], hWtDesc, hWtData, j, out nWtCount, out hWt, out nBiasCount, out hBias);
+                                t.Cuda.GetRnnLinLayerParams(hCudnn, hDesc, i, hDataDesc, hWtDesc, hWtData, j, out nWtCount, out hWt, out nBiasCount, out hBias);
 
                                 Assert.AreNotEqual(nWtCount, 0, "The weight data count should not be zero!");
                                 Assert.AreNotEqual(hWt, 0, "The weight handle should not be zero!");
@@ -1517,14 +1469,10 @@ namespace MyCaffe.test
                         err = excpt;
                     }
 
-                    for (int i = 0; i < rghTensor.Length; i++)
-                    {
-                        t.Cuda.FreeTensorDesc(rghTensor[i]);
-                    }
-
                     t.Cuda.FreeMemory(hWtData);
                     t.Cuda.FreeFilterDesc(hWtDesc);
                     t.Cuda.FreeRnnDesc(hDesc);
+                    t.Cuda.FreeRnnDataDesc(hDataDesc);
                     t.Cuda.FreeCuDNN(hCudnn);
 
                     if (err != null)

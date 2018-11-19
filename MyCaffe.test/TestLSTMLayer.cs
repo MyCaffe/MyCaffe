@@ -204,7 +204,25 @@ namespace MyCaffe.test
             {
                 foreach (ILSTMLayerTest t in test.Tests)
                 {
-                    t.TestForward();
+                    t.TestForward(Phase.TEST);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardCuDnnTraining()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestForward(Phase.TRAIN);
                 }
             }
             finally
@@ -235,7 +253,7 @@ namespace MyCaffe.test
     interface ILSTMLayerTest : ITest
     {
         void TestSetup();
-        void TestForward();
+        void TestForward(Phase phase = Phase.NONE);
         void TestGradient();
         void TestGradientNonZeroCont();
         void TestGradientNonZeroContBufferSize2();
@@ -365,12 +383,16 @@ namespace MyCaffe.test
 
             List<int> rgExpectedTopShape = Utility.Clone<int>(m_blob_bottom.shape(), 3);
             rgExpectedTopShape[2] = m_nNumOutput;
+
+            if (m_blob_top.num_axes == 4 && m_blob_top.shape(3) == 1 && rgExpectedTopShape.Count == 3)
+                rgExpectedTopShape.Add(1);
+
             m_log.CHECK(Utility.Compare<int>(m_blob_top.shape(), rgExpectedTopShape), "The top shape is not as expected.");
 
             layer.Dispose();
         }
 
-        public void TestForward()
+        public void TestForward(Phase phase)
         {
             int kNumTimesteps = 3;
             int nNum = m_blob_bottom.shape(1);
@@ -402,6 +424,10 @@ namespace MyCaffe.test
             sequence_filler.Fill(m_blob_bottom);
 
             m_param.recurrent_param.engine = m_engine;
+
+            if (phase != Phase.NONE)
+                m_param.phase = phase;
+
             LSTMLayer<T> layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
             m_cuda.rng_setseed(1701);
             layer.Setup(BottomVec, TopVec);
@@ -540,6 +566,7 @@ namespace MyCaffe.test
         public void TestGradient()
         {
             m_param.recurrent_param.engine = m_engine;
+            m_param.phase = Phase.TRAIN;
             LSTMLayer<T> layer = new LSTMLayer<T>(m_cuda, m_log, m_param, m_evtCancel);
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
