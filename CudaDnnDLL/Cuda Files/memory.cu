@@ -1246,9 +1246,12 @@ long Memory<T>::GetDropoutInfo(long hHandle, long hBottomDesc, unsigned long* pl
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
-	cudnnTensorDescriptor_t bottomDesc = GetTensorDesc(hBottomDesc);
-	size_t szStates;
-	size_t szReserved;
+	cudnnTensorDescriptor_t bottomDesc = NULL;
+	size_t szStates = 0;
+	size_t szReserved = 0;
+
+	if (hBottomDesc > 0)
+		bottomDesc = GetTensorDesc(hBottomDesc);
 
 	if (plState == NULL || plReserved == NULL)
 		return ERROR_PARAM_NULL;
@@ -1256,8 +1259,11 @@ long Memory<T>::GetDropoutInfo(long hHandle, long hBottomDesc, unsigned long* pl
 	if (lErr = cudnnDropoutGetStatesSize(cudnn, &szStates))
 		return lErr | ERROR_CUDNN_OFFSET;
 
-	if (lErr = cudnnDropoutGetReserveSpaceSize(bottomDesc, &szReserved))
-		return lErr | ERROR_CUDNN_OFFSET;
+	if (bottomDesc != NULL)
+	{
+		if (lErr = cudnnDropoutGetReserveSpaceSize(bottomDesc, &szReserved))
+			return lErr | ERROR_CUDNN_OFFSET;
+	}
 
 	*plState = (unsigned long)szStates;
 	*plReserved = (unsigned long)szReserved;
@@ -2073,12 +2079,12 @@ long Memory<T>::GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, i
 	if (lErr = cudnnGetRNNWorkspaceSize(cudnn, desc, descX->MaxSeqLen(), descX->SeqTensors(), &sizeInBytes))
 		return lErr;
 
-	int nWsCount = (int)((long)sizeInBytes / sizeof(T)) + 1;
+	int nWsCount = (int)((long)sizeInBytes / sizeof(T));
 
 	if (lErr = cudnnGetRNNTrainingReserveSize(cudnn, desc, descX->MaxSeqLen(), descX->SeqTensors(), &sizeInBytes))
 		return lErr;
 
-	int nResCount = (int)((long)sizeInBytes / sizeof(T)) + 1;
+	int nResCount = (int)((long)sizeInBytes / sizeof(T));
 
 	*pnWsCount = nWsCount;
 	*pnResCount = nResCount;
@@ -2344,6 +2350,9 @@ long Memory<T>::RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData
 	MemoryItem* pWorkspaceData;
 	MemoryItem* pReservedData;
 
+	if (descX == NULL || descY == NULL)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
 	if (lErr = m_memory.GetData(hXData, &pXData))
 		return lErr;
 
@@ -2578,6 +2587,9 @@ long Memory<T>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long h
 	MemoryItem* pWorkspaceData;
 	MemoryItem* pReservedData;
 
+	if (descX == NULL || descY == NULL)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
 	if (lErr = m_memory.GetData(hYData, &pYData))
 		return lErr;
 
@@ -2756,8 +2768,8 @@ long Memory<T>::RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, lon
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
 	cudnnRNNDescriptor_t desc = (cudnnRNNDescriptor_t)m_rnnDesc.GetData(hRnnDesc);
-	rnnDataHandle<T>* descX = (rnnDataHandle<T>*)m_rnnDataDesc2.GetData(hXDesc);
-	rnnDataHandle<T>* descY = (rnnDataHandle<T>*)m_rnnDataDesc2.GetData(hYDesc);
+	rnnDataHandle<T>* descX = (rnnDataHandle<T>*)m_rnnDataDesc1.GetData(hXDesc);
+	rnnDataHandle<T>* descY = (rnnDataHandle<T>*)m_rnnDataDesc1.GetData(hYDesc);
 	cudnnTensorDescriptor_t descHx = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hHxDesc);
 	cudnnFilterDescriptor_t descWt = (cudnnFilterDescriptor_t)m_tensorDesc.GetData(hWtDesc);
 	MemoryItem* pXData;
@@ -2766,6 +2778,9 @@ long Memory<T>::RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, lon
 	MemoryItem* pWtDiff;
 	MemoryItem* pWorkspaceData;
 	MemoryItem* pReservedData;
+
+	if (descX == NULL || descY == NULL)
+		return ERROR_PARAM_OUT_OF_RANGE;
 
 	if (lErr = m_memory.GetData(hXData, &pXData))
 		return lErr;
