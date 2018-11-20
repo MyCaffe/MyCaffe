@@ -494,7 +494,11 @@ namespace MyCaffe.test
                 for (int i = 0; i < nTopCount; i++)
                 {
                     m_log.CHECK_LT(t * nTopCount + i, top_copy.count(), "The top count is incorrect.");
-                    m_log.EXPECT_NEAR(rgTop[i], rgTopCopy[t * nTopCount + i], kEpsilon, "t = " + t.ToString() + "; i = " + i.ToString());
+
+                    double dfTop1 = rgTop[i];
+                    double dfTop0 = rgTopCopy[t * nTopCount + i];
+
+                    m_log.EXPECT_NEAR(dfTop1, dfTop0, kEpsilon, "t = " + t.ToString() + "; i = " + i.ToString());
                 }
             }
 
@@ -525,10 +529,13 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < nTopCount; i++)
                 {
+                    double dfTop1 = rgTop[i];
+                    double dfTop0 = rgTopCopy[t * nTopCount + i];
+
                     if (t == 0)
-                        m_log.EXPECT_NEAR(rgTop[i], rgTopCopy[t * nTopCount + i], kEpsilon, "t = " + t.ToString() + "; i = " + i.ToString());
+                        m_log.EXPECT_NEAR(dfTop1, dfTop0, kEpsilon, "t = " + t.ToString() + "; i = " + i.ToString());
                     else
-                        m_log.CHECK_NE(rgTop[i], rgTopCopy[t * nTopCount + i], "t = " + t.ToString() + "; i = " + i.ToString());
+                        m_log.CHECK_NE(dfTop1, dfTop0, "t = " + t.ToString() + "; i = " + i.ToString());
                 }
             }
         }
