@@ -259,6 +259,9 @@ namespace MyCaffe.layers
                 m_blobWts = new Blob<T>(m_cuda, m_log);
                 m_blobWts.Name = m_param.name + " weights";
 
+                blobs.Clear();
+                blobs.Add(m_blobWts);
+
                 m_hXDesc = m_cuda.CreateRnnDataDesc();
                 m_hYDesc = m_cuda.CreateRnnDataDesc();
 
