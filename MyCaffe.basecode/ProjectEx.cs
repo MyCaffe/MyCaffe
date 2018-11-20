@@ -1136,6 +1136,22 @@ namespace MyCaffe.basecode
             rgInputs.Add(new Tuple<string, int, int, int, int>(strName, nNum, nChannels, nHeight, nWidth));
 
             RawProtoCollection rgLayers = proto.FindChildren("layer");
+            bool bUsesLstm = false;
+
+            foreach (RawProto layer in rgLayers)
+            {
+                RawProto type = layer.FindChild("type");
+                if (type != null)
+                {
+                    string strType = type.Value.ToLower();
+                    if (strType == "lstm")
+                    {
+                        bUsesLstm = true;
+                        break;
+                    }
+                }
+            }
+
             foreach (RawProto layer in rgLayers)
             {
                 RawProto type = layer.FindChild("type");
@@ -1156,6 +1172,15 @@ namespace MyCaffe.basecode
                             {
                                 for (int i = 0; i < rgTop.Count; i++)
                                 {
+                                    if (bUsesLstm && i < 2)
+                                    {
+                                        RawProtoCollection rgDim = rgShape[i].FindChildren("dim");
+                                        if (rgDim.Count > 1)
+                                        {
+                                            rgDim[1].Value = "1";
+                                        }
+                                    }
+
                                     if (rgTop[i].Value.ToLower() != "label")
                                     {
                                         List<int> rgVal = new List<int>();
