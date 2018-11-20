@@ -2042,16 +2042,60 @@ template <class T>
 long Memory<T>::GetRnnParamCountEx(long hHandle, long hRnnDesc, long hXDesc, int* pnCount)
 {
 	LONG lErr;
-	cudnnHandle_t cudnn = GetCuDNN(hHandle);
-	cudnnRNNDescriptor_t desc = (cudnnRNNDescriptor_t)m_rnnDesc.GetData(hRnnDesc);
-	cudnnTensorDescriptor_t descX = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hXDesc);
 	cudnnDataType_t type = (sizeof(T) == 4) ? CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
+	cudnnHandle_t cudnn = GetCuDNN(hHandle);
+	cudnnRNNDescriptor_t desc = (cudnnRNNDescriptor_t)m_rnnDesc.GetData(hRnnDesc);	
+	cudnnRNNDataDescriptor_t descX = (cudnnRNNDataDescriptor_t)m_rnnDataDesc2.GetData(hXDesc);
+
+	if (descX == NULL)
+		return ERROR_PARAM_NULL;
 
 	if (pnCount == NULL)
 		return ERROR_PARAM_NULL;
 
+	cudnnDataType_t type0;
+	cudnnRNNDataLayout_t layout;
+	int nMaxSeqLen = 0;
+	int nBatchSize = 0;
+	int nVectorSize = 0;
+	T fFill;
+	int* rgSeqLen = (int*)malloc(sizeof(int) * 1);
+
+	if (rgSeqLen == NULL)
+		return ERROR_MEMORY_OUT;
+
+	lErr = cudnnGetRNNDataDescriptor(descX, &type0, &layout, &nMaxSeqLen, &nBatchSize, &nVectorSize, 1, rgSeqLen, (void*)&fFill);
+	free(rgSeqLen);
+
+	if (lErr)
+		return lErr;
+
+	cudnnTensorDescriptor_t tensorX;
+
+	if (lErr = cudnnCreateTensorDescriptor(&tensorX))
+		return lErr;
+
+	int rgDim[3];
+	rgDim[0] = (layout == CUDNN_RNN_DATA_LAYOUT_BATCH_MAJOR_UNPACKED) ? nMaxSeqLen : nBatchSize;
+	rgDim[1] = nVectorSize;
+	rgDim[2] = 1;
+
+	int rgStride[3];
+	rgStride[0] = rgDim[2] * rgDim[1];
+	rgStride[1] = rgDim[2];
+	rgStride[2] = 1;
+
+	if (lErr = cudnnSetTensorNdDescriptor(tensorX, type, 3, rgDim, rgStride))
+	{
+		cudnnDestroyTensorDescriptor(tensorX);
+		return lErr;
+	}
+
 	size_t sizeInBytes;
-	if (lErr = cudnnGetRNNParamsSize(cudnn, desc, descX, &sizeInBytes, type))
+	lErr = cudnnGetRNNParamsSize(cudnn, desc, tensorX, &sizeInBytes, type);
+	cudnnDestroyTensorDescriptor(tensorX);
+
+	if (lErr)
 		return lErr;
 
 	int nCount = (int)((long)sizeInBytes / sizeof(T));
@@ -2097,51 +2141,98 @@ template long Memory<float>::GetRnnWorkspaceCount(long hHandle, long hRnnDesc, l
 
 
 template <class T>
-long Memory<T>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, int nSeqLen, long* rghXDesc, int* pnWsCount, int* pnResCount)
+long Memory<T>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc, int* pnWsCount, int* pnResCount)
 {
 	LONG lErr;
+	cudnnDataType_t type = (sizeof(T) == 4) ? CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
 	cudnnRNNDescriptor_t desc = (cudnnRNNDescriptor_t)m_rnnDesc.GetData(hRnnDesc);
+	cudnnRNNDataDescriptor_t descX = (cudnnRNNDataDescriptor_t)m_rnnDataDesc2.GetData(hXDesc);
+
+	if (descX == NULL)
+		return ERROR_PARAM_NULL;
 
 	if (pnWsCount == NULL || pnResCount == NULL)
 		return ERROR_PARAM_NULL;
 
-	cudnnTensorDescriptor_t* rgDescX = (cudnnTensorDescriptor_t*)malloc(sizeof(cudnnTensorDescriptor_t) * nSeqLen);
+	cudnnDataType_t type0;
+	cudnnRNNDataLayout_t layout;
+	int nMaxSeqLen = 0;
+	int nBatchSize = 0;
+	int nVectorSize = 0;
+	T fFill;
+	int* rgSeqLen = (int*)malloc(sizeof(int) * 1);
+
+	if (rgSeqLen == NULL)
+		return ERROR_MEMORY_OUT;
+
+	lErr = cudnnGetRNNDataDescriptor(descX, &type0, &layout, &nMaxSeqLen, &nBatchSize, &nVectorSize, 1, rgSeqLen, (void*)&fFill);
+	free(rgSeqLen);
+
+	if (lErr)
+		return lErr;
+
+	cudnnTensorDescriptor_t* rgDescX = (cudnnTensorDescriptor_t*)malloc(sizeof(cudnnTensorDescriptor_t) * nMaxSeqLen);
 	if (rgDescX == NULL)
 		return ERROR_OUTOFMEMORY;
 
-	for (int i = 0; i < nSeqLen; i++)
+	memset(rgDescX, NULL, sizeof(cudnnTensorDescriptor_t) * nMaxSeqLen);
+
+	for (int i = 0; i < nMaxSeqLen; i++)
 	{
-		rgDescX[i] = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(rghXDesc[i]);
+		if (lErr = cudnnCreateTensorDescriptor(&rgDescX[i]))
+			break;
+
+		int rgDim[3];
+		rgDim[0] = (layout == CUDNN_RNN_DATA_LAYOUT_BATCH_MAJOR_UNPACKED) ? nMaxSeqLen : nBatchSize;
+		rgDim[1] = nVectorSize;
+		rgDim[2] = 1;
+
+		int rgStride[3];
+		rgStride[0] = rgDim[2] * rgDim[1];
+		rgStride[1] = rgDim[2];
+		rgStride[2] = 1;
+
+		if (lErr = cudnnSetTensorNdDescriptor(rgDescX[i], type, 3, rgDim, rgStride))
+			break;
 	}
 
 	size_t sizeInBytes;
-	if (lErr = cudnnGetRNNWorkspaceSize(cudnn, desc, nSeqLen, rgDescX, &sizeInBytes))
+	int nWsCount = 0;
+
+	if (!lErr)
 	{
-		free(rgDescX);
-		return lErr;
+		lErr = cudnnGetRNNWorkspaceSize(cudnn, desc, nMaxSeqLen, rgDescX, &sizeInBytes);
+
+		if (!lErr)
+		{
+			nWsCount = (int)((long)sizeInBytes / sizeof(T)) + 1;
+
+			lErr = cudnnGetRNNTrainingReserveSize(cudnn, desc, nMaxSeqLen, rgDescX, &sizeInBytes);
+		}
 	}
 
-	int nWsCount = (int)((long)sizeInBytes / sizeof(T)) + 1;
-
-	if (lErr = cudnnGetRNNTrainingReserveSize(cudnn, desc, nSeqLen, rgDescX, &sizeInBytes))
+	for (int i = 0; i < nMaxSeqLen; i++)
 	{
-		free(rgDescX);
-		return lErr;
+		if (rgDescX[i] != NULL)
+			cudnnDestroyTensorDescriptor(rgDescX[i]);
 	}
+
+	free(rgDescX);
+
+	if (lErr)
+		return lErr;
 
 	int nResCount = (int)((long)sizeInBytes / sizeof(T)) + 1;
 
 	*pnWsCount = nWsCount;
 	*pnResCount = nResCount;
 
-	free(rgDescX);
-
 	return 0;
 }
 
-template long Memory<double>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, int nSeqLen, long* rghXDesc, int* pnWsCount, int* pnResCount);
-template long Memory<float>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, int nSeqLen, long* rghXDesc, int* pnWsCount, int* pnResCount);
+template long Memory<double>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc, int* pnWsCount, int* pnResCount);
+template long Memory<float>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc, int* pnWsCount, int* pnResCount);
 
 
 template <class T>
@@ -2241,37 +2332,83 @@ template <class T>
 long Memory<T>::GetRnnLinLayerParamsEx(long hHandle, long hRnnDesc, int nLayer, long hXDesc, long hWtDesc, long hWtData, int nLinLayer, int* pnWtCount, long* phWt, int* pnBiasCount, long* phBias)
 {
 	LONG lErr;
+	cudnnDataType_t type = (sizeof(T) == 4) ? CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
 	cudnnRNNDescriptor_t desc = (cudnnRNNDescriptor_t)m_rnnDesc.GetData(hRnnDesc);
-	cudnnTensorDescriptor_t descX = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hXDesc);
+	cudnnRNNDataDescriptor_t descX = (cudnnRNNDataDescriptor_t)m_rnnDataDesc2.GetData(hXDesc);
 	cudnnFilterDescriptor_t descWt = (cudnnFilterDescriptor_t)m_filterDesc.GetData(hWtDesc);
 	MemoryItem* pWtData;
 
 	if (lErr = m_memory.GetData(hWtData, &pWtData))
 		return lErr;
 
+	if (descX == NULL)
+		return ERROR_PARAM_NULL;
+
 	if (pnWtCount == NULL || phWt == NULL || pnBiasCount == NULL || phBias == NULL)
 		return ERROR_PARAM_NULL;
+
+	cudnnDataType_t type0;
+	cudnnRNNDataLayout_t layout;
+	int nMaxSeqLen = 0;
+	int nBatchSize = 0;
+	int nVectorSize = 0;
+	T fFill;
+	int* rgSeqLen = (int*)malloc(sizeof(int) * 1);
+
+	if (rgSeqLen == NULL)
+		return ERROR_MEMORY_OUT;
+
+	lErr = cudnnGetRNNDataDescriptor(descX, &type0, &layout, &nMaxSeqLen, &nBatchSize, &nVectorSize, 1, rgSeqLen, (void*)&fFill);
+	free(rgSeqLen);
+
+	if (lErr)
+		return lErr;
+
+	cudnnTensorDescriptor_t tensorX;
+
+	if (lErr = cudnnCreateTensorDescriptor(&tensorX))
+		return lErr;
+
+	int rgDim[3];
+	rgDim[0] = (layout == CUDNN_RNN_DATA_LAYOUT_BATCH_MAJOR_UNPACKED) ? nMaxSeqLen : nBatchSize;
+	rgDim[1] = nVectorSize;
+	rgDim[2] = 1;
+
+	int rgStride[3];
+	rgStride[0] = rgDim[2] * rgDim[1];
+	rgStride[1] = rgDim[2];
+	rgStride[2] = 1;
+
+	if (lErr = cudnnSetTensorNdDescriptor(tensorX, type, 3, rgDim, rgStride))
+	{
+		cudnnDestroyTensorDescriptor(tensorX);
+		return lErr;
+	}
 
 	// Get the Weight Counts
 	cudnnFilterDescriptor_t filterWts;
 	if (lErr = cudnnCreateFilterDescriptor(&filterWts))
+	{
+		cudnnDestroyTensorDescriptor(tensorX);
 		return lErr;
+	}
 
 	void* pWtDevMem;
-	if (lErr = cudnnGetRNNLinLayerMatrixParams(cudnn, desc, nLayer, descX, descWt, pWtData->Data(), nLinLayer, filterWts, &pWtDevMem))
+	if (lErr = cudnnGetRNNLinLayerMatrixParams(cudnn, desc, nLayer, tensorX, descWt, pWtData->Data(), nLinLayer, filterWts, &pWtDevMem))
 	{
+		cudnnDestroyTensorDescriptor(tensorX);
 		cudnnDestroyFilterDescriptor(filterWts);
 		return lErr;
 	}
 
-	cudnnDataType_t type;
 	cudnnTensorFormat_t fmt;
 	int nbDims;
 	int rgDimA[3];
 
-	if (lErr = cudnnGetFilterNdDescriptor(filterWts, 3, &type, &fmt, &nbDims, rgDimA))
+	if (lErr = cudnnGetFilterNdDescriptor(filterWts, 3, &type0, &fmt, &nbDims, rgDimA))
 	{
+		cudnnDestroyTensorDescriptor(tensorX);
 		cudnnDestroyFilterDescriptor(filterWts);
 		return lErr;
 	}
@@ -2284,17 +2421,22 @@ long Memory<T>::GetRnnLinLayerParamsEx(long hHandle, long hRnnDesc, int nLayer, 
 	// Get the Bias Counts
 	cudnnFilterDescriptor_t filterBias;
 	if (lErr = cudnnCreateFilterDescriptor(&filterBias))
+	{
+		cudnnDestroyTensorDescriptor(tensorX);
 		return lErr;
+	}
 
 	void* pBiasDevMem;
-	if (lErr = cudnnGetRNNLinLayerBiasParams(cudnn, desc, nLayer, descX, descWt, pWtData->Data(), nLinLayer, filterBias, &pBiasDevMem))
+	if (lErr = cudnnGetRNNLinLayerBiasParams(cudnn, desc, nLayer, tensorX, descWt, pWtData->Data(), nLinLayer, filterBias, &pBiasDevMem))
 	{
+		cudnnDestroyTensorDescriptor(tensorX);
 		cudnnDestroyFilterDescriptor(filterBias);
 		return lErr;
 	}
 
 	if (lErr = cudnnGetFilterNdDescriptor(filterBias, 3, &type, &fmt, &nbDims, rgDimA))
 	{
+		cudnnDestroyTensorDescriptor(tensorX);
 		cudnnDestroyFilterDescriptor(filterBias);
 		return lErr;
 	}
@@ -2302,6 +2444,7 @@ long Memory<T>::GetRnnLinLayerParamsEx(long hHandle, long hRnnDesc, int nLayer, 
 	int nBiasCount = rgDimA[0] * rgDimA[1] * rgDimA[2];
 
 	cudnnDestroyFilterDescriptor(filterBias);
+	cudnnDestroyTensorDescriptor(tensorX);
 
 	
 	// Create the memory pointer handles.

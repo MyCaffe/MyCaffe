@@ -1465,7 +1465,7 @@ inline long Device<T>::SetRnnDataDescEx(long lInput, T* pfInput, long* plOutput,
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, MAX_ARG))
+	if (lErr = verifyInput(lInput, pfInput, 5, MAX_ARG))
 		return lErr;
 
 	long hRnnDataDesc = (long)pfInput[0];
@@ -1475,7 +1475,7 @@ inline long Device<T>::SetRnnDataDescEx(long lInput, T* pfInput, long* plOutput,
 	long nVectorSize = (long)pfInput[4];
 	int nIdx = 5;
 
-	if (lInput < nIdx + nBatchSize)
+	if (lInput != nIdx && lInput < nIdx + nBatchSize)
 		return ERROR_PARAM_OUT_OF_RANGE;
 
 	int* rgSeqLen = (int*)malloc(sizeof(int) * nBatchSize);
@@ -1484,8 +1484,13 @@ inline long Device<T>::SetRnnDataDescEx(long lInput, T* pfInput, long* plOutput,
 
 	for (int i = 0; i < nBatchSize; i++)
 	{
-		rgSeqLen[i] = (int)pfInput[nIdx];
-		nIdx++;
+		rgSeqLen[i] = nMaxSeqLen;
+
+		if (nIdx < lInput)
+		{
+			rgSeqLen[i] = (int)pfInput[nIdx];
+			nIdx++;
+		}
 	}
 
 	lErr = m_memory.SetRnnDataDesc2(hRnnDataDesc, (RnnDataLayout)layout, nMaxSeqLen, nBatchSize, nVectorSize, rgSeqLen);
@@ -1579,42 +1584,24 @@ inline long Device<T>::GetRnnWorkspaceCount(long lInput, T* pfInput, long* plOut
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, MAX_ARG))
+	if (lErr = verifyInput(lInput, pfInput, 4, MAX_ARG))
 		return lErr;
 
 	int nWsCount = 0;
 	int nResCount = 0;
 	long hHandle = (long)pfInput[0];
 	long hRnnDesc = (long)pfInput[1];
+	bool bUseExtendedVersion = (pfInput[2] != 0) ? true : false;
+	long hXDesc = (long)pfInput[3];
 
-	if (lInput == 3)
+	if (bUseExtendedVersion)
 	{
-		long hXDesc = (long)pfInput[2];
-		
-		if (lErr = m_memory.GetRnnWorkspaceCount(hHandle, hRnnDesc, hXDesc, &nWsCount, &nResCount))
+		if (lErr = m_memory.GetRnnWorkspaceCountEx(hHandle, hRnnDesc, hXDesc, &nWsCount, &nResCount))
 			return lErr;
 	}
 	else
 	{
-		int nSeqLen = (int)pfInput[2];
-
-		if (nSeqLen < 1 || nSeqLen >(lInput - 3))
-			return ERROR_PARAM_OUT_OF_RANGE;
-
-		long* rghXDesc = (long*)malloc(sizeof(long) * nSeqLen);
-		if (rghXDesc == NULL)
-			return ERROR_OUTOFMEMORY;
-
-		for (int i = 0; i < nSeqLen; i++)
-		{
-			rghXDesc[i] = (long)pfInput[i + 3];
-		}
-
-		lErr = m_memory.GetRnnWorkspaceCountEx(hHandle, hRnnDesc, nSeqLen, rghXDesc, &nWsCount, &nResCount);
-		
-		free(rghXDesc);
-
-		if (lErr)
+		if (lErr = m_memory.GetRnnWorkspaceCount(hHandle, hRnnDesc, hXDesc, &nWsCount, &nResCount))
 			return lErr;
 	}
 

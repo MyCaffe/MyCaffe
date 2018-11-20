@@ -274,7 +274,7 @@ class Memory
 		long GetRnnParamCount(long hHandle, long hRnnDesc, long hXDesc, int* pnCount);
 		long GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, int* pnWsCount, int* pnResCount);
 		long GetRnnParamCountEx(long hHandle, long hRnnDesc, long hXDesc, int* pnCount);
-		long GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, int nSeqLen, long* rghXDesc, int* pnWsCount, int* pnResCount);
+		long GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc, int* pnWsCount, int* pnResCount);
 		long GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, long hXDesc, long hWtDesc, long hWtData, int nLinLayer, int* pnWtCount, long* phWt, int* pnBiasCount, long* phBias);
 		long GetRnnLinLayerParamsEx(long hHandle, long hRnnDesc, int nLayer, long hXDesc, long hWtDesc, long hWtData, int nLinLayer, int* pnWtCount, long* phWt, int* pnBiasCount, long* phBias);
 		long RnnForward(long hHandle, long hRnnDesc, long hXDesc, long hXData, long hHxDesc, long hHxData, long hCxDesc, long hCxData, long hWtDesc, long hWtData, long hYDesc, long hYData, long hHyDesc, long hHyData, long hCyDesc, long hCyData, long hWorkspace, int nWsCount, long hReserved, int nResCount, bool bTraining);
