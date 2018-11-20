@@ -289,6 +289,7 @@ namespace MyCaffe.trainers.rnn.simple
         BucketCollection m_rgVocabulary = null;
         Phase m_phaseOnRun = Phase.NONE;
         LayerParameter.LayerType m_lstmType = LayerParameter.LayerType.LSTM;
+        bool m_bUsingCuDnnLstm = false;
 
         public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallbackRNN icallback, Phase phase, BucketCollection rgVocabulary, string strRunProperties = null)
         {
@@ -349,6 +350,10 @@ namespace MyCaffe.trainers.rnn.simple
                 {
                     lstmLayer = layer1 as LSTMLayer<T>;
                     m_lstmType = LayerParameter.LayerType.LSTM;
+
+                    if (lstmLayer.layer_param.recurrent_param.engine == EngineParameter.Engine.CUDNN)
+                        m_bUsingCuDnnLstm = true;
+
                     break;
                 }
                 else if (layer1.layer_param.type == LayerParameter.LayerType.LSTM_SIMPLE)
@@ -412,7 +417,7 @@ namespace MyCaffe.trainers.rnn.simple
 
             for (int i = 0; i < rgClipInput.Length; i++)
             {
-                if (m_lstmType == LayerParameter.LayerType.LSTM)
+                if (m_lstmType == LayerParameter.LayerType.LSTM && !m_bUsingCuDnnLstm)
                     rgClipInput[i] = (i < m_nBatchSize) ? m_tZero : m_tOne;
                 else
                     rgClipInput[i] = (i % m_nSequenceLength == 0) ? m_tZero : m_tOne;
@@ -577,7 +582,7 @@ namespace MyCaffe.trainers.rnn.simple
 
                         // LSTM: Create input data, the data must be in the order
                         // seq1_val1, seq2_val1, ..., seqBatch_Size_val1, seq1_val2, seq2_val2, ..., seqBatch_Size_valSequence_Length
-                        if (m_lstmType == LayerParameter.LayerType.LSTM)
+                        if (m_lstmType == LayerParameter.LayerType.LSTM && !m_bUsingCuDnnLstm)
                             nIdx = m_nBatchSize * j + i;
 
                         // LSTM_SIMPLE: Create input data, the data must be in the order
@@ -615,7 +620,7 @@ namespace MyCaffe.trainers.rnn.simple
 
                         // LSTM: Create input data, the data must be in the order
                         // seq1_val1, seq2_val1, ..., seqBatch_Size_val1, seq1_val2, seq2_val2, ..., seqBatch_Size_valSequence_Length
-                        if (m_lstmType == LayerParameter.LayerType.LSTM)
+                        if (m_lstmType == LayerParameter.LayerType.LSTM && !m_bUsingCuDnnLstm)
                             nIdx = m_nBatchSize * j + i;
 
                         // LSTM_SIMPLE: Create input data, the data must be in the order
@@ -717,7 +722,11 @@ namespace MyCaffe.trainers.rnn.simple
                 for (int j = 0; j < m_nSequenceLength; j++)
                 {
                     // The batch is filled with 0 except for the first sequence which is the one we want to use for prediction.
-                    nIdx = j * m_nBatchSize;
+                    if (!m_bUsingCuDnnLstm)
+                        nIdx = j * m_nBatchSize; // caffe uses Batch Major ordering
+                    else
+                        nIdx = j; // cuDnn uses Sequence Major ordering
+
                     rgInputVector[nIdx] = rgInput[j];
                 }
 
