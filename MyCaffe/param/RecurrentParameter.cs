@@ -19,7 +19,8 @@ namespace MyCaffe.param
         FillerParameter m_bias_filler = new FillerParameter("constant", 0.1);
         bool m_bDebugInfo = false;
         bool m_bExposeHidden = false; // caffe only
-        double m_dfDropoutRatio = 0.5; // cuDnn only
+        uint m_nNumLayers = 1; // cuDnn only
+        double m_dfDropoutRatio = 0.0; // cuDnn only
         long m_lDropoutSeed = 0; // cuDnn only
 
 
@@ -111,10 +112,21 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// The number of LSTM layers to implement.
+        /// </summary>
+        /// <remarks>This parameter only applies to cuDnn.</remarks>
+        [Description("Specifies the number of LSTM layers to implement (cuDnn only).")]
+        public uint num_layers
+        {
+            get { return m_nNumLayers; }
+            set { m_nNumLayers = value; }
+        }
+
+        /// <summary>
         /// Specifies the dropout ratio. (e.g. the probability that values will be dropped out and set to zero.  A value of 0.25 = 25% chance that a value is set to 0, and dropped out.)
         /// </summary>
         /// <remarks>The drop-out layer is only used with cuDnn when more than one layer are used.</remarks>
-        [Description("Specifies the dropout ratio. (e.g. the probability that values will be dropped out and set to zero.  A value of 0.25 = 25% chance that a value is set to 0, and dropped out.)")]
+        [Description("Specifies the dropout ratio (cuDnn only). (e.g. the probability that values will be dropped out and set to zero.  A value of 0.25 = 25% chance that a value is set to 0, and dropped out.)")]
         public double dropout_ratio
         {
             get { return m_dfDropoutRatio; }
@@ -125,7 +137,7 @@ namespace MyCaffe.param
         /// Specifies the seed used by cuDnn for random number generation.
         /// </summary>
         /// <remarks>The drop-out layer is only used with cuDnn when more than one layer are used.</remarks>
-        [Description("Specifies the random number generator seed used with the cuDnn dropout - the default value of '0' uses a random seed.")]
+        [Description("Specifies the random number generator seed used with the cuDnn dropout - the default value of '0' uses a random seed (cuDnn only).")]
         public long dropout_seed
         {
             get { return m_lDropoutSeed; }
@@ -167,6 +179,7 @@ namespace MyCaffe.param
                 m_bExposeHidden = p.expose_hidden;
                 m_dfDropoutRatio = p.dropout_ratio;
                 m_lDropoutSeed = p.dropout_seed;
+                m_nNumLayers = p.num_layers;
             }
         }
 
@@ -187,8 +200,13 @@ namespace MyCaffe.param
 
             rgChildren.Add("debug_info", debug_info.ToString());
             rgChildren.Add("expose_hidden", expose_hidden.ToString());
-            rgChildren.Add("dropout_ratio", dropout_ratio.ToString());
-            rgChildren.Add("dropout_seed", dropout_seed.ToString());
+
+            if (engine == Engine.CUDNN)
+            {
+                rgChildren.Add("dropout_ratio", dropout_ratio.ToString());
+                rgChildren.Add("dropout_seed", dropout_seed.ToString());
+                rgChildren.Add("num_layers", num_layers.ToString());
+            }
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -227,6 +245,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("dropout_seed")) != null)
                 p.dropout_seed = long.Parse(strVal);
+
+            if ((strVal = rp.FindValue("num_layers")) != null)
+                p.num_layers = uint.Parse(strVal);
 
             return p;
         }

@@ -239,7 +239,7 @@ namespace MyCaffe.layers
             try
             {
                 m_nHiddenSize = (int)m_param.recurrent_param.num_output;
-                m_nNumLayers = 1;
+                m_nNumLayers = (int)m_param.recurrent_param.num_layers;
 
                 m_hCuDnn = m_cuda.CreateCuDNN();
 
