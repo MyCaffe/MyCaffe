@@ -18,7 +18,9 @@ namespace MyCaffe.param
         FillerParameter m_weight_filler = new FillerParameter("xavier");
         FillerParameter m_bias_filler = new FillerParameter("constant", 0.1);
         bool m_bDebugInfo = false;
-        bool m_bExposeHidden = false;
+        bool m_bExposeHidden = false; // caffe only
+        double m_dfDropoutRatio = 0.5; // cuDnn only
+        long m_lDropoutSeed = 0; // cuDnn only
 
 
         /** @copydoc LayerParameterBase */
@@ -108,6 +110,28 @@ namespace MyCaffe.param
             set { m_bExposeHidden = value; }
         }
 
+        /// <summary>
+        /// Specifies the dropout ratio. (e.g. the probability that values will be dropped out and set to zero.  A value of 0.25 = 25% chance that a value is set to 0, and dropped out.)
+        /// </summary>
+        /// <remarks>The drop-out layer is only used with cuDnn when more than one layer are used.</remarks>
+        [Description("Specifies the dropout ratio. (e.g. the probability that values will be dropped out and set to zero.  A value of 0.25 = 25% chance that a value is set to 0, and dropped out.)")]
+        public double dropout_ratio
+        {
+            get { return m_dfDropoutRatio; }
+            set { m_dfDropoutRatio = value; }
+        }
+
+        /// <summary>
+        /// Specifies the seed used by cuDnn for random number generation.
+        /// </summary>
+        /// <remarks>The drop-out layer is only used with cuDnn when more than one layer are used.</remarks>
+        [Description("Specifies the random number generator seed used with the cuDnn dropout - the default value of '0' uses a random seed.")]
+        public long dropout_seed
+        {
+            get { return m_lDropoutSeed; }
+            set { m_lDropoutSeed = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(BinaryReader br, bool bNewInstance = true)
         {
@@ -141,6 +165,8 @@ namespace MyCaffe.param
                 m_bias_filler = p.bias_filler.Clone();
                 m_bDebugInfo = p.debug_info;
                 m_bExposeHidden = p.expose_hidden;
+                m_dfDropoutRatio = p.dropout_ratio;
+                m_lDropoutSeed = p.dropout_seed;
             }
         }
 
@@ -161,6 +187,8 @@ namespace MyCaffe.param
 
             rgChildren.Add("debug_info", debug_info.ToString());
             rgChildren.Add("expose_hidden", expose_hidden.ToString());
+            rgChildren.Add("dropout_ratio", dropout_ratio.ToString());
+            rgChildren.Add("dropout_seed", dropout_seed.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -193,6 +221,12 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("expose_hidden")) != null)
                 p.expose_hidden = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("dropout_ratio")) != null)
+                p.dropout_ratio = double.Parse(strVal);
+
+            if ((strVal = rp.FindValue("dropout_seed")) != null)
+                p.dropout_seed = long.Parse(strVal);
 
             return p;
         }

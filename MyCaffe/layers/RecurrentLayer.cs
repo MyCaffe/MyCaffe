@@ -80,6 +80,8 @@ namespace MyCaffe.layers
         long m_hCxDesc;
         long m_hHyDesc;
         long m_hCyDesc;
+        long m_hDropoutDesc;
+        long m_hDropoutStates;
         long m_hWeightDesc;
         long m_hRnnDesc;
         long m_hWorkspace;
@@ -157,6 +159,18 @@ namespace MyCaffe.layers
             {
                 m_cuda.FreeRnnDesc(m_hRnnDesc);
                 m_hRnnDesc = 0;
+            }
+
+            if (m_hDropoutDesc != 0)
+            {
+                m_cuda.FreeDropoutDesc(m_hDropoutDesc);
+                m_hDropoutDesc = 0;
+            }
+
+            if (m_hDropoutStates != 0)
+            {
+                m_cuda.FreeMemory(m_hDropoutStates);
+                m_hDropoutStates = 0;
             }
 
             if (m_hXDesc != 0)
@@ -256,6 +270,7 @@ namespace MyCaffe.layers
                 // Setup Rnn Descriptor
                 m_hRnnDesc = m_cuda.CreateRnnDesc();
                 m_hWeightDesc = m_cuda.CreateFilterDesc();
+                m_hDropoutDesc = m_cuda.CreateDropoutDesc();
 
 
                 //------------------------------------
@@ -294,7 +309,15 @@ namespace MyCaffe.layers
                 m_cuda.SetTensorNdDesc(m_hHyDesc, rgDimA, rgStrideA);
                 m_cuda.SetTensorNdDesc(m_hCyDesc, rgDimA, rgStrideA);
 
-                m_cuda.SetRnnDesc(m_hCuDnn, m_hRnnDesc, m_nHiddenSize, m_nNumLayers, 0, m_rnnMode);
+                // Setup the dropout descriptor.
+                ulong ulStateCount;
+                ulong ulReservedCount;
+                m_cuda.GetDropoutInfo(m_hCuDnn, 0, out ulStateCount, out ulReservedCount);
+                m_hDropoutStates = m_cuda.AllocMemory((long)ulStateCount);
+                m_cuda.SetDropoutDesc(m_hCuDnn, m_hDropoutDesc, m_param.recurrent_param.dropout_ratio, m_hDropoutStates, m_param.recurrent_param.dropout_seed);
+
+                // Setup the RNN descriptor.
+                m_cuda.SetRnnDesc(m_hCuDnn, m_hRnnDesc, m_nHiddenSize, m_nNumLayers, m_hDropoutDesc, m_rnnMode);
 
                 // Setup parameters - do this after the rnn descriptor is set
                 // otherwise we will not know how many parameters we have to allocate.
