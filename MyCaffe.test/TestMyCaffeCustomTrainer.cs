@@ -151,6 +151,27 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void Train_RNNSIMPLE_CharRNN_LSTM_cuDnn()
+        {
+            MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IMyCaffeCustomTrainerTest t in test.Tests)
+                {
+                    // NOTE: 1000 iterations is quite short and may not produce results,
+                    // for real training 100,000+ is a more common iteration to use.
+                    t.TrainCharRNN(false, "RNN.SIMPLE", LayerParameter.LayerType.LSTM, 1000);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
         public void Train_RNNSIMPLE_CharRNN_LSTMSIMPLE()
         {
             MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
@@ -248,6 +269,7 @@ namespace MyCaffe.test
         public MyCaffeCustomTrainerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
         {
+            m_engine = engine;
             m_settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
             m_settings.GpuIds = nDeviceID.ToString();
         }
@@ -385,7 +407,7 @@ namespace MyCaffe.test
             string strModelPath = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\char_rnn\\" + lstm.ToString().ToLower(), true);
 
             MyCaffeDataGeneralTrainer trainer = new MyCaffeDataGeneralTrainer();
-            ProjectEx project = getCharRNNProject(igym, nIterations, strModelPath);
+            ProjectEx project = getCharRNNProject(igym, nIterations, strModelPath, m_engine);
             DatasetDescriptor ds = trainer.GetDatasetOverride(0);
 
             m_log.CHECK(ds != null, "The MyCaffeDataTrainer should return its dataset override returned by the Gym that it uses.");
@@ -489,7 +511,7 @@ namespace MyCaffe.test
             string strModelPath = getTestPath("\\MyCaffe\\test_data\\models\\rnn\\wav\\" + lstm.ToString().ToLower(), true);
 
             MyCaffeDataGeneralTrainer trainer = new MyCaffeDataGeneralTrainer();
-            ProjectEx project = getCharRNNProject(igym, nIterations, strModelPath);
+            ProjectEx project = getCharRNNProject(igym, nIterations, strModelPath, EngineParameter.Engine.DEFAULT);
             DatasetDescriptor ds = trainer.GetDatasetOverride(0);
 
             m_log.CHECK(ds != null, "The MyCaffeDataTrainer should return its dataset override returned by the Gym that it uses.");
@@ -616,7 +638,7 @@ namespace MyCaffe.test
             return getTestPath("\\MyCaffe\\test_data\\roms\\" + strRom);
         }
 
-        private ProjectEx getCharRNNProject(IXMyCaffeGym igym, int nIterations, string strPath)
+        private ProjectEx getCharRNNProject(IXMyCaffeGym igym, int nIterations, string strPath, EngineParameter.Engine engine)
         {
             ProjectEx p = new ProjectEx("test");
 
@@ -624,6 +646,22 @@ namespace MyCaffe.test
             string strSolverFile = strPath + "\\solver.prototxt";
 
             RawProto protoM = RawProtoFile.LoadFromFile(strModelFile);
+
+            if (engine == EngineParameter.Engine.CUDNN)
+            {
+                NetParameter net_param = NetParameter.FromProto(protoM);
+
+                for (int i = 0; i < net_param.layer.Count; i++)
+                {
+                    if (net_param.layer[i].type == LayerParameter.LayerType.LSTM)
+                    {
+                        net_param.layer[i].recurrent_param.engine = engine;
+                    }
+                }
+
+                protoM = net_param.ToProto("root");
+            }
+
             p.ModelDescription = protoM.ToString();
 
             RawProto protoS = RawProtoFile.LoadFromFile(strSolverFile);
