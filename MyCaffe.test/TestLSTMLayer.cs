@@ -336,8 +336,7 @@ namespace MyCaffe.test
             m_colUnitTopVec.Add(m_blobUnit_top_c);
             m_colUnitTopVec.Add(m_blobUnit_top_h);
 
-            int nNumInstances = (engine == EngineParameter.Engine.CUDNN) ? 1 : 3;
-            ReshapeBlobs(1, nNumInstances);
+            ReshapeBlobs(1, 3);
 
             m_param = new LayerParameter(LayerParameter.LayerType.LSTM);
             m_param.recurrent_param.num_output = (uint)m_nNumOutput;
@@ -609,8 +608,7 @@ namespace MyCaffe.test
 
         public void TestGradientNonZeroContBufferSize2()
         {
-            int nNumInstances = (m_engine == EngineParameter.Engine.CUDNN) ? 1 : 2;
-            ReshapeBlobs(2, nNumInstances);
+            ReshapeBlobs(2, 2);
 
             // fill the values.
             FillerParameter filler_param = new FillerParameter("uniform");
@@ -634,8 +632,7 @@ namespace MyCaffe.test
 
         public void TestGradientNonZeroContBufferSize2WithStaticInput()
         {
-            int nNumInstances = (m_engine == EngineParameter.Engine.CUDNN) ? 1 : 2;
-            ReshapeBlobs(2, nNumInstances);
+            ReshapeBlobs(2, 2);
 
             // fill the values.
             FillerParameter filler_param = new FillerParameter("uniform");
