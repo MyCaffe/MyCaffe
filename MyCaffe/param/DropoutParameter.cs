@@ -52,7 +52,6 @@ namespace MyCaffe.param
             return false;   // DEFAULT = CAFFE
         }
 
-
         /// <summary>
         /// Specifies the dropout ratio. (e.g. the probability that values will be dropped out and set to zero.  A value of 0.25 = 25% chance that a value is set to 0, and dropped out.)
         /// </summary>
