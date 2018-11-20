@@ -3733,12 +3733,12 @@ namespace MyCaffe.common
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_RNN_PARAMCOUNT, new double[] { hCuDnn, hRnnDesc, hXDesc });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_RNN_PARAMCOUNT, new double[] { hCuDnn, hRnnDesc, hXDesc, (m_bEnableRnnExtendedVersion) ? 1 : 0 });
                 return (int)rg[0];
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_RNN_PARAMCOUNT, new float[] { hCuDnn, hRnnDesc, hXDesc });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_RNN_PARAMCOUNT, new float[] { hCuDnn, hRnnDesc, hXDesc, (m_bEnableRnnExtendedVersion) ? 1 : 0 });
                 return (int)rg[0];
             }
         }
@@ -3753,19 +3753,16 @@ namespace MyCaffe.common
         /// <returns>Returns the workspace count needed.</returns>
         public int GetRnnWorkspaceCount(long hCuDnn, long hRnnDesc, long hXDesc, out int nReservedCount)
         {
-            if (m_bEnableRnnExtendedVersion)
-                throw new NotImplementedException("Currently the RNN extended version is not supported for GetRnnWorkspaceCount.");
-
             if (m_dt == DataType.DOUBLE)
             {
-                List<double> rgArg = new List<double>() { hCuDnn, hRnnDesc, hXDesc };
+                List<double> rgArg = new List<double>() { hCuDnn, hRnnDesc, (m_bEnableRnnExtendedVersion) ? 1 : 0, hXDesc };
                 double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_RNN_WORKSPACECOUNT, rgArg.ToArray());
                 nReservedCount = (int)rg[1];
                 return (int)rg[0];
             }
             else
             {
-                List<float> rgArg = new List<float>() { hCuDnn, hRnnDesc, hXDesc };
+                List<float> rgArg = new List<float>() { hCuDnn, hRnnDesc, (m_bEnableRnnExtendedVersion) ? 1 : 0, hXDesc };
                 float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_RNN_WORKSPACECOUNT, rgArg.ToArray());
                 nReservedCount = (int)rg[1];
                 return (int)rg[0];
