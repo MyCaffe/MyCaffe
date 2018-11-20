@@ -412,7 +412,8 @@ namespace MyCaffe.test
 
             m_log.CHECK(ds != null, "The MyCaffeDataTrainer should return its dataset override returned by the Gym that it uses.");
 
-            string strWeights = strModelPath + "\\weights.mycaffemodel";
+            string strEngine = m_engine.ToString();
+            string strWeights = strModelPath + "\\weights." + strEngine + ".mycaffemodel";
             if (File.Exists(strWeights))
             {
                 using (FileStream fs = File.OpenRead(strWeights))
@@ -516,7 +517,8 @@ namespace MyCaffe.test
 
             m_log.CHECK(ds != null, "The MyCaffeDataTrainer should return its dataset override returned by the Gym that it uses.");
 
-            string strWeights = strModelPath + "\\weights.mycaffemodel";
+            string strEngine = m_engine.ToString();
+            string strWeights = strModelPath + "\\weights." + strEngine + ".mycaffemodel";
             if (File.Exists(strWeights))
             {
                 using (FileStream fs = File.OpenRead(strWeights))
@@ -592,7 +594,7 @@ namespace MyCaffe.test
         {
             byte[] rgWeights = e.UpdateWeights();
 
-            string strWeights = m_strModelPath + "\\weights.mycaffemodel";
+            string strWeights = m_strModelPath + "\\weights." + m_engine.ToString() + ".mycaffemodel";
 
             if (File.Exists(strWeights))
                 File.Delete(strWeights);
@@ -684,7 +686,7 @@ namespace MyCaffe.test
         /// </remarks>
         public string GetRunProperties()
         {
-            return "PhaseOnRun=TRAIN;OutputBlob=ip1;";
+            return "";
         }
 
         public void Update(TRAINING_CATEGORY cat, Dictionary<string, double> rgValues)
