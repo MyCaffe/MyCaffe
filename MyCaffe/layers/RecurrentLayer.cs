@@ -282,12 +282,17 @@ namespace MyCaffe.layers
                 m_blobX.ShareDiff(colBottom[0]);
                 m_log.CHECK_EQ(m_blobX.count(), m_nT * m_nN * m_nInputSize, "The input should be Sequence * Batch * InputSize in length.");
 
-                m_blobHx.Reshape(m_nNumLayers, m_nN, m_nInputSize, 1);
-                m_blobCx.Reshape(m_nNumLayers, m_nN, m_nInputSize, 1);
+                m_blobHx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
+                m_blobCx.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
 
                 m_blobY.Reshape(m_nT, m_nN, m_nHiddenSize, 1);
                 m_blobHy.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
                 m_blobCy.Reshape(m_nNumLayers, m_nN, m_nHiddenSize, 1);
+
+                m_blobHx.SetData(0);
+                m_blobCx.SetData(0);
+                m_blobHy.SetData(0);
+                m_blobCy.SetData(0);
 
                 // Set the input/output data descriptors
                 m_cuda.SetRnnDataDesc(m_hXDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, m_nT, m_nN, m_nInputSize);
@@ -819,6 +824,14 @@ namespace MyCaffe.layers
 
         private void forward_cudnn(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            double dfClip = Utility.ConvertVal<T>(colBottom[1].GetData(0));
+
+            if (dfClip > 0)
+            {
+                m_blobCx.CopyFrom(m_blobCy);
+                m_blobHx.CopyFrom(m_blobHy);
+            }
+
             m_cuda.RnnForward(m_hCuDnn, 
                               m_hRnnDesc,
                               m_hXDesc,
