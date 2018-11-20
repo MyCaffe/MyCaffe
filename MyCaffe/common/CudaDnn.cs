@@ -4046,6 +4046,10 @@ namespace MyCaffe.common
 
                 rgArg.Add(hWorkspace);
                 rgArg.Add(nWsCount);
+
+                rgArg.Add(hWtDesc);
+                rgArg.Add(hWtDiff);
+
                 rgArg.Add(hReserved);
                 rgArg.Add(nResCount);
 
@@ -4069,6 +4073,10 @@ namespace MyCaffe.common
 
                 rgArg.Add(hWorkspace);
                 rgArg.Add(nWsCount);
+
+                rgArg.Add(hWtDesc);
+                rgArg.Add(hWtDiff);
+
                 rgArg.Add(hReserved);
                 rgArg.Add(nResCount);
 
