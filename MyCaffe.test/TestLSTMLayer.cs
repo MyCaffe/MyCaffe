@@ -248,10 +248,29 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestCuDnn()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestCuDnn();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ILSTMLayerTest : ITest
     {
+        void TestCuDnn();
         void TestSetup();
         void TestForward(Phase phase = Phase.NONE);
         void TestGradient();
@@ -637,6 +656,383 @@ namespace MyCaffe.test
 
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 2);
+        }
+
+        public void TestCuDnn()
+        {
+            int nBatchSize = 64;
+            int nSeqLen = 20;
+            int nNumLayers = 2;
+            int nHiddenSize = 512;
+            int nInputSize = nHiddenSize;
+            long hCuDnn = 0;
+            long hXDesc = 0;
+            long hYDesc = 0;
+            long hHxDesc = 0;
+            long hCxDesc = 0;
+            long hHyDesc = 0;
+            long hCyDesc = 0;
+            long hRnnDesc = 0;
+            long hWtDesc = 0;
+            long hDropoutDesc = 0;
+            long hStates = 0;
+            long hWorkspace = 0;
+            int nWorkspaceCount = 0;
+            long hReserved = 0;
+            int nReservedCount = 0;
+            Blob<T> blobX = null;
+            Blob<T> blobHx = null;
+            Blob<T> blobCx = null;
+            Blob<T> blobY = null;
+            Blob<T> blobHy = null;
+            Blob<T> blobCy = null;
+            Blob<T> blobWt = null;
+
+            try
+            {
+                // Create cudnn context
+                hCuDnn = m_cuda.CreateCuDNN();
+
+                // Setup inputs and outputs.
+                blobX = new Blob<T>(m_cuda, m_log, nSeqLen, nBatchSize, nInputSize, 1);
+                blobHx = new Blob<T>(m_cuda, m_log, nNumLayers, nBatchSize, nHiddenSize, 1);
+                blobCx = new Blob<T>(m_cuda, m_log, nNumLayers, nBatchSize, nHiddenSize, 1);
+
+                blobY = new Blob<T>(m_cuda, m_log, nSeqLen, nBatchSize, nHiddenSize, 1);
+                blobHy = new Blob<T>(m_cuda, m_log, nNumLayers, nBatchSize, nHiddenSize, 1);
+                blobCy = new Blob<T>(m_cuda, m_log, nNumLayers, nBatchSize, nHiddenSize, 1);
+
+                // Setup tensor descriptors where there is one tensor per time step (tensors are set internall by m_cuda)
+                hXDesc = m_cuda.CreateRnnDataDesc();
+                m_cuda.SetRnnDataDesc(hXDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nInputSize);
+                hYDesc = m_cuda.CreateRnnDataDesc();
+                m_cuda.SetRnnDataDesc(hYDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
+
+                int[] rgDimA = new int[3];
+                rgDimA[0] = nNumLayers;
+                rgDimA[1] = nBatchSize;
+                rgDimA[2] = nHiddenSize;
+
+                int[] rgStrideA = new int[3];
+                rgStrideA[0] = rgDimA[2] * rgDimA[1];
+                rgStrideA[1] = rgDimA[2];
+                rgStrideA[2] = 1;
+
+                hHxDesc = m_cuda.CreateTensorDesc();
+                m_cuda.SetTensorNdDesc(hHxDesc, rgDimA, rgStrideA);
+                hCxDesc = m_cuda.CreateTensorDesc();
+                m_cuda.SetTensorNdDesc(hCxDesc, rgDimA, rgStrideA);
+                hHyDesc = m_cuda.CreateTensorDesc();
+                m_cuda.SetTensorNdDesc(hHyDesc, rgDimA, rgStrideA);
+                hCyDesc = m_cuda.CreateTensorDesc();
+                m_cuda.SetTensorNdDesc(hCyDesc, rgDimA, rgStrideA);
+
+                //-------------------------------------------------
+                // Set the dropout layer.
+                //-------------------------------------------------
+
+                hDropoutDesc = m_cuda.CreateDropoutDesc();
+                ulong ulStateCount;
+                ulong ulReservedCount;
+                m_cuda.GetDropoutInfo(hCuDnn, 0, out ulStateCount, out ulReservedCount);
+                hStates = m_cuda.AllocMemory((int)ulStateCount);
+                m_cuda.SetDropoutDesc(hCuDnn, hDropoutDesc, 0, hStates, 1337);
+
+                // Setup the RNN descriptor.
+                hRnnDesc = m_cuda.CreateRnnDesc();
+                m_cuda.SetRnnDesc(hCuDnn, hRnnDesc, nHiddenSize, nNumLayers, hDropoutDesc, RNN_MODE.LSTM);
+
+                // Setup the parameters.  This needs to be done after the RNN descriptor is set
+                // otherwise we don't know how many parameters we have to allocate.
+
+                int nAllWtCount = m_cuda.GetRnnParamCount(hCuDnn, hRnnDesc, hXDesc);
+
+                int[] rgDimW = new int[3];
+                rgDimW[0] = nAllWtCount;
+                rgDimW[1] = 1;
+                rgDimW[2] = 1;
+
+                hWtDesc = m_cuda.CreateFilterDesc();
+                m_cuda.SetFilterNdDesc(hWtDesc, rgDimW);
+
+                blobWt = new Blob<T>(m_cuda, m_log, new List<int>() { nAllWtCount });
+
+                // Setup the workspace and reserved memory.
+                nWorkspaceCount = m_cuda.GetRnnWorkspaceCount(hCuDnn, hRnnDesc, hXDesc, out nReservedCount);
+                hWorkspace = m_cuda.AllocMemory(nWorkspaceCount);
+                hReserved = m_cuda.AllocMemory(nReservedCount);
+
+
+                //-------------------------------------------------
+                // Initialize weights and inputs.
+                //-------------------------------------------------
+
+                // Initialize something simple.
+                // Matrices are initialized to 1/matrixSize, biases to 1, data is 1.
+                blobX.SetData(1.0);
+                blobHx.SetData(1.0);
+                blobCx.SetData(1.0);
+
+                blobY.SetDiff(1.0);
+                blobHy.SetDiff(1.0);
+                blobCy.SetDiff(1.0);
+
+                // Weights
+                int nNumLinLayers = 8; // LSTM.
+                Filler<T> fillerBias = Filler<T>.Create(m_cuda, m_log, new FillerParameter("constant", 1.0));
+
+                for (int i = 0; i < nNumLayers; i++)
+                {
+                    for (int j = 0; j < nNumLinLayers; j++)
+                    {
+                        int nWtCount;
+                        long hWtPtr;
+                        int nBiasCount;
+                        long hBiasPtr;
+
+                        m_cuda.GetRnnLinLayerParams(hCuDnn, hRnnDesc, i, hXDesc, hWtDesc, blobWt.gpu_data, j, out nWtCount, out hWtPtr, out nBiasCount, out hBiasPtr);
+
+                        double dfFill = 1.0 / (double)nWtCount;
+                        Filler<T> fillerWt = Filler<T>.Create(m_cuda, m_log, new FillerParameter("constant", dfFill));
+
+                        fillerWt.Fill(nWtCount, hWtPtr);
+                        fillerBias.Fill(nBiasCount, hBiasPtr);
+
+                        m_cuda.FreeMemoryPointer(hWtPtr);
+                        m_cuda.FreeMemoryPointer(hBiasPtr);
+                    }
+                }
+
+                //-------------------------------------------------
+                // At this point all of the setup is done.  We now need
+                // to pass through the RNN.
+                //-------------------------------------------------
+
+                m_cuda.SynchronizeDevice();
+
+                // Added here for testing - use non training when not training
+                //m_cuda.RnnForward(hCuDnn,
+                //                  hRnnDesc,
+                //                  hXDesc,
+                //                  blobX.gpu_data,
+                //                  hHxDesc,
+                //                  blobHx.gpu_data,
+                //                  hCxDesc,
+                //                  blobCx.gpu_data,
+                //                  hWtDesc,
+                //                  blobWt.gpu_data,
+                //                  hYDesc,
+                //                  blobY.mutable_gpu_data,
+                //                  hHyDesc,
+                //                  blobHy.mutable_gpu_data,
+                //                  hCyDesc,
+                //                  blobCy.mutable_gpu_data,
+                //                  hWorkspace,
+                //                  nWorkspaceCount,
+                //                  hReserved,
+                //                  nReservedCount,
+                //                  false);
+
+                // Use 'bTraining=true' when training.
+                m_cuda.RnnForward(hCuDnn,
+                                  hRnnDesc,
+                                  hXDesc,
+                                  blobX.gpu_data,
+                                  hHxDesc,
+                                  blobHx.gpu_data,
+                                  hCxDesc,
+                                  blobCx.gpu_data,
+                                  hWtDesc,
+                                  blobWt.gpu_data,
+                                  hYDesc,
+                                  blobY.mutable_gpu_data,
+                                  hHyDesc,
+                                  blobHy.mutable_gpu_data,
+                                  hCyDesc,
+                                  blobCy.mutable_gpu_data,
+                                  hWorkspace,
+                                  nWorkspaceCount,
+                                  hReserved,
+                                  nReservedCount,
+                                  true);
+
+                m_cuda.RnnBackwardData(hCuDnn,
+                                  hRnnDesc,
+                                  hYDesc,
+                                  blobY.gpu_data,
+                                  blobY.gpu_diff,
+                                  hHyDesc,
+                                  blobHy.gpu_diff,
+                                  hCyDesc,
+                                  blobCy.gpu_diff,
+                                  hWtDesc,
+                                  blobWt.gpu_data,
+                                  hHxDesc,
+                                  blobHx.gpu_data,
+                                  hCxDesc,
+                                  blobCx.gpu_data,
+                                  hXDesc,
+                                  blobX.mutable_gpu_diff,
+                                  hHxDesc,
+                                  blobHx.mutable_gpu_diff,
+                                  hCxDesc,
+                                  blobCx.mutable_gpu_diff,
+                                  hWorkspace,
+                                  nWorkspaceCount,
+                                  hReserved,
+                                  nReservedCount);
+
+                // RnnBackwardWeights adds to the data in dw.
+                blobWt.SetDiff(0);
+
+                m_cuda.RnnBackwardWeights(hCuDnn,
+                                  hRnnDesc,
+                                  hXDesc,
+                                  blobX.gpu_data,
+                                  hHxDesc,
+                                  blobHx.gpu_data,
+                                  hYDesc,
+                                  blobY.gpu_data,
+                                  hWorkspace,
+                                  nWorkspaceCount,
+                                  hWtDesc,
+                                  blobWt.mutable_gpu_diff,
+                                  hReserved,
+                                  nReservedCount);
+
+                // Make double sure everything is finished before result checking.
+                m_cuda.SynchronizeDevice();
+
+                //-------------------------------------------------
+                // Print check sums.
+                //-------------------------------------------------
+                printCheckSums(blobY, blobHy, blobCy, nSeqLen, nBatchSize, nHiddenSize, nNumLayers, false);
+                printCheckSums(blobY, blobHy, blobCy, nSeqLen, nBatchSize, nHiddenSize, nNumLayers, true);
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                if (blobX != null)
+                    blobX.Dispose();
+
+                if (blobHx != null)
+                    blobHx.Dispose();
+
+                if (blobCx != null)
+                    blobCx.Dispose();
+
+                if (blobY != null)
+                    blobY.Dispose();
+
+                if (blobHy != null)
+                    blobHy.Dispose();
+
+                if (blobCy != null)
+                    blobCy.Dispose();
+
+                if (blobWt != null)
+                    blobWt.Dispose();
+
+                if (hWorkspace != 0)
+                    m_cuda.FreeMemory(hWorkspace);
+
+                if (hReserved != 0)
+                    m_cuda.FreeMemory(hReserved);
+
+                if (hDropoutDesc != 0)
+                    m_cuda.FreeDropoutDesc(hDropoutDesc);
+
+                if (hStates != 0)
+                    m_cuda.FreeMemory(hStates);
+
+                if (hWtDesc != 0)
+                    m_cuda.FreeFilterDesc(hWtDesc);
+
+                if (hRnnDesc != 0)
+                    m_cuda.FreeRnnDesc(hRnnDesc);
+
+                if (hHxDesc != 0)
+                    m_cuda.FreeTensorDesc(hHxDesc);
+
+                if (hCxDesc != 0)
+                    m_cuda.FreeTensorDesc(hCxDesc);
+
+                if (hHyDesc != 0)
+                    m_cuda.FreeTensorDesc(hHyDesc);
+
+                if (hCyDesc != 0)
+                    m_cuda.FreeTensorDesc(hCyDesc);
+
+                if (hXDesc != 0)
+                    m_cuda.FreeRnnDataDesc(hXDesc);
+
+                if (hYDesc != 0)
+                    m_cuda.FreeRnnDataDesc(hYDesc);
+
+                if (hCuDnn != 0)
+                    m_cuda.FreeCuDNN(hCuDnn);
+            }
+        }
+
+        void printCheckSums(Blob<T> blobY, Blob<T> blobHy, Blob<T> blobCy, int nSeqLen, int nBatchSize, int nHiddenSize, int nNumLayers, bool bDiff)
+        {
+            double[] rgY = convert((bDiff) ? blobY.update_cpu_diff() : blobY.update_cpu_data());
+            double[] rgHy = convert((bDiff) ? blobHy.update_cpu_diff() : blobHy.update_cpu_data());
+            double[] rgCy = convert((bDiff) ? blobCy.update_cpu_diff() : blobCy.update_cpu_data());
+
+            double dfCheckSumi = 0;
+            double dfCheckSumh = 0;
+            double dfCheckSumc = 0;
+
+            for (int m = 0; m < nBatchSize; m++)
+            {
+                double dfLocalSumi = 0;
+                double dfLocalSumh = 0;
+                double dfLocalSumc = 0;
+
+                for (int j = 0; j < nSeqLen; j++)
+                {
+                    for (int i = 0; i < nHiddenSize; i++)
+                    {
+                        dfLocalSumi += rgY[j * nBatchSize * nHiddenSize + m * nHiddenSize + i];
+                    }
+                }
+
+                for (int j = 0; j < nNumLayers; j++)
+                {
+                    for (int i = 0; i < nHiddenSize; i++)
+                    {
+                        dfLocalSumh += rgHy[j * nHiddenSize * nBatchSize + m * nHiddenSize + i];
+                        dfLocalSumc += rgCy[j * nHiddenSize * nBatchSize + m * nHiddenSize + i];
+                    }
+                }
+
+                dfCheckSumi += dfLocalSumi;
+                dfCheckSumh += dfLocalSumh;
+                dfCheckSumc += dfLocalSumc;
+            }
+
+            string strType = (bDiff) ? "diff" : "data";
+            m_log.WriteLine("i " + strType + " checksum " + dfCheckSumi.ToString());
+            m_log.WriteLine("c " + strType + " checksum " + dfCheckSumc.ToString());
+            m_log.WriteLine("h " + strType + " checksum " + dfCheckSumh.ToString());
+        }
+
+        void printCheckSums(Blob<T> blobWt)
+        {
+            double[] rgWt = convert(blobWt.update_cpu_diff());
+
+            double dfCheckSumw = 0;
+
+            for (int i = 0; i < blobWt.count(); i++)
+            {
+                dfCheckSumw += rgWt[i];
+            }
+
+            m_log.WriteLine("weight diff checksum " + dfCheckSumw.ToString());
         }
     }
 }
