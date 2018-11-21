@@ -3937,10 +3937,10 @@ namespace MyCaffe.common
                 rgArg.Add(hYData);
                 rgArg.Add(hYDiff);
 
-                rgArg.Add(hHxDesc);
-                rgArg.Add(hHxDiff);
-                rgArg.Add(hCxDesc);
-                rgArg.Add(hCxDiff);
+                rgArg.Add(hHyDesc);
+                rgArg.Add(hHyDiff);
+                rgArg.Add(hCyDesc);
+                rgArg.Add(hCyDiff);
 
                 rgArg.Add(hWtDesc);
                 rgArg.Add(hWtData);
@@ -3976,10 +3976,10 @@ namespace MyCaffe.common
                 rgArg.Add(hYData);
                 rgArg.Add(hYDiff);
 
-                rgArg.Add(hHxDesc);
-                rgArg.Add(hHxDiff);
-                rgArg.Add(hCxDesc);
-                rgArg.Add(hCxDiff);
+                rgArg.Add(hHyDesc);
+                rgArg.Add(hHyDiff);
+                rgArg.Add(hCyDesc);
+                rgArg.Add(hCyDiff);
 
                 rgArg.Add(hWtDesc);
                 rgArg.Add(hWtData);
