@@ -914,7 +914,8 @@ namespace MyCaffe.test
                 // Print check sums.
                 //-------------------------------------------------
                 printCheckSums(blobY, blobHy, blobCy, nSeqLen, nBatchSize, nHiddenSize, nNumLayers, false);
-                printCheckSums(blobY, blobHy, blobCy, nSeqLen, nBatchSize, nHiddenSize, nNumLayers, true);
+                printCheckSums(blobX, blobHx, blobCx, nSeqLen, nBatchSize, nInputSize, nNumLayers, true);
+                printCheckSums(blobWt);
             }
             catch (Exception excpt)
             {
@@ -984,11 +985,11 @@ namespace MyCaffe.test
             }
         }
 
-        void printCheckSums(Blob<T> blobY, Blob<T> blobHy, Blob<T> blobCy, int nSeqLen, int nBatchSize, int nHiddenSize, int nNumLayers, bool bDiff)
+        void printCheckSums(Blob<T> blob, Blob<T> blobH, Blob<T> blobC, int nSeqLen, int nBatchSize, int nHiddenSize, int nNumLayers, bool bDiff)
         {
-            double[] rgY = convert((bDiff) ? blobY.update_cpu_diff() : blobY.update_cpu_data());
-            double[] rgHy = convert((bDiff) ? blobHy.update_cpu_diff() : blobHy.update_cpu_data());
-            double[] rgCy = convert((bDiff) ? blobCy.update_cpu_diff() : blobCy.update_cpu_data());
+            double[] rg = convert((bDiff) ? blob.update_cpu_diff() : blob.update_cpu_data());
+            double[] rgH = convert((bDiff) ? blobH.update_cpu_diff() : blobH.update_cpu_data());
+            double[] rgC = convert((bDiff) ? blobC.update_cpu_diff() : blobC.update_cpu_data());
 
             double dfCheckSumi = 0;
             double dfCheckSumh = 0;
@@ -1004,7 +1005,7 @@ namespace MyCaffe.test
                 {
                     for (int i = 0; i < nHiddenSize; i++)
                     {
-                        dfLocalSumi += rgY[j * nBatchSize * nHiddenSize + m * nHiddenSize + i];
+                        dfLocalSumi += rg[j * nBatchSize * nHiddenSize + m * nHiddenSize + i];
                     }
                 }
 
@@ -1012,8 +1013,8 @@ namespace MyCaffe.test
                 {
                     for (int i = 0; i < nHiddenSize; i++)
                     {
-                        dfLocalSumh += rgHy[j * nHiddenSize * nBatchSize + m * nHiddenSize + i];
-                        dfLocalSumc += rgCy[j * nHiddenSize * nBatchSize + m * nHiddenSize + i];
+                        dfLocalSumh += rgH[j * nHiddenSize * nBatchSize + m * nHiddenSize + i];
+                        dfLocalSumc += rgC[j * nHiddenSize * nBatchSize + m * nHiddenSize + i];
                     }
                 }
 
