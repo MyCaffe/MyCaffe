@@ -205,6 +205,17 @@ class MemoryItem
 
 			return SetData(lSize, pSrc);
 		}
+
+		float* GetHostDataAsFloat()
+		{
+			float* fp = (float*)malloc(Size());
+			if (cudaMemcpy(fp, Data(), Size(), cudaMemcpyDeviceToHost))
+			{
+				free(fp);
+				return NULL;
+			}
+			return fp;
+		}
 };
 
 
