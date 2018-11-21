@@ -346,48 +346,51 @@ namespace MyCaffe.layers
                 m_hReserved = m_cuda.AllocMemory(m_nReservedCount);
 
                 // Fill the weights.
-                int nNumLinearLayers = (m_rnnMode == RNN_MODE.LSTM) ? 8 : 2;
-                Filler<T> fillerWt = Filler<T>.Create(m_cuda, m_log, m_param.recurrent_param.weight_filler);
-                Filler<T> fillerBias = Filler<T>.Create(m_cuda, m_log, m_param.recurrent_param.bias_filler);
-                int nWtCount;
-                long hWt;
-                int nBiasCount;
-                long hBias;
-
-                for (int i = 0; i < m_nNumLayers; i++)
+                if (!shareParameter(m_blobWts, rgWtShape))
                 {
-                    for (int j = 0; j < nNumLinearLayers; j++)
+                    int nNumLinearLayers = (m_rnnMode == RNN_MODE.LSTM) ? 8 : 2;
+                    Filler<T> fillerWt = Filler<T>.Create(m_cuda, m_log, m_param.recurrent_param.weight_filler);
+                    Filler<T> fillerBias = Filler<T>.Create(m_cuda, m_log, m_param.recurrent_param.bias_filler);
+                    int nWtCount;
+                    long hWt;
+                    int nBiasCount;
+                    long hBias;
+
+                    for (int i = 0; i < m_nNumLayers; i++)
                     {
-                        m_cuda.GetRnnLinLayerParams(m_hCuDnn, m_hRnnDesc, i, m_hXDesc, m_hWeightDesc, m_blobWts.gpu_data, j, out nWtCount, out hWt, out nBiasCount, out hBias);
+                        for (int j = 0; j < nNumLinearLayers; j++)
+                        {
+                            m_cuda.GetRnnLinLayerParams(m_hCuDnn, m_hRnnDesc, i, m_hXDesc, m_hWeightDesc, m_blobWts.gpu_data, j, out nWtCount, out hWt, out nBiasCount, out hBias);
 
-                        if (nWtCount % 2 != 0)
-                        {
-                            // Since, some fillers (gaussian) require an even number of items,
-                            // we can temporarily use the all weight diff area and then copy 
-                            // the non-even number of items into the layer weights.
-                            fillerWt.Fill(nWtCount + 1, m_blobWts.mutable_gpu_diff);
-                            m_cuda.copy(nWtCount, m_blobWts.mutable_gpu_diff, hWt);
-                        }
-                        else
-                        {
-                            fillerWt.Fill(nWtCount, hWt);
-                        }
+                            if (nWtCount % 2 != 0)
+                            {
+                                // Since, some fillers (gaussian) require an even number of items,
+                                // we can temporarily use the all weight diff area and then copy 
+                                // the non-even number of items into the layer weights.
+                                fillerWt.Fill(nWtCount + 1, m_blobWts.mutable_gpu_diff);
+                                m_cuda.copy(nWtCount, m_blobWts.mutable_gpu_diff, hWt);
+                            }
+                            else
+                            {
+                                fillerWt.Fill(nWtCount, hWt);
+                            }
 
-                        if (nBiasCount % 2 != 0)
-                        {
-                            // Since, some fillers (gaussian) require an even number of items,
-                            // we can temporarily use the all weight diff area and then copy 
-                            // the non-even number of items into the layer bias.
-                            fillerBias.Fill(nBiasCount + 1, m_blobWts.mutable_gpu_diff);
-                            m_cuda.copy(nBiasCount, m_blobWts.mutable_gpu_diff, hBias);
-                        }
-                        else
-                        {
-                            fillerBias.Fill(nBiasCount, hBias);
-                        }
+                            if (nBiasCount % 2 != 0)
+                            {
+                                // Since, some fillers (gaussian) require an even number of items,
+                                // we can temporarily use the all weight diff area and then copy 
+                                // the non-even number of items into the layer bias.
+                                fillerBias.Fill(nBiasCount + 1, m_blobWts.mutable_gpu_diff);
+                                m_cuda.copy(nBiasCount, m_blobWts.mutable_gpu_diff, hBias);
+                            }
+                            else
+                            {
+                                fillerBias.Fill(nBiasCount, hBias);
+                            }
 
-                        m_cuda.FreeMemoryPointer(hWt);
-                        m_cuda.FreeMemoryPointer(hBias);
+                            m_cuda.FreeMemoryPointer(hWt);
+                            m_cuda.FreeMemoryPointer(hBias);
+                        }
                     }
                 }
 
@@ -835,7 +838,7 @@ namespace MyCaffe.layers
                 m_blobHx.CopyFrom(m_blobHy);
             }
 
-            m_cuda.RnnForward(m_hCuDnn, 
+            m_cuda.RnnForward(m_hCuDnn,
                               m_hRnnDesc,
                               m_hXDesc,
                               m_blobX.gpu_data,
