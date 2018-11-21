@@ -35,8 +35,8 @@ namespace MyCaffe.param
         /// <returns></returns>
         public string useCaffeReason()
         {
-            if (engine != Engine.CAFFE)
-                return "The engine setting is set on DEFAULT or CAFFE.";
+            if (engine == Engine.CAFFE)
+                return "The engine setting is set on CAFFE.";
 
             if (m_bExposeHidden)
                 return "Exposing hidden is currently only offered by CAFFE.";
@@ -50,10 +50,10 @@ namespace MyCaffe.param
         /// <returns>Returns <i>true</i> when cuDnn is to be used, <i>false</i> otherwise.</returns>
         public bool useCudnn()
         {
-            if (engine == EngineParameter.Engine.CUDNN && !m_bExposeHidden)
-                return true;
+            if (engine == EngineParameter.Engine.CAFFE || m_bExposeHidden)
+                return false;
 
-            return false;
+            return true;
         }
 
 
@@ -201,7 +201,7 @@ namespace MyCaffe.param
             rgChildren.Add("debug_info", debug_info.ToString());
             rgChildren.Add("expose_hidden", expose_hidden.ToString());
 
-            if (engine == Engine.CUDNN)
+            if (engine != Engine.CAFFE)
             {
                 rgChildren.Add("dropout_ratio", dropout_ratio.ToString());
                 rgChildren.Add("dropout_seed", dropout_seed.ToString());
