@@ -118,19 +118,24 @@ namespace MyCaffe.solvers
             m_nStart = 0;
             m_nEnd = -1;
 
-            m_blobGradients = new Blob<T>(m_cuda, m_log);
+            m_blobGradients = new Blob<T>(m_cuda, m_log, false);
             m_blobGradients.Name = "gradients";
-            m_blobDirection = new Blob<T>(m_cuda, m_log);
+            m_blobDirection = new Blob<T>(m_cuda, m_log, false);
             m_blobDirection.Name = "direction";
 
             for (int i = 0; i < m_param.lbgfs_corrections; i++)
             {
-                m_colBlobHistoryS.Add(new Blob<T>(m_cuda, m_log, rgShape));
-                m_colBlobHistoryY.Add(new Blob<T>(m_cuda, m_log, rgShape));
+                m_colBlobHistoryS.Add(new Blob<T>(m_cuda, m_log, rgShape, false));
+                m_colBlobHistoryY.Add(new Blob<T>(m_cuda, m_log, rgShape, false));
                 m_rgRhoHistory.Add(0);
             }
         }
 
+        /// <summary>
+        /// Apply the gradients to the network.
+        /// </summary>
+        /// <param name="nIterationOverride">Optionally, specifies an iteration override (default = -1, which ignores the override).</param>
+        /// <returns></returns>
         public override double ApplyUpdate(int nIterationOverride = -1)
         {
             for (int i = 0; i < m_net.learnable_parameters.Count; i++)
@@ -149,6 +154,9 @@ namespace MyCaffe.solvers
             return 0;
         }
 
+        /// <summary>
+        /// Collect the gradients from the network learnable parameters.
+        /// </summary>
         public virtual void CollectGradients()
         {
             BlobCollection<T> net_params = m_net.learnable_parameters;
@@ -167,6 +175,9 @@ namespace MyCaffe.solvers
             }
         }
 
+        /// <summary>
+        /// Update the history values with the gradients and direction.
+        /// </summary>
         public virtual void UpdateHistory()
         {
             if (m_nIter == 0)
@@ -206,6 +217,9 @@ namespace MyCaffe.solvers
             m_rgRhoHistory[m_nEnd] = 1.0 / dfYs;
         }
 
+        /// <summary>
+        /// Compute the initial Hessian approximation.
+        /// </summary>
         public virtual void ComputeInitialHessianApprox()
         {
             if (m_nIter == 0)
@@ -248,6 +262,9 @@ namespace MyCaffe.solvers
             return rgIndices;
         }
 
+        /// <summary>
+        /// Compute the direction.
+        /// </summary>
         public virtual void ComputeDirection()
         {
             m_cuda.copy(m_nN, m_blobGradients.gpu_data, m_blobDirection.mutable_gpu_data);
@@ -284,11 +301,17 @@ namespace MyCaffe.solvers
             }
         }
 
+        /// <summary>
+        /// Compute the step.
+        /// </summary>
         public virtual void ComputeStep()
         {
             m_dfStep = 1.0;
         }
 
+        /// <summary>
+        /// Update the network.
+        /// </summary>
         public virtual void UpdateNet()
         {
             m_cuda.scal(m_nN, m_dfStep, m_blobDirection.mutable_gpu_data);
@@ -311,8 +334,14 @@ namespace MyCaffe.solvers
                     m_cuda.scal(m_nN, 0, net_params[i].mutable_gpu_diff);
                 }
             }
+
+            m_net.Update();
         }
 
+        /// <summary>
+        /// Restore a previously saved solver state.
+        /// </summary>
+        /// <param name="rgState">Specifies the solver state to restore.</param>
         protected override void RestoreSolverState(byte[] rgState)
         {
             SolverState state = m_persist.LoadSolverState(rgState, m_param.type);
@@ -337,6 +366,10 @@ namespace MyCaffe.solvers
             m_blobDirection.FromProto(state.direction);
         }
 
+        /// <summary>
+        /// Save the solver state.
+        /// </summary>
+        /// <returns>They byte stream of the solver state is returned.</returns>
         protected override byte[] SnapshotSolverState()
         {
             SolverState state = new SolverState();
