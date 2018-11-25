@@ -13,7 +13,7 @@ using MyCaffe.basecode.descriptors;
 using MyCaffe.data;
 
 /// <summary>
-/// Testing the debig layer.
+/// Testing the debug layer.
 /// 
 /// Debug Layer - layer merely stores, up to max_stored_batches, batches of input which
 /// are then optionally used by various debug visualizers.
@@ -26,11 +26,11 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestForward()
         {
-            EmbedDebugLayerTest test = new EmbedDebugLayerTest();
+            DebugLayerTest test = new DebugLayerTest();
 
             try
             {
-                foreach (IEmbedDebugLayerTest t in test.Tests)
+                foreach (IDebugLayerTest t in test.Tests)
                 {
                     t.TestForward(10);
                 }
@@ -42,14 +42,14 @@ namespace MyCaffe.test
         }
     }
 
-    interface IEmbedDebugLayerTest : ITest
+    interface IDebugLayerTest : ITest
     {
         void TestForward(int k);
     }
 
-    class EmbedDebugLayerTest : TestBase
+    class DebugLayerTest : TestBase
     {
-        public EmbedDebugLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+        public DebugLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
             : base("Debug Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
@@ -57,13 +57,13 @@ namespace MyCaffe.test
         protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
         {
             if (dt == common.DataType.DOUBLE)
-                return new EmbedDebugLayerTest<double>(strName, nDeviceID, engine);
+                return new DebugLayerTest<double>(strName, nDeviceID, engine);
             else
-                return new EmbedDebugLayerTest<float>(strName, nDeviceID, engine);
+                return new DebugLayerTest<float>(strName, nDeviceID, engine);
         }
     }
 
-    class EmbedDebugLayerTest<T> : TestEx<T>, IEmbedDebugLayerTest
+    class DebugLayerTest<T> : TestEx<T>, IDebugLayerTest
     {
         Blob<T> m_blobBottomLabels;
         BlobCollection<T> m_colData = new BlobCollection<T>();
@@ -72,7 +72,7 @@ namespace MyCaffe.test
         int m_nBatchSize;
         int m_nVectorDim;
 
-        public EmbedDebugLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
+        public DebugLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
         {
             m_engine = engine;
