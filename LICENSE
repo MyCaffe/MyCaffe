@@ -259,6 +259,16 @@
   Some parts of MyCaffe are derived from forks off the Caffe source 
   (such as the UnPoolingLayer1, forked at https://github.com/mariolew/caffe-unpooling)
   which are also bound by the Caffe License above.
+
+  Some parts of MyCaffe are derived from forks off the Caffe source
+  (such as the LstmSimpleLayer, forked at https://github.com/junhyukoh/caffe-lstm)
+  which are also bound by the Caffe License above.
+
+  Some parts of MyCaffe are derived from forks off the Caffe source
+  (such as the GramLayer, TVLossLayer and LBFGSSolver used with Neural Style,
+  forked at https://github.com/ftokarev/caffe/tree/neural-style and at
+  https://github.com/ftokarev/caffe-neural-style) which are also bound by the
+  Caffe License above.
   ** end Caffe License **
 
   Some parts of MyCaffe are derived from the NVCaffe and Caffe SSD under the NVCaffe 
