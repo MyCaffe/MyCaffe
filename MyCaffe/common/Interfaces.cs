@@ -115,15 +115,17 @@ namespace MyCaffe.common
         /// Save the solver state to a byte array.
         /// </summary>
         /// <param name="state">Specifies the solver state to save.</param>
+        /// <param name="type">Specifies the solver type.</param>
         /// <returns>A byte array containing the solver state is returned.</returns>
-        byte[] SaveSolverState(SolverState state);
+        byte[] SaveSolverState(SolverState state, SolverParameter.SolverType type = SolverParameter.SolverType.SGD);
 
         /// <summary>
         /// Load the solver state from a byte array.
         /// </summary>
         /// <param name="rgState">Specifies the byte array containing the solver state.</param>
+        /// <param name="type">Specifies the solver type.</param>
         /// <returns>The SolverState loaded is returned.</returns>
-        SolverState LoadSolverState(byte[] rgState);
+        SolverState LoadSolverState(byte[] rgState, SolverParameter.SolverType type = SolverParameter.SolverType.SGD);
 
         /// <summary>
         /// Returns the weight information describing the weights containined within the weight bytes.

@@ -70,8 +70,9 @@ namespace MyCaffe.common
         /// Save the solver state to a byte array.
         /// </summary>
         /// <param name="state">Specifies the solver state to save.</param>
+        /// <param name="type">Specifies the solver type.</param>
         /// <returns>A byte array containing the solver state is returned.</returns>
-        public byte[] SaveSolverState(SolverState state)
+        public byte[] SaveSolverState(SolverState state, SolverParameter.SolverType type = SolverParameter.SolverType.SGD)
         {
             FieldDescriptor fd = FieldDescriptor.CreateSolverStateFieldDesc();
             ProtoBufWriter writer = new ProtoBufWriter(m_log);
@@ -81,9 +82,26 @@ namespace MyCaffe.common
             writer.WriteField(fd, "iter", new int[] { state.iter });
             writer.WriteField(fd, "current_step", new int[] { state.current_step });
 
+            if (type == SolverParameter.SolverType.LBFGS)
+            {
+                writer.WriteField(fd, "start", new int[] { state.start });
+                writer.WriteField(fd, "end", new int[] { state.end });
+            }
+
             for (int i = 0; i < state.history.Count; i++)
             {
                 writer.WriteField(fd, "history", saveBlobProto(fd.FindFirstChild("history"), state.history[i]));
+            }
+
+            if (type == SolverParameter.SolverType.LBFGS)
+            {
+                for (int i = 0; i < state.s_history.Count; i++)
+                {
+                    writer.WriteField(fd, "s_history", saveBlobProto(fd.FindFirstChild("s_history"), state.s_history[i]));
+                }
+
+                writer.WriteField(fd, "gradients", saveBlobProto(fd.FindFirstChild("gradient"), state.gradients));
+                writer.WriteField(fd, "direction", saveBlobProto(fd.FindFirstChild("direction"), state.direction));
             }
 
             return writer.GetBytes(true);
@@ -93,8 +111,9 @@ namespace MyCaffe.common
         /// Load the solver state from a byte array.
         /// </summary>
         /// <param name="rgState">Specifies the byte array containing the solver state.</param>
+        /// <param name="type">Specifies the solver type.</param>
         /// <returns>The SolverState loaded is returned.</returns>
-        public SolverState LoadSolverState(byte[] rgState)
+        public SolverState LoadSolverState(byte[] rgState, SolverParameter.SolverType type = SolverParameter.SolverType.SGD)
         {
             SolverState state = new SolverState();
             FieldDescriptor fd = FieldDescriptor.CreateSolverStateFieldDesc();
@@ -118,6 +137,15 @@ namespace MyCaffe.common
             ProtoBufField pbCurStep = fields.FindFirstChild("current_step");
             state.current_step = (pbCurStep == null || pbCurStep.IntValues == null || pbCurStep.IntValues.Length == 0) ? 1 : pbCurStep.IntValues[0];
 
+            if (type == SolverParameter.SolverType.LBFGS)
+            {
+                ProtoBufField pbStart = fields.FindFirstChild("start");
+                state.start = (pbStart == null || pbStart.IntValues == null || pbStart.IntValues.Length == 0) ? 0 : pbStart.IntValues[0];
+
+                ProtoBufField pbEnd = fields.FindFirstChild("end");
+                state.end = (pbEnd == null || pbEnd.IntValues == null || pbEnd.IntValues.Length == 0) ? 1 : pbEnd.IntValues[0];
+            }
+
             ProtoBufFieldCollection col = fields.FindAllChildren("history");
             if (col != null && col.Count > 0)
             {
@@ -126,6 +154,34 @@ namespace MyCaffe.common
                 for (int i = 0; i < col.Count; i++)
                 {
                     state.history.Add(LoadBlobProto(col[i].Bytes, fdHist.FieldId));
+                }
+            }
+
+            if (type == SolverParameter.SolverType.LBFGS)
+            {
+                ProtoBufFieldCollection colS = fields.FindAllChildren("s_history");
+                if (colS != null && colS.Count > 0)
+                {
+                    FieldDescriptor fdHist = fd.FindFirstChild("s_history");
+
+                    for (int i = 0; i < colS.Count; i++)
+                    {
+                        state.s_history.Add(LoadBlobProto(colS[i].Bytes, fdHist.FieldId));
+                    }
+                }
+
+                ProtoBufField pbGrad = fields.FindFirstChild("gradients");
+                if (pbGrad != null)
+                {
+                    FieldDescriptor fdGrad = fd.FindFirstChild("gradients");
+                    state.gradients = LoadBlobProto(pbGrad.Bytes, fdGrad.FieldId);
+                }
+
+                ProtoBufField pbDir = fields.FindFirstChild("direction");
+                if (pbDir != null)
+                {
+                    FieldDescriptor fdDir = fd.FindFirstChild("direction");
+                    state.direction = LoadBlobProto(pbDir.Bytes, fdDir.FieldId);
                 }
             }
 
