@@ -58,6 +58,7 @@ namespace MyCaffe.param
         int m_nDeviceID = 1;
         long m_lRandomSeed = -1;
         SolverType m_solverType = SolverType.SGD;
+        int m_lbfgs_corrections = 100;
         double m_dfDelta = 1e-8;
         double m_dfMomentum2 = 0.999;
         double m_dfRmsDecay = 0.95;
@@ -129,7 +130,14 @@ namespace MyCaffe.param
             /// @see [Adam: A Method for Stochastic Optimization](https://arxiv.org/abs/1412.6980v9) by Kingma, Diederik P. and Ba, Jimmy, 2014.
             /// </remarks>
             ADAM = 5,
-            _MAX = 6
+            /// <summary>
+            /// Use the L-BFGS solver based on the implementation of minFunc by Marc Schmidt.
+            /// </summary>
+            /// <remarks>
+            /// @see [minFunc](https://www.cs.ubc.ca/~schmidtm/Software/minFunc.html) by Marc Schmidt, 2005
+            /// </remarks>
+            LBFGS = 6,
+            _MAX = 7
         }
 
         /// <summary>
@@ -755,7 +763,8 @@ namespace MyCaffe.param
                      "  ADADELTA - Gradient based optimization like SGD, see M. Zeiler 'Adadelta, An adaptive learning rate method', arXiv preprint, 2012. \n" +
                      "  ADAGRAD - Gradient based optimization like SGD that tries to find rarely seen features, see Duchi, E, and Y. Singer, 'Adaptive subgradient methods for online learning and stochastic optimization', The Journal of Machine Learning Research, 2011. \n" +
                      "  ADAM - Gradient based optimization like SGD that includes 'adaptive momentum estimation' and can be thougth of as a generalization of AdaGrad, see D. Kingma, J. Ba, 'Adam: A method for stochastic optimization', Intl' Conference for Learning Representations, 2015. \n" +
-                     "  RMSPROP - Gradient based optimization like SGD, see T. Tieleman, and G. Hinton, 'RMSProp: Divide the gradient by a runnign average of its recent magnitude', COURSERA: Neural Networks for Machine Learning. Technical Report, 2012.")]
+                     "  RMSPROP - Gradient based optimization like SGD, see T. Tieleman, and G. Hinton, 'RMSProp: Divide the gradient by a runnign average of its recent magnitude', COURSERA: Neural Networks for Machine Learning. Technical Report, 2012. \n" + 
+                     "  LBGFS - Gradient based on minFunc, see Marc Schmidt 'minFunc'")]
         public SolverType type
         {
             get { return m_solverType; }
@@ -808,6 +817,17 @@ namespace MyCaffe.param
         {
             get { return m_bDebugInfo; }
             set { m_bDebugInfo = value; }
+        }
+
+        /// <summary>
+        /// Specifies the number of lbgfs corrections used with the L-BGFS solver.
+        /// </summary>
+        [Category("Solver - L-BGFS")]
+        [Description("Specifies the 'L-BGFS' corrections.")]
+        public int lbgfs_corrections
+        {
+            get { return m_lbfgs_corrections; }
+            set { m_lbfgs_corrections = value; }
         }
 
         /// <summary>
@@ -906,6 +926,9 @@ namespace MyCaffe.param
 
             if (type == SolverType.RMSPROP)
                 rgChildren.Add("rms_decay", rms_decay.ToString());
+
+            if (type == SolverType.LBFGS)
+                rgChildren.Add("lbgfs_corrections", lbgfs_corrections.ToString());
 
             if (debug_info != false)
                 rgChildren.Add("debug_info", debug_info.ToString());
@@ -1076,6 +1099,10 @@ namespace MyCaffe.param
                         p.type = SolverType.RMSPROP;
                         break;
 
+                    case "lbgfs":
+                        p.type = SolverType.LBFGS;
+                        break;
+
                     default:
                         throw new Exception("Unknown solver 'type' value: " + strVal);
                 }
@@ -1092,6 +1119,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("debug_info")) != null)
                 p.debug_info = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("lbgfs_corrections")) != null)
+                p.lbgfs_corrections = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("snapshot_after_train")) != null)
                 p.snapshot_after_train = bool.Parse(strVal);
