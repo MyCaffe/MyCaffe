@@ -170,6 +170,10 @@ namespace MyCaffe.param
             /// </summary>
             GRADIENTSCALER,
             /// <summary>
+            /// Initializes a parameter for the GramLayer (used with Neural Style)
+            /// </summary>
+            GRAM,
+            /// <summary>
             /// Initializes a parameter for the GRNLayer (global response normalization L2)
             /// </summary>
             GRN,
@@ -289,6 +293,10 @@ namespace MyCaffe.param
             /// Initializes a parameter for the SwishLayer
             /// </summary>
             SWISH,
+            /// <summary>
+            /// Initializes a parameter for the TVLossLayer (used with Neural Style).
+            /// </summary>
+            TV_LOSS,
             /// <summary>
             /// Initializes a parameter for the TanhLayer.
             /// </summary>
@@ -787,6 +795,12 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new FlattenParameter();
                     break;
 
+                case LayerType.GRAM:
+                    expected_bottom.Add("input");
+                    expected_top.Add("gram");
+                    m_rgLayerParameters[lt] = new GramParameter();
+                    break;
+
                 case LayerType.HINGE_LOSS:
                     expected_bottom.Add("pred");
                     expected_bottom.Add("label");
@@ -1021,6 +1035,14 @@ namespace MyCaffe.param
                     expected_top.Add("anchor");
                     expected_top.Add("pos");
                     expected_top.Add("neg");
+                    break;
+
+                case LayerType.TV_LOSS:
+                    expected_bottom.Add("pred");
+                    expected_bottom.Add("label");
+                    expected_top.Add("loss");
+                    m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
+                    m_rgLayerParameters[lt] = new TVLossParameter();
                     break;
 
                 case LayerType.LSTM_SIMPLE:
@@ -1365,6 +1387,24 @@ namespace MyCaffe.param
         {
             get { return (GradientScaleParameter)m_rgLayerParameters[LayerType.GRADIENTSCALER]; }
             set { m_rgLayerParameters[LayerType.GRADIENTSCALER] = value; }
+        }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.GRAM
+        /// </summary>
+        public GramParameter gram_param
+        {
+            get { return (GramParameter)m_rgLayerParameters[LayerType.GRAM]; }
+            set { m_rgLayerParameters[LayerType.GRAM] = value; }
+        }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.TV_LOSS
+        /// </summary>
+        public TVLossParameter TV_loss_param
+        {
+            get { return (TVLossParameter)m_rgLayerParameters[LayerType.TV_LOSS]; }
+            set { m_rgLayerParameters[LayerType.TV_LOSS] = value; }
         }
 
         /// <summary>
@@ -1853,6 +1893,9 @@ namespace MyCaffe.param
                 case LayerType.GRADIENTSCALER:
                     return "GSL";
 
+                case LayerType.GRAM:
+                    return "Gram";
+
                 case LayerType.HINGE_LOSS:
                     return "HingeLoss";
 
@@ -1975,6 +2018,9 @@ namespace MyCaffe.param
 
                 case LayerType.TRIPLET_DATA:
                     return "TripletData";
+
+                case LayerType.TV_LOSS:
+                    return "TVLoss";
 
                 case LayerType.LSTM_SIMPLE:
                     return "LstmSimple";
@@ -2459,6 +2505,9 @@ namespace MyCaffe.param
                 case "gsl":
                     return LayerType.GRADIENTSCALER;
 
+                case "gram":
+                    return LayerType.GRAM;
+
 //                case "hdf5data":
 //                    return LayerType.HDF5DATA;
 
@@ -2599,6 +2648,10 @@ namespace MyCaffe.param
                 case "triplet_selection":
                 case "tripletselection":
                     return LayerType.TRIPLET_SELECT;
+
+                case "tvloss":
+                case "tv_loss":
+                    return LayerType.TV_LOSS;
 
                 // case "windowdata":
                 //      return LayerType.WINDOWDATA;

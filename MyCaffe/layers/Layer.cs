@@ -1051,6 +1051,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.GRADIENTSCALER:
                     return new GradientScaleLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.GRAM:
+                    return new GramLayer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.HINGE_LOSS:
                     return new HingeLossLayer<T>(cuda, log, p);
 
@@ -1164,6 +1167,9 @@ namespace MyCaffe.layers
 
                 case LayerParameter.LayerType.TILE:
                     return new TileLayer<T>(cuda, log, p);
+
+                case LayerParameter.LayerType.TV_LOSS:
+                    return new TVLossLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.LSTM_SIMPLE:
                     return new LSTMSimpleLayer<T>(cuda, log, p);
