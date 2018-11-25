@@ -94,6 +94,8 @@
     <Compile Include="fillers\PositiveUnitballFiller.cs" />
     <Compile Include="fillers\UniformFiller.cs" />
     <Compile Include="fillers\XavierFiller.cs" />
+    <Compile Include="layers\TVLossLayer.cs" />
+    <Compile Include="layers\GramLayer.cs" />
     <Compile Include="layers\CropLayer.cs" />
     <Compile Include="layers\GradientScaleLayer.cs" />
     <Compile Include="layers\MemoryLossLayer.cs" />
@@ -178,6 +180,8 @@
     <Compile Include="MyCaffeControl.Designer.cs">
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="param\TVLossParameter.cs" />
+    <Compile Include="param\GramParameter.cs" />
     <Compile Include="param\BinaryHashParameter.cs" />
     <Compile Include="param\CropParameter.cs" />
     <Compile Include="param.ui\FormProperty.cs">
@@ -268,6 +272,7 @@
     <Compile Include="solvers\AdaGradSolver.cs" />
     <Compile Include="solvers\AdamSolver.cs" />
     <Compile Include="common\Parallel.cs" />
+    <Compile Include="solvers\LBFGSSolver.cs" />
     <Compile Include="solvers\RmsPropSolver.cs" />
     <Compile Include="solvers\AdaDeltaSolver.cs" />
     <Compile Include="solvers\NesterovSolver.cs" />
