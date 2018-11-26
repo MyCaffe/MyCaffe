@@ -146,10 +146,14 @@ namespace MyCaffe.solvers
         /// <returns></returns>
         public override double ApplyUpdate(int nIterationOverride = -1)
         {
-            for (int i = 0; i < m_net.learnable_parameters.Count; i++)
+            if (m_nN == 0)
             {
-                int nN = m_net.learnable_parameters[i].count();
-                m_cuda.scal(nN, 0, m_net.learnable_parameters[i].mutable_gpu_diff);
+                for (int i = 0; i < m_net.learnable_parameters.Count; i++)
+                {
+                    m_net.learnable_parameters[i].SetDiff(0);
+                }
+
+                return 0;
             }
 
             m_log.CHECK(is_root_solver, "You can only apply the LBFGS Solver updates on the root solver.");
@@ -160,6 +164,10 @@ namespace MyCaffe.solvers
             ComputeDirection();
             ComputeStep();
             UpdateNet();
+
+            // Increment the internal iter_ counter -- its value should always indicate
+            // the number of times the weights have been updated.
+            m_nIter++;
 
             return 0;
         }
@@ -194,13 +202,16 @@ namespace MyCaffe.solvers
                 return;
 
             m_cuda.scal(m_nN, m_tMinusOne, m_blobDirection.mutable_gpu_data); // s
-            m_cuda.axpby(m_nN, m_tOne, m_blobGradients.gpu_data, m_tMinusOne, m_blobGradients.mutable_gpu_data); // y
+            m_cuda.axpby(m_nN, m_tOne, m_blobGradients.gpu_data, m_tMinusOne, m_blobGradientsPrev.mutable_gpu_data); // y
             T fYs = m_cuda.dot(m_nN, m_blobDirection.gpu_data, m_blobGradientsPrev.gpu_data);
             double dfYs = Utility.ConvertVal<T>(fYs);
 
             if (dfYs < 1e-10)
             {
                 m_log.WriteLine("WARNING: Skipping L-BFGS update.");
+                if (m_nEnd < 0)
+                    m_nEnd = 0;
+
                 return;
             }
 
@@ -335,13 +346,17 @@ namespace MyCaffe.solvers
 
                 if (m_net.params_lr[i] != 0)
                 {
-                    T fLr = (T)Convert.ChangeType(m_net.params_lr[i], typeof(T));
-                    m_cuda.scale(nCount, fLr, m_blobDirection.gpu_data, net_params[i].mutable_gpu_diff, nOffset, 0);
+                    if (m_net.params_lr[i] != 1.0)
+                    {
+                        T fLr = (T)Convert.ChangeType(m_net.params_lr[i], typeof(T));
+                        m_cuda.scale(nCount, fLr, m_blobDirection.gpu_data, net_params[i].mutable_gpu_diff, nOffset, 0);
+                    }
+
                     nOffset += nCount;
                 }
                 else
                 {
-                    m_cuda.scal(m_nN, 0, net_params[i].mutable_gpu_diff);
+                    net_params[i].SetDiff(0);
                 }
             }
 
