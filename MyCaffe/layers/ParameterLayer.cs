@@ -56,7 +56,7 @@ namespace MyCaffe.layers
             else
             {
                 Blob<T> blob = new Blob<T>(m_cuda, m_log);
-                blob.Name = m_param.name + " param";
+                blob.Name = m_param.name;
                 blob.Reshape(m_param.parameter_param.shape);
                 m_colBlobs.Add(blob);
             }
