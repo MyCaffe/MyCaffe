@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DeepDraw.cs" />
+    <Compile Include="NeuralStyleTransfer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -57,6 +58,10 @@
     <ProjectReference Include="..\MyCaffe.basecode\MyCaffe.basecode.csproj">
       <Project>{d168418c-cdcc-4f5b-bf55-292a38cc2429}</Project>
       <Name>MyCaffe.basecode</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.db.image\MyCaffe.db.image.csproj">
+      <Project>{642BA581-59CB-445E-8D7D-81E67B748D77}</Project>
+      <Name>MyCaffe.db.image</Name>
     </ProjectReference>
     <ProjectReference Include="..\MyCaffe\MyCaffe.csproj">
       <Project>{28e430dd-bd6c-4a4c-9454-1eeb4ad63a5c}</Project>
