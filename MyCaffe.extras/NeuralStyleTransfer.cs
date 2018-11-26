@@ -28,23 +28,33 @@ namespace MyCaffe.extras
         List<string> m_rgStyleLayers;
         List<string> m_rgGramLayers;
         int m_nIterations = 1000;
-        int m_nSaveEvery = 100;
         int m_nDisplayEvery = 100;
         double m_dfTVLossWeight = 1e-2;
         double m_dfStyleWeight = 100;
         double m_dfContentWeight = 5;
-        int m_nGpuID = 0;
-        Net<T> m_net;
         CancelEvent m_evtCancel;
         DataTransformer<T> m_transformer = null;
         TransformationParameter m_transformationParam;
         PersistCaffe<T> m_persist;
+        NetParameter m_net_param;
+        byte[] m_rgWeights = null;
 
-        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, NetParameter p, List<string> rgContentLayers, List<string> rgStyleLayers, CancelEvent evtCancel)
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="cuda">Specifies the instance of CudaDnn to use.</param>
+        /// <param name="log">Specifies the output log.</param>
+        /// <param name="strModel">Specifies the network model to use.</param>
+        /// <param name="rgWeights">Optionally, specifies the weights to use (or <i>null</i> to ignore).</param>
+        /// <param name="rgContentLayers">Specifies the names of the content layers.</param>
+        /// <param name="rgStyleLayers">Specifies the names of the style layers.</param>
+        /// <param name="evtCancel">Specifies the cancel event used to abort processing.</param>
+        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, string strModel, byte[] rgWeights, List<string> rgContentLayers, List<string> rgStyleLayers, CancelEvent evtCancel)
         {
             m_cuda = cuda;
             m_log = log;
             m_evtCancel = evtCancel;
+            m_rgWeights = rgWeights;
 
             m_rgContentLayers = rgContentLayers;
             m_rgStyleLayers = rgStyleLayers;
@@ -53,28 +63,25 @@ namespace MyCaffe.extras
             rgUsedLayers.AddRange(m_rgContentLayers);
             rgUsedLayers.AddRange(m_rgStyleLayers);
 
-            NetParameter netP = p.Clone();
-            prune(netP, rgUsedLayers);
-            add_gram_layers(netP, m_rgStyleLayers);
-
-            m_net = new Net<T>(m_cuda, m_log, netP, evtCancel, null, Phase.TEST);
+            RawProto proto = RawProto.Parse(strModel);
+            m_net_param = NetParameter.FromProto(proto);
+            prune(m_net_param, rgUsedLayers);
+            add_gram_layers(m_net_param, m_rgStyleLayers);
 
             // mean is taken from gist.github.com/ksimonyan/3785162f95cd2d5fee77
             m_transformationParam = new TransformationParameter();
             m_transformationParam.color_order = TransformationParameter.COLOR_ORDER.BGR;
-            m_transformationParam.scale = 256.0;
+            m_transformationParam.scale = 1.0;
             m_transformationParam.mean_value.AddRange(new List<double>() { 103.939, 116.779, 123.68 });
 
             m_persist = new PersistCaffe<T>(m_log, false);
         }
 
+        /// <summary>
+        /// Release all resources used.
+        /// </summary>
         public void Dispose()
         {
-            if (m_net != null)
-            {
-                m_net.Dispose();
-                m_net = null;
-            }
         }
 
         private void prune(NetParameter p, List<string> rgUsedLayers)
@@ -118,6 +125,11 @@ namespace MyCaffe.extras
                 LayerParameter layer = new LayerParameter(LayerParameter.LayerType.GRAM);
                 layer.name = "gram_" + rgStyle[i];
                 m_rgGramLayers.Add(layer.name);
+
+                layer.bottom.Add(rgStyle[i]);
+                layer.top.Add(layer.name);
+
+                p.layer.Add(layer);
             }
         }
 
@@ -148,40 +160,54 @@ namespace MyCaffe.extras
             return ImageData.GetImage(d);
         }
 
+        /// <summary>
+        /// Process the content image by applying the style to it that was learned from the style image.
+        /// </summary>
+        /// <param name="bmpStyle">Specifies the image used to train the what style to apply to the content.</param>
+        /// <param name="bmpContent">Specifies the content image to which the style is to be applied.</param>
+        /// <param name="nIterations">Specifies the number of training iterations.</param>
+        /// <returns>The resulting image is returned.</returns>
         public Bitmap Process(Bitmap bmpStyle, Bitmap bmpContent, int nIterations)
         {
+            Solver<T> solver = null;
+            Net<T> net = null;
             BlobCollection<T> colContentActivations = new BlobCollection<T>();
             BlobCollection<T> colGramActivations = new BlobCollection<T>();
             double dfLoss;
 
             try
             {
+                net = new Net<T>(m_cuda, m_log, m_net_param, m_evtCancel, null, Phase.TEST);
+
+                if (m_rgWeights != null)
+                    net.LoadWeights(m_rgWeights, m_persist);
+
                 //-----------------------------------------
                 //  Get style and content activations.
                 //-----------------------------------------
 
-                prepare_data_blob(m_net, bmpStyle);
-                m_net.Forward(out dfLoss);
+                prepare_data_blob(net, bmpStyle);
+                net.Forward(out dfLoss);
 
                 foreach (string strGram in m_rgGramLayers)
                 {
-                    Blob<T> blobGram = m_net.blob_by_name(strGram);
+                    Blob<T> blobGram = net.blob_by_name(strGram);
                     colGramActivations.Add(blobGram.Clone());
                 }
 
                 Dictionary<string, int> rgStyleLayerSizes = new Dictionary<string, int>();
                 foreach (string strStyle in m_rgStyleLayers)
                 {
-                    Blob<T> blobStyle = m_net.blob_by_name(strStyle);
+                    Blob<T> blobStyle = net.blob_by_name(strStyle);
                     rgStyleLayerSizes.Add(strStyle, blobStyle.count());
                 }
 
-                prepare_data_blob(m_net, bmpContent);
-                m_net.Forward(out dfLoss);
+                prepare_data_blob(net, bmpContent);
+                net.Forward(out dfLoss);
 
                 foreach (string strContent in m_rgContentLayers)
                 {
-                    Blob<T> blobContent = m_net.blob_by_name(strContent);
+                    Blob<T> blobContent = net.blob_by_name(strContent);
                     colContentActivations.Add(blobContent.Clone());
                 }
 
@@ -190,7 +216,7 @@ namespace MyCaffe.extras
                 //  Prepare the network by adding new layers.
                 //-----------------------------------------
 
-                NetParameter net_param = m_net.ToProto(false);
+                NetParameter net_param = m_net_param;
                 List<string> rgInputLayers = new List<string>();
                 rgInputLayers.AddRange(m_rgContentLayers);
                 rgInputLayers.AddRange(m_rgGramLayers);
@@ -201,7 +227,7 @@ namespace MyCaffe.extras
                     p.name = "input_" + strName;
                     p.top.Add(p.name);
 
-                    Blob<T> blob = m_net.blob_by_name(strName);
+                    Blob<T> blob = net.blob_by_name(strName);
                     BlobShape shape = new BlobShape(blob.shape());
 
                     p.input_param.shape.Add(shape);
@@ -218,6 +244,7 @@ namespace MyCaffe.extras
                     p.loss_weight.Add(dfWeight);
 
                     p.bottom.Add("input_" + strName);
+                    p.bottom.Add(strName);
                     p.top.Add("loss_" + strName);
 
                     net_param.layer.Add(p);
@@ -230,7 +257,7 @@ namespace MyCaffe.extras
                     LayerParameter p = new LayerParameter(LayerParameter.LayerType.EUCLIDEAN_LOSS);
                     p.name = "loss_" + strGramName;
 
-                    double dfWeight = 2 * m_dfStyleWeight / colGramActivations[strName].count() / Math.Pow(rgStyleLayerSizes[strName], 2.0);
+                    double dfWeight = 2 * m_dfStyleWeight / colGramActivations[strGramName].count() / Math.Pow(rgStyleLayerSizes[strName], 2.0);
                     p.loss_weight.Add(dfWeight);
 
                     p.bottom.Add("input_" + strGramName);
@@ -256,7 +283,7 @@ namespace MyCaffe.extras
 
                 // Replace InputLayer with ParameterLayer,
                 // so that we'll be able to backprop into the image.
-                Blob<T> data = m_net.blob_by_name("data");
+                Blob<T> data = net.blob_by_name("data");
                 for (int i=0; i<net_param.layer.Count; i++)
                 {
                     LayerParameter p = net_param.layer[i];
@@ -264,6 +291,7 @@ namespace MyCaffe.extras
                     if (p.name == "input")
                     {
                         net_param.layer[i] = new LayerParameter(LayerParameter.LayerType.PARAMETER);
+                        net_param.layer[i].name = p.name;
                         net_param.layer[i].parameter_param.shape = new BlobShape(data.shape());
                         net_param.layer[i].bottom = Utility.Clone<string>(p.bottom);
                         net_param.layer[i].top = Utility.Clone<string>(p.top);
@@ -283,21 +311,33 @@ namespace MyCaffe.extras
 
                 foreach (LayerParameter layer in net_param.layer)
                 {
-                    layer.parameters = new List<ParamSpec>();
-                    layer.parameters.Add(new ParamSpec(0, 0));
-                    layer.parameters.Add(new ParamSpec(0, 0));
+                    if (!rgTypes.Contains(layer.type))
+                    {
+                        layer.parameters = new List<ParamSpec>();
+                        layer.parameters.Add(new ParamSpec(0, 0));
+                        layer.parameters.Add(new ParamSpec(0, 0));
+                    }
                 }
+
+                net.Dispose();
+                net = null;
 
 
                 //-----------------------------------------
                 //  Create solver and assign inputs.
                 //-----------------------------------------
 
+                RawProto proto1 = net_param.ToProto("root");
+                string str = proto1.ToString();
+
                 SolverParameter solver_param = new SolverParameter();
                 solver_param.display = m_nDisplayEvery;
                 solver_param.train_net_param = net_param;
+                solver_param.test_iter.Clear();
+                solver_param.test_interval = 0;
+                solver_param.test_initialization = false;
 
-                Solver<T> solver = new LBFGSSolver<T>(m_cuda, m_log, solver_param, m_evtCancel, null, null, null, m_persist);
+                solver = new LBFGSSolver<T>(m_cuda, m_log, solver_param, m_evtCancel, null, null, null, m_persist);
                 solver.OnSnapshot += Solver_OnSnapshot;
 
                 prepare_input_param(solver.net, bmpContent);
@@ -322,10 +362,8 @@ namespace MyCaffe.extras
                 //  Optimize.
                 //-----------------------------------------
 
-                solver.Solve(m_nIterations);
+                solver.Solve(m_nIterations, m_rgWeights);
                 Bitmap bmpOutput = save(solver.net);
-
-                solver.Dispose();
 
                 return bmpOutput;
             }
@@ -335,6 +373,12 @@ namespace MyCaffe.extras
             }
             finally
             {
+                if (net != null)
+                    net.Dispose();
+
+                if (solver != null)
+                    solver.Dispose();
+
                 colGramActivations.Dispose();
                 colContentActivations.Dispose();
             }
