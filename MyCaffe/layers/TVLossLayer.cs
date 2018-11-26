@@ -146,7 +146,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="colTop">top output blob vector (length 1), providing the error gradient
         /// with respect to outputs
-        ///  -# @f$ (N \times C \times H \times W) @f$
+        ///  -# @f$ (N \times C \times H \times W) @f$</param>
         /// <param name="rgbPropagateDown">propagate_down see Layer::Backward.</param>
         /// <param name="colBottom">bottom input blob vector (length 1)</param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
