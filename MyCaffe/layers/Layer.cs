@@ -1090,6 +1090,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.NORMALIZATION:
                     return new NormalizationLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.PARAMETER:
+                    return new ParameterLayer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.POOLING:
                     return new PoolingLayer<T>(cuda, log, p);
 

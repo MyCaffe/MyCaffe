@@ -226,6 +226,10 @@ namespace MyCaffe.param
             /// </summary>
             MVN,
             /// <summary>
+            /// Initializes a parameter for the ParameterLayer.
+            /// </summary>
+            PARAMETER,
+            /// <summary>
             /// Initializes a parameter for the PoolingLayer.
             /// </summary>
             POOLING,
@@ -875,6 +879,12 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new NormalizationParameter();
                     break;
 
+                case LayerType.PARAMETER:
+                    expected_bottom.Add("input");
+                    expected_top.Add("param");
+                    m_rgLayerParameters[lt] = new ParameterParameter();
+                    break;
+
                 case LayerType.POOLING:
                     expected_bottom.Add("input");
                     expected_top.Add("pool");
@@ -1401,7 +1411,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Returns the parameter set when initialized with LayerType.TV_LOSS
         /// </summary>
-        public TVLossParameter TV_loss_param
+        public TVLossParameter tv_loss_param
         {
             get { return (TVLossParameter)m_rgLayerParameters[LayerType.TV_LOSS]; }
             set { m_rgLayerParameters[LayerType.TV_LOSS] = value; }
@@ -1513,6 +1523,15 @@ namespace MyCaffe.param
         {
             get { return (UnPoolingParameter)m_rgLayerParameters[LayerType.UNPOOLING]; }
             set { m_rgLayerParameters[LayerType.UNPOOLING] = value; }
+        }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.PARAMETER
+        /// </summary>
+        public ParameterParameter parameter_param
+        {
+            get { return (ParameterParameter)m_rgLayerParameters[LayerType.PARAMETER]; }
+            set { m_rgLayerParameters[LayerType.PARAMETER] = value; }
         }
 
         /// <summary>
@@ -1941,6 +1960,9 @@ namespace MyCaffe.param
                 case LayerType.NORMALIZATION:
                     return "Normalization";
 
+                case LayerType.PARAMETER:
+                    return "Parameter";
+
                 case LayerType.POOLING:
                     return "Pooling";
 
@@ -2111,6 +2133,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(exp_param, "exp_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(flatten_param, "flatten_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gradient_scale_param, "gradient_scale_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(hinge_loss_param, "hinge_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(infogain_loss_param, "infogain_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(inner_product_param, "inner_product_param"));
@@ -2124,6 +2147,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization_param, "normalization_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(pooling_param, "pooling_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(parameter_param, "parameter_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(power_param, "power_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(prelu_param, "prelu_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(reduction_param, "reduction_param"));
@@ -2140,6 +2164,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tile_param, "tile_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_param, "triplet_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_simple_param, "triplet_loss_simple_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(tv_loss_param, "tv_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(lstm_simple_param, "lstm_simple_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(recurrent_param, "recurrent_param"));
 
@@ -2299,6 +2324,9 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("gradient_scale_param")) != null)
                 p.gradient_scale_param = GradientScaleParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("gram_param")) != null)
+                p.gram_param = GramParameter.FromProto(rpp);
+
             if ((rpp = rp.FindChild("hinge_loss_param")) != null)
                 p.hinge_loss_param = HingeLossParameter.FromProto(rpp);
 
@@ -2337,6 +2365,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("unpooling_param")) != null)
                 p.unpooling_param = UnPoolingParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("parameter_param")) != null)
+                p.parameter_param = ParameterParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("power_param")) != null)
                 p.power_param = PowerParameter.FromProto(rpp);
@@ -2385,6 +2416,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("triplet_loss_simple_param")) != null)
                 p.triplet_loss_simple_param = TripletLossSimpleParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("tv_loss_param")) != null)
+                p.tv_loss_param = TVLossParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("lstm_simple_param")) != null)
                 p.lstm_simple_param = LSTMSimpleParameter.FromProto(rpp);
@@ -2562,6 +2596,9 @@ namespace MyCaffe.param
 
                 case "normalization":
                     return LayerType.NORMALIZATION;
+
+                case "parameter":
+                    return LayerType.PARAMETER;
 
                 case "pooling":
                     return LayerType.POOLING;

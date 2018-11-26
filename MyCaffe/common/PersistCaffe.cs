@@ -1967,7 +1967,7 @@ namespace MyCaffe.common
             rgF.Add(new FieldDescriptor(118, LayerParameter.LayerType.LRN.ToString() + "_param", FieldDescriptor.TYPE.FIELDDESC));
             rgF.Add(new FieldDescriptor(119, LayerParameter.LayerType.MEMORYDATA.ToString() + "_param", FieldDescriptor.TYPE.FIELDDESC));
             rgF.Add(new FieldDescriptor(120, LayerParameter.LayerType.MVN.ToString() + "_param", FieldDescriptor.TYPE.FIELDDESC));
-            rgF.Add(new FieldDescriptor(145, "parameter_param", FieldDescriptor.TYPE.FIELDDESC));
+            rgF.Add(new FieldDescriptor(121, LayerParameter.LayerType.PARAMETER.ToString() + "_param", FieldDescriptor.TYPE.FIELDDESC));
             rgF.Add(new FieldDescriptor(121, LayerParameter.LayerType.POOLING.ToString() + "_param", FieldDescriptor.TYPE.FIELDDESC));
             rgF.Add(new FieldDescriptor(122, LayerParameter.LayerType.POWER.ToString() + "_param", FieldDescriptor.TYPE.FIELDDESC));
             rgF.Add(new FieldDescriptor(131, LayerParameter.LayerType.PRELU.ToString() + "_param", FieldDescriptor.TYPE.FIELDDESC));
