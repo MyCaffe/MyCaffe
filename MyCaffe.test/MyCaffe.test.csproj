@@ -87,6 +87,7 @@
     <Compile Include="SqlServerTypes\Loader.cs" />
     <Compile Include="TestBinaryHashLayer.cs" />
     <Compile Include="TestColorMapper.cs" />
+    <Compile Include="TestNeuralStyleTransfer.cs" />
     <Compile Include="TestTVLossLayer.cs" />
     <Compile Include="TestGramLayer.cs" />
     <Compile Include="TestDeepDraw.cs" />
