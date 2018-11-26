@@ -459,5 +459,88 @@ namespace MyCaffe.data
             b.add_scalar(-dfMin);
             b.scale_data(dfScale);
         }
+
+        /// <summary>
+        /// Reverse the transformation made when calling Transform.
+        /// </summary>
+        /// <param name="blob">Specifies the input blob.</param>
+        /// <param name="bIncludeMean">Specifies whether or not to add the mean back.</param>
+        /// <returns>The de-processed output Datum is returned.</returns>
+        public Datum UnTransform(Blob<T> blob, bool bIncludeMean = true)
+        {
+            double[] rgData = Utility.ConvertVec<T>(blob.update_cpu_data());
+            byte[] rgOutput = new byte[rgData.Length];
+            int nC = blob.channels;
+            int nH = blob.height;
+            int nW = blob.width;
+            int[] rgChannelSwap = null;
+            bool bUseMeanImage = m_param.use_imagedb_mean;
+            List<double> rgMeanValues = null;
+            double[] rgMean = null;
+            double dfScale = m_param.scale;
+
+            if (bUseMeanImage)
+            {
+                if (m_rgMeanData == null)
+                    m_log.FAIL("You must specify an imgMean parameter when using IMAGE mean subtraction.");
+
+                rgMean = m_rgMeanData;
+
+                int nExpected = nC * nH * nW;
+                m_log.CHECK_EQ(rgMean.Length, nExpected, "The size of the 'mean' image is incorrect!  Expected '" + nExpected.ToString() + "' elements, yet loaded '" + rgMean.Length + "' elements.");
+            }
+
+            if (m_rgMeanValues.Count > 0)
+            {
+                m_log.CHECK(m_rgMeanValues.Count == 1 || m_rgMeanValues.Count == nC, "Specify either 1 mean value or as many as channels: " + nC.ToString());
+                rgMeanValues = new List<double>();
+
+                for (int c = 0; c < nC; c++)
+                {
+                    // Replicate the mean value for simplicity.
+                    if (c == 0 || m_rgMeanValues.Count == 1)
+                        rgMeanValues.Add(m_rgMeanValues[0]);
+                    else if (c > 0)
+                        rgMeanValues.Add(m_rgMeanValues[c]);
+                }
+
+                rgMean = rgMeanValues.ToArray();
+            }
+
+            if (m_param.color_order == TransformationParameter.COLOR_ORDER.BGR)
+                rgChannelSwap = new int[] { 2, 1, 0 };
+
+            for (int c1 = 0; c1 < nC; c1++)
+            {
+                int c = (rgChannelSwap == null) ? c1 : rgChannelSwap[c1];
+
+                for (int h = 0; h < nH; h++)
+                {
+                    for (int w = 0; w < nW; w++)
+                    {
+                        int nDataIdx = (c * nH + h) * nW + w;
+                        double dfVal = (rgData[nDataIdx] / dfScale);
+
+                        if (bIncludeMean)
+                        {
+                            if (bUseMeanImage)
+                                dfVal += rgMean[nDataIdx];
+                            else if (rgMean != null && rgMean.Length == nC)
+                                dfVal += rgMean[c];
+                        }
+
+                        if (dfVal < 0)
+                            dfVal = 0;
+                        if (dfVal > 255)
+                            dfVal = 255;
+
+                        int nOutIdx = (c1 * nH + h) * nW + w;
+                        rgOutput[nOutIdx] = (byte)dfVal;
+                    }
+                }
+            }
+
+            return new Datum(false, nC, nW, nH, -1, DateTime.MinValue, rgOutput.ToList(), null, 0, false, -1);
+        }
     }
 }
