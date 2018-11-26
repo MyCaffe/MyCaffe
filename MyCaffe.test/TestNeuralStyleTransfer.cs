@@ -31,7 +31,7 @@ namespace MyCaffe.test
                 foreach (INeuralStyleTransferTest t in test.Tests)
                 {
                     if (t.DataType == DataType.FLOAT)
-                        t.TestNeuralStyleTransfer();
+                        t.TestNeuralStyleTransfer(5000);
                 }
             }
             finally
@@ -43,7 +43,7 @@ namespace MyCaffe.test
 
     interface INeuralStyleTransferTest : ITest
     {
-        void TestNeuralStyleTransfer();
+        void TestNeuralStyleTransfer(int nIteration);
     }
 
     class NeuralStyleTransferTest : TestBase
@@ -95,7 +95,7 @@ namespace MyCaffe.test
         /// using MyCaffe.
         /// </summary>
         /// 
-        public void TestNeuralStyleTransfer()
+        public void TestNeuralStyleTransfer(int nIterations)
         {
             CancelEvent evtCancel = new CancelEvent();
             List<string> rgContentLayers = new List<string>() { "conv4_2" };
@@ -129,12 +129,17 @@ namespace MyCaffe.test
 
             Bitmap bmpStyle = new Bitmap(strStyleImg);
             Bitmap bmpContent = new Bitmap(strContentImg);
-            Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, 1000);
+            Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, nIterations);
 
             if (!Directory.Exists(strResultDir))
                 Directory.CreateDirectory(strResultDir);
 
-            bmpResult.Save(strResultDir + "result.png", ImageFormat.Png);
+            string strResultFile = strResultDir + nIterations.ToString() + "_result.png";
+
+            if (File.Exists(strResultFile))
+                File.Delete(strResultFile);
+
+            bmpResult.Save(strResultFile, ImageFormat.Png);
         }
     }
 }
