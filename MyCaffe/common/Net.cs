@@ -1906,6 +1906,30 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Returns a parameter given its name.
+        /// </summary>
+        /// <param name="strName">Specifies the Parameter's name.</param>
+        /// <param name="bThrowExceptionOnError">Optionally, specifies to throw an exception when the layer is not found.  The default = <i>true</i>.</param>
+        /// <returns>The Blob with the given name is returned, or <i>null</i> if not found.</returns>
+        public Blob<T> param_by_name(string strName, bool bThrowExceptionOnError = true)
+        {
+            Blob<T> blob_ptr = null;
+
+            if (m_rgParamNamesIndex.ContainsKey(strName))
+            {
+                int nIdx = m_rgParamNamesIndex[strName];
+                blob_ptr = m_colParams[nIdx];
+            }
+            else
+            {
+                if (bThrowExceptionOnError)
+                    m_log.FAIL("Unknown parameter blob name " + strName);
+            }
+
+            return blob_ptr;
+        }
+
+        /// <summary>
         /// Returns the number of inputs.
         /// </summary>
         public int num_inputs
