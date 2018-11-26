@@ -42,6 +42,25 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Get the item with the specified name, or throw an exception if not found.
+        /// </summary>
+        /// <param name="strName">Specifies the name of the blob to find.</param>
+        /// <returns>The blob with the matching name is returned.</returns>
+        public Blob<T> this[string strName]
+        {
+            get
+            {
+                for (int i = 0; i < m_rgBlobs.Count; i++)
+                {
+                    if (m_rgBlobs[i].Name == strName)
+                        return m_rgBlobs[i];
+                }
+
+                throw new Exception("Could not find the blob named '" + strName + "' in the collection.");
+            }
+        }
+
+        /// <summary>
         /// Add a new Blob to the collection.
         /// </summary>
         /// <param name="b">Specifies the Blob to add.</param>
