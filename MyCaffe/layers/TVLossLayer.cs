@@ -135,7 +135,7 @@ namespace MyCaffe.layers
             m_cuda.mul(nCount, m_blobXDiff.gpu_data, m_blobXDiff.gpu_data, m_blobGradNorm.mutable_gpu_data); // X_diff^2
             m_cuda.mul(nCount, m_blobYDiff.gpu_data, m_blobYDiff.gpu_data, m_blobTmp.mutable_gpu_data); // Y_diff^2
             m_cuda.add(nCount, m_blobTmp.gpu_data, m_blobGradNorm.gpu_data, m_blobGradNorm.mutable_gpu_data); // X_diff^2 + Y_diff^2
-            m_cuda.powx(nCount, m_blobGradNorm.gpu_data, m_param.TV_loss_param.beta / 2, m_blobTmp.mutable_gpu_data); // (X_diff^2 + Y_diff^2)^(beta/2)
+            m_cuda.powx(nCount, m_blobGradNorm.gpu_data, m_param.tv_loss_param.beta / 2, m_blobTmp.mutable_gpu_data); // (X_diff^2 + Y_diff^2)^(beta/2)
 
             double dfAsum = convertD(m_blobTmp.asum_data());
             colTop[0].SetData(dfAsum, 0);
@@ -148,7 +148,7 @@ namespace MyCaffe.layers
         /// with respect to outputs
         ///  -# @f$ (N \times C \times H \times W) @f$
         /// <param name="rgbPropagateDown">propagate_down see Layer::Backward.</param>
-        /// <param name="colBottom">bottom input blob vector (length 1)
+        /// <param name="colBottom">bottom input blob vector (length 1)</param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
             if (!rgbPropagateDown[0])
@@ -158,8 +158,8 @@ namespace MyCaffe.layers
             int nCount = colBottom[0].count();
             long hBottomDiff = colBottom[0].mutable_gpu_diff;
 
-            m_cuda.powx(nCount, m_blobGradNorm.gpu_data, m_param.TV_loss_param.beta / 2 - 1, m_blobGradNorm.mutable_gpu_data);
-            m_cuda.scal(nCount, m_param.TV_loss_param.beta / 2, m_blobGradNorm.mutable_gpu_data);
+            m_cuda.powx(nCount, m_blobGradNorm.gpu_data, m_param.tv_loss_param.beta / 2 - 1, m_blobGradNorm.mutable_gpu_data);
+            m_cuda.scal(nCount, m_param.tv_loss_param.beta / 2, m_blobGradNorm.mutable_gpu_data);
 
             m_cuda.mul(nCount, m_blobXDiff.gpu_data, m_blobGradNorm.gpu_data, m_blobXDiff.mutable_gpu_data);
             m_cuda.scal(nCount, 2.0, m_blobXDiff.mutable_gpu_data); // dX_diff
