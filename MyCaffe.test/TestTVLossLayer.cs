@@ -112,7 +112,7 @@ namespace MyCaffe.test
         public void TestForward()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TV_LOSS);
-            p.TV_loss_param.beta = 2.5f;
+            p.tv_loss_param.beta = 2.5f;
             TVLossLayer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null) as TVLossLayer<T>;
 
             layer.Setup(BottomVec, TopVec);
@@ -125,7 +125,7 @@ namespace MyCaffe.test
         public void TestGradient()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.TV_LOSS);
-            p.TV_loss_param.beta = 2.5f;
+            p.tv_loss_param.beta = 2.5f;
             TVLossLayer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null) as TVLossLayer<T>;
             layer.Setup(BottomVec, TopVec);
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
