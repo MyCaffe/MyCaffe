@@ -177,6 +177,10 @@ namespace MyCaffe.extras
 
             try
             {
+                if (bmpStyle.Width != bmpContent.Width ||
+                    bmpStyle.Height != bmpContent.Height)
+                    bmpStyle = ImageTools.ResizeImage(bmpStyle, bmpContent.Width, bmpContent.Height);
+
                 net = new Net<T>(m_cuda, m_log, m_net_param, m_evtCancel, null, Phase.TEST);
 
                 if (m_rgWeights != null)
