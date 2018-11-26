@@ -71,6 +71,12 @@ namespace MyCaffe.solvers
                 m_blobGradients = null;
             }
 
+            if (m_blobGradientsPrev != null)
+            {
+                m_blobGradientsPrev.Dispose();
+                m_blobGradientsPrev = null;
+            }
+
             if (m_blobDirection != null)
             {
                 m_blobDirection.Dispose();
@@ -118,9 +124,11 @@ namespace MyCaffe.solvers
             m_nStart = 0;
             m_nEnd = -1;
 
-            m_blobGradients = new Blob<T>(m_cuda, m_log, false);
+            m_blobGradients = new Blob<T>(m_cuda, m_log, rgShape, false);
             m_blobGradients.Name = "gradients";
-            m_blobDirection = new Blob<T>(m_cuda, m_log, false);
+            m_blobGradientsPrev = new Blob<T>(m_cuda, m_log, rgShape, false);
+            m_blobGradientsPrev.Name = "gradients prev";
+            m_blobDirection = new Blob<T>(m_cuda, m_log, rgShape, false);
             m_blobDirection.Name = "direction";
 
             for (int i = 0; i < m_param.lbgfs_corrections; i++)
@@ -143,6 +151,8 @@ namespace MyCaffe.solvers
                 int nN = m_net.learnable_parameters[i].count();
                 m_cuda.scal(nN, 0, m_net.learnable_parameters[i].mutable_gpu_diff);
             }
+
+            m_log.CHECK(is_root_solver, "You can only apply the LBFGS Solver updates on the root solver.");
 
             CollectGradients();
             UpdateHistory();
