@@ -6,6 +6,7 @@ using MyCaffe.solvers;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,9 +30,9 @@ namespace MyCaffe.extras
         List<string> m_rgGramLayers;
         int m_nIterations = 1000;
         int m_nDisplayEvery = 100;
-        double m_dfTVLossWeight = 1e-2;
-        double m_dfStyleWeight = 100;
-        double m_dfContentWeight = 5;
+        double m_dfTVLossWeight = 0.01; // 0.01
+        double m_dfStyleWeight = 100;   // 100
+        double m_dfContentWeight = 5;   // 5;
         CancelEvent m_evtCancel;
         DataTransformer<T> m_transformer = null;
         TransformationParameter m_transformationParam;
@@ -49,7 +50,7 @@ namespace MyCaffe.extras
         /// <param name="rgContentLayers">Specifies the names of the content layers.</param>
         /// <param name="rgStyleLayers">Specifies the names of the style layers.</param>
         /// <param name="evtCancel">Specifies the cancel event used to abort processing.</param>
-        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, string strModel, byte[] rgWeights, List<string> rgContentLayers, List<string> rgStyleLayers, CancelEvent evtCancel)
+        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, string strModel, byte[] rgWeights, List<string> rgContentLayers, List<string> rgStyleLayers, CancelEvent evtCancel, bool bCaffeModel)
         {
             m_cuda = cuda;
             m_log = log;
@@ -70,7 +71,7 @@ namespace MyCaffe.extras
 
             // mean is taken from gist.github.com/ksimonyan/3785162f95cd2d5fee77
             m_transformationParam = new TransformationParameter();
-            m_transformationParam.color_order = TransformationParameter.COLOR_ORDER.BGR;
+            m_transformationParam.color_order = (bCaffeModel) ? TransformationParameter.COLOR_ORDER.BGR : TransformationParameter.COLOR_ORDER.RGB;
             m_transformationParam.scale = 1.0;
             m_transformationParam.mean_value.AddRange(new List<double>() { 103.939, 116.779, 123.68 });
 
@@ -123,11 +124,14 @@ namespace MyCaffe.extras
             for (int i = 0; i < rgStyle.Count; i++)
             {
                 LayerParameter layer = new LayerParameter(LayerParameter.LayerType.GRAM);
-                layer.name = "gram_" + rgStyle[i];
-                m_rgGramLayers.Add(layer.name);
+                string strStyle = rgStyle[i];
+                string strGram = "gram_" + strStyle;
 
-                layer.bottom.Add(rgStyle[i]);
-                layer.top.Add(layer.name);
+                layer.name = strGram;
+                m_rgGramLayers.Add(strGram);
+
+                layer.bottom.Add(strStyle);
+                layer.top.Add(strGram);
 
                 p.layer.Add(layer);
             }
@@ -156,7 +160,7 @@ namespace MyCaffe.extras
         private Bitmap save(Net<T> net)
         {
             Blob<T> blob = net.param_by_name("input");
-            Datum d = ImageData.GetImageData<T>(blob.update_cpu_data(), 3, blob.height, blob.width, false);
+            Datum d = m_transformer.UnTransform(blob);
             return ImageData.GetImage(d);
         }
 
@@ -166,8 +170,10 @@ namespace MyCaffe.extras
         /// <param name="bmpStyle">Specifies the image used to train the what style to apply to the content.</param>
         /// <param name="bmpContent">Specifies the content image to which the style is to be applied.</param>
         /// <param name="nIterations">Specifies the number of training iterations.</param>
+        /// <param name="strResultDir">Optionally, specifies an output directory where intermediate images are stored.</param>
+        /// <param name="nIntermediateOutput">Optionally, specifies how often to output an intermediate image.</param>
         /// <returns>The resulting image is returned.</returns>
-        public Bitmap Process(Bitmap bmpStyle, Bitmap bmpContent, int nIterations)
+        public Bitmap Process(Bitmap bmpStyle, Bitmap bmpContent, int nIterations, string strResultDir = null, int nIntermediateOutput = -1)
         {
             Solver<T> solver = null;
             Net<T> net = null;
@@ -177,6 +183,8 @@ namespace MyCaffe.extras
 
             try
             {
+                m_nIterations = nIterations;
+
                 if (bmpStyle.Width != bmpContent.Width ||
                     bmpStyle.Height != bmpContent.Height)
                     bmpStyle = ImageTools.ResizeImage(bmpStyle, bmpContent.Width, bmpContent.Height);
@@ -366,7 +374,33 @@ namespace MyCaffe.extras
                 //  Optimize.
                 //-----------------------------------------
 
-                solver.Solve(m_nIterations, m_rgWeights);
+                if (strResultDir != null && nIntermediateOutput > 0)
+                {
+                    int nImageCount = m_nIterations / nIntermediateOutput;
+
+                    solver.Solve(nIntermediateOutput, m_rgWeights);
+
+                    strResultDir = strResultDir.TrimEnd('\\');
+                    strResultDir += "\\";
+
+                    for (int i = 0; i < nImageCount; i++)
+                    {
+                        Bitmap bmpTemp = save(solver.net);
+
+                        string strFile = strResultDir + i.ToString() + "_temp.png";
+                        if (File.Exists(strFile))
+                            File.Delete(strFile);
+
+                        bmpTemp.Save(strFile);
+
+                        solver.Step(nIntermediateOutput);
+                    }
+                }
+                else
+                {
+                    solver.Solve(m_nIterations, m_rgWeights);
+                }
+
                 Bitmap bmpOutput = save(solver.net);
 
                 return bmpOutput;
