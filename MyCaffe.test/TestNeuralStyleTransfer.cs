@@ -102,7 +102,7 @@ namespace MyCaffe.test
             List<string> rgStyleLayers = new List<string>() { "conv1_1", "conv2_1", "conv3_1", "conv4_1", "conv5_1" };
             string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\VGG_ILSVRC_19_layers_deploy.prototxt");
             string strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\VGG_ILSVRC_19_layers.caffemodel");
-            string strDataDir = getTestPath("\\MyCaffe\\test_data\\images\\", true, true, true);
+            string strDataDir = getTestPath("\\MyCaffe\\test_data\\data\\images\\", true);
             string strStyleImg = strDataDir + "style\\starry_night.jpg";
             string strContentImg = strDataDir + "content\\nanjing.jpg";
             string strResultDir = strDataDir + "result\\";
@@ -125,10 +125,7 @@ namespace MyCaffe.test
                 strModelDesc = sr.ReadToEnd();
             }
 
-            RawProto proto = RawProto.Parse(strModelDesc);
-            NetParameter net_param = NetParameter.FromProto(proto);
-
-            NeuralStyleTransfer<T> ns = new NeuralStyleTransfer<T>(m_cuda, m_log, net_param, rgContentLayers, rgStyleLayers, evtCancel);
+            NeuralStyleTransfer<T> ns = new NeuralStyleTransfer<T>(m_cuda, m_log, strModelDesc, rgWeights, rgContentLayers, rgStyleLayers, evtCancel);
 
             Bitmap bmpStyle = new Bitmap(strStyleImg);
             Bitmap bmpContent = new Bitmap(strContentImg);
