@@ -1913,20 +1913,16 @@ namespace MyCaffe.common
         /// <returns>The Blob with the given name is returned, or <i>null</i> if not found.</returns>
         public Blob<T> param_by_name(string strName, bool bThrowExceptionOnError = true)
         {
-            Blob<T> blob_ptr = null;
-
-            if (m_rgParamNamesIndex.ContainsKey(strName))
+            foreach (Blob<T> blob in m_colParams)
             {
-                int nIdx = m_rgParamNamesIndex[strName];
-                blob_ptr = m_colParams[nIdx];
-            }
-            else
-            {
-                if (bThrowExceptionOnError)
-                    m_log.FAIL("Unknown parameter blob name " + strName);
+                if (blob.Name == strName)
+                    return blob;
             }
 
-            return blob_ptr;
+            if (bThrowExceptionOnError)
+                m_log.FAIL("Unknown parameter blob name '" + strName + "'");
+
+            return null;
         }
 
         /// <summary>
