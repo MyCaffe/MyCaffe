@@ -31,7 +31,7 @@ namespace MyCaffe.test
                 foreach (INeuralStyleTransferTest t in test.Tests)
                 {
                     if (t.DataType == DataType.FLOAT)
-                        t.TestNeuralStyleTransfer(5000);
+                        t.TestNeuralStyleTransfer(50);
                 }
             }
             finally
@@ -125,14 +125,14 @@ namespace MyCaffe.test
                 strModelDesc = sr.ReadToEnd();
             }
 
-            NeuralStyleTransfer<T> ns = new NeuralStyleTransfer<T>(m_cuda, m_log, strModelDesc, rgWeights, rgContentLayers, rgStyleLayers, evtCancel);
-
-            Bitmap bmpStyle = new Bitmap(strStyleImg);
-            Bitmap bmpContent = new Bitmap(strContentImg);
-            Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, nIterations);
+            NeuralStyleTransfer<T> ns = new NeuralStyleTransfer<T>(m_cuda, m_log, strModelDesc, rgWeights, rgContentLayers, rgStyleLayers, evtCancel, true);
 
             if (!Directory.Exists(strResultDir))
                 Directory.CreateDirectory(strResultDir);
+
+            Bitmap bmpStyle = new Bitmap(strStyleImg);
+            Bitmap bmpContent = new Bitmap(strContentImg);
+            Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, nIterations, strResultDir, 5);
 
             string strResultFile = strResultDir + nIterations.ToString() + "_result.png";
 
