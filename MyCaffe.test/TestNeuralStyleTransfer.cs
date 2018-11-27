@@ -31,7 +31,7 @@ namespace MyCaffe.test
                 foreach (INeuralStyleTransferTest t in test.Tests)
                 {
                     if (t.DataType == DataType.FLOAT)
-                        t.TestNeuralStyleTransfer(50);
+                        t.TestNeuralStyleTransfer(1000);
                 }
             }
             finally
@@ -98,13 +98,13 @@ namespace MyCaffe.test
         public void TestNeuralStyleTransfer(int nIterations)
         {
             CancelEvent evtCancel = new CancelEvent();
-            List<string> rgContentLayers = new List<string>() { "conv4_2" };
+            List<string> rgContentLayers = new List<string>() { "conv5_2" };
             List<string> rgStyleLayers = new List<string>() { "conv1_1", "conv2_1", "conv3_1", "conv4_1", "conv5_1" };
             string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\VGG_ILSVRC_19_layers_deploy.prototxt");
             string strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\VGG_ILSVRC_19_layers.caffemodel");
             string strDataDir = getTestPath("\\MyCaffe\\test_data\\data\\images\\", true);
-            string strStyleImg = strDataDir + "style\\starry_night.jpg";
-            string strContentImg = strDataDir + "content\\nanjing.jpg";
+            string strStyleImg = strDataDir + "style\\style.png";
+            string strContentImg = strDataDir + "content\\content.png";
             string strResultDir = strDataDir + "result\\";
             byte[] rgWeights = null;
             string strModelDesc = "";
@@ -125,14 +125,15 @@ namespace MyCaffe.test
                 strModelDesc = sr.ReadToEnd();
             }
 
-            NeuralStyleTransfer<T> ns = new NeuralStyleTransfer<T>(m_cuda, m_log, strModelDesc, rgWeights, rgContentLayers, rgStyleLayers, evtCancel, true);
+            NeuralStyleTransfer<T> ns = new NeuralStyleTransfer<T>(m_cuda, m_log, strModelDesc, rgWeights, rgContentLayers, rgStyleLayers, evtCancel, false);
 
             if (!Directory.Exists(strResultDir))
                 Directory.CreateDirectory(strResultDir);
 
             Bitmap bmpStyle = new Bitmap(strStyleImg);
             Bitmap bmpContent = new Bitmap(strContentImg);
-            Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, nIterations, strResultDir, 5);
+
+            Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, nIterations, strResultDir, 300);
 
             string strResultFile = strResultDir + nIterations.ToString() + "_result.png";
 
