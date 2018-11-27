@@ -1099,7 +1099,16 @@ namespace MyCaffe.param
         public LayerType type
         {
             get { return m_type; }
-            set { m_type = value; }
+        }
+
+        /// <summary>
+        /// Set the layer type.
+        /// </summary>
+        /// <param name="type">Specifies the new layer type.</param>
+        public void SetType(LayerType type)
+        {
+            m_type = type;
+            setupParams(type);
         }
 
         /// <summary>

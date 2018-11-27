@@ -108,7 +108,7 @@ namespace MyCaffe.layers
             base.LayerSetUp(colBottom, colTop);
 
             LayerParameter p = m_param.Clone(false);
-            p.type = LayerParameter.LayerType.SOFTMAX;
+            p.SetType(LayerParameter.LayerType.SOFTMAX);
 
             LayerParameter param_softmax = p.Clone(false);
             param_softmax.loss_weight.Clear();
