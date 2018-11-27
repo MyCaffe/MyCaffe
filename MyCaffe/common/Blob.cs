@@ -862,7 +862,6 @@ namespace MyCaffe.common
             get { return m_data; }
         }
 
-
         /// <summary>
         /// Returns the SyncedMemory that stores the diff.
         /// </summary>
@@ -1424,6 +1423,21 @@ namespace MyCaffe.common
             }
 
             return Utility.Compare<int>(m_rgShape, bp.shape.dim);
+        }
+
+        /// <summary>
+        /// Compares the shape of this blob to another shape.
+        /// </summary>
+        /// <param name="rgShape">Specifies the shape to compare with.</param>
+        /// <returns>If the shapes are the same, return <i>true</i>, othewise <i>false</i>.</returns>
+        public bool CompareShape(List<int> rgShape)
+        {
+            while (rgShape.Count < num_axes)
+            {
+                rgShape.Add(1);
+            }
+
+            return Utility.Compare<int>(shape(), rgShape);
         }
 
         /// <summary>
