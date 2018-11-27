@@ -28,11 +28,11 @@ namespace MyCaffe.extras
         List<string> m_rgContentLayers;
         List<string> m_rgStyleLayers;
         List<string> m_rgGramLayers;
-        int m_nIterations = 1000;
+        int m_nIterations = 200;
         int m_nDisplayEvery = 100;
-        double m_dfTVLossWeight = 0.01; // 0.01
-        double m_dfStyleWeight = 100;   // 100
-        double m_dfContentWeight = 5;   // 5;
+        double m_dfTVLossWeight = 0.007;  // 0.01 - smaller numbers sharpen the image.
+        double m_dfStyleWeight = 1000;    // 100 - higher numbers use more style.
+        double m_dfContentWeight = 1000;    // 5 - higher numbers use more content.
         CancelEvent m_evtCancel;
         DataTransformer<T> m_transformer = null;
         TransformationParameter m_transformationParam;
@@ -50,12 +50,25 @@ namespace MyCaffe.extras
         /// <param name="rgContentLayers">Specifies the names of the content layers.</param>
         /// <param name="rgStyleLayers">Specifies the names of the style layers.</param>
         /// <param name="evtCancel">Specifies the cancel event used to abort processing.</param>
-        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, string strModel, byte[] rgWeights, List<string> rgContentLayers, List<string> rgStyleLayers, CancelEvent evtCancel, bool bCaffeModel)
+        /// <param name="bCaffeModel">Specifies whether or not the weights are in the caffe (<i>true</i>) or mycaffe (<i>false</i>) format.</param>
+        /// <param name="dfContentWeight">Optionally, specifies the content weight to use (default = 100).</param>
+        /// <param name="dfStyleWeight">Optionally, specifies the style weight to use (default = 5000).</param>
+        /// <param name="dfTvWeight">Optionally, specifies the TV weight to use (default = 0.01).</param>
+        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, string strModel, byte[] rgWeights, List<string> rgContentLayers, List<string> rgStyleLayers, CancelEvent evtCancel, bool bCaffeModel, double? dfContentWeight = null, double? dfStyleWeight = null, double? dfTvWeight = null)
         {
             m_cuda = cuda;
             m_log = log;
             m_evtCancel = evtCancel;
             m_rgWeights = rgWeights;
+
+            if (dfContentWeight.HasValue)
+                m_dfContentWeight = dfContentWeight.Value;
+
+            if (dfStyleWeight.HasValue)
+                m_dfStyleWeight = dfStyleWeight.Value;
+
+            if (dfTvWeight.HasValue)
+                m_dfTVLossWeight = dfTvWeight.Value;
 
             m_rgContentLayers = rgContentLayers;
             m_rgStyleLayers = rgStyleLayers;
@@ -94,15 +107,16 @@ namespace MyCaffe.extras
             {
                 for (int j = 0; j < p.layer[i].top.Count; j++)
                 {
-                    if (rgUsedLayers.Contains(p.layer[i].top[j]))
+                    bool bIsUsed = rgUsedLayers.Contains(p.layer[i].top[j]);
+
+                    if (nPruneFrom >= 0 && bIsUsed)
                     {
                         nPruneFrom = -1;
                         break;
                     }
-                    else
+                    else if (nPruneFrom < 0 && !bIsUsed)
                     {
-                        if (nPruneFrom < 0)
-                            nPruneFrom = i;
+                        nPruneFrom = i;
                     }
                 }
             }
@@ -302,11 +316,8 @@ namespace MyCaffe.extras
 
                     if (p.name == "input")
                     {
-                        net_param.layer[i] = new LayerParameter(LayerParameter.LayerType.PARAMETER);
-                        net_param.layer[i].name = p.name;
+                        net_param.layer[i].SetType(LayerParameter.LayerType.PARAMETER);
                         net_param.layer[i].parameter_param.shape = new BlobShape(data.shape());
-                        net_param.layer[i].bottom = Utility.Clone<string>(p.bottom);
-                        net_param.layer[i].top = Utility.Clone<string>(p.top);
                         break;
                     }
                 }
@@ -358,16 +369,14 @@ namespace MyCaffe.extras
                 {
                     Blob<T> blobDst = solver.net.blob_by_name("input_" + strName);
                     Blob<T> blobSrc = colContentActivations[strName];
-                    blobDst.ShareData(blobSrc);
-                    blobDst.ShareDiff(blobSrc);
+                    blobDst.CopyFrom(blobSrc);
                 }
 
                 foreach (string strName in m_rgGramLayers)
                 {
                     Blob<T> blobDst = solver.net.blob_by_name("input_" + strName);
                     Blob<T> blobSrc = colGramActivations[strName];
-                    blobDst.ShareData(blobSrc);
-                    blobDst.ShareDiff(blobSrc);
+                    blobDst.CopyFrom(blobSrc);
                 }
 
                 //-----------------------------------------
