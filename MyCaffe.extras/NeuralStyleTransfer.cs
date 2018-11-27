@@ -30,9 +30,9 @@ namespace MyCaffe.extras
         List<string> m_rgGramLayers;
         int m_nIterations = 200;
         int m_nDisplayEvery = 100;
-        double m_dfTVLossWeight = 0.007;  // 0.01 - smaller numbers sharpen the image.
-        double m_dfStyleWeight = 1000;    // 100 - higher numbers use more style.
-        double m_dfContentWeight = 1000;    // 5 - higher numbers use more content.
+        double m_dfTVLossWeight = 0.01;  // 0.01 - smaller numbers sharpen the image.
+        double m_dfStyleWeight = 100;    // 100 - higher numbers use more style.
+        double m_dfContentWeight = 100;    // 5 - higher numbers use more content.
         CancelEvent m_evtCancel;
         DataTransformer<T> m_transformer = null;
         TransformationParameter m_transformationParam;
@@ -85,7 +85,7 @@ namespace MyCaffe.extras
             // mean is taken from gist.github.com/ksimonyan/3785162f95cd2d5fee77
             m_transformationParam = new TransformationParameter();
             m_transformationParam.color_order = (bCaffeModel) ? TransformationParameter.COLOR_ORDER.BGR : TransformationParameter.COLOR_ORDER.RGB;
-            m_transformationParam.scale = 1.0;
+            m_transformationParam.scale = 1.0 / 256.0;
             m_transformationParam.mean_value.AddRange(new List<double>() { 103.939, 116.779, 123.68 });
 
             m_persist = new PersistCaffe<T>(m_log, false);
