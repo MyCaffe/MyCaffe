@@ -468,7 +468,7 @@ namespace MyCaffe.db.image
                     {
                         List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).OrderBy(p => p.Label1).ToList();
 
-                        string strOut = "{";
+                        string strOut = "(" + rgLabels.Count.ToString() + ") {";
 
                         foreach (Label l in rgLabels)
                         {
