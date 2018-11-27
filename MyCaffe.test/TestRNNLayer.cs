@@ -171,6 +171,7 @@ namespace MyCaffe.test
             ReshapeBlobs(1, 3);
 
             m_param = new LayerParameter(LayerParameter.LayerType.RNN);
+            m_param.recurrent_param.engine = engine;
             m_param.recurrent_param.num_output = (uint)m_nNumOutput;
             m_param.recurrent_param.weight_filler = new FillerParameter("gaussian");
             m_param.recurrent_param.weight_filler.std = 0.2;
@@ -210,7 +211,7 @@ namespace MyCaffe.test
 
             List<int> rgExpectedTopShape = Utility.Clone<int>(m_blob_bottom.shape(), 3);
             rgExpectedTopShape[2] = m_nNumOutput;
-            m_log.CHECK(Utility.Compare<int>(m_blob_top.shape(), rgExpectedTopShape), "The top shape is not as expected.");
+            m_log.CHECK(m_blob_top.CompareShape(rgExpectedTopShape), "The top shape is not as expected.");
 
             layer.Dispose();
         }
