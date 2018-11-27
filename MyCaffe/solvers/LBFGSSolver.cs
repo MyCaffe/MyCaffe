@@ -252,9 +252,9 @@ namespace MyCaffe.solvers
             m_dfH0 = 1.0 / m_rgRhoHistory[m_nEnd] / dfH0;
         }
 
-        private List<int> lbfgs_history_indices(int nStart, int nEnd, int nmax)
+        private List<int> lbfgs_history_indices(int nStart, int nEnd, int nMax)
         {
-            List<int> rgIndices = Utility.Create<int>((nStart == 0) ? nEnd + 1 : nmax, 0);
+            List<int> rgIndices = Utility.Create<int>((nStart == 0) ? nEnd + 1 : nMax, 0);
 
             if (nStart == 0)
             {
