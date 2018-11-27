@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using MyCaffe.basecode;
 using MyCaffe.common;
+using MyCaffe.layers;
 using MyCaffe.param;
 
-namespace MyCaffe.layers
+namespace MyCaffe.layers_beta
 {
     /// <summary>
     /// The TVLossLayer computes total variation loss as described by 'Mahendran' et al., and used in Neural Style.

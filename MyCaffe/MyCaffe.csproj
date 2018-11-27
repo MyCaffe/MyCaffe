@@ -95,8 +95,8 @@
     <Compile Include="fillers\UniformFiller.cs" />
     <Compile Include="fillers\XavierFiller.cs" />
     <Compile Include="layers\ParameterLayer.cs" />
-    <Compile Include="layers\TVLossLayer.cs" />
-    <Compile Include="layers\GramLayer.cs" />
+    <Compile Include="layers_beta\TVLossLayer.cs" />
+    <Compile Include="layers_beta\GramLayer.cs" />
     <Compile Include="layers\CropLayer.cs" />
     <Compile Include="layers\GradientScaleLayer.cs" />
     <Compile Include="layers\MemoryLossLayer.cs" />
