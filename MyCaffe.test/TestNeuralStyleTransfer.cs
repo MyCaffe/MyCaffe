@@ -98,7 +98,7 @@ namespace MyCaffe.test
         public void TestNeuralStyleTransfer(int nIterations)
         {
             CancelEvent evtCancel = new CancelEvent();
-            List<string> rgContentLayers = new List<string>() { "conv5_2" };
+            List<string> rgContentLayers = new List<string>() { "conv4_2" };
             List<string> rgStyleLayers = new List<string>() { "conv1_1", "conv2_1", "conv3_1", "conv4_1", "conv5_1" };
             string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\VGG_ILSVRC_19_layers_deploy.prototxt");
             string strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\VGG_ILSVRC_19_layers.caffemodel");
