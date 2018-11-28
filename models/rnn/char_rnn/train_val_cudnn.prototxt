@@ -1,0 +1,134 @@
+name: "Char-RNN"
+layer 
+{
+   name: "Input"
+   type: "Input"
+   top: "data"
+   top: "clip"
+   top: "label"
+   input_param 
+   {
+      shape 
+      {
+         dim: 75
+         dim: 25
+      }
+      shape 
+      {
+         dim: 75
+         dim: 25
+      }
+      shape 
+      {
+         dim: 1875
+         dim: 1
+      }
+   }
+}
+layer 
+{
+   name: "EmbedLayer"
+   type: "Embed"
+   bottom: "data"
+   top: "inputVectors"
+   embed_param 
+   {
+      num_output: 15
+      input_dim: 128
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+   }
+}
+layer 
+{
+   name: "lstm1"
+   type: "Lstm"
+   bottom: "inputVectors"
+   bottom: "clip"
+   top: "lstm1"
+   recurrent_param 
+   {
+      engine: CUDNN
+      num_output: 512
+      weight_filler 
+      {
+         type: "uniform"
+         min: -0.01
+         max: 0.01
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0
+      }
+      debug_info: False
+      expose_hidden: False
+      dropout_ratio: 0.3
+      dropout_seed: 0
+      num_layers: 2
+   }
+}
+layer 
+{
+   name: "Reshape_lstm2"
+   type: "Reshape"
+   bottom: "lstm1"
+   top: "lstm2_reshaped"
+   reshape_param 
+   {
+      shape 
+      {
+         dim: -1
+         dim: 1
+         dim: 512
+      }
+   }
+}
+layer 
+{
+   name: "ip1"
+   type: "InnerProduct"
+   bottom: "lstm2_reshaped"
+   top: "ip1"
+   inner_product_param 
+   {
+      num_output: 128
+      bias_term: True
+      weight_filler 
+      {
+         type: "gaussian"
+         mean: 0
+         std: 0.1
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "Loss"
+   type: "SoftmaxWithLoss"
+   bottom: "ip1"
+   bottom: "label"
+   top: "loss"
+   exclude 
+   {
+      phase: RUN
+   }
+   loss_param 
+   {
+      normalization: VALID
+   }
+}
