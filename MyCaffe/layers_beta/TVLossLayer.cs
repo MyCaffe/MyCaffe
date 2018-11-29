@@ -131,10 +131,13 @@ namespace MyCaffe.layers_beta
 
             m_cuda.sub(nCount - 1, hBottomData, hBottomData, m_blobXDiff.mutable_gpu_data, 0, 1, 0);
             m_cuda.mul(nCount, m_blobXDiff.gpu_data, m_blobMask.gpu_data, m_blobXDiff.mutable_gpu_data);
+
             m_cuda.sub(nCount - nW, hBottomData, hBottomData, m_blobYDiff.mutable_gpu_data, 0, nW, 0);
             m_cuda.mul(nCount, m_blobYDiff.gpu_data, m_blobMask.gpu_data, m_blobYDiff.mutable_gpu_data);
+
             m_cuda.mul(nCount, m_blobXDiff.gpu_data, m_blobXDiff.gpu_data, m_blobGradNorm.mutable_gpu_data); // X_diff^2
             m_cuda.mul(nCount, m_blobYDiff.gpu_data, m_blobYDiff.gpu_data, m_blobTmp.mutable_gpu_data); // Y_diff^2
+
             m_cuda.add(nCount, m_blobTmp.gpu_data, m_blobGradNorm.gpu_data, m_blobGradNorm.mutable_gpu_data); // X_diff^2 + Y_diff^2
             m_cuda.powx(nCount, m_blobGradNorm.gpu_data, m_param.tv_loss_param.beta / 2, m_blobTmp.mutable_gpu_data); // (X_diff^2 + Y_diff^2)^(beta/2)
 
