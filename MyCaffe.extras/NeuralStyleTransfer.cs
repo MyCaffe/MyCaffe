@@ -28,16 +28,16 @@ namespace MyCaffe.extras
         List<string> m_rgContentLayers;
         List<string> m_rgStyleLayers;
         List<string> m_rgGramLayers;
-        int m_nIterations = 200;
+        int m_nIterations = 1000;
         int m_nDisplayEvery = 100;
-        double m_dfTVLossWeight = 0.01;  // 0.01 - smaller numbers sharpen the image.
-        double m_dfStyleWeight = 100;    // 100 - higher numbers use more style.
-        double m_dfContentWeight = 100;    // 5 - higher numbers use more content.
+        double m_dfTVLossWeight = 1e-2;    // 0.01 - smaller numbers sharpen the image.
+        double m_dfStyleWeight = 1e2;      // 100 - higher numbers use more style.
+        double m_dfContentWeight = 5e0;    // 5 - higher numbers use more content.
         CancelEvent m_evtCancel;
         DataTransformer<T> m_transformer = null;
         TransformationParameter m_transformationParam;
         PersistCaffe<T> m_persist;
-        NetParameter m_net_param;
+        NetParameter m_param;
         byte[] m_rgWeights = null;
 
         /// <summary>
@@ -78,14 +78,14 @@ namespace MyCaffe.extras
             rgUsedLayers.AddRange(m_rgStyleLayers);
 
             RawProto proto = RawProto.Parse(strModel);
-            m_net_param = NetParameter.FromProto(proto);
-            prune(m_net_param, rgUsedLayers);
-            add_gram_layers(m_net_param, m_rgStyleLayers);
+            m_param = NetParameter.FromProto(proto);
+            prune(m_param, rgUsedLayers);
+            add_gram_layers(m_param, m_rgStyleLayers);
 
             // mean is taken from gist.github.com/ksimonyan/3785162f95cd2d5fee77
             m_transformationParam = new TransformationParameter();
             m_transformationParam.color_order = (bCaffeModel) ? TransformationParameter.COLOR_ORDER.BGR : TransformationParameter.COLOR_ORDER.RGB;
-            m_transformationParam.scale = 1.0 / 256.0;
+            m_transformationParam.scale = 1.0;
             m_transformationParam.mean_value.AddRange(new List<double>() { 103.939, 116.779, 123.68 });
 
             m_persist = new PersistCaffe<T>(m_log, false);
@@ -203,7 +203,7 @@ namespace MyCaffe.extras
                     bmpStyle.Height != bmpContent.Height)
                     bmpStyle = ImageTools.ResizeImage(bmpStyle, bmpContent.Width, bmpContent.Height);
 
-                net = new Net<T>(m_cuda, m_log, m_net_param, m_evtCancel, null, Phase.TEST);
+                net = new Net<T>(m_cuda, m_log, m_param, m_evtCancel, null, Phase.TEST);
 
                 if (m_rgWeights != null)
                     net.LoadWeights(m_rgWeights, m_persist);
@@ -242,7 +242,7 @@ namespace MyCaffe.extras
                 //  Prepare the network by adding new layers.
                 //-----------------------------------------
 
-                NetParameter net_param = m_net_param;
+                NetParameter net_param = m_param;
                 List<string> rgInputLayers = new List<string>();
                 rgInputLayers.AddRange(m_rgContentLayers);
                 rgInputLayers.AddRange(m_rgGramLayers);
@@ -387,13 +387,16 @@ namespace MyCaffe.extras
                 {
                     int nImageCount = m_nIterations / nIntermediateOutput;
 
-                    solver.Solve(nIntermediateOutput, m_rgWeights);
+                    if (m_rgWeights != null)
+                        solver.net.LoadWeights(m_rgWeights, m_persist);
 
                     strResultDir = strResultDir.TrimEnd('\\');
                     strResultDir += "\\";
 
                     for (int i = 0; i < nImageCount; i++)
                     {
+                        solver.Step(nIntermediateOutput, TRAIN_STEP.NONE, true, true);
+
                         Bitmap bmpTemp = save(solver.net);
 
                         string strFile = strResultDir + i.ToString() + "_temp.png";
@@ -401,8 +404,6 @@ namespace MyCaffe.extras
                             File.Delete(strFile);
 
                         bmpTemp.Save(strFile);
-
-                        solver.Step(nIntermediateOutput);
                     }
                 }
                 else
