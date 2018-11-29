@@ -4,6 +4,7 @@ using MyCaffe.db.image;
 using MyCaffe.param;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -269,14 +270,12 @@ namespace MyCaffe.solvers
 
                 for (int i = nStart; i < rgIndices.Count; i++)
                 {
-                    rgIndices[j] = i;
-                    j++;
+                    rgIndices[j++] = i;
                 }
 
                 for (int i = 0; i <= nEnd; i++)
                 {
-                    rgIndices[j] = i;
-                    j++;
+                    rgIndices[j++] = i;
                 }
             }
 
