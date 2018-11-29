@@ -98,10 +98,13 @@ namespace MyCaffe.test
         public void TestNeuralStyleTransfer(int nIterations)
         {
             CancelEvent evtCancel = new CancelEvent();
+            double dfWtStyle = 1e2;
+            double dfWtContent = 5e0;
+            double dfWtTv = 1e-2;
             List<string> rgContentLayers = new List<string>() { "conv4_2" };
             List<string> rgStyleLayers = new List<string>() { "conv1_1", "conv2_1", "conv3_1", "conv4_1", "conv5_1" };
-            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\VGG_ILSVRC_19_layers_deploy.prototxt");
-            string strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\VGG_ILSVRC_19_layers.caffemodel");
+            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\vgg19\\deploy.prototxt");
+            string strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\vgg19\\weights.mycaffemodel");
             string strDataDir = getTestPath("\\MyCaffe\\test_data\\data\\images\\", true);
             string strStyleImg = strDataDir + "style\\style.png";
             string strContentImg = strDataDir + "content\\content.png";
@@ -125,7 +128,7 @@ namespace MyCaffe.test
                 strModelDesc = sr.ReadToEnd();
             }
 
-            NeuralStyleTransfer<T> ns = new NeuralStyleTransfer<T>(m_cuda, m_log, strModelDesc, rgWeights, rgContentLayers, rgStyleLayers, evtCancel, false);
+            NeuralStyleTransfer<T> ns = new NeuralStyleTransfer<T>(m_cuda, m_log, strModelDesc, rgWeights, rgContentLayers, rgStyleLayers, evtCancel, false, dfWtContent, dfWtStyle, dfWtTv);
 
             if (!Directory.Exists(strResultDir))
                 Directory.CreateDirectory(strResultDir);
