@@ -61,6 +61,16 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Insert a blob at the given index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index where the blob should be added.</param>
+        /// <param name="b">Specifies the blob to add.</param>
+        public void Insert(int nIdx, Blob<T> b)
+        {
+            m_rgBlobs.Insert(nIdx, b);
+        }
+
+        /// <summary>
         /// Add a new Blob to the collection.
         /// </summary>
         /// <param name="b">Specifies the Blob to add.</param>
