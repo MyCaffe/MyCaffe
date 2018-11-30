@@ -94,6 +94,7 @@
     <Compile Include="fillers\PositiveUnitballFiller.cs" />
     <Compile Include="fillers\UniformFiller.cs" />
     <Compile Include="fillers\XavierFiller.cs" />
+    <Compile Include="layers\ScalarLayer.cs" />
     <Compile Include="layers\ParameterLayer.cs" />
     <Compile Include="layers_beta\TVLossLayer.cs" />
     <Compile Include="layers_beta\GramLayer.cs" />
@@ -181,6 +182,7 @@
     <Compile Include="MyCaffeControl.Designer.cs">
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="param\ScalarParameter.cs" />
     <Compile Include="param\ParameterParameter.cs" />
     <Compile Include="param\TVLossParameter.cs" />
     <Compile Include="param\GramParameter.cs" />

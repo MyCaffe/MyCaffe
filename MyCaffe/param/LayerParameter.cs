@@ -254,6 +254,10 @@ namespace MyCaffe.param
             /// </summary>
             RESHAPE,
             /// <summary>
+            /// Initializes a parameter for the ScalarLayer.
+            /// </summary>
+            SCALAR,
+            /// <summary>
             /// Initializes a parameter for the ScaleLayer.
             /// </summary>
             SCALE,
@@ -934,6 +938,12 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new ReshapeParameter();
                     break;
 
+                case LayerType.SCALAR:
+                    expected_bottom.Add("input");
+                    expected_top.Add("sca");
+                    m_rgLayerParameters[lt] = new ScalarParameter();
+                    break;
+
                 case LayerType.SCALE:
                     expected_bottom.Add("input");
                     expected_top.Add("scale");
@@ -1589,6 +1599,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.SCALAR
+        /// </summary>
+        public ScalarParameter scalar_param
+        {
+            get { return (ScalarParameter)m_rgLayerParameters[LayerType.SCALAR]; }
+            set { m_rgLayerParameters[LayerType.SCALAR] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.SCALE
         /// </summary>
         public ScaleParameter scale_param
@@ -1996,6 +2015,9 @@ namespace MyCaffe.param
                 case LayerType.RESHAPE:
                     return "Reshape";
 
+                case LayerType.SCALAR:
+                    return "Scalar";
+
                 case LayerType.SCALE:
                     return "Scale";
 
@@ -2162,6 +2184,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(reduction_param, "reduction_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(relu_param, "relu_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(reshape_param, "reshape_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(scalar_param, "scalar_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(scale_param, "scale_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(sigmoid_param, "sigmoid_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(softmax_param, "softmax_param"));
@@ -2392,6 +2415,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("reshape_param")) != null)
                 p.reshape_param = ReshapeParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("scalar_param")) != null)
+                p.scalar_param = ScalarParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("scale_param")) != null)
                 p.scale_param = ScaleParameter.FromProto(rpp);
@@ -2632,6 +2658,9 @@ namespace MyCaffe.param
 
                 case "reshape":
                     return LayerType.RESHAPE;
+
+                case "scalar":
+                    return LayerType.SCALAR;
 
                 case "scale":
                     return LayerType.SCALE;

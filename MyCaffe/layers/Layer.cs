@@ -1118,6 +1118,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.RESHAPE:
                     return new ReshapeLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.SCALAR:
+                    return new ScalarLayer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.SCALE:
                     return new ScaleLayer<T>(cuda, log, p);
 
