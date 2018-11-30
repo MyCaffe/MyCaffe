@@ -76,6 +76,8 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.lblGpu = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
+            this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
+            this.startNeuralStyleTransferToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -287,7 +289,9 @@
             this.resNet56CifarAccuracyBugToolStripMenuItem,
             this.toolStripSeparator5,
             this.startCartPoleTrainerToolStripMenuItem,
-            this.startAtariTrainerToolStripMenuItem});
+            this.startAtariTrainerToolStripMenuItem,
+            this.toolStripSeparator4,
+            this.startNeuralStyleTransferToolStripMenuItem});
             this.specialTestsToolStripMenuItem.Name = "specialTestsToolStripMenuItem";
             this.specialTestsToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.specialTestsToolStripMenuItem.Text = "Special Tests";
@@ -446,6 +450,18 @@
             this.timerUI.Interval = 1000;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
+            // toolStripSeparator4
+            // 
+            this.toolStripSeparator4.Name = "toolStripSeparator4";
+            this.toolStripSeparator4.Size = new System.Drawing.Size(238, 6);
+            // 
+            // startNeuralStyleTransferToolStripMenuItem
+            // 
+            this.startNeuralStyleTransferToolStripMenuItem.Name = "startNeuralStyleTransferToolStripMenuItem";
+            this.startNeuralStyleTransferToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
+            this.startNeuralStyleTransferToolStripMenuItem.Text = "Start Neural Style Transfer";
+            this.startNeuralStyleTransferToolStripMenuItem.Click += new System.EventHandler(this.startNeuralStyleTransferToolStripMenuItem_Click);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -518,6 +534,8 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
         private System.Windows.Forms.ToolStripMenuItem startCartPoleTrainerToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem startAtariTrainerToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
+        private System.Windows.Forms.ToolStripMenuItem startNeuralStyleTransferToolStripMenuItem;
     }
 }
 

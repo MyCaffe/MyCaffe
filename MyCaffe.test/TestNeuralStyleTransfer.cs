@@ -30,7 +30,7 @@ namespace MyCaffe.test
             {
                 foreach (INeuralStyleTransferTest t in test.Tests)
                 {
-                    if (t.DataType == DataType.FLOAT)
+                    if (t.DataType == DataType.DOUBLE)
                         t.TestNeuralStyleTransfer(1000);
                 }
             }
@@ -62,7 +62,7 @@ namespace MyCaffe.test
         }
     }
 
-    class NeuralStyleTransferTest<T> : TestEx<T>, INeuralStyleTransferTest
+    public class NeuralStyleTransferTest<T> : TestEx<T>, INeuralStyleTransferTest
     {
         SettingsCaffe m_settings = new SettingsCaffe();
         CancelEvent m_evtCancel = new CancelEvent();
@@ -84,6 +84,11 @@ namespace MyCaffe.test
             base.dispose();
         }
 
+        public CancelEvent CancelEvent
+        {
+            get { return m_evtCancel; }
+        }
+
         protected override FillerParameter getFillerParam()
         {
             return new FillerParameter("gaussian");
@@ -98,13 +103,10 @@ namespace MyCaffe.test
         public void TestNeuralStyleTransfer(int nIterations)
         {
             CancelEvent evtCancel = new CancelEvent();
-            double dfWtStyle = 1e2;
-            double dfWtContent = 5e0;
-            double dfWtTv = 1e-2;
             List<string> rgContentLayers = new List<string>() { "conv4_2" };
             List<string> rgStyleLayers = new List<string>() { "conv1_1", "conv2_1", "conv3_1", "conv4_1", "conv5_1" };
             string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\vgg19\\deploy.prototxt");
-            string strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\vgg19\\weights.mycaffemodel");
+            string strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\vgg19\\weights.caffemodel");
             string strDataDir = getTestPath("\\MyCaffe\\test_data\\data\\images\\", true);
             string strStyleImg = strDataDir + "style\\style.png";
             string strContentImg = strDataDir + "content\\content.png";
@@ -128,7 +130,7 @@ namespace MyCaffe.test
                 strModelDesc = sr.ReadToEnd();
             }
 
-            NeuralStyleTransfer<T> ns = new NeuralStyleTransfer<T>(m_cuda, m_log, strModelDesc, rgWeights, rgContentLayers, rgStyleLayers, evtCancel, false, dfWtContent, dfWtStyle, dfWtTv);
+            NeuralStyleTransfer<T> ns = new NeuralStyleTransfer<T>(m_cuda, m_log, strModelDesc, rgWeights, rgContentLayers, rgStyleLayers, evtCancel, true);
 
             if (!Directory.Exists(strResultDir))
                 Directory.CreateDirectory(strResultDir);

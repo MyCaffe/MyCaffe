@@ -49,6 +49,8 @@ namespace MyCaffe.app
         Log m_log;
         Task m_pgTask = null;
         CancelEvent m_evtCancelPG = new CancelEvent();
+        Task m_nsTask = null;
+        CancelEvent m_evtCancelNs = new CancelEvent();
         MyCaffeGymUiServiceHost m_gymHost;
         TestingProgressGet m_progress = new TestingProgressGet();
 
@@ -836,6 +838,7 @@ namespace MyCaffe.app
             Properties.Settings.Default.Save();
 
             m_evtCancelPG.Set();
+            m_evtCancelNs.Set();
         }
 
         #region Server Based Autotesting
@@ -1201,6 +1204,7 @@ namespace MyCaffe.app
                 m_evtCancelPG.Reset();
                 m_pgTask = Task.Factory.StartNew(new Action<object>(pgTrainerThread), new Tuple<CancelEvent, string, bool, bool, bool, string>(m_evtCancelPG, "Cart-Pole", bShowUi, bUseAccelTrain, bAllowDiscountReset, strTrainer));
                 startAtariTrainerToolStripMenuItem.Enabled = false;
+                startNeuralStyleTransferToolStripMenuItem.Enabled = false;
                 startCartPoleTrainerToolStripMenuItem.Text = "Stop Cart-Pole Training";
             }
             else
@@ -1209,6 +1213,7 @@ namespace MyCaffe.app
                 m_evtCancelPG.Set();                
                 m_pgTask = null;
                 startAtariTrainerToolStripMenuItem.Enabled = true;
+                startNeuralStyleTransferToolStripMenuItem.Enabled = true;
                 startCartPoleTrainerToolStripMenuItem.Text = "Start Cart-Pole Training";
             }
         }
@@ -1235,6 +1240,7 @@ namespace MyCaffe.app
                 m_evtCancelPG.Reset();
                 m_pgTask = Task.Factory.StartNew(new Action<object>(pgTrainerThread), new Tuple<CancelEvent, string, bool, bool, bool, string>(m_evtCancelPG, "ATARI", bShowUi, bUseAccelTrain, bAllowDiscountReset, strTrainer));
                 startCartPoleTrainerToolStripMenuItem.Enabled = false;
+                startNeuralStyleTransferToolStripMenuItem.Enabled = false;
                 startAtariTrainerToolStripMenuItem.Text = "Stop ATARI Training";
             }
             else
@@ -1243,6 +1249,7 @@ namespace MyCaffe.app
                 m_evtCancelPG.Set();
                 m_pgTask = null;
                 startCartPoleTrainerToolStripMenuItem.Enabled = true;
+                startNeuralStyleTransferToolStripMenuItem.Enabled = true;
                 startAtariTrainerToolStripMenuItem.Text = "Start ATARI Training";
             }
         }
@@ -1282,6 +1289,46 @@ namespace MyCaffe.app
                 m_log.WriteError(new Exception(e.Message));
             else
                 m_log.WriteLine(e.Message);
+        }
+
+        private void startNeuralStyleTransferToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (startNeuralStyleTransferToolStripMenuItem.Text.Contains("Start"))
+            {
+                m_log.WriteLine("starting neural style transfer...");
+                m_evtCancelNs.Reset();
+                m_nsTask = Task.Factory.StartNew(new Action<object>(nsThread), new Tuple<CancelEvent>(m_evtCancelNs));
+                startCartPoleTrainerToolStripMenuItem.Enabled = false;
+                startAtariTrainerToolStripMenuItem.Enabled = false;
+                startNeuralStyleTransferToolStripMenuItem.Text = "Stop Neural Style Transfer";
+            }
+            else
+            {
+                m_log.WriteLine("stopping neural style transfer...");
+                m_evtCancelNs.Set();
+                startCartPoleTrainerToolStripMenuItem.Enabled = true;
+                startAtariTrainerToolStripMenuItem.Enabled = true;
+                startNeuralStyleTransferToolStripMenuItem.Text = "Start Neural Style Transfer";
+            }
+        }
+
+        private void nsThread(object obj)
+        {
+            Tuple<CancelEvent> arg = obj as Tuple<CancelEvent>;
+            CancelEvent evtCancel = arg.Item1;
+            NeuralStyleTransferTest<float> test = new NeuralStyleTransferTest<float>("Neural Style Test", 0, EngineParameter.Engine.DEFAULT);
+
+            test.Log.OnWriteLine += Log_OnWriteLine1;
+            test.CancelEvent.AddCancelOverride(evtCancel);
+            test.TestNeuralStyleTransfer(1000);
+
+            if (evtCancel.WaitOne(0))
+                test.Log.WriteLine("training aborted.");
+            else
+                test.Log.WriteLine("training done.");
+
+            test.Log.OnWriteLine -= log_OnWriteLine1;
+            test.Dispose();
         }
     }
 }
