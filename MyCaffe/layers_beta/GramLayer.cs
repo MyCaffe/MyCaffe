@@ -22,6 +22,8 @@ namespace MyCaffe.layers_beta
         int m_nK;
         int m_nM;
         int m_nN;
+        double m_dfAlpha = 1.0;
+        double m_dfBeta = 1.0;
 
         /// <summary>
         /// The GramLayer constructor.
@@ -34,6 +36,7 @@ namespace MyCaffe.layers_beta
         {
             m_type = LayerParameter.LayerType.GRAM;
         }
+
 
         /// <summary>
         /// Returns the exact number of bottom blobs (e.g. 1)
@@ -58,6 +61,11 @@ namespace MyCaffe.layers_beta
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            m_dfAlpha = m_param.gram_param.alpha;
+            m_dfBeta = m_param.gram_param.beta;
+
+            m_log.CHECK_GT(m_dfAlpha, 0, "The 'alpha' parameter must be greater than zero.");
+            m_log.CHECK_GT(m_dfBeta, 0, "The 'beta' parameter must be greater than zero.");
         }
 
         /// <summary>
@@ -72,7 +80,7 @@ namespace MyCaffe.layers_beta
             // Dimensions starting from 'axis' are 'flattened' into a single length 'K' vector.
             m_nK = colBottom[0].count(nAxis);
 
-            // The first 'axis-1' dimensions are independent Gram matrices; the total
+            // The first 'axis - 1' dimensions are independent Gram matrices; the total
             // number of these is 'M' the product over these dimensions.
             m_nM = colBottom[0].count(0, nAxis - 1);
 
@@ -98,11 +106,18 @@ namespace MyCaffe.layers_beta
         {
             long hBottomData = colBottom[0].gpu_data;
             long hTopData = colTop[0].mutable_gpu_data;
+            T fScale = m_tOne;
+
+            if (m_dfAlpha != 1.0)
+                fScale = (T)Convert.ChangeType(m_dfAlpha, typeof(T));
 
             for (int i = 0; i < m_nM; i++)
             {
-                m_cuda.gemm(false, true, m_nN, m_nN, m_nK, m_tOne, hBottomData, hBottomData, m_tZero, hTopData, i * m_nK * m_nN, i * m_nK * m_nN, i * m_nN * m_nN);
+                m_cuda.gemm(false, true, m_nN, m_nN, m_nK, fScale, hBottomData, hBottomData, m_tZero, hTopData, i * m_nK * m_nN, i * m_nK * m_nN, i * m_nN * m_nN);
             }
+
+            if (m_dfBeta != 1.0)
+                colTop[0].scale_data(m_dfBeta);
         }
 
         /// <summary>
@@ -121,12 +136,19 @@ namespace MyCaffe.layers_beta
             long hTopDiff = colTop[0].gpu_diff;
             long hBottomData = colBottom[0].gpu_data;
             long hBottomDiff = colBottom[0].mutable_gpu_diff;
+            T fScale = m_tOne;
+
+            if (m_dfAlpha != 1.0)
+                fScale = (T)Convert.ChangeType(1.0 / m_dfAlpha, typeof(T));
 
             for (int i = 0; i < m_nM; i++)
             {
-                m_cuda.gemm(false, false, m_nN, m_nK, m_nN, m_tOne, hTopDiff, hBottomData, m_tZero, hBottomDiff, i * m_nN * m_nN, i * m_nK * m_nN, i * m_nK * m_nN);
-                m_cuda.gemm(true, false, m_nN, m_nK, m_nN, m_tOne, hTopDiff, hBottomData, m_tOne, hBottomDiff, i * m_nN * m_nN, i * m_nK * m_nN, i * m_nK * m_nN);
+                m_cuda.gemm(false, false, m_nN, m_nK, m_nN, fScale, hTopDiff, hBottomData, m_tZero, hBottomDiff, i * m_nN * m_nN, i * m_nK * m_nN, i * m_nK * m_nN);
+                m_cuda.gemm(true, false, m_nN, m_nK, m_nN, fScale, hTopDiff, hBottomData, m_tOne, hBottomDiff, i * m_nN * m_nN, i * m_nK * m_nN, i * m_nK * m_nN);
             }
+
+            if (m_dfBeta != 1.0)
+                colBottom[0].scale_diff(1.0 / m_dfBeta);
         }
     }
 }

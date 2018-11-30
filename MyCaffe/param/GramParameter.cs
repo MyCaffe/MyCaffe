@@ -17,6 +17,8 @@ namespace MyCaffe.param
     public class GramParameter : LayerParameterBase 
     {
         int m_nAxis = 2;
+        double m_dfAlpha = 1.0;
+        double m_dfBeta = 1.0;
 
         /** @copydoc LayerParameterBase */
         public GramParameter()
@@ -37,6 +39,24 @@ namespace MyCaffe.param
             set { m_nAxis = value; }
         }
 
+        /// <summary>
+        /// Specifies the scaling factor applied before the gram operation.
+        /// </summary>
+        public double alpha
+        {
+            get { return m_dfAlpha; }
+            set { m_dfAlpha = value; }
+        }
+
+        /// <summary>
+        /// Specifies the scaling factor applied after the gram operation.
+        /// </summary>
+        public double beta
+        {
+            get { return m_dfBeta; }
+            set { m_dfBeta = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -54,6 +74,8 @@ namespace MyCaffe.param
         {
             GramParameter p = (GramParameter)src;
             m_nAxis = p.m_nAxis;
+            m_dfAlpha = p.m_dfAlpha;
+            m_dfBeta = p.m_dfBeta;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -70,6 +92,8 @@ namespace MyCaffe.param
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             rgChildren.Add("axis", axis.ToString());
+            rgChildren.Add("alpha", alpha.ToString());
+            rgChildren.Add("beta", beta.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -86,6 +110,12 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("axis")) != null)
                 p.axis = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("alpha")) != null)
+                p.alpha = double.Parse(strVal);
+
+            if ((strVal = rp.FindValue("beta")) != null)
+                p.beta = double.Parse(strVal);
 
             return p;
         }
