@@ -794,10 +794,15 @@ namespace MyCaffe.common
                         blob.Dispose();
                         colBlobs[nBlobIdx] = blobResized;
                     }
+
+                    m_log.WriteLine("(" + m_log.Progress.ToString("P") + ") loaded blob '" + colBlobs[nBlobIdx].Name + "' size = " + strShapeB);
+                }
+                else
+                {
+                    m_log.WriteLine("WARNING: did NOT load blob '" + colBlobs[nBlobIdx].Name + "' size = " + strShapeB);
                 }
 
                 m_log.Progress = (double)nBlobIdx / (double)colBlobs.Count;
-                m_log.WriteLine("(" + m_log.Progress.ToString("P") + ") loaded blob '" + colBlobs[nBlobIdx].Name + "' size = " + strShapeB);
 
                 nFieldIdx++;
                 nBlobIdx++;
@@ -1977,6 +1982,7 @@ namespace MyCaffe.common
             rgF.Add(new FieldDescriptor(123, LayerParameter.LayerType.RELU.ToString() + "_param", FieldDescriptor.TYPE.FIELDDESC));
             rgF.Add(new FieldDescriptor(133, LayerParameter.LayerType.RESHAPE.ToString() + "_param", FieldDescriptor.TYPE.FIELDDESC));
             rgF.Add(new FieldDescriptor(142, LayerParameter.LayerType.SCALE.ToString() + "_param", FieldDescriptor.TYPE.FIELDDESC));
+            rgF.Add(new FieldDescriptor(142, LayerParameter.LayerType.SCALAR.ToString() + "_param", FieldDescriptor.TYPE.FIELDDESC));
             rgF.Add(new FieldDescriptor(124, LayerParameter.LayerType.SIGMOID.ToString() + "_param", FieldDescriptor.TYPE.FIELDDESC));
             rgF.Add(new FieldDescriptor(125, LayerParameter.LayerType.SOFTMAX.ToString() + "_param", FieldDescriptor.TYPE.FIELDDESC));
             rgF.Add(new FieldDescriptor(132, LayerParameter.LayerType.SPP.ToString() + "_param", FieldDescriptor.TYPE.FIELDDESC));
