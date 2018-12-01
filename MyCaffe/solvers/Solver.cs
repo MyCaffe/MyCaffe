@@ -132,6 +132,11 @@ namespace MyCaffe.solvers
         /// The OnTestStart event fires at the start of each testing iteration.
         /// </summary>
         public event EventHandler OnTestStart;
+        /// <summary>
+        /// The OnCustomForwardBack allows for overriding the forward/backward operations within
+        /// the solver.
+        /// </summary>
+        public event EventHandler<CustomForwardBackArgs<T>> OnCustomForwardBack;
 
         /// <summary>
         /// The Solver constructor.
@@ -760,7 +765,17 @@ namespace MyCaffe.solvers
 
                         swTiming.Restart();
 
-                        bFwdPassNanFree = m_net.ForwardBackward(colBottom, out dfLocalLoss, step);
+                        if (OnCustomForwardBack != null)
+                        {
+                            CustomForwardBackArgs<T> args = new CustomForwardBackArgs<T>(m_net, step);
+                            OnCustomForwardBack(this, args);
+                            bFwdPassNanFree = args.FwdPassNanFree;
+                            dfLocalLoss = args.LocalLoss;
+                        }
+                        else
+                        {
+                            bFwdPassNanFree = m_net.ForwardBackward(colBottom, out dfLocalLoss, step);
+                        }
 
                         dfLossTotal += dfLocalLoss;
                         swTiming.Stop();
