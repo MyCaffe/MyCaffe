@@ -472,6 +472,62 @@ namespace MyCaffe.common
         }
     }
 
+    /// <summary>
+    /// The CustomForwardBackArgs provide the arguments to the OnCustomForwardBack event within the Solver Step function.
+    /// </summary>
+    /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
+    public class CustomForwardBackArgs<T> : EventArgs
+    {
+        Net<T> m_net;
+        TRAIN_STEP m_step;
+        bool m_bFwdPassNanFree = true;
+        double m_dfLocalLoss = 0;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="net">Specifies the training network.</param>
+        /// <param name="step">Specifies whether or not to step the operation.</param>
+        public CustomForwardBackArgs(Net<T> net, TRAIN_STEP step)
+        {
+            m_net = net;
+            m_step = step;
+        }
+
+        /// <summary>
+        /// Returns the training network.
+        /// </summary>
+        public Net<T> net
+        {
+            get { return m_net; }
+        }
+
+        /// <summary>
+        /// Returns whether or not to step the operation.
+        /// </summary>
+        public TRAIN_STEP step
+        {
+            get { return m_step; }
+        }
+
+        /// <summary>
+        /// Get/set whether or a NAN was detected in the forward pass.
+        /// </summary>
+        public bool FwdPassNanFree
+        {
+            get { return m_bFwdPassNanFree; }
+            set { m_bFwdPassNanFree = value; }
+        }
+
+        /// <summary>
+        /// Get/set the local loss of the pass.
+        /// </summary>
+        public double LocalLoss
+        {
+            get { return m_dfLocalLoss; }
+            set { m_dfLocalLoss = value; }
+        }
+    }
 
     /// <summary>
     /// The GradientsReadyArgs is sent to the Solver::OnGradientsReady event which fires at the end of each Solver::Step. 
