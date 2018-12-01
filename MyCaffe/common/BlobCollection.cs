@@ -50,14 +50,28 @@ namespace MyCaffe.common
         {
             get
             {
-                for (int i = 0; i < m_rgBlobs.Count; i++)
-                {
-                    if (m_rgBlobs[i].Name == strName)
-                        return m_rgBlobs[i];
-                }
+                Blob<T> blob = FindBlob(strName);
+                if (blob != null)
+                    return blob;
 
                 throw new Exception("Could not find the blob named '" + strName + "' in the collection.");
             }
+        }
+
+        /// <summary>
+        /// Finds a given blob in the collection based on its name.
+        /// </summary>
+        /// <param name="strName">Specifies the name of the blob to find.</param>
+        /// <returns>If found, the blob is returned, othweriwse <i>null</i> is returned.</returns>
+        public Blob<T> FindBlob(string strName)
+        {
+            for (int i = 0; i < m_rgBlobs.Count; i++)
+            {
+                if (m_rgBlobs[i].Name == strName)
+                    return m_rgBlobs[i];
+            }
+
+            return null;
         }
 
         /// <summary>
