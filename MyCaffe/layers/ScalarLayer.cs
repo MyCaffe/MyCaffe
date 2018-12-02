@@ -89,18 +89,21 @@ namespace MyCaffe.layers
 
             m_cuda.copy(nCount, hTopDiff, hBottomDiff);
 
-            switch (m_param.scalar_param.operation)
+            if (!m_param.scalar_param.passthrough_gradient)
             {
-                case ScalarParameter.ScalarOp.MUL:
-                    m_cuda.mul_scalar(nCount, 1.0 / m_param.scalar_param.value, hBottomDiff);
-                    break;
+                switch (m_param.scalar_param.operation)
+                {
+                    case ScalarParameter.ScalarOp.MUL:
+                        m_cuda.mul_scalar(nCount, 1.0 / m_param.scalar_param.value, hBottomDiff);
+                        break;
 
-                case ScalarParameter.ScalarOp.ADD:
-                    m_cuda.add_scalar(nCount, -m_param.scalar_param.value, hBottomDiff);
-                    break;
+                    case ScalarParameter.ScalarOp.ADD:
+                        m_cuda.add_scalar(nCount, -m_param.scalar_param.value, hBottomDiff);
+                        break;
 
-                default:
-                    throw new Exception("Unknown scalar operation '" + m_param.scalar_param.operation.ToString());
+                    default:
+                        throw new Exception("Unknown scalar operation '" + m_param.scalar_param.operation.ToString());
+                }
             }
         }
     }

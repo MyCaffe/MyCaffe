@@ -14,6 +14,7 @@ namespace MyCaffe.param
     {
         double m_dfVal;
         ScalarOp m_op;
+        bool m_bPassthroughGradient = false;
 
         public enum ScalarOp
         {
@@ -46,6 +47,15 @@ namespace MyCaffe.param
             set { m_op = value; }
         }
 
+        /// <summary>
+        /// Specifies whether or not to pass-through the gradient without performing the back-prop calculation (default = <i>false</i>).
+        /// </summary>
+        public bool passthrough_gradient
+        {
+            get { return m_bPassthroughGradient; }
+            set { m_bPassthroughGradient = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -64,6 +74,7 @@ namespace MyCaffe.param
             ScalarParameter p = (ScalarParameter)src;
             m_dfVal = p.m_dfVal;
             m_op = p.m_op;
+            m_bPassthroughGradient = p.m_bPassthroughGradient;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -81,6 +92,7 @@ namespace MyCaffe.param
 
             rgChildren.Add("value", m_dfVal.ToString());
             rgChildren.Add("operation", m_op.ToString());
+            rgChildren.Add("passthrough_gradient", passthrough_gradient.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -107,6 +119,9 @@ namespace MyCaffe.param
                 else
                     throw new Exception("Unknown scalar operation '" + strVal + "'");
             }
+
+            if ((strVal = rp.FindValue("passthrough_gradient")) != null)
+                p.passthrough_gradient = bool.Parse(strVal);
 
             return p;
         }
