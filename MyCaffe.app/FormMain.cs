@@ -1316,11 +1316,11 @@ namespace MyCaffe.app
         {
             Tuple<CancelEvent> arg = obj as Tuple<CancelEvent>;
             CancelEvent evtCancel = arg.Item1;
-            NeuralStyleTransferTest<float> test = new NeuralStyleTransferTest<float>("Neural Style Test", 0, EngineParameter.Engine.DEFAULT);
+            NeuralStyleTransferTest<float> test = new NeuralStyleTransferTest<float>("Neural Style Test", getGpu(), EngineParameter.Engine.DEFAULT);
 
             test.Log.OnWriteLine += Log_OnWriteLine1;
             test.CancelEvent.AddCancelOverride(evtCancel);
-            test.TestNeuralStyleTransfer(1000);
+            test.TestNeuralStyleTransfer(1000, "vgg19");
 
             if (evtCancel.WaitOne(0))
                 test.Log.WriteLine("training aborted.");
