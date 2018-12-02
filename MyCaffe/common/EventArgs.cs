@@ -530,6 +530,71 @@ namespace MyCaffe.common
     }
 
     /// <summary>
+    /// The ForwardArgs are passed to the OnForward event of the EventLayer.
+    /// </summary>
+    /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
+    public class ForwardArgs<T>
+    {
+        BlobCollection<T> m_colTop;
+        BlobCollection<T> m_colBottom;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="colBottom">Specifies the bottom blobs.</param>
+        /// <param name="colTop">Specifies the top blobs.</param>
+        public ForwardArgs(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            m_colTop = colTop;
+            m_colBottom = colBottom;
+        }
+
+        /// <summary>
+        /// Returns the bottom blobs.
+        /// </summary>
+        public BlobCollection<T> BottomVec
+        {
+            get { return m_colBottom;  }
+        }
+
+        /// <summary>
+        /// Returns the top blobs.
+        /// </summary>
+        public BlobCollection<T> TopVec
+        {
+            get { return m_colTop; }
+        }
+    }
+
+    /// <summary>
+    /// The BackwardArgs are passed to the OnBackward event of the EventLayer.
+    /// </summary>
+    /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
+    public class BackwardArgs<T> : ForwardArgs<T>
+    {
+        List<bool> m_rgbPropagateDown;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="colBottom">Specifies the bottom blobs.</param>
+        /// <param name="colTop">Specifies the top blobs.</param>
+        public BackwardArgs(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
+            : base(colBottom, colTop)
+        {
+            m_rgbPropagateDown = rgbPropagateDown;
+        }
+
+        /// <summary>
+        /// Returns the list on whether or not to propagate down.
+        /// </summary>
+        public List<bool> PropagateDown
+        {
+            get { return m_rgbPropagateDown; }
+        }
+    }
+
+    /// <summary>
     /// The GradientsReadyArgs is sent to the Solver::OnGradientsReady event which fires at the end of each Solver::Step. 
     /// </summary>
     /// <remarks>
