@@ -31,7 +31,7 @@ namespace MyCaffe.test
                 foreach (INeuralStyleTransferTest t in test.Tests)
                 {
                     if (t.DataType == DataType.DOUBLE)
-                        t.TestNeuralStyleTransfer(1000);
+                        t.TestNeuralStyleTransfer(1000, "vgg19");
                 }
             }
             finally
@@ -43,7 +43,7 @@ namespace MyCaffe.test
 
     interface INeuralStyleTransferTest : ITest
     {
-        void TestNeuralStyleTransfer(int nIteration);
+        void TestNeuralStyleTransfer(int nIteration, string strName);
     }
 
     class NeuralStyleTransferTest : TestBase
@@ -94,19 +94,42 @@ namespace MyCaffe.test
             return new FillerParameter("gaussian");
         }
 
+        private Tuple<string, string, string> getModel(string strName)
+        {
+            string strModelFile;
+            string strWtsFile;
+
+            switch (strName)
+            {
+                case "vgg19":
+                    strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\neuralstyle\\deploy.prototxt");
+                    strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\neuralstyle\\weights.caffemodel");
+                    break;
+
+                case "googlenet":
+                    strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\goognet\\neuralstyle\\train_val.prototxt");
+                    strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\goognet\\neuralstyle\\weights.caffemodel");
+                    break;
+
+                default:
+                    throw new Exception("Unknown model name '" + strName + "'");
+            }
+
+            return new Tuple<string, string, string>(strName, strModelFile, strWtsFile);
+        }
+
         /// <summary>
         /// The NeuralStyleTransfer test is based on implementing the Neural Style Transfer algorithm
         /// from https://github.com/ftokarev/caffe-neural-style/blob/master/neural-style.py
         /// using MyCaffe.
         /// </summary>
-        /// 
-        public void TestNeuralStyleTransfer(int nIterations)
+        public void TestNeuralStyleTransfer(int nIterations, string strName)
         {
             CancelEvent evtCancel = new CancelEvent();
-            List<string> rgContentLayers = new List<string>() { "conv4_2" };
-            List<string> rgStyleLayers = new List<string>() { "conv1_1", "conv2_1", "conv3_1", "conv4_1", "conv5_1" };
-            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\vgg19\\deploy.prototxt");
-            string strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\vgg19\\weights.caffemodel");
+            Tuple<string, string, string> info = getModel(strName);
+            string strModelName = info.Item1;
+            string strModelFile = info.Item2;
+            string strWeightFile = info.Item3;
             string strDataDir = getTestPath("\\MyCaffe\\test_data\\data\\images\\", true);
             string strStyleImg = strDataDir + "style\\style.png";
             string strContentImg = strDataDir + "content\\content.png";
@@ -114,9 +137,9 @@ namespace MyCaffe.test
             byte[] rgWeights = null;
             string strModelDesc = "";
 
-            if (File.Exists(strWtsFile))
+            if (File.Exists(strWeightFile))
             {
-                using (FileStream fs = new FileStream(strWtsFile, FileMode.Open, FileAccess.Read))
+                using (FileStream fs = new FileStream(strWeightFile, FileMode.Open, FileAccess.Read))
                 {
                     using (BinaryReader br = new BinaryReader(fs))
                     {
@@ -130,7 +153,7 @@ namespace MyCaffe.test
                 strModelDesc = sr.ReadToEnd();
             }
 
-            NeuralStyleTransfer<T> ns = new NeuralStyleTransfer<T>(m_cuda, m_log, strModelDesc, rgWeights, rgContentLayers, rgStyleLayers, evtCancel, true);
+            NeuralStyleTransfer<T> ns = new NeuralStyleTransfer<T>(m_cuda, m_log, m_evtCancel, strModelName, strModelDesc, rgWeights, false);
 
             if (!Directory.Exists(strResultDir))
                 Directory.CreateDirectory(strResultDir);
@@ -138,7 +161,7 @@ namespace MyCaffe.test
             Bitmap bmpStyle = new Bitmap(strStyleImg);
             Bitmap bmpContent = new Bitmap(strContentImg);
 
-            Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, nIterations, strResultDir, 300);
+            Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, nIterations, strResultDir, 10);
 
             string strResultFile = strResultDir + nIterations.ToString() + "_result.png";
 
