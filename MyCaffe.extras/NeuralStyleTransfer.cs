@@ -52,8 +52,6 @@ namespace MyCaffe.extras
         /// <param name="strModelType">Specifies the model type: 'vgg19', 'vgg16'</param>
         /// <param name="strModel">Specifies the network model to use.</param>
         /// <param name="rgWeights">Optionally, specifies the weights to use (or <i>null</i> to ignore).</param>
-        /// <param name="rgContentLayers">Specifies the names of the content layers.</param>
-        /// <param name="rgStyleLayers">Specifies the names of the style layers.</param>
         /// <param name="bCaffeModel">Specifies whether or not the weights are in the caffe (<i>true</i>) or mycaffe (<i>false</i>) format.</param>
         public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, string strModelType, string strModel, byte[] rgWeights, bool bCaffeModel)
         {
