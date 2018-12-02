@@ -1320,7 +1320,7 @@ namespace MyCaffe.app
 
             test.Log.OnWriteLine += Log_OnWriteLine1;
             test.CancelEvent.AddCancelOverride(evtCancel);
-            test.TestNeuralStyleTransfer(1000, "vgg19");
+            test.TestNeuralStyleTransfer(10000, "vgg19");
 
             if (evtCancel.WaitOne(0))
                 test.Log.WriteLine("training aborted.");
