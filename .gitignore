@@ -12,6 +12,7 @@
 # Private Files
 **/MyCaffe.app.setup/*
 **/MyCaffe.app.setup.vs/*
+**/MyCaffe.extras/_in_progress/*
 **/_private/*
 **/_in_progress/*
 **/_build/*
