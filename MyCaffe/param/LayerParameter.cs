@@ -154,6 +154,10 @@ namespace MyCaffe.param
             /// </summary>
             EUCLIDEAN_LOSS,
             /// <summary>
+            /// Initializes a parameter for the EventLayer.
+            /// </summary>
+            EVENT,
+            /// <summary>
             /// Initializes a parameter for the ExpLayer.
             /// </summary>
             EXP,
@@ -769,6 +773,11 @@ namespace MyCaffe.param
                     expected_bottom.Add("trgt");
                     expected_top.Add("loss");
                     m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
+                    break;
+
+                case LayerType.EVENT:
+                    expected_bottom.Add("input");
+                    expected_top.Add("output");
                     break;
 
                 case LayerType.EXP:
@@ -1925,6 +1934,9 @@ namespace MyCaffe.param
                 case LayerType.EUCLIDEAN_LOSS:
                     return "EuclideanLoss";
 
+                case LayerType.EVENT:
+                    return "Event";
+
                 case LayerType.EXP:
                     return "EXP";
 
@@ -2558,6 +2570,9 @@ namespace MyCaffe.param
                 case "euclideanloss":
                 case "euclidean_loss":
                     return LayerType.EUCLIDEAN_LOSS;
+
+                case "event":
+                    return LayerType.EVENT;
 
                 case "exp":
                     return LayerType.EXP;

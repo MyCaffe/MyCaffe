@@ -1037,6 +1037,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.EUCLIDEAN_LOSS:
                     return new EuclideanLossLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.EVENT:
+                    return new EventLayer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.EXP:
                     return new ExpLayer<T>(cuda, log, p);
 
