@@ -1,6 +1,7 @@
 ﻿using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.data;
+using MyCaffe.layers;
 using MyCaffe.param;
 using MyCaffe.solvers;
 using System;
@@ -27,12 +28,11 @@ namespace MyCaffe.extras
         Log m_log;
         int m_nIterations = 1000;
         int m_nDisplayEvery = 100;
-        double m_dfTVLossWeight = 0.0;
-        double m_dfStyleDataScale1 = 0.0001;
-        double m_dfStyleDataScale2 = 1;
-        double m_dfContentDataScale = 0.0001;
-        double m_dfContentLossScale = 0.0001;
-        double m_dfLearningRate = 0.5;
+        double m_dfTVLossWeight = 0;            // 0.01 to smooth out result -or- 0 to disable.
+        double m_dfStyleDataScale1 = 0.0001;    // 0.0001
+        double m_dfStyleDataScale2 = 1;         // 1
+        double m_dfContentDataScale = 0.0001;   // 0.0001
+        double m_dfContentLossScale = 0.001;    // 0.0001 to 1 (larger make image granier)
         CancelEvent m_evtCancel;
         DataTransformer<T> m_transformer = null;
         TransformationParameter m_transformationParam;
@@ -119,9 +119,13 @@ namespace MyCaffe.extras
                 int nW = 224;
                 input.input_param.shape.Add(new BlobShape(1, 3, nH, nW));
                 input.name = data_param.name;
-                input.top.Add("data");
+                input.top.Add("input1");
 
                 p.layer.Insert(0, input);
+            }
+            else
+            {
+                input.name = "input1";
             }
         }
 
@@ -296,14 +300,14 @@ namespace MyCaffe.extras
             List<int> rgDataShape = new List<int>() { 1, 3, bmp.Height, bmp.Width };
             m_transformer = new DataTransformer<T>(m_log, m_transformationParam, Phase.TEST, 3, bmp.Height, bmp.Width);
 
-            Blob<T> data = net.param_by_name("input");
+            Blob<T> data = net.param_by_name("input1");
             data.Reshape(rgDataShape);
             data.mutable_cpu_data = m_transformer.Transform(ImageData.GetImageData(bmp, 3, false, -1));
         }
 
         private Bitmap save(Net<T> net)
         {
-            Blob<T> blob = net.param_by_name("input");
+            Blob<T> blob = net.param_by_name("input1");
             Datum d = m_transformer.UnTransform(blob);
             return ImageData.GetImage(d);
         }
@@ -411,6 +415,14 @@ namespace MyCaffe.extras
                         net_param.layer.Add(ps2);
                     }
 
+                    LayerParameter event_param = new LayerParameter(LayerParameter.LayerType.EVENT);
+                    event_param.name = "event_" + strName;
+                    event_param.bottom.Add(strScale2);
+                    event_param.bottom.Add(strScale1);
+                    event_param.top.Add("event_" + strName);
+
+                    net_param.layer.Add(event_param);
+
                     LayerParameter p = new LayerParameter(LayerParameter.LayerType.EUCLIDEAN_LOSS);
                     p.name = "loss_" + strName;
 
@@ -418,8 +430,8 @@ namespace MyCaffe.extras
                     double dfScale = get_content_scale(blobContent);
                     p.loss_weight.Add(kvContent.Value * dfScale);
 
+                    p.bottom.Add("event_" + strName);
                     p.bottom.Add(strScale1);
-                    p.bottom.Add(strScale2);
                     p.top.Add("loss_" + strName);
 
                     net_param.layer.Add(p);
@@ -428,6 +440,15 @@ namespace MyCaffe.extras
                 foreach (KeyValuePair<string, double> kvGram in m_rgLayers["gram"].ToList())
                 {
                     string strGramName = kvGram.Key;
+
+                    LayerParameter event_param = new LayerParameter(LayerParameter.LayerType.EVENT);
+                    event_param.name = "event_" + strGramName;
+                    event_param.bottom.Add(strGramName);
+                    event_param.bottom.Add("input_" + strGramName);
+                    event_param.top.Add("event_" + strGramName);
+
+                    net_param.layer.Add(event_param);
+
                     LayerParameter p = new LayerParameter(LayerParameter.LayerType.EUCLIDEAN_LOSS);
                     p.name = "loss_" + strGramName;
 
@@ -436,7 +457,7 @@ namespace MyCaffe.extras
                     p.loss_weight.Add(kvGram.Value * dfScale);
 
                     p.bottom.Add("input_" + strGramName);
-                    p.bottom.Add(strGramName);
+                    p.bottom.Add("event_" + strGramName);
                     p.top.Add("loss_" + strGramName);
 
                     net_param.layer.Add(p);
@@ -464,11 +485,10 @@ namespace MyCaffe.extras
                 {
                     LayerParameter p = net_param.layer[i];
 
-                    if (p.name == "input")
+                    if (p.name == "input1")
                     {
                         net_param.layer[i].SetType(LayerParameter.LayerType.PARAMETER);
                         net_param.layer[i].parameter_param.shape = new BlobShape(data.shape());
-                        net_param.layer[i].loss_weight.Add(m_dfLearningRate);
                         break;
                     }
                 }
@@ -516,6 +536,15 @@ namespace MyCaffe.extras
                 solver = new LBFGSSolver<T>(m_cuda, m_log, solver_param, m_evtCancel, null, null, null, m_persist);
                 solver.OnSnapshot += Solver_OnSnapshot;
                 solver.OnTrainingIteration += Solver_OnTrainingIteration;
+
+                foreach (Layer<T> layer in solver.net.layers)
+                {
+                    if (layer.type == LayerParameter.LayerType.EVENT)
+                    {
+                        EventLayer<T> eventLayer = layer as EventLayer<T>;
+                        eventLayer.OnBackward += EventLayer_OnBackward;
+                    }
+                }
 
                 prepare_input_param(solver.net, bmpContent);
 
@@ -595,6 +624,19 @@ namespace MyCaffe.extras
                 colGramActivations.Dispose();
                 colContentActivations.Dispose();
             }
+        }
+
+        private void EventLayer_OnBackward(object sender, BackwardArgs<T> e)
+        {
+            int nCount = e.BottomVec[0].count();
+            long hTopDiff0 = e.TopVec[0].mutable_gpu_diff;
+            long hBottomData1 = e.BottomVec[1].gpu_data;
+            long hBottomDiff1 = e.BottomVec[1].mutable_gpu_diff;
+            long hBottomDiff = e.BottomVec[0].mutable_gpu_diff;
+
+            m_cuda.sign(nCount, hBottomData1, hBottomDiff1);
+            m_cuda.abs(nCount, hBottomDiff1, hBottomDiff1);
+            m_cuda.mul(nCount, hBottomDiff1, hTopDiff0, hBottomDiff);
         }
 
         private void Solver_OnTrainingIteration(object sender, TrainingIterationArgs<T> e)
