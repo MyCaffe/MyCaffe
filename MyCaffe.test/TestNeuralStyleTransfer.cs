@@ -161,7 +161,7 @@ namespace MyCaffe.test
             Bitmap bmpStyle = new Bitmap(strStyleImg);
             Bitmap bmpContent = new Bitmap(strContentImg);
 
-            Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, nIterations, strResultDir, 10);
+            Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, nIterations, strResultDir, 100);
 
             string strResultFile = strResultDir + nIterations.ToString() + "_result.png";
 
