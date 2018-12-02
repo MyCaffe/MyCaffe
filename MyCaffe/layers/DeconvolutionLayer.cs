@@ -604,6 +604,8 @@ namespace MyCaffe.layers
             {
                 m_cuda.SynchronizeStream(m_rghStream[g]);
             }
+
+            m_cuda.SynchronizeDevice();
         }
     }
 }
