@@ -627,6 +627,8 @@ namespace MyCaffe.layers
                     }
                 }
             }
+
+            m_cuda.SynchronizeDevice();
         }
     }
 }
