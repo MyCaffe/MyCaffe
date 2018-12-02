@@ -158,7 +158,7 @@ namespace MyCaffe.layers
                     double dfAlpha = dfSign * dfTopDiff / colBottom[i].num;
                     int nCount = colBottom[i].count();
 
-                    m_cuda.axpby(nCount, convert(dfAlpha), m_blobDiff.gpu_data, convert(0.0), colBottom[i].mutable_gpu_diff);
+                    m_cuda.axpby(nCount, convert(dfAlpha), m_blobDiff.gpu_data, m_tZero, colBottom[i].mutable_gpu_diff);
                 }
             }
         }
