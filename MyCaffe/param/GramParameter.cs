@@ -19,6 +19,7 @@ namespace MyCaffe.param
         int m_nAxis = 2;
         double m_dfAlpha = 1.0;
         double m_dfBeta = 1.0;
+        bool m_bDisableScalingOnGradient = false;
 
         /** @copydoc LayerParameterBase */
         public GramParameter()
@@ -57,6 +58,15 @@ namespace MyCaffe.param
             set { m_dfBeta = value; }
         }
 
+        /// <summary>
+        /// Specifies whether or not to apply the un-scaling of the alpha and beta values during the during the backpropagation (default = <i>false</i>).
+        /// </summary>
+        public bool disable_scaling_on_gradient
+        {
+            get { return m_bDisableScalingOnGradient; }
+            set { m_bDisableScalingOnGradient = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -76,6 +86,7 @@ namespace MyCaffe.param
             m_nAxis = p.m_nAxis;
             m_dfAlpha = p.m_dfAlpha;
             m_dfBeta = p.m_dfBeta;
+            m_bDisableScalingOnGradient = p.m_bDisableScalingOnGradient;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -94,6 +105,7 @@ namespace MyCaffe.param
             rgChildren.Add("axis", axis.ToString());
             rgChildren.Add("alpha", alpha.ToString());
             rgChildren.Add("beta", beta.ToString());
+            rgChildren.Add("disable_scaling_on_gradient", disable_scaling_on_gradient.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -116,6 +128,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("beta")) != null)
                 p.beta = double.Parse(strVal);
+
+            if ((strVal = rp.FindValue("disable_scaling_on_gradient")) != null)
+                p.disable_scaling_on_gradient = bool.Parse(strVal);
 
             return p;
         }
