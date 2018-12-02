@@ -16,9 +16,18 @@ namespace MyCaffe.param
         ScalarOp m_op;
         bool m_bPassthroughGradient = false;
 
+        /// <summary>
+        /// Defines the scalar operations that may be performed.
+        /// </summary>
         public enum ScalarOp
         {
+            /// <summary>
+            /// Specifies to run a mul_scalar on the layer.
+            /// </summary>
             MUL,
+            /// <summary>
+            /// Specifies to run an add_scalar on the layer.
+            /// </summary>
             ADD
         }
 
