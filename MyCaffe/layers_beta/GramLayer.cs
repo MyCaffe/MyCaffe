@@ -134,12 +134,15 @@ namespace MyCaffe.layers_beta
                 return;
 
             long hTopDiff = colTop[0].gpu_diff;
-            long hBottomData = colBottom[0].gpu_data;
             long hBottomDiff = colBottom[0].mutable_gpu_diff;
+            long hBottomData = colBottom[0].gpu_data;
             T fScale = m_tOne;
 
-            if (m_dfAlpha != 1.0)
-                fScale = (T)Convert.ChangeType(1.0 / m_dfAlpha, typeof(T));
+            if (!m_param.gram_param.disable_scaling_on_gradient)
+            {
+                if (m_dfAlpha != 1.0)
+                    fScale = (T)Convert.ChangeType(1.0 / m_dfAlpha, typeof(T));
+            }
 
             for (int i = 0; i < m_nM; i++)
             {
@@ -147,8 +150,11 @@ namespace MyCaffe.layers_beta
                 m_cuda.gemm(true, false, m_nN, m_nK, m_nN, fScale, hTopDiff, hBottomData, m_tOne, hBottomDiff, i * m_nN * m_nN, i * m_nK * m_nN, i * m_nK * m_nN);
             }
 
-            if (m_dfBeta != 1.0)
-                colBottom[0].scale_diff(1.0 / m_dfBeta);
+            if (!m_param.gram_param.disable_scaling_on_gradient)
+            {
+                if (m_dfBeta != 1.0)
+                    colBottom[0].scale_diff(1.0 / m_dfBeta);
+            }
         }
     }
 }
