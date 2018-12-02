@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using MyCaffe.basecode;
 using MyCaffe.common;
+using MyCaffe.layers;
 using MyCaffe.param;
 
-namespace MyCaffe.layers
+namespace MyCaffe.layers_beta
 {
     /// <summary>
     /// The ScalarLayer computes the operation with the value on the input.
