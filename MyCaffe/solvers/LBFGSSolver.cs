@@ -345,7 +345,9 @@ namespace MyCaffe.solvers
 
                 if (m_net.params_lr[i] != 0)
                 {
-                    if (m_net.params_lr[i] != 1.0)
+                    double dfLr = m_net.params_lr[i].GetValueOrDefault(1.0) * m_param.base_lr;
+
+                    if (dfLr != 1.0)
                     {
                         T fLr = (T)Convert.ChangeType(m_net.params_lr[i], typeof(T));
                         m_cuda.scale(nCount, fLr, m_blobDirection.gpu_data, net_params[i].mutable_gpu_diff, nOffset, 0);
