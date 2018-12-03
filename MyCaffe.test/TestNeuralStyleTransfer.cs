@@ -43,7 +43,7 @@ namespace MyCaffe.test
 
     interface INeuralStyleTransferTest : ITest
     {
-        void TestNeuralStyleTransfer(string strStyleImg, string strContentImg, int nIteration, int nIntermediateOutput, string strResultDir, string strModelName, string strSolverType, double dfLearningRate, double dfTvLoss = 0);
+        void TestNeuralStyleTransfer(string strStyleImg, string strContentImg, int nIteration, int nIntermediateOutput, string strResultDir, string strModelName, string strSolverType, double dfLearningRate, double dfTvLoss = 0, int nMaxImageSize = 640);
     }
 
     class NeuralStyleTransferTest : TestBase
@@ -148,11 +148,21 @@ namespace MyCaffe.test
         }
 
         /// <summary>
-        /// The NeuralStyleTransfer test is based on implementing the Neural Style Transfer algorithm
-        /// from https://github.com/ftokarev/caffe-neural-style/blob/master/neural-style.py
-        /// using MyCaffe.
+        /// The NeuralStyleTransfer test is based on the the open-source Neural Style Transfer algorithm
+        /// from https://github.com/ftokarev/caffe-neural-style/blob/master/neural-style.py, but has been
+        /// re-written and modified using MyCaffe.  See LICENSE file for details.
         /// </summary>
-        public void TestNeuralStyleTransfer(string strStyleImg, string strContentImg, int nIterations, int nIntermediateOutput, string strResultDir, string strName, string strSolverType = "LBFGS", double dfLearningRate = 1.0, double dfTvLoss = 0)
+        /// <param name="strStyleImg">Specifies the path to the style image file, or <i>null</i> which then uses the default at '/programdata/mycaffe/test_data/data/images/style/style.png'.</param>
+        /// <param name="strContentImg">Specifies the path to the content image file, or <i>null</i> which then uses the default at '/programdata/mycaffe/test_data/data/images/content/content.png'.</param>
+        /// <param name="nIterations">Specifies the number of iterations to learn the style.</param>
+        /// <param name="nIntermediateOutput">Optionally, specifies the number of iterations to output an intermediate image, or 0 to ignore.</param>
+        /// <param name="strResultDir">Specifies the path where all image results are placed.</param>
+        /// <param name="strName">Optionally, specifies the name of the model ('vgg19', 'googlenet') to use (default = 'vgg19').</param>
+        /// <param name="strSolverType">Optionally, specifies the solver type ('LBFGS', 'ADAM', 'RMSPROP', 'SGD') to use (default = 'LBFGS').</param>
+        /// <param name="dfLearningRate">Optionally, specifies the learning rate to use (default = 1.0).</param>
+        /// <param name="dfTvLoss">Optionally, specifies the TVLoss weights which acts as a smoothing factor to use (default = 0, which disables the TVLoss).</param>
+        /// <param name="nMaxSize">Optionally, specifies the maximum image size - if you run out of memory when performing neural style, reduce this size.</param>
+        public void TestNeuralStyleTransfer(string strStyleImg, string strContentImg, int nIterations, int nIntermediateOutput, string strResultDir, string strName, string strSolverType = "LBFGS", double dfLearningRate = 1.0, double dfTvLoss = 0, int nMaxSize = 640)
         {
             CancelEvent evtCancel = new CancelEvent();
             SolverParameter.SolverType solverType = getSolverType(strSolverType);
@@ -196,8 +206,7 @@ namespace MyCaffe.test
 
             Bitmap bmpStyle = new Bitmap(strStyleImg);
             Bitmap bmpContent = new Bitmap(strContentImg);
-
-            Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, nIterations, strResultDir, nIntermediateOutput, dfTvLoss);
+            Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, nIterations, strResultDir, nIntermediateOutput, dfTvLoss, nMaxSize);
 
             string strResultFile = strResultDir + nIterations.ToString() + "_result.png";
 

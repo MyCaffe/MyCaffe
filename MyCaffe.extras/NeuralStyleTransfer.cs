@@ -22,6 +22,8 @@ namespace MyCaffe.extras
     /// @see [ftokarev/caffe-neural-style Github](https://github.com/ftokarev/caffe-neural-style) by ftokarev, 2017. 
     /// @see [fzliu/style-transfer Github](https://github.com/fzliu/style-transfer/blob/master/style.py) by Frank Liu and Dylan Paiton, 2015.
     /// @see [A Neural Algorithm of Artistic Style](https://arxiv.org/abs/1508.06576) by Leon A. Gatys, Alexander S. Ecker, and Matthias Bethge, 2015 
+    /// @see [Neural Style Transfer: Creating Art with Deep Learning using tf.keras and eager execution](https://medium.com/tensorflow/neural-style-transfer-creating-art-with-deep-learning-using-tf-keras-and-eager-execution-7d541ac31398) by Raymond Yuan, Medium, 2018
+    /// @see [Neural Artistic Style Transfer: A Comprehensive Look](https://medium.com/artists-and-machine-intelligence/neural-artistic-style-transfer-a-comprehensive-look-f54d8649c199) by Shubhang Desai, Medium, 2017
     /// </remarks>
     public class NeuralStyleTransfer<T> : IDisposable
     {
@@ -329,7 +331,7 @@ namespace MyCaffe.extras
         /// <param name="nIntermediateOutput">Optionally, specifies how often to output an intermediate image.</param>
         /// <param name="dfTvLoss">Optionally, specifies the TV-Loss weight for smoothing (default = 0, which disables this loss).</param>
         /// <returns>The resulting image is returned.</returns>
-        public Bitmap Process(Bitmap bmpStyle, Bitmap bmpContent, int nIterations, string strResultDir = null, int nIntermediateOutput = -1, double dfTvLoss = 0)
+        public Bitmap Process(Bitmap bmpStyle, Bitmap bmpContent, int nIterations, string strResultDir = null, int nIntermediateOutput = -1, double dfTvLoss = 0, int nMaxSize = 840)
         {
             Solver<T> solver = null;
             Net<T> net = null;
@@ -342,12 +344,12 @@ namespace MyCaffe.extras
                 m_dfTVLossWeight = dfTvLoss;
                 m_nIterations = nIterations;
 
-                if (bmpContent.Width > 640 ||
-                    bmpContent.Height > 640)
+                if (bmpContent.Width > nMaxSize ||
+                    bmpContent.Height > nMaxSize)
                 {
-                    double dfAspectRatio = (double)bmpContent.Width / (double)bmpContent.Height;
-                    int nWidth = 640;
-                    int nHeight = (int)(640 * dfAspectRatio);
+                    double dfAspectRatio = (double)bmpContent.Height / (double)bmpContent.Width;
+                    int nWidth = nMaxSize;
+                    int nHeight = (int)(nMaxSize * dfAspectRatio);
                     bmpContent = ImageTools.ResizeImage(bmpContent, nWidth, nHeight);
                 }
 
@@ -624,7 +626,7 @@ namespace MyCaffe.extras
 
                     solver.Step(nIntermediateOutput, TRAIN_STEP.NONE, true, true, true);
 
-                    if (strResultDir != null && nIntermediateOutput > 0)
+                    if (strResultDir != null && nIntermediateOutput > 0 && i < nIterations1-1)
                     {
                         Bitmap bmpTemp = save(solver.net);
 
