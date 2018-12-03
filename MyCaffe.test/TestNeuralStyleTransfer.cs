@@ -31,7 +31,7 @@ namespace MyCaffe.test
                 foreach (INeuralStyleTransferTest t in test.Tests)
                 {
                     if (t.DataType == DataType.DOUBLE)
-                        t.TestNeuralStyleTransfer(1000, "vgg19");
+                        t.TestNeuralStyleTransfer(null, null, 1000, 100, null, "vgg19", "LBFGS", 1.0);
                 }
             }
             finally
@@ -43,7 +43,7 @@ namespace MyCaffe.test
 
     interface INeuralStyleTransferTest : ITest
     {
-        void TestNeuralStyleTransfer(int nIteration, string strName);
+        void TestNeuralStyleTransfer(string strStyleImg, string strContentImg, int nIteration, int nIntermediateOutput, string strResultDir, string strModelName, string strSolverType, double dfLearningRate, double dfTvLoss = 0);
     }
 
     class NeuralStyleTransferTest : TestBase
@@ -107,8 +107,8 @@ namespace MyCaffe.test
                     break;
 
                 case "googlenet":
-                    strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\goognet\\neuralstyle\\train_val.prototxt");
-                    strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\goognet\\neuralstyle\\weights.caffemodel");
+                    strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\goognet\\neuralstyle\\deploy.prototxt");
+                    strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\goognet\\neuralstyle\\weights.mycaffemodel");
                     break;
 
                 default:
@@ -118,24 +118,60 @@ namespace MyCaffe.test
             return new Tuple<string, string, string>(strName, strModelFile, strWtsFile);
         }
 
+        private SolverParameter.SolverType getSolverType(string strType)
+        {
+            switch (strType)
+            {
+                case "LBFGS":
+                    return SolverParameter.SolverType.LBFGS;
+
+                case "ADAM":
+                    return SolverParameter.SolverType.ADAM;
+
+                case "RMSPROP":
+                    return SolverParameter.SolverType.RMSPROP;
+
+                case "SGD":
+                    return SolverParameter.SolverType.SGD;
+
+                default:
+                    throw new Exception("The solver type '" + strType + "' is not supported at this time.");
+            }
+        }
+
+        private string getFileName(string strFile)
+        {
+            if (File.Exists(strFile + ".jpg"))
+                return strFile + ".jpg";
+
+            return strFile + ".png";
+        }
+
         /// <summary>
         /// The NeuralStyleTransfer test is based on implementing the Neural Style Transfer algorithm
         /// from https://github.com/ftokarev/caffe-neural-style/blob/master/neural-style.py
         /// using MyCaffe.
         /// </summary>
-        public void TestNeuralStyleTransfer(int nIterations, string strName)
+        public void TestNeuralStyleTransfer(string strStyleImg, string strContentImg, int nIterations, int nIntermediateOutput, string strResultDir, string strName, string strSolverType = "LBFGS", double dfLearningRate = 1.0, double dfTvLoss = 0)
         {
             CancelEvent evtCancel = new CancelEvent();
+            SolverParameter.SolverType solverType = getSolverType(strSolverType);
             Tuple<string, string, string> info = getModel(strName);
             string strModelName = info.Item1;
             string strModelFile = info.Item2;
             string strWeightFile = info.Item3;
             string strDataDir = getTestPath("\\MyCaffe\\test_data\\data\\images\\", true);
-            string strStyleImg = strDataDir + "style\\style.png";
-            string strContentImg = strDataDir + "content\\content.png";
-            string strResultDir = strDataDir + "result\\";
             byte[] rgWeights = null;
             string strModelDesc = "";
+
+            if (string.IsNullOrEmpty(strStyleImg))
+                strStyleImg = getFileName(strDataDir + "style\\style");
+
+            if (string.IsNullOrEmpty(strContentImg))
+                strContentImg = getFileName(strDataDir + "content\\content");
+
+            if (!string.IsNullOrEmpty(strResultDir))
+                strResultDir = strDataDir + "result\\";
 
             if (File.Exists(strWeightFile))
             {
@@ -153,7 +189,7 @@ namespace MyCaffe.test
                 strModelDesc = sr.ReadToEnd();
             }
 
-            NeuralStyleTransfer<T> ns = new NeuralStyleTransfer<T>(m_cuda, m_log, m_evtCancel, strModelName, strModelDesc, rgWeights, false);
+            NeuralStyleTransfer<T> ns = new NeuralStyleTransfer<T>(m_cuda, m_log, m_evtCancel, strModelName, strModelDesc, rgWeights, false, solverType, dfLearningRate);
 
             if (!Directory.Exists(strResultDir))
                 Directory.CreateDirectory(strResultDir);
@@ -161,7 +197,7 @@ namespace MyCaffe.test
             Bitmap bmpStyle = new Bitmap(strStyleImg);
             Bitmap bmpContent = new Bitmap(strContentImg);
 
-            Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, nIterations, strResultDir, 100);
+            Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, nIterations, strResultDir, nIntermediateOutput, dfTvLoss);
 
             string strResultFile = strResultDir + nIterations.ToString() + "_result.png";
 
