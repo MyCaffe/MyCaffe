@@ -15,7 +15,7 @@
       <Value Profile="(Default)">LBFGS</Value>
     </Setting>
     <Setting Name="NsIterations" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">1000</Value>
+      <Value Profile="(Default)">200</Value>
     </Setting>
     <Setting Name="NsLearningRate" Type="System.Double" Scope="User">
       <Value Profile="(Default)">1.5</Value>
@@ -24,7 +24,7 @@
       <Value Profile="(Default)" />
     </Setting>
     <Setting Name="NsIntermediateIterations" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">0</Value>
+      <Value Profile="(Default)">200</Value>
     </Setting>
     <Setting Name="NsTVLoss" Type="System.Double" Scope="User">
       <Value Profile="(Default)">0</Value>
@@ -34,6 +34,9 @@
     </Setting>
     <Setting Name="NsStyleImgFile" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="NsMaxImageSize" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">640</Value>
     </Setting>
   </Settings>
 </SettingsFile>

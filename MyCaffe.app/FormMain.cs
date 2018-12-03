@@ -1304,6 +1304,7 @@ namespace MyCaffe.app
                 string strResultPath = Properties.Settings.Default.NsResultPath;
                 int nIntermediateIterations = Properties.Settings.Default.NsIntermediateIterations;
                 double dfTvLoss = Properties.Settings.Default.NsTVLoss;
+                int nMaxImageSize = Properties.Settings.Default.NsMaxImageSize;
 
                 if (string.IsNullOrEmpty(strResultPath))
                 {
@@ -1316,7 +1317,7 @@ namespace MyCaffe.app
                     strResultPath = strPath;
                 }
 
-                FormNeuralStyle dlg = new FormNeuralStyle(strStyleFile, strContentFile, nIterations, strModelName, strSolverType, dfLr, strResultPath, nIntermediateIterations, dfTvLoss);
+                FormNeuralStyle dlg = new FormNeuralStyle(strStyleFile, strContentFile, nIterations, strModelName, strSolverType, dfLr, strResultPath, nIntermediateIterations, dfTvLoss, nMaxImageSize);
 
                 if (dlg.ShowDialog() != DialogResult.OK)
                     return;
@@ -1330,6 +1331,7 @@ namespace MyCaffe.app
                 Properties.Settings.Default.NsResultPath = dlg.Info.ResultPath;
                 Properties.Settings.Default.NsIntermediateIterations = dlg.Info.IntermediateIterations;
                 Properties.Settings.Default.NsTVLoss = dlg.Info.TVLoss;
+                Properties.Settings.Default.NsMaxImageSize = dlg.Info.MaxImageSize;
                 Properties.Settings.Default.Save();
 
                 m_log.WriteLine("starting neural style transfer...");
@@ -1358,7 +1360,7 @@ namespace MyCaffe.app
 
             test.Log.OnWriteLine += Log_OnWriteLine1;
             test.CancelEvent.AddCancelOverride(evtCancel);
-            test.TestNeuralStyleTransfer(info.StyleImageFile, info.ContentImageFile, info.Iterations, info.IntermediateIterations, info.ResultPath, info.ModelName, info.SolverType, info.LearningRate, info.TVLoss);
+            test.TestNeuralStyleTransfer(info.StyleImageFile, info.ContentImageFile, info.Iterations, info.IntermediateIterations, info.ResultPath, info.ModelName, info.SolverType, info.LearningRate, info.TVLoss, info.MaxImageSize);
 
             if (evtCancel.WaitOne(0))
                 test.Log.WriteLine("training aborted.");

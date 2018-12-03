@@ -73,7 +73,7 @@ namespace MyCaffe.app.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("1000")]
+        [global::System.Configuration.DefaultSettingValueAttribute("200")]
         public int NsIterations {
             get {
                 return ((int)(this["NsIterations"]));
@@ -109,7 +109,7 @@ namespace MyCaffe.app.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        [global::System.Configuration.DefaultSettingValueAttribute("200")]
         public int NsIntermediateIterations {
             get {
                 return ((int)(this["NsIntermediateIterations"]));
@@ -152,6 +152,18 @@ namespace MyCaffe.app.Properties {
             }
             set {
                 this["NsStyleImgFile"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("640")]
+        public int NsMaxImageSize {
+            get {
+                return ((int)(this["NsMaxImageSize"]));
+            }
+            set {
+                this["NsMaxImageSize"] = value;
             }
         }
     }

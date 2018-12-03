@@ -57,16 +57,18 @@
             this.lblGym = new System.Windows.Forms.Label();
             this.openFileDialogStyle = new System.Windows.Forms.OpenFileDialog();
             this.openFileDialogContent = new System.Windows.Forms.OpenFileDialog();
+            this.label8 = new System.Windows.Forms.Label();
+            this.edtMaxImageSize = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // btnCancel
             // 
             this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(476, 229);
+            this.btnCancel.Location = new System.Drawing.Point(476, 262);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(75, 23);
-            this.btnCancel.TabIndex = 16;
+            this.btnCancel.TabIndex = 24;
             this.btnCancel.Text = "Cancel";
             this.btnCancel.UseVisualStyleBackColor = true;
             // 
@@ -74,10 +76,10 @@
             // 
             this.btnOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.btnOK.Location = new System.Drawing.Point(395, 229);
+            this.btnOK.Location = new System.Drawing.Point(395, 262);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(75, 23);
-            this.btnOK.TabIndex = 15;
+            this.btnOK.TabIndex = 23;
             this.btnOK.Text = "OK";
             this.btnOK.UseVisualStyleBackColor = true;
             this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
@@ -197,30 +199,30 @@
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(27, 206);
+            this.label5.Location = new System.Drawing.Point(26, 239);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(65, 13);
-            this.label5.TabIndex = 12;
+            this.label5.TabIndex = 20;
             this.label5.Text = "Result Path:";
             // 
             // edtResultPath
             // 
             this.edtResultPath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.edtResultPath.Location = new System.Drawing.Point(98, 203);
+            this.edtResultPath.Location = new System.Drawing.Point(97, 236);
             this.edtResultPath.Name = "edtResultPath";
             this.edtResultPath.ReadOnly = true;
             this.edtResultPath.Size = new System.Drawing.Size(415, 20);
-            this.edtResultPath.TabIndex = 13;
+            this.edtResultPath.TabIndex = 21;
             this.edtResultPath.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // btnBrowseResultPath
             // 
             this.btnBrowseResultPath.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnBrowseResultPath.Location = new System.Drawing.Point(519, 203);
+            this.btnBrowseResultPath.Location = new System.Drawing.Point(518, 236);
             this.btnBrowseResultPath.Name = "btnBrowseResultPath";
             this.btnBrowseResultPath.Size = new System.Drawing.Size(32, 20);
-            this.btnBrowseResultPath.TabIndex = 14;
+            this.btnBrowseResultPath.TabIndex = 22;
             this.btnBrowseResultPath.Text = "...";
             this.btnBrowseResultPath.UseVisualStyleBackColor = true;
             this.btnBrowseResultPath.Click += new System.EventHandler(this.btnBrowse_Click);
@@ -256,29 +258,29 @@
             // 
             this.edtStyleImageFile.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.edtStyleImageFile.Location = new System.Drawing.Point(98, 151);
+            this.edtStyleImageFile.Location = new System.Drawing.Point(97, 184);
             this.edtStyleImageFile.Name = "edtStyleImageFile";
             this.edtStyleImageFile.ReadOnly = true;
             this.edtStyleImageFile.Size = new System.Drawing.Size(415, 20);
-            this.edtStyleImageFile.TabIndex = 13;
+            this.edtStyleImageFile.TabIndex = 15;
             this.edtStyleImageFile.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(27, 154);
+            this.label6.Location = new System.Drawing.Point(26, 187);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(65, 13);
-            this.label6.TabIndex = 12;
+            this.label6.TabIndex = 14;
             this.label6.Text = "Style Image:";
             // 
             // btnBrowseStyle
             // 
             this.btnBrowseStyle.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnBrowseStyle.Location = new System.Drawing.Point(519, 151);
+            this.btnBrowseStyle.Location = new System.Drawing.Point(518, 184);
             this.btnBrowseStyle.Name = "btnBrowseStyle";
             this.btnBrowseStyle.Size = new System.Drawing.Size(32, 20);
-            this.btnBrowseStyle.TabIndex = 14;
+            this.btnBrowseStyle.TabIndex = 16;
             this.btnBrowseStyle.Text = "...";
             this.btnBrowseStyle.UseVisualStyleBackColor = true;
             this.btnBrowseStyle.Click += new System.EventHandler(this.btnBrowseStyle_Click);
@@ -287,29 +289,29 @@
             // 
             this.edtContentImageFile.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.edtContentImageFile.Location = new System.Drawing.Point(98, 177);
+            this.edtContentImageFile.Location = new System.Drawing.Point(97, 210);
             this.edtContentImageFile.Name = "edtContentImageFile";
             this.edtContentImageFile.ReadOnly = true;
             this.edtContentImageFile.Size = new System.Drawing.Size(415, 20);
-            this.edtContentImageFile.TabIndex = 13;
+            this.edtContentImageFile.TabIndex = 18;
             this.edtContentImageFile.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(13, 180);
+            this.label7.Location = new System.Drawing.Point(12, 213);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(79, 13);
-            this.label7.TabIndex = 12;
+            this.label7.TabIndex = 17;
             this.label7.Text = "Content Image:";
             // 
             // btnBrowseContent
             // 
             this.btnBrowseContent.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnBrowseContent.Location = new System.Drawing.Point(519, 177);
+            this.btnBrowseContent.Location = new System.Drawing.Point(518, 210);
             this.btnBrowseContent.Name = "btnBrowseContent";
             this.btnBrowseContent.Size = new System.Drawing.Size(32, 20);
-            this.btnBrowseContent.TabIndex = 14;
+            this.btnBrowseContent.TabIndex = 19;
             this.btnBrowseContent.Text = "...";
             this.btnBrowseContent.UseVisualStyleBackColor = true;
             this.btnBrowseContent.Click += new System.EventHandler(this.btnBrowseContent_Click);
@@ -324,7 +326,7 @@
             this.lblGymName.Location = new System.Drawing.Point(223, 9);
             this.lblGymName.Name = "lblGymName";
             this.lblGymName.Size = new System.Drawing.Size(340, 27);
-            this.lblGymName.TabIndex = 17;
+            this.lblGymName.TabIndex = 26;
             // 
             // lblGym
             // 
@@ -334,7 +336,7 @@
             this.lblGym.Location = new System.Drawing.Point(0, 9);
             this.lblGym.Name = "lblGym";
             this.lblGym.Size = new System.Drawing.Size(220, 27);
-            this.lblGym.TabIndex = 18;
+            this.lblGym.TabIndex = 25;
             this.lblGym.Text = "Neural Style Transfer";
             // 
             // openFileDialogStyle
@@ -349,13 +351,33 @@
             this.openFileDialogContent.Filter = "Image Files (*.png;*.jpg;*.bmp)|*.png;*.jpg;*.bmp||";
             this.openFileDialogContent.Title = "Select the Content image";
             // 
+            // label8
+            // 
+            this.label8.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.label8.AutoSize = true;
+            this.label8.Location = new System.Drawing.Point(357, 154);
+            this.label8.Name = "label8";
+            this.label8.Size = new System.Drawing.Size(82, 13);
+            this.label8.TabIndex = 12;
+            this.label8.Text = "Max image size:";
+            // 
+            // edtMaxImageSize
+            // 
+            this.edtMaxImageSize.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.edtMaxImageSize.Location = new System.Drawing.Point(445, 151);
+            this.edtMaxImageSize.Name = "edtMaxImageSize";
+            this.edtMaxImageSize.Size = new System.Drawing.Size(67, 20);
+            this.edtMaxImageSize.TabIndex = 13;
+            this.edtMaxImageSize.Text = "640";
+            this.edtMaxImageSize.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            // 
             // FormNeuralStyle
             // 
             this.AcceptButton = this.btnOK;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(562, 264);
+            this.ClientSize = new System.Drawing.Size(562, 297);
             this.Controls.Add(this.lblGymName);
             this.Controls.Add(this.lblGym);
             this.Controls.Add(this.chkEnableTvLoss);
@@ -370,8 +392,10 @@
             this.Controls.Add(this.edtResultPath);
             this.Controls.Add(this.edtIntermediateIterations);
             this.Controls.Add(this.chkIntermediateOutput);
+            this.Controls.Add(this.edtMaxImageSize);
             this.Controls.Add(this.edtIterations);
             this.Controls.Add(this.edtTvLoss);
+            this.Controls.Add(this.label8);
             this.Controls.Add(this.edtLearningRate);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.cmbSolver);
@@ -425,5 +449,7 @@
         private System.Windows.Forms.Label lblGym;
         private System.Windows.Forms.OpenFileDialog openFileDialogStyle;
         private System.Windows.Forms.OpenFileDialog openFileDialogContent;
+        private System.Windows.Forms.Label label8;
+        private System.Windows.Forms.TextBox edtMaxImageSize;
     }
 }

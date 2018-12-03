@@ -13,11 +13,11 @@ namespace MyCaffe.app
 {
     public partial class FormNeuralStyle : Form
     {
-        NeuralStyleInfo m_info = new NeuralStyleInfo(null, null, 1000, "vgg19", "LBFGS", 1.0, null, 0, 0);
+        NeuralStyleInfo m_info = new NeuralStyleInfo(null, null, 1000, "vgg19", "LBFGS", 1.0, null, 0, 0, 640);
 
-        public FormNeuralStyle(string strStyleFile, string strContentFile, int nIterations, string strModelName, string strSolverType, double dfLr, string strResultPath, int nIntermediateIterations, double dfTvLoss)
+        public FormNeuralStyle(string strStyleFile, string strContentFile, int nIterations, string strModelName, string strSolverType, double dfLr, string strResultPath, int nIntermediateIterations, double dfTvLoss, int nMaxImageSize)
         {
-            m_info = new NeuralStyleInfo(strStyleFile, strContentFile, nIterations, strModelName, strSolverType, dfLr, strResultPath, nIntermediateIterations, dfTvLoss);
+            m_info = new NeuralStyleInfo(strStyleFile, strContentFile, nIterations, strModelName, strSolverType, dfLr, strResultPath, nIntermediateIterations, dfTvLoss, nMaxImageSize);
             InitializeComponent();
         }
 
@@ -39,6 +39,7 @@ namespace MyCaffe.app
 
             edtIterations.Text = m_info.Iterations.ToString();
             edtLearningRate.Text = m_info.LearningRate.ToString();
+            edtMaxImageSize.Text = m_info.MaxImageSize.ToString();
 
             if (m_info.IntermediateIterations == 0)
             {
@@ -64,6 +65,7 @@ namespace MyCaffe.app
             int nIntermediateIterations = 0;
             double dfLr;
             double dfTvLoss = 0;
+            int nMaxImageSize = 640;
 
             if (!int.TryParse(edtIterations.Text, out nIterations) || nIterations < 1)
             {
@@ -78,6 +80,14 @@ namespace MyCaffe.app
                 MessageBox.Show("The 'Learning Rate' value is invalid - enter a positive real value greater than one.", "Invalid Learning Rate", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 DialogResult = DialogResult.None;
                 edtLearningRate.Focus();
+                return;
+            }
+
+            if (!int.TryParse(edtMaxImageSize.Text, out nMaxImageSize) || nMaxImageSize < 64 || nMaxImageSize > 2048)
+            {
+                MessageBox.Show("The 'Max Image Size' value is invalid - enter a positive integer within the range [64, 2048].", "Invalid Max Image Size", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                DialogResult = DialogResult.None;
+                edtMaxImageSize.Focus();
                 return;
             }
 
@@ -127,7 +137,7 @@ namespace MyCaffe.app
                 return;
             }
 
-            m_info = new NeuralStyleInfo(edtStyleImageFile.Text, edtContentImageFile.Text, nIterations, strModel.ToLower(), strSolverType, dfLr, edtResultPath.Text, nIntermediateIterations, dfTvLoss);
+            m_info = new NeuralStyleInfo(edtStyleImageFile.Text, edtContentImageFile.Text, nIterations, strModel.ToLower(), strSolverType, dfLr, edtResultPath.Text, nIntermediateIterations, dfTvLoss, nMaxImageSize);
         }
 
         private void cmbSolver_SelectedIndexChanged(object sender, EventArgs e)
@@ -216,8 +226,9 @@ namespace MyCaffe.app
         double m_dfTVLoss = 0;
         string m_strContentImg;
         string m_strStyleImg;
+        int m_nMaxImageSize = 640;
 
-        public NeuralStyleInfo(string strStyleImg, string strContentImg, int nIterations, string strModelName, string strSolverType, double dfLearningRate, string strResultPath, int nIntermediateIterations, double dfTvLoss)
+        public NeuralStyleInfo(string strStyleImg, string strContentImg, int nIterations, string strModelName, string strSolverType, double dfLearningRate, string strResultPath, int nIntermediateIterations, double dfTvLoss, int nMaxImageSize)
         {
             m_strStyleImg = strStyleImg;
             m_strContentImg = strContentImg;
@@ -228,6 +239,7 @@ namespace MyCaffe.app
             m_dfLearningRate = dfLearningRate;
             m_strResultPath = strResultPath;
             m_nIntermediateIterations = nIntermediateIterations;
+            m_nMaxImageSize = nMaxImageSize;
         }
 
         public string StyleImageFile
@@ -273,6 +285,11 @@ namespace MyCaffe.app
         public double TVLoss
         {
             get { return m_dfTVLoss; }
+        }
+
+        public int MaxImageSize
+        {
+            get { return m_nMaxImageSize; }
         }
     }
 }
