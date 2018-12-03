@@ -100,6 +100,12 @@
       <DependentUpon>FormMnist.cs</DependentUpon>
     </Compile>
     <Compile Include="CiFar10DataLoader.cs" />
+    <Compile Include="FormNeuralStyle.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormNeuralStyle.Designer.cs">
+      <DependentUpon>FormNeuralStyle.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormSqlInstances.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -149,6 +155,9 @@
     <EmbeddedResource Include="FormMnist.resx">
       <DependentUpon>FormMnist.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="FormNeuralStyle.resx">
+      <DependentUpon>FormNeuralStyle.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="FormSqlInstances.resx">
       <DependentUpon>FormSqlInstances.cs</DependentUpon>
     </EmbeddedResource>
@@ -185,7 +194,9 @@
     <None Include="Resources\resnet56_cifar_train_val.prototxt" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\alexnet_cifar_solver.prototxt" />

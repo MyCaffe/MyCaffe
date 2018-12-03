@@ -1295,9 +1295,46 @@ namespace MyCaffe.app
         {
             if (startNeuralStyleTransferToolStripMenuItem.Text.Contains("Start"))
             {
+                string strStyleFile = Properties.Settings.Default.NsStyleImgFile;
+                string strContentFile = Properties.Settings.Default.NsContentImgFile;
+                string strModelName = Properties.Settings.Default.NsModelName;
+                string strSolverType = Properties.Settings.Default.NsSolverType;
+                int nIterations = Properties.Settings.Default.NsIterations;
+                double dfLr = Properties.Settings.Default.NsLearningRate;
+                string strResultPath = Properties.Settings.Default.NsResultPath;
+                int nIntermediateIterations = Properties.Settings.Default.NsIntermediateIterations;
+                double dfTvLoss = Properties.Settings.Default.NsTVLoss;
+
+                if (string.IsNullOrEmpty(strResultPath))
+                {
+                    string strPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                    strPath += "\\MyCaffe\\test_data\\data\\images\\result";
+
+                    if (!Directory.Exists(strPath))
+                        Directory.CreateDirectory(strPath);
+
+                    strResultPath = strPath;
+                }
+
+                FormNeuralStyle dlg = new FormNeuralStyle(strStyleFile, strContentFile, nIterations, strModelName, strSolverType, dfLr, strResultPath, nIntermediateIterations, dfTvLoss);
+
+                if (dlg.ShowDialog() != DialogResult.OK)
+                    return;
+
+                Properties.Settings.Default.NsStyleImgFile = dlg.Info.StyleImageFile;
+                Properties.Settings.Default.NsContentImgFile = dlg.Info.ContentImageFile;
+                Properties.Settings.Default.NsModelName = dlg.Info.ModelName;
+                Properties.Settings.Default.NsSolverType = dlg.Info.SolverType;
+                Properties.Settings.Default.NsIterations = dlg.Info.Iterations;
+                Properties.Settings.Default.NsLearningRate = dlg.Info.LearningRate;
+                Properties.Settings.Default.NsResultPath = dlg.Info.ResultPath;
+                Properties.Settings.Default.NsIntermediateIterations = dlg.Info.IntermediateIterations;
+                Properties.Settings.Default.NsTVLoss = dlg.Info.TVLoss;
+                Properties.Settings.Default.Save();
+
                 m_log.WriteLine("starting neural style transfer...");
                 m_evtCancelNs.Reset();
-                m_nsTask = Task.Factory.StartNew(new Action<object>(nsThread), new Tuple<CancelEvent>(m_evtCancelNs));
+                m_nsTask = Task.Factory.StartNew(new Action<object>(nsThread), new Tuple<CancelEvent, NeuralStyleInfo>(m_evtCancelNs, dlg.Info));
                 startCartPoleTrainerToolStripMenuItem.Enabled = false;
                 startAtariTrainerToolStripMenuItem.Enabled = false;
                 startNeuralStyleTransferToolStripMenuItem.Text = "Stop Neural Style Transfer";
@@ -1314,13 +1351,14 @@ namespace MyCaffe.app
 
         private void nsThread(object obj)
         {
-            Tuple<CancelEvent> arg = obj as Tuple<CancelEvent>;
+            Tuple<CancelEvent, NeuralStyleInfo> arg = obj as Tuple<CancelEvent, NeuralStyleInfo>;
             CancelEvent evtCancel = arg.Item1;
+            NeuralStyleInfo info = arg.Item2;
             NeuralStyleTransferTest<float> test = new NeuralStyleTransferTest<float>("Neural Style Test", getGpu(), EngineParameter.Engine.DEFAULT);
 
             test.Log.OnWriteLine += Log_OnWriteLine1;
             test.CancelEvent.AddCancelOverride(evtCancel);
-            test.TestNeuralStyleTransfer(10000, "vgg19");
+            test.TestNeuralStyleTransfer(info.StyleImageFile, info.ContentImageFile, info.Iterations, info.IntermediateIterations, info.ResultPath, info.ModelName, info.SolverType, info.LearningRate, info.TVLoss);
 
             if (evtCancel.WaitOne(0))
                 test.Log.WriteLine("training aborted.");
