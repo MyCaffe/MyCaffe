@@ -342,6 +342,15 @@ namespace MyCaffe.extras
                 m_dfTVLossWeight = dfTvLoss;
                 m_nIterations = nIterations;
 
+                if (bmpContent.Width > 640 ||
+                    bmpContent.Height > 640)
+                {
+                    double dfAspectRatio = (double)bmpContent.Width / (double)bmpContent.Height;
+                    int nWidth = 640;
+                    int nHeight = (int)(640 * dfAspectRatio);
+                    bmpContent = ImageTools.ResizeImage(bmpContent, nWidth, nHeight);
+                }
+
                 if (bmpStyle.Width != bmpContent.Width ||
                     bmpStyle.Height != bmpContent.Height)
                     bmpStyle = ImageTools.ResizeImage(bmpStyle, bmpContent.Width, bmpContent.Height);
@@ -615,7 +624,7 @@ namespace MyCaffe.extras
 
                     solver.Step(nIntermediateOutput, TRAIN_STEP.NONE, true, true, true);
 
-                    if (strResultDir != null)
+                    if (strResultDir != null && nIntermediateOutput > 0)
                     {
                         Bitmap bmpTemp = save(solver.net);
 
