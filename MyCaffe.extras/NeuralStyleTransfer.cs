@@ -27,12 +27,12 @@ namespace MyCaffe.extras
         CudaDnn<T> m_cuda;
         Log m_log;
         int m_nIterations = 1000;
-        int m_nDisplayEvery = 100;
-        double m_dfTVLossWeight = 0;            // 0.01 to smooth out result -or- 0 to disable.
-        double m_dfStyleDataScale1 = 0.0001;    // 0.0001
-        double m_dfStyleDataScale2 = 1;         // 1
-        double m_dfContentDataScale = 0.0001;   // 0.0001
-        double m_dfContentLossScale = 0.001;    // 0.0001 to 1 (larger make image granier)
+        int m_nDisplayEvery = 100;                // vgg19 settings
+        double m_dfTVLossWeight = 0;              // 0.01 to smooth out result -or- 0 to disable.
+        double m_dfStyleDataScale1 = 0.0001;      // 0.0001
+        double m_dfStyleDataScale2 = 1;           // 1
+        double m_dfContentDataScale = 0.0001;     // 0.0001
+        double m_dfContentLossScale = 0.0001;     // 0.0001 to 1 (larger make image granier)
         CancelEvent m_evtCancel;
         DataTransformer<T> m_transformer = null;
         TransformationParameter m_transformationParam;
@@ -42,6 +42,8 @@ namespace MyCaffe.extras
         Dictionary<string, Dictionary<string, double>> m_rgLayers = new Dictionary<string, Dictionary<string, double>>();
         List<string> m_rgstrUsedLayers = new List<string>();
         List<double> m_rgMeanValues = new List<double>();
+        SolverParameter.SolverType m_solverType = SolverParameter.SolverType.LBFGS;
+        double m_dfLearningRate = 1.0;
 
         /// <summary>
         /// The constructor.
@@ -53,12 +55,16 @@ namespace MyCaffe.extras
         /// <param name="strModel">Specifies the network model to use.</param>
         /// <param name="rgWeights">Optionally, specifies the weights to use (or <i>null</i> to ignore).</param>
         /// <param name="bCaffeModel">Specifies whether or not the weights are in the caffe (<i>true</i>) or mycaffe (<i>false</i>) format.</param>
-        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, string strModelType, string strModel, byte[] rgWeights, bool bCaffeModel)
+        /// <param name="solverType">Optionally, specifies the solver type to use (default = LBFGS).</param>
+        /// <param name="dfLearningRate">Optionally, specifies the solver learning rate (default = 1.0).</param>
+        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, string strModelType, string strModel, byte[] rgWeights, bool bCaffeModel, SolverParameter.SolverType solverType = SolverParameter.SolverType.LBFGS, double dfLearningRate = 1.0)
         {
             m_cuda = cuda;
             m_log = log;
             m_evtCancel = evtCancel;
             m_rgWeights = rgWeights;
+            m_solverType = solverType;
+            m_dfLearningRate = dfLearningRate;
 
             if (m_evtCancel != null)
                 m_evtCancel.Reset();
@@ -320,8 +326,9 @@ namespace MyCaffe.extras
         /// <param name="nIterations">Specifies the number of training iterations.</param>
         /// <param name="strResultDir">Optionally, specifies an output directory where intermediate images are stored.</param>
         /// <param name="nIntermediateOutput">Optionally, specifies how often to output an intermediate image.</param>
+        /// <param name="dfTvLoss">Optionally, specifies the TV-Loss weight for smoothing (default = 0, which disables this loss).</param>
         /// <returns>The resulting image is returned.</returns>
-        public Bitmap Process(Bitmap bmpStyle, Bitmap bmpContent, int nIterations, string strResultDir = null, int nIntermediateOutput = -1)
+        public Bitmap Process(Bitmap bmpStyle, Bitmap bmpContent, int nIterations, string strResultDir = null, int nIntermediateOutput = -1, double dfTvLoss = 0)
         {
             Solver<T> solver = null;
             Net<T> net = null;
@@ -331,13 +338,17 @@ namespace MyCaffe.extras
 
             try
             {
+                m_dfTVLossWeight = dfTvLoss;
                 m_nIterations = nIterations;
 
                 if (bmpStyle.Width != bmpContent.Width ||
                     bmpStyle.Height != bmpContent.Height)
                     bmpStyle = ImageTools.ResizeImage(bmpStyle, bmpContent.Width, bmpContent.Height);
 
+                m_log.WriteLine("Creating input network...");
+                m_log.Enable = false;
                 net = new Net<T>(m_cuda, m_log, m_param, m_evtCancel, null, Phase.TEST);
+                m_log.Enable = true;
 
                 if (m_rgWeights != null)
                     net.LoadWeights(m_rgWeights, m_persist);
@@ -532,8 +543,18 @@ namespace MyCaffe.extras
                 solver_param.test_iter.Clear();
                 solver_param.test_interval = 0;
                 solver_param.test_initialization = false;
+                solver_param.base_lr = m_dfLearningRate;
+                solver_param.type = m_solverType;
 
-                solver = new LBFGSSolver<T>(m_cuda, m_log, solver_param, m_evtCancel, null, null, null, m_persist);
+                m_log.WriteLine("Creating " + m_solverType.ToString() + " solver with learning rate = " + m_dfLearningRate.ToString() + "...");
+                m_log.Enable = false;
+
+                if (m_solverType == SolverParameter.SolverType.LBFGS)
+                    solver = new LBFGSSolver<T>(m_cuda, m_log, solver_param, m_evtCancel, null, null, null, m_persist);
+                else
+                    solver = Solver<T>.Create(m_cuda, m_log, solver_param, m_evtCancel, null, null, null, m_persist);
+
+                m_log.Enable = true;
                 solver.OnSnapshot += Solver_OnSnapshot;
                 solver.OnTrainingIteration += Solver_OnTrainingIteration;
 
