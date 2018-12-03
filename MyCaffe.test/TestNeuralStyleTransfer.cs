@@ -31,7 +31,7 @@ namespace MyCaffe.test
                 foreach (INeuralStyleTransferTest t in test.Tests)
                 {
                     if (t.DataType == DataType.DOUBLE)
-                        t.TestNeuralStyleTransfer(null, null, 1000, 100, null, "vgg19", "LBFGS", 1.0);
+                        t.TestNeuralStyleTransfer(null, null, 100, 100, null, "vgg19", "LBFGS", 1.5);
                 }
             }
             finally
@@ -175,12 +175,12 @@ namespace MyCaffe.test
             string strModelDesc = "";
 
             if (string.IsNullOrEmpty(strStyleImg))
-                strStyleImg = getFileName(strDataDir + "style\\style");
+                strStyleImg = getFileName(strDataDir + "style\\starry_night");
 
             if (string.IsNullOrEmpty(strContentImg))
-                strContentImg = getFileName(strDataDir + "content\\content");
+                strContentImg = getFileName(strDataDir + "content\\johannesburg");
 
-            if (!string.IsNullOrEmpty(strResultDir))
+            if (string.IsNullOrEmpty(strResultDir))
                 strResultDir = strDataDir + "result\\";
 
             if (File.Exists(strWeightFile))
