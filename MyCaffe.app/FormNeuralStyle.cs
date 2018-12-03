@@ -52,6 +52,8 @@ namespace MyCaffe.app
             }
 
             edtResultPath.Text = m_info.ResultPath;
+            edtStyleImageFile.Text = m_info.StyleImageFile;
+            edtContentImageFile.Text = m_info.ContentImageFile;
         }
 
         private void btnOK_Click(object sender, EventArgs e)
@@ -176,12 +178,28 @@ namespace MyCaffe.app
 
         private void btnBrowseStyle_Click(object sender, EventArgs e)
         {
+            string strPath = "";
+
+            if (edtStyleImageFile.Text.Length > 0)
+                strPath = Path.GetDirectoryName(edtStyleImageFile.Text);
+
+            if (Directory.Exists(strPath))
+                openFileDialogStyle.InitialDirectory = strPath;
+
             if (openFileDialogStyle.ShowDialog() == DialogResult.OK)
                 edtStyleImageFile.Text = openFileDialogStyle.FileName;
         }
 
         private void btnBrowseContent_Click(object sender, EventArgs e)
         {
+            string strPath = "";
+
+            if (edtContentImageFile.Text.Length > 0)
+                strPath = Path.GetDirectoryName(edtContentImageFile.Text);
+
+            if (Directory.Exists(strPath))
+                openFileDialogContent.InitialDirectory = strPath;
+
             if (openFileDialogContent.ShowDialog() == DialogResult.OK)
                 edtContentImageFile.Text = openFileDialogContent.FileName;
         }

@@ -340,13 +340,13 @@
             // openFileDialogStyle
             // 
             this.openFileDialogStyle.DefaultExt = "png";
-            this.openFileDialogStyle.Filter = "Image Files (*.png)|*.png||";
+            this.openFileDialogStyle.Filter = "Image Files (*.png;*.jpg;*.bmp)|*.png;*.jpg;*.bmp||";
             this.openFileDialogStyle.Title = "Select the Style image";
             // 
             // openFileDialogContent
             // 
             this.openFileDialogContent.DefaultExt = "png";
-            this.openFileDialogContent.Filter = "Image Files (*.png)|*.png||";
+            this.openFileDialogContent.Filter = "Image Files (*.png;*.jpg;*.bmp)|*.png;*.jpg;*.bmp||";
             this.openFileDialogContent.Title = "Select the Content image";
             // 
             // FormNeuralStyle
