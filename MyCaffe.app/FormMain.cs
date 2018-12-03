@@ -55,6 +55,7 @@ namespace MyCaffe.app
         TestingProgressGet m_progress = new TestingProgressGet();
 
         delegate void fnSetStatus(string strMsg, STATUS status, bool bBreath);
+        delegate void fnNsDone();
 
         enum STATUS
         {
@@ -1351,6 +1352,13 @@ namespace MyCaffe.app
             }
         }
 
+        private void nsDone()
+        {
+            startCartPoleTrainerToolStripMenuItem.Enabled = true;
+            startAtariTrainerToolStripMenuItem.Enabled = true;
+            startNeuralStyleTransferToolStripMenuItem.Text = "Start Neural Style Transfer";
+        }
+
         private void nsThread(object obj)
         {
             Tuple<CancelEvent, NeuralStyleInfo> arg = obj as Tuple<CancelEvent, NeuralStyleInfo>;
@@ -1369,6 +1377,8 @@ namespace MyCaffe.app
 
             test.Log.OnWriteLine -= log_OnWriteLine1;
             test.Dispose();
+
+            this.Invoke(new fnNsDone(nsDone));
         }
     }
 }
