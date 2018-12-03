@@ -208,7 +208,10 @@ namespace MyCaffe.test
             Bitmap bmpContent = new Bitmap(strContentImg);
             Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, nIterations, strResultDir, nIntermediateOutput, dfTvLoss, nMaxSize);
 
-            string strResultFile = strResultDir + nIterations.ToString() + "_result.png";
+            string strContent = Path.GetFileNameWithoutExtension(strContentImg);
+            string strStyle = Path.GetFileNameWithoutExtension(strStyleImg);
+
+            string strResultFile = strResultDir + "\\" + nIterations.ToString() + "_" + strContent + "_" + strStyle + ".png";
 
             if (File.Exists(strResultFile))
                 File.Delete(strResultFile);
