@@ -77,6 +77,7 @@ build/
 *.scc
 *.dll
 *.caffemodel
+*.mycaffemodel
 
 # OS generated files #
 .DS_Store*
