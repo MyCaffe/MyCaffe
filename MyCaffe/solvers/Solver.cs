@@ -158,7 +158,10 @@ namespace MyCaffe.solvers
             m_evtCancel = evtCancel;
             m_evtForceSnapshot = evtForceSnapshot;
             m_evtForceTest = evtForceTest;
-            m_log.Enable = is_root_solver;
+
+            if (m_log.IsEnabled)
+                m_log.Enable = is_root_solver;
+
             m_db = imgDb;
             m_persist = persist;
             m_nSolverCount = nSolverCount;
