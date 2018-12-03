@@ -102,13 +102,13 @@ namespace MyCaffe.test
             switch (strName)
             {
                 case "vgg19":
-                    strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\neuralstyle\\deploy.prototxt");
-                    strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\neuralstyle\\weights.caffemodel");
+                    strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\vgg19\\neuralstyle\\deploy.prototxt");
+                    strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\vgg19\\neuralstyle\\weights.caffemodel");
                     break;
 
                 case "googlenet":
-                    strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\goognet\\neuralstyle\\deploy.prototxt");
-                    strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\goognet\\neuralstyle\\weights.mycaffemodel");
+                    strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\googlenet\\neuralstyle\\deploy.prototxt");
+                    strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\googlenet\\neuralstyle\\weights.mycaffemodel");
                     break;
 
                 default:
