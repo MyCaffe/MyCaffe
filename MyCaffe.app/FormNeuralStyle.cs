@@ -213,6 +213,17 @@ namespace MyCaffe.app
             if (openFileDialogContent.ShowDialog() == DialogResult.OK)
                 edtContentImageFile.Text = openFileDialogContent.FileName;
         }
+
+        private void btnDefaults_Click(object sender, EventArgs e)
+        {
+            cmbModel.SelectedIndex = 0;
+            cmbSolver.SelectedIndex = 0;
+            chkEnableTvLoss.Checked = false;
+            edtIterations.Text = "200";
+            chkIntermediateOutput.Checked = true;
+            edtIntermediateIterations.Text = "200";
+            edtMaxImageSize.Text = "640";
+        }
     }
 
     public class NeuralStyleInfo

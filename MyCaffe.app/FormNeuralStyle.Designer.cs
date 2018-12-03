@@ -59,6 +59,7 @@
             this.openFileDialogContent = new System.Windows.Forms.OpenFileDialog();
             this.label8 = new System.Windows.Forms.Label();
             this.edtMaxImageSize = new System.Windows.Forms.TextBox();
+            this.btnDefaults = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnCancel
@@ -371,6 +372,17 @@
             this.edtMaxImageSize.Text = "640";
             this.edtMaxImageSize.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
+            // btnDefaults
+            // 
+            this.btnDefaults.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btnDefaults.Location = new System.Drawing.Point(97, 262);
+            this.btnDefaults.Name = "btnDefaults";
+            this.btnDefaults.Size = new System.Drawing.Size(75, 23);
+            this.btnDefaults.TabIndex = 27;
+            this.btnDefaults.Text = "Defaults";
+            this.btnDefaults.UseVisualStyleBackColor = true;
+            this.btnDefaults.Click += new System.EventHandler(this.btnDefaults_Click);
+            // 
             // FormNeuralStyle
             // 
             this.AcceptButton = this.btnOK;
@@ -378,6 +390,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
             this.ClientSize = new System.Drawing.Size(562, 297);
+            this.Controls.Add(this.btnDefaults);
             this.Controls.Add(this.lblGymName);
             this.Controls.Add(this.lblGym);
             this.Controls.Add(this.chkEnableTvLoss);
@@ -451,5 +464,6 @@
         private System.Windows.Forms.OpenFileDialog openFileDialogContent;
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.TextBox edtMaxImageSize;
+        private System.Windows.Forms.Button btnDefaults;
     }
 }
