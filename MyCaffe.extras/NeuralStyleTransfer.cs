@@ -20,6 +20,7 @@ namespace MyCaffe.extras
     /// <remarks>
     /// @see [minFunc](https://www.cs.ubc.ca/~schmidtm/Software/minFunc.html) by Marc Schmidt, 2005
     /// @see [ftokarev/caffe-neural-style Github](https://github.com/ftokarev/caffe-neural-style) by ftokarev, 2017. 
+    /// @see [fzliu/style-transfer Github](https://github.com/fzliu/style-transfer/blob/master/style.py) by Frank Liu and Dylan Paiton, 2015.
     /// @see [A Neural Algorithm of Artistic Style](https://arxiv.org/abs/1508.06576) by Leon A. Gatys, Alexander S. Ecker, and Matthias Bethge, 2015 
     /// </remarks>
     public class NeuralStyleTransfer<T> : IDisposable
