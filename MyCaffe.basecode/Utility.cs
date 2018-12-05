@@ -596,6 +596,28 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Convert an array to a string.
+        /// </summary>
+        /// <typeparam name="T">Specifies the base type of the array.</typeparam>
+        /// <param name="rg">Specifies the array.</param>
+        /// <returns>The string representation of the array is returned.</returns>
+        public static string ToString<T>(List<T> rg)
+        {
+            string strOut = "{";
+
+            for (int i = 0; i < rg.Count; i++)
+            {
+                strOut += rg[i].ToString();
+                strOut += ",";
+            }
+
+            strOut = strOut.TrimEnd(',');
+            strOut += "}";
+
+            return strOut;
+        }
+
+        /// <summary>
         /// Parses a string into a number, or if the string does not contain a number returns 0.
         /// </summary>
         /// <param name="str">Specifies the string to parse.</param>
