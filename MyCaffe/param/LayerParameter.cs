@@ -2770,7 +2770,12 @@ namespace MyCaffe.param
         /// <returns></returns>
         public override string ToString()
         {
-            return m_strName + " (" + m_type.ToString() + ")";
+            string strOut = m_strName + " (" + m_type.ToString() + ")";
+
+            strOut += " btm = " + Utility.ToString(m_rgstrBottom);
+            strOut += " top = " + Utility.ToString(m_rgstrTop);
+
+            return strOut;
         }
     }
 }
