@@ -773,8 +773,9 @@ namespace MyCaffe.extras
         /// <param name="nIterations">Specifies the number of iterations to run.</param>
         /// <param name="nIntermediateIterations">Specifies how often to output intermediate images if any (a value of 0 disables intermediate output).</param>
         /// <param name="rgWts">Specifies the layers to use and their weights for style and content.</param>
+        /// <param name="rgGpuID">Specifies the GPUIDs on which to run the Neural Style.</param>
         /// <returns>The configuration string is returned.</returns>
-        public static string CreateConfigurationString(string strSolver, double dfLearningRate, int nMaxImageSize, int nIterations, int nIntermediateIterations, Dictionary<string, Tuple<double, double>> rgWts)
+        public static string CreateConfigurationString(string strSolver, double dfLearningRate, int nMaxImageSize, int nIterations, int nIntermediateIterations, Dictionary<string, Tuple<double, double>> rgWts, List<int> rgGpuID)
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
@@ -797,6 +798,14 @@ namespace MyCaffe.extras
 
             rgChildren.Add(rgLayerWt);
 
+            RawProtoCollection gpus = new RawProtoCollection();
+            foreach (int nGpuID in rgGpuID)
+            {
+                gpus.Add("gpuid", nGpuID.ToString());
+            }
+
+            rgChildren.Add(gpus);
+
             RawProto proto = new RawProto("root", "", rgChildren);
 
             return proto.ToString();
@@ -811,8 +820,9 @@ namespace MyCaffe.extras
         /// <param name="nMaxImageSize">Returns the maximum image size.</param>
         /// <param name="nIterations">Returns the number of iterations to run.</param>
         /// <param name="nIntermediateIterations">Returns how often to output intermediate images if any (a value of 0 disables intermediate output).</param>
+        /// <param name="rgGpuID">Returns the list of GPUIDs on which to run the Neural Style.</param>
         /// <returns>Returns a list of layers along with their style and content weights.</returns>
-        public static Dictionary<string, Tuple<double, double>> ParseConfigurationString(string strConfig, out string strSolver, out double dfLearningRate, out int nMaxImageSize, out int nIterations, out int nIntermediateIterations)
+        public static Dictionary<string, Tuple<double, double>> ParseConfigurationString(string strConfig, out string strSolver, out double dfLearningRate, out int nMaxImageSize, out int nIterations, out int nIntermediateIterations, out List<int> rgGpuID)
         {
             RawProto proto = RawProto.Parse(strConfig);
             string strVal;
@@ -854,6 +864,13 @@ namespace MyCaffe.extras
                     dfCWt = double.Parse(strVal);
 
                 rgLayers.Add(strLayer, new Tuple<double, double>(dfSWt, dfCWt));
+            }
+
+            rgGpuID = new List<int>();
+            RawProtoCollection gpus = proto.FindChildren("gpuid");
+            foreach (RawProto gpuProto in gpus)
+            {
+                rgGpuID.Add(int.Parse(gpuProto.Value));
             }
 
             return rgLayers;
