@@ -47,6 +47,7 @@ namespace MyCaffe.extras
         List<double> m_rgMeanValues = new List<double>();
         SolverParameter.SolverType m_solverType = SolverParameter.SolverType.LBFGS;
         double m_dfLearningRate = 1.0;
+        int m_nDefaultMaxImageSize = 840;
 
         /// <summary>
         /// The constructor.
@@ -77,6 +78,60 @@ namespace MyCaffe.extras
 
             add_input_layer(m_param);
             m_rgstrUsedLayers = load_layers(strModelType);
+            prune(m_param, m_rgstrUsedLayers);
+            add_gram_layers(m_param);
+
+            m_transformationParam = new TransformationParameter();
+            m_transformationParam.color_order = (bCaffeModel) ? TransformationParameter.COLOR_ORDER.BGR : TransformationParameter.COLOR_ORDER.RGB;
+            m_transformationParam.scale = 1.0;
+            m_transformationParam.mean_value = m_rgMeanValues;
+
+            m_persist = new PersistCaffe<T>(m_log, false);
+        }
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="cuda">Specifies the instance of CudaDnn to use.</param>
+        /// <param name="log">Specifies the output log.</param>
+        /// <param name="evtCancel">Specifies the cancel event used to abort processing.</param>
+        /// <param name="rgLayers">Specifies the layers along with their style and content weights.</param>
+        /// <param name="strModelDesc">Specifies the network model descriptor to use.</param>
+        /// <param name="rgWeights">Optionally, specifies the weights to use (or <i>null</i> to ignore).</param>
+        /// <param name="bCaffeModel">Specifies whether or not the weights are in the caffe (<i>true</i>) or mycaffe (<i>false</i>) format.</param>
+        /// <param name="solverType">Optionally, specifies the solver type to use (default = LBFGS).</param>
+        /// <param name="dfLearningRate">Optionally, specifies the solver learning rate (default = 1.0).</param>
+        /// <param name="nMaxImageSize">Optionally, specifies the default maximum image size (default = 840).</param>
+        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, Dictionary<string, Tuple<double, double>> rgLayers, string strModelDesc, byte[] rgWeights, bool bCaffeModel, SolverParameter.SolverType solverType = SolverParameter.SolverType.LBFGS, double dfLearningRate = 1.0, int nMaxImageSize = 840)
+        {
+            m_cuda = cuda;
+            m_log = log;
+            m_evtCancel = evtCancel;
+            m_rgWeights = rgWeights;
+            m_solverType = solverType;
+            m_dfLearningRate = dfLearningRate;
+            m_nDefaultMaxImageSize = nMaxImageSize;
+
+            if (m_evtCancel != null)
+                m_evtCancel.Reset();
+
+            RawProto proto = RawProto.Parse(strModelDesc);
+            m_param = NetParameter.FromProto(proto);
+
+            Dictionary<string, double> rgStyle = new Dictionary<string, double>();
+            Dictionary<string, double> rgContent = new Dictionary<string, double>();
+
+            foreach (KeyValuePair<string, Tuple<double, double>> kv in rgLayers)
+            {
+                if (kv.Value.Item1 != 0)
+                    rgStyle.Add(kv.Key, kv.Value.Item1);
+
+                if (kv.Value.Item2 != 0)
+                    rgStyle.Add(kv.Key, kv.Value.Item2);
+            }
+
+            add_input_layer(m_param);
+            m_rgstrUsedLayers = load_layers(rgStyle, rgContent);
             prune(m_param, m_rgstrUsedLayers);
             add_gram_layers(m_param);
 
@@ -140,7 +195,6 @@ namespace MyCaffe.extras
 
         private List<string> load_layers(string strName)
         {
-            m_rgLayers = new Dictionary<string, Dictionary<string, double>>();
             Dictionary<string, double> rgContent = new Dictionary<string, double>();
             Dictionary<string, double> rgStyle = new Dictionary<string, double>();
 
@@ -182,6 +236,12 @@ namespace MyCaffe.extras
                     throw new Exception("Model '" + strName + "' is not supported.");
             }
 
+            return load_layers(rgStyle, rgContent);
+        }
+
+        private List<string> load_layers(Dictionary<string, double> rgStyle, Dictionary<string, double> rgContent)
+        {
+            m_rgLayers = new Dictionary<string, Dictionary<string, double>>();
             m_rgLayers.Add("content", rgContent);
             m_rgLayers.Add("style", rgStyle);
 
@@ -330,8 +390,9 @@ namespace MyCaffe.extras
         /// <param name="strResultDir">Optionally, specifies an output directory where intermediate images are stored.</param>
         /// <param name="nIntermediateOutput">Optionally, specifies how often to output an intermediate image.</param>
         /// <param name="dfTvLoss">Optionally, specifies the TV-Loss weight for smoothing (default = 0, which disables this loss).</param>
+        /// <param name="nMaxSize">Optionally, specifies a maximum image size override (default = -1, which uses the default).</param>
         /// <returns>The resulting image is returned.</returns>
-        public Bitmap Process(Bitmap bmpStyle, Bitmap bmpContent, int nIterations, string strResultDir = null, int nIntermediateOutput = -1, double dfTvLoss = 0, int nMaxSize = 840)
+        public Bitmap Process(Bitmap bmpStyle, Bitmap bmpContent, int nIterations, string strResultDir = null, int nIntermediateOutput = -1, double dfTvLoss = 0, int nMaxSize = -1)
         {
             Solver<T> solver = null;
             Net<T> net = null;
@@ -343,6 +404,9 @@ namespace MyCaffe.extras
             {
                 m_dfTVLossWeight = dfTvLoss;
                 m_nIterations = nIterations;
+
+                if (nMaxSize == -1)
+                    nMaxSize = m_nDefaultMaxImageSize;
 
                 if (bmpContent.Width > nMaxSize ||
                     bmpContent.Height > nMaxSize)
@@ -693,6 +757,101 @@ namespace MyCaffe.extras
 
         private void Solver_OnSnapshot(object sender, SnapshotArgs e)
         {
+        }
+
+        /// <summary>
+        /// The CreateConfigurationString function packs all deep draw settings into a configuration string.
+        /// </summary>
+        /// <param name="strSolver">Specifies the type of solver to use.</param>
+        /// <param name="dfLearningRate">Specifies the learning rate to use with the solver.</param>
+        /// <param name="nMaxImageSize">Specifies the maximum image size to use.</param>
+        /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <param name="nIntermediateIterations">Specifies how often to output intermediate images if any (a value of 0 disables intermediate output).</param>
+        /// <param name="rgWts">Specifies the layers to use and their weights for style and content.</param>
+        /// <returns>The configuration string is returned.</returns>
+        public static string CreateConfigurationString(string strSolver, double dfLearningRate, int nMaxImageSize, int nIterations, int nIntermediateIterations, Dictionary<string, Tuple<double, double>> rgWts)
+        {
+            RawProtoCollection rgChildren = new RawProtoCollection();
+
+            rgChildren.Add("solver", strSolver);
+            rgChildren.Add("learning_rate", dfLearningRate);
+            rgChildren.Add("max_image_size", nMaxImageSize);
+            rgChildren.Add("iterations", nIterations);
+            rgChildren.Add("intermediate_iterations", nIntermediateIterations);
+
+            RawProtoCollection rgLayerWt = new RawProtoCollection();
+            foreach (KeyValuePair<string, Tuple<double, double>> kv in rgWts)
+            {
+                RawProtoCollection layer = new RawProtoCollection();
+                layer.Add("name", kv.Key);
+                layer.Add("style_wt", kv.Value.Item1);
+                layer.Add("content_wt", kv.Value.Item2);
+
+                rgLayerWt.Add(new RawProto("layer", "", layer));
+            }
+
+            rgChildren.Add(rgLayerWt);
+
+            RawProto proto = new RawProto("root", "", rgChildren);
+
+            return proto.ToString();
+        }
+
+        /// <summary>
+        /// The ParseConfigurationString method parses a deep draw configuration string into the actual settings.
+        /// </summary>
+        /// <param name="strConfig">Specifies the configuration string to parse.</param>
+        /// <param name="strSolver">Returns the solver to use.</param>
+        /// <param name="dfLearningRate">Returns the learning rate to use with the solver.</param>
+        /// <param name="nMaxImageSize">Returns the maximum image size.</param>
+        /// <param name="nIterations">Returns the number of iterations to run.</param>
+        /// <param name="nIntermediateIterations">Returns how often to output intermediate images if any (a value of 0 disables intermediate output).</param>
+        /// <returns>Returns a list of layers along with their style and content weights.</returns>
+        public static Dictionary<string, Tuple<double, double>> ParseConfigurationString(string strConfig, out string strSolver, out double dfLearningRate, out int nMaxImageSize, out int nIterations, out int nIntermediateIterations)
+        {
+            RawProto proto = RawProto.Parse(strConfig);
+            string strVal;
+
+            strSolver = null;
+            if ((strVal = proto.FindValue("solver")) != null)
+                strSolver = strVal;
+
+            dfLearningRate = 0;
+            if ((strVal = proto.FindValue("learning_rate")) != null)
+                dfLearningRate = double.Parse(strVal);
+
+            nMaxImageSize = 0;
+            if ((strVal = proto.FindValue("max_image_size")) != null)
+                nMaxImageSize = int.Parse(strVal);
+
+            nIterations = 1000;
+            if ((strVal = proto.FindValue("iterations")) != null)
+                nIterations = int.Parse(strVal);
+
+            nIntermediateIterations = 0;
+            if ((strVal = proto.FindValue("intermediate_iterations")) != null)
+                nIntermediateIterations = int.Parse(strVal);
+
+            Dictionary<string, Tuple<double, double>> rgLayers = new Dictionary<string, Tuple<double, double>>();
+            RawProtoCollection style = proto.FindChildren("layer");
+            foreach (RawProto styleProto in style)
+            {
+                string strLayer = null;
+                if ((strVal = styleProto.FindValue("name")) != null)
+                    strLayer = strVal;
+
+                double dfSWt = 0;
+                if ((strVal = styleProto.FindValue("style_wt")) != null)
+                    dfSWt = double.Parse(strVal);
+
+                double dfCWt = 0;
+                if ((strVal = styleProto.FindValue("content_wt")) != null)
+                    dfCWt = double.Parse(strVal);
+
+                rgLayers.Add(strLayer, new Tuple<double, double>(dfSWt, dfCWt));
+            }
+
+            return rgLayers;
         }
     }
 }
