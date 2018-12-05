@@ -48,6 +48,7 @@ namespace MyCaffe.extras
         SolverParameter.SolverType m_solverType = SolverParameter.SolverType.LBFGS;
         double m_dfLearningRate = 1.0;
         int m_nDefaultMaxImageSize = 840;
+        string m_strDataBlobName = "data";
 
         /// <summary>
         /// The constructor.
@@ -161,13 +162,17 @@ namespace MyCaffe.extras
                 if (p.layer[i].type == LayerParameter.LayerType.DATA)
                 {
                     if (data_param == null)
+                    {
                         data_param = p.layer[i];
+                        m_strDataBlobName = data_param.top[0];
+                    }
 
                     rgDelIdx.Add(i);
                 }
                 else if (p.layer[i].type == LayerParameter.LayerType.INPUT)
                 {
                     input = p.layer[i];
+                    m_strDataBlobName = input.top[0];
                 }
             }
 
@@ -182,8 +187,8 @@ namespace MyCaffe.extras
                 int nH = 224;
                 int nW = 224;
                 input.input_param.shape.Add(new BlobShape(1, 3, nH, nW));
-                input.name = data_param.name;
-                input.top.Add("input1");
+                input.name = "input1";
+                input.top.Add(m_strDataBlobName);
 
                 p.layer.Insert(0, input);
             }
@@ -359,7 +364,7 @@ namespace MyCaffe.extras
             List<int> rgDataShape = new List<int>() { 1, 3, bmp.Height, bmp.Width };
             m_transformer = new DataTransformer<T>(m_log, m_transformationParam, Phase.TEST, 3, bmp.Height, bmp.Width);
 
-            Blob<T> data = net.blob_by_name("data");
+            Blob<T> data = net.blob_by_name(m_strDataBlobName);
             data.Reshape(rgDataShape);
             data.mutable_cpu_data = m_transformer.Transform(ImageData.GetImageData(bmp, 3, false, -1));
         }
@@ -559,7 +564,7 @@ namespace MyCaffe.extras
                     double dfWeight = m_dfTVLossWeight;
                     p.loss_weight.Add(dfWeight);
 
-                    p.bottom.Add("data");
+                    p.bottom.Add(m_strDataBlobName);
                     p.top.Add("loss_tv");
 
                     net_param.layer.Add(p);
@@ -567,7 +572,7 @@ namespace MyCaffe.extras
 
                 // Replace InputLayer with ParameterLayer,
                 // so that we'll be able to backprop into the image.
-                Blob<T> data = net.blob_by_name("data");
+                Blob<T> data = net.blob_by_name(m_strDataBlobName);
                 for (int i=0; i<net_param.layer.Count; i++)
                 {
                     LayerParameter p = net_param.layer[i];
