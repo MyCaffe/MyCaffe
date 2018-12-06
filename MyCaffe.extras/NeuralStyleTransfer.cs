@@ -615,9 +615,6 @@ namespace MyCaffe.extras
                 //  Create solver and assign inputs.
                 //-----------------------------------------
 
-                RawProto proto1 = net_param.ToProto("root");
-                string str = proto1.ToString();
-
                 SolverParameter solver_param = new SolverParameter();
                 solver_param.display = m_nDisplayEvery;
                 solver_param.train_net_param = net_param;
