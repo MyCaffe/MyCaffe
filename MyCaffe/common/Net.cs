@@ -2276,6 +2276,7 @@ namespace MyCaffe.common
             bool bSizeToFit = (inputWtInfo != null && targetWtInfo != null) ? true : false;
 
             persist.LoadWeights(rgWeights, rgExpectedShapes, m_colLearnableParams, bSizeToFit, out bLoadedDiffs, inputWtInfo, targetWtInfo, strSkipBlobType);
+            m_cuda.SynchronizeDevice();
         }
 
         /// <summary>
