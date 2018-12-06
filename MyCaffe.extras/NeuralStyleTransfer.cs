@@ -49,6 +49,12 @@ namespace MyCaffe.extras
         double m_dfLearningRate = 1.0;
         int m_nDefaultMaxImageSize = 840;
         string m_strDataBlobName = "data";
+        Solver<T> m_solver = null;
+        int m_nIntermediateOutput = 0;
+        int m_nPartialIteration = 0;
+        int m_nPartialIterations1 = 0;
+
+        public event EventHandler<NeuralStyleIntermediateOutputArgs> OnIntermediateOutput;
 
         /// <summary>
         /// The constructor.
@@ -392,18 +398,19 @@ namespace MyCaffe.extras
         /// <param name="bmpStyle">Specifies the image used to train the what style to apply to the content.</param>
         /// <param name="bmpContent">Specifies the content image to which the style is to be applied.</param>
         /// <param name="nIterations">Specifies the number of training iterations.</param>
-        /// <param name="strResultDir">Optionally, specifies an output directory where intermediate images are stored.</param>
         /// <param name="nIntermediateOutput">Optionally, specifies how often to output an intermediate image.</param>
         /// <param name="dfTvLoss">Optionally, specifies the TV-Loss weight for smoothing (default = 0, which disables this loss).</param>
         /// <param name="nMaxSize">Optionally, specifies a maximum image size override (default = -1, which uses the default).</param>
-        /// <returns>The resulting image is returned.</returns>
-        public Bitmap Process(Bitmap bmpStyle, Bitmap bmpContent, int nIterations, string strResultDir = null, int nIntermediateOutput = -1, double dfTvLoss = 0, int nMaxSize = -1)
+        /// <param name="bEnablePartialSolution">Optionally, specifies to run the process only up through the next intermediate image.  Subsequent calls to ProcessNext moves to the next intermediate image until completed.</param>
+        /// <returns>Upon completion the resulting final image is returned, otherwise when using bEnablePartionSolution = <i>true</i>, null is returned.</returns>
+        public Bitmap Process(Bitmap bmpStyle, Bitmap bmpContent, int nIterations, int nIntermediateOutput = -1, double dfTvLoss = 0, int nMaxSize = -1, bool bEnablePartialSolution = false)
         {
             Solver<T> solver = null;
             Net<T> net = null;
             BlobCollection<T> colContentActivations = new BlobCollection<T>();
             BlobCollection<T> colGramActivations = new BlobCollection<T>();
             double dfLoss;
+            bool bDone = true;
 
             try
             {
@@ -663,13 +670,24 @@ namespace MyCaffe.extras
                     blobDst.CopyFrom(blobSrc);
                 }
 
+                colGramActivations.Dispose();
+                colGramActivations = null;
+
+                colContentActivations.Dispose();
+                colContentActivations = null;
+
+
                 //-----------------------------------------
                 //  Optimize.
                 //-----------------------------------------
 
-                int nIterations1 = m_nIterations;
-                if (strResultDir != null && nIntermediateOutput > 0)
-                    nIterations1 /= nIntermediateOutput;
+                if (nIntermediateOutput <= 0 || nIntermediateOutput == m_nIterations)
+                {
+                    bEnablePartialSolution = false;
+                    nIntermediateOutput = m_nIterations;
+                }
+
+                int nIterations1 = m_nIterations / nIntermediateOutput;
 
                 if (m_rgWeights != null)
                 {
@@ -679,12 +697,16 @@ namespace MyCaffe.extras
                     solver.net.learnable_parameters.Insert(0, blobInput);
                 }
 
-                if (strResultDir != null)
+                if (bEnablePartialSolution)
                 {
-                    strResultDir = strResultDir.TrimEnd('\\');
-                    strResultDir += "\\";
+                    m_solver = solver;
+                    m_nPartialIteration = 0;
+                    m_nPartialIterations1 = nIterations1;
+                    m_nIntermediateOutput = nIntermediateOutput;
+                    bDone = false;
+                    return null;
                 }
-
+               
                 for (int i = 0; i < nIterations1; i++)
                 {
                     if (m_evtCancel.WaitOne(0))
@@ -692,24 +714,28 @@ namespace MyCaffe.extras
 
                     solver.Step(nIntermediateOutput, TRAIN_STEP.NONE, true, true, true);
 
-                    if (strResultDir != null && nIntermediateOutput > 0 && i < nIterations1-1)
+                    if (!m_evtCancel.WaitOne(0))
                     {
-                        Bitmap bmpTemp = save(solver.net);
-
-                        string strFile = strResultDir + i.ToString() + "_temp.png";
-                        if (File.Exists(strFile))
-                            File.Delete(strFile);
-
-                        bmpTemp.Save(strFile);
+                        if (OnIntermediateOutput != null && nIntermediateOutput > 0 && i < nIterations1 - 1)
+                        {
+                            Bitmap bmpTemp = save(solver.net);
+                            double dfPct = (double)i / (double)nIterations1;
+                            OnIntermediateOutput(this, new NeuralStyleIntermediateOutputArgs(i, bmpTemp, dfPct));
+                            bmpTemp.Dispose();
+                        }
                     }
                 }
 
-                Bitmap bmpOutput = save(solver.net);
-
-                return bmpOutput;
+                return save(solver.net);
             }
             catch (Exception excpt)
             {
+                if (solver != null)
+                {
+                    m_solver = null;
+                    solver.Dispose();
+                }
+
                 throw excpt;
             }
             finally
@@ -717,11 +743,73 @@ namespace MyCaffe.extras
                 if (net != null)
                     net.Dispose();
 
-                if (solver != null)
-                    solver.Dispose();
+                if (colGramActivations != null)
+                    colGramActivations.Dispose();
 
-                colGramActivations.Dispose();
-                colContentActivations.Dispose();
+                if (colContentActivations != null)
+                    colContentActivations.Dispose();
+
+                if (bDone)
+                {
+                    if (solver != null)
+                        solver.Dispose();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Process the next partial part of the solution.  This function is only valid after calling Process with bEnablePartialSolution = <i>true</i>.
+        /// </summary>
+        /// <param name="bmpIntermediate">Returns the intermediate image, if one was created.</param>
+        /// <param name="nIntermediateIdx">Returns the intermediate index for the image.</param>
+        /// <returns>Upon completion, the final Bitmap is returned, otherwise <i>null</i> is returned.</returns>
+        public Bitmap ProcessNext(out Bitmap bmpIntermediate, out int nIntermediateIdx)
+        {
+            try
+            {
+                bmpIntermediate = null;
+                nIntermediateIdx = m_nPartialIteration * m_nIntermediateOutput;
+
+                if (m_solver == null)
+                    throw new Exception("To run the next in process, the solver cannot be null!  You must call Process first.");
+
+                m_solver.Step(m_nIntermediateOutput, TRAIN_STEP.NONE, true, true, true);
+
+                if (m_evtCancel.WaitOne(0))
+                    return null;
+
+                m_nPartialIteration++;
+
+                if (m_nIntermediateOutput > 0 && m_nPartialIteration < m_nPartialIterations1)
+                {
+                    bmpIntermediate = save(m_solver.net);
+
+                    if (OnIntermediateOutput != null)
+                    {
+                        double dfPct = (double)m_nPartialIteration / (double)m_nPartialIterations1;
+                        OnIntermediateOutput(this, new NeuralStyleIntermediateOutputArgs(m_nPartialIteration * m_nIntermediateOutput, bmpIntermediate, dfPct));
+                    }
+                }
+
+                if (m_nPartialIteration < m_nPartialIterations1)
+                    return null;
+
+                return save(m_solver.net);
+            }
+            catch (Exception excpt)
+            {               
+                throw excpt;
+            }
+            finally
+            {
+                if (m_nPartialIteration == m_nPartialIterations1)
+                {
+                    if (m_solver != null)
+                    {
+                        m_solver.Dispose();
+                        m_solver = null;
+                    }
+                }
             }
         }
 
@@ -871,6 +959,35 @@ namespace MyCaffe.extras
             }
 
             return rgLayers;
+        }
+    }
+
+    public class NeuralStyleIntermediateOutputArgs : EventArgs
+    {
+        Bitmap m_img;
+        int m_nIteration;
+        double m_dfPercent;
+
+        public NeuralStyleIntermediateOutputArgs(int nIteration, Bitmap bmp, double dfPct)
+        {
+            m_nIteration = nIteration;
+            m_img = bmp;
+            m_dfPercent = dfPct;
+        }
+
+        public int Iteration
+        {
+            get { return m_nIteration; }
+        }
+
+        public Bitmap Image
+        {
+            get { return m_img; }
+        }
+
+        public double Percent
+        {
+            get { return m_dfPercent; }
         }
     }
 }

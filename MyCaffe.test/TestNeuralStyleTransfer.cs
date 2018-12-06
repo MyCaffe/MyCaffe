@@ -31,7 +31,64 @@ namespace MyCaffe.test
                 foreach (INeuralStyleTransferTest t in test.Tests)
                 {
                     if (t.DataType == DataType.DOUBLE)
-                        t.TestNeuralStyleTransfer(null, null, 100, 100, null, "vgg19", "LBFGS", 1.5);
+                        t.TestNeuralStyleTransfer(null, null, 20, 10, null, "vgg19", "LBFGS", 1.5, 0, 640, false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestNeuralStyleTransfer1NoIntermediate()
+        {
+            NeuralStyleTransferTest test = new NeuralStyleTransferTest();
+
+            try
+            {
+                foreach (INeuralStyleTransferTest t in test.Tests)
+                {
+                    if (t.DataType == DataType.DOUBLE)
+                        t.TestNeuralStyleTransfer(null, null, 20, 20, null, "vgg19", "LBFGS", 1.5, 0, 640, false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestNeuralStyleTransferPartial()
+        {
+            NeuralStyleTransferTest test = new NeuralStyleTransferTest();
+
+            try
+            {
+                foreach (INeuralStyleTransferTest t in test.Tests)
+                {
+                    if (t.DataType == DataType.DOUBLE)
+                        t.TestNeuralStyleTransfer(null, null, 20, 10, null, "vgg19", "LBFGS", 1.5, 0, 640, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestNeuralStyleTransferPartialNoIntermediate()
+        {
+            NeuralStyleTransferTest test = new NeuralStyleTransferTest();
+
+            try
+            {
+                foreach (INeuralStyleTransferTest t in test.Tests)
+                {
+                    if (t.DataType == DataType.DOUBLE)
+                        t.TestNeuralStyleTransfer(null, null, 20, 20, null, "vgg19", "LBFGS", 1.5, 0, 640, true);
                 }
             }
             finally
@@ -43,7 +100,7 @@ namespace MyCaffe.test
 
     interface INeuralStyleTransferTest : ITest
     {
-        void TestNeuralStyleTransfer(string strStyleImg, string strContentImg, int nIteration, int nIntermediateOutput, string strResultDir, string strModelName, string strSolverType, double dfLearningRate, double dfTvLoss = 0, int nMaxImageSize = 640);
+        void TestNeuralStyleTransfer(string strStyleImg, string strContentImg, int nIteration, int nIntermediateOutput, string strResultDir, string strModelName, string strSolverType, double dfLearningRate, double dfTvLoss = 0, int nMaxImageSize = 640, bool bEnablePartial = false);
     }
 
     class NeuralStyleTransferTest : TestBase
@@ -67,6 +124,7 @@ namespace MyCaffe.test
         SettingsCaffe m_settings = new SettingsCaffe();
         CancelEvent m_evtCancel = new CancelEvent();
         MyCaffeControl<T> m_caffe = null;
+        string m_strResultDir = null;
 
         public NeuralStyleTransferTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
@@ -162,7 +220,8 @@ namespace MyCaffe.test
         /// <param name="dfLearningRate">Optionally, specifies the learning rate to use (default = 1.0).</param>
         /// <param name="dfTvLoss">Optionally, specifies the TVLoss weights which acts as a smoothing factor to use (default = 0, which disables the TVLoss).</param>
         /// <param name="nMaxSize">Optionally, specifies the maximum image size - if you run out of memory when performing neural style, reduce this size.</param>
-        public void TestNeuralStyleTransfer(string strStyleImg, string strContentImg, int nIterations, int nIntermediateOutput, string strResultDir, string strName, string strSolverType = "LBFGS", double dfLearningRate = 1.0, double dfTvLoss = 0, int nMaxSize = 640)
+        /// <param name="bEnablePartial">When enabled, the partial solution functionality is tested.</param>
+        public void TestNeuralStyleTransfer(string strStyleImg, string strContentImg, int nIterations, int nIntermediateOutput, string strResultDir, string strName, string strSolverType = "LBFGS", double dfLearningRate = 1.0, double dfTvLoss = 0, int nMaxSize = 640, bool bEnablePartial = false)
         {
             CancelEvent evtCancel = new CancelEvent();
             SolverParameter.SolverType solverType = getSolverType(strSolverType);
@@ -201,12 +260,32 @@ namespace MyCaffe.test
 
             NeuralStyleTransfer<T> ns = new NeuralStyleTransfer<T>(m_cuda, m_log, m_evtCancel, strModelName, strModelDesc, rgWeights, false, solverType, dfLearningRate);
 
+            if (!bEnablePartial)
+                ns.OnIntermediateOutput += Ns_OnIntermediateOutput;
+
+            m_strResultDir = strResultDir;
+
             if (!Directory.Exists(strResultDir))
                 Directory.CreateDirectory(strResultDir);
 
             Bitmap bmpStyle = new Bitmap(strStyleImg);
             Bitmap bmpContent = new Bitmap(strContentImg);
-            Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, nIterations, strResultDir, nIntermediateOutput, dfTvLoss, nMaxSize);
+            Bitmap bmpResult = ns.Process(bmpStyle, bmpContent, nIterations, nIntermediateOutput, dfTvLoss, nMaxSize, bEnablePartial);
+            Bitmap bmpIntermediate = null;
+            int nIntermediateIdx = 0;
+            int nIdx = 0;
+
+            while (bEnablePartial && bmpResult == null && !m_evtCancel.WaitOne(0))
+            {
+                bmpResult = ns.ProcessNext(out bmpIntermediate, out nIntermediateIdx);
+                if (bmpIntermediate != null)
+                {
+                    string strIntermediateFile = m_strResultDir + "\\tmp_" + nIdx.ToString() + ".png";
+                    bmpIntermediate.Save(strIntermediateFile, ImageFormat.Png);
+                }
+
+                nIdx++;
+            }
 
             string strContent = Path.GetFileNameWithoutExtension(strContentImg);
             string strStyle = Path.GetFileNameWithoutExtension(strStyleImg);
@@ -217,6 +296,16 @@ namespace MyCaffe.test
                 File.Delete(strResultFile);
 
             bmpResult.Save(strResultFile, ImageFormat.Png);
+            bmpResult.Dispose();
+        }
+
+        private void Ns_OnIntermediateOutput(object sender, NeuralStyleIntermediateOutputArgs e)
+        {
+            if (!string.IsNullOrEmpty(m_strResultDir))
+            {
+                string strIntermediateFile = m_strResultDir + "\\tmp_" + e.Iteration.ToString() + ".png";
+                e.Image.Save(strIntermediateFile, ImageFormat.Png);
+            }
         }
     }
 }
