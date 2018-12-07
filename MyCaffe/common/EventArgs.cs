@@ -577,8 +577,9 @@ namespace MyCaffe.common
         /// <summary>
         /// The constructor.
         /// </summary>
-        /// <param name="colBottom">Specifies the bottom blobs.</param>
         /// <param name="colTop">Specifies the top blobs.</param>
+        /// <param name="rgbPropagateDown">Specifies whether or not to backpropagate down.</param>
+        /// <param name="colBottom">Specifies the bottom blobs.</param>
         public BackwardArgs(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
             : base(colBottom, colTop)
         {
