@@ -54,6 +54,9 @@ namespace MyCaffe.extras
         int m_nPartialIteration = 0;
         int m_nPartialIterations1 = 0;
 
+        /// <summary>
+        /// Specifies the event fired after producing intermediate output (e.g. when m_nIntermediateOutput > 0)
+        /// </summary>
         public event EventHandler<NeuralStyleIntermediateOutputArgs> OnIntermediateOutput;
 
         /// <summary>
@@ -962,12 +965,21 @@ namespace MyCaffe.extras
         }
     }
 
+    /// <summary>
+    /// The NeuralStyleIntermediateOutputArgs contains the arguments sent to the OnIntermediateOutput event.
+    /// </summary>
     public class NeuralStyleIntermediateOutputArgs : EventArgs
     {
         Bitmap m_img;
         int m_nIteration;
         double m_dfPercent;
 
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="nIteration">Specifies the current iteration.</param>
+        /// <param name="bmp">Specifies the intermediate image.</param>
+        /// <param name="dfPct">Specifies the total processing progress.</param>
         public NeuralStyleIntermediateOutputArgs(int nIteration, Bitmap bmp, double dfPct)
         {
             m_nIteration = nIteration;
@@ -975,16 +987,25 @@ namespace MyCaffe.extras
             m_dfPercent = dfPct;
         }
 
+        /// <summary>
+        /// Returns the current interation.
+        /// </summary>
         public int Iteration
         {
             get { return m_nIteration; }
         }
 
+        /// <summary>
+        /// Returns the current intermediate image.
+        /// </summary>
         public Bitmap Image
         {
             get { return m_img; }
         }
 
+        /// <summary>
+        /// Returns the total processing progress.
+        /// </summary>
         public double Percent
         {
             get { return m_dfPercent; }
