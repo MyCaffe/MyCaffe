@@ -52,8 +52,9 @@ namespace MyCaffe.solvers
         /// <param name="persist">Specifies the peristence used for loading and saving weights.</param>
         /// <param name="nSolverCount">Specifies the number of Solvers participating in a multi-GPU session.</param>
         /// <param name="nSolverRank">Specifies the rank of this Solver in a multi-GPU session.</param>
-        public LBFGSSolver(CudaDnn<T> cuda, Log log, SolverParameter p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0)
-            : base(cuda, log, p, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank)
+        /// <param name="shareNet">Optionally, specifies the net to share when creating the training network (default = null, meaning no share net is used).</param>
+        public LBFGSSolver(CudaDnn<T> cuda, Log log, SolverParameter p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null)
+            : base(cuda, log, p, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet)
         {
             m_tZero = (T)Convert.ChangeType(0, typeof(T));
             m_tOne = (T)Convert.ChangeType(1, typeof(T));
