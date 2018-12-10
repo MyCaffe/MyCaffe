@@ -53,6 +53,8 @@ namespace MyCaffe.extras
         int m_nIntermediateOutput = 0;
         int m_nPartialIteration = 0;
         int m_nPartialIterations1 = 0;
+        Net<T> m_netShare = null;
+        bool m_bUsingSharedNet = false;
 
         /// <summary>
         /// Specifies the event fired after producing intermediate output (e.g. when m_nIntermediateOutput > 0)
@@ -71,14 +73,16 @@ namespace MyCaffe.extras
         /// <param name="bCaffeModel">Specifies whether or not the weights are in the caffe (<i>true</i>) or mycaffe (<i>false</i>) format.</param>
         /// <param name="solverType">Optionally, specifies the solver type to use (default = LBFGS).</param>
         /// <param name="dfLearningRate">Optionally, specifies the solver learning rate (default = 1.0).</param>
-        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, string strModelType, string strModel, byte[] rgWeights, bool bCaffeModel, SolverParameter.SolverType solverType = SolverParameter.SolverType.LBFGS, double dfLearningRate = 1.0)
+        /// <param name="netShare">Optionally, specifies a net to share.</param>
+        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, string strModelType, string strModel, byte[] rgWeights, bool bCaffeModel, SolverParameter.SolverType solverType = SolverParameter.SolverType.LBFGS, double dfLearningRate = 1.0, Net<T> netShare = null)
         {
-            m_cuda = cuda;
             m_log = log;
             m_evtCancel = evtCancel;
             m_rgWeights = rgWeights;
             m_solverType = solverType;
             m_dfLearningRate = dfLearningRate;
+
+            setupNetShare(netShare, cuda);
 
             if (m_evtCancel != null)
                 m_evtCancel.Reset();
@@ -112,15 +116,17 @@ namespace MyCaffe.extras
         /// <param name="solverType">Optionally, specifies the solver type to use (default = LBFGS).</param>
         /// <param name="dfLearningRate">Optionally, specifies the solver learning rate (default = 1.0).</param>
         /// <param name="nMaxImageSize">Optionally, specifies the default maximum image size (default = 840).</param>
-        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, Dictionary<string, Tuple<double, double>> rgLayers, string strModelDesc, byte[] rgWeights, bool bCaffeModel, SolverParameter.SolverType solverType = SolverParameter.SolverType.LBFGS, double dfLearningRate = 1.0, int nMaxImageSize = 840)
+        /// <param name="netShare">Optionally, specifies a net to share.</param>
+        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, Dictionary<string, Tuple<double, double>> rgLayers, string strModelDesc, byte[] rgWeights, bool bCaffeModel, SolverParameter.SolverType solverType = SolverParameter.SolverType.LBFGS, double dfLearningRate = 1.0, int nMaxImageSize = 840, Net<T> netShare = null)
         {
-            m_cuda = cuda;
             m_log = log;
             m_evtCancel = evtCancel;
             m_rgWeights = rgWeights;
             m_solverType = solverType;
             m_dfLearningRate = dfLearningRate;
             m_nDefaultMaxImageSize = nMaxImageSize;
+
+            setupNetShare(netShare, cuda);
 
             if (m_evtCancel != null)
                 m_evtCancel.Reset();
@@ -158,6 +164,30 @@ namespace MyCaffe.extras
         /// </summary>
         public void Dispose()
         {
+        }
+
+        private void setupNetShare(Net<T> net, CudaDnn<T> cuda)
+        {
+            if (net == null)
+            {
+                m_cuda = cuda;
+                return;
+            }
+
+            int nNetDeviceId = net.Cuda.GetDeviceID();
+            int nCudaDeviceId = cuda.GetDeviceID();
+
+            if (nNetDeviceId != nCudaDeviceId)
+            {
+                m_cuda = cuda;
+                return;
+            }
+
+            m_netShare = net;
+            m_cuda = m_netShare.Cuda;
+            m_bUsingSharedNet = true;
+
+            return;
         }
 
         private void add_input_layer(NetParameter p)
@@ -438,10 +468,10 @@ namespace MyCaffe.extras
 
                 m_log.WriteLine("Creating input network...");
                 m_log.Enable = false;
-                net = new Net<T>(m_cuda, m_log, m_param, m_evtCancel, null, Phase.TEST);
+                net = new Net<T>(m_cuda, m_log, m_param, m_evtCancel, null, Phase.TEST, null, m_netShare);
                 m_log.Enable = true;
 
-                if (m_rgWeights != null)
+                if (m_rgWeights != null && !m_bUsingSharedNet)
                     net.LoadWeights(m_rgWeights, m_persist);
 
                 //-----------------------------------------
@@ -638,9 +668,9 @@ namespace MyCaffe.extras
                 m_log.Enable = false;
 
                 if (m_solverType == SolverParameter.SolverType.LBFGS)
-                    solver = new LBFGSSolver<T>(m_cuda, m_log, solver_param, m_evtCancel, null, null, null, m_persist);
+                    solver = new LBFGSSolver<T>(m_cuda, m_log, solver_param, m_evtCancel, null, null, null, m_persist, 1, 0, m_netShare);
                 else
-                    solver = Solver<T>.Create(m_cuda, m_log, solver_param, m_evtCancel, null, null, null, m_persist);
+                    solver = Solver<T>.Create(m_cuda, m_log, solver_param, m_evtCancel, null, null, null, m_persist, 1, 0, m_netShare);
 
                 m_log.Enable = true;
                 solver.OnSnapshot += Solver_OnSnapshot;
@@ -692,7 +722,7 @@ namespace MyCaffe.extras
 
                 int nIterations1 = m_nIterations / nIntermediateOutput;
 
-                if (m_rgWeights != null)
+                if (m_rgWeights != null && !m_bUsingSharedNet)
                 {
                     Blob<T> blobInput = solver.net.learnable_parameters[0];
                     solver.net.learnable_parameters.RemoveAt(0);
