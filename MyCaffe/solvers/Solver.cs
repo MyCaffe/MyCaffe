@@ -400,8 +400,8 @@ namespace MyCaffe.solvers
         /// Initializes the Solver.
         /// </summary>
         /// <param name="p">Specifies the SolverParameters used to initialize the Solver.</param>
-        /// <param name="netShareNet">Optionally, specifies a network to share (default = null).</param>
-        public void Init(SolverParameter p, Net<T> netShare = null)
+        /// <param name="shareNet">Optionally, specifies a network to share (default = null).</param>
+        public void Init(SolverParameter p, Net<T> shareNet = null)
         {
             m_log.WriteLine("Initializing solver from parameters: " + p.DebugString());
             m_param = p;
@@ -411,7 +411,7 @@ namespace MyCaffe.solvers
                 m_cuda.rng_setseed(m_param.random_seed + m_nSolverRank);
 
             // Scaffolding code.
-            InitTrainNet(netShare);
+            InitTrainNet(shareNet);
             InitTestNets();
 
             if (is_root_solver)
