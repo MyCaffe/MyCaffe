@@ -2509,5 +2509,13 @@ namespace MyCaffe.common
 
             return null;
         }
+
+        /// <summary>
+        /// Returns the instance of CudaDnn used by this network.
+        /// </summary>
+        public CudaDnn<T> Cuda
+        {
+            get { return m_cuda; }
+        }
     }
 }
