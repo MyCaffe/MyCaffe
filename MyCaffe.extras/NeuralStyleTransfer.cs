@@ -55,6 +55,7 @@ namespace MyCaffe.extras
         int m_nPartialIterations1 = 0;
         Net<T> m_netShare = null;
         bool m_bUsingSharedNet = false;
+        int m_nLBFGSCorrections = 100;
 
         /// <summary>
         /// Specifies the event fired after producing intermediate output (e.g. when m_nIntermediateOutput > 0)
@@ -74,13 +75,14 @@ namespace MyCaffe.extras
         /// <param name="solverType">Optionally, specifies the solver type to use (default = LBFGS).</param>
         /// <param name="dfLearningRate">Optionally, specifies the solver learning rate (default = 1.0).</param>
         /// <param name="netShare">Optionally, specifies a net to share.</param>
-        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, string strModelType, string strModel, byte[] rgWeights, bool bCaffeModel, SolverParameter.SolverType solverType = SolverParameter.SolverType.LBFGS, double dfLearningRate = 1.0, Net<T> netShare = null)
+        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, string strModelType, string strModel, byte[] rgWeights, bool bCaffeModel, SolverParameter.SolverType solverType = SolverParameter.SolverType.LBFGS, double dfLearningRate = 1.0, int nLBFGSCorrections = 100, Net<T> netShare = null)
         {
             m_log = log;
             m_evtCancel = evtCancel;
             m_rgWeights = rgWeights;
             m_solverType = solverType;
             m_dfLearningRate = dfLearningRate;
+            m_nLBFGSCorrections = nLBFGSCorrections;
 
             setupNetShare(netShare, cuda);
 
@@ -116,8 +118,9 @@ namespace MyCaffe.extras
         /// <param name="solverType">Optionally, specifies the solver type to use (default = LBFGS).</param>
         /// <param name="dfLearningRate">Optionally, specifies the solver learning rate (default = 1.0).</param>
         /// <param name="nMaxImageSize">Optionally, specifies the default maximum image size (default = 840).</param>
+        /// <param name="nLBFGSCorrections">Optionally, specifies the LBFGS Corrections (only used when using the LBFGS solver, default = 100).</param>
         /// <param name="netShare">Optionally, specifies a net to share.</param>
-        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, Dictionary<string, Tuple<double, double>> rgLayers, string strModelDesc, byte[] rgWeights, bool bCaffeModel, SolverParameter.SolverType solverType = SolverParameter.SolverType.LBFGS, double dfLearningRate = 1.0, int nMaxImageSize = 840, Net<T> netShare = null)
+        public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, Dictionary<string, Tuple<double, double>> rgLayers, string strModelDesc, byte[] rgWeights, bool bCaffeModel, SolverParameter.SolverType solverType = SolverParameter.SolverType.LBFGS, double dfLearningRate = 1.0, int nMaxImageSize = 840, int nLBFGSCorrections = 100, Net<T> netShare = null)
         {
             m_log = log;
             m_evtCancel = evtCancel;
@@ -125,6 +128,7 @@ namespace MyCaffe.extras
             m_solverType = solverType;
             m_dfLearningRate = dfLearningRate;
             m_nDefaultMaxImageSize = nMaxImageSize;
+            m_nLBFGSCorrections = nLBFGSCorrections;
 
             setupNetShare(netShare, cuda);
 
@@ -663,6 +667,7 @@ namespace MyCaffe.extras
                 solver_param.test_initialization = false;
                 solver_param.base_lr = m_dfLearningRate;
                 solver_param.type = m_solverType;
+                solver_param.lbgfs_corrections = m_nLBFGSCorrections;
 
                 m_log.WriteLine("Creating " + m_solverType.ToString() + " solver with learning rate = " + m_dfLearningRate.ToString() + "...");
                 m_log.Enable = false;
@@ -892,8 +897,9 @@ namespace MyCaffe.extras
         /// <param name="nIntermediateIterations">Specifies how often to output intermediate images if any (a value of 0 disables intermediate output).</param>
         /// <param name="rgWts">Specifies the layers to use and their weights for style and content.</param>
         /// <param name="rgGpuID">Specifies the GPUIDs on which to run the Neural Style.</param>
+        /// <param name="nLBFGSCorrections">Returns the LBFGS corrections to use, only applies when using the LBFGS Solver.</param>
         /// <returns>The configuration string is returned.</returns>
-        public static string CreateConfigurationString(string strSolver, double dfLearningRate, int nMaxImageSize, int nIterations, int nIntermediateIterations, Dictionary<string, Tuple<double, double>> rgWts, List<int> rgGpuID)
+        public static string CreateConfigurationString(string strSolver, double dfLearningRate, int nMaxImageSize, int nIterations, int nIntermediateIterations, Dictionary<string, Tuple<double, double>> rgWts, List<int> rgGpuID, int nLBFGSCorrections)
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
@@ -923,6 +929,7 @@ namespace MyCaffe.extras
             }
 
             rgChildren.Add(gpus);
+            rgChildren.Add("lbfgs_corrections", nLBFGSCorrections);
 
             RawProto proto = new RawProto("root", "", rgChildren);
 
@@ -939,8 +946,9 @@ namespace MyCaffe.extras
         /// <param name="nIterations">Returns the number of iterations to run.</param>
         /// <param name="nIntermediateIterations">Returns how often to output intermediate images if any (a value of 0 disables intermediate output).</param>
         /// <param name="rgGpuID">Returns the list of GPUIDs on which to run the Neural Style.</param>
+        /// <param name="nLBFGSCorrections">Returns the LBFGS corrections to use, only applies when using the LBFGS Solver.</param>
         /// <returns>Returns a list of layers along with their style and content weights.</returns>
-        public static Dictionary<string, Tuple<double, double>> ParseConfigurationString(string strConfig, out string strSolver, out double dfLearningRate, out int nMaxImageSize, out int nIterations, out int nIntermediateIterations, out List<int> rgGpuID)
+        public static Dictionary<string, Tuple<double, double>> ParseConfigurationString(string strConfig, out string strSolver, out double dfLearningRate, out int nMaxImageSize, out int nIterations, out int nIntermediateIterations, out List<int> rgGpuID, out int nLBFGSCorrections)
         {
             RawProto proto = RawProto.Parse(strConfig);
             string strVal;
@@ -990,6 +998,10 @@ namespace MyCaffe.extras
             {
                 rgGpuID.Add(int.Parse(gpuProto.Value));
             }
+
+            nLBFGSCorrections = 100;
+            if ((strVal = proto.FindValue("lbfgs_corrections")) != null)
+                nLBFGSCorrections = int.Parse(strVal);
 
             return rgLayers;
         }
