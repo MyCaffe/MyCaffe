@@ -105,39 +105,71 @@ namespace MyCaffe.solvers
         /// </summary>
         public void PreSolve()
         {
-            BlobCollection<T> net_params = m_net.learnable_parameters;
-
-            m_nN = 0;
-
-            for (int i = 0; i < net_params.Count; i++)
+            try
             {
-                if (m_net.params_lr[i] != 0)
-                    m_nN += net_params[i].count();
+                BlobCollection<T> net_params = m_net.learnable_parameters;
+
+                m_nN = 0;
+
+                for (int i = 0; i < net_params.Count; i++)
+                {
+                    if (m_net.params_lr[i] != 0)
+                        m_nN += net_params[i].count();
+                }
+
+                // Nothing to do, all learnable parameters have lr_mult = 0
+                if (m_nN == 0)
+                    return;
+
+                List<int> rgShape = new List<int>() { m_nN };
+                m_colBlobHistoryS.Clear(true);
+                m_colBlobHistoryY.Clear(true);
+                m_rgRhoHistory.Clear();
+                m_nStart = 0;
+                m_nEnd = -1;
+
+                m_blobGradients = new Blob<T>(m_cuda, m_log, rgShape, false);
+                m_blobGradients.Name = "gradients";
+                m_blobGradientsPrev = new Blob<T>(m_cuda, m_log, rgShape, false);
+                m_blobGradientsPrev.Name = "gradients prev";
+                m_blobDirection = new Blob<T>(m_cuda, m_log, rgShape, false);
+                m_blobDirection.Name = "direction";
+
+                for (int i = 0; i < m_param.lbgfs_corrections; i++)
+                {
+                    m_colBlobHistoryS.Add(new Blob<T>(m_cuda, m_log, rgShape, false));
+                    m_colBlobHistoryY.Add(new Blob<T>(m_cuda, m_log, rgShape, false));
+                    m_rgRhoHistory.Add(0);
+                }
             }
-
-            // Nothing to do, all learnable parameters have lr_mult = 0
-            if (m_nN == 0)
-                return;
-
-            List<int> rgShape = new List<int>() { m_nN };
-            m_colBlobHistoryS.Clear();
-            m_colBlobHistoryY.Clear();
-            m_rgRhoHistory.Clear();
-            m_nStart = 0;
-            m_nEnd = -1;
-
-            m_blobGradients = new Blob<T>(m_cuda, m_log, rgShape, false);
-            m_blobGradients.Name = "gradients";
-            m_blobGradientsPrev = new Blob<T>(m_cuda, m_log, rgShape, false);
-            m_blobGradientsPrev.Name = "gradients prev";
-            m_blobDirection = new Blob<T>(m_cuda, m_log, rgShape, false);
-            m_blobDirection.Name = "direction";
-
-            for (int i = 0; i < m_param.lbgfs_corrections; i++)
+            catch (Exception excpt)
             {
-                m_colBlobHistoryS.Add(new Blob<T>(m_cuda, m_log, rgShape, false));
-                m_colBlobHistoryY.Add(new Blob<T>(m_cuda, m_log, rgShape, false));
-                m_rgRhoHistory.Add(0);
+                m_colBlobHistoryS.Clear(true);
+                m_colBlobHistoryY.Clear(true);
+                m_rgRhoHistory.Clear();
+
+                if (m_blobGradients != null)
+                {
+                    m_blobGradients.Dispose();
+                    m_blobGradients = null;
+                }
+
+                if (m_blobGradientsPrev != null)
+                {
+                    m_blobGradientsPrev.Dispose();
+                    m_blobGradientsPrev = null;
+                }
+
+                if (m_blobDirection != null)
+                {
+                    m_blobDirection.Dispose();
+                    m_blobDirection = null;
+                }
+
+                throw excpt;
+            }
+            finally
+            {
             }
         }
 
