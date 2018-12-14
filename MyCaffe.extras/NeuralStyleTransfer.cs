@@ -74,6 +74,7 @@ namespace MyCaffe.extras
         /// <param name="bCaffeModel">Specifies whether or not the weights are in the caffe (<i>true</i>) or mycaffe (<i>false</i>) format.</param>
         /// <param name="solverType">Optionally, specifies the solver type to use (default = LBFGS).</param>
         /// <param name="dfLearningRate">Optionally, specifies the solver learning rate (default = 1.0).</param>
+        /// <param name="nLBFGSCorrections">Optionally, specifies the number of LBFGS corrections to use (default = 100, only applies when using LBFGS solver).</param>
         /// <param name="netShare">Optionally, specifies a net to share.</param>
         public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, string strModelType, string strModel, byte[] rgWeights, bool bCaffeModel, SolverParameter.SolverType solverType = SolverParameter.SolverType.LBFGS, double dfLearningRate = 1.0, int nLBFGSCorrections = 100, Net<T> netShare = null)
         {
