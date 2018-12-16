@@ -726,6 +726,57 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// The <c>ConvertMacro</c> method is used to replace a set of macros in a given string.
+        /// </summary>
+        /// <param name="strRaw">Specifies the raw string.</param>
+        /// <param name="strMacroName">Specifies the macro to be replaced.</param>
+        /// <param name="strReplacement">Specifies the replacement string.</param>
+        /// <returns>The new string with all macros replaced is returned.</returns>
+        public static string ReplaceMacro(string strRaw, string strMacroName, string strReplacement)
+        {
+            int nPos = 0;
+            string strOut = "";
+
+            while (strRaw.Length > 0)
+            {
+                nPos = strRaw.IndexOf(strMacroName);
+
+                if (nPos >= 0)
+                {
+                    strOut += strRaw.Substring(0, nPos);
+                    strOut += strReplacement;
+                    strRaw = strRaw.Substring(nPos + strMacroName.Length);
+                }
+                else
+                {
+                    strOut += strRaw;
+                    strRaw = "";
+                }
+            }
+
+            return strOut;
+        }
+
+        /// <summary>
+        /// The <c>ReplaceMacros</c> method is used to replace a set of macros in a given string.
+        /// </summary>
+        /// <param name="strRaw">Specifies the raw string.</param>
+        /// <param name="rgMacros">Specifies the set of macros.</param>
+        /// <returns>The new string with the macros replaced, is returned.</returns>
+        public static string ReplaceMacros(string strRaw, List<KeyValuePair<string, string>> rgMacros)
+        {
+            string strOut = strRaw;
+
+            foreach (KeyValuePair<string, string> kv in rgMacros)
+            {
+                strOut = ReplaceMacro(strOut, kv.Key, kv.Value);
+            }
+
+            return strOut;
+        }
+
+
+        /// <summary>
         /// Convert a date time into minutes since 1/1/1980
         /// </summary>
         /// <param name="dt">Specifies the datetime to convert.</param>
