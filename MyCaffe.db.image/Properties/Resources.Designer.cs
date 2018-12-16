@@ -203,7 +203,7 @@ namespace MyCaffe.db.image.Properties {
         ///	[ID] [int] IDENTITY(1,1) NOT NULL,
         ///	[Name] [varchar](512) NULL,
         ///	[OwnerID] [nvarchar](60) NULL,
-        /// CONSTRAINT [PK_ModelGroups_1] PRIMARY KEY CLUSTERED 
+        /// CONSTRAINT [PK_ModelGroups] PRIMARY KEY CLUSTERED 
         ///(
         ///	[ID] ASC
         ///)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
