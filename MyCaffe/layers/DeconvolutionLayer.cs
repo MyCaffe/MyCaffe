@@ -482,6 +482,7 @@ namespace MyCaffe.layers
                                               m_tZero,
                                               m_rghTopDesc[i],
                                               hTopData, m_nTopOffset * g);
+                    m_cuda.SynchronizeStream(m_rghStream[g]);
 
                     // Bias.
                     if (m_bBiasTerm)
@@ -495,6 +496,7 @@ namespace MyCaffe.layers
                                               m_tOne,
                                               m_rghTopDesc[i],
                                               hTopData, m_nTopOffset * g);
+                        m_cuda.SynchronizeStream(m_rghStream[g]);
                     }
                 }
 
@@ -502,13 +504,6 @@ namespace MyCaffe.layers
                 // stream, by launching an empty kernel into the default (null) stream.
                 m_cuda.SynchronizeThread();
             }
-
-            for (int g = 0; g < m_nGroup; g++)
-            {
-                m_cuda.SynchronizeStream(m_rghStream[g]);
-            }
-
-            m_cuda.SynchronizeDevice();
         }
 
         /// <summary>
@@ -600,14 +595,14 @@ namespace MyCaffe.layers
                 // Synchronize the work across groups, each of which went into its own
                 // stream, by launching an empty kernel into the default (null) stream.
                 m_cuda.SynchronizeThread();
-            }
 
-            for (int g = 0; g < m_nGroup; g++)
-            {
-                m_cuda.SynchronizeStream(m_rghStream[g]);
+                for (int g = 0; g < m_nGroup; g++)
+                {
+                    m_cuda.SynchronizeStream(m_rghStream[0 * m_nGroup + g]);
+                    m_cuda.SynchronizeStream(m_rghStream[1 * m_nGroup + g]);
+                    m_cuda.SynchronizeStream(m_rghStream[2 * m_nGroup + g]);
+                }
             }
-
-            m_cuda.SynchronizeDevice();
         }
     }
 }
