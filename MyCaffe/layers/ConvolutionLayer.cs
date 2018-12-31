@@ -525,8 +525,6 @@ namespace MyCaffe.layers
                     }
                 }
             }
-
-            m_cuda.SynchronizeDevice();
         }
 
         /// <summary>
@@ -559,7 +557,7 @@ namespace MyCaffe.layers
                     // Synchronize the work across groups, each of which went into its own stream.
                     for (int g = 0; g < m_nGroup; g++)
                     {
-                        m_cuda.SynchronizeStream(m_rghStream[g]);
+                        m_cuda.SynchronizeStream(m_rghStream[0 * m_nGroup + g]);
                     }
                 }
             }
@@ -592,7 +590,7 @@ namespace MyCaffe.layers
                     // Synchronize the work across groups, each of which went into its own stream.
                     for (int g = 0; g < m_nGroup; g++)
                     {
-                        m_cuda.SynchronizeStream(m_rghStream[g]);
+                        m_cuda.SynchronizeStream(m_rghStream[1 * m_nGroup + g]);
                     }
                 }
             }
@@ -625,12 +623,10 @@ namespace MyCaffe.layers
                     // Synchronize the work across groups, each of which went into its own stream.
                     for (int g = 0; g < m_nGroup; g++)
                     {
-                        m_cuda.SynchronizeStream(m_rghStream[g]);
+                        m_cuda.SynchronizeStream(m_rghStream[2 * m_nGroup + g]);
                     }
                 }
             }
-
-            m_cuda.SynchronizeDevice();
         }
     }
 }
