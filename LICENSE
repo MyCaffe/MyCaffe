@@ -499,6 +499,12 @@ license and copyright terms herein.
   SOFTWARE.
   ** end ResNet-56 License **
   
+  Some of the models (VGG16 and VGG19) were derived from the VGG models by
+  K. Simonyan, A. Zisserman and available at http://www.robots.ox.ac.uk/~vgg/research/very_deep/
+  under the Creative Commons Attribution License (https://creativecommons.org/licenses/by/4.0/),
+  also see 'Very Deep Convolutional Networks for Large-Scale Image Recognition' 
+  (https://arxiv.org/pdf/1409.1556.pdf) by K. Simonyan, A. Zisserman, arXiv:1409.1556 
+
   Some portions of MyCaffe (Cart-Pole Open Gym) were re-written using the open-source
   classic Cart-Pole simulation from OpenAi located at 
   https://github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py and 
