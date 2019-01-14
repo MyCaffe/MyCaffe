@@ -31,6 +31,7 @@ We have several new models supported by MyCaffe with the train_val and solution 
  - Deep convolutional auto-encoder neural networks with pooling as described in [4].
  - Policy Gradient Reinforcement Learning networks as described in [5].
  - Recurrent Learning of Char-RNN as described in [8] and [9].
+ - Neural Style Transfer as described in [10] and [11] using the VGG model described in [12]
 
 For more information on the MyCaffe implementation of Policy Gradient Reinforcement Learning, see [MyCaffe: A Complete C# Re-Write of Caffe with Reinforcement Learning](https://arxiv.org/abs/1810.02272) by D. Brown, 2018. 
 
@@ -58,6 +59,12 @@ Source code available on GitHub at <a href="https://github.com/stella-emu/stella
 [8] [The Unreasonable Effectiveness of Recurrent Neural Networks](http://karpathy.github.io/2015/05/21/rnn-effectiveness/) by Andrej Karpathy, 2015.
 
 [9] [adepierre/caffe-char-rnn Github](https://github.com/adepierre/caffe-char-rnn) by adepierre, 2017.
+
+[10] [A Neural Algorithm of Artistic Style](https://arxiv.org/abs/1508.06576) Leon A. Gatys, Alexander S. Ecker, Matthias Bethge, 2015, arXiv:1508:06576
+
+[11] [ftokarev/caffe Github](https://github.com/ftokarev/caffe-neural-style) by ftokarev, 2017
+
+[12] [Very Deep Convolutional Networks for Large-Scale Image Recognition](https://arxiv.org/pdf/1409.1556.pdf) by K. Simonyan, A. Zisserman, arXiv:1409.1556
 
 For more information on the C++ CAFFE open-source project, please see the following <a href="http://caffe.berkeleyvision.org/">link</a>.
 
