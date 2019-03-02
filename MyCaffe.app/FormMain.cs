@@ -53,6 +53,7 @@ namespace MyCaffe.app
         CancelEvent m_evtCancelNs = new CancelEvent();
         MyCaffeGymUiServiceHost m_gymHost;
         TestingProgressGet m_progress = new TestingProgressGet();
+        string m_strNsResults = null;
 
         delegate void fnSetStatus(string strMsg, STATUS status, bool bBreath);
         delegate void fnNsDone();
@@ -460,6 +461,7 @@ namespace MyCaffe.app
                 createMyCaffeToolStripMenuItem.Enabled = false;
                 destroyMyCaffeToolStripMenuItem.Enabled = false;
                 deviceInformationToolStripMenuItem.Enabled = false;
+                runTestImageToolStripMenuItem.Enabled = false;
                 m_bwLoadMnistDatabase.RunWorkerAsync(dlg.Parameters);
             }
         }
@@ -478,6 +480,7 @@ namespace MyCaffe.app
                 createMyCaffeToolStripMenuItem.Enabled = false;
                 destroyMyCaffeToolStripMenuItem.Enabled = false;
                 deviceInformationToolStripMenuItem.Enabled = false;
+                runTestImageToolStripMenuItem.Enabled = false;
                 m_bwLoadCiFar10Database.RunWorkerAsync(dlg.Parameters);
             }
         }
@@ -510,12 +513,15 @@ namespace MyCaffe.app
             specialTestsToolStripMenuItem.Enabled = !m_bLoading && !m_bCaffeCreated;
             loadMNISTToolStripMenuItem.Enabled = !m_bLoading;
             loadCIFAR10ToolStripMenuItem.Enabled = !m_bLoading;
+            runTestImageToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
             cancelToolStripMenuItem.Enabled = false;
         }
 
         private void m_bw_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             ProgressInfo pi = e.UserState as ProgressInfo;
+
+            runTestImageToolStripMenuItem.Enabled = false;
 
             if (pi.Alive.HasValue)
             {
@@ -531,6 +537,7 @@ namespace MyCaffe.app
                     trainMNISTToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
                     testMNISTToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
                     deviceInformationToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
+                    runTestImageToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
                 }
                 else
                 {
@@ -638,6 +645,7 @@ namespace MyCaffe.app
             testMNISTToolStripMenuItem.Enabled = false;
             loadMNISTToolStripMenuItem.Enabled = false;
             deviceInformationToolStripMenuItem.Enabled = false;
+            runTestImageToolStripMenuItem.Enabled = false;
             abortToolStripMenuItem.Enabled = true;
             m_evtCancel.Reset();
             m_Cmd = COMMAND.DESTROY;
@@ -1318,6 +1326,18 @@ namespace MyCaffe.app
                     strResultPath = strPath;
                 }
 
+                if (string.IsNullOrEmpty(strStyleFile))
+                {
+                    strStyleFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                    strStyleFile += "\\MyCaffe\\test_data\\data\\images\\style\\starry_night.jpg";
+                }
+
+                if (string.IsNullOrEmpty(strContentFile))
+                {
+                    strContentFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                    strContentFile += "\\MyCaffe\\test_data\\data\\images\\content\\sanfrancisco.jpg";
+                }
+
                 FormNeuralStyle dlg = new FormNeuralStyle(strStyleFile, strContentFile, nIterations, strModelName, strSolverType, dfLr, strResultPath, nIntermediateIterations, dfTvLoss, nMaxImageSize);
 
                 if (dlg.ShowDialog() != DialogResult.OK)
@@ -1336,6 +1356,7 @@ namespace MyCaffe.app
                 Properties.Settings.Default.Save();
 
                 m_log.WriteLine("starting neural style transfer...");
+                m_log.WriteLine("Results to be placed in: " + strResultPath);
                 m_evtCancelNs.Reset();
                 m_nsTask = Task.Factory.StartNew(new Action<object>(nsThread), new Tuple<CancelEvent, NeuralStyleInfo>(m_evtCancelNs, dlg.Info));
                 startCartPoleTrainerToolStripMenuItem.Enabled = false;
@@ -1357,6 +1378,13 @@ namespace MyCaffe.app
             startCartPoleTrainerToolStripMenuItem.Enabled = true;
             startAtariTrainerToolStripMenuItem.Enabled = true;
             startNeuralStyleTransferToolStripMenuItem.Text = "Start Neural Style Transfer";
+
+            if (File.Exists(m_strNsResults))
+            {
+                Process p = new Process();
+                p.StartInfo = new ProcessStartInfo(m_strNsResults);
+                p.Start();
+            }
         }
 
         private void nsThread(object obj)
@@ -1368,7 +1396,7 @@ namespace MyCaffe.app
 
             test.Log.OnWriteLine += Log_OnWriteLine1;
             test.CancelEvent.AddCancelOverride(evtCancel);
-            test.TestNeuralStyleTransfer(info.StyleImageFile, info.ContentImageFile, info.Iterations, info.IntermediateIterations, info.ResultPath, info.ModelName, info.SolverType, info.LearningRate, info.TVLoss, info.MaxImageSize);
+            m_strNsResults = test.TestNeuralStyleTransfer(info.StyleImageFile, info.ContentImageFile, info.Iterations, info.IntermediateIterations, info.ResultPath, info.ModelName, info.SolverType, info.LearningRate, info.TVLoss, info.MaxImageSize);
 
             if (evtCancel.WaitOne(0))
                 test.Log.WriteLine("training aborted.");
