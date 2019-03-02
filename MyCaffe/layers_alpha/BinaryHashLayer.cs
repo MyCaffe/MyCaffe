@@ -175,12 +175,12 @@ namespace MyCaffe.layers.alpha
             colTop[0].ReshapeLike(colBottom[0]);
 
             Tuple<double, double, double, double> normSize1 = m_cuda.minmax(colBottom[1].count(), 0, 0, 0);
-            int nMax1 = (int)Math.Max(normSize1.Item1, normSize1.Item1);
+            int nMax1 = (int)Math.Max(normSize1.Item1, normSize1.Item2);
             if (m_blobNormalized.count() < nMax1)
                 m_blobNormalized.Reshape(nMax1, 1, 1, 1);
 
             Tuple<double, double, double, double> normSize2 = m_cuda.minmax(colBottom[2].count(), 0, 0, 0);
-            int nMax2 = (int)Math.Max(normSize2.Item1, normSize2.Item1);
+            int nMax2 = (int)Math.Max(normSize2.Item1, normSize2.Item2);
             if (m_blobNormalized.count() < nMax2)
                 m_blobNormalized.Reshape(nMax2, 1, 1, 1);
 
