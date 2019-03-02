@@ -100,7 +100,7 @@ namespace MyCaffe.test
 
     interface INeuralStyleTransferTest : ITest
     {
-        void TestNeuralStyleTransfer(string strStyleImg, string strContentImg, int nIteration, int nIntermediateOutput, string strResultDir, string strModelName, string strSolverType, double dfLearningRate, double dfTvLoss = 0, int nMaxImageSize = 640, bool bEnablePartial = false);
+        string TestNeuralStyleTransfer(string strStyleImg, string strContentImg, int nIteration, int nIntermediateOutput, string strResultDir, string strModelName, string strSolverType, double dfLearningRate, double dfTvLoss = 0, int nMaxImageSize = 640, bool bEnablePartial = false);
     }
 
     class NeuralStyleTransferTest : TestBase
@@ -221,7 +221,8 @@ namespace MyCaffe.test
         /// <param name="dfTvLoss">Optionally, specifies the TVLoss weights which acts as a smoothing factor to use (default = 0, which disables the TVLoss).</param>
         /// <param name="nMaxSize">Optionally, specifies the maximum image size - if you run out of memory when performing neural style, reduce this size.</param>
         /// <param name="bEnablePartial">When enabled, the partial solution functionality is tested.</param>
-        public void TestNeuralStyleTransfer(string strStyleImg, string strContentImg, int nIterations, int nIntermediateOutput, string strResultDir, string strName, string strSolverType = "LBFGS", double dfLearningRate = 1.0, double dfTvLoss = 0, int nMaxSize = 640, bool bEnablePartial = false)
+        /// <returns>The name of the resulting file is returned.</returns>
+        public string TestNeuralStyleTransfer(string strStyleImg, string strContentImg, int nIterations, int nIntermediateOutput, string strResultDir, string strName, string strSolverType = "LBFGS", double dfLearningRate = 1.0, double dfTvLoss = 0, int nMaxSize = 640, bool bEnablePartial = false)
         {
             CancelEvent evtCancel = new CancelEvent();
             SolverParameter.SolverType solverType = getSolverType(strSolverType);
@@ -297,6 +298,8 @@ namespace MyCaffe.test
 
             bmpResult.Save(strResultFile, ImageFormat.Png);
             bmpResult.Dispose();
+
+            return strResultFile;
         }
 
         private void Ns_OnIntermediateOutput(object sender, NeuralStyleIntermediateOutputArgs e)
