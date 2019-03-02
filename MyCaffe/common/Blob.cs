@@ -1757,15 +1757,65 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="work">Specifies a workspace used to optimize the query.</param>
         /// <param name="bDetectNans">Optionally, specifies whether or not to detect Nan's and Infinity values.</param>
+        /// <param name="nIndexUpTo">Optionally specifies to the shape index to run individual runs up through, a value of 0 runs on all items at once.</param>
         /// <returns>A tuple containing the 'min', 'max' and optionally 'number of nans' and 'number of infinity' is returned for the data.</returns>
-        public Tuple<double, double, double, double> minmax_data(Blob<T> work, bool bDetectNans = false)
+        public Tuple<double, double, double, double> minmax_data(Blob<T> work, bool bDetectNans = false, int nIndexUpTo = 0)
         {
             if (count() == 0 || gpu_data == 0)
                 return new Tuple<double, double, double, double>(0, 0, 0, 0);
 
             work.ReshapeLike(this);
 
-            return m_cuda.minmax(count(), gpu_data, work.mutable_gpu_data, work.mutable_gpu_diff, bDetectNans);
+            int nNum = 1;
+            for (int i = 0; i < nIndexUpTo && i<m_rgShape.Count; i++)
+            {
+                nNum *= m_rgShape[i];
+            }
+
+            if (nIndexUpTo == 0 || nIndexUpTo >= m_rgShape.Count || nNum == 1)
+                return m_cuda.minmax(count(), gpu_data, work.mutable_gpu_data, work.mutable_gpu_diff, bDetectNans);
+
+            List<double> rgdfMax = new List<double>();
+            List<double> rgdfMin = new List<double>();
+            List<double> rgdfItem3 = new List<double>();
+            List<double> rgdfItem4 = new List<double>();
+            List<int> rgShape = new List<int>();
+            nNum = 1;
+
+            for (int i = 0; i < m_rgShape.Count; i++)
+            {
+                if (i < nIndexUpTo)
+                {
+                    nNum *= m_rgShape[i];
+                    rgShape.Add(1);
+                }
+                else
+                {
+                    rgShape.Add(m_rgShape[i]);
+                }
+            }
+
+            Blob<T> item = new Blob<T>(m_cuda, m_log, rgShape, false);        
+
+            for (int i = 0; i < nNum; i++)
+            {
+                int nCount = item.count();
+                m_cuda.copy(nCount, gpu_data, item.mutable_gpu_data, i * nCount, 0);
+                Tuple<double, double, double, double> minmax = m_cuda.minmax(nCount, item.gpu_data, work.mutable_gpu_data, work.mutable_gpu_diff, bDetectNans);
+                rgdfMin.Add(minmax.Item1);
+                rgdfMax.Add(minmax.Item2);
+                rgdfItem3.Add(minmax.Item3);
+                rgdfItem4.Add(minmax.Item4);
+            }
+
+            item.Dispose();
+
+            double dfMin = rgdfMin.Min(p => p);
+            double dfMax = rgdfMax.Max(p => p);
+            double dfItem3 = rgdfItem3.Sum(p => p);
+            double dfItem4 = rgdfItem4.Sum(p => p);
+
+            return new Tuple<double, double, double, double>(dfMin, dfMax, dfItem3, dfItem4);
         }
 
         /// <summary>
@@ -1773,15 +1823,65 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="work">Specifies a workspace used to optimize the query.</param>
         /// <param name="bDetectNans">Optionally, specifies whether or not to detect Nan's and Infinity values.</param>
+        /// <param name="nIndexUpTo">Optionally specifies to the shape index to run individual runs up through, a value of 0 runs on all items at once.</param>
         /// <returns>A tuple containing the 'min', 'max' and optionally 'number of nans' and 'number of infinity' is returned for the data.</returns>
-        public Tuple<double, double, double, double> minmax_diff(Blob<T> work, bool bDetectNans = false)
+        public Tuple<double, double, double, double> minmax_diff(Blob<T> work, bool bDetectNans = false, int nIndexUpTo = 0)
         {
             if (count() == 0 || gpu_diff == 0)
                 return new Tuple<double, double, double, double>(0, 0, 0, 0);
 
             work.ReshapeLike(this);
 
-            return m_cuda.minmax(count(), gpu_diff, work.mutable_gpu_data, work.mutable_gpu_diff, bDetectNans);
+            int nNum = 1;
+            for (int i = 0; i < nIndexUpTo && i < m_rgShape.Count; i++)
+            {
+                nNum *= m_rgShape[i];
+            }
+
+            if (nIndexUpTo == 0 || nIndexUpTo >= m_rgShape.Count || nNum == 1)
+                return m_cuda.minmax(count(), gpu_diff, work.mutable_gpu_data, work.mutable_gpu_diff, bDetectNans);
+
+            List<double> rgdfMax = new List<double>();
+            List<double> rgdfMin = new List<double>();
+            List<double> rgdfItem3 = new List<double>();
+            List<double> rgdfItem4 = new List<double>();
+            List<int> rgShape = new List<int>();
+            nNum = 1;
+
+            for (int i = 0; i < m_rgShape.Count; i++)
+            {
+                if (i < nIndexUpTo)
+                {
+                    nNum *= m_rgShape[i];
+                    rgShape.Add(1);
+                }
+                else
+                {
+                    rgShape.Add(m_rgShape[i]);
+                }
+            }
+
+            Blob<T> item = new Blob<T>(m_cuda, m_log, rgShape, false);
+
+            for (int i = 0; i < nNum; i++)
+            {
+                int nCount = item.count();
+                m_cuda.copy(nCount, gpu_diff, item.mutable_gpu_data, i * nCount, 0);
+                Tuple<double, double, double, double> minmax = m_cuda.minmax(nCount, item.gpu_data, work.mutable_gpu_data, work.mutable_gpu_diff, bDetectNans);
+                rgdfMin.Add(minmax.Item1);
+                rgdfMax.Add(minmax.Item2);
+                rgdfItem3.Add(minmax.Item3);
+                rgdfItem4.Add(minmax.Item4);
+            }
+
+            item.Dispose();
+
+            double dfMin = rgdfMin.Min(p => p);
+            double dfMax = rgdfMax.Max(p => p);
+            double dfItem3 = rgdfItem3.Sum(p => p);
+            double dfItem4 = rgdfItem4.Sum(p => p);
+
+            return new Tuple<double, double, double, double>(dfMin, dfMax, dfItem3, dfItem4);
         }
 
         /// <summary>
