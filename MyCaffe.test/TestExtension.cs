@@ -87,7 +87,10 @@ namespace MyCaffe.test
 
         public void TestRun()
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.dll";
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            if (!File.Exists(strPath))
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+
             long hExtension = m_cuda.CreateExtension(strPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
