@@ -1752,35 +1752,56 @@ namespace MyCaffe.common
             }
         }
 
+        private int get_index_up_to(List<int> rgShape, int nMax = 12800)
+        {
+            int nIndexUpTo = m_rgShape.Count - 1;
+            int nNum = m_rgShape[nIndexUpTo];
+
+            while (nIndexUpTo > 0 && nNum < nMax)
+            {
+                nNum *= m_rgShape[nIndexUpTo-1];
+                if (nNum < nMax)
+                    nIndexUpTo--;
+            }
+
+            if (nNum > 1 && nIndexUpTo == 0 && m_rgShape.Count > 1)
+                nIndexUpTo++;
+
+            return nIndexUpTo;
+        }
+
         /// <summary>
         /// Returns the minimum and maximum values in the data of the Blob.
         /// </summary>
         /// <param name="work">Specifies a workspace used to optimize the query.</param>
         /// <param name="bDetectNans">Optionally, specifies whether or not to detect Nan's and Infinity values.</param>
-        /// <param name="nIndexUpTo">Optionally specifies to the shape index to run individual runs up through, a value of 0 runs on all items at once.</param>
         /// <returns>A tuple containing the 'min', 'max' and optionally 'number of nans' and 'number of infinity' is returned for the data.</returns>
-        public Tuple<double, double, double, double> minmax_data(Blob<T> work, bool bDetectNans = false, int nIndexUpTo = 0)
+        public Tuple<double, double, double, double> minmax_data(Blob<T> work, bool bDetectNans = false)
         {
-            if (count() == 0 || gpu_data == 0)
+            int nCount = count();
+
+            if (nCount == 0 || gpu_data == 0)
                 return new Tuple<double, double, double, double>(0, 0, 0, 0);
 
-            work.ReshapeLike(this);
-
-            int nNum = 1;
-            for (int i = 0; i < nIndexUpTo && i<m_rgShape.Count; i++)
+            if (nCount == 1)
             {
-                nNum *= m_rgShape[i];
+                double[] rgdf = Utility.ConvertVec<T>(mutable_cpu_data);
+                return new Tuple<double, double, double, double>(rgdf[0], rgdf[0], double.IsNaN(rgdf[0]) ? 1 : 0, double.IsInfinity(rgdf[0]) ? 1 : 0);
             }
 
-            if (nIndexUpTo == 0 || nIndexUpTo >= m_rgShape.Count || nNum == 1)
-                return m_cuda.minmax(count(), gpu_data, work.mutable_gpu_data, work.mutable_gpu_diff, bDetectNans);
+            work.Reshape(nCount + 64, 1, 1, 1);
+            work.ReshapeLike(this);
+
+            int nIndexUpTo = get_index_up_to(m_rgShape);
+            if (nIndexUpTo == 0 || nIndexUpTo >= m_rgShape.Count)
+                return m_cuda.minmax(nCount, gpu_data, work.mutable_gpu_data, work.mutable_gpu_diff, bDetectNans);
 
             List<double> rgdfMax = new List<double>();
             List<double> rgdfMin = new List<double>();
             List<double> rgdfItem3 = new List<double>();
             List<double> rgdfItem4 = new List<double>();
             List<int> rgShape = new List<int>();
-            nNum = 1;
+            int nNum = 1;
 
             for (int i = 0; i < m_rgShape.Count; i++)
             {
@@ -1799,7 +1820,7 @@ namespace MyCaffe.common
 
             for (int i = 0; i < nNum; i++)
             {
-                int nCount = item.count();
+                nCount = item.count();
                 m_cuda.copy(nCount, gpu_data, item.mutable_gpu_data, i * nCount, 0);
                 Tuple<double, double, double, double> minmax = m_cuda.minmax(nCount, item.gpu_data, work.mutable_gpu_data, work.mutable_gpu_diff, bDetectNans);
                 rgdfMin.Add(minmax.Item1);
@@ -1823,30 +1844,33 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="work">Specifies a workspace used to optimize the query.</param>
         /// <param name="bDetectNans">Optionally, specifies whether or not to detect Nan's and Infinity values.</param>
-        /// <param name="nIndexUpTo">Optionally specifies to the shape index to run individual runs up through, a value of 0 runs on all items at once.</param>
         /// <returns>A tuple containing the 'min', 'max' and optionally 'number of nans' and 'number of infinity' is returned for the data.</returns>
-        public Tuple<double, double, double, double> minmax_diff(Blob<T> work, bool bDetectNans = false, int nIndexUpTo = 0)
+        public Tuple<double, double, double, double> minmax_diff(Blob<T> work, bool bDetectNans = false)
         {
-            if (count() == 0 || gpu_diff == 0)
+            int nCount = count();
+
+            if (nCount == 0 || gpu_diff == 0)
                 return new Tuple<double, double, double, double>(0, 0, 0, 0);
 
-            work.ReshapeLike(this);
-
-            int nNum = 1;
-            for (int i = 0; i < nIndexUpTo && i < m_rgShape.Count; i++)
+            if (nCount == 1)
             {
-                nNum *= m_rgShape[i];
+                double[] rgdf = Utility.ConvertVec<T>(mutable_cpu_diff);
+                return new Tuple<double, double, double, double>(rgdf[0], rgdf[0], double.IsNaN(rgdf[0]) ? 1 : 0, double.IsInfinity(rgdf[0]) ? 1 : 0);
             }
 
-            if (nIndexUpTo == 0 || nIndexUpTo >= m_rgShape.Count || nNum == 1)
-                return m_cuda.minmax(count(), gpu_diff, work.mutable_gpu_data, work.mutable_gpu_diff, bDetectNans);
+            work.Reshape(nCount + 64, 1, 1, 1);
+            work.ReshapeLike(this);
+
+            int nIndexUpTo = get_index_up_to(m_rgShape);
+            if (nIndexUpTo == 0 || nIndexUpTo >= m_rgShape.Count)
+                return m_cuda.minmax(nCount, gpu_diff, work.mutable_gpu_data, work.mutable_gpu_diff, bDetectNans);
 
             List<double> rgdfMax = new List<double>();
             List<double> rgdfMin = new List<double>();
             List<double> rgdfItem3 = new List<double>();
             List<double> rgdfItem4 = new List<double>();
             List<int> rgShape = new List<int>();
-            nNum = 1;
+            int nNum = 1;
 
             for (int i = 0; i < m_rgShape.Count; i++)
             {
@@ -1865,7 +1889,7 @@ namespace MyCaffe.common
 
             for (int i = 0; i < nNum; i++)
             {
-                int nCount = item.count();
+                nCount = item.count();
                 m_cuda.copy(nCount, gpu_diff, item.mutable_gpu_data, i * nCount, 0);
                 Tuple<double, double, double, double> minmax = m_cuda.minmax(nCount, item.gpu_data, work.mutable_gpu_data, work.mutable_gpu_diff, bDetectNans);
                 rgdfMin.Add(minmax.Item1);
