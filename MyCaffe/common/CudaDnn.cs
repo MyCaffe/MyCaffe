@@ -1372,15 +1372,22 @@ namespace MyCaffe.common
         /// <returns>The number of GPU's is returned.</returns>
         public int GetDeviceCount()
         {
-            if (m_dt == DataType.DOUBLE)
+            try
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETDEVICEPROP, new double[] { 0, (int)DEVPROP.DEVICECOUNT });
-                return (int)rg[0];
+                if (m_dt == DataType.DOUBLE)
+                {
+                    double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETDEVICEPROP, new double[] { 0, (int)DEVPROP.DEVICECOUNT });
+                    return (int)rg[0];
+                }
+                else
+                {
+                    float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETDEVICEPROP, new float[] { 0, (int)DEVPROP.DEVICECOUNT });
+                    return (int)rg[0];
+                }
             }
-            else
+            catch (Exception)
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETDEVICEPROP, new float[] { 0, (int)DEVPROP.DEVICECOUNT });
-                return (int)rg[0];
+                return 0;
             }
         }
 
