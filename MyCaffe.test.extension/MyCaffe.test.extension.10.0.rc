@@ -51,8 +51,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,10,1,14
- PRODUCTVERSION 0,10,1,14
+ FILEVERSION 0,10,1,21
+ PRODUCTVERSION 0,10,1,21
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -69,12 +69,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "SignalPop LLC"
             VALUE "FileDescription", "This file is only used for testing the extension with CUDA 10.0"
-            VALUE "FileVersion", "0.10.1.14"
+            VALUE "FileVersion", "0.10.1.21"
             VALUE "InternalName", "MyCaffe.test.extension"
             VALUE "LegalCopyright", "Copyright (C) 2018-2019 SignalPop LLC.  All rights reserved."
             VALUE "OriginalFilename", "MyCaffe.test.extension"
             VALUE "ProductName", "MyCaffe"
-            VALUE "ProductVersion", "0.10.1.14"
+            VALUE "ProductVersion", "0.10.1.21"
         END
     END
     BLOCK "VarFileInfo"
