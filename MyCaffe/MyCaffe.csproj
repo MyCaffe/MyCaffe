@@ -109,13 +109,13 @@
     <Compile Include="layers\DebugLayer.cs" />
     <Compile Include="layers\SoftmaxLayer.cs" />
     <Compile Include="layers_alpha\BinaryHashLayer.cs" />
-    <Compile Include="layers_alpha\GRNLayer.cs" />
+    <Compile Include="layers_beta\GRNLayer.cs" />
     <Compile Include="layers_alpha\TripletDataLayer.cs" />
     <Compile Include="layers_beta\KnnLayer.cs" />
     <Compile Include="layers_alpha\TripletSelectLayer.cs" />
     <Compile Include="layers_alpha\TripletLossLayer.cs" />
     <Compile Include="layers_alpha\TripletLossSimpleLayer.cs" />
-    <Compile Include="layers_alpha\NormalizationLayer.cs" />
+    <Compile Include="layers_beta\NormalizationLayer.cs" />
     <Compile Include="layers\SPPLayer.cs" />
     <Compile Include="layers\BatchReindexLayer.cs" />
     <Compile Include="layers\EmbedLayer.cs" />
