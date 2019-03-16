@@ -38,6 +38,19 @@ For more information on the MyCaffe implementation of Policy Gradient Reinforcem
 MyCaffe now supports the Arcade-Learning-Environment by [6] based on the Stella Atari-2600 emulator from [7], via the AleControl from SignalPop.  
 For more information, get the <a href="https://www.nuget.org/packages?q=AleControl">AleControl on Nuget</a>, or visit the <a href="https://github.com/MyCaffe/AleControl">AleControl on Github</a>.
 
+<h2>License and Citation</h2>
+MyCaffe is released under the [Apache License 2.0](https://github.com/MyCaffe/MyCaffe/blob/master/LICENSE).  
+
+Please cite MyCaffe in your publications and projects if it helps you:
+<code>
+@article{brown2018mycaffe,
+  Author = {Brown, David W.}
+  Journal = {arXiv preprint arXiv:1810.02272},
+  Title = {MyCaffe: A Complete C# Re-Write of Caffe with Reinforcement Learning}
+  Year = {2018}
+}
+</code>
+
 [1] [CAFFE: Convolutional Architecture for Fast Feature Embedding](https://arxiv.org/abs/1408.5093) by Yangqing Jai, Evan Shelhamer, Jeff Donahue, 
 Sergey Karayev, Jonathan Long, Ross Girshick, Sergio Guadarrama, and Trevor Darrell, 2014.
 
