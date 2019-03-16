@@ -43,14 +43,14 @@ MyCaffe is released under the [Apache License 2.0](https://github.com/MyCaffe/My
 
 Please cite MyCaffe in your publications and projects if it helps you:
 <pre>
-	<code>
-		@article{brown2018mycaffe,
-		  Author = {Brown, David W.}
-		  Journal = {arXiv preprint arXiv:1810.02272},
-		  Title = {MyCaffe: A Complete C# Re-Write of Caffe with Reinforcement Learning}
-		  Year = {2018}
-		}
-	</code>
+<code>
+	@article{brown2018mycaffe,
+	  Author = {Brown, David W.}
+	  Journal = {arXiv preprint arXiv:1810.02272},
+	  Title = {MyCaffe: A Complete C# Re-Write of Caffe with Reinforcement Learning}
+	  Year = {2018}
+	}
+</code>
 </pre>
 
 [1] [CAFFE: Convolutional Architecture for Fast Feature Embedding](https://arxiv.org/abs/1408.5093) by Yangqing Jai, Evan Shelhamer, Jeff Donahue, 
