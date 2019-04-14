@@ -544,28 +544,25 @@ namespace MyCaffe.test
 
             List<SourceDescriptor> rgSrcId = new List<SourceDescriptor>() { src1, src2 };
 
-            for (int k = 0; k < 2; k++)
+            factory.Open(rgSrcId[0]);
+            factory.DeleteSourceData();
+
+            int nCount = factory.GetImageCount();
+            for (int i = nCount; i < nCount + 5; i++)
             {
-                factory.Open(rgSrcId[k]);
-                factory.DeleteSourceData();
+                List<byte> rgData = new List<byte>();
 
-                int nCount = factory.GetImageCount();
-                for (int i = nCount; i < 5; i++)
+                for (int j = 0; j < 24; j++)
                 {
-                    List<byte> rgData = new List<byte>();
-
-                    for (int j = 0; j < 24; j++)
-                    {
-                        int datum = unique_pixels ? j : i;
-                        rgData.Add((byte)datum);
-                    }
-
-                    SimpleDatum sd = new SimpleDatum(false, 2, 4, 3, i, DateTime.Today, rgData, null, 0, false, i);
-                    factory.PutRawImage(i, sd);
+                    int datum = unique_pixels ? j : i;
+                    rgData.Add((byte)datum);
                 }
 
-                factory.Close();
+                SimpleDatum sd = new SimpleDatum(false, 2, 4, 3, i, DateTime.Today, rgData, null, 0, false, i);
+                factory.PutRawImage(i, sd);
             }
+
+            factory.Close();
 
             DatasetDescriptor ds = new DatasetDescriptor(0, "test_data", null, null, src1, src2, null, null);
             ds.ID = factory.AddDataset(ds);
