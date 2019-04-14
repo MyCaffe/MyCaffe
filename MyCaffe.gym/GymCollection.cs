@@ -90,8 +90,14 @@ namespace MyCaffe.gym
 
                 return null;
             }
-            catch (Exception)
+            catch (Exception excpt)
             {
+                if (excpt is System.Reflection.ReflectionTypeLoadException)
+                {
+                    var typeLoadException = excpt as ReflectionTypeLoadException;
+                    var loaderExceptions = typeLoadException.LoaderExceptions;
+                }
+
                 return null;
             }
         }
