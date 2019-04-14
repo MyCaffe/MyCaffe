@@ -618,7 +618,7 @@ namespace MyCaffe.param
             return p;
         }
 
-        private void setupParams(LayerType lt)
+        private void setupParams(LayerType lt, bool bNewParams = true)
         {
             switch (lt)
             {
@@ -705,7 +705,8 @@ namespace MyCaffe.param
                 case LayerType.DECONVOLUTION:
                     expected_bottom.Add("score");
                     expected_top.Add("upscore");
-                    m_rgLayerParameters[LayerType.CONVOLUTION] = new ConvolutionParameter();
+                    if (bNewParams || m_rgLayerParameters[LayerType.CONVOLUTION] == null)
+                        m_rgLayerParameters[LayerType.CONVOLUTION] = new ConvolutionParameter();
                     break;
 
                 case LayerType.CROP:
@@ -1124,10 +1125,11 @@ namespace MyCaffe.param
         /// Set the layer type.
         /// </summary>
         /// <param name="type">Specifies the new layer type.</param>
-        public void SetType(LayerType type)
+        /// <param name="bNewParam">Optionally, specifies to create new params (default = true).</param>
+        public void SetType(LayerType type, bool bNewParam = true)
         {
             m_type = type;
-            setupParams(type);
+            setupParams(type, bNewParam);
         }
 
         /// <summary>
