@@ -1775,8 +1775,9 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="work">Specifies a workspace used to optimize the query.</param>
         /// <param name="bDetectNans">Optionally, specifies whether or not to detect Nan's and Infinity values.</param>
+        /// <param name="bUseChunks">Optionally, specifies whether or not to use the min/max on all of the memory (default) or run in chunks (true).</param>
         /// <returns>A tuple containing the 'min', 'max' and optionally 'number of nans' and 'number of infinity' is returned for the data.</returns>
-        public Tuple<double, double, double, double> minmax_data(Blob<T> work, bool bDetectNans = false)
+        public Tuple<double, double, double, double> minmax_data(Blob<T> work, bool bDetectNans = false, bool bUseChunks = false)
         {
             int nCount = count();
 
@@ -1793,7 +1794,7 @@ namespace MyCaffe.common
             work.ReshapeLike(this);
 
             int nIndexUpTo = get_index_up_to(m_rgShape);
-            if (nIndexUpTo == 0 || nIndexUpTo >= m_rgShape.Count)
+            if (nIndexUpTo == 0 || nIndexUpTo >= m_rgShape.Count || !bUseChunks)
                 return m_cuda.minmax(nCount, gpu_data, work.mutable_gpu_data, work.mutable_gpu_diff, bDetectNans);
 
             List<double> rgdfMax = new List<double>();
@@ -1844,8 +1845,9 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="work">Specifies a workspace used to optimize the query.</param>
         /// <param name="bDetectNans">Optionally, specifies whether or not to detect Nan's and Infinity values.</param>
+        /// <param name="bUseChunks">Optionally, specifies whether or not to use the min/max on all of the memory (default) or run in chunks (true).</param>
         /// <returns>A tuple containing the 'min', 'max' and optionally 'number of nans' and 'number of infinity' is returned for the data.</returns>
-        public Tuple<double, double, double, double> minmax_diff(Blob<T> work, bool bDetectNans = false)
+        public Tuple<double, double, double, double> minmax_diff(Blob<T> work, bool bDetectNans = false, bool bUseChunks = false)
         {
             int nCount = count();
 
@@ -1862,7 +1864,7 @@ namespace MyCaffe.common
             work.ReshapeLike(this);
 
             int nIndexUpTo = get_index_up_to(m_rgShape);
-            if (nIndexUpTo == 0 || nIndexUpTo >= m_rgShape.Count)
+            if (nIndexUpTo == 0 || nIndexUpTo >= m_rgShape.Count || !bUseChunks)
                 return m_cuda.minmax(nCount, gpu_diff, work.mutable_gpu_data, work.mutable_gpu_diff, bDetectNans);
 
             List<double> rgdfMax = new List<double>();
