@@ -551,14 +551,14 @@ namespace MyCaffe.test
             DatasetFactory factory = new DatasetFactory();
 
             m_log.WriteLine("Creating temporary dataset '" + m_strSrc1 + "'.");
-            SourceDescriptor src1 = new SourceDescriptor(0, m_strSrc1, 2, 4, 3, false, true);
-            src1.ID = factory.AddSource(src1);
-            m_nSrcID1 = src1.ID;
-            SourceDescriptor src2 = new SourceDescriptor(0, m_strSrc2, 2, 4, 3, false, true);
-            src2.ID = factory.AddSource(src2);
-            m_nSrcID2 = src2.ID;
+            SourceDescriptor srcTrain = new SourceDescriptor(0, m_strSrc1, 2, 4, 3, false, true);
+            srcTrain.ID = factory.AddSource(srcTrain);
+            m_nSrcID1 = srcTrain.ID;
+            SourceDescriptor srcTest = new SourceDescriptor(0, m_strSrc2, 2, 4, 3, false, true);
+            srcTest.ID = factory.AddSource(srcTest);
+            m_nSrcID2 = srcTest.ID;
 
-            List<SourceDescriptor> rgSrcId = new List<SourceDescriptor>() { src1, src2 };
+            List<SourceDescriptor> rgSrcId = new List<SourceDescriptor>() { srcTrain, srcTest };
 
             for (int k = 0; k < 2; k++)
             {
@@ -583,7 +583,7 @@ namespace MyCaffe.test
                 factory.Close();
             }
 
-            DatasetDescriptor ds = new DatasetDescriptor(0, "test_data", null, null, src1, src2, null, null);
+            DatasetDescriptor ds = new DatasetDescriptor(0, "test_data", null, null, srcTrain, srcTest, null, null);
             ds.ID = factory.AddDataset(ds);
 
             factory.UpdateDatasetCounts(ds.ID);
@@ -598,12 +598,12 @@ namespace MyCaffe.test
 
             string strName = m_strSrc1 + ".x";
             m_log.WriteLine("Creating temporary dataset '" + m_strSrc1 + "'.");
-            SourceDescriptor src1 = new SourceDescriptor(0, strName, 2, 4, 3, false, true);
-            m_nSrcID1 = factory.AddSource(src1);
-            SourceDescriptor src2 = new SourceDescriptor(0, strName + ".t", 2, 4, 3, false, true);
-            m_nSrcID2 = factory.AddSource(src2);
+            SourceDescriptor srcTrain = new SourceDescriptor(0, strName, 2, 4, 3, false, true);
+            m_nSrcID1 = factory.AddSource(srcTrain);
+            SourceDescriptor srcTest = new SourceDescriptor(0, strName + ".t", 2, 4, 3, false, true);
+            m_nSrcID2 = factory.AddSource(srcTest);
 
-            List<SourceDescriptor> rgSrcId = new List<SourceDescriptor>() { src1, src2 };
+            List<SourceDescriptor> rgSrcId = new List<SourceDescriptor>() { srcTrain, srcTest };
 
             for (int k = 0; k < 2; k++)
             {
@@ -630,7 +630,7 @@ namespace MyCaffe.test
                 factory.Close();
             }
 
-            DatasetDescriptor ds = new DatasetDescriptor(0, strName, null, null, src1, src2, null, null);
+            DatasetDescriptor ds = new DatasetDescriptor(0, strName, null, null, srcTrain, srcTest, null, null);
             ds.ID = factory.AddDataset(ds);
 
             factory.UpdateDatasetCounts(ds.ID);
