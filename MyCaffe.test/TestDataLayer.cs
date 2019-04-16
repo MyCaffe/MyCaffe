@@ -213,8 +213,12 @@ namespace MyCaffe.test
                 foreach (IDataLayerTest t in test.Tests)
                 {
                     bool unique_pixels = true;
-                    t.Fill(unique_pixels);
-                    t.TestReadCrop(Phase.TRAIN, IMAGEDB_LOAD_METHOD.LOAD_ALL);
+
+                    for (int i = 0; i < 2; i++)
+                    {
+                        t.Fill(unique_pixels);
+                        t.TestReadCrop(Phase.TRAIN, IMAGEDB_LOAD_METHOD.LOAD_ALL);
+                    }
                 }
             }
             finally
@@ -233,8 +237,12 @@ namespace MyCaffe.test
                 foreach (IDataLayerTest t in test.Tests)
                 {
                     bool unique_pixels = true;
-                    t.Fill(unique_pixels);
-                    t.TestReadCrop(Phase.TRAIN, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+
+                    for (int i = 0; i < 2; i++)
+                    {
+                        t.Fill(unique_pixels);
+                        t.TestReadCrop(Phase.TRAIN, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                    }
                 }
             }
             finally
@@ -333,8 +341,12 @@ namespace MyCaffe.test
                 foreach (IDataLayerTest t in test.Tests)
                 {
                     bool unique_pixels = true;
-                    t.Fill(unique_pixels);
-                    t.TestReadCrop(Phase.TEST, IMAGEDB_LOAD_METHOD.LOAD_ALL);
+
+                    for (int i = 0; i < 2; i++)
+                    {
+                        t.Fill(unique_pixels);
+                        t.TestReadCrop(Phase.TEST, IMAGEDB_LOAD_METHOD.LOAD_ALL);
+                    }
                 }
             }
             finally
@@ -353,8 +365,12 @@ namespace MyCaffe.test
                 foreach (IDataLayerTest t in test.Tests)
                 {
                     bool unique_pixels = true;
-                    t.Fill(unique_pixels);
-                    t.TestReadCrop(Phase.TEST, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+
+                    for (int i = 0; i < 2; i++)
+                    {
+                        t.Fill(unique_pixels);
+                        t.TestReadCrop(Phase.TEST, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                    }
                 }
             }
             finally
@@ -544,25 +560,28 @@ namespace MyCaffe.test
 
             List<SourceDescriptor> rgSrcId = new List<SourceDescriptor>() { src1, src2 };
 
-            factory.Open(rgSrcId[0]);
-            factory.DeleteSourceData();
-
-            int nCount = factory.GetImageCount();
-            for (int i = nCount; i < nCount + 5; i++)
+            for (int k = 0; k < 2; k++)
             {
-                List<byte> rgData = new List<byte>();
+                factory.Open(rgSrcId[k]);
+                factory.DeleteSourceData();
 
-                for (int j = 0; j < 24; j++)
+                int nCount = factory.GetImageCount();
+                for (int i = nCount; i < nCount + 5; i++)
                 {
-                    int datum = unique_pixels ? j : i;
-                    rgData.Add((byte)datum);
+                    List<byte> rgData = new List<byte>();
+
+                    for (int j = 0; j < 24; j++)
+                    {
+                        int datum = unique_pixels ? j : i;
+                        rgData.Add((byte)datum);
+                    }
+
+                    SimpleDatum sd = new SimpleDatum(false, 2, 4, 3, i, DateTime.Today, rgData, null, 0, false, i);
+                    factory.PutRawImage(i, sd);
                 }
 
-                SimpleDatum sd = new SimpleDatum(false, 2, 4, 3, i, DateTime.Today, rgData, null, 0, false, i);
-                factory.PutRawImage(i, sd);
+                factory.Close();
             }
-
-            factory.Close();
 
             DatasetDescriptor ds = new DatasetDescriptor(0, "test_data", null, null, src1, src2, null, null);
             ds.ID = factory.AddDataset(ds);
