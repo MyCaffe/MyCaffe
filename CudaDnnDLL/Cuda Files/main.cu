@@ -14,6 +14,12 @@
 #include <math.h>
 #include <time.h>
 #include <sys\timeb.h>
+#ifdef _TRACEAPI
+#ifdef _TRACETOFILE
+#include <iostream>
+#include <fstream>
+#endif // _TRACETOFILE
+#endif // _TRACEAPI
 
 // includes, project
 #include "main.h"
@@ -37,8 +43,14 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 
 #ifdef _DEBUG
 #ifdef _TRACEAPI
-	snprintf(s_msgbuf, 256, "calling CudaDnnDLL FunctionID (%ld) %s\n", lfnIdx, GetApiName(lfnIdx));
+	snprintf(s_msgbuf, 256, "%s calling CudaDnnDLL FunctionID (%ld) %s\n", (sizeof(T) == sizeof(float)) ? "FLOAT" : "DOUBLE", lfnIdx, GetApiName(lfnIdx));
 	OutputDebugStringA(s_msgbuf);
+#ifdef _TRACETOFILE
+	std::ofstream myfile;
+	myfile.open("c:\\temp\\mycaffe_debug.txt", std::ofstream::out | std::ofstream::app);
+	myfile << s_msgbuf;
+	myfile.close();
+#endif
 #endif
 #endif
 
@@ -801,8 +813,14 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, LPTSTR pszInput, T** p
 
 #ifdef _DEBUG
 #ifdef _TRACEAPI
-	snprintf(s_msgbuf, 256, "calling CudaDnnDLL FunctionID (%ld) %s\n", lfnIdx, GetApiName(lfnIdx));
+	snprintf(s_msgbuf, 256, "%s calling CudaDnnDLL FunctionID (%ld) %s\n", (sizeof(T) == sizeof(float)) ? "FLOAT" : "DOUBLE", lfnIdx, GetApiName(lfnIdx));
 	OutputDebugStringA(s_msgbuf);
+#ifdef _TRACETOFILE
+	std::ofstream myfile;
+	myfile.open("c:\\temp\\mycaffe_debug.txt", std::ofstream::out | std::ofstream::app);
+	myfile << s_msgbuf;
+	myfile.close();
+#endif
 #endif
 #endif
 
@@ -824,8 +842,14 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 
 #ifdef _DEBUG
 #ifdef _TRACEAPI
-	snprintf(s_msgbuf, 256, "calling CudaDnnDLL FunctionID (%ld) %s\n", lfnIdx, GetApiName(lfnIdx));
+	snprintf(s_msgbuf, 256, "%s calling CudaDnnDLL FunctionID (%ld) %s\n", (sizeof(T) == sizeof(float)) ? "FLOAT" : "DOUBLE", lfnIdx, GetApiName(lfnIdx));
 	OutputDebugStringA(s_msgbuf);
+#ifdef _TRACETOFILE
+	std::ofstream myfile;
+	myfile.open("c:\\temp\\mycaffe_debug.txt", std::ofstream::out | std::ofstream::app);
+	myfile << s_msgbuf;
+	myfile.close();
+#endif
 #endif
 #endif
 
