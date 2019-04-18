@@ -237,12 +237,8 @@ namespace MyCaffe.test
                 foreach (IDataLayerTest t in test.Tests)
                 {
                     bool unique_pixels = true;
-
-                    for (int i = 0; i < 2; i++)
-                    {
-                        t.Fill(unique_pixels);
-                        t.TestReadCrop(Phase.TRAIN, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
-                    }
+                    t.Fill(unique_pixels);
+                    t.TestReadCrop(Phase.TRAIN, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
                 }
             }
             finally
