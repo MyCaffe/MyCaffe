@@ -17,6 +17,7 @@ namespace MyCaffe.gym
         /// The constructor.
         /// </summary>
         /// <param name="ctx">Specifies the context.</param>
+        /// <param name="binding">Optionally, specifies the binding.  Specifying a binding can be useful when you need to set larger buffer sizes.</param>
         public MyCaffeGymUiProxy(InstanceContext ctx, NetNamedPipeBinding binding = null)
             : base(ctx, new ServiceEndpoint(ContractDescription.GetContract(typeof(IXMyCaffeGymUiService)),
                    (binding == null) ? new NetNamedPipeBinding() : binding, new EndpointAddress("net.pipe://localhost/MyCaffeGym/gymui")))
