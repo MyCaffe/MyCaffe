@@ -30,21 +30,23 @@ namespace MyCaffe.gym
         /// Each dynamic Gym must implement a DLL with the IXMyCaffeGym interface implemented.  When loading dynamic
         /// Gym's, this class looks for these DLL's in the \code ./CustomGyms \endcode directory relative to the
         /// location of the MyCaffe.gym assembly.</remarks>
-        public void Load()
+        /// <returns>A list of errors occuring while loading Gyms is returned if any occur.</returns>
+        public List<Exception> Load()
         {
             m_rgGym.Add(new CartPoleGym());
             m_rgGym.Add(new AtariGym());
             m_rgGym.Add(new DataGeneralGym());
 
-            addCustomGyms();
+            return addCustomGyms();
         }
 
-        private void addCustomGyms()
+        private List<Exception> addCustomGyms()
         {
             string codeBase = Assembly.GetExecutingAssembly().CodeBase;
             UriBuilder uri = new UriBuilder(codeBase);
             string path = Uri.UnescapeDataString(uri.Path);
             string strPath = Path.GetDirectoryName(path);
+            List<Exception> rgErr = new List<Exception>();
 
             strPath += "\\CustomGyms";
 
@@ -58,16 +60,27 @@ namespace MyCaffe.gym
 
                     if (fi.Extension.ToLower() == ".dll")
                     {
-                        IXMyCaffeGym igym = loadCustomGym(strFile);
+                        Exception excpt;
+                        IXMyCaffeGym igym = loadCustomGym(strFile, out excpt);
                         if (igym != null)
+                        {
                             m_rgGym.Add(igym);
+                        }
+                        else if (excpt != null)
+                        {
+                            rgErr.Add(excpt);
+                        }
                     }
                 }
             }
+
+            return rgErr;
         }
 
-        private IXMyCaffeGym loadCustomGym(string strFile)
+        private IXMyCaffeGym loadCustomGym(string strFile, out Exception err)
         {
+            err = null;
+
             try
             {
                 Assembly a = Assembly.LoadFile(strFile);
@@ -96,7 +109,12 @@ namespace MyCaffe.gym
                 {
                     var typeLoadException = excpt as ReflectionTypeLoadException;
                     var loaderExceptions = typeLoadException.LoaderExceptions;
+
+                    if (loaderExceptions != null && loaderExceptions.Length > 0)
+                        excpt = new Exception(excpt.Message, loaderExceptions[0]);
                 }
+
+                err = excpt;
 
                 return null;
             }
