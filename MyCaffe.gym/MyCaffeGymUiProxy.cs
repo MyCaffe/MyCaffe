@@ -17,9 +17,9 @@ namespace MyCaffe.gym
         /// The constructor.
         /// </summary>
         /// <param name="ctx">Specifies the context.</param>
-        public MyCaffeGymUiProxy(InstanceContext ctx)
+        public MyCaffeGymUiProxy(InstanceContext ctx, NetNamedPipeBinding binding = null)
             : base(ctx, new ServiceEndpoint(ContractDescription.GetContract(typeof(IXMyCaffeGymUiService)),
-                   new NetNamedPipeBinding(), new EndpointAddress("net.pipe://localhost/MyCaffeGym/gymui")))
+                   (binding == null) ? new NetNamedPipeBinding() : binding, new EndpointAddress("net.pipe://localhost/MyCaffeGym/gymui")))
         {
         }
 
