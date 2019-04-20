@@ -26,6 +26,7 @@ namespace MyCaffe.gym
         string m_strName = "";
         Bitmap m_bmp = null;
         GymCollection m_colGym = new GymCollection();
+        List<Exception> m_loadErrors;
 
         /// <summary>
         /// The constructor.
@@ -33,7 +34,15 @@ namespace MyCaffe.gym
         public MyCaffeGymControl()
         {
             InitializeComponent();
-            m_colGym.Load();
+            m_loadErrors = m_colGym.Load();
+        }
+
+        /// <summary>
+        /// Returns any load errors that may have occured while loading the gyms.
+        /// </summary>
+        public List<Exception> LoadErrors
+        {
+            get { return m_loadErrors; }
         }
 
         /// <summary>
