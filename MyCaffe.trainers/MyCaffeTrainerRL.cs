@@ -357,10 +357,10 @@ namespace MyCaffe.trainers
             m_properties = new PropertySet(strProperties);
             m_nThreads = m_properties.GetPropertyAsInt("Threads", 1);
 
-            string strRewardType = m_properties.GetProperty("RewardType");
-            if (strRewardType == "VAL")
+            string strRewardType = m_properties.GetProperty("RewardType").ToUpper();
+            if (strRewardType == "VAL" || strRewardType == "VALUE")
                 m_rewardType = REWARD_TYPE.VALUE;
-            else if (strRewardType == "AVE")
+            else if (strRewardType == "AVE" || strRewardType == "AVERAGE")
                 m_rewardType = REWARD_TYPE.AVERAGE;
 
             string strTrainerType = m_properties.GetProperty("TrainerType");
