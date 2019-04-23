@@ -36,11 +36,12 @@ namespace MyCaffe.trainers.pg.st
         /// <param name="properties">Specifies the property set containing the key/value pairs of property settings.</param>
         /// <param name="random">Specifies a Random number generator used for random selection.</param>
         /// <param name="icallback">Specifies the callback for parent notifications and queries.</param>
-        public TrainerPG(MyCaffeControl<T> mycaffe, PropertySet properties, Random random, IxTrainerCallback icallback)
+        public TrainerPG(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallback icallback)
         {
             m_icallback = icallback;
             m_mycaffe = mycaffe;
             m_properties = properties;
+            m_random = random;
         }
 
         /// <summary>
@@ -250,7 +251,7 @@ namespace MyCaffe.trainers.pg.st
                         m_brain.SetActionProbabilities(rgfAprobSet);
 
                         // Get the action one-hot vectors.  When using Softmax, this contains the one-hot vector containing
-                        // eac action set (e.g. 3 actions with action 0 set would return a vector <1,0,0>).  
+                        // each action set (e.g. 3 actions with action 0 set would return a vector <1,0,0>).  
                         // When using a binary probability (e.g. with Sigmoid), the each action set only contains a
                         // single element which is set to the action value itself (e.g. 0 for action '0' and 1 for action '1')
                         float[] rgfAonehotSet = m_rgMemory.GetActionOneHotVectors();

@@ -39,11 +39,12 @@ namespace MyCaffe.trainers.pg.mt
         /// <param name="properties">Specifies the property set containing the key/value pairs of property settings.</param>
         /// <param name="random">Specifies a Random number generator used for random selection.</param>
         /// <param name="icallback">Specifies the callback for parent notifications and queries.</param>
-        public TrainerPG(MyCaffeControl<T> mycaffe, PropertySet properties, Random random, IxTrainerCallback icallback)
+        public TrainerPG(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallback icallback)
         {
             m_icallback = icallback;
             m_mycaffe = mycaffe;
             m_properties = properties;
+            m_random = random;
 
             m_nThreads = m_properties.GetPropertyAsInt("Threads", 1);
             m_rgGpuID.Add(m_mycaffe.Cuda.GetDeviceID());
