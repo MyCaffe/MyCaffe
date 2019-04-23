@@ -48,7 +48,7 @@ namespace MyCaffe.trainers
         /// <summary>
         /// Random number generator used to get initial actions, etc.
         /// </summary>
-        protected Random m_random = new Random();
+        protected CryptoRandom m_random = new CryptoRandom(true);
         /// <summary>
         /// Specifies the properties parsed from the key-value pair passed to the Initialize method.
         /// </summary>
