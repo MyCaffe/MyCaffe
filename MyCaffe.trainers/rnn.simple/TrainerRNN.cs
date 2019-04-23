@@ -571,7 +571,7 @@ namespace MyCaffe.trainers.rnn.simple
                         // Feed the net with input data and labels (clips are always the same)
                         double dfData = rgdfData[nCurrentValIdx + j];
                         // Labels are the same with an offset of +1
-                        double dfLabel = rgdfData[nCurrentValIdx + j + 1]; // predict next character
+                        double dfLabel = rgdfData[nCurrentValIdx + j + 1]; // predict next value
                         float fDataIdx = findIndex(dfData, out bFound);
                         float fLabelIdx = findIndex(dfLabel, out bFound);
 
