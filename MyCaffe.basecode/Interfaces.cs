@@ -25,7 +25,11 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Defines the recurrent training method.
         /// </summary>
-        RECURRENT
+        RECURRENT,
+        /// <summary>
+        /// Defines the reinforcement traing method such as PG that also uses a recurrent model such as LSTM.
+        /// </summary>
+        REINFORCEMENT_RECURRENT
     }
 
     /// <summary>
@@ -54,6 +58,26 @@ namespace MyCaffe.basecode
         /// </summary>
         ALL = 5
     }
+
+    /// <summary>
+    /// Specifies the stage underwhich to run a custom trainer.
+    /// </summary>
+    public enum Stage
+    {
+        /// <summary>
+        /// No stage defined.
+        /// </summary>
+        NONE = 0,
+        /// <summary>
+        /// Run the trainer in RNN mode.
+        /// </summary>
+        RNN = 1,
+        /// <summary>
+        /// Run the trainer in RL mode.
+        /// </summary>
+        RL = 2
+    }
+
 
     /// <summary>
     /// Defines the gym type (if any).
