@@ -49,6 +49,12 @@
   <ItemGroup>
     <Compile Include="EventArgs.cs" />
     <Compile Include="Interfaces.cs" />
+    <Compile Include="MyCaffeTrainerDual.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="MyCaffeTrainerDual.Designer.cs">
+      <DependentUpon>MyCaffeTrainerDual.cs</DependentUpon>
+    </Compile>
     <Compile Include="MyCaffeTrainerRNN.cs">
       <SubType>Component</SubType>
     </Compile>
