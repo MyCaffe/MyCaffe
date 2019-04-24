@@ -272,6 +272,14 @@ namespace MyCaffe.trainers
         #region IXMyCaffeCustomTrainer Interface
 
         /// <summary>
+        /// Returns the Stage.RL type.
+        /// </summary>
+        public Stage Stage
+        {
+            get { return Stage.RL; }
+        }
+
+        /// <summary>
         /// Returns the name of the custom trainer.  This method calls the 'name' override.
         /// </summary>
         public string Name
@@ -357,7 +365,12 @@ namespace MyCaffe.trainers
             m_properties = new PropertySet(strProperties);
             m_nThreads = m_properties.GetPropertyAsInt("Threads", 1);
 
-            string strRewardType = m_properties.GetProperty("RewardType").ToUpper();
+            string strRewardType = m_properties.GetProperty("RewardType", false);
+            if (strRewardType == null)
+                strRewardType = "VAL";
+            else
+                strRewardType = strRewardType.ToUpper();
+
             if (strRewardType == "VAL" || strRewardType == "VALUE")
                 m_rewardType = REWARD_TYPE.VALUE;
             else if (strRewardType == "AVE" || strRewardType == "AVERAGE")

@@ -249,6 +249,14 @@ namespace MyCaffe.trainers
         #region IXMyCaffeCustomTrainer Interface
 
         /// <summary>
+        /// Returns the Stage.RNN type.
+        /// </summary>
+        public Stage Stage
+        {
+            get { return Stage.RNN; }
+        }
+
+        /// <summary>
         /// Returns the name of the custom trainer.  This method calls the 'name' override.
         /// </summary>
         public string Name

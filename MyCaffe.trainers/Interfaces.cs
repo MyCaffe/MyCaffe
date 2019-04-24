@@ -29,6 +29,10 @@ namespace MyCaffe.trainers
         /// </summary>
         void CleanUp();
         /// <summary>
+        /// Returns the stage that the trainer is running under based on the trainer type.
+        /// </summary>
+        Stage Stage { get; }
+        /// <summary>
         /// Returns the name of the custom trainer.
         /// </summary>
         string Name { get; }
