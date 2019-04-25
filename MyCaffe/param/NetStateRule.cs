@@ -6,6 +6,8 @@ using System.IO;
 using System.ComponentModel;
 using MyCaffe.basecode;
 using MyCaffe.common;
+using System.Drawing.Design;
+using MyCaffe.param.ui;
 
 namespace MyCaffe.param
 {
@@ -127,6 +129,9 @@ namespace MyCaffe.param
         /// (Use mutiple NetStateRules to specify conjunctions of stages.)
         /// </summary>
         [Description("Specifies the stage required to meet this rule.")]
+        [Editor(@"System.Windows.Forms.Design.StringCollectionEditor, System.Design, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", typeof(System.Drawing.Design.UITypeEditor))]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+        [TypeConverter(typeof(CsvConverter))]
         public List<string> stage
         {
             get { return m_rgStage; }
@@ -140,6 +145,9 @@ namespace MyCaffe.param
         /// (Use mutiple NetStateRules to specify conjunctions of stages.)
         /// </summary>
         [Description("Specifies the 'not_stage' that cannot be specified to meet this rule.")]
+        [Editor(@"System.Windows.Forms.Design.StringCollectionEditor, System.Design, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", typeof(System.Drawing.Design.UITypeEditor))]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Content)]
+        [TypeConverter(typeof(CsvConverter))]
         public List<string> not_stage
         {
             get { return m_rgNotStage; }
