@@ -21,6 +21,7 @@ namespace MyCaffe.basecode
         bool m_bExistTrain = false;
         bool m_bDatasetAdjusted = false;
         bool m_bDefaultSaveImagesToFile = true;
+        Stage m_stage = Stage.NONE;
 
         /// <summary>
         /// The OverrrideModel event fires each time the SetDataset function is called.
@@ -463,8 +464,20 @@ namespace MyCaffe.basecode
                 if (strCustomTrainer == "RNN.Trainer")
                     return TRAINING_CATEGORY.RECURRENT;
 
+                if (strCustomTrainer == "Dual.Trainer")
+                    return TRAINING_CATEGORY.DUAL;
+
                 return TRAINING_CATEGORY.CUSTOM;
             }
+        }
+
+        /// <summary>
+        /// Return the stage under which the project was opened.
+        /// </summary>
+        public Stage Stage
+        {
+            get { return m_stage; }
+            set { m_stage = value; }
         }
 
         /// <summary>
