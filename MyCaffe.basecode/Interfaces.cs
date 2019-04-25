@@ -27,9 +27,9 @@ namespace MyCaffe.basecode
         /// </summary>
         RECURRENT,
         /// <summary>
-        /// Defines the reinforcement traing method such as PG that also uses a recurrent model such as LSTM.
+        /// Defines the reinforcement training method such as PG that also uses a recurrent model such as LSTM.
         /// </summary>
-        REINFORCEMENT_RECURRENT
+        DUAL
     }
 
     /// <summary>
@@ -75,7 +75,11 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Run the trainer in RL mode.
         /// </summary>
-        RL = 2
+        RL = 2,
+        /// <summary>
+        /// Applies to all stages.
+        /// </summary>
+        ALL = 3
     }
 
 
