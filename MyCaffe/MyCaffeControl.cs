@@ -90,6 +90,7 @@ namespace MyCaffe
         BlobShape m_inputShape = null;
         Phase m_lastPhaseRun = Phase.NONE;
         long m_hCopyBuffer = 0;
+        string m_strStage = null;
 
 
         /// <summary>
@@ -203,6 +204,14 @@ namespace MyCaffe
         }
 
         /// <summary>
+        /// Returns the stage under which the project was loaded, if any.
+        /// </summary>
+        public string CurrentStage
+        {
+            get { return m_strStage; }
+        }
+
+        /// <summary>
         /// Clone the current instance of the MyCaffeControl creating a second instance.
         /// </summary>
         /// <remarks>
@@ -216,7 +225,7 @@ namespace MyCaffe
             s.GpuIds = nGpuID.ToString();
 
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, m_evtCancel, null, null, null, null, m_strCudaPath);
-            mycaffe.Load(Phase.TRAIN, m_project, null, null, false, m_imgDb, (m_imgDb == null) ? false : true);
+            mycaffe.Load(Phase.TRAIN, m_project, null, null, false, m_imgDb, (m_imgDb == null) ? false : true, true, m_strStage);
 
             Net<T> netSrc = GetInternalNet(Phase.TRAIN);
             Net<T> netDst = mycaffe.GetInternalNet(Phase.TRAIN);
@@ -688,6 +697,32 @@ namespace MyCaffe
             return new BlobShape(rgShape);
         }
 
+        private Stage getStage(string strStage)
+        {
+            if (strStage == Stage.RNN.ToString())
+                return Stage.RNN;
+
+            if (strStage == Stage.RL.ToString())
+                return Stage.RL;
+
+            return Stage.NONE;
+        }
+
+        private string addStage(string strModel, Phase phase, string strStage)
+        {
+            if (string.IsNullOrEmpty(strStage))
+                return strModel;
+
+            RawProto proto = RawProto.Parse(strModel);
+            NetParameter param = NetParameter.FromProto(proto);
+
+            param.state.stage.Clear();
+            param.state.phase = phase;
+            param.state.stage.Add(strStage);
+
+            return param.ToProto("root", true).ToString();
+        }
+
         /// <summary>
         /// Load a project and optionally the MyCaffeImageDatabase.
         /// </summary>
@@ -706,6 +741,7 @@ namespace MyCaffe
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
         public bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null)
         {
+            m_strStage = strStage;
             m_imgDb = imgdb;
             m_bImgDbOwner = false;
 
@@ -749,7 +785,9 @@ namespace MyCaffe
                 }
             }
 
+            p.ModelDescription = addStage(p.ModelDescription, phase, strStage);
             m_project = p;
+            m_project.Stage = getStage(m_strStage);
 
             if (m_project == null)
                 throw new Exception("You must specify a project.");
@@ -851,14 +889,18 @@ namespace MyCaffe
         /// <param name="imgdb">Optionally, specifies the MyCaffeImageDatabase to use.  When <i>null</i>, an instance if the MyCaffeImageDatabase is created internally.</param>
         /// <param name="bUseImageDb">Optionally, specifies whehter or not to use the image database (default = true).</param>
         /// <param name="bCreateRunNet">Optionally, specifies whether or not to create the Run net (default = true).</param>
+        /// <param name="strStage">Optionally, specifies a stage under which to load the model.</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true)
+        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null)
         {
+            m_strStage = strStage;
             m_imgDb = imgdb;
             m_bImgDbOwner = false;
 
             RawProto protoSolver = RawProto.Parse(strSolver);
             SolverParameter solverParam = SolverParameter.FromProto(protoSolver);
+
+            strModel = addStage(strModel, phase, strStage);
 
             RawProto protoModel = RawProto.Parse(strModel);
             solverParam.net_param = NetParameter.FromProto(protoModel);
