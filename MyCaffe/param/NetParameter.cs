@@ -192,6 +192,11 @@ namespace MyCaffe.param
         /** @copydoc BaseParameter */
         public override RawProto ToProto(string strName)
         {
+            return ToProto(strName, false);
+        }
+
+        public RawProto ToProto(string strName, bool bIncludeState)
+        {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             rgChildren.Add("name", name, RawProto.TYPE.STRING);
@@ -207,7 +212,8 @@ namespace MyCaffe.param
             if (force_backward != false)
                 rgChildren.Add("force_backward", force_backward.ToString());
 
-//            rgChildren.Add(state.ToProto("state"));
+            if (bIncludeState)
+                rgChildren.Add(state.ToProto("state"));
 
             if (debug_info != false)
                 rgChildren.Add("debug_info", debug_info.ToString());
