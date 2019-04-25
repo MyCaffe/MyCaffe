@@ -137,7 +137,7 @@ namespace MyCaffe.trainers
         /// </summary>
         protected virtual TRAINING_CATEGORY category
         {
-            get { return TRAINING_CATEGORY.REINFORCEMENT_RECURRENT; }
+            get { return TRAINING_CATEGORY.DUAL; }
         }
 
         /// <summary>
