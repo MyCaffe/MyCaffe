@@ -183,6 +183,7 @@
     <Compile Include="MyCaffeControl.Designer.cs">
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="param.ui\CsvConverter.cs" />
     <Compile Include="param\ScalarParameter.cs" />
     <Compile Include="param\ParameterParameter.cs" />
     <Compile Include="param\TVLossParameter.cs" />
