@@ -195,6 +195,12 @@ namespace MyCaffe.param
             return ToProto(strName, false);
         }
 
+        /// <summary>
+        /// Save the parameter settings to a RawProto.
+        /// </summary>
+        /// <param name="strName">Specifies the name, typically 'root'.</param>
+        /// <param name="bIncludeState">Specifies whether or not to also include the state when saving.</param>
+        /// <returns>The RawProto representing the settings is returned.</returns>
         public RawProto ToProto(string strName, bool bIncludeState)
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
