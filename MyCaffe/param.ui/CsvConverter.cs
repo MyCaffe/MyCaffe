@@ -26,7 +26,7 @@ namespace MyCaffe.param.ui
         {
             List<String> v = value as List<String>;
 
-            if (destinationType == typeof(string))
+            if (destinationType == typeof(string) && v != null)
             {
                 return String.Join(",", v.ToArray());
             }
