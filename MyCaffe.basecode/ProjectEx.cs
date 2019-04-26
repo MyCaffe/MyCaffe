@@ -1260,6 +1260,12 @@ namespace MyCaffe.basecode
                 for (int i = 0; i < rgInputs.Count; i++)
                 {
                     input_shape = new RawProto("input_shape", "");
+
+                    nNum = rgInputs[i].Item2;
+                    nChannels = rgInputs[i].Item3;
+                    nHeight = rgInputs[i].Item4;
+                    nWidth = rgInputs[i].Item5;
+
                     input_shape.Children.Add(new RawProto("dim", nNum.ToString()));
                     input_shape.Children.Add(new RawProto("dim", nChannels.ToString()));
 
