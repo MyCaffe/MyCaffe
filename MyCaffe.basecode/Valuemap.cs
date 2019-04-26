@@ -87,6 +87,32 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Set a given pixel to a given color.
+        /// </summary>
+        /// <param name="nChannel">Specifies the channel location of the pixel.</param>
+        /// <param name="nX">Specifies the x location of the pixel.</param>
+        /// <param name="nY">Specifies the y location of the pixel.</param>
+        /// <param name="clr">Specifies the value to set the pixel.</param>
+        public void SetPixel(int nChannel, int nX, int nY, double clr)
+        {
+            int nIdx = (nChannel * m_nChannelOffset) + nY * m_nWidth + nX;
+            m_rgData[nIdx] = clr;
+        }
+
+        /// <summary>
+        /// Get the value of a pixel in the map.
+        /// </summary>
+        /// <param name="nChannel">Specifies the channel of the pixel.</param>
+        /// <param name="nX">Specifies the x location of the pixel.</param>
+        /// <param name="nY">Specifies the y location of the pixel.</param>
+        /// <returns>The color of the pixel is returned.</returns>
+        public double GetPixel(int nChannel, int nX, int nY)
+        {
+            int nIdx = (nChannel * m_nChannelOffset) + nY * m_nWidth + nX;
+            return m_rgData[nIdx];
+        }
+
+        /// <summary>
         /// Reset all values to zero.
         /// </summary>
         public void Clear()
