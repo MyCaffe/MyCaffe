@@ -19,6 +19,7 @@ namespace MyCaffe.param
         uint m_nLabelChannels = 1;
         uint m_nLabelHeight = 1;
         uint m_nLabelWidth = 1;
+        uint m_nClipLength = 0;
         LABEL_TYPE m_labelType = LABEL_TYPE.SINGLE;
         bool m_bPrimaryData = true;
 
@@ -117,6 +118,20 @@ namespace MyCaffe.param
             set { m_nLabelWidth = value; }
         }
 
+        /// <summary>
+        /// Specifies the clip length (default = 0, which means unused).
+        /// </summary>
+        /// <remarks>
+        /// The clip length is only used when a top named 'clip' exists which is used when feeding data
+        /// into an LSTM layer which requires a 'clip'input.
+        /// </remarks>
+        [Description("Specifies the clip length used with LSTM layers (default = 0, which means unused)")]
+        public uint clip_length
+        {
+            get { return m_nClipLength; }
+            set { m_nClipLength = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -142,6 +157,7 @@ namespace MyCaffe.param
             m_nLabelWidth = p.m_nLabelWidth;
             m_labelType = p.m_labelType;
             m_bPrimaryData = p.m_bPrimaryData;
+            m_nClipLength = p.m_nClipLength;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -170,6 +186,9 @@ namespace MyCaffe.param
 
             if (primary_data == false)
                 rgChildren.Add("primary_data", primary_data.ToString());
+
+            if (m_nClipLength > 0)
+                rgChildren.Add("clip_length", m_nClipLength.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -228,6 +247,15 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("primary_data")) != null)
                 p.primary_data = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("clip_length")) != null)
+            {
+                int nVal = int.Parse(strVal);
+                if (nVal < 0)
+                    nVal = 0;
+
+                p.clip_length = (uint)nVal;
+            }
 
             return p;
         }
