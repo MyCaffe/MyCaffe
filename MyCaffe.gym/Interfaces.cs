@@ -187,6 +187,30 @@ namespace MyCaffe.gym
     }
 
     /// <summary>
+    /// The IXMyCaffeGymRange interface is used to query the data range for the vocabulary.
+    /// </summary>
+    public interface IXMyCaffeGymRange : IXMyCaffeGym
+    {
+        /// <summary>
+        /// Returns the data range of the gym which is used to build the vocabulary.
+        /// </summary>
+        /// <returns></returns>
+        Tuple<double, double> GetDataRange();
+        /// <summary>
+        /// Returns true to use the fixed bucket collection based on the GetDataRange values, otherwise the bucket collection is created from the data.
+        /// </summary>
+        bool UseFixedVocabulary { get; }
+        /// <summary>
+        /// Returns the vocabulary size to use (e.g. the number of buckets).
+        /// </summary>
+        int VocabularySize { get; }
+        /// <summary>
+        /// Specifies whether or not to use the pre-load data.
+        /// </summary>
+        bool UsePreLoadData { get; }
+    }
+
+    /// <summary>
     /// The State class defines an abstract base class for the state information and gym data.
     /// </summary>
     public abstract class State
