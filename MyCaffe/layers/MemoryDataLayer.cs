@@ -28,8 +28,13 @@ namespace MyCaffe.layers
         int m_nLabelWidth = 0;
         int m_nDataSize;
         int m_nLabelSize = 0;
+        int m_nClipSize1 = 0;
+        int m_nClipSize2 = 0;
+        int m_nLabelIdx = -1;
+        int m_nClipIdx = -1;
         Blob<T> m_blobData;
         Blob<T> m_blobLabel;
+        Blob<T> m_blobClip = null;
         bool m_bHasNewData;
         int m_nPos = 0;
         int m_nN = 1;
@@ -38,6 +43,11 @@ namespace MyCaffe.layers
         /// The OnGetData event fires on the DataLayerSetup call and each time the data wraps around (e.g. all data as already fed through) during the forward call.
         /// </summary>
         public event EventHandler<MemoryDataLayerGetDataArgs> OnGetData;
+        /// <summary>
+        /// The OnDataPack event fires from within the AddDatumVector method and is used to pack the data into a specific ordering needed by the layers connected
+        /// downstream of the MemoryDataLayer, such as an LSTM layer.
+        /// </summary>
+        public event EventHandler<MemoryDataLayerPackDataArgs<T>> OnDataPack;
 
         /// <summary>
         /// The BaseDataLayer constructor.
@@ -95,6 +105,25 @@ namespace MyCaffe.layers
                     m_log.CHECK_GT(m_nBatchSize * m_nLabelSize, 0, "batch_size, label_channels, label_height, and label_width must be specified and positive in memory_data_param when using label_type = MULTIPLE.");
             }
 
+            if (m_param.memory_data_param.clip_length1 > 0)
+                m_nClipSize1 = (int)m_param.memory_data_param.clip_length1;
+
+            if (m_param.memory_data_param.clip_length2 > 0)
+                m_nClipSize2 = (int)m_param.memory_data_param.clip_length2;
+
+            if (m_nClipSize1 > 1 && m_nClipSize2 == 0)
+                m_nClipSize2 = 1;
+
+            if (m_nClipSize2 > 1 && m_nClipSize1 == 0)
+                m_nClipSize1 = 1;
+
+            if (m_nClipSize1 > 0 || m_nClipSize2 > 0)
+            {
+                m_blobClip = new Blob<T>(m_cuda, m_log);
+                m_blobClip.Name = m_param.name + " clip";
+                m_blobClip.Reshape(new List<int>() { m_nClipSize1, m_nClipSize2 });
+            }
+
             if (OnGetData != null)
             {
                 OnGetData(this, new MemoryDataLayerGetDataArgs(true));
@@ -117,10 +146,36 @@ namespace MyCaffe.layers
             colTop[0].Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
             m_blobData.update_cpu_data();
 
+            int nLabelIdx = -1;
+            int nClipIdx = -1;
+
+            for (int i = 0; i < m_param.top.Count; i++)
+            {
+                if (m_param.top[i].ToLower() == "label")
+                    nLabelIdx = i;
+
+                if (m_param.top[i].ToLower() == "clip")
+                    nClipIdx = i;
+            }
+
             if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
             {
-                colTop[1].Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
+                if (nLabelIdx == -1)
+                    nLabelIdx = (nClipIdx == -1) ? 1 : nClipIdx + 1;
+
+                m_nLabelIdx = nLabelIdx;
+                colTop[nLabelIdx].ReshapeLike(m_blobLabel);
                 m_blobLabel.update_cpu_data();
+            }
+
+            if (m_blobClip != null)
+            {
+                if (nClipIdx == -1)
+                    throw new Exception("Could not find a top named 'clip'!");
+
+                m_nClipIdx = nClipIdx;
+                colTop[nClipIdx].ReshapeLike(m_blobClip);
+                m_blobClip.update_cpu_data();
             }
         }
 
@@ -135,16 +190,21 @@ namespace MyCaffe.layers
 
             m_blobData.Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
 
-            if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
-                m_blobLabel.Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
-
             colTop[0].Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
             m_blobData.update_cpu_data();
 
             if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
             {
-                colTop[1].Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
+                m_blobLabel.Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
+                colTop[m_nLabelIdx].ReshapeLike(m_blobLabel);
                 m_blobLabel.update_cpu_data();
+            }
+
+            if (m_blobClip != null)
+            {
+                m_blobClip.Reshape(new List<int>() { m_nClipSize1, m_nClipSize2 });
+                colTop[m_nClipIdx].ReshapeLike(m_blobClip);
+                m_blobClip.update_cpu_data();
             }
         }
 
@@ -173,21 +233,24 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Returns the maximum number of top blobs: data, label
+        /// Returns the maximum number of top blobs: data, clip, label
         /// </summary>
         public override int MaxTopBlobs
         {
-            get { return 2; }
+            get { return 3; }
         }
 
         /// <summary>
         /// This method is used to add a list of Datums to the memory.
         /// </summary>
         /// <param name="rgData">The list of Data Datums to add.</param>
+        /// <param name="rgClip">Optionally, specifies the clip data, if any exits.</param>
         /// <param name="nLblAxis">Optionally, specifies the axis on which the multi-label data is placed.  This field is not used on SINGLE label types.</param>
         /// <param name="bReset">Optionally, specifies to force reset the internal data.</param>
         /// <param name="bResizeBatch">Optionally, specifies whether or not to size the batch to the number of rgData.</param>
-        public virtual void AddDatumVector(List<Datum> rgData, int nLblAxis = 1, bool bReset = false, bool bResizeBatch = false)
+        /// <remarks>
+        /// The batch size is only resized when the clip data is null, otherwise, regardless of the 'bResizeBatch' setting, the batch size is not changed.</remarks>
+        public virtual void AddDatumVector(List<Datum> rgData, List<Datum> rgClip = null, int nLblAxis = 1, bool bReset = false, bool bResizeBatch = false)
         {
             if (bReset)
                 m_bHasNewData = false;
@@ -196,29 +259,40 @@ namespace MyCaffe.layers
             int nNum = rgData.Count;
             m_log.CHECK_GT(nNum, 0, "There are no datum to add.");
 
-            if (bResizeBatch)
-                m_nBatchSize = rgData.Count;
-
-            int nNumAligned = (int)Math.Floor((double)rgData.Count / (double)m_nBatchSize) * m_nBatchSize;
-            m_log.CHECK_GT(nNumAligned, 0, "Three are not enough datum to add.");
-
-            if (nNumAligned < nNum)
+            if (rgClip == null)
             {
-                m_log.WriteLine("WARNING: Clipping batch to batch aligned count of " + nNumAligned.ToString() + ".");
+                if (bResizeBatch)
+                    m_nBatchSize = rgData.Count;
 
-                for (int i = nNumAligned; i < nNum; i++)
+                int nNumAligned = (int)Math.Floor((double)rgData.Count / (double)m_nBatchSize) * m_nBatchSize;
+                m_log.CHECK_GT(nNumAligned, 0, "Three are not enough datum to add.");
+
+                if (nNumAligned < nNum)
                 {
-                    rgData.RemoveAt(rgData.Count - 1);
+                    m_log.WriteLine("WARNING: Clipping batch to batch aligned count of " + nNumAligned.ToString() + ".");
+
+                    for (int i = nNumAligned; i < nNum; i++)
+                    {
+                        rgData.RemoveAt(rgData.Count - 1);
+                    }
                 }
+
+                nNum = nNumAligned;
+                m_log.CHECK_EQ(nNum % m_nBatchSize, 0, "The added data must be a multiple of the batch size.");
+
+                m_blobData.Reshape(nNum, m_nChannels, m_nHeight, m_nWidth);
+
+                // Apply data transformations (mirror, scale, crop...)
+                m_transformer.Transform(rgData, m_blobData, m_cuda, m_log);
             }
+            else
+            {
+                if (OnDataPack == null)
+                    throw new Exception("To properly handle data packing, you must connect the OnDataPack event and properly fill out the data and clip blobs with the ordering expected by the recurrent layers.");
 
-            nNum = nNumAligned;
-            m_log.CHECK_EQ(nNum % m_nBatchSize, 0, "The added data must be a multiple of the batch size.");
-
-            m_blobData.Reshape(nNum, m_nChannels, m_nHeight, m_nWidth);
-
-            // Apply data transformations (mirror, scale, crop...)
-            m_transformer.Transform(rgData, m_blobData, m_cuda, m_log);
+                MemoryDataLayerPackDataArgs<T> args = new MemoryDataLayerPackDataArgs<T>(m_blobData, m_blobClip, rgData, rgClip);
+                OnDataPack(this, args);
+            }
 
             if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
             {
@@ -313,6 +387,12 @@ namespace MyCaffe.layers
                 m_cuda.copy(src.m_blobLabel.count(), src.m_blobLabel.gpu_data, m_blobLabel.mutable_gpu_data);
             }
 
+            if (m_blobClip != null)
+            {
+                m_blobClip.ReshapeLike(src.m_blobClip);
+                m_cuda.copy(src.m_blobClip.count(), src.m_blobClip.gpu_data, m_blobClip.mutable_gpu_data);
+            }
+
             m_bHasNewData = true;
         }
 
@@ -354,6 +434,22 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Returns the clip 1 size, if any exists.
+        /// </summary>
+        public int clip_size1
+        {
+            get { return m_nClipSize1; }
+        }
+
+        /// <summary>
+        /// Returns the clip 2 size, if any exists.
+        /// </summary>
+        public int clip_size2
+        {
+            get { return m_nClipSize2; }
+        }
+
+        /// <summary>
         /// The forward computation which loads the data into the top (output) Blob%s.
         /// </summary>
         /// <param name="colBottom">Not used.</param>
@@ -365,23 +461,51 @@ namespace MyCaffe.layers
         {
             int nSrcOffset;
 
-            colTop[0].Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
+            Blob<T> blobClip = null;
+            Blob<T> blobLabel = null;
+            Blob<T> blobData = null;
+
+            foreach (Blob<T> b in colTop)
+            {
+                if (blobClip == null && b.Name.ToLower().Contains("clip"))
+                    blobClip = b;
+
+                else if (blobLabel == null && b.Name.ToLower().Contains("label"))
+                    blobLabel = b;
+
+                else
+                    blobData = b;
+            }
+
+            blobData.Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
 
             nSrcOffset = m_nPos * m_nDataSize;
-            m_cuda.copy(colTop[0].count(), m_blobData.gpu_data, colTop[0].mutable_gpu_data, nSrcOffset, 0);
+            m_cuda.copy(blobData.count(), m_blobData.gpu_data, blobData.mutable_gpu_data, nSrcOffset, 0);
+
 
             if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
             {
+                if (blobLabel == null)
+                    m_log.WriteError(new Exception("Could not find the MemoryDataLayer 'label' top!"));
+
                 List<int> rgLabelShape = Utility.Clone<int>(m_blobLabel.shape());
                 if (rgLabelShape.Count == 0)
                     rgLabelShape.Add(m_nBatchSize);
                 else
                     rgLabelShape[0] = m_nBatchSize;
 
-                colTop[1].Reshape(rgLabelShape);
+                blobLabel.Reshape(rgLabelShape);
 
                 nSrcOffset = m_nPos * m_nLabelSize;
-                m_cuda.copy(colTop[1].count(), m_blobLabel.gpu_data, colTop[1].mutable_gpu_data, nSrcOffset, 0);
+                m_cuda.copy(blobLabel.count(), m_blobLabel.gpu_data, blobLabel.mutable_gpu_data, nSrcOffset, 0);
+            }
+
+            if (m_blobClip != null)
+            {
+                if (blobClip == null)
+                    m_log.WriteError(new Exception("Could not find the MemoryDataLayer 'clip' top!"));
+
+                blobClip.CopyFrom(m_blobClip, false, true);
             }
 
             m_nPos = (m_nPos + m_nBatchSize) % m_nN;
@@ -413,6 +537,77 @@ namespace MyCaffe.layers
         public bool Initialization
         {
             get { return m_bInitialization; }
+        }
+    }
+
+    /// <summary>
+    /// The MemoryDataLayerPackDataArgs is passed to the OnDataPack event which fires each time the data received in AddDatumVector needs to be packed 
+    /// into a specific ordering as is the case when using an LSTM network.
+    /// </summary>
+    /// <typeparam name="T">Specifies the base datatype of <i>float</i> or <i>double</i>.</typeparam>
+    public class MemoryDataLayerPackDataArgs<T> : EventArgs
+    {
+        Blob<T> m_blobData;
+        Blob<T> m_blobClip;
+        List<Datum> m_rgData;
+        List<Datum> m_rgClip;
+        LayerParameter.LayerType m_lstmType = LayerParameter.LayerType.LSTM;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="blobData">Specifies the blob data to fill with the ordered data.</param>
+        /// <param name="blobClip">Specifies the clip data to fill with the ordered data.</param>
+        /// <param name="rgData">Specifies the raw data to use to fill.</param>
+        /// <param name="rgClip">Specifies the raw clip data to use to fill.</param>
+        /// <param name="type">Specifies the LSTM type.</param>
+        public MemoryDataLayerPackDataArgs(Blob<T> blobData, Blob<T> blobClip, List<Datum> rgData, List<Datum> rgClip, LayerParameter.LayerType type = LayerParameter.LayerType.LSTM)
+        {
+            m_blobData = blobData;
+            m_blobClip = blobClip;
+            m_rgData = rgData;
+            m_rgClip = rgClip;
+            m_lstmType = type;
+        }
+
+        /// <summary>
+        /// Returns the LSTM type.
+        /// </summary>
+        public LayerParameter.LayerType LstmType
+        {
+            get { return m_lstmType; }
+        }
+
+        /// <summary>
+        /// Returns the blob data to fill with ordered data.
+        /// </summary>
+        public Blob<T> Data
+        {
+            get { return m_blobData; }
+        }
+
+        /// <summary>
+        /// Returns the clip data to fill with ordered data for clipping.
+        /// </summary>
+        public Blob<T> Clip
+        {
+            get { return m_blobClip; }
+        }
+
+        /// <summary>
+        /// Returns the raw data items to use to fill.
+        /// </summary>
+        public List<Datum> DataItems
+        {
+            get { return m_rgData; }
+        }
+
+        /// <summary>
+        /// Returns the raw clip items to use to fill.
+        /// </summary>
+        public List<Datum> ClipItems
+        {
+            get { return m_rgClip; }
         }
     }
 }
