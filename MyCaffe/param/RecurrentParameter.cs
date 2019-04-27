@@ -35,8 +35,8 @@ namespace MyCaffe.param
         /// <returns></returns>
         public string useCaffeReason()
         {
-            if (engine == Engine.CAFFE || engine == Engine.DEFAULT)
-                return "The engine setting is set on CAFFE or DEFAULT.";
+            if (engine == Engine.CAFFE)
+                return "The engine setting is set on CAFFE.";
 
             if (m_bExposeHidden)
                 return "Exposing hidden is currently only offered by CAFFE.";
@@ -48,12 +48,12 @@ namespace MyCaffe.param
         /// Queries whether or not to use [NVIDIA's cuDnn](https://developer.nvidia.com/cudnn).
         /// </summary>
         /// <remarks>
-        /// CAFFE is the DEFAULT engine.
+        /// CUDNN is the DEFAULT engine.
         /// </remarks>
         /// <returns>Returns <i>true</i> when cuDnn is to be used, <i>false</i> otherwise.</returns>
         public bool useCudnn()
         {
-            if (engine != EngineParameter.Engine.CUDNN || m_bExposeHidden)
+            if (engine == EngineParameter.Engine.CAFFE || m_bExposeHidden)
                 return false;
 
             return true;
