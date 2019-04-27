@@ -113,6 +113,34 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Set all values to the specified value.
+        /// </summary>
+        /// <param name="dfVal">Specifies the value to set all elements.</param>
+        public void SetAll(double dfVal)
+        {
+            for (int i = 0; i < m_rgData.Length; i++)
+            {
+                m_rgData[i] = dfVal;
+            }
+        }
+
+        /// <summary>
+        /// Set all values of a given channel to a specified value.
+        /// </summary>
+        /// <param name="nChannel">Specifies the channel.</param>
+        /// <param name="dfVal">Specifies the value.</param>
+        public void SetAll(int nChannel, double dfVal)
+        {
+            int nIdxStart = m_nChannelOffset * nChannel;
+            int nCount = m_nChannelOffset;
+
+            for (int i = nIdxStart; i < nIdxStart + nCount; i++)
+            {
+                m_rgData[i] = dfVal;
+            }
+        }
+
+        /// <summary>
         /// Reset all values to zero.
         /// </summary>
         public void Clear()
