@@ -18,7 +18,10 @@ namespace MyCaffe.trainers
         double m_dfReward = 0;
         int m_nActionCount = 0;
         SimpleDatum m_data = null;
+        SimpleDatum m_clip = null;
+        SimpleDatum m_label = null;
         double[] m_rgState = null;
+        double[] m_rgClip = null;
         Image m_img = null;
 
         /// <summary>
@@ -83,6 +86,33 @@ namespace MyCaffe.trainers
         }
 
         /// <summary>
+        /// Returns the clip data assoicated with the state. 
+        /// </summary>
+        public SimpleDatum Clip
+        {
+            get { return m_clip; }
+            set { m_clip = value; }
+        }
+
+        /// <summary>
+        /// Get/set the raw clip data.
+        /// </summary>
+        public double[] RawClip
+        {
+            get { return m_rgClip; }
+            set { m_rgClip = value; }
+        }
+
+        /// <summary>
+        /// Get/set the label data associated with the state.  This field is optional.
+        /// </summary>
+        public SimpleDatum Label
+        {
+            get { return m_label; }
+            set { m_label = value; }
+        }
+
+        /// <summary>
         /// Get/set the image (if any exists)
         /// </summary>
         public Image RawImage
@@ -104,6 +134,10 @@ namespace MyCaffe.trainers
             s.m_dfReward = m_dfReward;
             s.m_data = new SimpleDatum(m_data, true);
             s.m_rgState = Utility.Clone<double>(m_rgState);
+
+            if (m_clip != null)
+                s.m_clip = new SimpleDatum(m_clip, true);
+
             s.m_img = (m_img == null) ? null : new Bitmap(m_img);
 
             return s;
