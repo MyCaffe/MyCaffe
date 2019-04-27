@@ -115,14 +115,16 @@ namespace MyCaffe.gym
         /// <summary>
         /// Resets the state of they gym.
         /// </summary>
+        /// <param name="bGetLabel">Optionally, specifies to query the label (default = false).</param>
         /// <returns>A tuple containing state information and gym data, the reward and whether or not the gym is done is returned.</returns>
-        Tuple<State, double, bool> Reset();
+        Tuple<State, double, bool> Reset(bool bGetLabel = false);
         /// <summary>
         /// Run an action on the gym.
         /// </summary>
         /// <param name="nAction">Specifies the action to run, which is an index into the action space.</param>
+        /// <param name="bGetLabel">Optionally, specifies to query the label (default = false).</param>
         /// <returns>A tuple containing state information and gym data, the reward and whether or not the gym is done is returned.</returns>
-        Tuple<State, double, bool> Step(int nAction);
+        Tuple<State, double, bool> Step(int nAction, bool bGetLabel = false);
         /// <summary>
         /// Render the gym on a bitmap.
         /// </summary>
@@ -233,5 +235,23 @@ namespace MyCaffe.gym
         /// <param name="nDataLen">Returns the non-render data length (the actual data used in training)</param>
         /// <returns>A tuple with the SimpleDatum containing the data and the non rendering data length is returned.</returns>
         public abstract SimpleDatum GetData(bool bNormalize, out int nDataLen);
+        /// <summary>
+        /// Returns 'true' if this State supports clip data.
+        /// </summary>
+        public virtual bool HasClip { get { return false; } }
+        /// <summary>
+        /// Get the clip data (used with recurrent models such as LSTM).
+        /// </summary>
+        /// <returns>The clip data corresponding to the GetData is returned.</returns>
+        public virtual SimpleDatum GetClip() { throw new NotImplementedException(); }
+        /// <summary>
+        /// Returns 'true' if this state supports label data.
+        /// </summary>
+        public virtual bool HasLabel {  get { return false; } }
+        /// <summary>
+        /// Get the label data (used with recurrent models such as LSTM with dynamic data).
+        /// </summary>
+        /// <returns>The label data is returned.</returns>
+        public virtual SimpleDatum GetLabel() { throw new NotImplementedException(); }
     }
 }
