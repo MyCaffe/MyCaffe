@@ -403,14 +403,15 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
         /// <param name="rg">Specifies the array of generics.</param>
+        /// <param name="nStart">Specifies a start offset (default = 0).</param>
         /// <returns>The array of <i>float</i> is returned.</returns>
-        public static float[] ConvertVecF<T>(T[] rg)
+        public static float[] ConvertVecF<T>(T[] rg, int nStart = 0)
         {
-            if (typeof(T) == typeof(float))
+            if (typeof(T) == typeof(float) && nStart == 0)
                 return (float[])Convert.ChangeType(rg, typeof(float[]));
 
-            float[] rgf = new float[rg.Length];
-            Array.Copy(Array.ConvertAll(rg, p => Convert.ToSingle(p)), rgf, rgf.Length);
+            float[] rgf = new float[rg.Length - nStart];
+            Array.Copy(Array.ConvertAll(rg, p => Convert.ToSingle(p)), nStart, rgf, 0, rgf.Length);
 
             return rgf;
         }
