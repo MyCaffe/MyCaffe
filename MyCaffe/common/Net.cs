@@ -239,6 +239,18 @@ namespace MyCaffe.common
             Dispose(true);
         }
 
+        private void scanForRecommendations(NetParameter p)
+        {
+            for (int i = 0; i < p.layer.Count; i++)
+            {
+                if (p.layer[i].type == LayerParameter.LayerType.LSTM_SIMPLE)
+                    m_log.WriteLine("WARNING: Layer '" + p.layer[i].name + "' uses the LSTM_SIMPLE type, we recommend using the LSTM with CUDNN engine instead.");
+
+                if (p.layer[i].type == LayerParameter.LayerType.LSTM && p.layer[i].recurrent_param.engine == EngineParameter.Engine.CAFFE)
+                    m_log.WriteLine("WARNING: Layer '" + p.layer[i].name + "' uses the LSTM type with the CAFFE engine (which is quite slow), we recommend using the LSTM with CUDNN engine instead.");
+            }
+        }
+
         /// <summary>
         /// Initialize a network with a NetParameter.
         /// </summary>
@@ -261,6 +273,8 @@ namespace MyCaffe.common
                 {
                     m_phase = p.state.phase;
                 }
+
+                scanForRecommendations(p);
 
                 // Filter layser based on their include/exclude rules and
                 // the current NetState.
