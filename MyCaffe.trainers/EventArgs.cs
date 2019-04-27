@@ -325,6 +325,7 @@ namespace MyCaffe.trainers
         CancelEvent m_evtCancel;
         StateBase m_state = null;
         int m_nIndex = 0;
+        bool m_bGetLabel = false;
 
         /// <summary>
         /// The constructor.
@@ -336,7 +337,8 @@ namespace MyCaffe.trainers
         /// <param name="bReset">Specifies to reset the environment.</param>
         /// <param name="nAction">Specifies the action to run.  If less than zero this parameter is ignored.</param>
         /// <param name="bAllowUi">Optionally, specifies whether or not to allow the user interface.</param>
-        public GetDataArgs(int nIdx, Component mycaffe, Log log, CancelEvent evtCancel, bool bReset, int nAction = -1, bool bAllowUi = true)
+        /// <param name="bGetLabel">Optionally, specifies to get the label in addition to the data.</param>
+        public GetDataArgs(int nIdx, Component mycaffe, Log log, CancelEvent evtCancel, bool bReset, int nAction = -1, bool bAllowUi = true, bool bGetLabel = false)
         {
             m_nIndex = nIdx;
             m_nAction = nAction;
@@ -344,6 +346,7 @@ namespace MyCaffe.trainers
             m_log = log;
             m_evtCancel = evtCancel;
             m_bReset = bReset;
+            m_bGetLabel = bGetLabel;
         }
 
 
@@ -353,6 +356,14 @@ namespace MyCaffe.trainers
         public int Index
         {
             get { return m_nIndex; }
+        }
+
+        /// <summary>
+        /// Returns whether or not to retrieve the label in addition to the data.
+        /// </summary>
+        public bool GetLabel
+        {
+            get { return m_bGetLabel; }
         }
 
         /// <summary>
