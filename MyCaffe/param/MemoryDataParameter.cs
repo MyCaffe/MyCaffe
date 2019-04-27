@@ -19,7 +19,8 @@ namespace MyCaffe.param
         uint m_nLabelChannels = 1;
         uint m_nLabelHeight = 1;
         uint m_nLabelWidth = 1;
-        uint m_nClipLength = 0;
+        uint m_nClipLength1 = 0;
+        uint m_nClipLength2 = 0;
         LABEL_TYPE m_labelType = LABEL_TYPE.SINGLE;
         bool m_bPrimaryData = true;
 
@@ -119,17 +120,31 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Specifies the clip length (default = 0, which means unused).
+        /// Specifies the clip length 1 (default = 0, which means unused).
         /// </summary>
         /// <remarks>
-        /// The clip length is only used when a top named 'clip' exists which is used when feeding data
+        /// The clip length 1 is only used when a top named 'clip' exists which is used when feeding data
         /// into an LSTM layer which requires a 'clip'input.
         /// </remarks>
-        [Description("Specifies the clip length used with LSTM layers (default = 0, which means unused)")]
-        public uint clip_length
+        [Description("Specifies the first clip length used with LSTM layers (default = 0, which means unused)")]
+        public uint clip_length1
         {
-            get { return m_nClipLength; }
-            set { m_nClipLength = value; }
+            get { return m_nClipLength1; }
+            set { m_nClipLength1 = value; }
+        }
+
+        /// <summary>
+        /// Specifies the clip length 2 (default = 0, which means unused).
+        /// </summary>
+        /// <remarks>
+        /// The clip length 2 is only used when a top named 'clip' exists which is used when feeding data
+        /// into an LSTM layer which requires a 'clip'input.
+        /// </remarks>
+        [Description("Specifies the second clip length used with LSTM layers (default = 0, which means unused)")]
+        public uint clip_length2
+        {
+            get { return m_nClipLength2; }
+            set { m_nClipLength2 = value; }
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -157,7 +172,8 @@ namespace MyCaffe.param
             m_nLabelWidth = p.m_nLabelWidth;
             m_labelType = p.m_labelType;
             m_bPrimaryData = p.m_bPrimaryData;
-            m_nClipLength = p.m_nClipLength;
+            m_nClipLength1 = p.m_nClipLength1;
+            m_nClipLength2 = p.m_nClipLength2;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -187,8 +203,11 @@ namespace MyCaffe.param
             if (primary_data == false)
                 rgChildren.Add("primary_data", primary_data.ToString());
 
-            if (m_nClipLength > 0)
-                rgChildren.Add("clip_length", m_nClipLength.ToString());
+            if (m_nClipLength1> 0)
+                rgChildren.Add("clip_length1", m_nClipLength1.ToString());
+
+            if (m_nClipLength2 > 0)
+                rgChildren.Add("clip_length2", m_nClipLength2.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -248,13 +267,22 @@ namespace MyCaffe.param
             if ((strVal = rp.FindValue("primary_data")) != null)
                 p.primary_data = bool.Parse(strVal);
 
-            if ((strVal = rp.FindValue("clip_length")) != null)
+            if ((strVal = rp.FindValue("clip_length1")) != null)
             {
                 int nVal = int.Parse(strVal);
                 if (nVal < 0)
                     nVal = 0;
 
-                p.clip_length = (uint)nVal;
+                p.clip_length1 = (uint)nVal;
+            }
+
+            if ((strVal = rp.FindValue("clip_length2")) != null)
+            {
+                int nVal = int.Parse(strVal);
+                if (nVal < 0)
+                    nVal = 0;
+
+                p.clip_length2 = (uint)nVal;
             }
 
             return p;
