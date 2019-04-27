@@ -148,7 +148,7 @@ namespace MyCaffe.gym
 
             m_rgActionSet = m_rgActions.ToList();
 
-            Reset();
+            Reset(false);
         }
 
         /// <summary>
@@ -382,8 +382,9 @@ namespace MyCaffe.gym
         /// <summary>
         /// Reset the state of the gym.
         /// </summary>
+        /// <param name="bGetLabel">Not used.</param>
         /// <returns>A tuple containing state data, the reward, and the done state is returned.</returns>
-        public Tuple<State, double, bool> Reset()
+        public Tuple<State, double, bool> Reset(bool bGetLabel)
         {
             m_state = new AtariState();
             m_ale.ResetGame();
@@ -394,8 +395,9 @@ namespace MyCaffe.gym
         /// Step the gym one step in its simulation.
         /// </summary>
         /// <param name="nAction">Specifies the action to run on the gym.</param>
+        /// <param name="bGetLabel">Not used.</param>
         /// <returns>A tuple containing state data, the reward, and the done state is returned.</returns>
-        public Tuple<State, double, bool> Step(int nAction)
+        public Tuple<State, double, bool> Step(int nAction, bool bGetLabel)
         {
             ACTION action = (ACTION)m_rgActionSet[nAction].Value;
             double dfReward = m_ale.Act(action);
