@@ -87,6 +87,7 @@ namespace MyCaffe.trainers
         bool m_bSnapshot = false;
         BucketCollection m_rgVocabulary = null;
         Stage m_stage = Stage.RL;
+        bool m_bUsePreloadData = false;
 
         enum TRAINER_TYPE
         {
@@ -180,7 +181,7 @@ namespace MyCaffe.trainers
                 switch (m_trainerType)
                 {
                     case TRAINER_TYPE.RNN_SIMPLE:
-                        return new rnn.simple.TrainerRNN<double>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
+                        return new rnn.simple.TrainerRNN<double>(mycaffe, m_properties, m_random, this, m_rgVocabulary, m_bUsePreloadData);
 
                     default:
                         throw new Exception("The trainer type '" + m_trainerType.ToString() + "' is not supported in the RNN stage!");
@@ -226,7 +227,7 @@ namespace MyCaffe.trainers
                 switch (m_trainerType)
                 {
                     case TRAINER_TYPE.RNN_SIMPLE:
-                        return new rnn.simple.TrainerRNN<float>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
+                        return new rnn.simple.TrainerRNN<float>(mycaffe, m_properties, m_random, this, m_rgVocabulary, m_bUsePreloadData);
 
                     default:
                         throw new Exception("The trainer type '" + m_trainerType.ToString() + "' is not supported in the RNN stage!");
@@ -328,9 +329,11 @@ namespace MyCaffe.trainers
         /// <param name="log">Specifies the output log to use.</param>
         /// <param name="evtCancel">Specifies the cancel event.</param>
         /// <param name="nProjectID">Specifies the project ID if any.</param>
+        /// <param name="bUsePreloadData">Returns whether or not to use pre-load data, or dynamic data.</param>
         /// <returns>When data is pre-loaded the discovered vocabulary is returned as a bucket collection.</returns>
-        protected virtual BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID)
+        protected virtual BucketCollection preloaddata(Log log, CancelEvent evtCancel, int nProjectID, out bool bUsePreloadData)
         {
+            bUsePreloadData = false;
             return null;
         }
 
@@ -820,7 +823,7 @@ namespace MyCaffe.trainers
         /// <returns>When data is pre-loaded the discovered vocabulary is returned as a BucketCollection.</returns>
         BucketCollection IXMyCaffeCustomTrainerRNN.PreloadData(Log log, CancelEvent evtCancel, int nProjectID)
         {
-            return preloaddata(log, evtCancel, nProjectID);
+            return preloaddata(log, evtCancel, nProjectID, out m_bUsePreloadData);
         }
 
         /// <summary>
