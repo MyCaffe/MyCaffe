@@ -538,7 +538,7 @@ namespace MyCaffe.test
             }
 
             MemoryDataLayer<T> layer = sender as MemoryDataLayer<T>;
-            layer.AddDatumVector(rgData, 2);
+            layer.AddDatumVector(rgData, null, 2);
 
             m_data.Reshape(rgData.Count, rgData[0].channels, rgData[0].height, rgData[0].width);
             List<float> rgLbl1 = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
@@ -637,7 +637,7 @@ namespace MyCaffe.test
             }
 
             MemoryDataLayer<T> layer = sender as MemoryDataLayer<T>;
-            layer.AddDatumVector(rgData, 3);
+            layer.AddDatumVector(rgData, null, 3);
 
             m_data.Reshape(rgData.Count, rgData[0].channels, rgData[0].height, rgData[0].width);
             List<float> rgLbl1 = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
