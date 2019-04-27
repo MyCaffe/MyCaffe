@@ -129,7 +129,7 @@ namespace MyCaffe.trainers
             switch (m_trainerType)
             {
                 case TRAINER_TYPE.RNN_SIMPLE:
-                    return new rnn.simple.TrainerRNN<double>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
+                    return new rnn.simple.TrainerRNN<double>(mycaffe, m_properties, m_random, this, m_rgVocabulary, true);
 
                 default:
                     throw new Exception("Unknown trainer type '" + m_trainerType.ToString() + "'!");
@@ -154,7 +154,7 @@ namespace MyCaffe.trainers
             switch (m_trainerType)
             {
                 case TRAINER_TYPE.RNN_SIMPLE:
-                    return new rnn.simple.TrainerRNN<float>(mycaffe, m_properties, m_random, this, m_rgVocabulary);
+                    return new rnn.simple.TrainerRNN<float>(mycaffe, m_properties, m_random, this, m_rgVocabulary, true);
 
                 default:
                     throw new Exception("Unknown trainer type '" + m_trainerType.ToString() + "'!");
