@@ -213,7 +213,10 @@ namespace MyCaffe.trainers.pg.simple
             int nIteration = 0;
 
             StateBase s = getData(-1);
-          
+
+            if (s.Clip != null)
+                throw new Exception("The PG.SIMPLE trainer does not support recurrent layers or clip data, use the 'PG.ST' or 'PG.MT' trainer instead.");
+
             while (!m_brain.Cancel.WaitOne(0) && (nIterations == -1 || nIteration < nIterations))
             {
                 // Preprocess the observation.
@@ -314,7 +317,7 @@ namespace MyCaffe.trainers.pg.simple
         bool m_bSkipLoss;
         int m_nMiniBatch = 10;
         SimpleDatum m_sdLast = null;
-
+ 
         public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase)
         {
             m_mycaffe = mycaffe;
@@ -386,7 +389,7 @@ namespace MyCaffe.trainers.pg.simple
 
         public void SetData(List<Datum> rgData)
         {
-            m_memData.AddDatumVector(rgData, 1, true, true);
+            m_memData.AddDatumVector(rgData, null, 1, true, true);
         }
 
         public GetDataArgs getDataArgs(int nAction)
@@ -428,7 +431,7 @@ namespace MyCaffe.trainers.pg.simple
             rgData.Add(new Datum(sd));
             double dfLoss;
 
-            m_memData.AddDatumVector(rgData, 1, true, true);
+            m_memData.AddDatumVector(rgData, null, 1, true, true);
             m_bSkipLoss = true;
             BlobCollection<T> res = m_net.Forward(out dfLoss);
             m_bSkipLoss = false;
@@ -535,6 +538,11 @@ namespace MyCaffe.trainers.pg.simple
             }
 
             return rgData;
+        }
+
+        public List<Datum> GetClip()
+        {
+            return null;
         }
     }
 

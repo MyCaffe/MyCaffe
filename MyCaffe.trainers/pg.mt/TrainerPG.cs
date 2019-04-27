@@ -566,7 +566,7 @@ namespace MyCaffe.trainers.pg.mt
             return args.State;
         }
 
-        private int getAction(int nEpisode, SimpleDatum sd, int nActionCount, out float[] rgfAprob)
+        private int getAction(int nEpisode, SimpleDatum sd, SimpleDatum sdClip, int nActionCount, out float[] rgfAprob)
         {
             m_dfExplorationRate = getEpsilon(nEpisode);
 
@@ -578,7 +578,7 @@ namespace MyCaffe.trainers.pg.mt
                 return nAction;
             }
 
-            return m_brain.act(sd, out rgfAprob);
+            return m_brain.act(sd, sdClip, out rgfAprob);
         }
 
         private int updateStatus(int nEpisodeCount, double dfRunningReward, double dfLoss, double dfLearningRate)
@@ -604,7 +604,7 @@ namespace MyCaffe.trainers.pg.mt
 
             m_brain.Create();
 
-            int a = m_brain.act(state.Data, out rgfAprob);
+            int a = m_brain.act(state.Data, state.Clip, out rgfAprob);
 
             return new Tuple<int, int>(a, state.ActionCount);
         }
@@ -638,7 +638,7 @@ namespace MyCaffe.trainers.pg.mt
 
                 // Forward the policy network and sample an action.
                 float[] rgfAprob;
-                int action = getAction(nEpisodeNumber, x, s.ActionCount, out rgfAprob);
+                int action = getAction(nEpisodeNumber, x, s.Clip, s.ActionCount, out rgfAprob);
 
                 // Take the next step using the action
                 StateBase s_ = getData(m_nIndex, action);
@@ -680,7 +680,9 @@ namespace MyCaffe.trainers.pg.mt
 
                         // Train for one iteration, which triggers the loss function.
                         List<Datum> rgData = m_rgMemory.GetData();
-                        m_brain.SetData(rgData);
+                        List<Datum> rgClip = m_rgMemory.GetClip();
+
+                        m_brain.SetData(rgData, rgClip);
                         m_brain.Train(nEpisodeNumber, step);
 
                         // Update reward running
@@ -752,7 +754,11 @@ namespace MyCaffe.trainers.pg.mt
         Blob<T> m_blobDiscountedR;
         Blob<T> m_blobPolicyGradient;
         Blob<T> m_blobActionOneHot;
+        Blob<T> m_blobDiscountedR1;
+        Blob<T> m_blobPolicyGradient1;
+        Blob<T> m_blobActionOneHot1;
         Blob<T> m_blobLoss;
+        Blob<T> m_blobAprobLogit;
         bool m_bSkipLoss;
         int m_nMiniBatch = 10;
         SimpleDatum m_sdLast = null;
@@ -763,6 +769,9 @@ namespace MyCaffe.trainers.pg.mt
         int m_nThreadCount = 1;
         bool m_bCreated = false;
         bool m_bUseAcceleratedTraining = false;
+        int m_nRecurrentSequenceLength = 0;
+        List<Datum> m_rgData = null;
+        List<Datum> m_rgClip = null;
 
         /// <summary>
         /// The OnApplyUpdate event fires when the Brain needs to apply its gradients to the primary instance of MyCaffe.
@@ -827,12 +836,17 @@ namespace MyCaffe.trainers.pg.mt
             if (m_memLoss == null)
                 throw new Exception("Could not find the MemoryLoss Layer!");
 
+            m_memData.OnDataPack += memData_OnDataPack;
             m_memLoss.OnGetLoss += memLoss_OnGetLoss;
 
             m_blobDiscountedR = new Blob<T>(m_mycaffeWorker.Cuda, m_mycaffeWorker.Log);
             m_blobPolicyGradient = new Blob<T>(m_mycaffeWorker.Cuda, m_mycaffeWorker.Log);
             m_blobActionOneHot = new Blob<T>(m_mycaffeWorker.Cuda, m_mycaffeWorker.Log);
+            m_blobDiscountedR1 = new Blob<T>(m_mycaffeWorker.Cuda, m_mycaffeWorker.Log);
+            m_blobPolicyGradient1 = new Blob<T>(m_mycaffeWorker.Cuda, m_mycaffeWorker.Log);
+            m_blobActionOneHot1 = new Blob<T>(m_mycaffeWorker.Cuda, m_mycaffeWorker.Log);
             m_blobLoss = new Blob<T>(m_mycaffeWorker.Cuda, m_mycaffeWorker.Log);
+            m_blobAprobLogit = new Blob<T>(m_mycaffeWorker.Cuda, m_mycaffeWorker.Log);
 
             if (m_softmax != null)
             {
@@ -867,7 +881,11 @@ namespace MyCaffe.trainers.pg.mt
             dispose(ref m_blobDiscountedR);
             dispose(ref m_blobPolicyGradient);
             dispose(ref m_blobActionOneHot);
+            dispose(ref m_blobDiscountedR1);
+            dispose(ref m_blobPolicyGradient1);
+            dispose(ref m_blobActionOneHot1);
             dispose(ref m_blobLoss);
+            dispose(ref m_blobAprobLogit);
 
             if (m_colAccumulatedGradients != null)
             {
@@ -879,6 +897,14 @@ namespace MyCaffe.trainers.pg.mt
                 m_mycaffeWorker.Dispose();
 
             m_mycaffeWorker = null;
+        }
+
+        /// <summary>
+        /// Returns the recurrent sequence length detected when training a recurrent network, otherwise 0 is returned.
+        /// </summary>
+        public int RecurrentSequenceLength
+        {
+            get { return m_nRecurrentSequenceLength; }
         }
 
         /// <summary>
@@ -927,6 +953,10 @@ namespace MyCaffe.trainers.pg.mt
             m_blobDiscountedR.Reshape(nNum, nActionProbs, 1, 1);
             m_blobPolicyGradient.Reshape(nNum, nActionProbs, 1, 1);
             m_blobActionOneHot.Reshape(nNum, nActionProbs, 1, 1);
+            m_blobDiscountedR1.ReshapeLike(m_blobDiscountedR);
+            m_blobPolicyGradient1.ReshapeLike(m_blobPolicyGradient);
+            m_blobActionOneHot1.ReshapeLike(m_blobActionOneHot);
+            m_blobAprobLogit.Reshape(1, nActionProbs, 1, 1);
             m_blobLoss.Reshape(1, 1, 1, 1);
 
             return nActionProbs;
@@ -984,9 +1014,18 @@ namespace MyCaffe.trainers.pg.mt
         /// Add the data to the model by adding it to the MemoryData layer.
         /// </summary>
         /// <param name="rgData">Specifies the data to add.</param>
-        public void SetData(List<Datum> rgData)
+        /// <param name="rgClip">Specifies the clip data to add if any exists.</param>
+        public void SetData(List<Datum> rgData, List<Datum> rgClip)
         {
-            m_memData.AddDatumVector(rgData, 1, true, true);
+            if (m_nRecurrentSequenceLength > 1 && rgData.Count > 1 && rgClip != null)
+            {
+                m_rgData = rgData;
+                m_rgClip = rgClip;
+            }
+            else
+            {
+                m_memData.AddDatumVector(rgData, rgClip, 1, true, true);
+            }
         }
 
         /// <summary>
@@ -1062,16 +1101,25 @@ namespace MyCaffe.trainers.pg.mt
         /// or calculated via a forward pass (when using Exploitation).
         /// </summary>
         /// <param name="sd">Specifies the data to run the model on.</param>
+        /// <param name="sdClip">Specifies the clip data (if any exits).</param>
         /// <param name="rgfAprob">Returns the Aprob values calculated (NOTE: this is only used in non-Softmax models).</param>
         /// <returns>The action value is returned.</returns>
-        public int act(SimpleDatum sd, out float[] rgfAprob)
+        public int act(SimpleDatum sd, SimpleDatum sdClip, out float[] rgfAprob)
         {
             List<Datum> rgData = new List<Datum>();
             rgData.Add(new Datum(sd));
+            List<Datum> rgClip = null;
+
+            if (sdClip != null)
+            {
+                rgClip = new List<Datum>();
+                rgClip.Add(new Datum(sdClip));
+            }
+
             double dfLoss;
             float fRandom = (float)m_random.NextDouble(); // Roll the dice.
 
-            m_memData.AddDatumVector(rgData, 1, true, true);
+            m_memData.AddDatumVector(rgData, rgClip, 1, true, true);
             m_bSkipLoss = true;
             BlobCollection<T> res = m_net.Forward(out dfLoss);
             m_bSkipLoss = false;
@@ -1082,7 +1130,19 @@ namespace MyCaffe.trainers.pg.mt
             {
                 if (res[i].type != Blob<T>.BLOB_TYPE.LOSS)
                 {
-                    rgfAprob = Utility.ConvertVecF<T>(res[i].update_cpu_data());
+                    int nStart = 0;
+                    // When using recurrent learning, only act on the last outputs.
+                    if (m_nRecurrentSequenceLength > 1)
+                    {
+                        int nCount = res[i].count();
+                        int nOutput = nCount / m_nRecurrentSequenceLength;
+                        nStart = nCount - nOutput;
+
+                        if (nStart < 0)
+                            throw new Exception("The start must be zero or greater!");
+                    }
+
+                    rgfAprob = Utility.ConvertVecF<T>(res[i].update_cpu_data(), nStart);
                     break;
                 }
             }
@@ -1106,6 +1166,21 @@ namespace MyCaffe.trainers.pg.mt
             return rgfAprob.Length - 1;
         }
 
+        private void prepareBlob(Blob<T> b1, Blob<T> b)
+        {
+            b1.CopyFrom(b, false, true);
+
+            List<int> rgShape = b.shape();
+            rgShape[0] = 1;
+            b.Reshape(rgShape);
+        }
+
+        private void copyBlob(int nIdx, Blob<T> src, Blob<T> dst)
+        {
+            int nCount = dst.count();
+            m_mycaffeWorker.Cuda.copy(nCount, src.gpu_data, dst.mutable_gpu_data, nIdx * nCount, 0);
+        }
+
         /// <summary>
         /// Train the model at the current iteration.
         /// </summary>
@@ -1113,7 +1188,32 @@ namespace MyCaffe.trainers.pg.mt
         /// <param name="step">Specifies the training step to use (if any).  This is only used for debugging.</param>
         public void Train(int nIteration, TRAIN_STEP step)
         {
-            m_solver.Step(1, step, true, m_bUseAcceleratedTraining, true);
+            // Run data/clip groups > 1 in non batch mode.
+            if (m_nRecurrentSequenceLength > 1 && m_rgData != null && m_rgData.Count > 1 && m_rgClip != null)
+            {
+                prepareBlob(m_blobActionOneHot1, m_blobActionOneHot);
+                prepareBlob(m_blobDiscountedR1, m_blobDiscountedR);
+                prepareBlob(m_blobPolicyGradient1, m_blobPolicyGradient);
+
+                for (int i = 0; i < m_rgData.Count; i++)
+                {
+                    copyBlob(i, m_blobActionOneHot1, m_blobActionOneHot);
+                    copyBlob(i, m_blobDiscountedR1, m_blobDiscountedR);
+                    copyBlob(i, m_blobPolicyGradient1, m_blobPolicyGradient);
+
+                    List<Datum> rgData1 = new List<Datum>() { m_rgData[i] };
+                    List<Datum> rgClip1 = new List<Datum>() { m_rgClip[i] };
+
+                    m_memData.AddDatumVector(rgData1, rgClip1, 1, true, true);
+
+                    m_solver.Step(1, step, true, m_bUseAcceleratedTraining, true);
+                }
+            }
+            else
+            {
+                m_solver.Step(1, step, true, m_bUseAcceleratedTraining, true);
+            }
+
             m_colAccumulatedGradients.Accumulate(m_mycaffeWorker.Cuda, m_net.learnable_parameters, true);
 
             if (nIteration % m_nMiniBatch == 0 || step == TRAIN_STEP.BACKWARD || step == TRAIN_STEP.BOTH)
@@ -1135,6 +1235,74 @@ namespace MyCaffe.trainers.pg.mt
                 m_net.ClearParamDiffs();
             }
         }
+
+        /// <summary>
+        /// Pack the data in an ordering expected by the RNN layer used.  This method is only called when using Data/Clip inputs.
+        /// </summary>
+        /// <param name="sender">Specifies the sender of the event, which is the MemoryDataLayer.</param>
+        /// <param name="e">Specifies the event parameters.</param>
+        /// <remarks>
+        /// This method is responsible for packing the datum received into the data blob within the event arguments and do so in the
+        /// expected LSTM ordering.
+        /// </remarks>
+        private void memData_OnDataPack(object sender, MemoryDataLayerPackDataArgs<T> e)
+        {            
+            List<int> rgDataShape = e.Data.shape();
+            List<int> rgClipShape = e.Clip.shape();
+            int nBatch = e.DataItems.Count;
+            int nSeqLen = rgDataShape[0];
+
+            e.Data.Log.CHECK_EQ(nBatch, e.ClipItems.Count, "The data and clip should have the same number of items.");
+            e.Data.Log.CHECK_EQ(nSeqLen, rgClipShape[0], "The data and clip should have the same sequence count.");
+
+            rgDataShape[1] = nBatch;  // LSTM uses sizing: seq, batch, data1, data2
+            rgClipShape[1] = nBatch;
+
+            e.Data.Reshape(rgDataShape);
+            e.Clip.Reshape(rgClipShape);
+
+            T[] rgRawData = new T[e.Data.count()];
+            T[] rgRawClip = new T[e.Clip.count()];
+
+            int nDataSize = e.Data.count(2);
+            T[] rgDataItem = new T[nDataSize];
+            T dfClip;
+            int nIdx;
+
+            for (int i = 0; i < nBatch; i++)
+            {
+                Datum data = e.DataItems[i];
+                Datum clip = e.ClipItems[i];
+
+                for (int j = 0; j < nSeqLen; j++)
+                {
+                    dfClip = (T)Convert.ChangeType(clip.RealData[j], typeof(T));
+
+                    for (int k = 0; k < nDataSize; k++)
+                    {
+                        rgDataItem[k] = (T)Convert.ChangeType(data.RealData[j * nDataSize + k], typeof(T));
+                    }
+
+                    // LSTM: Create input data, the data must be in the order
+                    // seq1_val1, seq2_val1, ..., seqBatch_Size_val1, seq1_val2, seq2_val2, ..., seqBatch_Size_valSequence_Length
+                    if (e.LstmType == LayerParameter.LayerType.LSTM)
+                        nIdx = nBatch * j + i;  
+
+                    // LSTM_SIMPLE: Create input data, the data must be in the order
+                    // seq1_val1, seq1_val2, ..., seq1_valBatchSize, seq2_val1, seq2_val2, ..., seqSequenceLength_valBatchSize
+                    else
+                        nIdx = i * nBatch + j;  
+
+                    Array.Copy(rgDataItem, 0, rgRawData, nIdx * nDataSize, nDataSize);
+                    rgRawClip[nIdx] = dfClip;
+                }
+            }
+
+            e.Data.mutable_cpu_data = rgRawData;
+            e.Clip.mutable_cpu_data = rgRawClip;
+            m_nRecurrentSequenceLength = nSeqLen;
+        }
+
 
         /// <summary>
         /// Calcualte the loss and initial gradients.  This event function fires, when training, during the forward pass of the MemoryLoss layer.
@@ -1159,9 +1327,21 @@ namespace MyCaffe.trainers.pg.mt
             int nCount = m_blobActionOneHot.count();
             long hActionOneHot = m_blobActionOneHot.gpu_data;
             long hPolicyGrad = 0;
-            long hBottomDiff = e.Bottom[0].mutable_gpu_diff;
             long hDiscountedR = m_blobDiscountedR.gpu_data;
             double dfLoss;
+            Blob<T> blobOriginalBottom = e.Bottom[0];
+            int nDataSize = e.Bottom[0].count(1);
+            int nLogitSize = m_blobAprobLogit.count();
+
+            if (m_nRecurrentSequenceLength > 1)
+            {
+                m_mycaffeWorker.Log.CHECK_EQ(nDataSize, nLogitSize, "The data size should match the aprobl logit size!");
+                m_mycaffeWorker.Cuda.copy(m_blobAprobLogit.count(), e.Bottom[0].gpu_data, m_blobAprobLogit.mutable_gpu_data, (m_nRecurrentSequenceLength - 1) * nDataSize, 0);
+                m_mycaffeWorker.Cuda.copy(m_blobAprobLogit.count(), e.Bottom[0].gpu_diff, m_blobAprobLogit.mutable_gpu_diff, (m_nRecurrentSequenceLength - 1) * nDataSize, 0);
+                e.Bottom[0] = m_blobAprobLogit;
+            }
+
+            long hBottomDiff = e.Bottom[0].mutable_gpu_diff;
 
             // Calculate the initial gradients (policy grad initially just contains the action probabilities)
             if (m_softmax != null)
@@ -1206,6 +1386,15 @@ namespace MyCaffe.trainers.pg.mt
 
             if (hPolicyGrad != hBottomDiff)
                 m_mycaffeWorker.Cuda.copy(nCount, hPolicyGrad, hBottomDiff);
+
+            // Copy the diff to the last in the sequence and 
+            // zero out the rest in the sequence.
+            if (m_nRecurrentSequenceLength > 1)
+            {
+                blobOriginalBottom.SetDiff(0);
+                m_mycaffeWorker.Cuda.copy(nCount, hBottomDiff, blobOriginalBottom.mutable_gpu_diff, 0, (m_nRecurrentSequenceLength - 1) * nDataSize);
+                e.Bottom[0] = blobOriginalBottom;
+            }
 
             m_dfLastLoss = e.Loss;
         }
@@ -1252,8 +1441,8 @@ namespace MyCaffe.trainers.pg.mt
         /// <returns>The discounted rewards is returned (one value for each step in the episode).</returns>
         public float[] GetDiscountedRewards(float fGamma, bool bAllowReset)
         {
-            float fRunningAdd = 0;
             float[] rgR = m_rgItems.Select(p => p.Reward).ToArray();
+            float fRunningAdd = 0;
             float[] rgDiscountedR = new float[rgR.Length];
 
             for (int t = Count - 1; t >= 0; t--)
@@ -1321,6 +1510,31 @@ namespace MyCaffe.trainers.pg.mt
             for (int i = 0; i < m_rgItems.Count; i++)
             {
                 rgData.Add(new Datum(m_rgItems[i].Data));
+            }
+
+            return rgData;
+        }
+
+        /// <summary>
+        /// Returns the clip data if it exists, or <i>null</i>.
+        /// </summary>
+        /// <returns>The clip data is returned, or <i>null</i>.</returns>
+        public List<Datum> GetClip()
+        {
+            if (m_rgItems.Count == 0)
+                return null;
+
+            if (m_rgItems[0].State.Clip == null)
+                return null;
+
+            List<Datum> rgData = new List<Datum>();
+
+            for (int i = 0; i < m_rgItems.Count; i++)
+            {
+                if (m_rgItems[i].State.Clip == null)
+                    return null;
+
+                rgData.Add(new Datum(m_rgItems[i].State.Clip));
             }
 
             return rgData;
