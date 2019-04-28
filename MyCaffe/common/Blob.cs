@@ -70,7 +70,11 @@ namespace MyCaffe.common
             /// <summary>
             /// The Blob holds Accuracy Data.
             /// </summary>
-            ACCURACY
+            ACCURACY,
+            /// <summary>
+            /// The blob holds Clip data.
+            /// </summary>
+            CLIP
         }
 
         /// <summary>
