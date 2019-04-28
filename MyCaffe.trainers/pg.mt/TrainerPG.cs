@@ -1024,6 +1024,8 @@ namespace MyCaffe.trainers.pg.mt
             else
             {
                 m_memData.AddDatumVector(rgData, rgClip, 1, true, true);
+                m_rgData = null;
+                m_rgClip = null;
             }
         }
 
@@ -1131,10 +1133,10 @@ namespace MyCaffe.trainers.pg.mt
                 {
                     int nStart = 0;
                     // When using recurrent learning, only act on the last outputs.
-                    if (m_nRecurrentSequenceLength > 1)
+                    if (m_nRecurrentSequenceLength > 1 && res[i].num > 1)
                     {
                         int nCount = res[i].count();
-                        int nOutput = nCount / m_nRecurrentSequenceLength;
+                        int nOutput = nCount / res[i].num;
                         nStart = nCount - nOutput;
 
                         if (nStart < 0)
@@ -1167,7 +1169,8 @@ namespace MyCaffe.trainers.pg.mt
 
         private void prepareBlob(Blob<T> b1, Blob<T> b)
         {
-            b1.CopyFrom(b, false, true);
+            b1.ReshapeLike(b);
+            b1.CopyFrom(b, 0, 0, b1.count(), true, true);
 
             List<int> rgShape = b.shape();
             rgShape[0] = 1;
@@ -1177,7 +1180,7 @@ namespace MyCaffe.trainers.pg.mt
         private void copyBlob(int nIdx, Blob<T> src, Blob<T> dst)
         {
             int nCount = dst.count();
-            m_mycaffeWorker.Cuda.copy(nCount, src.gpu_data, dst.mutable_gpu_data, nIdx * nCount, 0);
+            dst.CopyFrom(src, nIdx * nCount, 0, nCount, true, false);
         }
 
         /// <summary>
@@ -1207,6 +1210,9 @@ namespace MyCaffe.trainers.pg.mt
 
                     m_solver.Step(1, step, true, m_bUseAcceleratedTraining, true);
                 }
+
+                m_rgData = null;
+                m_rgClip = null;
             }
             else
             {
@@ -1329,7 +1335,10 @@ namespace MyCaffe.trainers.pg.mt
             long hDiscountedR = m_blobDiscountedR.gpu_data;
             double dfLoss;
             int nDataSize = e.Bottom[0].count(1);
+            bool bUsingEndData = false;
 
+            // When using a recurrent model and receiving data with more than one sequence,
+            // copy and only use the last sequence data.
             if (m_nRecurrentSequenceLength > 1)
             {
                 if (e.Bottom[0].num > 1)
@@ -1341,6 +1350,7 @@ namespace MyCaffe.trainers.pg.mt
                     rgShape[0] = 1;
                     e.Bottom[0].Reshape(rgShape);
                     e.Bottom[0].CopyFrom(m_blobAprobLogit, (m_blobAprobLogit.num - 1) * nDataSize, 0, nDataSize, true, true);
+                    bUsingEndData = true;
                 }
             }
 
@@ -1390,9 +1400,9 @@ namespace MyCaffe.trainers.pg.mt
             if (hPolicyGrad != hBottomDiff)
                 m_mycaffeWorker.Cuda.copy(nCount, hPolicyGrad, hBottomDiff);
 
-            // Copy the diff to the last in the sequence and 
-            // zero out the rest in the sequence.
-            if (m_nRecurrentSequenceLength > 1)
+            // When using recurrent model with more than one sequence of data, only
+            // copy the diff to the last in the sequence and zero out the rest in the sequence.
+            if (m_nRecurrentSequenceLength > 1 && bUsingEndData)
             {
                 m_blobAprobLogit.SetDiff(0);
                 m_blobAprobLogit.CopyFrom(e.Bottom[0], 0, (m_blobAprobLogit.num - 1) * nDataSize, nDataSize, false, true);
