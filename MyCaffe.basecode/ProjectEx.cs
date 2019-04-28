@@ -51,7 +51,9 @@ namespace MyCaffe.basecode
         /// <param name="state">Specifies the state descriptor for the project.</param>
         /// <param name="bExistTrain">Specifies whether or not training results exist for the proejct.</param>
         /// <param name="bExistTest">Specifies whether or not testing results exist for the project.</param>
-        public ProjectEx(ProjectDescriptor prj, StateDescriptor state = null, bool bExistTrain = false, bool bExistTest = false)
+        /// <param name="bQueryModel">Optionally, specifies whether or not to set (and parse) the model.</param>
+        /// <param name="bQuerySolver">Optionally, specifies whether or not to set (and parse) the solver.</param>
+        public ProjectEx(ProjectDescriptor prj, StateDescriptor state = null, bool bExistTrain = false, bool bExistTest = false, bool bQueryModel = true, bool bQuerySolver = true)
         {
             m_project = prj;
 
@@ -60,11 +62,70 @@ namespace MyCaffe.basecode
 
             m_state = state;
 
-            ModelDescription = prj.ModelDescription;
-            SolverDescription = prj.SolverDescription;
+            if (bQueryModel)    
+                ModelDescription = prj.ModelDescription;
+            else
+                m_project.ModelName = getModelName(prj.ModelDescription);
+
+            if (bQuerySolver)
+                SolverDescription = prj.SolverDescription;
+            else
+                m_project.SolverName = getSolverType(prj.SolverDescription);
 
             m_bExistTest = bExistTest;
             m_bExistTrain = bExistTrain;
+        }
+
+        private string parse(string str, string strTarget, string strDefault = "UNKNOWN")
+        {
+            if (str == null)
+                return strDefault;
+
+            int nPos1 = 0;
+
+            while (nPos1 < str.Length)
+            {
+                nPos1 = str.IndexOf(strTarget, nPos1);
+                if (nPos1 < 0)
+                    return strDefault;
+
+                if (nPos1 == 0 || char.IsWhiteSpace(str[nPos1 - 1]) || str[nPos1 - 1] == '\n' || str[nPos1 - 1] == '\r')
+                    break;
+
+                nPos1++;
+            }
+
+            if (nPos1 >= str.Length)
+                return strDefault;
+
+            nPos1 += strTarget.Length;
+
+            while (nPos1 < str.Length && (char.IsWhiteSpace(str[nPos1]) || str[nPos1] == '\"'))
+            {
+                nPos1++;
+            }
+
+            string strName;
+
+            int nPos2 = str.IndexOfAny(new char[] { ' ', '\n', '\r', '\"', '\t' }, nPos1);
+            if (nPos2 < 0)
+                strName = str.Substring(nPos1);
+            else
+                strName = str.Substring(nPos1, nPos2 - nPos1).Trim(' ', '\"');
+
+            return strName;
+        }
+
+        private string getModelName(string strDesc)
+        {
+            string strName = parse(strDesc, "name:");
+            return strName;
+        }
+
+        private string getSolverType(string strDesc)
+        {
+            string strName = parse(strDesc, "type:");
+            return strName;
         }
 
         private void setDatasetFromProto(RawProto proto)
@@ -232,6 +293,9 @@ namespace MyCaffe.basecode
         /// <returns>The custom trainer name is returned.</returns>
         public string GetCustomTrainer(out string strProperties)
         {
+            if (m_protoSolver == null)
+                SolverDescription = m_project.SolverDescription;
+
             strProperties = "";
 
             RawProto rp = m_protoSolver.FindChild("custom_trainer");
@@ -276,6 +340,9 @@ namespace MyCaffe.basecode
         /// <returns>The batch size is returned.</returns>
         public int GetBatchSize(Phase phase)
         {
+            if (m_protoModel == null)
+                ModelDescription = m_project.ModelDescription;
+
             RawProtoCollection col = m_protoModel.FindChildren("layer");
 
             foreach (RawProto rp1 in col)
@@ -316,6 +383,9 @@ namespace MyCaffe.basecode
         /// <returns>If found the setting value is returned, otherwise <i>null</i> is returned.</returns>
         public double? GetLayerSetting(Phase phase, string strLayer, string strParam)
         {
+            if (m_protoModel == null)
+                ModelDescription = m_project.ModelDescription;
+
             RawProtoCollection col = m_protoModel.FindChildren("layer");
 
             foreach (RawProto rp1 in col)
@@ -348,6 +418,9 @@ namespace MyCaffe.basecode
         /// <returns>The setting is returned if found, otherwise <i>null</i> is returned.</returns>
         public string GetSolverSetting(string strParam)
         {
+            if (m_protoSolver == null)
+                SolverDescription = m_project.SolverDescription;
+
             RawProto proto = m_protoSolver.FindChild(strParam);
             if (proto == null)
                 return null;
@@ -586,6 +659,7 @@ namespace MyCaffe.basecode
             get { return (m_protoSolver == null) ? null : m_protoSolver.ToString(); }
             set
             {
+                m_project.SolverName = getSolverType(value);
                 m_project.SolverDescription = value;
                 m_protoSolver = null;
 
@@ -616,6 +690,7 @@ namespace MyCaffe.basecode
             get { return (m_protoModel == null) ? null : m_protoModel.ToString(); }
             set
             {
+                m_project.ModelName = getModelName(value);
                 m_project.ModelDescription = value;
                 m_protoModel = null;
 
@@ -822,17 +897,7 @@ namespace MyCaffe.basecode
         /// </summary>
         public string ModelName
         {
-            get
-            {
-                if (m_protoModel == null)
-                    return "";
-
-                string strName = m_protoModel.FindValue("name");
-                if (strName == null)
-                    return "";
-
-                return strName;
-            }
+            get { return m_project.ModelName; }
         }
 
         /// <summary>
@@ -840,17 +905,7 @@ namespace MyCaffe.basecode
         /// </summary>
         public string SolverType
         {
-            get
-            {
-                if (m_protoSolver == null)
-                    return "";
-
-                string strType = m_protoSolver.FindValue("type");
-                if (strType == null)
-                    return "SGD";
-
-                return strType;
-            }
+            get { return m_project.SolverName; }
         }
 
         /// <summary>
