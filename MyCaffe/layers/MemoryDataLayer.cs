@@ -461,20 +461,16 @@ namespace MyCaffe.layers
         {
             int nSrcOffset;
 
+            Blob<T> blobData = colTop[0];
             Blob<T> blobClip = null;
             Blob<T> blobLabel = null;
-            Blob<T> blobData = null;
 
-            foreach (Blob<T> b in colTop)
+            for (int i=1; i<colTop.Count; i++)
             {
-                if (blobClip == null && b.Name.ToLower().Contains("clip"))
-                    blobClip = b;
-
-                else if (blobLabel == null && b.Name.ToLower().Contains("label"))
-                    blobLabel = b;
-
+                if (blobClip == null && (colTop[i].type == Blob<T>.BLOB_TYPE.CLIP || colTop[i].Name.ToLower().Contains("clip")))
+                    blobClip = colTop[i];
                 else
-                    blobData = b;
+                    blobLabel = colTop[i];
             }
 
             blobData.Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
