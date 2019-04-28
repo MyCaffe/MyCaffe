@@ -306,7 +306,7 @@ namespace MyCaffe.basecode
             List<RawProto> rgParent = new List<RawProto>() { new RawProto("root", "") };
             RawProto child = new RawProto("", "");
 
-            str = Utility.Replace(str, '\t', ' ');
+//            str = Utility.Replace(str, '\t', ' ');
             str = strip_comments(str);
 
             List<KeyValuePair<string, int>> rgstrTokens = tokenize(str);
@@ -361,7 +361,7 @@ namespace MyCaffe.basecode
             for (int i=0; i<rgLines.Length; i++)
             {
                 string strLine = rgLines[i].Trim(' ', '\r', '\t');
-                string[] rgTokens = strLine.Split(' ');
+                string[] rgTokens = strLine.Split(' ', '\t');
                 List<string> rgFinalTokens = new List<string>();
                 bool bAdding = false;
                 string strItem1 = "";
