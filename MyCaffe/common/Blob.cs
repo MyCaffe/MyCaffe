@@ -595,6 +595,27 @@ namespace MyCaffe.common
         /// Copy from a source Blob.
         /// </summary>
         /// <param name="src">The Blob to copy from.</param>
+        /// <param name="nSrcOffset">The offset into the source data to copy.</param>
+        /// <param name="nDstOffset">The offset into the destination data to copy.</param>
+        /// <param name="nCount">The number of items to copy.</param>
+        /// <param name="bCopyData">Copy the data.</param>
+        /// <param name="bCopyDiff">Copy the diff.</param>
+        public void CopyFrom(Blob<T> src, int nSrcOffset, int nDstOffset, int nCount, bool bCopyData, bool bCopyDiff)
+        {
+            m_log.CHECK_GE(count(), nDstOffset + nCount, "The data to be copied is larger that the destination blob.");
+            m_log.CHECK_GE(src.count(), nSrcOffset + nCount, "The data to be copied is larger than the source blob.");
+
+            if (bCopyData)
+                m_cuda.copy(nCount, src.gpu_data, mutable_gpu_data, nSrcOffset, nDstOffset);
+
+            if (bCopyDiff)
+                m_cuda.copy(nCount, src.gpu_diff, mutable_gpu_diff, nSrcOffset, nDstOffset);
+        }
+
+        /// <summary>
+        /// Copy from a source Blob.
+        /// </summary>
+        /// <param name="src">The Blob to copy from.</param>
         /// <param name="bCopyDiff">If false, copy the data; if true, copy the diff.</param>
         /// <param name="bReshape">If false, require this Blob to be pre-shaped to the shape
         /// of other (and die otherwise); If true, Reshape this Blob to other's shape if
