@@ -36,7 +36,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestForward()
         {
-            RNNLayerTest test = new RNNLayerTest();
+            RNNLayerTest test = new RNNLayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
