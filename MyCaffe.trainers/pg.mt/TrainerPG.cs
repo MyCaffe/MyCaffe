@@ -956,7 +956,6 @@ namespace MyCaffe.trainers.pg.mt
             m_blobDiscountedR1.ReshapeLike(m_blobDiscountedR);
             m_blobPolicyGradient1.ReshapeLike(m_blobPolicyGradient);
             m_blobActionOneHot1.ReshapeLike(m_blobActionOneHot);
-            m_blobAprobLogit.Reshape(1, nActionProbs, 1, 1);
             m_blobLoss.Reshape(1, 1, 1, 1);
 
             return nActionProbs;
@@ -1329,16 +1328,20 @@ namespace MyCaffe.trainers.pg.mt
             long hPolicyGrad = 0;
             long hDiscountedR = m_blobDiscountedR.gpu_data;
             double dfLoss;
-            Blob<T> blobOriginalBottom = e.Bottom[0];
             int nDataSize = e.Bottom[0].count(1);
-            int nLogitSize = m_blobAprobLogit.count();
 
             if (m_nRecurrentSequenceLength > 1)
             {
-                m_mycaffeWorker.Log.CHECK_EQ(nDataSize, nLogitSize, "The data size should match the aprobl logit size!");
-                m_mycaffeWorker.Cuda.copy(m_blobAprobLogit.count(), e.Bottom[0].gpu_data, m_blobAprobLogit.mutable_gpu_data, (m_nRecurrentSequenceLength - 1) * nDataSize, 0);
-                m_mycaffeWorker.Cuda.copy(m_blobAprobLogit.count(), e.Bottom[0].gpu_diff, m_blobAprobLogit.mutable_gpu_diff, (m_nRecurrentSequenceLength - 1) * nDataSize, 0);
-                e.Bottom[0] = m_blobAprobLogit;
+                if (e.Bottom[0].num > 1)
+                {
+                    m_blobAprobLogit.CopyFrom(e.Bottom[0], false, true);
+                    m_blobAprobLogit.CopyFrom(e.Bottom[0], true);
+
+                    List<int> rgShape = e.Bottom[0].shape();
+                    rgShape[0] = 1;
+                    e.Bottom[0].Reshape(rgShape);
+                    e.Bottom[0].CopyFrom(m_blobAprobLogit, (m_blobAprobLogit.num - 1) * nDataSize, 0, nDataSize, true, true);
+                }
             }
 
             long hBottomDiff = e.Bottom[0].mutable_gpu_diff;
@@ -1391,9 +1394,10 @@ namespace MyCaffe.trainers.pg.mt
             // zero out the rest in the sequence.
             if (m_nRecurrentSequenceLength > 1)
             {
-                blobOriginalBottom.SetDiff(0);
-                m_mycaffeWorker.Cuda.copy(nCount, hBottomDiff, blobOriginalBottom.mutable_gpu_diff, 0, (m_nRecurrentSequenceLength - 1) * nDataSize);
-                e.Bottom[0] = blobOriginalBottom;
+                m_blobAprobLogit.SetDiff(0);
+                m_blobAprobLogit.CopyFrom(e.Bottom[0], 0, (m_blobAprobLogit.num - 1) * nDataSize, nDataSize, false, true);
+                e.Bottom[0].CopyFrom(m_blobAprobLogit, false, true);
+                e.Bottom[0].CopyFrom(m_blobAprobLogit, true);
             }
 
             m_dfLastLoss = e.Loss;
