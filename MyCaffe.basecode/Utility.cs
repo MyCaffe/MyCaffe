@@ -601,14 +601,33 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <typeparam name="T">Specifies the base type of the array.</typeparam>
         /// <param name="rg">Specifies the array.</param>
+        /// <param name="nDecimals">Optionally, specifies the number of decimals (default = -1, ignored)</param>
         /// <returns>The string representation of the array is returned.</returns>
-        public static string ToString<T>(List<T> rg)
+        public static string ToString<T>(List<T> rg, int nDecimals = -1)
         {
             string strOut = "{";
 
             for (int i = 0; i < rg.Count; i++)
             {
-                strOut += rg[i].ToString();
+                if (nDecimals >= 0)
+                {
+                    if (typeof(T) == typeof(float))
+                    {
+                        float f = (float)Convert.ChangeType(rg[i], typeof(float));
+                        strOut += f.ToString("N" + nDecimals.ToString());
+                    }
+                    else if (typeof(T) == typeof(double))
+                    {
+                        double f = (double)Convert.ChangeType(rg[i], typeof(double));
+                        strOut += f.ToString("N" + nDecimals.ToString());
+                    }
+                    else
+                    {
+                        strOut += rg[i].ToString();
+                    }
+                }
+                else
+                    strOut += rg[i].ToString();
                 strOut += ",";
             }
 
