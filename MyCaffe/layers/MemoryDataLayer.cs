@@ -284,63 +284,63 @@ namespace MyCaffe.layers
 
                 // Apply data transformations (mirror, scale, crop...)
                 m_transformer.Transform(rgData, m_blobData, m_cuda, m_log);
+
+                if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
+                {
+                    List<int> rgLblShape = new List<int>();
+                    rgLblShape.Add(nNum);
+                    rgLblShape.Add(1);
+                    rgLblShape.Add(1);
+                    rgLblShape.Add(1);
+
+                    // Reshape label blob depending on label type.
+                    if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.MULTIPLE)
+                    {
+                        m_log.CHECK_GE(nLblAxis, 1, "The label axis must be greater than or equal to 1.");
+                        m_log.CHECK_LE(nLblAxis, 4, "The label axis must be less than 4.");
+
+                        List<float> rgLbl = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
+                        rgLblShape[nLblAxis] = rgLbl.Count;
+                    }
+
+                    m_blobLabel.Reshape(rgLblShape);
+
+                    // Copy labels - use DataCriteria for MULTIPLE labels
+                    if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.MULTIPLE)
+                    {
+                        T[] rgLabels = m_blobLabel.mutable_cpu_data;
+                        int nIdx = 0;
+
+                        for (int i = 0; i < nNum; i++)
+                        {
+                            List<float> rgLbl = BinaryData.UnPackFloatList(rgData[i].DataCriteria, rgData[i].DataCriteriaFormat);
+                            for (int j = 0; j < rgLbl.Count; j++)
+                            {
+                                rgLabels[nIdx] = (T)Convert.ChangeType(rgLbl[j], typeof(T));
+                                nIdx++;
+                            }
+                        }
+                        m_blobLabel.mutable_cpu_data = rgLabels;
+                    }
+                    // Copy labels - use standard Datum label for SINGLE labels.
+                    else
+                    {
+                        T[] rgLabels = m_blobLabel.mutable_cpu_data;
+                        for (int i = 0; i < nNum; i++)
+                        {
+                            rgLabels[i] = (T)Convert.ChangeType(rgData[i].label, typeof(T));
+                        }
+                        m_blobLabel.mutable_cpu_data = rgLabels;
+                    }
+                }
             }
             else
             {
                 if (OnDataPack == null)
                     throw new Exception("To properly handle data packing, you must connect the OnDataPack event and properly fill out the data and clip blobs with the ordering expected by the recurrent layers.");
 
-                MemoryDataLayerPackDataArgs<T> args = new MemoryDataLayerPackDataArgs<T>(m_blobData, m_blobClip, rgData, rgClip);
+                MemoryDataLayerPackDataArgs<T> args = new MemoryDataLayerPackDataArgs<T>(m_blobData, m_blobClip, m_blobLabel, rgData, rgClip);
                 OnDataPack(this, args);
-            }
-
-            if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
-            {
-                List<int> rgLblShape = new List<int>();
-                rgLblShape.Add(nNum);
-                rgLblShape.Add(1);
-                rgLblShape.Add(1);
-                rgLblShape.Add(1);
-
-                // Reshape label blob depending on label type.
-                if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.MULTIPLE)
-                {
-                    m_log.CHECK_GE(nLblAxis, 1, "The label axis must be greater than or equal to 1.");
-                    m_log.CHECK_LE(nLblAxis, 4, "The label axis must be less than 4.");
-
-                    List<float> rgLbl = BinaryData.UnPackFloatList(rgData[0].DataCriteria, rgData[0].DataCriteriaFormat);
-                    rgLblShape[nLblAxis] = rgLbl.Count;
-                }
-
-                m_blobLabel.Reshape(rgLblShape);
-
-                // Copy labels - use DataCriteria for MULTIPLE labels
-                if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.MULTIPLE)
-                {
-                    T[] rgLabels = m_blobLabel.mutable_cpu_data;
-                    int nIdx = 0;
-
-                    for (int i = 0; i < nNum; i++)
-                    {
-                        List<float> rgLbl = BinaryData.UnPackFloatList(rgData[i].DataCriteria, rgData[i].DataCriteriaFormat);
-                        for (int j = 0; j < rgLbl.Count; j++)
-                        {
-                            rgLabels[nIdx] = (T)Convert.ChangeType(rgLbl[j], typeof(T));
-                            nIdx++;
-                        }
-                    }
-                    m_blobLabel.mutable_cpu_data = rgLabels;
-                }
-                // Copy labels - use standard Datum label for SINGLE labels.
-                else
-                {
-                    T[] rgLabels = m_blobLabel.mutable_cpu_data;
-                    for (int i = 0; i < nNum; i++)
-                    {
-                        rgLabels[i] = (T)Convert.ChangeType(rgData[i].label, typeof(T));
-                    }
-                    m_blobLabel.mutable_cpu_data = rgLabels;
-                }
             }
 
             m_bHasNewData = true;
@@ -545,6 +545,7 @@ namespace MyCaffe.layers
     {
         Blob<T> m_blobData;
         Blob<T> m_blobClip;
+        Blob<T> m_blobLabel;
         List<Datum> m_rgData;
         List<Datum> m_rgClip;
         LayerParameter.LayerType m_lstmType = LayerParameter.LayerType.LSTM;
@@ -554,13 +555,15 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="blobData">Specifies the blob data to fill with the ordered data.</param>
         /// <param name="blobClip">Specifies the clip data to fill with the ordered data.</param>
+        /// <param name="blobLabel">Specifies the labeld ata to fill with ordered data.</param>
         /// <param name="rgData">Specifies the raw data to use to fill.</param>
         /// <param name="rgClip">Specifies the raw clip data to use to fill.</param>
         /// <param name="type">Specifies the LSTM type.</param>
-        public MemoryDataLayerPackDataArgs(Blob<T> blobData, Blob<T> blobClip, List<Datum> rgData, List<Datum> rgClip, LayerParameter.LayerType type = LayerParameter.LayerType.LSTM)
+        public MemoryDataLayerPackDataArgs(Blob<T> blobData, Blob<T> blobClip, Blob<T> blobLabel, List<Datum> rgData, List<Datum> rgClip, LayerParameter.LayerType type = LayerParameter.LayerType.LSTM)
         {
             m_blobData = blobData;
             m_blobClip = blobClip;
+            m_blobLabel = blobLabel;
             m_rgData = rgData;
             m_rgClip = rgClip;
             m_lstmType = type;
@@ -588,6 +591,14 @@ namespace MyCaffe.layers
         public Blob<T> Clip
         {
             get { return m_blobClip; }
+        }
+
+        /// <summary>
+        /// Returns the label data to fill with ordered label information.
+        /// </summary>
+        public Blob<T> Label
+        {
+            get { return m_blobLabel; }
         }
 
         /// <summary>
