@@ -18,7 +18,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestSetup()
         {
-            RNNLayerTest test = new RNNLayerTest();
+            RNNLayerTest test = new RNNLayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
@@ -54,7 +54,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestGradient()
         {
-            RNNLayerTest test = new RNNLayerTest();
+            RNNLayerTest test = new RNNLayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
@@ -72,7 +72,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestGradientNonZeroCont()
         {
-            RNNLayerTest test = new RNNLayerTest();
+            RNNLayerTest test = new RNNLayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
@@ -90,7 +90,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestGradientNonZeroContBufferSize2()
         {
-            RNNLayerTest test = new RNNLayerTest();
+            RNNLayerTest test = new RNNLayerTest(EngineParameter.Engine.CAFFE);
 
             try
             {
@@ -108,7 +108,115 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestGradientNonZeroContBufferSize2WithStaticInput()
         {
-            RNNLayerTest test = new RNNLayerTest();
+            RNNLayerTest test = new RNNLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IRNNLayerTest t in test.Tests)
+                {
+                    t.TestGradientNonZeroContBufferSize2WithStaticInput();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSetup_Cudnn()
+        {
+            RNNLayerTest test = new RNNLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IRNNLayerTest t in test.Tests)
+                {
+                    t.TestSetup();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForward_Cudnn()
+        {
+            RNNLayerTest test = new RNNLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IRNNLayerTest t in test.Tests)
+                {
+                    t.TestForward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradient_Cudnn()
+        {
+            RNNLayerTest test = new RNNLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IRNNLayerTest t in test.Tests)
+                {
+                    t.TestGradient();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientNonZeroCont_Cudnn()
+        {
+            RNNLayerTest test = new RNNLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IRNNLayerTest t in test.Tests)
+                {
+                    t.TestGradientNonZeroCont();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientNonZeroContBufferSize2_Cudnn()
+        {
+            RNNLayerTest test = new RNNLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IRNNLayerTest t in test.Tests)
+                {
+                    t.TestGradientNonZeroContBufferSize2();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientNonZeroContBufferSize2WithStaticInput_Cudnn()
+        {
+            RNNLayerTest test = new RNNLayerTest(EngineParameter.Engine.CUDNN);
 
             try
             {
