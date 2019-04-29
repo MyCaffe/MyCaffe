@@ -501,7 +501,7 @@ namespace MyCaffe.trainers.pg.st
         public GetDataArgs getDataArgs(int nAction)
         {
             bool bReset = (nAction == -1) ? true : false;
-            return new GetDataArgs(0, m_mycaffe, m_mycaffe.Log, m_mycaffe.CancelEvent, bReset, nAction, false);
+            return new GetDataArgs(0, m_mycaffe, m_mycaffe.Log, m_mycaffe.CancelEvent, bReset, nAction, true);
         }
 
         public Log Log
@@ -654,6 +654,24 @@ namespace MyCaffe.trainers.pg.st
             m_mycaffe.Log.Enable = true;
         }
 
+        private T[] unpackLabel(Datum d)
+        {
+            if (d.DataCriteria == null)
+                return null;
+
+            if (d.DataCriteriaFormat == SimpleDatum.DATA_FORMAT.LIST_FLOAT)
+            {
+                List<float> rgf = BinaryData.UnPackFloatList(d.DataCriteria, SimpleDatum.DATA_FORMAT.LIST_FLOAT);
+                return Utility.ConvertVec<T>(rgf.ToArray());
+            }
+            else if (d.DataCriteriaFormat == SimpleDatum.DATA_FORMAT.LIST_DOUBLE)
+            {
+                List<double> rgf = BinaryData.UnPackDoubleList(d.DataCriteria, SimpleDatum.DATA_FORMAT.LIST_DOUBLE);
+                return Utility.ConvertVec<T>(rgf.ToArray());
+            }
+
+            return null;
+        }
 
         /// <summary>
         /// Pack the data in an ordering expected by the RNN layer used.  This method is only called when using Data/Clip inputs.
@@ -668,6 +686,7 @@ namespace MyCaffe.trainers.pg.st
         {
             List<int> rgDataShape = e.Data.shape();
             List<int> rgClipShape = e.Clip.shape();
+            List<int> rgLabelShape = e.Label.shape();
             int nBatch = e.DataItems.Count;
             int nSeqLen = rgDataShape[0];
 
@@ -676,12 +695,15 @@ namespace MyCaffe.trainers.pg.st
 
             rgDataShape[1] = nBatch;  // LSTM uses sizing: seq, batch, data1, data2
             rgClipShape[1] = nBatch;
+            rgLabelShape[1] = nBatch;
 
             e.Data.Reshape(rgDataShape);
             e.Clip.Reshape(rgClipShape);
+            e.Label.Reshape(rgLabelShape);
 
             T[] rgRawData = new T[e.Data.count()];
             T[] rgRawClip = new T[e.Clip.count()];
+            T[] rgRawLabel = new T[e.Label.count()];
 
             int nDataSize = e.Data.count(2);
             T[] rgDataItem = new T[nDataSize];
@@ -692,6 +714,8 @@ namespace MyCaffe.trainers.pg.st
             {
                 Datum data = e.DataItems[i];
                 Datum clip = e.ClipItems[i];
+
+                T[] rgLabel = unpackLabel(data);
 
                 for (int j = 0; j < nSeqLen; j++)
                 {
@@ -714,11 +738,15 @@ namespace MyCaffe.trainers.pg.st
 
                     Array.Copy(rgDataItem, 0, rgRawData, nIdx * nDataSize, nDataSize);
                     rgRawClip[nIdx] = dfClip;
+
+                    if (rgLabel != null)
+                        rgRawLabel[nIdx] = rgLabel[j];
                 }
             }
 
             e.Data.mutable_cpu_data = rgRawData;
             e.Clip.mutable_cpu_data = rgRawClip;
+            e.Label.mutable_cpu_data = rgRawLabel;
             m_nRecurrentSequenceLength = nSeqLen;
         }
 

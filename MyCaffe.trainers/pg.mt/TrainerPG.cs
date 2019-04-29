@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -566,16 +567,19 @@ namespace MyCaffe.trainers.pg.mt
             return args.State;
         }
 
-        private int getAction(int nEpisode, SimpleDatum sd, SimpleDatum sdClip, int nActionCount, out float[] rgfAprob)
+        private int getAction(int nEpisode, SimpleDatum sd, SimpleDatum sdClip, int nActionCount, TRAIN_STEP step, out float[] rgfAprob)
         {
-            m_dfExplorationRate = getEpsilon(nEpisode);
-
-            if (m_random.NextDouble() < m_dfExplorationRate)
+            if (step == TRAIN_STEP.NONE)
             {
-                rgfAprob = new float[nActionCount];
-                int nAction = m_random.Next(nActionCount);
-                rgfAprob[nAction] = 1.0f;
-                return nAction;
+                m_dfExplorationRate = getEpsilon(nEpisode);
+
+                if (m_random.NextDouble() < m_dfExplorationRate)
+                {
+                    rgfAprob = new float[nActionCount];
+                    int nAction = m_random.Next(nActionCount);
+                    rgfAprob[nAction] = 1.0f;
+                    return nAction;
+                }
             }
 
             return m_brain.act(sd, sdClip, out rgfAprob);
@@ -638,7 +642,10 @@ namespace MyCaffe.trainers.pg.mt
 
                 // Forward the policy network and sample an action.
                 float[] rgfAprob;
-                int action = getAction(nEpisodeNumber, x, s.Clip, s.ActionCount, out rgfAprob);
+                int action = getAction(nEpisodeNumber, x, s.Clip, s.ActionCount, step, out rgfAprob);
+
+                if (step == TRAIN_STEP.FORWARD)
+                    return;
 
                 // Take the next step using the action
                 StateBase s_ = getData(m_nIndex, action);
@@ -1039,7 +1046,7 @@ namespace MyCaffe.trainers.pg.mt
         public GetDataArgs getDataArgs(int nIdx, int nAction, bool? bResetOverride = null)
         {
             bool bReset = (nAction == -1) ? true : false;
-            return new GetDataArgs(nIdx, m_mycaffePrimary, m_mycaffePrimary.Log, m_mycaffePrimary.CancelEvent, bReset, nAction, false);
+            return new GetDataArgs(nIdx, m_mycaffePrimary, m_mycaffePrimary.Log, m_mycaffePrimary.CancelEvent, bReset, nAction, false, true);
         }
 
         /// <summary>
@@ -1241,6 +1248,25 @@ namespace MyCaffe.trainers.pg.mt
             }
         }
 
+        private T[] unpackLabel(Datum d)
+        {
+            if (d.DataCriteria == null)
+                return null;
+
+            if (d.DataCriteriaFormat == SimpleDatum.DATA_FORMAT.LIST_FLOAT)
+            {
+                List<float> rgf = BinaryData.UnPackFloatList(d.DataCriteria, SimpleDatum.DATA_FORMAT.LIST_FLOAT);
+                return Utility.ConvertVec<T>(rgf.ToArray());
+            }
+            else if (d.DataCriteriaFormat == SimpleDatum.DATA_FORMAT.LIST_DOUBLE)
+            {
+                List<double> rgf = BinaryData.UnPackDoubleList(d.DataCriteria, SimpleDatum.DATA_FORMAT.LIST_DOUBLE);
+                return Utility.ConvertVec<T>(rgf.ToArray());
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Pack the data in an ordering expected by the RNN layer used.  This method is only called when using Data/Clip inputs.
         /// </summary>
@@ -1254,6 +1280,7 @@ namespace MyCaffe.trainers.pg.mt
         {            
             List<int> rgDataShape = e.Data.shape();
             List<int> rgClipShape = e.Clip.shape();
+            List<int> rgLabelShape = e.Label.shape();
             int nBatch = e.DataItems.Count;
             int nSeqLen = rgDataShape[0];
 
@@ -1262,12 +1289,15 @@ namespace MyCaffe.trainers.pg.mt
 
             rgDataShape[1] = nBatch;  // LSTM uses sizing: seq, batch, data1, data2
             rgClipShape[1] = nBatch;
+            rgLabelShape[1] = nBatch;
 
             e.Data.Reshape(rgDataShape);
             e.Clip.Reshape(rgClipShape);
+            e.Label.Reshape(rgLabelShape);
 
             T[] rgRawData = new T[e.Data.count()];
             T[] rgRawClip = new T[e.Clip.count()];
+            T[] rgRawLabel = new T[e.Label.count()];
 
             int nDataSize = e.Data.count(2);
             T[] rgDataItem = new T[nDataSize];
@@ -1278,6 +1308,8 @@ namespace MyCaffe.trainers.pg.mt
             {
                 Datum data = e.DataItems[i];
                 Datum clip = e.ClipItems[i];
+
+                T[] rgLabel = unpackLabel(data);
 
                 for (int j = 0; j < nSeqLen; j++)
                 {
@@ -1300,11 +1332,15 @@ namespace MyCaffe.trainers.pg.mt
 
                     Array.Copy(rgDataItem, 0, rgRawData, nIdx * nDataSize, nDataSize);
                     rgRawClip[nIdx] = dfClip;
+
+                    if (rgLabel != null)
+                        rgRawLabel[nIdx] = rgLabel[j];
                 }
             }
 
             e.Data.mutable_cpu_data = rgRawData;
             e.Clip.mutable_cpu_data = rgRawClip;
+            e.Label.mutable_cpu_data = rgRawLabel;
             m_nRecurrentSequenceLength = nSeqLen;
         }
 
