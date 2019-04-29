@@ -200,17 +200,29 @@ namespace MyCaffe.basecode
         /// Finds the correct Bucket and adds the value to it.
         /// </summary>
         /// <param name="fVal">Specifies the value to add.</param>
-        public void Add(double fVal)
+        /// <returns>The index of the bucket for which the value was added is returned.</returns>
+        public int Add(double fVal)
         {
             for (int i = 0; i < m_rgBuckets.Count; i++)
             {
                 int nVal = m_rgBuckets[i].Add(fVal);
                 if (nVal == 0)
-                    break;
+                    return i;
+
+                if (nVal < 0 && i == 0)
+                {
+                    m_rgBuckets[i].Add(fVal, true);
+                    return i;
+                }
 
                 if (nVal == 1 && i == m_rgBuckets.Count - 1)
+                {
                     m_rgBuckets[i].Add(fVal, true);
+                    return i;
+                }
             }
+
+            throw new Exception("Failed to find a bucket!");
         }
 
         /// <summary>
