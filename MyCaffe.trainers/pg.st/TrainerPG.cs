@@ -439,9 +439,9 @@ namespace MyCaffe.trainers.pg.st
             m_blobDiscountedR.Reshape(nNum, nActionProbs, 1, 1);
             m_blobPolicyGradient.Reshape(nNum, nActionProbs, 1, 1);
             m_blobActionOneHot.Reshape(nNum, nActionProbs, 1, 1);
-            m_blobDiscountedR1.ReshapeLike(m_blobDiscountedR);
-            m_blobPolicyGradient1.ReshapeLike(m_blobPolicyGradient);
-            m_blobActionOneHot1.ReshapeLike(m_blobActionOneHot);
+            m_blobDiscountedR1.Reshape(nNum, nActionProbs, 1, 1);
+            m_blobPolicyGradient1.Reshape(nNum, nActionProbs, 1, 1);
+            m_blobActionOneHot1.Reshape(nNum, nActionProbs, 1, 1);
             m_blobLoss.Reshape(1, 1, 1, 1);
 
             return nActionProbs;
@@ -594,12 +594,8 @@ namespace MyCaffe.trainers.pg.st
 
         private void prepareBlob(Blob<T> b1, Blob<T> b)
         {
-            b1.ReshapeLike(b);
             b1.CopyFrom(b, 0, 0, b1.count(), true, true);
-
-            List<int> rgShape = b.shape();
-            rgShape[0] = 1;
-            b.Reshape(rgShape);
+            b.Reshape(1, b.channels, b.height, b.width);
         }
 
         private void copyBlob(int nIdx, Blob<T> src, Blob<T> dst)
@@ -632,6 +628,10 @@ namespace MyCaffe.trainers.pg.st
 
                     m_solver.Step(1, TRAIN_STEP.NONE, true, false, true);
                 }
+
+                m_blobActionOneHot.ReshapeLike(m_blobActionOneHot1);
+                m_blobDiscountedR.ReshapeLike(m_blobDiscountedR1);
+                m_blobPolicyGradient.ReshapeLike(m_blobPolicyGradient1);
 
                 m_rgData = null;
                 m_rgClip = null;
