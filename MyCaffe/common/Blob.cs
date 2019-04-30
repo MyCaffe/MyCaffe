@@ -304,7 +304,7 @@ namespace MyCaffe.common
                 }
             }
 
-            if (m_nCount > m_nCapacity || m_nCount > m_data.Capacity || (m_diff != null && m_nCount < m_diff.Capacity))
+            if (m_nCount > m_nCapacity || m_nCount > m_data.Capacity || (m_diff != null && m_nCount > m_diff.Capacity))
             {
                 if (m_data != null)
                     m_data.Dispose();
