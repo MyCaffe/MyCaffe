@@ -15,6 +15,7 @@ using MyCaffe.param;
 namespace MyCaffe.trainers
 {
     /// <summary>
+    /// (Depreciated - use MyCaffeTrainerDual instead.) 
     /// The MyCaffeTrainerRNN is used to perform recurrent neural-network training tasks on an instance of the MyCaffeControl.
     /// </summary>
     /// <remarks>

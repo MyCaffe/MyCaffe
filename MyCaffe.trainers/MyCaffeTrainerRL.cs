@@ -14,6 +14,7 @@ using MyCaffe.gym;
 namespace MyCaffe.trainers
 {
     /// <summary>
+    /// (Depreciated - use MyCaffeTrainerDual instead.) 
     /// The MyCaffeTraininerRL is used to perform reinforcement learning training tasks on an instance of the MyCaffeControl.
     /// </summary>
     /// <remarks>
