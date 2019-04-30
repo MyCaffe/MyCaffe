@@ -384,7 +384,7 @@ namespace MyCaffe.trainers.rnn.simple
 
             m_nVocabSize = (int)layer.layer_param.inner_product_param.num_output;
             if (rgVocabulary != null)
-                m_mycaffe.Log.CHECK_EQ(m_nVocabSize, rgVocabulary.Count, "The vocabulary count and last inner product output count should match!");
+                m_mycaffe.Log.CHECK_EQ(m_nVocabSize, rgVocabulary.Count, "The vocabulary count = '" + rgVocabulary.Count.ToString() + "' and last inner product output count = '" + m_nVocabSize.ToString() +"' - these do not match but they should!");
 
             if (m_lstmType == LayerParameter.LayerType.LSTM)
             {
