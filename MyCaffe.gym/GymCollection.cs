@@ -111,7 +111,7 @@ namespace MyCaffe.gym
                     var loaderExceptions = typeLoadException.LoaderExceptions;
 
                     if (loaderExceptions != null && loaderExceptions.Length > 0)
-                        excpt = new Exception(excpt.Message, loaderExceptions[0]);
+                        excpt = new Exception("Gym '" + strFile + "' failed to load!", loaderExceptions[0]);
                 }
 
                 err = excpt;
