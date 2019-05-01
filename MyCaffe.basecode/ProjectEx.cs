@@ -124,7 +124,7 @@ namespace MyCaffe.basecode
 
         private string getSolverType(string strDesc)
         {
-            string strName = parse(strDesc, "type:");
+            string strName = parse(strDesc, "type:", "SGD");
             return strName;
         }
 
