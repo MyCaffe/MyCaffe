@@ -102,7 +102,7 @@ namespace MyCaffe.trainers.pg.st
         {
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN);
-            agent.Run(Phase.TEST, 1);
+            agent.Run(Phase.TEST, 1, TRAIN_STEP.NONE);
             agent.Dispose();
             return null;
         }
@@ -123,7 +123,7 @@ namespace MyCaffe.trainers.pg.st
 
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, properties, m_random, Phase.TRAIN);
-            agent.Run(Phase.TEST, nIterations);
+            agent.Run(Phase.TEST, nIterations, TRAIN_STEP.NONE);
 
             agent.Dispose();
             Shutdown(nDelay);
@@ -139,12 +139,9 @@ namespace MyCaffe.trainers.pg.st
         /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
         public bool Train(int nIterations, TRAIN_STEP step)
         {
-            if (step != TRAIN_STEP.NONE)
-                throw new Exception("The single threaded traininer does not support stepping - use the 'PG.MT' trainer instead.");
-
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN);
-            agent.Run(Phase.TRAIN, nIterations);
+            agent.Run(Phase.TRAIN, nIterations, step);
             agent.Dispose();
 
             return false;
@@ -204,7 +201,8 @@ namespace MyCaffe.trainers.pg.st
         /// </summary>
         /// <param name="phase">Specifies the phae.</param>
         /// <param name="nIterations">Specifies the number of iterations to run.</param>
-        public void Run(Phase phase, int nIterations)
+        /// <param name="step">Specifies the training step to take, if any.  This is only used when debugging.</param>
+        public void Run(Phase phase, int nIterations, TRAIN_STEP step)
         {
             MemoryCollection m_rgMemory = new MemoryCollection();
             double? dfRunningReward = null;
@@ -222,6 +220,9 @@ namespace MyCaffe.trainers.pg.st
                 // Forward the policy network and sample an action.
                 float[] rgfAprob;
                 int action = m_brain.act(x, s.Clip, out rgfAprob);
+
+                if (step == TRAIN_STEP.FORWARD)
+                    return;
 
                 // Take the next step using the action
                 StateBase s_ = getData(action);
@@ -261,7 +262,7 @@ namespace MyCaffe.trainers.pg.st
                         List<Datum> rgData = m_rgMemory.GetData();
                         List<Datum> rgClip = m_rgMemory.GetClip();
                         m_brain.SetData(rgData, rgClip);
-                        m_brain.Train(nEpisodeNumber);
+                        m_brain.Train(nEpisodeNumber, step);
 
                         // Update reward running
                         if (!dfRunningReward.HasValue)
@@ -274,6 +275,9 @@ namespace MyCaffe.trainers.pg.st
 
                         s = getData(-1);
                         m_rgMemory.Clear();
+
+                        if (step != TRAIN_STEP.NONE)
+                            return;
                     }
                     else
                     {
@@ -604,7 +608,7 @@ namespace MyCaffe.trainers.pg.st
             dst.CopyFrom(src, nIdx * nCount, 0, nCount, true, false);
         }
 
-        public void Train(int nIteration)
+        public void Train(int nIteration, TRAIN_STEP step)
         {
             m_mycaffe.Log.Enable = false;
 
@@ -626,7 +630,7 @@ namespace MyCaffe.trainers.pg.st
 
                     m_memData.AddDatumVector(rgData1, rgClip1, 1, true, true);
 
-                    m_solver.Step(1, TRAIN_STEP.NONE, true, false, true);
+                    m_solver.Step(1, step, true, false, true);
                 }
 
                 m_blobActionOneHot.ReshapeLike(m_blobActionOneHot1);
@@ -638,12 +642,12 @@ namespace MyCaffe.trainers.pg.st
             }
             else
             {
-                m_solver.Step(1, TRAIN_STEP.NONE, true, false, true);
+                m_solver.Step(1, step, true, false, true);
             }
 
             m_colAccumulatedGradients.Accumulate(m_mycaffe.Cuda, m_net.learnable_parameters, true);
 
-            if (nIteration % m_nMiniBatch == 0)
+            if (nIteration % m_nMiniBatch == 0 || step == TRAIN_STEP.BACKWARD || step == TRAIN_STEP.BOTH)
             {
                 m_net.learnable_parameters.CopyFrom(m_colAccumulatedGradients, true);
                 m_colAccumulatedGradients.SetDiff(0);
@@ -740,7 +744,17 @@ namespace MyCaffe.trainers.pg.st
                     rgRawClip[nIdx] = dfClip;
 
                     if (rgLabel != null)
-                        rgRawLabel[nIdx] = rgLabel[j];
+                    {
+                        if (rgLabel.Length == nSeqLen)
+                            rgRawLabel[nIdx] = rgLabel[j];
+                        else if (rgLabel.Length == 1)
+                        {
+                            if (j == nSeqLen - 1)
+                                rgRawLabel[0] = rgLabel[0];
+                        }
+                        else
+                            e.Data.Log.FAIL("The label length '" + rgLabel.Length.ToString() + "' must be either '1' for SINGLE labels, or the sequence length of '" + nSeqLen.ToString() + "' for MULTI labels.");
+                    }
                 }
             }
 
