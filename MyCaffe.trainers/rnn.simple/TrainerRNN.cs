@@ -144,7 +144,7 @@ namespace MyCaffe.trainers.rnn.simple
 
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TEST, m_rgVocabulary, m_bUsePreloadData);
-            agent.Run(Phase.TEST, nIterations);
+            agent.Run(Phase.TEST, nIterations, TRAIN_STEP.NONE);
 
             agent.Dispose();
             Shutdown(nDelay);
@@ -160,12 +160,9 @@ namespace MyCaffe.trainers.rnn.simple
         /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
         public bool Train(int nIterations, TRAIN_STEP step)
         {
-            if (step != TRAIN_STEP.NONE)
-                throw new Exception("The simple traininer does not support stepping.");
-
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN, m_rgVocabulary, m_bUsePreloadData);
-            agent.Run(Phase.TRAIN, nIterations);
+            agent.Run(Phase.TRAIN, nIterations, step);
 
             agent.Dispose();
 
@@ -213,8 +210,9 @@ namespace MyCaffe.trainers.rnn.simple
         /// </summary>
         /// <param name="phase">Specifies the phae.</param>
         /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <param name="step">Specifies the training step (used only during debugging).</param>
         /// <returns>The vocabulary built up during training and testing is returned.</returns>
-        public void Run(Phase phase, int nIterations)
+        public void Run(Phase phase, int nIterations, TRAIN_STEP step)
         {
             StateBase s = getData(-1);
 
@@ -223,7 +221,7 @@ namespace MyCaffe.trainers.rnn.simple
                 if (phase == Phase.TEST)
                     m_brain.Test(s, nIterations);
                 else if (phase == Phase.TRAIN)
-                    m_brain.Train(s, nIterations, TRAIN_STEP.NONE);
+                    m_brain.Train(s, nIterations, step);
 
                 s = getData(1);
             }
@@ -273,6 +271,7 @@ namespace MyCaffe.trainers.rnn.simple
         Blob<T> m_blobLabel;
         Blob<T> m_blobOutput = null;
         int m_nSequenceLength;
+        int m_nSequenceLengthLabel;
         int m_nBatchSize;
         int m_nVocabSize;
         CryptoRandom m_random;
@@ -437,8 +436,10 @@ namespace MyCaffe.trainers.rnn.simple
                 if ((m_blobLabel = m_net.FindBlob("label")) == null)
                     throw new Exception("Could not find the 'Input' layer top named 'label'!");
 
-                m_rgLabelInput = new T[m_nSequenceLength * m_nBatchSize];
-                m_mycaffe.Log.CHECK_EQ(m_rgLabelInput.Length, m_blobLabel.count(), "The label count must equal the sequence length * batch size: " + m_rgLabelInput.Length.ToString());
+                m_nSequenceLengthLabel = m_blobLabel.shape(0);
+                m_rgLabelInput = new T[m_nSequenceLengthLabel];
+                m_mycaffe.Log.CHECK_EQ(m_rgLabelInput.Length, m_blobLabel.count(), "The label count must equal the label sequence length * batch size: " + m_rgLabelInput.Length.ToString());
+                m_mycaffe.Log.CHECK(m_nSequenceLengthLabel == m_nSequenceLength * m_nBatchSize || m_nSequenceLengthLabel == 1, "The label sqeuence length must be 1 or equal the length of the sequence: " + m_nSequenceLength.ToString());
             }
         }
 
@@ -594,7 +595,9 @@ namespace MyCaffe.trainers.rnn.simple
                                 nIdx = i * m_nBatchSize + j;
 
                             m_rgDataInput[nIdx] = (T)Convert.ChangeType(fDataIdx, typeof(T));
-                            m_rgLabelInput[nIdx] = (T)Convert.ChangeType(fLabelIdx, typeof(T));
+
+                            if (m_nSequenceLengthLabel == (m_nSequenceLength * m_nBatchSize) || j == m_nSequenceLength - 1)
+                                m_rgLabelInput[nIdx] = (T)Convert.ChangeType(fLabelIdx, typeof(T));
                         }
                     }
 
@@ -644,7 +647,9 @@ namespace MyCaffe.trainers.rnn.simple
                             nIdx = i * m_nBatchSize + j;
 
                         m_rgDataInput[nIdx] = (T)Convert.ChangeType(fDataIdx, typeof(T));
-                        m_rgLabelInput[nIdx] = (T)Convert.ChangeType(fLabelIdx, typeof(T));
+
+                        if (m_nSequenceLengthLabel == (m_nSequenceLength * m_nBatchSize) || j == m_nSequenceLength - 1)
+                            m_rgLabelInput[nIdx] = (T)Convert.ChangeType(fLabelIdx, typeof(T));
                     }
                 }
 
