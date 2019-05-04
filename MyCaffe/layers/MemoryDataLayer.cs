@@ -140,7 +140,12 @@ namespace MyCaffe.layers
                 m_blobData.Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
 
                 if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
-                    m_blobLabel.Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
+                {
+                    if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.SINGLE && m_blobClip != null)
+                        m_blobLabel.Reshape(1, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
+                    else
+                        m_blobLabel.Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
+                }
             }
 
             colTop[0].Reshape(m_nBatchSize, m_nChannels, m_nHeight, m_nWidth);
@@ -195,7 +200,11 @@ namespace MyCaffe.layers
 
             if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
             {
-                m_blobLabel.Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
+                if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.SINGLE && m_blobClip != null)
+                    m_blobLabel.Reshape(1, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
+                else
+                    m_blobLabel.Reshape(m_nBatchSize, m_nLabelChannels, m_nLabelHeight, m_nLabelWidth);
+
                 colTop[m_nLabelIdx].ReshapeLike(m_blobLabel);
                 m_blobLabel.update_cpu_data();
             }
@@ -288,7 +297,12 @@ namespace MyCaffe.layers
                 if (m_param.memory_data_param.label_type != LayerParameterBase.LABEL_TYPE.NONE)
                 {
                     List<int> rgLblShape = new List<int>();
-                    rgLblShape.Add(nNum);
+                    int nLabelNum = nNum;
+
+                    if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.SINGLE)
+                        nLabelNum = 1;
+
+                    rgLblShape.Add(nLabelNum);
                     rgLblShape.Add(1);
                     rgLblShape.Add(1);
                     rgLblShape.Add(1);
@@ -322,14 +336,24 @@ namespace MyCaffe.layers
                         }
                         m_blobLabel.mutable_cpu_data = rgLabels;
                     }
-                    // Copy labels - use standard Datum label for SINGLE labels.
                     else
                     {
                         T[] rgLabels = m_blobLabel.mutable_cpu_data;
-                        for (int i = 0; i < nNum; i++)
+
+                        // For recurrent layers, single labels only use the last label in the sequence.
+                        if (rgClip != null)
                         {
-                            rgLabels[i] = (T)Convert.ChangeType(rgData[i].label, typeof(T));
+                            rgLabels[0] = (T)Convert.ChangeType(rgData[nNum - 1].label, typeof(T));
                         }
+                        else
+                        {
+                            // Copy labels - use standard Datum label for SINGLE labels.
+                            for (int i = 0; i < nNum; i++)
+                            {
+                                rgLabels[i] = (T)Convert.ChangeType(rgData[i].label, typeof(T));
+                            }
+                        }
+
                         m_blobLabel.mutable_cpu_data = rgLabels;
                     }
                 }
@@ -484,11 +508,15 @@ namespace MyCaffe.layers
                 if (blobLabel == null)
                     m_log.WriteError(new Exception("Could not find the MemoryDataLayer 'label' top!"));
 
+                int nLabelSize = 1;
+                if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.MULTIPLE)
+                    nLabelSize = m_nBatchSize;
+
                 List<int> rgLabelShape = Utility.Clone<int>(m_blobLabel.shape());
                 if (rgLabelShape.Count == 0)
-                    rgLabelShape.Add(m_nBatchSize);
+                    rgLabelShape.Add(nLabelSize);
                 else
-                    rgLabelShape[0] = m_nBatchSize;
+                    rgLabelShape[0] = nLabelSize;
 
                 blobLabel.Reshape(rgLabelShape);
 
