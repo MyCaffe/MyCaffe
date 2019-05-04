@@ -1339,7 +1339,17 @@ namespace MyCaffe.trainers.pg.mt
                     rgRawClip[nIdx] = dfClip;
 
                     if (rgLabel != null)
-                        rgRawLabel[nIdx] = rgLabel[j];
+                    {
+                        if (rgLabel.Length == nSeqLen)
+                            rgRawLabel[nIdx] = rgLabel[j];
+                        else if (rgLabel.Length == 1)
+                        {
+                            if (j == nSeqLen - 1)
+                                rgRawLabel[0] = rgLabel[0];
+                        }
+                        else
+                            e.Data.Log.FAIL("The label length '" + rgLabel.Length.ToString() + "' must be either '1' for SINGLE labels, or the sequence length of '" + nSeqLen.ToString() + "' for MULTI labels.");
+                    }
                 }
             }
 
