@@ -83,6 +83,30 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns the bucket minimum value.
+        /// </summary>
+        public double Minimum
+        {
+            get { return m_fMin; }
+        }
+
+        /// <summary>
+        /// Returns the bucket maximum value.
+        /// </summary>
+        public double Maximum
+        {
+            get { return m_fMax; }
+        }
+
+        /// <summary>
+        /// Returns the bucket midpoint.
+        /// </summary>
+        public double MidPoint
+        {
+            get { return m_fMin + (m_fMax - m_fMin) / 2.0; }
+        }
+
+        /// <summary>
         /// Returns a string representation of the Bucket.
         /// </summary>
         /// <returns>The string representation is returned.</returns>
@@ -194,6 +218,30 @@ namespace MyCaffe.basecode
         public int Count
         {
             get { return m_rgBuckets.Count; }
+        }
+
+        /// <summary>
+        /// Returns the bucket with the highest count.
+        /// </summary>
+        /// <returns>The bucket with the highest count is returned.</returns>
+        public Bucket GetBucketWithMaxCount()
+        {
+            int nMax = 0;
+            int nMaxIdx = -1;
+
+            for (int i = 0; i < m_rgBuckets.Count; i++)
+            {
+                if (nMax < m_rgBuckets[i].Count)
+                {
+                    nMax = m_rgBuckets[i].Count;
+                    nMaxIdx = i;
+                }
+            }
+
+            if (nMaxIdx == -1)
+                return null;
+
+            return m_rgBuckets[nMaxIdx];
         }
 
         /// <summary>
