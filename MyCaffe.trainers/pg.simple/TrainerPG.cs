@@ -464,7 +464,7 @@ namespace MyCaffe.trainers.pg.simple
         public void Train(int nIteration)
         {
             m_mycaffe.Log.Enable = false;
-            m_solver.Step(1, TRAIN_STEP.NONE, false, false, true);  // accumulate grad over batch
+            m_solver.Step(1, TRAIN_STEP.NONE, false, false, true, true);  // accumulate grad over batch
 
             if (nIteration % m_nMiniBatch == 0)
             {

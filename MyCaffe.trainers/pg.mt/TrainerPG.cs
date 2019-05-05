@@ -1216,7 +1216,7 @@ namespace MyCaffe.trainers.pg.mt
 
                     m_memData.AddDatumVector(rgData1, rgClip1, 1, true, true);
 
-                    m_solver.Step(1, step, true, m_bUseAcceleratedTraining, true);
+                    m_solver.Step(1, step, true, m_bUseAcceleratedTraining, true, true);
                 }
 
                 m_blobActionOneHot.ReshapeLike(m_blobActionOneHot1);
@@ -1228,7 +1228,7 @@ namespace MyCaffe.trainers.pg.mt
             }
             else
             {
-                m_solver.Step(1, step, true, m_bUseAcceleratedTraining, true);
+                m_solver.Step(1, step, true, m_bUseAcceleratedTraining, true, true);
             }
 
             m_colAccumulatedGradients.Accumulate(m_mycaffeWorker.Cuda, m_net.learnable_parameters, true);
