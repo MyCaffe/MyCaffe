@@ -700,8 +700,9 @@ namespace MyCaffe.solvers
         /// <param name="bZeroDiffs">Optionally, specifies whether or not to zero out the gradient diffs (default = <i>true</i>).</param>
         /// <param name="bApplyUpdates">Optionally, specifies to apply the gradient updates to the weights (default = <i>true</i>).</param>
         /// <param name="bDisableOutput">Optionally, disable the output to the log.</param>
+        /// <param name="bDisableProgress">Optionally, disables the progress updating to the log.</param>
         /// <returns></returns>
-        public bool Step(int nIters, TRAIN_STEP step = TRAIN_STEP.NONE, bool bZeroDiffs = true, bool bApplyUpdates = true, bool bDisableOutput = false)
+        public bool Step(int nIters, TRAIN_STEP step = TRAIN_STEP.NONE, bool bZeroDiffs = true, bool bApplyUpdates = true, bool bDisableOutput = false, bool bDisableProgress = false)
         {
             Exception err = null;
 
@@ -861,7 +862,8 @@ namespace MyCaffe.solvers
                     if (m_evtCancel.WaitOne(0))
                         break;
 
-                    m_log.Progress = (double)m_nIter / (double)stop_iter;
+                    if (!bDisableProgress)
+                        m_log.Progress = (double)m_nIter / (double)stop_iter;
 
                     bool bSnapshotTaken = false;
                     bool bForceSnapshot = forceSnapshot;
