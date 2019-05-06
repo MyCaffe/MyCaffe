@@ -753,7 +753,9 @@ namespace MyCaffe.trainers.pg.st
                                 rgRawLabel[0] = rgLabel[0];
                         }
                         else
-                            e.Data.Log.FAIL("The label length '" + rgLabel.Length.ToString() + "' must be either '1' for SINGLE labels, or the sequence length of '" + nSeqLen.ToString() + "' for MULTI labels.");
+                        {
+                            throw new Exception("The Solver SequenceLength parameter does not match the actual sequence length!  The label length '" + rgLabel.Length.ToString() + "' must be either '1' for SINGLE labels, or the sequence length of '" + nSeqLen.ToString() + "' for MULTI labels.  Stopping training.");
+                        }
                     }
                 }
             }
