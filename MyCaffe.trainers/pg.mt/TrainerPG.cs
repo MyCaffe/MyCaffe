@@ -537,17 +537,24 @@ namespace MyCaffe.trainers.pg.mt
         /// <param name="arg">Specifies the agent thread start arguments.</param>
         protected override void doWork(object arg)
         {
-            WorkerStartArgs args = arg as WorkerStartArgs;
-
-            lock (m_syncObj)
+            try
             {
-                m_brain.Create();
-            }
+                WorkerStartArgs args = arg as WorkerStartArgs;
 
-            m_evtDone.Reset();
-            m_evtCancel.Reset();           
-            Run(args.Phase, args.Iterations, args.Step);
-            m_evtDone.Set();
+                lock (m_syncObj)
+                {
+                    m_brain.Create();
+                }
+
+                m_evtDone.Reset();
+                m_evtCancel.Reset();
+                Run(args.Phase, args.Iterations, args.Step);
+                m_evtDone.Set();
+            }
+            catch (Exception excpt)
+            {
+                m_brain.OutputLog.WriteError(excpt);
+            }
 
             m_brain.Cancel.Set();
         }
@@ -1348,7 +1355,9 @@ namespace MyCaffe.trainers.pg.mt
                                 rgRawLabel[0] = rgLabel[0];
                         }
                         else
-                            e.Data.Log.FAIL("The label length '" + rgLabel.Length.ToString() + "' must be either '1' for SINGLE labels, or the sequence length of '" + nSeqLen.ToString() + "' for MULTI labels.");
+                        {
+                            throw new Exception("The Solver SequenceLength parameter does not match the actual sequence length!  The label length '" + rgLabel.Length.ToString() + "' must be either '1' for SINGLE labels, or the sequence length of '" + nSeqLen.ToString() + "' for MULTI labels.  Stopping training.");
+                        }
                     }
                 }
             }
