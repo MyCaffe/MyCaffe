@@ -292,6 +292,7 @@ namespace MyCaffe.trainers.rnn.simple
         bool m_bUsePreloadData = true;
         Phase m_phaseOnRun = Phase.NONE;
         LayerParameter.LayerType m_lstmType = LayerParameter.LayerType.LSTM;
+        int m_nSolverSequenceLength = -1;
 
         public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallbackRNN icallback, Phase phase, BucketCollection rgVocabulary, bool bUsePreloadData, string strRunProperties = null)
         {
@@ -306,6 +307,7 @@ namespace MyCaffe.trainers.rnn.simple
             m_random = random;
             m_rgVocabulary = rgVocabulary;
             m_bUsePreloadData = bUsePreloadData;
+            m_nSolverSequenceLength = m_properties.GetPropertyAsInt("SequenceLength", -1);
 
             if (m_runProperties != null)
             {
@@ -609,7 +611,16 @@ namespace MyCaffe.trainers.rnn.simple
                     GetDataArgs e = getDataArgs(0, true);
                     m_icallback.OnGetData(e);
 
+                    string strSolverErr = "";
+                    if (m_nSolverSequenceLength >= 0 && m_nSolverSequenceLength != m_nSequenceLength)
+                        strSolverErr = "The solver parameter 'SequenceLength' length of " + m_nSolverSequenceLength.ToString() + " must match the model sequence length of " + m_nSequenceLength.ToString() + ".  ";
+
+                    int nExpectedCount = m_blobData.count();
+                    m_mycaffe.Log.CHECK_EQ(nExpectedCount, e.State.Data.ItemCount, strSolverErr + "The size of the data received ('" + e.State.Data.ItemCount.ToString() + "') does mot match the expected data count of '" + nExpectedCount.ToString() + "'!");
                     m_blobData.mutable_cpu_data = Utility.ConvertVec<T>(e.State.Data.RealData);
+
+                    nExpectedCount = m_blobLabel.count();
+                    m_mycaffe.Log.CHECK_EQ(nExpectedCount, e.State.Label.ItemCount, strSolverErr + "The size of the label received ('" + e.State.Label.ItemCount.ToString() + "') does not match the expected label count of '" + nExpectedCount.ToString() + "'!");
                     m_blobLabel.mutable_cpu_data = Utility.ConvertVec<T>(e.State.Label.RealData);
                 }
             }
