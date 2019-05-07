@@ -266,15 +266,26 @@ namespace MyCaffe.trainers
     {
         float[] m_rgOutput;
         string m_type;
+        int m_nN;
         byte[] m_rgRawOutput;
 
         /// <summary>
         /// The constructor.
         /// </summary>
+        /// <param name="nN">Specifies the number of outputs.</param>
         /// <param name="rgOutput">Specifies the output to convert.</param>
-        public ConvertOutputArgs(float[] rgOutput)
+        public ConvertOutputArgs(int nN, float[] rgOutput)
         {
+            m_nN = nN;
             m_rgOutput = rgOutput;
+        }
+
+        /// <summary>
+        /// Returns the number of results.
+        /// </summary>
+        public int ResultCount
+        {
+            get { return m_nN; }
         }
 
         /// <summary>
