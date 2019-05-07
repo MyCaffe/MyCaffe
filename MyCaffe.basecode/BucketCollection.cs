@@ -309,10 +309,14 @@ namespace MyCaffe.basecode
         /// Returns the average of the Bucket at a given index.
         /// </summary>
         /// <param name="nIdx">Specifies the index.</param>
+        /// <param name="bUseMidPoint">Optionally specifies to use the bucket midpoint instead of the average.</param>
         /// <returns>The Bucket average is returned.</returns>
-        public double GetValueAt(int nIdx)
+        public double GetValueAt(int nIdx, bool bUseMidPoint = false)
         {
-            return m_rgBuckets[nIdx].Average;
+            if (bUseMidPoint)
+                return m_rgBuckets[nIdx].MidPoint;
+            else
+                return m_rgBuckets[nIdx].Average;
         }
 
         /// <summary>
