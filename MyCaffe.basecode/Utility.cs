@@ -602,13 +602,17 @@ namespace MyCaffe.basecode
         /// <typeparam name="T">Specifies the base type of the array.</typeparam>
         /// <param name="rg">Specifies the array.</param>
         /// <param name="nDecimals">Optionally, specifies the number of decimals (default = -1, ignored)</param>
+        /// <param name="nIdxHighight">Optionally, specifies the index to highlight (default = -1, ignored)</param>
         /// <returns>The string representation of the array is returned.</returns>
-        public static string ToString<T>(List<T> rg, int nDecimals = -1)
+        public static string ToString<T>(List<T> rg, int nDecimals = -1, int nIdxHighight = -1)
         {
             string strOut = "{";
 
             for (int i = 0; i < rg.Count; i++)
             {
+                if (nIdxHighight >= 0 && i == nIdxHighight)
+                    strOut += "[*";
+
                 if (nDecimals >= 0)
                 {
                     if (typeof(T) == typeof(float))
@@ -628,6 +632,10 @@ namespace MyCaffe.basecode
                 }
                 else
                     strOut += rg[i].ToString();
+
+                if (nIdxHighight >= 0 && i == nIdxHighight)
+                    strOut += "*]";
+
                 strOut += ",";
             }
 
