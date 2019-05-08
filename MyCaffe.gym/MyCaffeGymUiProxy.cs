@@ -13,6 +13,9 @@ namespace MyCaffe.gym
     /// </summary>
     public class MyCaffeGymUiProxy : DuplexClientBase<IXMyCaffeGymUiService>       
     {
+        object m_sync = new object();
+        bool m_bOpen = false;
+
         /// <summary>
         /// The constructor.
         /// </summary>
@@ -32,6 +35,7 @@ namespace MyCaffe.gym
         /// <returns>The ID of the Gym opened is returned.</returns>
         public int OpenUi(string strName, int nId)
         {
+            m_bOpen = true;
             return Channel.OpenUi(strName, nId);
         }
 
@@ -41,7 +45,11 @@ namespace MyCaffe.gym
         /// <param name="nId">Specifies the ID of the Gym.</param>
         public void CloseUi(int nId)
         {
-            Channel.CloseUi(nId);
+            lock (m_sync)
+            {
+                Channel.CloseUi(nId);
+                m_bOpen = false;
+            }
         }
 
         /// <summary>
@@ -51,7 +59,19 @@ namespace MyCaffe.gym
         /// <param name="obs">Specifies the Observation to render.</param>
         public void Render(int nId, Observation obs)
         {
-            Channel.Render(nId, obs);
+            try
+            {
+                lock (m_sync)
+                {
+                    if (!m_bOpen)
+                        return;
+
+                    Channel.Render(nId, obs);
+                }
+            }
+            catch
+            {
+            }
         }
 
         /// <summary>
