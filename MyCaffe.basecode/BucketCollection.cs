@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -150,7 +151,7 @@ namespace MyCaffe.basecode
     /// <summary>
     /// The BucketCollection contains a set of Buckets.
     /// </summary>
-    public class BucketCollection
+    public class BucketCollection : IEnumerable<Bucket>
     {
         List<Bucket> m_rgBuckets = new List<Bucket>();
         bool m_bIsDataReal = false;
@@ -484,6 +485,42 @@ namespace MyCaffe.basecode
 
                 return col;
             }
+        }
+
+        /// <summary>
+        /// Returns the total count across all buckets.
+        /// </summary>
+        public int TotalCount
+        {
+            get
+            {
+                int nCount = 0;
+
+                foreach (Bucket b in m_rgBuckets)
+                {
+                    nCount += b.Count;
+                }
+
+                return nCount;
+            }
+        }
+
+        /// <summary>
+        /// Returns the enumerator used in foreach loops.
+        /// </summary>
+        /// <returns>The enumerator is returned.</returns>
+        public IEnumerator<Bucket> GetEnumerator()
+        {
+            return m_rgBuckets.GetEnumerator();
+        }
+
+        /// <summary>
+        /// Returns the enumerator used in foreach loops.
+        /// </summary>
+        /// <returns>The enumerator is returned.</returns>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return m_rgBuckets.GetEnumerator();
         }
     }
 }
