@@ -120,6 +120,17 @@ namespace MyCaffe.layers
             m_bBiasTerm = m_param.inner_product_param.bias_term;
             m_bTranspose = m_param.inner_product_param.transpose;
             m_nN = nNumOutput;
+
+            List<int> rgShape = colBottom[0].shape();
+            int nShapeCount = rgShape.Count;
+            for (int i = nShapeCount; i <= m_param.inner_product_param.axis; i++)
+            {
+                rgShape.Add(1);
+            }
+
+            if (nShapeCount != rgShape.Count)
+                colBottom[0].Reshape(rgShape);
+
             int nAxis = colBottom[0].CanonicalAxisIndex(m_param.inner_product_param.axis);
 
             // Dimensions starting from 'axis' are 'flattened' into a single
