@@ -9,6 +9,9 @@ using MyCaffe.common;
 using MyCaffe.fillers;
 using MyCaffe.layers;
 using MyCaffe.db.image;
+using System.IO;
+using System.Diagnostics;
+using MyCaffe.solvers;
 
 namespace MyCaffe.test
 {
@@ -266,6 +269,42 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestTrainingSineWaveWithGradientCuDnn()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestTraining(4000, 100, 1, 15, 10, 1, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingSineWaveWithGradientCaffe()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestTraining(4000, 100, 1, 15, 10, 1, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface ILSTMLayerTest : ITest
@@ -281,6 +320,8 @@ namespace MyCaffe.test
         void TestLSTMUnitSetup();
         void TestLSTMUnitGradient();
         void TestLSTMUnitGradientNonZeroCont();
+
+        void TestTraining(int nTotalDataLength, int nSteps, int nNumInputs, int nNumHidden, int nNumOutputs, int nBatch, bool bShortModel, int nMaxIter = 4000);
     }
 
     class LSTMLayerTest : TestBase
@@ -1041,6 +1082,696 @@ namespace MyCaffe.test
             }
 
             m_log.WriteLine("weight diff checksum " + dfCheckSumw.ToString());
+        }
+
+        /// <summary>
+        /// Test the training portion of the LSTM, predict the next in the output based on the sequence.
+        /// </summary>
+        /// <param name="nTotalDataLength">Specifies the data length.</param>
+        /// <param name="nSteps">Specifies the number of time steps.</param>
+        /// <param name="nNumInputs">Specifies the number of inputs.</param>
+        /// <param name="nNumHidden">Specifies the number of LSTM hidden outputs.</param>
+        /// <param name="nNumOutputs">Specifies the number of output predictions.</param>
+        /// <param name="nBatch">Specifies the batch size.</param>
+        /// <param name="bShortModel">Specifies whether or not to use a short model specification.</param>
+        /// <param name="nMaxIter">Specifies the maximum number of iterations.</param>
+        public void TestTraining(int nTotalDataLength, int nSteps, int nNumInputs, int nNumHidden, int nNumOutputs, int nBatch, bool bShortModel, int nMaxIter)
+        {
+            int nDeviceID = m_cuda.GetDeviceID();
+            T tOne = (T)Convert.ChangeType(1.0, typeof(T));
+            T tZero = (T)Convert.ChangeType(0.0, typeof(T));
+            NetParameter net_param = getTrainModel(nSteps, nNumInputs, nNumHidden, nNumOutputs, nBatch);
+            SolverParameter solver_param = getSolver(net_param, nDeviceID, nMaxIter);
+
+            string strModel1 = solver_param.net_param.ToProto("root").ToString();
+
+            // Set device id
+            m_log.WriteLine("Running test on " + m_cuda.GetDeviceName(solver_param.device_id) + " with ID = " + solver_param.device_id.ToString());
+            m_log.WriteLine("type: " + typeof(T).ToString() + " num_output: " + nNumHidden.ToString() + " batch: " + nBatch.ToString() + " MaxIter: " + nMaxIter.ToString());
+            m_cuda.SetDeviceID(solver_param.device_id);
+
+            Solver<T> solver = Solver<T>.Create(m_cuda, m_log, solver_param, m_evtCancel, null, null, null, null);
+            Net<T> train_net = solver.net;
+            Net<T> test_net = solver.test_nets[0];
+
+            Assert.AreEqual(true, train_net.has_blob("data"));
+            Assert.AreEqual(true, train_net.has_blob("clip"));
+            Assert.AreEqual(true, train_net.has_blob("label"));
+            Assert.AreEqual(true, test_net.has_blob("data"));
+            Assert.AreEqual(true, test_net.has_blob("clip"));
+
+            Blob<T> train_data_blob = train_net.blob_by_name("data");
+            Blob<T> train_label_blob = train_net.blob_by_name("label");
+            Blob<T> train_clip_blob = train_net.blob_by_name("clip");
+
+            Blob<T> test_data_blob = test_net.blob_by_name("data");
+            Blob<T> test_clip_blob = test_net.blob_by_name("clip");
+
+            int seq_length = train_data_blob.shape(0);
+            Assert.AreEqual(0, nTotalDataLength % seq_length);
+
+            // Initialize bias for the forget gate to 1 to speed up LSTM learning.
+            for (int i = 0; i < train_net.layers.Count; i++)
+            {
+                if (train_net.layers[i].type != LayerParameter.LayerType.LSTM)
+                    continue;
+
+                if (train_net.layers[i].blobs.Count <= 1) // cuDNN does not have a bias blob.
+                    continue;
+
+                int h = (int)train_net.layers[i].layer_param.recurrent_param.num_output;
+                Blob<T> bias = train_net.layers[i].blobs[1];
+
+                double[] rgBias = convert(bias.mutable_cpu_data);
+
+                for (int j = 0; j < h; j++)
+                {
+                    rgBias[h + j] = 1.0;
+                }
+
+                bias.mutable_cpu_data = convert(rgBias);
+
+                if (m_evtCancel.WaitOne(0))
+                {
+                    m_log.WriteLine("Aborted.");
+                    return;
+                }
+            }
+
+
+            //-------------------------------------------------------
+            //  Training
+            //-------------------------------------------------------
+
+            Stopwatch swStatus = new Stopwatch();
+            Stopwatch sw1 = new Stopwatch();
+            TestingProgressSet progress = new TestingProgressSet();
+            double dfTotalTime = 0;
+
+            swStatus.Start();
+
+            // Set clip to 0 for first batch, 1 otherwise.
+            train_clip_blob.SetData(1.0);
+            train_clip_blob.SetData(0.0, 0, nBatch);
+
+
+            // Load the initial data with seq_length in data, and next nNumOutputs in label.
+            double[] rgData;
+            double[] rgLabel;
+            DataStream data = new DataStream(nTotalDataLength, seq_length, nNumOutputs, nBatch);
+
+            data.CreateArrays(out rgData, out rgLabel);
+            data.LoadData(true, rgData, rgLabel, m_param.type);
+
+
+            // Training loop;
+            int iter = 0;
+            while (iter < solver_param.max_iter)
+            {
+                train_data_blob.mutable_cpu_data = convert(rgData.ToArray());
+                train_label_blob.mutable_cpu_data = convert(rgLabel.ToArray());
+
+                sw1.Start();
+
+                solver.Step(1);
+
+                sw1.Stop();
+                dfTotalTime += sw1.Elapsed.TotalMilliseconds;
+                sw1.Reset();
+
+                iter++;
+
+                if (swStatus.Elapsed.TotalMilliseconds > 2000)
+                {
+                    m_log.Progress = (double)iter / (double)solver_param.max_iter;
+                    m_log.WriteLine("iteration = " + iter.ToString() + "  (" + m_log.Progress.ToString("P") + ")  ave solver time = " + (dfTotalTime / iter).ToString() + " ms.");
+                    swStatus.Stop();
+                    swStatus.Reset();
+                    swStatus.Start();
+
+                    progress.SetProgress(m_log.Progress);
+                }
+
+                if (m_evtCancel.WaitOne(0))
+                {
+                    m_log.WriteLine("Aborted.");
+                    return;
+                }
+
+                data.LoadData(false, rgData, rgLabel, m_param.type);
+            }
+
+            m_log.WriteLine("Solving completed.");
+
+
+            //-------------------------------------------------------
+            //  Testing 
+            //-------------------------------------------------------
+
+            // Copy the trained weights to the test net.
+            test_net.ShareTrainedLayersWith(train_net);
+
+            string strFileName = "c:\\temp\\lstm_" + m_engine.ToString() + "_next_TEST_results_num_out_" + nNumHidden.ToString() + "_batch_" + nBatch.ToString() + "_maxiter_" + nMaxIter.ToString() + ".csv";
+            if (File.Exists(strFileName))
+                File.Delete(strFileName);
+
+            swStatus.Restart();
+
+            // Set the clip mask
+            test_clip_blob.SetData(1.0);
+            test_clip_blob.SetData(0.0, 0, nBatch);
+
+            // Load the first sequence data.
+            data.Reset(true);
+            data.LoadData(true, rgData, rgLabel, m_param.type);
+
+            using (StreamWriter sw = new StreamWriter(strFileName))
+            {
+                sw.WriteLine("Running Test Network with: " + m_engine.ToString() + ", batch=" + nBatch.ToString() + ", numHidden=" + nNumHidden.ToString());
+
+                string strHeader = "";
+
+                for (int i = 0; i < nNumOutputs; i++)
+                {
+                    strHeader += "expected" + i.ToString() + ",predicted" + i.ToString();
+                    strHeader += ",,";
+                }
+
+                sw.WriteLine(strHeader.TrimEnd(','));
+
+                for (int i = 0; i < nTotalDataLength; i++)
+                {
+                    double dfLoss;
+
+                    test_data_blob.mutable_cpu_data = convert(rgData);
+
+                    test_net.Forward(out dfLoss);
+
+                    Blob<T> pred = test_net.FindBlob("ip1");
+                    m_log.CHECK_EQ(pred.count(), nSteps + nNumOutputs, "The result blob should equal the number of data + predictions.");
+
+                    double[] rgPredictions = convert(pred.mutable_cpu_data);
+
+                    string strLine = "";
+
+                    for (int j = 0; j < rgLabel.Length; j++)
+                    {
+                        double dfPredicted = rgPredictions[seq_length + j];  // predictions are the last 'nNumOutput' count of the outputs.
+                        double dfExpected = rgLabel[j];
+
+                        strLine += dfExpected.ToString() + "," + dfPredicted.ToString() + ",,";
+                    }
+
+                    sw.WriteLine(strLine);
+
+                    if (swStatus.Elapsed.TotalMilliseconds > 2000)
+                    {
+                        m_log.Progress = (double)i / nTotalDataLength;
+                        m_log.WriteLine("Testing iteration " + i.ToString() + " (" + m_log.Progress.ToString("P") + ")");
+                        swStatus.Restart();
+                    }
+
+                    if (m_evtCancel.WaitOne(0))
+                    {
+                        m_log.WriteLine("Aborted.");
+                        return;
+                    }
+
+                    data.LoadData(false, rgData, rgLabel, m_param.type);
+                }
+            }
+
+            m_log.WriteLine("Testing completed.");
+
+
+            //-------------------------------------------------------
+            //  Running 
+            //-------------------------------------------------------
+
+            NetParameter net_param_deploy = getDeployModel(nSteps, nNumInputs, nNumHidden, nNumOutputs, nBatch);
+            Net<T> deploy_net = new Net<T>(m_cuda, m_log, net_param_deploy, m_evtCancel, null, Phase.RUN);
+
+            // Copy the trained weights to the deploy net.
+            train_net.CopyTrainedLayersTo(deploy_net);
+
+            strFileName = "c:\\temp\\lstm_" + m_engine.ToString() + "_next_DEPLOY_results_num_out_" + nNumHidden.ToString() + "_maxiter_" + nMaxIter.ToString() + ".csv";
+            if (File.Exists(strFileName))
+                File.Delete(strFileName);
+
+            Blob<T> deploy_data_blob = deploy_net.blob_by_name("data");
+            Blob<T> deploy_clip_blob = deploy_net.blob_by_name("clip");
+
+            // Load the first sequence data.
+            data = new DataStream(nTotalDataLength, seq_length + nNumOutputs, nNumOutputs, nBatch);
+            data.CreateArrays(out rgData, out rgLabel);
+            data.LoadData(true, rgData, rgLabel, m_param.type);
+
+            swStatus.Restart();
+
+            using (StreamWriter sw = new StreamWriter(strFileName))
+            {
+                sw.WriteLine("Running Deploy Network");
+                string strHeader = "";
+
+                for (int i = 0; i < nNumOutputs; i++)
+                {
+                    strHeader += "Expected" + i.ToString();
+                    strHeader += ",";
+                    strHeader += "Pred" + i.ToString();
+                    strHeader += ",,";
+                }
+
+                sw.WriteLine(strHeader.TrimEnd(','));
+
+                for (int i = 0; i < nTotalDataLength; i++)
+                {
+                    List<double> rgPredictions = new List<double>();
+                    double dfLoss;
+
+                    deploy_clip_blob.SetData(0.0);
+
+                    for (int j = 0; j < seq_length; j++)
+                    {
+                        deploy_data_blob.SetData(rgData[j], 0);
+                        deploy_net.Forward(out dfLoss);
+                        deploy_clip_blob.SetData(1.0);
+                    }
+
+                    for (int j = 0; j < nNumOutputs; j++)
+                    {
+                        deploy_data_blob.SetData(-2, 0);
+                        BlobCollection<T> results = deploy_net.Forward(out dfLoss);
+                        deploy_clip_blob.SetData(1.0);
+
+                        m_log.CHECK_EQ(results.Count, 1, "There should only be one result blob.");
+                        m_log.CHECK_EQ(results[0].count(), 1, "There should be 1 outputs in the result.");
+                        double[] rgPred = convert(results[0].mutable_cpu_data);
+                        rgPredictions.Add(rgPred[0]);
+                    }
+
+                    string strLine = "";
+
+                    for (int k = 0; k < rgPredictions.Count; k++)
+                    {
+                        double dfExpected = rgData[seq_length + k];
+                        double dfPredicted = rgPredictions[k];
+
+                        strLine += dfExpected.ToString() + "," + dfPredicted.ToString();
+                        strLine += ",,";
+                    }
+
+                    sw.WriteLine(strLine.TrimEnd(','));
+
+                    if (swStatus.Elapsed.TotalMilliseconds > 2000)
+                    {
+                        m_log.Progress = (double)i / nTotalDataLength;
+                        m_log.WriteLine("Running iteration " + i.ToString() + " (" + m_log.Progress.ToString("P") + ")");
+                        swStatus.Restart();
+                    }
+
+                    if (m_evtCancel.WaitOne(0))
+                    {
+                        m_log.WriteLine("Aborted.");
+                        return;
+                    }
+
+                    data.LoadData(false, rgData, rgLabel, m_param.type);
+                }
+            }
+
+
+            //-------------------------------------------------------
+            //  Cleanup 
+            //-------------------------------------------------------
+
+            solver.Dispose();
+            deploy_net.Dispose();
+        }
+
+        /// <summary>
+        /// Get the solver descriptor.
+        /// </summary>
+        /// <param name="nMaxIter">Specifies the maximum number of iterations to run.</param>
+        /// <returns>The solver parameter is returned.</returns>
+        private SolverParameter getSolver(NetParameter net_param, int nDeviceID, int nMaxIter = 4000)
+        {
+            SolverParameter solver_param = new SolverParameter();
+
+            solver_param.test_interval = 500;
+            solver_param.test_iter.Add(100);
+            solver_param.test_initialization = false;
+            solver_param.max_iter = nMaxIter;
+            solver_param.snapshot = nMaxIter;
+            solver_param.display = 200;
+            solver_param.type = SolverParameter.SolverType.ADAM;
+            solver_param.base_lr = 0.002;
+            solver_param.device_id = nDeviceID;
+            solver_param.net_param = net_param;
+
+            return solver_param;
+        }
+
+        /// <summary>
+        /// Build the model for testing.
+        /// </summary>
+        /// <param name="nSteps">Specifies the number of time-steps.</param>
+        /// <param name="nNumInputs">Specifies the number of input items (per time-step)</param>
+        /// <param name="nNumHidden">Specifies the number of hidden outputs of the LSTM</param>
+        /// <param name="nNumOutputs">Specifies the number of predicted outputs.</param>
+        /// <param name="nBatch">Specifies the batch size.</param>
+        /// <remarks>
+        /// When using the non clockwork model to create forward predictions, a the data input is concatenated with dummy data to create inputs that then
+        /// match the final labels which are a concatenation of the data + labels (containing future data).
+        /// 
+        /// For example:
+        ///   timesteps = 100 (past items to use for prediction)
+        ///   batch = 1
+        ///   input = 1
+        ///   hidden = 23
+        ///   output = 10 (future items to predict)
+        ///   
+        /// Data Size = { 100, 1, 1 }
+        /// Clip Size = { 100, 1 }
+        /// Label Size = { 10, 1, 1 }
+        /// 
+        /// Dummy Data Size = { 10, 1, 1 } (to match label predictions)
+        /// 
+        /// Concat1 Size = { 110, 1, 1 } (Data + Dummy) - fed into LSTM
+        /// 
+        /// Concat2 Size = { 110, 1, 1 } (Data + Label) - fed into LOSS
+        /// 
+        /// This is similar to the way CorvusCorax loads the LSTM layer int he 'Caffe LSTM Example on Sin(t) Waveform Pediction'
+        /// @see [GitHub: Caffe LSTM Example on Sin(t) Waveform Prediction](https://github.com/CorvusCorax/Caffe-LSTM-Mini-Tutorial) by CorvusCorax, 2019.
+        /// </remarks>
+        /// <returns>The string representing the model is returned.</returns>
+        private NetParameter getTrainModel(int nSteps, int nNumInputs, int nNumHidden, int nNumOutputs, int nBatch)
+        {
+            NetParameter net_param = new NetParameter();
+
+            net_param.name = "LSTM";
+
+            LayerParameter input_layer = new LayerParameter(LayerParameter.LayerType.INPUT, "data");
+            input_layer.top.Add("data");
+            input_layer.top.Add("clip");
+            input_layer.top.Add("label");
+            input_layer.input_param.shape.Add(new BlobShape(new List<int>() { nSteps, nBatch, nNumInputs }));      // data
+            input_layer.input_param.shape.Add(new BlobShape(new List<int>() { nSteps + nNumOutputs, nBatch }));    // clip
+            input_layer.input_param.shape.Add(new BlobShape(new List<int>() { nNumOutputs, nBatch, nNumInputs })); // label
+            net_param.layer.Add(input_layer);
+
+            LayerParameter dummy_data_layer = new LayerParameter(LayerParameter.LayerType.DUMMYDATA, "dummydata");
+            dummy_data_layer.top.Add("dummy");
+            dummy_data_layer.dummy_data_param.shape.Add(new BlobShape(new List<int>() { nNumOutputs, nBatch, nNumInputs })); // should match data batch and inputs.
+            dummy_data_layer.dummy_data_param.data_filler.Add(new FillerParameter("constant", -2));
+            net_param.layer.Add(dummy_data_layer);
+
+            LayerParameter concat_layer1 = new LayerParameter(LayerParameter.LayerType.CONCAT, "concat1");
+            concat_layer1.bottom.Add("data");
+            concat_layer1.bottom.Add("dummy");
+            concat_layer1.top.Add("fulldata");
+            concat_layer1.concat_param.axis = 0;
+            net_param.layer.Add(concat_layer1);
+
+            LayerParameter lstm_layer = new LayerParameter(LayerParameter.LayerType.LSTM, "lstm1");
+            lstm_layer.bottom.Add("fulldata");
+            lstm_layer.bottom.Add("clip");
+            lstm_layer.top.Add("lstm1");
+            lstm_layer.recurrent_param.num_output = (uint)nNumHidden;
+            lstm_layer.recurrent_param.engine = m_engine;
+            lstm_layer.recurrent_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.05);
+            lstm_layer.recurrent_param.bias_filler = new FillerParameter("constant", 0);
+            if (m_engine == EngineParameter.Engine.CUDNN)
+            {
+                lstm_layer.recurrent_param.num_layers = 1;
+                lstm_layer.recurrent_param.dropout_ratio = 0;
+                lstm_layer.recurrent_param.dropout_seed = 0;
+            }
+            net_param.layer.Add(lstm_layer);
+
+            LayerParameter innerproduct_layer = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "ip1");
+            innerproduct_layer.bottom.Add("lstm1");
+            innerproduct_layer.top.Add("ip1");
+            innerproduct_layer.inner_product_param.num_output = 1;
+            innerproduct_layer.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.1);
+            innerproduct_layer.inner_product_param.bias_filler = new FillerParameter("constant", 0);
+            innerproduct_layer.inner_product_param.axis = 2;
+            net_param.layer.Add(innerproduct_layer);
+
+            LayerParameter concat_layer2 = new LayerParameter(LayerParameter.LayerType.CONCAT, "concat2");
+            concat_layer2.bottom.Add("data");
+            concat_layer2.bottom.Add("label");
+            concat_layer2.top.Add("fulllabel");
+            concat_layer2.concat_param.axis = 0;
+            net_param.layer.Add(concat_layer2);
+
+            LayerParameter euclidean_loss_layer = new LayerParameter(LayerParameter.LayerType.EUCLIDEAN_LOSS, "loss1");
+            euclidean_loss_layer.bottom.Add("ip1");
+            euclidean_loss_layer.bottom.Add("fulllabel");
+            euclidean_loss_layer.top.Add("loss");
+            net_param.layer.Add(euclidean_loss_layer);
+
+            return net_param;
+        }
+
+        /// <summary>
+        /// Build the model for running.
+        /// </summary>
+        /// <param name="nSteps">Specifies the number of time-steps.</param>
+        /// <param name="nNumInputs">Specifies the number of input items (per time-step)</param>
+        /// <param name="nNumHidden">Specifies the number of hidden outputs of the LSTM</param>
+        /// <param name="nNumOutputs">Specifies the number of predicted outputs.</param>
+        /// <param name="nBatch">Specifies the batch size.</param>
+        /// <remarks>
+        /// When using the non clockwork model to create forward predictions, a the data input is concatenated with dummy data to create inputs that then
+        /// match the final labels which are a concatenation of the data + labels (containing future data).
+        /// 
+        /// For example:
+        ///   timesteps = 100 (past items to use for prediction)
+        ///   batch = 1
+        ///   input = 1
+        ///   hidden = 23
+        ///   output = 10 (future items to predict)
+        ///   
+        /// Data Size = { 100, 1, 1 }
+        /// Clip Size = { 100, 1 }
+        /// Label Size = { 10, 1, 1 }
+        /// 
+        /// Dummy Data Size = { 10, 1, 1 } (to match label predictions)
+        /// 
+        /// Concat1 Size = { 110, 1, 1 } (Data + Dummy) - fed into LSTM
+        /// 
+        /// Concat2 Size = { 110, 1, 1 } (Data + Label) - fed into LOSS
+        /// 
+        /// This is similar to the way CorvusCorax loads the LSTM layer int he 'Caffe LSTM Example on Sin(t) Waveform Pediction'
+        /// @see [GitHub: Caffe LSTM Example on Sin(t) Waveform Prediction](https://github.com/CorvusCorax/Caffe-LSTM-Mini-Tutorial) by CorvusCorax, 2019.
+        /// </remarks>
+        /// <returns>The string representing the model is returned.</returns>
+        private NetParameter getDeployModel(int nSteps, int nNumInputs, int nNumHidden, int nNumOutputs, int nBatch)
+        {
+            NetParameter net_param = new NetParameter();
+
+            net_param.name = "LSTM";
+
+            LayerParameter input_layer = new LayerParameter(LayerParameter.LayerType.INPUT, "data");
+            input_layer.top.Add("data");
+            input_layer.top.Add("clip");
+            input_layer.input_param.shape.Add(new BlobShape(new List<int>() { 1, 1, nNumInputs }));     // data
+            input_layer.input_param.shape.Add(new BlobShape(new List<int>() { 1, 1 }));                 // clip
+            net_param.layer.Add(input_layer);
+
+            LayerParameter lstm_layer = new LayerParameter(LayerParameter.LayerType.LSTM, "lstm1");
+            lstm_layer.bottom.Add("data");
+            lstm_layer.bottom.Add("clip");
+            lstm_layer.top.Add("lstm1");
+            lstm_layer.recurrent_param.num_output = (uint)nNumHidden;
+            lstm_layer.recurrent_param.engine = m_engine;
+            lstm_layer.recurrent_param.weight_filler = new FillerParameter("xavier");
+            lstm_layer.recurrent_param.bias_filler = new FillerParameter("constant", 0);
+            if (m_engine == EngineParameter.Engine.CUDNN)
+            {
+                lstm_layer.recurrent_param.num_layers = 1;
+                lstm_layer.recurrent_param.dropout_ratio = 0;
+                lstm_layer.recurrent_param.dropout_seed = 0;
+            }
+            net_param.layer.Add(lstm_layer);
+
+            LayerParameter innerproduct_layer = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "ip1");
+            innerproduct_layer.bottom.Add("lstm1");
+            innerproduct_layer.top.Add("ip1");
+            innerproduct_layer.inner_product_param.num_output = 1;
+            innerproduct_layer.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.1);
+            innerproduct_layer.inner_product_param.bias_filler = new FillerParameter("constant", 0);
+            innerproduct_layer.inner_product_param.axis = 2;
+            net_param.layer.Add(innerproduct_layer);
+
+            return net_param;
+        }
+    }
+
+    public class DataStream
+    {
+        int m_nDataIdx = 0;
+        int m_nLabelIdx = 0;
+        double[] m_rgSequence;
+        List<double> m_rgData1;
+        List<double> m_rgLabel1;
+        int m_nBatch;
+        int m_nSequenceLength;
+        int m_nNumOutput;
+        CryptoRandom m_random = new CryptoRandom();
+
+        public DataStream(int nTotalDataLength, int nSequenceLength, int nNumOutput, int nBatch)
+        {
+            m_rgSequence = new double[nTotalDataLength];
+
+            // Construct the data.
+            double dfMean = 0;
+            double dfMaxAbs = 0;
+
+            for (int i = 0; i < nTotalDataLength; i++)
+            {
+                double dfVal = f_x(i * 0.01);
+                dfMaxAbs = Math.Max(dfMaxAbs, Math.Abs(dfVal));
+            }
+
+            for (int i = 0; i < nTotalDataLength; i++)
+            {
+                dfMean += f_x(i * 0.01) / dfMaxAbs;
+            }
+
+            dfMean /= nTotalDataLength;
+
+            for (int i = 0; i < nTotalDataLength; i++)
+            {
+                m_rgSequence[i] = f_x(i * 0.01) / dfMaxAbs - dfMean;
+            }
+
+            m_nSequenceLength = nSequenceLength;
+            m_nNumOutput = nNumOutput;
+            m_nBatch = nBatch;
+
+            m_rgData1 = new List<double>();
+            m_rgLabel1 = new List<double>();
+
+            Reset();
+        }
+
+        private double f_x(double dfT)
+        {
+            return 0.5 * Math.Sin(2 * dfT) - 0.05 * Math.Cos(17 * dfT + 0.8) + 0.05 * Math.Sin(25 * dfT + 10) - 0.02 * Math.Cos(45 * dfT + 0.3);
+        }
+
+        public void Reset(bool bRandom = false)
+        {
+            m_nDataIdx = 0;
+
+            if (bRandom)
+                m_nDataIdx = m_random.Next(m_rgSequence.Length);
+
+            m_nLabelIdx = m_nDataIdx + m_nSequenceLength;
+
+            m_rgData1 = new List<double>();
+            m_rgLabel1 = new List<double>();
+        }
+
+        public void CreateArrays(out double[] rgData, out double[] rgLabel)
+        {
+            rgData = new double[m_nBatch * m_nSequenceLength];
+            rgLabel = new double[m_nBatch * m_nNumOutput];
+        }
+
+        public void LoadData(bool bInitial, double[] rgData, double[] rgLabel, LayerParameter.LayerType type)
+        {
+            if (rgData == null || rgData.Length != m_nBatch * m_nSequenceLength)
+                throw new Exception("The data length is incorrect!");
+
+            if (rgLabel == null || rgLabel.Length != m_nBatch * m_nNumOutput)
+                throw new Exception("The label length is incorrect!");
+
+            for (int i = 0; i < m_nBatch; i++)
+            {
+                if (bInitial && i == 0)
+                    loadData(i, m_rgData1, m_rgLabel1);
+                else
+                    loadNext(i, m_rgData1, m_rgLabel1);
+
+                Array.Copy(m_rgData1.ToArray(), 0, rgData, i * m_rgData1.Count, m_rgData1.Count);
+                Array.Copy(m_rgLabel1.ToArray(), 0, rgLabel, i * m_rgLabel1.Count, m_rgLabel1.Count);
+            }
+
+            // Transpose data for CAFFE ordering.
+            if (type == LayerParameter.LayerType.LSTM && m_nBatch > 1)
+            {
+                double[] rgDataT = new double[rgData.Length];
+                double[] rgLabelT = new double[rgLabel.Length];
+                int nSrcIdx = 0;
+                int nDstIdx = 0;
+
+                for (int i = 0; i < m_nBatch; i++) // batch
+                {
+                    for (int j = 0; j < m_nSequenceLength; j++)  // sequence
+                    {
+                        nDstIdx = m_nBatch * j + i;
+                        nSrcIdx++;
+                        rgDataT[nDstIdx] = rgData[nSrcIdx];
+                    }
+
+                    for (int j = 0; j < m_nNumOutput; j++)  // sequence
+                    {
+                        nDstIdx = m_nBatch * j + i;
+                        nSrcIdx++;
+                        rgLabelT[nDstIdx] = rgLabel[nSrcIdx];
+                    }
+                }
+
+                Array.Copy(rgDataT, rgData, rgData.Length);
+                Array.Copy(rgLabelT, rgLabel, rgLabel.Length);
+            }
+        }
+
+        private void loadData(int nBatchIdx, List<double> rgData, List<double> rgLabel)
+        {
+            rgData.Clear();
+            rgLabel.Clear();
+
+            for (int i = 0; i < m_nSequenceLength; i++)
+            {
+                rgData.Add(m_rgSequence[m_nDataIdx]);
+                m_nDataIdx++;
+
+                if (m_nDataIdx == m_rgSequence.Length)
+                    m_nDataIdx = 0;
+            }
+
+            m_nLabelIdx = m_nDataIdx;
+
+            for (int i = 0; i < m_nNumOutput; i++)
+            {
+                rgLabel.Add(m_rgSequence[m_nLabelIdx]);
+                m_nLabelIdx++;
+
+                if (m_nLabelIdx == m_rgSequence.Length)
+                    m_nLabelIdx = 0;
+            }
+        }
+
+        private void loadNext(int nBatchIdx, List<double> rgData, List<double> rgLabel)
+        {
+            rgData.Add(m_rgSequence[m_nDataIdx]);
+            m_nDataIdx++;
+
+            if (m_nDataIdx == m_rgSequence.Length)
+                m_nDataIdx = 0;
+
+            rgData.RemoveAt(0);
+
+            rgLabel.Add(m_rgSequence[m_nLabelIdx]);
+            m_nLabelIdx++;
+
+            if (m_nLabelIdx == m_rgSequence.Length)
+                m_nLabelIdx = 0;
+
+            rgLabel.RemoveAt(0);
         }
     }
 }
