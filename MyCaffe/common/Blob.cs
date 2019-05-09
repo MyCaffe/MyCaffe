@@ -1349,6 +1349,26 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Set a data range with a given value.
+        /// </summary>
+        /// <param name="dfVal">Specifies the value to set.</param>
+        /// <param name="nStartIdx">Specifies the start index.</param>
+        /// <param name="nCount">Specifies the number of items to set.</param>
+        public void SetData(double dfVal, int nStartIdx, int nCount)
+        {
+            T tVal = (T)Convert.ChangeType(dfVal, typeof(T));
+            T[] rg = mutable_cpu_data;
+
+            for (int i = 0; i < nCount; i++)
+            {
+                if (nStartIdx + i < rg.Length)
+                    rg[nStartIdx + i] = tVal;
+            }
+
+            mutable_cpu_data = rg;
+        }
+
+        /// <summary>
         /// Either sets all of the diff items in the Blob to a given value, or alternatively only sets a single
         /// indexed item to a given value.
         /// </summary>
