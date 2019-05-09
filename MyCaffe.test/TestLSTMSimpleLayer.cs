@@ -156,7 +156,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestTraining()
+        public void TestTrainingClockworkGradient()
         {
             LSTMSimpleLayerTest test = new LSTMSimpleLayerTest(m_log, m_evtCancel, m_strParams);
 
