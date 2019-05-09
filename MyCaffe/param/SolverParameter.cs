@@ -518,6 +518,8 @@ namespace MyCaffe.param
         ///            
         /// where base_lr, max_iter, gamma, step, stepvalue and power are defined int the
         /// solver protocol buffer, and iter is the current iteration.
+        /// 
+        /// @see [Don't Decay the Learning Rate, Increase the Batch Size](https://arxiv.org/abs/1711.00489) by Samuel L. Smith, Pieter-Jan Kindermans, Chris Ying and Quoc V. Le, 2017. 
         /// </remarks>
         [Browsable(false)]
         public string lr_policy
