@@ -64,7 +64,7 @@ namespace MyCaffe.layers
 
         // cuDNN Specific Members
         long m_hCuDnn;
-        int m_nInputSize;
+        int m_nInputSize = 1;
         int m_nHiddenSize;
         int m_nNumLayers;
         Blob<T> m_blobX;
