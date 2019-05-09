@@ -107,7 +107,7 @@ namespace MyCaffe.param
         /// blobs.  The number of additional bottom/top blobs required depends on the
         /// recurrent architecture -- e.g., 1 for RNN's, 2 for LSTM's.
         /// </summary>
-        [Description("Specifies whether to add as additional inputs (bottoms) the initial hidden state blobs, and add as additional outputs (tops) the final timestep hidden state blobs.  The number of additional bottom/top blobs required depends on teh recurrent architecture -- e.g., 1 for RNN's, 2 for LSTM's.")]
+        [Description("Specifies whether to add as additional inputs (bottoms) the initial hidden state blobs, and add as additional outputs (tops) the final timestep hidden state blobs.  The number of additional bottom/top blobs required depends on the recurrent architecture -- e.g., 1 for RNN's, 2 for LSTM's.")]
         public bool expose_hidden
         {
             get { return m_bExposeHidden; }
