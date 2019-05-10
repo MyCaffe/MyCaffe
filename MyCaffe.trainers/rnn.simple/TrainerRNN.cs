@@ -756,12 +756,14 @@ namespace MyCaffe.trainers.rnn.simple
 
                 for (int i = 0; i < nN; i++)
                 {
-                    GetDataArgs e = getDataArgs(0, true);
+                    GetDataArgs e = getDataArgs(0, (m_blobLabel != null) ? true : false);
                     m_icallback.OnGetData(e);
 
                     string strSolverErr = "";
-                    if (m_nSolverSequenceLength >= 0 && m_nSolverSequenceLength != m_nSequenceLength)
-                        strSolverErr = "The solver parameter 'SequenceLength' length of " + m_nSolverSequenceLength.ToString() + " must match the model sequence length of " + m_nSequenceLength.ToString() + ".  ";
+                    int nLookahead = 1;
+
+                    if (m_nSolverSequenceLength >= 0)
+                        nLookahead = m_nSequenceLength - m_nSolverSequenceLength;
 
                     int nExpectedCount = m_blobData.count();
                     m_mycaffe.Log.CHECK_EQ(nExpectedCount, e.State.Data.ItemCount, strSolverErr + "The size of the data received ('" + e.State.Data.ItemCount.ToString() + "') does mot match the expected data count of '" + nExpectedCount.ToString() + "'!");
@@ -776,7 +778,7 @@ namespace MyCaffe.trainers.rnn.simple
 
                     double dfLoss;
                     BlobCollection<T> colResults = m_net.Forward(out dfLoss);
-                    float fPrediction = getLastPrediction(colResults[0], m_rgVocabulary);
+                    float fPrediction = getLastPrediction(colResults[0], m_rgVocabulary, nLookahead);
                     float fActual = (float)e.State.Label.RealData[e.State.Label.RealData.Length - 1];
 
                     if (m_rgVocabulary == null)
@@ -848,13 +850,13 @@ namespace MyCaffe.trainers.rnn.simple
             return rgPredictions;
         }
 
-        private int getLastPrediction(Blob<T> blobOutput, BucketCollection rgVocabulary)
+        private int getLastPrediction(Blob<T> blobOutput, BucketCollection rgVocabulary, int nLookahead = 0)
         {
             if (m_blobOutput != null)
                 blobOutput = m_blobOutput;
 
             // Get the probabilities for the last character of the first sequence in the batch
-            int nOffset = (m_nSequenceLength - 1) * m_nBatchSize * m_nVocabSize;
+            int nOffset = (m_nSequenceLength - nLookahead) * m_nBatchSize * m_nVocabSize;
             float[] rgDataRaw = Utility.ConvertVecF<T>(blobOutput.update_cpu_data());
             float[] rgData = new float[m_nVocabSize];
 
