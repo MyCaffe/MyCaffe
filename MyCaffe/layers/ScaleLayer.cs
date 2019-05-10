@@ -10,7 +10,7 @@ using MyCaffe.fillers;
 namespace MyCaffe.layers
 {
     /// <summary>
-    /// The ScaleLayer computes the elementwise product of two input Blobs, with the sanpe of
+    /// The ScaleLayer computes the elementwise product of two input Blobs, with the shape of
     /// the latter Blob 'broadcast' to match the shape of the former.
     /// Equivalent to tiling the later Blob, then computing the elementwise
     /// product.  Note: for efficiency and convienience this layer can
