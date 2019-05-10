@@ -756,7 +756,7 @@ namespace MyCaffe.trainers.rnn.simple
 
                 for (int i = 0; i < nN; i++)
                 {
-                    GetDataArgs e = getDataArgs(0, (m_blobLabel != null) ? true : false);
+                    GetDataArgs e = getDataArgs(0, true);
                     m_icallback.OnGetData(e);
 
                     string strSolverErr = "";
@@ -779,7 +779,7 @@ namespace MyCaffe.trainers.rnn.simple
                     double dfLoss;
                     BlobCollection<T> colResults = m_net.Forward(out dfLoss);
                     float fPrediction = getLastPrediction(colResults[0], m_rgVocabulary, nLookahead);
-                    float fActual = (float)e.State.Label.RealData[e.State.Label.RealData.Length - 1];
+                    float fActual = (float)e.State.Label.RealData[e.State.Label.RealData.Length - nLookahead];
 
                     if (m_rgVocabulary == null)
                     {
