@@ -23,14 +23,18 @@ namespace MyCaffe.param
             /// </summary>
             NONE,
             /// <summary>
-            /// Specifies a single label value, which is the default.
+            /// Specifies a single label value per batch item so if the batch size = 8 there should be 8 labels, which is the default.
             /// </summary>
             SINGLE,
             /// <summary>
             /// Specifies multiple values for the label such as are used in segmentation problems, 
             /// the label's are stored in each Data Item's <i>DataCriteria</i> field.
             /// </summary>
-            MULTIPLE
+            MULTIPLE,
+            /// <summary>
+            /// Specifies to force the label to a single value regardless of the batch size, so if the batch size is 8, the label count remains only 1.
+            /// </summary>
+            ONLY_ONE
         }
 
         /** @copydoc BaseParameter */

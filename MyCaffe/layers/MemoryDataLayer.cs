@@ -508,9 +508,9 @@ namespace MyCaffe.layers
                 if (blobLabel == null)
                     m_log.WriteError(new Exception("Could not find the MemoryDataLayer 'label' top!"));
 
-                int nLabelSize = 1;
-                if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.MULTIPLE)
-                    nLabelSize = m_nBatchSize;
+                int nLabelSize = m_nBatchSize;
+                if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.ONLY_ONE)
+                    nLabelSize = 1;
 
                 List<int> rgLabelShape = Utility.Clone<int>(m_blobLabel.shape());
                 if (rgLabelShape.Count == 0)
