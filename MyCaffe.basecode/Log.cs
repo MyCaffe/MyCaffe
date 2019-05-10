@@ -146,7 +146,10 @@ namespace MyCaffe.basecode
         {
             get { return m_dfProgress; }
             set 
-            { 
+            {
+                if (!m_bEnable)
+                    return;
+
                 m_dfProgress = value;
 
                 if (OnProgress != null)
