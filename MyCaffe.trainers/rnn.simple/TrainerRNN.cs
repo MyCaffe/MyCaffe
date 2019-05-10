@@ -740,124 +740,155 @@ namespace MyCaffe.trainers.rnn.simple
 
         public float[] Run(int nN)
         {
-            Stopwatch sw = new Stopwatch();
-            float[] rgPredictions = new float[nN];
-
-            sw.Start();
-
-            m_bIsDataReal = false;
-
-            if (m_rgVocabulary != null)
-                m_bIsDataReal = m_rgVocabulary.IsDataReal;
-
-            if (m_bIsDataReal && !m_bUsePreloadData)
+            try
             {
-                rgPredictions = new float[nN * 2];
+                Stopwatch sw = new Stopwatch();
+                float[] rgPredictions = new float[nN];
 
-                for (int i = 0; i < nN; i++)
+                sw.Start();
+
+                m_bIsDataReal = false;
+
+                if (m_rgVocabulary != null)
+                    m_bIsDataReal = m_rgVocabulary.IsDataReal;
+
+                m_mycaffe.Log.Enable = false;
+
+                if (m_bIsDataReal && !m_bUsePreloadData)
                 {
-                    GetDataArgs e = getDataArgs(0, true);
-                    m_icallback.OnGetData(e);
-
                     string strSolverErr = "";
                     int nLookahead = 1;
-
                     if (m_nSolverSequenceLength >= 0)
                         nLookahead = m_nSequenceLength - m_nSolverSequenceLength;
 
-                    int nExpectedCount = m_blobData.count();
-                    m_mycaffe.Log.CHECK_EQ(nExpectedCount, e.State.Data.ItemCount, strSolverErr + "The size of the data received ('" + e.State.Data.ItemCount.ToString() + "') does mot match the expected data count of '" + nExpectedCount.ToString() + "'!");
-                    m_blobData.mutable_cpu_data = Utility.ConvertVec<T>(e.State.Data.RealData);
+                    rgPredictions = new float[nN * 2 * nLookahead];
 
-                    if (m_blobLabel != null)
+                    for (int i = 0; i < nN; i++)
                     {
-                        nExpectedCount = m_blobLabel.count();
-                        m_mycaffe.Log.CHECK_EQ(nExpectedCount, e.State.Label.ItemCount, strSolverErr + "The size of the label received ('" + e.State.Label.ItemCount.ToString() + "') does not match the expected label count of '" + nExpectedCount.ToString() + "'!");
-                        m_blobLabel.mutable_cpu_data = Utility.ConvertVec<T>(e.State.Label.RealData);
-                    }
+                        GetDataArgs e = getDataArgs(0, true);
+                        m_icallback.OnGetData(e);
 
-                    double dfLoss;
-                    BlobCollection<T> colResults = m_net.Forward(out dfLoss);
-                    float fPrediction = getLastPrediction(colResults[0], m_rgVocabulary, nLookahead);
-                    float fActual = (float)e.State.Label.RealData[e.State.Label.RealData.Length - nLookahead];
+                        int nExpectedCount = m_blobData.count();
+                        m_mycaffe.Log.CHECK_EQ(nExpectedCount, e.State.Data.ItemCount, strSolverErr + "The size of the data received ('" + e.State.Data.ItemCount.ToString() + "') does mot match the expected data count of '" + nExpectedCount.ToString() + "'!");
+                        m_blobData.mutable_cpu_data = Utility.ConvertVec<T>(e.State.Data.RealData);
 
-                    if (m_rgVocabulary == null)
-                    {
-                        rgPredictions[i] = fPrediction;
-                        rgPredictions[nN + i] = fActual;
-                    }
-                    else
-                    {
-                        rgPredictions[i] = (float)m_rgVocabulary.GetValueAt((int)fPrediction, true);
-                        rgPredictions[nN + i] = (float)m_rgVocabulary.GetValueAt((int)fActual, true);
-                    }
+                        if (m_blobLabel != null)
+                        {
+                            nExpectedCount = m_blobLabel.count();
+                            m_mycaffe.Log.CHECK_EQ(nExpectedCount, e.State.Label.ItemCount, strSolverErr + "The size of the label received ('" + e.State.Label.ItemCount.ToString() + "') does not match the expected label count of '" + nExpectedCount.ToString() + "'!");
+                            m_blobLabel.mutable_cpu_data = Utility.ConvertVec<T>(e.State.Label.RealData);
+                        }
 
-                    if (sw.Elapsed.TotalMilliseconds > 1000)
-                    {
-                        double dfPct = (double)i / (double)nN;
-                        m_mycaffe.Log.Progress = dfPct;
-                        m_mycaffe.Log.WriteLine("Running at " + dfPct.ToString("P") + " complete...");
-                        sw.Restart();
-                    }
+                        double dfLoss;
+                        BlobCollection<T> colResults = m_net.Forward(out dfLoss);
+                        Blob<T> blobOutput = colResults[0];
 
-                    if (m_mycaffe.CancelEvent.WaitOne(0))
-                        break;
+                        if (m_blobOutput != null)
+                            blobOutput = m_blobOutput;
+
+                        float[] rgResults = Utility.ConvertVecF<T>(blobOutput.update_cpu_data());
+
+                        for (int j = nLookahead; j > 0; j--)
+                        {
+                            float fPrediction = getLastPrediction(rgResults, m_rgVocabulary, j);
+                            float fActual = (float)e.State.Label.RealData[e.State.Label.RealData.Length - j];
+
+                            int nIdx0 = ((nLookahead - j) * nN * 2);
+                            int nIdx1 = nIdx0 + nN;
+
+                            if (m_rgVocabulary == null)
+                            {
+                                rgPredictions[nIdx0 + i] = fPrediction;
+                                rgPredictions[nIdx1 + i] = fActual;
+                            }
+                            else
+                            {
+                                rgPredictions[nIdx0 + i] = (float)m_rgVocabulary.GetValueAt((int)fPrediction, true);
+                                rgPredictions[nIdx1 + i] = (float)m_rgVocabulary.GetValueAt((int)fActual, true);
+                            }
+                        }
+
+                        if (sw.Elapsed.TotalMilliseconds > 1000)
+                        {
+                            double dfPct = (double)i / (double)nN;
+                            m_mycaffe.Log.Enable = true;
+                            m_mycaffe.Log.Progress = dfPct;
+                            m_mycaffe.Log.WriteLine("Running at " + dfPct.ToString("P") + " complete...");
+                            m_mycaffe.Log.Enable = false;
+                            sw.Restart();
+                        }
+
+                        if (m_mycaffe.CancelEvent.WaitOne(0))
+                            break;
+                    }
                 }
-            }
-            else
-            {
-                int nIdx = 0;
-                List<T> rgInput = rgInput = getInitialInput(m_bIsDataReal);
-
-                for (int i = 0; i < nN; i++)
+                else
                 {
-                    T[] rgInputVector = new T[m_blobData.count()];
-                    for (int j = 0; j < m_nSequenceLength; j++)
+                    int nIdx = 0;
+                    List<T> rgInput = rgInput = getInitialInput(m_bIsDataReal);
+
+                    for (int i = 0; i < nN; i++)
                     {
-                        // The batch is filled with 0 except for the first sequence which is the one we want to use for prediction.
-                        nIdx = j * m_nBatchSize;
-                        rgInputVector[nIdx] = rgInput[j];
+                        T[] rgInputVector = new T[m_blobData.count()];
+                        for (int j = 0; j < m_nSequenceLength; j++)
+                        {
+                            // The batch is filled with 0 except for the first sequence which is the one we want to use for prediction.
+                            nIdx = j * m_nBatchSize;
+                            rgInputVector[nIdx] = rgInput[j];
+                        }
+
+                        m_blobData.mutable_cpu_data = rgInputVector;
+
+                        double dfLoss;
+                        BlobCollection<T> colResults = m_net.Forward(out dfLoss);
+                        Blob<T> blobOutput = colResults[0];
+
+                        if (m_blobOutput != null)
+                            blobOutput = m_blobOutput;
+
+                        float[] rgResults = Utility.ConvertVecF<T>(blobOutput.update_cpu_data());
+                        float fPrediction = getLastPrediction(rgResults, m_rgVocabulary);
+
+                        //Add the new prediction and discard the oldest one
+                        rgInput.Add((T)Convert.ChangeType(fPrediction, typeof(T)));
+                        rgInput.RemoveAt(0);
+
+                        if (m_rgVocabulary == null)
+                            rgPredictions[i] = fPrediction;
+                        else
+                            rgPredictions[i] = (float)m_rgVocabulary.GetValueAt((int)fPrediction);
+
+                        if (sw.Elapsed.TotalMilliseconds > 1000)
+                        {
+                            double dfPct = (double)i / (double)nN;
+                            m_mycaffe.Log.Enable = true;
+                            m_mycaffe.Log.Progress = dfPct;
+                            m_mycaffe.Log.WriteLine("Running at " + dfPct.ToString("P") + " complete...");
+                            m_mycaffe.Log.Enable = false;
+                            sw.Restart();
+                        }
+
+                        if (m_mycaffe.CancelEvent.WaitOne(0))
+                            break;
                     }
-
-                    m_blobData.mutable_cpu_data = rgInputVector;
-
-                    double dfLoss;
-                    BlobCollection<T> colResults = m_net.Forward(out dfLoss);
-                    float fPrediction = getLastPrediction(colResults[0], m_rgVocabulary);
-
-                    //Add the new prediction and discard the oldest one
-                    rgInput.Add((T)Convert.ChangeType(fPrediction, typeof(T)));
-                    rgInput.RemoveAt(0);
-
-                    if (m_rgVocabulary == null)
-                        rgPredictions[i] = fPrediction;
-                    else
-                        rgPredictions[i] = (float)m_rgVocabulary.GetValueAt((int)fPrediction);
-
-                    if (sw.Elapsed.TotalMilliseconds > 1000)
-                    {
-                        double dfPct = (double)i / (double)nN;
-                        m_mycaffe.Log.Progress = dfPct;
-                        m_mycaffe.Log.WriteLine("Running at " + dfPct.ToString("P") + " complete...");
-                        sw.Restart();
-                    }
-
-                    if (m_mycaffe.CancelEvent.WaitOne(0))
-                        break;
                 }
-            }
 
-            return rgPredictions;
+                return rgPredictions;
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                m_mycaffe.Log.Enable = true;
+            }
         }
 
-        private int getLastPrediction(Blob<T> blobOutput, BucketCollection rgVocabulary, int nLookahead = 0)
+        private int getLastPrediction(float[] rgDataRaw, BucketCollection rgVocabulary, int nLookahead = 1)
         {
-            if (m_blobOutput != null)
-                blobOutput = m_blobOutput;
-
             // Get the probabilities for the last character of the first sequence in the batch
             int nOffset = (m_nSequenceLength - nLookahead) * m_nBatchSize * m_nVocabSize;
-            float[] rgDataRaw = Utility.ConvertVecF<T>(blobOutput.update_cpu_data());
             float[] rgData = new float[m_nVocabSize];
 
             for (int i = 0; i < rgData.Length; i++)
