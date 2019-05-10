@@ -1205,9 +1205,7 @@ namespace MyCaffe.test
                 {
                     m_log.Progress = (double)iter / (double)solver_param.max_iter;
                     m_log.WriteLine("iteration = " + iter.ToString() + "  (" + m_log.Progress.ToString("P") + ")  ave solver time = " + (dfTotalTime / iter).ToString() + " ms.");
-                    swStatus.Stop();
-                    swStatus.Reset();
-                    swStatus.Start();
+                    swStatus.Restart();
 
                     progress.SetProgress(m_log.Progress);
                 }
