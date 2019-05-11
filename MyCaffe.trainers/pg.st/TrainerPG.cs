@@ -382,7 +382,9 @@ namespace MyCaffe.trainers.pg.st
             m_colAccumulatedGradients = m_net.learnable_parameters.Clone();
             m_colAccumulatedGradients.SetDiff(0);
 
-            m_nMiniBatch = mycaffe.CurrentProject.GetBatchSize(phase);
+            int nMiniBatch = mycaffe.CurrentProject.GetBatchSize(phase);
+            if (nMiniBatch != 0)
+                m_nMiniBatch = nMiniBatch;
         }
 
         private void dispose(ref Blob<T> b)
