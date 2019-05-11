@@ -344,7 +344,9 @@ namespace MyCaffe.trainers.pg.simple
             m_blobDiscountedR = new Blob<T>(mycaffe.Cuda, mycaffe.Log);
             m_blobPolicyGradient = new Blob<T>(mycaffe.Cuda, mycaffe.Log);
 
-            m_nMiniBatch = mycaffe.CurrentProject.GetBatchSize(phase);
+            int nMiniBatch = mycaffe.CurrentProject.GetBatchSize(phase);
+            if (nMiniBatch != 0)
+                m_nMiniBatch = nMiniBatch;
         }
 
         private void dispose(ref Blob<T> b)

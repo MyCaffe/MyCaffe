@@ -809,10 +809,10 @@ namespace MyCaffe.trainers.pg.mt
             m_nGpuID = nGpuID;
             m_nThreadCount = nThreadCount;
             m_mycaffePrimary = mycaffe;
-            m_nMiniBatch = mycaffe.CurrentProject.GetBatchSize(phase);
 
-            if (m_nMiniBatch == 0)
-                m_nMiniBatch = 1;
+            int nMiniBatch = mycaffe.CurrentProject.GetBatchSize(phase);
+            if (nMiniBatch != 0)
+                m_nMiniBatch = nMiniBatch;
 
             double? dfRate = mycaffe.CurrentProject.GetSolverSettingAsNumeric("base_lr");
             if (dfRate.HasValue)
