@@ -966,10 +966,11 @@ namespace MyCaffe.basecode
         /// <param name="nHeight">Specifies the height of each item in the batch.</param>
         /// <param name="nWidth">Specifies the width of each item in the batch.</param>
         /// <param name="protoTransform">Returns a RawProto describing the Data Transformation parameters to use.</param>
+        /// <param name="stage">Optionally, specifies the stage to create the run network on.</param>
         /// <returns>The RawProto of the model description is returned.</returns>
-        public RawProto CreateModelForRunning(string strName, int nNum, int nChannels, int nHeight, int nWidth, out RawProto protoTransform)
+        public RawProto CreateModelForRunning(string strName, int nNum, int nChannels, int nHeight, int nWidth, out RawProto protoTransform, Stage stage = Stage.NONE)
         {
-            return CreateModelForRunning(m_project.ModelDescription, strName, nNum, nChannels, nHeight, nWidth, out protoTransform);
+            return CreateModelForRunning(m_project.ModelDescription, strName, nNum, nChannels, nHeight, nWidth, out protoTransform, stage);
         }
 
         /// <summary>
@@ -1144,37 +1145,80 @@ namespace MyCaffe.basecode
             return strLayer + " { name: \"accuracy\" type: \"Accuracy\" bottom: \"" + strBottom + "\" bottom: \"label\" top: \"accuracy\" include { phase: TEST } accuracy_param { top_k: 1 } }";
         }
 
-        private static List<Phase> getPhases(RawProtoCollection col)
+        private static PhaseStageCollection getPhases(RawProto proto, string strType)
         {
-            List<Phase> rgPhases = new List<Phase>();
+            PhaseStageCollection psCol = new PhaseStageCollection();
+
+            RawProtoCollection type = proto.FindChildren(strType);
+            if (type == null || type.Count == 0)
+                return psCol;
+
+            return getPhases(type);
+        }
+
+        private static PhaseStageCollection getPhases(RawProtoCollection col)
+        {
+            PhaseStageCollection psCol = new PhaseStageCollection();
 
             foreach (RawProto proto1 in col)
             {
-                RawProto proto = proto1.FindChild("phase");
-                if (proto == null)
+                RawProto protoPhase = proto1.FindChild("phase");
+                if (protoPhase == null)
                     continue;
 
-                if (proto.Value == Phase.RUN.ToString() || proto.Value == Phase.ALL.ToString())
+                Stage stage = Stage.NONE;
+                RawProto protoStage = proto1.FindChild("stage");
+                if (protoStage != null)
                 {
-                    if (!rgPhases.Contains(Phase.RUN))
-                        rgPhases.Add(Phase.RUN);
+                    if (protoStage.Value == Stage.RL.ToString())
+                        stage = Stage.RL;
+
+                    else if (protoStage.Value == Stage.RNN.ToString())
+                        stage = Stage.RNN;
                 }
 
-                if (proto.Value == Phase.TEST.ToString() || proto.Value == Phase.ALL.ToString())
+                Phase phase = Phase.NONE;
+                if (protoPhase != null)
                 {
-                    if (!rgPhases.Contains(Phase.TEST))
-                        rgPhases.Add(Phase.TEST);
+                    if (protoPhase.Value == Phase.ALL.ToString())
+                        phase = Phase.ALL;
+
+                    else if (protoPhase.Value == Phase.RUN.ToString())
+                        phase = Phase.RUN;
+
+                    else if (protoPhase.Value == Phase.TEST.ToString())
+                        phase = Phase.TEST;
+
+                    else if (protoPhase.Value == Phase.TRAIN.ToString())
+                        phase = Phase.TRAIN;
                 }
 
-                if (proto.Value == Phase.TRAIN.ToString() || proto.Value == Phase.ALL.ToString())
-                {
-                    if (!rgPhases.Contains(Phase.TRAIN))
-                        rgPhases.Add(Phase.TRAIN);
-                }
+                psCol.Add(phase, stage);
             }
 
-            return rgPhases;
+            return psCol;
         }
+
+        private static bool includeLayer(RawProto layer, Stage stage, out PhaseStageCollection psInclude, out PhaseStageCollection psExclude)
+        {
+            psInclude = getPhases(layer, "include");
+            psExclude = getPhases(layer, "exlcude").FindAllWith(stage);
+
+            PhaseStageCollection psInclude1 = psInclude.FindAllWith(Stage.NONE);
+            PhaseStageCollection psInclude2 = psInclude.FindAllWith(stage);
+
+            psInclude = psInclude.FindAllWith(Phase.NONE, Phase.ALL, Phase.RUN);
+            psExclude = psExclude.FindAllWith(Phase.RUN);
+
+            if (psExclude.Count > 0)
+                return false;
+
+            if (psInclude.Count > 0 && psInclude1.Count == 0 && psInclude2.Count == 0)
+                return false;
+
+            return true;
+        }
+
 
         /// <summary>
         /// Create a model description as a RawProto for running the Project.
@@ -1186,13 +1230,17 @@ namespace MyCaffe.basecode
         /// <param name="nHeight">Specifies the height of each item in the batch.</param>
         /// <param name="nWidth">Specifies the width of each item in the batch.</param>
         /// <param name="protoTransform">Returns a RawProto describing the Data Transformation parameters to use.</param>
+        /// <param name="stage">Optionally, specifies the stage to create the run network on.</param>
         /// <returns>The RawProto of the model description is returned.</returns>
-        public static RawProto CreateModelForRunning(string strModelDescription, string strName, int nNum, int nChannels, int nHeight, int nWidth, out RawProto protoTransform)
+        public static RawProto CreateModelForRunning(string strModelDescription, string strName, int nNum, int nChannels, int nHeight, int nWidth, out RawProto protoTransform, Stage stage = Stage.NONE)
         {
+            PhaseStageCollection psInclude;
+            PhaseStageCollection psExclude;
             RawProto proto = RawProto.Parse(strModelDescription);
             int nNameIdx = proto.FindChildIndex("name");
             int nInputInsertIdx = -1;
             int nInputShapeInsertIdx = -1;
+            bool bNoInput = false;
 
             protoTransform = null;
 
@@ -1220,6 +1268,9 @@ namespace MyCaffe.basecode
                 }
             }
 
+            bool bFoundInput = false;
+            bool bFoundMemoryData = false;
+
             foreach (RawProto layer in rgLayers)
             {
                 RawProto type = layer.FindChild("type");
@@ -1228,110 +1279,130 @@ namespace MyCaffe.basecode
                     string strType = type.Value.ToLower();
                     if (strType == "input")
                     {
-                        rgInputs.Clear();
+                        bFoundInput = true;
 
-                        RawProtoCollection rgTop = layer.FindChildren("top");
-                        RawProto input_param = layer.FindChild("input_param");
-                        if (input_param != null)
+                        if (includeLayer(layer, stage, out psInclude, out psExclude))
                         {
-                            RawProtoCollection rgShape = input_param.FindChildren("shape");
+                            rgInputs.Clear();
 
-                            if (rgTop.Count == rgShape.Count)
+                            RawProtoCollection rgTop = layer.FindChildren("top");
+                            RawProto input_param = layer.FindChild("input_param");
+                            if (input_param != null)
                             {
-                                for (int i = 0; i < rgTop.Count; i++)
+                                RawProtoCollection rgShape = input_param.FindChildren("shape");
+
+                                if (rgTop.Count == rgShape.Count)
                                 {
-                                    if (bUsesLstm && i < 2)
+                                    for (int i = 0; i < rgTop.Count; i++)
                                     {
-                                        RawProtoCollection rgDim = rgShape[i].FindChildren("dim");
-                                        if (rgDim.Count > 1)
+                                        if (bUsesLstm && i < 2)
                                         {
-                                            rgDim[1].Value = "1";
-                                        }
-                                    }
-
-                                    if (rgTop[i].Value.ToLower() != "label")
-                                    {
-                                        List<int> rgVal = new List<int>();
-                                        RawProtoCollection rgDim = rgShape[i].FindChildren("dim");
-                                        foreach (RawProto dim in rgDim)
-                                        {
-                                            rgVal.Add(int.Parse(dim.Value));
+                                            RawProtoCollection rgDim = rgShape[i].FindChildren("dim");
+                                            if (rgDim.Count > 1)
+                                            {
+                                                rgDim[1].Value = "1";
+                                            }
                                         }
 
-                                        nNum = (rgVal.Count > 0) ? rgVal[0] : 1;
-                                        nChannels = (rgVal.Count > 1) ? rgVal[1] : 1;
-                                        nHeight = (rgVal.Count > 2) ? rgVal[2] : 1;
-                                        nWidth = (rgVal.Count > 3) ? rgVal[3] : 1;
+                                        if (rgTop[i].Value.ToLower() != "label")
+                                        {
+                                            List<int> rgVal = new List<int>();
+                                            RawProtoCollection rgDim = rgShape[i].FindChildren("dim");
+                                            foreach (RawProto dim in rgDim)
+                                            {
+                                                rgVal.Add(int.Parse(dim.Value));
+                                            }
 
-                                        rgInputs.Add(new Tuple<string, int, int, int, int>(rgTop[i].Value, nNum, nChannels, nHeight, nWidth));
+                                            nNum = (rgVal.Count > 0) ? rgVal[0] : 1;
+                                            nChannels = (rgVal.Count > 1) ? rgVal[1] : 1;
+                                            nHeight = (rgVal.Count > 2) ? rgVal[2] : 1;
+                                            nWidth = (rgVal.Count > 3) ? rgVal[3] : 1;
+
+                                            rgInputs.Add(new Tuple<string, int, int, int, int>(rgTop[i].Value, nNum, nChannels, nHeight, nWidth));
+                                        }
                                     }
                                 }
                             }
                         }
-
-                        break;
                     }
-                }
-            }
-
-            RawProtoCollection rgInput = new RawProtoCollection();
-            RawProtoCollection rgInputShape = new RawProtoCollection();
-
-            RawProto input = proto.FindChild("input");
-            if (input != null)
-            {
-                input.Value = rgInputs[0].Item1;
-            }
-            else
-            {
-                for (int i = 0; i < rgInputs.Count; i++)
-                {
-                    input = new RawProto("input", rgInputs[i].Item1, null, RawProto.TYPE.STRING);
-                    rgInput.Add(input);
-                    nInputInsertIdx = nNameIdx;
-                    nNameIdx++;
-                }
-            }
-            
-            RawProto input_shape = proto.FindChild("input_shape");
-            if (input_shape != null)
-            {
-                RawProtoCollection colDim = input_shape.FindChildren("dim");
-            
-                if (colDim.Count > 0)
-                    colDim[0].Value = rgInputs[0].Item2.ToString();
-            
-                if (colDim.Count > 1)
-                    colDim[1].Value = rgInputs[0].Item3.ToString();
-            
-                if (colDim.Count > 2)
-                    colDim[2].Value = rgInputs[0].Item4.ToString();
-            
-                if (colDim.Count > 3)
-                    colDim[3].Value = rgInputs[0].Item5.ToString();
-            }
-            else
-            {
-                for (int i = 0; i < rgInputs.Count; i++)
-                {
-                    input_shape = new RawProto("input_shape", "");
-
-                    nNum = rgInputs[i].Item2;
-                    nChannels = rgInputs[i].Item3;
-                    nHeight = rgInputs[i].Item4;
-                    nWidth = rgInputs[i].Item5;
-
-                    input_shape.Children.Add(new RawProto("dim", nNum.ToString()));
-                    input_shape.Children.Add(new RawProto("dim", nChannels.ToString()));
-
-                    if (nHeight > 1 || nWidth > 1)
+                    else if (strType == "memorydata")
                     {
-                        input_shape.Children.Add(new RawProto("dim", nHeight.ToString()));
-                        input_shape.Children.Add(new RawProto("dim", nWidth.ToString()));
+                        bFoundMemoryData = true;
+                        bNoInput = true;
+                        rgInputs.Clear();
                     }
 
-                    rgInputShape.Add(input_shape);
-                    nInputShapeInsertIdx = nNameIdx;
+                    if (bFoundInput && bFoundMemoryData)
+                        break;
+                }
+            }
+
+            RawProto input = null;
+            RawProto input_shape = null;
+            RawProtoCollection rgInput = null;
+            RawProtoCollection rgInputShape = null;
+
+            if (!bNoInput)
+            {
+                rgInput = new RawProtoCollection();
+                rgInputShape = new RawProtoCollection();
+
+                input = proto.FindChild("input");
+                if (input != null)
+                {
+                    input.Value = rgInputs[0].Item1;
+                }
+                else
+                {
+                    for (int i = 0; i < rgInputs.Count; i++)
+                    {
+                        input = new RawProto("input", rgInputs[i].Item1, null, RawProto.TYPE.STRING);
+                        rgInput.Add(input);
+                        nInputInsertIdx = nNameIdx;
+                        nNameIdx++;
+                    }
+                }
+
+                input_shape = proto.FindChild("input_shape");
+                if (input_shape != null)
+                {
+                    RawProtoCollection colDim = input_shape.FindChildren("dim");
+
+                    if (colDim.Count > 0)
+                        colDim[0].Value = rgInputs[0].Item2.ToString();
+
+                    if (colDim.Count > 1)
+                        colDim[1].Value = rgInputs[0].Item3.ToString();
+
+                    if (colDim.Count > 2)
+                        colDim[2].Value = rgInputs[0].Item4.ToString();
+
+                    if (colDim.Count > 3)
+                        colDim[3].Value = rgInputs[0].Item5.ToString();
+                }
+                else
+                {
+                    for (int i = 0; i < rgInputs.Count; i++)
+                    {
+                        input_shape = new RawProto("input_shape", "");
+
+                        nNum = rgInputs[i].Item2;
+                        nChannels = rgInputs[i].Item3;
+                        nHeight = rgInputs[i].Item4;
+                        nWidth = rgInputs[i].Item5;
+
+                        input_shape.Children.Add(new RawProto("dim", nNum.ToString()));
+                        input_shape.Children.Add(new RawProto("dim", nChannels.ToString()));
+
+                        if (nHeight > 1 || nWidth > 1)
+                        {
+                            input_shape.Children.Add(new RawProto("dim", nHeight.ToString()));
+                            input_shape.Children.Add(new RawProto("dim", nWidth.ToString()));
+                        }
+
+                        rgInputShape.Add(input_shape);
+                        nInputShapeInsertIdx = nNameIdx;
+                    }
                 }
             }
 
@@ -1351,24 +1422,18 @@ namespace MyCaffe.basecode
                 {
                     string strType = type.Value.ToLower();
                     bool bKeepLayer = false;
-                    List<Phase> rgPhaseInclude = new List<Phase>();
-                    List<Phase> rgPhaseExclude = new List<Phase>();
 
-                    RawProtoCollection rgInclude = layer.FindChildren("include");
-                    if (rgInclude != null)
-                        rgPhaseInclude = getPhases(rgInclude);
-
-                    RawProtoCollection rgExclude = layer.FindChildren("exclude");
-                    if (rgExclude != null)
-                        rgPhaseExclude = getPhases(rgExclude);
-
-                    if (rgPhaseExclude.Contains(Phase.RUN))
+                    if (!includeLayer(layer, stage, out psInclude, out psExclude))
+                    {
+                        rgRemove.Add(layer);
+                    }
+                    else if (psExclude.Find(Phase.RUN, stage) != null)
                     {
                         rgRemove.Add(layer);
                     }
                     else if (strType == "data" || strType == "batchdata")
                     {
-                        if (rgPhaseInclude.Contains(Phase.TEST))
+                        if (psInclude.Find(Phase.TEST, stage) != null)
                             protoTransform = layer.FindChild("transform_param");
                     }
                     else if (strType == "input")
@@ -1402,12 +1467,8 @@ namespace MyCaffe.basecode
                     {
                         rgRemove.Add(layer);
                     }
-                    else if (rgPhaseExclude.Contains(Phase.RUN))
-                    {
-                        rgRemove.Add(layer);
-                    }
 
-                    if (!bKeepLayer && ((rgPhaseInclude.Contains(Phase.TEST) || rgPhaseInclude.Contains(Phase.TRAIN)) && !rgPhaseInclude.Contains(Phase.RUN)))
+                    if (!bKeepLayer && psInclude.FindAllWith(Phase.TEST, Phase.TRAIN).Count > 0 && psInclude.FindAllWith(Phase.RUN).Count == 0)
                     {
                         rgRemove.Add(layer);
                     }
@@ -1417,7 +1478,9 @@ namespace MyCaffe.basecode
                         if (max_btm != null)
                         {
                             RawProto phase1 = max_btm.FindChild("phase");
-                            if (phase1 != null && phase1.Value == "RUN")
+                            RawProto stage1 = max_btm.FindChild("stage");
+
+                            if (phase1 != null && phase1.Value == "RUN" && (stage1 == null || stage1.Value == stage.ToString() || stage1.Value == Stage.NONE.ToString()))
                             {
                                 RawProto count = max_btm.FindChild("count");
                                 int nCount = int.Parse(count.Value);
@@ -1771,6 +1834,90 @@ namespace MyCaffe.basecode
             }
 
             return "Project: " + strName + " -> Dataset: " + m_project.Dataset.Name;
+        }
+    }
+
+    class PhaseStageCollection
+    {
+        List<PhaseStage> m_rgItems = new List<PhaseStage>();
+
+        public PhaseStageCollection()
+        {
+        }
+
+        public int Count
+        {
+            get { return m_rgItems.Count; }
+        }
+
+        public bool Add(Phase p, Stage s)
+        {
+            PhaseStage ps = Find(p, s);
+            if (ps == null)
+            {
+                m_rgItems.Add(new PhaseStage(p, s));
+                return true;
+            }
+
+            return false;
+        }
+
+        public PhaseStage Find(Phase p, Stage s)
+        {
+            foreach (PhaseStage ps in m_rgItems)
+            {
+                if (ps.Phase == p && ps.Stage == s)
+                    return ps;
+            }
+
+            return null;
+        }
+
+        public PhaseStageCollection FindAllWith(Stage stage)
+        {
+            PhaseStageCollection psCol = new PhaseStageCollection();
+
+            foreach (PhaseStage ps in m_rgItems)
+            {
+                if (ps.Stage == stage)
+                    psCol.Add(ps.Phase, ps.Stage);
+            }
+
+            return psCol;
+        }
+        public PhaseStageCollection FindAllWith(params Phase[] phase)
+        {
+            PhaseStageCollection psCol = new PhaseStageCollection();
+
+            foreach (PhaseStage ps in m_rgItems)
+            {
+                if (phase.Contains(ps.Phase))
+                    psCol.Add(ps.Phase, ps.Stage);
+            }
+
+            return psCol;
+        }
+    }
+
+    class PhaseStage
+    {
+        Phase m_phase = Phase.NONE;
+        Stage m_stage = Stage.NONE;
+
+        public PhaseStage(Phase p, Stage s)
+        {
+            m_phase = p;
+            m_stage = s;
+        }
+
+        public Phase Phase
+        {
+            get { return m_phase; }
+        }
+
+        public Stage Stage
+        {
+            get { return m_stage; }
         }
     }
 }
