@@ -622,7 +622,7 @@ namespace MyCaffe
         /// <returns>The new NetParameter suitable for the RUN phase is returned.</returns>
         protected NetParameter createNetParameterForRunning(ProjectEx p, out TransformationParameter transform_param)
         {
-            return createNetParameterForRunning(p.Dataset, p.ModelDescription, out transform_param);
+            return createNetParameterForRunning(p.Dataset, p.ModelDescription, out transform_param, p.Stage);
         }
 
         /// <summary>
@@ -634,10 +634,11 @@ namespace MyCaffe
         /// <param name="ds">Specifies a DatasetDescriptor for the dataset used.</param>
         /// <param name="strModel">Specifies the model descriptor.</param>
         /// <param name="transform_param">Specifies the TransformationParameter to use.</param>
+        /// <param name="stage">Optionally, specifies the stage to create the run network on.</param>
         /// <returns>The new NetParameter suitable for the RUN phase is returned.</returns>
-        protected NetParameter createNetParameterForRunning(DatasetDescriptor ds, string strModel, out TransformationParameter transform_param)
+        protected NetParameter createNetParameterForRunning(DatasetDescriptor ds, string strModel, out TransformationParameter transform_param, Stage stage = Stage.NONE)
         {
-            return createNetParameterForRunning(datasetToShape(ds), strModel, out transform_param);
+            return createNetParameterForRunning(datasetToShape(ds), strModel, out transform_param, stage);
         }
 
         /// <summary>
@@ -649,11 +650,12 @@ namespace MyCaffe
         /// <param name="shape">Specifies the shape of the images that will be used.</param>
         /// <param name="strModel">Specifies the model descriptor.</param>
         /// <param name="transform_param">Specifies the TransformationParameter to use.</param>
+        /// <param name="stage">Optionally, specifies the stage to create the run network on.</param>
         /// <returns>The new NetParameter suitable for the RUN phase is returned.</returns>
-        public NetParameter createNetParameterForRunning(BlobShape shape, string strModel, out TransformationParameter transform_param)
+        public NetParameter createNetParameterForRunning(BlobShape shape, string strModel, out TransformationParameter transform_param, Stage stage = Stage.NONE)
         {
             m_inputShape = shape;
-            return CreateNetParameterForRunning(shape, strModel, out transform_param);
+            return CreateNetParameterForRunning(shape, strModel, out transform_param, stage);
         }
 
         /// <summary>
@@ -665,15 +667,16 @@ namespace MyCaffe
         /// <param name="shape">Specifies the shape of the images that will be used.</param>
         /// <param name="strModel">Specifies the model descriptor.</param>
         /// <param name="transform_param">Specifies the TransformationParameter to use.</param>
+        /// <param name="stage">Optionally, specifies the stage to create the run network on.</param>
         /// <returns>The new NetParameter suitable for the RUN phase is returned.</returns>
-        public static NetParameter CreateNetParameterForRunning(BlobShape shape, string strModel, out TransformationParameter transform_param)
+        public static NetParameter CreateNetParameterForRunning(BlobShape shape, string strModel, out TransformationParameter transform_param, Stage stage = Stage.NONE)
         {
             int nImageChannels = shape.dim[1];
             int nImageHeight = shape.dim[2];
             int nImageWidth = shape.dim[3];
 
             RawProto protoTransform = null;
-            RawProto protoModel = ProjectEx.CreateModelForRunning(strModel, "data", 1, nImageChannels, nImageHeight, nImageWidth, out protoTransform);
+            RawProto protoModel = ProjectEx.CreateModelForRunning(strModel, "data", 1, nImageChannels, nImageHeight, nImageWidth, out protoTransform, stage);
 
             if (protoTransform != null)
                 transform_param = TransformationParameter.FromProto(protoTransform);
