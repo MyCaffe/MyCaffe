@@ -1213,7 +1213,7 @@ namespace MyCaffe.basecode
             if (psExclude.Count > 0)
                 return false;
 
-            if (psInclude.Count > 0 && psInclude1.Count == 0 && psInclude2.Count == 0)
+            if (psInclude.Count == 0 || (psInclude1.Count == 0 && psInclude2.Count == 0))
                 return false;
 
             return true;
