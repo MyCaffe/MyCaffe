@@ -1206,15 +1206,17 @@ namespace MyCaffe.basecode
 
             PhaseStageCollection psInclude1 = psInclude.FindAllWith(Stage.NONE);
             PhaseStageCollection psInclude2 = psInclude.FindAllWith(stage);
-
-            psInclude = psInclude.FindAllWith(Phase.NONE, Phase.ALL, Phase.RUN);
+            PhaseStageCollection psInclude3 = psInclude.FindAllWith(Phase.NONE, Phase.ALL, Phase.RUN);
             psExclude = psExclude.FindAllWith(Phase.RUN);
 
             if (psExclude.Count > 0)
                 return false;
 
-            if (psInclude.Count == 0 || (psInclude1.Count == 0 && psInclude2.Count == 0))
-                return false;
+            if (psInclude.Count > 0)
+            {
+                if (psInclude3.Count == 0 || (psInclude1.Count == 0 && psInclude2.Count == 0))
+                    return false;
+            }
 
             return true;
         }
