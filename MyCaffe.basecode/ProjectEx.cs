@@ -1328,8 +1328,12 @@ namespace MyCaffe.basecode
                     else if (strType == "memorydata")
                     {
                         bFoundMemoryData = true;
-                        bNoInput = true;
-                        rgInputs.Clear();
+
+                        if (includeLayer(layer, stage, out psInclude, out psExclude))
+                        {
+                            bNoInput = true;
+                            rgInputs.Clear();
+                        }
                     }
 
                     if (bFoundInput && bFoundMemoryData)
@@ -1798,6 +1802,54 @@ namespace MyCaffe.basecode
                 firstFound = child;
 
             return firstFound.FindValue(strField);
+        }
+
+        /// <summary>
+        /// Disables the testing interval so that no test passes are run.
+        /// </summary>
+        /// <returns>Returns <i>true</i> if the testing was disabled, false if it was not setup in the first place.</returns>
+        public bool DisableTesting()
+        {
+            // Force parse the proto if not already parsed.
+            if (m_protoSolver == null)
+            {
+                string strProto = SolverDescription;
+                SolverDescription = strProto;
+            }
+
+            bool bSet = false;
+            RawProto protoTestIter = m_protoSolver.FindChild("test_iter");
+            RawProto protoTestInterval = m_protoSolver.FindChild("test_interval");
+            RawProto protoTestInit = m_protoSolver.FindChild("test_initialization");
+
+            if (protoTestInterval != null)
+            {
+                if (protoTestInterval.Value != "0")
+                {
+                    protoTestInterval.Value = "0";
+                    bSet = true;
+                }
+            }
+
+            if (protoTestInit != null)
+            {
+                if (protoTestInit.Value != "False")
+                {
+                    protoTestInit.Value = "False";
+                    bSet = true;
+                }
+            }
+
+            if (protoTestIter != null)
+            {
+                m_protoSolver.RemoveChild(protoTestIter);
+                bSet = true;
+            }
+
+            if (bSet)
+                SolverDescription = m_protoSolver.ToString();
+
+            return bSet;
         }
 
         /// <summary>
