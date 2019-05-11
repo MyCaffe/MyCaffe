@@ -811,6 +811,9 @@ namespace MyCaffe.trainers.pg.mt
             m_mycaffePrimary = mycaffe;
             m_nMiniBatch = mycaffe.CurrentProject.GetBatchSize(phase);
 
+            if (m_nMiniBatch == 0)
+                m_nMiniBatch = 1;
+
             double? dfRate = mycaffe.CurrentProject.GetSolverSettingAsNumeric("base_lr");
             if (dfRate.HasValue)
                 m_dfLearningRate = dfRate.Value;
