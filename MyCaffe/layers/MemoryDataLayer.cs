@@ -299,7 +299,7 @@ namespace MyCaffe.layers
                     List<int> rgLblShape = new List<int>();
                     int nLabelNum = nNum;
 
-                    if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.SINGLE)
+                    if (m_param.memory_data_param.label_type == LayerParameterBase.LABEL_TYPE.ONLY_ONE)
                         nLabelNum = 1;
 
                     rgLblShape.Add(nLabelNum);
