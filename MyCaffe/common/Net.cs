@@ -1138,7 +1138,11 @@ namespace MyCaffe.common
 
             int net_param_id = m_colParams.Count;
 
-            m_colParams.Add(m_rgLayers[layer_id].blobs[param_id]);
+            // Apply freeze learning if set.
+            Blob<T> learning_param = m_rgLayers[layer_id].blobs[param_id];
+            learning_param.freeze_learning = m_rgLayers[layer_id].layer_param.freeze_learning;
+
+            m_colParams.Add(learning_param);
             m_rgrgnParamIdVecs[layer_id].Add(net_param_id);
             m_rgParamLayerIndices.Add(new KeyValuePair<int ,int>(layer_id, param_id));
 
@@ -1304,7 +1308,7 @@ namespace MyCaffe.common
 
             for (int i = nStart; i >= nEnd; i--)
             {
-                if (m_rgbLayerNeedBackward[i] && !m_rgLayers[i].layer_param.freeze_learning)
+                if (m_rgbLayerNeedBackward[i])
                 {
                     m_rgLayers[i].Backward(m_rgcolTopVecs[i], m_rgrgbBottomNeedBackward[i], m_rgcolBottomVecs[i]);
 
