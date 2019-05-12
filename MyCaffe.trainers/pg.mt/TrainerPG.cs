@@ -1038,7 +1038,7 @@ namespace MyCaffe.trainers.pg.mt
         /// <param name="rgClip">Specifies the clip data to add if any exists.</param>
         public void SetData(List<Datum> rgData, List<Datum> rgClip)
         {
-            if (m_nRecurrentSequenceLength > 1 && rgData.Count > 1 && rgClip != null)
+            if (m_nRecurrentSequenceLength != 1 && rgData.Count > 1 && rgClip != null)
             {
                 m_rgData = rgData;
                 m_rgClip = rgClip;
@@ -1209,7 +1209,7 @@ namespace MyCaffe.trainers.pg.mt
         public void Train(int nIteration, TRAIN_STEP step)
         {
             // Run data/clip groups > 1 in non batch mode.
-            if (m_nRecurrentSequenceLength > 1 && m_rgData != null && m_rgData.Count > 1 && m_rgClip != null)
+            if (m_nRecurrentSequenceLength != 1 && m_rgData != null && m_rgData.Count > 1 && m_rgClip != null)
             {
                 prepareBlob(m_blobActionOneHot1, m_blobActionOneHot);
                 prepareBlob(m_blobDiscountedR1, m_blobDiscountedR);
@@ -1299,6 +1299,7 @@ namespace MyCaffe.trainers.pg.mt
             int nBatch = e.DataItems.Count;
             int nSeqLen = rgDataShape[0];
 
+            e.Data.Log.CHECK_GT(nSeqLen, 0, "The sequence lenth must be greater than zero!");
             e.Data.Log.CHECK_EQ(nBatch, e.ClipItems.Count, "The data and clip should have the same number of items.");
             e.Data.Log.CHECK_EQ(nSeqLen, rgClipShape[0], "The data and clip should have the same sequence count.");
 
