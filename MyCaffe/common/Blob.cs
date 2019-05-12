@@ -40,6 +40,7 @@ namespace MyCaffe.common
         int m_nIdx = -1;
         BLOB_TYPE m_type = BLOB_TYPE.DATA;
         object m_tag = null;
+        bool m_bFreezeLearning = false;
 
         /// <summary>
         /// Defines the maximum number of Axes supported by the Blob.
@@ -169,6 +170,15 @@ namespace MyCaffe.common
             : this(cuda, log)
         {
             FromProto(bp);
+        }
+
+        /// <summary>
+        /// Specifies whether or not the diff is applied to the data during Update.  When freeze learning = <i>true</i>, the update is skipped.
+        /// </summary>
+        public bool freeze_learning
+        {
+            get { return m_bFreezeLearning; }
+            set { m_bFreezeLearning = value; }
         }
 
         /// <summary>
@@ -1020,11 +1030,11 @@ namespace MyCaffe.common
         /// The 'update' method is used for parameter blobs in a Net.
         /// </summary>
         /// <remarks>
-        /// Update is called to apply the diff errors to the data.  WHen !bIncludeDiff, no diff is applied.
+        /// Update is called to apply the diff errors to the data.  When !bIncludeDiff or freeze_learning = <i>true</i>, no diff is applied.
         /// </remarks>
         public void Update()
         {
-            if (!m_bIncludeDiff)
+            if (!m_bIncludeDiff || m_bFreezeLearning)
                 return;
 
             // The GPU is assumed to be the owner of the data.
