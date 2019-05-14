@@ -561,6 +561,9 @@ namespace MyCaffe.trainers.pg.mt
 
         private double getEpsilon(int nEpisode)
         {
+            if (m_nEpsSteps == 0)
+                return 0;
+
             if (nEpisode >= m_nEpsSteps)
                 return m_dfEpsEnd;
 
@@ -580,7 +583,7 @@ namespace MyCaffe.trainers.pg.mt
             {
                 m_dfExplorationRate = getEpsilon(nEpisode);
 
-                if (m_random.NextDouble() < m_dfExplorationRate)
+                if (m_dfExplorationRate > 0 && m_random.NextDouble() < m_dfExplorationRate)
                 {
                     rgfAprob = new float[nActionCount];
                     int nAction = m_random.Next(nActionCount);
