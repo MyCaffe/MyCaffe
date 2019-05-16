@@ -213,10 +213,12 @@ namespace MyCaffe.layers
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            if (!rgbPropagateDown[0] || !m_bEnableLoss)
+            if (!rgbPropagateDown[0])
                 return;
 
-            m_cuda.copy(colTop[0].count(), colTop[0].gpu_data, colTop[0].mutable_gpu_diff);
+            // mutliply the loss by the loss weight (in top[0].diff)
+            if (m_bEnableLoss)
+                m_cuda.mul(colTop[0].count(), colTop[0].gpu_data, colTop[0].gpu_diff, colTop[0].mutable_gpu_diff);
 
             double dfTopDiff = convertD(colTop[0].GetDiff(0)); // loss weight
             double dfNormalizer = get_normalizer(m_normalization, -1);
