@@ -1451,7 +1451,25 @@ namespace MyCaffe.basecode
                         rgProtoSoftMaxLoss.Add(layer);
                         bKeepLayer = true;
                     }
-                    else if (strType == "memoryloss")
+                    else if (strType == "memoryloss" ||
+                             strType == "contrastive_loss" ||
+                             strType == "contrastiveloss" ||
+                             strType == "euclidean_loss" ||
+                             strType == "euclideanloss" ||
+                             strType == "hinge_loss" ||
+                             strType == "hingeloss" ||
+                             strType == "infogain_loss" ||
+                             strType == "infogainloss" ||
+                             strType == "multinomiallogistic_loss" ||
+                             strType == "multinomiallogisticloss" ||
+                             strType == "sigmoidcrossentropy_loss" ||
+                             strType == "sigmoidcrossentropyloss" ||
+                             strType == "softmaxcrossentropy_loss" ||
+                             strType == "softmaxcrossentropyloss" ||
+                             strType == "triplet_loss" ||
+                             strType == "tripletloss" ||
+                             strType == "triplet_loss_simple" ||
+                             strType == "tripletlosssimple")
                     {
                         rgRemove.Add(layer);
                     }
