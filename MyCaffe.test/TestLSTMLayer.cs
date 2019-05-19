@@ -1485,7 +1485,7 @@ namespace MyCaffe.test
             // Copy the trained weights to the test net.
             test_net.ShareTrainedLayersWith(train_net);
 
-            string strFileName = strPath + "lstm_" + strType + "_" + m_engine.ToString() + "_next_TEST_results_num_in_" + nNumInputs.ToString() + "_num_out_" + nNumHidden.ToString() + "_items_" + nNumItemsPerOutput.ToString() + "_batch_" + nBatch.ToString() + "_maxiter_" + nMaxIter.ToString() + ".csv";
+            string strFileName = strPath + "lstm_" + strType + "_" + type.ToString() + "_" + m_engine.ToString() + "_next_TEST_results_num_in_" + nNumInputs.ToString() + "_num_out_" + nNumHidden.ToString() + "_items_" + nNumItemsPerOutput.ToString() + "_batch_" + nBatch.ToString() + "_maxiter_" + nMaxIter.ToString() + ".csv";
             if (File.Exists(strFileName))
                 File.Delete(strFileName);
 
@@ -1591,7 +1591,7 @@ namespace MyCaffe.test
             // Copy the trained weights to the deploy net.
             train_net.CopyTrainedLayersTo(deploy_net);
 
-            strFileName = strPath + "lstm_" + strType + "_" + m_engine.ToString() + "_next_DEPLOY_results_num_in_" + nNumInputs.ToString() + "_num_out_" + nNumHidden.ToString() + "_items_" + nNumItemsPerOutput.ToString() + "_maxiter_" + nMaxIter.ToString() + ".csv";
+            strFileName = strPath + "lstm_" + strType + "_" + type.ToString() + "_" + m_engine.ToString() + "_next_DEPLOY_results_num_in_" + nNumInputs.ToString() + "_num_out_" + nNumHidden.ToString() + "_items_" + nNumItemsPerOutput.ToString() + "_maxiter_" + nMaxIter.ToString() + ".csv";
             if (File.Exists(strFileName))
                 File.Delete(strFileName);
 
