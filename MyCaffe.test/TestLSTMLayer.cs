@@ -279,7 +279,43 @@ namespace MyCaffe.test
             {
                 foreach (ILSTMLayerTest t in test.Tests)
                 {
-                    t.TestTraining(4000, 100, 1, 15, 10, 1, true);
+                    t.TestTraining(4000, 100, 1, 15, 10, 1, 1, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingSineWaveWithGradientCuDnnTwoStreams()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestTraining(4000, 100, 2, 15, 10, 2, 1, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingSineWaveWithGradientCuDnnTwoInputOneOutputStreams()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestTraining(4000, 100, 2, 15, 10, 1, 1, true);
                 }
             }
             finally
@@ -297,7 +333,223 @@ namespace MyCaffe.test
             {
                 foreach (ILSTMLayerTest t in test.Tests)
                 {
-                    t.TestTraining(4000, 100, 1, 15, 10, 1, true);
+                    t.TestTraining(4000, 100, 1, 15, 10, 1, 1, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingSineWaveWithGradientCuDnnBatch()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestTraining(4000, 100, 1, 15, 10, 1, 10, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingSineWaveWithGradientCuDnnTwoStreamsBatch()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestTraining(4000, 100, 2, 15, 10, 2, 10, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingSineWaveWithGradientCuDnnTwoInputOneOutputStreamsBatch()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestTraining(4000, 100, 2, 15, 10, 1, 10, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingSineWaveWithGradientCaffeBatch()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestTraining(4000, 100, 1, 15, 10, 1, 10, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingRandomWaveWithGradientCuDnn()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestTraining(4000, 100, 1, 15, 10, 1, 1, true, 4000, DataStream.DATASTREAM_TYPE.RANDOM_STDDEV);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingRandomWaveWithGradientCuDnnTwoStreams()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestTraining(4000, 100, 2, 15, 10, 2, 1, true, 4000, DataStream.DATASTREAM_TYPE.RANDOM_STDDEV);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingRandomWaveWithGradientCuDnnTwoInputOneOutputStreams()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestTraining(4000, 100, 2, 15, 10, 1, 1, true, 4000, DataStream.DATASTREAM_TYPE.RANDOM_STDDEV);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingRandomWaveWithGradientCaffe()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestTraining(4000, 100, 1, 15, 10, 1, 1, true, 4000, DataStream.DATASTREAM_TYPE.RANDOM_STDDEV);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingRandomWaveWithGradientCuDnnBatch()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestTraining(4000, 100, 1, 15, 10, 1, 10, true, 4000, DataStream.DATASTREAM_TYPE.RANDOM_STDDEV);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingRandomWaveWithGradientCuDnnTwoStreamsBatch()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestTraining(4000, 100, 2, 15, 10, 2, 10, true, 4000, DataStream.DATASTREAM_TYPE.RANDOM_STDDEV);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingRandomWaveWithGradientCuDnnTwoInputOneOutputStreamsBatch()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestTraining(4000, 100, 2, 15, 10, 1, 10, true, 4000, DataStream.DATASTREAM_TYPE.RANDOM_STDDEV);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTrainingRandomWaveWithGradientCaffeBatch()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestTraining(4000, 100, 1, 15, 10, 1, 10, true, 4000, DataStream.DATASTREAM_TYPE.RANDOM_STDDEV);
                 }
             }
             finally
@@ -321,7 +573,7 @@ namespace MyCaffe.test
         void TestLSTMUnitGradient();
         void TestLSTMUnitGradientNonZeroCont();
 
-        void TestTraining(int nTotalDataLength, int nSteps, int nNumInputs, int nNumHidden, int nNumOutputs, int nBatch, bool bShortModel, int nMaxIter = 4000);
+        void TestTraining(int nTotalDataLength, int nSteps, int nNumInputs, int nNumHidden, int nNumOutputs, int nNumItemsPerOutput, int nBatch, bool bShortModel, int nMaxIter = 4000, DataStream.DATASTREAM_TYPE type = DataStream.DATASTREAM_TYPE.SINWAVE);
     }
 
     class LSTMLayerTest : TestBase
@@ -354,6 +606,7 @@ namespace MyCaffe.test
         Blob<T> m_blobUnit_top_h;
         BlobCollection<T> m_colUnitBottomVec = new BlobCollection<T>();
         BlobCollection<T> m_colUnitTopVec = new BlobCollection<T>();
+        const double PREDICTION_STUB = -2;
 
         public LSTMLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
@@ -1095,13 +1348,18 @@ namespace MyCaffe.test
         /// <param name="nBatch">Specifies the batch size.</param>
         /// <param name="bShortModel">Specifies whether or not to use a short model specification.</param>
         /// <param name="nMaxIter">Specifies the maximum number of iterations.</param>
-        public void TestTraining(int nTotalDataLength, int nSteps, int nNumInputs, int nNumHidden, int nNumOutputs, int nBatch, bool bShortModel, int nMaxIter)
+        public void TestTraining(int nTotalDataLength, int nSteps, int nNumInputs, int nNumHidden, int nNumOutputs, int nNumItemsPerOutput, int nBatch, bool bShortModel, int nMaxIter, DataStream.DATASTREAM_TYPE type)
         {
+            string strType = (typeof(T) == typeof(double)) ? "DOUBLE" : "FLOAT";
+            string strPath = "c:\\temp\\test_results\\";
             int nDeviceID = m_cuda.GetDeviceID();
             T tOne = (T)Convert.ChangeType(1.0, typeof(T));
             T tZero = (T)Convert.ChangeType(0.0, typeof(T));
-            NetParameter net_param = getTrainModel(nSteps, nNumInputs, nNumHidden, nNumOutputs, nBatch);
+            NetParameter net_param = getTrainModel(nSteps, nNumInputs, nNumHidden, nNumOutputs, nNumItemsPerOutput, nBatch, type);
             SolverParameter solver_param = getSolver(net_param, nDeviceID, nMaxIter);
+
+            if (!Directory.Exists(strPath))
+                Directory.CreateDirectory(strPath);
 
             string strModel1 = solver_param.net_param.ToProto("root").ToString();
 
@@ -1178,11 +1436,10 @@ namespace MyCaffe.test
             // Load the initial data with seq_length in data, and next nNumOutputs in label.
             double[] rgData;
             double[] rgLabel;
-            DataStream data = new DataStream(nTotalDataLength, seq_length, nNumOutputs, nBatch);
+            DataStream data = new DataStream(nTotalDataLength, seq_length, nNumInputs, nNumOutputs, nNumItemsPerOutput, nBatch, type, strPath, (type == DataStream.DATASTREAM_TYPE.SINWAVE) ? false : true);
 
             data.CreateArrays(out rgData, out rgLabel);
-            data.LoadData(true, rgData, rgLabel, m_param.type);
-
+            data.LoadData(true, rgData, rgLabel, m_param.type, (type == DataStream.DATASTREAM_TYPE.SINWAVE) ? false : true);
 
             // Training loop;
             int iter = 0;
@@ -1192,7 +1449,6 @@ namespace MyCaffe.test
                 train_label_blob.mutable_cpu_data = convert(rgLabel.ToArray());
 
                 sw1.Start();
-
                 solver.Step(1);
 
                 sw1.Stop();
@@ -1216,7 +1472,7 @@ namespace MyCaffe.test
                     return;
                 }
 
-                data.LoadData(false, rgData, rgLabel, m_param.type);
+                data.LoadData(false, rgData, rgLabel, m_param.type, (type == DataStream.DATASTREAM_TYPE.SINWAVE) ? false : true);
             }
 
             m_log.WriteLine("Solving completed.");
@@ -1229,7 +1485,7 @@ namespace MyCaffe.test
             // Copy the trained weights to the test net.
             test_net.ShareTrainedLayersWith(train_net);
 
-            string strFileName = "c:\\temp\\lstm_" + m_engine.ToString() + "_next_TEST_results_num_out_" + nNumHidden.ToString() + "_batch_" + nBatch.ToString() + "_maxiter_" + nMaxIter.ToString() + ".csv";
+            string strFileName = strPath + "lstm_" + strType + "_" + m_engine.ToString() + "_next_TEST_results_num_in_" + nNumInputs.ToString() + "_num_out_" + nNumHidden.ToString() + "_items_" + nNumItemsPerOutput.ToString() + "_batch_" + nBatch.ToString() + "_maxiter_" + nMaxIter.ToString() + ".csv";
             if (File.Exists(strFileName))
                 File.Delete(strFileName);
 
@@ -1241,7 +1497,7 @@ namespace MyCaffe.test
 
             // Load the first sequence data.
             data.Reset(true);
-            data.LoadData(true, rgData, rgLabel, m_param.type);
+            data.LoadData(true, rgData, rgLabel, m_param.type, (type == DataStream.DATASTREAM_TYPE.SINWAVE) ? false : true);
 
             using (StreamWriter sw = new StreamWriter(strFileName))
             {
@@ -1251,7 +1507,11 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < nNumOutputs; i++)
                 {
-                    strHeader += "expected" + i.ToString() + ",predicted" + i.ToString();
+                    for (int j = 0; j < nNumItemsPerOutput; j++)
+                    {
+                        strHeader += "expected" + i.ToString() + "_" + j.ToString() + ",predicted" + i.ToString() + "_" + j.ToString();
+                    }
+
                     strHeader += ",,";
                 }
 
@@ -1262,22 +1522,39 @@ namespace MyCaffe.test
                     double dfLoss;
 
                     test_data_blob.mutable_cpu_data = convert(rgData);
-
                     test_net.Forward(out dfLoss);
 
                     Blob<T> pred = test_net.FindBlob("ip1");
-                    m_log.CHECK_EQ(pred.count(), nSteps + nNumOutputs, "The result blob should equal the number of data + predictions.");
+                    m_log.CHECK_EQ(pred.count(), (nSteps + nNumOutputs) * nNumItemsPerOutput * nBatch, "The result blob should equal the number of data + predictions.");
 
                     double[] rgPredictions = convert(pred.mutable_cpu_data);
+                    double[] rgPredictions2 = null;
+
+                    if (type != DataStream.DATASTREAM_TYPE.SINWAVE)
+                    {
+                        Blob<T> pred2 = test_net.FindBlob("power1");
+                        rgPredictions2 = convert(pred2.mutable_cpu_data);
+                    }
 
                     string strLine = "";
 
-                    for (int j = 0; j < rgLabel.Length; j++)
+                    for (int j = 0; j < nNumOutputs; j++)
                     {
-                        double dfPredicted = rgPredictions[seq_length + j];  // predictions are the last 'nNumOutput' count of the outputs.
-                        double dfExpected = rgLabel[j];
+                        for (int k = 0; k < nNumItemsPerOutput; k++)
+                        {
+                            double dfPredicted = rgPredictions[((nBatch - 1) * (seq_length + nNumOutputs) * nNumItemsPerOutput) + (seq_length + j) * nNumItemsPerOutput + k];  // predictions are the last 'nNumOutput' count of the outputs.
+                            double dfExpected = rgLabel[((nBatch - 1) * nNumOutputs * nNumItemsPerOutput) + (j * nNumItemsPerOutput) + k];
 
-                        strLine += dfExpected.ToString() + "," + dfPredicted.ToString() + ",,";
+                            strLine += dfExpected.ToString() + "," + dfPredicted.ToString() + ",";
+
+                            if (rgPredictions2 != null)
+                            {
+                                double dfPredicted2 = rgPredictions2[((nBatch - 1) * (seq_length + nNumOutputs) * nNumItemsPerOutput) + (seq_length + j) * nNumItemsPerOutput + k];  // predictions are the last 'nNumOutput' count of the outputs.
+                                strLine += dfPredicted2.ToString() + ",";
+                            }
+                        }
+
+                        strLine += ",";
                     }
 
                     sw.WriteLine(strLine);
@@ -1295,7 +1572,7 @@ namespace MyCaffe.test
                         return;
                     }
 
-                    data.LoadData(false, rgData, rgLabel, m_param.type);
+                    data.LoadData(false, rgData, rgLabel, m_param.type, (type == DataStream.DATASTREAM_TYPE.SINWAVE) ? false : true);
                 }
             }
 
@@ -1306,13 +1583,15 @@ namespace MyCaffe.test
             //  Running 
             //-------------------------------------------------------
 
-            NetParameter net_param_deploy = getDeployModel(nSteps, nNumInputs, nNumHidden, nNumOutputs, nBatch);
+            NetParameter net_param_deploy = getDeployModel(nSteps, nNumInputs, nNumHidden, nNumOutputs, nNumItemsPerOutput, nBatch, type);
             Net<T> deploy_net = new Net<T>(m_cuda, m_log, net_param_deploy, m_evtCancel, null, Phase.RUN);
+
+            string strModel2 = net_param_deploy.ToProto("root").ToString();
 
             // Copy the trained weights to the deploy net.
             train_net.CopyTrainedLayersTo(deploy_net);
 
-            strFileName = "c:\\temp\\lstm_" + m_engine.ToString() + "_next_DEPLOY_results_num_out_" + nNumHidden.ToString() + "_maxiter_" + nMaxIter.ToString() + ".csv";
+            strFileName = strPath + "lstm_" + strType + "_" + m_engine.ToString() + "_next_DEPLOY_results_num_in_" + nNumInputs.ToString() + "_num_out_" + nNumHidden.ToString() + "_items_" + nNumItemsPerOutput.ToString() + "_maxiter_" + nMaxIter.ToString() + ".csv";
             if (File.Exists(strFileName))
                 File.Delete(strFileName);
 
@@ -1320,9 +1599,9 @@ namespace MyCaffe.test
             Blob<T> deploy_clip_blob = deploy_net.blob_by_name("clip");
 
             // Load the first sequence data.
-            data = new DataStream(nTotalDataLength, seq_length + nNumOutputs, nNumOutputs, nBatch);
+            data = new DataStream(nTotalDataLength, seq_length + nNumOutputs, nNumInputs, nNumOutputs, nNumItemsPerOutput, nBatch, type, strPath, (type == DataStream.DATASTREAM_TYPE.SINWAVE) ? false : true);
             data.CreateArrays(out rgData, out rgLabel);
-            data.LoadData(true, rgData, rgLabel, m_param.type);
+            data.LoadData(true, rgData, rgLabel, m_param.type, (type == DataStream.DATASTREAM_TYPE.SINWAVE) ? false : true);
 
             swStatus.Restart();
 
@@ -1333,9 +1612,11 @@ namespace MyCaffe.test
 
                 for (int i = 0; i < nNumOutputs; i++)
                 {
-                    strHeader += "Expected" + i.ToString();
-                    strHeader += ",";
-                    strHeader += "Pred" + i.ToString();
+                    for (int j = 0; j < nNumItemsPerOutput; j++)
+                    {
+                        strHeader += "expected" + i.ToString() + "_" + j.ToString() + ",predicted" + i.ToString() + "_" + j.ToString();
+                    }
+
                     strHeader += ",,";
                 }
 
@@ -1350,32 +1631,48 @@ namespace MyCaffe.test
 
                     for (int j = 0; j < seq_length; j++)
                     {
-                        deploy_data_blob.SetData(rgData[j], 0);
+                        for (int k = 0; k < nNumInputs; k++)
+                        {
+                            deploy_data_blob.SetData(rgData[(j*nNumInputs) + k], k);
+                        }
+
                         deploy_net.Forward(out dfLoss);
                         deploy_clip_blob.SetData(1.0);
                     }
 
                     for (int j = 0; j < nNumOutputs; j++)
                     {
-                        deploy_data_blob.SetData(-2, 0);
+                        for (int k = 0; k < nNumInputs; k++)
+                        {
+                            deploy_data_blob.SetData(PREDICTION_STUB, k);
+                        }
+
                         BlobCollection<T> results = deploy_net.Forward(out dfLoss);
                         deploy_clip_blob.SetData(1.0);
 
                         m_log.CHECK_EQ(results.Count, 1, "There should only be one result blob.");
-                        m_log.CHECK_EQ(results[0].count(), 1, "There should be 1 outputs in the result.");
+                        m_log.CHECK_EQ(results[0].count(), nNumItemsPerOutput, "There should be 1 outputs in the result.");
                         double[] rgPred = convert(results[0].mutable_cpu_data);
-                        rgPredictions.Add(rgPred[0]);
+
+                        for (int k = 0; k < nNumItemsPerOutput; k++)
+                        {
+                            rgPredictions.Add(rgPred[k]);
+                        }
                     }
 
                     string strLine = "";
 
-                    for (int k = 0; k < rgPredictions.Count; k++)
+                    for (int j = 0; j < nNumOutputs; j++)
                     {
-                        double dfExpected = rgData[seq_length + k];
-                        double dfPredicted = rgPredictions[k];
+                        for (int k = 0; k < nNumItemsPerOutput; k++)
+                        {
+                            double dfExpected = rgData[(seq_length + j) * nNumInputs + k];
+                            double dfPredicted = rgPredictions[(j * nNumItemsPerOutput) + k];
 
-                        strLine += dfExpected.ToString() + "," + dfPredicted.ToString();
-                        strLine += ",,";
+                            strLine += dfExpected.ToString() + "," + dfPredicted.ToString() + ",";
+                        }
+
+                        strLine += ",";
                     }
 
                     sw.WriteLine(strLine.TrimEnd(','));
@@ -1393,7 +1690,7 @@ namespace MyCaffe.test
                         return;
                     }
 
-                    data.LoadData(false, rgData, rgLabel, m_param.type);
+                    data.LoadData(false, rgData, rgLabel, m_param.type, (type == DataStream.DATASTREAM_TYPE.SINWAVE) ? false : true);
                 }
             }
 
@@ -1462,7 +1759,7 @@ namespace MyCaffe.test
         /// @see [GitHub: Caffe LSTM Example on Sin(t) Waveform Prediction](https://github.com/CorvusCorax/Caffe-LSTM-Mini-Tutorial) by CorvusCorax, 2019.
         /// </remarks>
         /// <returns>The string representing the model is returned.</returns>
-        private NetParameter getTrainModel(int nSteps, int nNumInputs, int nNumHidden, int nNumOutputs, int nBatch)
+        private NetParameter getTrainModel(int nSteps, int nNumInputs, int nNumHidden, int nNumOutputs, int nNumItemsPerOutput, int nBatch, DataStream.DATASTREAM_TYPE type)
         {
             NetParameter net_param = new NetParameter();
 
@@ -1474,13 +1771,13 @@ namespace MyCaffe.test
             input_layer.top.Add("label");
             input_layer.input_param.shape.Add(new BlobShape(new List<int>() { nSteps, nBatch, nNumInputs }));      // data
             input_layer.input_param.shape.Add(new BlobShape(new List<int>() { nSteps + nNumOutputs, nBatch }));    // clip
-            input_layer.input_param.shape.Add(new BlobShape(new List<int>() { nNumOutputs, nBatch, nNumInputs })); // label
+            input_layer.input_param.shape.Add(new BlobShape(new List<int>() { nNumOutputs, nBatch, nNumItemsPerOutput })); // label
             net_param.layer.Add(input_layer);
 
             LayerParameter dummy_data_layer = new LayerParameter(LayerParameter.LayerType.DUMMYDATA, "dummydata");
             dummy_data_layer.top.Add("dummy");
             dummy_data_layer.dummy_data_param.shape.Add(new BlobShape(new List<int>() { nNumOutputs, nBatch, nNumInputs })); // should match data batch and inputs.
-            dummy_data_layer.dummy_data_param.data_filler.Add(new FillerParameter("constant", -2));
+            dummy_data_layer.dummy_data_param.data_filler.Add(new FillerParameter("constant", PREDICTION_STUB));
             net_param.layer.Add(dummy_data_layer);
 
             LayerParameter concat_layer1 = new LayerParameter(LayerParameter.LayerType.CONCAT, "concat1");
@@ -1509,14 +1806,44 @@ namespace MyCaffe.test
             LayerParameter innerproduct_layer = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "ip1");
             innerproduct_layer.bottom.Add("lstm1");
             innerproduct_layer.top.Add("ip1");
-            innerproduct_layer.inner_product_param.num_output = 1;
+            innerproduct_layer.inner_product_param.num_output = (uint)nNumItemsPerOutput;
             innerproduct_layer.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.1);
             innerproduct_layer.inner_product_param.bias_filler = new FillerParameter("constant", 0);
             innerproduct_layer.inner_product_param.axis = 2;
             net_param.layer.Add(innerproduct_layer);
 
+            if (type != DataStream.DATASTREAM_TYPE.SINWAVE)
+            {
+                LayerParameter power_layer = new LayerParameter(LayerParameter.LayerType.POWER, "power1");
+                power_layer.bottom.Add("ip1");
+                power_layer.top.Add("power1");
+                power_layer.power_param.scale = 2.0;
+                power_layer.power_param.power = 1.0;
+                power_layer.power_param.shift = 0;
+                power_layer.include.Add(new NetStateRule(Phase.TEST));
+                power_layer.propagate_down.Add(false);
+                net_param.layer.Add(power_layer);
+            }
+
+            string strData = "data";
+            if (nNumInputs > nNumItemsPerOutput)
+            {
+                LayerParameter slice_layer = new LayerParameter(LayerParameter.LayerType.SLICE, "slice");
+                slice_layer.bottom.Add("data");
+                slice_layer.top.Add("slice1");
+                slice_layer.top.Add("slice2");
+                slice_layer.slice_param.slice_point.Add((uint)nNumItemsPerOutput);
+                slice_layer.slice_param.axis = 2;
+                net_param.layer.Add(slice_layer);
+                strData = "slice1";
+
+                LayerParameter silence_layer = new LayerParameter(LayerParameter.LayerType.SILENCE, "silence");
+                silence_layer.bottom.Add("slice2");
+                net_param.layer.Add(silence_layer);
+            }
+
             LayerParameter concat_layer2 = new LayerParameter(LayerParameter.LayerType.CONCAT, "concat2");
-            concat_layer2.bottom.Add("data");
+            concat_layer2.bottom.Add(strData);
             concat_layer2.bottom.Add("label");
             concat_layer2.top.Add("fulllabel");
             concat_layer2.concat_param.axis = 0;
@@ -1564,7 +1891,7 @@ namespace MyCaffe.test
         /// @see [GitHub: Caffe LSTM Example on Sin(t) Waveform Prediction](https://github.com/CorvusCorax/Caffe-LSTM-Mini-Tutorial) by CorvusCorax, 2019.
         /// </remarks>
         /// <returns>The string representing the model is returned.</returns>
-        private NetParameter getDeployModel(int nSteps, int nNumInputs, int nNumHidden, int nNumOutputs, int nBatch)
+        private NetParameter getDeployModel(int nSteps, int nNumInputs, int nNumHidden, int nNumOutputs, int nNumItemsPerOutput, int nBatch, DataStream.DATASTREAM_TYPE type)
         {
             NetParameter net_param = new NetParameter();
 
@@ -1596,11 +1923,23 @@ namespace MyCaffe.test
             LayerParameter innerproduct_layer = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT, "ip1");
             innerproduct_layer.bottom.Add("lstm1");
             innerproduct_layer.top.Add("ip1");
-            innerproduct_layer.inner_product_param.num_output = 1;
+            innerproduct_layer.inner_product_param.num_output = (uint)nNumItemsPerOutput;
             innerproduct_layer.inner_product_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.1);
             innerproduct_layer.inner_product_param.bias_filler = new FillerParameter("constant", 0);
             innerproduct_layer.inner_product_param.axis = 2;
             net_param.layer.Add(innerproduct_layer);
+
+            if (type != DataStream.DATASTREAM_TYPE.SINWAVE)
+            {
+                LayerParameter power_layer = new LayerParameter(LayerParameter.LayerType.POWER, "power1");
+                power_layer.bottom.Add("ip1");
+                power_layer.top.Add("power1");
+                power_layer.power_param.scale = 2.0;
+                power_layer.power_param.power = 1.0;
+                power_layer.power_param.shift = 0;
+                power_layer.propagate_down.Add(false);
+                net_param.layer.Add(power_layer);
+            }
 
             return net_param;
         }
@@ -1610,53 +1949,216 @@ namespace MyCaffe.test
     {
         int m_nDataIdx = 0;
         int m_nLabelIdx = 0;
-        double[] m_rgSequence;
-        List<double> m_rgData1;
-        List<double> m_rgLabel1;
+        List<double[]> m_rgrgSequence = new List<double[]>();
+        List<List<double>> m_rgrgData1 = new List<List<double>>();
+        List<List<double>> m_rgrgLabel1 = new List<List<double>>();
         int m_nBatch;
         int m_nSequenceLength;
         int m_nNumOutput;
+        int m_nNumItemsPerOutput;
+        int m_nNumInput;
         CryptoRandom m_random = new CryptoRandom();
+        double m_dfAccumulator = 0;
+        List<double> m_rgAccumulations = new List<double>();
 
-        public DataStream(int nTotalDataLength, int nSequenceLength, int nNumOutput, int nBatch)
+        public enum DATASTREAM_TYPE
         {
-            m_rgSequence = new double[nTotalDataLength];
+            SINWAVE,
+            RANDOM,
+            RANDOM_STDDEV
+        }
+
+        delegate double fn(double dfT);
+
+        public DataStream(int nTotalDataLength, int nSequenceLength, int nNumInput, int nNumOutput, int nNumItemsPerOutput, int nBatch, DATASTREAM_TYPE type, string strPath, bool bForceToRange = true, bool bCenter = false)
+        {
+            fn fn1;
+            fn fn2;
+
+            switch (type)
+            {
+                case DATASTREAM_TYPE.RANDOM:
+                    fn1 = f_rand;
+                    fn2 = f_sma;
+                    break;
+
+                case DATASTREAM_TYPE.RANDOM_STDDEV:
+                    fn1 = f_rand_stdev;
+                    fn2 = f_sma;
+                    break;
+
+                default:
+                    fn1 = f_x1;
+                    fn2 = f_x2;
+                    break;
+            }
+
+            for (int i = 0; i < nNumInput; i++)
+            {
+                m_rgrgSequence.Add(new double[nTotalDataLength]);
+            }
 
             // Construct the data.
-            double dfMean = 0;
-            double dfMaxAbs = 0;
+            double[] rgdfMin = new double[nNumInput];
+            double[] rgdfMax = new double[nNumInput];
+            double[] rgdfMean = new double[nNumInput];
 
-            for (int i = 0; i < nTotalDataLength; i++)
+            for (int j = 0; j < nNumInput; j++)
             {
-                double dfVal = f_x(i * 0.01);
-                dfMaxAbs = Math.Max(dfMaxAbs, Math.Abs(dfVal));
+                rgdfMin[j] = double.MaxValue;
+                rgdfMax[j] = -double.MaxValue;
             }
 
             for (int i = 0; i < nTotalDataLength; i++)
             {
-                dfMean += f_x(i * 0.01) / dfMaxAbs;
+                double df = fn1(i * 0.01);
+
+                for (int j = 0; j < nNumInput; j++)
+                {
+                    m_rgrgSequence[j][i] = df;
+                    rgdfMin[j] = Math.Min(rgdfMin[j], df);
+                    rgdfMax[j] = Math.Max(rgdfMax[j], df);
+                    df = fn2(df);
+                }
             }
 
-            dfMean /= nTotalDataLength;
-
-            for (int i = 0; i < nTotalDataLength; i++)
+            if (bForceToRange)
             {
-                m_rgSequence[i] = f_x(i * 0.01) / dfMaxAbs - dfMean;
+                for (int i = 0; i < nTotalDataLength; i++)
+                {
+                    for (int j = 0; j < nNumInput; j++)
+                    {
+                        double dfVal = m_rgrgSequence[j][i];
+
+                        dfVal = (dfVal - rgdfMin[j]) / (rgdfMax[j] - rgdfMin[j]);
+                        dfVal *= 2;
+                        dfVal += -1;
+                        rgdfMean[j] += dfVal;
+                        m_rgrgSequence[j][i] = dfVal;
+                    }
+                }
+
+                if (bCenter)
+                {
+                    for (int i = 0; i < nTotalDataLength; i++)
+                    {
+                        for (int j = 0; j < nNumInput; j++)
+                        {
+                            if (i == 0)
+                                rgdfMean[j] /= nTotalDataLength;
+
+                            m_rgrgSequence[j][i] -= rgdfMean[j];
+                        }
+                    }
+                }
             }
+#if DEBUG
+            using (StreamWriter sw = new StreamWriter(strPath + "values.csv"))
+            {
+                for (int i = 0; i < nTotalDataLength; i++)
+                {
+                    string strLine = "";
+
+                    for (int j = 0; j < nNumInput; j++)
+                    {
+                        strLine += m_rgrgSequence[j][i].ToString();
+                        strLine += ",";
+                    }
+
+                    sw.WriteLine(strLine.TrimEnd(','));
+                }
+            }
+#endif
 
             m_nSequenceLength = nSequenceLength;
             m_nNumOutput = nNumOutput;
+            m_nNumInput = nNumInput;
+            m_nNumItemsPerOutput = nNumItemsPerOutput;
             m_nBatch = nBatch;
-
-            m_rgData1 = new List<double>();
-            m_rgLabel1 = new List<double>();
 
             Reset();
         }
 
-        private double f_x(double dfT)
+        private double f_x1(double dfT)
         {
             return 0.5 * Math.Sin(2 * dfT) - 0.05 * Math.Cos(17 * dfT + 0.8) + 0.05 * Math.Sin(25 * dfT + 10) - 0.02 * Math.Cos(45 * dfT + 0.3);
+        }
+
+        private double f_x2(double df)
+        {
+            return Math.Cos(df);
+        }
+
+        private double f_rand(double dfT)
+        {
+            double dfVal = m_random.NextDouble();
+
+            dfVal -= 0.5;
+
+            if (dfT == 0)
+            {
+                m_dfAccumulator = dfVal;
+                m_rgAccumulations.Clear();
+            }
+            else
+            {
+                m_dfAccumulator += dfVal;
+            }
+
+            m_rgAccumulations.Add(m_dfAccumulator);
+
+            if (m_rgAccumulations.Count > 20)
+                m_rgAccumulations.RemoveAt(0);
+
+            return m_dfAccumulator;
+        }
+
+        private double f_rand_stdev(double dfT)
+        {
+            double dfVal = m_random.NextDouble();
+            dfVal -= 0.5;
+
+            int nIdx = (int)dfT;
+            int nIdxStdDev = nIdx % 30;
+            int nRandStdDev = m_random.Next(nIdxStdDev);
+            double dfVal2 = m_random.NextDouble();
+
+            dfVal2 -= 0.5;
+            dfVal2 *= ((double)nRandStdDev / 30.0);
+
+            dfVal += dfVal2;
+
+            if (dfT == 0)
+            {
+                m_dfAccumulator = dfVal;
+                m_rgAccumulations.Clear();
+            }
+            else
+            {
+                m_dfAccumulator += dfVal;
+            }
+
+            m_rgAccumulations.Add(m_dfAccumulator);
+
+            if (m_rgAccumulations.Count > 20)
+                m_rgAccumulations.RemoveAt(0);
+
+            return m_dfAccumulator;
+        }
+
+        private double f_sma(double df)
+        {
+            if (m_rgAccumulations.Count == 0)
+                return 0;
+
+            double dfTotal = 0;
+
+            foreach (double df1 in m_rgAccumulations)
+            {
+                dfTotal += df1;
+            }
+
+            return dfTotal / m_rgAccumulations.Count;
         }
 
         public void Reset(bool bRandom = false)
@@ -1664,80 +2166,118 @@ namespace MyCaffe.test
             m_nDataIdx = 0;
 
             if (bRandom)
-                m_nDataIdx = m_random.Next(m_rgSequence.Length);
+                m_nDataIdx = m_random.Next(m_rgrgSequence[0].Length);
 
             m_nLabelIdx = m_nDataIdx + m_nSequenceLength;
 
-            m_rgData1 = new List<double>();
-            m_rgLabel1 = new List<double>();
+            m_rgrgData1.Clear();
+            m_rgrgLabel1.Clear();
+
+            for (int j = 0; j < m_nNumInput; j++)
+            {
+                m_rgrgData1.Add(new List<double>());
+                m_rgrgLabel1.Add(new List<double>());
+            }
         }
 
         public void CreateArrays(out double[] rgData, out double[] rgLabel)
         {
-            rgData = new double[m_nBatch * m_nSequenceLength];
-            rgLabel = new double[m_nBatch * m_nNumOutput];
+            rgData = new double[m_nBatch * m_nSequenceLength * m_nNumInput];
+            rgLabel = new double[m_nBatch * m_nNumOutput * m_nNumItemsPerOutput];
         }
 
-        public void LoadData(bool bInitial, double[] rgData, double[] rgLabel, LayerParameter.LayerType type)
+        public void LoadData(bool bInitial, double[] rgData, double[] rgLabel, LayerParameter.LayerType type, bool bNormalize)
         {
-            if (rgData == null || rgData.Length != m_nBatch * m_nSequenceLength)
+            if (rgData == null || rgData.Length != m_nBatch * m_nSequenceLength * m_nNumInput)
                 throw new Exception("The data length is incorrect!");
 
-            if (rgLabel == null || rgLabel.Length != m_nBatch * m_nNumOutput)
+            if (rgLabel == null || rgLabel.Length != m_nBatch * m_nNumOutput * m_nNumItemsPerOutput)
                 throw new Exception("The label length is incorrect!");
 
             for (int i = 0; i < m_nBatch; i++)
             {
                 if (bInitial && i == 0)
-                    loadData(i, m_rgData1, m_rgLabel1);
+                    loadData(i, m_rgrgData1, m_rgrgLabel1);
                 else
-                    loadNext(i, m_rgData1, m_rgLabel1);
+                    loadNext(i, m_rgrgData1, m_rgrgLabel1);
 
-                Array.Copy(m_rgData1.ToArray(), 0, rgData, i * m_rgData1.Count, m_rgData1.Count);
-                Array.Copy(m_rgLabel1.ToArray(), 0, rgLabel, i * m_rgLabel1.Count, m_rgLabel1.Count);
-            }
-
-            // Transpose data for CAFFE ordering.
-            if (type == LayerParameter.LayerType.LSTM && m_nBatch > 1)
-            {
-                double[] rgDataT = new double[rgData.Length];
-                double[] rgLabelT = new double[rgLabel.Length];
-                int nSrcIdx = 0;
-                int nDstIdx = 0;
-
-                for (int i = 0; i < m_nBatch; i++) // batch
+                for (int j = 0; j < m_nSequenceLength; j++)
                 {
-                    for (int j = 0; j < m_nSequenceLength; j++)  // sequence
-                    {
-                        nDstIdx = m_nBatch * j + i;
-                        nSrcIdx++;
-                        rgDataT[nDstIdx] = rgData[nSrcIdx];
-                    }
+                    // LSTM: Create input data, the data must be in the order
+                    // seq1_val1, seq2_val1, ..., seqBatch_Size_val1, seq1_val2, seq2_val2, ..., seqBatch_Size_valSequence_Length
+                    int nIdxData = (m_nBatch * j + i) * m_nNumInput;
 
-                    for (int j = 0; j < m_nNumOutput; j++)  // sequence
+                    for (int k = 0; k < m_nNumInput; k++)
                     {
-                        nDstIdx = m_nBatch * j + i;
-                        nSrcIdx++;
-                        rgLabelT[nDstIdx] = rgLabel[nSrcIdx];
+                        rgData[nIdxData + k] = m_rgrgData1[k][j];
                     }
                 }
 
-                Array.Copy(rgDataT, rgData, rgData.Length);
-                Array.Copy(rgLabelT, rgLabel, rgLabel.Length);
+                for (int j = 0; j < m_nNumOutput; j++)
+                {
+                    // LSTM: Create input data, the data must be in the order
+                    // seq1_val1, seq2_val1, ..., seqBatch_Size_val1, seq1_val2, seq2_val2, ..., seqBatch_Size_valSequence_Length
+                    int nIdxLabel = (m_nBatch * j + i) * m_nNumItemsPerOutput;
+
+                    for (int k = 0; k < m_nNumItemsPerOutput; k++)
+                    {
+                        rgLabel[nIdxLabel + k] = m_rgrgLabel1[k][j];
+                    }
+                }
             }
+
+            // Normalize across both data and label combined.
+            if (bNormalize)
+                normalize(rgData, rgLabel);
+
+            // Transpose data for CAFFE ordering.
+            //if (type == LayerParameter.LayerType.LSTM && m_nBatch > 1)
+            //{
+            //    double[] rgDataT = new double[rgData.Length];
+            //    double[] rgLabelT = new double[rgLabel.Length];
+            //    int nSrcIdx = 0;
+            //    int nDstIdx = 0;
+
+            //    for (int i = 0; i < m_nBatch; i++) // batch
+            //    {
+            //        for (int j = 0; j < m_nSequenceLength; j++)  // sequence
+            //        {
+            //            nDstIdx = m_nBatch * j + i;
+            //            nSrcIdx++;
+            //            rgDataT[nDstIdx] = rgData[nSrcIdx];
+            //        }
+
+            //        for (int j = 0; j < m_nNumOutput; j++)  // sequence
+            //        {
+            //            nDstIdx = m_nBatch * j + i;
+            //            nSrcIdx++;
+            //            rgLabelT[nDstIdx] = rgLabel[nSrcIdx];
+            //        }
+            //    }
+
+            //    Array.Copy(rgDataT, rgData, rgData.Length);
+            //    Array.Copy(rgLabelT, rgLabel, rgLabel.Length);
+            //}
         }
 
-        private void loadData(int nBatchIdx, List<double> rgData, List<double> rgLabel)
+        private void loadData(int nBatchIdx, List<List<double>> rgrgData, List<List<double>> rgrgLabel)
         {
-            rgData.Clear();
-            rgLabel.Clear();
+            for (int j = 0; j < m_nNumInput; j++)
+            {
+                rgrgData[j].Clear();
+                rgrgLabel[j].Clear();
+            }
 
             for (int i = 0; i < m_nSequenceLength; i++)
             {
-                rgData.Add(m_rgSequence[m_nDataIdx]);
+                for (int j = 0; j < m_nNumInput; j++)
+                {
+                    rgrgData[j].Add(m_rgrgSequence[j][m_nDataIdx]);
+                }
+
                 m_nDataIdx++;
 
-                if (m_nDataIdx == m_rgSequence.Length)
+                if (m_nDataIdx == m_rgrgSequence[0].Length)
                     m_nDataIdx = 0;
             }
 
@@ -1745,31 +2285,83 @@ namespace MyCaffe.test
 
             for (int i = 0; i < m_nNumOutput; i++)
             {
-                rgLabel.Add(m_rgSequence[m_nLabelIdx]);
+                for (int j = 0; j < m_nNumItemsPerOutput; j++)
+                {
+                    rgrgLabel[j].Add(m_rgrgSequence[j][m_nLabelIdx]);
+                }
+
                 m_nLabelIdx++;
 
-                if (m_nLabelIdx == m_rgSequence.Length)
+                if (m_nLabelIdx == m_rgrgSequence[0].Length)
                     m_nLabelIdx = 0;
             }
         }
 
-        private void loadNext(int nBatchIdx, List<double> rgData, List<double> rgLabel)
+        private void loadNext(int nBatchIdx, List<List<double>> rgrgData, List<List<double>> rgrgLabel)
         {
-            rgData.Add(m_rgSequence[m_nDataIdx]);
+            for (int j = 0; j < m_nNumInput; j++)
+            {
+                rgrgData[j].Add(m_rgrgSequence[j][m_nDataIdx]);
+            }
+
             m_nDataIdx++;
 
-            if (m_nDataIdx == m_rgSequence.Length)
+            if (m_nDataIdx == m_rgrgSequence[0].Length)
                 m_nDataIdx = 0;
 
-            rgData.RemoveAt(0);
+            for (int j = 0; j < m_nNumInput; j++)
+            {
+                rgrgData[j].RemoveAt(0);
+            }
 
-            rgLabel.Add(m_rgSequence[m_nLabelIdx]);
+            for (int j = 0; j < m_nNumItemsPerOutput; j++)
+            {
+                rgrgLabel[j].Add(m_rgrgSequence[j][m_nLabelIdx]);
+            }
+
             m_nLabelIdx++;
 
-            if (m_nLabelIdx == m_rgSequence.Length)
+            if (m_nLabelIdx == m_rgrgSequence[0].Length)
                 m_nLabelIdx = 0;
 
-            rgLabel.RemoveAt(0);
+            for (int j = 0; j < m_nNumItemsPerOutput; j++)
+            {
+                rgrgLabel[j].RemoveAt(0);
+            }
+        }
+
+        private void normalize(double[] rgData, double[] rgLabel)
+        {
+            double dfMin = double.MaxValue;
+            double dfMax = -double.MaxValue;
+            double dfSum = rgData.Sum(p => p) + rgLabel.Sum(p => p);
+            double dfAve = dfSum / (rgData.Length + rgLabel.Length);
+
+            for (int i = 0; i < rgData.Length; i++)
+            {
+                rgData[i] -= dfAve;
+                dfMin = Math.Min(dfMin, rgData[i]);
+                dfMax = Math.Max(dfMax, rgData[i]);
+            }
+
+            for (int i = 0; i < rgLabel.Length; i++)
+            {
+                rgLabel[i] -= dfAve;
+                dfMin = Math.Min(dfMin, rgLabel[i]);
+                dfMax = Math.Max(dfMax, rgLabel[i]);
+            }
+
+            double dfRange = dfMax - dfMin;
+
+            for (int i = 0; i < rgData.Length; i++)
+            {
+                rgData[i] = (rgData[i] - dfMin) / dfRange;
+            }
+
+            for (int i = 0; i < rgLabel.Length; i++)
+            {
+                rgLabel[i] = (rgLabel[i] - dfMin) / dfRange;
+            }
         }
     }
 }
