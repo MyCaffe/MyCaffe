@@ -222,6 +222,16 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns the bucket at a given index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index of the bucket to retrieve.</param>
+        /// <returns>The bucket at the index is returned.</returns>
+        public Bucket this[int nIdx]
+        {
+            get { return m_rgBuckets[nIdx]; }
+        }
+
+        /// <summary>
         /// Returns the bucket with the highest count.
         /// </summary>
         /// <returns>The bucket with the highest count is returned.</returns>
