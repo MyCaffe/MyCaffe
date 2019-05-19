@@ -1909,7 +1909,7 @@ namespace MyCaffe.basecode
         }
     }
 
-    class PhaseStageCollection
+    class PhaseStageCollection /** @private */
     {
         List<PhaseStage> m_rgItems = new List<PhaseStage>();
 
@@ -1971,7 +1971,7 @@ namespace MyCaffe.basecode
         }
     }
 
-    class PhaseStage
+    class PhaseStage /** @private */
     {
         Phase m_phase = Phase.NONE;
         Stage m_stage = Stage.NONE;
