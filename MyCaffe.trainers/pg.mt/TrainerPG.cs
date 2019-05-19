@@ -1646,7 +1646,6 @@ namespace MyCaffe.trainers.pg.mt
         /// <summary>
         /// The constructor.
         /// </summary>
-        /// <param name="dfElitePercentile">Specifies the percentage of elite candidates (highest rewards) to keep (default = 1 or 100% to keep all).</param>
         public Memory()
         {
         }
