@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MyCaffe.trainers
@@ -333,6 +334,7 @@ namespace MyCaffe.trainers
         bool m_bReset;
         Component m_caffe;
         Log m_log;
+        ManualResetEvent m_evtDataReady = null;
         CancelEvent m_evtCancel;
         StateBase m_state = null;
         int m_nIndex = 0;
@@ -349,8 +351,12 @@ namespace MyCaffe.trainers
         /// <param name="nAction">Specifies the action to run.  If less than zero this parameter is ignored.</param>
         /// <param name="bAllowUi">Optionally, specifies whether or not to allow the user interface.</param>
         /// <param name="bGetLabel">Optionally, specifies to get the label in addition to the data.</param>
-        public GetDataArgs(int nIdx, Component mycaffe, Log log, CancelEvent evtCancel, bool bReset, int nAction = -1, bool bAllowUi = true, bool bGetLabel = false)
+        /// <param name="bBatchMode">Optionally, specifies to get the data in batch mode (default = false).</param>
+        public GetDataArgs(int nIdx, Component mycaffe, Log log, CancelEvent evtCancel, bool bReset, int nAction = -1, bool bAllowUi = true, bool bGetLabel = false, bool bBatchMode = false)
         {
+            if (bBatchMode)
+                m_evtDataReady = new ManualResetEvent(false);
+
             m_nIndex = nIdx;
             m_nAction = nAction;
             m_caffe = mycaffe;
@@ -360,6 +366,14 @@ namespace MyCaffe.trainers
             m_bGetLabel = bGetLabel;
         }
 
+        /// <summary>
+        /// Returns the data ready event that is set once the data has been retrieved.  This field is only
+        /// used when using the OnGetDataAsync event.
+        /// </summary>
+        public ManualResetEvent DataReady
+        {
+            get { return m_evtDataReady; }
+        }
 
         /// <summary>
         /// Returns the index of the thread asking for the gym.
