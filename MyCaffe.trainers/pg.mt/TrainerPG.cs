@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -469,7 +470,10 @@ namespace MyCaffe.trainers.pg.mt
         double m_dfEpsStart = 0;
         double m_dfEpsEnd = 0;
         double m_dfExplorationRate = 0;
+        int m_nEpisodeBatchSize = 1;
+        double m_dfEpisodeElitePercentile = 1;
         static object m_syncObj = new object();
+        bool m_bShowActionProb = false;
 
         /// <summary>
         /// The OnApplyUpdates event fires each time the Agent needs to apply its updates to the primary instance of MyCaffe.
@@ -502,6 +506,9 @@ namespace MyCaffe.trainers.pg.mt
             m_nEpsSteps = properties.GetPropertyAsInt("EpsSteps", 0);
             m_dfEpsStart = properties.GetPropertyAsDouble("EpsStart", 0);
             m_dfEpsEnd = properties.GetPropertyAsDouble("EpsEnd", 0);
+            m_nEpisodeBatchSize = m_properties.GetPropertyAsInt("EpisodeBatchSize", 1);
+            m_dfEpisodeElitePercentile = properties.GetPropertyAsDouble("EpisodeElitePercent", 1.0);
+            m_bShowActionProb = properties.GetPropertyAsBool("ShowActionProb", false);
 
             if (m_dfEpsStart < 0 || m_dfEpsStart > 1)
                 throw new Exception("The 'EpsStart' is out of range - please specify a real number in the range [0,1]");
@@ -635,7 +642,8 @@ namespace MyCaffe.trainers.pg.mt
         /// <param name="step">Specifies the training step to take, if any.  This is only used when debugging.</param>
         public void Run(Phase phase, int nIterations, TRAIN_STEP step)
         {
-            Memory m_rgMemory = new Memory();
+            MemoryCache rgMemoryCache = new MemoryCache(m_nEpisodeBatchSize);
+            Memory rgMemory = new Memory();
             double? dfRunningReward = null;
             double dfRewardSum = 0;
             int nEpisodeNumber = 0;
@@ -654,6 +662,25 @@ namespace MyCaffe.trainers.pg.mt
                 float[] rgfAprob;
                 int action = getAction(nEpisodeNumber, x, s.Clip, s.ActionCount, step, out rgfAprob);
 
+                if (m_bShowActionProb)
+                {
+                    string strOut = "Action Prob: " + Utility.ToString<float>(rgfAprob.ToList());
+                    int nMaxIdx = 0;
+                    float fMax = -float.MaxValue;
+
+                    for (int i=0; i<rgfAprob.Length; i++)
+                    {
+                        if (rgfAprob[i] > fMax)
+                        {
+                            nMaxIdx = i;
+                            fMax = rgfAprob[i];
+                        }
+                    }
+
+                    strOut += " -> " + nMaxIdx.ToString();
+                    m_brain.OutputLog.WriteLine(strOut);
+                }
+
                 if (step == TRAIN_STEP.FORWARD)
                     return;
 
@@ -664,7 +691,7 @@ namespace MyCaffe.trainers.pg.mt
                 if (phase == Phase.TRAIN)
                 {
                     // Build up episode memory, using reward for taking the action.
-                    m_rgMemory.Add(new MemoryItem(s, x, action, rgfAprob, (float)s_.Reward));
+                    rgMemory.Add(new MemoryItem(s, x, action, rgfAprob, (float)s_.Reward));
 
                     // An episode has finished.
                     if (s_.Done)
@@ -672,47 +699,64 @@ namespace MyCaffe.trainers.pg.mt
                         nEpisodeNumber++;
                         nIteration++;
 
-                        m_brain.Reshape(m_rgMemory);
-
-                        // Compute the discounted reward (backwards through time)
-                        float[] rgDiscountedR = m_rgMemory.GetDiscountedRewards(m_fGamma, m_bAllowDiscountReset);
-                        // Rewards are normalized when set to be unit normal (helps control the gradient estimator variance)
-                        m_brain.SetDiscountedR(rgDiscountedR);
-
-                        // Sigmoid models, set the probabilities up font.
-                        if (!m_brain.UsesSoftMax)
+                        if (rgMemoryCache.Add(rgMemory))
                         {
-                            // Get the action probabilities.
-                            float[] rgfAprobSet = m_rgMemory.GetActionProbabilities();
-                            // The action probabilities are used to calculate the initial gradient within the loss function.
-                            m_brain.SetActionProbabilities(rgfAprobSet);
+                            if (m_bShowActionProb)
+                                m_brain.OutputLog.WriteLine("---learning---");
+
+                            rgMemoryCache.PurgeNonElite(m_dfEpisodeElitePercentile);
+
+                            for (int i=0; i<rgMemoryCache.Count; i++)
+                            {
+                                Memory rgMemory1 = rgMemoryCache[i];
+
+                                m_brain.Reshape(rgMemory1);
+
+                                // Compute the discounted reward (backwards through time)
+                                float[] rgDiscountedR = rgMemory1.GetDiscountedRewards(m_fGamma, m_bAllowDiscountReset);
+                                // Rewards are normalized when set to be unit normal (helps control the gradient estimator variance)
+                                m_brain.SetDiscountedR(rgDiscountedR);
+
+                                // Sigmoid models, set the probabilities up font.
+                                if (!m_brain.UsesSoftMax)
+                                {
+                                    // Get the action probabilities.
+                                    float[] rgfAprobSet = rgMemory1.GetActionProbabilities();
+                                    // The action probabilities are used to calculate the initial gradient within the loss function.
+                                    m_brain.SetActionProbabilities(rgfAprobSet);
+                                }
+
+                                // Get the action one-hot vectors.  When using Softmax, this contains the one-hot vector containing
+                                // each action set (e.g. 3 actions with action 0 set would return a vector <1,0,0>).  
+                                // When using a binary probability (e.g. with Sigmoid), the each action set only contains a
+                                // single element which is set to the action value itself (e.g. 0 for action '0' and 1 for action '1')
+                                float[] rgfAonehotSet = rgMemory1.GetActionOneHotVectors();
+                                m_brain.SetActionOneHotVectors(rgfAonehotSet);
+
+                                // Train for one iteration, which triggers the loss function.
+                                List<Datum> rgData = rgMemory1.GetData();
+                                List<Datum> rgClip = rgMemory1.GetClip();
+
+                                m_brain.SetData(rgData, rgClip);
+
+                                bool bApplyGradients = (i == rgMemoryCache.Count - 1) ? true : false;
+                                m_brain.Train(nEpisodeNumber, step, bApplyGradients);
+
+                                // Update reward running
+                                if (!dfRunningReward.HasValue)
+                                    dfRunningReward = dfRewardSum;
+                                else
+                                    dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
+
+                                nEpisodeNumber = updateStatus(nEpisodeNumber, dfRunningReward.Value, m_brain.LastLoss, m_brain.LearningRate);
+                                dfRewardSum = 0;
+                            }
+
+                            rgMemoryCache.Clear();
                         }
 
-                        // Get the action one-hot vectors.  When using Softmax, this contains the one-hot vector containing
-                        // each action set (e.g. 3 actions with action 0 set would return a vector <1,0,0>).  
-                        // When using a binary probability (e.g. with Sigmoid), the each action set only contains a
-                        // single element which is set to the action value itself (e.g. 0 for action '0' and 1 for action '1')
-                        float[] rgfAonehotSet = m_rgMemory.GetActionOneHotVectors();
-                        m_brain.SetActionOneHotVectors(rgfAonehotSet);
-
-                        // Train for one iteration, which triggers the loss function.
-                        List<Datum> rgData = m_rgMemory.GetData();
-                        List<Datum> rgClip = m_rgMemory.GetClip();
-
-                        m_brain.SetData(rgData, rgClip);
-                        m_brain.Train(nEpisodeNumber, step);
-
-                        // Update reward running
-                        if (!dfRunningReward.HasValue)
-                            dfRunningReward = dfRewardSum;
-                        else
-                            dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
-
-                        nEpisodeNumber = updateStatus(nEpisodeNumber, dfRunningReward.Value, m_brain.LastLoss, m_brain.LearningRate);
-                        dfRewardSum = 0;
-
                         s = getData(m_nIndex, -1);
-                        m_rgMemory.Clear();
+                        rgMemory = new Memory();
 
                         if (step != TRAIN_STEP.NONE)
                             return;
@@ -816,6 +860,8 @@ namespace MyCaffe.trainers.pg.mt
             int nMiniBatch = mycaffe.CurrentProject.GetBatchSize(phase);
             if (nMiniBatch != 0)
                 m_nMiniBatch = nMiniBatch;
+
+            m_nMiniBatch = m_properties.GetPropertyAsInt("MiniBatchOverride", m_nMiniBatch);
 
             double? dfRate = mycaffe.CurrentProject.GetSolverSettingAsNumeric("base_lr");
             if (dfRate.HasValue)
@@ -1209,7 +1255,8 @@ namespace MyCaffe.trainers.pg.mt
         /// </summary>
         /// <param name="nIteration">Specifies the current iterations.  NOTE: at each 'MiniBatch' (specified as the <i>batch_size</i> in the model), the accumulated gradients are applied.</param>
         /// <param name="step">Specifies the training step to use (if any).  This is only used for debugging.</param>
-        public void Train(int nIteration, TRAIN_STEP step)
+        /// <param name="bApplyGradients">Apply the gradients.</param>
+        public void Train(int nIteration, TRAIN_STEP step, bool bApplyGradients = true)
         {
             // Run data/clip groups > 1 in non batch mode.
             if (m_nRecurrentSequenceLength != 1 && m_rgData != null && m_rgData.Count > 1 && m_rgClip != null)
@@ -1228,8 +1275,9 @@ namespace MyCaffe.trainers.pg.mt
                     List<Datum> rgClip1 = new List<Datum>() { m_rgClip[i] };
 
                     m_memData.AddDatumVector(rgData1, rgClip1, 1, true, true);
-
+                   
                     m_solver.Step(1, step, true, m_bUseAcceleratedTraining, true, true);
+                    m_colAccumulatedGradients.Accumulate(m_mycaffeWorker.Cuda, m_net.learnable_parameters, true);
                 }
 
                 m_blobActionOneHot.ReshapeLike(m_blobActionOneHot1);
@@ -1242,11 +1290,10 @@ namespace MyCaffe.trainers.pg.mt
             else
             {
                 m_solver.Step(1, step, true, m_bUseAcceleratedTraining, true, true);
+                m_colAccumulatedGradients.Accumulate(m_mycaffeWorker.Cuda, m_net.learnable_parameters, true);
             }
 
-            m_colAccumulatedGradients.Accumulate(m_mycaffeWorker.Cuda, m_net.learnable_parameters, true);
-
-            if (nIteration % m_nMiniBatch == 0 || step == TRAIN_STEP.BACKWARD || step == TRAIN_STEP.BOTH)
+            if (nIteration % m_nMiniBatch == 0 || bApplyGradients || step == TRAIN_STEP.BACKWARD || step == TRAIN_STEP.BOTH)
             {
                 m_net.learnable_parameters.CopyFrom(m_colAccumulatedGradients, true);
                 m_colAccumulatedGradients.SetDiff(0);
@@ -1462,7 +1509,7 @@ namespace MyCaffe.trainers.pg.mt
             m_mycaffeWorker.Cuda.mul(nCount, hPolicyGrad, hDiscountedR, hPolicyGrad);
 
             e.Loss = dfLoss;
-            e.EnableLossUpdate = false; // apply gradients to bottom directly.
+            e.EnableLossUpdate = false; // dont apply loss to loss weight.
 
             if (hPolicyGrad != hBottomDiff)
                 m_mycaffeWorker.Cuda.copy(nCount, hPolicyGrad, hBottomDiff);
@@ -1482,18 +1529,167 @@ namespace MyCaffe.trainers.pg.mt
     }
 
     /// <summary>
+    /// Contains the best memory episodes (best by highest total rewards)
+    /// </summary>
+    class MemoryCache : IEnumerable<Memory>
+    {
+        int m_nMax;
+        List<Memory> m_rgMemory = new List<Memory>();
+
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="nMax">Specifies the memory cache size.</param>
+        public MemoryCache(int nMax)
+        {
+            m_nMax = nMax;
+        }
+
+        /// <summary>
+        /// Returns the number of items in the cache.
+        /// </summary>
+        public int Count
+        {
+            get { return m_rgMemory.Count; }
+        }
+
+        /// <summary>
+        /// Returns an item at the specified index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index of the item to get.</param>
+        /// <returns>The item at the index is returned.</returns>
+        public Memory this[int nIdx]
+        {
+            get { return m_rgMemory[nIdx]; }
+        }
+
+        /// <summary>
+        /// Add a new episode to the memory cache.
+        /// </summary>
+        /// <param name="mem"></param>
+        /// <returns></returns>
+        public bool Add(Memory mem)
+        {
+            m_rgMemory.Add(mem);
+
+            if (m_rgMemory.Count == m_nMax)
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Clear all items from the memory cache.
+        /// </summary>
+        public void Clear()
+        {
+            m_rgMemory.Clear();
+        }
+
+        /// <summary>
+        /// Purge all non elite episodes.
+        /// </summary>
+        /// <param name="dfElitePercent">Specifies the pecentile of elite to keep (e.g. 0.7 specifies to keep the top 70% by reward sum).</param>
+        public void PurgeNonElite(double dfElitePercent)
+        {
+            if (dfElitePercent <= 0.0 || dfElitePercent >= 1.0)
+                return;
+
+            double dfMin = m_rgMemory.Min(p => p.RewardSum);
+            double dfMax = m_rgMemory.Max(p => p.RewardSum);
+            double dfRange = dfMax - dfMin;
+            double dfCutoff = dfMin + ((1.0 - dfElitePercent) * dfRange);
+            List<Memory> rgMem = m_rgMemory.OrderByDescending(p => p.RewardSum).ToList();
+            List<Memory> rgElite = new List<Memory>();
+
+            for (int i = 0; i < rgMem.Count; i++)
+            {
+                double dfSum = rgMem[i].RewardSum;
+
+                if (dfSum >= dfCutoff)
+                    rgElite.Add(rgMem[i]);
+                else
+                    break;
+            }
+
+            m_rgMemory = rgElite;
+        }
+
+        /// <summary>
+        /// Returns the enumerator.
+        /// </summary>
+        /// <returns>The enumerator is returned.</returns>
+        public IEnumerator<Memory> GetEnumerator()
+        {
+            return m_rgMemory.GetEnumerator();
+        }
+
+        /// <summary>
+        /// Returns the enumerator.
+        /// </summary>
+        /// <returns>The enumerator is returned.</returns>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return m_rgMemory.GetEnumerator();
+        }
+    }
+
+    /// <summary>
     /// Specifies a single Memory (e.g. an episode).
     /// </summary>
-    class Memory : GenericList<MemoryItem>
+    class Memory
     {
+        List<MemoryItem> m_rgItems = new List<MemoryItem>();
         int m_nEpisodeNumber = 0;
         double m_dfRewardSum = 0;
 
         /// <summary>
         /// The constructor.
         /// </summary>
+        /// <param name="dfElitePercentile">Specifies the percentage of elite candidates (highest rewards) to keep (default = 1 or 100% to keep all).</param>
         public Memory()
         {
+        }
+
+        /// <summary>
+        /// Returns the number of memory items in the memory.
+        /// </summary>
+        public int Count
+        {
+            get { return m_rgItems.Count; }
+        }
+
+        /// <summary>
+        /// Add a new item to the memory.
+        /// </summary>
+        /// <remarks>
+        /// If the MaxItems is exceeded, the list of items is sorted and the bottom item(s) are dropped.
+        /// </remarks>
+        /// <param name="item">Specifies the item to add.</param>
+        public void Add(MemoryItem item)
+        {
+            m_dfRewardSum += item.Reward;
+            m_rgItems.Add(item);
+        }
+
+        /// <summary>
+        /// Remove all items in the list.
+        /// </summary>
+        public void Clear()
+        {
+            m_dfRewardSum = 0;
+            m_rgItems.Clear();
+        }
+
+        /// <summary>
+        /// Get/set an item within the memory at a given index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index of the item to access.</param>
+        /// <returns>The item at the index is returned.</returns>
+        public MemoryItem this[int nIdx]
+        {
+            get { return m_rgItems[nIdx]; }
+            set { m_rgItems[nIdx] = value; }
         }
 
         /// <summary>
