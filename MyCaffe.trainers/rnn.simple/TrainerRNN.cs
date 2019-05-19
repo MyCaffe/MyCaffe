@@ -1043,7 +1043,7 @@ namespace MyCaffe.trainers.rnn.simple
         }
     }
 
-    class DataCollectionPool
+    class DataCollectionPool /** @private */
     {
         List<DataCollector> m_rgCollectors = new List<DataCollector>();
 
@@ -1084,7 +1084,7 @@ namespace MyCaffe.trainers.rnn.simple
         }
     }
 
-    class DataCollector
+    class DataCollector /** @private */
     {
         ManualResetEvent m_evtAbort = new ManualResetEvent(false);
         AutoResetEvent m_evtRun = new AutoResetEvent(false);
