@@ -296,6 +296,7 @@ namespace MyCaffe.trainers.rnn.simple
         int m_nSolverSequenceLength = -1;
         int m_nThreads = 1;
         DataCollectionPool m_dataPool = new DataCollectionPool();
+        double m_dfScale = 1.0;
 
         public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallbackRNN icallback, Phase phase, BucketCollection rgVocabulary, bool bUsePreloadData, string strRunProperties = null)
         {
@@ -313,6 +314,7 @@ namespace MyCaffe.trainers.rnn.simple
             m_nSolverSequenceLength = m_properties.GetPropertyAsInt("SequenceLength", -1);
             m_bDisableVocabulary = m_properties.GetPropertyAsBool("DisableVocabulary", false);
             m_nThreads = m_properties.GetPropertyAsInt("Threads", 1);
+            m_dfScale = m_properties.GetPropertyAsDouble("Scale", 1.0);
 
             if (m_nThreads > 1)
                 m_dataPool.Initialize(m_nThreads, icallback);
@@ -821,7 +823,7 @@ namespace MyCaffe.trainers.rnn.simple
 
                 sw.Start();
 
-                m_bIsDataReal = false;
+                m_bIsDataReal = true;
 
                 if (m_rgVocabulary != null)
                     m_bIsDataReal = m_rgVocabulary.IsDataReal;
@@ -877,6 +879,12 @@ namespace MyCaffe.trainers.rnn.simple
                             }
                             else
                             {
+                                if (m_dfScale != 1.0 && m_dfScale > 0)
+                                {
+                                    fActual /= (float)m_dfScale;
+                                    fPrediction /= (float)m_dfScale;
+                                }
+
                                 rgPredictions[nIdx0 + i] = (float)m_rgVocabulary.GetValueAt((int)fPrediction, true);
                                 rgPredictions[nIdx1 + i] = (float)m_rgVocabulary.GetValueAt((int)fActual, true);
                             }
