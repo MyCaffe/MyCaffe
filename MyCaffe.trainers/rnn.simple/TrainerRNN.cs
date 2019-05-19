@@ -196,7 +196,7 @@ namespace MyCaffe.trainers.rnn.simple
 
         private StateBase getData(int nAction)
         {
-            GetDataArgs args = m_brain.getDataArgs(nAction, true);
+            GetDataArgs args = m_brain.getDataArgs(0, nAction, true);
             m_icallback.OnGetData(args);
             return args.State;
         }
@@ -273,7 +273,7 @@ namespace MyCaffe.trainers.rnn.simple
         int m_nSequenceLength;
         int m_nSequenceLengthLabel;
         int m_nBatchSize;
-        int m_nVocabSize;
+        int m_nVocabSize = 1;
         CryptoRandom m_random;
         T[] m_rgDataInput;
         T[] m_rgLabelInput;
@@ -290,9 +290,12 @@ namespace MyCaffe.trainers.rnn.simple
         double m_dfLastLearningRate = 0;
         BucketCollection m_rgVocabulary = null;
         bool m_bUsePreloadData = true;
+        bool m_bDisableVocabulary = false;
         Phase m_phaseOnRun = Phase.NONE;
         LayerParameter.LayerType m_lstmType = LayerParameter.LayerType.LSTM;
         int m_nSolverSequenceLength = -1;
+        int m_nThreads = 1;
+        DataCollectionPool m_dataPool = new DataCollectionPool();
 
         public Brain(MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, IxTrainerCallbackRNN icallback, Phase phase, BucketCollection rgVocabulary, bool bUsePreloadData, string strRunProperties = null)
         {
@@ -308,6 +311,11 @@ namespace MyCaffe.trainers.rnn.simple
             m_rgVocabulary = rgVocabulary;
             m_bUsePreloadData = bUsePreloadData;
             m_nSolverSequenceLength = m_properties.GetPropertyAsInt("SequenceLength", -1);
+            m_bDisableVocabulary = m_properties.GetPropertyAsBool("DisableVocabulary", false);
+            m_nThreads = m_properties.GetPropertyAsInt("Threads", 1);
+
+            if (m_nThreads > 1)
+                m_dataPool.Initialize(m_nThreads, icallback);
 
             if (m_runProperties != null)
             {
@@ -388,9 +396,12 @@ namespace MyCaffe.trainers.rnn.simple
             Layer<T> layer = m_net.FindLastLayer(LayerParameter.LayerType.INNERPRODUCT);
             m_mycaffe.Log.CHECK(layer != null, "Could not find an ending INNERPRODUCT layer!");
 
-            m_nVocabSize = (int)layer.layer_param.inner_product_param.num_output;
-            if (rgVocabulary != null)
-                m_mycaffe.Log.CHECK_EQ(m_nVocabSize, rgVocabulary.Count, "The vocabulary count = '" + rgVocabulary.Count.ToString() + "' and last inner product output count = '" + m_nVocabSize.ToString() + "' - these do not match but they should!");
+            if (!m_bDisableVocabulary)
+            {
+                m_nVocabSize = (int)layer.layer_param.inner_product_param.num_output;
+                if (rgVocabulary != null)
+                    m_mycaffe.Log.CHECK_EQ(m_nVocabSize, rgVocabulary.Count, "The vocabulary count = '" + rgVocabulary.Count.ToString() + "' and last inner product output count = '" + m_nVocabSize.ToString() + "' - these do not match but they should!");
+            }
 
             if (m_lstmType == LayerParameter.LayerType.LSTM)
             {
@@ -443,7 +454,7 @@ namespace MyCaffe.trainers.rnn.simple
                 if ((m_blobLabel = m_net.FindBlob("label")) == null)
                     throw new Exception("Could not find the 'Input' layer top named 'label'!");
 
-                m_nSequenceLengthLabel = m_blobLabel.shape(0);
+                m_nSequenceLengthLabel = m_blobLabel.count(0, 2);
                 m_rgLabelInput = new T[m_nSequenceLengthLabel];
                 m_mycaffe.Log.CHECK_EQ(m_rgLabelInput.Length, m_blobLabel.count(), "The label count must equal the label sequence length * batch size: " + m_rgLabelInput.Length.ToString());
                 m_mycaffe.Log.CHECK(m_nSequenceLengthLabel == m_nSequenceLength * m_nBatchSize || m_nSequenceLengthLabel == 1, "The label sqeuence length must be 1 or equal the length of the sequence: " + m_nSequenceLength.ToString());
@@ -481,6 +492,11 @@ namespace MyCaffe.trainers.rnn.simple
 
         public void Dispose()
         {
+            if (m_dataPool != null)
+            {
+                m_dataPool.Shutdown();
+                m_dataPool = null;
+            }
         }
 
         private void updateStatus(int nIteration, int nMaxIteration, double dfAccuracy, double dfLoss, double dfLearningRate)
@@ -489,10 +505,10 @@ namespace MyCaffe.trainers.rnn.simple
             m_icallback.OnUpdateStatus(args);
         }
 
-        public GetDataArgs getDataArgs(int nAction, bool bGetLabel = false)
+        public GetDataArgs getDataArgs(int nIdx, int nAction, bool bGetLabel = false, int nBatchSize = 1)
         {
             bool bReset = (nAction == -1) ? true : false;
-            return new GetDataArgs(0, m_mycaffe, m_mycaffe.Log, m_mycaffe.CancelEvent, bReset, nAction, false, bGetLabel);
+            return new GetDataArgs(nIdx, m_mycaffe, m_mycaffe.Log, m_mycaffe.CancelEvent, bReset, nAction, false, bGetLabel, (nBatchSize > 1) ? true : false);
         }
 
         public Log Log
@@ -613,20 +629,78 @@ namespace MyCaffe.trainers.rnn.simple
                 }
                 else
                 {
-                    GetDataArgs e = getDataArgs(0, true);
-                    m_icallback.OnGetData(e);
+                    m_mycaffe.Log.CHECK_EQ(m_nBatchSize, m_nThreads, "The 'Threads' setting of " + m_nThreads.ToString() + " must match the batch size = " + m_nBatchSize.ToString() + "!");
+
+                    List<GetDataArgs> rgDataArgs = new List<GetDataArgs>();
+
+                    if (m_nBatchSize == 1)
+                    {
+                        GetDataArgs e = getDataArgs(0, 0, true, m_nBatchSize);
+                        m_icallback.OnGetData(e);
+                        rgDataArgs.Add(e);
+                    }
+                    else
+                    {
+                        for (int i = 0; i < m_nBatchSize; i++)
+                        {
+                            rgDataArgs.Add(getDataArgs(i, 0, true, m_nBatchSize));
+                        }
+
+                        if (!m_dataPool.Run(rgDataArgs))
+                            m_mycaffe.Log.FAIL("Data Time Out - Failed to collect all data to build the RNN batch!");
+                    }
+
+                    double[] rgData = rgDataArgs[0].State.Data.RealData;
+                    double[] rgLabel = rgDataArgs[0].State.Label.RealData;
+                    double[] rgClip = rgDataArgs[0].State.Clip.RealData;
+
+                    int nDataLen = rgData.Length;
+                    int nLabelLen = rgLabel.Length;
+                    int nClipLen = rgClip.Length;
+                    int nDataItem = nDataLen / nLabelLen;
+
+                    if (m_nBatchSize > 1)
+                    {
+                        rgData = new double[nDataLen * m_nBatchSize];
+                        rgLabel = new double[nLabelLen * m_nBatchSize];
+                        rgClip = new double[nClipLen * m_nBatchSize];
+
+                        for (int i = 0; i < m_nBatchSize; i++)
+                        {
+                            for (int j = 0; j < m_nSequenceLength; j++)
+                            {
+                                // LSTM: Create input data, the data must be in the order
+                                // seq1_val1, seq2_val1, ..., seqBatch_Size_val1, seq1_val2, seq2_val2, ..., seqBatch_Size_valSequence_Length
+                                if (m_lstmType == LayerParameter.LayerType.LSTM)
+                                    nIdx = m_nBatchSize * j + i;
+
+                                // LSTM_SIMPLE: Create input data, the data must be in the order
+                                // seq1_val1, seq1_val2, ..., seq1_valBatchSize, seq2_val1, seq2_val2, ..., seqSequenceLength_valBatchSize
+                                else
+                                    nIdx = i * m_nBatchSize + j;
+
+                                Array.Copy(rgDataArgs[i].State.Data.RealData, 0, rgData, nIdx * nDataItem, nDataItem);
+                                rgLabel[nIdx] = rgDataArgs[i].State.Label.RealData[j];
+                                rgClip[nIdx] = rgDataArgs[i].State.Clip.RealData[j];
+                            }
+                        }
+                    }
 
                     string strSolverErr = "";
                     if (m_nSolverSequenceLength >= 0 && m_nSolverSequenceLength != m_nSequenceLength)
                         strSolverErr = "The solver parameter 'SequenceLength' length of " + m_nSolverSequenceLength.ToString() + " must match the model sequence length of " + m_nSequenceLength.ToString() + ".  ";
 
                     int nExpectedCount = m_blobData.count();
-                    m_mycaffe.Log.CHECK_EQ(nExpectedCount, e.State.Data.ItemCount, strSolverErr + "The size of the data received ('" + e.State.Data.ItemCount.ToString() + "') does mot match the expected data count of '" + nExpectedCount.ToString() + "'!");
-                    m_blobData.mutable_cpu_data = Utility.ConvertVec<T>(e.State.Data.RealData);
+                    m_mycaffe.Log.CHECK_EQ(nExpectedCount, rgData.Length, strSolverErr + "The size of the data received ('" + rgData.Length.ToString() + "') does mot match the expected data count of '" + nExpectedCount.ToString() + "'!");
+                    m_blobData.mutable_cpu_data = Utility.ConvertVec<T>(rgData);
 
                     nExpectedCount = m_blobLabel.count();
-                    m_mycaffe.Log.CHECK_EQ(nExpectedCount, e.State.Label.ItemCount, strSolverErr + "The size of the label received ('" + e.State.Label.ItemCount.ToString() + "') does not match the expected label count of '" + nExpectedCount.ToString() + "'!");
-                    m_blobLabel.mutable_cpu_data = Utility.ConvertVec<T>(e.State.Label.RealData);
+                    m_mycaffe.Log.CHECK_EQ(nExpectedCount, rgLabel.Length, strSolverErr + "The size of the label received ('" + rgLabel.Length.ToString() + "') does not match the expected label count of '" + nExpectedCount.ToString() + "'!");
+                    m_blobLabel.mutable_cpu_data = Utility.ConvertVec<T>(rgLabel);
+
+                    nExpectedCount = m_blobClip.count();
+                    m_mycaffe.Log.CHECK_EQ(nExpectedCount, rgClip.Length, strSolverErr + "The size of the clip received ('" + rgClip.Length.ToString() + "') does not match the expected clip count of '" + nExpectedCount.ToString() + "'!");
+                    m_blobClip.mutable_cpu_data = Utility.ConvertVec<T>(rgClip);
                 }
             }
             // Byte Data (uses a vocabulary if available)
@@ -678,7 +752,7 @@ namespace MyCaffe.trainers.rnn.simple
         {
             bFound = false;
 
-            if (m_rgVocabulary == null)
+            if (m_rgVocabulary == null || m_bDisableVocabulary)
                 return b;
 
             bFound = true;
@@ -690,7 +764,7 @@ namespace MyCaffe.trainers.rnn.simple
         {
             bFound = false;
 
-            if (m_rgVocabulary == null)
+            if (m_rgVocabulary == null || m_bDisableVocabulary)
                 return (float)df;
 
             return m_rgVocabulary.FindIndex(df);
@@ -758,14 +832,14 @@ namespace MyCaffe.trainers.rnn.simple
                 {
                     string strSolverErr = "";
                     int nLookahead = 1;
-                    if (m_nSolverSequenceLength >= 0)
+                    if (m_nSolverSequenceLength >= 0 && m_nSolverSequenceLength < m_nSequenceLength)
                         nLookahead = m_nSequenceLength - m_nSolverSequenceLength;
 
                     rgPredictions = new float[nN * 2 * nLookahead];
 
                     for (int i = 0; i < nN; i++)
                     {
-                        GetDataArgs e = getDataArgs(0, true);
+                        GetDataArgs e = getDataArgs(0, 0, true);
                         m_icallback.OnGetData(e);
 
                         int nExpectedCount = m_blobData.count();
@@ -796,7 +870,7 @@ namespace MyCaffe.trainers.rnn.simple
                             int nIdx0 = ((nLookahead - j) * nN * 2);
                             int nIdx1 = nIdx0 + nN;
 
-                            if (m_rgVocabulary == null)
+                            if (m_rgVocabulary == null || m_bDisableVocabulary)
                             {
                                 rgPredictions[nIdx0 + i] = fPrediction;
                                 rgPredictions[nIdx1 + i] = fActual;
@@ -853,7 +927,7 @@ namespace MyCaffe.trainers.rnn.simple
                         rgInput.Add((T)Convert.ChangeType(fPrediction, typeof(T)));
                         rgInput.RemoveAt(0);
 
-                        if (m_rgVocabulary == null)
+                        if (m_rgVocabulary == null || m_bDisableVocabulary)
                             rgPredictions[i] = fPrediction;
                         else
                             rgPredictions[i] = (float)m_rgVocabulary.GetValueAt((int)fPrediction);
@@ -885,10 +959,14 @@ namespace MyCaffe.trainers.rnn.simple
             }
         }
 
-        private int getLastPrediction(float[] rgDataRaw, BucketCollection rgVocabulary, int nLookahead = 1)
+        private float getLastPrediction(float[] rgDataRaw, BucketCollection rgVocabulary, int nLookahead = 1)
         {
             // Get the probabilities for the last character of the first sequence in the batch
             int nOffset = (m_nSequenceLength - nLookahead) * m_nBatchSize * m_nVocabSize;
+
+            if (m_bDisableVocabulary)
+                return rgDataRaw[nOffset];
+
             float[] rgData = new float[m_nVocabSize];
 
             for (int i = 0; i < rgData.Length; i++)
@@ -962,6 +1040,92 @@ namespace MyCaffe.trainers.rnn.simple
             }
 
             return nMaxIdx - nOffset;
+        }
+    }
+
+    class DataCollectionPool
+    {
+        List<DataCollector> m_rgCollectors = new List<DataCollector>();
+
+        public DataCollectionPool()
+        {
+        }
+
+        public void Initialize(int nThreads, IxTrainerCallback icallback)
+        {
+            for (int i = 0; i < nThreads; i++)
+            {
+                m_rgCollectors.Add(new DataCollector(icallback));
+            }
+        }
+
+        public void Shutdown()
+        {
+            foreach (DataCollector col in m_rgCollectors)
+            {
+                col.CleanUp();
+            }
+        }
+
+        public bool Run(List<GetDataArgs> rgStartup)
+        {
+            List<ManualResetEvent> rgWait = new List<ManualResetEvent>();
+
+            if (rgStartup.Count != m_rgCollectors.Count)
+                throw new Exception("The startup count does not match the collector count.");
+
+            for (int i = 0; i < rgStartup.Count; i++)
+            {
+                rgWait.Add(rgStartup[i].DataReady);
+                m_rgCollectors[i].Run(rgStartup[i]);
+            }
+
+            return WaitHandle.WaitAll(rgWait.ToArray(), 10000);
+        }
+    }
+
+    class DataCollector
+    {
+        ManualResetEvent m_evtAbort = new ManualResetEvent(false);
+        AutoResetEvent m_evtRun = new AutoResetEvent(false);
+        Thread m_thread;
+        GetDataArgs m_args;
+        IxTrainerCallback m_icallback;
+
+        public DataCollector(IxTrainerCallback icallback)
+        {
+            m_icallback = icallback;
+            m_thread = new Thread(new ThreadStart(doWork));
+            m_thread.Start();
+        }
+
+        public void CleanUp()
+        {
+            m_evtAbort.Set();          
+        }
+
+        public void Run(GetDataArgs args)
+        {
+            m_args = args;
+            m_evtRun.Set();
+        }
+
+        private void doWork()
+        {
+            bool bDone = false;
+            List<WaitHandle> rgWait = new List<WaitHandle>();
+            rgWait.Add(m_evtAbort);
+            rgWait.Add(m_evtRun);
+
+            while (!bDone)
+            {
+                int nWait = WaitHandle.WaitAny(rgWait.ToArray());
+                if (nWait == 0)
+                    return;
+
+                m_icallback.OnGetData(m_args);
+                m_args.DataReady.Set();
+            }
         }
     }
 }
