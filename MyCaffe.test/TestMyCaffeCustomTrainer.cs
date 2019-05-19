@@ -641,7 +641,7 @@ namespace MyCaffe.test
             trainer.Initialize(strProp, this);
 
             BucketCollection rgVocabulary = trainer.PreloadData(m_log, m_evtCancel, 0);
-            project.ModelDescription = trainer.ResizeModel(project.ModelDescription, rgVocabulary);
+            project.ModelDescription = trainer.ResizeModel(m_log, project.ModelDescription, rgVocabulary);
 
             // load the project to train (note the project must use the InputLayer for input).
             mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false);
@@ -751,7 +751,7 @@ namespace MyCaffe.test
             itrainer.Initialize(strProp, this);
 
             BucketCollection rgVocabulary = itrainer.PreloadData(m_log, m_evtCancel, 0);
-            project.ModelDescription = itrainer.ResizeModel(project.ModelDescription, rgVocabulary);
+            project.ModelDescription = itrainer.ResizeModel(m_log, project.ModelDescription, rgVocabulary);
 
             // load the project to train (note the project must use the InputLayer for input).
             mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
@@ -865,7 +865,7 @@ namespace MyCaffe.test
             trainer.Initialize(strProp, this);
 
             BucketCollection rgVocabulary = trainer.PreloadData(m_log, m_evtCancel, 0);
-            project.ModelDescription = trainer.ResizeModel(project.ModelDescription, rgVocabulary);
+            project.ModelDescription = trainer.ResizeModel(m_log, project.ModelDescription, rgVocabulary);
 
             // load the project to train (note the project must use the InputLayer for input).
             mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false);
@@ -970,7 +970,7 @@ namespace MyCaffe.test
             itrainer.Initialize(strProp, this);
 
             BucketCollection rgVocabulary = itrainer.PreloadData(m_log, m_evtCancel, 0);
-            project.ModelDescription = itrainer.ResizeModel(project.ModelDescription, rgVocabulary);
+            project.ModelDescription = itrainer.ResizeModel(m_log, project.ModelDescription, rgVocabulary);
 
             // load the project to train (note the project must use the InputLayer for input).
             mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());

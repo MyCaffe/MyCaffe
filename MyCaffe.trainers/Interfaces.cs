@@ -152,9 +152,10 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <param name="strModel">Specifies the model descriptor.</param>
         /// <param name="rgVocabulary">Specifies the vocabulary, if any.</param>
+        /// <param name="log">Specifies the output log.</param>
         /// <returns>A new model discriptor is returned (or the same 'strModel' if no changes were made).</returns>
         /// <remarks>Note, this method is called after PreloadData.</remarks>
-        string ResizeModel(string strModel, BucketCollection rgVocabulary);
+        string ResizeModel(Log log, string strModel, BucketCollection rgVocabulary);
     }
 
     /// <summary>

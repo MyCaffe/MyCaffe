@@ -581,34 +581,49 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <param name="strModel">Specifies the model descriptor.</param>
         /// <param name="rgVocabulary">Specifies the vocabulary.</param>
+        /// <param name="log">Specifies the output log.</param>
         /// <returns>A new model discriptor is returned (or the same 'strModel' if no changes were made).</returns>
         /// <remarks>Note, this method is called after PreloadData.</remarks>
-        public string ResizeModel(string strModel, BucketCollection rgVocabulary)
+        public string ResizeModel(Log log, string strModel, BucketCollection rgVocabulary)
         {
             if (rgVocabulary == null || rgVocabulary.Count == 0)
                 return strModel;
 
             int nVocabCount = rgVocabulary.Count;
             NetParameter p = NetParameter.FromProto(RawProto.Parse(strModel));
+            string strEmbedName = "";
             EmbedParameter embed = null;
+            string strIpName = "";
             InnerProductParameter ip = null;
 
             foreach (LayerParameter layer in p.layer)
             {
                 if (layer.type == LayerParameter.LayerType.EMBED)
                 {
+                    strEmbedName = layer.name;
                     embed = layer.embed_param;
                 }
                 else if (layer.type == LayerParameter.LayerType.INNERPRODUCT)
                 {
+                    strIpName = layer.name;
                     ip = layer.inner_product_param;
                 }
             }
 
             if (embed != null)
-                embed.input_dim = (uint)nVocabCount;
+            {
+                if (embed.input_dim != (uint)nVocabCount)
+                {
+                    log.WriteLine("WARNING: Embed layer '" + strEmbedName + "' input dim changed from " + embed.input_dim.ToString() + " to " + nVocabCount.ToString() + " to accomodate for the vocabulary count.");
+                    embed.input_dim = (uint)nVocabCount;
+                }
+            }
 
-            ip.num_output = (uint)nVocabCount;
+            if (ip.num_output != (uint)nVocabCount)
+            {
+                log.WriteLine("WARNING: InnerProduct layer '" + strIpName + "' num_output changed from " + ip.num_output.ToString() + " to " + nVocabCount.ToString() + " to accomodate for the vocabulary count.");
+                ip.num_output = (uint)nVocabCount;
+            }
 
             m_rgVocabulary = rgVocabulary;
 
