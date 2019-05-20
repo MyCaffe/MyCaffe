@@ -874,17 +874,17 @@ namespace MyCaffe.trainers.rnn.simple
 
                             if (m_rgVocabulary == null || m_bDisableVocabulary)
                             {
-                                rgPredictions[nIdx0 + i] = fPrediction;
-                                rgPredictions[nIdx1 + i] = fActual;
-                            }
-                            else
-                            {
                                 if (m_dfScale != 1.0 && m_dfScale > 0)
                                 {
                                     fActual /= (float)m_dfScale;
                                     fPrediction /= (float)m_dfScale;
                                 }
 
+                                rgPredictions[nIdx0 + i] = fPrediction;
+                                rgPredictions[nIdx1 + i] = fActual;
+                            }
+                            else
+                            {
                                 rgPredictions[nIdx0 + i] = (float)m_rgVocabulary.GetValueAt((int)fPrediction, true);
                                 rgPredictions[nIdx1 + i] = (float)m_rgVocabulary.GetValueAt((int)fActual, true);
                             }
