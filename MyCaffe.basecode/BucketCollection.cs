@@ -516,6 +516,28 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns the distribution of buckets as a percentage for each time a bucket was hit.
+        /// </summary>
+        /// <returns>The distribution string is returned.</returns>
+        public string ToDistributionString()
+        {
+            double dfTotalCount = TotalCount;
+            string str = "{";
+
+            foreach (Bucket b in m_rgBuckets)
+            {
+                double dfPct = (double)b.Count / dfTotalCount;
+                str += dfPct.ToString("P");
+                str += ",";
+            }
+
+            str = str.TrimEnd(',');
+            str += "}";
+
+            return str;
+        }
+
+        /// <summary>
         /// Returns the enumerator used in foreach loops.
         /// </summary>
         /// <returns>The enumerator is returned.</returns>
