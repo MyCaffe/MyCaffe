@@ -10,7 +10,7 @@ using MyCaffe.fillers;
 namespace MyCaffe.layers
 {
     /// <summary>
-    /// The EnbedLayer is a layer for learning 'embeddings' of one-hot vector input.
+    /// The EmbedLayer is a layer for learning 'embeddings' of one-hot vector input.
     /// This layer is initialized with the MyCaffe.param.EmbedParameter.
     /// </summary>
     /// <remarks>
