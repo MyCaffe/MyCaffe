@@ -1091,6 +1091,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.MVN:
                     return new MVNLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.ONEHOT:
+                    return new OneHotLayer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.NORMALIZATION:
                     return new NormalizationLayer<T>(cuda, log, p);
 

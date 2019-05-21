@@ -670,6 +670,25 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestOneHotParameter()
+        {
+            string str = "onehot_param { axis: 1 num_output: 13 min: -1.01 max: 2.02 }";
+            RawProto proto = RawProto.Parse(str).FindChild("onehot_param");
+            OneHotParameter p = OneHotParameter.FromProto(proto);
+
+            Assert.AreEqual(p.axis, 1);
+            Assert.AreEqual(p.min, -1.01);
+            Assert.AreEqual(p.max, 2.02);
+            Assert.AreEqual((int)p.num_output, 13);
+
+            RawProto proto2 = p.ToProto("onehot_param");
+            string strProto2 = proto2.ToString();
+            string strProto1 = proto.ToString();
+
+            Assert.AreEqual(strProto1, strProto2);
+        }
+
+        [TestMethod]
         public void TestNetStateParameter()
         {
             string str = "netstate { phase: TRAIN level: 2 stage: \"foo\" }";

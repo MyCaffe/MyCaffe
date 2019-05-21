@@ -94,6 +94,7 @@
     <Compile Include="fillers\PositiveUnitballFiller.cs" />
     <Compile Include="fillers\UniformFiller.cs" />
     <Compile Include="fillers\XavierFiller.cs" />
+    <Compile Include="layers_beta\OneHotLayer.cs" />
     <Compile Include="layers_beta\EventLayer.cs" />
     <Compile Include="layers_beta\ScalarLayer.cs" />
     <Compile Include="layers\ParameterLayer.cs" />
@@ -184,6 +185,7 @@
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
     <Compile Include="param.ui\CsvConverter.cs" />
+    <Compile Include="param\OneHotParameter.cs" />
     <Compile Include="param\ScalarParameter.cs" />
     <Compile Include="param\ParameterParameter.cs" />
     <Compile Include="param\TVLossParameter.cs" />
