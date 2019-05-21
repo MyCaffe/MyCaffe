@@ -136,7 +136,7 @@ namespace MyCaffe.test
     class MVNLayerTest : TestBase
     {
         public MVNLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("LRN Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
+            : base("MVN Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
