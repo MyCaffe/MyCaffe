@@ -872,13 +872,13 @@ namespace MyCaffe.trainers.rnn.simple
                             int nIdx0 = ((nLookahead - j) * nN * 2);
                             int nIdx1 = nIdx0 + nN;
 
+                            if (m_dfScale != 1.0 && m_dfScale > 0)
+                                fActual /= (float)m_dfScale;
+
                             if (m_rgVocabulary == null || m_bDisableVocabulary)
                             {
                                 if (m_dfScale != 1.0 && m_dfScale > 0)
-                                {
-                                    fActual /= (float)m_dfScale;
                                     fPrediction /= (float)m_dfScale;
-                                }
 
                                 rgPredictions[nIdx0 + i] = fPrediction;
                                 rgPredictions[nIdx1 + i] = fActual;
