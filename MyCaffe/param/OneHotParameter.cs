@@ -35,6 +35,7 @@ namespace MyCaffe.param
         uint m_nNumOutput = 16;
         double m_dfMin = -1.0;
         double m_dfMax = 1.0;
+        int m_nMinAxes = 4;
 
         /** @copydoc LayerParameterBase */
         public OneHotParameter()
@@ -48,6 +49,15 @@ namespace MyCaffe.param
         {
             get { return m_nAxis; }
             set { m_nAxis = value; }
+        }
+
+        /// <summary>
+        /// Specifies the minimum number of axes.  Axes of size 1 are added to the current axis count up to the minimum.
+        /// </summary>
+        public int min_axes
+        {
+            get { return m_nMinAxes; }
+            set { m_nMinAxes = value; }
         }
 
         /// <summary>
@@ -98,6 +108,7 @@ namespace MyCaffe.param
             m_nNumOutput = p.m_nNumOutput;
             m_dfMin = p.m_dfMin;
             m_dfMax = p.m_dfMax;
+            m_nMinAxes = p.m_nMinAxes;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -117,6 +128,7 @@ namespace MyCaffe.param
             rgChildren.Add("num_output", num_output.ToString());
             rgChildren.Add("min", min.ToString());
             rgChildren.Add("max", max.ToString());
+            rgChildren.Add("min_axes", min_axes.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -142,6 +154,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("max")) != null)
                 p.max = double.Parse(strVal);
+
+            if ((strVal = rp.FindValue("min_axes")) != null)
+                p.min_axes = int.Parse(strVal);
 
             return p;
         }

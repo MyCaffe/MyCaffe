@@ -7,7 +7,7 @@ using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.fillers;
 
-namespace MyCaffe.layers
+namespace MyCaffe.layers.beta
 {
     /// <summary>
     /// The OneHotLayer is a layer for converting real values into a one-hot vector where a 1 is placed
@@ -106,6 +106,11 @@ namespace MyCaffe.layers
 
             List<int> rgTopShape = Utility.Clone<int>(colBottom[0].shape());
             rgTopShape[m_nAxis] = m_colBuckets.Count;
+
+            while (rgTopShape.Count < m_param.onehot_param.min_axes)
+            {
+                rgTopShape.Add(1);
+            }
 
             colTop[0].Reshape(rgTopShape);
 
