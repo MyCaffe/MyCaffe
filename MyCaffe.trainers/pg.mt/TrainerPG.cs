@@ -664,21 +664,8 @@ namespace MyCaffe.trainers.pg.mt
 
                 if (m_bShowActionProb)
                 {
-                    string strOut = "Action Prob: " + Utility.ToString<float>(rgfAprob.ToList());
-                    int nMaxIdx = 0;
-                    float fMax = -float.MaxValue;
-
-                    for (int i=0; i<rgfAprob.Length; i++)
-                    {
-                        if (rgfAprob[i] > fMax)
-                        {
-                            nMaxIdx = i;
-                            fMax = rgfAprob[i];
-                        }
-                    }
-
-                    strOut += " -> " + nMaxIdx.ToString();
-                    m_brain.OutputLog.WriteLine(strOut);
+                    string strOut = "Action Prob: " + Utility.ToString<float>(rgfAprob.ToList()) + " -> " + action.ToString();
+                    m_brain.OutputLog.WriteLine(strOut, false, false, false, true);
                 }
 
                 if (step == TRAIN_STEP.FORWARD)
