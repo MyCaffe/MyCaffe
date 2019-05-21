@@ -474,6 +474,7 @@ namespace MyCaffe.trainers.pg.mt
         double m_dfEpisodeElitePercentile = 1;
         static object m_syncObj = new object();
         bool m_bShowActionProb = false;
+        bool m_bVerbose = false;
 
         /// <summary>
         /// The OnApplyUpdates event fires each time the Agent needs to apply its updates to the primary instance of MyCaffe.
@@ -509,6 +510,7 @@ namespace MyCaffe.trainers.pg.mt
             m_nEpisodeBatchSize = m_properties.GetPropertyAsInt("EpisodeBatchSize", 1);
             m_dfEpisodeElitePercentile = properties.GetPropertyAsDouble("EpisodeElitePercent", 1.0);
             m_bShowActionProb = properties.GetPropertyAsBool("ShowActionProb", false);
+            m_bVerbose = properties.GetPropertyAsBool("Verbose", false);
 
             if (m_dfEpsStart < 0 || m_dfEpsStart > 1)
                 throw new Exception("The 'EpsStart' is out of range - please specify a real number in the range [0,1]");
@@ -665,7 +667,7 @@ namespace MyCaffe.trainers.pg.mt
                 if (m_bShowActionProb)
                 {
                     string strOut = "Action Prob: " + Utility.ToString<float>(rgfAprob.ToList()) + " -> " + action.ToString();
-                    m_brain.OutputLog.WriteLine(strOut, false, false, false, true);
+                    m_brain.OutputLog.WriteLine(strOut, false, false, false, !m_bVerbose);
                 }
 
                 if (step == TRAIN_STEP.FORWARD)
