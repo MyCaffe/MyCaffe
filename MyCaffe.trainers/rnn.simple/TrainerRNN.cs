@@ -194,9 +194,9 @@ namespace MyCaffe.trainers.rnn.simple
             }
         }
 
-        private StateBase getData(int nAction)
+        private StateBase getData(Phase phase, int nAction)
         {
-            GetDataArgs args = m_brain.getDataArgs(0, nAction, true);
+            GetDataArgs args = m_brain.getDataArgs(phase, 0, nAction, true);
             m_icallback.OnGetData(args);
             return args.State;
         }
@@ -214,7 +214,7 @@ namespace MyCaffe.trainers.rnn.simple
         /// <returns>The vocabulary built up during training and testing is returned.</returns>
         public void Run(Phase phase, int nIterations, TRAIN_STEP step)
         {
-            StateBase s = getData(-1);
+            StateBase s = getData(phase, -1);
 
             while (!m_brain.Cancel.WaitOne(0) && !s.Done)
             {
@@ -223,7 +223,7 @@ namespace MyCaffe.trainers.rnn.simple
                 else if (phase == Phase.TRAIN)
                     m_brain.Train(s, nIterations, step);
 
-                s = getData(1);
+                s = getData(phase, 1);
             }
         }
 
@@ -507,10 +507,10 @@ namespace MyCaffe.trainers.rnn.simple
             m_icallback.OnUpdateStatus(args);
         }
 
-        public GetDataArgs getDataArgs(int nIdx, int nAction, bool bGetLabel = false, int nBatchSize = 1)
+        public GetDataArgs getDataArgs(Phase phase, int nIdx, int nAction, bool bGetLabel = false, int nBatchSize = 1)
         {
             bool bReset = (nAction == -1) ? true : false;
-            return new GetDataArgs(nIdx, m_mycaffe, m_mycaffe.Log, m_mycaffe.CancelEvent, bReset, nAction, false, bGetLabel, (nBatchSize > 1) ? true : false);
+            return new GetDataArgs(phase, nIdx, m_mycaffe, m_mycaffe.Log, m_mycaffe.CancelEvent, bReset, nAction, false, bGetLabel, (nBatchSize > 1) ? true : false);
         }
 
         public Log Log
@@ -587,6 +587,7 @@ namespace MyCaffe.trainers.rnn.simple
         {
             bool bFound;
             int nIdx;
+            Phase phase = (bTrain) ? Phase.TRAIN : Phase.TEST;
 
             // Real Data 
             if (m_bIsDataReal)
@@ -637,7 +638,7 @@ namespace MyCaffe.trainers.rnn.simple
 
                     if (m_nBatchSize == 1)
                     {
-                        GetDataArgs e = getDataArgs(0, 0, true, m_nBatchSize);
+                        GetDataArgs e = getDataArgs(phase, 0, 0, true, m_nBatchSize);
                         m_icallback.OnGetData(e);
                         rgDataArgs.Add(e);
                     }
@@ -645,7 +646,7 @@ namespace MyCaffe.trainers.rnn.simple
                     {
                         for (int i = 0; i < m_nBatchSize; i++)
                         {
-                            rgDataArgs.Add(getDataArgs(i, 0, true, m_nBatchSize));
+                            rgDataArgs.Add(getDataArgs(phase, i, 0, true, m_nBatchSize));
                         }
 
                         if (!m_dataPool.Run(rgDataArgs))
@@ -841,7 +842,7 @@ namespace MyCaffe.trainers.rnn.simple
 
                     for (int i = 0; i < nN; i++)
                     {
-                        GetDataArgs e = getDataArgs(0, 0, true);
+                        GetDataArgs e = getDataArgs(Phase.RUN, 0, 0, true);
                         m_icallback.OnGetData(e);
 
                         int nExpectedCount = m_blobData.count();

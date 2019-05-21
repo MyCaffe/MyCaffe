@@ -182,9 +182,9 @@ namespace MyCaffe.trainers.pg.simple
             }
         }
 
-        private StateBase getData(int nAction)
+        private StateBase getData(Phase phase, int nAction)
         {
-            GetDataArgs args = m_brain.getDataArgs(nAction);
+            GetDataArgs args = m_brain.getDataArgs(phase, nAction);
             m_icallback.OnGetData(args);
             return args.State;
         }
@@ -212,7 +212,7 @@ namespace MyCaffe.trainers.pg.simple
             int nEpisodeNumber = 0;
             int nIteration = 0;
 
-            StateBase s = getData(-1);
+            StateBase s = getData(phase, -1);
 
             if (s.Clip != null)
                 throw new Exception("The PG.SIMPLE trainer does not support recurrent layers or clip data, use the 'PG.ST' or 'PG.MT' trainer instead.");
@@ -227,7 +227,7 @@ namespace MyCaffe.trainers.pg.simple
                 int action = m_brain.act(x, out fAprob);
 
                 // Take the next step using the action
-                StateBase s_ = getData(action);
+                StateBase s_ = getData(phase, action);
                 dfRewardSum += s_.Reward;
 
                 if (phase == Phase.TRAIN)
@@ -267,7 +267,7 @@ namespace MyCaffe.trainers.pg.simple
                         updateStatus(nEpisodeNumber, dfRewardSum, dfRunningReward.Value);
                         dfRewardSum = 0;
 
-                        s = getData(-1);
+                        s = getData(phase, -1);
                         m_rgMemory.Clear();
                     }
                     else
@@ -290,7 +290,7 @@ namespace MyCaffe.trainers.pg.simple
                         updateStatus(nEpisodeNumber, dfRewardSum, dfRunningReward.Value);
                         dfRewardSum = 0;
 
-                        s = getData(-1);
+                        s = getData(phase, -1);
                     }
                     else
                     {
@@ -394,10 +394,10 @@ namespace MyCaffe.trainers.pg.simple
             m_memData.AddDatumVector(rgData, null, 1, true, true);
         }
 
-        public GetDataArgs getDataArgs(int nAction)
+        public GetDataArgs getDataArgs(Phase phase, int nAction)
         {
             bool bReset = (nAction == -1) ? true : false;
-            return new GetDataArgs(0, m_mycaffe, m_mycaffe.Log, m_mycaffe.CancelEvent, bReset, nAction, false);
+            return new GetDataArgs(phase, 0, m_mycaffe, m_mycaffe.Log, m_mycaffe.CancelEvent, bReset, nAction, false);
         }
 
         public Log Log

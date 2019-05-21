@@ -179,9 +179,9 @@ namespace MyCaffe.trainers.pg.st
             }
         }
 
-        private StateBase getData(int nAction)
+        private StateBase getData(Phase phase, int nAction)
         {
-            GetDataArgs args = m_brain.getDataArgs(nAction);
+            GetDataArgs args = m_brain.getDataArgs(phase, nAction);
             m_icallback.OnGetData(args);
             return args.State;
         }
@@ -210,7 +210,7 @@ namespace MyCaffe.trainers.pg.st
             int nEpisodeNumber = 0;
             int nIteration = 0;
 
-            StateBase s = getData(-1);
+            StateBase s = getData(phase, -1);
           
             while (!m_brain.Cancel.WaitOne(0) && (nIterations == -1 || nIteration < nIterations))
             {
@@ -225,7 +225,7 @@ namespace MyCaffe.trainers.pg.st
                     return;
 
                 // Take the next step using the action
-                StateBase s_ = getData(action);
+                StateBase s_ = getData(phase, action);
                 dfRewardSum += s_.Reward;
 
                 if (phase == Phase.TRAIN)
@@ -273,7 +273,7 @@ namespace MyCaffe.trainers.pg.st
                         updateStatus(nEpisodeNumber, dfRewardSum, dfRunningReward.Value);
                         dfRewardSum = 0;
 
-                        s = getData(-1);
+                        s = getData(phase, -1);
                         m_rgMemory.Clear();
 
                         if (step != TRAIN_STEP.NONE)
@@ -299,7 +299,7 @@ namespace MyCaffe.trainers.pg.st
                         updateStatus(nEpisodeNumber, dfRewardSum, dfRunningReward.Value);
                         dfRewardSum = 0;
 
-                        s = getData(-1);
+                        s = getData(phase, -1);
                     }
                     else
                     {
@@ -504,10 +504,10 @@ namespace MyCaffe.trainers.pg.st
             }
         }
 
-        public GetDataArgs getDataArgs(int nAction)
+        public GetDataArgs getDataArgs(Phase phase, int nAction)
         {
             bool bReset = (nAction == -1) ? true : false;
-            return new GetDataArgs(0, m_mycaffe, m_mycaffe.Log, m_mycaffe.CancelEvent, bReset, nAction, true);
+            return new GetDataArgs(phase, 0, m_mycaffe, m_mycaffe.Log, m_mycaffe.CancelEvent, bReset, nAction, true);
         }
 
         public Log Log

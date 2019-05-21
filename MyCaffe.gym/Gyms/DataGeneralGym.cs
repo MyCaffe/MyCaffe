@@ -27,6 +27,7 @@ namespace MyCaffe.gym
         Dictionary<string, int> m_rgActions = new Dictionary<string, int>();
         DATA_TYPE m_dt = DATA_TYPE.BLOB;
         MyCaffeStreamDatabase m_db;
+        Phase m_phase = Phase.NONE;
 
         /// <summary>
         /// The constructor.
@@ -237,6 +238,15 @@ namespace MyCaffe.gym
         public byte[] ConvertOutput(int nN, float[] rg, out string type)
         {
             return m_db.ConvertOutput(rg, out type);
+        }
+
+        /// <summary>
+        /// Get/set the active phase under which the reset and next run.
+        /// </summary>
+        public Phase ActivePhase
+        {
+            get { return m_phase; }
+            set { m_phase = value; }
         }
     }
 

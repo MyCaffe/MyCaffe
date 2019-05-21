@@ -187,6 +187,10 @@ namespace MyCaffe.gym
         /// <param name="type">Returns the output type.</param>
         /// <returns>The converted output data is returned.</returns>
         byte[] ConvertOutput(int nN, float[] rg, out string type);
+        /// <summary>
+        /// Specifies the active phase under which to get the data reset and next.
+        /// </summary>
+        Phase ActivePhase { get; set; }
     }
 
     /// <summary>

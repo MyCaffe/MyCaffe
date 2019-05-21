@@ -339,10 +339,12 @@ namespace MyCaffe.trainers
         StateBase m_state = null;
         int m_nIndex = 0;
         bool m_bGetLabel = false;
+        Phase m_phase = Phase.NONE;
 
         /// <summary>
         /// The constructor.
         /// </summary>
+        /// <param name="phase">Specifies the phase under which to get the data.</param>
         /// <param name="nIdx">Specifies the index of the thread.</param>
         /// <param name="mycaffe">Specifies the MyCaffeControl used.</param>
         /// <param name="log">Specifies the output log to use.</param>
@@ -352,11 +354,12 @@ namespace MyCaffe.trainers
         /// <param name="bAllowUi">Optionally, specifies whether or not to allow the user interface.</param>
         /// <param name="bGetLabel">Optionally, specifies to get the label in addition to the data.</param>
         /// <param name="bBatchMode">Optionally, specifies to get the data in batch mode (default = false).</param>
-        public GetDataArgs(int nIdx, Component mycaffe, Log log, CancelEvent evtCancel, bool bReset, int nAction = -1, bool bAllowUi = true, bool bGetLabel = false, bool bBatchMode = false)
+        public GetDataArgs(Phase phase, int nIdx, Component mycaffe, Log log, CancelEvent evtCancel, bool bReset, int nAction = -1, bool bAllowUi = true, bool bGetLabel = false, bool bBatchMode = false)
         {
             if (bBatchMode)
                 m_evtDataReady = new ManualResetEvent(false);
 
+            m_phase = phase;
             m_nIndex = nIdx;
             m_nAction = nAction;
             m_caffe = mycaffe;
@@ -364,6 +367,14 @@ namespace MyCaffe.trainers
             m_evtCancel = evtCancel;
             m_bReset = bReset;
             m_bGetLabel = bGetLabel;
+        }
+
+        /// <summary>
+        /// Returns the active phase under which to get the data.
+        /// </summary>
+        public Phase ActivePhase
+        {
+            get { return m_phase; }
         }
 
         /// <summary>

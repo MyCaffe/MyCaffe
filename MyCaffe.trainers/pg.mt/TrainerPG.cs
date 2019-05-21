@@ -579,9 +579,9 @@ namespace MyCaffe.trainers.pg.mt
             return m_dfEpsStart + (double)(nEpisode * (m_dfEpsEnd - m_dfEpsStart)/m_nEpsSteps);
         }
 
-        private StateBase getData(int nIdx, int nAction, bool? bResetOverride = null)
+        private StateBase getData(Phase phase, int nIdx, int nAction, bool? bResetOverride = null)
         {
-            GetDataArgs args = m_brain.getDataArgs(nIdx, nAction, bResetOverride);
+            GetDataArgs args = m_brain.getDataArgs(phase, nIdx, nAction, bResetOverride);
             m_icallback.OnGetData(args);
             return args.State;
         }
@@ -619,10 +619,10 @@ namespace MyCaffe.trainers.pg.mt
         public Tuple<int, int> Run(int nDelay = 1000)
         {
             // Reset the environment and get the initial state.
-            getData(m_nIndex, -1);
+            getData(Phase.RUN, m_nIndex, -1);
             Thread.Sleep(nDelay);
 
-            StateBase state = getData(m_nIndex, -1, false);
+            StateBase state = getData(Phase.RUN, m_nIndex, -1, false);
             float[] rgfAprob;
 
             m_brain.Create();
@@ -653,7 +653,7 @@ namespace MyCaffe.trainers.pg.mt
 
             m_brain.Create();
 
-            StateBase s = getData(m_nIndex, -1);
+            StateBase s = getData(phase, m_nIndex, -1);
           
             while (!m_brain.Cancel.WaitOne(0) && (nIterations == -1 || nIteration < nIterations))
             {
@@ -666,7 +666,7 @@ namespace MyCaffe.trainers.pg.mt
 
                 if (m_bShowActionProb)
                 {
-                    string strOut = "Action Prob: " + Utility.ToString<float>(rgfAprob.ToList()) + " -> " + action.ToString();
+                    string strOut = "Action Prob: " + Utility.ToString<float>(rgfAprob.ToList(), 4) + " -> " + action.ToString();
                     m_brain.OutputLog.WriteLine(strOut, false, false, false, !m_bVerbose);
                 }
 
@@ -674,7 +674,7 @@ namespace MyCaffe.trainers.pg.mt
                     return;
 
                 // Take the next step using the action
-                StateBase s_ = getData(m_nIndex, action);
+                StateBase s_ = getData(phase, m_nIndex, action);
                 dfRewardSum += s_.Reward;
 
                 if (phase == Phase.TRAIN)
@@ -744,7 +744,7 @@ namespace MyCaffe.trainers.pg.mt
                             rgMemoryCache.Clear();
                         }
 
-                        s = getData(m_nIndex, -1);
+                        s = getData(phase, m_nIndex, -1);
                         rgMemory = new Memory();
 
                         if (step != TRAIN_STEP.NONE)
@@ -770,7 +770,7 @@ namespace MyCaffe.trainers.pg.mt
                         nEpisodeNumber = updateStatus(nEpisodeNumber, dfRunningReward.Value, m_brain.LastLoss, m_brain.LearningRate);
                         dfRewardSum = 0;
 
-                        s = getData(m_nIndex, -1);
+                        s = getData(phase, m_nIndex, -1);
                     }
                     else
                     {
@@ -1092,14 +1092,15 @@ namespace MyCaffe.trainers.pg.mt
         /// <summary>
         /// Returns the GetDataArgs used to retrieve new data from the envrionment implemented by derived parent trainer.
         /// </summary>
+        /// <param name="phase">Specifies the phase under which to get the data.</param>
         /// <param name="nIdx">Specifies the envrionment index.</param>
         /// <param name="nAction">Specifies the action to run, or -1 to reset the environment.</param>
         /// <param name="bResetOverride">Optionally, specifies to reset the environment when <i>true</i> (default = <i>null</i>).</param>
         /// <returns>A new GetDataArgs is returned.</returns>
-        public GetDataArgs getDataArgs(int nIdx, int nAction, bool? bResetOverride = null)
+        public GetDataArgs getDataArgs(Phase phase, int nIdx, int nAction, bool? bResetOverride = null)
         {
             bool bReset = (nAction == -1) ? true : false;
-            return new GetDataArgs(nIdx, m_mycaffePrimary, m_mycaffePrimary.Log, m_mycaffePrimary.CancelEvent, bReset, nAction, false, true);
+            return new GetDataArgs(phase, nIdx, m_mycaffePrimary, m_mycaffePrimary.Log, m_mycaffePrimary.CancelEvent, bReset, nAction, false, true);
         }
 
         /// <summary>
