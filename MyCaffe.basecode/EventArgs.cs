@@ -54,6 +54,8 @@ namespace MyCaffe.basecode
         object m_tag = null;
         bool m_bError;
         bool m_bOverrideEnabled = false;
+        bool m_bConsumed = false;
+        bool m_bDisable = false;
 
         /// <summary>
         /// The LogArg constructor.
@@ -63,12 +65,32 @@ namespace MyCaffe.basecode
         /// <param name="dfProgress">Specifies the progress value specifies when setting the Log::Progress value.</param>
         /// <param name="bError">Specifies whether or not the message is the result of a call from Log::WriteError.</param>
         /// <param name="bOverrideEnabled">Specifies whether or not the log override was used.</param>
-        public LogArg(string strSrc, string strMsg, double dfProgress = 0.0, bool bError = false, bool bOverrideEnabled = false)
+        /// <param name="bDisable">Specifies whether or not to disable the output of the message (e.g. used internally).</param>
+        public LogArg(string strSrc, string strMsg, double dfProgress = 0.0, bool bError = false, bool bOverrideEnabled = false, bool bDisable = false)
             : base(strSrc, dfProgress)
         {
             m_strMsg = strMsg;
             m_bError = bError;
             m_bOverrideEnabled = bOverrideEnabled;
+            m_bDisable = bDisable;
+        }
+
+        /// <summary>
+        /// Specifies whether or not the message has already been consumed.
+        /// </summary>
+        public bool Consumed
+        {
+            get { return m_bConsumed; }
+            set { m_bConsumed = value; }
+        }
+
+        /// <summary>
+        /// Specifies whether or not to mark this log entry as disabled so that it is not output.
+        /// </summary>
+        public bool Disable
+        {
+            get { return m_bDisable; }
+            set { m_bDisable = value; }
         }
 
         /// <summary>

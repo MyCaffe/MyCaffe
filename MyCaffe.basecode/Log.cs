@@ -76,7 +76,8 @@ namespace MyCaffe.basecode
         /// <param name="bOverrideEnabled">Specifies whether or not to override the enabled state (default = false).</param>
         /// <param name="bHeader">Specifies whether or not the output text represents a header (default = false).</param>
         /// <param name="bError">Specfifies whether or not the output text represents an error (default = false).</param>
-        public void WriteLine(string str, bool bOverrideEnabled = false, bool bHeader = false, bool bError = false)
+        /// <param name="bDisable">Specifies whether or not to disable the output of this line (e.g. used internally).</param>
+        public void WriteLine(string str, bool bOverrideEnabled = false, bool bHeader = false, bool bError = false, bool bDisable = false)
         {
             // Check for enabled and not overridden
             if (!m_bEnable && !bOverrideEnabled)
@@ -90,7 +91,7 @@ namespace MyCaffe.basecode
                 strLine = str;
 
             if (OnWriteLine != null)
-                OnWriteLine(this, new LogArg(m_strSource, strLine, m_dfProgress, bError, bOverrideEnabled));
+                OnWriteLine(this, new LogArg(m_strSource, strLine, m_dfProgress, bError, bOverrideEnabled, bDisable));
 
             if (m_bEnableTrace)
             {
