@@ -230,6 +230,10 @@ namespace MyCaffe.param
             /// </summary>
             MVN,
             /// <summary>
+            /// Initializes a parameter for the OneHotLayer.
+            /// </summary>
+            ONEHOT,
+            /// <summary>
             /// Initializes a parameter for the ParameterLayer.
             /// </summary>
             PARAMETER,
@@ -887,6 +891,12 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new MVNParameter();
                     break;
 
+                case LayerType.ONEHOT:
+                    expected_bottom.Add("input");
+                    expected_top.Add("onehot");
+                    m_rgLayerParameters[lt] = new OneHotParameter();
+                    break;
+
                 case LayerType.NORMALIZATION:
                     expected_bottom.Add("input");
                     expected_top.Add("norm");
@@ -1529,6 +1539,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.ONEHOT
+        /// </summary>
+        public OneHotParameter onehot_param
+        {
+            get { return (OneHotParameter)m_rgLayerParameters[LayerType.ONEHOT]; }
+            set { m_rgLayerParameters[LayerType.ONEHOT] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.NORMALIZATION
         /// </summary>
         public NormalizationParameter normalization_param
@@ -1999,6 +2018,9 @@ namespace MyCaffe.param
                 case LayerType.MVN:
                     return "MVN";
 
+                case LayerType.ONEHOT:
+                    return "OneHot";
+
                 case LayerType.NORMALIZATION:
                     return "Normalization";
 
@@ -2190,6 +2212,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(memory_data_param, "memory_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(mvn_param, "mvn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization_param, "normalization_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(onehot_param, "onehot_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(pooling_param, "pooling_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(parameter_param, "parameter_param"));
@@ -2405,6 +2428,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("normalization_param")) != null)
                 p.normalization_param = NormalizationParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("onehot_param")) != null)
+                p.onehot_param = OneHotParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("pooling_param")) != null)
                 p.pooling_param = PoolingParameter.FromProto(rpp);
@@ -2645,6 +2671,9 @@ namespace MyCaffe.param
 
                 case "mvn":
                     return LayerType.MVN;
+
+                case "onehot":
+                    return LayerType.ONEHOT;
 
                 case "normalization":
                     return LayerType.NORMALIZATION;
