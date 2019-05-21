@@ -326,7 +326,7 @@ namespace MyCaffe.trainers
     }
 
     /// <summary>
-    /// The GetDataArgs is passed to the OnGetData event.
+    /// The GetDataArgs is passed to the OnGetData event to retrieve data.
     /// </summary>
     public class GetDataArgs : EventArgs
     {
