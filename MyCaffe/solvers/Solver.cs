@@ -784,6 +784,9 @@ namespace MyCaffe.solvers
                             bFwdPassNanFree = m_net.ForwardBackward(colBottom, out dfLocalLoss, step);
                         }
 
+                        if (double.IsNaN(dfLocalLoss) || double.IsInfinity(dfLocalLoss))
+                            m_log.WriteError(new Exception("The local loss at iteration " + m_nIter.ToString() + " is invalid (NAN or INFINITY)!"));
+
                         dfLossTotal += dfLocalLoss;
                         swTiming.Stop();
 
@@ -970,14 +973,9 @@ namespace MyCaffe.solvers
             if (OnSnapshot == null)
                 return;
 
-            SnapshotArgs args = new common.SnapshotArgs(null, null, m_dfLastAccuracy, m_dfLastError, m_nIter, m_snapshotWeightUpdatemMethod);
-            args.IncludeState = m_param.snapshot_include_state;
-            args.IncludeWeights = m_param.snapshot_include_weights;
-            args.SingleStep = m_bEnableSingleStep;
+            SnapshotArgs args = GetSnapshotArgs(null, null, m_dfLastAccuracy, m_dfLastError, m_nIter, m_snapshotWeightUpdatemMethod);
             args.Forced = bForced;
             args.Scheduled = bScheduled;
-            args.OnGetState += args_OnGetState;
-            args.OnGetWeights += args_OnGetWeights;
 
             OnSnapshot(this, args);
             m_log.WriteLine("Snapshot completed.");
@@ -991,6 +989,29 @@ namespace MyCaffe.solvers
         private void args_OnGetState(object sender, GetBytesArgs e)
         {
             e.Data = SnapshotSolverState();
+        }
+
+        /// <summary>
+        /// The GetSnapshotArgs method fills out a snapshot args structure.
+        /// </summary>
+        /// <param name="rgState">Specifies the state bytes or null.</param>
+        /// <param name="rgWeights">Specifies the weight bytes or null.</param>
+        /// <param name="dfAccuracy">Specifies the accuracy.</param>
+        /// <param name="dfError">Specifies the error.</param>
+        /// <param name="nIteration">Specifies the interation.</param>
+        /// <param name="wtUpdt">Specifies the weight update method.</param>
+        /// <returns>The args are returned.</returns>
+        public SnapshotArgs GetSnapshotArgs(byte[] rgState, byte[] rgWeights, double dfAccuracy, double dfError, int nIteration, SNAPSHOT_WEIGHT_UPDATE_METHOD wtUpdt)
+        {
+            SnapshotArgs args = new SnapshotArgs(rgState, rgWeights, dfAccuracy, dfError, nIteration, wtUpdt);
+
+            args.IncludeState = m_param.snapshot_include_state;
+            args.IncludeWeights = m_param.snapshot_include_weights;
+            args.SingleStep = m_bEnableSingleStep;
+            args.OnGetState += args_OnGetState;
+            args.OnGetWeights += args_OnGetWeights;
+
+            return args;
         }
 
         /// <summary>
