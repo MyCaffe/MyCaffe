@@ -672,7 +672,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestOneHotParameter()
         {
-            string str = "onehot_param { axis: 1 num_output: 13 min: -1.01 max: 2.02 }";
+            string str = "onehot_param { axis: 1 num_output: 13 min: -1.01 max: 2.02 min_axes: 4 }";
             RawProto proto = RawProto.Parse(str).FindChild("onehot_param");
             OneHotParameter p = OneHotParameter.FromProto(proto);
 
