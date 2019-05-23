@@ -135,6 +135,7 @@ namespace MyCaffe.layers
         /// <param name="colBottom">input blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$
         ///     the inputs.
+        /// </param>
         /// <param name="colTop">output blob vector (length 1)
         ///  -# @f$ (N \times 1 \times K) @f$ or, if out_max_val
         ///     @f$ (N \times 2 \times K) @f$ unless axis set then e.g.
