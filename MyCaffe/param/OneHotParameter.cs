@@ -1,6 +1,7 @@
 ﻿using MyCaffe.basecode;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -45,6 +46,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the axis over which to apply the one-hot vectoring.
         /// </summary>
+        [Description("Specifies the axis over which to apply the one-hot vectoring.")]
         public int axis
         {
             get { return m_nAxis; }
@@ -54,6 +56,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the minimum number of axes.  Axes of size 1 are added to the current axis count up to the minimum.
         /// </summary>
+        [Description("Specifies the minimum number of axes.  Axes of size 1 are added to the current axis count up to the minimum.")]
         public int min_axes
         {
             get { return m_nMinAxes; }
@@ -63,6 +66,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the number of items within the one-hot vector output.
         /// </summary>
+        [Description("Specifies the number of items within the one-hot vector output.")]
         public uint num_output
         {
             get { return m_nNumOutput; }
@@ -72,6 +76,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the minimum data range over which to bucketize for the one-hot vector input.
         /// </summary>
+        [Description("Specifies the minimum data range over which to bucketize for the one-hot vector input.")]
         public double min
         {
             get { return m_dfMin; }
@@ -81,6 +86,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the maximum data range over which to bucketize for the one-hot vector input.
         /// </summary>
+        [Description("Specifies the maximum data range over which to bucketize for the one-hot vector input.")]
         public double max
         {
             get { return m_dfMax; }
