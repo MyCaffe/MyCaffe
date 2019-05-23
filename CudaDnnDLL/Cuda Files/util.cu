@@ -77,6 +77,10 @@ bool GetErrorString(long lErr, char* szErr, long lMaxErr)
 			_snprintf(szErr, lMaxErr, "GENERAL: Expected device memory but received host memory (%ld)", lErr);
 			return true;
 
+		case ERROR_MEMORY_RANGE_EXCEEDED:
+			_snprintf(szErr, lMaxErr, "GENERAL: Exceeded the maximum amount of memory size available as a chunk (%ld)", lErr);
+			return true;
+
 		case ERROR_MEMORY_OUT:
 			_snprintf(szErr, lMaxErr, "GENERAL: Out of memory (%ld)", lErr);
 			return true;
