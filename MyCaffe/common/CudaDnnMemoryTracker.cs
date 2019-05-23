@@ -30,7 +30,7 @@ namespace MyCaffe.common
         /// <param name="hMemory">Specifies the CudaDnn handle to the memory.</param>
         /// <param name="lSize">Specifies the size of the memory (in items).</param>
         /// <returns></returns>
-        public long AllocMemory(long hKernel, int nDeviceID, long hMemory, long lSize)
+        public long AllocMemory(long hKernel, int nDeviceID, long hMemory, ulong lSize)
         {
             MemoryInfo mi = new MemoryInfo(hKernel, nDeviceID, hMemory, lSize);
             string strKey = mi.ToKey();
@@ -40,6 +40,10 @@ namespace MyCaffe.common
                 throw new Exception("Memory item '" + strKey + "' already exists!");
 
             m_rgItems.Add(nKeyHash, mi);
+
+#if DEBUG
+            Trace.WriteLine("Memory Used: " + TotalMemoryUsedText);   
+#endif
 
             return hMemory;
         }
@@ -59,16 +63,20 @@ namespace MyCaffe.common
                 throw new Exception("Memory item '" + strKey + "' does not exist!");
 
             m_rgItems.Remove(nKeyHash);
+
+#if DEBUG
+            Trace.WriteLine("Memory Used: " + TotalMemoryUsedText);
+#endif
         }
 
         /// <summary>
         /// Returns the total number of items allocated.
         /// </summary>
-        public long TotalItemsAllocated
+        public ulong TotalItemsAllocated
         {
             get
             {
-                long lMem = 0;
+                ulong lMem = 0;
 
                 foreach (KeyValuePair<int, MemoryInfo> kv in m_rgItems)
                 {
@@ -82,12 +90,12 @@ namespace MyCaffe.common
         /// <summary>
         /// Returns the total amount of memory used (in bytes).
         /// </summary>
-        public long TotalMemoryUsed
+        public ulong TotalMemoryUsed
         {
             get 
             {
                 int nSize = (typeof(T) == typeof(double)) ? 8 : 4;
-                return TotalItemsAllocated * nSize;
+                return TotalItemsAllocated * (ulong)nSize;
             }
         }
 
@@ -108,9 +116,9 @@ namespace MyCaffe.common
         long m_hKernel;
         int m_nDeviceID;
         long m_hMemory;
-        long m_lSize;
+        ulong m_lSize;
 
-        public MemoryInfo(long hKernel, int nDeviceID, long hMemory, long lSize)
+        public MemoryInfo(long hKernel, int nDeviceID, long hMemory, ulong lSize)
         {
             m_hKernel = hKernel;
             m_nDeviceID = nDeviceID;
@@ -133,7 +141,7 @@ namespace MyCaffe.common
             get { return m_hMemory; }
         }
 
-        public long Size
+        public ulong Size
         {
             get { return m_lSize; }
         }
