@@ -750,6 +750,7 @@ namespace MyCaffe.common
 
             CUDA_ACCURACY_FWD = 286,
 
+            CUDA_CHANNEL_MIN = 289,
             CUDA_CHANNEL_MAX = 290,
             CUDA_CHANNEL_SUB = 291,
             CUDA_CHANNEL_SUM = 292,
@@ -1084,9 +1085,17 @@ namespace MyCaffe.common
         /// <summary>
         /// Returns the total amount of GPU memory used by this instance.
         /// </summary>
-        public long TotalMemoryUsed
+        public ulong TotalMemoryUsed
         {
             get { return m_memTracker.TotalMemoryUsed; }
+        }
+
+        /// <summary>
+        /// Returns the total amount of memory used.
+        /// </summary>
+        public string TotalMemoryUsedAsText
+        {
+            get { return m_memTracker.TotalMemoryUsedText; }
         }
 
         /// <summary>
@@ -1582,7 +1591,7 @@ namespace MyCaffe.common
                             rg = new double[] { m_nGhostMemoryIndex };
                         }
 
-                        return m_memTracker.AllocMemory(m_hKernel, m_nDeviceId, (long)rg[0], rgInput.Count);
+                        return m_memTracker.AllocMemory(m_hKernel, m_nDeviceId, (long)rg[0], (ulong)rgInput.Count);
                     }
                 }
                 else
@@ -1609,7 +1618,7 @@ namespace MyCaffe.common
                             rg = new float[] { m_nGhostMemoryIndex };
                         }
 
-                        return m_memTracker.AllocMemory(m_hKernel, m_nDeviceId, (long)rg[0], rgInput.Count);
+                        return m_memTracker.AllocMemory(m_hKernel, m_nDeviceId, (long)rg[0], (ulong)rgInput.Count);
                     }
                 }
             }
@@ -1628,7 +1637,7 @@ namespace MyCaffe.common
         /// <returns>The handle to the GPU memory is returned.</returns>
         public long AllocMemory(long lCapacity)
         {
-            if (lCapacity == 0)
+            if (lCapacity <= 0)
                 throw new ArgumentOutOfRangeException();
 
             try
@@ -1650,7 +1659,7 @@ namespace MyCaffe.common
                             rg = new double[] { m_nGhostMemoryIndex };
                         }
 
-                        return m_memTracker.AllocMemory(m_hKernel, m_nDeviceId, (long)rg[0], lCapacity);
+                        return m_memTracker.AllocMemory(m_hKernel, m_nDeviceId, (long)rg[0], (ulong)lCapacity);
                     }
                 }
                 else
@@ -1670,7 +1679,7 @@ namespace MyCaffe.common
                             rg = new float[] { m_nGhostMemoryIndex };
                         }
 
-                        return m_memTracker.AllocMemory(m_hKernel, m_nDeviceId, (long)rg[0], lCapacity);
+                        return m_memTracker.AllocMemory(m_hKernel, m_nDeviceId, (long)rg[0], (ulong)lCapacity);
                     }
                 }
             }
@@ -5566,6 +5575,23 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Calculates the minimum value within each channel of X and places the result in Y.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of elements in X.</param>
+        /// <param name="nOuterNum">Specifies the number of images within X.</param>
+        /// <param name="nChannels">Specifies the number of channels per image of X.</param>
+        /// <param name="nInnerNum">Specifies the dimension of each image in X.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        public void channel_min(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MIN, new double[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MIN, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
+        }
+
+        /// <summary>
         /// Calculates the maximum value within each channel of X and places the result in Y.
         /// </summary>
         /// <param name="nCount">Specifies the number of elements in X.</param>
@@ -5583,7 +5609,7 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Subtracts the values of the channels from Y and places the result in Y.
+        /// Subtracts the values of the channels from X and places the result in Y.
         /// </summary>
         /// <param name="nCount">Specifies the number of elements in X.</param>
         /// <param name="nOuterNum">Specifies the number of images within X.</param>
@@ -5617,7 +5643,7 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Divides the values of the channels from Y and places the result in Y.
+        /// Divides the values of the channels from X and places the result in Y.
         /// </summary>
         /// <param name="nCount">Specifies the number of elements in X.</param>
         /// <param name="nOuterNum">Specifies the number of images within X.</param>
@@ -5635,7 +5661,7 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Multiplies the values of the channels from Y and places the result in Y.
+        /// Multiplies the values of the channels from X and places the result in Y.
         /// </summary>
         /// <param name="nCount">Specifies the number of elements in X.</param>
         /// <param name="nOuterNum">Specifies the number of images within X.</param>
