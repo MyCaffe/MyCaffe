@@ -185,6 +185,9 @@ long memtestHandle<T>::Initialize(Memory<T>* pMem, T fPctToAllocate, size_t* psz
 		if (fPctToAllocate > 0 && fPctToAllocate < 1)
 			m_szTotalNumBlocks = (size_t)(m_szTotalNumBlocks * fPctToAllocate);
 
+		if (m_szTotalNumBlocks > 48200)
+			m_szTotalNumBlocks -= 100;
+
 		do
 		{
 			m_szTotalNumBlocks -= 16; // magic number 16MB

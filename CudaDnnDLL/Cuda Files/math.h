@@ -140,6 +140,7 @@ class Math
 		long contains_point(int n, long hMean, long hWidth, long hX, long hWork, T* pOut, int nXOff = 0);
 		long denan(int n, long hX, T fReplacement);
 
+		long channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_sum(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);

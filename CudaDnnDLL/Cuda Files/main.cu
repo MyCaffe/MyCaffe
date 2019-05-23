@@ -509,6 +509,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_CONTAINS_POINT:
 			return m_device.cuda_contains_point(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_CHANNEL_MIN:
+			return m_device.cuda_channel_min(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_CHANNEL_MAX:
 			return m_device.cuda_channel_max(lCount, pfInput, plCount, ppfOutput);
 
@@ -1313,6 +1316,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_CONTAINS_POINT:
 		return "CUDA_FN_CONTAINS_POINT";
+
+	case CUDA_FN_CHANNEL_MIN:
+		return "CUDA_FN_CHANNEL_MIN";
 
 	case CUDA_FN_CHANNEL_MAX:
 		return "CUDA_FN_CHANNEL_MAX";
