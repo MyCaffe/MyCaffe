@@ -1016,6 +1016,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.DATA:
                     return new DataLayer<T>(cuda, log, p, imgDb, evtCancel);
 
+                case LayerParameter.LayerType.DATA_NORMALIZER:
+                    return new DataNormalizerLayer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.DEBUG:
                     return new DebugLayer<T>(cuda, log, p);
 

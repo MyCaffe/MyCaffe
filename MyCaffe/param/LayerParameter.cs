@@ -130,6 +130,10 @@ namespace MyCaffe.param
             /// </summary>
             DATA,
             /// <summary>
+            /// Initializes a parameter for the DataNormalizerLayer.
+            /// </summary>
+            DATA_NORMALIZER,
+            /// <summary>
             /// Initializes a parameter for the DropoutLayer.
             /// </summary>
             DROPOUT,
@@ -726,6 +730,14 @@ namespace MyCaffe.param
                     expected_top.Add("label");
                     m_rgLayerParameters[LayerType.TRANSFORM] = new TransformationParameter();
                     m_rgLayerParameters[LayerType.DATA] = new DataParameter();
+                    break;
+
+                case LayerType.DATA_NORMALIZER:
+                    expected_bottom.Add("data");
+                    expected_bottom.Add("label");
+                    expected_top.Add("ndata");
+                    expected_bottom.Add("nlabel");
+                    m_rgLayerParameters[LayerType.DATA_NORMALIZER] = new DataNormalizerParameter();
                     break;
 
                 case LayerType.MEMORYDATA:
@@ -1359,6 +1371,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.DATA_NORMALIZER
+        /// </summary>
+        public DataNormalizerParameter data_normalizer_param
+        {
+            get { return (DataNormalizerParameter)m_rgLayerParameters[LayerType.DATA_NORMALIZER]; }
+            set { m_rgLayerParameters[LayerType.DATA_NORMALIZER] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.DEBUG
         /// </summary>
         public DebugParameter debug_param
@@ -1930,6 +1951,9 @@ namespace MyCaffe.param
 
                 case LayerType.DATA:
                     return "Data";
+
+                case LayerType.DATA_NORMALIZER:
+                    return "DataNormalizer";
 
                 case LayerType.DEBUG:
                     return "Debug";
@@ -2573,6 +2597,10 @@ namespace MyCaffe.param
 
                 case "data":
                     return LayerType.DATA;
+
+                case "datanormalizer":
+                case "data_normalizer":
+                    return LayerType.DATA_NORMALIZER;
 
                 case "debug":
                     return LayerType.DEBUG;
