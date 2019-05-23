@@ -18,7 +18,7 @@ MemoryCollection::~MemoryCollection()
 	}
 }
 
-long MemoryCollection::Allocate(int nDeviceID, long lSize, void* pSrc, cudaStream_t pStream, long* phHandle)
+long MemoryCollection::Allocate(int nDeviceID, size_t lSize, void* pSrc, cudaStream_t pStream, long* phHandle)
 {
 	LONG lErr = 0;
 	long nFirstIdx = m_nLastIdx;
@@ -58,7 +58,7 @@ long MemoryCollection::Allocate(int nDeviceID, long lSize, void* pSrc, cudaStrea
 	return ERROR_MEMORY_OUT;
 }
 
-long MemoryCollection::Allocate(int nDeviceID, void* pData, long lSize, long* phHandle)
+long MemoryCollection::Allocate(int nDeviceID, void* pData, size_t lSize, long* phHandle)
 {
 	LONG lErr = 0;
 	long nFirstIdx = m_nLastIdx;

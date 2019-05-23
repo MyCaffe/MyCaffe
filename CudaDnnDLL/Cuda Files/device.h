@@ -126,7 +126,7 @@ class Device
 			return m_memory.FreeHost(pf);
 		}
 
-		long AllocHost(long lCount, T** ppDst, T* pSrc, bool bSrcOnDevice = false)
+		long AllocHost(size_t lCount, T** ppDst, T* pSrc, bool bSrcOnDevice = false)
 		{
 			return m_memory.AllocHost(lCount, ppDst, pSrc, bSrcOnDevice);
 		}
@@ -299,6 +299,7 @@ class Device
 		long cuda_contains_point(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_denan(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
+		long cuda_channel_min(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_max(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_sub(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_sum(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -1027,14 +1028,14 @@ inline long Device<T>::GetConvolutionInfo(long lInput, T* pfInput, long* plOutpu
 	long hFilter = (long)pfInput[2];
 	long hConvDesc = (long)pfInput[3];
 	long hTopDesc = (long)pfInput[4];
-	long lWsLimitInBytes = (long)pfInput[5];
+	size_t lWsLimitInBytes = (size_t)pfInput[5];
 	int nPreferredFwdAlgo = -1;
 	long algoFwd = 0;
-	long lWsSizeFwd = 0;
+	size_t lWsSizeFwd = 0;
 	long algoBwdFilter = 0;
-	long lWsSizeBwdFilter = 0;
+	size_t lWsSizeBwdFilter = 0;
 	long algoBwdData = 0;
-	long lWsSizeBwdData = 0;
+	size_t lWsSizeBwdData = 0;
 
 	if (lInput >= 7)
 		nPreferredFwdAlgo = (int)pfInput[6];
@@ -1079,7 +1080,7 @@ inline long Device<T>::ConvolutionForward(long lInput, T* pfInput, long* plOutpu
 	long algo = (long)pfInput[9];
 	long hWorkspace = (long)pfInput[10];
 	int nWorkspaceOffset = (int)pfInput[11];
-	long lWorkspaceSize = (long)pfInput[12];
+	size_t lWorkspaceSize = (size_t)pfInput[12];
 	T fBeta = pfInput[13];
 	long hTopDesc = (long)pfInput[14];
 	long hTopData = (long)pfInput[15];
@@ -1137,7 +1138,7 @@ inline long Device<T>::ConvolutionBackwardFilter(long lInput, T* pfInput, long* 
 	long algo = (long)pfInput[9];
 	long hWorkspace = (long)pfInput[10];
 	int nWorkspaceOffset = (int)pfInput[11];
-	long lWorkspaceSize = (long)pfInput[12];
+	size_t lWorkspaceSize = (size_t)pfInput[12];
 	T fBeta = pfInput[13];
 	long hFilterDesc = (long)pfInput[14];
 	long hWeightDiff = (long)pfInput[15];
@@ -1170,7 +1171,7 @@ inline long Device<T>::ConvolutionBackwardData(long lInput, T* pfInput, long* pl
 	long algo = (long)pfInput[9];
 	long hWorkspace = (long)pfInput[10];
 	int nWorkspaceOffset = (int)pfInput[11];
-	long lWorkspaceSize = (long)pfInput[12];
+	size_t lWorkspaceSize = (size_t)pfInput[12];
 	T fBeta = pfInput[13];
 	long hBottomDesc = (long)pfInput[14];
 	long hBottomDiff = (long)pfInput[15];
@@ -2310,8 +2311,8 @@ inline long Device<T>::cuda_clip_fwd(long lInput, T* pfInput, long* plOutput, T*
 	int nCount = (int)pfInput[0];
 	long hBottomData = (long)pfInput[1];
 	long hTopData = (long)pfInput[2];
-	T fMin = (long)pfInput[3];
-	T fMax = (long)pfInput[4];
+	T fMin = pfInput[3];
+	T fMax = pfInput[4];
 
 	return m_math.clip_fwd(nCount, hBottomData, hTopData, fMin, fMax);
 }
@@ -2328,8 +2329,8 @@ inline long Device<T>::cuda_clip_bwd(long lInput, T* pfInput, long* plOutput, T*
 	long hTopDiff = (long)pfInput[1];
 	long hBottomData = (long)pfInput[2];
 	long hBottomDiff = (long)pfInput[3];
-	T fMin = (long)pfInput[4];
-	T fMax = (long)pfInput[5];
+	T fMin = pfInput[4];
+	T fMax = pfInput[5];
 
 	return m_math.clip_bwd(nCount, hTopDiff, hBottomData, hBottomDiff, fMin, fMax);
 }

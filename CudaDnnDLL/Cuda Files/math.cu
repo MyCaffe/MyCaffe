@@ -277,7 +277,11 @@ long Math<T>::get(int nCount, long hDst, int nIdx, T* pfOutput)
 
 	if (nIdx == -1)
 	{
-		if (lErr = cudaMemcpy(pfOutput, pItem->Data(), sizeof(T) * nCount, cudaMemcpyDeviceToHost))
+		long long lSize = nCount * sizeof(T);
+		if (lSize > SIZE_MAX)
+			return ERROR_MEMORY_RANGE_EXCEEDED;
+
+		if (lErr = cudaMemcpy(pfOutput, pItem->Data(), (size_t)lSize, cudaMemcpyDeviceToHost))
 			return lErr;
 	}
 	else
@@ -300,7 +304,10 @@ template <class T>
 long Math<T>::copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOffset, long hAsyncStream)
 {
 	LONG lErr;
-	long lSize = nCount * sizeof(T);
+	long long lSize = nCount * sizeof(T);
+	if (lSize > SIZE_MAX)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
 	MemoryItem* pSrc;
 	MemoryItem* pDst;
 
@@ -1648,10 +1655,14 @@ long Math<T>::minmaxval(int n, long hA, long hWork1, long hWork2, T* pMin, T* pM
 	{
 		while (nCount < n)
 		{
-			if (lErr = cudaMemset(w1, 0, nSize * sizeof(T)))
+			long long lSize = nSize * sizeof(T);
+			if (lSize > SIZE_MAX)
+				return ERROR_MEMORY_RANGE_EXCEEDED;
+
+			if (lErr = cudaMemset(w1, 0, (size_t)lSize))
 				return lErr;
 
-			if (lErr = cudaMemset(w2, 0, nSize * sizeof(T)))
+			if (lErr = cudaMemset(w2, 0, (size_t)lSize))
 				return lErr;
 
 			minmax_kernel<T> << <nBlocks, MAX_SH_MEM >> > (a, w1, w2, nSize, fMin, fMax);
@@ -1789,10 +1800,14 @@ long Math<T>::naninfval(int n, long hA, long hWork1, long hWork2, T* pNan, T* pI
 	{
 		while (nCount < n)
 		{
-			if (lErr = cudaMemset(w1, 0, nSize * sizeof(T)))
+			long long lSize = nSize * sizeof(T);
+			if (lSize > SIZE_MAX)
+				return ERROR_MEMORY_RANGE_EXCEEDED;
+
+			if (lErr = cudaMemset(w1, 0, (size_t)lSize))
 				return lErr;
 
-			if (lErr = cudaMemset(w2, 0, nSize * sizeof(T)))
+			if (lErr = cudaMemset(w2, 0, (size_t)lSize))
 				return lErr;
 
 			naninf_kernel<T> << <nBlocks, MAX_SH_MEM >> > (a, w1, w2, nSize);
@@ -2748,6 +2763,46 @@ long Math<T>::logistic2(int n, long hX, long hY)
 
 template long Math<double>::logistic2(int n, long hA, long hY);
 template long Math<float>::logistic2(int n, long hA, long hY);
+
+
+template <typename T>
+__global__ void channel_min_kernel(const int num, const int channels, const int spatial_dim, const T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * spatial_dim; i += blockDim.x * gridDim.x)
+	{
+		int n = i / spatial_dim;
+		int s = i % spatial_dim;
+		T val = FLT_MAX;
+
+		for (int c = 0; c < channels; c++)
+		{
+			val = min(x[(n * channels + c) * spatial_dim + s], val);
+		}
+
+		y[i] = val;
+	}
+}
+
+template <typename T>
+long Math<T>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	channel_min_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+template long Math<float>::channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 
 
 template <typename T>

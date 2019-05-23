@@ -230,7 +230,7 @@ template long Memory<float>::AllocHost(LPTSTR* ppDst, LPTSTR pSrc);
 
 
 template <class T>
-long Memory<T>::AllocHost(long lCount, T** ppDst, T* pSrc, bool bSrcOnDevice)
+long Memory<T>::AllocHost(size_t lCount, T** ppDst, T* pSrc, bool bSrcOnDevice)
 {
 	if (lCount == 0)
 		return ERROR_PARAM_OUT_OF_RANGE;
@@ -238,15 +238,18 @@ long Memory<T>::AllocHost(long lCount, T** ppDst, T* pSrc, bool bSrcOnDevice)
 	if (ppDst == NULL)
 		return ERROR_PARAM_NULL;
 
-	long lSize = lCount * sizeof(T);
+	long long lSize = lCount * sizeof(T);
+	if (lSize > SIZE_MAX)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
 	T* pDst = NULL;	
 	LONG lErr = 0;
 
 #ifdef USE_PINNED_HOST_MEM
-	if (lErr = cudaMallocHost(&pDst, lSize))
+	if (lErr = cudaMallocHost(&pDst, (size_t)lSize))
 		return lErr;
 #else
-	pDst = (T*)malloc(lSize);
+	pDst = (T*)malloc((size_t)lSize);
 	if (pDst == NULL)
 		return ERROR_MEMORY_OUT;
 #endif
@@ -255,7 +258,7 @@ long Memory<T>::AllocHost(long lCount, T** ppDst, T* pSrc, bool bSrcOnDevice)
 	{
 		cudaMemcpyKind kind = (bSrcOnDevice) ? cudaMemcpyDeviceToHost : cudaMemcpyHostToHost;
 
-		if (lErr = cudaMemcpy(pDst, pSrc, lSize, kind))
+		if (lErr = cudaMemcpy(pDst, pSrc, (size_t)lSize, kind))
 		{
 #ifdef USE_PINNED_HOST_MEM
 			cudaFreeHost(pDst);
@@ -274,12 +277,12 @@ long Memory<T>::AllocHost(long lCount, T** ppDst, T* pSrc, bool bSrcOnDevice)
 	return cudaGetLastError();
 }
 
-template long Memory<double>::AllocHost(long lCount, double** ppDst, double* pSrc, bool bSrcOnDevice);
-template long Memory<float>::AllocHost(long lCount, float** ppDst, float* pSrc, bool bSrcOnDevice);
+template long Memory<double>::AllocHost(size_t lCount, double** ppDst, double* pSrc, bool bSrcOnDevice);
+template long Memory<float>::AllocHost(size_t lCount, float** ppDst, float* pSrc, bool bSrcOnDevice);
 
 
 template <class T>
-long Memory<T>::CopyToHost(long lCount, T* pDst, T* pSrc, bool bSrcOnDevice)
+long Memory<T>::CopyToHost(size_t lCount, T* pDst, T* pSrc, bool bSrcOnDevice)
 {
 	if (lCount == 0)
 		return ERROR_PARAM_OUT_OF_RANGE;
@@ -289,15 +292,19 @@ long Memory<T>::CopyToHost(long lCount, T* pDst, T* pSrc, bool bSrcOnDevice)
 
 	cudaMemcpyKind kind = (bSrcOnDevice) ? cudaMemcpyDeviceToHost : cudaMemcpyHostToHost;
 
-	return cudaMemcpy(pDst, pSrc, lCount * sizeof(T), kind);
+	long long lSize = lCount * sizeof(T);
+	if (lSize > SIZE_MAX)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
+	return cudaMemcpy(pDst, pSrc, (size_t)lSize, kind);
 }
 
-template long Memory<double>::CopyToHost(long lCount, double* pDst, double* pSrc, bool bSrcOnDevice);
-template long Memory<float>::CopyToHost(long lCount, float* pDst, float* pSrc, bool bSrcOnDevice);
+template long Memory<double>::CopyToHost(size_t lCount, double* pDst, double* pSrc, bool bSrcOnDevice);
+template long Memory<float>::CopyToHost(size_t lCount, float* pDst, float* pSrc, bool bSrcOnDevice);
 
 
 template <class T>
-long Memory<T>::AllocHostBuffer(long lCount, long* phHandle)
+long Memory<T>::AllocHostBuffer(size_t lCount, long* phHandle)
 {
 	LONG lErr = 0;
 
@@ -331,8 +338,8 @@ long Memory<T>::AllocHostBuffer(long lCount, long* phHandle)
 	return 0;
 }
 
-template long Memory<double>::AllocHostBuffer(long lCount, long* phHandle);
-template long Memory<float>::AllocHostBuffer(long lCount, long* phHandle);
+template long Memory<double>::AllocHostBuffer(size_t lCount, long* phHandle);
+template long Memory<float>::AllocHostBuffer(size_t lCount, long* phHandle);
 
 
 template <class T>
@@ -584,7 +591,7 @@ template long Memory<float>::CreateConvolutionDesc(long* phHandle);
 
 
 template <class T>
-long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, long lWsLimitInBytes, long* palgoFwd, long* plWsSizeFwd, long* palgoBwdFilter, long* plWsSizeBwdFilter, long* palgoBwdData, long* plWsSizeBwdData, int nPreferredFwdAlgo)
+long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, size_t lWsLimitInBytes, long* palgoFwd, size_t* plWsSizeFwd, long* palgoBwdFilter, size_t* plWsSizeBwdFilter, long* palgoBwdData, size_t* plWsSizeBwdData, int nPreferredFwdAlgo)
 {
 	cudnnStatus_t lErr;	
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -599,7 +606,7 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 	cudnnConvolutionBwdFilterPreference_t bwdFltPref = CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT;
 	cudnnConvolutionBwdDataPreference_t bwdDataPref = CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT;
 
-	if (lWsLimitInBytes < 0)
+	if (lWsLimitInBytes == (size_t)-1)
 	{
 		lWsLimitInBytes = 0;
 		fwdPref = CUDNN_CONVOLUTION_FWD_PREFER_FASTEST;
@@ -667,21 +674,21 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 		return lErr | ERROR_CUDNN_OFFSET;
 
 	*palgoFwd = (long)algoFwd;
-	*plWsSizeFwd = (long)szFwd;
+	*plWsSizeFwd = szFwd;
 	*palgoBwdFilter = (long)algoBwdFilter;
-	*plWsSizeBwdFilter = (long)szBwdFilter;
+	*plWsSizeBwdFilter = szBwdFilter;
 	*palgoBwdData = (long)algoBwdData;
-	*plWsSizeBwdData = (long)szBwdData;
+	*plWsSizeBwdData = szBwdData;
 
 	return cudaSuccess;
 }
 
-template long Memory<double>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, long lWsLimitInBytes, long* palgoFwd, long* plWsSizeFwd, long* palgoBwdFilter, long* plWsSizeBwdFilter, long* palgoBwdData, long* plWsSizeBwdData, int nPreferredFwdAlgo);
-template long Memory<float>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, long lWsLimitInBytes, long* palgoFwd, long* plWsSizeFwd, long* palgoBwdFilter, long* plWsSizeBwdFilter, long* palgoBwdData, long* plWsSizeBwdData, int nPreferredFwdAlgo);
+template long Memory<double>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, size_t lWsLimitInBytes, long* palgoFwd, size_t* plWsSizeFwd, long* palgoBwdFilter, size_t* plWsSizeBwdFilter, long* palgoBwdData, size_t* plWsSizeBwdData, int nPreferredFwdAlgo);
+template long Memory<float>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, size_t lWsLimitInBytes, long* palgoFwd, size_t* plWsSizeFwd, long* palgoBwdFilter, size_t* plWsSizeBwdFilter, long* palgoBwdData, size_t* plWsSizeBwdData, int nPreferredFwdAlgo);
 
 
 template <class T>
-long Memory<T>::ConvolutionForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, T fBeta, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream)
+long Memory<T>::ConvolutionForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, size_t lWorkspaceSize, T fBeta, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -741,8 +748,8 @@ long Memory<T>::ConvolutionForward(long hHandle, T fAlpha, long hBottomDesc, lon
 	return CUDNN_STATUS_SUCCESS;
 }
 
-template long Memory<double>::ConvolutionForward(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, double dfBeta, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream);
-template long Memory<float>::ConvolutionForward(long hHandle, float fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, float fBeta, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream);
+template long Memory<double>::ConvolutionForward(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, size_t lWorkspaceSize, double dfBeta, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream);
+template long Memory<float>::ConvolutionForward(long hHandle, float fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, size_t lWorkspaceSize, float fBeta, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream);
 
 
 template <class T>
@@ -784,7 +791,7 @@ template long Memory<float>::ConvolutionBackwardBias(long hHandle, float fAlpha,
 
 
 template <class T>
-long Memory<T>::ConvolutionBackwardFilter(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, T fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream)
+long Memory<T>::ConvolutionBackwardFilter(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, size_t lWorkspaceSize, T fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -849,12 +856,12 @@ long Memory<T>::ConvolutionBackwardFilter(long hHandle, T fAlpha, long hBottomDe
 	return CUDNN_STATUS_SUCCESS;
 }
 
-template long Memory<double>::ConvolutionBackwardFilter(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, double dfBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream);
-template long Memory<float>::ConvolutionBackwardFilter(long hHandle, float fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, float fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream);
+template long Memory<double>::ConvolutionBackwardFilter(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, size_t lWorkspaceSize, double dfBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream);
+template long Memory<float>::ConvolutionBackwardFilter(long hHandle, float fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, size_t lWorkspaceSize, float fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream);
 
 
 template <class T>
-long Memory<T>::ConvolutionBackwardData(long hHandle, T fAlpha, long hFilterDesc, long hWeight, int nWeightOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, T fBeta, long hBottomDesc, long hBottomDiff, int nBottomOffset, bool bSyncStream)
+long Memory<T>::ConvolutionBackwardData(long hHandle, T fAlpha, long hFilterDesc, long hWeight, int nWeightOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, size_t lWorkspaceSize, T fBeta, long hBottomDesc, long hBottomDiff, int nBottomOffset, bool bSyncStream)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -919,8 +926,8 @@ long Memory<T>::ConvolutionBackwardData(long hHandle, T fAlpha, long hFilterDesc
 	return CUDNN_STATUS_SUCCESS;
 }
 
-template long Memory<double>::ConvolutionBackwardData(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, double dfBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream);
-template long Memory<float>::ConvolutionBackwardData(long hHandle, float fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, float fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream);
+template long Memory<double>::ConvolutionBackwardData(long hHandle, double dfAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, size_t lWorkspaceSize, double dfBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream);
+template long Memory<float>::ConvolutionBackwardData(long hHandle, float fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, size_t lWorkspaceSize, float fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream);
 
 
 template <class T>
@@ -2028,7 +2035,7 @@ long Memory<T>::GetRnnParamCount(long hHandle, long hRnnDesc, long hXDesc, int* 
 	if (lErr = cudnnGetRNNParamsSize(cudnn, desc, descX->GetFirstTensor(), &sizeInBytes, type))
 		return lErr;
 
-	int nCount = (int)((long)sizeInBytes / sizeof(T));
+	int nCount = (int)(sizeInBytes / sizeof(T));
 	*pnCount = nCount;
 
 	return 0;
@@ -2098,7 +2105,7 @@ long Memory<T>::GetRnnParamCountEx(long hHandle, long hRnnDesc, long hXDesc, int
 	if (lErr)
 		return lErr;
 
-	int nCount = (int)((long)sizeInBytes / sizeof(T));
+	int nCount = (int)(sizeInBytes / sizeof(T));
 	*pnCount = nCount;
 
 	return 0;
@@ -2123,12 +2130,12 @@ long Memory<T>::GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, i
 	if (lErr = cudnnGetRNNWorkspaceSize(cudnn, desc, descX->MaxSeqLen(), descX->SeqTensors(), &sizeInBytes))
 		return lErr;
 
-	int nWsCount = (int)((long)sizeInBytes / sizeof(T));
+	int nWsCount = (int)(sizeInBytes / sizeof(T));
 
 	if (lErr = cudnnGetRNNTrainingReserveSize(cudnn, desc, descX->MaxSeqLen(), descX->SeqTensors(), &sizeInBytes))
 		return lErr;
 
-	int nResCount = (int)((long)sizeInBytes / sizeof(T));
+	int nResCount = (int)(sizeInBytes / sizeof(T));
 
 	*pnWsCount = nWsCount;
 	*pnResCount = nResCount;
@@ -2206,7 +2213,7 @@ long Memory<T>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc,
 
 		if (!lErr)
 		{
-			nWsCount = (int)((long)sizeInBytes / sizeof(T)) + 1;
+			nWsCount = (int)(sizeInBytes / sizeof(T)) + 1;
 
 			lErr = cudnnGetRNNTrainingReserveSize(cudnn, desc, nMaxSeqLen, rgDescX, &sizeInBytes);
 		}
@@ -2223,7 +2230,7 @@ long Memory<T>::GetRnnWorkspaceCountEx(long hHandle, long hRnnDesc, long hXDesc,
 	if (lErr)
 		return lErr;
 
-	int nResCount = (int)((long)sizeInBytes / sizeof(T)) + 1;
+	int nResCount = (int)(sizeInBytes / sizeof(T)) + 1;
 
 	*pnWsCount = nWsCount;
 	*pnResCount = nResCount;
@@ -2307,13 +2314,19 @@ long Memory<T>::GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, lo
 
 	// Create the memory pointer handles.
 	long hWtMemPtr;
-	long lWtSize = nWtCount * sizeof(T);
-	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), (T*)pWtDevMem, lWtSize, &hWtMemPtr))
+	long long lWtSize = nWtCount * sizeof(T);
+	if (lWtSize > SIZE_MAX)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
+	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), (T*)pWtDevMem, (size_t)lWtSize, &hWtMemPtr))
 		return lErr;
 
 	long hBiasMemPtr;
-	long lBiasSize = nBiasCount * sizeof(T);
-	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), (T*)pBiasDevMem, lBiasSize, &hBiasMemPtr))
+	long long lBiasSize = nBiasCount * sizeof(T);
+	if (lBiasSize > SIZE_MAX)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
+	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), (T*)pBiasDevMem, (size_t)lBiasSize, &hBiasMemPtr))
 		return lErr;
 
 	*pnWtCount = nWtCount;
@@ -2449,13 +2462,19 @@ long Memory<T>::GetRnnLinLayerParamsEx(long hHandle, long hRnnDesc, int nLayer, 
 	
 	// Create the memory pointer handles.
 	long hWtMemPtr;
-	long lWtSize = nWtCount * sizeof(T);
-	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), (T*)pWtDevMem, lWtSize, &hWtMemPtr))
+	long long lWtSize = nWtCount * sizeof(T);
+	if (lWtSize > SIZE_MAX)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
+	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), (T*)pWtDevMem, (size_t)lWtSize, &hWtMemPtr))
 		return lErr;
 
 	long hBiasMemPtr;
-	long lBiasSize = nBiasCount * sizeof(T);
-	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), (T*)pBiasDevMem, lBiasSize, &hBiasMemPtr))
+	long long lBiasSize = nBiasCount * sizeof(T);
+	if (lBiasSize > SIZE_MAX)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
+	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), (T*)pBiasDevMem, (size_t)lBiasSize, &hBiasMemPtr))
 		return lErr;
 
 	*pnWtCount = nWtCount;

@@ -554,7 +554,7 @@ long Device<T>::AllocMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 
 	long hHandle = 0;
 	long hStream = 0;
-	long lCount = (long)pfInput[0];
+	size_t lCount = (size_t)pfInput[0];
 	T* pSrc = NULL;
 
 	if (lInput > 1)
@@ -616,18 +616,18 @@ long Device<T>::GetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
-	long lCount = 0;
+	size_t lCount = 0;
 	MemoryItem* pItem;
 
 	if (lInput > 1)
-		lCount = (long)pfInput[1];
+		lCount = (size_t)pfInput[1];
 
 	if (lErr = m_memory.GetMemory(hHandle, &pItem))
 		return lErr;
 
-	long lAllocatedCount = pItem->Size() / sizeof(T);
+	size_t lAllocatedCount = pItem->Size() / sizeof(T);
 
-	if (lCount < 0)
+	if (lCount == (size_t)-1)
 		lCount = lAllocatedCount;
 	else if (lCount > lAllocatedCount)
 		return ERROR_PARAM_OUT_OF_RANGE;
@@ -649,7 +649,10 @@ long Device<T>::GetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 		*ppfOutput = pfOutput;
 	}
 
-	*plOutput = lCount;
+	if ((long)lCount < 0)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	*plOutput = (long)lCount;
 	return 0;
 }
 
@@ -666,7 +669,7 @@ long Device<T>::SetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
-	long lCount = (int)pfInput[1];
+	size_t lCount = (size_t)pfInput[1];
 	long hStream = 0;
 	T* pData = NULL;
 
@@ -701,8 +704,8 @@ long Device<T>::SetMemoryAt(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
-	long lCount = (int)pfInput[1];
-	int nOffset = (int)pfInput[2];
+	size_t lCount = (size_t)pfInput[1];
+	size_t nOffset = (size_t)pfInput[2];
 	T* pData = &pfInput[3];
 
 	if (lErr = m_memory.SetMemoryAt(hHandle, pData, lCount, nOffset))
@@ -796,7 +799,11 @@ long Device<T>::GetHostMemory(long lInput, T* pfInput, long* plOutput, T** ppfOu
 
 	if (pHostBuf != NULL)
 	{
-		*plOutput = pHostBuf->Count();
+		long lCount = (long)pHostBuf->Count();
+		if (lCount < 0)
+			return ERROR_PARAM_OUT_OF_RANGE;
+
+		*plOutput = lCount;
 		*ppfOutput = pHostBuf->Data();
 	}
 	else
@@ -2045,6 +2052,28 @@ template long Device<float>::cuda_denan(long lInput, float* pfInput, long* plOut
 
 
 template <class T>
+long Device<T>::cuda_channel_min(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	int nOutNum = (int)pfInput[1];
+	int nChannels = (int)pfInput[2];
+	int nInNum = (int)pfInput[3];
+	long hX = (long)pfInput[4];
+	long hY = (long)pfInput[5];
+
+	return m_math.channel_min(n, nOutNum, nChannels, nInNum, hX, hY);
+}
+
+template long Device<double>::cuda_channel_min(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_channel_min(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_channel_max(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
@@ -2941,7 +2970,7 @@ long Device<T>::cuda_tsne_compute_exact_gradient(long lInput, T* pfInput, long* 
 		lErr = m_math.tsne_compute_exact_gradient(n, d, pY_on_host, pP_on_host, pQ_on_host, pdC_on_host, fSumQ);
 
 	if (!lErr)
-		lErr = m_memory.SetMemory(hdC, pdC_on_host, -1, -1);
+		lErr = m_memory.SetMemory(hdC, pdC_on_host, (size_t)-1, -1);
 
 	if (!bQisHostMem && pQ_on_host != NULL)
 		m_memory.FreeHost(pQ_on_host);

@@ -23,7 +23,7 @@ class MemoryItem
 {
 	protected:
 		void* m_pData;
-		long m_lSize;
+		size_t m_lSize;
 		int m_nDeviceID;
 		bool m_bOwner;
 
@@ -54,7 +54,7 @@ class MemoryItem
 			return m_pData;
 		}
 
-		long Size()
+		size_t Size()
 		{
 			return m_lSize;
 		}
@@ -64,7 +64,7 @@ class MemoryItem
 			return m_nDeviceID;
 		}
 
-		long Allocate(int nDeviceID, long lSize, void* pSrc = NULL, cudaStream_t pStream = NULL)
+		long Allocate(int nDeviceID, size_t lSize, void* pSrc = NULL, cudaStream_t pStream = NULL)
 		{
 			if (lSize == 0)
 				return ERROR_PARAM_OUT_OF_RANGE;
@@ -97,7 +97,7 @@ class MemoryItem
 			return 0;
 		}
 
-		long Allocate(int nDeviceID, void* pData, long lSize)
+		long Allocate(int nDeviceID, void* pData, size_t lSize)
 		{
 			if (lSize == 0)
 				return ERROR_PARAM_OUT_OF_RANGE;
@@ -123,7 +123,7 @@ class MemoryItem
 			return 0;
 		}
 
-		long GetData(long lSize, void* pDst)
+		long GetData(size_t lSize, void* pDst)
 		{
 			if (pDst == NULL)
 				return ERROR_PARAM_NULL;
@@ -137,7 +137,7 @@ class MemoryItem
 			return cudaMemcpy(pDst, m_pData, lSize, cudaMemcpyDeviceToHost);
 		}
 
-		long SetData(long lSize, void* pSrc, cudaStream_t pStream = NULL)
+		long SetData(size_t lSize, void* pSrc, cudaStream_t pStream = NULL)
 		{
 			if (pSrc == NULL)
 				return ERROR_PARAM_NULL;
@@ -145,7 +145,7 @@ class MemoryItem
 			if (m_pData == NULL)
 				return ERROR_MEMORY_OUT;
 
-			if (lSize < 0)
+			if (lSize == (size_t)-1)
 				lSize = m_lSize;
 
 			if (lSize <= 0)
@@ -163,7 +163,7 @@ class MemoryItem
 				return cudaMemcpy(m_pData, pSrc, lSize, cudaMemcpyHostToDevice);
 		}
 
-		long SetDataAt(long lSize, void* pSrc, int nOffsetInBytes)
+		long SetDataAt(size_t lSize, void* pSrc, size_t nOffsetInBytes)
 		{
 			if (pSrc == NULL)
 				return ERROR_PARAM_NULL;
@@ -174,7 +174,11 @@ class MemoryItem
 			if (lSize <= 0)
 				return ERROR_PARAM_OUT_OF_RANGE;
 
-			if (nOffsetInBytes + lSize > m_lSize)
+			long long lSize1 = lSize + nOffsetInBytes;
+			if (lSize1 > SIZE_MAX)
+				return ERROR_MEMORY_RANGE_EXCEEDED;
+
+			if ((size_t)lSize1 > m_lSize)
 				return ERROR_PARAM_OUT_OF_RANGE;
 
 			byte* pData = ((byte*)m_pData) + nOffsetInBytes;
@@ -198,7 +202,7 @@ class MemoryItem
 			return 0;
 		}
 
-		long Copy(long lSize, MemoryItem* pSrc)
+		long Copy(size_t lSize, MemoryItem* pSrc)
 		{
 			if (lSize > pSrc->Size())
 				return ERROR_PARAM_OUT_OF_RANGE;
@@ -236,12 +240,14 @@ class MemoryCollection
 		MemoryCollection();
 		~MemoryCollection();
 
-		long GetSize(int lCount, int nBaseSize)
+		long long GetSize(size_t lCount, int nBaseSize)
 		{
 			if (lCount % 2 != 0)
 				lCount++;
 
-			return lCount * nBaseSize;
+			long long llCount = (unsigned long)lCount * nBaseSize;
+			
+			return llCount;
 		}
 
 		void SetMemoryPointers(MemoryCollection* pMemPtrs)
@@ -249,12 +255,12 @@ class MemoryCollection
 			m_pMemPtrs = pMemPtrs;
 		}
 
-		long Allocate(int nDeviceID, long lSize, void* pSrc, cudaStream_t pStream, long* phHandle);
-		long Allocate(int nDeviceID, void* pData, long lSize, long* phHandle);
+		long Allocate(int nDeviceID, size_t lSize, void* pSrc, cudaStream_t pStream, long* phHandle);
+		long Allocate(int nDeviceID, void* pData, size_t lSize, long* phHandle);
 		long Free(long hHandle);
 		long GetData(long hHandle, MemoryItem** ppItem);
-		long SetData(long hHandle, long lSize, void* pSrc, cudaStream_t pStream);
-		long SetDataAt(long hHandle, long lSize, void* pSrc, int nOffsetInBytes);
+		long SetData(long hHandle, size_t lSize, void* pSrc, cudaStream_t pStream);
+		long SetDataAt(long hHandle, size_t lSize, void* pSrc, size_t nOffsetInBytes);
 		long GetCount();
 		unsigned long GetTotalUsed();
 };
@@ -308,7 +314,7 @@ inline long MemoryCollection::GetData(long hHandle, MemoryItem** ppItem)
 	return 0;
 }
 
-inline long MemoryCollection::SetData(long hHandle, long lSize, void* pSrc, cudaStream_t pStream)
+inline long MemoryCollection::SetData(long hHandle, size_t lSize, void* pSrc, cudaStream_t pStream)
 {
 	if (hHandle < 1 || hHandle >= MAX_ITEMS * 2)
 		return ERROR_PARAM_OUT_OF_RANGE;
@@ -334,7 +340,7 @@ inline long MemoryCollection::SetData(long hHandle, long lSize, void* pSrc, cuda
 	return m_rgHandles[hHandle].SetData(lSize, pSrc, pStream);
 }
 
-inline long MemoryCollection::SetDataAt(long hHandle, long lSize, void* pSrc, int nOffsetInBytes)
+inline long MemoryCollection::SetDataAt(long hHandle, size_t lSize, void* pSrc, size_t nOffsetInBytes)
 {
 	if (hHandle < 1 || hHandle >= MAX_ITEMS * 2)
 		return ERROR_PARAM_OUT_OF_RANGE;

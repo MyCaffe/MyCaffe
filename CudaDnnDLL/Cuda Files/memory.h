@@ -66,11 +66,11 @@ template <class T>
 class HostBuffer
 {
 	private:
-		long m_lCount;
+		size_t m_lCount;
 		T* m_pMemory;
 
 	public:
-		HostBuffer(T* pMem, long lCount)
+		HostBuffer(T* pMem, size_t lCount)
 		{
 			m_pMemory = pMem;
 			m_lCount = lCount;
@@ -81,7 +81,7 @@ class HostBuffer
 			return m_pMemory;
 		}
 
-		long Count()
+		size_t Count()
 		{
 			return m_lCount;
 		}
@@ -147,30 +147,30 @@ class Memory
 		long CheckMemoryAttributes(long hSrc, int nSrcDeviceID, long hDst, int nDstDeviceID, bool* pbResult);
 		long GetDeviceMemory(int nDeviceID, T* plTotal, T* plFree, T* plUsed, bool* pbEstimate);
 
-		long AllocMemory(int nDeviceID, long lCount, T* pSrc, long hStream, long* phHandle);
+		long AllocMemory(int nDeviceID, size_t lCount, T* pSrc, long hStream, long* phHandle);
 		long FreeMemory(long hHandle);
 		long GetMemory(long hHandle, MemoryItem** ppItem);
-		long SetMemory(long hHandle, T* pSrc, long lCount, long hStream);
-		long SetMemoryAt(long hHandle, T* pSrc, long lCount, int nOffset);
+		long SetMemory(long hHandle, T* pSrc, size_t lCount, long hStream);
+		long SetMemoryAt(long hHandle, T* pSrc, size_t lCount, size_t nOffset);
 
-		T* GetMemoryToHost(long hHandle, long* plCount = NULL);
+		T* GetMemoryToHost(long hHandle, size_t* plCount = NULL);
 		long SetMemoryToHost(long hHandle, T* pDst);
 
-		long AllocHostBuffer(long lCount, long* phHandle);
+		long AllocHostBuffer(size_t lCount, long* phHandle);
 		long FreeHostBuffer(long hHandle);
 		HostBuffer<T>* GetHostBuffer(long hHandle);
-		long SetHostBuffer(long hHandle, long lCount, T* pData);
+		long SetHostBuffer(long hHandle, size_t lCount, T* pData);
 		bool IsHostBuffer(T* pf);
 
-		long CopyToHost(long lCount, T* pDst, T* pSrc, bool bSrcOnDevice);
-		long AllocHost(long lCount, T** ppDst, T* pSrc, bool bSrcOnDevice);
+		long CopyToHost(size_t lCount, T* pDst, T* pSrc, bool bSrcOnDevice);
+		long AllocHost(size_t lCount, T** ppDst, T* pSrc, bool bSrcOnDevice);
 		long FreeHost(T* pDst);
 
 		long AllocHost(LPTSTR* ppDst, LPTSTR pSrc);
 		long FreeHost(LPTSTR pDst);
 
-		long CreateMemoryPointer(int nDeviceID, T* pData, long lSize, long* phHandle);
-		long CreateMemoryPointer(long hData, long lOffset, long lCount, long* phHandle);
+		long CreateMemoryPointer(int nDeviceID, T* pData, size_t lSize, long* phHandle);
+		long CreateMemoryPointer(long hData, long lOffset, size_t lCount, long* phHandle);
 		long FreeMemoryPointer(long hData);
 
 		long CreateStream(long* phHandle, bool bNonBlocking = false);
@@ -200,11 +200,11 @@ class Memory
 		long FreeConvolutionDesc(long hHandle);
 		cudnnConvolutionDescriptor_t GetConvolutionDesc(long hHandle);
 		long SetConvolutionDesc(long hHandle, int pad_h, int pad_w, int stride_h, int stride_w);
-	    long GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, long lWsLimitInBytes, long* palgoFwd, long* plWsSizeFwd, long* palgoBwdFilter, long* plWsSizeBwdFilter, long* palgoBwdData, long* plWsSizeBwdData, int nPreferredFwdAlgo = -1);
-		long ConvolutionForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, T fBeta, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream);
+	    long GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, size_t lWsLimitInBytes, long* palgoFwd, size_t* plWsSizeFwd, long* palgoBwdFilter, size_t* plWsSizeBwdFilter, long* palgoBwdData, size_t* plWsSizeBwdData, int nPreferredFwdAlgo = -1);
+		long ConvolutionForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, size_t lWorkspaceSize, T fBeta, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream);
 		long ConvolutionBackwardBias(long hHandle, T fAlpha, long hTopDesc, long hTopDiff, int nTopOffset, T fBeta, long hBiasDesc, long hBiasDiff, int nBiasOffset, bool bSyncStream);
-		long ConvolutionBackwardFilter(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSiz, T fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffsete, bool bSyncStream);
-		long ConvolutionBackwardData(long hHandle, T fAlpha, long hFilterDesc, long hWeight, int nWeightOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, T fBeta, long hBottomDesc, long hBottomDiff, int nBottomOffset, bool bSyncStream);
+		long ConvolutionBackwardFilter(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, size_t lWorkspaceSize, T fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffsete, bool bSyncStream);
+		long ConvolutionBackwardData(long hHandle, T fAlpha, long hFilterDesc, long hWeight, int nWeightOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, size_t lWorkspaceSize, T fBeta, long hBottomDesc, long hBottomDiff, int nBottomOffset, bool bSyncStream);
 
 		long CreatePoolingDesc(long* phHandle);
 		long FreePoolingDesc(long hHandle);
@@ -382,10 +382,10 @@ inline long Memory<T>::CheckMemoryAttributes(long hSrc, int nSrcDeviceID, long h
 
 
 template <class T>
-inline long Memory<T>::CreateMemoryPointer(long hData, long lOffset, long lCount, long* phHandle)
+inline long Memory<T>::CreateMemoryPointer(long hData, long lOffset, size_t lCount, long* phHandle)
 {
 	long lErr;
-	long lSize = m_memory.GetSize(lCount, sizeof(T));
+	size_t lSize = m_memory.GetSize(lCount, sizeof(T));
 	MemoryItem* pData = NULL;
 
 	if (lErr = m_memory.GetData(hData, &pData))
@@ -400,7 +400,7 @@ inline long Memory<T>::CreateMemoryPointer(long hData, long lOffset, long lCount
 }
 
 template <class T>
-inline long Memory<T>::CreateMemoryPointer(int nDeviceID, T* data, long lSize, long* phHandle)
+inline long Memory<T>::CreateMemoryPointer(int nDeviceID, T* data, size_t lSize, long* phHandle)
 {
 	long lErr;
 	long hHandle = 0;
@@ -427,16 +427,18 @@ inline long Memory<T>::FreeMemoryPointer(long hData)
 
 
 template <class T>
-inline long Memory<T>::AllocMemory(int nDeviceID, long lCount, T* pSrc, long hStream, long* phHandle)
+inline long Memory<T>::AllocMemory(int nDeviceID, size_t lCount, T* pSrc, long hStream, long* phHandle)
 {
 	cudaStream_t pStream = NULL;
 
 	if (hStream > 0)
 		pStream = (cudaStream_t)m_streams.GetData(hStream);
 
-	long lSize = m_memory.GetSize(lCount, sizeof(T));
+	long long llSize = m_memory.GetSize(lCount, sizeof(T));
+	if (llSize > SIZE_MAX)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
 
-	return m_memory.Allocate(nDeviceID, lSize, pSrc, pStream, phHandle);
+	return m_memory.Allocate(nDeviceID, (size_t)llSize, pSrc, pStream, phHandle);
 }
 
 template <class T>
@@ -452,7 +454,7 @@ inline long Memory<T>::GetMemory(long hHandle, MemoryItem** ppItem)
 }
 
 template <class T>
-inline T* Memory<T>::GetMemoryToHost(long hHandle, long* plCount)
+inline T* Memory<T>::GetMemoryToHost(long hHandle, size_t* plCount)
 {
 	MemoryItem *pItem;
 
@@ -460,7 +462,7 @@ inline T* Memory<T>::GetMemoryToHost(long hHandle, long* plCount)
 		return NULL;
 
 	T* pHost = NULL;
-	long lCount = pItem->Size() / sizeof(T);
+	size_t lCount = pItem->Size() / sizeof(T);
 
 	if (AllocHost(lCount, &pHost, (T*)pItem->Data(), TRUE))
 		return NULL;
@@ -480,26 +482,38 @@ inline long Memory<T>::SetMemoryToHost(long hHandle, T* pDst)
 	if (lErr = m_memory.GetData(hHandle, &pItem))
 		return lErr;
 
-	long lSize = pItem->Size();
+	size_t lSize = pItem->Size();
 
 	return pItem->GetData(lSize, pDst);
 }
 
 template <class T>
-inline long Memory<T>::SetMemory(long hHandle, T* pSrc, long lCount, long hStream)
+inline long Memory<T>::SetMemory(long hHandle, T* pSrc, size_t lCount, long hStream)
 {
 	cudaStream_t pStream = NULL;
 
 	if (hStream > 0)
 		pStream = (cudaStream_t)m_streams.GetData(hStream);
 
-	return m_memory.SetData(hHandle, lCount * sizeof(T), pSrc, pStream);
+	long long lSize = lCount * sizeof(T);
+	if (lSize > SIZE_MAX)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
+	return m_memory.SetData(hHandle, lSize, pSrc, pStream);
 }
 
 template <class T>
-inline long Memory<T>::SetMemoryAt(long hHandle, T* pSrc, long lCount, int nOffset)
+inline long Memory<T>::SetMemoryAt(long hHandle, T* pSrc, size_t lCount, size_t nOffset)
 {
-	return m_memory.SetDataAt(hHandle, lCount * sizeof(T), pSrc, nOffset * sizeof(T));
+	long long lSize = lCount * sizeof(T);
+	if (lSize > SIZE_MAX)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
+	long long lOffset = nOffset * sizeof(T);
+	if (lOffset > SIZE_MAX)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
+	return m_memory.SetDataAt(hHandle, (size_t)lSize, pSrc, (size_t)lOffset);
 }
 
 
@@ -538,13 +552,17 @@ inline HostBuffer<T>* Memory<T>::GetHostBuffer(long hHandle)
 }
 
 template <class T>
-inline long Memory<T>::SetHostBuffer(long hHandle, long lCount, T* pData)
+inline long Memory<T>::SetHostBuffer(long hHandle, size_t lCount, T* pData)
 {
 	HostBuffer<T>* p = (HostBuffer<T>*)m_hostbuffers.GetData(hHandle);
 	if (p == NULL)
 		return ERROR_MEMORY_OUT;
 
-	return cudaMemcpy(p->Data(), pData, lCount * sizeof(T), cudaMemcpyHostToHost);
+	long long lSize = lCount * sizeof(T);
+	if (lSize > SIZE_MAX)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
+	return cudaMemcpy(p->Data(), pData, (size_t)lSize, cudaMemcpyHostToHost);
 }
 
 
