@@ -14,6 +14,7 @@ namespace MyCaffe.param
     public class EngineParameter : LayerParameterBase 
     {
         Engine m_engine = Engine.DEFAULT;
+        bool m_bUseHalfSize = false;
 
         /// <summary>
         /// Defines the type of engine to use.
@@ -49,6 +50,17 @@ namespace MyCaffe.param
             set { m_engine = value; }
         }
 
+        /// <summary>
+        /// When true and using the CUDNN engine, half sizes are used on the weights (FP16), otherwise when using the CAFFE engine
+        /// this setting is ignored.
+        /// </summary>
+        [Description("When true and using the CUDNN engine, half sizes (FP16) are used on the weights, otherwise when using the CAFFE engine, this setting is ignored.")]
+        public bool cudnn_use_halfsize
+        {
+            get { return m_bUseHalfSize; }
+            set { m_bUseHalfSize = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -67,6 +79,7 @@ namespace MyCaffe.param
         {
             EngineParameter p = (EngineParameter)src;
             m_engine = p.m_engine;
+            m_bUseHalfSize = p.m_bUseHalfSize;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -84,6 +97,9 @@ namespace MyCaffe.param
 
             if (engine != Engine.DEFAULT)
                 rgChildren.Add("engine", engine.ToString());
+
+            if (cudnn_use_halfsize)
+                rgChildren.Add("cudnn_use_halfsize", cudnn_use_halfsize.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -118,6 +134,9 @@ namespace MyCaffe.param
                         throw new Exception("Unknown 'engine' value: " + strVal);
                 }
             }
+
+            if ((strVal = rp.FindValue("cudnn_use_halfsize")) != null)
+                p.cudnn_use_halfsize = bool.Parse(strVal);
 
             return p;
         }

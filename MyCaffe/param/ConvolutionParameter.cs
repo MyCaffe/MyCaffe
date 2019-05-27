@@ -73,6 +73,7 @@ namespace MyCaffe.param
             return true;
         }
 
+
         /// <summary>
         /// When true, allows workspace usage on groups > 1 (default = false).
         /// </summary>
