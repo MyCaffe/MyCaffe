@@ -338,9 +338,10 @@ namespace MyCaffe.common
         /// <param name="nChannels"></param>
         /// <param name="nHeight"></param>
         /// <param name="nWidth"></param>
-        public void Reshape(int nNum, int nChannels, int nHeight, int nWidth)
+        /// <param name="bUseHalfSize">Optionally, specifies to use half sized memory.</param>
+        public void Reshape(int nNum, int nChannels, int nHeight, int nWidth, bool? bUseHalfSize = null)
         {
-            Reshape(new List<int>() { nNum, nChannels, nHeight, nWidth });
+            Reshape(new List<int>() { nNum, nChannels, nHeight, nWidth }, bUseHalfSize);
         }
 
         /// <summary>
@@ -472,9 +473,10 @@ namespace MyCaffe.common
         /// Reshape this Blob to have the same shape as another Blob.
         /// </summary>
         /// <param name="b">Specifies the other Blob.</param>
-        public void ReshapeLike(Blob<T> b)
+        /// <param name="bUseHalfSize">Optionally, specifies to use half sized memory.</param>
+        public void ReshapeLike(Blob<T> b, bool? bUseHalfSize = null)
         {
-            Reshape(b.shape());
+            Reshape(b.shape(), bUseHalfSize);
         }
 
         /// <summary>
