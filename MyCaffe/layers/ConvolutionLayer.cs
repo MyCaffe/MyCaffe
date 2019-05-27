@@ -65,12 +65,12 @@ namespace MyCaffe.layers
         int m_nTopOffset = 0;
         int m_nBiasOffset = 0;
 
-        long[] m_rglWorkspaceFwdSizes = null;
-        long[] m_rglWorkspaceBwdFilterSizes = null;
-        long[] m_rglWorkspaceBwdDataSizes = null;
-        long[] m_rglWorkspaceFwdOffsets = null; // offsets into workspace fwd data.
-        long[] m_rglWorkspaceBwdFilterOffsets = null; // offsets into workspace bwd filter data.
-        long[] m_rglWorkspaceBwdDataOffsets = null; // offsets into workspace bwd data.
+        ulong[] m_rglWorkspaceFwdSizes = null;
+        ulong[] m_rglWorkspaceBwdFilterSizes = null;
+        ulong[] m_rglWorkspaceBwdDataSizes = null;
+        ulong[] m_rglWorkspaceFwdOffsets = null; // offsets into workspace fwd data.
+        ulong[] m_rglWorkspaceBwdFilterOffsets = null; // offsets into workspace bwd filter data.
+        ulong[] m_rglWorkspaceBwdDataOffsets = null; // offsets into workspace bwd data.
 
         /// <summary>
         /// The ConvolutionLayer constructor.
@@ -183,12 +183,12 @@ namespace MyCaffe.layers
             m_rgbwdDataAlgo = new CONV_BWD_DATA_ALGO[colBottom.Count];
 
             // Initialize the size arrays.
-            m_rglWorkspaceFwdSizes = new long[colBottom.Count];
-            m_rglWorkspaceBwdFilterSizes = new long[colBottom.Count];
-            m_rglWorkspaceBwdDataSizes = new long[colBottom.Count];
-            m_rglWorkspaceFwdOffsets = new long[m_nGroup * CUDNN_STREAMS_PER_GROUP];
-            m_rglWorkspaceBwdFilterOffsets = new long[m_nGroup * CUDNN_STREAMS_PER_GROUP];
-            m_rglWorkspaceBwdDataOffsets = new long[m_nGroup * CUDNN_STREAMS_PER_GROUP];
+            m_rglWorkspaceFwdSizes = new ulong[colBottom.Count];
+            m_rglWorkspaceBwdFilterSizes = new ulong[colBottom.Count];
+            m_rglWorkspaceBwdDataSizes = new ulong[colBottom.Count];
+            m_rglWorkspaceFwdOffsets = new ulong[m_nGroup * CUDNN_STREAMS_PER_GROUP];
+            m_rglWorkspaceBwdFilterOffsets = new ulong[m_nGroup * CUDNN_STREAMS_PER_GROUP];
+            m_rglWorkspaceBwdDataOffsets = new ulong[m_nGroup * CUDNN_STREAMS_PER_GROUP];
 
             for (int i = 0; i < colBottom.Count; i++)
             {
@@ -257,17 +257,7 @@ namespace MyCaffe.layers
             Size szPad = size_at(m_blobPad);
             Size szStride = size_at(m_blobStride);
 
-            // Specify workspace limit for kernels directly until we have a 
-            // planning strategy and a rewrite of Caffe's GPU memory management.
-            // default = 1024 * 1024 * 16;
-            long lWorkspaceLimitBytes = m_param.convolution_param.cudnn_workspace_limit * 16;
-
-            // BUG Work Around
-            // With cuDNN 7.0.5 and above we are seeing memory overwrite errors (from CUDA)
-            //  when using more than 1 group and the workspace.
-            //  * also confirmed in cuDNN 7.1.4 and CUDA 9.2 on driver 397.64, 398.36
-            if (m_nGroup > 1 && !m_param.convolution_param.cudnn_workspace_allow_on_groups)
-                lWorkspaceLimitBytes = 0; // sets option to NO_WORKSPACE for Bwd Filter and Data
+            ulong lWorkspaceLimitBytes = getWorkspaceLimitInBytes();
 
             for (int i = 0; i < colBottom.Count; i++)
             {
@@ -279,9 +269,9 @@ namespace MyCaffe.layers
                 CONV_FWD_ALGO algoFwd = (CONV_FWD_ALGO)0;
                 CONV_BWD_FILTER_ALGO algoBwdFilter = (CONV_BWD_FILTER_ALGO)0;
                 CONV_BWD_DATA_ALGO algoBwdData = (CONV_BWD_DATA_ALGO)0;
-                long lWsSizeFwd = 0;
-                long lWsSizeBwdFilter = 0;
-                long lWsSizeBwdData = 0;
+                ulong lWsSizeFwd = 0;
+                ulong lWsSizeBwdFilter = 0;
+                ulong lWsSizeBwdData = 0;
 
                 m_cuda.GetConvolutionInfo(m_rghCudnn[0], m_rghBottomDesc[i], m_hFilterDesc, m_rghConvDesc[i], m_rghTopDesc[i], lWorkspaceLimitBytes, out algoFwd, out lWsSizeFwd, out algoBwdFilter, out lWsSizeBwdFilter, out algoBwdData, out lWsSizeBwdData);
                 m_rgfwdAlgo[i] = algoFwd;
@@ -293,9 +283,9 @@ namespace MyCaffe.layers
             }
 
             // reduce over all workspace sizes to get a maximum to allocate / reallocate
-            long lTotalWsFwd = 0;
-            long lTotalWsBwdFilter = 0;
-            long lTotalWsBwdData = 0;
+            ulong lTotalWsFwd = 0;
+            ulong lTotalWsBwdFilter = 0;
+            ulong lTotalWsBwdData = 0;
 
             for (int i = 0; i < colBottom.Count; i++)
             {
@@ -305,7 +295,7 @@ namespace MyCaffe.layers
             }
 
             // Get max over all oeprations.
-            long lMaxWorkspace = Math.Max(lTotalWsFwd, Math.Max(lTotalWsBwdFilter, lTotalWsBwdData));
+            ulong lMaxWorkspace = Math.Max(lTotalWsFwd, Math.Max(lTotalWsBwdFilter, lTotalWsBwdData));
 
             // Ensure all groups have enough workspace.
             ulong lTotalMaxWorkspace = (ulong)lMaxWorkspace * (ulong)m_nGroup * (ulong)CUDNN_STREAMS_PER_GROUP;
@@ -320,9 +310,9 @@ namespace MyCaffe.layers
             // if we succedd in the allocation, set the offsets for the workspaces.
             for (int g = 0; g < (m_nGroup * CUDNN_STREAMS_PER_GROUP); g++)
             {
-                m_rglWorkspaceFwdOffsets[g] = g * lTotalWsFwd;
-                m_rglWorkspaceBwdFilterOffsets[g] = g * lTotalWsBwdFilter;
-                m_rglWorkspaceBwdDataOffsets[g] = g * lTotalWsBwdData;
+                m_rglWorkspaceFwdOffsets[g] = (ulong)g * lTotalWsFwd;
+                m_rglWorkspaceBwdFilterOffsets[g] = (ulong)g * lTotalWsBwdFilter;
+                m_rglWorkspaceBwdDataOffsets[g] = (ulong)g * lTotalWsBwdData;
             }
 
             // Tensor descriptor for bias.
