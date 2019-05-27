@@ -79,6 +79,14 @@ namespace MyCaffe.layers
         /// Specifies that the half size of the top (if any) should be converted to the base size.
         /// </summary>
         protected bool m_bUseHalfSize = false;
+        /// <summary>
+        /// Specifies whether or not the layer should convert the top when using half sized memory (typically only done with input data).
+        /// </summary>
+        protected bool m_bConvertTop = false;
+        /// <summary>
+        /// Specifies whether or not the layer should convert the bottom when using half sized memory.
+        /// </summary>
+        protected bool m_bConvertBottom = true;
 
         private double m_dfForwardTiming = 0;
         private double m_dfForwardAverageTiming = 0;
@@ -276,13 +284,23 @@ namespace MyCaffe.layers
                 return;
 
             ulong lMaxSize = 0;
+            bool bConversionNeeded = false;
 
             foreach (Blob<T> b in col)
             {
-                ulong lSize = b.GetConversionWorkSize(m_bUseHalfSize);
-                if (lMaxSize < lSize)
-                    lMaxSize = lSize;
+                if ((m_bUseHalfSize && !b.HalfSize) ||
+                    (!m_bUseHalfSize && b.HalfSize))
+                {
+                    ulong lSize = b.GetConversionWorkSize(m_bUseHalfSize);
+                    if (lMaxSize < lSize)
+                        lMaxSize = lSize;
+
+                    bConversionNeeded = true;
+                }
             }
+
+            if (!bConversionNeeded)
+                return;
 
             WorkspaceArgs args = getWorkspace();
             if (args.Size < lMaxSize)
@@ -310,13 +328,22 @@ namespace MyCaffe.layers
                 return;
 
             ulong lMaxSize = 0;
+            bool bConversionNeeded = false;
 
             foreach (Blob<T> b in col)
             {
-                ulong lSize = b.GetConversionWorkSize(true);
-                if (lMaxSize < lSize)
-                    lMaxSize = lSize;
+                if (b.HalfSize)
+                {
+                    ulong lSize = b.GetConversionWorkSize(false);
+                    if (lMaxSize < lSize)
+                        lMaxSize = lSize;
+
+                    bConversionNeeded = true;
+                }
             }
+
+            if (!bConversionNeeded)
+                return;
 
             WorkspaceArgs args = getWorkspace();
             if (args.Size < lMaxSize)
@@ -352,8 +379,14 @@ namespace MyCaffe.layers
                 m_swTiming.Restart();
                 double dfLoss = 0;
 
-                convert(colBottom);
+                if (m_bConvertBottom)
+                    convert(colBottom);
+
                 Reshape(colBottom, colTop);
+
+                if (m_bConvertTop)
+                    convert(colTop);
+
                 forward(colBottom, colTop);
 
                 for (int i = 0; i < colTop.Count; i++)
