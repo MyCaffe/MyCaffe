@@ -432,18 +432,18 @@ long Math<T>::copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOff
 
 		if (hAsyncStream < 0)
 		{
-			if (lErr = cudaMemcpy(dst, src, lSize, cudaMemcpyDeviceToDevice))
+			if (lErr = cudaMemcpy(dst, src, (size_t)lSize, cudaMemcpyDeviceToDevice))
 				return lErr;
 		}
 		else if (hAsyncStream == 0)
 		{
-			if (lErr = cudaMemcpyAsync(dst, src, lSize, cudaMemcpyDeviceToDevice, cudaStreamDefault))
+			if (lErr = cudaMemcpyAsync(dst, src, (size_t)lSize, cudaMemcpyDeviceToDevice, cudaStreamDefault))
 				return lErr;
 		}
 		else
 		{
 			stream = (cudaStream_t)m_pStreamCol->GetData(hAsyncStream);
-			if (lErr = cudaMemcpyAsync(dst, src, lSize, cudaMemcpyDeviceToDevice, stream))
+			if (lErr = cudaMemcpyAsync(dst, src, (size_t)lSize, cudaMemcpyDeviceToDevice, stream))
 				return lErr;
 		}
 	}
@@ -465,23 +465,26 @@ long Math<T>::copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOff
 
 		if (hAsyncStream < 0)
 		{
-			if (lErr = cudaMemcpy(dst, src, lSize, cudaMemcpyDeviceToDevice))
+			if (lErr = cudaMemcpy(dst, src, (size_t)lSize, cudaMemcpyDeviceToDevice))
 				return lErr;
 		}
 		else if (hAsyncStream == 0)
 		{
-			if (lErr = cudaMemcpyAsync(dst, src, lSize, cudaMemcpyDeviceToDevice, cudaStreamDefault))
+			if (lErr = cudaMemcpyAsync(dst, src, (size_t)lSize, cudaMemcpyDeviceToDevice, cudaStreamDefault))
 				return lErr;
 		}
 		else
 		{
 			stream = (cudaStream_t)m_pStreamCol->GetData(hAsyncStream);
-			if (lErr = cudaMemcpyAsync(dst, src, lSize, cudaMemcpyDeviceToDevice, stream))
+			if (lErr = cudaMemcpyAsync(dst, src, (size_t)lSize, cudaMemcpyDeviceToDevice, stream))
 				return lErr;
 		}
 	}
 
-	return cudaStreamSynchronize(stream);
+	if (lErr = cudaStreamSynchronize(stream))
+		return lErr;
+
+	return cudaSuccess;
 }
 
 template long Math<double>::copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOffset, long hAsyncStream, int nSrcHalfSizeOverride, int nDstHalfSizeOverride);
