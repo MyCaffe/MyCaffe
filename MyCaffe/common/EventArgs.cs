@@ -15,7 +15,7 @@ namespace MyCaffe.common
     /// </remarks>
     public class WorkspaceArgs : EventArgs
     {
-        long m_lWorkspaceSizeInBytes = 0;
+        ulong m_lWorkspaceSizeInBytes = 0;
         long m_hWorkspaceData = 0;  // underlying storage.
 
         /// <summary>
@@ -23,7 +23,7 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="hData">Specifies a handle to the GPU memory.</param>
         /// <param name="lSize">Specifies the size of the workspace memory (in bytes).</param>
-        public WorkspaceArgs(long hData, long lSize)
+        public WorkspaceArgs(long hData, ulong lSize)
         {
             m_hWorkspaceData = hData;
             m_lWorkspaceSizeInBytes = lSize;
@@ -41,10 +41,45 @@ namespace MyCaffe.common
         /// <summary>
         /// Get/set the size of the workspace memory (in bytes).
         /// </summary>
-        public long Size
+        public ulong Size
         {
             get { return m_lWorkspaceSizeInBytes; }
             set { m_lWorkspaceSizeInBytes = value; }
+        }
+    }
+
+    /// <summary>
+    /// The GetConversionBlobArgs are passed to the Layer::OnGetConversionBlobs event which fires each time a blob needs to be converted form half to base or back.
+    /// </summary>
+    /// <typeparam name="T">Specifies the default base type.</typeparam>
+    public class GetConversionBlobArgs<T> : EventArgs
+    {
+        Blob<T> m_blobBaseWork;
+        Blob<T> m_blobHalfWork;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        public GetConversionBlobArgs()
+        {
+        }
+
+        /// <summary>
+        /// The work blob in the base size.
+        /// </summary>
+        public Blob<T> BaseWork
+        {
+            get { return m_blobBaseWork; }
+            set { m_blobBaseWork = value; }
+        }
+
+        /// <summary>
+        /// The work blob in the half size.
+        /// </summary>
+        public Blob<T> HalfWork
+        {
+            get { return m_blobHalfWork; }
+            set { m_blobHalfWork = value; }
         }
     }
 
