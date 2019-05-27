@@ -24,6 +24,7 @@ namespace MyCaffe.common
         long m_hGpuData = 0;
         T[] m_rgCpuData = null;
         bool m_bOwnData = true;
+        bool m_bHalfSize = false;
         object m_tag = null;
 
         /// <summary>
@@ -33,8 +34,18 @@ namespace MyCaffe.common
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="lCapacity">Optionally, specifies the capacity of the SyncedMemory (in items).</param>
         /// <param name="tag">Optionally, specifies a tag used for debugging (the default = <i>null</i>).</param>
-        public SyncedMemory(CudaDnn<T> cuda, Log log, long lCapacity = 0, object tag = null)
+        /// <param name="bUseHalfSize">Optionally, specifies to use half size (FP16) for both data and diff.  This option is only available when using the <i>float</i> base type 'T'.</param>
+        public SyncedMemory(CudaDnn<T> cuda, Log log, long lCapacity = 0, object tag = null, bool bUseHalfSize = false)
         {
+            if (bUseHalfSize && typeof(T) != typeof(float))
+            {
+                bUseHalfSize = false;
+
+                if (log != null)
+                    log.WriteLine("Half size disabled for non 'float' basetypes!");
+            }
+
+            m_bHalfSize = bUseHalfSize;
             m_cuda = cuda;
             m_log = log;
             m_tag = tag;
@@ -77,11 +88,21 @@ namespace MyCaffe.common
         /// Allocate a number of items in GPU memory and save the handle.
         /// </summary>
         /// <param name="lCount">Specifies the number of items.</param>
-        public void Allocate(long lCount)
+        /// <param name="bUseHalfSize">Optionally, specifis to use half sized memory (default = false).  This only applies to the 'float' base type.</param>
+        public void Allocate(long lCount, bool bUseHalfSize = false)
         {
+            if (bUseHalfSize && typeof(T) != typeof(float))
+            {
+                bUseHalfSize = false;
+
+                if (m_log != null)
+                    m_log.WriteLine("Half size disabled for non 'float' basetypes!");
+            }
+
             free();
             m_nDeviceID = m_cuda.GetDeviceID();
-            m_hGpuData = m_cuda.AllocMemory(lCount);
+            m_bHalfSize = bUseHalfSize;
+            m_hGpuData = m_cuda.AllocMemory(lCount, m_bHalfSize);
             m_lCapacity = lCount;
             m_lCount = 0;
             m_bOwnData = true;
@@ -92,11 +113,21 @@ namespace MyCaffe.common
         /// Allocate a number of items and copy the given array into the memory on the GPU.
         /// </summary>
         /// <param name="rg">Specifies the array of items to copy.</param>
-        public void Allocate(T[] rg)
+        /// <param name="bUseHalfSize">Optionally, specifis to use half sized memory (default = false).  This only applies to the 'float' base type.</param>
+        public void Allocate(T[] rg, bool bUseHalfSize = false)
         {
+            if (bUseHalfSize && typeof(T) != typeof(float))
+            {
+                bUseHalfSize = false;
+
+                if (m_log != null)
+                    m_log.WriteLine("Half size disabled for non 'float' basetypes!");
+            }
+
             free();
             m_nDeviceID = m_cuda.GetDeviceID();
-            m_hGpuData = m_cuda.AllocMemory(rg);
+            m_bHalfSize = bUseHalfSize;
+            m_hGpuData = m_cuda.AllocMemory(rg, 0, m_bHalfSize);
             m_lCapacity = rg.Length;
             m_lCount = rg.Length;
             m_bOwnData = true;
@@ -220,12 +251,17 @@ namespace MyCaffe.common
         /// <returns>A new SynedMemory that is a copy of this one, is returned.</returns>
         public SyncedMemory<T> Clone()
         {
-            SyncedMemory<T> dst = new SyncedMemory<T>(m_cuda, m_log, m_lCapacity);
+            SyncedMemory<T> dst = new SyncedMemory<T>(m_cuda, m_log, m_lCapacity, null, m_bHalfSize);
 
             if (m_lCount > 0)
                 dst.Copy(this);
 
             return dst;
+        }
+
+        public bool HalfSize
+        {
+            get { return m_bHalfSize; }
         }
 
         /// <summary>

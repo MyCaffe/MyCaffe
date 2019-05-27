@@ -348,7 +348,7 @@ namespace MyCaffe.common
     /// </remarks>
     public interface ICudaMemory /** @private */
     {
-        long AllocMemory(long lCount);
+        long AllocMemory(long lCount, bool bHalf = false);
         long AllocMemory(List<double> rg);
         long AllocMemory(List<float> rg);
         long AllocMemory(double[] rgSrc, long hStream = 0);
@@ -388,21 +388,21 @@ namespace MyCaffe.common
 
         long CreateTensorDesc();
         void FreeTensorDesc(long h);
-        void SetTensorNdDesc(long hHandle, int[] rgDim, int[] rgStride);
-        void SetTensorDesc(long hHandle, int n, int c, int h, int w);
-        void SetTensorDesc(long hHandle, int n, int c, int h, int w, int nStride, int cStride, int hStride, int wStride);
+        void SetTensorNdDesc(long hHandle, int[] rgDim, int[] rgStride, bool bHalf = false);
+        void SetTensorDesc(long hHandle, int n, int c, int h, int w, bool bHalf = false);
+        void SetTensorDesc(long hHandle, int n, int c, int h, int w, int nStride, int cStride, int hStride, int wStride, bool bHalf = false);
         void AddTensor(long hHandle, long hSrcDesc, long hSrc, int nSrcOffset, long hDstDesc, long hDst, int nDstOffset);
 
         void DeriveBatchNormDesc(long hFwdScaleBiasMeanVarDesc, long hFwdBottomDesc, long hBwdScaleBiasMeanVarDesc, long hBwdBottomDesc, BATCHNORM_MODE mode);
 
         long CreateFilterDesc();
         void FreeFilterDesc(long h);
-        void SetFilterNdDesc(long hHandle, int[] rgDim);
-        void SetFilterDesc(long hHandle, int n, int c, int h, int w);
+        void SetFilterNdDesc(long hHandle, int[] rgDim, bool bHalf = false);
+        void SetFilterDesc(long hHandle, int n, int c, int h, int w, bool bHalf = false);
 
         long CreateConvolutionDesc();
         void FreeConvolutionDesc(long h);
-        void SetConvolutionDesc(long hHandle, int hPad, int wPad, int hStride, int wStride);
+        void SetConvolutionDesc(long hHandle, int hPad, int wPad, int hStride, int wStride, bool bHalf = false);
 
         long CreatePoolingDesc();
         void FreePoolingDesc(long h);
@@ -439,7 +439,7 @@ namespace MyCaffe.common
         void set(int nCount, long hHandle, float fVal, int nIdx = -1);
         double[] get_double(int nCount, long hHandle, int nIdx = -1);
         float[] get_float(int nCount, long hHandle, int nIdx = -1);
-        void copy(int nCount, long hSrc, long hDst, int nSrcOffset = 0, int nDstOffset = 0, long hAsyncStream = -1);
+        void copy(int nCount, long hSrc, long hDst, int nSrcOffset = 0, int nDstOffset = 0, long hAsyncStream = -1, bool? bSrcHalfOverride = null, bool? bDstHalfOverride = null);
 
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC);
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, long hA, long hB, float fBeta, long hC);
@@ -520,7 +520,7 @@ namespace MyCaffe.common
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class CudaDnn<T> : ICudaDnn, IDisposable
     {
-        CudaDnnMemoryTracker<T> m_memTracker = new CudaDnnMemoryTracker<T>();
+        CudaDnnMemoryTracker<T> m_memTracker;
         int m_nDeviceId;
         string m_strPath = "";
         static int s_nIdxSeed = 0;
@@ -585,9 +585,10 @@ namespace MyCaffe.common
             DEVICE_ENABLEPEERACCESS = 11,
             DEVICE_DISABLEPEERACCESS = 12,
 
-            CREATE_MEMORYPOINTER = 18,
-            FREE_MEMORYPOINTER = 19,
+            CREATE_MEMORYPOINTER = 16,
+            FREE_MEMORYPOINTER = 17,
 
+            ALLOCMEM_HALF = 19,
             ALLOCMEM = 20,
             FREEMEM = 21,
             GETMEM = 22,
@@ -901,8 +902,10 @@ namespace MyCaffe.common
         /// <param name="strPath">Specifies the file path of the Low-Level Cuda DNN Dll file. When NULL or empty, the Low-Level <code>CudaDNNDll.dll</code> file in the directory of 
         /// the currently executing process (that is using the CudaDnn object) is used.</param>
         /// <param name="bResetFirst">Specifies to reset the device before initialzing.  <b>IMPORTANT:</b> It is only recommended to set this to <code>true</code> when testing.</param>
-        public CudaDnn(int nDeviceID, DEVINIT flags = (DEVINIT.CUBLAS | DEVINIT.CURAND), long? lSeed = null, string strPath = "", bool bResetFirst = false)
+        /// <param name="bEnableMemoryTrace">Optionally, specifies to enable the memory tracing (only supported in debug mode and dramatically slows down processing).</param>
+        public CudaDnn(int nDeviceID, DEVINIT flags = (DEVINIT.CUBLAS | DEVINIT.CURAND), long? lSeed = null, string strPath = "", bool bResetFirst = false, bool bEnableMemoryTrace = false)
         {
+            m_memTracker = new CudaDnnMemoryTracker<T>(bEnableMemoryTrace);
             m_nDeviceId = nDeviceID;
             m_nIdx = get_index();
 
@@ -1184,6 +1187,21 @@ namespace MyCaffe.common
         public static void SetDefaultCudaPath(string strPath)
         {
             s_strCudaPath = strPath;
+        }
+
+        /// <summary>
+        /// Returns the base type size in bytes.
+        /// </summary>
+        /// <param name="bUseHalfSize">Specifies whether or not to use half size or the base size.</param>
+        public static ulong basetype_size(bool bUseHalfSize)
+        {
+            if (bUseHalfSize)
+                return 2;
+
+            if (typeof(T) == typeof(float))
+                return 4;
+            else
+                return 8;
         }
 
         private double convertD(T fVal)
@@ -1555,9 +1573,10 @@ namespace MyCaffe.common
         /// Allocate a block of GPU memory and copy an array of type 'T' to it, optionally using a stream for the copy.
         /// </summary>
         /// <param name="rgSrc">Specifies an array of 'T' to copy to the GPU.</param>
-        /// <param name="hStream">Optionally specifies a stream to use for the copy.</param>
+        /// <param name="hStream">Optionally, specifies a stream to use for the copy.</param>
+        /// <param name="bHalfSize">Optionally, specifies to use half size float memory - only available with the 'float' base type.</param>
         /// <returns>The handle to the GPU memory is returned.</returns>
-        public long AllocMemory(T[] rgSrc, long hStream = 0)
+        public long AllocMemory(T[] rgSrc, long hStream = 0, bool bHalfSize = false)
         {
             if (rgSrc == null)
                 throw new ArgumentNullException();
@@ -1569,6 +1588,9 @@ namespace MyCaffe.common
             {
                 if (m_dt == DataType.DOUBLE)
                 {
+                    if (bHalfSize)
+                        throw new Exception("Half sizes are only supported with the 'float' base type.");
+
                     List<double> rgInput = new List<double>() { rgSrc.Length };
 
                     if (hStream > 0)
@@ -1582,7 +1604,10 @@ namespace MyCaffe.common
                     {
                         if (m_rgGhostMemory == null || !m_bGhostMemoryEnabled)
                         {
-                            rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ALLOCMEM, rgInput.ToArray());
+                            if (bHalfSize)
+                                rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ALLOCMEM_HALF, rgInput.ToArray());
+                            else
+                                rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ALLOCMEM, rgInput.ToArray());
                         }
                         else
                         {
@@ -1591,7 +1616,7 @@ namespace MyCaffe.common
                             rg = new double[] { m_nGhostMemoryIndex };
                         }
 
-                        return m_memTracker.AllocMemory(m_hKernel, m_nDeviceId, (long)rg[0], (ulong)rgInput.Count);
+                        return m_memTracker.AllocMemory(m_hKernel, m_nDeviceId, (long)rg[0], (ulong)rgInput.Count, bHalfSize);
                     }
                 }
                 else
@@ -1618,7 +1643,7 @@ namespace MyCaffe.common
                             rg = new float[] { m_nGhostMemoryIndex };
                         }
 
-                        return m_memTracker.AllocMemory(m_hKernel, m_nDeviceId, (long)rg[0], (ulong)rgInput.Count);
+                        return m_memTracker.AllocMemory(m_hKernel, m_nDeviceId, (long)rg[0], (ulong)rgInput.Count, bHalfSize);
                     }
                 }
             }
@@ -1634,8 +1659,9 @@ namespace MyCaffe.common
         /// Allocate a block of GPU memory with a specified capacity.
         /// </summary>
         /// <param name="lCapacity">Specifies the capacity to allocate (in items, not bytes).</param>
+        /// <param name="bHalfSize">Optionally, specifies to use half size float memory - only available with the 'float' base type.</param>
         /// <returns>The handle to the GPU memory is returned.</returns>
-        public long AllocMemory(long lCapacity)
+        public long AllocMemory(long lCapacity, bool bHalfSize = false)
         {
             if (lCapacity <= 0)
                 throw new ArgumentOutOfRangeException();
@@ -1644,6 +1670,9 @@ namespace MyCaffe.common
             {
                 if (m_dt == DataType.DOUBLE)
                 {
+                    if (bHalfSize)
+                        throw new Exception("Half sizes are only supported with the 'float' base type.");
+
                     double[] rg = new double[] { lCapacity };
 
                     lock (m_memSync)
@@ -1659,7 +1688,7 @@ namespace MyCaffe.common
                             rg = new double[] { m_nGhostMemoryIndex };
                         }
 
-                        return m_memTracker.AllocMemory(m_hKernel, m_nDeviceId, (long)rg[0], (ulong)lCapacity);
+                        return m_memTracker.AllocMemory(m_hKernel, m_nDeviceId, (long)rg[0], (ulong)lCapacity, bHalfSize);
                     }
                 }
                 else
@@ -1670,7 +1699,10 @@ namespace MyCaffe.common
                     {
                         if (m_rgGhostMemory == null || !m_bGhostMemoryEnabled)
                         {
-                            rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ALLOCMEM, rg);
+                            if (bHalfSize)
+                                rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ALLOCMEM_HALF, rg);
+                            else
+                                rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ALLOCMEM, rg);
                         }
                         else
                         {
@@ -1679,7 +1711,7 @@ namespace MyCaffe.common
                             rg = new float[] { m_nGhostMemoryIndex };
                         }
 
-                        return m_memTracker.AllocMemory(m_hKernel, m_nDeviceId, (long)rg[0], (ulong)lCapacity);
+                        return m_memTracker.AllocMemory(m_hKernel, m_nDeviceId, (long)rg[0], (ulong)lCapacity, bHalfSize);
                     }
                 }
             }
@@ -1687,9 +1719,7 @@ namespace MyCaffe.common
             {
                 string strMemory = m_memTracker.TotalMemoryUsedText;
                 string strDevice = GetDeviceName(m_nDeviceId);
-
-                int nSize = (typeof(T) == typeof(double)) ? 8 : 4;
-                long lMb = (lCapacity * nSize) / 1000000;
+                long lMb = (lCapacity * (int)basetype_size(false)) / 1000000;
 
                 throw new Exception("Out of memory!  There is not enough memory to allocate the requested " + lMb.ToString("N0") + " MB of memory.  You are currently using " + strMemory + " of memory on " + strDevice + ".  You may need to use a different GPU that has more memory.", excpt);
             }
@@ -1984,7 +2014,7 @@ namespace MyCaffe.common
         /// <param name="nOffset">Specifies offset within the GPU memory from where the copy is to start.</param>
         public void SetMemoryAt(long hMem, double[] rgSrc, int nOffset)
         {
-            SetMemory(hMem, convert(rgSrc), nOffset);
+            SetMemoryAt(hMem, convert(rgSrc), nOffset);
         }
 
         /// <summary>
@@ -1996,7 +2026,7 @@ namespace MyCaffe.common
         /// <param name="nOffset">Specifies offset within the GPU memory from where the copy is to start.</param>
         public void SetMemoryAt(long hMem, float[] rgSrc, int nOffset)
         {
-            SetMemory(hMem, convert(rgSrc), nOffset);
+            SetMemoryAt(hMem, convert(rgSrc), nOffset);
         }
 
         /// <summary>
@@ -2018,7 +2048,7 @@ namespace MyCaffe.common
                 if (m_hKernel > 0)
                 {
                     if (m_rgGhostMemory == null)
-                        m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SETMEM, rg.ToArray());
+                        m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SETMEMAT, rg.ToArray());
                     else
                         throw new Exception("Ghost memory does not support SetMemoryAt.");
                 }
@@ -2031,7 +2061,7 @@ namespace MyCaffe.common
                 if (m_hKernel > 0)
                 {
                     if (m_rgGhostMemory == null)
-                        m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SETMEM, rg.ToArray());
+                        m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SETMEMAT, rg.ToArray());
                     else
                         throw new Exception("Ghost memory does not support SetMemoryAt.");
                 }
@@ -2534,14 +2564,15 @@ namespace MyCaffe.common
         /// <param name="hHandle">Specifies the handle to the tensor descriptor.</param>
         /// <param name="rgDim">Specifies the dimensions of the data.</param>
         /// <param name="rgStride">Specifies the stride of the data.</param>
-        public void SetTensorNdDesc(long hHandle, int[] rgDim, int[] rgStride)
+        /// <param name="bHalf">Optionally, specifies whether or not to use the FP16 half data type.</param>
+        public void SetTensorNdDesc(long hHandle, int[] rgDim, int[] rgStride, bool bHalf = false)
         {
             if (rgDim.Length != rgStride.Length)
                 throw new Exception("The stride and dim arrays must have the same length.");
 
             if (m_dt == DataType.DOUBLE)
             {
-                List<double> rgArg = new List<double>() { hHandle, rgDim.Length };
+                List<double> rgArg = new List<double>() { hHandle, (bHalf) ? 1 : 0, rgDim.Length };
 
                 for (int i = 0; i < rgDim.Length; i++)
                 {
@@ -2557,7 +2588,7 @@ namespace MyCaffe.common
             }
             else
             {
-                List<float> rgArg = new List<float>() { hHandle, rgDim.Length };
+                List<float> rgArg = new List<float>() { hHandle, (bHalf) ? 1 : 0, rgDim.Length };
 
                 for (int i = 0; i < rgDim.Length; i++)
                 {
@@ -2581,12 +2612,13 @@ namespace MyCaffe.common
         /// <param name="c">Specifies the number of channels in each item.</param>
         /// <param name="h">Specifies the height of each item.</param>
         /// <param name="w">Specifies the width of each item.</param>
-        public void SetTensorDesc(long hHandle, int n, int c, int h, int w)
+        /// <param name="bHalf">Optionally, specifies whether or not to use the FP16 half data type.</param>
+        public void SetTensorDesc(long hHandle, int n, int c, int h, int w, bool bHalf = false)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_TENSORDESC, new double[] { hHandle, n, c, h, w });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_TENSORDESC, new double[] { hHandle, (bHalf) ? 1 : 0, n, c, h, w });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_TENSORDESC, new float[] { hHandle, n, c, h, w });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_TENSORDESC, new float[] { hHandle, (bHalf) ? 1 : 0, n, c, h, w });
         }
 
         /// <summary>
@@ -2601,12 +2633,13 @@ namespace MyCaffe.common
         /// <param name="cStride">Specifies the stride between two channels.</param>
         /// <param name="hStride">Specifies the stride between two rows.</param>
         /// <param name="wStride">Specifies the stride between two columns.</param>
-        public void SetTensorDesc(long hHandle, int n, int c, int h, int w, int nStride, int cStride, int hStride, int wStride)
+        /// <param name="bHalf">Optionally, specifies whether or not to use the FP16 half data type.</param>
+        public void SetTensorDesc(long hHandle, int n, int c, int h, int w, int nStride, int cStride, int hStride, int wStride, bool bHalf = false)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_TENSORDESC, new double[] { hHandle, n, c, h, w, nStride, cStride, hStride, wStride });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_TENSORDESC, new double[] { hHandle, (bHalf) ? 1 : 0, n, c, h, w, nStride, cStride, hStride, wStride });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_TENSORDESC, new float[] { hHandle, n, c, h, w, nStride, cStride, hStride, wStride });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_TENSORDESC, new float[] { hHandle, (bHalf) ? 1 : 0, n, c, h, w, nStride, cStride, hStride, wStride });
         }
 
         /// <summary>
@@ -2680,11 +2713,12 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="hHandle">Specifies the handle to the filter descriptor.</param>
         /// <param name="rgDim">Specifies the dimensions of the data.</param>
-        public void SetFilterNdDesc(long hHandle, int[] rgDim)
+        /// <param name="bHalf">Optionally, specifies whether or not to use the FP16 half data type.</param>
+        public void SetFilterNdDesc(long hHandle, int[] rgDim, bool bHalf = false)
         {
             if (m_dt == DataType.DOUBLE)
             {
-                List<double> rgArg = new List<double>() { hHandle, rgDim.Length };
+                List<double> rgArg = new List<double>() { hHandle, (bHalf) ? 1 : 0, rgDim.Length };
 
                 for (int i = 0; i < rgDim.Length; i++)
                 {
@@ -2695,7 +2729,7 @@ namespace MyCaffe.common
             }
             else
             {
-                List<float> rgArg = new List<float>() { hHandle, rgDim.Length };
+                List<float> rgArg = new List<float>() { hHandle, (bHalf) ? 1 : 0, rgDim.Length };
 
                 for (int i = 0; i < rgDim.Length; i++)
                 {
@@ -2714,12 +2748,13 @@ namespace MyCaffe.common
         /// <param name="c">Specifies the number of channels in each item.</param>
         /// <param name="h">Specifies the height of each item.</param>
         /// <param name="w">Specifies the width of each item.</param>
-        public void SetFilterDesc(long hHandle, int n, int c, int h, int w)
+        /// <param name="bHalf">Optionally, specifies whether or not to use the FP16 half data type.</param>
+        public void SetFilterDesc(long hHandle, int n, int c, int h, int w, bool bHalf = false)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_FILTERDESC, new double[] { hHandle, n, c, h, w });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_FILTERDESC, new double[] { hHandle, (bHalf) ? 1 : 0, n, c, h, w });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_FILTERDESC, new float[] { hHandle, n, c, h, w });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_FILTERDESC, new float[] { hHandle, (bHalf) ? 1 : 0, n, c, h, w });
         }
 
         /// <summary>
@@ -2760,12 +2795,13 @@ namespace MyCaffe.common
         /// <param name="wPad">Specifies the pad applied to the width.</param>
         /// <param name="hStride">Specifies the stride of the height.</param>
         /// <param name="wStride">Specifies the stride of the width.</param>
-        public void SetConvolutionDesc(long hHandle, int hPad, int wPad, int hStride, int wStride)
+        /// <param name="bHalf">Optionally, specifies whether or not to use the FP16 half data type.</param>
+        public void SetConvolutionDesc(long hHandle, int hPad, int wPad, int hStride, int wStride, bool bHalf = false)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_CONVDESC, new double[] { hHandle, hPad, wPad, hStride, wStride });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_CONVDESC, new double[] { hHandle, (bHalf) ? 1 : 0, hPad, wPad, hStride, wStride });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_CONVDESC, new float[] { hHandle, hPad, wPad, hStride, wStride });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_CONVDESC, new float[] { hHandle, (bHalf) ? 1 : 0, hPad, wPad, hStride, wStride });
         }
 
         /// <summary>
@@ -4377,12 +4413,21 @@ namespace MyCaffe.common
         /// <param name="nSrcOffset">Optionally specifies the offset into the source data where the copying starts.</param>
         /// <param name="nDstOffset">Optionally specifies the offset into the destination data where the copying starts.</param>
         /// <param name="hStream">Optionally, specifies a handle to a stream to use for the operation.</param>
-        public void copy(int nCount, long hSrc, long hDst, int nSrcOffset = 0, int nDstOffset = 0, long hStream = -1)
+        public void copy(int nCount, long hSrc, long hDst, int nSrcOffset = 0, int nDstOffset = 0, long hStream = -1, bool? bSrcHalfSizeOverride = null, bool? bDstHalfSizeOverride = null)
         {
+            int nSrcHalfSizeOverride = -1;
+            int nDstHalfSizeOverride = -1;
+
+            if (bSrcHalfSizeOverride.HasValue)
+                nSrcHalfSizeOverride = (bSrcHalfSizeOverride.Value) ? 1 : 0;
+
+            if (bDstHalfSizeOverride.HasValue)
+                nDstHalfSizeOverride = (bDstHalfSizeOverride.Value) ? 1 : 0;
+
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY, new double[] { nCount, hSrc, hDst, nSrcOffset, nDstOffset, hStream });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY, new double[] { nCount, hSrc, hDst, nSrcOffset, nDstOffset, hStream, nSrcHalfSizeOverride, nDstHalfSizeOverride });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY, new float[] { nCount, hSrc, hDst, nSrcOffset, nDstOffset, hStream });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY, new float[] { nCount, hSrc, hDst, nSrcOffset, nDstOffset, hStream, nSrcHalfSizeOverride, nDstHalfSizeOverride });
         }
 
         /// <summary>

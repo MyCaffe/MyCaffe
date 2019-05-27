@@ -84,18 +84,27 @@ namespace MyCaffe.common
         /// <param name="cuda">Specifies the CudaDnn instance used to communidate with Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="bIncludeDiff">Optionally, specifies whether or not to include (and allocate) the Diff data.</param>
-        public Blob(CudaDnn<T> cuda, Log log, bool bIncludeDiff = true)
+        /// <param name="bUseHalfSize">Optionally, specifies to use half size (FP16) for both data and diff.  This option is only available when using the <i>float</i> base type 'T'.</param>
+        public Blob(CudaDnn<T> cuda, Log log, bool bIncludeDiff = true, bool bUseHalfSize = false)
         {
+            if (bUseHalfSize && typeof(T) != typeof(float))
+            {
+                bUseHalfSize = false;
+
+                if (log != null)
+                    log.WriteLine("WARNING: Half sizes currently only supported with the 'float' base type - changing back to full size.");
+            }
+
             m_tZero = (T)Convert.ChangeType(0, typeof(T));
             m_tMinusOne = (T)Convert.ChangeType(-1, typeof(T));
             m_bIncludeDiff = bIncludeDiff;
             m_cuda = cuda;
             m_log = log;
             m_shape = new SyncedMemory<T>(m_cuda, m_log);
-            m_data = new SyncedMemory<T>(m_cuda, m_log);
+            m_data = new SyncedMemory<T>(m_cuda, m_log, 0, null, bUseHalfSize);
 
             if (m_bIncludeDiff)
-                m_diff = new SyncedMemory<T>(m_cuda, m_log);
+                m_diff = new SyncedMemory<T>(m_cuda, m_log, 0, null, bUseHalfSize);
         }
 
         /// <summary>
@@ -108,8 +117,9 @@ namespace MyCaffe.common
         /// <param name="nHeight">Specifies the height of each input.</param>
         /// <param name="nWidth">Specifies the width of each input.</param>
         /// <param name="bIncludeDiff">Optionally, specifies whether or not to include (and allocate) the Diff data.</param>
-        public Blob(CudaDnn<T> cuda, Log log, int nNum, int nChannels, int nHeight, int nWidth, bool bIncludeDiff = true)
-            : this(cuda, log, bIncludeDiff)
+        /// <param name="bUseHalfSize">Optionally, specifies to use half size (FP16) for both data and diff.  This option is only available when using the <i>float</i> base type 'T'.</param>
+        public Blob(CudaDnn<T> cuda, Log log, int nNum, int nChannels, int nHeight, int nWidth, bool bIncludeDiff = true, bool bUseHalfSize = false)
+            : this(cuda, log, bIncludeDiff, bUseHalfSize)
         {
             // Capacity must be initialized before calling Reshape.
             m_nCapacity = 0;
@@ -124,8 +134,9 @@ namespace MyCaffe.common
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="rgShape">Specifies the shape of each axis of the Blob.</param>
         /// <param name="bIncludeDiff">Optionally, specifies whether or not to include (and allocate) the Diff data.</param>
-        public Blob(CudaDnn<T> cuda, Log log, List<int> rgShape, bool bIncludeDiff = true)
-            : this(cuda, log, bIncludeDiff)
+        /// <param name="bUseHalfSize">Optionally, specifies to use half size (FP16) for both data and diff.  This option is only available when using the <i>float</i> base type 'T'.</param>
+        public Blob(CudaDnn<T> cuda, Log log, List<int> rgShape, bool bIncludeDiff = true, bool bUseHalfSize = false)
+            : this(cuda, log, bIncludeDiff, bUseHalfSize)
         {
             // Capacity must be initialized before calling Reshape.
             m_nCapacity = 0;
@@ -138,8 +149,9 @@ namespace MyCaffe.common
         /// <param name="cuda">Specifies the CudaDnn instance used to communidate with Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="b">Create this blob to be like another Blob (e.g. same shape).</param>
-        public Blob(CudaDnn<T> cuda, Log log, Blob<T> b)
-            : this(cuda, log, (b.m_diff != null) ? true : false)
+        /// <param name="bUseHalfSize">Optionally, specifies to use half size (FP16) for both data and diff.  This option is only available when using the <i>float</i> base type 'T'.</param>
+        public Blob(CudaDnn<T> cuda, Log log, Blob<T> b, bool bUseHalfSize = false)
+            : this(cuda, log, (b.m_diff != null) ? true : false, bUseHalfSize)
         {
             // Capacity must be initialized before calling Reshape.
             m_nCapacity = 0;
@@ -154,8 +166,9 @@ namespace MyCaffe.common
         /// <param name="d">Specifies the datum for which the Blob is shaped to match.</param>
         /// <param name="bCopyData">Optionally, specifies whether or not to actually copy the data.  When <i>false</i>, the shape is set, but no data is copied.</param>
         /// <param name="bIncludeDiff">Optionally, specifies whether or not to include (and allocate) the Diff data.</param>
-        public Blob(CudaDnn<T> cuda, Log log, SimpleDatum d, bool bCopyData = false, bool bIncludeDiff = true)
-            : this(cuda, log, bIncludeDiff)
+        /// <param name="bUseHalfSize">Optionally, specifies to use half size (FP16) for both data and diff.  This option is only available when using the <i>float</i> base type 'T'.</param>
+        public Blob(CudaDnn<T> cuda, Log log, SimpleDatum d, bool bCopyData = false, bool bIncludeDiff = true, bool bUseHalfSize = false)
+            : this(cuda, log, bIncludeDiff, bUseHalfSize)
         {
             SetData(d, true, bCopyData);
         }
@@ -166,10 +179,95 @@ namespace MyCaffe.common
         /// <param name="cuda">Specifies the CudaDnn instance used to communidate with Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="bp">Specifies the BlobProto used to load the Blob.</param>
-        public Blob(CudaDnn<T> cuda, Log log, BlobProto bp)
-            : this(cuda, log)
+        /// <param name="bUseHalfSize">Optionally, specifies to use half size (FP16) for both data and diff.  This option is only available when using the <i>float</i> base type 'T'.</param>
+        public Blob(CudaDnn<T> cuda, Log log, BlobProto bp, bool bUseHalfSize = false)
+            : this(cuda, log, true, bUseHalfSize)
         {
             FromProto(bp);
+        }
+
+        /// <summary>
+        /// Returns the amount of memory (in bytes) required to convert from base to half and back.
+        /// </summary>
+        /// <param name="bUseHalfSize">Specifies whether or not we are converting to half size or not.</param>
+        public ulong GetConversionWorkSize(bool bUseHalfSize)
+        {
+            // (count (for data) + count (for diff)) * base type size
+            return (ulong)count() * 2 * CudaDnn<T>.basetype_size(bUseHalfSize);
+        }
+
+        /// <summary>
+        /// Converts this blob from its base type to the half type.
+        /// </summary>
+        /// <param name="hWorkMem">Specifies the work memory.</param>
+        /// <param name="lWorkSize">Specifies the work size.</param>
+        /// <param name="bData">Specifies to convert the data.</param>
+        /// <param name="bDiff">Specifies to convert the diff</param>
+        public void ConvertToHalf(long hWorkMem, ulong lWorkSize, bool bData, bool bDiff)
+        {
+            int nCount = count();
+            ulong lSize = (ulong)nCount * 2 * CudaDnn<T>.basetype_size(true);
+
+            if ((long)lSize < 0)
+                throw new Exception("Memory out of range!");
+
+            if (lWorkSize < lSize)
+                throw new Exception("Work memory is not large enough!");
+
+            if (bData)
+                m_cuda.copy(nCount, gpu_data, hWorkMem, 0, 0, -1, null, true);
+
+            if (bDiff)
+                m_cuda.copy(nCount, gpu_diff, hWorkMem, 0, nCount, -1, null, true);
+
+            Reshape(shape(), true);
+
+            if (bData)
+                m_cuda.copy(nCount, hWorkMem, mutable_gpu_data, 0, 0, -1, true, null);
+
+            if (bDiff)
+                m_cuda.copy(nCount, hWorkMem, mutable_gpu_diff, nCount, 0, -1, true, null);
+        }
+
+        /// <summary>
+        /// Converts this blob from the half type to the base type.
+        /// </summary>
+        /// <param name="hWorkMem">Specifies the work memory.</param>
+        /// <param name="lWorkSize">Specifies the work size.</param>
+        /// <param name="bData">Specifies to convert the data.</param>
+        /// <param name="bDiff">Specifies to convert the diff</param>
+        public void ConvertToBase(long hWorkMem, ulong lWorkSize, bool bData, bool bDiff)
+        {
+            int nCount = count();
+            ulong lSize = (ulong)nCount * 2 * CudaDnn<T>.basetype_size(false);
+
+            if ((long)lSize < 0)
+                throw new Exception("Memory out of range!");
+
+            if (lWorkSize < lSize)
+                throw new Exception("Work memory is not large enough!");
+
+            if (bData)
+                m_cuda.copy(nCount, gpu_data, hWorkMem, 0, 0, -1, null, false);
+
+            if (bDiff)
+                m_cuda.copy(nCount, gpu_diff, hWorkMem, 0, nCount, -1, null, false);
+
+            Reshape(shape(), false);
+
+            if (bData)
+                m_cuda.copy(nCount, hWorkMem, mutable_gpu_data, 0, 0, -1, false, null);
+
+            if (bDiff)
+                m_cuda.copy(nCount, hWorkMem, mutable_gpu_diff, nCount, 0, -1, false, null);
+        }
+
+        /// <summary>
+        /// Returns whether or not this blob is using half sizes.
+        /// </summary>
+        public bool HalfSize
+        {
+            get { return m_data.HalfSize; }
         }
 
         /// <summary>
@@ -260,7 +358,8 @@ namespace MyCaffe.common
         /// propagate the new input shape to higher layers.
         /// </remarks>
         /// <param name="rgShape">Specifies the new shape.</param>
-        public void Reshape(List<int> rgShape)
+        /// <param name="bUseHalfSize">Optionally, specifies to use half sized memory.</param>
+        public void Reshape(List<int> rgShape, bool? bUseHalfSize = null)
         {
             m_log.CHECK_LE(rgShape.Count, MAX_BLOB_AXES, "The number of axes cannot exceed " + MAX_BLOB_AXES.ToString());
             m_nCount = 1;
@@ -314,7 +413,7 @@ namespace MyCaffe.common
                 }
             }
 
-            if (m_nCount > m_nCapacity || m_nCount > m_data.Capacity || (m_diff != null && m_nCount > m_diff.Capacity))
+            if (m_nCount > m_nCapacity || m_nCount > m_data.Capacity || (m_diff != null && m_nCount > m_diff.Capacity) || (m_data != null && bUseHalfSize.HasValue && m_data.HalfSize != bUseHalfSize.Value))
             {
                 if (m_data != null)
                     m_data.Dispose();
@@ -325,16 +424,16 @@ namespace MyCaffe.common
                 m_nCapacity = m_nCount;
 
                 if (m_data == null)
-                    m_data = new SyncedMemory<T>(m_cuda, m_log, m_nCapacity);
+                    m_data = new SyncedMemory<T>(m_cuda, m_log, m_nCapacity, null, bUseHalfSize.GetValueOrDefault(false));
                 else
-                    m_data.Allocate(m_nCapacity);
+                    m_data.Allocate(m_nCapacity, bUseHalfSize.GetValueOrDefault(m_data.HalfSize));
 
                 if (m_bIncludeDiff)
                 {
                     if (m_diff == null)
-                        m_diff = new SyncedMemory<T>(m_cuda, m_log, m_nCapacity);
+                        m_diff = new SyncedMemory<T>(m_cuda, m_log, m_nCapacity, null, bUseHalfSize.GetValueOrDefault(false));
                     else
-                        m_diff.Allocate(m_nCapacity);
+                        m_diff.Allocate(m_nCapacity, bUseHalfSize.GetValueOrDefault(m_data.HalfSize));
                 }
             }
 

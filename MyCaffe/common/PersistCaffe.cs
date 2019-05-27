@@ -784,7 +784,19 @@ namespace MyCaffe.common
 
                     T[] rgData = copyData(pbData, type, lDataCount, rgBlobShape);
 
-                    blob.mutable_cpu_data = rgData;
+                    if (blob.HalfSize)
+                    {
+                        Blob<T> blobTemp = new Blob<T>(blob.Cuda, blob.Log, false, false);
+                        blobTemp.ReshapeLike(blob);
+                        blobTemp.mutable_cpu_data = rgData;
+                        blob.CopyFrom(blobTemp);
+                        blobTemp.Dispose();
+                    }
+                    else
+                    {
+                        blob.mutable_cpu_data = rgData;
+                    }
+
                     blob.Tag = colFieldBlobs[nFieldIdx].Tag;
 
                     if (bSizeToFit && bResizeNeeded)
