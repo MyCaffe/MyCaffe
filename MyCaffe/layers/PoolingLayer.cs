@@ -323,10 +323,10 @@ namespace MyCaffe.layers
                 m_log.CHECK_LT((m_nPooledWidth - 1) * m_nStrideW, m_nWidth + m_nPadW, "The pooled width must fit in the image and not overlap onto the padding.");
             }
 
-            colTop[0].Reshape(colBottom[0].num, m_nChannels, m_nPooledHeight, m_nPooledWidth);
+            colTop[0].Reshape(colBottom[0].num, m_nChannels, m_nPooledHeight, m_nPooledWidth, m_bUseHalfSize);
 
             if (colTop.Count > 1)
-                colTop[1].ReshapeLike(colTop[0]);
+                colTop[1].ReshapeLike(colTop[0], m_bUseHalfSize);
 
             if (!m_param.pooling_param.useCudnn())
             {
