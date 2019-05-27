@@ -108,7 +108,7 @@ namespace MyCaffe.common
         BEST_RESULT_TYPE m_nBestResultType = BEST_RESULT_TYPE.BY_CHANNEL;
 
         long m_hWorkspaceData = 0;  // shared among the layers, only grows in size.
-        long m_lWorkspaceSize = 0;
+        ulong m_lWorkspaceSize = 0;
 
         Net<T> m_sharedNet = null;
         bool m_bBreakOnFirstNan = false;
@@ -710,7 +710,7 @@ namespace MyCaffe.common
             if (m_hWorkspaceData != 0)
                 m_cuda.FreeMemory(m_hWorkspaceData);
 
-            m_hWorkspaceData = m_cuda.AllocMemory(m_lWorkspaceSize);
+            m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSize);
             m_cuda.ResetGhostMemory();
         }
 
