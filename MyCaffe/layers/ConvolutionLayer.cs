@@ -218,7 +218,7 @@ namespace MyCaffe.layers
             // Create filter descriptor.
             Size szKernel = size_at(m_blobKernelShape);
             m_hFilterDesc = m_cuda.CreateFilterDesc();
-            m_cuda.SetFilterDesc(m_hFilterDesc, m_nNumOutput / m_nGroup, m_nChannels / m_nGroup, szKernel.Height, szKernel.Width); 
+            m_cuda.SetFilterDesc(m_hFilterDesc, m_nNumOutput / m_nGroup, m_nChannels / m_nGroup, szKernel.Height, szKernel.Width, m_bUseHalfSize); 
 
             // Create tensor descriptor(s) for data and corresponding convolution(s).
             for (int i = 0; i < colBottom.Count; i++)
@@ -271,9 +271,9 @@ namespace MyCaffe.layers
 
             for (int i = 0; i < colBottom.Count; i++)
             {
-                m_cuda.SetTensorDesc(m_rghBottomDesc[i], m_nNum, m_nChannels / m_nGroup, nHeight, nWidth, m_nChannels * nHeight * nWidth, nHeight * nWidth, nWidth, 1);
-                m_cuda.SetTensorDesc(m_rghTopDesc[i], m_nNum, m_nNumOutput / m_nGroup, nHeightOut, nWidthOut, m_nNumOutput * m_nOutSpatialDim, m_nOutSpatialDim, nWidthOut, 1);
-                m_cuda.SetConvolutionDesc(m_rghConvDesc[i], szPad.Height, szPad.Width, szStride.Height, szStride.Width);
+                m_cuda.SetTensorDesc(m_rghBottomDesc[i], m_nNum, m_nChannels / m_nGroup, nHeight, nWidth, m_nChannels * nHeight * nWidth, nHeight * nWidth, nWidth, 1, m_bUseHalfSize);
+                m_cuda.SetTensorDesc(m_rghTopDesc[i], m_nNum, m_nNumOutput / m_nGroup, nHeightOut, nWidthOut, m_nNumOutput * m_nOutSpatialDim, m_nOutSpatialDim, nWidthOut, 1, m_bUseHalfSize);
+                m_cuda.SetConvolutionDesc(m_rghConvDesc[i], szPad.Height, szPad.Width, szStride.Height, szStride.Width, m_bUseHalfSize);
 
                 // Get the algorithms and workspace sizes needed.
                 CONV_FWD_ALGO algoFwd = (CONV_FWD_ALGO)0;
@@ -308,7 +308,7 @@ namespace MyCaffe.layers
             long lMaxWorkspace = Math.Max(lTotalWsFwd, Math.Max(lTotalWsBwdFilter, lTotalWsBwdData));
 
             // Ensure all groups have enough workspace.
-            long lTotalMaxWorkspace = lMaxWorkspace * m_nGroup * CUDNN_STREAMS_PER_GROUP;
+            ulong lTotalMaxWorkspace = (ulong)lMaxWorkspace * (ulong)m_nGroup * (ulong)CUDNN_STREAMS_PER_GROUP;
 
             // Initialize the workspace data.
             WorkspaceArgs wsArgs = getWorkspace();
@@ -327,7 +327,7 @@ namespace MyCaffe.layers
 
             // Tensor descriptor for bias.
             if (m_bBiasTerm)
-                m_cuda.SetTensorDesc(m_hBiasDesc, 1, m_nNumOutput / m_nGroup, 1, 1);
+                m_cuda.SetTensorDesc(m_hBiasDesc, 1, m_nNumOutput / m_nGroup, 1, 1, m_bUseHalfSize);
         }
 
         /// <summary>

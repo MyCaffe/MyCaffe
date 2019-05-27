@@ -163,7 +163,15 @@ namespace MyCaffe.layers
             base.LayerSetUp(colBottom, colTop);
 
             if (!m_param.convolution_param.useCudnn(m_nNumSpatialAxes))
+            {
+                for (int i = 0; i < colBottom.Count; i++)
+                {
+                    if (colBottom[i].HalfSize)
+                        m_log.FAIL("Half sizes are only supported with the CUDNN engine!");
+                }
+
                 return;
+            }
 
             // Initialize CUDA streams and cuDNN.
             m_rghStream = new long[m_nGroup * CUDNN_STREAMS_PER_GROUP];
@@ -235,7 +243,15 @@ namespace MyCaffe.layers
             base.Reshape(colBottom, colTop);
 
             if (!m_param.convolution_param.useCudnn(m_nNumSpatialAxes))
+            {
+                for (int i = 0; i < colBottom.Count; i++)
+                {
+                    if (colBottom[i].HalfSize)
+                        m_log.FAIL("Half sizes are only supported with the CUDNN engine!");
+                }
+
                 return;
+            }
 
             m_log.CHECK_EQ(2, m_nNumSpatialAxes, "cuDNN Deconvolution input must have 2 spatial axes (e.g., height and width).  Use 'engine: CAFFE' for general ND deconvolution.");
 
@@ -298,7 +314,7 @@ namespace MyCaffe.layers
             long lMaxWorkspace = Math.Max(lTotalWsFwd, Math.Max(lTotalWsBwdFilter, lTotalWsBwdData));
 
             // Ensure all groups have enough workspace.
-            long lTotalMaxWorkspace = lMaxWorkspace * m_nGroup * CUDNN_STREAMS_PER_GROUP;
+            ulong lTotalMaxWorkspace = (ulong)lMaxWorkspace * (ulong)m_nGroup * CUDNN_STREAMS_PER_GROUP;
 
             // Initialize the workspace data.
             WorkspaceArgs wsArgs = getWorkspace();
@@ -394,6 +410,9 @@ namespace MyCaffe.layers
 
             for (int i = 0; i < colBottom.Count; i++)
             {
+                if (colBottom[i].HalfSize)
+                    m_log.FAIL("The CAFFE engine does not support half sizes!");
+
                 long hBottomData = colBottom[i].gpu_data;
                 long hTopData = colTop[i].mutable_gpu_data;
 
@@ -420,6 +439,9 @@ namespace MyCaffe.layers
 
             for (int i = 0; i < colTop.Count; i++)
             {
+                if (colTop[i].HalfSize || colBottom[i].HalfSize)
+                    m_log.FAIL("The CAFFE engine does not support half sizes!");
+
                 long hTopDiff = colTop[i].gpu_diff;
                 long hBottomData = colBottom[i].gpu_data;
                 long hBottomDiff = colBottom[i].mutable_gpu_diff;

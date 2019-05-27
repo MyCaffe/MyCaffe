@@ -80,6 +80,9 @@ namespace MyCaffe.layers
             if (!m_param.relu_param.useCudnn())
                 return;
 
+            // Setup the convert to half flags used by the Layer just before calling forward and backward.
+            m_bUseHalfSize = m_param.relu_param.cudnn_use_halfsize;
+
             // Initialize CuDNN
             m_hCudnn = m_cuda.CreateCuDNN();
             m_hBottomDesc = m_cuda.CreateTensorDesc();
@@ -103,8 +106,8 @@ namespace MyCaffe.layers
             int nH = colBottom[0].height;
             int nW = colBottom[0].width;
 
-            m_cuda.SetTensorDesc(m_hBottomDesc, nN, nK, nH, nW);
-            m_cuda.SetTensorDesc(m_hTopDesc, nN, nK, nH, nW);
+            m_cuda.SetTensorDesc(m_hBottomDesc, nN, nK, nH, nW, m_bUseHalfSize);
+            m_cuda.SetTensorDesc(m_hTopDesc, nN, nK, nH, nW, m_bUseHalfSize);
         }
 
         /// <summary>

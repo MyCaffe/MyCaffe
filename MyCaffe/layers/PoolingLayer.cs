@@ -260,6 +260,9 @@ namespace MyCaffe.layers
             //  Note only MAX and AVE pooling are supported.
             //---------------------------------------------
 
+            // Setup the convert to half flags used by the Layer just before calling forward and backward.
+            m_bUseHalfSize = m_param.pooling_param.cudnn_use_halfsize;
+
             if (m_param.pooling_param.pool == PoolingParameter.PoolingMethod.MAX)
                 m_method = PoolingMethod.MAX;
             else
@@ -342,8 +345,8 @@ namespace MyCaffe.layers
             //  cuDnn specific pooling.
             //---------------------------------------------
 
-            m_cuda.SetTensorDesc(m_hBottomDesc, colBottom[0].num, m_nChannels, m_nHeight, m_nWidth);
-            m_cuda.SetTensorDesc(m_hTopDesc, colBottom[0].num, m_nChannels, m_nPooledHeight, m_nPooledWidth);
+            m_cuda.SetTensorDesc(m_hBottomDesc, colBottom[0].num, m_nChannels, m_nHeight, m_nWidth, m_bUseHalfSize);
+            m_cuda.SetTensorDesc(m_hTopDesc, colBottom[0].num, m_nChannels, m_nPooledHeight, m_nPooledWidth, m_bUseHalfSize);
         }
 
         /// <summary>

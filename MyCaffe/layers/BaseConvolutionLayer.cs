@@ -114,7 +114,7 @@ namespace MyCaffe.layers
         Blob<T> m_blobBiasMultiplier;
 
         long m_hWorkspaceData = 0;
-        long m_lWorkspaceSize = 0;
+        ulong m_lWorkspaceSize = 0;
         bool m_bWorkspaceOwner = false;
 
         
@@ -201,7 +201,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="lSize">Specifies the size (in items) of workspace needed.</param>
         /// <returns>This method always returns <i>true</i>.</returns>
-        protected override bool setWorkspace(long lSize)
+        protected override bool setWorkspace(ulong lSize)
         {
             if (!m_bWorkspaceOwner && base.setWorkspace(lSize))
                 return true;
@@ -217,7 +217,7 @@ namespace MyCaffe.layers
             if (m_hWorkspaceData != 0)
                 m_cuda.FreeMemory(m_hWorkspaceData);
 
-            m_hWorkspaceData = m_cuda.AllocMemory(m_lWorkspaceSize);
+            m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSize);
             m_cuda.ResetGhostMemory();
 
             return true;
@@ -442,6 +442,10 @@ namespace MyCaffe.layers
 
             List<int> rgBiasShape = new List<int>() { m_nNumOutput };
 
+            // Setup the convert to half flags used by the Layer just before calling forward and backward.
+            if (p.useCudnn(m_nNumSpatialAxes))
+                m_bUseHalfSize = p.cudnn_use_halfsize;
+
             if (m_colBlobs.Count > 0)
             {
                 m_log.CHECK_EQ(1 + ((m_bBiasTerm) ? 1 : 0), m_colBlobs.Count, "Incorrect number of weight blobs.");
@@ -466,14 +470,29 @@ namespace MyCaffe.layers
 
                 // Initialize and fill the weights:
                 // output channels x input channels per-group x kernel height x kernel width.
-                Blob<T> blobWts = new Blob<T>(m_cuda, m_log);
+                Blob<T> blobWts = new Blob<T>(m_cuda, m_log, true, m_bUseHalfSize);
                 blobWts.Name = colTop[0].Name + " weights";
 
-                if (!shareParameter(blobWts, rgWeightShape))
+                if (m_bUseHalfSize || !shareParameter(blobWts, rgWeightShape))
                 {
-                    blobWts.Reshape(rgWeightShape);
+                    blobWts.Reshape(rgWeightShape, m_bUseHalfSize);
                     Filler<T> wtFiller = Filler<T>.Create(m_cuda, m_log, p.weight_filler);
-                    wtFiller.Fill(blobWts);
+
+                    Blob<T> blobWts1 = blobWts;
+
+                    if (m_bUseHalfSize)
+                    {
+                        blobWts1 = new Blob<T>(m_cuda, m_log, false, false);
+                        blobWts1.ReshapeLike(blobWts);
+                    }
+
+                    wtFiller.Fill(blobWts1);
+
+                    if (m_bUseHalfSize)
+                    {
+                        blobWts.CopyFrom(blobWts1);
+                        blobWts1.Dispose();
+                    }
                 }
 
                 m_colBlobs.Add(blobWts);
@@ -481,14 +500,29 @@ namespace MyCaffe.layers
                 // If necessary, initialize and fill the biases:
                 if (m_bBiasTerm)
                 {
-                    Blob<T> blobBias = new Blob<T>(m_cuda, m_log);
+                    Blob<T> blobBias = new Blob<T>(m_cuda, m_log, true, m_bUseHalfSize);
                     blobBias.Name = colTop[0].Name + " bias";
 
-                    if (!shareParameter(blobBias, rgBiasShape))
+                    if (m_bUseHalfSize || !shareParameter(blobBias, rgBiasShape))
                     {
-                        blobBias.Reshape(rgBiasShape);
+                        blobBias.Reshape(rgBiasShape, m_bUseHalfSize);
                         Filler<T> biasFiller = Filler<T>.Create(m_cuda, m_log, p.bias_filler);
-                        biasFiller.Fill(blobBias);
+
+                        Blob<T> blobBias1 = blobBias;
+
+                        if (m_bUseHalfSize)
+                        {
+                            blobBias1 = new Blob<T>(m_cuda, m_log, false, false);
+                            blobBias1.ReshapeLike(blobBias);
+                        }
+
+                        biasFiller.Fill(blobBias1);
+
+                        if (m_bUseHalfSize)
+                        {
+                            blobBias.CopyFrom(blobBias1);
+                            blobBias1.Dispose();
+                        }
                     }
 
                     m_colBlobs.Add(blobBias);
@@ -541,7 +575,7 @@ namespace MyCaffe.layers
 
             for (int i = 0; i < colTop.Count; i++)
             {
-                colTop[i].Reshape(rgTopShape);
+                colTop[i].Reshape(rgTopShape, m_bUseHalfSize);
             }
 
             if (reverse_dimensions())

@@ -75,6 +75,10 @@ namespace MyCaffe.layers
         /// Enables/disables the pass-through mode for the layer.  Default = <i>false</i>.
         /// </summary>
         protected bool m_bEnablePassthrough = false;
+        /// <summary>
+        /// Specifies that the half size of the top (if any) should be converted to the base size.
+        /// </summary>
+        protected bool m_bUseHalfSize = false;
 
         private double m_dfForwardTiming = 0;
         private double m_dfForwardAverageTiming = 0;
@@ -104,6 +108,12 @@ namespace MyCaffe.layers
         /// When implemented, this event causes a nan/inf check at the end of each forward and backward pass
         /// and is only recommended use during debugging.</remarks>
         public event EventHandler<GetWorkBlobArgs<T>> OnDebug;
+
+        enum CONVERT_TYPE
+        {
+            BASE_TO_HALF,
+            HALF_TO_BASE
+        }
 
         /// <summary>
         /// The Layer constructor.
@@ -260,6 +270,64 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs, which should be reshaped as needed by the Layer.</param>
         public abstract void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop);
 
+        private void convert(BlobCollection<T> col)
+        {
+            if (OnGetWorkspace == null || OnSetWorkspace == null)
+                return;
+
+            ulong lMaxSize = 0;
+
+            foreach (Blob<T> b in col)
+            {
+                ulong lSize = b.GetConversionWorkSize(m_bUseHalfSize);
+                if (lMaxSize < lSize)
+                    lMaxSize = lSize;
+            }
+
+            WorkspaceArgs args = getWorkspace();
+            if (args.Size < lMaxSize)
+            {
+                setWorkspace(lMaxSize);
+                args = getWorkspace();
+            }
+
+            foreach (Blob<T> b in col)
+            {
+                if (m_bUseHalfSize && !b.HalfSize)
+                    b.ConvertToHalf(args.Data, args.Size, true, true);
+                else if (!m_bUseHalfSize && b.HalfSize)
+                    b.ConvertToBase(args.Data, args.Size, true, true);
+            }
+        }
+
+        public void ConvertToBase(BlobCollection<T> col)
+        {
+            if (OnGetWorkspace == null || OnSetWorkspace == null)
+                return;
+
+            ulong lMaxSize = 0;
+
+            foreach (Blob<T> b in col)
+            {
+                ulong lSize = b.GetConversionWorkSize(true);
+                if (lMaxSize < lSize)
+                    lMaxSize = lSize;
+            }
+
+            WorkspaceArgs args = getWorkspace();
+            if (args.Size < lMaxSize)
+            {
+                setWorkspace(lMaxSize);
+                args = getWorkspace();
+            }
+
+            foreach (Blob<T> b in col)
+            {
+                b.ConvertToBase(args.Data, args.Size, true, true);
+            }
+        }
+
+
         /// <summary>
         /// Given the bottom (input) Blobs, this function computes the top (output) Blobs and the loss.
         /// </summary>
@@ -280,6 +348,7 @@ namespace MyCaffe.layers
                 m_swTiming.Restart();
                 double dfLoss = 0;
 
+                convert(colBottom);
                 Reshape(colBottom, colTop);
                 forward(colBottom, colTop);
 
@@ -358,6 +427,8 @@ namespace MyCaffe.layers
             try
             {
                 m_swTiming.Restart();
+                convert(colTop);
+                convert(colBottom);
                 backward(colTop, rgbPropagateDown, colBottom);
                 m_swTiming.Stop();
                 m_dfBackwardTiming = m_swTiming.Elapsed.TotalMilliseconds;
@@ -806,7 +877,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="lSize"></param>
         /// <returns></returns>
-        protected virtual bool setWorkspace(long lSize)
+        protected virtual bool setWorkspace(ulong lSize)
         {
             if (OnSetWorkspace == null)
                 return false;
