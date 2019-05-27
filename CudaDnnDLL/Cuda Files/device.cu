@@ -89,10 +89,12 @@ long Device<T>::GetDeviceName(int nDevice, LPTSTR* pszDevice)
 	if (lErr = cudaGetDeviceProperties(&prop, nDevice))
 		return lErr;
 
+	m_nMajor = prop.major;
+	m_nMinor = prop.minor;
+
 	bool b64Bit = (sizeof(void*) == 8) ? true : false;
 	bool bTcc = (prop.tccDriver == 1) ? true : false;
 	bool bVer = (prop.major >= 2) ? true : false;
-
 	double dfGB = (double)prop.totalGlobalMem / 1000000000.00;
 
 	LPTSTR pDst = (LPTSTR)malloc(sizeof(TCHAR) * 512);
@@ -173,6 +175,9 @@ long Device<T>::GetDeviceP2PInfo(int nDevice, LPTSTR* pszDevice)
 
 	if (lErr = cudaGetDeviceProperties(&prop, nDevice))
 		return lErr;
+
+	m_nMajor = prop.major;
+	m_nMinor = prop.minor;
 
 	bool bCapable = false;
 	bool b64bit = (sizeof(void*) == 8) ? true : false;
@@ -418,6 +423,9 @@ long Device<T>::GetDeviceInfo(int nDevice, LPTSTR* pszDevice, bool bVerbose)
 		if (lErr = cudaGetDeviceProperties(&prop, nDevice))
 			return lErr;
 
+		m_nMajor = prop.major;
+		m_nMinor = prop.minor;
+
 		char szBuffer[1024];
 		_snprintf(szBuffer, 1023, "\r\n Major: %d, Minor: %d, Compute Mode: %d\r\n Max Grid: { %d, %d, %d }, Max Thread Dim: { %d, %d, %d }\r\n Shared Memory/Block: %zd\r\n", prop.major, prop.minor, prop.computeMode, prop.maxGridSize[0], prop.maxGridSize[1], prop.maxGridSize[2], prop.maxThreadsDim[0], prop.maxThreadsDim[1], prop.maxThreadsDim[2], prop.sharedMemPerBlock);
 		_tcsncat(pDst, A2T(szBuffer), 2047);
@@ -574,7 +582,7 @@ long Device<T>::AllocMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 		}
 	}
 
-	if (lErr = m_memory.AllocMemory(GetDevice(), lCount, pSrc, hStream, &hHandle))
+	if (lErr = m_memory.AllocMemory(GetDevice(), false, lCount, pSrc, hStream, &hHandle))
 		return lErr;
 
 	if (lErr = setOutput(hHandle, plOutput, ppfOutput))
@@ -585,6 +593,49 @@ long Device<T>::AllocMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 
 template long Device<double>::AllocMemory(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
 template long Device<float>::AllocMemory(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
+long Device<T>::AllocMemoryHalf(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, INT_MAX))
+		return lErr;
+
+	long hHandle = 0;
+	long hStream = 0;
+	size_t lCount = (size_t)pfInput[0];
+	T* pSrc = NULL;
+
+	if (lInput > 1)
+	{
+		if (lInput == lCount + 1)
+		{
+			pSrc = &pfInput[1];
+		}
+		else if (lInput == lCount + 2)
+		{
+			hStream = (long)pfInput[1];
+			pSrc = &pfInput[2];
+		}
+		else
+		{
+			return ERROR_PARAM_OUT_OF_RANGE;
+		}
+	}
+
+	if (lErr = m_memory.AllocMemory(GetDevice(), true, lCount, pSrc, hStream, &hHandle))
+		return lErr;
+
+	if (lErr = setOutput(hHandle, plOutput, ppfOutput))
+		return lErr;
+
+	return 0;
+}
+
+template long Device<double>::AllocMemoryHalf(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::AllocMemoryHalf(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>
@@ -625,7 +676,7 @@ long Device<T>::GetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 	if (lErr = m_memory.GetMemory(hHandle, &pItem))
 		return lErr;
 
-	size_t lAllocatedCount = pItem->Size() / sizeof(T);
+	size_t lAllocatedCount = pItem->Size() / (pItem->IsHalf() ? sizeof(__half) : sizeof(T));
 
 	if (lCount == (size_t)-1)
 		lCount = lAllocatedCount;
@@ -636,14 +687,14 @@ long Device<T>::GetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 	{
 		T* pfOutput = *ppfOutput;
 
-		if (lErr = m_memory.CopyToHost(lCount, pfOutput, (T*)pItem->Data(), true))
+		if (lErr = m_memory.CopyToHost(lCount, pfOutput, (T*)pItem->Data(), true, pItem->IsHalf()))
 			return lErr;
 	}
 	else
 	{
 		T* pfOutput = NULL;
 
-		if (lErr = m_memory.AllocHost(lCount, &pfOutput, (T*)pItem->Data(), true))
+		if (lErr = m_memory.AllocHost(lCount, &pfOutput, (T*)pItem->Data(), true, pItem->IsHalf()))
 			return lErr;
 
 		*ppfOutput = pfOutput;
@@ -871,20 +922,21 @@ long Device<T>::SetTensorDesc(long lInput, T* pfInput, long* plOutput, T** ppfOu
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, 9, true))
+	if (lErr = verifyInput(lInput, pfInput, 6, 10, true))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
-	int n = (int)pfInput[1];
-	int c = (int)pfInput[2];
-	int h = (int)pfInput[3];
-	int w = (int)pfInput[4];
+	bool bHalf = (bool)(pfInput[1] == 1) ? true : false;
+	int n = (int)pfInput[2];
+	int c = (int)pfInput[3];
+	int h = (int)pfInput[4];
+	int w = (int)pfInput[5];
 	int nStride;
 	int cStride;
 	int hStride;
 	int wStride;
 
-	if (lInput == 5)
+	if (lInput == 6)
 	{
 		wStride = 1;
 		hStride = w * wStride;
@@ -893,13 +945,13 @@ long Device<T>::SetTensorDesc(long lInput, T* pfInput, long* plOutput, T** ppfOu
 	}
 	else
 	{
-		nStride = (int)pfInput[5];
-		cStride = (int)pfInput[6];
-		hStride = (int)pfInput[7];
-		wStride = (int)pfInput[8];
+		nStride = (int)pfInput[6];
+		cStride = (int)pfInput[7];
+		hStride = (int)pfInput[8];
+		wStride = (int)pfInput[9];
 	}
 
-	if (lErr = m_memory.SetTensorDesc(hHandle, n, c, h, w, nStride, cStride, hStride, wStride))
+	if (lErr = m_memory.SetTensorDesc(hHandle, n, c, h, w, nStride, cStride, hStride, wStride, bHalf))
 		return lErr;
 
 	return 0;
@@ -914,11 +966,12 @@ long Device<T>::SetTensorNdDesc(long lInput, T* pfInput, long* plOutput, T** ppf
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, MAX_ARG))
+	if (lErr = verifyInput(lInput, pfInput, 4, MAX_ARG))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
-	int nCount = (int)pfInput[1];
+	bool bHalf = (bool)(pfInput[1] == 1) ? true : false;
+	int nCount = (int)pfInput[2];
 
 	if (nCount > MAX_DIM || nCount <= 0 || nCount > (lInput - 2)/2)
 		return ERROR_PARAM_OUT_OF_RANGE;
@@ -934,7 +987,7 @@ long Device<T>::SetTensorNdDesc(long lInput, T* pfInput, long* plOutput, T** ppf
 		return ERROR_OUTOFMEMORY;
 	}
 
-	int nIdx = 2;
+	int nIdx = 3;
 	for (int i = 0; i < nCount; i++)
 	{
 		rgDim[i] = (int)pfInput[nIdx];
@@ -947,7 +1000,7 @@ long Device<T>::SetTensorNdDesc(long lInput, T* pfInput, long* plOutput, T** ppf
 		nIdx++;
 	}
 
-	lErr = m_memory.SetTensorDesc(hHandle, rgDim, rgStride, nCount);
+	lErr = m_memory.SetTensorDesc(hHandle, rgDim, rgStride, nCount, bHalf);
 
 	free(rgDim);
 	free(rgStride);
@@ -968,7 +1021,8 @@ long Device<T>::SetFilterNdDesc(long lInput, T* pfInput, long* plOutput, T** ppf
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
-	int nCount = (int)pfInput[1];
+	bool bHalf = (bool)(pfInput[1] == 1) ? true : false;
+	int nCount = (int)pfInput[2];
 
 	if (nCount > MAX_DIM || nCount <= 0 || nCount > (lInput - 2))
 		return ERROR_PARAM_OUT_OF_RANGE;
@@ -977,14 +1031,14 @@ long Device<T>::SetFilterNdDesc(long lInput, T* pfInput, long* plOutput, T** ppf
 	if (rgDim == NULL)
 		return ERROR_OUTOFMEMORY;
 
-	int nIdx = 2;
+	int nIdx = 3;
 	for (int i = 0; i < nCount; i++)
 	{
 		rgDim[i] = (int)pfInput[nIdx];
 		nIdx++;
 	}
 
-	lErr = m_memory.SetFilterDesc(hHandle, rgDim, nCount);
+	lErr = m_memory.SetFilterDesc(hHandle, rgDim, nCount, bHalf);
 
 	free(rgDim);
 
@@ -1016,7 +1070,7 @@ long Device<T>::GetDropoutInfo(long lInput, T* pfInput, long* plOutput, T** ppfO
 
 	T* pfOutput = NULL;
 
-	if (lErr = m_memory.AllocHost(2, &pfOutput, NULL, false))
+	if (lErr = m_memory.AllocHost(2, &pfOutput, NULL, false, false))
 		return lErr;
 
 	pfOutput[0] = (T)lStates;
@@ -1058,7 +1112,7 @@ long Device<T>::cuda_get(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 
 	T* pfOutput = NULL;
 	
-	if (lErr = m_memory.AllocHost(nItems, &pfOutput, NULL, false))
+	if (lErr = m_memory.AllocHost(nItems, &pfOutput, NULL, false, false))
 		return lErr;
 
 	if (lErr = m_math.get(nCount, hHandle, nIdx, pfOutput))
@@ -1901,7 +1955,7 @@ long Device<T>::cuda_minmaxval(long lInput, T* pfInput, long* plOutput, T** ppfO
 
 	T* pfOutput = NULL;
 
-	if (lErr = m_memory.AllocHost(4, &pfOutput, NULL, false))
+	if (lErr = m_memory.AllocHost(4, &pfOutput, NULL, false, false))
 		return lErr;
 
 	pfOutput[0] = fMin;
@@ -3042,7 +3096,7 @@ long Device<T>::cuda_tsne_compute_knn_bounds(long lInput, T* pfInput, long* plOu
 
 	T* pfOutput = NULL;
 
-	if (lErr = m_memory.AllocHost(4, &pfOutput, NULL, false))
+	if (lErr = m_memory.AllocHost(4, &pfOutput, NULL, false, false))
 		return lErr;
 
 	pfOutput[0] = fMinX;
@@ -3149,7 +3203,7 @@ long Device<T>::cuda_calc_batch_dist(long lInput, T* pfInput, long* plOutput, T*
 		return ERROR_PARAM_OUT_OF_RANGE;
 
 	T* pfOutput = NULL;
-	if (lErr = m_memory.AllocHost(nDim0, &pfOutput, NULL, false))
+	if (lErr = m_memory.AllocHost(nDim0, &pfOutput, NULL, false, false))
 		return lErr;
 
 	lErr = m_math.calc_batch_dist(nDistMethod, fThreshold, nItemDim, hSrc, hTargets, hWork, nDim0, nDim1, &pfInput[8], pfOutput);

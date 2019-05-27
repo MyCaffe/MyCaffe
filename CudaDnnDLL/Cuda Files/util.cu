@@ -74,15 +74,23 @@ bool GetErrorString(long lErr, char* szErr, long lMaxErr)
 			return true;
 
 		case ERROR_MEMORY_EXPECTED_DEVICE:
-			_snprintf(szErr, lMaxErr, "GENERAL: Expected device memory but received host memory (%ld)", lErr);
+			_snprintf(szErr, lMaxErr, "MEMORY: Expected device memory but received host memory (%ld)", lErr);
 			return true;
 
 		case ERROR_MEMORY_RANGE_EXCEEDED:
-			_snprintf(szErr, lMaxErr, "GENERAL: Exceeded the maximum amount of memory size available as a chunk (%ld)", lErr);
+			_snprintf(szErr, lMaxErr, "MEMORY: Exceeded the maximum amount of memory size available as a chunk (%ld)", lErr);
+			return true;
+
+		case ERROR_MEMORY_MIXED_HALF_TYPES:
+			_snprintf(szErr, lMaxErr, "MEMORY: You are using a mix of half types and non-half types.  All types for this function must be of the same type (%ld)", lErr);
+			return true;
+
+		case ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED:
+			_snprintf(szErr, lMaxErr, "MEMORY: The GPU that you are using has limited half-type support.  Full half-type support is only available on Maxwell gpu's with compute 5.3 and above (%ld)", lErr);
 			return true;
 
 		case ERROR_MEMORY_OUT:
-			_snprintf(szErr, lMaxErr, "GENERAL: Out of memory (%ld)", lErr);
+			_snprintf(szErr, lMaxErr, "MEMORY: Out of memory (%ld)", lErr);
 			return true;
 
 		case ERROR_MATRIX_DIMENSIONS_DONT_MATCH:

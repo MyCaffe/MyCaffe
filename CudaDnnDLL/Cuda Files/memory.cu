@@ -230,7 +230,7 @@ template long Memory<float>::AllocHost(LPTSTR* ppDst, LPTSTR pSrc);
 
 
 template <class T>
-long Memory<T>::AllocHost(size_t lCount, T** ppDst, T* pSrc, bool bSrcOnDevice)
+long Memory<T>::AllocHost(size_t lCount, T** ppDst, void* pSrc, bool bSrcOnDevice, bool bHalf)
 {
 	if (lCount == 0)
 		return ERROR_PARAM_OUT_OF_RANGE;
@@ -243,29 +243,30 @@ long Memory<T>::AllocHost(size_t lCount, T** ppDst, T* pSrc, bool bSrcOnDevice)
 		return ERROR_MEMORY_RANGE_EXCEEDED;
 
 	T* pDst = NULL;	
-	LONG lErr = 0;
-
-#ifdef USE_PINNED_HOST_MEM
-	if (lErr = cudaMallocHost(&pDst, (size_t)lSize))
+	LONG lErr;
+	
+	if (lErr = alloc_host((void**)&pDst, (size_t)lSize))
 		return lErr;
-#else
-	pDst = (T*)malloc((size_t)lSize);
-	if (pDst == NULL)
-		return ERROR_MEMORY_OUT;
-#endif
 
 	if (pSrc != NULL)
 	{
 		cudaMemcpyKind kind = (bSrcOnDevice) ? cudaMemcpyDeviceToHost : cudaMemcpyHostToHost;
 
-		if (lErr = cudaMemcpy(pDst, pSrc, (size_t)lSize, kind))
+		if (bHalf)
 		{
-#ifdef USE_PINNED_HOST_MEM
-			cudaFreeHost(pDst);
-#else
-			free(pDst);
-#endif
-			return lErr;
+			if (lErr = convertHalf2BaseType(lCount, pSrc, pDst, kind))
+			{
+				FreeHost(pDst);
+				return lErr;
+			}
+		}
+		else
+		{
+			if (lErr = cudaMemcpy(pDst, pSrc, (size_t)lSize, kind))
+			{
+				FreeHost(pDst);
+				return lErr;
+			}
 		}
 	}
 	else
@@ -277,12 +278,12 @@ long Memory<T>::AllocHost(size_t lCount, T** ppDst, T* pSrc, bool bSrcOnDevice)
 	return cudaGetLastError();
 }
 
-template long Memory<double>::AllocHost(size_t lCount, double** ppDst, double* pSrc, bool bSrcOnDevice);
-template long Memory<float>::AllocHost(size_t lCount, float** ppDst, float* pSrc, bool bSrcOnDevice);
+template long Memory<double>::AllocHost(size_t lCount, double** ppDst, void* pSrc, bool bSrcOnDevice, bool bHalf);
+template long Memory<float>::AllocHost(size_t lCount, float** ppDst, void* pSrc, bool bSrcOnDevice, bool bHalf);
 
 
 template <class T>
-long Memory<T>::CopyToHost(size_t lCount, T* pDst, T* pSrc, bool bSrcOnDevice)
+long Memory<T>::CopyToHost(size_t lCount, T* pDst, void* pSrc, bool bSrcOnDevice, bool bHalf)
 {
 	if (lCount == 0)
 		return ERROR_PARAM_OUT_OF_RANGE;
@@ -296,11 +297,14 @@ long Memory<T>::CopyToHost(size_t lCount, T* pDst, T* pSrc, bool bSrcOnDevice)
 	if (lSize > SIZE_MAX)
 		return ERROR_MEMORY_RANGE_EXCEEDED;
 
-	return cudaMemcpy(pDst, pSrc, (size_t)lSize, kind);
+	if (bHalf)
+		return convertHalf2BaseType(lCount, pSrc, pDst, kind);
+	else
+		return cudaMemcpy(pDst, pSrc, (size_t)lSize, kind);
 }
 
-template long Memory<double>::CopyToHost(size_t lCount, double* pDst, double* pSrc, bool bSrcOnDevice);
-template long Memory<float>::CopyToHost(size_t lCount, float* pDst, float* pSrc, bool bSrcOnDevice);
+template long Memory<double>::CopyToHost(size_t lCount, double* pDst, void* pSrc, bool bSrcOnDevice, bool bHalf);
+template long Memory<float>::CopyToHost(size_t lCount, float* pDst, void* pSrc, bool bSrcOnDevice, bool bHalf);
 
 
 template <class T>
@@ -313,7 +317,7 @@ long Memory<T>::AllocHostBuffer(size_t lCount, long* phHandle)
 
 	T* pMem = NULL;
 	
-	if (lErr = AllocHost(lCount, &pMem, NULL, FALSE))
+	if (lErr = AllocHost(lCount, &pMem, NULL, FALSE, FALSE))
 		return lErr;
 
 	HostBuffer<T>* pHostBuf = new HostBuffer<T>(pMem, lCount);
@@ -2318,7 +2322,7 @@ long Memory<T>::GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, lo
 	if (lWtSize > SIZE_MAX)
 		return ERROR_MEMORY_RANGE_EXCEEDED;
 
-	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), (T*)pWtDevMem, (size_t)lWtSize, &hWtMemPtr))
+	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), pWtData->IsHalf(), (T*)pWtDevMem, (size_t)lWtSize, &hWtMemPtr))
 		return lErr;
 
 	long hBiasMemPtr;
@@ -2326,7 +2330,7 @@ long Memory<T>::GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, lo
 	if (lBiasSize > SIZE_MAX)
 		return ERROR_MEMORY_RANGE_EXCEEDED;
 
-	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), (T*)pBiasDevMem, (size_t)lBiasSize, &hBiasMemPtr))
+	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), pWtData->IsHalf(), (T*)pBiasDevMem, (size_t)lBiasSize, &hBiasMemPtr))
 		return lErr;
 
 	*pnWtCount = nWtCount;
@@ -2466,7 +2470,7 @@ long Memory<T>::GetRnnLinLayerParamsEx(long hHandle, long hRnnDesc, int nLayer, 
 	if (lWtSize > SIZE_MAX)
 		return ERROR_MEMORY_RANGE_EXCEEDED;
 
-	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), (T*)pWtDevMem, (size_t)lWtSize, &hWtMemPtr))
+	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), pWtData->IsHalf(), (T*)pWtDevMem, (size_t)lWtSize, &hWtMemPtr))
 		return lErr;
 
 	long hBiasMemPtr;
@@ -2474,7 +2478,7 @@ long Memory<T>::GetRnnLinLayerParamsEx(long hHandle, long hRnnDesc, int nLayer, 
 	if (lBiasSize > SIZE_MAX)
 		return ERROR_MEMORY_RANGE_EXCEEDED;
 
-	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), (T*)pBiasDevMem, (size_t)lBiasSize, &hBiasMemPtr))
+	if (lErr = CreateMemoryPointer(pWtData->DeviceID(), pWtData->IsHalf(), (T*)pBiasDevMem, (size_t)lBiasSize, &hBiasMemPtr))
 		return lErr;
 
 	*pnWtCount = nWtCount;

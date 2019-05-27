@@ -90,7 +90,7 @@ class Math
 
 		long set(int nCount, long hDst, T fVal, int nIdx, int nXOff = 0);
 		long get(int nCount, long hSrc, int nIdx, T* pfOutput);
-		long copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOffset, long hAsyncStream);
+		long copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOffset, long hAsyncStream, int nSrcHalfSizeOverride = -1, int nDstHalfSizeOverride = -1);
 
 		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, T* a, T* b, T fBeta, T* c);
 		long gemv(bool bTransA, int m, int n, T fAlpha, T* a, T* x, T fBeta, T* y);

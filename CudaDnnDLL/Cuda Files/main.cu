@@ -92,6 +92,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_ALLOCMEM:
 			return m_device.AllocMemory(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_ALLOCMEM_HALF:
+			return m_device.AllocMemoryHalf(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_FREEMEM:
 			return m_device.FreeMemory(lCount, pfInput, plCount, ppfOutput);
 

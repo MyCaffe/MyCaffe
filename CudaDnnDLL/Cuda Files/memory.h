@@ -19,6 +19,7 @@
 #include <vector>
 #include <algorithm>
 #include "..\inc\FunctionIDs.h"
+#include <cuda_fp16.h>
 
 //=============================================================================
 //	Flags
@@ -142,12 +143,17 @@ class Memory
 			return &m_streams;
 		}
 
+		long alloc_host(void** ppDst, size_t lSize);
+		long free_host(void* pData);
+		long convertBaseType2Half(size_t lCount, T* pSrc, size_t* plSize, __half** ppDst);
+		long convertHalf2BaseType(size_t lCount, void* pSrc, T* pDst, cudaMemcpyKind kind);
+
 		long GetPointer(HANDLE_TYPE ht, long hHandle, void** ppPtr);
 
 		long CheckMemoryAttributes(long hSrc, int nSrcDeviceID, long hDst, int nDstDeviceID, bool* pbResult);
 		long GetDeviceMemory(int nDeviceID, T* plTotal, T* plFree, T* plUsed, bool* pbEstimate);
 
-		long AllocMemory(int nDeviceID, size_t lCount, T* pSrc, long hStream, long* phHandle);
+		long AllocMemory(int nDeviceID, bool bHalf, size_t lCount, T* pSrc, long hStream, long* phHandle);
 		long FreeMemory(long hHandle);
 		long GetMemory(long hHandle, MemoryItem** ppItem);
 		long SetMemory(long hHandle, T* pSrc, size_t lCount, long hStream);
@@ -162,14 +168,14 @@ class Memory
 		long SetHostBuffer(long hHandle, size_t lCount, T* pData);
 		bool IsHostBuffer(T* pf);
 
-		long CopyToHost(size_t lCount, T* pDst, T* pSrc, bool bSrcOnDevice);
-		long AllocHost(size_t lCount, T** ppDst, T* pSrc, bool bSrcOnDevice);
+		long CopyToHost(size_t lCount, T* pDst, void* pSrc, bool bSrcOnDevice, bool bHalf);
+		long AllocHost(size_t lCount, T** ppDst, void* pSrc, bool bSrcOnDevice, bool bHalf);
 		long FreeHost(T* pDst);
 
 		long AllocHost(LPTSTR* ppDst, LPTSTR pSrc);
 		long FreeHost(LPTSTR pDst);
 
-		long CreateMemoryPointer(int nDeviceID, T* pData, size_t lSize, long* phHandle);
+		long CreateMemoryPointer(int nDeviceID, bool bHalf, T* pData, size_t lSize, long* phHandle);
 		long CreateMemoryPointer(long hData, long lOffset, size_t lCount, long* phHandle);
 		long FreeMemoryPointer(long hData);
 
@@ -186,20 +192,20 @@ class Memory
 		long CreateTensorDesc(long* phHandle);
 		long FreeTensorDesc(long hHandle);
 		cudnnTensorDescriptor_t GetTensorDesc(long hHandle);
-		long SetTensorDesc(long hHandle, int n, int c, int h, int w, int stride_n, int stride_c, int stride_h, int stride_w);
-		long SetTensorDesc(long hHandle, int* rgDim, int* rgStride, int nCount);
+		long SetTensorDesc(long hHandle, int n, int c, int h, int w, int stride_n, int stride_c, int stride_h, int stride_w, bool bHalf);
+		long SetTensorDesc(long hHandle, int* rgDim, int* rgStride, int nCount, bool bHalf);
 		long AddTensor(long hHandle, T fAlpha, long hSrcDesc, long hSrc, int nSrcOffset, T fBeta, long hDstDesc, long hDst, int nDstOffset);
 
 		long CreateFilterDesc(long* phHandle);
 		long FreeFilterDesc(long hHandle);
 		cudnnFilterDescriptor_t GetFilterDesc(long hHandle);
-		long SetFilterDesc(long hHandle, int n, int c, int h, int w);
-		long SetFilterDesc(long hHandle, int* rgDim, int nCount);
+		long SetFilterDesc(long hHandle, int n, int c, int h, int w, bool bHalf);
+		long SetFilterDesc(long hHandle, int* rgDim, int nCount, bool bHalf);
 
 		long CreateConvolutionDesc(long* phHandle);
 		long FreeConvolutionDesc(long hHandle);
 		cudnnConvolutionDescriptor_t GetConvolutionDesc(long hHandle);
-		long SetConvolutionDesc(long hHandle, int pad_h, int pad_w, int stride_h, int stride_w);
+		long SetConvolutionDesc(long hHandle, int pad_h, int pad_w, int stride_h, int stride_w, bool bHalf);
 	    long GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, size_t lWsLimitInBytes, long* palgoFwd, size_t* plWsSizeFwd, long* palgoBwdFilter, size_t* plWsSizeBwdFilter, long* palgoBwdData, size_t* plWsSizeBwdData, int nPreferredFwdAlgo = -1);
 		long ConvolutionForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, size_t lWorkspaceSize, T fBeta, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream);
 		long ConvolutionBackwardBias(long hHandle, T fAlpha, long hTopDesc, long hTopDiff, int nTopOffset, T fBeta, long hBiasDesc, long hBiasDiff, int nBiasOffset, bool bSyncStream);
@@ -326,6 +332,95 @@ class Memory
 //	Inline Methods
 //=============================================================================
 
+template <class T>
+inline long Memory<T>::alloc_host(void** ppDst, size_t lSize)
+{
+	LONG lErr;
+
+#ifdef USE_PINNED_HOST_MEM
+	if (lErr = cudaMallocHost(ppDst, (size_t)lSize))
+		return lErr;
+#else
+	*ppDst = malloc((size_t)lSize);
+	if (*ppDst == NULL)
+		return ERROR_MEMORY_OUT;
+#endif
+
+	return 0;
+}
+
+template <class T>
+inline long Memory<T>::free_host(void* p)
+{
+	if (p == NULL)
+		return 0;
+
+#ifdef USE_PINNED_HOST_MEM
+	return cudaFreeHost(p);
+#else
+	free(p);
+	return 0;
+#endif
+}
+
+template <class T>
+inline long Memory<T>::convertBaseType2Half(size_t lCount, T* pSrc, size_t* plSize, __half** ppDst)
+{
+	LONG lErr;
+
+	long long llSize = lCount * sizeof(__half);
+	if (llSize > SIZE_MAX)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
+	if (pSrc != NULL)
+	{
+		__half* pData = NULL;
+
+		if (lErr = alloc_host((void**)&pData, (size_t)llSize))
+			return lErr;
+
+		for (int i = 0; i < lCount; i++)
+		{
+			pData[i] = __float2half(pSrc[i]);
+		}
+
+		*ppDst = pData;
+	}
+
+	*plSize = (size_t)llSize;
+
+	return 0;
+}
+
+template <class T>
+inline long Memory<T>::convertHalf2BaseType(size_t lCount, void* pSrc, T* pDst, cudaMemcpyKind kind)
+{
+	LONG lErr;
+
+	__half* pSrc1 = NULL;
+	size_t lSize1 = lCount * sizeof(__half);
+
+	if (lErr = alloc_host((void**)&pSrc1, lSize1))
+		return lErr;
+
+	if (lErr = cudaMemcpy(pSrc1, pSrc, lSize1, kind))
+	{
+		free_host(pSrc1);
+		return lErr;
+	}
+
+	for (int i = 0; i < lCount; i++)
+	{
+		pDst[i] = (T)__half2float(pSrc1[i]);
+	}
+
+	free_host(pSrc1);
+	pSrc1 = NULL;
+
+	return 0;
+}
+
+
 
 //-----------------------------------------------------------------------------
 //	Memory
@@ -396,11 +491,11 @@ inline long Memory<T>::CreateMemoryPointer(long hData, long lOffset, size_t lCou
 	if (lOffset > 0)
 		data += lOffset;
 
-	return CreateMemoryPointer(pData->DeviceID(), data, lSize, phHandle);
+	return CreateMemoryPointer(pData->DeviceID(), pData->IsHalf(), data, lSize, phHandle);
 }
 
 template <class T>
-inline long Memory<T>::CreateMemoryPointer(int nDeviceID, T* data, size_t lSize, long* phHandle)
+inline long Memory<T>::CreateMemoryPointer(int nDeviceID, bool bHalf, T* data, size_t lSize, long* phHandle)
 {
 	long lErr;
 	long hHandle = 0;
@@ -408,7 +503,7 @@ inline long Memory<T>::CreateMemoryPointer(int nDeviceID, T* data, size_t lSize,
 	if (phHandle == NULL)
 		return ERROR_PARAM_NULL;
 
-	if (lErr = m_memoryPointers.Allocate(nDeviceID, data, lSize, &hHandle))
+	if (lErr = m_memoryPointers.Allocate(nDeviceID, bHalf, data, lSize, &hHandle))
 		return lErr;
 
 	// Move the handle into the range [MAX_HANDLES, MAX_HANDLES*2]
@@ -427,8 +522,9 @@ inline long Memory<T>::FreeMemoryPointer(long hData)
 
 
 template <class T>
-inline long Memory<T>::AllocMemory(int nDeviceID, size_t lCount, T* pSrc, long hStream, long* phHandle)
+inline long Memory<T>::AllocMemory(int nDeviceID, bool bHalf, size_t lCount, T* pSrc, long hStream, long* phHandle)
 {
+	LONG lErr;
 	cudaStream_t pStream = NULL;
 
 	if (hStream > 0)
@@ -438,7 +534,22 @@ inline long Memory<T>::AllocMemory(int nDeviceID, size_t lCount, T* pSrc, long h
 	if (llSize > SIZE_MAX)
 		return ERROR_MEMORY_RANGE_EXCEEDED;
 
-	return m_memory.Allocate(nDeviceID, (size_t)llSize, pSrc, pStream, phHandle);
+	void* pSrc1 = pSrc;
+
+	if (bHalf)
+	{
+		lCount = m_memory.GetCount(lCount);
+
+		if (lErr = convertBaseType2Half(lCount, pSrc, (size_t*)&llSize, (__half**)&pSrc1))
+			return lErr;
+	}
+
+	lErr = m_memory.Allocate(nDeviceID, bHalf, (size_t)llSize, pSrc1, pStream, phHandle);
+
+	if (bHalf && pSrc1 != NULL)
+		free_host(pSrc1);
+
+	return lErr;
 }
 
 template <class T>
@@ -464,7 +575,7 @@ inline T* Memory<T>::GetMemoryToHost(long hHandle, size_t* plCount)
 	T* pHost = NULL;
 	size_t lCount = pItem->Size() / sizeof(T);
 
-	if (AllocHost(lCount, &pHost, (T*)pItem->Data(), TRUE))
+	if (AllocHost(lCount, &pHost, (T*)pItem->Data(), TRUE, pItem->IsHalf()))
 		return NULL;
 
 	if (plCount != NULL)
@@ -483,8 +594,29 @@ inline long Memory<T>::SetMemoryToHost(long hHandle, T* pDst)
 		return lErr;
 
 	size_t lSize = pItem->Size();
+	void* pDst1 = pDst;
 
-	return pItem->GetData(lSize, pDst);
+	if (pItem->IsHalf())
+	{
+		if (lErr = alloc_host(&pDst1, lSize))
+			return lErr;
+	}
+
+	if (lErr = pItem->GetData(lSize, pDst1))
+	{
+		if (pItem->IsHalf())
+			free_host(pDst1);
+
+		return lErr;
+	}
+
+	if (pItem->IsHalf())
+	{
+		size_t lCount = lSize / sizeof(__half);
+		lErr = convertHalf2BaseType(lCount, pDst1, pDst, cudaMemcpyDeviceToHost);
+	}
+
+	return lErr;
 }
 
 template <class T>
@@ -499,7 +631,26 @@ inline long Memory<T>::SetMemory(long hHandle, T* pSrc, size_t lCount, long hStr
 	if (lSize > SIZE_MAX)
 		return ERROR_MEMORY_RANGE_EXCEEDED;
 
-	return m_memory.SetData(hHandle, lSize, pSrc, pStream);
+	LONG lErr;
+	size_t lSize1 = (size_t)lSize;
+	void* pSrc1 = (void*)pSrc;
+	MemoryItem* pItem;
+
+	if (lErr = m_memory.GetData(hHandle, &pItem))
+		return lErr;
+
+	if (pItem->IsHalf())
+	{
+		if (lErr = convertBaseType2Half(lCount, pSrc, &lSize1, (__half**)&pSrc1))
+			return lErr;
+	}
+
+	lErr = m_memory.SetData(pItem, pItem->IsHalf(), lSize1, pSrc1, pStream);
+
+	if (pItem->IsHalf())
+		free_host(pSrc1);
+
+	return lErr;
 }
 
 template <class T>
@@ -513,36 +664,42 @@ inline long Memory<T>::SetMemoryAt(long hHandle, T* pSrc, size_t lCount, size_t 
 	if (lOffset > SIZE_MAX)
 		return ERROR_MEMORY_RANGE_EXCEEDED;
 
-	return m_memory.SetDataAt(hHandle, (size_t)lSize, pSrc, (size_t)lOffset);
+	LONG lErr;
+	size_t lSize1 = (size_t)lSize;
+	size_t lOffset1 = (size_t)lOffset;
+	void* pSrc1 = (void*)pSrc;
+	MemoryItem* pItem;
+
+	if (lErr = m_memory.GetData(hHandle, &pItem))
+		return lErr;
+
+	if (pItem->IsHalf())
+	{
+		if (lErr = convertBaseType2Half(lCount, pSrc, &lSize1, (__half**)&pSrc1))
+			return lErr;
+
+		lOffset1 = nOffset * sizeof(__half);
+	}
+
+	lErr = m_memory.SetDataAt(pItem, pItem->IsHalf(), (size_t)lSize1, pSrc1, (size_t)lOffset1);
+
+	if (pItem->IsHalf())
+		free_host(pSrc1);
+
+	return lErr;
 }
 
 
 template <class T>
 inline long Memory<T>::FreeHost(T* pDst)
 {
-	if (pDst == NULL)
-		return 0;
-
-#ifdef USE_PINNED_HOST_MEM
-	return cudaFreeHost(pDst);
-#else
-	free(pDst);
-	return 0;
-#endif
+	return free_host(pDst);
 }
 
 template <class T>
 inline long Memory<T>::FreeHost(LPTSTR pDst)
 {
-	if (pDst == NULL)
-		return 0;
-
-#ifdef USE_PINNED_HOST_MEM
-	return cudaFreeHost(pDst);
-#else
-	free(pDst);
-	return 0;
-#endif
+	return free_host(pDst);
 }
 
 template <class T>
@@ -633,11 +790,11 @@ inline cudnnTensorDescriptor_t Memory<T>::GetTensorDesc(long hHandle)
 }
 
 template <class T>
-inline long Memory<T>::SetTensorDesc(long hHandle, int n, int c, int h, int w, int stride_n, int stride_c, int stride_h, int stride_w)
+inline long Memory<T>::SetTensorDesc(long hHandle, int n, int c, int h, int w, int stride_n, int stride_c, int stride_h, int stride_w, bool bHalf)
 {
 	LONG lErr;
 	cudnnTensorDescriptor_t desc = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hHandle);
-	cudnnDataType_t type = (sizeof(T) == 4) ? CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
+	cudnnDataType_t type = (sizeof(T) == 4) ? (bHalf) ? CUDNN_DATA_HALF : CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
 	if (lErr = cudnnSetTensor4dDescriptorEx(desc, type, n, c, h, w, stride_n, stride_c, stride_h, stride_w))
 		return lErr | ERROR_CUDNN_OFFSET;
 
@@ -645,11 +802,11 @@ inline long Memory<T>::SetTensorDesc(long hHandle, int n, int c, int h, int w, i
 }
 
 template <class T>
-inline long Memory<T>::SetTensorDesc(long hHandle, int* rgDim, int* rgStride, int nCount)
+inline long Memory<T>::SetTensorDesc(long hHandle, int* rgDim, int* rgStride, int nCount, bool bHalf)
 {
 	LONG lErr;
 	cudnnTensorDescriptor_t desc = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hHandle);
-	cudnnDataType_t type = (sizeof(T) == 4) ? CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
+	cudnnDataType_t type = (sizeof(T) == 4) ? (bHalf) ? CUDNN_DATA_HALF : CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
 	if (lErr = cudnnSetTensorNdDescriptor(desc, type, nCount, rgDim, rgStride))
 		return lErr | ERROR_CUDNN_OFFSET;
 
@@ -674,11 +831,11 @@ inline cudnnFilterDescriptor_t Memory<T>::GetFilterDesc(long hHandle)
 }
 
 template <class T>
-inline long Memory<T>::SetFilterDesc(long hHandle, int n, int c, int h, int w)
+inline long Memory<T>::SetFilterDesc(long hHandle, int n, int c, int h, int w, bool bHalf)
 {
 	LONG lErr;
 	cudnnFilterDescriptor_t desc = (cudnnFilterDescriptor_t)m_filterDesc.GetData(hHandle);
-	cudnnDataType_t type = (sizeof(T) == 4) ? CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
+	cudnnDataType_t type = (sizeof(T) == 4) ? (bHalf) ? CUDNN_DATA_HALF : CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
 #ifdef CUDNN_5
 	if (lErr = cudnnSetFilter4dDescriptor(desc, type, CUDNN_TENSOR_NCHW, n, c, h, w))
 		return lErr | ERROR_CUDNN_OFFSET;
@@ -691,11 +848,11 @@ inline long Memory<T>::SetFilterDesc(long hHandle, int n, int c, int h, int w)
 
 
 template <class T>
-inline long Memory<T>::SetFilterDesc(long hHandle, int* rgDim, int nCount)
+inline long Memory<T>::SetFilterDesc(long hHandle, int* rgDim, int nCount, bool bHalf)
 {
 	LONG lErr;
 	cudnnFilterDescriptor_t desc = (cudnnFilterDescriptor_t)m_filterDesc.GetData(hHandle);
-	cudnnDataType_t type = (sizeof(T) == 4) ? CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
+	cudnnDataType_t type = (sizeof(T) == 4) ? (bHalf) ? CUDNN_DATA_HALF : CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
 	if (lErr = cudnnSetFilterNdDescriptor(desc, type, CUDNN_TENSOR_NCHW, nCount, rgDim))
 		return lErr | ERROR_CUDNN_OFFSET;
 
@@ -721,13 +878,13 @@ inline cudnnConvolutionDescriptor_t Memory<T>::GetConvolutionDesc(long hHandle)
 }
 
 template <class T>
-inline long Memory<T>::SetConvolutionDesc(long hHandle, int pad_h, int pad_w, int stride_h, int stride_w)
+inline long Memory<T>::SetConvolutionDesc(long hHandle, int pad_h, int pad_w, int stride_h, int stride_w, bool bHalf)
 {
 	LONG lErr;
 	cudnnConvolutionDescriptor_t desc = (cudnnConvolutionDescriptor_t)m_convDesc.GetData(hHandle);
 #ifdef CUDNN_6
-	cudnnDataType_t computeType = (sizeof(T) == sizeof(double)) ? CUDNN_DATA_DOUBLE : CUDNN_DATA_FLOAT;
-	if (lErr = cudnnSetConvolution2dDescriptor(desc, pad_h, pad_w, stride_h, stride_w, 1, 1, CUDNN_CROSS_CORRELATION, computeType))
+	cudnnDataType_t type = (sizeof(T) == 4) ? (bHalf) ? CUDNN_DATA_HALF : CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
+	if (lErr = cudnnSetConvolution2dDescriptor(desc, pad_h, pad_w, stride_h, stride_w, 1, 1, CUDNN_CROSS_CORRELATION, type))
 		return lErr | ERROR_CUDNN_OFFSET;
 #else
 	if (lErr = cudnnSetConvolution2dDescriptor(desc, pad_h, pad_w, stride_h, stride_w, 1, 1, CUDNN_CROSS_CORRELATION))

@@ -34,7 +34,7 @@ long pcaHandle<T>::Initialize(Memory<T>* pMem, Math<T>* pMath)
 	{
 		if (m_hResiduals == 0)
 		{
-			if (lErr = m_pMem->AllocMemory(nDeviceID, m_nN * m_nD, NULL, -1, &m_hResiduals))
+			if (lErr = m_pMem->AllocMemory(nDeviceID, false, m_nN * m_nD, NULL, -1, &m_hResiduals))
 				throw lErr;
 
 			m_bOwnResiduals = true;
@@ -58,7 +58,7 @@ long pcaHandle<T>::Initialize(Memory<T>* pMem, Math<T>* pMath)
 
 		m_pfEigenvalues = m_pMem->GetHostBuffer(m_hEigenvalues)->Data();
 
-		if (lErr = m_pMem->AllocMemory(nDeviceID, m_nN * 1, NULL, -1, &m_hMeanCenter))
+		if (lErr = m_pMem->AllocMemory(nDeviceID, false, m_nN * 1, NULL, -1, &m_hMeanCenter))
 			throw lErr;
 
 

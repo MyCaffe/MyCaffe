@@ -46,6 +46,8 @@ class Device
 		long m_lSeed;
 		int m_nDevice;
 		HANDLE m_hEventSrc;
+		int m_nMajor = 0;
+		int m_nMinor = 0;
 
 		long verifyInput(long lInput, T* pfInput, long lMin, long lMax, bool bExact = false);
 		long verifyOutput(long* plOutput, T** ppfOutput);
@@ -102,6 +104,7 @@ class Device
 		long DisablePeerAccess(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long AllocMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long AllocMemoryHalf(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long FreeMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long GetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -126,9 +129,9 @@ class Device
 			return m_memory.FreeHost(pf);
 		}
 
-		long AllocHost(size_t lCount, T** ppDst, T* pSrc, bool bSrcOnDevice = false)
+		long AllocHost(size_t lCount, T** ppDst, T* pSrc, bool bSrcOnDevice = false, bool bHalf = false)
 		{
-			return m_memory.AllocHost(lCount, ppDst, pSrc, bSrcOnDevice);
+			return m_memory.AllocHost(lCount, ppDst, pSrc, bSrcOnDevice, bHalf);
 		}
 
 		long CreateMemoryPointer(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -601,15 +604,18 @@ inline long Device<T>::GetDeviceProperty(long lInput, T* pfInput, long* plOutput
 	}
 	else
 	{
-		cudaDeviceProp p;
+		cudaDeviceProp prop;
 
-		if (lErr = cudaGetDeviceProperties(&p, nDeviceID))
+		if (lErr = cudaGetDeviceProperties(&prop, nDeviceID))
 			return lErr;
+
+		m_nMajor = prop.major;
+		m_nMinor = prop.minor;
 
 		switch (nPropID)
 		{
 			case DEVPROP_MULTIGPUBOARDGROUPID:
-				fVal = (T)p.multiGpuBoardGroupID;
+				fVal = (T)prop.multiGpuBoardGroupID;
 				break;
 
 			default:
@@ -667,7 +673,7 @@ inline long Device<T>::GetDeviceMemory(long lInput, T* pfInput, long* plOutput, 
 
 	T* pfOutput = NULL;
 
-	if (lErr = m_memory.AllocHost(4, &pfOutput, NULL, false))
+	if (lErr = m_memory.AllocHost(4, &pfOutput, NULL, false, false))
 		return lErr;
 
 	pfOutput[0] = fTotal;
@@ -747,7 +753,7 @@ inline long Device<T>::CreateMemoryTest(long lInput, T* pfInput, long* plOutput,
 
 	T* pfOutput = NULL;
 
-	if (lErr = m_memory.AllocHost(5, &pfOutput, NULL, false))
+	if (lErr = m_memory.AllocHost(5, &pfOutput, NULL, false, false))
 		return lErr;
 
 	pfOutput[0] = (T)hHandle;
@@ -955,16 +961,17 @@ inline long Device<T>::SetFilterDesc(long lInput, T* pfInput, long* plOutput, T*
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+	if (lErr = verifyInput(lInput, pfInput, 6, 6))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
-	int n = (int)pfInput[1];
-	int c = (int)pfInput[2];
-	int h = (int)pfInput[3];
-	int w = (int)pfInput[4];
+	bool bHalf = (bool)(pfInput[1] == 1) ? true : false;
+	int n = (int)pfInput[2];
+	int c = (int)pfInput[3];
+	int h = (int)pfInput[4];
+	int w = (int)pfInput[5];
 
-	return m_memory.SetFilterDesc(hHandle, n, c, h, w);
+	return m_memory.SetFilterDesc(hHandle, n, c, h, w, bHalf);
 }
 
 template <class T>
@@ -1000,16 +1007,31 @@ inline long Device<T>::SetConvolutionDesc(long lInput, T* pfInput, long* plOutpu
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+	if (lErr = verifyInput(lInput, pfInput, 6, 6))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
-	int hPad = (int)pfInput[1];
-	int wPad = (int)pfInput[2];
-	int hStride = (int)pfInput[3];
-	int wStride = (int)pfInput[4];
+	bool bHalf = (bool)(pfInput[1] == 1) ? true : false;
+	int hPad = (int)pfInput[2];
+	int wPad = (int)pfInput[3];
+	int hStride = (int)pfInput[4];
+	int wStride = (int)pfInput[5];
 
-	return m_memory.SetConvolutionDesc(hHandle, hPad, wPad, hStride, wStride);
+	if (m_nMajor == 0 && m_nMinor == 0)
+	{
+		cudaDeviceProp prop;
+		if (lErr = cudaGetDeviceProperties(&prop, m_nDevice))
+			return lErr;
+
+		m_nMajor = prop.major;
+		m_nMinor = prop.minor;
+	}
+
+	// FULL HALF mode only supported on compute mode > 5.3
+	if (m_nMajor < 5 || (m_nMajor == 5 && m_nMinor < 3))
+		bHalf = false;
+
+	return m_memory.SetConvolutionDesc(hHandle, hPad, wPad, hStride, wStride, bHalf);
 }
 
 template <class T>
@@ -1044,7 +1066,7 @@ inline long Device<T>::GetConvolutionInfo(long lInput, T* pfInput, long* plOutpu
 		return lErr;
 
 	T* pOutput = NULL;
-	if (lErr = m_memory.AllocHost(6, &pOutput, NULL, false))
+	if (lErr = m_memory.AllocHost(6, &pOutput, NULL, false, false))
 		return lErr;
 
 	pOutput[0] = (T)algoFwd;
@@ -1607,7 +1629,7 @@ inline long Device<T>::GetRnnWorkspaceCount(long lInput, T* pfInput, long* plOut
 	}
 
 	T* pOutput = NULL;
-	if (lErr = m_memory.AllocHost(2, &pOutput, NULL, false))
+	if (lErr = m_memory.AllocHost(2, &pOutput, NULL, false, false))
 		return lErr;
 
 	pOutput[0] = (T)nWsCount;
@@ -1656,7 +1678,7 @@ inline long Device<T>::GetRnnLinLayerParams(long lInput, T* pfInput, long* plOut
 	}
 
 	T* pOutput = NULL;
-	if (lErr = m_memory.AllocHost(4, &pOutput, NULL, false))
+	if (lErr = m_memory.AllocHost(4, &pOutput, NULL, false, false))
 		return lErr;
 
 	pOutput[0] = (T)nWtCount;
@@ -2481,7 +2503,7 @@ inline long Device<T>::RunPCA(long lInput, T* pfInput, long* plOutput, T** ppfOu
 
 	T* pfOutput = NULL;
 	
-	if (lErr = m_memory.AllocHost(3, &pfOutput, NULL, false))
+	if (lErr = m_memory.AllocHost(3, &pfOutput, NULL, false, false))
 		return lErr;
 
 	pfOutput[0] = (bDone) ? T(0) : T(1);
@@ -2557,7 +2579,7 @@ inline long Device<T>::FindTsneGaussianPerplexity(long lInput, T* pfInput, long*
 
 	T* pfOutput = NULL;
 	
-	if (lErr = m_memory.AllocHost(3, &pfOutput, NULL, false))
+	if (lErr = m_memory.AllocHost(3, &pfOutput, NULL, false, false))
 		return lErr;
 
 	pfOutput[0] = (bDone) ? T(0) : T(1);
@@ -3900,7 +3922,7 @@ inline long Device<T>::cuda_copy(long lInput, T* pfInput, long* plOutput, T** pp
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 3, 6))
+	if (lErr = verifyInput(lInput, pfInput, 3, 8))
 		return lErr;
 
 	int nCount = (int)pfInput[0];
@@ -3909,6 +3931,8 @@ inline long Device<T>::cuda_copy(long lInput, T* pfInput, long* plOutput, T** pp
 	int nSrcOffset = 0;
 	int nDstOffset = 0;
 	long hAsyncStream = -1;
+	int nSrcHalfSizeOverride = -1;
+	int nDstHalfSizeOverride = -1;
 
 	if (lInput > 3)
 		nSrcOffset = (int)pfInput[3];
@@ -3919,7 +3943,13 @@ inline long Device<T>::cuda_copy(long lInput, T* pfInput, long* plOutput, T** pp
 	if (lInput > 5)
 		hAsyncStream = (long)pfInput[5];
 
-	return m_math.copy(nCount, hSrc, hDst, nSrcOffset, nDstOffset, hAsyncStream);
+	if (lInput > 6)
+		nSrcHalfSizeOverride = (int)pfInput[6];
+
+	if (lInput > 7)
+		nDstHalfSizeOverride = (int)pfInput[7];
+
+	return m_math.copy(nCount, hSrc, hDst, nSrcOffset, nDstOffset, hAsyncStream, nSrcHalfSizeOverride, nDstHalfSizeOverride);
 }
 
 #endif // __DEVICE_CU__

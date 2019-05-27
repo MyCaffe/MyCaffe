@@ -18,7 +18,7 @@ MemoryCollection::~MemoryCollection()
 	}
 }
 
-long MemoryCollection::Allocate(int nDeviceID, size_t lSize, void* pSrc, cudaStream_t pStream, long* phHandle)
+long MemoryCollection::Allocate(int nDeviceID, bool bHalf, size_t lSize, void* pSrc, cudaStream_t pStream, long* phHandle)
 {
 	LONG lErr = 0;
 	long nFirstIdx = m_nLastIdx;
@@ -29,7 +29,7 @@ long MemoryCollection::Allocate(int nDeviceID, size_t lSize, void* pSrc, cudaStr
 		{
 			m_nLastIdx = i;			
 			
-			if (lErr = m_rgHandles[i].Allocate(nDeviceID, lSize, pSrc, pStream))
+			if (lErr = m_rgHandles[i].Allocate(nDeviceID, bHalf, lSize, pSrc, pStream))
 				return lErr;
 
 			m_lTotalMem += (unsigned long)m_rgHandles[i].Size();
@@ -46,7 +46,7 @@ long MemoryCollection::Allocate(int nDeviceID, size_t lSize, void* pSrc, cudaStr
 		{
 			m_nLastIdx = i;			
 			
-			if (lErr = m_rgHandles[i].Allocate(nDeviceID, lSize, pSrc, pStream))
+			if (lErr = m_rgHandles[i].Allocate(nDeviceID, bHalf, lSize, pSrc, pStream))
 				return lErr;
 
 			m_lTotalMem += (unsigned long)m_rgHandles[i].Size();
@@ -58,7 +58,7 @@ long MemoryCollection::Allocate(int nDeviceID, size_t lSize, void* pSrc, cudaStr
 	return ERROR_MEMORY_OUT;
 }
 
-long MemoryCollection::Allocate(int nDeviceID, void* pData, size_t lSize, long* phHandle)
+long MemoryCollection::Allocate(int nDeviceID, bool bHalf, void* pData, size_t lSize, long* phHandle)
 {
 	LONG lErr = 0;
 	long nFirstIdx = m_nLastIdx;
@@ -69,7 +69,7 @@ long MemoryCollection::Allocate(int nDeviceID, void* pData, size_t lSize, long* 
 		{
 			m_nLastIdx = i;
 
-			if (lErr = m_rgHandles[i].Allocate(nDeviceID, pData, lSize))
+			if (lErr = m_rgHandles[i].Allocate(nDeviceID, bHalf, pData, lSize))
 				return lErr;
 
 			m_lTotalMem += (unsigned long)m_rgHandles[i].Size();

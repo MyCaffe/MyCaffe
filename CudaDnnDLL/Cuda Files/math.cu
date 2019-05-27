@@ -241,22 +241,46 @@ long Math<T>::set(int nCount, long hDst, T fVal, int nIdx, int nXOff)
 		return 0;
 	}
 
-	T* pData = (T*)pItem->Data();
-
-	if (nXOff > 0)
-		pData += nXOff;
-
-	if (nIdx >= 0)
+	if (pItem->IsHalf())
 	{
-		if (nIdx > 0)
-			pData += nIdx;
+		__half* pData = (__half*)pItem->Data();
+		__half hfVal = __float2half((float)fVal);
 
-		if (lErr = cudaMemcpy(pData, &fVal, sizeof(T), cudaMemcpyHostToDevice))
-			return lErr;
+		if (nXOff > 0)
+			pData += nXOff;
+
+		if (nIdx >= 0)
+		{
+			if (nIdx > 0)
+				pData += nIdx;
+
+			if (lErr = cudaMemcpy(pData, &hfVal, sizeof(__half), cudaMemcpyHostToDevice))
+				return lErr;
+		}
+		else
+		{
+			set_kernel<__half><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, hfVal, pData);
+		}
 	}
 	else
 	{
-		set_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, fVal, pData);
+		T* pData = (T*)pItem->Data();
+
+		if (nXOff > 0)
+			pData += nXOff;
+
+		if (nIdx >= 0)
+		{
+			if (nIdx > 0)
+				pData += nIdx;
+
+			if (lErr = cudaMemcpy(pData, &fVal, sizeof(T), cudaMemcpyHostToDevice))
+				return lErr;
+		}
+		else
+		{		
+			set_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS >>>(nCount, fVal, pData);
+		}
 	}
 
 	return cudaStreamSynchronize(0);
@@ -281,16 +305,36 @@ long Math<T>::get(int nCount, long hDst, int nIdx, T* pfOutput)
 		if (lSize > SIZE_MAX)
 			return ERROR_MEMORY_RANGE_EXCEEDED;
 
-		if (lErr = cudaMemcpy(pfOutput, pItem->Data(), (size_t)lSize, cudaMemcpyDeviceToHost))
-			return lErr;
+		if (pItem->IsHalf())
+			return m_pMem->convertHalf2BaseType(nCount, pItem->Data(), pfOutput, cudaMemcpyDeviceToHost);
+		else
+			return cudaMemcpy(pfOutput, pItem->Data(), (size_t)lSize, cudaMemcpyDeviceToHost);
 	}
 	else
 	{
-		T* pData = (T*)pItem->Data();
-		pData += nIdx;
+		if (pItem->IsHalf())
+		{
+			__half* pData = (__half*)pItem->Data();
+			size_t lSize = sizeof(__half);
 
-		if (lErr = cudaMemcpy(pfOutput, pData, sizeof(T), cudaMemcpyDeviceToHost))
-			return lErr;
+			pData += nIdx;
+
+			if (lErr = cudaMemcpy(pfOutput, pData, lSize, cudaMemcpyDeviceToHost))
+				return lErr;
+
+			T fVal = __half2float(*pfOutput);
+			*pfOutput = fVal;
+		}
+		else
+		{
+			T* pData = (T*)pItem->Data();
+			size_t lSize = sizeof(T);
+
+			pData += nIdx;
+
+			if (lErr = cudaMemcpy(pfOutput, pData, lSize, cudaMemcpyDeviceToHost))
+				return lErr;
+		}
 	}
 
 	return cudaStreamSynchronize(0);
@@ -300,14 +344,28 @@ template long Math<double>::get(int nCount, long hDst, int nIdx, double* pfOutpu
 template long Math<float>::get(int nCount, long hDst, int nIdx, float* pfOutput);
 
 
+template <typename T>
+__global__ void copy_kernel_half2float(const int n, __half* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		y[i] = __half2float(x[i]);
+	}
+}
+
+template <typename T>
+__global__ void copy_kernel_float2half(const int n, T* x, __half* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		y[i] = __float2half(x[i]);
+	}
+}
+
 template <class T>
-long Math<T>::copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOffset, long hAsyncStream)
+long Math<T>::copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOffset, long hAsyncStream, int nSrcHalfSizeOverride, int nDstHalfSizeOverride)
 {
 	LONG lErr;
-	long long lSize = nCount * sizeof(T);
-	if (lSize > SIZE_MAX)
-		return ERROR_MEMORY_RANGE_EXCEEDED;
-
 	MemoryItem* pSrc;
 	MemoryItem* pDst;
 
@@ -317,39 +375,117 @@ long Math<T>::copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOff
 	if (lErr = m_pMemCol->GetData(hDst, &pDst))
 		return lErr;
 
-	T* src = (T*)pSrc->Data();
-	T* dst = (T*)pDst->Data();
-
-	if (nSrcOffset > 0)
-		src += nSrcOffset;
-
-	if (nDstOffset > 0)
-		dst += nDstOffset;
+	if (nCount < 0)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
 
 	cudaStream_t stream = 0;
 
-	if (hAsyncStream < 0)
+	bool bSrcHalf = pSrc->IsHalf();
+	if (nSrcHalfSizeOverride >= 0)
+		bSrcHalf = (nSrcHalfSizeOverride == 1) ? true : false;
+
+	bool bDstHalf = pDst->IsHalf();
+	if (nDstHalfSizeOverride >= 0)
+		bDstHalf = (nDstHalfSizeOverride == 1) ? true : false;
+
+	if (bSrcHalf && !bDstHalf)
 	{
-		if (lErr = cudaMemcpy(dst, src, lSize, cudaMemcpyDeviceToDevice))
-			return lErr;
+		__half* src = (__half*)pSrc->Data();
+		T* dst = (T*)pDst->Data();
+
+		if (nSrcOffset > 0)
+			src += nSrcOffset;
+
+		if (nDstOffset > 0)
+			dst += nDstOffset;
+
+		copy_kernel_half2float<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, src, dst);
 	}
-	else if (hAsyncStream == 0)
+	else if (!bSrcHalf && bDstHalf)
 	{
-		if (lErr = cudaMemcpyAsync(dst, src, lSize, cudaMemcpyDeviceToDevice, cudaStreamDefault))
-			return lErr;
+		T* src = (T*)pSrc->Data();
+		__half* dst = (__half*)pDst->Data();
+
+		if (nSrcOffset > 0)
+			src += nSrcOffset;
+
+		if (nDstOffset > 0)
+			dst += nDstOffset;
+
+		copy_kernel_float2half<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, src, dst);
+	}
+	else if (bSrcHalf && bDstHalf)
+	{
+		__half* src = (__half*)pSrc->Data();
+		__half* dst = (__half*)pDst->Data();
+
+		if (nSrcOffset > 0)
+			src += nSrcOffset;
+
+		if (nDstOffset > 0)
+			dst += nDstOffset;
+
+		size_t lBaseSize = sizeof(__half);
+		long long lSize = nCount * lBaseSize;
+		if (lSize > SIZE_MAX)
+			return ERROR_MEMORY_RANGE_EXCEEDED;
+
+		if (hAsyncStream < 0)
+		{
+			if (lErr = cudaMemcpy(dst, src, lSize, cudaMemcpyDeviceToDevice))
+				return lErr;
+		}
+		else if (hAsyncStream == 0)
+		{
+			if (lErr = cudaMemcpyAsync(dst, src, lSize, cudaMemcpyDeviceToDevice, cudaStreamDefault))
+				return lErr;
+		}
+		else
+		{
+			stream = (cudaStream_t)m_pStreamCol->GetData(hAsyncStream);
+			if (lErr = cudaMemcpyAsync(dst, src, lSize, cudaMemcpyDeviceToDevice, stream))
+				return lErr;
+		}
 	}
 	else
 	{
-		stream = (cudaStream_t)m_pStreamCol->GetData(hAsyncStream);
-		if (lErr = cudaMemcpyAsync(dst, src, lSize, cudaMemcpyDeviceToDevice, stream))
-			return lErr;
+		T* src = (T*)pSrc->Data();
+		T* dst = (T*)pDst->Data();
+
+		if (nSrcOffset > 0)
+			src += nSrcOffset;
+
+		if (nDstOffset > 0)
+			dst += nDstOffset;
+
+		size_t lBaseSize = sizeof(T);
+		long long lSize = nCount * lBaseSize;
+		if (lSize > SIZE_MAX)
+			return ERROR_MEMORY_RANGE_EXCEEDED;
+
+		if (hAsyncStream < 0)
+		{
+			if (lErr = cudaMemcpy(dst, src, lSize, cudaMemcpyDeviceToDevice))
+				return lErr;
+		}
+		else if (hAsyncStream == 0)
+		{
+			if (lErr = cudaMemcpyAsync(dst, src, lSize, cudaMemcpyDeviceToDevice, cudaStreamDefault))
+				return lErr;
+		}
+		else
+		{
+			stream = (cudaStream_t)m_pStreamCol->GetData(hAsyncStream);
+			if (lErr = cudaMemcpyAsync(dst, src, lSize, cudaMemcpyDeviceToDevice, stream))
+				return lErr;
+		}
 	}
 
 	return cudaStreamSynchronize(stream);
 }
 
-template long Math<double>::copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOffset, long hAsyncStream);
-template long Math<float>::copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOffset, long hAsyncStream);
+template long Math<double>::copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOffset, long hAsyncStream, int nSrcHalfSizeOverride, int nDstHalfSizeOverride);
+template long Math<float>::copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOffset, long hAsyncStream, int nSrcHalfSizeOverride, int nDstHalfSizeOverride);
 
 template<>
 long Math<double>::nrm2(int n, long hA, int nAOff, double* pdfResult)
@@ -821,21 +957,42 @@ long Math<double>::axpy(int n, double fAlpha, long hX, long hY, int nXOff, int n
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	double* x = (double*)pX->Data();
-	double* y = (double*)pY->Data();
-
-	if (nXOff > 0)
-		x += nXOff;
-
-	if (nYOff > 0)
-		y += nYOff;
-
 	cudaStream_t stream;
 	if (lErr = cublasGetStream(m_cublas, &stream))
 		return lErr;
 
-	if (lErr = cublasDaxpy(m_cublas, n, &fAlpha, x, 1, y, 1))
-		return lErr;
+	if (pX->IsHalf() && pY->IsHalf())
+	{
+		__half* x = (__half*)pX->Data();
+		__half* y = (__half*)pY->Data();
+		float fAlpha1 = (float)fAlpha;
+
+		if (nXOff > 0)
+			x += nXOff;
+
+		if (nYOff > 0)
+			y += nYOff;
+
+		if (lErr = cublasAxpyEx(m_cublas, n, &fAlpha1, CUDA_R_32F, x, CUDA_R_16F, 1, y, CUDA_R_16F, 1, CUDA_R_32F))
+			return lErr;
+	}
+	else
+	{
+		if (pX->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		double* x = (double*)pX->Data();
+		double* y = (double*)pY->Data();
+
+		if (nXOff > 0)
+			x += nXOff;
+
+		if (nYOff > 0)
+			y += nYOff;
+
+		if (lErr = cublasDaxpy(m_cublas, n, &fAlpha, x, 1, y, 1))
+			return lErr;
+	}
 
 	return cudaStreamSynchronize(stream);
 }
@@ -856,21 +1013,41 @@ long Math<float>::axpy(int n, float fAlpha, long hX, long hY, int nXOff, int nYO
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	float* x = (float*)pX->Data();
-	float* y = (float*)pY->Data();
-
-	if (nXOff > 0)
-		x += nXOff;
-
-	if (nYOff > 0)
-		y += nYOff;
-
 	cudaStream_t stream;
 	if (lErr = cublasGetStream(m_cublas, &stream))
 		return lErr;
 
-	if (lErr = cublasSaxpy(m_cublas, n, &fAlpha, x, 1, y, 1))
-		return lErr;
+	if (pX->IsHalf() && pY->IsHalf())
+	{
+		__half* x = (__half*)pX->Data();
+		__half* y = (__half*)pY->Data();
+
+		if (nXOff > 0)
+			x += nXOff;
+
+		if (nYOff > 0)
+			y += nYOff;
+
+		if (lErr = cublasAxpyEx(m_cublas, n, &fAlpha, CUDA_R_32F, x, CUDA_R_16F, 1, y, CUDA_R_16F, 1, CUDA_R_32F))
+			return lErr;
+	}
+	else
+	{
+		if (pX->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		float* x = (float*)pX->Data();
+		float* y = (float*)pY->Data();
+
+		if (nXOff > 0)
+			x += nXOff;
+
+		if (nYOff > 0)
+			y += nYOff;
+
+		if (lErr = cublasSaxpy(m_cublas, n, &fAlpha, x, 1, y, 1))
+			return lErr;
+	}
 
 	return cudaStreamSynchronize(stream);
 }
@@ -1040,21 +1217,44 @@ long Math<double>::dot(int n, long hX, long hY, double* pOut, int nXOff, int nYO
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	double* x = (double*)pX->Data();
-	double* y = (double*)pY->Data();
-
-	if (nXOff > 0)
-		x += nXOff;
-
-	if (nYOff > 0)
-		y += nYOff;
-
 	cudaStream_t stream;
 	if (lErr = cublasGetStream(m_cublas, &stream))
 		return lErr;
 
-	if (lErr = cublasDdot(m_cublas, n, x, 1, y, 1, (double*)pOut))
-		return lErr;
+	if (pX->IsHalf() && pY->IsHalf())
+	{
+		__half* x = (__half*)pX->Data();
+		__half* y = (__half*)pY->Data();
+		__half result;
+
+		if (nXOff > 0)
+			x += nXOff;
+
+		if (nYOff > 0)
+			y += nYOff;
+
+		if (lErr = cublasDotEx(m_cublas, n, x, CUDA_R_16F, 1, y, CUDA_R_16F, 1, &result, CUDA_R_16F, CUDA_R_32F))
+			return lErr;
+
+		*pOut = result;
+	}
+	else
+	{
+		if (pX->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		double* x = (double*)pX->Data();
+		double* y = (double*)pY->Data();
+
+		if (nXOff > 0)
+			x += nXOff;
+
+		if (nYOff > 0)
+			y += nYOff;
+
+		if (lErr = cublasDdot(m_cublas, n, x, 1, y, 1, pOut))
+			return lErr;
+	}
 
 	return cudaStreamSynchronize(stream);
 }
@@ -1078,21 +1278,44 @@ long Math<float>::dot(int n, long hX, long hY, float* pOut, int nXOff, int nYOff
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	float* x = (float*)pX->Data();
-	float* y = (float*)pY->Data();
-
-	if (nXOff > 0)
-		x += nXOff;
-
-	if (nYOff > 0)
-		y += nYOff;
-
 	cudaStream_t stream;
 	if (lErr = cublasGetStream(m_cublas, &stream))
 		return lErr;
 
-	if (lErr = cublasSdot(m_cublas, n, x, 1, y, 1, (float*)pOut))
-		return lErr;
+	if (pX->IsHalf() && pY->IsHalf())
+	{
+		__half* x = (__half*)pX->Data();
+		__half* y = (__half*)pY->Data();
+		__half result;
+
+		if (nXOff > 0)
+			x += nXOff;
+
+		if (nYOff > 0)
+			y += nYOff;
+
+		if (lErr = cublasDotEx(m_cublas, n, x, CUDA_R_16F, 1, y, CUDA_R_16F, 1, &result, CUDA_R_16F, CUDA_R_32F))
+			return lErr;
+
+		*pOut = result;
+	}
+	else
+	{
+		if (pX->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		float* x = (float*)pX->Data();
+		float* y = (float*)pY->Data();
+
+		if (nXOff > 0)
+			x += nXOff;
+
+		if (nYOff > 0)
+			y += nYOff;
+
+		if (lErr = cublasSdot(m_cublas, n, x, 1, y, 1, (float*)pOut))
+			return lErr;
+	}
 
 	return cudaStreamSynchronize(stream);
 }
@@ -1326,6 +1549,16 @@ __global__ void add_kernel(const int n, T* a, T* b, T* y, T fAlpha)
 	}
 }
 
+__global__ void add_kernel_half(const int n, __half* a, __half* b, __half* y, __half fAlpha)
+{
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		y[i] = a[i] + (b[i] * fAlpha);
+	}
+#endif
+}
+
 template <>
 long Math<double>::add(int n, long hA, long hB, long hY, double dfAlpha)
 {
@@ -1343,7 +1576,21 @@ long Math<double>::add(int n, long hA, long hB, long hY, double dfAlpha)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	add_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (double*)pA->Data(), (double*)pB->Data(), (double*)pY->Data(), dfAlpha);
+	if (pA->IsHalf() && pB->IsHalf() && pY->IsHalf())
+	{
+#if __SM__ < 530
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+#endif
+		__half alpha = __float2half((float)dfAlpha);
+		add_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (__half*)pA->Data(), (__half*)pB->Data(), (__half*)pY->Data(), alpha);
+	}
+	else
+	{
+		if (pA->IsHalf() || pB->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		add_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>> (n, (double*)pA->Data(), (double*)pB->Data(), (double*)pY->Data(), dfAlpha);
+	}
 
 	return cudaStreamSynchronize(0);
 }
@@ -1365,7 +1612,21 @@ long Math<float>::add(int n, long hA, long hB, long hY, float fAlpha)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	add_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (float*)pA->Data(), (float*)pB->Data(), (float*)pY->Data(), fAlpha);
+	if (pA->IsHalf() && pB->IsHalf() && pY->IsHalf())
+	{
+#if __SM__ < 530
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+#endif
+		__half alpha = __float2half((float)fAlpha);
+		add_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (__half*)pA->Data(), (__half*)pB->Data(), (__half*)pY->Data(), alpha);
+	}
+	else
+	{
+		if (pA->IsHalf() || pB->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		add_kernel<float> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, (float*)pA->Data(), (float*)pB->Data(), (float*)pY->Data(), fAlpha);
+	}
 
 	return cudaStreamSynchronize(0);
 }

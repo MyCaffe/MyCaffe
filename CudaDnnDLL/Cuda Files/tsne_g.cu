@@ -763,13 +763,13 @@ long tsnegHandle<T>::Initialize(Memory<T>* pMem, Math<T>* pMath)
 		if ((m_pColP_on_host = m_pMem->GetHostBuffer(m_hColP)->Data()) == NULL)
 			throw ERROR_MEMORY_OUT;
 
-		if (lErr = m_pMem->AllocHost(m_nD, &m_pBuff_on_host, NULL, false))
+		if (lErr = m_pMem->AllocHost(m_nD, &m_pBuff_on_host, NULL, false, false))
 			throw lErr;
 
-		if (lErr = m_pMem->AllocHost(m_nN * m_nD, &m_pPosF_on_host, NULL, false))
+		if (lErr = m_pMem->AllocHost(m_nN * m_nD, &m_pPosF_on_host, NULL, false, false))
 			throw lErr;
 
-		if (lErr = m_pMem->AllocHost(m_nN * m_nD, &m_pNegF_on_host, NULL, false))
+		if (lErr = m_pMem->AllocHost(m_nN * m_nD, &m_pNegF_on_host, NULL, false, false))
 			throw lErr;
 	}
 	catch (LONG lErrEx)
