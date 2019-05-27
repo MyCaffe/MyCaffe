@@ -300,6 +300,10 @@ namespace MyCaffe.layers
             }
         }
 
+        /// <summary>
+        /// ConvertToBase converts any blobs in a collection that are in half size to the base size.
+        /// </summary>
+        /// <param name="col">Specifies the blob collection to convert.</param>
         public void ConvertToBase(BlobCollection<T> col)
         {
             if (OnGetWorkspace == null || OnSetWorkspace == null)
