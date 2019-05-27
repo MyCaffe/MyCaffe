@@ -52,6 +52,7 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            m_bConvertBottom = false;
         }
 
         /// <summary>
@@ -71,7 +72,7 @@ namespace MyCaffe.layers
                 // blob of the first split output with the input, but this seems to cause
                 // some strange effects in practice...)
                 m_log.CHECK(colTop[i].gpu_data != colBottom[0].gpu_data, "Layer does not allow in-place computation.");
-                colTop[i].ReshapeLike(colBottom[0]);
+                colTop[i].ReshapeLike(colBottom[0], colBottom[0].HalfSize);
                 m_log.CHECK_EQ(m_nCount, colTop[i].count(), "The count should equal the top[i].count().");
             }
         }

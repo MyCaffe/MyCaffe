@@ -55,6 +55,9 @@ namespace MyCaffe.layers
                     colTop[i].Reshape(p.shape[nShapeIdx]);
                 }
             }
+
+            m_bUseHalfSize = p.cudnn_use_halfsize;
+            m_bConvertTop = p.cudnn_use_halfsize;
         }
 
         /// <summary>
