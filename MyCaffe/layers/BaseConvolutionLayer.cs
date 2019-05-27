@@ -164,6 +164,39 @@ namespace MyCaffe.layers
             base.dispose();
         }
 
+        /// <summary>
+        /// Returns the workspace limit in bytes based on the cudnn_workspace_limit setting.
+        /// </summary>
+        /// <remarks>
+        /// The following cudnn_workspace_limits are used as follows:
+        /// 0     = no workspace used.
+        /// -1    = let CUDA choose fastest algorithm and workspace size.
+        /// value = use the value specified * 16.
+        /// </remarks>
+        /// <returns>The workspace limit in bytes is returned.</returns>
+        protected ulong getWorkspaceLimitInBytes()
+        {
+            // Specify workspace limit for kernels directly until we have a 
+            // planning strategy and a rewrite of Caffe's GPU memory management.
+            // default = 1024 * 1024 * 16;
+            ulong lWorkspaceLimitBytes = (ulong)m_param.convolution_param.cudnn_workspace_limit;
+            if (lWorkspaceLimitBytes != ulong.MaxValue)
+                lWorkspaceLimitBytes *= 16;
+
+            // When using Half Size memory, let CUDA pick the fastest workspace size and algorithm.
+            if (m_bUseHalfSize)
+                lWorkspaceLimitBytes = ulong.MaxValue;
+
+            // BUG Work Around
+            // With cuDNN 7.0.5 and above we are seeing memory overwrite errors (from CUDA)
+            //  when using more than 1 group and the workspace.
+            //  * also confirmed in cuDNN 7.1.4 and CUDA 9.2 on driver 397.64, 398.36
+            if (m_nGroup > 1 && !m_param.convolution_param.cudnn_workspace_allow_on_groups)
+                lWorkspaceLimitBytes = 0; // sets option to NO_WORKSPACE for Bwd Filter and Data
+
+            return lWorkspaceLimitBytes;
+        }
+
         /** @copydoc Layer::internal_blobs */
         public override BlobCollection<T> internal_blobs
         {
