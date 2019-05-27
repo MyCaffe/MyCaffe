@@ -741,8 +741,9 @@ namespace MyCaffe
         /// <param name="bUseImageDb">Optionally, specifies whehter or not to use the image database (default = true).</param>
         /// <param name="bCreateRunNet">Optionally, specifies whether or not to create the Run net.</param>
         /// <param name="strStage">Optionally, specifies a stage under which to load the model.</param>
+        /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null)
+        public bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
         {
             m_strStage = strStage;
             m_imgDb = imgdb;
@@ -800,7 +801,7 @@ namespace MyCaffe
             if (m_cuda != null)
                 m_cuda.Dispose();
 
-            m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath, bResetFirst);
+            m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath, bResetFirst, bEnableMemTrace);
 
             m_log.WriteLine("Cuda Connection created using '" + m_cuda.Path + "'.");
 
@@ -893,8 +894,9 @@ namespace MyCaffe
         /// <param name="bUseImageDb">Optionally, specifies whehter or not to use the image database (default = true).</param>
         /// <param name="bCreateRunNet">Optionally, specifies whether or not to create the Run net (default = true).</param>
         /// <param name="strStage">Optionally, specifies a stage under which to load the model.</param>
+        /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null)
+        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
         {
             m_strStage = strStage;
             m_imgDb = imgdb;
@@ -951,7 +953,7 @@ namespace MyCaffe
             if (m_cuda != null)
                 m_cuda.Dispose();
 
-            m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath, bResetFirst);
+            m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath, bResetFirst, bEnableMemTrace);
             m_log.WriteLine("Cuda Connection created using '" + m_cuda.Path + "'.");
 
             if (phase == Phase.TEST || phase == Phase.TRAIN)
