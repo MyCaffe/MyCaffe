@@ -260,8 +260,9 @@ class MemoryCollection
 
 		long long GetSize(size_t lCount, int nBaseSize)
 		{
-			lCount = GetCount(lCount);
-			long long llCount = (unsigned long)lCount * nBaseSize;
+			long long llCount = (long long)GetCount(lCount);
+
+			llCount *= (long long)nBaseSize;
 			
 			return llCount;
 		}
