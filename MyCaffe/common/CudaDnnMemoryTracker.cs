@@ -14,12 +14,15 @@ namespace MyCaffe.common
     public class CudaDnnMemoryTracker<T>
     {
         Dictionary<int, MemoryInfo> m_rgItems = new Dictionary<int, MemoryInfo>();
+        bool m_bEnableMemoryTrace = false;
 
         /// <summary>
         /// The CudaDnnMemoryTracker constructor.
         /// </summary>
-        public CudaDnnMemoryTracker()
+        /// <param name="bEnableMemoryTrace">Optionally, specifies to enable the memory trace (only supported in debug builds).</param>
+        public CudaDnnMemoryTracker(bool bEnableMemoryTrace = false)
         {
+            m_bEnableMemoryTrace = bEnableMemoryTrace;
         }
 
         /// <summary>
@@ -29,10 +32,11 @@ namespace MyCaffe.common
         /// <param name="nDeviceID">Specifies the CudaDnn device ID on which the memory was allocated.</param>
         /// <param name="hMemory">Specifies the CudaDnn handle to the memory.</param>
         /// <param name="lSize">Specifies the size of the memory (in items).</param>
+        /// <param name="bHalf">Specifies whether or not half memory is used.</param>
         /// <returns></returns>
-        public long AllocMemory(long hKernel, int nDeviceID, long hMemory, ulong lSize)
+        public long AllocMemory(long hKernel, int nDeviceID, long hMemory, ulong lSize, bool bHalf)
         {
-            MemoryInfo mi = new MemoryInfo(hKernel, nDeviceID, hMemory, lSize);
+            MemoryInfo mi = new MemoryInfo(hKernel, nDeviceID, hMemory, lSize, bHalf);
             string strKey = mi.ToKey();
             int nKeyHash = strKey.GetHashCode();
 
@@ -42,7 +46,8 @@ namespace MyCaffe.common
             m_rgItems.Add(nKeyHash, mi);
 
 #if DEBUG
-            Trace.WriteLine("Memory Used: " + TotalMemoryUsedText);   
+            if (m_bEnableMemoryTrace)   
+                Trace.WriteLine("Memory Used: " + TotalMemoryUsedText);   
 #endif
 
             return hMemory;
@@ -65,8 +70,18 @@ namespace MyCaffe.common
             m_rgItems.Remove(nKeyHash);
 
 #if DEBUG
-            Trace.WriteLine("Memory Used: " + TotalMemoryUsedText);
+            if (m_bEnableMemoryTrace)
+                Trace.WriteLine("Memory Used: " + TotalMemoryUsedText);
 #endif
+        }
+
+        /// <summary>
+        /// Enable/disable the memory trace - this feature is only available in debug builds.
+        /// </summary>
+        public bool EnableMemoryTrace
+        {
+            get { return m_bEnableMemoryTrace; }
+            set { m_bEnableMemoryTrace = value; }
         }
 
         /// <summary>
@@ -80,7 +95,11 @@ namespace MyCaffe.common
 
                 foreach (KeyValuePair<int, MemoryInfo> kv in m_rgItems)
                 {
-                    lMem += kv.Value.Size;
+                    ulong ulBase = (ulong)((typeof(T) == typeof(float)) ? 4 : 8);
+                    if (kv.Value.Half)
+                        ulBase = 2;
+
+                    lMem += kv.Value.Size * ulBase;
                 }
 
                 return lMem;
@@ -94,8 +113,7 @@ namespace MyCaffe.common
         {
             get 
             {
-                int nSize = (typeof(T) == typeof(double)) ? 8 : 4;
-                return TotalItemsAllocated * (ulong)nSize;
+                return TotalItemsAllocated;
             }
         }
 
@@ -117,13 +135,15 @@ namespace MyCaffe.common
         int m_nDeviceID;
         long m_hMemory;
         ulong m_lSize;
+        bool m_bHalf;
 
-        public MemoryInfo(long hKernel, int nDeviceID, long hMemory, ulong lSize)
+        public MemoryInfo(long hKernel, int nDeviceID, long hMemory, ulong lSize, bool bHalf)
         {
             m_hKernel = hKernel;
             m_nDeviceID = nDeviceID;
             m_hMemory = hMemory;
             m_lSize = lSize;
+            m_bHalf = bHalf;
         }
 
         public long Kernel
@@ -144,6 +164,11 @@ namespace MyCaffe.common
         public ulong Size
         {
             get { return m_lSize; }
+        }
+
+        public bool Half
+        {
+            get { return m_bHalf; }
         }
 
         public string ToKey()
