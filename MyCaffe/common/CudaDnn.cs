@@ -2820,27 +2820,27 @@ namespace MyCaffe.common
         /// <param name="algoBwdData">Returns the algorithm for the backward data.</param>
         /// <param name="lWsSizeBwdData">Returns the workspace (in bytes) for the backward data.</param>
         /// <param name="preferredFwdAlgo">Optionally, specifies a preferred forward algo to attempt to use for forward convolution.  The new algo is only used if the current device supports it.</param>
-        public void GetConvolutionInfo(long hCuDnn, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, long lWorkspaceSizeLimitInBytes, out CONV_FWD_ALGO algoFwd, out long lWsSizeFwd, out CONV_BWD_FILTER_ALGO algoBwdFilter, out long lWsSizeBwdFilter, out CONV_BWD_DATA_ALGO algoBwdData, out long lWsSizeBwdData, CONV_FWD_ALGO preferredFwdAlgo = CONV_FWD_ALGO.NONE)
+        public void GetConvolutionInfo(long hCuDnn, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, ulong lWorkspaceSizeLimitInBytes, out CONV_FWD_ALGO algoFwd, out ulong lWsSizeFwd, out CONV_BWD_FILTER_ALGO algoBwdFilter, out ulong lWsSizeBwdFilter, out CONV_BWD_DATA_ALGO algoBwdData, out ulong lWsSizeBwdData, CONV_FWD_ALGO preferredFwdAlgo = CONV_FWD_ALGO.NONE)
         {
             if (m_dt == DataType.DOUBLE)
             {
                 double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, new double[] { hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, lWorkspaceSizeLimitInBytes, (int)preferredFwdAlgo });
                 algoFwd = (CONV_FWD_ALGO)rg[0];
-                lWsSizeFwd = (long)rg[1];
+                lWsSizeFwd = (ulong)rg[1];
                 algoBwdFilter = (CONV_BWD_FILTER_ALGO)rg[2];
-                lWsSizeBwdFilter = (long)rg[3];
+                lWsSizeBwdFilter = (ulong)rg[3];
                 algoBwdData = (CONV_BWD_DATA_ALGO)rg[4];
-                lWsSizeBwdData = (long)rg[5];
+                lWsSizeBwdData = (ulong)rg[5];
             }
             else
             {
                 float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, new float[] { hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, lWorkspaceSizeLimitInBytes, (int)preferredFwdAlgo });
                 algoFwd = (CONV_FWD_ALGO)rg[0];
-                lWsSizeFwd = (long)rg[1];
+                lWsSizeFwd = (ulong)rg[1];
                 algoBwdFilter = (CONV_BWD_FILTER_ALGO)rg[2];
-                lWsSizeBwdFilter = (long)rg[3];
+                lWsSizeBwdFilter = (ulong)rg[3];
                 algoBwdData = (CONV_BWD_DATA_ALGO)rg[4];
-                lWsSizeBwdData = (long)rg[5];
+                lWsSizeBwdData = (ulong)rg[5];
             }
         }
 
@@ -2863,7 +2863,7 @@ namespace MyCaffe.common
         /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
         /// <param name="nTopOffset">Specifies an offset into the top memory (in items, not bytes).</param>
         /// <param name="bSyncStream">Optionally, specifies whether or not to syncrhonize the stream. The default = <i>true</i>.</param>
-        public void ConvolutionForward(long hCuDnn, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, CONV_FWD_ALGO algoFwd, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream = true)
+        public void ConvolutionForward(long hCuDnn, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, CONV_FWD_ALGO algoFwd, long hWorkspace, int nWorkspaceOffset, ulong lWorkspaceSize, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream = true)
         {
             ConvolutionForward(hCuDnn, m_tOne, hBottomDesc, hBottomData, nBottomOffset, hFilterDesc, hWeight, nWeightOffset, hConvDesc, algoFwd, hWeight, nWeightOffset, lWorkspaceSize, m_tZero, hTopDesc, hTopData, nTopOffset, bSyncStream);
         }
@@ -2889,7 +2889,7 @@ namespace MyCaffe.common
         /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
         /// <param name="nTopOffset">Specifies an offset into the top memory (in items, not bytes).</param>
         /// <param name="bSyncStream">Optionally, specifies whether or not to syncrhonize the stream. The default = <i>true</i>.</param>
-        public void ConvolutionForward(long hCuDnn, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, CONV_FWD_ALGO algoFwd, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, T fBeta, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream = true)
+        public void ConvolutionForward(long hCuDnn, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, CONV_FWD_ALGO algoFwd, long hWorkspace, int nWorkspaceOffset, ulong lWorkspaceSize, T fBeta, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream = true)
         {
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FWD_CONV, new double[] { hCuDnn, convertD(fAlpha), hBottomDesc, hBottomData, nBottomOffset, hFilterDesc, hWeight, nWeightOffset, hConvDesc, (double)algoFwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, convertD(fBeta), hTopDesc, hTopData, nTopOffset, (bSyncStream) ? 1 : 0 });
@@ -2953,7 +2953,7 @@ namespace MyCaffe.common
         /// <param name="hWeightDiff">Specifies a handle to the weight diff in GPU memory.</param>
         /// <param name="nWeightOffset">Specifies an offset into the weight memory (in items, not bytes).</param>
         /// <param name="bSyncStream">Optionally, specifies whether or not to syncrhonize the stream. The default = <i>true</i>.</param>
-        public void ConvolutionBackwardFilter(long hCuDnn, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, CONV_BWD_FILTER_ALGO algoBwd, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream)
+        public void ConvolutionBackwardFilter(long hCuDnn, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, CONV_BWD_FILTER_ALGO algoBwd, long hWorkspace, int nWorkspaceOffset, ulong lWorkspaceSize, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream)
         {
             ConvolutionBackwardFilter(hCuDnn, m_tOne, hBottomDesc, hBottomData, nBottomOffset, hTopDesc, hTopDiff, nTopOffset, hConvDesc, algoBwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, m_tOne, hFilterDesc, hWeightDiff, nWeightOffset, bSyncStream);
         }
@@ -2979,7 +2979,7 @@ namespace MyCaffe.common
         /// <param name="hWeightDiff">Specifies a handle to the weight diff in GPU memory.</param>
         /// <param name="nWeightOffset">Specifies an offset into the weight memory (in items, not bytes).</param>
         /// <param name="bSyncStream">Optionally, specifies whether or not to syncrhonize the stream. The default = <i>true</i>.</param>
-        public void ConvolutionBackwardFilter(long hCuDnn, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, CONV_BWD_FILTER_ALGO algoBwd, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, T fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream = true)
+        public void ConvolutionBackwardFilter(long hCuDnn, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, CONV_BWD_FILTER_ALGO algoBwd, long hWorkspace, int nWorkspaceOffset, ulong lWorkspaceSize, T fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffset, bool bSyncStream = true)
         {
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_CONV_FILTER, new double[] { hCuDnn, convertD(fAlpha), hBottomDesc, hBottomData, nBottomOffset, hTopDesc, hTopDiff, nTopOffset, hConvDesc, (double)algoBwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, convertD(fBeta), hFilterDesc, hWeightDiff, nWeightOffset, (bSyncStream) ? 1 : 0 });
@@ -3006,7 +3006,7 @@ namespace MyCaffe.common
         /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
         /// <param name="nBottomOffset">Specifies an offset into the bottom memory (in items, not bytes).</param>
         /// <param name="bSyncStream">Optionally, specifies whether or not to syncrhonize the stream. The default = <i>true</i>.</param>
-        public void ConvolutionBackwardData(long hCuDnn, long hFilterDesc, long hWeight, int nWeightOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, CONV_BWD_DATA_ALGO algoBwd, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, long hBottomDesc, long hBottomDiff, int nBottomOffset, bool bSyncStream = true)
+        public void ConvolutionBackwardData(long hCuDnn, long hFilterDesc, long hWeight, int nWeightOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, CONV_BWD_DATA_ALGO algoBwd, long hWorkspace, int nWorkspaceOffset, ulong lWorkspaceSize, long hBottomDesc, long hBottomDiff, int nBottomOffset, bool bSyncStream = true)
         {
             ConvolutionBackwardData(hCuDnn, m_tOne, hFilterDesc, hWeight, nWeightOffset, hTopDesc, hTopDiff, nTopOffset, hConvDesc, algoBwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, m_tZero, hBottomDesc, hBottomDiff, nBottomOffset, bSyncStream);
         }
@@ -3032,7 +3032,7 @@ namespace MyCaffe.common
         /// <param name="hBottomDiff">Specifies a handle to the bottom diff in GPU memory.</param>
         /// <param name="nBottomOffset">Specifies an offset into the bottom memory (in items, not bytes).</param>
         /// <param name="bSyncStream">Optionally, specifies whether or not to syncrhonize the stream. The default = <i>true</i>.</param>
-        public void ConvolutionBackwardData(long hCuDnn, T fAlpha, long hFilterDesc, long hWeight, int nWeightOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, CONV_BWD_DATA_ALGO algoBwd, long hWorkspace, int nWorkspaceOffset, long lWorkspaceSize, T fBeta, long hBottomDesc, long hBottomDiff, int nBottomOffset, bool bSyncStream = true)
+        public void ConvolutionBackwardData(long hCuDnn, T fAlpha, long hFilterDesc, long hWeight, int nWeightOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, CONV_BWD_DATA_ALGO algoBwd, long hWorkspace, int nWorkspaceOffset, ulong lWorkspaceSize, T fBeta, long hBottomDesc, long hBottomDiff, int nBottomOffset, bool bSyncStream = true)
         {
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.BWD_CONV_DATA, new double[] { hCuDnn, convertD(fAlpha), hFilterDesc, hWeight, nWeightOffset, hTopDesc, hTopDiff, nTopOffset, hConvDesc, (double)algoBwd, hWorkspace, nWorkspaceOffset, lWorkspaceSize, convertD(fBeta), hBottomDesc, hBottomDiff, nBottomOffset, (bSyncStream) ? 1 : 0 });
