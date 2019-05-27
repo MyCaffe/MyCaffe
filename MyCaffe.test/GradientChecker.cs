@@ -124,6 +124,7 @@ namespace MyCaffe.test
             // Ignore the loss from the layer (it's just the weighted sum of the losses
             // from the top blobs, whose gradients we may want to test individually).
             layer.Forward(colBottom, colTop);
+            layer.ConvertToBase(colTop);
 
             // Get additional loss from the objective.
             GetObjAndGradient(layer, colTop, nTopID, nTopDataID);
@@ -131,6 +132,8 @@ namespace MyCaffe.test
 
             // Store computed gradients for all checked blobs
             BlobCollection<T> colComputedGradientBlobs = new BlobCollection<T>();
+
+            layer.ConvertToBase(colBlobsToCheck);
 
             for (int nBlobID = 0; nBlobID < colBlobsToCheck.Count; nBlobID++)
             {
@@ -183,6 +186,7 @@ namespace MyCaffe.test
                         m_cuda.rng_setseed(m_uiSeed);
 
                         layer.Forward(colBottom, colTop);
+                        layer.ConvertToBase(colTop);
                         dfPositiveObjective = GetObjAndGradient(layer, colTop, nTopID, nTopDataID);
 
                         // Compute loss with stepsize subtracted from input.
@@ -192,6 +196,7 @@ namespace MyCaffe.test
                         m_cuda.rng_setseed(m_uiSeed);
 
                         layer.Forward(colBottom, colTop);
+                        layer.ConvertToBase(colTop);
                         dfNegativeObjective = GetObjAndGradient(layer, colTop, nTopID, nTopDataID);
 
                         // Recover original input value.

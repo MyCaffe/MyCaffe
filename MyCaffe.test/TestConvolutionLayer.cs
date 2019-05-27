@@ -62,6 +62,32 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestSimpleConvolutionCuDnnHalf()
+        {
+            ConvolutionLayerTest test = new ConvolutionLayerTest(EngineParameter.Engine.CUDNN, true);
+
+            try
+            {
+                foreach (IConvolutionLayerTest t in test.Tests)
+                {
+                    try
+                    {
+                        Trace.WriteLine(t.DataType.ToString() + ":" + t.engine.ToString() + ": TestSimpleConvolutionHalf");
+                        t.TestSimpleConvolution();
+                    }
+                    catch (Exception excpt)
+                    {
+                        throw new Exception(t.DataType.ToString() + ":" + t.engine.ToString() + excpt.Message);
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestSimpleConvolutionGroupCuDnn()
         {
             ConvolutionLayerTest test = new ConvolutionLayerTest(EngineParameter.Engine.CUDNN);
@@ -86,6 +112,7 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
 
         [TestMethod]
         public void TestSobelConvolutionCuDnn()
@@ -125,6 +152,35 @@ namespace MyCaffe.test
                     try
                     {
                         Trace.WriteLine(t.DataType.ToString() + ":" + t.engine.ToString() + ": TestGradient");
+                        t.TestGradient();
+                    }
+                    catch (Exception excpt)
+                    {
+                        throw new Exception(t.DataType.ToString() + ":" + t.engine.ToString() + excpt.Message);
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientCuDnnHalf()
+        {
+            ConvolutionLayerTest test = new ConvolutionLayerTest(EngineParameter.Engine.CUDNN, true);
+
+            try
+            {
+                foreach (IConvolutionLayerTest t in test.Tests)
+                {
+                    try
+                    {
+                        if (t.DataType == DataType.DOUBLE)
+                            continue;
+
+                        Trace.WriteLine(t.DataType.ToString() + ":" + t.engine.ToString() + ": TestGradientHalf");
                         t.TestGradient();
                     }
                     catch (Exception excpt)
@@ -557,17 +613,17 @@ namespace MyCaffe.test
 
     class ConvolutionLayerTest : TestBase
     {
-        public ConvolutionLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("Convolution Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
+        public ConvolutionLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, bool bHalf = false)
+            : base("Convolution Layer Test", TestBase.DEFAULT_DEVICE_ID, engine, null, bHalf)
         {
         }
 
         protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
         {
             if (dt == common.DataType.DOUBLE)
-                return new ConvolutionLayerTest<double>(strName, nDeviceID, engine);
+                return new ConvolutionLayerTest<double>(strName, nDeviceID, engine, m_bHalf);
             else
-                return new ConvolutionLayerTest<float>(strName, nDeviceID, engine);
+                return new ConvolutionLayerTest<float>(strName, nDeviceID, engine, m_bHalf);
         }
     }
 
@@ -595,9 +651,11 @@ namespace MyCaffe.test
         Blob<T> m_blob_bottom2;
         Blob<T> m_blob_top2;
         Blob<T> m_ref_blob_top;
+        long m_hWorkspaceData = 0;
+        ulong m_lWorkspaceSize = 0;
         
-        public ConvolutionLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
-            : base(strName, new List<int>() { 2, 3, 6, 4 }, nDeviceID)
+        public ConvolutionLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine, bool bHalf)
+            : base(strName, new List<int>() { 2, 3, 6, 4 }, nDeviceID, bHalf)
         {
             m_blob_bottom2 = new Blob<T>(m_cuda, m_log);
             m_blob_top2 = new Blob<T>(m_cuda, m_log);
@@ -617,6 +675,13 @@ namespace MyCaffe.test
         {
             m_blob_bottom2.Dispose();
             m_blob_top2.Dispose();
+
+            if (m_hWorkspaceData != 0)
+            {
+                m_cuda.FreeMemory(m_hWorkspaceData);
+                m_hWorkspaceData = 0;
+            }
+
             base.dispose();
         }
 
@@ -915,34 +980,62 @@ namespace MyCaffe.test
 
         public void TestSimpleConvolution()
         {
-            ConvolutionLayerTest test = new ConvolutionLayerTest();
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
             p.convolution_param.engine = m_engine;
             p.convolution_param.kernel_size.Add(3);
             p.convolution_param.stride.Add(2);
             p.convolution_param.num_output = 4;
+            p.convolution_param.cudnn_use_halfsize = m_bHalf;
             p.convolution_param.weight_filler = new FillerParameter("gaussian");
             p.convolution_param.bias_filler = new FillerParameter("constant");
             p.convolution_param.bias_filler.value = 0.1;
             ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+            layer.OnGetWorkspace += layer_OnGetWorkspace;
+            layer.OnSetWorkspace += layer_OnSetWorkspace;
 
             layer.Setup(BottomVec, TopVec);
             layer.Forward(BottomVec, TopVec);
 
+            BlobCollection<T> colWeights1 = layer.blobs;
+            double dfErr = 1e-4;
+
+            if (m_bHalf)
+            {
+                colWeights1 = new BlobCollection<T>();
+                for (int i = 0; i < layer.blobs.Count; i++)
+                {
+                    colWeights1.Add(new Blob<T>(m_cuda, m_log, false, false));
+                    colWeights1[i].ReshapeLike(layer.blobs[i]);
+                    colWeights1[i].CopyFrom(layer.blobs[i]);
+                }
+
+                ulong lWorkSize = Math.Max(Bottom.GetConversionWorkSize(false), Top.GetConversionWorkSize(false));
+                long hWorkMem = m_cuda.AllocMemory((long)lWorkSize);
+
+                Bottom.ConvertToBase(hWorkMem, lWorkSize, true, false);
+                Top.ConvertToBase(hWorkMem, lWorkSize, true, false);
+                Bottom2.ConvertToBase(hWorkMem, lWorkSize, true, false);
+                Top2.ConvertToBase(hWorkMem, lWorkSize, true, false);
+
+                m_cuda.FreeMemory(hWorkMem);
+
+                dfErr = 0.01;
+            }
+
             // Check against reference convolution;
-            caffe_conv(Bottom, p.convolution_param, layer.blobs, MakeReferenceTop(Top));
-            T[] rgTopData = Top.update_cpu_data();
+            caffe_conv(Bottom, p.convolution_param, colWeights1, MakeReferenceTop(Top));
             T[] rgRefTopData = TopRef.update_cpu_data();
+            T[] rgTopData = Top.update_cpu_data();
 
             for (int i = 0; i < Top.count(); i++)
             {
                 T dfTop = rgTopData[i];
                 T dfTopRef = rgRefTopData[i];
 
-                EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
+                EXPECT_NEAR(dfTop, dfTopRef, dfErr);
             }
 
-            caffe_conv(Bottom2, p.convolution_param, layer.blobs, MakeReferenceTop(Top2));
+            caffe_conv(Bottom2, p.convolution_param, colWeights1, MakeReferenceTop(Top2));
             rgTopData = Top2.update_cpu_data();
             rgRefTopData = TopRef.update_cpu_data();
 
@@ -951,8 +1044,32 @@ namespace MyCaffe.test
                 T dfTop = rgTopData[i];
                 T dfTopRef = rgRefTopData[i];
 
-                EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
+                EXPECT_NEAR(dfTop, dfTopRef, dfErr);
             }
+
+            if (m_bHalf)
+                colWeights1.Dispose();
+        }
+
+        private void layer_OnSetWorkspace(object sender, WorkspaceArgs e)
+        {
+            if (e.Size < m_lWorkspaceSize)
+                return;
+
+            m_lWorkspaceSize = e.Size;
+            m_cuda.DisableGhostMemory();
+
+            if (m_hWorkspaceData != 0)
+                m_cuda.FreeMemory(m_hWorkspaceData);
+
+            m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSize);
+            m_cuda.ResetGhostMemory();
+        }
+
+        private void layer_OnGetWorkspace(object sender, WorkspaceArgs e)
+        {
+            e.Data = m_hWorkspaceData;
+            e.Size = m_lWorkspaceSize;
         }
 
         public void TestSimpleConvolutionGroup()
@@ -1121,9 +1238,12 @@ namespace MyCaffe.test
             p.convolution_param.kernel_size.Add(3);
             p.convolution_param.stride.Add(2);
             p.convolution_param.num_output = 2;
+            p.convolution_param.cudnn_use_halfsize = m_bHalf;
             p.convolution_param.weight_filler = new FillerParameter("gaussian");
             p.convolution_param.bias_filler = new FillerParameter("gaussian");
             ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+            layer.OnGetWorkspace += layer_OnGetWorkspace;
+            layer.OnSetWorkspace += layer_OnSetWorkspace;
 
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
@@ -1162,9 +1282,12 @@ namespace MyCaffe.test
             p.convolution_param.stride.Add(2);
             p.convolution_param.num_output = 3;
             p.convolution_param.group = 3;
+            p.convolution_param.cudnn_use_halfsize = m_bHalf;
             p.convolution_param.weight_filler = new FillerParameter("gaussian");
             p.convolution_param.bias_filler = new FillerParameter("gaussian");
             ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
+            layer.OnGetWorkspace += layer_OnGetWorkspace;
+            layer.OnSetWorkspace += layer_OnSetWorkspace;
 
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec);

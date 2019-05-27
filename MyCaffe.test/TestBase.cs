@@ -20,9 +20,12 @@ namespace MyCaffe.test
         List<ITest> m_rgTests = new List<ITest>();
         string m_strName = "";
         static bool m_bResetOnCleanUp = false;
+        protected bool m_bHalf = false;
 
-        public TestBase(string strName, int nDeviceID = DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, object tag = null)
+        public TestBase(string strName, int nDeviceID = DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, object tag = null, bool bHalf = false)
         {
+            m_bHalf = bHalf;
+
             // If an auto test has set the GPUID, us it instead.
             LocalDataStoreSlot lds = Thread.GetNamedDataSlot("GPUID");
             if (lds != null)
@@ -126,9 +129,9 @@ namespace MyCaffe.test
         protected virtual ITest create(DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
         {
             if (dt == DataType.DOUBLE)
-                return new Test<double>(strName, nDeviceID, engine);
+                return new Test<double>(strName, nDeviceID, engine, m_bHalf);
             else
-                return new Test<float>(strName, nDeviceID, engine);
+                return new Test<float>(strName, nDeviceID, engine, m_bHalf);
         }
 
         protected virtual int create_count
@@ -295,11 +298,13 @@ namespace MyCaffe.test
         protected DataType m_dt;
         protected EngineParameter.Engine m_engine;
         protected bool m_bEnabled = true;
+        protected bool m_bHalf = false;
 
-        public Test(string strName, int nDeviceID = TestBase.DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+        public Test(string strName, int nDeviceID = TestBase.DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, bool bHalf = false)
         {
             m_dt = (typeof(T) == typeof(double)) ? DataType.DOUBLE : DataType.FLOAT;
             m_cuda = GetCuda(nDeviceID);
+            m_bHalf = bHalf;
 
             string str = name;
 
@@ -393,14 +398,14 @@ namespace MyCaffe.test
         BlobCollection<T> m_colTop = new BlobCollection<T>();
         protected Filler<T> m_filler;
 
-        public TestEx(string strName, List<int> rgBottomShape = null, int nDeviceID = TestBase.DEFAULT_DEVICE_ID)
-            : base(strName, nDeviceID)
+        public TestEx(string strName, List<int> rgBottomShape = null, int nDeviceID = TestBase.DEFAULT_DEVICE_ID, bool bHalf = false)
+            : base(strName, nDeviceID, EngineParameter.Engine.DEFAULT, bHalf)
         {
             if (rgBottomShape == null)
                 rgBottomShape = new List<int>() { 2, 3, 4, 5 };
 
-            m_blob_bottom = new Blob<T>(m_cuda, m_log, rgBottomShape);
-            m_blob_top = new Blob<T>(m_cuda, m_log);
+            m_blob_bottom = new Blob<T>(m_cuda, m_log, rgBottomShape, true);
+            m_blob_top = new Blob<T>(m_cuda, m_log, true);
             m_colBottom.Add(m_blob_bottom);
             m_colTop.Add(m_blob_top);
 

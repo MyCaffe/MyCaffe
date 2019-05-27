@@ -682,6 +682,101 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestAllocHalf()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            List<float> rgf = new List<float>();
+            long hMemF = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    if (t.DataType == DataType.DOUBLE)
+                        continue;
+
+                    for (float f = 0; f < 1.0f; f += 0.01f)
+                    {
+                        rgf.Add((float)Math.Sin((double)f));
+                    }
+
+                    hMemF = t.Cuda.AllocMemory(rgf.Count, true);
+                    t.Log.CHECK_NE(hMemF, 0, "The memory should not be null!");
+                    t.Cuda.SetMemory(hMemF, rgf);
+
+                    float[] rgf1 = t.Cuda.GetMemoryFloat(hMemF);
+
+                    t.Log.CHECK_GE(rgf1.Length, rgf.Count, "The data returned is not the same count as the data set.");
+
+                    for (int i = 0; i < rgf.Count; i++)
+                    {
+                        float f1 = rgf1[i];
+                        float f = rgf[i];
+
+                        t.Log.EXPECT_NEAR_FLOAT(f1, f, 0.001, "The values should be the same!");
+                    }
+
+                    t.Cuda.FreeMemory(hMemF);
+                    hMemF = 0;
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
+        public void TestAllocHalf2()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            List<float> rgf = new List<float>();
+            long hMemF = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    if (t.DataType == DataType.DOUBLE)
+                        continue;
+
+                    for (float f = 0; f < 1.0f; f += 0.01f)
+                    {
+                        rgf.Add((float)Math.Sin((double)f));
+                    }
+
+                    hMemF = t.Cuda.AllocMemory(rgf.Count, true);
+                    t.Log.CHECK_NE(hMemF, 0, "The memory should not be null!");
+
+                    for (int i = 0; i < rgf.Count; i++)
+                    {
+                        t.Cuda.SetMemoryAt(hMemF, new float[] { rgf[i] }, i);
+                    }
+
+                    float[] rgf1 = t.Cuda.GetMemoryFloat(hMemF);
+
+                    t.Log.CHECK_GE(rgf1.Length, rgf.Count, "The data returned is not the same count as the data set.");
+
+                    for (int i = 0; i < rgf.Count; i++)
+                    {
+                        float f1 = rgf1[i];
+                        float f = rgf[i];
+
+                        t.Log.EXPECT_NEAR_FLOAT(f1, f, 0.001, "The values should be the same!");
+                    }
+
+                    t.Cuda.FreeMemory(hMemF);
+                    hMemF = 0;
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestMath_sumsqdiff()
         {
             CudaDnnTest test = new CudaDnnTest();
@@ -1401,7 +1496,6 @@ namespace MyCaffe.test
             }
         }
 
-
         [TestMethod]
         public void TestRnnGetLinLayerParams()
         {
@@ -1540,6 +1634,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestAdd()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITestCudaDnn t in test.Tests)
+                {
+                    t.TestAdd();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestGemm()
         {
             CudaDnnTest test = new CudaDnnTest();
@@ -1596,6 +1708,7 @@ namespace MyCaffe.test
 
     public interface ITestCudaDnn : ITest
     {
+        void TestAdd();
         void TestGemm();
         void TestGemv();
         void TestMemoryTestByBlock();
@@ -1679,6 +1792,57 @@ namespace MyCaffe.test
             }
             
             base.dispose();
+        }
+
+        public void TestAdd()
+        {
+            double[] rgData1 = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+            double[] rgData2 = new double[] { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.12, 0.11, 0.121 };
+
+            m_A.Reshape(rgData1.Length, 1, 1, 1);
+            m_B.ReshapeLike(m_A);
+            m_C.ReshapeLike(m_B);
+
+            m_A.mutable_cpu_data = convert(rgData1.ToArray());
+            m_B.mutable_cpu_data = convert(rgData2.ToArray());
+            m_C.SetData(0);
+
+            m_cuda.add(m_A.count(), m_A.gpu_data, m_B.gpu_data, m_C.mutable_gpu_data);
+
+            double[] rgResult = convert(m_C.mutable_cpu_data);
+
+            for (int i = 0; i < rgData1.Length; i++)
+            {
+                double dfExpected = rgData1[i] + rgData2[i];
+                double dfActual = rgResult[i];
+
+                m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.001, "The expected and actual are not the same.");
+            }
+
+            ulong lWorkSize = m_B.GetConversionWorkSize(true);
+            long hWorkMem = m_cuda.AllocMemory((long)lWorkSize);
+
+            m_A.ConvertToHalf(hWorkMem, lWorkSize, true, false);
+            m_B.ConvertToHalf(hWorkMem, lWorkSize, true, false);
+            m_C.ConvertToHalf(hWorkMem, lWorkSize, true, false);
+
+            m_A.mutable_cpu_data = convert(rgData1.ToArray());
+            m_B.mutable_cpu_data = convert(rgData2.ToArray());
+            m_C.SetData(0);
+
+            m_cuda.add(m_A.count(), m_A.gpu_data, m_B.gpu_data, m_C.mutable_gpu_data);
+
+            rgResult = convert(m_C.mutable_cpu_data);
+
+            for (int i = 0; i < rgData1.Length; i++)
+            {
+                double dfExpected = rgData1[i] + rgData2[i];
+                double dfActual = rgResult[i];
+
+                m_log.EXPECT_NEAR_FLOAT(dfExpected, dfActual, 0.01, "The expected and actual are not the same.");
+            }
+
+            m_cuda.FreeMemory(hWorkMem);
         }
 
         public void TestGemm()
