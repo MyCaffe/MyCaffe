@@ -610,7 +610,7 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 	cudnnConvolutionBwdFilterPreference_t bwdFltPref = CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT;
 	cudnnConvolutionBwdDataPreference_t bwdDataPref = CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT;
 
-	if (lWsLimitInBytes == (size_t)-1)
+	if (lWsLimitInBytes == ((size_t)-1)/2 + 1)
 	{
 		lWsLimitInBytes = 0;
 		fwdPref = CUDNN_CONVOLUTION_FWD_PREFER_FASTEST;
