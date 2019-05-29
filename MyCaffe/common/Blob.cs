@@ -463,10 +463,11 @@ namespace MyCaffe.common
         /// propagate the new input shape to higher layers.
         /// </remarks>
         /// <param name="shape">Specifies the new shape of the Blob.</param>
-        public void Reshape(BlobShape shape)
+        /// <param name="bUseHalfSize">Optionally, specifies to use half sized memory.</param>
+        public void Reshape(BlobShape shape, bool? bUseHalfSize = null)
         {
             m_log.CHECK_LE(shape.dim.Count, MAX_BLOB_AXES, "The shape dimension must be less than " + MAX_BLOB_AXES.ToString());
-            Reshape(shape.dim);
+            Reshape(shape.dim, bUseHalfSize);
         }
 
         /// <summary>
@@ -1639,7 +1640,9 @@ namespace MyCaffe.common
         /// <returns>A new copy of the Blob is returned.</returns>
         public Blob<T> Clone()
         {
-            Blob<T> b = new Blob<T>(m_cuda, m_log, this);
+            Blob<T> b = new Blob<T>(m_cuda, m_log);
+
+            b.ReshapeLike(this, HalfSize);
 
             if (m_diff != null)
                 b.m_diff.Copy(m_diff);
@@ -1826,7 +1829,8 @@ namespace MyCaffe.common
         /// <returns></returns>
         public override string ToString()
         {
-            return m_strName + " (" + shape_string + ")";
+            string strSize = (HalfSize) ? "HALF " : "FULL ";
+            return strSize + m_strName + " (" + shape_string + ")";
         }
 
         /// <summary>
