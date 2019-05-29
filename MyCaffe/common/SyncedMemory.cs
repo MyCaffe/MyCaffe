@@ -259,6 +259,9 @@ namespace MyCaffe.common
             return dst;
         }
 
+        /// <summary>
+        /// Returns whether or not the sync memory is half-sized memory.
+        /// </summary>
         public bool HalfSize
         {
             get { return m_bHalfSize; }
