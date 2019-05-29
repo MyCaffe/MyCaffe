@@ -1742,13 +1742,14 @@ long Math<double>::add_scalar(int n, double fAlpha, long hY, int nYOff)
 	{
 #if (__SM__ < 530)
 		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
-#endif
+#else
 		__half fAlpha1 = __float2half((float)fAlpha);
 		__half* y = (__half*)pY->Data();
 		if (nYOff > 0)
 			y += nYOff;
 
 		add_scalar_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha1, y);
+#endif
 	}
 	else
 	{
@@ -1776,13 +1777,14 @@ long Math<float>::add_scalar(int n, float fAlpha, long hY, int nYOff)
 	{
 #if (__SM__ < 530)
 		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
-#endif
+#else
 		__half fAlpha1 = __float2half((float)fAlpha);
 		__half* y = (__half*)pY->Data();
 		if (nYOff > 0)
 			y += nYOff;
 
 		add_scalar_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha1, y);
+#endif
 	}
 	else
 	{
@@ -1837,9 +1839,10 @@ long Math<double>::add(int n, long hA, long hB, long hY, double dfAlpha)
 	{
 #if (__SM__ < 530)
 		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
-#endif
+#else
 		__half alpha = __float2half((float)dfAlpha);
 		add_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (__half*)pA->Data(), (__half*)pB->Data(), (__half*)pY->Data(), alpha);
+#endif
 	}
 	else
 	{
@@ -1873,9 +1876,10 @@ long Math<float>::add(int n, long hA, long hB, long hY, float fAlpha)
 	{
 #if __SM__ < 530
 		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
-#endif
+#else
 		__half alpha = __float2half((float)fAlpha);
 		add_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (__half*)pA->Data(), (__half*)pB->Data(), (__half*)pY->Data(), alpha);
+#endif
 	}
 	else
 	{
@@ -2545,7 +2549,7 @@ long Math<double>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, i
 	{
 #if (__SM__ < 530)
 		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
-#endif
+#else
 		__half* a = (__half*)pA->Data();
 		__half* b = (__half*)pB->Data();
 		__half* y = (__half*)pY->Data();
@@ -2560,6 +2564,7 @@ long Math<double>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, i
 			y += nYOff;
 
 		sub_kernel_half<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>> (n, a, b, y);
+#endif
 	}
 	else
 	{
@@ -2606,7 +2611,7 @@ long Math<float>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, in
 	{
 #if (__SM__ < 530)
 		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
-#endif
+#else
 		__half* a = (__half*)pA->Data();
 		__half* b = (__half*)pB->Data();
 		__half* y = (__half*)pY->Data();
@@ -2621,6 +2626,7 @@ long Math<float>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, in
 			y += nYOff;
 
 		sub_kernel_half<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+#endif
 	}
 	else
 	{
@@ -2731,13 +2737,14 @@ long Math<double>::mul_scalar(int n, double fAlpha, long hY, int nYOff)
 	{
 #if (__SM__ < 530)
 		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
-#endif
+#else
 		__half fAlpha1 = __float2half((float)fAlpha);
 		__half* y = (__half*)pY->Data();
 		if (nYOff > 0)
 			y += nYOff;
 
 		mul_scalar_kernel_half << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, fAlpha1, y);
+#endif
 	}
 	else
 	{
@@ -2765,13 +2772,14 @@ long Math<float>::mul_scalar(int n, float fAlpha, long hY, int nYOff)
 	{
 #if (__SM__ < 530)
 		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
-#endif
+#else
 		__half fAlpha1 = __float2half(fAlpha);
 		__half* y = (__half*)pY->Data();
 		if (nYOff > 0)
 			y += nYOff;
 
 		mul_scalar_kernel_half << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, fAlpha1, y);
+#endif
 	}
 	else
 	{
@@ -2826,7 +2834,7 @@ long Math<double>::mul(int n, long hA, long hB, long hY, int nAOff, int nBOff, i
 	{
 #if (__SM__ < 530)
 		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
-#endif
+#else
 		__half* a = (__half*)pA->Data();
 		__half* b = (__half*)pB->Data();
 		__half* y = (__half*)pY->Data();
@@ -2841,6 +2849,7 @@ long Math<double>::mul(int n, long hA, long hB, long hY, int nAOff, int nBOff, i
 			y += nYOff;
 
 		mul_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+#endif
 	}
 	else
 	{
@@ -2887,7 +2896,7 @@ long Math<float>::mul(int n, long hA, long hB, long hY, int nAOff, int nBOff, in
 	{
 #if (__SM__ < 530)
 		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
-#endif
+#else
 		__half* a = (__half*)pA->Data();
 		__half* b = (__half*)pB->Data();
 		__half* y = (__half*)pY->Data();
@@ -2902,6 +2911,7 @@ long Math<float>::mul(int n, long hA, long hB, long hY, int nAOff, int nBOff, in
 			y += nYOff;
 
 		mul_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+#endif
 	}
 	else
 	{
@@ -2968,8 +2978,9 @@ long Math<double>::div(int n, long hA, long hB, long hY)
 	{
 #if (__SM__ < 530)
 		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
-#endif
+#else
 		div_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (__half*)pA->Data(), (__half*)pB->Data(), (__half*)pY->Data());
+#endif
 	}
 	else
 	{
