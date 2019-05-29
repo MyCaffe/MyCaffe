@@ -72,6 +72,10 @@ namespace MyCaffe.layers
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             base.LayerSetUp(colBottom, colTop);
+
+            // Setup the convert to half flags used by the Layer just before calling forward and backward.
+            m_bUseHalfSize = m_param.use_halfsize;
+            m_bConvertTopOnBwd = false;
         }
 
         /// <summary>
@@ -84,7 +88,7 @@ namespace MyCaffe.layers
             base.Reshape(colBottom, colTop);
 
             m_log.CHECK_EQ(colBottom[0].count(1), colBottom[1].count(1), "Inputs must have the same dimension.");
-            m_blobDiff.ReshapeLike(colBottom[0]);
+            m_blobDiff.ReshapeLike(colBottom[0], colBottom[0].HalfSize);
         }
 
         /// <summary>
@@ -105,9 +109,14 @@ namespace MyCaffe.layers
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             int nCount = colBottom[0].count();
+            long hData = m_blobDiff.gpu_data;
 
-            m_cuda.sub(nCount, colBottom[0].gpu_data, colBottom[1].gpu_data, m_blobDiff.mutable_gpu_data);
-            T fDot = m_cuda.dot(nCount, m_blobDiff.gpu_data, m_blobDiff.gpu_data);
+            m_cuda.sub(nCount, colBottom[0].gpu_data, colBottom[1].gpu_data, hData);
+
+            if (m_blobDiff.HalfSize)
+                hData = convert_to_full(nCount, hData);
+
+            T fDot = m_cuda.dot(nCount, hData, hData);
             double dfLoss = convertD(fDot) / colBottom[0].num / 2.0;
 
             colTop[0].SetData(dfLoss, 0);

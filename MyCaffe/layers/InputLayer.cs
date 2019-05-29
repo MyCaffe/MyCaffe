@@ -56,8 +56,8 @@ namespace MyCaffe.layers
                 }
             }
 
-            m_bUseHalfSize = p.cudnn_use_halfsize;
-            m_bConvertTop = p.cudnn_use_halfsize;
+            m_bUseHalfSize = m_param.use_halfsize;
+            m_bConvertTopOnFwd = m_param.use_halfsize;
         }
 
         /// <summary>

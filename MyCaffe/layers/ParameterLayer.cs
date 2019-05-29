@@ -61,7 +61,9 @@ namespace MyCaffe.layers
                 m_colBlobs.Add(blob);
             }
 
-            colTop[0].Reshape(m_param.parameter_param.shape);
+            m_bUseHalfSize = m_param.use_halfsize;
+
+            colTop[0].Reshape(m_param.parameter_param.shape, m_bUseHalfSize);
         }
 
         /// <summary>

@@ -80,9 +80,13 @@ namespace MyCaffe.layers
         /// </summary>
         protected bool m_bUseHalfSize = false;
         /// <summary>
-        /// Specifies whether or not the layer should convert the top when using half sized memory (typically only done with input data).
+        /// Specifies whether or not the layer should convert the top on the forward pass when using half sized memory (typically only done with input data).
         /// </summary>
-        protected bool m_bConvertTop = false;
+        protected bool m_bConvertTopOnFwd = false;
+        /// <summary>
+        /// Specifies whether or not to convert the top on the backward pass when using half sized memory (typically not done on loss layers).
+        /// </summary>
+        protected bool m_bConvertTopOnBwd = true;
         /// <summary>
         /// Specifies whether or not the layer should convert the bottom when using half sized memory.
         /// </summary>
@@ -278,11 +282,35 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs, which should be reshaped as needed by the Layer.</param>
         public abstract void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop);
 
-        private void convert(BlobCollection<T> col)
+        /// <summary>
+        /// Convert half memory to full memory.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hMem">Specifies the memory to convert.</param>
+        /// <returns>A handle to the converted memory is returned.</returns>
+        protected long convert_to_full(int nCount, long hMem)
         {
             if (OnGetWorkspace == null || OnSetWorkspace == null)
-                return;
+                throw new Exception("The OnGetWorkSpace and OnSetWorkspace events must be connected!");
 
+            ulong lSize = (ulong)nCount * CudaDnn<T>.basetype_size(false);
+            WorkspaceArgs args = getWorkspace();
+            if (args.Size < lSize)
+            {
+                setWorkspace(lSize);
+                args = getWorkspace();
+            }
+
+            m_cuda.copy(nCount, hMem, args.Data, 0, 0, -1, null, false);
+            return args.Data;
+        }
+
+        /// <summary>
+        /// Convert a collection of blobs from / to half size.
+        /// </summary>
+        /// <param name="col">Specifies the collection to convert.</param>
+        protected void convert(BlobCollection<T> col)
+        {
             ulong lMaxSize = 0;
             bool bConversionNeeded = false;
 
@@ -301,6 +329,9 @@ namespace MyCaffe.layers
 
             if (!bConversionNeeded)
                 return;
+
+            if (OnGetWorkspace == null || OnSetWorkspace == null)
+                throw new Exception("The OnGetWorkSpace and OnSetWorkspace events must be connected!");
 
             WorkspaceArgs args = getWorkspace();
             if (args.Size < lMaxSize)
@@ -384,7 +415,7 @@ namespace MyCaffe.layers
 
                 Reshape(colBottom, colTop);
 
-                if (m_bConvertTop)
+                if (m_bConvertTopOnFwd)
                     convert(colTop);
 
                 forward(colBottom, colTop);
@@ -464,8 +495,12 @@ namespace MyCaffe.layers
             try
             {
                 m_swTiming.Restart();
-                convert(colTop);
+
+                if (m_bConvertTopOnBwd)
+                    convert(colTop);
+
                 convert(colBottom);
+
                 backward(colTop, rgbPropagateDown, colBottom);
                 m_swTiming.Stop();
                 m_dfBackwardTiming = m_swTiming.Elapsed.TotalMilliseconds;

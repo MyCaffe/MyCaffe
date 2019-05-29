@@ -31,6 +31,19 @@ namespace MyCaffe.layers_beta
         }
 
         /// <summary>
+        /// Setup the layer.
+        /// </summary>
+        /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
+        /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
+        public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            base.LayerSetUp(colBottom, colTop);
+
+            // Setup the convert to half flags used by the Layer just before calling forward and backward.
+            m_bUseHalfSize = m_param.use_halfsize;
+        }
+
+        /// <summary>
         /// Computes @f$ y = val operation x @f$
         /// </summary>
         /// <param name="colBottom">bottom input blob vector (length 1)

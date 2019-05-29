@@ -54,6 +54,8 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            m_bUseHalfSize = m_param.use_halfsize;
+
             if (OnLayerSetup != null)
                 OnLayerSetup(this, new ForwardArgs<T>(colBottom, colTop));
         }
@@ -71,7 +73,7 @@ namespace MyCaffe.layers
                 return;
             }
 
-            colTop[0].ReshapeLike(colBottom[0]);
+            colTop[0].ReshapeLike(colBottom[0], m_bUseHalfSize);
         }
 
         /// <summary>
@@ -99,7 +101,7 @@ namespace MyCaffe.layers
                 m_log.CHECK_EQ(nCount, nCountB, "The top and bottom at " + i.ToString() + " must have the same number of items.");
 
                 long hBottomData = colBottom[i].gpu_data;
-                long hTopData = colTop[i].mutable_gpu_data; ;
+                long hTopData = colTop[i].mutable_gpu_data;
 
                 m_cuda.copy(nCount, hBottomData, hTopData);
             }

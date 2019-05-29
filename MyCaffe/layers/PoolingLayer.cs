@@ -261,7 +261,7 @@ namespace MyCaffe.layers
             //---------------------------------------------
 
             // Setup the convert to half flags used by the Layer just before calling forward and backward.
-            m_bUseHalfSize = m_param.pooling_param.cudnn_use_halfsize;
+            m_bUseHalfSize = m_param.use_halfsize;
 
             if (m_param.pooling_param.pool == PoolingParameter.PoolingMethod.MAX)
                 m_method = PoolingMethod.MAX;

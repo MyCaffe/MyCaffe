@@ -64,6 +64,9 @@ namespace MyCaffe.layers_beta
             m_dfAlpha = m_param.gram_param.alpha;
             m_dfBeta = m_param.gram_param.beta;
 
+            // Setup the convert to half flags used by the Layer just before calling forward and backward.
+            m_bUseHalfSize = m_param.use_halfsize;
+
             m_log.CHECK_GT(m_dfAlpha, 0, "The 'alpha' parameter must be greater than zero.");
             m_log.CHECK_GT(m_dfBeta, 0, "The 'beta' parameter must be greater than zero.");
         }
@@ -90,7 +93,7 @@ namespace MyCaffe.layers_beta
             List<int> rgTopShape = Utility.Clone<int>(colBottom[0].shape(), nAxis + 1);
             rgTopShape[nAxis] = m_nN;
 
-            colTop[0].Reshape(rgTopShape);
+            colTop[0].Reshape(rgTopShape, m_bUseHalfSize);
         }
 
         /// <summary>

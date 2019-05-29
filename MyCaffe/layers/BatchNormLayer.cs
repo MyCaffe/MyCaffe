@@ -381,7 +381,7 @@ namespace MyCaffe.layers
             //-----------------------------------
 
             // Setup the convert to half flags used by the Layer just before calling forward and backward.
-            m_bUseHalfSize = m_param.batch_norm_param.cudnn_use_halfsize;
+            m_bUseHalfSize = m_param.use_halfsize;
 
             int nChannels = colBottom[0].channels;
             List<int> rgShape = new List<int>() { 1, nChannels, 1, 1 };

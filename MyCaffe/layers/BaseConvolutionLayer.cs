@@ -477,7 +477,7 @@ namespace MyCaffe.layers
 
             // Setup the convert to half flags used by the Layer just before calling forward and backward.
             if (p.useCudnn(m_nNumSpatialAxes))
-                m_bUseHalfSize = p.cudnn_use_halfsize;
+                m_bUseHalfSize = m_param.use_halfsize;
 
             if (m_colBlobs.Count > 0)
             {

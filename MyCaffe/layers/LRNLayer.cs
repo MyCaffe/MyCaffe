@@ -291,7 +291,7 @@ namespace MyCaffe.layers
                 return;
 
             // Setup the convert to half flags used by the Layer just before calling forward and backward.
-            m_bUseHalfSize = m_param.lrn_param.cudnn_use_halfsize;
+            m_bUseHalfSize = m_param.use_halfsize;
 
             m_hCuDnn = m_cuda.CreateCuDNN();
             m_hNormDesc = m_cuda.CreateLRNDesc();
