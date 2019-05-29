@@ -4413,6 +4413,8 @@ namespace MyCaffe.common
         /// <param name="nSrcOffset">Optionally specifies the offset into the source data where the copying starts.</param>
         /// <param name="nDstOffset">Optionally specifies the offset into the destination data where the copying starts.</param>
         /// <param name="hStream">Optionally, specifies a handle to a stream to use for the operation.</param>
+        /// <param name="bSrcHalfSizeOverride">Optionally, specifies and override for the half size state of the source (default = null, which is ignored).</param>
+        /// <param name="bDstHalfSizeOverride">Optionally, specifies and override for the half size state of the destination (default = null, which is ignored).</param>
         public void copy(int nCount, long hSrc, long hDst, int nSrcOffset = 0, int nDstOffset = 0, long hStream = -1, bool? bSrcHalfSizeOverride = null, bool? bDstHalfSizeOverride = null)
         {
             int nSrcHalfSizeOverride = -1;
