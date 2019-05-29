@@ -648,6 +648,7 @@ namespace MyCaffe.app
             runTestImageToolStripMenuItem.Enabled = false;
             abortToolStripMenuItem.Enabled = true;
             m_evtCancel.Reset();
+
             m_Cmd = COMMAND.DESTROY;
             m_evtCommandRead.Set();
         }
@@ -663,6 +664,7 @@ namespace MyCaffe.app
             abortToolStripMenuItem.Enabled = true;
             m_evtCancel.Reset();
             m_evtCaffeCancel.Reset();
+
             m_Cmd = COMMAND.TRAIN;
             m_evtCommandRead.Set();
             cancelToolStripMenuItem.Enabled = true;
@@ -679,6 +681,7 @@ namespace MyCaffe.app
             abortToolStripMenuItem.Enabled = true;
             m_evtCancel.Reset();
             m_evtCaffeCancel.Reset();
+
             m_Cmd = COMMAND.TEST;
             m_evtCommandRead.Set();
             cancelToolStripMenuItem.Enabled = true;
@@ -720,6 +723,7 @@ namespace MyCaffe.app
             deviceInformationToolStripMenuItem.Enabled = false;
             abortToolStripMenuItem.Enabled = true;
             m_evtCancel.Reset();
+
             m_Cmd = COMMAND.DEVICEINFO;
             m_evtCommandRead.Set();
         }
@@ -761,6 +765,7 @@ namespace MyCaffe.app
                                 SettingsCaffe settings = new SettingsCaffe();
                                 settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
                                 settings.EnableRandomInputSelection = true;
+                                settings.GpuIds = getGpu().ToString();
 
                                 caffe = new MyCaffeControl<float>(settings, log, m_evtCaffeCancel);
 
@@ -792,9 +797,9 @@ namespace MyCaffe.app
                                 break;
 
                             case COMMAND.DEVICEINFO:
-                                string str1 = caffe.GetDeviceName(0);
+                                string str1 = caffe.GetDeviceName(getGpu());
                                 str1 += Environment.NewLine;
-                                str1 += caffe.Cuda.GetDeviceInfo(0, true);
+                                str1 += caffe.Cuda.GetDeviceInfo(getGpu(), true);
                                 bw.ReportProgress(0, new ProgressInfo(0, 0, str1, null, true));
                                 break;
 
