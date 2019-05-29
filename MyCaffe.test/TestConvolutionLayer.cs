@@ -985,7 +985,7 @@ namespace MyCaffe.test
             p.convolution_param.kernel_size.Add(3);
             p.convolution_param.stride.Add(2);
             p.convolution_param.num_output = 4;
-            p.convolution_param.cudnn_use_halfsize = m_bHalf;
+            p.use_halfsize = m_bHalf;
             p.convolution_param.weight_filler = new FillerParameter("gaussian");
             p.convolution_param.bias_filler = new FillerParameter("constant");
             p.convolution_param.bias_filler.value = 0.1;
@@ -1238,7 +1238,7 @@ namespace MyCaffe.test
             p.convolution_param.kernel_size.Add(3);
             p.convolution_param.stride.Add(2);
             p.convolution_param.num_output = 2;
-            p.convolution_param.cudnn_use_halfsize = m_bHalf;
+            p.use_halfsize = m_bHalf;
             p.convolution_param.weight_filler = new FillerParameter("gaussian");
             p.convolution_param.bias_filler = new FillerParameter("gaussian");
             ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
@@ -1282,7 +1282,7 @@ namespace MyCaffe.test
             p.convolution_param.stride.Add(2);
             p.convolution_param.num_output = 3;
             p.convolution_param.group = 3;
-            p.convolution_param.cudnn_use_halfsize = m_bHalf;
+            p.use_halfsize = m_bHalf;
             p.convolution_param.weight_filler = new FillerParameter("gaussian");
             p.convolution_param.bias_filler = new FillerParameter("gaussian");
             ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
