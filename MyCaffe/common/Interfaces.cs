@@ -15,6 +15,19 @@ using System.Threading.Tasks;
 namespace MyCaffe.common
 {
     /// <summary>
+    /// Delegate used to set the OnSetworkspace event.
+    /// </summary>
+    /// <param name="sender">Specifies the sender.</param>
+    /// <param name="e">Specifies the arguments.</param>
+    public delegate void onSetWorkspace(object sender, WorkspaceArgs e);
+    /// <summary>
+    /// Delegate used to set the OnGetworkspace event.
+    /// </summary>
+    /// <param name="sender">Specifies the sender.</param>
+    /// <param name="e">Specifies the arguments.</param>
+    public delegate void onGetWorkspace(object sender, WorkspaceArgs e);
+
+    /// <summary>
     /// Defines the training stepping method (if any).
     /// </summary>
     [Serializable]
