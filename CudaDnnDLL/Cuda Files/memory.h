@@ -381,7 +381,7 @@ inline long Memory<T>::convertBaseType2Half(size_t lCount, T* pSrc, size_t* plSi
 
 		for (int i = 0; i < lCount; i++)
 		{
-			pData[i] = __float2half(pSrc[i]);
+			pData[i] = __float2half((float)pSrc[i]);
 		}
 
 		*ppDst = pData;

@@ -684,6 +684,58 @@ long Math<float>::gemm(bool bTransA, bool bTransB, int m, int n, int k, float fA
 }
 
 
+template <>
+long Math<double>::gemm(bool bTransA, bool bTransB, int m, int n, int k, double dfAlpha, __half* a, __half *b, double dfBeta, __half* c)
+{
+	LONG lErr;
+
+	if (m_cublas == NULL)
+		return ERROR_CUBLAS_NULL;
+
+	// Note that cublas follows fortran order.
+	int lda = (!bTransA) ? k : m;
+	int ldb = (!bTransB) ? n : k;
+	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
+	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
+
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	float fAlpha = (float)dfAlpha;
+	float fBeta = (float)dfBeta;
+
+	if (lErr = cublasGemmEx(m_cublas, cuTransB, cuTransA, n, m, k, &fAlpha, b, CUDA_R_16F, ldb, a, CUDA_R_16F, lda, &fBeta, c, CUDA_R_16F, n, CUDA_R_32F, CUBLAS_GEMM_DEFAULT))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
+}
+
+template <>
+long Math<float>::gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, __half* a, __half *b, float fBeta, __half* c)
+{
+	LONG lErr;
+
+	if (m_cublas == NULL)
+		return ERROR_CUBLAS_NULL;
+
+	// Note that cublas follows fortran order.
+	int lda = (!bTransA) ? k : m;
+	int ldb = (!bTransB) ? n : k;
+	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
+	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
+
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
+
+	if (lErr = cublasGemmEx(m_cublas, cuTransB, cuTransA, n, m, k, &fAlpha, b, CUDA_R_16F, ldb, a, CUDA_R_16F, lda, &fBeta, c, CUDA_R_16F, n, CUDA_R_32F, CUBLAS_GEMM_DEFAULT))
+		return lErr;
+
+	return cudaStreamSynchronize(stream);
+}
+
+
 template <> 
 long Math<double>::gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC, int nAOff, int nBOff, int nCOff)
 {
@@ -704,20 +756,43 @@ long Math<double>::gemm(bool bTransA, bool bTransB, int m, int n, int k, double 
 	if (lErr = m_pMemCol->GetData(hC, &pC))
 		return lErr;
 
-	double* a = (double*)pA->Data();
-	double* b = (double*)pB->Data();
-	double* c = (double*)pC->Data();
+	if (pA->IsHalf() && pB->IsHalf() && pC->IsHalf())
+	{
+		__half* a = (__half*)pA->Data();
+		__half* b = (__half*)pB->Data();
+		__half* c = (__half*)pC->Data();
 
-	if (nAOff > 0)
-		a += nAOff;
+		if (nAOff > 0)
+			a += nAOff;
 
-	if (nBOff > 0)
-		b += nBOff;
+		if (nBOff > 0)
+			b += nBOff;
 
-	if (nCOff > 0)
-		c += nCOff;
+		if (nCOff > 0)
+			c += nCOff;
 
-	return gemm(bTransA, bTransB, m, n, k, fAlpha, a, b, fBeta, c);
+		return gemm(bTransA, bTransB, m, n, k, fAlpha, a, b, fBeta, c);
+	}
+	else
+	{
+		if (pA->IsHalf() || pB->IsHalf() || pC->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		double* a = (double*)pA->Data();
+		double* b = (double*)pB->Data();
+		double* c = (double*)pC->Data();
+
+		if (nAOff > 0)
+			a += nAOff;
+
+		if (nBOff > 0)
+			b += nBOff;
+
+		if (nCOff > 0)
+			c += nCOff;
+
+		return gemm(bTransA, bTransB, m, n, k, fAlpha, a, b, fBeta, c);
+	}
 }
 
 template <> 
@@ -740,20 +815,43 @@ long Math<float>::gemm(bool bTransA, bool bTransB, int m, int n, int k, float fA
 	if (lErr = m_pMemCol->GetData(hC, &pC))
 		return lErr;
 
-	float* a = (float*)pA->Data();
-	float* b = (float*)pB->Data();
-	float* c = (float*)pC->Data();
+	if (pA->IsHalf() && pB->IsHalf() && pC->IsHalf())
+	{
+		__half* a = (__half*)pA->Data();
+		__half* b = (__half*)pB->Data();
+		__half* c = (__half*)pC->Data();
 
-	if (nAOff > 0)
-		a += nAOff;
+		if (nAOff > 0)
+			a += nAOff;
 
-	if (nBOff > 0)
-		b += nBOff;
+		if (nBOff > 0)
+			b += nBOff;
 
-	if (nCOff > 0)
-		c += nCOff;
+		if (nCOff > 0)
+			c += nCOff;
 
-	return gemm(bTransA, bTransB, m, n, k, fAlpha, a, b, fBeta, c);
+		return gemm(bTransA, bTransB, m, n, k, fAlpha, a, b, fBeta, c);
+	}
+	else
+	{
+		if (pA->IsHalf() || pB->IsHalf() || pC->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		float* a = (float*)pA->Data();
+		float* b = (float*)pB->Data();
+		float* c = (float*)pC->Data();
+
+		if (nAOff > 0)
+			a += nAOff;
+
+		if (nBOff > 0)
+			b += nBOff;
+
+		if (nCOff > 0)
+			c += nCOff;
+
+		return gemm(bTransA, bTransB, m, n, k, fAlpha, a, b, fBeta, c);
+	}
 }
 
 
@@ -777,10 +875,6 @@ long Math<double>::gemm2(bool bTransA, bool bTransB, int m, int n, int k, double
 	if (lErr = m_pMemCol->GetData(hC, &pC))
 		return lErr;
 
-	double* a = (double*)pA->Data();
-	double* b = (double*)pB->Data();
-	double* c = (double*)pC->Data();
-
 	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
 	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
 
@@ -788,8 +882,27 @@ long Math<double>::gemm2(bool bTransA, bool bTransB, int m, int n, int k, double
 	if (lErr = cublasGetStream(m_cublas, &stream))
 		return lErr;
 
-	if (lErr = cublasDgemm(m_cublas, cuTransA, cuTransB, m, n, k, &fAlpha, a, lda, b, ldb, &fBeta, c, ldc))
-		return lErr;
+	if (pA->IsHalf() && pB->IsHalf() && pC->IsHalf())
+	{
+		__half* a = (__half*)pA->Data();
+		__half* b = (__half*)pB->Data();
+		__half* c = (__half*)pC->Data();
+
+		if (lErr = cublasGemmEx(m_cublas, cuTransA, cuTransB, m, n, k, &fAlpha, a, CUDA_R_16F, lda, b, CUDA_R_16F, ldb, &fBeta, c, CUDA_R_16F, ldc, CUDA_R_32F, CUBLAS_GEMM_DEFAULT))
+			return lErr;
+	}
+	else
+	{
+		if (pA->IsHalf() || pB->IsHalf() || pC->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		double* a = (double*)pA->Data();
+		double* b = (double*)pB->Data();
+		double* c = (double*)pC->Data();
+
+		if (lErr = cublasDgemm(m_cublas, cuTransA, cuTransB, m, n, k, &fAlpha, a, lda, b, ldb, &fBeta, c, ldc))
+			return lErr;
+	}
 
 	return cudaStreamSynchronize(stream);
 }
@@ -814,10 +927,6 @@ long Math<float>::gemm2(bool bTransA, bool bTransB, int m, int n, int k, float f
 	if (lErr = m_pMemCol->GetData(hC, &pC))
 		return lErr;
 
-	float* a = (float*)pA->Data();
-	float* b = (float*)pB->Data();
-	float* c = (float*)pC->Data();
-
 	cublasOperation_t cuTransA = (!bTransA) ? CUBLAS_OP_N : CUBLAS_OP_T;
 	cublasOperation_t cuTransB = (!bTransB) ? CUBLAS_OP_N : CUBLAS_OP_T;
 
@@ -825,8 +934,27 @@ long Math<float>::gemm2(bool bTransA, bool bTransB, int m, int n, int k, float f
 	if (lErr = cublasGetStream(m_cublas, &stream))
 		return lErr;
 
-	if (lErr = cublasSgemm(m_cublas, cuTransA, cuTransB, m, n, k, &fAlpha, a, lda, b, ldb, &fBeta, c, ldc))
-		return lErr;
+	if (pA->IsHalf() && pB->IsHalf() && pC->IsHalf())
+	{
+		__half* a = (__half*)pA->Data();
+		__half* b = (__half*)pB->Data();
+		__half* c = (__half*)pC->Data();
+
+		if (lErr = cublasGemmEx(m_cublas, cuTransA, cuTransB, m, n, k, &fAlpha, a, CUDA_R_16F, lda, b, CUDA_R_16F, ldb, &fBeta, c, CUDA_R_16F, ldc, CUDA_R_32F, CUBLAS_GEMM_DEFAULT))
+			return lErr;
+	}
+	else
+	{
+		if (pA->IsHalf() || pB->IsHalf() || pC->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		float* a = (float*)pA->Data();
+		float* b = (float*)pB->Data();
+		float* c = (float*)pC->Data();
+
+		if (lErr = cublasSgemm(m_cublas, cuTransA, cuTransB, m, n, k, &fAlpha, a, lda, b, ldb, &fBeta, c, ldc))
+			return lErr;
+	}
 
 	return cudaStreamSynchronize(stream);
 }
@@ -1075,14 +1203,42 @@ long Math<double>::axpby(int n, double fAlpha, long hX, double fBeta, long hY)
 	if (lErr = cublasGetStream(m_cublas, &stream))
 		return lErr;
 
-	if (lErr = cublasDscal(m_cublas, n, &fBeta, (double*)pY->Data(), 1))
-		return lErr;
+	if (pY->IsHalf())
+	{
+		float fBeta1 = (float)fBeta;
+		__half* x = (__half*)pX->Data();
+
+		if (lErr = cublasScalEx(m_cublas, n, &fBeta1, CUDA_R_32F, x, CUDA_R_16F, 1, CUDA_R_32F))
+			return lErr;
+	}
+	else
+	{
+		if (lErr = cublasDscal(m_cublas, n, &fBeta, (double*)pY->Data(), 1))
+			return lErr;
+	}
 
 	if (lErr = cudaStreamSynchronize(stream))
 		return lErr;
 
-	if (lErr = cublasDaxpy(m_cublas, n, &fAlpha, (double*)pX->Data(), 1, (double*)pY->Data(), 1))
-		return lErr;
+	if (pX->IsHalf() && pY->IsHalf())
+	{
+		__half* x = (__half*)pX->Data();
+		__half* y = (__half*)pY->Data();
+
+		if (lErr = cublasAxpyEx(m_cublas, n, &fAlpha, CUDA_R_32F, x, CUDA_R_16F, 1, y, CUDA_R_16F, 1, CUDA_R_32F))
+			return lErr;
+	}
+	else
+	{
+		if (pX->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		double* x = (double*)pX->Data();
+		double* y = (double*)pY->Data();
+
+		if (lErr = cublasDaxpy(m_cublas, n, &fAlpha, x, 1, y, 1))
+			return lErr;
+	}
 
 	return cudaStreamSynchronize(stream);
 }
@@ -1107,14 +1263,41 @@ long Math<float>::axpby(int n, float fAlpha, long hX, float fBeta, long hY)
 	if (lErr = cublasGetStream(m_cublas, &stream))
 		return lErr;
 
-	if (lErr = cublasSscal(m_cublas, n, &fBeta, (float*)pY->Data(), 1))
-		return lErr;
+	if (pY->IsHalf())
+	{
+		__half* x = (__half*)pX->Data();
+
+		if (lErr = cublasScalEx(m_cublas, n, &fBeta, CUDA_R_32F, x, CUDA_R_16F, 1, CUDA_R_32F))
+			return lErr;
+	}
+	else
+	{
+		if (lErr = cublasSscal(m_cublas, n, &fBeta, (float*)pY->Data(), 1))
+			return lErr;
+	}
 
 	if (lErr = cudaStreamSynchronize(stream))
 		return lErr;
 
-	if (lErr = cublasSaxpy(m_cublas, n, &fAlpha, (float*)pX->Data(), 1, (float*)pY->Data(), 1))
-		return lErr;
+	if (pX->IsHalf() && pY->IsHalf())
+	{
+		__half* x = (__half*)pX->Data();
+		__half* y = (__half*)pY->Data();
+
+		if (lErr = cublasAxpyEx(m_cublas, n, &fAlpha, CUDA_R_32F, x, CUDA_R_16F, 1, y, CUDA_R_16F, 1, CUDA_R_32F))
+			return lErr;
+	}
+	else
+	{
+		if (pX->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		float* x = (float*)pX->Data();
+		float* y = (float*)pY->Data();
+
+		if (lErr = cublasSaxpy(m_cublas, n, &fAlpha, x, 1, y, 1))
+			return lErr;
+	}
 
 	return cudaStreamSynchronize(stream);
 }
@@ -1145,11 +1328,29 @@ long Math<double>::scal(int n, double fAlpha, long hX, int nXOff, long hStream)
 	if (lErr = m_pMemCol->GetData(hX, &pX))
 		return lErr;
 
-	double* x = (double*)pX->Data();
-	if (nXOff > 0)
-		x += nXOff;
+	cudaStream_t stream;
+	if (lErr = cublasGetStream(m_cublas, &stream))
+		return lErr;
 
-	lErr = cublasDscal(m_cublas, n, &fAlpha, x, 1);
+	if (pX->IsHalf())
+	{
+		float fAlpha1 = (float)fAlpha;
+		__half* x = (__half*)pX->Data();
+		if (nXOff > 0)
+			x += nXOff;
+
+		lErr = cublasScalEx(m_cublas, n, &fAlpha1, CUDA_R_32F, x, CUDA_R_16F, 1, CUDA_R_32F);
+	}
+	else
+	{
+		double* x = (double*)pX->Data();
+		if (nXOff > 0)
+			x += nXOff;
+
+		lErr = cublasDscal(m_cublas, n, &fAlpha, x, 1);
+	}
+
+	cudaStreamSynchronize(stream);
 
 	if (initial_stream != NULL)
 		cublasSetStream(m_cublas, initial_stream);
@@ -1182,15 +1383,26 @@ long Math<float>::scal(int n, float fAlpha, long hX, int nXOff, long hStream)
 	if (lErr = m_pMemCol->GetData(hX, &pX))
 		return lErr;
 
-	float* x = (float*)pX->Data();
-	if (nXOff > 0)
-		x += nXOff;
-
 	cudaStream_t stream;
 	if (lErr = cublasGetStream(m_cublas, &stream))
 		return lErr;
 
-	lErr = cublasSscal(m_cublas, n, &fAlpha, x, 1);
+	if (pX->IsHalf())
+	{
+		__half* x = (__half*)pX->Data();
+		if (nXOff > 0)
+			x += nXOff;
+
+		lErr = cublasScalEx(m_cublas, n, &fAlpha, CUDA_R_32F, x, CUDA_R_16F, 1, CUDA_R_32F);
+	}
+	else
+	{
+		float* x = (float*)pX->Data();
+		if (nXOff > 0)
+			x += nXOff;
+
+		lErr = cublasSscal(m_cublas, n, &fAlpha, x, 1);
+	}
 
 	cudaStreamSynchronize(stream);
 
@@ -1502,9 +1714,20 @@ __global__ void add_scalar_kernel(const int n, const T alpha, T* y)
 {
 	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
 	{
-		y[i] += alpha;
+		y[i] = y[i] + alpha;
 	}
 }
+
+__global__ void add_scalar_kernel_half(const int n, __half alpha, __half* y)
+{
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		y[i] = y[i] + alpha;
+	}
+#endif
+}
+
 
 template <>
 long Math<double>::add_scalar(int n, double fAlpha, long hY, int nYOff)
@@ -1515,11 +1738,26 @@ long Math<double>::add_scalar(int n, double fAlpha, long hY, int nYOff)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	double* y = (double*)pY->Data();
-	if (nYOff > 0)
-		y += nYOff;
+	if (pY->IsHalf())
+	{
+#if (__SM__ < 530)
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+#endif
+		__half fAlpha1 = __float2half((float)fAlpha);
+		__half* y = (__half*)pY->Data();
+		if (nYOff > 0)
+			y += nYOff;
 
-	add_scalar_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, y);
+		add_scalar_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha1, y);
+	}
+	else
+	{
+		double* y = (double*)pY->Data();
+		if (nYOff > 0)
+			y += nYOff;
+
+		add_scalar_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, y);
+	}
 
 	return cudaStreamSynchronize(0);
 }
@@ -1533,11 +1771,27 @@ long Math<float>::add_scalar(int n, float fAlpha, long hY, int nYOff)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	float* y = (float*)pY->Data();
-	if (nYOff > 0)
-		y += nYOff;
 
-	add_scalar_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, y);
+	if (pY->IsHalf())
+	{
+#if (__SM__ < 530)
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+#endif
+		__half fAlpha1 = __float2half((float)fAlpha);
+		__half* y = (__half*)pY->Data();
+		if (nYOff > 0)
+			y += nYOff;
+
+		add_scalar_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha1, y);
+	}
+	else
+	{
+		float* y = (float*)pY->Data();
+		if (nYOff > 0)
+			y += nYOff;
+
+		add_scalar_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, y);
+	}
 
 	return cudaStreamSynchronize(0);
 }
@@ -1581,7 +1835,7 @@ long Math<double>::add(int n, long hA, long hB, long hY, double dfAlpha)
 
 	if (pA->IsHalf() && pB->IsHalf() && pY->IsHalf())
 	{
-#if __SM__ < 530
+#if (__SM__ < 530)
 		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
 #endif
 		__half alpha = __float2half((float)dfAlpha);
@@ -2259,6 +2513,17 @@ __global__ void sub_kernel(const int n, T* a, T* b, T* y)
 	}
 }
 
+template <typename T>
+__global__ void sub_kernel_half(const int n, __half* a, __half* b, __half* y)
+{
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		y[i] = a[i] - b[i];
+	}
+#endif
+}
+
 template <>
 long Math<double>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, int nYOff)
 {
@@ -2276,20 +2541,46 @@ long Math<double>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, i
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	double* a = (double*)pA->Data();
-	double* b = (double*)pB->Data();
-	double* y = (double*)pY->Data();
+	if (pA->IsHalf() && pB->IsHalf() && pY->IsHalf())
+	{
+#if (__SM__ < 530)
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+#endif
+		__half* a = (__half*)pA->Data();
+		__half* b = (__half*)pB->Data();
+		__half* y = (__half*)pY->Data();
 
-	if (nAOff > 0)
-		a += nAOff;
+		if (nAOff > 0)
+			a += nAOff;
 
-	if (nBOff > 0)
-		b += nBOff;
+		if (nBOff > 0)
+			b += nBOff;
 
-	if (nYOff > 0)
-		y += nYOff;
+		if (nYOff > 0)
+			y += nYOff;
 
-	sub_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+		sub_kernel_half<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>> (n, a, b, y);
+	}
+	else
+	{
+		if (pA->IsHalf() || pB->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		double* a = (double*)pA->Data();
+		double* b = (double*)pB->Data();
+		double* y = (double*)pY->Data();
+
+		if (nAOff > 0)
+			a += nAOff;
+
+		if (nBOff > 0)
+			b += nBOff;
+
+		if (nYOff > 0)
+			y += nYOff;
+
+		sub_kernel<double> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, a, b, y);
+	}
 
 	return cudaStreamSynchronize(0);
 }
@@ -2311,20 +2602,46 @@ long Math<float>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, in
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	float* a = (float*)pA->Data();
-	float* b = (float*)pB->Data();
-	float* y = (float*)pY->Data();
+	if (pA->IsHalf() && pB->IsHalf() && pY->IsHalf())
+	{
+#if (__SM__ < 530)
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+#endif
+		__half* a = (__half*)pA->Data();
+		__half* b = (__half*)pB->Data();
+		__half* y = (__half*)pY->Data();
 
-	if (nAOff > 0)
-		a += nAOff;
+		if (nAOff > 0)
+			a += nAOff;
 
-	if (nBOff > 0)
-		b += nBOff;
+		if (nBOff > 0)
+			b += nBOff;
 
-	if (nYOff > 0)
-		y += nYOff;
+		if (nYOff > 0)
+			y += nYOff;
 
-	sub_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+		sub_kernel_half<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+	}
+	else
+	{
+		if (pA->IsHalf() || pB->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		float* a = (float*)pA->Data();
+		float* b = (float*)pB->Data();
+		float* y = (float*)pY->Data();
+
+		if (nAOff > 0)
+			a += nAOff;
+
+		if (nBOff > 0)
+			b += nBOff;
+
+		if (nYOff > 0)
+			y += nYOff;
+
+		sub_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+	}
 
 	return cudaStreamSynchronize(0);
 }
@@ -2391,6 +2708,16 @@ __global__ void mul_scalar_kernel(const int n, const T alpha, T* y)
 	}
 }
 
+__global__ void mul_scalar_kernel_half(const int n, __half alpha, __half* y)
+{
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		y[i] = y[i] * alpha;
+	}
+#endif
+}
+
 template <>
 long Math<double>::mul_scalar(int n, double fAlpha, long hY, int nYOff)
 {
@@ -2400,11 +2727,26 @@ long Math<double>::mul_scalar(int n, double fAlpha, long hY, int nYOff)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	double* y = (double*)pY->Data();
-	if (nYOff > 0)
-		y += nYOff;
+	if (pY->IsHalf())
+	{
+#if (__SM__ < 530)
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+#endif
+		__half fAlpha1 = __float2half((float)fAlpha);
+		__half* y = (__half*)pY->Data();
+		if (nYOff > 0)
+			y += nYOff;
 
-	mul_scalar_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, y);
+		mul_scalar_kernel_half << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, fAlpha1, y);
+	}
+	else
+	{
+		double* y = (double*)pY->Data();
+		if (nYOff > 0)
+			y += nYOff;
+
+		mul_scalar_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, y);
+	}
 
 	return cudaStreamSynchronize(0);
 }
@@ -2418,11 +2760,27 @@ long Math<float>::mul_scalar(int n, float fAlpha, long hY, int nYOff)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	float* y = (float*)pY->Data();
-	if (nYOff > 0)
-		y += nYOff;
 
-	mul_scalar_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, y);
+	if (pY->IsHalf())
+	{
+#if (__SM__ < 530)
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+#endif
+		__half fAlpha1 = __float2half(fAlpha);
+		__half* y = (__half*)pY->Data();
+		if (nYOff > 0)
+			y += nYOff;
+
+		mul_scalar_kernel_half << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, fAlpha1, y);
+	}
+	else
+	{
+		float* y = (float*)pY->Data();
+		if (nYOff > 0)
+			y += nYOff;
+
+		mul_scalar_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, fAlpha, y);
+	}
 
 	return cudaStreamSynchronize(0);
 }
@@ -2435,6 +2793,16 @@ __global__ void mul_kernel(const int n, T* a, T* b, T* y)
 	{
 		y[i] = a[i] * b[i];
 	}
+}
+
+__global__ void mul_kernel_half(const int n, __half* a, __half* b, __half* y)
+{
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		y[i] = a[i] * b[i];
+	}
+#endif
 }
 
 template <>
@@ -2454,20 +2822,46 @@ long Math<double>::mul(int n, long hA, long hB, long hY, int nAOff, int nBOff, i
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	double* a = (double*)pA->Data();
-	double* b = (double*)pB->Data();
-	double* y = (double*)pY->Data();
+	if (pA->IsHalf() && pB->IsHalf() && pY->IsHalf())
+	{
+#if (__SM__ < 530)
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+#endif
+		__half* a = (__half*)pA->Data();
+		__half* b = (__half*)pB->Data();
+		__half* y = (__half*)pY->Data();
 
-	if (nAOff > 0)
-		a += nAOff;
+		if (nAOff > 0)
+			a += nAOff;
 
-	if (nBOff > 0)
-		b += nBOff;
+		if (nBOff > 0)
+			b += nBOff;
 
-	if (nYOff > 0)
-		y += nYOff;
+		if (nYOff > 0)
+			y += nYOff;
 
-	mul_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+		mul_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+	}
+	else
+	{
+		if (pA->IsHalf() || pB->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		double* a = (double*)pA->Data();
+		double* b = (double*)pB->Data();
+		double* y = (double*)pY->Data();
+
+		if (nAOff > 0)
+			a += nAOff;
+
+		if (nBOff > 0)
+			b += nBOff;
+
+		if (nYOff > 0)
+			y += nYOff;
+
+		mul_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+	}
 
 	return cudaStreamSynchronize(0);
 }
@@ -2489,20 +2883,46 @@ long Math<float>::mul(int n, long hA, long hB, long hY, int nAOff, int nBOff, in
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	float* a = (float*)pA->Data();
-	float* b = (float*)pB->Data();
-	float* y = (float*)pY->Data();
+	if (pA->IsHalf() && pB->IsHalf() && pY->IsHalf())
+	{
+#if (__SM__ < 530)
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+#endif
+		__half* a = (__half*)pA->Data();
+		__half* b = (__half*)pB->Data();
+		__half* y = (__half*)pY->Data();
 
-	if (nAOff > 0)
-		a += nAOff;
+		if (nAOff > 0)
+			a += nAOff;
 
-	if (nBOff > 0)
-		b += nBOff;
+		if (nBOff > 0)
+			b += nBOff;
 
-	if (nYOff > 0)
-		y += nYOff;
+		if (nYOff > 0)
+			y += nYOff;
 
-	mul_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+		mul_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+	}
+	else
+	{
+		if (pA->IsHalf() || pB->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		float* a = (float*)pA->Data();
+		float* b = (float*)pB->Data();
+		float* y = (float*)pY->Data();
+
+		if (nAOff > 0)
+			a += nAOff;
+
+		if (nBOff > 0)
+			b += nBOff;
+
+		if (nYOff > 0)
+			y += nYOff;
+
+		mul_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+	}
 
 	return cudaStreamSynchronize(0);
 }
@@ -2515,6 +2935,16 @@ __global__ void div_kernel(const int n, T* a, T* b, T* y)
 	{
 		y[i] = a[i] / b[i];
 	}
+}
+
+__global__ void div_kernel_half(const int n, __half* a, __half* b, __half* y)
+{
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		y[i] = a[i] / b[i];
+	}
+#endif
 }
 
 template <>
@@ -2534,7 +2964,20 @@ long Math<double>::div(int n, long hA, long hB, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	div_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (double*)pA->Data(), (double*)pB->Data(), (double*)pY->Data());
+	if (pA->IsHalf() && pB->IsHalf() && pY->IsHalf())
+	{
+#if (__SM__ < 530)
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+#endif
+		div_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (__half*)pA->Data(), (__half*)pB->Data(), (__half*)pY->Data());
+	}
+	else
+	{
+		if (pA->IsHalf() || pB->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		div_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (double*)pA->Data(), (double*)pB->Data(), (double*)pY->Data());
+	}
 
 	return cudaStreamSynchronize(0);
 }
@@ -2556,7 +2999,20 @@ long Math<float>::div(int n, long hA, long hB, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	div_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (float*)pA->Data(), (float*)pB->Data(), (float*)pY->Data());
+	if (pA->IsHalf() && pB->IsHalf() && pY->IsHalf())
+	{
+#if (__SM__ < 530)
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+#endif
+		div_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (__half*)pA->Data(), (__half*)pB->Data(), (__half*)pY->Data());
+	}
+	else
+	{
+		if (pA->IsHalf() || pB->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		div_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (float*)pA->Data(), (float*)pB->Data(), (float*)pY->Data());
+	}
 
 	return cudaStreamSynchronize(0);
 }
@@ -2569,6 +3025,18 @@ __global__ void abs_kernel(const int n, T* a, T* y)
 	{
 		y[i] = abs(a[i]);
 	}
+}
+
+__global__ void abs_kernel_half(const int n, __half* a, __half* y)
+{
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		float fA = __half2float(a[i]);
+		fA = abs(fA);
+		y[i] = __float2half(fA);
+	}
+#endif
 }
 
 template <>
@@ -2584,7 +3052,20 @@ long Math<double>::abs(int n, long hA, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	abs_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (double*)pA->Data(), (double*)pY->Data());
+	if (pA->IsHalf() && pY->IsHalf())
+	{
+#if (__SM__ < 530)
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+#endif
+		abs_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (__half*)pA->Data(), (__half*)pY->Data());
+	}
+	else
+	{
+		if (pA->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		abs_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (double*)pA->Data(), (double*)pY->Data());
+	}
 
 	return cudaStreamSynchronize(0);
 }
@@ -2602,7 +3083,20 @@ long Math<float>::abs(int n, long hA, long hY)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	abs_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (float*)pA->Data(), (float*)pY->Data());
+	if (pA->IsHalf() && pY->IsHalf())
+	{
+#if (__SM__ < 530)
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+#endif
+		abs_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (__half*)pA->Data(), (__half*)pY->Data());
+	}
+	else
+	{
+		if (pA->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		abs_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (float*)pA->Data(), (float*)pY->Data());
+	}
 
 	return cudaStreamSynchronize(0);
 }
@@ -2777,6 +3271,16 @@ __global__ void sign_kernel(const int n, T* x, T* y)
 	}
 }
 
+__global__ void sign_kernel_half(const int n, __half* x, __half* y)
+{
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		y[i] = (__half(0) < x[i]) - (x[i] < __half(0));
+	}
+#endif
+}
+
 template <typename T>
 long Math<T>::sign(int n, long hX, long hY, int nXOff, int nYOff)
 {
@@ -2790,16 +3294,38 @@ long Math<T>::sign(int n, long hX, long hY, int nXOff, int nYOff)
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	T* x = (T*)pX->Data();
-	T* y = (T*)pY->Data();
+	if (pX->IsHalf() && pY->IsHalf())
+	{
+#if (__SM__ < 530)
+		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
+#endif
+		__half* x = (__half*)pX->Data();
+		__half* y = (__half*)pY->Data();
 
-	if (nXOff > 0)
-		x += nXOff;
+		if (nXOff > 0)
+			x += nXOff;
 
-	if (nYOff > 0)
-		y += nYOff;
+		if (nYOff > 0)
+			y += nYOff;
 
-	sign_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, y);
+		sign_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, y);
+	}
+	else
+	{
+		if (pX->IsHalf() || pY->IsHalf())
+			return ERROR_MEMORY_MIXED_HALF_TYPES;
+
+		T* x = (T*)pX->Data();
+		T* y = (T*)pY->Data();
+
+		if (nXOff > 0)
+			x += nXOff;
+
+		if (nYOff > 0)
+			y += nYOff;
+
+		sign_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, y);
+	}
 
 	return cudaStreamSynchronize(0);
 }
