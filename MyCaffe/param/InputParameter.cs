@@ -18,22 +18,10 @@ namespace MyCaffe.param
     public class InputParameter : LayerParameterBase
     {
         List<BlobShape> m_rgShape = new List<BlobShape>();
-        bool m_bUseHalfSize = false;
 
         /** @copydoc LayerParameterBase */
         public InputParameter()
         {
-        }
-
-        /// <summary>
-        /// When true and using the CUDNN engine, half sizes are used on the weights (FP16), otherwise when using the CAFFE engine
-        /// this setting is ignored.
-        /// </summary>
-        [Description("When true and using the CUDNN engine, half sizes (FP16) are used on the weights, otherwise when using the CAFFE engine, this setting is ignored.")]
-        public bool cudnn_use_halfsize
-        {
-            get { return m_bUseHalfSize; }
-            set { m_bUseHalfSize = value; }
         }
 
         /// <summary>
@@ -71,8 +59,6 @@ namespace MyCaffe.param
             {
                 m_rgShape.Add(b.Clone());
             }
-
-            m_bUseHalfSize = p.cudnn_use_halfsize;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -93,9 +79,6 @@ namespace MyCaffe.param
                 rgChildren.Add(b.ToProto("shape"));
             }
 
-            if (cudnn_use_halfsize)
-                rgChildren.Add("cudnn_use_halfsize", cudnn_use_halfsize.ToString());
-
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -115,9 +98,6 @@ namespace MyCaffe.param
                 BlobShape b = BlobShape.FromProto(rp1);
                 p.m_rgShape.Add(b);
             }
-
-            if ((strVal = rp.FindValue("cudnn_use_halfsize")) != null)
-                p.cudnn_use_halfsize = bool.Parse(strVal);
 
             return p;
         }

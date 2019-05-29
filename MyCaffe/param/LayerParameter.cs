@@ -23,6 +23,8 @@ namespace MyCaffe.param
         List<string> m_rgstrTop = new List<string>();
         // Used for rendering models only.
         bool m_bGroupStart = false;
+        // Use half sized memory
+        bool m_bUseHalfSize = false;
 
         // The train/test phase for computation.
         Phase m_phase;
@@ -1144,6 +1146,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Specifies whether or not to use half sized memory or not.
+        /// </summary>
+        public bool use_halfsize
+        {
+            get { return m_bUseHalfSize; }
+            set { m_bUseHalfSize = value; }
+        }
+
+        /// <summary>
         /// Set the layer type.
         /// </summary>
         /// <param name="type">Specifies the new layer type.</param>
@@ -1879,6 +1890,7 @@ namespace MyCaffe.param
             p.m_nSolverCount = m_nSolverCount;
             p.m_nSolverRank = m_nSolverRank;
             p.m_bGroupStart = m_bGroupStart;
+            p.m_bUseHalfSize = m_bUseHalfSize;
 
             return p;
         }
@@ -2169,6 +2181,9 @@ namespace MyCaffe.param
             if (freeze_learning)
                 rgChildren.Add("freeze_learning", freeze_learning.ToString());
 
+            if (use_halfsize)
+                rgChildren.Add("use_halfsize", use_halfsize.ToString());
+
             foreach (ParamSpec ps in parameters)
             {
                 rgChildren.Add(ps.ToProto("param"));
@@ -2304,6 +2319,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("freeze_learning")) != null)
                 p.freeze_learning = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("use_halfsize")) != null)
+                p.use_halfsize = bool.Parse(strVal);
 
             RawProtoCollection rgrp;
 
@@ -2829,8 +2847,9 @@ namespace MyCaffe.param
         /// <returns></returns>
         public override string ToString()
         {
-            string strOut = m_strName + " (" + m_type.ToString() + ")";
+            string strOut = ((use_halfsize) ? "HALF " : "FULL ");
 
+            strOut += m_strName + " (" + m_type.ToString() + ")";
             strOut += " btm = " + Utility.ToString(m_rgstrBottom);
             strOut += " top = " + Utility.ToString(m_rgstrTop);
 
