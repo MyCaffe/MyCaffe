@@ -321,7 +321,10 @@ namespace MyCaffe.trainers.rnn.simple
 
             if (m_runProperties != null)
             {
-                m_dfTemperature = m_runProperties.GetPropertyAsDouble("Temperature", 0);
+                m_dfTemperature = Math.Abs(m_runProperties.GetPropertyAsDouble("Temperature", 0));
+                if (m_dfTemperature > 1.0)
+                    m_dfTemperature = 1.0;
+
                 string strPhaseOnRun = m_runProperties.GetProperty("PhaseOnRun", false);
                 switch (strPhaseOnRun)
                 {
@@ -718,7 +721,7 @@ namespace MyCaffe.trainers.rnn.simple
                 // Re-order the data according to caffe input specification for LSTM layer.
                 for (int i = 0; i < m_nBatchSize; i++)
                 {
-                    int nCurrentCharIdx = m_random.Next(rgData.Length - m_nSequenceLength - 1);
+                    int nCurrentCharIdx = m_random.Next(rgData.Length - m_nSequenceLength - 2);
 
                     for (int j = 0; j < m_nSequenceLength; j++)
                     {
@@ -930,7 +933,7 @@ namespace MyCaffe.trainers.rnn.simple
                             blobOutput = m_blobOutput;
 
                         float[] rgResults = Utility.ConvertVecF<T>(blobOutput.update_cpu_data());
-                        float fPrediction = getLastPrediction(rgResults, m_rgVocabulary);
+                        float fPrediction = getLastPrediction(rgResults, m_rgVocabulary, 1);
 
                         //Add the new prediction and discard the oldest one
                         rgInput.Add((T)Convert.ChangeType(fPrediction, typeof(T)));
@@ -968,7 +971,7 @@ namespace MyCaffe.trainers.rnn.simple
             }
         }
 
-        private float getLastPrediction(float[] rgDataRaw, BucketCollection rgVocabulary, int nLookahead = 1)
+        private float getLastPrediction(float[] rgDataRaw, BucketCollection rgVocabulary, int nLookahead)
         {
             // Get the probabilities for the last character of the first sequence in the batch
             int nOffset = (m_nSequenceLength - nLookahead) * m_nBatchSize * m_nVocabSize;
