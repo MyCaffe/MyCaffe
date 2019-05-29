@@ -56,6 +56,13 @@ namespace MyCaffe.extras
         Net<T> m_netShare = null;
         bool m_bUsingSharedNet = false;
         int m_nLBFGSCorrections = 100;
+        bool m_bAllowHalfSize = false;
+        bool m_bAllowHalfSizeOnGram = true;
+        bool m_bAllowHalfSizeOnEvent = true;
+        bool m_bAllowHalfSizeOnLoss = true;
+        bool m_bAllowHalfSizeOnScalar = true;
+        long m_hWorkspaceData = 0;  
+        ulong m_lWorkspaceSize = 0;
 
         /// <summary>
         /// Specifies the event fired after producing intermediate output (e.g. when m_nIntermediateOutput > 0)
@@ -79,6 +86,8 @@ namespace MyCaffe.extras
         /// <param name="netShare">Optionally, specifies a net to share.</param>
         public NeuralStyleTransfer(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, string strModelType, string strModel, byte[] rgWeights, bool bCaffeModel, SolverParameter.SolverType solverType = SolverParameter.SolverType.LBFGS, double dfLearningRate = 1.5, int nLBFGSCorrections = 100, double dfDataScale = 1.0, Net<T> netShare = null)
         {
+            evtCancel.Reset();
+
             m_log = log;
             m_evtCancel = evtCancel;
             m_rgWeights = rgWeights;
@@ -171,6 +180,59 @@ namespace MyCaffe.extras
         /// </summary>
         public void Dispose()
         {
+            m_evtCancel.Set();
+
+            if (m_solver != null)
+            {
+                m_solver.Dispose();
+                m_solver = null;
+            }
+
+            if (m_hWorkspaceData != 0)
+            {
+                m_cuda.FreeMemory(m_hWorkspaceData);
+                m_hWorkspaceData = 0;
+                m_lWorkspaceSize = 0;
+            }
+        }
+
+        /// <summary>
+        /// Setup which layers are allowed to use half-sized memory when their convolution counterparts use it.
+        /// </summary>
+        /// <param name="bAllowHs">Allow half-size memory.</param>
+        /// <param name="bAllowOnGram">Allow half-size on the gram layers.</param>
+        /// <param name="bAllowOnEvent">Allow half-size on the event layers.</param>
+        /// <param name="bAllowOnLoss">Allow half-size on the loss layers.</param>
+        /// <param name="bAllowOnScalar">Allow half-size on the scalar layers.</param>
+        public void SetupHalfSize(bool bAllowHs, bool bAllowOnGram, bool bAllowOnEvent, bool bAllowOnLoss, bool bAllowOnScalar)
+        {
+            m_bAllowHalfSize = bAllowHs;
+            m_bAllowHalfSizeOnEvent = bAllowOnEvent;
+            m_bAllowHalfSizeOnGram = bAllowOnGram;
+            m_bAllowHalfSizeOnLoss = bAllowOnLoss;
+            m_bAllowHalfSizeOnScalar = bAllowOnScalar;
+
+            if (!bAllowHs || !m_bAllowHalfSizeOnGram)
+            {
+                List<string> rgstrHalfLayers = new List<string>();
+
+                foreach (LayerParameter layer1 in m_param.layer)
+                {
+                    if (layer1.use_halfsize)
+                    {
+                        if (layer1.name.Contains("gram"))
+                            layer1.use_halfsize = false;
+                        else
+                            rgstrHalfLayers.Add(layer1.name);
+                    }
+                }
+
+                if (!bAllowHs && rgstrHalfLayers.Count > 0)
+                {
+                    string strErr = "Half-sized memory not supported!  Disable half-size in the following layers: " + Utility.ToString<string>(rgstrHalfLayers);
+                    m_log.FAIL(strErr);                  
+                }
+            }
         }
 
         private void setupNetShare(Net<T> net, CudaDnn<T> cuda)
@@ -372,9 +434,22 @@ namespace MyCaffe.extras
 
             for (int i=0; i<lstStyle.Count; i++)
             {
+                bool bUseHalfSize = false;
                 LayerParameter layer = new LayerParameter(LayerParameter.LayerType.GRAM);
                 string strStyle = lstStyle[i].Key;
                 string strGram = lstGram[i].Key;
+
+                foreach (LayerParameter layer1 in p.layer)
+                {
+                    if (layer1.type == LayerParameter.LayerType.CONVOLUTION)
+                    {
+                        if (layer1.top.Contains(strStyle))
+                        {
+                            bUseHalfSize = layer1.use_halfsize;
+                            break;
+                        }
+                    }
+                }
 
                 layer.name = strGram;
 
@@ -383,6 +458,7 @@ namespace MyCaffe.extras
                 layer.gram_param.alpha = m_dfStyleDataScale1;
                 layer.gram_param.disable_scaling_on_gradient = true;
                 layer.gram_param.beta = m_dfStyleDataScale2;
+                layer.use_halfsize = (bUseHalfSize && m_bAllowHalfSizeOnGram);
 
                 p.layer.Add(layer);
             }
@@ -411,7 +487,7 @@ namespace MyCaffe.extras
             m_transformer = new DataTransformer<T>(m_log, m_transformationParam, Phase.TEST, 3, bmp.Height, bmp.Width);
 
             Blob<T> data = net.blob_by_name(m_strDataBlobName);
-            data.Reshape(rgDataShape);
+            data.Reshape(rgDataShape, data.HalfSize);
             data.mutable_cpu_data = m_transformer.Transform(ImageData.GetImageData(bmp, 3, false, -1));
         }
 
@@ -421,7 +497,7 @@ namespace MyCaffe.extras
             m_transformer = new DataTransformer<T>(m_log, m_transformationParam, Phase.TEST, 3, bmp.Height, bmp.Width);
 
             Blob<T> data = net.param_by_name("input1");
-            data.Reshape(rgDataShape);
+            data.Reshape(rgDataShape, data.HalfSize);
             data.mutable_cpu_data = m_transformer.Transform(ImageData.GetImageData(bmp, 3, false, -1));
         }
 
@@ -475,7 +551,9 @@ namespace MyCaffe.extras
 
                 m_log.WriteLine("Creating input network...");
                 m_log.Enable = false;
-                net = new Net<T>(m_cuda, m_log, m_param, m_evtCancel, null, Phase.TEST, null, m_netShare);
+                net = new Net<T>(m_cuda, m_log, m_param, m_evtCancel, null, Phase.TEST, null, m_netShare, net_OnGetWorkspace, net_OnSetWorkspace);
+                net.OnGetWorkspace += net_OnGetWorkspace;
+                net.OnSetWorkspace += net_OnSetWorkspace;
                 m_log.Enable = true;
 
                 if (m_rgWeights != null && !m_bUsingSharedNet)
@@ -521,6 +599,7 @@ namespace MyCaffe.extras
 
                     Blob<T> blob = net.blob_by_name(strName);
                     p.input_param.shape.Add(new BlobShape(blob.shape()));
+                    p.use_halfsize = blob.HalfSize;
 
                     net_param.layer.Add(p);
                 }
@@ -530,6 +609,7 @@ namespace MyCaffe.extras
                     string strName = kvContent.Key;
                     string strScale1 = "input_" + strName;
                     string strScale2 = strName;
+                    Blob<T> blobContent = colContentActivations[strName];
 
                     if (m_dfContentDataScale != 1.0)
                     {
@@ -538,6 +618,7 @@ namespace MyCaffe.extras
                         ps1.scalar_param.value = m_dfContentDataScale;
                         ps1.scalar_param.operation = ScalarParameter.ScalarOp.MUL;
                         ps1.scalar_param.passthrough_gradient = true;
+                        ps1.use_halfsize = (blobContent.HalfSize && m_bAllowHalfSizeOnScalar);
                         ps1.bottom.Add("input_" + strName);
                         ps1.top.Add(strScale1);
 
@@ -548,6 +629,7 @@ namespace MyCaffe.extras
                         ps2.scalar_param.value = m_dfContentDataScale;
                         ps2.scalar_param.operation = ScalarParameter.ScalarOp.MUL;
                         ps2.scalar_param.passthrough_gradient = true;
+                        ps2.use_halfsize = (blobContent.HalfSize && m_bAllowHalfSizeOnScalar);
                         ps2.bottom.Add(strName);
                         ps2.top.Add(strScale2);
 
@@ -558,6 +640,7 @@ namespace MyCaffe.extras
                     event_param.name = "event_" + strName;
                     event_param.bottom.Add(strScale2);
                     event_param.bottom.Add(strScale1);
+                    event_param.use_halfsize = (blobContent.HalfSize && m_bAllowHalfSizeOnEvent);
                     event_param.top.Add("event_" + strName);
 
                     net_param.layer.Add(event_param);
@@ -565,10 +648,9 @@ namespace MyCaffe.extras
                     LayerParameter p = new LayerParameter(LayerParameter.LayerType.EUCLIDEAN_LOSS);
                     p.name = "loss_" + strName;
 
-                    Blob<T> blobContent = colContentActivations[strName];
                     double dfScale = get_content_scale(blobContent);
                     p.loss_weight.Add(kvContent.Value * dfScale);
-
+                    p.use_halfsize = (blobContent.HalfSize && m_bAllowHalfSizeOnLoss);
                     p.bottom.Add("event_" + strName);
                     p.bottom.Add(strScale1);
                     p.top.Add("loss_" + strName);
@@ -579,9 +661,11 @@ namespace MyCaffe.extras
                 foreach (KeyValuePair<string, double> kvGram in m_rgLayers["gram"].ToList())
                 {
                     string strGramName = kvGram.Key;
+                    Blob<T> blobGram = colGramActivations[strGramName];
 
                     LayerParameter event_param = new LayerParameter(LayerParameter.LayerType.EVENT);
                     event_param.name = "event_" + strGramName;
+                    event_param.use_halfsize = (blobGram.HalfSize && m_bAllowHalfSizeOnEvent);
                     event_param.bottom.Add(strGramName);
                     event_param.bottom.Add("input_" + strGramName);
                     event_param.top.Add("event_" + strGramName);
@@ -590,8 +674,8 @@ namespace MyCaffe.extras
 
                     LayerParameter p = new LayerParameter(LayerParameter.LayerType.EUCLIDEAN_LOSS);
                     p.name = "loss_" + strGramName;
+                    p.use_halfsize = (blobGram.HalfSize && m_bAllowHalfSizeOnLoss);
 
-                    Blob<T> blobGram = colGramActivations[strGramName];
                     double dfScale = get_style_scale(blobGram);
                     p.loss_weight.Add(kvGram.Value * dfScale);
 
@@ -676,9 +760,9 @@ namespace MyCaffe.extras
                 m_log.Enable = false;
 
                 if (m_solverType == SolverParameter.SolverType.LBFGS)
-                    solver = new LBFGSSolver<T>(m_cuda, m_log, solver_param, m_evtCancel, null, null, null, m_persist, 1, 0, m_netShare);
+                    solver = new LBFGSSolver<T>(m_cuda, m_log, solver_param, m_evtCancel, null, null, null, m_persist, 1, 0, m_netShare, net_OnGetWorkspace, net_OnSetWorkspace);
                 else
-                    solver = Solver<T>.Create(m_cuda, m_log, solver_param, m_evtCancel, null, null, null, m_persist, 1, 0, m_netShare);
+                    solver = Solver<T>.Create(m_cuda, m_log, solver_param, m_evtCancel, null, null, null, m_persist, 1, 0, m_netShare, net_OnGetWorkspace, net_OnSetWorkspace);
 
                 m_log.Enable = true;
                 solver.OnSnapshot += Solver_OnSnapshot;
@@ -798,6 +882,27 @@ namespace MyCaffe.extras
             }
         }
 
+        private void net_OnSetWorkspace(object sender, WorkspaceArgs e)
+        {
+            if (e.Size < m_lWorkspaceSize)
+                return;
+
+            m_lWorkspaceSize = e.Size;
+            m_cuda.DisableGhostMemory();
+
+            if (m_hWorkspaceData != 0)
+                m_cuda.FreeMemory(m_hWorkspaceData);
+
+            m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSize);
+            m_cuda.ResetGhostMemory();
+        }
+
+        private void net_OnGetWorkspace(object sender, WorkspaceArgs e)
+        {
+            e.Data = m_hWorkspaceData;
+            e.Size = m_lWorkspaceSize;
+        }
+
         /// <summary>
         /// Process the next partial part of the solution.  This function is only valid after calling Process with bEnablePartialSolution = <i>true</i>.
         /// </summary>
@@ -873,15 +978,15 @@ namespace MyCaffe.extras
 
             if (double.IsNaN(e.Loss))
             {
-                m_log.WriteError(new Exception("Loss = NAN!"));
                 m_evtCancel.Set();
+                m_log.FAIL("Loss = NAN!");
                 return;
             }
 
             if (double.IsInfinity(e.Loss))
             {
-                m_log.WriteError(new Exception("Loss = Infinity!"));
                 m_evtCancel.Set();
+                m_log.FAIL("Loss = Infinity!");
                 return;
             }
         }
@@ -902,8 +1007,13 @@ namespace MyCaffe.extras
         /// <param name="rgGpuID">Specifies the GPUIDs on which to run the Neural Style.</param>
         /// <param name="nLBFGSCorrections">Specifies the LBFGS corrections to use, only applies when using the LBFGS Solver.</param>
         /// <param name="dfDataScale">Specifies the data scale (default = 1.0).</param>
+        /// <param name="bAllowHs">Specivies to allow half sized memory.</param>
+        /// <param name="bAllowHsGram">Specifies to allow half sized memory on gram layers.</param>
+        /// <param name="bAllowHsEvent">Specifies to allow half sized memory on event layers.</param>
+        /// <param name="bAllowHsScalar">Specifies to allow half sized memory on scalar layers.</param>
+        /// <param name="bAllowHsLoss">Specifies to allow half sized memory on loss layers.</param>
         /// <returns>The configuration string is returned.</returns>
-        public static string CreateConfigurationString(string strSolver, double dfLearningRate, int nMaxImageSize, int nIterations, int nIntermediateIterations, Dictionary<string, Tuple<double, double>> rgWts, List<int> rgGpuID, int nLBFGSCorrections, double dfDataScale)
+        public static string CreateConfigurationString(string strSolver, double dfLearningRate, int nMaxImageSize, int nIterations, int nIntermediateIterations, Dictionary<string, Tuple<double, double>> rgWts, List<int> rgGpuID, int nLBFGSCorrections, double dfDataScale, bool bAllowHs, bool bAllowHsGram, bool bAllowHsEvent, bool bAllowHsScalar, bool bAllowHsLoss)
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
@@ -935,6 +1045,11 @@ namespace MyCaffe.extras
             rgChildren.Add(gpus);
             rgChildren.Add("lbfgs_corrections", nLBFGSCorrections);
             rgChildren.Add("data_scale", dfDataScale);
+            rgChildren.Add("allow_hs", bAllowHs);
+            rgChildren.Add("allow_hs_gram", bAllowHsGram);
+            rgChildren.Add("allow_hs_event", bAllowHsEvent);
+            rgChildren.Add("allow_hs_scalar", bAllowHsScalar);
+            rgChildren.Add("allow_hs_loss", bAllowHsLoss);
 
             RawProto proto = new RawProto("root", "", rgChildren);
 
@@ -953,8 +1068,13 @@ namespace MyCaffe.extras
         /// <param name="rgGpuID">Returns the list of GPUIDs on which to run the Neural Style.</param>
         /// <param name="nLBFGSCorrections">Returns the LBFGS corrections to use, only applies when using the LBFGS Solver.</param>
         /// <param name="dfDataScale">Returns the data scale to use, default = 1.0.</param>
+        /// <param name="bAllowHs">Returns whether or not half size memory is allowed.</param>
+        /// <param name="bAllowHsGram">Returns whether or not to allow half size memory in the gram layers.</param>
+        /// <param name="bAllowHsEvent">Returns whether or not to allow half size memory in the event layers.</param>
+        /// <param name="bAllowHsScalar">Returns whether or not to allow half size memory in the scalar layers.</param>
+        /// <param name="bAllowHsLoss">Returns whether or not to allow half size memory in the loss layers.</param>
         /// <returns>Returns a list of layers along with their style and content weights.</returns>
-        public static Dictionary<string, Tuple<double, double>> ParseConfigurationString(string strConfig, out string strSolver, out double dfLearningRate, out int nMaxImageSize, out int nIterations, out int nIntermediateIterations, out List<int> rgGpuID, out int nLBFGSCorrections, out double dfDataScale)
+        public static Dictionary<string, Tuple<double, double>> ParseConfigurationString(string strConfig, out string strSolver, out double dfLearningRate, out int nMaxImageSize, out int nIterations, out int nIntermediateIterations, out List<int> rgGpuID, out int nLBFGSCorrections, out double dfDataScale, out bool bAllowHs, out bool bAllowHsGram, out bool bAllowHsEvent, out bool bAllowHsScalar, out bool bAllowHsLoss)
         {
             RawProto proto = RawProto.Parse(strConfig);
             string strVal;
@@ -1012,6 +1132,26 @@ namespace MyCaffe.extras
             dfDataScale = 1.0;
             if ((strVal = proto.FindValue("data_scale")) != null)
                 dfDataScale = double.Parse(strVal);
+
+            bAllowHs = false;
+            if ((strVal = proto.FindValue("allow_hs")) != null)
+                bAllowHs = bool.Parse(strVal);
+
+            bAllowHsGram = true;
+            if ((strVal = proto.FindValue("allow_hs_gram")) != null)
+                bAllowHsGram = bool.Parse(strVal);
+
+            bAllowHsEvent = true;
+            if ((strVal = proto.FindValue("allow_hs_event")) != null)
+                bAllowHsEvent = bool.Parse(strVal);
+
+            bAllowHsScalar = true;
+            if ((strVal = proto.FindValue("allow_hs_scalar")) != null)
+                bAllowHsScalar = bool.Parse(strVal);
+
+            bAllowHsLoss = true;
+            if ((strVal = proto.FindValue("allow_hs_loss")) != null)
+                bAllowHsLoss = bool.Parse(strVal);
 
             return rgLayers;
         }
