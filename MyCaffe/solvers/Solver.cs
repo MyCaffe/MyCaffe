@@ -99,6 +99,8 @@ namespace MyCaffe.solvers
         double m_dfAverageTestTime = 0;
         SNAPSHOT_WEIGHT_UPDATE_METHOD m_snapshotWeightUpdatemMethod = SNAPSHOT_WEIGHT_UPDATE_METHOD.FAVOR_ACCURACY;
         int m_nTrainingTimeLimitInMinutes = 0;
+        long m_hWorkspaceData = 0;  // shared among the layers and nets, only grows in size.
+        ulong m_lWorkspaceSize = 0;
 
         /// <summary>
         /// The OnStart event fires at the start of each training iteration.
@@ -137,6 +139,14 @@ namespace MyCaffe.solvers
         /// the solver.
         /// </summary>
         public event EventHandler<CustomForwardBackArgs<T>> OnCustomForwardBack;
+        /// <summary>
+        /// Specifies the OnGetWorkspace event that fires when the getWorkspace() function is called by a layer to get a shareable workspace to conserve GPU memory.
+        /// </summary>
+        public event EventHandler<WorkspaceArgs> OnGetWorkspace;
+        /// <summary>
+        /// Specifies the OnSetWorkspace event that fires when the setWorkspace() function is called by a layer to get a shareable workspace to conserve GPU memory.
+        /// </summary>
+        public event EventHandler<WorkspaceArgs> OnSetWorkspace;
 
         /// <summary>
         /// The Solver constructor.
@@ -152,7 +162,9 @@ namespace MyCaffe.solvers
         /// <param name="nSolverCount">Specifies the number of Solvers participating in a multi-GPU session.</param>
         /// <param name="nSolverRank">Specifies the rank of this Solver in a multi-GPU session.</param>
         /// <param name="shareNet">Optionally, specifies the net to share when creating the training network (default = null, meaning no share net is used).</param>
-        public Solver(CudaDnn<T> cuda, Log log, SolverParameter p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null)
+        /// <param name="getws">Optionally, specifies the handler for getting the workspace.</param>
+        /// <param name="setws">Optionally, specifies the handler for setting the workspace.</param>
+        public Solver(CudaDnn<T> cuda, Log log, SolverParameter p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
         {
             m_cuda = cuda;
             m_log = log;
@@ -167,6 +179,12 @@ namespace MyCaffe.solvers
             m_persist = persist;
             m_nSolverCount = nSolverCount;
             m_nSolverRank = nSolverRank;
+
+            if (getws != null)
+                OnGetWorkspace += new EventHandler<WorkspaceArgs>(getws);
+
+            if (setws != null)
+                OnSetWorkspace += new EventHandler<WorkspaceArgs>(setws);
 
             Init(p, shareNet);
         }
@@ -292,6 +310,13 @@ namespace MyCaffe.solvers
             {
                 m_blobBatchInputData.Dispose();
                 m_blobBatchInputData = null;
+            }
+
+            if (m_hWorkspaceData != 0)
+            {
+                m_cuda.FreeMemory(m_hWorkspaceData);
+                m_hWorkspaceData = 0;
+                m_lWorkspaceSize = 0;
             }
         }
 
@@ -466,13 +491,46 @@ namespace MyCaffe.solvers
                 net_param.state = net_state;
                 net_param.solver_count = m_nSolverCount;
                 net_param.solver_rank = m_nSolverRank;
-                m_net = new Net<T>(m_cuda, m_log, net_param, m_evtCancel, m_db, Phase.NONE, m_evtCompleted, shareNet);
+                m_net = new Net<T>(m_cuda, m_log, net_param, m_evtCancel, m_db, Phase.NONE, m_evtCompleted, shareNet, net_OnGetWorkspace, net_OnSetWorkspace);
                 m_net.OnGetIteration += net_OnGetIteration;
             }
             catch(Exception excpt)
             {
                 throw new Exception("Initializing Training Net: " + excpt.Message);
             }
+        }
+
+        private void net_OnSetWorkspace(object sender, WorkspaceArgs e)
+        {
+            if (OnSetWorkspace != null)
+            {
+                OnSetWorkspace(sender, e);
+                return;
+            }
+
+            if (e.Size < m_lWorkspaceSize)
+                return;
+
+            m_lWorkspaceSize = e.Size;
+            m_cuda.DisableGhostMemory();
+
+            if (m_hWorkspaceData != 0)
+                m_cuda.FreeMemory(m_hWorkspaceData);
+
+            m_hWorkspaceData = m_cuda.AllocMemory((long)m_lWorkspaceSize);
+            m_cuda.ResetGhostMemory();
+        }
+
+        private void net_OnGetWorkspace(object sender, WorkspaceArgs e)
+        {
+            if (OnGetWorkspace != null)
+            {
+                OnGetWorkspace(sender, e);
+                return;
+            }
+
+            e.Data = m_hWorkspaceData;
+            e.Size = m_lWorkspaceSize;
         }
 
         private void net_OnGetIteration(object sender, GetIterationArgs e)
@@ -548,8 +606,9 @@ namespace MyCaffe.solvers
                     net_params[i].state = net_state;
 
                     m_log.WriteLine("Creating test net (#" + i.ToString() + ") specified by " + sources[i], true);
-                    m_rgTestNets.Add(new Net<T>(m_cuda, m_log, net_params[i], m_evtCancel, m_db, Phase.NONE, null, TrainingNet));
+                    Net<T> net = new Net<T>(m_cuda, m_log, net_params[i], m_evtCancel, m_db, Phase.NONE, null, TrainingNet, net_OnGetWorkspace, net_OnSetWorkspace);
 
+                    m_rgTestNets.Add(net);
                     m_rgTestNets[i].set_debug_info(m_param.debug_info);
                 }
             }
@@ -1451,8 +1510,10 @@ namespace MyCaffe.solvers
         /// <param name="nSolverCount">Specifies the number of Solvers participating in a multi-GPu session.</param>
         /// <param name="nSolverRank">Specifies the rank of the new Solver.</param>
         /// <param name="shareNet">Optionally, specifies the net to share when creating the training network (default = null, meaning no share net is used).</param>
+        /// <param name="getws">Optionally, specifies the handler for getting the workspace.</param>
+        /// <param name="setws">Optionally, specifies the handler for setting the workspace.</param>
         /// <returns>A new Solver instance is returned.</returns>
-        public static SGDSolver<T> Create(CudaDnn<T> cuda, Log log, ProjectEx p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null)
+        public static SGDSolver<T> Create(CudaDnn<T> cuda, Log log, ProjectEx p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
         {
             SolverParameter solverParam = null;
 
@@ -1473,7 +1534,7 @@ namespace MyCaffe.solvers
                 solverParam.net_param.ProjectID = p.ID;
             }
 
-            return Create(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet);
+            return Create(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
         }
 
         /// <summary>
@@ -1490,35 +1551,37 @@ namespace MyCaffe.solvers
         /// <param name="nSolverCount">Specifies the number of Solvers participating in a multi-GPu session.</param>
         /// <param name="nSolverRank">Specifies the rank of the new Solver.</param>
         /// <param name="shareNet">Optionally, specifies the net to share when creating the training network (default = null, meaning no share net is used).</param>
+        /// <param name="getws">Optionally, specifies the handler for getting the workspace.</param>
+        /// <param name="setws">Optionally, specifies the handler for setting the workspace.</param>
         /// <returns></returns>
-        public static SGDSolver<T> Create(CudaDnn<T> cuda, Log log, SolverParameter solverParam, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null)
+        public static SGDSolver<T> Create(CudaDnn<T> cuda, Log log, SolverParameter solverParam, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
         {
             SGDSolver<T> solver = null;
 
             switch (solverParam.type)
             {
                 case SolverParameter.SolverType.SGD:
-                    solver = new SGDSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet);
+                    solver = new SGDSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
                     break;
 
                 case SolverParameter.SolverType.NESTEROV:
-                    solver = new NesterovSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet);
+                    solver = new NesterovSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
                     break;
 
                 case SolverParameter.SolverType.ADAGRAD:
-                    solver = new AdaGradSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet);
+                    solver = new AdaGradSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
                     break;
 
                 case SolverParameter.SolverType.ADADELTA:
-                    solver = new AdaDeltaSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet);
+                    solver = new AdaDeltaSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
                     break;
 
                 case SolverParameter.SolverType.ADAM:
-                    solver = new AdamSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet);
+                    solver = new AdamSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
                     break;
 
                 case SolverParameter.SolverType.RMSPROP:
-                    solver = new RmsPropSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet);
+                    solver = new RmsPropSolver<T>(cuda, log, solverParam, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws);
                     break;
 
                 default:

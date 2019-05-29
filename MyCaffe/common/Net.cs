@@ -118,6 +118,14 @@ namespace MyCaffe.common
         List<Layer<T>> m_rgConnectedLayers = new List<Layer<T>>();
         Blob<T> m_debugBlob = null;
 
+        /// <summary>
+        /// Specifies the OnGetWorkspace event that fires when the getWorkspace() function is called by a layer to get a shareable workspace to conserve GPU memory.
+        /// </summary>
+        public event EventHandler<WorkspaceArgs> OnGetWorkspace;
+        /// <summary>
+        /// Specifies the OnSetWorkspace event that fires when the setWorkspace() function is called by a layer to get a shareable workspace to conserve GPU memory.
+        /// </summary>
+        public event EventHandler<WorkspaceArgs> OnSetWorkspace;
         /// Specifies the OnGetIteration event that fires when a layer needs to get the current iteration from the solver.
         /// </summary>
         public event EventHandler<GetIterationArgs> OnGetIteration;
@@ -139,7 +147,9 @@ namespace MyCaffe.common
         /// <param name="phaseOverride">Optionally, specifies an override of the Phase for which the Net is used.</param>
         /// <param name="evtTrainingCompleted">Optionally, specifies an auto reset event that is set after training has completed.</param>
         /// <param name="sharedNet">Specifies another Net that shares the GPU memory created by this Net.</param>
-        public Net(CudaDnn<T> cuda, Log log, NetParameter p, CancelEvent evtCancel, IXImageDatabase imgDb, Phase phaseOverride = Phase.NONE, AutoResetEvent evtTrainingCompleted = null, Net<T> sharedNet = null)
+        /// <param name="getws">Optionally, specifies the handler for getting the workspace.</param>
+        /// <param name="setws">Optionally, specifies the handler for setting the workspace.</param>
+        public Net(CudaDnn<T> cuda, Log log, NetParameter p, CancelEvent evtCancel, IXImageDatabase imgDb, Phase phaseOverride = Phase.NONE, AutoResetEvent evtTrainingCompleted = null, Net<T> sharedNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
         {
             m_sharedNet = sharedNet;
             m_db = imgDb;
@@ -148,6 +158,12 @@ namespace MyCaffe.common
             m_blobWork = new Blob<T>(cuda, log);
 
             m_evtCancel = evtCancel;
+
+            if (getws != null)
+                OnGetWorkspace += new EventHandler<WorkspaceArgs>(getws);
+
+            if (setws != null)
+                OnSetWorkspace += new EventHandler<WorkspaceArgs>(setws);
 
             Init(p, phaseOverride, evtTrainingCompleted);
         }
@@ -701,6 +717,12 @@ namespace MyCaffe.common
 
         private void layer_OnSetWorkspace(object sender, WorkspaceArgs e)
         {
+            if (OnSetWorkspace != null)
+            {
+                OnSetWorkspace(sender, e);
+                return;
+            }
+
             if (e.Size < m_lWorkspaceSize)
                 return;
 
@@ -716,6 +738,12 @@ namespace MyCaffe.common
 
         private void layer_OnGetWorkspace(object sender, WorkspaceArgs e)
         {
+            if (OnGetWorkspace != null)
+            {
+                OnGetWorkspace(sender, e);
+                return;
+            }
+
             e.Data = m_hWorkspaceData;
             e.Size = m_lWorkspaceSize;
         }

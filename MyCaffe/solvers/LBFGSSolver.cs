@@ -53,8 +53,10 @@ namespace MyCaffe.solvers
         /// <param name="nSolverCount">Specifies the number of Solvers participating in a multi-GPU session.</param>
         /// <param name="nSolverRank">Specifies the rank of this Solver in a multi-GPU session.</param>
         /// <param name="shareNet">Optionally, specifies the net to share when creating the training network (default = null, meaning no share net is used).</param>
-        public LBFGSSolver(CudaDnn<T> cuda, Log log, SolverParameter p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null)
-            : base(cuda, log, p, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet)
+        /// <param name="getws">Optionally, specifies the handler for getting the workspace.</param>
+        /// <param name="setws">Optionally, specifies the handler for setting the workspace.</param>
+        public LBFGSSolver(CudaDnn<T> cuda, Log log, SolverParameter p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
+            : base(cuda, log, p, evtCancel, evtForceSnapshot, evtForceTest, imgDb, persist, nSolverCount, nSolverRank, shareNet, getws, setws)
         {
             m_tZero = (T)Convert.ChangeType(0, typeof(T));
             m_tOne = (T)Convert.ChangeType(1, typeof(T));
