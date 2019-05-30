@@ -552,8 +552,6 @@ namespace MyCaffe.extras
                 m_log.WriteLine("Creating input network...");
                 m_log.Enable = false;
                 net = new Net<T>(m_cuda, m_log, m_param, m_evtCancel, null, Phase.TEST, null, m_netShare, net_OnGetWorkspace, net_OnSetWorkspace);
-                net.OnGetWorkspace += net_OnGetWorkspace;
-                net.OnSetWorkspace += net_OnSetWorkspace;
                 m_log.Enable = true;
 
                 if (m_rgWeights != null && !m_bUsingSharedNet)
