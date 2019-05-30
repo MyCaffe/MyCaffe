@@ -726,7 +726,6 @@ namespace MyCaffe.test
             }
         }
 
-
         [TestMethod]
         public void TestAllocHalf2()
         {
@@ -768,6 +767,41 @@ namespace MyCaffe.test
 
                     t.Cuda.FreeMemory(hMemF);
                     hMemF = 0;
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
+        public void TestAxpyHalf()
+        { 
+            CudaDnnTest test = new CudaDnnTest();
+            List<float> rgf = new List<float>();
+            long hMemF1 = 0;
+            long hMemF2 = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    if (t.DataType == DataType.DOUBLE)
+                        continue;
+
+                    long lCount = 20948400;
+                    hMemF1 = t.Cuda.AllocMemory(lCount, true);
+                    hMemF2 = t.Cuda.AllocMemory(lCount, true);
+
+                    t.Cuda.axpy((int)lCount, -1.0, hMemF1, hMemF2);
+
+                    t.Cuda.FreeMemory(hMemF1);
+                    hMemF1 = 0;
+
+                    t.Cuda.FreeMemory(hMemF2);
+                    hMemF2 = 0;
                 }
             }
             finally
