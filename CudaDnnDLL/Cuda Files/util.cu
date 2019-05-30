@@ -150,7 +150,50 @@ bool GetCudaErrorString(long lErr, char* szErr, long lMaxErr)
 	if (lErr == 0)
 		return false;
 
-	if ((lErr & ERROR_CUDNN_OFFSET) == ERROR_CUDNN_OFFSET)
+	if ((lErr & ERROR_CUBLAS_OFFSET) == ERROR_CUBLAS_OFFSET)
+	{
+		lErr &= (~ERROR_CUBLAS_OFFSET);
+
+		switch (lErr)
+		{
+		case CUBLAS_STATUS_NOT_INITIALIZED:
+			_snprintf(szErr, lMaxErr, "cuBlas: The cuBlas library was not initialized propertly (%ld)", lErr);
+			return true;
+
+		case CUBLAS_STATUS_ALLOC_FAILED:
+			_snprintf(szErr, lMaxErr, "cuBlas: A resource allocation failed within the cuBlas library (%ld)", lErr);
+			return true;
+
+		case CUBLAS_STATUS_INVALID_VALUE:
+			_snprintf(szErr, lMaxErr, "cuBlas: An invalid parameter was passed to the function. (%ld)", lErr);
+			return true;
+
+		case CUBLAS_STATUS_ARCH_MISMATCH:
+			_snprintf(szErr, lMaxErr, "cuBlas: The function requires functionality not supported by the current device architecture. (%ld)", lErr);
+			return true;
+
+		case CUBLAS_STATUS_MAPPING_ERROR:
+			_snprintf(szErr, lMaxErr, "cuBlas: Access to the GPU memory failed possibly caused by a failure to bind to a texture. (%ld)", lErr);
+			return true;
+
+		case CUBLAS_STATUS_EXECUTION_FAILED:
+			_snprintf(szErr, lMaxErr, "cuBlas: A cuBlas GPU kernel failed to execute. (%ld)", lErr);
+			return true;
+
+		case CUBLAS_STATUS_INTERNAL_ERROR:
+			_snprintf(szErr, lMaxErr, "cuBlas: A failure occurred within cuBlas. (%ld)", lErr);
+			return true;
+
+		case CUBLAS_STATUS_NOT_SUPPORTED:
+			_snprintf(szErr, lMaxErr, "cuBlas: The function called is not supported. (%ld)", lErr);
+			return true;
+
+		case CUBLAS_STATUS_LICENSE_ERROR:
+			_snprintf(szErr, lMaxErr, "cuBlas: The functionality requested requires a license that is missing. (%ld)", lErr);
+			return true;
+		}
+	}
+	else if ((lErr & ERROR_CUDNN_OFFSET) == ERROR_CUDNN_OFFSET)
 	{
 		lErr &= (~ERROR_CUDNN_OFFSET);
 

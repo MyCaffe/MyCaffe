@@ -122,6 +122,7 @@ const int ERROR_TSNE							= ERROR_NN + 40;
 const int ERROR_TSNE_NO_DISTANCES_FOUND			= ERROR_TSNE + 1;
 
 const int ERROR_CUDNN_OFFSET					= 0x4000;
+const int ERROR_CUBLAS_OFFSET					= 0x8000;
 
 //-----------------------------------------------------------------------------
 //	Helper Types
