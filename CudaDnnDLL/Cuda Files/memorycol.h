@@ -155,7 +155,8 @@ class MemoryItem
 			if (m_pData == NULL)
 				return ERROR_MEMORY_OUT;
 
-			if (lSize == (size_t)-1)
+			size_t lSizeMax = SIZE_MAX;
+			if (lSize >= (lSizeMax - 10))
 				lSize = m_lSize;
 
 			if (lSize <= 0)

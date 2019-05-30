@@ -848,10 +848,10 @@ long tsnegHandle<T>::ComputeGradient(bool bValPUpdated)
 	if (lErr = computeGradient(m_pRowP_on_host, m_pColP_on_host, m_pValP_on_host, m_pY_on_host, m_nN, m_nD, m_pdC_on_host, m_fTheta))
 		return lErr;
 
-	if (lErr = m_pMem->SetMemory(m_hdC, m_pdC_on_host, -1, -1))
+	if (lErr = m_pMem->SetMemory(m_hdC, m_pdC_on_host, SIZE_MAX, -1))
 		return lErr;
 
-	if (lErr = m_pMem->SetMemory(m_hY, m_pY_on_host, -1, -1))
+	if (lErr = m_pMem->SetMemory(m_hY, m_pY_on_host, SIZE_MAX, -1))
 		return lErr;
 
 	return 0;
@@ -1140,7 +1140,7 @@ long tsnegHandle<T>::SymmetrizeMatrix(unsigned int* pnRowCount)
 	if (lErr = symmetrizeMatrix(m_pRowP_on_host, m_pColP_on_host, m_pValP_on_host, pnRowCount))
 		return lErr;
 
-	return m_pMem->SetMemory(m_hValP, m_pValP_on_host, -1, -1);
+	return m_pMem->SetMemory(m_hValP, m_pValP_on_host, SIZE_MAX, -1);
 }
 
 template long tsnegHandle<double>::SymmetrizeMatrix(unsigned int* pnRowCount);

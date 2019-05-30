@@ -678,7 +678,7 @@ long Device<T>::GetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 
 	size_t lAllocatedCount = pItem->Size() / (pItem->IsHalf() ? sizeof(__half) : sizeof(T));
 
-	if (lCount == (size_t)-1)
+	if (lCount >= (SIZE_MAX - 10))
 		lCount = lAllocatedCount;
 	else if (lCount > lAllocatedCount)
 		return ERROR_PARAM_OUT_OF_RANGE;
@@ -3024,7 +3024,7 @@ long Device<T>::cuda_tsne_compute_exact_gradient(long lInput, T* pfInput, long* 
 		lErr = m_math.tsne_compute_exact_gradient(n, d, pY_on_host, pP_on_host, pQ_on_host, pdC_on_host, fSumQ);
 
 	if (!lErr)
-		lErr = m_memory.SetMemory(hdC, pdC_on_host, (size_t)-1, -1);
+		lErr = m_memory.SetMemory(hdC, pdC_on_host, SIZE_MAX, -1);
 
 	if (!bQisHostMem && pQ_on_host != NULL)
 		m_memory.FreeHost(pQ_on_host);
