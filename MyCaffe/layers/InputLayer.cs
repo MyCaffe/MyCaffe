@@ -45,6 +45,7 @@ namespace MyCaffe.layers
             InputParameter p = m_param.input_param;
             int nNumShape = p.shape.Count();
 
+            m_bUseHalfSize = m_param.use_halfsize;
             m_log.CHECK(nNumShape == 0 || nNumShape == 1 || nNumShape == nNumTop, "Must specify 'shape' once, once per top blob, or not at all: " + nNumTop.ToString() + " top vs. " + nNumShape.ToString() + " shapes.");
 
             if (nNumShape > 0)
@@ -52,11 +53,10 @@ namespace MyCaffe.layers
                 for (int i = 0; i < nNumTop; i++)
                 {
                     int nShapeIdx = (p.shape.Count() == 1) ? 0 : i;
-                    colTop[i].Reshape(p.shape[nShapeIdx]);
+                    colTop[i].Reshape(p.shape[nShapeIdx], m_bUseHalfSize);
                 }
             }
 
-            m_bUseHalfSize = m_param.use_halfsize;
             m_bConvertTopOnFwd = m_param.use_halfsize;
         }
 
