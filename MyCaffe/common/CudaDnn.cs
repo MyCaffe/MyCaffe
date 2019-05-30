@@ -1604,10 +1604,7 @@ namespace MyCaffe.common
                     {
                         if (m_rgGhostMemory == null || !m_bGhostMemoryEnabled)
                         {
-                            if (bHalfSize)
-                                rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ALLOCMEM_HALF, rgInput.ToArray());
-                            else
-                                rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ALLOCMEM, rgInput.ToArray());
+                            rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.ALLOCMEM, rgInput.ToArray());
                         }
                         else
                         {
@@ -1634,7 +1631,10 @@ namespace MyCaffe.common
                     {
                         if (m_rgGhostMemory == null || !m_bGhostMemoryEnabled)
                         {
-                            rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ALLOCMEM, rgInput.ToArray());
+                            if (bHalfSize)
+                                rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ALLOCMEM_HALF, rgInput.ToArray());
+                            else
+                                rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.ALLOCMEM, rgInput.ToArray());
                         }
                         else
                         {
