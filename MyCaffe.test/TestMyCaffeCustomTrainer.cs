@@ -1453,7 +1453,7 @@ namespace MyCaffe.test
                 throw new Exception("Output data conversion requires a gym that implements the IXMyCaffeGymData interface.");
 
             string type;
-            byte[] rgOutput = igym.ConvertOutput(e.Output.Length, e.Output, out type);
+            byte[] rgOutput = igym.ConvertOutput(Stage, e.Output.Length, e.Output, out type);
             e.SetRawOutput(rgOutput, type);
 
             return true;
@@ -1837,7 +1837,7 @@ namespace MyCaffe.test
                 throw new Exception("Output data conversion requires a gym that implements the IXMyCaffeGymData interface.");
 
             string type;
-            byte[] rgOutput = igym.ConvertOutput(e.Output.Length, e.Output, out type);
+            byte[] rgOutput = igym.ConvertOutput(Stage, e.Output.Length, e.Output, out type);
             e.SetRawOutput(rgOutput, type);
 
             return true;

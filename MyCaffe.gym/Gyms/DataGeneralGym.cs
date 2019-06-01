@@ -230,12 +230,13 @@ namespace MyCaffe.gym
         /// <summary>
         /// Converts the output values into the native type used by the Gym during queries.
         /// </summary>
+        /// <param name="stage">Specifies the stage under which the conversion is run.</param>
         /// <param name="nN">Specifies the number of outputs.</param>
         /// <param name="rg">Specifies the raw output data.</param>
         /// <param name="type">Returns the output type.</param>
         /// <returns>The converted output data is returned in a byte stream.</returns>
         /// <remarks>Note: Currently, only data gym's implement this function.</remarks>
-        public byte[] ConvertOutput(int nN, float[] rg, out string type)
+        public byte[] ConvertOutput(Stage stage, int nN, float[] rg, out string type)
         {
             return m_db.ConvertOutput(rg, out type);
         }
