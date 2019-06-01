@@ -119,12 +119,11 @@ namespace MyCaffe.trainers.pg.mt
         }
 
         /// <summary>
-        /// <summary>
         /// Run a single cycle on the environment after the delay.
         /// </summary>
         /// <param name="nDelay">Specifies a delay to wait before running.</param>
         /// <returns>The results of the run containing the action are returned.</returns>
-        public ResultCollection Run(int nDelay = 1000)
+        public ResultCollection RunOne(int nDelay = 1000)
         {
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(0, m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN, 0, 1);
@@ -142,6 +141,23 @@ namespace MyCaffe.trainers.pg.mt
             agent.Dispose();
 
             return new ResultCollection(rgActions);
+        }
+
+        /// <summary>
+        /// Run a set of iterations and return the resuts.
+        /// </summary>
+        /// <param name="nN">Specifies the number of samples to run.</param>
+        /// <param name="strRunProperties">Optionally specifies properties to use when running.</param>
+        /// <param name="type">Returns the data type contained in the byte stream.</param>
+        /// <returns>The results of the run containing the action are returned as a byte stream.</returns>
+        public byte[] Run(int nN, string strRunProperties, out string type)
+        {
+            m_mycaffe.CancelEvent.Reset();
+            Agent<T> agent = new Agent<T>(0, m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN, 0, 1);
+            byte[] rgResults = agent.Run(nN, out type);
+            agent.Dispose();
+
+            return rgResults;
         }
 
         /// <summary>
@@ -633,6 +649,62 @@ namespace MyCaffe.trainers.pg.mt
         }
 
         /// <summary>
+        /// Run the action on a set number of iterations and return the results with no training.
+        /// </summary>
+        /// <param name="nIterations">Specifies the iterations to run.</param>
+        /// <param name="type">Specifies the type of data returned in the byte stream.</param>
+        /// <returns>A byte stream of the results is returned.</returns>
+        public byte[] Run(int nIterations, out string type)
+        {
+            IxTrainerCallbackRNN icallback = m_icallback as IxTrainerCallbackRNN;
+            if (icallback == null)
+                throw new Exception("The Run method requires an IxTrainerCallbackRNN interface to convert the results into the native format!");
+
+            m_brain.Create();
+
+            StateBase s = getData(Phase.RUN, m_nIndex, -1);
+            int nIteration = 0;
+            List<float> rgResults = new List<float>();
+            int nLookahead = m_properties.GetPropertyAsInt("Lookahead", 0);
+
+            while (!m_brain.Cancel.WaitOne(0) && (nIterations == -1 || nIteration < nIterations))
+            {
+                // Preprocess the observation.
+                SimpleDatum x = m_brain.Preprocess(s, m_bUseRawInput);
+
+                // Forward the policy network and sample an action.
+                float[] rgfAprob;
+                int nAction = m_brain.act(x, s.Clip, out rgfAprob);
+
+                if (m_bShowActionProb && m_bVerbose)
+                {
+                    string strOut = "Action Prob: " + Utility.ToString<float>(rgfAprob.ToList(), 4) + " -> " + nAction.ToString();
+                    m_brain.OutputLog.WriteLine(strOut);
+                }
+
+                int nSeqLen = m_brain.RecurrentSequenceLength;
+                int nItemLen = s.Data.ItemCount / nSeqLen;
+                int nData1Idx = s.Data.ItemCount - (nItemLen * (nLookahead + 1));
+
+                rgResults.Add(s.Data.TimeStamp.ToFileTime());
+                rgResults.Add((float)s.Data.RealData[nData1Idx]);
+                rgResults.Add(nAction);
+
+                // Take the next step using the action
+                s = getData(Phase.RUN, m_nIndex, nAction);
+                nIteration++;
+
+                m_brain.OutputLog.Progress = ((double)nIteration / (double)nIterations);
+            }
+
+            ConvertOutputArgs args = new ConvertOutputArgs(nIterations, rgResults.ToArray());
+            icallback.OnConvertOutput(args);
+
+            type = args.RawType;
+            return args.RawOutput;
+        }
+
+        /// <summary>
         /// The Run method provides the main 'actor' loop that performs the following steps:
         /// 1.) get state
         /// 2.) build experience
@@ -664,10 +736,10 @@ namespace MyCaffe.trainers.pg.mt
                 float[] rgfAprob;
                 int action = getAction(nEpisodeNumber, x, s.Clip, s.ActionCount, step, out rgfAprob);
 
-                if (m_bShowActionProb)
+                if (m_bShowActionProb && m_bVerbose)
                 {
                     string strOut = "Action Prob: " + Utility.ToString<float>(rgfAprob.ToList(), 4) + " -> " + action.ToString();
-                    m_brain.OutputLog.WriteLine(strOut, false, false, false, !m_bVerbose);
+                    m_brain.OutputLog.WriteLine(strOut);
                 }
 
                 if (step == TRAIN_STEP.FORWARD)
@@ -893,11 +965,13 @@ namespace MyCaffe.trainers.pg.mt
             if (m_memData == null)
                 throw new Exception("Could not find the MemoryData Layer!");
 
-            if (m_memLoss == null)
+            if (m_memLoss == null && m_phase != Phase.RUN)
                 throw new Exception("Could not find the MemoryLoss Layer!");
 
             m_memData.OnDataPack += memData_OnDataPack;
-            m_memLoss.OnGetLoss += memLoss_OnGetLoss;
+
+            if (m_memLoss != null)
+                m_memLoss.OnGetLoss += memLoss_OnGetLoss;
 
             m_blobDiscountedR = new Blob<T>(m_mycaffeWorker.Cuda, m_mycaffeWorker.Log);
             m_blobPolicyGradient = new Blob<T>(m_mycaffeWorker.Cuda, m_mycaffeWorker.Log);
@@ -937,7 +1011,12 @@ namespace MyCaffe.trainers.pg.mt
         /// </summary>
         public void Dispose()
         {
-            m_memLoss.OnGetLoss -= memLoss_OnGetLoss;
+            if (m_memLoss != null)
+                m_memLoss.OnGetLoss -= memLoss_OnGetLoss;
+
+            if (m_memData != null)
+                m_memData.OnDataPack -= memData_OnDataPack;
+
             dispose(ref m_blobDiscountedR);
             dispose(ref m_blobPolicyGradient);
             dispose(ref m_blobActionOneHot);

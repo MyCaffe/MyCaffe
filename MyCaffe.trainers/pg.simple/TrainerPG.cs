@@ -98,13 +98,30 @@ namespace MyCaffe.trainers.pg.simple
         /// </summary>
         /// <param name="nDelay">Specifies a delay to wait before running.</param>
         /// <returns>The results of the run containing the action are returned.</returns>
-        public ResultCollection Run(int nDelay = 1000)
+        public ResultCollection RunOne(int nDelay = 1000)
         {
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN);
             agent.Run(Phase.TEST, 1);
             agent.Dispose();
             return null;
+        }
+
+        /// <summary>
+        /// Run a set of iterations and return the resuts.
+        /// </summary>
+        /// <param name="nN">Specifies the number of samples to run.</param>
+        /// <param name="strRunProperties">Optionally specifies properties to use when running.</param>
+        /// <param name="type">Returns the data type contained in the byte stream.</param>
+        /// <returns>The results of the run containing the action are returned as a byte stream.</returns>
+        public byte[] Run(int nN, string strRunProperties, out string type)
+        {
+            m_mycaffe.CancelEvent.Reset();
+            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN);
+            byte[] rgResults = agent.Run(nN, out type);
+            agent.Dispose();
+
+            return rgResults;
         }
 
         /// <summary>
@@ -193,6 +210,41 @@ namespace MyCaffe.trainers.pg.simple
         {
             GetStatusArgs args = new GetStatusArgs(0, nEpisodeCount, 1000000, dfRunningReward, 0, 0, 0, 0);
             m_icallback.OnUpdateStatus(args);
+        }
+
+        public byte[] Run(int nIterations, out string type)
+        {
+            IxTrainerCallbackRNN icallback = m_icallback as IxTrainerCallbackRNN;
+            if (icallback == null)
+                throw new Exception("The Run method requires an IxTrainerCallbackRNN interface to convert the results into the native format!");
+
+            StateBase s = getData(Phase.RUN, -1);
+            int nIteration = 0;
+            List<float> rgResults = new List<float>();
+
+            while (!m_brain.Cancel.WaitOne(0) && (nIterations == -1 || nIteration < nIterations))
+            {
+                // Preprocess the observation.
+                SimpleDatum x = m_brain.Preprocess(s, m_bUseRawInput);
+
+                // Forward the policy network and sample an action.
+                float fAprob;
+                int action = m_brain.act(x, out fAprob);
+
+                rgResults.Add(s.Data.TimeStamp.ToFileTime());
+                rgResults.Add((float)s.Data.RealData[0]);
+                rgResults.Add(action);
+
+                // Take the next step using the action
+                StateBase s_ = getData(Phase.RUN, action);
+                nIteration++;
+            }
+
+            ConvertOutputArgs args = new ConvertOutputArgs(nIterations, rgResults.ToArray());
+            icallback.OnConvertOutput(args);
+
+            type = args.RawType;
+            return args.RawOutput;
         }
 
         /// <summary>
