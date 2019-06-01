@@ -739,7 +739,7 @@ namespace MyCaffe.trainers
         /// <param name="mycaffe">Specifies the MyCaffeControl to use.</param>
         /// <param name="nDelay">Specifies a delay to wait before getting the action.</param>
         /// <returns>The results of the run are returned.</returns>
-        ResultCollection IXMyCaffeCustomTrainerRL.Run(Component mycaffe, int nDelay)
+        ResultCollection IXMyCaffeCustomTrainerRL.RunOne(Component mycaffe, int nDelay)
         {
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe, Stage.RL);
@@ -748,11 +748,39 @@ namespace MyCaffe.trainers
             if (itrainer == null)
                 throw new Exception("The trainer must be set to to 'PG.SIMPLE', 'PG.ST' or 'PG.MT' to run in reinforcement learning mode.");
 
-            ResultCollection res = itrainer.Run(nDelay);
+            ResultCollection res = itrainer.RunOne(nDelay);
             m_itrainer.Shutdown(50);
             m_itrainer = null;
 
             return res;
+        }
+
+        /// <summary>
+        /// Run the network using the run technique implemented by this trainer.
+        /// </summary>
+        /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
+        /// <param name="nN">Specifies the number of samples to run.</param>
+        /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
+        /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
+        public byte[] Run(Component mycaffe, int nN, out string type)
+        {
+            if (m_itrainer == null)
+                m_itrainer = createTrainer(mycaffe, Stage.RL);
+
+            string strRunProperties = null;
+            IXMyCaffeCustomTrainerCallbackRNN icallback = m_icallback as IXMyCaffeCustomTrainerCallbackRNN;
+            if (icallback != null)
+                strRunProperties = icallback.GetRunProperties();
+
+            IxTrainerRL itrainer = m_itrainer as IxTrainerRL;
+            if (itrainer == null)
+                throw new Exception("The IxTrainerRL interface must be implemented.");
+
+            byte[] rgResults = itrainer.Run(nN, strRunProperties, out type);
+            m_itrainer.Shutdown(0);
+            m_itrainer = null;
+
+            return rgResults;
         }
 
         #endregion

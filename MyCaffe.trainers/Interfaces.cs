@@ -115,7 +115,15 @@ namespace MyCaffe.trainers
         /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
         /// <param name="nDelay">Specifies a delay to wait before getting the action.</param>
         /// <returns>The run results are returned.</returns>
-        ResultCollection Run(Component mycaffe, int nDelay);
+        ResultCollection RunOne(Component mycaffe, int nDelay);
+        /// <summary>
+        /// Run the network using the run technique implemented by this trainer.
+        /// </summary>
+        /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
+        /// <param name="nN">Specifies the number of samples to run.</param>
+        /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
+        /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
+        byte[] Run(Component mycaffe, int nN, out string type);
     }
 
     /// <summary>
@@ -224,7 +232,16 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <param name="nDelay">Specifies a delay to wait before getting the action.</param>
         /// <returns>The result collection containing the action is returned.</returns>
-        ResultCollection Run(int nDelay = 1000);
+        ResultCollection RunOne(int nDelay = 1000);
+
+        /// <summary>
+        /// Run a number of 'nN' samples on the trainer.
+        /// </summary>
+        /// <param name="nN">Specifies the number of samples to run.</param>
+        /// <param name="strRunProperties">Optionally specifies properties to use when running.</param>
+        /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
+        /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
+        byte[] Run(int nN, string strRunProperties, out string type);
     }
 
     /// <summary>

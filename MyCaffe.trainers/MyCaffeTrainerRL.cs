@@ -419,16 +419,40 @@ namespace MyCaffe.trainers
         /// <param name="mycaffe">Specifies the MyCaffeControl to use.</param>
         /// <param name="nDelay">Specifies a delay to wait before getting the action.</param>
         /// <returns>The results of the run are returned.</returns>
-        public ResultCollection Run(Component mycaffe, int nDelay = 1000)
+        public ResultCollection RunOne(Component mycaffe, int nDelay = 1000)
         {
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe);
 
-            ResultCollection res = m_itrainer.Run(nDelay);
+            ResultCollection res = m_itrainer.RunOne(nDelay);
             m_itrainer.Shutdown(50);
             m_itrainer = null;
 
             return res;
+        }
+
+        /// <summary>
+        /// Run the network using the run technique implemented by this trainer.
+        /// </summary>
+        /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
+        /// <param name="nN">Specifies the number of samples to run.</param>
+        /// <param name="type">Specifies the output data type returned as a raw byte stream.</param>
+        /// <returns>The run results are returned in the same native type as that of the CustomQuery used.</returns>
+        public byte[] Run(Component mycaffe, int nN, out string type)
+        {
+            if (m_itrainer == null)
+                m_itrainer = createTrainer(mycaffe);
+
+            string strRunProperties = null;
+            IXMyCaffeCustomTrainerCallbackRNN icallback = m_icallback as IXMyCaffeCustomTrainerCallbackRNN;
+            if (icallback != null)
+                strRunProperties = icallback.GetRunProperties();
+
+            byte[] rgResults = m_itrainer.Run(nN, strRunProperties, out type);
+            m_itrainer.Shutdown(0);
+            m_itrainer = null;
+
+            return rgResults;
         }
 
         /// <summary>
