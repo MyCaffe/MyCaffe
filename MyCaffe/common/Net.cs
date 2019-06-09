@@ -1654,6 +1654,14 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Returns the net parameter.
+        /// </summary>
+        public NetParameter net_param
+        {
+            get { return m_param; }
+        }
+
+        /// <summary>
         /// Writes the net to a proto.
         /// </summary>
         /// <returns>A new NetParameter is returned.</returns>
