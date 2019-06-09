@@ -627,7 +627,10 @@ inline long Memory<T>::SetMemory(long hHandle, T* pSrc, size_t lCount, long hStr
 	if (hStream > 0)
 		pStream = (cudaStream_t)m_streams.GetData(hStream);
 
-	long long lSize = lCount * sizeof(T);
+	long long lSize = lCount;
+	if (lCount < SIZE_MAX - 10)
+		lSize = lCount * sizeof(T);
+
 	if (lSize > SIZE_MAX)
 		return ERROR_MEMORY_RANGE_EXCEEDED;
 
