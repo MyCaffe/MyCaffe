@@ -1108,6 +1108,14 @@ namespace MyCaffe.solvers
         }
 
         /// <summary>
+        /// Returns the smoothed loss.
+        /// </summary>
+        public double smoothed_loss
+        {
+            get { return m_dfSmoothedLoss; }
+        }
+
+        /// <summary>
         /// Returns the SolverParameter used.
         /// </summary>
         public SolverParameter parameter
