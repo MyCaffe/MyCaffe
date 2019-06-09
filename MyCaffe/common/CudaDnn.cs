@@ -743,6 +743,7 @@ namespace MyCaffe.common
             CUDA_DENAN = 252,
             CUDA_SUB_AND_DOT = 253,
             CUDA_MINMAXVAL = 254,
+            CUDA_SUM = 255,
 
             CUDA_IM2COL = 280,
             CUDA_IM2COL_ND = 281,
@@ -5741,6 +5742,22 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DOT, new double[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hA, hY });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_DOT, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hA, hY });
+        }
+
+        /// <summary>
+        /// Calculates the sum of inner values of X and places the result in Y.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of elements in X.</param>
+        /// <param name="nOuterNum">Specifies the number of outer items within X.</param>
+        /// <param name="nInnerNum">Specifies the dimension of items to sum in X.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        public void sum(int nCount, int nOuterNum, int nInnerNum, long hX, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SUM, new double[] { nCount, nOuterNum, nInnerNum, hX, hY });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SUM, new float[] { nCount, nOuterNum, nInnerNum, hX, hY });
         }
 
         /// <summary>
