@@ -182,6 +182,79 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Constructor that copies an array into a single SimpleDatum by appending each to the other in order.
+        /// </summary>
+        /// <param name="rg">Specifies the array of SimpleDatum to append together.</param>
+        public SimpleDatum(List<SimpleDatum> rg)
+        {
+            if (rg.Count == 1)
+            {
+                Copy(rg[0], true);
+                return;
+            }
+
+            Copy(rg[0], false);
+
+            m_nChannels *= rg.Count;
+
+            if (rg.Count > 1)
+            {
+                if (rg[0].IsRealData)
+                {
+                    List<double> rgData = new List<double>();
+
+                    for (int i = 0; i < rg.Count; i++)
+                    {
+                        rgData.AddRange(rg[i].RealData);
+                    }
+
+                    m_rgRealData = rgData.ToArray();
+                    m_rgByteData = null;
+                }
+                else
+                {
+                    List<byte> rgData = new List<byte>();
+
+                    for (int i = 0; i < rg.Count; i++)
+                    {
+                        rgData.AddRange(rg[i].ByteData);
+                    }
+
+                    m_rgRealData = null;
+                    m_rgByteData = rgData.ToArray();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns all indexes with non-zero data.
+        /// </summary>
+        /// <returns>The list of indexes corresponding to non-zero data is returned.</returns>
+        public List<int> GetNonZeroIndexes()
+        {
+            List<int> rgIdx = new List<int>();
+
+            if (m_bIsRealData)
+            {
+                for (int i = 0; i < m_rgRealData.Length; i++)
+                {
+                    if (m_rgRealData[i] != 0)
+                        rgIdx.Add(i);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < m_rgByteData.Length; i++)
+                {
+                    if (m_rgRealData[i] != 0)
+                        rgIdx.Add(i);
+                }
+            }
+
+            return rgIdx;
+        }
+
+        /// <summary>
         /// Zero out all data in the datum but keep the size and other settings.
         /// </summary>
         public void Zero()
@@ -238,8 +311,18 @@ namespace MyCaffe.basecode
             m_nChannels = d.m_nChannels;
             m_nHeight = d.m_nHeight;
             m_nWidth = d.m_nWidth;
-            m_rgRealData = Utility.Clone<double>(d.m_rgRealData);
-            m_rgByteData = Utility.Clone<byte>(d.m_rgByteData);
+
+            if (bCopyData)
+            {
+                m_rgRealData = Utility.Clone<double>(d.m_rgRealData);
+                m_rgByteData = Utility.Clone<byte>(d.m_rgByteData);
+            }
+            else
+            {
+                m_rgRealData = d.m_rgRealData;
+                m_rgByteData = d.m_rgByteData;
+            }
+
             m_dt = d.m_dt;
             m_nOriginalBoost = d.m_nOriginalBoost;
             m_nBoost = d.m_nBoost;
