@@ -137,6 +137,7 @@ class Math
 		long sumsq(int n, long hW, long hA, int nAOff, T* pOut);
 		long sumsqdiff(int n, long hW, long hA, long hB, int nAOff, int nBOff, T* pOut);
 		long sumsqdiff(int n, T* w, T* x, T* y, T* pOut, cudaStream_t stream = NULL);
+		long sum(int n, int nOutNum, int nInNum, long hX, long hY);
 		long width(int n, long hMean, long hMin, long hMax, T fAlpha, long hWidth);
 		long contains_point(int n, long hMean, long hWidth, long hX, long hWork, T* pOut, int nXOff = 0);
 		long denan(int n, long hX, T fReplacement);

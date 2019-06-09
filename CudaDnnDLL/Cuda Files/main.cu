@@ -506,6 +506,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_SUMSQDIFF:
 			return m_device.cuda_sumsqdiff(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_SUM:
+			return m_device.cuda_sum(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_WIDTH:
 			return m_device.cuda_width(lCount, pfInput, plCount, ppfOutput);
 

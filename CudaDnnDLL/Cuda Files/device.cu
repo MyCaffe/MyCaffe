@@ -2035,6 +2035,27 @@ template long Device<float>::cuda_sumsqdiff(long lInput, float* pfInput, long* p
 
 
 template <class T>
+long Device<T>::cuda_sum(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	int nOutNum = (int)pfInput[1];
+	int nInNum = (int)pfInput[2];
+	long hX = (long)pfInput[3];
+	long hY = (long)pfInput[4];
+
+	return m_math.sum(n, nOutNum, nInNum, hX, hY);
+}
+
+template long Device<double>::cuda_sum(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_sum(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_width(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

@@ -3021,8 +3021,9 @@ long Math<float>::div(int n, long hA, long hB, long hY)
 	{
 #if (__SM__ < 530)
 		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
-#endif
+#else
 		div_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (__half*)pA->Data(), (__half*)pB->Data(), (__half*)pY->Data());
+#endif
 	}
 	else
 	{
@@ -3074,8 +3075,9 @@ long Math<double>::abs(int n, long hA, long hY)
 	{
 #if (__SM__ < 530)
 		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
-#endif
+#else
 		abs_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (__half*)pA->Data(), (__half*)pY->Data());
+#endif
 	}
 	else
 	{
@@ -3105,8 +3107,9 @@ long Math<float>::abs(int n, long hA, long hY)
 	{
 #if (__SM__ < 530)
 		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
-#endif
+#else
 		abs_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, (__half*)pA->Data(), (__half*)pY->Data());
+#endif
 	}
 	else
 	{
@@ -3316,7 +3319,7 @@ long Math<T>::sign(int n, long hX, long hY, int nXOff, int nYOff)
 	{
 #if (__SM__ < 530)
 		return ERROR_MEMORY_HALF_TYPE_NOT_SUPPORTED;
-#endif
+#else
 		__half* x = (__half*)pX->Data();
 		__half* y = (__half*)pY->Data();
 
@@ -3327,6 +3330,7 @@ long Math<T>::sign(int n, long hX, long hY, int nXOff, int nYOff)
 			y += nYOff;
 
 		sign_kernel_half<<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, y);
+#endif
 	}
 	else
 	{
@@ -3443,6 +3447,46 @@ long Math<T>::sumsqdiff(int n, T* w, T* x, T* y, T* pOut, cudaStream_t stream)
 
 template long Math<double>::sumsqdiff(int n, double* w, double* x, double* y, double* pOut, cudaStream_t stream);
 template long Math<float>::sumsqdiff(int n, float* w, float* x, float* y, float* pOut, cudaStream_t stream);
+
+
+template <typename T>
+__global__ void sum_kernel(const int num, const int spatial_dim, const T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num; i += blockDim.x * gridDim.x)
+	{
+		T val = 0;
+
+		for (int j = 0; j < spatial_dim; j++)
+		{
+			val += x[(i * spatial_dim) + j];
+		}
+
+		__syncthreads();
+
+		y[i] = val;
+	}
+}
+
+template <typename T>
+long Math<T>::sum(int n, int nOutNum, int nInNum, long hX, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	sum_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nInNum, (T*)pX->Data(), (T*)pY->Data());
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::sum(int n, int nOutNum, int nInNum, long hX, long hY);
+template long Math<float>::sum(int n, int nOutNum, int nInNum, long hX, long hY);
 
 
 template <typename T>
