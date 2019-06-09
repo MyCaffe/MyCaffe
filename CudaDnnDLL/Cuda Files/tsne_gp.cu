@@ -421,13 +421,13 @@ long tsnegpHandle<T>::CleanUp()
 	
 	if (m_pValP != NULL)
 	{
-		m_pMem->SetMemory(m_hValP, m_pValP, -1, -1);
+		m_pMem->SetMemory(m_hValP, m_pValP, SIZE_MAX, -1);
 		m_pMem->FreeHost(m_pValP);
 	}
 
 	if (m_pCurP != NULL)
 	{
-		m_pMem->SetMemory(m_hCurP, m_pCurP, -1, -1);
+		m_pMem->SetMemory(m_hCurP, m_pCurP, SIZE_MAX, -1);
 		m_pMem->FreeHost(m_pCurP);
 	}
 
