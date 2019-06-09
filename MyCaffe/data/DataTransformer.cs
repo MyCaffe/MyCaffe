@@ -254,17 +254,74 @@ namespace MyCaffe.data
             blobUni.Dispose();
         }
 
+
+        /// <summary>
+        /// Transforms a list of Datum and places the transformed data into a Blob.
+        /// </summary>
+        /// <param name="rgDatum">Specifies a List of SimpleDatum to be transformed.</param>
+        /// <param name="blobTransformed">Specifies the Blob where all transformed data is placed.</param>
+        /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
+        /// <param name="log">Specifies a Log for all output.</param>
+        /// <param name="bJustFill">Optionally, specifies to just fill the data blob with the data without actually transforming it.</param>
+        public void Transform(List<SimpleDatum> rgDatum, Blob<T> blobTransformed, CudaDnn<T> cuda, Log log, bool bJustFill = false)
+        {
+            Transform(rgDatum.ToArray(), blobTransformed, cuda, log, bJustFill);
+        }
+
+        /// <summary>
+        /// Transforms a list of Datum and places the transformed data into a Blob.
+        /// </summary>
+        /// <param name="rgDatum">Specifies a Array of SimpleDatum to be transformed.</param>
+        /// <param name="blobTransformed">Specifies the Blob where all transformed data is placed.</param>
+        /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
+        /// <param name="log">Specifies a Log for all output.</param>
+        /// <param name="bJustFill">Optionally, specifies to just fill the data blob with the data without actually transforming it.</param>
+        public void Transform(SimpleDatum[] rgDatum, Blob<T> blobTransformed, CudaDnn<T> cuda, Log log, bool bJustFill = false)
+        {
+            int nDatumNum = rgDatum.Length;
+            int nNum = blobTransformed.num;
+            int nChannels = blobTransformed.channels;
+            int nHeight = blobTransformed.height;
+            int nWidth = blobTransformed.width;
+
+            m_log.CHECK_GT(nDatumNum, 0, "There are no datum to add.");
+            m_log.CHECK_LE(nDatumNum, nNum, "The size of the rgDatum must be no greater than the transformed blob num.");
+
+            Blob<T> blobUni = new Blob<T>(cuda, log, 1, nChannels, nHeight, nWidth, false);
+
+            for (int i = 0; i < nDatumNum; i++)
+            {
+                int nOffset = blobTransformed.offset(i);
+
+                if (rgDatum[i] != null)
+                {
+                    if (bJustFill)
+                        blobUni.mutable_cpu_data = Utility.ConvertVec<T>(rgDatum[i].RealData);
+                    else
+                        Transform(rgDatum[i], blobUni);
+                }
+                else
+                {
+                    blobUni.SetData(0);
+                }
+
+                cuda.copy(blobUni.count(), blobUni.gpu_data, blobTransformed.mutable_gpu_data, 0, nOffset);
+            }
+
+            blobUni.Dispose();
+        }
+
         /// <summary>
         /// Transforms a Datum and places the dat ainto a Blob.
         /// </summary>
         /// <param name="d">Specifies the Datum to transform.</param>
         /// <param name="blob">Specifies the Blob where the transformed data is placed.</param>
-        public void Transform(Datum d, Blob<T> blob)
+        public void Transform(SimpleDatum d, Blob<T> blob)
         {
             int nCropSize = (int)m_param.crop_size;
-            int nDatumChannels = d.channels;
-            int nDatumHeight = d.height;
-            int nDatumWidth = d.width;
+            int nDatumChannels = d.Channels;
+            int nDatumHeight = d.Height;
+            int nDatumWidth = d.Width;
 
             // Check dimensions
             int nChannels = blob.channels;
@@ -296,7 +353,7 @@ namespace MyCaffe.data
         /// </summary>
         /// <param name="d">Data to transform.</param>
         /// <returns>Transformed data.</returns>
-        public T[] Transform(Datum d)
+        public T[] Transform(SimpleDatum d)
         {
             m_dfLastMax = -double.MaxValue;
             m_dfLastMin = double.MaxValue;
