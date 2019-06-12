@@ -102,7 +102,7 @@ namespace MyCaffe.trainers.pg.simple
         {
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN);
-            agent.Run(Phase.TEST, 1);
+            agent.Run(Phase.TEST, 1, ITERATOR_TYPE.ITERATION);
             agent.Dispose();
             return null;
         }
@@ -127,9 +127,10 @@ namespace MyCaffe.trainers.pg.simple
         /// <summary>
         /// Run the test cycle - currently this is not implemented.
         /// </summary>
-        /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <param name="nN">Specifies the number of iterations (based on the ITERATION_TYPE) to run, or -1 to ignore.</param>
+        /// <param name="type">Specifies the iteration type (default = ITERATION).</param>
         /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
-        public bool Test(int nIterations)
+        public bool Test(int nN, ITERATOR_TYPE type)
         {
             int nDelay = 1000;
             string strProp = m_properties.ToString();
@@ -140,7 +141,7 @@ namespace MyCaffe.trainers.pg.simple
 
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, properties, m_random, Phase.TRAIN);
-            agent.Run(Phase.TEST, nIterations);
+            agent.Run(Phase.TEST, nN, type);
 
             agent.Dispose();
             Shutdown(nDelay);
@@ -151,17 +152,18 @@ namespace MyCaffe.trainers.pg.simple
         /// <summary>
         /// Train the network using a modified PG training algorithm optimized for GPU use.
         /// </summary>
-        /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <param name="nN">Specifies the number of iterations (based on the ITERATION_TYPE) to run, or -1 to ignore.</param>
+        /// <param name="type">Specifies the iteration type (default = ITERATION).</param>
         /// <param name="step">Specifies the stepping mode to use (when debugging).</param>
         /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
-        public bool Train(int nIterations, TRAIN_STEP step)
+        public bool Train(int nN, ITERATOR_TYPE type, TRAIN_STEP step)
         {
             if (step != TRAIN_STEP.NONE)
                 throw new Exception("The simple traininer does not support stepping - use the 'PG.MT' trainer instead.");
 
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN);
-            agent.Run(Phase.TRAIN, nIterations);
+            agent.Run(Phase.TRAIN, nN, type);
             agent.Dispose();
 
             return false;
@@ -247,6 +249,27 @@ namespace MyCaffe.trainers.pg.simple
             return args.RawOutput;
         }
 
+        private bool isAtIteration(int nN, ITERATOR_TYPE type, int nIteration, int nEpisode)
+        {
+            if (nN == -1)
+                return false;
+
+            if (type == ITERATOR_TYPE.EPISODE)
+            {
+                if (nEpisode < nN)
+                    return false;
+
+                return true;
+            }
+            else
+            {
+                if (nIteration < nN)
+                    return false;
+
+                return true;
+            }
+        }
+
         /// <summary>
         /// The Run method provides the main 'actor' loop that performs the following steps:
         /// 1.) get state
@@ -255,13 +278,14 @@ namespace MyCaffe.trainers.pg.simple
         /// 4.) train on experiences
         /// </summary>
         /// <param name="phase">Specifies the phae.</param>
-        /// <param name="nIterations">Specifies the number of iterations to run.</param>
-        public void Run(Phase phase, int nIterations)
+        /// <param name="nN">Specifies the number of iterations (based on the ITERATION_TYPE) to run, or -1 to ignore.</param>
+        /// <param name="type">Specifies the iteration type (default = ITERATION).</param>
+        public void Run(Phase phase, int nN, ITERATOR_TYPE type)
         {
             MemoryCollection m_rgMemory = new MemoryCollection();
             double? dfRunningReward = null;
             double dfRewardSum = 0;
-            int nEpisodeNumber = 0;
+            int nEpisode = 0;
             int nIteration = 0;
 
             StateBase s = getData(phase, -1);
@@ -269,7 +293,7 @@ namespace MyCaffe.trainers.pg.simple
             if (s.Clip != null)
                 throw new Exception("The PG.SIMPLE trainer does not support recurrent layers or clip data, use the 'PG.ST' or 'PG.MT' trainer instead.");
 
-            while (!m_brain.Cancel.WaitOne(0) && (nIterations == -1 || nIteration < nIterations))
+            while (!m_brain.Cancel.WaitOne(0) && !isAtIteration(nN, type, nIteration, nEpisode))
             {
                 // Preprocess the observation.
                 SimpleDatum x = m_brain.Preprocess(s, m_bUseRawInput);
@@ -290,7 +314,7 @@ namespace MyCaffe.trainers.pg.simple
                     // An episode has finished.
                     if (s_.Done)
                     {
-                        nEpisodeNumber++;
+                        nEpisode++;
                         nIteration++;
 
                         m_brain.Reshape(m_rgMemory);
@@ -308,7 +332,7 @@ namespace MyCaffe.trainers.pg.simple
                         // Train for one iteration, which triggers the loss function.
                         List<Datum> rgData = m_rgMemory.GetData();
                         m_brain.SetData(rgData);
-                        m_brain.Train(nEpisodeNumber);
+                        m_brain.Train(nIteration);
 
                         // Update reward running
                         if (!dfRunningReward.HasValue)
@@ -316,7 +340,7 @@ namespace MyCaffe.trainers.pg.simple
                         else
                             dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
 
-                        updateStatus(nEpisodeNumber, dfRewardSum, dfRunningReward.Value);
+                        updateStatus(nEpisode, dfRewardSum, dfRunningReward.Value);
                         dfRewardSum = 0;
 
                         s = getData(phase, -1);
@@ -331,7 +355,7 @@ namespace MyCaffe.trainers.pg.simple
                 {
                     if (s_.Done)
                     {
-                        nEpisodeNumber++;
+                        nEpisode++;
 
                         // Update reward running
                         if (!dfRunningReward.HasValue)
@@ -339,7 +363,7 @@ namespace MyCaffe.trainers.pg.simple
                         else
                             dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
 
-                        updateStatus(nEpisodeNumber, dfRewardSum, dfRunningReward.Value);
+                        updateStatus(nEpisode, dfRewardSum, dfRunningReward.Value);
                         dfRewardSum = 0;
 
                         s = getData(phase, -1);

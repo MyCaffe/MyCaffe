@@ -163,9 +163,10 @@ namespace MyCaffe.trainers.pg.mt
         /// <summary>
         /// Run the test cycle - currently this is not implemented.
         /// </summary>
-        /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <param name="nN">Specifies the number of iterations (based on the ITERATION_TYPE) to run, or -1 to ignore.</param>
+        /// <param name="type">Specifies the iteration type (default = ITERATION).</param>
         /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
-        public bool Test(int nIterations)
+        public bool Test(int nN, ITERATOR_TYPE type)
         {
             int nDelay = 1000;
             string strProp = m_properties.ToString();
@@ -176,7 +177,7 @@ namespace MyCaffe.trainers.pg.mt
 
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(0, m_icallback, m_mycaffe, properties, m_random, Phase.TRAIN, 0, 1);           
-            agent.Run(Phase.TEST, nIterations, TRAIN_STEP.NONE);
+            agent.Run(Phase.TEST, nN, type, TRAIN_STEP.NONE);
 
             agent.Dispose();
             Shutdown(nDelay);
@@ -187,10 +188,11 @@ namespace MyCaffe.trainers.pg.mt
         /// <summary>
         /// Train the network using a modified PG training algorithm optimized for GPU use.
         /// </summary>
-        /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <param name="nN">Specifies the number of iterations (based on the ITERATION_TYPE) to run, or -1 to ignore.</param>
+        /// <param name="type">Specifies the iteration type (default = ITERATION).</param>
         /// <param name="step">Specifies the stepping mode to use (when debugging).</param>
         /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
-        public bool Train(int nIterations, TRAIN_STEP step)
+        public bool Train(int nN, ITERATOR_TYPE type, TRAIN_STEP step)
         {
             List<Agent<T>> rgAgents = new List<Agent<T>>();
             int nGpuIdx = 0;
@@ -214,9 +216,9 @@ namespace MyCaffe.trainers.pg.mt
             }
 
             if (m_optimizer != null)
-                m_optimizer.Start(new WorkerStartArgs(0, Phase.TRAIN, nIterations, step));
+                m_optimizer.Start(new WorkerStartArgs(0, Phase.TRAIN, nN, type, step));
 
-            WorkerStartArgs args = new WorkerStartArgs(1, Phase.TRAIN, nIterations, step);            
+            WorkerStartArgs args = new WorkerStartArgs(1, Phase.TRAIN, nN, type, step);            
             foreach (Agent<T> agent in rgAgents)
             {
                 agent.Start(args);
@@ -258,7 +260,8 @@ namespace MyCaffe.trainers.pg.mt
     {
         int m_nCycleDelay;
         Phase m_phase;
-        int m_nIterations;
+        int m_nN;
+        ITERATOR_TYPE m_type;
         TRAIN_STEP m_step = TRAIN_STEP.NONE;
 
         /// <summary>
@@ -266,13 +269,15 @@ namespace MyCaffe.trainers.pg.mt
         /// </summary>
         /// <param name="nCycleDelay">Specifies the cycle delay specifies the amount of time to wait for a cancel on each training loop.</param>
         /// <param name="phase">Specifies the phase on which to run.</param>
-        /// <param name="nIterations">Specifies the maximum number of episodes to run.</param>
+        /// <param name="nN">Specifies the number of iterations (based on the ITERATION_TYPE) to run, or -1 to ignore.</param>
+        /// <param name="type">Specifies the iteration type (default = ITERATION).</param>
         /// <param name="step">Specifies a training step, if any - this is used during debugging.</param>
-        public WorkerStartArgs(int nCycleDelay, Phase phase, int nIterations, TRAIN_STEP step)
+        public WorkerStartArgs(int nCycleDelay, Phase phase, int nN, ITERATOR_TYPE type, TRAIN_STEP step)
         {
             m_nCycleDelay = nCycleDelay;
             m_phase = phase;
-            m_nIterations = nIterations;
+            m_nN = nN;
+            m_type = type;
             m_step = step;
         }
 
@@ -303,9 +308,17 @@ namespace MyCaffe.trainers.pg.mt
         /// <summary>
         /// Returns the maximum number of episodes to run.
         /// </summary>
-        public int Iterations
+        public int N
         {
-            get { return m_nIterations; }
+            get { return m_nN; }
+        }
+
+        /// <summary>
+        /// Returns the iteration type.
+        /// </summary>
+        public ITERATOR_TYPE IterationType
+        {
+            get { return m_type; }
         }
     }
 
@@ -573,7 +586,7 @@ namespace MyCaffe.trainers.pg.mt
 
                 m_evtDone.Reset();
                 m_evtCancel.Reset();
-                Run(args.Phase, args.Iterations, args.Step);
+                Run(args.Phase, args.N, args.IterationType, args.Step);
                 m_evtDone.Set();
             }
             catch (Exception excpt)
@@ -704,6 +717,27 @@ namespace MyCaffe.trainers.pg.mt
             return args.RawOutput;
         }
 
+        private bool isAtIteration(int nN, ITERATOR_TYPE type, int nIteration, int nEpisode)
+        {
+            if (nN == -1)
+                return false;
+
+            if (type == ITERATOR_TYPE.EPISODE)
+            {
+                if (nEpisode < nN)
+                    return false;
+
+                return true;
+            }
+            else
+            {
+                if (nIteration < nN)
+                    return false;
+
+                return true;
+            }
+        }
+
         /// <summary>
         /// The Run method provides the main 'actor' loop that performs the following steps:
         /// 1.) get state
@@ -712,29 +746,30 @@ namespace MyCaffe.trainers.pg.mt
         /// 4.) train on experiences
         /// </summary>
         /// <param name="phase">Specifies the phae.</param>
-        /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <param name="nN">Specifies the number of iterations (based on the ITERATION_TYPE) to run, or -1 to ignore.</param>
+        /// <param name="type">Specifies the iteration type (default = ITERATION).</param>
         /// <param name="step">Specifies the training step to take, if any.  This is only used when debugging.</param>
-        public void Run(Phase phase, int nIterations, TRAIN_STEP step)
+        public void Run(Phase phase, int nN, ITERATOR_TYPE type, TRAIN_STEP step)
         {
             MemoryCache rgMemoryCache = new MemoryCache(m_nEpisodeBatchSize);
             Memory rgMemory = new Memory();
             double? dfRunningReward = null;
             double dfRewardSum = 0;
-            int nEpisodeNumber = 0;
+            int nEpisode = 0;
             int nIteration = 0;
 
             m_brain.Create();
 
             StateBase s = getData(phase, m_nIndex, -1);
-          
-            while (!m_brain.Cancel.WaitOne(0) && (nIterations == -1 || nIteration < nIterations))
+
+            while (!m_brain.Cancel.WaitOne(0) && !isAtIteration(nN, type, nIteration, nEpisode))
             {
                 // Preprocess the observation.
                 SimpleDatum x = m_brain.Preprocess(s, m_bUseRawInput);
 
                 // Forward the policy network and sample an action.
                 float[] rgfAprob;
-                int action = getAction(nEpisodeNumber, x, s.Clip, s.ActionCount, step, out rgfAprob);
+                int action = getAction(nIteration, x, s.Clip, s.ActionCount, step, out rgfAprob);
 
                 if (m_bShowActionProb && m_bVerbose)
                 {
@@ -757,7 +792,7 @@ namespace MyCaffe.trainers.pg.mt
                     // An episode has finished.
                     if (s_.Done)
                     {
-                        nEpisodeNumber++;
+                        nEpisode++;
                         nIteration++;
 
                         if (rgMemoryCache.Add(rgMemory))
@@ -801,7 +836,7 @@ namespace MyCaffe.trainers.pg.mt
                                 m_brain.SetData(rgData, rgClip);
 
                                 bool bApplyGradients = (i == rgMemoryCache.Count - 1) ? true : false;
-                                m_brain.Train(nEpisodeNumber, step, bApplyGradients);
+                                m_brain.Train(nIteration, step, bApplyGradients);
 
                                 // Update reward running
                                 if (!dfRunningReward.HasValue)
@@ -809,7 +844,7 @@ namespace MyCaffe.trainers.pg.mt
                                 else
                                     dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
 
-                                nEpisodeNumber = updateStatus(nEpisodeNumber, dfRunningReward.Value, m_brain.LastLoss, m_brain.LearningRate);
+                                nEpisode = updateStatus(nEpisode, dfRunningReward.Value, m_brain.LastLoss, m_brain.LearningRate);
                                 dfRewardSum = 0;
                             }
 
@@ -831,7 +866,7 @@ namespace MyCaffe.trainers.pg.mt
                 {
                     if (s_.Done)
                     {
-                        nEpisodeNumber++;
+                        nEpisode++;
 
                         // Update reward running
                         if (!dfRunningReward.HasValue)
@@ -839,7 +874,7 @@ namespace MyCaffe.trainers.pg.mt
                         else
                             dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
 
-                        nEpisodeNumber = updateStatus(nEpisodeNumber, dfRunningReward.Value, m_brain.LastLoss, m_brain.LearningRate);
+                        nEpisode = updateStatus(nEpisode, dfRunningReward.Value, m_brain.LastLoss, m_brain.LearningRate);
                         dfRewardSum = 0;
 
                         s = getData(phase, m_nIndex, -1);
