@@ -775,7 +775,6 @@ namespace MyCaffe.test
             }
         }
 
-
         [TestMethod]
         public void TestAxpyHalf()
         { 
@@ -1722,6 +1721,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestSum()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITestCudaDnn t in test.Tests)
+                {
+                    t.TestSum();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestHammingDistance()
         {
             CudaDnnTest test = new CudaDnnTest();
@@ -1745,6 +1762,7 @@ namespace MyCaffe.test
         void TestAdd();
         void TestGemm();
         void TestGemv();
+        void TestSum();
         void TestMemoryTestByBlock();
         void TestMemoryTestAll();
         void TestMemoryPointers();
@@ -2030,6 +2048,43 @@ namespace MyCaffe.test
                 double dfVal = convert(m_x.GetData(i));
                 double dfRes = result_3[i];
                 m_log.CHECK_EQ(dfVal, dfRes, "The value does not match the expected result.");
+            }
+        }
+
+        public void TestSum()
+        {
+            double[] rgData = new double[]
+            {
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+                10, 20, 30, 40, 50, 60, 70, 80, 90, 100,
+
+                1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.1, 9.1, 10.1,
+                10.1, 20.1, 30.1, 40.1, 50.1, 60.1, 70.1, 80.1, 90.1, 100.1,
+
+                1.2, 2.2, 3.2, 4.2, 5.2, 6.2, 7.2, 8.2, 9.2, 10.2,
+                10.2, 20.2, 30.2, 40.2, 50.2, 60.2, 70.2, 80.2, 90.2, 100.2
+            };
+
+            m_A.Reshape(3, 2, 10, 1);
+            m_A.mutable_cpu_data = convert(rgData);
+
+            m_cuda.sum(m_A.count(), 6, 10, m_A.gpu_data, m_A.mutable_gpu_diff);
+            double[] rgResult = convert(m_A.mutable_cpu_diff);
+            double[] rgExpected = new double[6];
+
+            for (int i = 0; i < 6; i++)
+            {
+                rgExpected[i] = 0;
+
+                for (int j = 0; j < 10; j++)
+                {
+                    rgExpected[i] += rgData[(i * 10) + j];
+                }
+            }
+
+            for (int i = 0; i < 6; i++)
+            {
+                m_log.EXPECT_NEAR_FLOAT(rgExpected[i], rgResult[i], 0.0001, "The values do not match at i = " + i.ToString());
             }
         }
 
