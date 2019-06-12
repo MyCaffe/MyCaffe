@@ -55,6 +55,7 @@ namespace MyCaffe.gym
         DirectBitmap m_bmpRaw = null;
         DirectBitmap m_bmpActionRaw = null;
         bool m_bEnableNumSkip = true;
+        int m_nFrameSkip = -1;
 
         /// <summary>
         /// The constructor.
@@ -133,14 +134,23 @@ namespace MyCaffe.gym
 
             m_bPreprocess = properties.GetPropertyAsBool("Preprocess", true);
             m_bEnableNumSkip = properties.GetPropertyAsBool("EnableNumSkip", true);
+            m_nFrameSkip = properties.GetPropertyAsInt("FrameSkip", -1);
 
             m_ale.Load(strROM);
             m_rgActionsRaw = m_ale.ActionSpace;
             m_random = new CryptoRandom();
+            m_rgFrameSkip = new List<int>();
 
-            for (int i = 2; i < 5; i++)
+            if (m_nFrameSkip < 0)
             {
-                m_rgFrameSkip.Add(i);
+                for (int i = 2; i < 5; i++)
+                {
+                    m_rgFrameSkip.Add(i);
+                }
+            }
+            else
+            {
+                m_rgFrameSkip.Add(m_nFrameSkip);
             }
 
             m_rgActions.Add(ACTION.ACT_PLAYER_A_RIGHT.ToString(), (int)ACTION.ACT_PLAYER_A_RIGHT);
@@ -404,7 +414,11 @@ namespace MyCaffe.gym
 
             if (m_bEnableNumSkip)
             {
-                int nIdx = m_random.Next(m_rgFrameSkip.Count);
+                int nIdx = 0;
+
+                if (m_rgFrameSkip.Count > 1)
+                    nIdx = m_random.Next(m_rgFrameSkip.Count);
+
                 int nNumSkip = m_rgFrameSkip[nIdx];
 
                 for (int i = 0; i < nNumSkip; i++)
