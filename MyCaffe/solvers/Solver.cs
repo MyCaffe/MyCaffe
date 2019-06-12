@@ -728,11 +728,10 @@ namespace MyCaffe.solvers
             // display the loss, which is computed in the forward pass.
             if (m_param.display > 0 && (m_nIter % m_param.display) == 0)
             {
-                int average_loss = m_param.average_loss;
                 double dfLoss;
                 m_net.Forward(out dfLoss);
 
-                UpdateSmoothedLoss(dfLoss, start_iter, average_loss);
+                UpdateSmoothedLoss(dfLoss, start_iter);
                 m_log.WriteLine("Iteration " + m_nIter + ", loss = " + m_dfSmoothedLoss.ToString());
             }
 
@@ -760,8 +759,9 @@ namespace MyCaffe.solvers
         /// <param name="bApplyUpdates">Optionally, specifies to apply the gradient updates to the weights (default = <i>true</i>).</param>
         /// <param name="bDisableOutput">Optionally, disable the output to the log.</param>
         /// <param name="bDisableProgress">Optionally, disables the progress updating to the log.</param>
+        /// <param name="dfLossOverride">Optionally, specifies a loss override which can be useful when using a backward step only.</param>
         /// <returns></returns>
-        public bool Step(int nIters, TRAIN_STEP step = TRAIN_STEP.NONE, bool bZeroDiffs = true, bool bApplyUpdates = true, bool bDisableOutput = false, bool bDisableProgress = false)
+        public bool Step(int nIters, TRAIN_STEP step = TRAIN_STEP.NONE, bool bZeroDiffs = true, bool bApplyUpdates = true, bool bDisableOutput = false, bool bDisableProgress = false, double? dfLossOverride = null)
         {
             Exception err = null;
 
@@ -770,7 +770,6 @@ namespace MyCaffe.solvers
                 BlobCollection<T> colBottom = new BlobCollection<T>();
                 int start_iter = m_nIter;
                 int stop_iter = m_nIter + nIters;
-                int average_loss = m_param.average_loss;
 
                 m_rgLosses.Clear();
                 m_dfSmoothedLoss = 0;
@@ -858,9 +857,10 @@ namespace MyCaffe.solvers
                     }
 
                     dfLoss = dfLossTotal / nIterCount;
+                    dfLoss = dfLossOverride.GetValueOrDefault(dfLoss);
 
                     // average the loss across iterations for smoothed reporting
-                    UpdateSmoothedLoss(dfLoss, start_iter, average_loss);
+                    UpdateSmoothedLoss(dfLoss, start_iter);
 
                     if (!bDisplay && sw.ElapsedMilliseconds > 2000 && !bDisableOutput)
                     {
@@ -954,11 +954,20 @@ namespace MyCaffe.solvers
                     if (step != TRAIN_STEP.NONE || m_bEnableSingleStep)
                     {
                         if (step == TRAIN_STEP.BOTH)
-                            m_log.WriteLine("Single step (both) triggered - solving stopped after a single forward/backward pass.");
+                        {
+                            if (!bDisableOutput)
+                                m_log.WriteLine("Single step (both) triggered - solving stopped after a single forward/backward pass.");
+                        }
                         else if (step == TRAIN_STEP.FORWARD)
-                            m_log.WriteLine("Single step (forward) triggered - solving stopped after a single forward pass.");
+                        {
+                            if (!bDisableOutput)
+                                m_log.WriteLine("Single step (forward) triggered - solving stopped after a single forward pass.");
+                        }
                         else if (step == TRAIN_STEP.BACKWARD)
-                            m_log.WriteLine("Single step (backward) triggered - solving stopped after a single backward pass.");
+                        {
+                            if (!bDisableOutput)
+                                m_log.WriteLine("Single step (backward) triggered - solving stopped after a single backward pass.");
+                        }
                         else
                         {
                             // When single stepping, force the snapshot so as to allow
@@ -1460,9 +1469,12 @@ namespace MyCaffe.solvers
         /// </summary>
         /// <param name="dfLoss">Specifies the new loss value to add into the average.</param>
         /// <param name="nStartIter">Specifies the starting iteration.</param>
-        /// <param name="nAverageLoss">Specifies the number of iterations to average over.</param>
-        protected void UpdateSmoothedLoss(double dfLoss, int nStartIter, int nAverageLoss)
+        /// <param name="nAverageLoss">Optionally, specifies the number of iterations to average over (default = param.average_loss).</param>
+        public void UpdateSmoothedLoss(double dfLoss, int nStartIter, int nAverageLoss = 0)
         {
+            if (nAverageLoss == 0)
+                nAverageLoss = m_param.average_loss;
+
             if (m_rgLosses.Count < nAverageLoss)
             {
                 m_rgLosses.Add(dfLoss);
