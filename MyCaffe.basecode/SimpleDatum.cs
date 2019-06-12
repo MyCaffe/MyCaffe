@@ -197,7 +197,7 @@ namespace MyCaffe.basecode
 
             m_nChannels *= rg.Count;
 
-            if (rg.Count > 1)
+            if (rg.Count >= 1)
             {
                 if (rg[0].IsRealData)
                 {
@@ -225,6 +225,51 @@ namespace MyCaffe.basecode
                 }
             }
         }
+
+        /// <summary>
+        /// Returns the minimum value in the data or double.NaN if there is no data.
+        /// </summary>
+        public double Min
+        {
+            get
+            {
+                if (m_bIsRealData)
+                {
+                    if (m_rgRealData != null)
+                        return m_rgRealData.Min(p => p);
+                }
+                else
+                {
+                    if (m_rgByteData != null)
+                        return (double)m_rgByteData.Min(p => p);
+                }
+
+                return double.NaN;
+            }
+        }
+
+        /// <summary>
+        /// Returns the maximum value in the data or double.NaN if there is no data.
+        /// </summary>
+        public double Max
+        {
+            get
+            {
+                if (m_bIsRealData)
+                {
+                    if (m_rgRealData != null)
+                        return m_rgRealData.Max(p => p);
+                }
+                else
+                {
+                    if (m_rgByteData != null)
+                        return (double)m_rgByteData.Max(p => p);
+                }
+
+                return double.NaN;
+            }
+        }
+
 
         /// <summary>
         /// Returns all indexes with non-zero data.
@@ -270,8 +315,11 @@ namespace MyCaffe.basecode
         /// Subtract the data of another SimpleDatum from this one, so this = this - sd.
         /// </summary>
         /// <param name="sd">Specifies the other SimpleDatum to subtract.</param>
-        public void Sub(SimpleDatum sd)
+        /// <returns>If both data values are different <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public bool Sub(SimpleDatum sd)
         {
+            bool bDifferent = false;
+
             if (sd.ItemCount != ItemCount)
                 throw new Exception("Both simple datums must have the same number of elements!");
 
@@ -283,6 +331,8 @@ namespace MyCaffe.basecode
                 for (int i = 0; i < m_rgByteData.Length; i++)
                 {
                     m_rgByteData[i] -= sd.m_rgByteData[i];
+                    if (m_rgByteData[i] != 0)
+                        bDifferent = true;
                 }
             }
 
@@ -294,8 +344,12 @@ namespace MyCaffe.basecode
                 for (int i = 0; i < m_rgRealData.Length; i++)
                 {
                     m_rgRealData[i] -= sd.m_rgRealData[i];
+                    if (m_rgRealData[i] != 0)
+                        bDifferent = true;
                 }
             }
+
+            return bDifferent;
         }
 
         /// <summary>
