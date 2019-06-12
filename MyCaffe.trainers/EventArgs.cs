@@ -162,6 +162,7 @@ namespace MyCaffe.trainers
         double m_dfOptimalCoeff = 0;
         double m_dfLoss = 0;
         double m_dfLearningRate = 0;
+        bool m_bModelUpdated = false;
 
         /// <summary>
         /// The constructor.
@@ -174,7 +175,8 @@ namespace MyCaffe.trainers
         /// <param name="dfOptimalCoeff">Specifies the current optimal selection coefficient.</param>
         /// <param name="dfLoss">Specifies the loss.</param>
         /// <param name="dfLearningRate">Specifies the learning rate.</param>
-        public GetStatusArgs(int nIndex, int nFrames, int nMaxFrames, double dfR, double dfExplorationRate, double dfOptimalCoeff, double dfLoss, double dfLearningRate)
+        /// <param name="bModelUpdated">Specifies whether or not the model has been updated.</param>
+        public GetStatusArgs(int nIndex, int nFrames, int nMaxFrames, double dfR, double dfExplorationRate, double dfOptimalCoeff, double dfLoss, double dfLearningRate, bool bModelUpdated = false)
         {
             m_nIndex = nIndex;
             m_nTotalFrames = nFrames;
@@ -184,6 +186,7 @@ namespace MyCaffe.trainers
             m_dfOptimalCoeff = dfOptimalCoeff;
             m_dfLoss = dfLoss;
             m_dfLearningRate = dfLearningRate;
+            m_bModelUpdated = bModelUpdated;
         }
 
         /// <summary>
@@ -217,6 +220,14 @@ namespace MyCaffe.trainers
         public int MaxFrames
         {
             get { return m_nMaxFrames; }
+        }
+
+        /// <summary>
+        /// Returns whether or not the model has been updated or not.
+        /// </summary>
+        public bool ModelUpdated
+        {
+            get { return m_bModelUpdated; }
         }
 
         /// <summary>
