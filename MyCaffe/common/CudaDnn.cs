@@ -5223,10 +5223,10 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Calculates the log value of A * beta and places the result in Y.
+        /// Calculates the log value of (A * beta) + alpha, and places the result in Y.
         /// </summary>
         /// <remarks>
-        /// Y = log(A * beta)
+        /// Y = log((A * beta) + alpha)
         /// </remarks>
         /// <param name="n">Specifies the number of items (not bytes) in the vectors A and Y.</param>
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
