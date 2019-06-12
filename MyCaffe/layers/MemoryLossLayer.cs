@@ -20,8 +20,8 @@ namespace MyCaffe.layers
     public class MemoryLossLayer<T> : LossLayer<T>
     {
         object m_userState = null;
-        bool m_bEnableLoss = true;
         bool m_bWarningMade = false;
+        bool m_bEnableLoss = true;
 
         /// <summary>
         /// The OnGetLoss event fires during each forward pass.  The value returned is saved,
@@ -193,7 +193,6 @@ namespace MyCaffe.layers
             OnGetLoss(this, e);
 
             m_bEnableLoss = e.EnableLossUpdate;
-
             colTop[0].SetData(e.Loss / dfNormalizer, 0);
         }
 
@@ -216,12 +215,23 @@ namespace MyCaffe.layers
             if (!rgbPropagateDown[0])
                 return;
 
+            double dfNormalizer = get_normalizer(m_normalization, -1);
+
             // mutliply the loss by the loss weight (in top[0].diff)
             if (m_bEnableLoss)
-                m_cuda.mul(colTop[0].count(), colTop[0].gpu_data, colTop[0].gpu_diff, colTop[0].mutable_gpu_diff);
+            {
+                double dfLoss = convertD(colTop[0].GetData(0));
+
+                for (int i = 0; i < colBottom.Count; i++)
+                {
+                    m_cuda.copy(colBottom[i].count(), colBottom[i].gpu_data, colBottom[i].mutable_gpu_diff);
+                    m_cuda.mul_scalar(colBottom[i].count(), dfLoss, colBottom[i].mutable_gpu_diff);
+                }
+
+                dfNormalizer = 1.0;
+            }
 
             double dfTopDiff = convertD(colTop[0].GetDiff(0)); // loss weight
-            double dfNormalizer = get_normalizer(m_normalization, -1);
             double dfLossWeight = dfTopDiff / dfNormalizer;
 
             // Apply the loss weight to the bottom diffs.
