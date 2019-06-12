@@ -421,7 +421,8 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <param name="mycaffe">Specifies the MyCaffeControl to use.</param>
         /// <param name="nIterationOverride">Specifies the iterations to run if greater than zero.</param>
-        public void Test(Component mycaffe, int nIterationOverride)
+        /// <param name="type">Specifies the type of iterator to use.</param>
+        public void Test(Component mycaffe, int nIterationOverride, ITERATOR_TYPE type = ITERATOR_TYPE.ITERATION)
         {
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe);
@@ -429,7 +430,7 @@ namespace MyCaffe.trainers
             if (nIterationOverride == -1)
                 nIterationOverride = m_nIterations;
 
-            m_itrainer.Test(nIterationOverride);
+            m_itrainer.Test(nIterationOverride, type);
             m_itrainer.Shutdown(0);
             m_itrainer = null;
         }
@@ -439,8 +440,9 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <param name="mycaffe">Specifies the MyCaffeControl to use.</param>
         /// <param name="nIterationOverride">Specifies the iterations to run if greater than zero.</param>
+        /// <param name="type">Specifies the type of iterator to use.</param>
         /// <param name="step">Optionally, specifies whether or not to step the training for debugging (default = NONE).</param>
-        public void Train(Component mycaffe, int nIterationOverride, TRAIN_STEP step = TRAIN_STEP.NONE)
+        public void Train(Component mycaffe, int nIterationOverride, ITERATOR_TYPE type = ITERATOR_TYPE.ITERATION, TRAIN_STEP step = TRAIN_STEP.NONE)
         {
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe);
@@ -448,7 +450,7 @@ namespace MyCaffe.trainers
             if (nIterationOverride == -1)
                 nIterationOverride = m_nIterations;
 
-            m_itrainer.Train(nIterationOverride, step);
+            m_itrainer.Train(nIterationOverride, type, step);
 
             m_itrainer.Shutdown(0);
             m_itrainer = null;

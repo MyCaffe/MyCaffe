@@ -136,15 +136,16 @@ namespace MyCaffe.trainers.rnn.simple
         /// <summary>
         /// Run the test cycle - currently this is not implemented.
         /// </summary>
-        /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <param name="nN">Specifies the number of iterations (based on the ITERATION_TYPE) to run, or -1 to ignore.</param>
+        /// <param name="type">Specifies the iteration type (default = ITERATION).</param>
         /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
-        public bool Test(int nIterations)
+        public bool Test(int nN, ITERATOR_TYPE type)
         {
             int nDelay = 1000;
 
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TEST, m_rgVocabulary, m_bUsePreloadData);
-            agent.Run(Phase.TEST, nIterations, TRAIN_STEP.NONE);
+            agent.Run(Phase.TEST, nN, type, TRAIN_STEP.NONE);
 
             agent.Dispose();
             Shutdown(nDelay);
@@ -155,14 +156,15 @@ namespace MyCaffe.trainers.rnn.simple
         /// <summary>
         /// Train the network using a modified PG training algorithm optimized for GPU use.
         /// </summary>
-        /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <param name="nN">Specifies the number of iterations (based on the ITERATION_TYPE) to run, or -1 to ignore.</param>
+        /// <param name="type">Specifies the iteration type (default = ITERATION).</param>
         /// <param name="step">Specifies the stepping mode to use (when debugging).</param>
         /// <returns>A value of <i>true</i> is returned when handled, <i>false</i> otherwise.</returns>
-        public bool Train(int nIterations, TRAIN_STEP step)
+        public bool Train(int nN, ITERATOR_TYPE type, TRAIN_STEP step)
         {
             m_mycaffe.CancelEvent.Reset();
             Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN, m_rgVocabulary, m_bUsePreloadData);
-            agent.Run(Phase.TRAIN, nIterations, step);
+            agent.Run(Phase.TRAIN, nN, type, step);
 
             agent.Dispose();
 
@@ -209,19 +211,23 @@ namespace MyCaffe.trainers.rnn.simple
         /// 3.) ... or Train the network.
         /// </summary>
         /// <param name="phase">Specifies the phae.</param>
-        /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <param name="nN">Specifies the number of iterations (based on the ITERATION_TYPE) to run, or -1 to ignore.</param>
+        /// <param name="type">Specifies the iteration type (required = ITERATION).</param>
         /// <param name="step">Specifies the training step (used only during debugging).</param>
         /// <returns>The vocabulary built up during training and testing is returned.</returns>
-        public void Run(Phase phase, int nIterations, TRAIN_STEP step)
+        public void Run(Phase phase, int nN, ITERATOR_TYPE type, TRAIN_STEP step)
         {
+            if (type != ITERATOR_TYPE.ITERATION)
+                throw new Exception("The TrainerRNN only supports the ITERATION type.");
+
             StateBase s = getData(phase, -1);
 
             while (!m_brain.Cancel.WaitOne(0) && !s.Done)
             {
                 if (phase == Phase.TEST)
-                    m_brain.Test(s, nIterations);
+                    m_brain.Test(s, nN);
                 else if (phase == Phase.TRAIN)
-                    m_brain.Train(s, nIterations, step);
+                    m_brain.Train(s, nN, step);
 
                 s = getData(phase, 1);
             }

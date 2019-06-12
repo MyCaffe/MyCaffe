@@ -12,6 +12,21 @@ using System.Threading.Tasks;
 namespace MyCaffe.trainers
 {
     /// <summary>
+    /// Specifies the iterator type to use.
+    /// </summary>
+    public enum ITERATOR_TYPE
+    {
+        /// <summary>
+        /// Use the iteration type.
+        /// </summary>
+        ITERATION = 0,
+        /// <summary>
+        /// Use the episode type.
+        /// </summary>
+        EPISODE = 1
+    }
+
+    /// <summary>
     /// The IXMyCaffeCustomTrainer interface is used by the MyCaffeCustomTraininer components that
     /// provide various training techniques such as Reinforcement Training.
     /// </summary>
@@ -69,14 +84,16 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
         /// <param name="nIterationOverride">Specifies the iteration override if any.</param>
+        /// <param name="type">Specifies the type of iterator to use.</param>
         /// <param name="step">Specifies whether or not to step the training for debugging.</param>
-        void Train(Component mycaffe, int nIterationOverride, TRAIN_STEP step);
+        void Train(Component mycaffe, int nIterationOverride, ITERATOR_TYPE type = ITERATOR_TYPE.ITERATION, TRAIN_STEP step = TRAIN_STEP.NONE);
         /// <summary>
         /// Test the network using the testing technique implemented by this trainer.
         /// </summary>
         /// <param name="mycaffe">Specifies an instance to the MyCaffeControl component.</param>
         /// <param name="nIterationOverride">Specifies the iteration override if any.</param>
-        void Test(Component mycaffe, int nIterationOverride);
+        /// <param name="type">Specifies the type of iterator to use.</param>
+        void Test(Component mycaffe, int nIterationOverride, ITERATOR_TYPE type = ITERATOR_TYPE.ITERATION);
         /// <summary>
         /// Returns a specific property value.
         /// </summary>
@@ -210,16 +227,18 @@ namespace MyCaffe.trainers
         /// <summary>
         /// Train the network.
         /// </summary>
-        /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <param name="nN">Specifies the number of iterations (based on the ITERATION_TYPE) to run, or -1 to ignore.</param>
+        /// <param name="type">Specifies the iteration type (default = ITERATION).</param>
         /// <param name="step">Specifies whether or not to step the training for debugging.</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> on failure.</returns>
-        bool Train(int nIterations, TRAIN_STEP step);
+        bool Train(int nN, ITERATOR_TYPE type, TRAIN_STEP step);
         /// <summary>
         /// Test the newtork.
         /// </summary>
-        /// <param name="nIterations">Specifies the number of iterations to run.</param>
+        /// <param name="nN">Specifies the number of iterations (based on the ITERATION_TYPE) to run, or -1 to ignore.</param>
+        /// <param name="type">Specifies the iteration type (default = ITERATION).</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> on failure.</returns>
-        bool Test(int nIterations);
+        bool Test(int nN, ITERATOR_TYPE type);
     }
 
     /// <summary>
