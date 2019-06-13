@@ -158,7 +158,9 @@ namespace MyCaffe.trainers
         int m_nNewFrameCount = 0;
         int m_nTotalFrames = 0;
         int m_nMaxFrames = 0;
+        int m_nIteration = 0;
         double m_dfTotalReward = 0;
+        double m_dfReward = 0;
         double m_dfExplorationRate = 0;
         double m_dfOptimalCoeff = 0;
         double m_dfLoss = 0;
@@ -171,18 +173,22 @@ namespace MyCaffe.trainers
         /// <param name="nIndex">Specifies the index of the caller.</param>
         /// <param name="nFrames">Specifies the total number of frames across all agents.</param>
         /// <param name="nMaxFrames">Specifies the maximum number of frames across all agents.</param>
-        /// <param name="dfR">Specifies the total reward.</param>
+        /// <param name="nIteration">Specifies the number of iterations run.</param>
+        /// <param name="dfTotalReward">Specifies the total reward.</param>
+        /// <param name="dfReward">Specifies the immediate reward for the current episode.</param>
         /// <param name="dfExplorationRate">Specifies the current exploration rate.</param>
         /// <param name="dfOptimalCoeff">Specifies the current optimal selection coefficient.</param>
         /// <param name="dfLoss">Specifies the loss.</param>
         /// <param name="dfLearningRate">Specifies the learning rate.</param>
         /// <param name="bModelUpdated">Specifies whether or not the model has been updated.</param>
-        public GetStatusArgs(int nIndex, int nFrames, int nMaxFrames, double dfR, double dfExplorationRate, double dfOptimalCoeff, double dfLoss, double dfLearningRate, bool bModelUpdated = false)
+        public GetStatusArgs(int nIndex, int nIteration, int nFrames, int nMaxFrames, double dfTotalReward, double dfReward, double dfExplorationRate, double dfOptimalCoeff, double dfLoss, double dfLearningRate, bool bModelUpdated = false)
         {
             m_nIndex = nIndex;
+            m_nIteration = nIteration;
             m_nTotalFrames = nFrames;
             m_nMaxFrames = nMaxFrames;
-            m_dfTotalReward = dfR;
+            m_dfTotalReward = dfTotalReward;
+            m_dfReward = dfReward;
             m_dfExplorationRate = dfExplorationRate;
             m_dfOptimalCoeff = dfOptimalCoeff;
             m_dfLoss = dfLoss;
@@ -196,6 +202,14 @@ namespace MyCaffe.trainers
         public int Index
         {
             get { return m_nIndex; }
+        }
+
+        /// <summary>
+        /// Returns the number of iterations (steps) run.
+        /// </summary>
+        public int Iteration
+        {
+            get { return m_nIteration; }
         }
 
         /// <summary>
@@ -250,9 +264,17 @@ namespace MyCaffe.trainers
         /// <summary>
         /// Returns the total rewards.
         /// </summary>
-        public double Reward
+        public double TotalReward
         {
             get { return m_dfTotalReward; }
+        }
+
+        /// <summary>
+        /// Returns the immediate reward for the current episode.
+        /// </summary>
+        public double Reward
+        {
+            get { return m_dfReward; }
         }
 
         /// <summary>
