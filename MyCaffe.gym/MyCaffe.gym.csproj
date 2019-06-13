@@ -41,7 +41,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="AleControlLib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f59a5464a77ea1ad, processorArchitecture=MSIL">
-      <HintPath>..\packages\AleControl.0.10.0.75-beta1\lib\net40\AleControlLib.dll</HintPath>
+      <HintPath>..\packages\AleControl.0.10.1.148-beta1\lib\net40\AleControlLib.dll</HintPath>
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </Reference>
     <Reference Include="System" />
@@ -58,6 +58,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AleSample.cs" />
     <Compile Include="FormActionImage.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -103,6 +104,9 @@
     <None Include="app.config" />
     <None Include="mycaffe.gym.pfx" />
     <None Include="packages.config" />
+    <None Include="roms\defender.bin" />
+    <None Include="roms\pong.bin" />
+    <None Include="roms\space_invaders.bin" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="FormActionImage.resx">
