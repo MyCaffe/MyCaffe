@@ -284,6 +284,7 @@ namespace MyCaffe.gym.python
             m_gymui.CloseUi(0);
             m_gymui.Close();
             m_gymui = null;
+            m_nUiId = -1;
         }
 
         /// <summary>
