@@ -129,6 +129,7 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
         [TestMethod]
         public void Train_PGST_AtariWithOutUi_Dual()
         {
@@ -157,6 +158,24 @@ namespace MyCaffe.test
                 foreach (IMyCaffeCustomTrainerTest t in test.Tests)
                 {
                     t.TrainAtariPG(false, false, "PG.SIMPLE", 10);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void Train_C51ST_AtariWithOutUi_Dual()
+        {
+            MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
+
+            try
+            {
+                foreach (IMyCaffeCustomTrainerTest t in test.Tests)
+                {
+                    t.TrainAtariC51Dual(true, "C51.ST", 10);
                 }
             }
             finally
@@ -289,7 +308,9 @@ namespace MyCaffe.test
     interface IMyCaffeCustomTrainerTest : ITest
     {
         void TrainCartPolePG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
-        void TrainAtariPG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
+        void TrainAtariPG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false);
+        void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int nIteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false);
+
         void TrainCharRNN(bool bDual, bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
         void TrainWavRNN(bool bDual, bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
     }
@@ -443,7 +464,7 @@ namespace MyCaffe.test
                 itrainer.OpenUi();
 
             m_nMaxIteration = nIterations;
-            itrainer.Train(mycaffe, nIterations, TRAIN_STEP.NONE);
+            itrainer.Train(mycaffe, nIterations);
             itrainer.CleanUp();
 
             // Release the mycaffe resources.
@@ -451,15 +472,15 @@ namespace MyCaffe.test
         }
 
 
-        public void TrainAtariPG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
+        public void TrainAtariPG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false)
         {
             if (bDual)
-                TrainAtariPGDual(bShowUi, strTrainerType, nIterations, bUseAcceleratedTraining, bAllowDiscountReset);
+                TrainAtariPGDual(bShowUi, strTrainerType, nIterations, bUseAcceleratedTraining, bAllowDiscountReset, strAtariRom, bAllowNegRewards, bTerminateOnRallyEnd);
             else
-                TrainAtariPG(bShowUi, strTrainerType, nIterations, bUseAcceleratedTraining, bAllowDiscountReset);
+                TrainAtariPG(bShowUi, strTrainerType, nIterations, bUseAcceleratedTraining, bAllowDiscountReset, strAtariRom, bAllowNegRewards, bTerminateOnRallyEnd);
         }
 
-        public void TrainAtariPG(bool bShowUi, string strTrainerType, int nIterations = 100, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
+        public void TrainAtariPG(bool bShowUi, string strTrainerType, int nIterations = 100, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false)
         {
             m_evtCancel.Reset();
 
@@ -479,7 +500,11 @@ namespace MyCaffe.test
             MyCaffeAtariTrainer trainer = new MyCaffeAtariTrainer();
             ProjectEx project = getReinforcementProject(igym, nIterations, dt);
             DatasetDescriptor ds = trainer.GetDatasetOverride(0);
-            string strRom = getRomPath("pong.bin");
+
+            if (strAtariRom == null)
+                strAtariRom = "pong";
+
+            string strRom = getRomPath(strAtariRom + ".bin");
 
             m_log.CHECK(ds != null, "The MyCaffeAtariTrainer should return its dataset override returned by the Gym that it uses.");
 
@@ -495,9 +520,17 @@ namespace MyCaffe.test
             //  - RewardType = MAX (display the maximum rewards received, a setting of VAL displays the actual reward received)
             //  - Gamma = 0.99 (discounting factor)
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
-            //  - UseAcceleratedTraining = False (disable accelerated training).
+            //  - AllowNegativeRewards = False (when enabled and the ball falls behind our player, a -1 reward is given).
+            //  - TerminateOnRallyEnd = False (when enabled a termination state is given each time the ball falls behind our player).
             //  - GameROM = 'path to game ROM'
-            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;GameROM=" + strRom, this);
+            string strParam = "TrainerType=" + strTrainerType + ";RewardType=VAL;";
+            strParam += "UseAcceleratedTraining=" + bUseAcceleratedTraining + ";";
+            strParam += "AllowDiscountReset=" + bAllowDiscountReset + ";";
+            strParam += "Gamma=0.99;";
+            strParam += "AllowNegativeRewards=" + bAllowNegRewards.ToString() + ";";
+            strParam += "TerminateOnRallyEnd=" + bTerminateOnRallyEnd.ToString() + ";";
+            strParam += "GameROM=" + strRom;
+            trainer.Initialize(strParam, this);
 
             if (bShowUi)
                 trainer.OpenUi();
@@ -510,7 +543,7 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TrainAtariPGDual(bool bShowUi, string strTrainerType, int nIterations = 100, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
+        public void TrainAtariPGDual(bool bShowUi, string strTrainerType, int nIterations = 100, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false)
         {
             m_evtCancel.Reset();
 
@@ -535,7 +568,11 @@ namespace MyCaffe.test
 
             ProjectEx project = getReinforcementProject(igym, nIterations, dt);
             DatasetDescriptor ds = itrainer.GetDatasetOverride(0);
-            string strRom = getRomPath("pong.bin");
+
+            if (strAtariRom == null)
+                strAtariRom = "pong";
+
+            string strRom = getRomPath(strAtariRom + ".bin");
 
             m_log.CHECK(ds != null, "The MyCaffeAtariTrainer should return its dataset override returned by the Gym that it uses.");
 
@@ -548,9 +585,17 @@ namespace MyCaffe.test
             //  - RewardType = MAX (display the maximum rewards received, a setting of VAL displays the actual reward received)
             //  - Gamma = 0.99 (discounting factor)
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
-            //  - UseAcceleratedTraining = False (disable accelerated training).
+            //  - AllowNegativeRewards = False (when enabled and the ball falls behind our player, a -1 reward is given).
+            //  - TerminateOnRallyEnd = False (when enabled a termination state is given each time the ball falls behind our player).
             //  - GameROM = 'path to game ROM'
-            itrainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;GameROM=" + strRom, this);
+            string strParam = "TrainerType=" + strTrainerType + ";RewardType=VAL;";
+            strParam += "UseAcceleratedTraining=" + bUseAcceleratedTraining + ";";
+            strParam += "AllowDiscountReset=" + bAllowDiscountReset + ";";
+            strParam += "Gamma=0.99;";
+            strParam += "AllowNegativeRewards=" + bAllowNegRewards.ToString() + ";";
+            strParam += "TerminateOnRallyEnd=" + bTerminateOnRallyEnd.ToString() + ";";
+            strParam += "GameROM=" + strRom;
+            itrainer.Initialize(strParam, this);
 
             // load the project to train (note the project must use the MemoryDataLayer for input).
             mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
@@ -559,7 +604,73 @@ namespace MyCaffe.test
                 itrainer.OpenUi();
 
             m_nMaxIteration = nIterations;
-            itrainer.Train(mycaffe, nIterations, TRAIN_STEP.NONE);
+            itrainer.Train(mycaffe, nIterations);
+            itrainer.CleanUp();
+
+            // Release the mycaffe resources.
+            mycaffe.Dispose();
+        }
+
+        public void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int iteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false)
+        {
+            m_evtCancel.Reset();
+
+            if (strTrainerType != "C51.ST")
+                throw new Exception("Currently only the C51.ST trainer supports C51 training.");
+
+            GymCollection col = new GymCollection();
+            col.Load();
+            IXMyCaffeGym igym = col.Find("ATARI");
+            DATA_TYPE dt = DATA_TYPE.BLOB;
+            string strAccelTrain = "OFF";
+            string strAllowReset = "NO";
+
+            m_log.WriteHeader("Test Training ATARI for " + nIterations.ToString("N0") + " iterations.");
+            m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain + ", AllowDiscountReset = " + strAllowReset);
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
+            MyCaffeAtariTrainerDual trainerX = new MyCaffeAtariTrainerDual();
+
+            IXMyCaffeCustomTrainerRL itrainer = trainerX as IXMyCaffeCustomTrainerRL;
+            if (itrainer == null)
+                throw new Exception("The trainer must implement the IXMyCaffeCustomTrainerRL interface!");
+
+            ProjectEx project = getReinforcementProjectC51(igym, nIterations);
+            DatasetDescriptor ds = itrainer.GetDatasetOverride(0);
+
+            if (strAtariRom == null)
+                strAtariRom = "pong";
+
+            string strRom = getRomPath(strAtariRom + ".bin");
+
+            m_log.CHECK(ds != null, "The MyCaffeAtariTrainer should return its dataset override returned by the Gym that it uses.");
+
+            // Train the network using the custom trainer
+            //  - Iterations (maximum frames cumulative across all threads) = 1000 (normally this would be much higher such as 500,000)
+            //  - Learning rate = 0.001 (defined in solver.prototxt)
+            //  - Mini Batch Size = 10 (defined in train_val.prototxt for MemoryDataLayer)
+            //
+            //  - TrainerType = 'C51.ST' ('C51.ST' = use single-threaded C51 trainer)
+            //  - RewardType = MAX (display the maximum rewards received, a setting of VAL displays the actual reward received)
+            //  - Gamma = 0.99 (discounting factor)
+            //  - Threads = 1 (only use 1 thread if multi-threading is supported)
+            //  - UseAcceleratedTraining = False (disable accelerated training).
+            //  - AllowNegativeRewards = False (when enabled and the ball falls behind our player, a -1 reward is given).
+            //  - TerminateOnRallyEnd = False (when enabled a termination state is given each time the ball falls behind our player).
+            //  - GameROM = 'path to game ROM'
+            string strParam = "TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=False;AllowDiscountReset=False;Gamma=0.99;";
+            strParam += "AllowNegativeRewards=" + bAllowNegRewards.ToString() + ";";
+            strParam += "TerminateOnRallyEnd=" + bTerminateOnRallyEnd.ToString() + ";";
+            strParam += "GameROM=" + strRom;
+            itrainer.Initialize(strParam, this);
+
+            // load the project to train (note the project must use the MemoryDataLayer for input).
+            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
+
+            if (bShowUi)
+                itrainer.OpenUi();
+
+            m_nMaxIteration = nIterations;
+            itrainer.Train(mycaffe, nIterations, (ITERATOR_TYPE)iteratorType);
             itrainer.CleanUp();
 
             // Release the mycaffe resources.
@@ -760,7 +871,7 @@ namespace MyCaffe.test
                 itrainer.OpenUi();
 
             m_nMaxIteration = nIterations;
-            itrainer.Train(mycaffe, nIterations, TRAIN_STEP.NONE);
+            itrainer.Train(mycaffe, nIterations);
 
             string type;
             int nN = 1000; // Note: see iterations used, for real training the iterations should be 100,000+
@@ -979,7 +1090,7 @@ namespace MyCaffe.test
                 itrainer.OpenUi();
 
             m_nMaxIteration = nIterations;
-            itrainer.Train(mycaffe, nIterations, TRAIN_STEP.NONE);
+            itrainer.Train(mycaffe, nIterations);
 
             string type;
             int nN = 1000; // Note: see iterations used, for real training the iterations should be 100,000+
@@ -1003,7 +1114,6 @@ namespace MyCaffe.test
             // Release the mycaffe resources.
             mycaffe.Dispose();
         }
-
 
 
         private void Mycaffe_OnSnapshot(object sender, SnapshotArgs e)
@@ -1047,6 +1157,26 @@ namespace MyCaffe.test
 
             p.SolverDescription = protoS.ToString();
             p.SetDataset(igym.GetDataset(dt));
+
+            return p;
+        }
+
+        private ProjectEx getReinforcementProjectC51(IXMyCaffeGym igym, int nIterations)
+        {
+            ProjectEx p = new ProjectEx("test");
+
+            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\reinforcement\\atari.c51\\train_val.prototxt");
+            string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\reinforcement\\atari.c51\\solver.prototxt");
+
+            RawProto protoM = RawProtoFile.LoadFromFile(strModelFile);
+            p.ModelDescription = protoM.ToString();
+
+            RawProto protoS = RawProtoFile.LoadFromFile(strSolverFile);
+            RawProto iter = protoS.FindChild("max_iter");
+            iter.Value = nIterations.ToString();
+
+            p.SolverDescription = protoS.ToString();
+            p.SetDataset(igym.GetDataset(DATA_TYPE.BLOB));
 
             return p;
         }
@@ -1623,6 +1753,11 @@ namespace MyCaffe.test
         string m_strName = "ATARI";
         GymCollection m_colGyms = new GymCollection();
         DatasetDescriptor m_ds;
+        double m_dfLastPct = 0;
+        double m_dfLastRewards = 0;
+        double m_dfLastExploration = 0;
+        double m_dfLastOptimal = 0;
+        int m_nLastEpisode = 0;
 
         public MyCaffeAtariTrainerDual()
             : base()
@@ -1693,6 +1828,13 @@ namespace MyCaffe.test
 
             if (m_gymui != null && m_nUiId >= 0)
             {
+                if (e.GetDataCallback != null)
+                {
+                    OverlayArgs args = new OverlayArgs(obs.ImageDisplay);
+                    e.GetDataCallback.OnOverlay(args);
+                    obs.ImageDisplay = args.DisplayImage;
+                }
+
                 m_gymui.Render(m_nUiId, obs);
                 Thread.Sleep(m_igym.UiDelay);
             }
@@ -1701,9 +1843,38 @@ namespace MyCaffe.test
             {
                 double dfPct = (GlobalEpisodeMax == 0) ? 0 : (double)GlobalEpisodeCount / (double)GlobalEpisodeMax;
                 e.OutputLog.Progress = dfPct;
-                e.OutputLog.WriteLine("(" + dfPct.ToString("P") + ") Global Episode #" + GlobalEpisodeCount.ToString() + "  Global Reward = " + GlobalRewards.ToString() + " Exploration Rate = " + ExplorationRate.ToString("P") + " Optimal Selection Rate = " + OptimalSelectionRate.ToString("P"));
+
+                if (updateNeeded(dfPct))
+                {
+                    string strOut = "(" + dfPct.ToString("P") + ") Iteration: " + GlobalIteration.ToString() + " Global Episode #" + GlobalEpisodeCount.ToString() + "  Global Reward = " + GlobalRewards.ToString() + " Exploration Rate = " + ExplorationRate.ToString("P") + " Score = " + ImmediateRewards.ToString();
+
+                    if (OptimalSelectionRate > 0)
+                        strOut += " Optimal Selection Rate = " + OptimalSelectionRate.ToString("P");
+
+                    e.OutputLog.WriteLine(strOut);
+                }
+
                 m_sw.Restart();
             }
+
+            return true;
+        }
+
+        private bool updateNeeded(double dfPct)
+        {
+            int nEpisode = GlobalEpisodeCount;            
+            double dfRewards = GlobalRewards;
+            double dfExploration = ExplorationRate;
+            double dfOptimal = OptimalSelectionRate;
+
+            if (dfPct == m_dfLastPct && nEpisode == m_nLastEpisode && dfRewards == m_dfLastRewards && dfExploration == m_dfLastExploration && dfOptimal == m_dfLastOptimal)
+                return false;
+
+            m_dfLastPct = dfPct;
+            m_nLastEpisode = nEpisode;
+            m_dfLastRewards = dfRewards;
+            m_dfLastExploration = dfExploration;
+            m_dfLastOptimal = dfOptimal;
 
             return true;
         }
