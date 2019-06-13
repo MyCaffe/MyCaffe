@@ -47,13 +47,14 @@ namespace MyCaffe.app
         Stopwatch m_swGlobalTiming = null;
         string m_strTestLogDir = null;
         Log m_log;
-        Task m_pgTask = null;
-        CancelEvent m_evtCancelPG = new CancelEvent();
+        Task m_trainerTask = null;
+        CancelEvent m_evtCancelTraining = new CancelEvent();
         Task m_nsTask = null;
         CancelEvent m_evtCancelNs = new CancelEvent();
         MyCaffeGymUiServiceHost m_gymHost;
         TestingProgressGet m_progress = new TestingProgressGet();
         string m_strNsResults = null;
+        string m_strAtariRom = "pong";
 
         delegate void fnSetStatus(string strMsg, STATUS status, bool bBreath);
         delegate void fnNsDone();
@@ -851,7 +852,7 @@ namespace MyCaffe.app
             Properties.Settings.Default.GPU = getGpu();
             Properties.Settings.Default.Save();
 
-            m_evtCancelPG.Set();
+            m_evtCancelTraining.Set();
             m_evtCancelNs.Set();
         }
 
@@ -1215,8 +1216,8 @@ namespace MyCaffe.app
                 strTrainer = dlg.Trainer;
 
                 m_log.WriteLine("starting policy gradient cart-pole test...");
-                m_evtCancelPG.Reset();
-                m_pgTask = Task.Factory.StartNew(new Action<object>(pgTrainerThread), new Tuple<CancelEvent, string, bool, bool, bool, string>(m_evtCancelPG, "Cart-Pole", bShowUi, bUseAccelTrain, bAllowDiscountReset, strTrainer));
+                m_evtCancelTraining.Reset();
+                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "Cart-Pole", strTrainer, bShowUi, bUseAccelTrain, bAllowDiscountReset, false, false));
                 startAtariTrainerToolStripMenuItem.Enabled = false;
                 startNeuralStyleTransferToolStripMenuItem.Enabled = false;
                 startCartPoleTrainerToolStripMenuItem.Text = "Stop Cart-Pole Training";
@@ -1224,8 +1225,8 @@ namespace MyCaffe.app
             else
             {
                 m_log.WriteLine("stopping policy gradient cart-pole test...");
-                m_evtCancelPG.Set();                
-                m_pgTask = null;
+                m_evtCancelTraining.Set();                
+                m_trainerTask = null;
                 startAtariTrainerToolStripMenuItem.Enabled = true;
                 startNeuralStyleTransferToolStripMenuItem.Enabled = true;
                 startCartPoleTrainerToolStripMenuItem.Text = "Start Cart-Pole Training";
@@ -1239,59 +1240,78 @@ namespace MyCaffe.app
                 bool bShowUi = false;
                 bool bUseAccelTrain = false;
                 bool bAllowDiscountReset = false;
+                bool bAllowNegativeRewards = false;
+                bool bTerminateOnRallyEnd = false;
                 string strTrainer = "SIMPLE";
 
                 FormCustomTraining dlg = new FormCustomTraining("ATARI");
                 if (dlg.ShowDialog() != DialogResult.OK)
                     return;
 
+                m_strAtariRom = dlg.RomName;
                 bShowUi = dlg.ShowUserInterface;
                 bUseAccelTrain = dlg.UseAcceleratedTraining;
                 bAllowDiscountReset = dlg.AllowDiscountReset;
+                bAllowNegativeRewards = dlg.AllowNegativeRewards;
+                bTerminateOnRallyEnd = dlg.TerminateOnRallyEnd;
                 strTrainer = dlg.Trainer;
 
-                m_log.WriteLine("starting policy gradient ATARI test...");
-                m_evtCancelPG.Reset();
-                m_pgTask = Task.Factory.StartNew(new Action<object>(pgTrainerThread), new Tuple<CancelEvent, string, bool, bool, bool, string>(m_evtCancelPG, "ATARI", bShowUi, bUseAccelTrain, bAllowDiscountReset, strTrainer));
+                m_log.WriteLine("starting " + strTrainer + " ATARI (" + m_strAtariRom + ") test...");
+                m_evtCancelTraining.Reset();
+                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "ATARI", strTrainer, bShowUi, bUseAccelTrain, bAllowDiscountReset, bAllowNegativeRewards, bTerminateOnRallyEnd));
                 startCartPoleTrainerToolStripMenuItem.Enabled = false;
                 startNeuralStyleTransferToolStripMenuItem.Enabled = false;
                 startAtariTrainerToolStripMenuItem.Text = "Stop ATARI Training";
             }
             else
             {
-                m_log.WriteLine("stopping policy gradient ATARI test...");
-                m_evtCancelPG.Set();
-                m_pgTask = null;
+                m_log.WriteLine("stopping ATARI test...");
+                m_evtCancelTraining.Set();
+                m_trainerTask = null;
                 startCartPoleTrainerToolStripMenuItem.Enabled = true;
                 startNeuralStyleTransferToolStripMenuItem.Enabled = true;
                 startAtariTrainerToolStripMenuItem.Text = "Start ATARI Training";
             }
         }
 
-        private void pgTrainerThread(object obj)
+        private void trainerThread(object obj)
         {
-            Tuple<CancelEvent, string, bool, bool, bool, string> arg = obj as Tuple<CancelEvent, string, bool, bool, bool, string>;
-            CancelEvent evtCancel = arg.Item1;
-            string strGym = arg.Item2;
+            Settings arg = obj as Settings;
+            CancelEvent evtCancel = arg.Cancel;
+            string strGym = arg.Gym;
             MyCaffeCustomTrainerTest<float> test = new MyCaffeCustomTrainerTest<float>(strGym, 0, EngineParameter.Engine.DEFAULT);
             int nIterations = 500000;
-            bool bShowUi = arg.Item3;
-            bool bUseAccelTrain = arg.Item4;
-            bool bAllowDiscountReset = arg.Item5;
-            string strTrainer = arg.Item6;
+            bool bShowUi = arg.ShowUi;
+            bool bUseAccelTrain = arg.UseAcceleratedTraining;
+            bool bAllowDiscountReset = arg.AllowDiscountReset;
+            string strTrainer = arg.Trainer;
 
             test.Log.OnWriteLine += Log_OnWriteLine1;
             test.CancelEvent.AddCancelOverride(evtCancel);
 
-            if (strGym == "Cart-Pole")
-                test.TrainCartPolePG(bShowUi, "PG." + strTrainer, nIterations, bUseAccelTrain, bAllowDiscountReset);
-            else if (strGym == "ATARI")
-                test.TrainAtariPG(bShowUi, "PG." + strTrainer, nIterations, bUseAccelTrain, bAllowDiscountReset);
+            try
+            {
+                if (strGym == "Cart-Pole")
+                {
+                    test.TrainCartPolePG(bShowUi, strTrainer, nIterations, bUseAccelTrain, bAllowDiscountReset);
+                }
+                else if (strGym == "ATARI")
+                {
+                    if (strTrainer.Contains("C51"))
+                        test.TrainAtariC51Dual(bShowUi, strTrainer, nIterations, 1, m_strAtariRom, arg.AllowNegativeRewards, arg.TerminateOnRallyEnd);
+                    else
+                        test.TrainAtariPG(bShowUi, strTrainer, nIterations, bUseAccelTrain, bAllowDiscountReset, m_strAtariRom, arg.AllowNegativeRewards, arg.TerminateOnRallyEnd);
+                }
 
-            if (evtCancel.WaitOne(0))
-                test.Log.WriteLine("training aborted.");
-            else
-                test.Log.WriteLine("training done.");
+                if (evtCancel.WaitOne(0))
+                    test.Log.WriteLine("training aborted.");
+                else
+                    test.Log.WriteLine("training done.");
+            }
+            catch (Exception excpt)
+            {
+                test.Log.WriteError(excpt);
+            }
 
             test.Log.OnWriteLine -= Log_OnWriteLine1;
             test.Dispose();
@@ -1412,6 +1432,70 @@ namespace MyCaffe.app
             test.Dispose();
 
             this.Invoke(new fnNsDone(nsDone));
+        }
+    }
+
+    class Settings
+    {
+        CancelEvent m_evtCancel;
+        string m_strTrainer;
+        string m_strGym;
+        bool m_bShowUi;
+        bool m_bUseAccelTrain;
+        bool m_bAllowDiscountReset;
+        bool m_bAllowNegativeRewards;
+        bool m_bTerminateOnRallyEnd;
+
+        public Settings(CancelEvent evtCancel, string strGym, string strTrainer, bool bShowUi, bool bUseAccelTrain, bool bAllowDiscountReset, bool bAllowNegRewards, bool bTerminateOnRallyEnd)
+        {
+            m_evtCancel = evtCancel;
+            m_strGym = strGym;
+            m_strTrainer = strTrainer;
+            m_bShowUi = bShowUi;
+            m_bUseAccelTrain = bUseAccelTrain;
+            m_bAllowDiscountReset = bAllowDiscountReset;
+            m_bAllowNegativeRewards = bAllowNegRewards;
+            m_bTerminateOnRallyEnd = bTerminateOnRallyEnd;
+        }
+
+        public CancelEvent Cancel
+        {
+            get { return m_evtCancel; }
+        }
+
+        public string Gym
+        {
+            get { return m_strGym; }
+        }
+
+        public string Trainer
+        {
+            get { return m_strTrainer; }
+        }
+
+        public bool ShowUi
+        {
+            get { return m_bShowUi; }
+        }
+
+        public bool UseAcceleratedTraining
+        {
+            get { return m_bUseAccelTrain; }
+        }
+
+        public bool AllowDiscountReset
+        {
+            get { return m_bAllowDiscountReset; }
+        }
+
+        public bool AllowNegativeRewards
+        {
+            get { return m_bAllowNegativeRewards; }
+        }
+
+        public bool TerminateOnRallyEnd
+        {
+            get { return m_bTerminateOnRallyEnd; }
         }
     }
 }

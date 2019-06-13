@@ -16,7 +16,11 @@ namespace MyCaffe.app
         bool m_bShowUi = false;
         bool m_bUseAcceleratedTraining = false;
         bool m_bAllowDiscountReset = false;
+        bool m_bAllowNegativeRewards = false;
+        bool m_bTerminateOnRallyEnd = false;
+        bool m_bAllowC51 = false;
         string m_strTrainer = "";
+        string m_strRomName = "";
 
         public FormCustomTraining(string strName)
         {
@@ -25,17 +29,23 @@ namespace MyCaffe.app
 
             if (strName == "ATARI")
             {
-                m_strTrainer = "SIMPLE";
+                m_strTrainer = "PG.SIMPLE";
                 m_bShowUi = false;
                 m_bUseAcceleratedTraining = false;
                 m_bAllowDiscountReset = true;
+                m_bAllowC51 = true;
+                grpRom.Visible = true;
+
             }
             else
             {
-                m_strTrainer = "MT";
+                m_strTrainer = "PG.MT";
                 m_bShowUi = false;
                 m_bUseAcceleratedTraining = true;
                 m_bAllowDiscountReset = false;
+                grpRom.Visible = false;
+                chkTerminateOnRallyEnd.Visible = false;
+                chkAllowNegativeRewards.Visible = false;
             }
         }
 
@@ -47,12 +57,16 @@ namespace MyCaffe.app
             chkUseAcceleratedTraining.Checked = m_bUseAcceleratedTraining;
             chkAllowDiscountReset.Checked = m_bAllowDiscountReset;
 
-            if (m_strTrainer == "SIMPLE")
-                radSimple.Checked = true;
-            else if (m_strTrainer == "ST")
-                radSingleThread.Checked = true;
+            if (m_strTrainer == "PG.SIMPLE")
+                radPGSimple.Checked = true;
+            else if (m_strTrainer == "PG.ST")
+                radPGSingleThread.Checked = true;
+            else if (m_strTrainer == "C51.ST")
+                radC51SingleThread.Checked = true;
             else
-                radMultiThread.Checked = true;
+                radPGMultiThread.Checked = true;
+
+            radC51SingleThread.Enabled = m_bAllowC51;
         }
 
         private void btnOK_Click(object sender, EventArgs e)
@@ -60,13 +74,27 @@ namespace MyCaffe.app
             m_bShowUi = chkShowUi.Checked;
             m_bUseAcceleratedTraining = chkUseAcceleratedTraining.Checked;
             m_bAllowDiscountReset = chkAllowDiscountReset.Checked;
+            m_bAllowNegativeRewards = chkAllowNegativeRewards.Checked;
+            m_bTerminateOnRallyEnd = chkTerminateOnRallyEnd.Checked;
 
-            if (radSimple.Checked)
-                m_strTrainer = "SIMPLE";
-            else if (radSingleThread.Checked)
-                m_strTrainer = "ST";
+            if (radPGSimple.Checked)
+                m_strTrainer = "PG.SIMPLE";
+            else if (radPGSingleThread.Checked)
+                m_strTrainer = "PG.ST";
+            else if (radC51SingleThread.Checked)
+                m_strTrainer = "C51.ST";
             else
-                m_strTrainer = "MT";
+                m_strTrainer = "PG.MT";
+
+            if (radAtariBreakout.Checked)
+                m_strRomName = "breakout";
+            else
+                m_strRomName = "pong";
+        }
+
+        public string RomName
+        {
+            get { return m_strRomName; }
         }
 
         public bool ShowUserInterface
@@ -82,6 +110,16 @@ namespace MyCaffe.app
         public bool AllowDiscountReset
         {
             get { return m_bAllowDiscountReset; }
+        }
+
+        public bool TerminateOnRallyEnd
+        {
+            get { return m_bTerminateOnRallyEnd; }
+        }
+
+        public bool AllowNegativeRewards
+        {
+            get { return m_bAllowNegativeRewards; }
         }
 
         public string Trainer

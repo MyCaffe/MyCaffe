@@ -37,22 +37,29 @@
             this.chkShowUi = new System.Windows.Forms.CheckBox();
             this.chkUseAcceleratedTraining = new System.Windows.Forms.CheckBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.radMultiThread = new System.Windows.Forms.RadioButton();
-            this.radSingleThread = new System.Windows.Forms.RadioButton();
-            this.radSimple = new System.Windows.Forms.RadioButton();
+            this.radC51SingleThread = new System.Windows.Forms.RadioButton();
+            this.radPGMultiThread = new System.Windows.Forms.RadioButton();
+            this.radPGSingleThread = new System.Windows.Forms.RadioButton();
+            this.radPGSimple = new System.Windows.Forms.RadioButton();
             this.chkAllowDiscountReset = new System.Windows.Forms.CheckBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.grpRom = new System.Windows.Forms.GroupBox();
+            this.radAtariBreakout = new System.Windows.Forms.RadioButton();
+            this.radAtariPong = new System.Windows.Forms.RadioButton();
+            this.chkAllowNegativeRewards = new System.Windows.Forms.CheckBox();
+            this.chkTerminateOnRallyEnd = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
+            this.grpRom.SuspendLayout();
             this.SuspendLayout();
             // 
             // btnCancel
             // 
             this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(202, 181);
+            this.btnCancel.Location = new System.Drawing.Point(366, 194);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(75, 23);
-            this.btnCancel.TabIndex = 5;
+            this.btnCancel.TabIndex = 7;
             this.btnCancel.Text = "Cancel";
             this.btnCancel.UseVisualStyleBackColor = true;
             // 
@@ -60,7 +67,7 @@
             // 
             this.btnOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.btnOK.Location = new System.Drawing.Point(121, 181);
+            this.btnOK.Location = new System.Drawing.Point(285, 194);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(75, 23);
             this.btnOK.TabIndex = 6;
@@ -76,7 +83,7 @@
             this.lblGym.Location = new System.Drawing.Point(-1, 9);
             this.lblGym.Name = "lblGym";
             this.lblGym.Size = new System.Drawing.Size(72, 27);
-            this.lblGym.TabIndex = 7;
+            this.lblGym.TabIndex = 0;
             this.lblGym.Text = "Gym:";
             // 
             // lblGymName
@@ -88,8 +95,8 @@
             this.lblGymName.ForeColor = System.Drawing.Color.SteelBlue;
             this.lblGymName.Location = new System.Drawing.Point(73, 9);
             this.lblGymName.Name = "lblGymName";
-            this.lblGymName.Size = new System.Drawing.Size(216, 27);
-            this.lblGymName.TabIndex = 7;
+            this.lblGymName.Size = new System.Drawing.Size(380, 27);
+            this.lblGymName.TabIndex = 1;
             // 
             // chkShowUi
             // 
@@ -97,7 +104,7 @@
             this.chkShowUi.Location = new System.Drawing.Point(12, 51);
             this.chkShowUi.Name = "chkShowUi";
             this.chkShowUi.Size = new System.Drawing.Size(120, 17);
-            this.chkShowUi.TabIndex = 8;
+            this.chkShowUi.TabIndex = 2;
             this.chkShowUi.Text = "Show user-interface";
             this.toolTip1.SetToolTip(this.chkShowUi, "Show the gym user interface.");
             this.chkShowUi.UseVisualStyleBackColor = true;
@@ -108,7 +115,7 @@
             this.chkUseAcceleratedTraining.Location = new System.Drawing.Point(12, 74);
             this.chkUseAcceleratedTraining.Name = "chkUseAcceleratedTraining";
             this.chkUseAcceleratedTraining.Size = new System.Drawing.Size(141, 17);
-            this.chkUseAcceleratedTraining.TabIndex = 8;
+            this.chkUseAcceleratedTraining.TabIndex = 3;
             this.chkUseAcceleratedTraining.Text = "Use accelerated training";
             this.toolTip1.SetToolTip(this.chkUseAcceleratedTraining, "Enable accelerated training which focuses on gradient changes (Note this works be" +
         "st with Cart-Pole)");
@@ -116,47 +123,60 @@
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.radMultiThread);
-            this.groupBox1.Controls.Add(this.radSingleThread);
-            this.groupBox1.Controls.Add(this.radSimple);
+            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox1.Controls.Add(this.radC51SingleThread);
+            this.groupBox1.Controls.Add(this.radPGMultiThread);
+            this.groupBox1.Controls.Add(this.radPGSingleThread);
+            this.groupBox1.Controls.Add(this.radPGSimple);
             this.groupBox1.Location = new System.Drawing.Point(12, 120);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(263, 51);
-            this.groupBox1.TabIndex = 9;
+            this.groupBox1.Size = new System.Drawing.Size(429, 51);
+            this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Trainer";
             // 
-            // radMultiThread
+            // radC51SingleThread
             // 
-            this.radMultiThread.AutoSize = true;
-            this.radMultiThread.Location = new System.Drawing.Point(170, 19);
-            this.radMultiThread.Name = "radMultiThread";
-            this.radMultiThread.Size = new System.Drawing.Size(80, 17);
-            this.radMultiThread.TabIndex = 2;
-            this.radMultiThread.Text = "Multi-thread";
-            this.radMultiThread.UseVisualStyleBackColor = true;
+            this.radC51SingleThread.AutoSize = true;
+            this.radC51SingleThread.Location = new System.Drawing.Point(310, 19);
+            this.radC51SingleThread.Name = "radC51SingleThread";
+            this.radC51SingleThread.Size = new System.Drawing.Size(109, 17);
+            this.radC51SingleThread.TabIndex = 3;
+            this.radC51SingleThread.Text = "C51 Single-thread";
+            this.radC51SingleThread.UseVisualStyleBackColor = true;
             // 
-            // radSingleThread
+            // radPGMultiThread
             // 
-            this.radSingleThread.AutoSize = true;
-            this.radSingleThread.Location = new System.Drawing.Point(77, 19);
-            this.radSingleThread.Name = "radSingleThread";
-            this.radSingleThread.Size = new System.Drawing.Size(87, 17);
-            this.radSingleThread.TabIndex = 1;
-            this.radSingleThread.Text = "Single-thread";
-            this.radSingleThread.UseVisualStyleBackColor = true;
+            this.radPGMultiThread.AutoSize = true;
+            this.radPGMultiThread.Location = new System.Drawing.Point(206, 19);
+            this.radPGMultiThread.Name = "radPGMultiThread";
+            this.radPGMultiThread.Size = new System.Drawing.Size(98, 17);
+            this.radPGMultiThread.TabIndex = 2;
+            this.radPGMultiThread.Text = "PG Multi-thread";
+            this.radPGMultiThread.UseVisualStyleBackColor = true;
             // 
-            // radSimple
+            // radPGSingleThread
             // 
-            this.radSimple.AutoSize = true;
-            this.radSimple.Checked = true;
-            this.radSimple.Location = new System.Drawing.Point(15, 19);
-            this.radSimple.Name = "radSimple";
-            this.radSimple.Size = new System.Drawing.Size(56, 17);
-            this.radSimple.TabIndex = 0;
-            this.radSimple.TabStop = true;
-            this.radSimple.Text = "Simple";
-            this.radSimple.UseVisualStyleBackColor = true;
+            this.radPGSingleThread.AutoSize = true;
+            this.radPGSingleThread.Location = new System.Drawing.Point(95, 19);
+            this.radPGSingleThread.Name = "radPGSingleThread";
+            this.radPGSingleThread.Size = new System.Drawing.Size(105, 17);
+            this.radPGSingleThread.TabIndex = 1;
+            this.radPGSingleThread.Text = "PG Single-thread";
+            this.radPGSingleThread.UseVisualStyleBackColor = true;
+            // 
+            // radPGSimple
+            // 
+            this.radPGSimple.AutoSize = true;
+            this.radPGSimple.Checked = true;
+            this.radPGSimple.Location = new System.Drawing.Point(15, 19);
+            this.radPGSimple.Name = "radPGSimple";
+            this.radPGSimple.Size = new System.Drawing.Size(74, 17);
+            this.radPGSimple.TabIndex = 0;
+            this.radPGSimple.TabStop = true;
+            this.radPGSimple.Text = "PG Simple";
+            this.radPGSimple.UseVisualStyleBackColor = true;
             // 
             // chkAllowDiscountReset
             // 
@@ -164,10 +184,65 @@
             this.chkAllowDiscountReset.Location = new System.Drawing.Point(12, 97);
             this.chkAllowDiscountReset.Name = "chkAllowDiscountReset";
             this.chkAllowDiscountReset.Size = new System.Drawing.Size(120, 17);
-            this.chkAllowDiscountReset.TabIndex = 8;
+            this.chkAllowDiscountReset.TabIndex = 4;
             this.chkAllowDiscountReset.Text = "Allow discount reset";
             this.toolTip1.SetToolTip(this.chkAllowDiscountReset, "Allowing the discount reset, resets the running sum on non-zero reward values.");
             this.chkAllowDiscountReset.UseVisualStyleBackColor = true;
+            // 
+            // grpRom
+            // 
+            this.grpRom.Controls.Add(this.radAtariBreakout);
+            this.grpRom.Controls.Add(this.radAtariPong);
+            this.grpRom.Location = new System.Drawing.Point(12, 177);
+            this.grpRom.Name = "grpRom";
+            this.grpRom.Size = new System.Drawing.Size(200, 40);
+            this.grpRom.TabIndex = 8;
+            this.grpRom.TabStop = false;
+            this.grpRom.Text = "ATARI ROM";
+            this.grpRom.Visible = false;
+            // 
+            // radAtariBreakout
+            // 
+            this.radAtariBreakout.AutoSize = true;
+            this.radAtariBreakout.Location = new System.Drawing.Point(95, 17);
+            this.radAtariBreakout.Name = "radAtariBreakout";
+            this.radAtariBreakout.Size = new System.Drawing.Size(68, 17);
+            this.radAtariBreakout.TabIndex = 1;
+            this.radAtariBreakout.TabStop = true;
+            this.radAtariBreakout.Text = "Breakout";
+            this.radAtariBreakout.UseVisualStyleBackColor = true;
+            // 
+            // radAtariPong
+            // 
+            this.radAtariPong.AutoSize = true;
+            this.radAtariPong.Checked = true;
+            this.radAtariPong.Location = new System.Drawing.Point(15, 17);
+            this.radAtariPong.Name = "radAtariPong";
+            this.radAtariPong.Size = new System.Drawing.Size(50, 17);
+            this.radAtariPong.TabIndex = 0;
+            this.radAtariPong.TabStop = true;
+            this.radAtariPong.Text = "Pong";
+            this.radAtariPong.UseVisualStyleBackColor = true;
+            // 
+            // chkAllowNegativeRewards
+            // 
+            this.chkAllowNegativeRewards.AutoSize = true;
+            this.chkAllowNegativeRewards.Location = new System.Drawing.Point(218, 51);
+            this.chkAllowNegativeRewards.Name = "chkAllowNegativeRewards";
+            this.chkAllowNegativeRewards.Size = new System.Drawing.Size(135, 17);
+            this.chkAllowNegativeRewards.TabIndex = 9;
+            this.chkAllowNegativeRewards.Text = "Allow negative rewards";
+            this.chkAllowNegativeRewards.UseVisualStyleBackColor = true;
+            // 
+            // chkTerminateOnRallyEnd
+            // 
+            this.chkTerminateOnRallyEnd.AutoSize = true;
+            this.chkTerminateOnRallyEnd.Location = new System.Drawing.Point(218, 74);
+            this.chkTerminateOnRallyEnd.Name = "chkTerminateOnRallyEnd";
+            this.chkTerminateOnRallyEnd.Size = new System.Drawing.Size(130, 17);
+            this.chkTerminateOnRallyEnd.TabIndex = 9;
+            this.chkTerminateOnRallyEnd.Text = "Terminate on rally end";
+            this.chkTerminateOnRallyEnd.UseVisualStyleBackColor = true;
             // 
             // FormCustomTraining
             // 
@@ -175,7 +250,10 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(289, 216);
+            this.ClientSize = new System.Drawing.Size(453, 229);
+            this.Controls.Add(this.chkTerminateOnRallyEnd);
+            this.Controls.Add(this.chkAllowNegativeRewards);
+            this.Controls.Add(this.grpRom);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.chkAllowDiscountReset);
             this.Controls.Add(this.chkUseAcceleratedTraining);
@@ -195,6 +273,8 @@
             this.Load += new System.EventHandler(this.FromCustomTraining_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
+            this.grpRom.ResumeLayout(false);
+            this.grpRom.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -209,10 +289,16 @@
         private System.Windows.Forms.CheckBox chkShowUi;
         private System.Windows.Forms.CheckBox chkUseAcceleratedTraining;
         private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.RadioButton radMultiThread;
-        private System.Windows.Forms.RadioButton radSingleThread;
-        private System.Windows.Forms.RadioButton radSimple;
+        private System.Windows.Forms.RadioButton radPGMultiThread;
+        private System.Windows.Forms.RadioButton radPGSingleThread;
+        private System.Windows.Forms.RadioButton radPGSimple;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.CheckBox chkAllowDiscountReset;
+        private System.Windows.Forms.RadioButton radC51SingleThread;
+        private System.Windows.Forms.GroupBox grpRom;
+        private System.Windows.Forms.RadioButton radAtariBreakout;
+        private System.Windows.Forms.RadioButton radAtariPong;
+        private System.Windows.Forms.CheckBox chkAllowNegativeRewards;
+        private System.Windows.Forms.CheckBox chkTerminateOnRallyEnd;
     }
 }
