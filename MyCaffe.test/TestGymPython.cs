@@ -8,6 +8,7 @@ using MyCaffe.param;
 using MyCaffe.common;
 using MyCaffe.layers;
 using MyCaffe.gym.python;
+using System.Diagnostics;
 
 namespace MyCaffe.test
 {
@@ -20,15 +21,16 @@ namespace MyCaffe.test
             MyCaffePythonGym gym = new MyCaffePythonGym();
             Random random = new Random();
 
-            gym.Initialize("ATARI", "FrameSkip=4;GameROM=C:\\Program~Files\\SignalPop\\AI~Designer\\roms\\pong.bin");
+            gym.Initialize("ATARI", "AllowNegativeRewards=True;TerminateOnRallyEnd=True;FrameSkip=4;GameROM=C:\\ProgramData\\MyCaffe\\test_data\\roms\\breakout.bin");
 
             string strName = gym.Name;
-            Assert.AreEqual(strName, "ATARI");
+            Assert.AreEqual(strName, "MyCaffe ATARI");
 
             int[] rgActions = gym.Actions;
-            Assert.AreEqual(rgActions.Length, 2);
+            Assert.AreEqual(rgActions.Length, 3);
             Assert.AreEqual(rgActions[0], 0);
             Assert.AreEqual(rgActions[1], 1);
+            Assert.AreEqual(rgActions[2], 2);
 
             gym.OpenUi();
 
@@ -41,6 +43,11 @@ namespace MyCaffe.test
                 gym.Step(rgActions[nActionIdx], 1);
 
                 Assert.AreNotEqual(gym.Data, null);
+
+                Trace.WriteLine("Reward = " + gym.Reward);
+
+                if (gym.IsTerminal)
+                    Trace.WriteLine("TERMINAL = TRUE");
             }
            
             gym.CloseUi();
