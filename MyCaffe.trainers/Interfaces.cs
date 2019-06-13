@@ -5,6 +5,7 @@ using MyCaffe.gym;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -312,6 +313,19 @@ namespace MyCaffe.trainers
         /// The OnWait callback fires when waiting for a shutdown.
         /// </summary>
         void OnWait(WaitArgs e);
+    }
+
+    /// <summary>
+    /// The IxTrainerGetDataCallback interface is called right after rendering the output image and just before
+    /// sending it to the display, thus giving the implementor a chance to 'overlay' information onto the image.
+    /// </summary>
+    public interface IxTrainerGetDataCallback
+    {
+        /// <summary>
+        /// The OnOverlay method is optionally called just before displaying a gym image thus allowing for an overlay to be applied.
+        /// </summary>
+        /// <param name="e"></param>
+        void OnOverlay(OverlayArgs e);
     }
 
     /// <summary>

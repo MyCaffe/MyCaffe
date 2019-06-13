@@ -3,6 +3,7 @@ using MyCaffe.gym;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -337,6 +338,32 @@ namespace MyCaffe.trainers
     }
 
     /// <summary>
+    /// The OverlayArgs is passed ot the OnOverlay event, optionally fired just before displaying a gym image.
+    /// </summary>
+    public class OverlayArgs : EventArgs
+    {
+        Bitmap m_bmp;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="bmp">Specifies the display image.</param>
+        public OverlayArgs(Bitmap bmp)
+        {
+            m_bmp = bmp;
+        }
+
+        /// <summary>
+        /// Get/set the display image.
+        /// </summary>
+        public Bitmap DisplayImage
+        {
+            get { return m_bmp; }
+            set { m_bmp = value; }
+        }
+    }
+
+    /// <summary>
     /// The GetDataArgs is passed to the OnGetData event to retrieve data.
     /// </summary>
     public class GetDataArgs : EventArgs
@@ -351,6 +378,7 @@ namespace MyCaffe.trainers
         int m_nIndex = 0;
         bool m_bGetLabel = false;
         Phase m_phase = Phase.NONE;
+        IxTrainerGetDataCallback m_iOnGetData = null;
 
         /// <summary>
         /// The constructor.
@@ -365,7 +393,8 @@ namespace MyCaffe.trainers
         /// <param name="bAllowUi">Optionally, specifies whether or not to allow the user interface.</param>
         /// <param name="bGetLabel">Optionally, specifies to get the label in addition to the data.</param>
         /// <param name="bBatchMode">Optionally, specifies to get the data in batch mode (default = false).</param>
-        public GetDataArgs(Phase phase, int nIdx, Component mycaffe, Log log, CancelEvent evtCancel, bool bReset, int nAction = -1, bool bAllowUi = true, bool bGetLabel = false, bool bBatchMode = false)
+        /// <param name="iOnGetData">Optionally, specifies the callback called after rendering the gym output, yet just before displaying it.</param>
+        public GetDataArgs(Phase phase, int nIdx, Component mycaffe, Log log, CancelEvent evtCancel, bool bReset, int nAction = -1, bool bAllowUi = true, bool bGetLabel = false, bool bBatchMode = false, IxTrainerGetDataCallback iOnGetData = null)
         {
             if (bBatchMode)
                 m_evtDataReady = new ManualResetEvent(false);
@@ -378,6 +407,15 @@ namespace MyCaffe.trainers
             m_evtCancel = evtCancel;
             m_bReset = bReset;
             m_bGetLabel = bGetLabel;
+            m_iOnGetData = iOnGetData;
+        }
+
+        /// <summary>
+        /// Returns the OnGetData Callback called just after rendering yet before displaying the gym image.
+        /// </summary>
+        public IxTrainerGetDataCallback GetDataCallback
+        {
+            get { return m_iOnGetData; }
         }
 
         /// <summary>
