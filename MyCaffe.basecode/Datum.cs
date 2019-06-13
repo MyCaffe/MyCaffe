@@ -116,15 +116,6 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Returns a user-defined tag associated with the data.
-        /// </summary>
-        public object Tag
-        {
-            get { return m_tag; }
-            set { m_tag = value; }
-        }
-
-        /// <summary>
         /// Returns a user-defined name of the tag associated with the data.
         /// </summary>
         public string TagName
