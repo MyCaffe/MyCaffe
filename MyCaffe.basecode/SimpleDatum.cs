@@ -36,6 +36,7 @@ namespace MyCaffe.basecode
         DATA_FORMAT m_debugDataFormat = DATA_FORMAT.NONE;
         string m_strDesc = null;
         int m_nSourceID = 0;
+        object m_tag = null;
 
         /// <summary>
         /// Defines the data format of the DebugData and DataCriteria when specified.
@@ -224,6 +225,15 @@ namespace MyCaffe.basecode
                     m_rgByteData = rgData.ToArray();
                 }
             }
+        }
+
+        /// <summary>
+        /// Specifies user data associated with the SimpleDatum.
+        /// </summary>
+        public object Tag
+        {
+            get { return m_tag; }
+            set { m_tag = value; }
         }
 
         /// <summary>
