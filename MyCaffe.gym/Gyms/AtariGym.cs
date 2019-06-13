@@ -153,6 +153,7 @@ namespace MyCaffe.gym
                 m_rgFrameSkip.Add(m_nFrameSkip);
             }
 
+            m_rgActions.Add(ACTION.ACT_PLAYER_A_FIRE.ToString(), (int)ACTION.ACT_PLAYER_A_FIRE);
             m_rgActions.Add(ACTION.ACT_PLAYER_A_RIGHT.ToString(), (int)ACTION.ACT_PLAYER_A_RIGHT);
             m_rgActions.Add(ACTION.ACT_PLAYER_A_LEFT.ToString(), (int)ACTION.ACT_PLAYER_A_LEFT);
 
