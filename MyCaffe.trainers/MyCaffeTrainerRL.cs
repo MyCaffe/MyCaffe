@@ -525,9 +525,9 @@ namespace MyCaffe.trainers
         /// </summary>
         public void OnUpdateStatus(GetStatusArgs e)
         {
-            m_dfGlobalRewards = e.Reward;
-            m_dfGlobalRewardsMax = Math.Max(m_dfGlobalRewardsMax, e.Reward);
-            m_dfGlobalRewardsAve = (1.0 / (double)m_nThreads) * e.Reward + ((m_nThreads - 1) / (double)m_nThreads) * m_dfGlobalRewardsAve;
+            m_dfGlobalRewards = e.TotalReward;
+            m_dfGlobalRewardsMax = Math.Max(m_dfGlobalRewardsMax, e.TotalReward);
+            m_dfGlobalRewardsAve = (1.0 / (double)m_nThreads) * e.TotalReward + ((m_nThreads - 1) / (double)m_nThreads) * m_dfGlobalRewardsAve;
             m_dfExplorationRate = e.ExplorationRate;
             m_dfOptimalSelectionRate = e.OptimalSelectionCoefficient;
 

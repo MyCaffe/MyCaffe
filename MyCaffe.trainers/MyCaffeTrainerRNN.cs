@@ -501,13 +501,13 @@ namespace MyCaffe.trainers
                 m_dfLoss = e.Loss;
                 m_nIteration = e.Frames;
                 m_nIterations = e.MaxFrames;
-                m_dfAccuracy = e.Reward;
+                m_dfAccuracy = e.TotalReward;
 
                 Dictionary<string, double> rgValues = new Dictionary<string, double>();
                 rgValues.Add("GlobalIteration", e.Frames);
                 rgValues.Add("GlobalLoss", e.Loss);
                 rgValues.Add("LearningRate", e.LearningRate);
-                rgValues.Add("GlobalAccuracy", e.Reward);
+                rgValues.Add("GlobalAccuracy", e.TotalReward);
                 m_icallback.Update(TrainingCategory, rgValues);
             }
         }
