@@ -114,6 +114,8 @@ namespace MyCaffe.gym
             m_ale.EnableColorData = false;
             m_ale.EnableRestrictedActionSet = true;
             m_ale.EnableColorAveraging = true;
+            m_ale.AllowNegativeRewards = properties.GetPropertyAsBool("AllowNegativeRewards", false);
+            m_ale.EnableTerminateOnRallyEnd = properties.GetPropertyAsBool("TerminateOnRallyEnd", false);
             m_ale.RandomSeed = (int)DateTime.Now.Ticks;
             m_ale.RepeatActionProbability = 0.0f; // disable action repeatability
 
