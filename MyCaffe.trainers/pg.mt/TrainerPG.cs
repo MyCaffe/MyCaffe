@@ -633,9 +633,9 @@ namespace MyCaffe.trainers.pg.mt
             return m_brain.act(sd, sdClip, out rgfAprob);
         }
 
-        private int updateStatus(int nEpisodeCount, double dfRunningReward, double dfLoss, double dfLearningRate)
+        private int updateStatus(int nIteration, int nEpisodeCount, double dfRunningReward, double dfRewardSum, double dfLoss, double dfLearningRate)
         {
-            GetStatusArgs args = new GetStatusArgs(m_nIndex, nEpisodeCount, 1000000, dfRunningReward, m_dfExplorationRate, 0, dfLoss, dfLearningRate);
+            GetStatusArgs args = new GetStatusArgs(m_nIndex, nIteration, nEpisodeCount, 1000000, dfRunningReward, dfRewardSum, m_dfExplorationRate, 0, dfLoss, dfLearningRate);
             m_icallback.OnUpdateStatus(args);
             return args.NewFrameCount;
         }
@@ -844,7 +844,7 @@ namespace MyCaffe.trainers.pg.mt
                                 else
                                     dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
 
-                                nEpisode = updateStatus(nEpisode, dfRunningReward.Value, m_brain.LastLoss, m_brain.LearningRate);
+                                nEpisode = updateStatus(nIteration, nEpisode, dfRunningReward.Value, dfRewardSum, m_brain.LastLoss, m_brain.LearningRate);
                                 dfRewardSum = 0;
                             }
 
@@ -874,7 +874,7 @@ namespace MyCaffe.trainers.pg.mt
                         else
                             dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
 
-                        nEpisode = updateStatus(nEpisode, dfRunningReward.Value, m_brain.LastLoss, m_brain.LearningRate);
+                        nEpisode = updateStatus(nIteration, nEpisode, dfRunningReward.Value, dfRewardSum, m_brain.LastLoss, m_brain.LearningRate);
                         dfRewardSum = 0;
 
                         s = getData(phase, m_nIndex, -1);

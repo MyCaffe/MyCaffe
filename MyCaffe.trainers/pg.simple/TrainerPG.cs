@@ -208,9 +208,9 @@ namespace MyCaffe.trainers.pg.simple
             return args.State;
         }
 
-        private void updateStatus(int nEpisodeCount, double dfRewardSum, double dfRunningReward)
+        private void updateStatus(int nIteration, int nEpisodeCount, double dfRewardSum, double dfRunningReward)
         {
-            GetStatusArgs args = new GetStatusArgs(0, nEpisodeCount, 1000000, dfRunningReward, 0, 0, 0, 0);
+            GetStatusArgs args = new GetStatusArgs(0, nIteration, nEpisodeCount, 1000000, dfRunningReward, dfRewardSum, 0, 0, 0, 0);
             m_icallback.OnUpdateStatus(args);
         }
 
@@ -340,7 +340,7 @@ namespace MyCaffe.trainers.pg.simple
                         else
                             dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
 
-                        updateStatus(nEpisode, dfRewardSum, dfRunningReward.Value);
+                        updateStatus(nIteration, nEpisode, dfRewardSum, dfRunningReward.Value);
                         dfRewardSum = 0;
 
                         s = getData(phase, -1);
@@ -363,7 +363,7 @@ namespace MyCaffe.trainers.pg.simple
                         else
                             dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
 
-                        updateStatus(nEpisode, dfRewardSum, dfRunningReward.Value);
+                        updateStatus(nIteration, nEpisode, dfRewardSum, dfRunningReward.Value);
                         dfRewardSum = 0;
 
                         s = getData(phase, -1);

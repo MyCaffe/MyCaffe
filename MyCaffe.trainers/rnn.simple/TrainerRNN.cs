@@ -512,7 +512,7 @@ namespace MyCaffe.trainers.rnn.simple
 
         private void updateStatus(int nIteration, int nMaxIteration, double dfAccuracy, double dfLoss, double dfLearningRate)
         {
-            GetStatusArgs args = new GetStatusArgs(0, nIteration, nMaxIteration, dfAccuracy, 0, 0, dfLoss, dfLearningRate);
+            GetStatusArgs args = new GetStatusArgs(0, nIteration, nIteration, nMaxIteration, dfAccuracy, 0, 0, 0, dfLoss, dfLearningRate);
             m_icallback.OnUpdateStatus(args);
         }
 
