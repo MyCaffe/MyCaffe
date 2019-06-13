@@ -17,9 +17,11 @@ namespace MyCaffe.gym.python
     /// </summary>
     /// <remarks>
     /// To use within Python first install the PythonNet package with the command:
+    /// <code>
     ///   pip install pythonnet
+    /// </code>
     /// 
-    /// Next, from within python use the following code to access the PythonGym.
+    /// Next, from within python use the following code to access the MyCaffePythonGym.
     /// <code>
     /// import clr
     /// clr.AddReference('path\\MyCaffe.gym.python.dll')
@@ -32,7 +34,7 @@ namespace MyCaffe.gym.python
     /// gym.CloseUi();
     /// </code>
     /// 
-    /// NOTE: Using the OpenUi function requires that a service host is already running.  The MyCaffe Test Application
+    /// NOTE: Using the OpenUi function requires that a UI service host is already running.  The MyCaffe Test Application
     /// automatically provides a service host - just run this application before running your Python script and
     /// the test application will then handle the user interface display.
     /// 
