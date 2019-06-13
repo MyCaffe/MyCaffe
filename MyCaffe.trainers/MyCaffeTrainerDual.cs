@@ -25,6 +25,7 @@ namespace MyCaffe.trainers
     /// TrainerType=PG.SIMPLE - creates the initial simple policy gradient trainer that only supports single-threaded Sigmoid based models.
     /// TrainerType=PG.ST - creates a single-threaded policy gradient trainer that supports both Sigmoid and Softmax based models.
     /// TrainerType=PG.MT - creates a multi-threaded policy gradient trainer that supports both Sigmoid and Softmax based models and can train across GPU's.
+    /// TrainerType=C51.ST = creates a single-threaded network that implements the C51 DDQN algorithm.
     /// 
     /// Other intitialization properties include:
     /// 
@@ -70,6 +71,7 @@ namespace MyCaffe.trainers
         IxTrainer m_itrainer = null;
         double m_dfExplorationRate = 0;
         double m_dfOptimalSelectionRate = 0;
+        double m_dfImmediateRewards = 0;
         double m_dfGlobalRewards = 0;
         double m_dfGlobalRewardsAve = 0;
         double m_dfGlobalRewardsMax = -double.MaxValue;
@@ -94,6 +96,7 @@ namespace MyCaffe.trainers
             PG_MT,
             PG_ST,
             PG_SIMPLE,
+            C51_ST,
             RNN_SIMPLE
         }
 
@@ -200,6 +203,9 @@ namespace MyCaffe.trainers
                     case TRAINER_TYPE.PG_MT:
                         return new pg.mt.TrainerPG<double>(mycaffe, m_properties, m_random, this);
 
+                    case TRAINER_TYPE.C51_ST:
+                        return new c51.ddqn.TrainerC51<double>(mycaffe, m_properties, m_random, this);
+
                     default:
                         throw new Exception("The trainer type '" + m_trainerType.ToString() + "' is not supported in the RL stage!");
                 }
@@ -245,6 +251,9 @@ namespace MyCaffe.trainers
 
                     case TRAINER_TYPE.PG_MT:
                         return new pg.mt.TrainerPG<float>(mycaffe, m_properties, m_random, this);
+
+                    case TRAINER_TYPE.C51_ST:
+                        return new c51.ddqn.TrainerC51<float>(mycaffe, m_properties, m_random, this);
 
                     default:
                         throw new Exception("The trainer type '" + m_trainerType.ToString() + "' is not supported in the RL stage!");
@@ -466,6 +475,11 @@ namespace MyCaffe.trainers
                     m_stage = Stage.RL;
                     break;
 
+                case "C51.ST":      // single threaded C51
+                    m_trainerType = TRAINER_TYPE.C51_ST;
+                    m_stage = Stage.RL;
+                    break;
+
                 case "RNN.SIMPLE":
                     m_trainerType = TRAINER_TYPE.RNN_SIMPLE;
                     m_stage = Stage.RNN;
@@ -503,7 +517,8 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <param name="mycaffe">Specifies the MyCaffeControl to use.</param>
         /// <param name="nIterationOverride">Specifies the iterations to run if greater than zero.</param>
-        public void Test(Component mycaffe, int nIterationOverride)
+        /// <param name="type">Specifies the type of iterator to use.</param>
+        public void Test(Component mycaffe, int nIterationOverride, ITERATOR_TYPE type = ITERATOR_TYPE.ITERATION)
         {
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe, getStage());
@@ -511,7 +526,7 @@ namespace MyCaffe.trainers
             if (nIterationOverride == -1)
                 nIterationOverride = m_nIterations;
 
-            m_itrainer.Test(nIterationOverride);
+            m_itrainer.Test(nIterationOverride, type);
             m_itrainer.Shutdown(500);
             m_itrainer = null;
         }
@@ -521,8 +536,9 @@ namespace MyCaffe.trainers
         /// </summary>
         /// <param name="mycaffe">Specifies the MyCaffeControl to use.</param>
         /// <param name="nIterationOverride">Specifies the iterations to run if greater than zero.</param>
+        /// <param name="type">Specifies the type of iterator to use.</param>
         /// <param name="step">Optionally, specifies whether or not to step the training for debugging (default = NONE).</param>
-        public void Train(Component mycaffe, int nIterationOverride, TRAIN_STEP step = TRAIN_STEP.NONE)
+        public void Train(Component mycaffe, int nIterationOverride, ITERATOR_TYPE type = ITERATOR_TYPE.ITERATION, TRAIN_STEP step = TRAIN_STEP.NONE)
         {
             if (m_itrainer == null)
                 m_itrainer = createTrainer(mycaffe, getStage());
@@ -530,7 +546,7 @@ namespace MyCaffe.trainers
             if (nIterationOverride == -1)
                 nIterationOverride = m_nIterations;
 
-            m_itrainer.Train(nIterationOverride, step);
+            m_itrainer.Train(nIterationOverride, type, step);
             m_itrainer.Shutdown(1000);
             m_itrainer = null;
         }
@@ -575,12 +591,13 @@ namespace MyCaffe.trainers
         /// </summary>
         public void OnUpdateStatus(GetStatusArgs e)
         {
-            m_nIteration = e.Frames;
-            m_dfAccuracy = e.Reward;
+            m_nIteration = e.Iteration;
+            m_dfAccuracy = e.TotalReward;
             m_nIterations = e.MaxFrames;
-            m_dfGlobalRewards = e.Reward;
-            m_dfGlobalRewardsMax = Math.Max(m_dfGlobalRewardsMax, e.Reward);
-            m_dfGlobalRewardsAve = (1.0 / (double)m_nThreads) * e.Reward + ((m_nThreads - 1) / (double)m_nThreads) * m_dfGlobalRewardsAve;
+            m_dfImmediateRewards = e.Reward;
+            m_dfGlobalRewards = e.TotalReward;
+            m_dfGlobalRewardsMax = Math.Max(m_dfGlobalRewardsMax, e.TotalReward);
+            m_dfGlobalRewardsAve = (1.0 / (double)m_nThreads) * e.TotalReward + ((m_nThreads - 1) / (double)m_nThreads) * m_dfGlobalRewardsAve;
             m_dfExplorationRate = e.ExplorationRate;
             m_dfOptimalSelectionRate = e.OptimalSelectionCoefficient;
 
@@ -675,12 +692,25 @@ namespace MyCaffe.trainers
             }
         }
 
+        public double ImmediateRewards
+        {
+            get { return m_dfImmediateRewards; }
+        }
+
         /// <summary>
         /// Return the global loss.
         /// </summary>
         public double GlobalLoss
         {
             get { return m_dfLoss; }
+        }
+
+        /// <summary>
+        /// Returns the global iteration.
+        /// </summary>
+        public int GlobalIteration
+        {
+            get { return m_nIteration; }
         }
 
         /// <summary>
@@ -746,7 +776,7 @@ namespace MyCaffe.trainers
 
             IxTrainerRL itrainer = m_itrainer as IxTrainerRL;
             if (itrainer == null)
-                throw new Exception("The trainer must be set to to 'PG.SIMPLE', 'PG.ST' or 'PG.MT' to run in reinforcement learning mode.");
+                throw new Exception("The trainer must be set to to 'C51.ST', PG.SIMPLE', 'PG.ST' or 'PG.MT' to run in reinforcement learning mode.");
 
             ResultCollection res = itrainer.RunOne(nDelay);
             m_itrainer.Shutdown(50);
