@@ -90,7 +90,6 @@ namespace MyCaffe.param
         public static InputParameter FromProto(RawProto rp)
         {
             InputParameter p = new InputParameter();
-            string strVal;
 
             RawProtoCollection col = rp.FindChildren("shape");
             foreach (RawProto rp1 in col)
