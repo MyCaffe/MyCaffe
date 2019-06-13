@@ -85,6 +85,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="SqlServerTypes\Loader.cs" />
+    <Compile Include="TestGymPython.cs" />
     <Compile Include="TestBinaryHashLayer.cs" />
     <Compile Include="TestColorMapper.cs" />
     <Compile Include="TestOneHotLayer.cs" />
@@ -222,6 +223,10 @@
     <ProjectReference Include="..\MyCaffe.extras\MyCaffe.extras.csproj">
       <Project>{9376B860-9896-40E5-8746-8ABF1F0A8B3D}</Project>
       <Name>MyCaffe.extras</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.gym.python\MyCaffe.gym.python.csproj">
+      <Project>{cdde1746-1f52-4dd0-8e7d-9b785e71eabd}</Project>
+      <Name>MyCaffe.gym.python</Name>
     </ProjectReference>
     <ProjectReference Include="..\MyCaffe.gym\MyCaffe.gym.csproj">
       <Project>{C14BEDC8-FF66-4118-BE66-675F26BE7EE0}</Project>
