@@ -401,6 +401,7 @@ namespace MyCaffe.basecode
             m_rgDebugData = d.m_rgDebugData;
             m_debugDataFormat = d.m_debugDataFormat;
             m_nSourceID = d.m_nSourceID;
+            m_tag = d.m_tag;
         }
 
         /// <summary>
