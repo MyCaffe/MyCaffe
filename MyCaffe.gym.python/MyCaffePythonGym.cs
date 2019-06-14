@@ -167,29 +167,27 @@ namespace MyCaffe.gym.python
         /// <summary>
         /// Returns the data as an image compatible with CV2.
         /// </summary>
-        public List<List<List<double>>> DataAsImage
+        /// <param name="dfScale">Optionally, specifies the scale to apply to each item.</param>
+        public List<List<List<double>>> GetDataAsImage(double dfScale = 1)
         {
-            get
+            List<List<List<double>>> rgrgrgData = new List<List<List<double>>>();
+            List<double> rgData = Data;
+            int nSize = (int)Math.Sqrt(rgData.Count);
+
+            for (int i = 0; i < nSize; i++)
             {
-                List<List<List<double>>> rgrgrgData = new List<List<List<double>>>();
-                List<double> rgData = Data;
-                int nSize = (int)Math.Sqrt(rgData.Count);
+                List<List<double>> rgrgData = new List<List<double>>();
 
-                for (int i = 0; i < nSize; i++)
+                for (int j = 0; j < nSize; j++)
                 {
-                    List<List<double>> rgrgData = new List<List<double>>();
-
-                    for (int j = 0; j < nSize; j++)
-                    {
-                        int nIdx = (i * nSize) + j;
-                        rgrgData.Add(new List<double>() { rgData[nIdx] });
-                    }
-
-                    rgrgrgData.Add(rgrgData);
+                    int nIdx = (i * nSize) + j;
+                    rgrgData.Add(new List<double>() { rgData[nIdx] * dfScale });
                 }
 
-                return rgrgrgData;
+                rgrgrgData.Add(rgrgData);
             }
+
+            return rgrgrgData;
         }
 
         /// <summary>
