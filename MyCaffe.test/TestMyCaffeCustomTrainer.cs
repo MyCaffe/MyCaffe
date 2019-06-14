@@ -1758,6 +1758,7 @@ namespace MyCaffe.test
         double m_dfLastExploration = 0;
         double m_dfLastOptimal = 0;
         int m_nLastEpisode = 0;
+        EventWaitHandle m_evtOpenUi = new EventWaitHandle(false, EventResetMode.AutoReset, "_MyCaffeTrainer_OpenUi_");
 
         public MyCaffeAtariTrainerDual()
             : base()
@@ -1837,6 +1838,11 @@ namespace MyCaffe.test
 
                 m_gymui.Render(m_nUiId, obs);
                 Thread.Sleep(m_igym.UiDelay);
+            }
+            else
+            {
+                if (m_evtOpenUi.WaitOne(0))
+                    openUi();
             }
 
             if (m_sw.Elapsed.TotalMilliseconds > 1000)

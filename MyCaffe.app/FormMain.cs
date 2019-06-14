@@ -1433,6 +1433,19 @@ namespace MyCaffe.app
 
             this.Invoke(new fnNsDone(nsDone));
         }
+
+        private void showGymUiToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                EventWaitHandle evtOpenUi = EventWaitHandle.OpenExisting("_MyCaffeTrainer_OpenUi_");
+                if (evtOpenUi != null)
+                    evtOpenUi.Set();
+            }
+            catch (Exception excpt)
+            {
+            }
+        }
     }
 
     class Settings
