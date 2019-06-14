@@ -466,7 +466,7 @@ namespace MyCaffe.trainers.c51.ddqn
         int m_nActionCount = 2;
         bool m_bModelUpdated = false;
         Font m_font = null;
-        Dictionary<Color, Tuple<Brush, Brush, Pen>> m_rgStyle = new Dictionary<Color, Tuple<Brush, Brush, Pen>>();
+        Dictionary<Color, Tuple<Brush, Brush, Pen, Brush>> m_rgStyle = new Dictionary<Color, Tuple<Brush, Brush, Pen, Brush>>();
 
 
         /// <summary>
@@ -556,11 +556,12 @@ namespace MyCaffe.trainers.c51.ddqn
                 m_font = null;
             }
 
-            foreach (KeyValuePair<Color, Tuple<Brush, Brush, Pen>> kv in m_rgStyle)
+            foreach (KeyValuePair<Color, Tuple<Brush, Brush, Pen, Brush>> kv in m_rgStyle)
             {
                 kv.Value.Item1.Dispose();
                 kv.Value.Item2.Dispose();
                 kv.Value.Item3.Dispose();
+                kv.Value.Item4.Dispose();
             }
 
             m_rgStyle.Clear();
@@ -1113,20 +1114,34 @@ namespace MyCaffe.trainers.c51.ddqn
                 int nHt1 = (int)(e.DisplayImage.Height * 0.3);
                 int nX = nBorder;
                 int nY = e.DisplayImage.Height - nHt1;
-                ColorMapper clrMap = new ColorMapper(0, rgData.Count + 1, Color.Black, Color.Red);
+                ColorMapper clrMap = new ColorMapper(0, rgData.Count + 1, Color.Black, Color.Red);            
+                float[] rgfMin = new float[rgData.Count];
+                float[] rgfMax = new float[rgData.Count];
+                float fMax = -float.MaxValue;
+                int nMaxIdx = 0;
+
+                for (int i=0; i<rgData.Count; i++)
+                {
+                    rgfMin[i] = rgData[i].Min(p => p);
+                    rgfMax[i] = rgData[i].Max(p => p);
+
+                    if (rgfMax[i] > fMax)
+                    {
+                        fMax = rgfMax[i];
+                        nMaxIdx = i;
+                    }
+                }
 
                 for (int i = 0; i < rgData.Count; i++)
                 {
-                    drawProbabilities(g, nX, nY, nWid1, nHt1, i, rgData[i], clrMap.GetColor(i + 1));
+                    drawProbabilities(g, nX, nY, nWid1, nHt1, i, rgData[i], clrMap.GetColor(i + 1), rgfMin[i], rgfMax[i], (i == nMaxIdx) ? true : false);
                     nX += nWid1;
                 }
             }
         }
 
-        private void drawProbabilities(Graphics g, int nX, int nY, int nWid, int nHt, int nAction, List<float> rgProb, Color clr)
+        private void drawProbabilities(Graphics g, int nX, int nY, int nWid, int nHt, int nAction, List<float> rgProb, Color clr, float fMin, float fMax, bool bMax)
         {
-            float fMin = rgProb.Min(p => p);
-            float fMax = rgProb.Max(p => p);
             string str = "";
 
             if (m_font == null)
@@ -1139,11 +1154,13 @@ namespace MyCaffe.trainers.c51.ddqn
                 Color clr2 = Color.FromArgb(64, clr);
                 Pen pen = new Pen(clr2, 1.0f);
                 Brush br2 = new SolidBrush(clr2);
-                m_rgStyle.Add(clr, new Tuple<Brush, Brush, Pen>(br1, br2, pen));
+                Brush brBright = new SolidBrush(clr);
+                m_rgStyle.Add(clr, new Tuple<Brush, Brush, Pen, Brush>(br1, br2, pen, brBright));
             }
 
             Brush brBack = m_rgStyle[clr].Item1;
             Brush brFront = m_rgStyle[clr].Item2;
+            Brush brTop = m_rgStyle[clr].Item4;
             Pen penLine = m_rgStyle[clr].Item3;
 
             if (fMin != 0 || fMax != 0)
@@ -1159,7 +1176,7 @@ namespace MyCaffe.trainers.c51.ddqn
 
             int nY1 = (int)(nY + (nHt - sz.Height));
             int nX1 = (int)(nX + (nWid / 2) - (sz.Width / 2));
-            g.DrawString(str, m_font, brFront, new Point(nX1, nY1));
+            g.DrawString(str, m_font, (bMax) ? brTop : brFront, new Point(nX1, nY1));
 
             if (fMin != 0 || fMax != 0)
             {
@@ -1169,7 +1186,7 @@ namespace MyCaffe.trainers.c51.ddqn
 
                 for (int i = 0; i < rgProb.Count; i++)
                 {
-                    float fProb = rgProb[i];
+                    float fProb = (rgProb[i] - fMin) / (fMax - fMin);
                     float fHt = nHt * fProb;
                     float fHt1 = nHt - fHt;
                     RectangleF rc1 = new RectangleF(fX, nY + fHt1, fWid, fHt);
