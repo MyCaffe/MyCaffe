@@ -189,7 +189,7 @@ layer
    }
    inner_product_param 
    {
-      num_output: 102
+      num_output: 153
       bias_term: True
       weight_filler 
       {
@@ -214,7 +214,7 @@ layer
    {
       shape 
       {
-         dim: 2
+         dim: 3
          dim: 51
       }
       axis: 1

@@ -18,6 +18,6 @@ delta: 0.0003125
 momentum2: 0.999
 snapshot_after_train: True
 custom_trainer: Dual.Trainer
-custom_trainer_properties: TrainerType=C51.ST;Threads=1;GPUIDs=0;RewardType=VAL;Gamma=0.99;GameROM=C:\Program~Files\SignalPop\AI~Designer\roms\pong.bin;UseAcceleratedTraining=True;AllowDiscountReset=True;ValueType=BLOB;InputSize=80;EpsStart=0.99;EpsEnd=0.01;EpsSteps=200000;FrameSkip=4;UseRawInput=True
+custom_trainer_properties: TrainerType=C51.ST;Threads=1;GPUIDs=0;RewardType=VAL;Gamma=0.99;;UseAcceleratedTraining=True;AllowDiscountReset=True;ValueType=BLOB;InputSize=80;EpsStart=0.99;EpsEnd=0.01;EpsSteps=200000;FrameSkip=1;UseRawInput=True;GameROM=C:\Program~Files\SignalPop\AI~Designer\roms\pong.bin;
 snapshot_include_weights: True
 snapshot_include_state: False
