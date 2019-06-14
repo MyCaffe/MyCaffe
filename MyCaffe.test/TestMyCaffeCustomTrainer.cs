@@ -660,6 +660,7 @@ namespace MyCaffe.test
             string strParam = "TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=False;AllowDiscountReset=False;Gamma=0.99;";
             strParam += "AllowNegativeRewards=" + bAllowNegRewards.ToString() + ";";
             strParam += "TerminateOnRallyEnd=" + bTerminateOnRallyEnd.ToString() + ";";
+            strParam += "EpsSteps=200000;EpsStart=0.99;EpsEnd=0.01;";
             strParam += "GameROM=" + strRom;
             itrainer.Initialize(strParam, this);
 
