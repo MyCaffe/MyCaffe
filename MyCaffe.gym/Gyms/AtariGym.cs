@@ -52,6 +52,7 @@ namespace MyCaffe.gym
         DATA_TYPE m_dt = DATA_TYPE.BLOB;
         COLORTYPE m_ct = COLORTYPE.CT_COLOR;
         bool m_bPreprocess = true;
+        bool m_bForceGray = false;
         DirectBitmap m_bmpRaw = null;
         DirectBitmap m_bmpActionRaw = null;
         bool m_bEnableNumSkip = true;
@@ -135,6 +136,7 @@ namespace MyCaffe.gym
                 m_ct = COLORTYPE.CT_GRAYSCALE;
 
             m_bPreprocess = properties.GetPropertyAsBool("Preprocess", true);
+            m_bForceGray = properties.GetPropertyAsBool("ActionForceGray", false);
             m_bEnableNumSkip = properties.GetPropertyAsBool("EnableNumSkip", true);
             m_nFrameSkip = properties.GetPropertyAsInt("FrameSkip", -1);
 
@@ -271,7 +273,7 @@ namespace MyCaffe.gym
             m_ale.GetScreenDimensions(out fWid, out fHt);
             byte[] rgRawData = m_ale.GetScreenData(m_ct);
 
-            Tuple<DirectBitmap, SimpleDatum> data = getData(m_ct, (int)fWid, (int)fHt, 35, 2, rgRawData, m_bPreprocess, bGetAction);
+            Tuple<DirectBitmap, SimpleDatum> data = getData(m_ct, (int)fWid, (int)fHt, 35, 2, rgRawData, m_bPreprocess, bGetAction, m_bForceGray);
             Bitmap bmp = null;
 
             if (bShowUi)
@@ -285,9 +287,9 @@ namespace MyCaffe.gym
             return new Tuple<Bitmap, SimpleDatum>(bmp, data.Item2);
         }
 
-        private Tuple<DirectBitmap, SimpleDatum> getData(COLORTYPE ct, int nWid, int nHt, int nOffset, int nDownsample, byte[] rg, bool bPreprocess, bool bGetAction)
+        private Tuple<DirectBitmap, SimpleDatum> getData(COLORTYPE ct, int nWid, int nHt, int nOffset, int nDownsample, byte[] rg, bool bPreprocess, bool bGetAction, bool bForceGray)
         {
-            int nChannels = (bPreprocess) ? 1 : 3;
+            int nChannels = (bPreprocess || bForceGray) ? 1 : 3;
             int nSize = Math.Min(nWid, nHt);
             int nDsSize = nSize / nDownsample;
             int nX = 0;
@@ -351,7 +353,14 @@ namespace MyCaffe.gym
                     }
 
                     Color clr = Color.FromArgb(nR, nG, nB);
+
                     bmp.SetPixel(x, y, clr);
+
+                    if (bForceGray)
+                    {
+                        int nClr = (nR + nG + nB) / 3;
+                        clr = Color.FromArgb(nClr, nClr, nClr);
+                    }
 
                     if (bY && bX && (dataB != null || dataV != null))
                     {
