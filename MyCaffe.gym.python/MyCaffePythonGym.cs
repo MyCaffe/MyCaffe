@@ -167,8 +167,10 @@ namespace MyCaffe.gym.python
         /// <summary>
         /// Returns the data as an image compatible with CV2.
         /// </summary>
+        /// <param name="bGrayscale">Optionally, specifies to return gray scale data (one channel).</param>
         /// <param name="dfScale">Optionally, specifies the scale to apply to each item.</param>
-        public List<List<List<double>>> GetDataAsImage(double dfScale = 1)
+        /// <param name="nClipUpToRow">Optionally, specifies the number of rows starting from the top to clip and set as 0.</param>
+        public List<List<List<double>>> GetDataAsImage(bool bGrayscale = false, double dfScale = 1, int nClipUpToRow = 0)
         {
             List<List<List<double>>> rgrgrgData = new List<List<List<double>>>();
             List<double> rgData1 = Data;
@@ -184,10 +186,33 @@ namespace MyCaffe.gym.python
                 {
                     List<double> rgData = new List<double>();
 
-                    for (int c = 0; c < nChannels; c++)
+                    if (bGrayscale)
                     {
-                        int nIdx = (c * nHeight * nWidth) + (h * nWidth) + w;
-                        rgData.Add(rgData1[nIdx] * dfScale);
+                        double dfSum = 0;
+
+                        for (int c = 0; c < nChannels; c++)
+                        {
+                            int nIdx = (c * nHeight * nWidth) + (h * nWidth) + w;
+                            dfSum += rgData1[nIdx];
+                        }
+
+                        if (h < nClipUpToRow)
+                            dfSum = 0;
+
+                        rgData.Add((dfSum / nChannels) * dfScale);
+                    }
+                    else
+                    {
+                        for (int c = 0; c < nChannels; c++)
+                        {
+                            int nIdx = (c * nHeight * nWidth) + (h * nWidth) + w;
+                            double dfVal = rgData1[nIdx];
+
+                            if (h < nClipUpToRow)
+                                dfVal = 0;
+
+                            rgData.Add(dfVal * dfScale);
+                        }
                     }
 
                     rgrgData.Add(rgData);
