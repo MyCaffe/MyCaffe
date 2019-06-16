@@ -161,7 +161,7 @@ namespace MyCaffe.gym.python
         /// </summary>
         public List<double> Data
         {
-            get { return (m_state == null) ? null : m_state.Item1.RealData.ToList(); }
+            get { return (m_state == null) ? null : m_state.Item1.GetData<double>().ToList(); }
         }
 
         /// <summary>
@@ -171,17 +171,26 @@ namespace MyCaffe.gym.python
         public List<List<List<double>>> GetDataAsImage(double dfScale = 1)
         {
             List<List<List<double>>> rgrgrgData = new List<List<List<double>>>();
-            List<double> rgData = Data;
-            int nSize = (int)Math.Sqrt(rgData.Count);
+            List<double> rgData1 = Data;
+            int nChannels = m_state.Item1.Channels;
+            int nHeight = m_state.Item1.Height;
+            int nWidth = m_state.Item1.Width;
 
-            for (int i = 0; i < nSize; i++)
+            for (int h = 0; h < nHeight; h++)
             {
                 List<List<double>> rgrgData = new List<List<double>>();
 
-                for (int j = 0; j < nSize; j++)
+                for (int w = 0; w < nWidth; w++)
                 {
-                    int nIdx = (i * nSize) + j;
-                    rgrgData.Add(new List<double>() { rgData[nIdx] * dfScale });
+                    List<double> rgData = new List<double>();
+
+                    for (int c = 0; c < nChannels; c++)
+                    {
+                        int nIdx = (c * nHeight * nWidth) + (h * nWidth) + w;
+                        rgData.Add(rgData1[nIdx] * dfScale);
+                    }
+
+                    rgrgData.Add(rgData);
                 }
 
                 rgrgrgData.Add(rgrgData);
@@ -215,7 +224,7 @@ namespace MyCaffe.gym.python
 
             m_state = new Tuple<SimpleDatum, double, bool>(data.Item2, state.Item2, state.Item3);
 
-            return new Tuple<List<double>, double, bool>(m_state.Item1.RealData.ToList(), m_state.Item2, m_state.Item3);
+            return new Tuple<List<double>, double, bool>(m_state.Item1.GetData<double>().ToList(), m_state.Item2, m_state.Item3);
         }
 
         /// <summary>
@@ -250,7 +259,7 @@ namespace MyCaffe.gym.python
 
             m_state = new Tuple<SimpleDatum, double, bool>(data.Item2, state.Item2, state.Item3);
 
-            return new Tuple<List<double>, double, bool>(m_state.Item1.RealData.ToList(), m_state.Item2, m_state.Item3);
+            return new Tuple<List<double>, double, bool>(m_state.Item1.GetData<double>().ToList(), m_state.Item2, m_state.Item3);
         }
 
         /// <summary>
