@@ -487,7 +487,12 @@ namespace MyCaffe.trainers.c51.ddqn
             m_netTarget = new Net<T>(m_mycaffe.Cuda, m_mycaffe.Log, m_net.net_param, m_mycaffe.CancelEvent, null, phase);
             m_properties = properties;
             m_random = random;
+
             m_transformer = m_mycaffe.DataTransformer;
+            m_transformer.param.mean_value.Add(255 / 2); // center
+            m_transformer.param.mean_value.Add(255 / 2);
+            m_transformer.param.mean_value.Add(255 / 2);
+            m_transformer.param.scale = 1.0 / 255;       // normalize
 
             m_fGamma = (float)properties.GetPropertyAsDouble("Gamma", m_fGamma);
             m_nAtoms = properties.GetPropertyAsInt("Atoms", m_nAtoms);
@@ -1132,9 +1137,6 @@ namespace MyCaffe.trainers.c51.ddqn
         {
             Blob<T> actions = m_net.blob_by_name("actions");
             if (actions == null)
-                return;
-
-            if (actions.num != 1)
                 return;
 
             float[] rgActions = Utility.ConvertVecF<T>(actions.mutable_cpu_data);
