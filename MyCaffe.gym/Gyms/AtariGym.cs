@@ -111,7 +111,7 @@ namespace MyCaffe.gym
             m_ale.Initialize();
             m_ale.EnableDisplayScreen = false;
             m_ale.EnableSound = false;
-            m_ale.EnableColorData = false;
+            m_ale.EnableColorData = properties.GetPropertyAsBool("EnableColor", false);
             m_ale.EnableRestrictedActionSet = true;
             m_ale.EnableColorAveraging = true;
             m_ale.AllowNegativeRewards = properties.GetPropertyAsBool("AllowNegativeRewards", false);
@@ -362,7 +362,7 @@ namespace MyCaffe.gym
                         }
                         else
                         {
-                            dataB.SetPixel(x, y, clr);
+                            dataB.SetPixel(nX, nY, clr);
                         }
 
                         nX++;
