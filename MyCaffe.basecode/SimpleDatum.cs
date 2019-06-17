@@ -143,6 +143,56 @@ namespace MyCaffe.basecode
         /// <summary>
         /// The SimpleDatum constructor.
         /// </summary>
+        /// <param name="bIsReal">Specifies whether or not the data values are <i>double</i> or <i>byte</i>.</param>
+        /// <param name="nChannels">Specifies the number of channels in the data (e.g. 3 for color, 1 for black and white images)</param>
+        /// <param name="nWidth">Specifies the width of the data (e.g. the number of pixels wide).</param>
+        /// <param name="nHeight">Specifies the height of the data (e.g. the number of pixels high).</param>
+        /// <param name="nLabel">Specifies the known label of the data.</param>
+        /// <param name="dtTime">Specifies a time-stamp associated with the data.</param>
+        /// <param name="rgData">Specifies the data as a list of <i>bytes</i> (expects <i>bIsReal</i> = <i>false</i>).</param>
+        /// <param name="rgfData">Specifies the data as a list of <i>double</i> (expects <i>bIsReal</i> = <i>true</i>).</param>
+        /// <param name="nBoost">Specifies the boost to use with the data (a value of 0 indicates no boost).</param>
+        /// <param name="bAutoLabeled">Specifies whether or not the label was auto-generated.</param>
+        /// <param name="nIdx">Specifies the index of the data.</param>
+        /// <param name="nVirtualID">Specifies a virtual index for the data (default = 0).  When specified, the SimpleDatum is used to reference another.</param>
+        /// <param name="nImageID">Specifies the image ID within the database.</param>
+        /// <param name="nSourceID">Specifies the data source ID of the data source that owns this image.</param>
+        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, byte[] rgData, double[] rgfData, int nBoost, bool bAutoLabeled, int nIdx, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0)
+        {
+            m_nChannels = nChannels;
+            m_nWidth = nWidth;
+            m_nHeight = nHeight;
+            m_nOriginalLabel = nLabel;
+            m_nLabel = nLabel;
+            m_dt = dtTime;
+            m_nOriginalBoost = nBoost;
+            m_nBoost = nBoost;
+            m_bAutoLabeled = bAutoLabeled;
+            m_nVirtualID = nVirtualID;
+            m_bIsRealData = bIsReal;
+            m_nIndex = nIdx;
+            m_nImageID = nImageID;
+            m_nSourceID = nSourceID;
+
+            if (rgData != null)
+            {
+                if (bIsReal)
+                    throw new ArgumentException("The data sent is not real, but the bIsReal is set to true!");
+
+                m_rgByteData = rgData;
+            }
+            else if (rgfData != null)
+            {
+                if (!bIsReal)
+                    throw new ArgumentException("The data sent is real, but the bIsReal is set to false!");
+
+                m_rgRealData = rgfData;
+            }
+        }
+
+        /// <summary>
+        /// The SimpleDatum constructor.
+        /// </summary>
         /// <param name="data">Specifies the byte data to fill the SimpleDatum with.</param>
         public SimpleDatum(Bytemap data)
         {
@@ -185,6 +235,10 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Constructor that copies an array into a single SimpleDatum by appending each to the other in order.
         /// </summary>
+        /// <remarks>
+        /// Data is ordered by HxWxC where C is filled with the channels of each input.  So if three inputs
+        /// are used the output is HxWx[c1,c2,c3].
+        /// </remarks>
         /// <param name="rg">Specifies the array of SimpleDatum to append together.</param>
         public SimpleDatum(List<SimpleDatum> rg)
         {
@@ -202,27 +256,45 @@ namespace MyCaffe.basecode
             {
                 if (rg[0].IsRealData)
                 {
-                    List<double> rgData = new List<double>();
+                    double[] rgData = new double[m_nChannels * Height * Width];
 
-                    for (int i = 0; i < rg.Count; i++)
+                    for (int h = 0; h < Height; h++)
                     {
-                        rgData.AddRange(rg[i].RealData);
+                        for (int w = 0; w < Width; w++)
+                        {
+                            int nIdxSrc = (h * Width) + w;
+                            int nIdxDst = nIdxSrc * m_nChannels;
+
+                            for (int c = 0; c < m_nChannels; c++)
+                            {
+                                rgData[nIdxDst + c] = rg[c].RealData[nIdxSrc];
+                            }
+                        }
                     }
 
-                    m_rgRealData = rgData.ToArray();
+                    m_rgRealData = rgData;
                     m_rgByteData = null;
                 }
                 else
                 {
-                    List<byte> rgData = new List<byte>();
+                    byte[] rgData = new byte[m_nChannels * Height * Width];
 
-                    for (int i = 0; i < rg.Count; i++)
+                    for (int h = 0; h < Height; h++)
                     {
-                        rgData.AddRange(rg[i].ByteData);
+                        for (int w = 0; w < Width; w++)
+                        {
+                            int nIdxSrc = (h * Width) + w;
+                            int nIdxDst = nIdxSrc * m_nChannels;
+
+                            for (int c = 0; c < m_nChannels; c++)
+                            {
+                                rgData[nIdxDst + c] = rg[c].ByteData[nIdxSrc];
+                            }
+                        }
                     }
 
+                    m_rgByteData = rgData;
                     m_rgRealData = null;
-                    m_rgByteData = rgData.ToArray();
                 }
             }
         }
