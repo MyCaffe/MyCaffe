@@ -44,14 +44,14 @@ namespace MyCaffe.test
 
                 Assert.AreNotEqual(gym.Data, null);
 
-                List<List<List<double>>> rgrgrgData = gym.GetDataAsImage();
+                List<List<List<double>>> rgrgrgData = gym.GetDataAs3D();
 
                 Assert.AreNotEqual(rgrgrgData, null);
                 Assert.AreEqual(rgrgrgData.Count, 80);
                 Assert.AreEqual(rgrgrgData[0].Count, 80);
                 Assert.AreEqual(rgrgrgData[0][0].Count, 3);
 
-                rgrgrgData = gym.GetDataAsImage(true);
+                rgrgrgData = gym.GetDataAs3D(true);
 
                 Assert.AreNotEqual(rgrgrgData, null);
                 Assert.AreEqual(rgrgrgData.Count, 80);
@@ -96,12 +96,57 @@ namespace MyCaffe.test
 
                 Assert.AreNotEqual(gym.Data, null);
 
-                List<List<List<double>>> rgrgrgData = gym.GetDataAsImage();
+                List<List<List<double>>> rgrgrgData = gym.GetDataAs3D();
 
                 Assert.AreNotEqual(rgrgrgData, null);
                 Assert.AreEqual(rgrgrgData.Count, 80);
                 Assert.AreEqual(rgrgrgData[0].Count, 80);
                 Assert.AreEqual(rgrgrgData[0][0].Count, 1);
+
+                Trace.WriteLine("Reward = " + gym.Reward);
+
+                if (gym.IsTerminal)
+                    Trace.WriteLine("TERMINAL = TRUE");
+            }
+
+            gym.CloseUi();
+        }
+
+        [TestMethod]
+        public void TestGymGrayStacked()
+        {
+            MyCaffePythonGym gym = new MyCaffePythonGym();
+            Random random = new Random();
+
+            gym.Initialize("ATARI", "Preprocess=False;ForceGray=True;AllowNegativeRewards=True;TerminateOnRallyEnd=True;FrameSkip=4;GameROM=C:\\ProgramData\\MyCaffe\\test_data\\roms\\breakout.bin");
+
+            string strName = gym.Name;
+            Assert.AreEqual(strName, "MyCaffe ATARI");
+
+            int[] rgActions = gym.Actions;
+            Assert.AreEqual(rgActions.Length, 3);
+            Assert.AreEqual(rgActions[0], 0);
+            Assert.AreEqual(rgActions[1], 1);
+            Assert.AreEqual(rgActions[2], 2);
+
+            gym.OpenUi();
+
+            for (int i = 0; i < 100; i++)
+            {
+                if (i == 0 || gym.IsTerminal)
+                    gym.Reset();
+
+                int nActionIdx = random.Next(rgActions.Length);
+                gym.Step(rgActions[nActionIdx], 1);
+
+                Assert.AreNotEqual(gym.Data, null);
+
+                List<List<List<double>>> rgrgrgData = gym.GetDataAsStacked3D((i == 0) ? true : false, 4, 4, true, 1.0);
+
+                Assert.AreNotEqual(rgrgrgData, null);
+                Assert.AreEqual(rgrgrgData.Count, 80);
+                Assert.AreEqual(rgrgrgData[0].Count, 80);
+                Assert.AreEqual(rgrgrgData[0][0].Count, 4);
 
                 Trace.WriteLine("Reward = " + gym.Reward);
 
