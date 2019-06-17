@@ -760,8 +760,9 @@ namespace MyCaffe.solvers
         /// <param name="bDisableOutput">Optionally, disable the output to the log.</param>
         /// <param name="bDisableProgress">Optionally, disables the progress updating to the log.</param>
         /// <param name="dfLossOverride">Optionally, specifies a loss override which can be useful when using a backward step only.</param>
+        /// <param name="bAllowSnapshot">Optionally, specifies whether or not a snapshot is allowed even during TRAIN_STEP.</param>
         /// <returns></returns>
-        public bool Step(int nIters, TRAIN_STEP step = TRAIN_STEP.NONE, bool bZeroDiffs = true, bool bApplyUpdates = true, bool bDisableOutput = false, bool bDisableProgress = false, double? dfLossOverride = null)
+        public bool Step(int nIters, TRAIN_STEP step = TRAIN_STEP.NONE, bool bZeroDiffs = true, bool bApplyUpdates = true, bool bDisableOutput = false, bool bDisableProgress = false, double? dfLossOverride = null, bool? bAllowSnapshot = null)
         {
             Exception err = null;
 
@@ -930,7 +931,7 @@ namespace MyCaffe.solvers
                     bool bSnapshotTaken = false;
                     bool bForceSnapshot = forceSnapshot;
 
-                    if (step == TRAIN_STEP.NONE && (is_root_solver && bFwdPassNanFree &&
+                    if ((step == TRAIN_STEP.NONE || bAllowSnapshot.GetValueOrDefault(false)) && (is_root_solver && bFwdPassNanFree &&
                         (bForceSnapshot ||
                          (m_param.snapshot > 0 && (m_nIter % m_param.snapshot) == 0) ||
                          (m_dfLastAccuracy > m_dfBestAccuracy))))
