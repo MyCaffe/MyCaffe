@@ -461,7 +461,8 @@ namespace MyCaffe.trainers.c51.ddqn
         int m_nAtoms = 51;
         double m_dfVMax = 10;       // Max possible score for Pong per action is 1
         double m_dfVMin = -10;      // Min possible score for Pong per action is -1
-        int m_nFramesPerX = 1;
+        int m_nFramesPerX = 4;
+        int m_nStackPerX = 4;
         int m_nBatchSize = 32;
         MemoryCollection m_rgSamples;
         int m_nActionCount = 2;
@@ -654,7 +655,7 @@ namespace MyCaffe.trainers.c51.ddqn
             {
                 m_rgX = new List<SimpleDatum>();
 
-                for (int i = 0; i < m_nFramesPerX; i++)
+                for (int i = 0; i < m_nFramesPerX * m_nStackPerX; i++)
                 {
                     m_rgX.Add(sd);
                 }
@@ -665,7 +666,15 @@ namespace MyCaffe.trainers.c51.ddqn
                 m_rgX.RemoveAt(0);
             }
 
-            return new SimpleDatum(m_rgX);
+            SimpleDatum[] rgSd = new SimpleDatum[m_nStackPerX];
+
+            for (int i=0; i<m_nStackPerX; i++)
+            {
+                int nIdx = ((m_nStackPerX - i) * m_nFramesPerX) - 1;
+                rgSd[i] = m_rgX[nIdx];
+            }
+
+            return new SimpleDatum(rgSd.ToList());
         }
 
         private float[] createZArray(double dfVMin, double dfVMax, int nAtoms, out float fDeltaZ)
