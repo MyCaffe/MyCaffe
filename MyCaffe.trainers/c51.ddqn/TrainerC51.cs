@@ -425,7 +425,7 @@ namespace MyCaffe.trainers.c51.ddqn
                     s = s_;
                     x = x_;
                 }
-
+               
                 nIteration++;
             }
         }
@@ -731,12 +731,12 @@ namespace MyCaffe.trainers.c51.ddqn
         /// <returns>The action value is returned.</returns>
         public int act(SimpleDatum sd, SimpleDatum sdClip, int nActionCount)
         {
+            setData(m_net, sd, sdClip);
+            m_net.ForwardFromTo(0, m_net.layers.Count - 2);
+
             Blob<T> actions = m_net.blob_by_name("actions");
             if (actions == null)
                 throw new Exception("Missing expected 'actions' blob!");
-
-            setData(m_net, sd, sdClip);
-            m_net.ForwardFromTo(0, m_net.layers.Count - 2);
 
             createZ(1, nActionCount, m_nAtoms);
             m_blobQ.ReshapeLike(actions);
@@ -744,7 +744,7 @@ namespace MyCaffe.trainers.c51.ddqn
             m_mycaffe.Cuda.mul(actions.count(), actions.gpu_data, m_blobZ.gpu_data, m_blobQ.mutable_gpu_data);
             reduce_sum_axis2(m_blobQ);
 
-            return argmax(Utility.ConvertVecF<T>(m_blobQ.mutable_cpu_diff), nActionCount, 0);
+            return argmax(Utility.ConvertVecF<T>(m_blobQ.mutable_cpu_data), nActionCount, 0);
         }
 
         /// <summary>
@@ -788,7 +788,7 @@ namespace MyCaffe.trainers.c51.ddqn
             setData0(m_net, rgSamples);
             dfLoss = m_net.ForwardFromTo();
 
-            m_solver.Step(1, TRAIN_STEP.BACKWARD, true, true, true, true, dfLoss);
+            m_solver.Step(1, TRAIN_STEP.BACKWARD, true, true, true, true, dfLoss, true);
 
             return dfLoss;
         }
@@ -899,7 +899,7 @@ namespace MyCaffe.trainers.c51.ddqn
 
             Blob<T> logits = m_net.blob_by_name("logits");
             if (logits == null)
-                throw new Exception("Could not find the expected 'logits' blob!");
+                throw new Exception("Missing expected 'logits' blob!");
 
             m_blobPLoss.ReshapeLike(logits);
 
@@ -1147,7 +1147,7 @@ namespace MyCaffe.trainers.c51.ddqn
             Blob<T> actions = m_net.blob_by_name("actions");
             if (actions == null)
                 return;
-
+            
             float[] rgActions = Utility.ConvertVecF<T>(actions.mutable_cpu_data);
 
             List<List<float>> rgData = new List<List<float>>();
