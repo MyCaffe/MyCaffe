@@ -1217,7 +1217,7 @@ namespace MyCaffe.app
 
                 m_log.WriteLine("starting policy gradient cart-pole test...");
                 m_evtCancelTraining.Reset();
-                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "Cart-Pole", strTrainer, bShowUi, bUseAccelTrain, bAllowDiscountReset, false, false));
+                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "Cart-Pole", strTrainer, bShowUi, bUseAccelTrain, bAllowDiscountReset, false, false, false));
                 startAtariTrainerToolStripMenuItem.Enabled = false;
                 startNeuralStyleTransferToolStripMenuItem.Enabled = false;
                 startCartPoleTrainerToolStripMenuItem.Text = "Stop Cart-Pole Training";
@@ -1242,6 +1242,7 @@ namespace MyCaffe.app
                 bool bAllowDiscountReset = false;
                 bool bAllowNegativeRewards = false;
                 bool bTerminateOnRallyEnd = false;
+                bool bLoadWeights = false;
                 string strTrainer = "SIMPLE";
 
                 FormCustomTraining dlg = new FormCustomTraining("ATARI");
@@ -1254,11 +1255,12 @@ namespace MyCaffe.app
                 bAllowDiscountReset = dlg.AllowDiscountReset;
                 bAllowNegativeRewards = dlg.AllowNegativeRewards;
                 bTerminateOnRallyEnd = dlg.TerminateOnRallyEnd;
+                bLoadWeights = dlg.LoadWeights;
                 strTrainer = dlg.Trainer;
 
                 m_log.WriteLine("starting " + strTrainer + " ATARI (" + m_strAtariRom + ") test...");
                 m_evtCancelTraining.Reset();
-                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "ATARI", strTrainer, bShowUi, bUseAccelTrain, bAllowDiscountReset, bAllowNegativeRewards, bTerminateOnRallyEnd));
+                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "ATARI", strTrainer, bShowUi, bUseAccelTrain, bAllowDiscountReset, bAllowNegativeRewards, bTerminateOnRallyEnd, bLoadWeights));
                 startCartPoleTrainerToolStripMenuItem.Enabled = false;
                 startNeuralStyleTransferToolStripMenuItem.Enabled = false;
                 startAtariTrainerToolStripMenuItem.Text = "Stop ATARI Training";
@@ -1298,7 +1300,7 @@ namespace MyCaffe.app
                 else if (strGym == "ATARI")
                 {
                     if (strTrainer.Contains("C51"))
-                        test.TrainAtariC51Dual(bShowUi, strTrainer, nIterations, 1, m_strAtariRom, arg.AllowNegativeRewards, arg.TerminateOnRallyEnd);
+                        test.TrainAtariC51Dual(bShowUi, strTrainer, nIterations, 1, m_strAtariRom, arg.AllowNegativeRewards, arg.TerminateOnRallyEnd, arg.LoadWeights);
                     else
                         test.TrainAtariPG(bShowUi, strTrainer, nIterations, bUseAccelTrain, bAllowDiscountReset, m_strAtariRom, arg.AllowNegativeRewards, arg.TerminateOnRallyEnd);
                 }
@@ -1458,8 +1460,9 @@ namespace MyCaffe.app
         bool m_bAllowDiscountReset;
         bool m_bAllowNegativeRewards;
         bool m_bTerminateOnRallyEnd;
+        bool m_bLoadWeights;
 
-        public Settings(CancelEvent evtCancel, string strGym, string strTrainer, bool bShowUi, bool bUseAccelTrain, bool bAllowDiscountReset, bool bAllowNegRewards, bool bTerminateOnRallyEnd)
+        public Settings(CancelEvent evtCancel, string strGym, string strTrainer, bool bShowUi, bool bUseAccelTrain, bool bAllowDiscountReset, bool bAllowNegRewards, bool bTerminateOnRallyEnd, bool bLoadWeights)
         {
             m_evtCancel = evtCancel;
             m_strGym = strGym;
@@ -1469,6 +1472,7 @@ namespace MyCaffe.app
             m_bAllowDiscountReset = bAllowDiscountReset;
             m_bAllowNegativeRewards = bAllowNegRewards;
             m_bTerminateOnRallyEnd = bTerminateOnRallyEnd;
+            m_bLoadWeights = bLoadWeights;
         }
 
         public CancelEvent Cancel
@@ -1509,6 +1513,11 @@ namespace MyCaffe.app
         public bool TerminateOnRallyEnd
         {
             get { return m_bTerminateOnRallyEnd; }
+        }
+
+        public bool LoadWeights
+        {
+            get { return m_bLoadWeights; }
         }
     }
 }

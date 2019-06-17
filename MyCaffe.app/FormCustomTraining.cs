@@ -19,6 +19,7 @@ namespace MyCaffe.app
         bool m_bAllowNegativeRewards = false;
         bool m_bTerminateOnRallyEnd = false;
         bool m_bAllowC51 = false;
+        bool m_bLoadWeights = true;
         string m_strTrainer = "";
         string m_strRomName = "";
 
@@ -76,6 +77,7 @@ namespace MyCaffe.app
             m_bAllowDiscountReset = chkAllowDiscountReset.Checked;
             m_bAllowNegativeRewards = chkAllowNegativeRewards.Checked;
             m_bTerminateOnRallyEnd = chkTerminateOnRallyEnd.Checked;
+            m_bLoadWeights = chkLoadWeights.Checked;
 
             if (radPGSimple.Checked)
                 m_strTrainer = "PG.SIMPLE";
@@ -122,9 +124,20 @@ namespace MyCaffe.app
             get { return m_bAllowNegativeRewards; }
         }
 
+        public bool LoadWeights
+        {
+            get { return m_bLoadWeights; }
+        }
+
         public string Trainer
         {
             get { return m_strTrainer; }
+        }
+
+        private void radC51SingleThread_CheckedChanged(object sender, EventArgs e)
+        {
+            chkAllowNegativeRewards.Checked = radC51SingleThread.Checked;
+            chkTerminateOnRallyEnd.Checked = radC51SingleThread.Checked;
         }
     }
 }

@@ -48,6 +48,7 @@
             this.radAtariPong = new System.Windows.Forms.RadioButton();
             this.chkAllowNegativeRewards = new System.Windows.Forms.CheckBox();
             this.chkTerminateOnRallyEnd = new System.Windows.Forms.CheckBox();
+            this.chkLoadWeights = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.grpRom.SuspendLayout();
             this.SuspendLayout();
@@ -145,6 +146,7 @@
             this.radC51SingleThread.TabIndex = 3;
             this.radC51SingleThread.Text = "C51 Single-thread";
             this.radC51SingleThread.UseVisualStyleBackColor = true;
+            this.radC51SingleThread.CheckedChanged += new System.EventHandler(this.radC51SingleThread_CheckedChanged);
             // 
             // radPGMultiThread
             // 
@@ -244,6 +246,18 @@
             this.chkTerminateOnRallyEnd.Text = "Terminate on rally end";
             this.chkTerminateOnRallyEnd.UseVisualStyleBackColor = true;
             // 
+            // chkLoadWeights
+            // 
+            this.chkLoadWeights.AutoSize = true;
+            this.chkLoadWeights.Checked = true;
+            this.chkLoadWeights.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkLoadWeights.Location = new System.Drawing.Point(218, 97);
+            this.chkLoadWeights.Name = "chkLoadWeights";
+            this.chkLoadWeights.Size = new System.Drawing.Size(127, 17);
+            this.chkLoadWeights.TabIndex = 9;
+            this.chkLoadWeights.Text = "Load weights (if exist)";
+            this.chkLoadWeights.UseVisualStyleBackColor = true;
+            // 
             // FormCustomTraining
             // 
             this.AcceptButton = this.btnOK;
@@ -251,6 +265,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
             this.ClientSize = new System.Drawing.Size(453, 229);
+            this.Controls.Add(this.chkLoadWeights);
             this.Controls.Add(this.chkTerminateOnRallyEnd);
             this.Controls.Add(this.chkAllowNegativeRewards);
             this.Controls.Add(this.grpRom);
@@ -300,5 +315,6 @@
         private System.Windows.Forms.RadioButton radAtariPong;
         private System.Windows.Forms.CheckBox chkAllowNegativeRewards;
         private System.Windows.Forms.CheckBox chkTerminateOnRallyEnd;
+        private System.Windows.Forms.CheckBox chkLoadWeights;
     }
 }
