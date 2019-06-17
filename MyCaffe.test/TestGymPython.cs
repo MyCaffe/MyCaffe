@@ -131,6 +131,18 @@ namespace MyCaffe.test
 
             gym.OpenUi();
 
+            List<double[]> rgrgActions = new List<double[]>();
+            double[] rgProb = new double[51];
+
+            for (int i = 0; i < 51; i++)
+            {
+                rgProb[i] = 1.0 / Math.PI * Math.Exp(-(i - 25) * (i - 25) / (2 * 1));
+            }
+
+            rgrgActions.Add(rgProb);
+            rgrgActions.Add(rgProb);
+            rgrgActions.Add(rgProb);
+
             for (int i = 0; i < 100; i++)
             {
                 if (i == 0 || gym.IsTerminal)
@@ -152,6 +164,16 @@ namespace MyCaffe.test
 
                 if (gym.IsTerminal)
                     Trace.WriteLine("TERMINAL = TRUE");
+
+                for (int j = 0; j < rgrgActions.Count; j++)
+                {
+                    for (int k = 0; k < rgrgActions[j].Length; k++)
+                    {
+                        rgrgActions[j][k] += 0.01 * random.NextDouble();
+                    }
+                }
+
+                gym.SetActionDistributions(rgrgActions.ToArray());
             }
 
             gym.CloseUi();
