@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -40,7 +41,7 @@ namespace MyCaffe.gym.python
     /// 
     /// To get the latest MyCaffe Test Application, see https://github.com/MyCaffe/MyCaffe/releases
     /// </remarks>
-    public class MyCaffePythonGym : IXMyCaffeGymUiCallback
+    public class MyCaffePythonGym : IXMyCaffeGymUiCallback, IDisposable
     {
         int m_nUiId = -1;
         IXMyCaffeGym m_igym = null;
@@ -48,12 +49,38 @@ namespace MyCaffe.gym.python
         Log m_log = new Log("MyCaffePythonGym");
         Tuple<SimpleDatum, double, bool> m_state = null;
         List<SimpleDatum> m_rgData = new List<SimpleDatum>();
+        double[][] m_rgrgActionDistributions = null;
+        bool m_bNormalizeOverlay = true;
+        Font m_font = null;
+        Dictionary<Color, Tuple<Brush, Brush, Pen, Brush>> m_rgStyle = new Dictionary<Color, Tuple<Brush, Brush, Pen, Brush>>();
 
         /// <summary>
         /// The constructor.
         /// </summary>
         public MyCaffePythonGym()
         {
+        }
+
+        /// <summary>
+        /// Release resources used.
+        /// </summary>
+        public void Dispose()
+        {
+            if (m_font != null)
+            {
+                m_font.Dispose();
+                m_font = null;
+            }
+
+            foreach (KeyValuePair<Color, Tuple<Brush, Brush, Pen, Brush>> kv in m_rgStyle)
+            {
+                kv.Value.Item1.Dispose();
+                kv.Value.Item2.Dispose();
+                kv.Value.Item3.Dispose();
+                kv.Value.Item4.Dispose();
+            }
+
+            m_rgStyle.Clear();
         }
 
         /// <summary>
@@ -93,6 +120,11 @@ namespace MyCaffe.gym.python
 
                 return "MyCaffe " + m_igym.Name;
             }
+        }
+
+        public void SetActionDistributions(double[][] rgrg)
+        {
+            m_rgrgActionDistributions = rgrg;
         }
 
         /// <summary>
@@ -346,6 +378,9 @@ namespace MyCaffe.gym.python
 
             if (bIsOpen)
             {
+                if (m_rgrgActionDistributions != null)
+                    overlay(obs.ImageDisplay, m_rgrgActionDistributions);
+
                 m_gymui.Render(m_nUiId, obs);
                 Thread.Sleep(m_igym.UiDelay);
             }
@@ -381,6 +416,9 @@ namespace MyCaffe.gym.python
 
             if (bIsOpen)
             {
+                if (m_rgrgActionDistributions != null)
+                    overlay(obs.ImageDisplay, m_rgrgActionDistributions);
+
                 m_gymui.Render(m_nUiId, obs);
                 Thread.Sleep(m_igym.UiDelay);
             }
@@ -388,6 +426,112 @@ namespace MyCaffe.gym.python
             m_state = new Tuple<SimpleDatum, double, bool>(data.Item2, state.Item2, state.Item3);
 
             return new Tuple<List<double>, double, bool>(m_state.Item1.GetData<double>().ToList(), m_state.Item2, m_state.Item3);
+        }
+
+        private void overlay(Bitmap bmp, double[][] rgData)
+        {
+            if (bmp == null)
+                return;
+
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                int nBorder = 30;
+                int nWid = bmp.Width - (nBorder * 2);
+                int nWid1 = nWid / rgData.Length;
+                int nHt1 = (int)(bmp.Height * 0.3);
+                int nX = nBorder;
+                int nY = bmp.Height - nHt1;
+                ColorMapper clrMap = new ColorMapper(0, rgData.Length + 1, Color.Black, Color.Red);
+                float[] rgfMin = new float[rgData.Length];
+                float[] rgfMax = new float[rgData.Length];
+                float fMax = -float.MaxValue;
+                float fMaxMax = -float.MaxValue;
+                int nMaxIdx = 0;
+
+                for (int i = 0; i < rgData.Length; i++)
+                {
+                    rgfMin[i] = (float)rgData[i].Min(p => p);
+                    rgfMax[i] = (float)rgData[i].Max(p => p);
+
+                    if (rgfMax[i] > fMax)
+                    {
+                        fMax = rgfMax[i];
+                        nMaxIdx = i;
+                    }
+
+                    fMaxMax = Math.Max(fMax, fMaxMax);
+                }
+
+                if (fMaxMax > 0.2f)
+                    m_bNormalizeOverlay = false;
+
+                for (int i = 0; i < rgData.Length; i++)
+                {
+                    drawProbabilities(g, nX, nY, nWid1, nHt1, i, rgData[i], clrMap.GetColor(i + 1), rgfMin[i], rgfMax[i], (i == nMaxIdx) ? true : false, m_bNormalizeOverlay);
+                    nX += nWid1;
+                }
+            }
+        }
+
+        private void drawProbabilities(Graphics g, int nX, int nY, int nWid, int nHt, int nAction, double[] rgProb, Color clr, float fMin, float fMax, bool bMax, bool bNormalize)
+        {
+            string str = "";
+
+            if (m_font == null)
+                m_font = new Font("Century Gothic", 9.0f);
+
+            if (!m_rgStyle.ContainsKey(clr))
+            {
+                Color clr1 = Color.FromArgb(128, clr);
+                Brush br1 = new SolidBrush(clr1);
+                Color clr2 = Color.FromArgb(64, clr);
+                Pen pen = new Pen(clr2, 1.0f);
+                Brush br2 = new SolidBrush(clr2);
+                Brush brBright = new SolidBrush(clr);
+                m_rgStyle.Add(clr, new Tuple<Brush, Brush, Pen, Brush>(br1, br2, pen, brBright));
+            }
+
+            Brush brBack = m_rgStyle[clr].Item1;
+            Brush brFront = m_rgStyle[clr].Item2;
+            Brush brTop = m_rgStyle[clr].Item4;
+            Pen penLine = m_rgStyle[clr].Item3;
+
+            if (fMin != 0 || fMax != 0)
+            {
+                str = "Action " + nAction.ToString() + " (" + (fMax - fMin).ToString("N7") + ")";
+            }
+            else
+            {
+                str = "Action " + nAction.ToString() + " - No Probabilities";
+            }
+
+            SizeF sz = g.MeasureString(str, m_font);
+
+            int nY1 = (int)(nY + (nHt - sz.Height));
+            int nX1 = (int)(nX + (nWid / 2) - (sz.Width / 2));
+            g.DrawString(str, m_font, (bMax) ? brTop : brFront, new Point(nX1, nY1));
+
+            if (fMin != 0 || fMax != 0)
+            {
+                float fX = nX;
+                float fWid = nWid / (float)rgProb.Length;
+                nHt -= (int)sz.Height;
+
+                for (int i = 0; i < rgProb.Length; i++)
+                {
+                    float fProb = (float)rgProb[i];
+
+                    if (bNormalize)
+                        fProb = (fProb - fMin) / (fMax - fMin);
+
+                    float fHt = nHt * fProb;
+                    float fHt1 = nHt - fHt;
+                    RectangleF rc1 = new RectangleF(fX, nY + fHt1, fWid, fHt);
+                    g.FillRectangle(brBack, rc1);
+                    g.DrawRectangle(penLine, rc1.X, rc1.Y, rc1.Width, rc1.Height);
+                    fX += fWid;
+                }
+            }
         }
 
         /// <summary>
