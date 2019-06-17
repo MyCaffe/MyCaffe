@@ -309,7 +309,7 @@ namespace MyCaffe.test
     {
         void TrainCartPolePG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
         void TrainAtariPG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false);
-        void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int nIteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false);
+        void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int nIteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExist = false);
 
         void TrainCharRNN(bool bDual, bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
         void TrainWavRNN(bool bDual, bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
@@ -611,7 +611,7 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int iteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false)
+        public void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int iteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExists = false)
         {
             m_evtCancel.Reset();
 
@@ -628,13 +628,14 @@ namespace MyCaffe.test
             m_log.WriteHeader("Test Training ATARI for " + nIterations.ToString("N0") + " iterations.");
             m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain + ", AllowDiscountReset = " + strAllowReset);
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
-            MyCaffeAtariTrainerDual trainerX = new MyCaffeAtariTrainerDual();
+            mycaffe.OnSnapshot += Mycaffe_OnSnapshot;
 
+            MyCaffeAtariTrainerDual trainerX = new MyCaffeAtariTrainerDual();
             IXMyCaffeCustomTrainerRL itrainer = trainerX as IXMyCaffeCustomTrainerRL;
             if (itrainer == null)
                 throw new Exception("The trainer must implement the IXMyCaffeCustomTrainerRL interface!");
 
-            ProjectEx project = getReinforcementProjectC51(igym, nIterations);
+            ProjectEx project = getReinforcementProjectC51(igym, nIterations, bLoadWeightsIfExists);
             DatasetDescriptor ds = itrainer.GetDatasetOverride(0);
 
             if (strAtariRom == null)
@@ -1119,7 +1120,6 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-
         private void Mycaffe_OnSnapshot(object sender, SnapshotArgs e)
         {
             byte[] rgWeights = e.UpdateWeights();
@@ -1165,7 +1165,7 @@ namespace MyCaffe.test
             return p;
         }
 
-        private ProjectEx getReinforcementProjectC51(IXMyCaffeGym igym, int nIterations)
+        private ProjectEx getReinforcementProjectC51(IXMyCaffeGym igym, int nIterations, bool bLoadWeightsIfExist)
         {
             ProjectEx p = new ProjectEx("test");
 
@@ -1181,6 +1181,22 @@ namespace MyCaffe.test
 
             p.SolverDescription = protoS.ToString();
             p.SetDataset(igym.GetDataset(DATA_TYPE.BLOB));
+
+            m_strModelPath = Path.GetDirectoryName(strModelFile);
+
+            if (bLoadWeightsIfExist)
+            {
+                string strWeights = m_strModelPath + "\\weights." + m_engine.ToString() + ".mycaffemodel";
+
+                if (File.Exists(strWeights))
+                {
+                    using (FileStream fs = new FileStream(strWeights, FileMode.Open))
+                    using (BinaryReader br = new BinaryReader(fs))
+                    {
+                        p.WeightsState = br.ReadBytes((int)fs.Length);
+                    }
+                }
+            }
 
             return p;
         }
