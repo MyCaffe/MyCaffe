@@ -27,7 +27,11 @@ namespace MyCaffe.gym
 
         private void dlg_FormClosing(object sender, System.Windows.Forms.FormClosingEventArgs e)
         {
-            m_callback.Closing();
+            if (m_callback != null)
+            {
+                m_callback.Closing();
+                m_callback = null;
+            }
         }
 
         /// <summary>
@@ -40,7 +44,12 @@ namespace MyCaffe.gym
                 return;
 
             m_rgGyms[nId].Hide();
-            m_callback.Closing();
+
+            if (m_callback != null)
+            {
+                m_callback.Closing();
+                m_callback = null;
+            }
         }
 
         /// <summary>
