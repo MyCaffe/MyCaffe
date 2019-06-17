@@ -47,6 +47,7 @@ namespace MyCaffe.gym.python
         MyCaffeGymUiProxy m_gymui = null;
         Log m_log = new Log("MyCaffePythonGym");
         Tuple<SimpleDatum, double, bool> m_state = null;
+        List<SimpleDatum> m_rgData = new List<SimpleDatum>();
 
         /// <summary>
         /// The constructor.
@@ -165,18 +166,19 @@ namespace MyCaffe.gym.python
         }
 
         /// <summary>
-        /// Returns the data as an image compatible with CV2.
+        /// Returns the data int a 3D form compatible with CV2.
         /// </summary>
         /// <param name="bGrayscale">Optionally, specifies to return gray scale data (one channel).</param>
         /// <param name="dfScale">Optionally, specifies the scale to apply to each item.</param>
-        /// <param name="nClipUpToRow">Optionally, specifies the number of rows starting from the top to clip and set as 0.</param>
-        public List<List<List<double>>> GetDataAsImage(bool bGrayscale = false, double dfScale = 1, int nClipUpToRow = 0)
+        /// <param name="rgData1">Optionally, specifies the data as a flat array.</param>
+        /// <returns>The data is returned as a multi-dimensional array.</returns>
+        public List<List<List<double>>> GetDataAs3D(bool bGrayscale = false, double dfScale = 1, SimpleDatum sd = null)
         {
+            double[] rgData1 = (sd == null) ? Data.ToArray() : sd.GetData<double>();
+            int nChannels = (sd == null) ? m_state.Item1.Channels : sd.Channels;
+            int nHeight = (sd == null) ? m_state.Item1.Height : sd.Height;
+            int nWidth = (sd == null) ? m_state.Item1.Width : sd.Width;
             List<List<List<double>>> rgrgrgData = new List<List<List<double>>>();
-            List<double> rgData1 = Data;
-            int nChannels = m_state.Item1.Channels;
-            int nHeight = m_state.Item1.Height;
-            int nWidth = m_state.Item1.Width;
 
             for (int h = 0; h < nHeight; h++)
             {
@@ -196,9 +198,6 @@ namespace MyCaffe.gym.python
                             dfSum += rgData1[nIdx];
                         }
 
-                        if (h < nClipUpToRow)
-                            dfSum = 0;
-
                         rgData.Add((dfSum / nChannels) * dfScale);
                     }
                     else
@@ -207,9 +206,6 @@ namespace MyCaffe.gym.python
                         {
                             int nIdx = (c * nHeight * nWidth) + (h * nWidth) + w;
                             double dfVal = rgData1[nIdx];
-
-                            if (h < nClipUpToRow)
-                                dfVal = 0;
 
                             rgData.Add(dfVal * dfScale);
                         }
@@ -222,6 +218,113 @@ namespace MyCaffe.gym.python
             }
 
             return rgrgrgData;
+        }
+
+        private SimpleDatum preprocess(SimpleDatum sd, bool bGrayscale, double dfScale)
+        {
+            if (!bGrayscale && dfScale == 1)
+                return sd;
+
+            double[] rgData = sd.GetData<double>();
+            int nCount = sd.Height * sd.Width;
+            int nChannels = sd.Channels;
+            bool bIsReal = sd.IsRealData;
+            byte[] rgByteData = null;
+            double[] rgRealData = null;
+
+            if (bIsReal && !bGrayscale)
+            {
+                nCount *= sd.Channels;
+                rgRealData = new double[nCount];
+            }
+            else
+            {
+                bIsReal = false;
+                nChannels = 1;
+                rgByteData = new byte[nCount];
+            }
+
+            for (int h = 0; h < sd.Height; h++)
+            {
+                for (int w = 0; w < sd.Width; w++)
+                {
+                    int nIdx = (h * sd.Width) + w;
+                    int nIdxSrc = nIdx * sd.Channels;
+
+                    if (rgRealData != null)
+                    {
+                        for (int c = 0; c < sd.Channels; c++)
+                        {
+                            double dfVal = rgData[nIdxSrc + c] * dfScale;
+                            rgRealData[nIdxSrc + c] = dfVal;
+                        }
+                    }
+                    else
+                    {
+                        double dfSum = 0;
+
+                        for (int c = 0; c < sd.Channels; c++)
+                        {
+                            dfSum += rgData[nIdxSrc + c];
+                        }
+
+                        double dfVal = ((dfSum / sd.Channels) * dfScale);
+                        if (dfVal > 255)
+                            dfVal = 255;
+
+                        if (dfVal < 0)
+                            dfVal = 0;
+
+                        rgByteData[nIdx] = (byte)dfVal;
+                    }
+                }
+            }
+
+            SimpleDatum sdResult = new SimpleDatum(bIsReal, nChannels, sd.Width, sd.Height, sd.Label, sd.TimeStamp, rgByteData, rgRealData, sd.Boost, sd.AutoLabeled, sd.Index);
+            sdResult.Tag = sd.Tag;
+
+            return sdResult;
+        }
+
+        /// <summary>
+        /// Returns stacked data in a 3D form compatible with CV2.
+        /// </summary>
+        /// <param name="bReset">Specifies to reset the stack or not.</param>
+        /// <param name="nFrames">Optionally, specifies the number of frames (default = 4).</param>
+        /// <param name="nStacks">Optionally, specifies the number of stacks (default = 4).</param>
+        /// <param name="bGrayscale">Optionally, specifies to return gray scale data (default = true, one channel).</param>
+        /// <param name="dfScale">Optionally, specifies the scale to apply to each item (default = 1.0).</param>
+        /// <returns>The data is returned as a multi-dimensional array.</returns>
+        public List<List<List<double>>> GetDataAsStacked3D(bool bReset, int nFrames = 4, int nStacks = 4, bool bGrayscale = true, double dfScale = 1)
+        {
+            SimpleDatum sd = preprocess(m_state.Item1, bGrayscale, dfScale);
+
+            if (bReset)
+            {
+                m_rgData.Clear();
+
+                for (int i = 0; i < nFrames * nStacks; i++)
+                {
+                    m_rgData.Add(sd);
+                }
+            }
+            else
+            {
+                m_rgData.Add(sd);
+                m_rgData.RemoveAt(0);
+            }
+
+            SimpleDatum[] rgSd = new SimpleDatum[nStacks];
+
+            for (int i = 0; i < nStacks; i++)
+            {
+                int nIdx = ((nStacks - i) * nFrames) - 1;
+                rgSd[i] = m_rgData[nIdx];
+            }
+
+            SimpleDatum sd1 = new SimpleDatum(rgSd.ToList());
+
+            return GetDataAs3D(false, 1, sd1);
         }
 
         /// <summary>
