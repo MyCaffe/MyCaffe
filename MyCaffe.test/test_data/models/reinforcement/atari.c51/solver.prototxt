@@ -9,7 +9,7 @@ lr_policy: fixed
 momentum: 0
 weight_decay: 0
 regularization_type: L2
-snapshot: 500
+snapshot: 5000
 snapshot_prefix: basic
 snapshot_format: BINARYPROTO
 device_id: 1
