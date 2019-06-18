@@ -173,10 +173,17 @@ layer
 }
 layer 
 {
+   name: "relu4"
+   type: "ReLU"
+   bottom: "ip1"
+   top: "ip1"
+}
+layer 
+{
    name: "ip2"
    type: "InnerProduct"
    bottom: "ip1"
-   top: "logits"
+   top: "logits1"
    param 
    {
       lr_mult: 1
@@ -208,8 +215,8 @@ layer
 {
    name: "reshape1"
    type: "Reshape"
-   bottom: "logits"
-   top: "logits_reshape"
+   bottom: "logits1"
+   top: "logits"
    reshape_param 
    {
       shape 
@@ -222,20 +229,9 @@ layer
 }
 layer 
 {
-   name: "softmax1"
-   type: "Softmax"
-   bottom: "logits_reshape"
-   top: "actions"
-   softmax_param 
-   {
-      axis: 2
-   }
-}
-layer 
-{
    name: "loss1"
    type: "MemoryLoss"
-   bottom: "actions"
+   bottom: "logits"
    top: "loss1"
    include 
    {
@@ -243,6 +239,6 @@ layer
    }
    loss_param 
    {
-      normalization: NONE
+      normalization: VALID
    }
 }
