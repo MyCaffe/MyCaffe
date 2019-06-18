@@ -186,6 +186,7 @@ namespace MyCaffe.trainers.c51.ddqn
         int m_nEpsSteps = 0;
         double m_dfEpsStart = 0;
         double m_dfEpsEnd = 0;
+        double m_dfEpsDelta = 0;
         double m_dfExplorationRate = 0;
         STATE m_state = STATE.EXPLORING;
 
@@ -219,6 +220,8 @@ namespace MyCaffe.trainers.c51.ddqn
             m_nEpsSteps = properties.GetPropertyAsInt("EpsSteps", m_nEpsSteps);
             m_dfEpsStart = properties.GetPropertyAsDouble("EpsStart", m_dfEpsStart);
             m_dfEpsEnd = properties.GetPropertyAsDouble("EpsEnd", m_dfEpsEnd);
+            m_dfEpsDelta = (m_dfEpsStart - m_dfEpsEnd) / m_nEpsSteps;
+            m_dfExplorationRate = m_dfEpsStart;
 
             if (m_dfEpsStart < 0 || m_dfEpsStart > 1)
                 throw new Exception("The 'EpsStart' is out of range - please specify a real number in the range [0,1]");
@@ -242,20 +245,6 @@ namespace MyCaffe.trainers.c51.ddqn
             }
         }
 
-        private double getEpsilon(int nIteration)
-        {
-            if (m_state == STATE.EXPLORING)
-                return 1;
-
-            if (m_nEpsSteps == 0)
-                return 0;
-
-            if (nIteration >= m_nEpsSteps)
-                return m_dfEpsEnd;
-
-            return m_dfEpsStart + (double)(nIteration * (m_dfEpsEnd - m_dfEpsStart) / m_nEpsSteps);
-        }
-
         private StateBase getData(Phase phase, int nAction, int nIdx)
         {
             GetDataArgs args = m_brain.getDataArgs(phase, nAction);
@@ -269,12 +258,18 @@ namespace MyCaffe.trainers.c51.ddqn
         {
             if (step == TRAIN_STEP.NONE)
             {
-                m_dfExplorationRate = getEpsilon(nIteration);
-
-                if (m_dfExplorationRate > 0 && m_random.NextDouble() < m_dfExplorationRate)
+                switch (m_state)
                 {
-                    int nAction = m_random.Next(nActionCount);
-                    return nAction;
+                    case STATE.EXPLORING:
+                        return m_random.Next(nActionCount);
+
+                    case STATE.TRAINING:
+                        if (m_dfExplorationRate > m_dfEpsEnd)
+                            m_dfExplorationRate -= m_dfEpsDelta;
+
+                        if (m_random.NextDouble() < m_dfExplorationRate)
+                            return m_random.Next(nActionCount);
+                        break;
                 }
             }
 
@@ -455,6 +450,8 @@ namespace MyCaffe.trainers.c51.ddqn
         Blob<T> m_blobPLoss = null;
         Blob<T> m_blobLoss = null;
         Blob<T> m_blobActionBinaryLoss = null;
+        Blob<T> m_blobActionTarget = null;
+        Blob<T> m_blobAction = null;
         float m_fDeltaZ = 0;
         float[] m_rgfZ = null;
         float m_fGamma = 0.99f;
@@ -507,12 +504,12 @@ namespace MyCaffe.trainers.c51.ddqn
             m_blobPLoss = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log, true);
             m_blobLoss = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log, true);
             m_blobActionBinaryLoss = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log, false);
+            m_blobActionTarget = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log, false);
+            m_blobAction = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log, false);
 
             m_memLoss = m_net.FindLastLayer(LayerParameter.LayerType.MEMORY_LOSS) as MemoryLossLayer<T>;
             if (m_memLoss == null)
                 m_mycaffe.Log.FAIL("Missing the expected MEMORY_LOSS layer!");
-
-            m_memLoss.OnGetLoss += m_memLoss_OnGetLoss;
 
             Blob<T> data = m_net.blob_by_name("data");
             if (data == null)
@@ -544,6 +541,8 @@ namespace MyCaffe.trainers.c51.ddqn
             dispose(ref m_blobMLoss);
             dispose(ref m_blobPLoss);
             dispose(ref m_blobActionBinaryLoss);
+            dispose(ref m_blobActionTarget);
+            dispose(ref m_blobAction);
 
             if (m_softmax != null)
             {
@@ -734,9 +733,11 @@ namespace MyCaffe.trainers.c51.ddqn
             setData(m_net, sd, sdClip);
             m_net.ForwardFromTo(0, m_net.layers.Count - 2);
 
-            Blob<T> actions = m_net.blob_by_name("actions");
-            if (actions == null)
-                throw new Exception("Missing expected 'actions' blob!");
+            Blob<T> logits = m_net.blob_by_name("logits");
+            if (logits == null)
+                throw new Exception("Missing expected 'logits' blob!");
+
+            Blob<T> actions = softmax_forward(logits, m_blobAction);
 
             createZ(1, nActionCount, m_nAtoms);
             m_blobQ.ReshapeLike(actions);
@@ -774,37 +775,93 @@ namespace MyCaffe.trainers.c51.ddqn
         /// </summary>
         /// <param name="rgSamples">Contains the samples to train the model with.</param>
         /// <param name="nActionCount">Specifies the number of actions in the action set.</param>
-        /// <returns>The smoothed loss is returned.</returns>
-        public double Train(MemoryCollection rgSamples, int nActionCount)
+        public void Train(MemoryCollection rgSamples, int nActionCount)
         {
-            double dfLoss;
-
             m_rgSamples = rgSamples;
             m_nActionCount = nActionCount;
 
             setData1(m_netTarget, rgSamples);
             m_netTarget.ForwardFromTo(0, m_netTarget.layers.Count - 2);
 
+            m_memLoss.OnGetLoss += m_memLoss_OnGetLoss1;
+
+            setData1(m_net, rgSamples);
+            m_net.ForwardFromTo();
+
+            m_memLoss.OnGetLoss -= m_memLoss_OnGetLoss1;
+            m_memLoss.OnGetLoss += m_memLoss_OnGetLoss2;
+
             setData0(m_net, rgSamples);
-            dfLoss = m_net.ForwardFromTo();
+            m_solver.Step(1);
 
-            m_solver.Step(1, TRAIN_STEP.BACKWARD, true, true, true, true, dfLoss, true);
-
-            return dfLoss;
+            m_memLoss.OnGetLoss -= m_memLoss_OnGetLoss2;
         }
 
-        private void m_memLoss_OnGetLoss(object sender, MemoryLossLayerGetLossArgs<T> e)
+        /// <summary>
+        /// Calculate the gradients between the target m_loss and actual p_loss.
+        /// </summary>
+        /// <param name="sender">Specifies the sender.</param>
+        /// <param name="e">Specifies the arguments.</param>
+        private void m_memLoss_OnGetLoss2(object sender, MemoryLossLayerGetLossArgs<T> e)
         {
-            Blob<T> actions = m_net.blob_by_name("actions");
-            if (actions == null)
-                throw new Exception("Missing expected 'actions' blob!");
-
-            Blob<T> p_actions = m_netTarget.blob_by_name("actions");
-            if (p_actions == null)
-                throw new Exception("Missing expected 'actions' blob!");
-
             int nNumSamples = m_rgSamples.Count;
 
+            Blob<T> logits = m_net.blob_by_name("logits");
+            if (logits == null)
+                throw new Exception("Missing expected 'logits' blob!");
+
+            //-------------------------------------------------------
+            //  Loss function
+            //-------------------------------------------------------
+
+            m_blobPLoss.ReshapeLike(logits);
+
+            m_mycaffe.Cuda.mul(logits.count(), logits.gpu_data, m_blobActionBinaryLoss.mutable_gpu_data, m_blobPLoss.mutable_gpu_data); // Logits valid
+            m_blobPLoss.Reshape(m_blobPLoss.num, m_nActionCount, m_nAtoms, 1);
+            reduce_sum_axis1(m_blobPLoss);
+
+            e.Loss = softmaxLoss_forward(m_blobPLoss, m_blobMLoss, m_blobLoss);
+
+            e.EnableLossUpdate = false;
+            m_blobLoss.SetDiff(1);
+
+            softmaxLoss_backward(m_blobPLoss, m_blobMLoss, m_blobLoss);
+
+            int nDstOffset = 0;
+            int nSrcOffset = 0;
+
+            for (int i = 0; i < nNumSamples; i++)
+            {
+                for (int j = 0; j < m_nActionCount; j++)
+                {
+                    m_mycaffe.Cuda.mul(m_nAtoms, m_blobPLoss.gpu_diff, m_blobActionBinaryLoss.gpu_data, e.Bottom[0].mutable_gpu_diff, nSrcOffset, nDstOffset, nDstOffset);
+                    nDstOffset += m_nAtoms;
+                }
+
+                nSrcOffset += m_nAtoms;
+            }
+        }
+
+        /// <summary>
+        /// Calculate the target m_loss
+        /// </summary>
+        /// <param name="sender">Specifies the sender.</param>
+        /// <param name="e">Specifies the arguments.</param>
+        private void m_memLoss_OnGetLoss1(object sender, MemoryLossLayerGetLossArgs<T> e)
+        {
+            Blob<T> logits = m_net.blob_by_name("logits");
+            if (logits == null)
+                throw new Exception("Missing expected 'logits' blob!");
+
+            Blob<T> actions = softmax_forward(logits, m_blobAction);
+
+            Blob<T> p_logits = m_netTarget.blob_by_name("logits");
+            if (p_logits == null)
+                throw new Exception("Missing expected 'logits' blob!");
+
+            Blob<T> p_actions = softmax_forward(p_logits, m_blobActionTarget);
+
+            int nNumSamples = m_rgSamples.Count;
             createZ(nNumSamples, m_nActionCount, m_nAtoms);
 
             m_blobQ.ReshapeLike(actions);
@@ -815,10 +872,10 @@ namespace MyCaffe.trainers.c51.ddqn
 
             // Get Optimal Actions for the next states (for distribution z)
             m_mycaffe.Cuda.mul(actions.count(), actions.gpu_data, m_blobZ.gpu_data, m_blobQ.mutable_gpu_data);
-            m_mycaffe.Cuda.sum(m_blobQ.count(), m_blobQ.count(0, 2), m_blobQ.count(2), m_blobQ.gpu_data, m_blobQ.mutable_gpu_diff);
+            reduce_sum_axis2(m_blobQ);
             m_blobQ.Reshape(nNumSamples, m_nActionCount, 1, 1);
 
-            float[] rgQbatch = Utility.ConvertVecF<T>(m_blobQ.mutable_cpu_diff);
+            float[] rgQbatch = Utility.ConvertVecF<T>(m_blobQ.mutable_cpu_data);
             float[] rgPbatch = Utility.ConvertVecF<T>(p_actions.mutable_cpu_data);
             float[] rgMBatch = new float[nNumSamples * m_nAtoms];
 
@@ -890,42 +947,6 @@ namespace MyCaffe.trainers.c51.ddqn
                 int nIdx = (i * m_nActionCount * m_nAtoms) + (nAction * m_nAtoms);
 
                 m_blobActionBinaryLoss.SetData(1.0, nIdx, m_nAtoms);
-            }
-
-
-            //-------------------------------------------------------
-            //  Loss function
-            //-------------------------------------------------------
-
-            Blob<T> logits = m_net.blob_by_name("logits");
-            if (logits == null)
-                throw new Exception("Missing expected 'logits' blob!");
-
-            m_blobPLoss.ReshapeLike(logits);
-
-            m_mycaffe.Cuda.mul(logits.count(), logits.gpu_data, m_blobActionBinaryLoss.mutable_gpu_data, m_blobPLoss.mutable_gpu_data); // Logits valid
-            m_blobPLoss.Reshape(m_blobPLoss.num, m_nActionCount, m_nAtoms, 1);
-            reduce_sum_axis1(m_blobPLoss);
-
-            e.Loss = softmaxLoss_forward(m_blobPLoss, m_blobMLoss, m_blobLoss);
-
-            e.EnableLossUpdate = false;
-            m_blobLoss.SetDiff(1);
-
-            softmaxLoss_backward(m_blobPLoss, m_blobMLoss, m_blobLoss);
-
-            int nDstOffset = 0;
-            int nSrcOffset = 0;
-
-            for (int i = 0; i < nNumSamples; i++)
-            {
-                for (int j = 0; j < m_nActionCount; j++)
-                {
-                    m_mycaffe.Cuda.mul(m_nAtoms, m_blobPLoss.gpu_diff, m_blobActionBinaryLoss.gpu_data, e.Bottom[0].mutable_gpu_diff, nSrcOffset, nDstOffset, nDstOffset);
-                    nDstOffset += m_nAtoms;
-                }
-
-                nSrcOffset += m_nAtoms;
             }
         }
 
@@ -1019,26 +1040,27 @@ namespace MyCaffe.trainers.c51.ddqn
             m_softmaxLoss.Backward(colTop, new List<bool>() { true, false }, colBottom);
         }
 
-        private void softmax_forward(Blob<T> b)
+        private Blob<T> softmax_forward(Blob<T> bBottom, Blob<T> bTop)
         {
             BlobCollection<T> colBottom = new BlobCollection<T>();
-            colBottom.Add(b);
+            colBottom.Add(bBottom);
 
             BlobCollection<T> colTop = new BlobCollection<T>();
-            colTop.Add(b);
+            colTop.Add(bTop);
 
             if (m_softmax == null)
             {
                 LayerParameter p = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
-                p.softmax_param.axis = 1;
+                p.softmax_param.axis = 2;
                 m_softmax = new SoftmaxLayer<T>(m_mycaffe.Cuda, m_mycaffe.Log, p);
                 m_softmax.Setup(colBottom, colTop);
             }
 
             m_softmax.Reshape(colBottom, colTop);
             m_softmax.Forward(colBottom, colTop);
-        }
 
+            return colTop[0];
+        }
 
         private double setBounds(double z, double dfMin, double dfMax)
         {
@@ -1144,9 +1166,11 @@ namespace MyCaffe.trainers.c51.ddqn
         /// <param name="e">Specifies the arguments to the callback which contains the original display image.</param>
         public void OnOverlay(OverlayArgs e)
         {
-            Blob<T> actions = m_net.blob_by_name("actions");
-            if (actions == null)
+            Blob<T> logits = m_net.blob_by_name("logits");
+            if (logits == null)
                 return;
+
+            Blob<T> actions = softmax_forward(logits, m_blobAction);
             
             float[] rgActions = Utility.ConvertVecF<T>(actions.mutable_cpu_data);
 
