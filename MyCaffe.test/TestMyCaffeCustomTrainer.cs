@@ -664,7 +664,7 @@ namespace MyCaffe.test
             strParam += "FrameSkip=1;";
             strParam += "AllowNegativeRewards=" + bAllowNegRewards.ToString() + ";";
             strParam += "TerminateOnRallyEnd=" + bTerminateOnRallyEnd.ToString() + ";";
-            strParam += "EpsSteps=200000;EpsStart=0.99;EpsEnd=0.01;";
+            strParam += "EpsSteps=" + nIterations.ToString() + ";EpsStart=0.99;EpsEnd=0.01;";
             strParam += "GameROM=" + strRom;
             itrainer.Initialize(strParam, this);
 
