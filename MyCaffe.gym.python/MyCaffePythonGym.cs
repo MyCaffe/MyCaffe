@@ -467,7 +467,7 @@ namespace MyCaffe.gym.python
 
                 for (int i = 0; i < rgData.Length; i++)
                 {
-                    drawProbabilities(g, nX, nY, nWid1, nHt1, i, rgData[i], clrMap.GetColor(i + 1), rgfMin[i], rgfMax[i], (i == nMaxIdx) ? true : false, m_bNormalizeOverlay);
+                    drawProbabilities(g, nX, nY, nWid1, nHt1, i, rgData[i], clrMap.GetColor(i + 1), rgfMin.Min(p => p), rgfMax.Max(p => p), (i == nMaxIdx) ? true : false, m_bNormalizeOverlay);
                     nX += nWid1;
                 }
             }
