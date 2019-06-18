@@ -469,6 +469,7 @@ namespace MyCaffe.trainers.c51.ddqn
         Dictionary<Color, Tuple<Brush, Brush, Pen, Brush>> m_rgStyle = new Dictionary<Color, Tuple<Brush, Brush, Pen, Brush>>();
         List<SimpleDatum> m_rgX = new List<SimpleDatum>();
         bool m_bNormalizeOverlay = true;
+        List<List<float>> m_rgOverlay = null;
 
 
         /// <summary>
@@ -1177,43 +1178,51 @@ namespace MyCaffe.trainers.c51.ddqn
             if (logits == null)
                 return;
 
-            Blob<T> actions = softmax_forward(logits, m_blobAction);
-            
-            float[] rgActions = Utility.ConvertVecF<T>(actions.mutable_cpu_data);
-
-            List<List<float>> rgData = new List<List<float>>();
-            for (int i = 0; i < m_nActionCount; i++)
+            if (logits.num == 1)
             {
-                List<float> rgProb = new List<float>();
+                Blob<T> actions = softmax_forward(logits, m_blobAction);
 
-                for (int j = 0; j < m_nAtoms; j++)
+                float[] rgActions = Utility.ConvertVecF<T>(actions.mutable_cpu_data);
+
+                List<List<float>> rgData = new List<List<float>>();
+                for (int i = 0; i < m_nActionCount; i++)
                 {
-                    int nIdx = (i * m_nAtoms) + j;
-                    rgProb.Add(rgActions[nIdx]);
+                    List<float> rgProb = new List<float>();
+
+                    for (int j = 0; j < m_nAtoms; j++)
+                    {
+                        int nIdx = (i * m_nAtoms) + j;
+                        rgProb.Add(rgActions[nIdx]);
+                    }
+
+                    rgData.Add(rgProb);
                 }
 
-                rgData.Add(rgProb);
+                m_rgOverlay = rgData;
             }
+
+            if (m_rgOverlay == null)
+                return;
 
             using (Graphics g = Graphics.FromImage(e.DisplayImage))
             {
                 int nBorder = 30;
                 int nWid = e.DisplayImage.Width - (nBorder * 2);
-                int nWid1 = nWid / rgData.Count;
+                int nWid1 = nWid / m_rgOverlay.Count;
                 int nHt1 = (int)(e.DisplayImage.Height * 0.3);
                 int nX = nBorder;
                 int nY = e.DisplayImage.Height - nHt1;
-                ColorMapper clrMap = new ColorMapper(0, rgData.Count + 1, Color.Black, Color.Red);            
-                float[] rgfMin = new float[rgData.Count];
-                float[] rgfMax = new float[rgData.Count];
+                ColorMapper clrMap = new ColorMapper(0, m_rgOverlay.Count + 1, Color.Black, Color.Red);            
+                float[] rgfMin = new float[m_rgOverlay.Count];
+                float[] rgfMax = new float[m_rgOverlay.Count];
                 float fMax = -float.MaxValue;
                 float fMaxMax = -float.MaxValue;
                 int nMaxIdx = 0;
 
-                for (int i=0; i<rgData.Count; i++)
+                for (int i=0; i<m_rgOverlay.Count; i++)
                 {
-                    rgfMin[i] = rgData[i].Min(p => p);
-                    rgfMax[i] = rgData[i].Max(p => p);
+                    rgfMin[i] = m_rgOverlay[i].Min(p => p);
+                    rgfMax[i] = m_rgOverlay[i].Max(p => p);
 
                     if (rgfMax[i] > fMax)
                     {
@@ -1227,9 +1236,9 @@ namespace MyCaffe.trainers.c51.ddqn
                 if (fMaxMax > 0.2f)
                     m_bNormalizeOverlay = false;
 
-                for (int i = 0; i < rgData.Count; i++)
+                for (int i = 0; i < m_rgOverlay.Count; i++)
                 {
-                    drawProbabilities(g, nX, nY, nWid1, nHt1, i, rgData[i], clrMap.GetColor(i + 1), rgfMin.Min(p => p), rgfMax.Max(p => p), (i == nMaxIdx) ? true : false, m_bNormalizeOverlay);
+                    drawProbabilities(g, nX, nY, nWid1, nHt1, i, m_rgOverlay[i], clrMap.GetColor(i + 1), rgfMin.Min(p => p), rgfMax.Max(p => p), (i == nMaxIdx) ? true : false, m_bNormalizeOverlay);
                     nX += nWid1;
                 }
             }
