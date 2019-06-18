@@ -733,12 +733,13 @@ namespace MyCaffe.common
         /// of other (and die otherwise); If true, Reshape this Blob to other's shape if
         /// necessary.</param>
         /// <param name="hDstHostBuffer">Optionally, specifies the host buffer of the destination.</param>
+        /// <param name="bIgnoreShape">Optionally, specifies to ignore the shape and just make sure the count is the same before copying (default = false).</param>
         /// <returns>
         /// When used, the host buffer handle is returned.
         /// </returns>
-        public long CopyFrom(Blob<T> src, bool bCopyDiff = false, bool bReshape = false, long hDstHostBuffer = 0)
+        public long CopyFrom(Blob<T> src, bool bCopyDiff = false, bool bReshape = false, long hDstHostBuffer = 0, bool bIgnoreShape = false)
         {
-            if (src.count() != m_nCount || !Utility.Compare<int>(src.m_rgShape, m_rgShape))
+            if (src.count() != m_nCount || (!bIgnoreShape && !Utility.Compare<int>(src.m_rgShape, m_rgShape)))
             {
                 if (bReshape)
                     ReshapeLike(src);
