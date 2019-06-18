@@ -452,6 +452,7 @@ namespace MyCaffe.trainers.c51.ddqn
         Blob<T> m_blobActionBinaryLoss = null;
         Blob<T> m_blobActionTarget = null;
         Blob<T> m_blobAction = null;
+        Blob<T> m_blobLabel = null;
         float m_fDeltaZ = 0;
         float[] m_rgfZ = null;
         float m_fGamma = 0.99f;
@@ -506,6 +507,7 @@ namespace MyCaffe.trainers.c51.ddqn
             m_blobActionBinaryLoss = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log, false);
             m_blobActionTarget = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log, false);
             m_blobAction = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log, false);
+            m_blobLabel = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log, true);
 
             m_memLoss = m_net.FindLastLayer(LayerParameter.LayerType.MEMORY_LOSS) as MemoryLossLayer<T>;
             if (m_memLoss == null)
@@ -543,6 +545,7 @@ namespace MyCaffe.trainers.c51.ddqn
             dispose(ref m_blobActionBinaryLoss);
             dispose(ref m_blobActionTarget);
             dispose(ref m_blobAction);
+            dispose(ref m_blobLabel);
 
             if (m_softmax != null)
             {
@@ -783,17 +786,14 @@ namespace MyCaffe.trainers.c51.ddqn
             setData1(m_netTarget, rgSamples);
             m_netTarget.ForwardFromTo(0, m_netTarget.layers.Count - 2);
 
-            m_memLoss.OnGetLoss += m_memLoss_OnGetLoss1;
-
             setData1(m_net, rgSamples);
+            m_memLoss.OnGetLoss += m_memLoss_OnGetLoss1;
             m_net.ForwardFromTo();
-
             m_memLoss.OnGetLoss -= m_memLoss_OnGetLoss1;
-            m_memLoss.OnGetLoss += m_memLoss_OnGetLoss2;
 
             setData0(m_net, rgSamples);
+            m_memLoss.OnGetLoss += m_memLoss_OnGetLoss2;
             m_solver.Step(1);
-
             m_memLoss.OnGetLoss -= m_memLoss_OnGetLoss2;
         }
 
@@ -815,17 +815,11 @@ namespace MyCaffe.trainers.c51.ddqn
             //-------------------------------------------------------
 
             m_blobPLoss.ReshapeLike(logits);
+            m_blobLabel.ReshapeLike(logits);
 
             m_mycaffe.Cuda.mul(logits.count(), logits.gpu_data, m_blobActionBinaryLoss.mutable_gpu_data, m_blobPLoss.mutable_gpu_data); // Logits valid
             m_blobPLoss.Reshape(m_blobPLoss.num, m_nActionCount, m_nAtoms, 1);
-            reduce_sum_axis1(m_blobPLoss);
-
-            e.Loss = softmaxLoss_forward(m_blobPLoss, m_blobMLoss, m_blobLoss);
-
-            e.EnableLossUpdate = false;
-            m_blobLoss.SetDiff(1);
-
-            softmaxLoss_backward(m_blobPLoss, m_blobMLoss, m_blobLoss);
+            m_blobLabel.Reshape(m_blobLabel.num, m_nActionCount, m_nAtoms, 1);
 
             int nDstOffset = 0;
             int nSrcOffset = 0;
@@ -834,12 +828,18 @@ namespace MyCaffe.trainers.c51.ddqn
             {
                 for (int j = 0; j < m_nActionCount; j++)
                 {
-                    m_mycaffe.Cuda.mul(m_nAtoms, m_blobPLoss.gpu_diff, m_blobActionBinaryLoss.gpu_data, e.Bottom[0].mutable_gpu_diff, nSrcOffset, nDstOffset, nDstOffset);
+                    m_mycaffe.Cuda.mul(m_nAtoms, m_blobMLoss.gpu_data, m_blobActionBinaryLoss.gpu_data, m_blobLabel.mutable_gpu_data, nSrcOffset, nDstOffset, nDstOffset);
                     nDstOffset += m_nAtoms;
                 }
 
                 nSrcOffset += m_nAtoms;
             }
+
+            e.Loss = softmaxLoss_forward(m_blobPLoss, m_blobLabel, m_blobLoss);
+            softmaxLoss_backward(m_blobPLoss, m_blobLabel, m_blobLoss);
+
+            e.EnableLossUpdate = false;
+            m_mycaffe.Cuda.mul(m_blobPLoss.count(), m_blobPLoss.gpu_diff, m_blobActionBinaryLoss.gpu_data, e.Bottom[0].mutable_gpu_diff);
         }
 
         /// <summary>
@@ -925,13 +925,12 @@ namespace MyCaffe.trainers.c51.ddqn
                     fSum += rgMBatch[(i * m_nAtoms) + j];
                 }
 
-                if (fSum == 0)
-                    throw new Exception("The sum of atom values cannot be zero!");
-
-                for (int j = 0; j < m_nAtoms; j++)
+                if (fSum != 0)
                 {
-                    int nIdx = i * m_nAtoms;
-                    rgMBatch[nIdx + j] /= fSum;
+                    for (int j = 0; j < m_nAtoms; j++)
+                    {
+                        rgMBatch[(i * m_nAtoms) + j] /= fSum;
+                    }
                 }
             }
 
@@ -948,6 +947,13 @@ namespace MyCaffe.trainers.c51.ddqn
 
                 m_blobActionBinaryLoss.SetData(1.0, nIdx, m_nAtoms);
             }
+        }
+
+        private float reduce_mean(Blob<T> b)
+        {
+            float[] rg = Utility.ConvertVecF<T>(b.mutable_cpu_data);
+            float fSum = rg.Sum(p => p);
+            return fSum / rg.Length;
         }
 
         private void reduce_sum_axis1(Blob<T> b)
@@ -1020,7 +1026,8 @@ namespace MyCaffe.trainers.c51.ddqn
             if (m_softmaxLoss == null)
             {
                 LayerParameter p = new LayerParameter(LayerParameter.LayerType.SOFTMAXCROSSENTROPY_LOSS);
-                p.softmax_param.axis = 1;
+                p.softmax_param.axis = 2;
+                p.loss_param.normalization = LossParameter.NormalizationMode.NONE;
                 m_softmaxLoss = new SoftmaxCrossEntropyLossLayer<T>(m_mycaffe.Cuda, m_mycaffe.Log, p);
                 m_softmaxLoss.Setup(colBottom, colTop);
             }
@@ -1222,7 +1229,7 @@ namespace MyCaffe.trainers.c51.ddqn
 
                 for (int i = 0; i < rgData.Count; i++)
                 {
-                    drawProbabilities(g, nX, nY, nWid1, nHt1, i, rgData[i], clrMap.GetColor(i + 1), rgfMin[i], rgfMax[i], (i == nMaxIdx) ? true : false, m_bNormalizeOverlay);
+                    drawProbabilities(g, nX, nY, nWid1, nHt1, i, rgData[i], clrMap.GetColor(i + 1), rgfMin.Min(p => p), rgfMax.Max(p => p), (i == nMaxIdx) ? true : false, m_bNormalizeOverlay);
                     nX += nWid1;
                 }
             }
