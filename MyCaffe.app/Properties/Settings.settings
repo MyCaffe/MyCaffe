@@ -38,5 +38,11 @@
     <Setting Name="NsMaxImageSize" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">640</Value>
     </Setting>
+    <Setting Name="CustVmin" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">-10</Value>
+    </Setting>
+    <Setting Name="CustVmax" Type="System.Double" Scope="User">
+      <Value Profile="(Default)">10</Value>
+    </Setting>
   </Settings>
 </SettingsFile>
