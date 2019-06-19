@@ -49,6 +49,11 @@
             this.chkAllowNegativeRewards = new System.Windows.Forms.CheckBox();
             this.chkTerminateOnRallyEnd = new System.Windows.Forms.CheckBox();
             this.chkLoadWeights = new System.Windows.Forms.CheckBox();
+            this.lblVMin = new System.Windows.Forms.Label();
+            this.edtVMin = new System.Windows.Forms.TextBox();
+            this.lblVMax = new System.Windows.Forms.Label();
+            this.edtVMax = new System.Windows.Forms.TextBox();
+            this.btnReset = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             this.grpRom.SuspendLayout();
             this.SuspendLayout();
@@ -57,7 +62,7 @@
             // 
             this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(366, 194);
+            this.btnCancel.Location = new System.Drawing.Point(439, 194);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(75, 23);
             this.btnCancel.TabIndex = 7;
@@ -68,7 +73,7 @@
             // 
             this.btnOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.btnOK.Location = new System.Drawing.Point(285, 194);
+            this.btnOK.Location = new System.Drawing.Point(358, 194);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(75, 23);
             this.btnOK.TabIndex = 6;
@@ -96,7 +101,7 @@
             this.lblGymName.ForeColor = System.Drawing.Color.SteelBlue;
             this.lblGymName.Location = new System.Drawing.Point(73, 9);
             this.lblGymName.Name = "lblGymName";
-            this.lblGymName.Size = new System.Drawing.Size(380, 27);
+            this.lblGymName.Size = new System.Drawing.Size(453, 27);
             this.lblGymName.TabIndex = 1;
             // 
             // chkShowUi
@@ -132,7 +137,7 @@
             this.groupBox1.Controls.Add(this.radPGSimple);
             this.groupBox1.Location = new System.Drawing.Point(12, 120);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(429, 51);
+            this.groupBox1.Size = new System.Drawing.Size(502, 51);
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Trainer";
@@ -249,8 +254,6 @@
             // chkLoadWeights
             // 
             this.chkLoadWeights.AutoSize = true;
-            this.chkLoadWeights.Checked = true;
-            this.chkLoadWeights.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkLoadWeights.Location = new System.Drawing.Point(218, 97);
             this.chkLoadWeights.Name = "chkLoadWeights";
             this.chkLoadWeights.Size = new System.Drawing.Size(127, 17);
@@ -258,13 +261,70 @@
             this.chkLoadWeights.Text = "Load weights (if exist)";
             this.chkLoadWeights.UseVisualStyleBackColor = true;
             // 
+            // lblVMin
+            // 
+            this.lblVMin.AutoSize = true;
+            this.lblVMin.Location = new System.Drawing.Point(429, 52);
+            this.lblVMin.Name = "lblVMin";
+            this.lblVMin.Size = new System.Drawing.Size(34, 13);
+            this.lblVMin.TabIndex = 10;
+            this.lblVMin.Text = "VMin:";
+            this.lblVMin.Visible = false;
+            // 
+            // edtVMin
+            // 
+            this.edtVMin.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.edtVMin.Location = new System.Drawing.Point(469, 49);
+            this.edtVMin.Name = "edtVMin";
+            this.edtVMin.Size = new System.Drawing.Size(45, 20);
+            this.edtVMin.TabIndex = 11;
+            this.edtVMin.Text = "-10";
+            this.edtVMin.Visible = false;
+            // 
+            // lblVMax
+            // 
+            this.lblVMax.AutoSize = true;
+            this.lblVMax.Location = new System.Drawing.Point(429, 75);
+            this.lblVMax.Name = "lblVMax";
+            this.lblVMax.Size = new System.Drawing.Size(37, 13);
+            this.lblVMax.TabIndex = 10;
+            this.lblVMax.Text = "VMax:";
+            this.lblVMax.Visible = false;
+            // 
+            // edtVMax
+            // 
+            this.edtVMax.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.edtVMax.Location = new System.Drawing.Point(469, 72);
+            this.edtVMax.Name = "edtVMax";
+            this.edtVMax.Size = new System.Drawing.Size(45, 20);
+            this.edtVMax.TabIndex = 11;
+            this.edtVMax.Text = "10";
+            this.edtVMax.Visible = false;
+            // 
+            // btnReset
+            // 
+            this.btnReset.Location = new System.Drawing.Point(469, 98);
+            this.btnReset.Name = "btnReset";
+            this.btnReset.Size = new System.Drawing.Size(45, 21);
+            this.btnReset.TabIndex = 12;
+            this.btnReset.Text = "reset";
+            this.btnReset.UseVisualStyleBackColor = true;
+            this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
+            // 
             // FormCustomTraining
             // 
             this.AcceptButton = this.btnOK;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(453, 229);
+            this.ClientSize = new System.Drawing.Size(526, 229);
+            this.Controls.Add(this.btnReset);
+            this.Controls.Add(this.edtVMax);
+            this.Controls.Add(this.lblVMax);
+            this.Controls.Add(this.edtVMin);
+            this.Controls.Add(this.lblVMin);
             this.Controls.Add(this.chkLoadWeights);
             this.Controls.Add(this.chkTerminateOnRallyEnd);
             this.Controls.Add(this.chkAllowNegativeRewards);
@@ -316,5 +376,10 @@
         private System.Windows.Forms.CheckBox chkAllowNegativeRewards;
         private System.Windows.Forms.CheckBox chkTerminateOnRallyEnd;
         private System.Windows.Forms.CheckBox chkLoadWeights;
+        private System.Windows.Forms.Label lblVMin;
+        private System.Windows.Forms.TextBox edtVMin;
+        private System.Windows.Forms.Label lblVMax;
+        private System.Windows.Forms.TextBox edtVMax;
+        private System.Windows.Forms.Button btnReset;
     }
 }

@@ -22,6 +22,8 @@ namespace MyCaffe.app
         bool m_bLoadWeights = true;
         string m_strTrainer = "";
         string m_strRomName = "";
+        double m_dfVMin = -10;
+        double m_dfVMax = 10;
 
         public FormCustomTraining(string strName)
         {
@@ -68,6 +70,9 @@ namespace MyCaffe.app
                 radPGMultiThread.Checked = true;
 
             radC51SingleThread.Enabled = m_bAllowC51;
+
+            edtVMin.Text = Properties.Settings.Default.CustVmin.ToString();
+            edtVMax.Text = Properties.Settings.Default.CustVmax.ToString();
         }
 
         private void btnOK_Click(object sender, EventArgs e)
@@ -92,11 +97,58 @@ namespace MyCaffe.app
                 m_strRomName = "breakout";
             else
                 m_strRomName = "pong";
+
+            if (radC51SingleThread.Checked)
+            {
+                double dfVMin;
+                double dfVMax;
+
+                if (!double.TryParse(edtVMin.Text, out dfVMin))
+                {
+                    MessageBox.Show("The 'VMin' value is invalid.  Please enter a valid number.", "Invalid VMin", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    edtVMin.Focus();
+                    DialogResult = DialogResult.None;
+                    return;
+                }
+
+                if (!double.TryParse(edtVMax.Text, out dfVMax))
+                {
+                    MessageBox.Show("The 'VMax' value is invalid.  Please enter a valid number.", "Invalid VMax", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    edtVMax.Focus();
+                    DialogResult = DialogResult.None;
+                    return;
+                }
+
+                if (dfVMax <= dfVMin)
+                {
+                    MessageBox.Show("The 'VMax' value must be greater than the 'VMin' value.", "Invalid VMin,VMax", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    edtVMin.Focus();
+                    DialogResult = DialogResult.None;
+                    return;
+                }
+
+                m_dfVMin = dfVMin;
+                m_dfVMax = dfVMax;
+
+                Properties.Settings.Default.CustVmin = m_dfVMin;
+                Properties.Settings.Default.CustVmax = m_dfVMax;
+                Properties.Settings.Default.Save();
+            }
         }
 
         public string RomName
         {
             get { return m_strRomName; }
+        }
+
+        public double VMin
+        {
+            get { return m_dfVMin; }
+        }
+
+        public double VMax
+        {
+            get { return m_dfVMax; }
         }
 
         public bool ShowUserInterface
@@ -136,8 +188,23 @@ namespace MyCaffe.app
 
         private void radC51SingleThread_CheckedChanged(object sender, EventArgs e)
         {
+            chkUseAcceleratedTraining.Enabled = !radC51SingleThread.Checked;
+            chkAllowDiscountReset.Enabled = !radC51SingleThread.Checked;
             chkAllowNegativeRewards.Checked = radC51SingleThread.Checked;
             chkTerminateOnRallyEnd.Checked = radC51SingleThread.Checked;
+
+            lblVMin.Visible = radC51SingleThread.Checked;
+            lblVMax.Visible = radC51SingleThread.Checked;
+            edtVMin.Visible = radC51SingleThread.Checked;
+            edtVMax.Visible = radC51SingleThread.Checked;
+
+            radAtariBreakout.Checked = radC51SingleThread.Checked;
+        }
+
+        private void btnReset_Click(object sender, EventArgs e)
+        {
+            edtVMin.Text = "-10";
+            edtVMax.Text = "10";
         }
     }
 }
