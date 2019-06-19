@@ -16,6 +16,10 @@ using MyCaffe.trainers;
 using System.ServiceModel;
 using MyCaffe.db.stream;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Reflection;
+using System.Security.AccessControl;
+using System.Security.Principal;
 
 namespace MyCaffe.test
 {
@@ -309,7 +313,7 @@ namespace MyCaffe.test
     {
         void TrainCartPolePG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
         void TrainAtariPG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false);
-        void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int nIteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExist = false);
+        void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int nIteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExist = false, double dfVMin = -10, double dfVMax = 10);
 
         void TrainCharRNN(bool bDual, bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
         void TrainWavRNN(bool bDual, bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
@@ -611,7 +615,7 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int iteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExists = false)
+        public void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int iteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExists = false, double dfVMin = -10, double dfVMax = 10)
         {
             m_evtCancel.Reset();
 
@@ -654,17 +658,18 @@ namespace MyCaffe.test
             //  - RewardType = MAX (display the maximum rewards received, a setting of VAL displays the actual reward received)
             //  - Gamma = 0.99 (discounting factor)
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
-            //  - UseAcceleratedTraining = False (disable accelerated training).
             //  - AllowNegativeRewards = False (when enabled and the ball falls behind our player, a -1 reward is given).
             //  - TerminateOnRallyEnd = False (when enabled a termination state is given each time the ball falls behind our player).
             //  - GameROM = 'path to game ROM'
-            string strParam = "TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=False;AllowDiscountReset=False;Gamma=0.99;";
-            strParam += "Preprocess=False;";
-            strParam += "ActionForceGray=True;";
-            strParam += "FrameSkip=1;";
-            strParam += "AllowNegativeRewards=" + bAllowNegRewards.ToString() + ";";
-            strParam += "TerminateOnRallyEnd=" + bTerminateOnRallyEnd.ToString() + ";";
+            string strParam = "TrainerType=" + strTrainerType + ";RewardType=VAL;Gamma=0.99;";
+            strParam += "UseRawInput=True;";        // use the input values directly, do not take a difference of them with the previous.
+            strParam += "Preprocess=False;";        // do not preprocess (turn inputs to 1 or 0).
+            strParam += "ActionForceGray=True;";    // force inputs to gray with a single color channel.
+            strParam += "FrameSkip=1;";             // process one frame of data at a time.
+            strParam += "AllowNegativeRewards=" + bAllowNegRewards.ToString() + ";";    // receive -1 reward on rally's where ball not even hit.
+            strParam += "TerminateOnRallyEnd=" + bTerminateOnRallyEnd.ToString() + ";"; // play only one rally at a time then restart the game.
             strParam += "EpsSteps=" + nIterations.ToString() + ";EpsStart=0.99;EpsEnd=0.01;";
+            strParam += "VMin=" + dfVMin.ToString() + ";VMax=" + dfVMax.ToString() + ";";
             strParam += "GameROM=" + strRom;
             itrainer.Initialize(strParam, this);
 
@@ -1123,16 +1128,18 @@ namespace MyCaffe.test
         private void Mycaffe_OnSnapshot(object sender, SnapshotArgs e)
         {
             byte[] rgWeights = e.UpdateWeights();
-
             string strWeights = m_strModelPath + "\\weights." + m_engine.ToString() + ".mycaffemodel";
 
-            if (File.Exists(strWeights))
-                File.Delete(strWeights);
-
-            using (FileStream fs = File.Open(strWeights, FileMode.OpenOrCreate))
-            using (BinaryWriter bw = new BinaryWriter(fs))
+            using (new SingleGlobalInstance(0, false))
             {
-                bw.Write(rgWeights);
+                if (File.Exists(strWeights))
+                    File.Delete(strWeights);
+
+                using (FileStream fs = File.Open(strWeights, FileMode.OpenOrCreate))
+                using (BinaryWriter bw = new BinaryWriter(fs))
+                {
+                    bw.Write(rgWeights);
+                }
             }
         }
 
@@ -1266,6 +1273,56 @@ namespace MyCaffe.test
                     double dfProgress = (int)nIteration / (double)m_nMaxIteration;
                     m_progress.SetProgress(dfProgress);
                 }
+            }
+        }
+    }
+
+    class SingleGlobalInstance : IDisposable
+    {
+        public bool m_hasHandle = false;
+        Mutex m_mutex;
+
+        private void InitMutex()
+        {
+            string appGuid = ((GuidAttribute)Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(GuidAttribute), false).GetValue(0)).Value;
+            string mutexId = string.Format("Global\\{{{0}}}", appGuid);
+            m_mutex = new Mutex(false, mutexId);
+
+            var allowEveryoneRule = new MutexAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid, null), MutexRights.FullControl, AccessControlType.Allow);
+            var securitySettings = new MutexSecurity();
+            securitySettings.AddAccessRule(allowEveryoneRule);
+            m_mutex.SetAccessControl(securitySettings);
+        }
+
+        public SingleGlobalInstance(int timeOut, bool bThrowException)
+        {
+            InitMutex();
+            try
+            {
+                if (timeOut < 0)
+                    m_hasHandle = m_mutex.WaitOne(Timeout.Infinite, false);
+                else
+                    m_hasHandle = m_mutex.WaitOne(timeOut, false);
+
+                if (m_hasHandle == false && bThrowException)
+                    throw new TimeoutException("Timeout waiting for exclusive access on SingleInstance");
+            }
+            catch (AbandonedMutexException)
+            {
+                m_hasHandle = true;
+            }
+        }
+
+
+        public void Dispose()
+        {
+            if (m_mutex != null)
+            {
+                if (m_hasHandle)
+                    m_mutex.ReleaseMutex();
+
+                m_mutex.Close();
+                m_mutex = null;
             }
         }
     }
