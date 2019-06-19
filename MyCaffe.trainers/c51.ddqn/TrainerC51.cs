@@ -358,7 +358,7 @@ namespace MyCaffe.trainers.c51.ddqn
         /// <param name="step">Specifies the training step to take, if any.  This is only used when debugging.</param>
         public void Run(Phase phase, int nN, ITERATOR_TYPE type, TRAIN_STEP step)
         {
-            MemoryCollection rgMemory = new MemoryCollection(m_nMaxMemory);
+            MemoryEpisodeCollection rgMemory = new MemoryEpisodeCollection(m_nMaxMemory);
             int nIteration = 0;
             double? dfRunningReward = null;
             double dfRewardSum = 0;
@@ -784,6 +784,7 @@ namespace MyCaffe.trainers.c51.ddqn
             m_rgSamples = rgSamples;
             m_nActionCount = nActionCount;
 
+            m_mycaffe.Log.Enable = false;
             setData1(m_netTarget, rgSamples);
             m_netTarget.ForwardFromTo(0, m_netTarget.layers.Count - 2);
 
@@ -796,6 +797,7 @@ namespace MyCaffe.trainers.c51.ddqn
             m_memLoss.OnGetLoss += m_memLoss_OnGetLoss2;
             m_solver.Step(1);
             m_memLoss.OnGetLoss -= m_memLoss_OnGetLoss2;
+            m_mycaffe.Log.Enable = true;
         }
 
         /// <summary>
@@ -1306,8 +1308,129 @@ namespace MyCaffe.trainers.c51.ddqn
         }
     }
 
+    class MemoryEpisodeCollection
+    {
+        int m_nTotalCount = 0;
+        int m_nMax;
+        List<MemoryCollection> m_rgItems = new List<MemoryCollection>();
+
+        public enum ITEM
+        {
+            DATA0,
+            DATA1,
+            CLIP0,
+            CLIP1
+        }
+
+        public MemoryEpisodeCollection(int nMax)
+        {
+            m_nMax = nMax;
+        }
+
+        public int Count
+        {
+            get { return m_rgItems.Count; }
+        }
+
+        public void Clear()
+        {
+            m_nTotalCount = 0;
+            m_rgItems.Clear();
+        }
+
+        public void Add(MemoryItem item)
+        {
+            m_nTotalCount++;
+
+            if (m_rgItems.Count == 0 || m_rgItems[m_rgItems.Count - 1].Episode != item.Episode)
+            {
+                MemoryCollection col = new MemoryCollection(int.MaxValue);
+                col.Add(item);
+                m_rgItems.Add(col);
+            }
+            else
+            {
+                m_rgItems[m_rgItems.Count - 1].Add(item);
+            }
+
+            if (m_nTotalCount > m_nMax)
+            {
+                List<MemoryCollection> rgItems = m_rgItems.OrderBy(p => p.TotalReward).ToList();
+                m_nTotalCount -= rgItems[0].Count;
+                m_rgItems.Remove(rgItems[0]);
+            }
+        }
+
+        public MemoryCollection GetRandomSamples(CryptoRandom random, int nCount)
+        {
+            MemoryCollection col = new MemoryCollection(nCount);
+            List<string> rgItems = new List<string>();
+
+            for (int i = 0; i < nCount; i++)
+            {
+                int nEpisode = random.Next(m_rgItems.Count);
+                int nItem = random.Next(m_rgItems[nEpisode].Count);
+                string strItem = nEpisode.ToString() + "_" + nItem.ToString();
+
+                if (!rgItems.Contains(strItem))
+                {
+                    col.Add(m_rgItems[nEpisode][nItem]);
+                    rgItems.Add(strItem);
+                }
+            }
+
+            return col;
+        }
+
+        List<StateBase> GetState1()
+        {
+            List<StateBase> rgItems = new List<StateBase>();
+
+            for (int i = 0; i < m_rgItems.Count; i++)
+            {
+                for (int j = 0; j < m_rgItems[i].Count; j++)
+                {
+                    rgItems.Add(m_rgItems[i][j].State1);
+                }
+            }
+
+            return rgItems;
+        }
+
+        List<SimpleDatum> GetItem(ITEM item)
+        {
+            List<SimpleDatum> rgItems = new List<SimpleDatum>();
+
+            for (int i = 0; i < m_rgItems.Count; i++)
+            {
+                switch (item)
+                {
+                    case ITEM.DATA0:
+                        rgItems.AddRange(m_rgItems[i].GetData0());
+                        break;
+
+                    case ITEM.DATA1:
+                        rgItems.AddRange(m_rgItems[i].GetData1());
+                        break;
+
+                    case ITEM.CLIP0:
+                        rgItems.AddRange(m_rgItems[i].GetClip0());
+                        break;
+
+                    case ITEM.CLIP1:
+                        rgItems.AddRange(m_rgItems[i].GetClip1());
+                        break;
+                }
+            }
+
+            return rgItems;
+        }
+    }
+
     class MemoryCollection : IEnumerable<MemoryItem> /** @private */
     {
+        double m_dfTotalReward = 0;
+        int m_nEpisode;
         int m_nMax;
         List<MemoryItem> m_rgItems = new List<MemoryItem>();
 
@@ -1328,6 +1451,9 @@ namespace MyCaffe.trainers.c51.ddqn
 
         public void Add(MemoryItem item)
         {
+            m_nEpisode = item.Episode;
+            m_dfTotalReward += item.Reward;
+
             m_rgItems.Add(item);
 
             if (m_rgItems.Count > m_nMax)
@@ -1336,7 +1462,19 @@ namespace MyCaffe.trainers.c51.ddqn
 
         public void Clear()
         {
+            m_nEpisode = 0;
+            m_dfTotalReward = 0;
             m_rgItems.Clear();
+        }
+
+        public int Episode
+        {
+            get { return m_nEpisode; }
+        }
+
+        public double TotalReward
+        {
+            get { return m_dfTotalReward; }
         }
 
         public MemoryCollection GetRandomSamples(CryptoRandom random, int nCount)
@@ -1396,6 +1534,11 @@ namespace MyCaffe.trainers.c51.ddqn
         IEnumerator IEnumerable.GetEnumerator()
         {
             return m_rgItems.GetEnumerator();
+        }
+
+        public override string ToString()
+        {
+            return "Episode #" + m_nEpisode.ToString() + " (" + m_rgItems.Count.ToString() + ") => " + m_dfTotalReward.ToString();
         }
     }
 
