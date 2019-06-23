@@ -1307,6 +1307,8 @@ namespace MyCaffe.app
                 {
                     if (strTrainer.Contains("C51"))
                         test.TrainAtariC51Dual(bShowUi, strTrainer, nIterations, 1, m_strAtariRom, arg.AllowNegativeRewards, arg.TerminateOnRallyEnd, arg.LoadWeights, arg.VMin, arg.VMax, arg.EnableVersionB);
+                    else if (strTrainer.Contains("NOISYDQN"))
+                        test.TrainAtariNoisyNetDual(bShowUi, strTrainer, nIterations, 1, m_strAtariRom, arg.AllowNegativeRewards, arg.TerminateOnRallyEnd, arg.LoadWeights);
                     else
                         test.TrainAtariPG(bShowUi, strTrainer, nIterations, bUseAccelTrain, bAllowDiscountReset, m_strAtariRom, arg.AllowNegativeRewards, arg.TerminateOnRallyEnd);
                 }

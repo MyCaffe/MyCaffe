@@ -92,6 +92,8 @@ namespace MyCaffe.app
                 m_strTrainer = "PG.ST";
             else if (radC51SingleThread.Checked)
                 m_strTrainer = "C51.ST";
+            else if (radNoisyNet.Checked)
+                m_strTrainer = "NOISYDQN.ST";
             else
                 m_strTrainer = "PG.MT";
 
@@ -195,24 +197,39 @@ namespace MyCaffe.app
 
         private void radC51SingleThread_CheckedChanged(object sender, EventArgs e)
         {
-            chkUseAcceleratedTraining.Enabled = !radC51SingleThread.Checked;
-            chkAllowDiscountReset.Enabled = !radC51SingleThread.Checked;
-            chkAllowNegativeRewards.Checked = radC51SingleThread.Checked;
-            chkTerminateOnRallyEnd.Checked = radC51SingleThread.Checked;
-
             lblVMin.Visible = radC51SingleThread.Checked;
             lblVMax.Visible = radC51SingleThread.Checked;
             edtVMin.Visible = radC51SingleThread.Checked;
             edtVMax.Visible = radC51SingleThread.Checked;
-
-            radAtariBreakout.Checked = radC51SingleThread.Checked;
             chkEnableVersionB.Visible = radC51SingleThread.Checked;
+            btnReset.Visible = radC51SingleThread.Checked;
+
+            if (radC51SingleThread.Checked)
+            {
+                radAtariBreakout.Checked = true;
+                chkAllowNegativeRewards.Checked = true;
+                chkTerminateOnRallyEnd.Checked = true;
+                chkUseAcceleratedTraining.Checked = false;
+                chkAllowDiscountReset.Checked = false;
+            }
         }
 
         private void btnReset_Click(object sender, EventArgs e)
         {
             edtVMin.Text = "-10";
             edtVMax.Text = "10";
+        }
+
+        private void radNoisyNet_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radNoisyNet.Checked)
+            {
+                radAtariBreakout.Checked = true;
+                chkAllowNegativeRewards.Checked = true;
+                chkTerminateOnRallyEnd.Checked = true;
+                chkUseAcceleratedTraining.Checked = false;
+                chkAllowDiscountReset.Checked = false;
+            }
         }
     }
 }

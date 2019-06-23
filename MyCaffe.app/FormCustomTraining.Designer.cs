@@ -37,6 +37,7 @@
             this.chkShowUi = new System.Windows.Forms.CheckBox();
             this.chkUseAcceleratedTraining = new System.Windows.Forms.CheckBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.radNoisyNet = new System.Windows.Forms.RadioButton();
             this.radC51SingleThread = new System.Windows.Forms.RadioButton();
             this.radPGMultiThread = new System.Windows.Forms.RadioButton();
             this.radPGSingleThread = new System.Windows.Forms.RadioButton();
@@ -132,6 +133,7 @@
             // 
             this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox1.Controls.Add(this.radNoisyNet);
             this.groupBox1.Controls.Add(this.radC51SingleThread);
             this.groupBox1.Controls.Add(this.radPGMultiThread);
             this.groupBox1.Controls.Add(this.radPGSingleThread);
@@ -142,6 +144,17 @@
             this.groupBox1.TabIndex = 5;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Trainer";
+            // 
+            // radNoisyNet
+            // 
+            this.radNoisyNet.AutoSize = true;
+            this.radNoisyNet.Location = new System.Drawing.Point(420, 19);
+            this.radNoisyNet.Name = "radNoisyNet";
+            this.radNoisyNet.Size = new System.Drawing.Size(133, 17);
+            this.radNoisyNet.TabIndex = 3;
+            this.radNoisyNet.Text = "NoisyNet Single-thread";
+            this.radNoisyNet.UseVisualStyleBackColor = true;
+            this.radNoisyNet.CheckedChanged += new System.EventHandler(this.radNoisyNet_CheckedChanged);
             // 
             // radC51SingleThread
             // 
@@ -312,6 +325,7 @@
             this.btnReset.TabIndex = 12;
             this.btnReset.Text = "reset";
             this.btnReset.UseVisualStyleBackColor = true;
+            this.btnReset.Visible = false;
             this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
             // 
             // chkEnableVersionB
@@ -395,5 +409,6 @@
         private System.Windows.Forms.TextBox edtVMax;
         private System.Windows.Forms.Button btnReset;
         private System.Windows.Forms.CheckBox chkEnableVersionB;
+        private System.Windows.Forms.RadioButton radNoisyNet;
     }
 }
