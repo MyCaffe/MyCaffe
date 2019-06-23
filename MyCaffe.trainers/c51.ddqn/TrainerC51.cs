@@ -463,7 +463,7 @@ namespace MyCaffe.trainers.c51.ddqn
         int m_nStackPerX = 4;
         int m_nBatchSize = 32;
         MemoryCollection m_rgSamples;
-        int m_nActionCount = 2;
+        int m_nActionCount = 3;
         bool m_bModelUpdated = false;
         Font m_font = null;
         Dictionary<Color, Tuple<Brush, Brush, Pen, Brush>> m_rgStyle = new Dictionary<Color, Tuple<Brush, Brush, Pen, Brush>>();
