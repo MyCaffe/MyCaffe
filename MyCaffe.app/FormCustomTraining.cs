@@ -24,6 +24,7 @@ namespace MyCaffe.app
         string m_strRomName = "";
         double m_dfVMin = -10;
         double m_dfVMax = 10;
+        bool m_bEnableVersionB = false;
 
         public FormCustomTraining(string strName)
         {
@@ -83,6 +84,7 @@ namespace MyCaffe.app
             m_bAllowNegativeRewards = chkAllowNegativeRewards.Checked;
             m_bTerminateOnRallyEnd = chkTerminateOnRallyEnd.Checked;
             m_bLoadWeights = chkLoadWeights.Checked;
+            m_bEnableVersionB = chkEnableVersionB.Checked;
 
             if (radPGSimple.Checked)
                 m_strTrainer = "PG.SIMPLE";
@@ -139,6 +141,11 @@ namespace MyCaffe.app
         public string RomName
         {
             get { return m_strRomName; }
+        }
+
+        public bool EnableVersionB
+        {
+            get { return m_bEnableVersionB; }
         }
 
         public double VMin
@@ -199,6 +206,7 @@ namespace MyCaffe.app
             edtVMax.Visible = radC51SingleThread.Checked;
 
             radAtariBreakout.Checked = radC51SingleThread.Checked;
+            chkEnableVersionB.Visible = radC51SingleThread.Checked;
         }
 
         private void btnReset_Click(object sender, EventArgs e)

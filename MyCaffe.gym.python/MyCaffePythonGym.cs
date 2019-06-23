@@ -122,6 +122,10 @@ namespace MyCaffe.gym.python
             }
         }
 
+        /// <summary>
+        /// Set the action distribution for display.
+        /// </summary>
+        /// <param name="rgrg">Specifies the action distribution data where a distribution is provided per action.</param>
         public void SetActionDistributions(double[][] rgrg)
         {
             m_rgrgActionDistributions = rgrg;
@@ -202,7 +206,7 @@ namespace MyCaffe.gym.python
         /// </summary>
         /// <param name="bGrayscale">Optionally, specifies to return gray scale data (one channel).</param>
         /// <param name="dfScale">Optionally, specifies the scale to apply to each item.</param>
-        /// <param name="rgData1">Optionally, specifies the data as a flat array.</param>
+        /// <param name="sd">Optionally, specifies the data.</param>
         /// <returns>The data is returned as a multi-dimensional array.</returns>
         public List<List<List<double>>> GetDataAs3D(bool bGrayscale = false, double dfScale = 1, SimpleDatum sd = null)
         {

@@ -97,6 +97,7 @@ namespace MyCaffe.trainers
             PG_ST,
             PG_SIMPLE,
             C51_ST,
+            C51b_ST,
             RNN_SIMPLE
         }
 
@@ -206,6 +207,9 @@ namespace MyCaffe.trainers
                     case TRAINER_TYPE.C51_ST:
                         return new c51.ddqn.TrainerC51<double>(mycaffe, m_properties, m_random, this);
 
+                    case TRAINER_TYPE.C51b_ST:
+                        return new c51b.ddqn.TrainerC51<double>(mycaffe, m_properties, m_random, this);
+
                     default:
                         throw new Exception("The trainer type '" + m_trainerType.ToString() + "' is not supported in the RL stage!");
                 }
@@ -254,6 +258,9 @@ namespace MyCaffe.trainers
 
                     case TRAINER_TYPE.C51_ST:
                         return new c51.ddqn.TrainerC51<float>(mycaffe, m_properties, m_random, this);
+
+                    case TRAINER_TYPE.C51b_ST:
+                        return new c51b.ddqn.TrainerC51<float>(mycaffe, m_properties, m_random, this);
 
                     default:
                         throw new Exception("The trainer type '" + m_trainerType.ToString() + "' is not supported in the RL stage!");
@@ -477,6 +484,11 @@ namespace MyCaffe.trainers
 
                 case "C51.ST":      // single threaded C51
                     m_trainerType = TRAINER_TYPE.C51_ST;
+                    m_stage = Stage.RL;
+                    break;
+
+                case "C51b.ST":      // single threaded C51b
+                    m_trainerType = TRAINER_TYPE.C51b_ST;
                     m_stage = Stage.RL;
                     break;
 

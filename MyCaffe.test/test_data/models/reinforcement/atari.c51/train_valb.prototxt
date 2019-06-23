@@ -1,0 +1,255 @@
+name: "BasicNet"
+layer 
+{
+   name: "input"
+   type: "Input"
+   top: "data"
+   input_param 
+   {
+      shape 
+      {
+         dim: 32
+         dim: 4
+         dim: 80
+         dim: 80
+      }
+   }
+}
+layer 
+{
+   name: "conv1"
+   type: "Convolution"
+   bottom: "data"
+   top: "conv1"
+   param 
+   {
+      lr_mult: 1
+   }
+   param 
+   {
+      lr_mult: 2
+      decay_mult: 0
+   }
+   convolution_param 
+   {
+      kernel_size: 8
+      stride: 4
+      pad: 2
+      dilation: 1
+      num_output: 32
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+   }
+}
+layer 
+{
+   name: "relu1"
+   type: "ReLU"
+   bottom: "conv1"
+   top: "conv1"
+}
+layer 
+{
+   name: "conv2"
+   type: "Convolution"
+   bottom: "conv1"
+   top: "conv2"
+   param 
+   {
+      lr_mult: 1
+   }
+   param 
+   {
+      lr_mult: 2
+      decay_mult: 0
+   }
+   convolution_param 
+   {
+      kernel_size: 4
+      stride: 2
+      pad: 1
+      dilation: 1
+      num_output: 64
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+   }
+}
+layer 
+{
+   name: "relu2"
+   type: "ReLU"
+   bottom: "conv2"
+   top: "conv2"
+}
+layer 
+{
+   name: "conv3"
+   type: "Convolution"
+   bottom: "conv2"
+   top: "conv3"
+   param 
+   {
+      lr_mult: 1
+   }
+   param 
+   {
+      lr_mult: 2
+      decay_mult: 0
+   }
+   convolution_param 
+   {
+      kernel_size: 3
+      stride: 1
+      pad: 1
+      dilation: 1
+      num_output: 64
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+   }
+}
+layer 
+{
+   name: "relu3"
+   type: "ReLU"
+   bottom: "conv3"
+   top: "conv3"
+}
+layer 
+{
+   name: "ip1"
+   type: "InnerProduct"
+   bottom: "conv3"
+   top: "ip1"
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 2
+   }
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   inner_product_param 
+   {
+      num_output: 512
+      bias_term: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "relu4"
+   type: "ReLU"
+   bottom: "ip1"
+   top: "ip1"
+}
+layer 
+{
+   name: "ip2"
+   type: "InnerProduct"
+   bottom: "ip1"
+   top: "logits1"
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 2
+   }
+   param 
+   {
+      lr_mult: 1
+      decay_mult: 0
+   }
+   inner_product_param 
+   {
+      num_output: 153
+      bias_term: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0.1
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "reshape1"
+   type: "Reshape"
+   bottom: "logits1"
+   top: "logits"
+   reshape_param 
+   {
+      shape 
+      {
+         dim: 3
+         dim: 51
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "softmax1"
+   type: "Softmax"
+   bottom: "logits"
+   top: "actions"
+   softmax_param 
+   {
+      axis: 2
+   }
+}
+layer 
+{
+   name: "loss1"
+   type: "MemoryLoss"
+   bottom: "actions"
+   top: "loss1"
+   include 
+   {
+      phase: TRAIN
+   }
+   loss_param 
+   {
+      normalization: NONE
+   }
+}

@@ -1217,7 +1217,7 @@ namespace MyCaffe.app
 
                 m_log.WriteLine("starting policy gradient cart-pole test...");
                 m_evtCancelTraining.Reset();
-                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "Cart-Pole", strTrainer, bShowUi, bUseAccelTrain, bAllowDiscountReset, false, false, false, 0, 0));
+                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "Cart-Pole", strTrainer, bShowUi, bUseAccelTrain, bAllowDiscountReset, false, false, false, 0, 0, false));
                 startAtariTrainerToolStripMenuItem.Enabled = false;
                 startNeuralStyleTransferToolStripMenuItem.Enabled = false;
                 startCartPoleTrainerToolStripMenuItem.Text = "Stop Cart-Pole Training";
@@ -1245,6 +1245,7 @@ namespace MyCaffe.app
                 bool bLoadWeights = false;
                 double dfVMin = -10;
                 double dfVMax = 10;
+                bool bEnableVersionB = false;
                 string strTrainer = "SIMPLE";
 
                 FormCustomTraining dlg = new FormCustomTraining("ATARI");
@@ -1258,13 +1259,14 @@ namespace MyCaffe.app
                 bAllowNegativeRewards = dlg.AllowNegativeRewards;
                 bTerminateOnRallyEnd = dlg.TerminateOnRallyEnd;
                 bLoadWeights = dlg.LoadWeights;
+                bEnableVersionB = dlg.EnableVersionB;
                 strTrainer = dlg.Trainer;
                 dfVMin = dlg.VMin;
                 dfVMax = dlg.VMax;
 
                 m_log.WriteLine("starting " + strTrainer + " ATARI (" + m_strAtariRom + ") test...");
                 m_evtCancelTraining.Reset();
-                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "ATARI", strTrainer, bShowUi, bUseAccelTrain, bAllowDiscountReset, bAllowNegativeRewards, bTerminateOnRallyEnd, bLoadWeights, dfVMin, dfVMax));
+                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "ATARI", strTrainer, bShowUi, bUseAccelTrain, bAllowDiscountReset, bAllowNegativeRewards, bTerminateOnRallyEnd, bLoadWeights, dfVMin, dfVMax, bEnableVersionB));
                 startCartPoleTrainerToolStripMenuItem.Enabled = false;
                 startNeuralStyleTransferToolStripMenuItem.Enabled = false;
                 startAtariTrainerToolStripMenuItem.Text = "Stop ATARI Training";
@@ -1304,7 +1306,7 @@ namespace MyCaffe.app
                 else if (strGym == "ATARI")
                 {
                     if (strTrainer.Contains("C51"))
-                        test.TrainAtariC51Dual(bShowUi, strTrainer, nIterations, 1, m_strAtariRom, arg.AllowNegativeRewards, arg.TerminateOnRallyEnd, arg.LoadWeights, arg.VMin, arg.VMax);
+                        test.TrainAtariC51Dual(bShowUi, strTrainer, nIterations, 1, m_strAtariRom, arg.AllowNegativeRewards, arg.TerminateOnRallyEnd, arg.LoadWeights, arg.VMin, arg.VMax, arg.EnableVersionB);
                     else
                         test.TrainAtariPG(bShowUi, strTrainer, nIterations, bUseAccelTrain, bAllowDiscountReset, m_strAtariRom, arg.AllowNegativeRewards, arg.TerminateOnRallyEnd);
                 }
@@ -1467,8 +1469,9 @@ namespace MyCaffe.app
         bool m_bLoadWeights;
         double m_dfVMin;
         double m_dfVMax;
+        bool m_bEnableVersionB;
 
-        public Settings(CancelEvent evtCancel, string strGym, string strTrainer, bool bShowUi, bool bUseAccelTrain, bool bAllowDiscountReset, bool bAllowNegRewards, bool bTerminateOnRallyEnd, bool bLoadWeights, double dfVMin, double dfVMax)
+        public Settings(CancelEvent evtCancel, string strGym, string strTrainer, bool bShowUi, bool bUseAccelTrain, bool bAllowDiscountReset, bool bAllowNegRewards, bool bTerminateOnRallyEnd, bool bLoadWeights, double dfVMin, double dfVMax, bool bEnableVersionB)
         {
             m_evtCancel = evtCancel;
             m_strGym = strGym;
@@ -1481,11 +1484,17 @@ namespace MyCaffe.app
             m_bLoadWeights = bLoadWeights;
             m_dfVMin = dfVMin;
             m_dfVMax = dfVMax;
+            m_bEnableVersionB = bEnableVersionB;
         }
 
         public CancelEvent Cancel
         {
             get { return m_evtCancel; }
+        }
+
+        public bool EnableVersionB
+        {
+            get { return m_bEnableVersionB; }
         }
 
         public string Gym

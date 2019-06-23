@@ -13,7 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyCaffe.trainers.c51.ddqn
+namespace MyCaffe.trainers.c51b.ddqn
 {
     /// <summary>
     /// The TrainerC51 implements the C51-DDQN algorithm as described by Bellemare et al., and 'flyyufelix'
@@ -181,7 +181,7 @@ namespace MyCaffe.trainers.c51.ddqn
         float m_fGamma = 0.95f;
         bool m_bUseRawInput = true;
         int m_nMaxMemory = 50000;
-        int m_nTrainingUpdateFreq = 5000;
+        int m_nTrainingUpdateFreq = 1000;
         int m_nExplorationNum = 50000;
         int m_nEpsSteps = 0;
         double m_dfEpsStart = 0;
@@ -441,8 +441,8 @@ namespace MyCaffe.trainers.c51.ddqn
         SimpleDatum m_sdLast = null;
         DataTransformer<T> m_transformer;
         MemoryLossLayer<T> m_memLoss;
-        SoftmaxCrossEntropyLossLayer<T> m_softmaxLoss = null;
-        SoftmaxLayer<T> m_softmax;
+        SoftmaxLayer<T> m_softmax1;
+        SoftmaxLayer<T> m_softmax2;
         Blob<T> m_blobZ = null;
         Blob<T> m_blobZ1 = null;
         Blob<T> m_blobQ = null;
@@ -548,10 +548,16 @@ namespace MyCaffe.trainers.c51.ddqn
             dispose(ref m_blobAction);
             dispose(ref m_blobLabel);
 
-            if (m_softmax != null)
+            if (m_softmax1 != null)
             {
-                m_softmax.Dispose();
-                m_softmax = null;
+                m_softmax1.Dispose();
+                m_softmax1 = null;
+            }
+
+            if (m_softmax2 != null)
+            {
+                m_softmax2.Dispose();
+                m_softmax2 = null;
             }
 
             if (m_netTarget != null)
@@ -737,11 +743,9 @@ namespace MyCaffe.trainers.c51.ddqn
             setData(m_net, sd, sdClip);
             m_net.ForwardFromTo(0, m_net.layers.Count - 2);
 
-            Blob<T> logits = m_net.blob_by_name("logits");
-            if (logits == null)
-                throw new Exception("Missing expected 'logits' blob!");
-
-            Blob<T> actions = softmax_forward(logits, m_blobAction);
+            Blob<T> actions = m_net.blob_by_name("actions");
+            if (actions == null)
+                throw new Exception("Missing expected 'actions' blob!");
 
             createZ(1, nActionCount, m_nAtoms);
             m_blobQ.ReshapeLike(actions);
@@ -789,14 +793,14 @@ namespace MyCaffe.trainers.c51.ddqn
             m_netTarget.ForwardFromTo(0, m_netTarget.layers.Count - 2);
 
             setData1(m_net, rgSamples);
-            m_memLoss.OnGetLoss += m_memLoss_OnGetLoss1;
+            m_memLoss.OnGetLoss += m_memLoss_ProjectDistribution;
             m_net.ForwardFromTo();
-            m_memLoss.OnGetLoss -= m_memLoss_OnGetLoss1;
+            m_memLoss.OnGetLoss -= m_memLoss_ProjectDistribution;
 
             setData0(m_net, rgSamples);
-            m_memLoss.OnGetLoss += m_memLoss_OnGetLoss2;
+            m_memLoss.OnGetLoss += m_memLoss_ComputeLoss;
             m_solver.Step(1);
-            m_memLoss.OnGetLoss -= m_memLoss_OnGetLoss2;
+            m_memLoss.OnGetLoss -= m_memLoss_ComputeLoss;
             m_mycaffe.Log.Enable = true;
         }
 
@@ -805,7 +809,7 @@ namespace MyCaffe.trainers.c51.ddqn
         /// </summary>
         /// <param name="sender">Specifies the sender.</param>
         /// <param name="e">Specifies the arguments.</param>
-        private void m_memLoss_OnGetLoss2(object sender, MemoryLossLayerGetLossArgs<T> e)
+        private void m_memLoss_ComputeLoss(object sender, MemoryLossLayerGetLossArgs<T> e)
         {
             int nNumSamples = m_rgSamples.Count;
 
@@ -817,52 +821,54 @@ namespace MyCaffe.trainers.c51.ddqn
             //  Loss function
             //-------------------------------------------------------
 
-            m_blobPLoss.ReshapeLike(logits);
-            m_blobLabel.ReshapeLike(logits);
+            m_blobLoss.ReshapeLike(logits);
 
-            m_mycaffe.Cuda.mul(logits.count(), logits.gpu_data, m_blobActionBinaryLoss.mutable_gpu_data, m_blobPLoss.mutable_gpu_data); // Logits valid
-            m_blobPLoss.Reshape(m_blobPLoss.num, m_nActionCount, m_nAtoms, 1);
-            m_blobLabel.Reshape(m_blobLabel.num, m_nActionCount, m_nAtoms, 1);
+            // logit valid
+            m_mycaffe.Cuda.mul(m_blobLoss.count(), logits.gpu_data, m_blobActionBinaryLoss.gpu_data, m_blobLoss.mutable_gpu_data);
+            // logit valid reshape
+            m_blobLoss.Reshape(m_blobLoss.num, m_nActionCount, m_nAtoms, 1);
+            // logit valid non-zero
+            reduce_sum_axis1(m_blobLoss);
+            m_blobPLoss.ReshapeLike(m_blobLoss);
 
-            int nDstOffset = 0;
-            int nSrcOffset = 0;
+            softmax_forward_axis1(m_blobLoss, m_blobPLoss);
+            m_mycaffe.Cuda.sub(m_blobLoss.count(), m_blobPLoss.gpu_data, m_blobMLoss.gpu_data, m_blobLoss.mutable_gpu_data);
 
-            for (int i = 0; i < nNumSamples; i++)
+            int nOffsetSrc = 0;
+            int nOffsetDst = 0;
+
+            for (int i = 0; i < e.Bottom[0].num; i++)
             {
                 for (int j = 0; j < m_nActionCount; j++)
                 {
-                    m_mycaffe.Cuda.mul(m_nAtoms, m_blobMLoss.gpu_data, m_blobActionBinaryLoss.gpu_data, m_blobLabel.mutable_gpu_data, nSrcOffset, nDstOffset, nDstOffset);
-                    nDstOffset += m_nAtoms;
+                    m_mycaffe.Cuda.copy(m_nAtoms, m_blobLoss.gpu_data, e.Bottom[0].mutable_gpu_diff, nOffsetSrc, nOffsetDst);
+                    nOffsetDst += m_nAtoms;
                 }
 
-                nSrcOffset += m_nAtoms;
+                nOffsetSrc += m_nAtoms;
             }
 
-            e.Loss = softmaxLoss_forward(m_blobPLoss, m_blobLabel, m_blobLoss);
-            softmaxLoss_backward(m_blobPLoss, m_blobLabel, m_blobLoss);
+            m_mycaffe.Cuda.mul(e.Bottom[0].count(), e.Bottom[0].gpu_diff, m_blobActionBinaryLoss.gpu_data, e.Bottom[0].mutable_gpu_diff);
 
+            reduce_sum_axis1(m_blobLoss);
+            e.Loss = -1 * reduce_mean(m_blobLoss);
             e.EnableLossUpdate = false;
-            m_mycaffe.Cuda.mul(m_blobPLoss.count(), m_blobPLoss.gpu_diff, m_blobActionBinaryLoss.gpu_data, e.Bottom[0].mutable_gpu_diff);
         }
 
         /// <summary>
-        /// Calculate the target m_loss
+        /// Project the distribution for each action.
         /// </summary>
         /// <param name="sender">Specifies the sender.</param>
         /// <param name="e">Specifies the arguments.</param>
-        private void m_memLoss_OnGetLoss1(object sender, MemoryLossLayerGetLossArgs<T> e)
+        private void m_memLoss_ProjectDistribution(object sender, MemoryLossLayerGetLossArgs<T> e)
         {
-            Blob<T> logits = m_net.blob_by_name("logits");
-            if (logits == null)
-                throw new Exception("Missing expected 'logits' blob!");
+            Blob<T> actions = m_net.blob_by_name("actions");
+            if (actions == null)
+                throw new Exception("Missing expected 'actions' blob!");
 
-            Blob<T> actions = softmax_forward(logits, m_blobAction);
-
-            Blob<T> p_logits = m_netTarget.blob_by_name("logits");
-            if (p_logits == null)
-                throw new Exception("Missing expected 'logits' blob!");
-
-            Blob<T> p_actions = softmax_forward(p_logits, m_blobActionTarget);
+            Blob<T> p_actions = m_netTarget.blob_by_name("actions");
+            if (p_actions == null)
+                throw new Exception("Missing expected 'actions' blob!");
 
             int nNumSamples = m_rgSamples.Count;
             createZ(nNumSamples, m_nActionCount, m_nAtoms);
@@ -1017,40 +1023,7 @@ namespace MyCaffe.trainers.c51.ddqn
             b.mutable_cpu_data = Utility.ConvertVec<T>(rgSum);
         }
 
-        private double softmaxLoss_forward(Blob<T> actual, Blob<T> target, Blob<T> loss)
-        {
-            BlobCollection<T> colBottom = new BlobCollection<T>();
-            colBottom.Add(actual);
-            colBottom.Add(target);
-
-            BlobCollection<T> colTop = new BlobCollection<T>();
-            colTop.Add(loss);
-
-            if (m_softmaxLoss == null)
-            {
-                LayerParameter p = new LayerParameter(LayerParameter.LayerType.SOFTMAXCROSSENTROPY_LOSS);
-                p.softmax_param.axis = 2;
-                p.loss_param.normalization = LossParameter.NormalizationMode.NONE;
-                m_softmaxLoss = new SoftmaxCrossEntropyLossLayer<T>(m_mycaffe.Cuda, m_mycaffe.Log, p);
-                m_softmaxLoss.Setup(colBottom, colTop);
-            }
-
-            return m_softmaxLoss.Forward(colBottom, colTop);
-        }
-
-        private void softmaxLoss_backward(Blob<T> actual, Blob<T> target, Blob<T> loss)
-        {
-            BlobCollection<T> colBottom = new BlobCollection<T>();
-            colBottom.Add(actual);
-            colBottom.Add(target);
-
-            BlobCollection<T> colTop = new BlobCollection<T>();
-            colTop.Add(loss);
-
-            m_softmaxLoss.Backward(colTop, new List<bool>() { true, false }, colBottom);
-        }
-
-        private Blob<T> softmax_forward(Blob<T> bBottom, Blob<T> bTop)
+        private Blob<T> softmax_forward_axis1(Blob<T> bBottom, Blob<T> bTop)
         {
             BlobCollection<T> colBottom = new BlobCollection<T>();
             colBottom.Add(bBottom);
@@ -1058,16 +1031,16 @@ namespace MyCaffe.trainers.c51.ddqn
             BlobCollection<T> colTop = new BlobCollection<T>();
             colTop.Add(bTop);
 
-            if (m_softmax == null)
+            if (m_softmax1 == null)
             {
                 LayerParameter p = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
-                p.softmax_param.axis = 2;
-                m_softmax = new SoftmaxLayer<T>(m_mycaffe.Cuda, m_mycaffe.Log, p);
-                m_softmax.Setup(colBottom, colTop);
+                p.softmax_param.axis = 1;
+                m_softmax1 = new SoftmaxLayer<T>(m_mycaffe.Cuda, m_mycaffe.Log, p);
+                m_softmax1.Setup(colBottom, colTop);
             }
 
-            m_softmax.Reshape(colBottom, colTop);
-            m_softmax.Forward(colBottom, colTop);
+            m_softmax1.Reshape(colBottom, colTop);
+            m_softmax1.Forward(colBottom, colTop);
 
             return colTop[0];
         }
@@ -1176,14 +1149,12 @@ namespace MyCaffe.trainers.c51.ddqn
         /// <param name="e">Specifies the arguments to the callback which contains the original display image.</param>
         public void OnOverlay(OverlayArgs e)
         {
-            Blob<T> logits = m_net.blob_by_name("logits");
-            if (logits == null)
+            Blob<T> actions = m_net.blob_by_name("actions");
+            if (actions == null)
                 return;
 
-            if (logits.num == 1)
+            if (actions.num == 1)
             {
-                Blob<T> actions = softmax_forward(logits, m_blobAction);
-
                 float[] rgActions = Utility.ConvertVecF<T>(actions.mutable_cpu_data);
 
                 List<List<float>> rgData = new List<List<float>>();

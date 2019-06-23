@@ -313,7 +313,7 @@ namespace MyCaffe.test
     {
         void TrainCartPolePG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
         void TrainAtariPG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false);
-        void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int nIteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExist = false, double dfVMin = -10, double dfVMax = 10);
+        void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int nIteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExist = false, double dfVMin = -10, double dfVMax = 10, bool bEnableVersionB = false);
 
         void TrainCharRNN(bool bDual, bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
         void TrainWavRNN(bool bDual, bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
@@ -615,17 +615,19 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int iteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExists = false, double dfVMin = -10, double dfVMax = 10)
+        public void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int iteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExists = false, double dfVMin = -10, double dfVMax = 10, bool bEnableVersionB = false)
         {
             m_evtCancel.Reset();
 
             if (strTrainerType != "C51.ST")
                 throw new Exception("Currently only the C51.ST trainer supports C51 training.");
 
+            if (bEnableVersionB)
+                strTrainerType = "C51b.ST";
+
             GymCollection col = new GymCollection();
             col.Load();
             IXMyCaffeGym igym = col.Find("ATARI");
-            DATA_TYPE dt = DATA_TYPE.BLOB;
             string strAccelTrain = "OFF";
             string strAllowReset = "NO";
 
@@ -639,7 +641,7 @@ namespace MyCaffe.test
             if (itrainer == null)
                 throw new Exception("The trainer must implement the IXMyCaffeCustomTrainerRL interface!");
 
-            ProjectEx project = getReinforcementProjectC51(igym, nIterations, bLoadWeightsIfExists);
+            ProjectEx project = getReinforcementProjectC51(igym, nIterations, bLoadWeightsIfExists, (strTrainerType == "C51b.ST") ? true : false);
             DatasetDescriptor ds = itrainer.GetDatasetOverride(0);
 
             if (strAtariRom == null)
@@ -668,7 +670,7 @@ namespace MyCaffe.test
             strParam += "FrameSkip=1;";             // process one frame of data at a time.
             strParam += "AllowNegativeRewards=" + bAllowNegRewards.ToString() + ";";    // receive -1 reward on rally's where ball not even hit.
             strParam += "TerminateOnRallyEnd=" + bTerminateOnRallyEnd.ToString() + ";"; // play only one rally at a time then restart the game.
-            strParam += "EpsSteps=" + nIterations.ToString() + ";EpsStart=0.99;EpsEnd=0.01;";
+            strParam += "EpsSteps=" + nIterations.ToString() + ";EpsStart=1.0;EpsEnd=0.01;";
             strParam += "VMin=" + dfVMin.ToString() + ";VMax=" + dfVMax.ToString() + ";";
             strParam += "GameROM=" + strRom;
             itrainer.Initialize(strParam, this);
@@ -1172,11 +1174,12 @@ namespace MyCaffe.test
             return p;
         }
 
-        private ProjectEx getReinforcementProjectC51(IXMyCaffeGym igym, int nIterations, bool bLoadWeightsIfExist)
+        private ProjectEx getReinforcementProjectC51(IXMyCaffeGym igym, int nIterations, bool bLoadWeightsIfExist, bool bVersionB)
         {
             ProjectEx p = new ProjectEx("test");
+            string strVer = (bVersionB) ? "b" : "";
 
-            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\reinforcement\\atari.c51\\train_val.prototxt");
+            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\reinforcement\\atari.c51\\train_val" + strVer + ".prototxt");
             string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\reinforcement\\atari.c51\\solver.prototxt");
 
             RawProto protoM = RawProtoFile.LoadFromFile(strModelFile);
@@ -1193,7 +1196,7 @@ namespace MyCaffe.test
 
             if (bLoadWeightsIfExist)
             {
-                string strWeights = m_strModelPath + "\\weights." + m_engine.ToString() + ".mycaffemodel";
+                string strWeights = m_strModelPath + "\\weights" + strVer + "." + m_engine.ToString() + ".mycaffemodel";
 
                 if (File.Exists(strWeights))
                 {
