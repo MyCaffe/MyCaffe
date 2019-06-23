@@ -190,6 +190,42 @@ namespace MyCaffe.basecode
             }
         }
 
+
+        /// <summary>
+        /// The SimpleDatum constructor.
+        /// </summary>
+        /// <param name="bIsReal">Specifies whether or not the data values are <i>double</i> or <i>byte</i>.</param>
+        /// <param name="nChannels">Specifies the number of channels in the data (e.g. 3 for color, 1 for black and white images)</param>
+        /// <param name="nWidth">Specifies the width of the data (e.g. the number of pixels wide).</param>
+        /// <param name="nHeight">Specifies the height of the data (e.g. the number of pixels high).</param>
+        /// <param name="nLabel">Specifies the known label of the data.</param>
+        /// <param name="dtTime">Specifies a time-stamp associated with the data.</param>
+        /// <param name="nBoost">Specifies the boost to use with the data (a value of 0 indicates no boost).</param>
+        /// <param name="bAutoLabeled">Specifies whether or not the label was auto-generated.</param>
+        /// <param name="nIdx">Specifies the index of the data.</param>
+        /// <param name="nVirtualID">Specifies a virtual index for the data (default = 0).  When specified, the SimpleDatum is used to reference another.</param>
+        /// <param name="nImageID">Specifies the image ID within the database.</param>
+        /// <param name="nSourceID">Specifies the data source ID of the data source that owns this image.</param>
+        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, int nBoost = 0, bool bAutoLabeled = false, int nIdx = -1, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0)
+        {
+            m_nChannels = nChannels;
+            m_nWidth = nWidth;
+            m_nHeight = nHeight;
+            m_nOriginalLabel = nLabel;
+            m_nLabel = nLabel;
+            m_dt = dtTime;
+            m_nOriginalBoost = nBoost;
+            m_nBoost = nBoost;
+            m_bAutoLabeled = bAutoLabeled;
+            m_nVirtualID = nVirtualID;
+            m_bIsRealData = bIsReal;
+            m_nIndex = nIdx;
+            m_nImageID = nImageID;
+            m_nSourceID = nSourceID;
+            m_rgByteData = null;
+            m_rgRealData = null;
+        }
+
         /// <summary>
         /// The SimpleDatum constructor.
         /// </summary>
