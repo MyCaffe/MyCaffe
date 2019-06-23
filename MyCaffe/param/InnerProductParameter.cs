@@ -22,10 +22,35 @@ namespace MyCaffe.param
         int m_nAxis = 1;
         int m_nMinTopAxes = -1;
         bool m_bTranspose = false;
+        bool m_bEnableNoise = false;
+        double m_dfSigmaInit = 0.017;
 
         /** @copydoc LayerParameterBase */
         public InnerProductParameter()
         {
+        }
+
+        /// <summary>
+        /// Enable/disable noise in the inner-product layer (default = false).
+        /// </summary>
+        /// <remarks>
+        /// When enabled, noise is only used during the training phase.
+        /// </remarks>
+        [Description("Enable/disable noise in the inner-product layer (default = false).")]
+        public bool enable_noise
+        {
+            get { return m_bEnableNoise; }
+            set { m_bEnableNoise = value; }
+        }
+
+        /// <summary>
+        /// Specifies the initialization value for the sigma weight and sigma bias used when 'enable_noise' = <i>true</i>.
+        /// </summary>
+        [Description("Specifies the initialization value for the sigma weight and sigma bias used when 'enable_noise' = true.")]
+        public double sigma_init
+        {
+            get { return m_dfSigmaInit; }
+            set { m_dfSigmaInit = value; }
         }
 
         /// <summary>
@@ -137,6 +162,8 @@ namespace MyCaffe.param
             m_nAxis = p.m_nAxis;
             m_bTranspose = p.m_bTranspose;
             m_nMinTopAxes = p.m_nMinTopAxes;
+            m_bEnableNoise = p.m_bEnableNoise;
+            m_dfSigmaInit = p.m_dfSigmaInit;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -168,6 +195,12 @@ namespace MyCaffe.param
 
             if (min_top_axes != -1)
                 rgChildren.Add("min_top_axes", min_top_axes.ToString());
+
+            if (m_bEnableNoise)
+            {
+                rgChildren.Add("enable_noise", m_bEnableNoise.ToString());
+                rgChildren.Add("sigma_init", m_dfSigmaInit.ToString());
+            }
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -204,6 +237,12 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("min_top_axes")) != null)
                 p.min_top_axes = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("enable_noise")) != null)
+                p.enable_noise = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("sigma_init")) != null)
+                p.sigma_init = double.Parse(strVal);
 
             return p;
         }
