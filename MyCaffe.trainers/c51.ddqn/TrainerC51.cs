@@ -789,14 +789,14 @@ namespace MyCaffe.trainers.c51.ddqn
             m_netTarget.ForwardFromTo(0, m_netTarget.layers.Count - 2);
 
             setData1(m_net, rgSamples);
-            m_memLoss.OnGetLoss += m_memLoss_OnGetLoss1;
+            m_memLoss.OnGetLoss += m_memLoss_OnGetLoss;
             m_net.ForwardFromTo();
-            m_memLoss.OnGetLoss -= m_memLoss_OnGetLoss1;
+            m_memLoss.OnGetLoss -= m_memLoss_OnGetLoss;
 
             setData0(m_net, rgSamples);
-            m_memLoss.OnGetLoss += m_memLoss_OnGetLoss2;
+            m_memLoss.OnGetLoss += m_memLoss_ProjectDistribution;
             m_solver.Step(1);
-            m_memLoss.OnGetLoss -= m_memLoss_OnGetLoss2;
+            m_memLoss.OnGetLoss -= m_memLoss_ProjectDistribution;
             m_mycaffe.Log.Enable = true;
         }
 
@@ -805,7 +805,7 @@ namespace MyCaffe.trainers.c51.ddqn
         /// </summary>
         /// <param name="sender">Specifies the sender.</param>
         /// <param name="e">Specifies the arguments.</param>
-        private void m_memLoss_OnGetLoss2(object sender, MemoryLossLayerGetLossArgs<T> e)
+        private void m_memLoss_ProjectDistribution(object sender, MemoryLossLayerGetLossArgs<T> e)
         {
             int nNumSamples = m_rgSamples.Count;
 
@@ -850,7 +850,7 @@ namespace MyCaffe.trainers.c51.ddqn
         /// </summary>
         /// <param name="sender">Specifies the sender.</param>
         /// <param name="e">Specifies the arguments.</param>
-        private void m_memLoss_OnGetLoss1(object sender, MemoryLossLayerGetLossArgs<T> e)
+        private void m_memLoss_OnGetLoss(object sender, MemoryLossLayerGetLossArgs<T> e)
         {
             Blob<T> logits = m_net.blob_by_name("logits");
             if (logits == null)
