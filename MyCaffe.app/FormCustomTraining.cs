@@ -24,7 +24,6 @@ namespace MyCaffe.app
         string m_strRomName = "";
         double m_dfVMin = -10;
         double m_dfVMax = 10;
-        bool m_bEnableVersionB = false;
 
         public FormCustomTraining(string strName)
         {
@@ -84,7 +83,6 @@ namespace MyCaffe.app
             m_bAllowNegativeRewards = chkAllowNegativeRewards.Checked;
             m_bTerminateOnRallyEnd = chkTerminateOnRallyEnd.Checked;
             m_bLoadWeights = chkLoadWeights.Checked;
-            m_bEnableVersionB = chkEnableVersionB.Checked;
 
             if (radPGSimple.Checked)
                 m_strTrainer = "PG.SIMPLE";
@@ -145,11 +143,6 @@ namespace MyCaffe.app
             get { return m_strRomName; }
         }
 
-        public bool EnableVersionB
-        {
-            get { return m_bEnableVersionB; }
-        }
-
         public double VMin
         {
             get { return m_dfVMin; }
@@ -201,7 +194,6 @@ namespace MyCaffe.app
             lblVMax.Visible = radC51SingleThread.Checked;
             edtVMin.Visible = radC51SingleThread.Checked;
             edtVMax.Visible = radC51SingleThread.Checked;
-            chkEnableVersionB.Visible = radC51SingleThread.Checked;
             btnReset.Visible = radC51SingleThread.Checked;
 
             if (radC51SingleThread.Checked)

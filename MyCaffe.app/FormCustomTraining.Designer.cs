@@ -55,7 +55,6 @@
             this.lblVMax = new System.Windows.Forms.Label();
             this.edtVMax = new System.Windows.Forms.TextBox();
             this.btnReset = new System.Windows.Forms.Button();
-            this.chkEnableVersionB = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.grpRom.SuspendLayout();
             this.SuspendLayout();
@@ -328,17 +327,6 @@
             this.btnReset.Visible = false;
             this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
             // 
-            // chkEnableVersionB
-            // 
-            this.chkEnableVersionB.AutoSize = true;
-            this.chkEnableVersionB.Location = new System.Drawing.Point(520, 101);
-            this.chkEnableVersionB.Name = "chkEnableVersionB";
-            this.chkEnableVersionB.Size = new System.Drawing.Size(107, 17);
-            this.chkEnableVersionB.TabIndex = 13;
-            this.chkEnableVersionB.Text = "Enable Version B";
-            this.chkEnableVersionB.UseVisualStyleBackColor = true;
-            this.chkEnableVersionB.Visible = false;
-            // 
             // FormCustomTraining
             // 
             this.AcceptButton = this.btnOK;
@@ -346,7 +334,6 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
             this.ClientSize = new System.Drawing.Size(666, 229);
-            this.Controls.Add(this.chkEnableVersionB);
             this.Controls.Add(this.btnReset);
             this.Controls.Add(this.edtVMax);
             this.Controls.Add(this.lblVMax);
@@ -408,7 +395,6 @@
         private System.Windows.Forms.Label lblVMax;
         private System.Windows.Forms.TextBox edtVMax;
         private System.Windows.Forms.Button btnReset;
-        private System.Windows.Forms.CheckBox chkEnableVersionB;
         private System.Windows.Forms.RadioButton radNoisyNet;
     }
 }
