@@ -753,27 +753,27 @@ namespace MyCaffe.trainers.noisy.dqn
             reduce_sum_axis1(m_blobYPrediction);
 
             m_mycaffe.Cuda.sub(m_blobYPrediction.count(), m_blobYPrediction.gpu_data, m_blobYTarget.gpu_data, m_blobYPrediction.mutable_gpu_diff);
-            mul(m_blobYPrediction, logits, e.Bottom[0]);
+            mul(m_blobYPrediction, m_blobActionTarget, -1, e.Bottom[0]);
 
             m_mycaffe.Cuda.powx(m_blobYPrediction.count(), m_blobYPrediction.gpu_diff, 2.0, m_blobYPrediction.mutable_gpu_data);
             e.Loss = reduce_mean(m_blobYPrediction);
             e.EnableLossUpdate = false;
         }
 
-        private void mul(Blob<T> pred, Blob<T> logits, Blob<T> result)
+        private void mul(Blob<T> pred, Blob<T> actionTarget, float fAlpha, Blob<T> result)
         {
-            float[] rgPred = Utility.ConvertVecF<T>(pred.mutable_cpu_diff);
-            float[] rgLogit = Utility.ConvertVecF<T>(logits.mutable_cpu_data);
-            float[] rgResult = new float[rgLogit.Length];
+            float[] rgPredicted = Utility.ConvertVecF<T>(pred.mutable_cpu_diff);
+            float[] rgActionTarget = Utility.ConvertVecF<T>(actionTarget.mutable_cpu_data);
+            float[] rgResult = new float[rgActionTarget.Length];
 
-            for (int i = 0; i < logits.num; i++)
+            for (int i = 0; i < actionTarget.num; i++)
             {
-                float fPred = rgPred[i];
+                float fPred = rgPredicted[i];
 
-                for (int j = 0; j < logits.channels; j++)
+                for (int j = 0; j < actionTarget.channels; j++)
                 {
-                    int nIdx = (i * logits.channels) + j;
-                    rgResult[nIdx] = rgLogit[nIdx] * fPred; 
+                    int nIdx = (i * actionTarget.channels) + j;
+                    rgResult[nIdx] = fAlpha * rgActionTarget[nIdx] * fPred; 
                 }
             }
 
