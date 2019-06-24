@@ -4675,7 +4675,9 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Scale the vector x and then multiply the vector X by a scalar and add the result to the vector Y.
+        /// Scale the vector x by Alpha and scale vector y by Beta and then add both together.
+        /// 
+        /// Y = (X * fAlpha) + (Y * fBeta)
         /// </summary>
         /// <remarks>
         /// This function uses [NVIDIA's cuBlas](https://developer.nvidia.com/cublas).
