@@ -231,13 +231,17 @@ namespace MyCaffe.layers
                 // Add Noise sigma weight and bias
                 if (m_bEnableNoise)
                 {
-                    m_fillerEpsilon = Filler<T>.Create(m_cuda, m_log, new FillerParameter());
+                    double dfRange = 1.0 / Math.Sqrt(blobWeight.num);
+                    FillerParameter fp = new FillerParameter("uniform");
+                    fp.min = -dfRange;
+                    fp.max = dfRange;
+                    m_fillerEpsilon = Filler<T>.Create(m_cuda, m_log, fp);
 
                     Blob<T> blobSigmaWeight = new Blob<T>(m_cuda, m_log);
                     blobSigmaWeight.Name = m_param.name + " sigma_wt";
                     blobSigmaWeight.type = Blob<T>.BLOB_TYPE.WEIGHT;
                     blobSigmaWeight.ReshapeLike(m_colBlobs[0]);
-                    blobSigmaWeight.SetData(m_dfSigmaInit);
+                    blobSigmaWeight.SetData(m_dfSigmaInit / Math.Sqrt(blobSigmaWeight.shape(1)));
                     m_colBlobs.Add(blobSigmaWeight);
                     m_blobEpsilonWeight.ReshapeLike(blobSigmaWeight);
 
@@ -247,10 +251,12 @@ namespace MyCaffe.layers
                         blobSigmaBias.Name = m_param.name + " sigma_bias";
                         blobSigmaBias.type = Blob<T>.BLOB_TYPE.WEIGHT;
                         blobSigmaBias.ReshapeLike(m_colBlobs[1]);
-                        blobSigmaBias.SetData(m_dfSigmaInit);
+                        blobSigmaBias.SetData(m_dfSigmaInit / Math.Sqrt(blobSigmaBias.shape(0)));
                         m_colBlobs.Add(blobSigmaBias);
                         m_blobEpsilonBias.ReshapeLike(blobSigmaBias);
                     }
+
+                    ResetNoise();
                 }
             }
 
@@ -298,6 +304,34 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Resample the noise for both weights and bias (if used).
+        /// </summary>
+        public void ResetNoise()
+        {
+            if (m_bEnableNoise)
+            {
+                // Resamples the noise vector.
+                resetNoise(m_blobEpsilonWeight);
+
+                if (m_bBiasTerm)
+                {
+                    // Resample the noise vector
+                    resetNoise(m_blobEpsilonBias);
+                }
+            }
+        }
+
+        private void resetNoise(Blob<T> b)
+        {
+            m_fillerEpsilon.Fill(b);
+
+            m_cuda.abs(b.count(), b.gpu_data, b.mutable_gpu_diff);
+            m_cuda.sqrt(b.count(), b.gpu_diff, b.mutable_gpu_diff);
+            m_cuda.sign(b.count(), b.gpu_data, b.mutable_gpu_data);
+            m_cuda.mul(b.count(), b.gpu_data, b.gpu_diff, b.mutable_gpu_data);
+        }
+
+        /// <summary>
         /// The forward computation.
         /// </summary>
         /// <param name="colBottom">bottom input blob vector (length 1)
@@ -316,8 +350,6 @@ namespace MyCaffe.layers
 
             if (m_bEnableNoise)
             {
-                // Resamples the noise vector.
-                m_fillerEpsilon.Fill(m_blobEpsilonWeight);
                 // Multiply the sigma weight by the noise vector.
                 m_cuda.mul(m_colBlobs[2].count(), m_colBlobs[2].gpu_data, m_blobEpsilonWeight.gpu_data, m_blobEpsilonWeight.mutable_gpu_diff);
                 // Add the sigma noise to the weights.
@@ -325,8 +357,6 @@ namespace MyCaffe.layers
 
                 if (m_bBiasTerm)
                 {
-                    // Resample the noise vector
-                    m_fillerEpsilon.Fill(m_blobEpsilonBias);
                     // Multiply the sigma bias by the noise vector.
                     m_cuda.mul(m_colBlobs[3].count(), m_colBlobs[3].gpu_data, m_blobEpsilonBias.gpu_data, m_blobEpsilonBias.mutable_gpu_diff);
                     // Add the sigma noise to the bias.
@@ -394,14 +424,12 @@ namespace MyCaffe.layers
             if (m_bEnableNoise)
             {
                 // Gradient with respect to the sigma weight
-                m_cuda.copy(m_colBlobs[0].count(), m_colBlobs[0].gpu_diff, m_colBlobs[2].gpu_diff);
-                m_cuda.mul(m_colBlobs[2].count(), m_colBlobs[2].gpu_diff, m_blobEpsilonWeight.gpu_data, m_colBlobs[2].mutable_gpu_diff);
+                m_cuda.mul(m_colBlobs[2].count(), m_colBlobs[0].gpu_diff, m_blobEpsilonWeight.gpu_data, m_colBlobs[2].mutable_gpu_diff);
 
                 if (m_bBiasTerm)
                 {
                     // Gradient with respect to the sigma bais
-                    m_cuda.copy(m_colBlobs[1].count(), m_colBlobs[1].gpu_diff, m_colBlobs[3].gpu_diff);
-                    m_cuda.mul(m_colBlobs[3].count(), m_colBlobs[3].gpu_diff, m_blobEpsilonBias.gpu_data, m_colBlobs[3].mutable_gpu_diff);
+                    m_cuda.mul(m_colBlobs[3].count(), m_colBlobs[1].gpu_diff, m_blobEpsilonBias.gpu_data, m_colBlobs[3].mutable_gpu_diff);
                 }
             }
         }
