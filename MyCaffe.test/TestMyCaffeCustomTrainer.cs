@@ -197,7 +197,25 @@ namespace MyCaffe.test
             {
                 foreach (IMyCaffeCustomTrainerTest t in test.Tests)
                 {
-                    t.TrainAtariC51Dual(true, "NOISYDQN.ST", 10);
+                    t.TrainAtariNoisyNetDual(true, "NOISYDQN.ST", 10);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void Train_NoisyNetSimple_AtariWithOutUi_Dual()
+        {
+            MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
+
+            try
+            {
+                foreach (IMyCaffeCustomTrainerTest t in test.Tests)
+                {
+                    t.TrainAtariNoisyNetDual(true, "NOISYDQN.SIMPLE", 10);
                 }
             }
             finally
@@ -330,6 +348,7 @@ namespace MyCaffe.test
     interface IMyCaffeCustomTrainerTest : ITest
     {
         void TrainCartPolePG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
+        void TrainCartPoleNoisyNetDual(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
         void TrainAtariPG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false);
         void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int nIteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExist = false, double dfVMin = -10, double dfVMax = 10);
         void TrainAtariNoisyNetDual(bool bShowUi, string strTrainerType, int nIterations = 100, int nIteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExist = false);
@@ -463,6 +482,60 @@ namespace MyCaffe.test
                 throw new Exception("The trainer must implement the IXMyCaffeCustomTrainerRL interface!");
 
             ProjectEx project = getReinforcementProject(igym, nIterations, DATA_TYPE.VALUES, strTrainerType.Contains("SIMPLE"));
+            DatasetDescriptor ds = itrainer.GetDatasetOverride(0);
+
+            m_log.CHECK(ds != null, "The MyCaffeCartPoleTrainer should return its dataset override returned by the Gym that it uses.");
+
+            // Train the network using the custom trainer
+            //  - Iterations (maximum frames cumulative across all threads) = 1000 (normally this would be much higher such as 500,000)
+            //  - Learning rate = 0.001 (defined in solver.prototxt)
+            //  - Mini Batch Size = 10 (defined in train_val.prototxt for MemoryDataLayer)
+            //
+            //  - TraingerType = 'strTrainerType' ('PG.MT' = use multi-threaded Policy Gradient trainer, 'PG.ST' = single-threaded trainer, 'PG.SIMPLE' = basic trainer with Sigmoid output support only)
+            //  - RewardType = MAX (display the maximum rewards received, a setting of VAL displays the actual reward received)
+            //  - Gamma = 0.99 (discounting factor)
+            //  - Init1 = default force of 10.
+            //  - Init2 = do not use additive force.                    
+            //  - Threads = 1 (only use 1 thread if multi-threading is supported)
+            itrainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1", this);
+
+            // load the project to train (note the project must use the MemoryDataLayer for input).
+            mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
+
+            if (bShowUi)
+                itrainer.OpenUi();
+
+            m_nMaxIteration = nIterations;
+            itrainer.Train(mycaffe, nIterations);
+            itrainer.CleanUp();
+
+            // Release the mycaffe resources.
+            mycaffe.Dispose();
+        }
+
+        public void TrainCartPoleNoisyNetDual(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
+        {
+            m_evtCancel.Reset();
+
+            GymCollection col = new GymCollection();
+            col.Load();
+            IXMyCaffeGym igym = col.Find("Cart-Pole");
+            string strAccelTrain = (bUseAcceleratedTraining) ? "ON" : "OFF";
+            string strAllowReset = (bAllowDiscountReset) ? "YES" : "NO";
+
+            if (strTrainerType != "NOISYDQN.SIMPLE")
+                strAccelTrain = "NOT SUPPORTED";
+
+            m_log.WriteHeader("Test Training Cart-Pole for " + nIterations.ToString("N0") + " iterations.");
+            m_log.WriteLine("Using trainer = " + strTrainerType + ", Accelerated Training = " + strAccelTrain + ", AllowDiscountReset = " + strAllowReset);
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel);
+            MyCaffeCartPoleTrainerDual trainerX = new MyCaffeCartPoleTrainerDual();
+
+            IXMyCaffeCustomTrainerRL itrainer = trainerX as IXMyCaffeCustomTrainerRL;
+            if (itrainer == null)
+                throw new Exception("The trainer must implement the IXMyCaffeCustomTrainerRL interface!");
+
+            ProjectEx project = getReinforcementProjectNoisyNet(igym, nIterations, false, strTrainerType);
             DatasetDescriptor ds = itrainer.GetDatasetOverride(0);
 
             m_log.CHECK(ds != null, "The MyCaffeCartPoleTrainer should return its dataset override returned by the Gym that it uses.");
@@ -709,8 +782,9 @@ namespace MyCaffe.test
         {
             m_evtCancel.Reset();
 
-            if (strTrainerType != "NOISYDQN.ST")
-                throw new Exception("Currently only the NOISYDQN.ST trainer supports NoisyNet training.");
+            if (strTrainerType != "NOISYDQN.ST" && 
+                strTrainerType != "NOISYDQN.SIMPLE")
+                throw new Exception("Currently only the NOISYDQN.ST and NOISYDQN.SIMPLE trainers support NoisyNet training.");
 
             GymCollection col = new GymCollection();
             col.Load();
@@ -728,7 +802,7 @@ namespace MyCaffe.test
             if (itrainer == null)
                 throw new Exception("The trainer must implement the IXMyCaffeCustomTrainerRL interface!");
 
-            ProjectEx project = getReinforcementProjectNoisyNet(igym, nIterations, bLoadWeightsIfExists);
+            ProjectEx project = getReinforcementProjectNoisyNet(igym, nIterations, bLoadWeightsIfExists, strTrainerType);
             DatasetDescriptor ds = itrainer.GetDatasetOverride(0);
 
             if (strAtariRom == null)
@@ -1296,12 +1370,13 @@ namespace MyCaffe.test
             return p;
         }
 
-        private ProjectEx getReinforcementProjectNoisyNet(IXMyCaffeGym igym, int nIterations, bool bLoadWeightsIfExist)
+        private ProjectEx getReinforcementProjectNoisyNet(IXMyCaffeGym igym, int nIterations, bool bLoadWeightsIfExist, string strTrainerType)
         {
             ProjectEx p = new ProjectEx("test");
 
-            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\reinforcement\\atari.noisy.dqn\\train_val.prototxt");
-            string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\reinforcement\\atari.noisy.dqn\\solver.prototxt");
+            string strType = (strTrainerType.Contains("SIMPLE") ? "cartpole.noisy.dqn" : "atari.noisy.dqn");
+            string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\reinforcement\\" + strType + "\\train_val.prototxt");
+            string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\reinforcement\\" + strType + "\\solver.prototxt");
 
             RawProto protoM = RawProtoFile.LoadFromFile(strModelFile);
             p.ModelDescription = protoM.ToString();
@@ -1845,6 +1920,7 @@ namespace MyCaffe.test
         MyCaffeGymUiProxy m_gymui = null;
         string m_strName = "Cart-Pole";
         GymCollection m_colGyms = new GymCollection();
+        EventWaitHandle m_evtOpenUi = new EventWaitHandle(false, EventResetMode.AutoReset, "_MyCaffeTrainer_OpenUi_");
 
         public MyCaffeCartPoleTrainerDual()
             : base()
@@ -1916,6 +1992,11 @@ namespace MyCaffe.test
             {
                 m_gymui.Render(m_nUiId, obs);
                 Thread.Sleep(m_igym.UiDelay);
+            }
+            else
+            {
+                if (m_evtOpenUi.WaitOne(0))
+                    openUi();
             }
 
             if (m_sw.Elapsed.TotalMilliseconds > 1000)
