@@ -1205,11 +1205,13 @@ namespace MyCaffe.app
                 bool bUseAccelTrain = false;
                 bool bAllowDiscountReset = false;
                 string strTrainer = "SIMPLE";
+                int nIterations = 500000;
 
                 FormCustomTraining dlg = new FormCustomTraining("Cart-Pole");
                 if (dlg.ShowDialog() != DialogResult.OK)
                     return;
 
+                nIterations = dlg.Iterations;
                 bShowUi = dlg.ShowUserInterface;
                 bUseAccelTrain = dlg.UseAcceleratedTraining;
                 bAllowDiscountReset = dlg.AllowDiscountReset;
@@ -1219,7 +1221,7 @@ namespace MyCaffe.app
 
                 m_log.WriteLine("starting policy gradient cart-pole test...");
                 m_evtCancelTraining.Reset();
-                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "Cart-Pole", strTrainer, bShowUi, bUseAccelTrain, bAllowDiscountReset, false, false, false, 0, 0));
+                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "Cart-Pole", strTrainer, nIterations, bShowUi, bUseAccelTrain, bAllowDiscountReset, false, false, false, 0, 0));
                 startAtariTrainerToolStripMenuItem.Enabled = false;
                 startNeuralStyleTransferToolStripMenuItem.Enabled = false;
                 startCartPoleTrainerToolStripMenuItem.Text = "Stop Cart-Pole Training";
@@ -1250,12 +1252,14 @@ namespace MyCaffe.app
                 double dfVMin = -10;
                 double dfVMax = 10;
                 string strTrainer = "SIMPLE";
+                int nIterations = 500000;
 
                 FormCustomTraining dlg = new FormCustomTraining("ATARI");
                 if (dlg.ShowDialog() != DialogResult.OK)
                     return;
 
                 m_strAtariRom = dlg.RomName;
+                nIterations = dlg.Iterations;
                 bShowUi = dlg.ShowUserInterface;
                 bUseAccelTrain = dlg.UseAcceleratedTraining;
                 bAllowDiscountReset = dlg.AllowDiscountReset;
@@ -1270,7 +1274,7 @@ namespace MyCaffe.app
 
                 m_log.WriteLine("starting " + strTrainer + " ATARI (" + m_strAtariRom + ") test...");
                 m_evtCancelTraining.Reset();
-                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "ATARI", strTrainer, bShowUi, bUseAccelTrain, bAllowDiscountReset, bAllowNegativeRewards, bTerminateOnRallyEnd, bLoadWeights, dfVMin, dfVMax));
+                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "ATARI", strTrainer, nIterations, bShowUi, bUseAccelTrain, bAllowDiscountReset, bAllowNegativeRewards, bTerminateOnRallyEnd, bLoadWeights, dfVMin, dfVMax));
                 startCartPoleTrainerToolStripMenuItem.Enabled = false;
                 startNeuralStyleTransferToolStripMenuItem.Enabled = false;
                 startAtariTrainerToolStripMenuItem.Text = "Stop ATARI Training";
@@ -1294,7 +1298,7 @@ namespace MyCaffe.app
             CancelEvent evtCancel = arg.Cancel;
             string strGym = arg.Gym;
             MyCaffeCustomTrainerTest<float> test = new MyCaffeCustomTrainerTest<float>(strGym, 0, EngineParameter.Engine.DEFAULT);
-            int nIterations = 500000;
+            int nIterations = arg.Iterations;
             bool bShowUi = arg.ShowUi;
             bool bUseAccelTrain = arg.UseAcceleratedTraining;
             bool bAllowDiscountReset = arg.AllowDiscountReset;
@@ -1478,14 +1482,16 @@ namespace MyCaffe.app
         bool m_bAllowNegativeRewards;
         bool m_bTerminateOnRallyEnd;
         bool m_bLoadWeights;
+        int m_nIterations;
         double m_dfVMin;
         double m_dfVMax;
 
-        public Settings(CancelEvent evtCancel, string strGym, string strTrainer, bool bShowUi, bool bUseAccelTrain, bool bAllowDiscountReset, bool bAllowNegRewards, bool bTerminateOnRallyEnd, bool bLoadWeights, double dfVMin, double dfVMax)
+        public Settings(CancelEvent evtCancel, string strGym, string strTrainer, int nIterations, bool bShowUi, bool bUseAccelTrain, bool bAllowDiscountReset, bool bAllowNegRewards, bool bTerminateOnRallyEnd, bool bLoadWeights, double dfVMin, double dfVMax)
         {
             m_evtCancel = evtCancel;
             m_strGym = strGym;
             m_strTrainer = strTrainer;
+            m_nIterations = nIterations;
             m_bShowUi = bShowUi;
             m_bUseAccelTrain = bUseAccelTrain;
             m_bAllowDiscountReset = bAllowDiscountReset;
@@ -1509,6 +1515,11 @@ namespace MyCaffe.app
         public string Trainer
         {
             get { return m_strTrainer; }
+        }
+
+        public int Iterations
+        {
+            get { return m_nIterations; }
         }
 
         public bool ShowUi

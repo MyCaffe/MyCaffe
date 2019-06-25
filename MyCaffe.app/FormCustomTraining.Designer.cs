@@ -57,6 +57,8 @@
             this.edtVMax = new System.Windows.Forms.TextBox();
             this.btnReset = new System.Windows.Forms.Button();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
+            this.lblIterations = new System.Windows.Forms.Label();
+            this.edtIterations = new System.Windows.Forms.TextBox();
             this.groupBox1.SuspendLayout();
             this.grpRom.SuspendLayout();
             this.SuspendLayout();
@@ -68,7 +70,7 @@
             this.btnCancel.Location = new System.Drawing.Point(611, 194);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(75, 23);
-            this.btnCancel.TabIndex = 16;
+            this.btnCancel.TabIndex = 18;
             this.btnCancel.Text = "Cancel";
             this.btnCancel.UseVisualStyleBackColor = true;
             // 
@@ -79,7 +81,7 @@
             this.btnOK.Location = new System.Drawing.Point(530, 194);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(75, 23);
-            this.btnOK.TabIndex = 15;
+            this.btnOK.TabIndex = 17;
             this.btnOK.Text = "OK";
             this.btnOK.UseVisualStyleBackColor = true;
             this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
@@ -157,6 +159,8 @@
             this.radNoisyNetSimple.TabIndex = 5;
             this.radNoisyNetSimple.TabStop = true;
             this.radNoisyNetSimple.Text = "NoisyNet Simple";
+            this.toolTip1.SetToolTip(this.radNoisyNetSimple, "Use the simple noisy net trainer for making more\r\ncomplex decisions with more tha" +
+        "n two actions.");
             this.radNoisyNetSimple.UseVisualStyleBackColor = true;
             // 
             // radNoisyNetSingleThread
@@ -167,6 +171,8 @@
             this.radNoisyNetSingleThread.Size = new System.Drawing.Size(133, 17);
             this.radNoisyNetSingleThread.TabIndex = 4;
             this.radNoisyNetSingleThread.Text = "NoisyNet Single-thread";
+            this.toolTip1.SetToolTip(this.radNoisyNetSingleThread, "Use the single-threaded noisy net for more complex\r\ndecision making with more tha" +
+        "n two actions.");
             this.radNoisyNetSingleThread.UseVisualStyleBackColor = true;
             this.radNoisyNetSingleThread.CheckedChanged += new System.EventHandler(this.radNoisyNet_CheckedChanged);
             // 
@@ -178,6 +184,8 @@
             this.radC51SingleThread.Size = new System.Drawing.Size(109, 17);
             this.radC51SingleThread.TabIndex = 3;
             this.radC51SingleThread.Text = "C51 Single-thread";
+            this.toolTip1.SetToolTip(this.radC51SingleThread, "Use the C51-DQN trainer for more complex multi\r\naction decisions (more than two a" +
+        "ctions).");
             this.radC51SingleThread.UseVisualStyleBackColor = true;
             this.radC51SingleThread.CheckedChanged += new System.EventHandler(this.radC51SingleThread_CheckedChanged);
             // 
@@ -189,6 +197,8 @@
             this.radPGMultiThread.Size = new System.Drawing.Size(98, 17);
             this.radPGMultiThread.TabIndex = 2;
             this.radPGMultiThread.Text = "PG Multi-thread";
+            this.toolTip1.SetToolTip(this.radPGMultiThread, "Use the multi-threaded policy gradient trainer for \r\nbinary decisions (left or ri" +
+        "ght).");
             this.radPGMultiThread.UseVisualStyleBackColor = true;
             // 
             // radPGSingleThread
@@ -199,6 +209,8 @@
             this.radPGSingleThread.Size = new System.Drawing.Size(105, 17);
             this.radPGSingleThread.TabIndex = 1;
             this.radPGSingleThread.Text = "PG Single-thread";
+            this.toolTip1.SetToolTip(this.radPGSingleThread, "Use the single-threaded policy gradient trainer for \r\nbinary decisions (left or r" +
+        "ight).");
             this.radPGSingleThread.UseVisualStyleBackColor = true;
             // 
             // radPGSimple
@@ -211,6 +223,8 @@
             this.radPGSimple.TabIndex = 0;
             this.radPGSimple.TabStop = true;
             this.radPGSimple.Text = "PG Simple";
+            this.toolTip1.SetToolTip(this.radPGSimple, "Use the simple policy gradient trainer which only \r\nperforms binary decision maki" +
+        "ng (left or right).");
             this.radPGSimple.UseVisualStyleBackColor = true;
             // 
             // chkAllowDiscountReset
@@ -245,6 +259,7 @@
             this.radAtariBreakout.TabIndex = 1;
             this.radAtariBreakout.TabStop = true;
             this.radAtariBreakout.Text = "Breakout";
+            this.toolTip1.SetToolTip(this.radAtariBreakout, "Play the ATARI game \'Breakout\'");
             this.radAtariBreakout.UseVisualStyleBackColor = true;
             // 
             // radAtariPong
@@ -257,6 +272,7 @@
             this.radAtariPong.TabIndex = 0;
             this.radAtariPong.TabStop = true;
             this.radAtariPong.Text = "Pong";
+            this.toolTip1.SetToolTip(this.radAtariPong, "Play the ATARI game \'Pong\'");
             this.radAtariPong.UseVisualStyleBackColor = true;
             // 
             // chkAllowNegativeRewards
@@ -267,6 +283,8 @@
             this.chkAllowNegativeRewards.Size = new System.Drawing.Size(135, 17);
             this.chkAllowNegativeRewards.TabIndex = 5;
             this.chkAllowNegativeRewards.Text = "Allow negative rewards";
+            this.toolTip1.SetToolTip(this.chkAllowNegativeRewards, "Allowing negative rewards instructs the Gym to return -1 on \r\non failures, such a" +
+        "s not hitting the ball, etc.");
             this.chkAllowNegativeRewards.UseVisualStyleBackColor = true;
             // 
             // chkTerminateOnRallyEnd
@@ -277,6 +295,7 @@
             this.chkTerminateOnRallyEnd.Size = new System.Drawing.Size(130, 17);
             this.chkTerminateOnRallyEnd.TabIndex = 6;
             this.chkTerminateOnRallyEnd.Text = "Terminate on rally end";
+            this.toolTip1.SetToolTip(this.chkTerminateOnRallyEnd, resources.GetString("chkTerminateOnRallyEnd.ToolTip"));
             this.chkTerminateOnRallyEnd.UseVisualStyleBackColor = true;
             // 
             // chkLoadWeights
@@ -287,6 +306,7 @@
             this.chkLoadWeights.Size = new System.Drawing.Size(127, 17);
             this.chkLoadWeights.TabIndex = 7;
             this.chkLoadWeights.Text = "Load weights (if exist)";
+            this.toolTip1.SetToolTip(this.chkLoadWeights, "Load any weights previously saved for the training.");
             this.chkLoadWeights.UseVisualStyleBackColor = true;
             // 
             // lblVMin
@@ -308,6 +328,8 @@
             this.edtVMin.Size = new System.Drawing.Size(45, 20);
             this.edtVMin.TabIndex = 9;
             this.edtVMin.Text = "-10";
+            this.toolTip1.SetToolTip(this.edtVMin, "Specifies the minimum possible reward that could occur \r\nwhen using the C51 train" +
+        "ing algorithm.");
             this.edtVMin.Visible = false;
             // 
             // lblVMax
@@ -329,6 +351,8 @@
             this.edtVMax.Size = new System.Drawing.Size(45, 20);
             this.edtVMax.TabIndex = 11;
             this.edtVMax.Text = "10";
+            this.toolTip1.SetToolTip(this.edtVMax, "Specifies the maximum possible reward that could occur\r\nwhen training with the C5" +
+        "1 trainer.");
             this.edtVMax.Visible = false;
             // 
             // btnReset
@@ -339,6 +363,7 @@
             this.btnReset.Size = new System.Drawing.Size(45, 21);
             this.btnReset.TabIndex = 12;
             this.btnReset.Text = "reset";
+            this.toolTip1.SetToolTip(this.btnReset, "Reset the VMin, VMax to their default values.");
             this.btnReset.UseVisualStyleBackColor = true;
             this.btnReset.Visible = false;
             this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
@@ -349,6 +374,26 @@
             this.timerUI.Interval = 250;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
+            // lblIterations
+            // 
+            this.lblIterations.AutoSize = true;
+            this.lblIterations.Location = new System.Drawing.Point(233, 196);
+            this.lblIterations.Name = "lblIterations";
+            this.lblIterations.Size = new System.Drawing.Size(53, 13);
+            this.lblIterations.TabIndex = 15;
+            this.lblIterations.Text = "Iterations:";
+            // 
+            // edtIterations
+            // 
+            this.edtIterations.Location = new System.Drawing.Point(292, 193);
+            this.edtIterations.Name = "edtIterations";
+            this.edtIterations.Size = new System.Drawing.Size(91, 20);
+            this.edtIterations.TabIndex = 16;
+            this.edtIterations.Text = "1000000";
+            this.edtIterations.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.toolTip1.SetToolTip(this.edtIterations, "Specify the number of iterations (frames) to train.  Each\r\nepisode will have mult" +
+        "iple frames.");
+            // 
             // FormCustomTraining
             // 
             this.AcceptButton = this.btnOK;
@@ -356,6 +401,8 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
             this.ClientSize = new System.Drawing.Size(698, 229);
+            this.Controls.Add(this.edtIterations);
+            this.Controls.Add(this.lblIterations);
             this.Controls.Add(this.btnReset);
             this.Controls.Add(this.edtVMax);
             this.Controls.Add(this.lblVMax);
@@ -420,5 +467,7 @@
         private System.Windows.Forms.RadioButton radNoisyNetSingleThread;
         private System.Windows.Forms.RadioButton radNoisyNetSimple;
         private System.Windows.Forms.Timer timerUI;
+        private System.Windows.Forms.Label lblIterations;
+        private System.Windows.Forms.TextBox edtIterations;
     }
 }

@@ -120,6 +120,17 @@
   <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
+  <metadata name="toolTip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 17</value>
+  </metadata>
+  <data name="chkTerminateOnRallyEnd.ToolTip" xml:space="preserve">
+    <value>Terminating on rally end, sets the 'done' state for the
+episode after a single point in the game (e.g. when
+playing breakout, when the ball passes the player
+paddle, the episode ends when terminating on the
+rally end, otherwise, the game plays for an additional
+5 turns).</value>
+  </data>
   <metadata name="timerUI.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>114, 17</value>
   </metadata>

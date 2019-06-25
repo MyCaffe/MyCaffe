@@ -24,6 +24,7 @@ namespace MyCaffe.app
         string m_strRomName = "";
         double m_dfVMin = -10;
         double m_dfVMax = 10;
+        int m_nIterations = 1000000;
 
         public FormCustomTraining(string strName)
         {
@@ -79,10 +80,19 @@ namespace MyCaffe.app
 
             edtVMin.Text = Properties.Settings.Default.CustVmin.ToString();
             edtVMax.Text = Properties.Settings.Default.CustVmax.ToString();
+            edtIterations.Text = m_nIterations.ToString();
         }
 
         private void btnOK_Click(object sender, EventArgs e)
         {
+            if (!int.TryParse(edtIterations.Text, out m_nIterations) || m_nIterations < 1)
+            {
+                MessageBox.Show("The 'Iterations' value is invalid - please enter a valid positive integer value greater than or equal to 1.", "Invalid Iterations", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                edtIterations.Focus();
+                DialogResult = DialogResult.None;
+                return;
+            }
+
             m_bShowUi = chkShowUi.Checked;
             m_bUseAcceleratedTraining = chkUseAcceleratedTraining.Checked;
             m_bAllowDiscountReset = chkAllowDiscountReset.Checked;
@@ -151,6 +161,11 @@ namespace MyCaffe.app
         public string RomName
         {
             get { return m_strRomName; }
+        }
+
+        public int Iterations
+        {
+            get { return m_nIterations; }
         }
 
         public double VMin
