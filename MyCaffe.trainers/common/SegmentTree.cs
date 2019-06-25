@@ -22,8 +22,17 @@ namespace MyCaffe.trainers.common
     /// </remarks>
     public class SegmentTree
     {
+        /// <summary>
+        /// Specifies the capacity of the segment tree.
+        /// </summary>
         protected int m_nCapacity;
+        /// <summary>
+        /// Specifies the operation to perform when reducing the tree.
+        /// </summary>
         protected OPERATION m_op;
+        /// <summary>
+        /// Specifies the data of the tree.
+        /// </summary>
         protected float[] m_rgfValues;
 
         /// <summary>
@@ -172,9 +181,9 @@ namespace MyCaffe.trainers.common
         /// <param name="nStart">Beginning of the subsequence.</param>
         /// <param name="nEnd">End of the subsequence</param>
         /// <returns>Returns the sum of all items in the array.</returns>
-        public float sum(int nStart = 0, int? nEnd1 = null)
+        public float sum(int nStart = 0, int? nEnd = null)
         {
-            return reduce(nStart, nEnd1);
+            return reduce(nStart, nEnd);
         }
 
         /// <summary>
@@ -232,9 +241,9 @@ namespace MyCaffe.trainers.common
         /// <param name="nStart">Beginning of the subsequence.</param>
         /// <param name="nEnd">End of the subsequence</param>
         /// <returns>The minimum item in the sequence is returned.</returns>
-        public float min(int nStart = 0, int? nEnd1 = null)
+        public float min(int nStart = 0, int? nEnd = null)
         {
-            return reduce(nStart, nEnd1);
+            return reduce(nStart, nEnd);
         }
     }
 }

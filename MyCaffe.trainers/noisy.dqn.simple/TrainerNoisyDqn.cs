@@ -636,7 +636,7 @@ namespace MyCaffe.trainers.noisy.dqn.simple
         /// <summary>
         /// Train the model at the current iteration.
         /// </summary>
-        /// <param name="rgSamples">Contains the samples to train the model with along with the priorities associated with the samples.</param>
+        /// <param name="rgSamples1">Contains the samples to train the model with along with the priorities associated with the samples.</param>
         /// <param name="nActionCount">Specifies the number of actions in the action set.</param>
         public void Train(Tuple<MemoryCollection, int[], float[]> rgSamples1, int nActionCount)
         {

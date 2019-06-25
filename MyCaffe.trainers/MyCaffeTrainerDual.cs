@@ -717,6 +717,9 @@ namespace MyCaffe.trainers
             }
         }
 
+        /// <summary>
+        /// Returns the immediate rewards for the current training cycle as opposed to the averaged rewards.
+        /// </summary>
         public double ImmediateRewards
         {
             get { return m_dfImmediateRewards; }
