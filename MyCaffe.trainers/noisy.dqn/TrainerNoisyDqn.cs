@@ -477,7 +477,9 @@ namespace MyCaffe.trainers.noisy.dqn
             m_transformer.param.mean_value.Add(255 / 2); // center
             m_transformer.param.mean_value.Add(255 / 2);
             m_transformer.param.mean_value.Add(255 / 2);
+            m_transformer.param.mean_value.Add(255 / 2);
             m_transformer.param.scale = 1.0 / 255;       // normalize
+            m_transformer.Update();
 
             m_blobActionTarget = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log);
             m_blobYTarget = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log);
@@ -495,8 +497,6 @@ namespace MyCaffe.trainers.noisy.dqn
 
             m_nFramesPerX = data.channels;
             m_nBatchSize = data.num;
-
-            m_solver.parameter.delta = 0.01 / (double)m_nBatchSize;
         }
 
         private void dispose(ref Blob<T> b)
@@ -640,7 +640,7 @@ namespace MyCaffe.trainers.noisy.dqn
                 rgSd[i] = m_rgX[nIdx];
             }
 
-            return new SimpleDatum(rgSd.ToList());
+            return new SimpleDatum(rgSd.ToList(), true);
         }
 
         /// <summary>
@@ -656,12 +656,12 @@ namespace MyCaffe.trainers.noisy.dqn
             setData(m_net, sd, sdClip);
             m_net.ForwardFromTo(0, m_net.layers.Count - 2);
 
-            Blob<T> logits = m_net.blob_by_name("logits");
-            if (logits == null)
+            Blob<T> output = m_net.blob_by_name("logits");
+            if (output == null)
                 throw new Exception("Missing expected 'logits' blob!");
 
             // Choose greedy action
-            return argmax(Utility.ConvertVecF<T>(logits.mutable_cpu_data));
+            return argmax(Utility.ConvertVecF<T>(output.mutable_cpu_data));
         }
 
         /// <summary>
@@ -727,6 +727,9 @@ namespace MyCaffe.trainers.noisy.dqn
             m_solver.Step(1);
             m_memLoss.OnGetLoss -= m_memLoss_ComputeLoss;
             m_mycaffe.Log.Enable = true;
+
+            resetNoise(m_net);
+            resetNoise(m_netTarget);
         }
 
         /// <summary>
@@ -738,17 +741,17 @@ namespace MyCaffe.trainers.noisy.dqn
         {
             int nNumSamples = m_rgSamples.Count;
 
-            Blob<T> logits = m_net.blob_by_name("logits");
-            if (logits == null)
+            Blob<T> output = m_net.blob_by_name("logits");
+            if (output == null)
                 throw new Exception("Missing expected 'logits' blob!");
 
             //-------------------------------------------------------
             //  Loss function
             //-------------------------------------------------------
 
-            m_mycaffe.Log.CHECK_EQ(logits.count(), m_blobActionTarget.count(), "The logits count does not match the action target count!");
+            m_mycaffe.Log.CHECK_EQ(output.count(), m_blobActionTarget.count(), "The logits count does not match the action target count!");
             m_blobYPrediction.ReshapeLike(m_blobActionTarget);
-            m_mycaffe.Cuda.mul(logits.count(), logits.gpu_data, m_blobActionTarget.gpu_data, m_blobYPrediction.mutable_gpu_data);
+            m_mycaffe.Cuda.mul(output.count(), output.gpu_data, m_blobActionTarget.gpu_data, m_blobYPrediction.mutable_gpu_data);
 
             reduce_sum_axis1(m_blobYPrediction);
 
@@ -758,6 +761,18 @@ namespace MyCaffe.trainers.noisy.dqn
             m_mycaffe.Cuda.powx(m_blobYPrediction.count(), m_blobYPrediction.gpu_diff, 2.0, m_blobYPrediction.mutable_gpu_data);
             e.Loss = reduce_mean(m_blobYPrediction);
             e.EnableLossUpdate = false;
+        }
+
+        private void resetNoise(Net<T> net)
+        {
+            foreach (Layer<T> layer in net.layers)
+            {
+                if (layer.type == LayerParameter.LayerType.INNERPRODUCT)
+                {
+                    if (layer.layer_param.inner_product_param.enable_noise)
+                        ((InnerProductLayer<T>)layer).ResetNoise();
+                }
+            }
         }
 
         private void mul(Blob<T> pred, Blob<T> actionTarget, float fAlpha, Blob<T> result)
@@ -1010,6 +1025,7 @@ namespace MyCaffe.trainers.noisy.dqn
     {
         int m_nTotalCount = 0;
         int m_nMax;
+        bool m_bRemoveOldest;
         List<MemoryCollection> m_rgItems = new List<MemoryCollection>();
 
         public enum ITEM
@@ -1020,9 +1036,10 @@ namespace MyCaffe.trainers.noisy.dqn
             CLIP1
         }
 
-        public MemoryEpisodeCollection(int nMax)
+        public MemoryEpisodeCollection(int nMax, bool bRemoveOldest = true)
         {
             m_nMax = nMax;
+            m_bRemoveOldest = bRemoveOldest;
         }
 
         public int Count
@@ -1053,9 +1070,21 @@ namespace MyCaffe.trainers.noisy.dqn
 
             if (m_nTotalCount > m_nMax)
             {
-                List<MemoryCollection> rgItems = m_rgItems.OrderBy(p => p.TotalReward).ToList();
-                m_nTotalCount -= rgItems[0].Count;
-                m_rgItems.Remove(rgItems[0]);
+                if (m_bRemoveOldest)
+                {
+                    m_rgItems[0].RemoveAt(0);
+
+                    if (m_rgItems[0].Count == 0)
+                        m_rgItems.RemoveAt(0);
+
+                    m_nTotalCount--;
+                }
+                else
+                {
+                    List<MemoryCollection> rgItems = m_rgItems.OrderBy(p => p.TotalReward).ToList();
+                    m_nTotalCount -= rgItems[0].Count;
+                    m_rgItems.Remove(rgItems[0]);
+                }
             }
         }
 
@@ -1145,6 +1174,11 @@ namespace MyCaffe.trainers.noisy.dqn
         public MemoryItem this[int nIdx]
         {
             get { return m_rgItems[nIdx]; }
+        }
+
+        public void RemoveAt(int nIdx)
+        {
+            m_rgItems.RemoveAt(nIdx);
         }
 
         public void Add(MemoryItem item)
