@@ -119,16 +119,16 @@ namespace MyCaffe.trainers.common
         /// <param name="nStart">Beginning of the subsequence.</param>
         /// <param name="nEnd">End of the subsequence</param>
         /// <returns></returns>
-        public float reduce(int nStart, int? nEnd1 = null)
+        public float reduce(int nStart, int? nEnd = null)
         {
-            int nEnd = nEnd1.GetValueOrDefault(m_nCapacity);
+            int nEnd1 = nEnd.GetValueOrDefault(m_nCapacity);
 
-            if (nEnd < 0)
-                nEnd += m_nCapacity;
+            if (nEnd1 < 0)
+                nEnd1 += m_nCapacity;
 
-            nEnd -= 1;
+            nEnd1 -= 1;
 
-            return reduce_helper(nStart, nEnd, 1, 0, m_nCapacity - 1);
+            return reduce_helper(nStart, nEnd1, 1, 0, m_nCapacity - 1);
         }
 
         /// <summary>
