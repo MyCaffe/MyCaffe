@@ -102,6 +102,7 @@ namespace MyCaffe.gym
 
         private void FormGym_Load(object sender, EventArgs e)
         {
+            Text = "MyCaffe Test Gym - " + m_strName;
         }
 
         private void FormGym_FormClosing(object sender, FormClosingEventArgs e)

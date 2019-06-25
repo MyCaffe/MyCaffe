@@ -127,6 +127,10 @@ namespace MyCaffe.gym
         /// <returns>If found the Gym IXMyCaffeGym interface is returned, otherwise <i>null</i> is returned.</returns>
         public IXMyCaffeGym Find(string strName)
         {
+            int nPos = strName.IndexOf(':');
+            if (nPos > 0)
+                strName = strName.Substring(0, nPos);
+
             foreach (IXMyCaffeGym igym in m_rgGym)
             {
                 if (igym.Name == strName)

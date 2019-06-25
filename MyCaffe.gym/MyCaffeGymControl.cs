@@ -89,9 +89,15 @@ namespace MyCaffe.gym
             IXMyCaffeGym igym = m_colGym.Find(strName);
 
             if (bmp != null)
+            {
                 m_bmp = new Bitmap(bmp);
+            }
             else
-                m_bmp = igym.Render(bShowUi, Width, Height, rgData, false).Item1;
+            {
+                Tuple<Bitmap, SimpleDatum> data = igym.Render(bShowUi, Width, Height, rgData, false);
+                if (data != null)
+                    m_bmp = data.Item1;
+            }
 
             if (IsHandleCreated && Visible)
                 Invalidate(true);
