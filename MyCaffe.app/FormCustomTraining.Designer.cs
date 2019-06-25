@@ -37,6 +37,7 @@
             this.chkShowUi = new System.Windows.Forms.CheckBox();
             this.chkUseAcceleratedTraining = new System.Windows.Forms.CheckBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.radNoisyNetSimple = new System.Windows.Forms.RadioButton();
             this.radNoisyNetSingleThread = new System.Windows.Forms.RadioButton();
             this.radC51SingleThread = new System.Windows.Forms.RadioButton();
             this.radPGMultiThread = new System.Windows.Forms.RadioButton();
@@ -55,7 +56,7 @@
             this.lblVMax = new System.Windows.Forms.Label();
             this.edtVMax = new System.Windows.Forms.TextBox();
             this.btnReset = new System.Windows.Forms.Button();
-            this.radNoisyNetSimple = new System.Windows.Forms.RadioButton();
+            this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.groupBox1.SuspendLayout();
             this.grpRom.SuspendLayout();
             this.SuspendLayout();
@@ -145,6 +146,18 @@
             this.groupBox1.TabIndex = 13;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Trainer";
+            // 
+            // radNoisyNetSimple
+            // 
+            this.radNoisyNetSimple.AutoSize = true;
+            this.radNoisyNetSimple.Enabled = false;
+            this.radNoisyNetSimple.Location = new System.Drawing.Point(559, 19);
+            this.radNoisyNetSimple.Name = "radNoisyNetSimple";
+            this.radNoisyNetSimple.Size = new System.Drawing.Size(102, 17);
+            this.radNoisyNetSimple.TabIndex = 5;
+            this.radNoisyNetSimple.TabStop = true;
+            this.radNoisyNetSimple.Text = "NoisyNet Simple";
+            this.radNoisyNetSimple.UseVisualStyleBackColor = true;
             // 
             // radNoisyNetSingleThread
             // 
@@ -330,17 +343,11 @@
             this.btnReset.Visible = false;
             this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
             // 
-            // radNoisyNetSimple
+            // timerUI
             // 
-            this.radNoisyNetSimple.AutoSize = true;
-            this.radNoisyNetSimple.Enabled = false;
-            this.radNoisyNetSimple.Location = new System.Drawing.Point(559, 19);
-            this.radNoisyNetSimple.Name = "radNoisyNetSimple";
-            this.radNoisyNetSimple.Size = new System.Drawing.Size(102, 17);
-            this.radNoisyNetSimple.TabIndex = 5;
-            this.radNoisyNetSimple.TabStop = true;
-            this.radNoisyNetSimple.Text = "NoisyNet Simple";
-            this.radNoisyNetSimple.UseVisualStyleBackColor = true;
+            this.timerUI.Enabled = true;
+            this.timerUI.Interval = 250;
+            this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
             // FormCustomTraining
             // 
@@ -412,5 +419,6 @@
         private System.Windows.Forms.Button btnReset;
         private System.Windows.Forms.RadioButton radNoisyNetSingleThread;
         private System.Windows.Forms.RadioButton radNoisyNetSimple;
+        private System.Windows.Forms.Timer timerUI;
     }
 }

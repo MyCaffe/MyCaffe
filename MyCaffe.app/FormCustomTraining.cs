@@ -233,5 +233,24 @@ namespace MyCaffe.app
                 chkAllowDiscountReset.Checked = false;
             }
         }
+
+        private void timerUI_Tick(object sender, EventArgs e)
+        {
+            if (radC51SingleThread.Checked ||
+                radNoisyNetSingleThread.Checked)
+            {
+                radAtariBreakout.Enabled = true;
+                radAtariBreakout.Checked = true;
+                radAtariPong.Enabled = false;
+            }
+            if (radPGSimple.Checked ||
+                radPGSingleThread.Checked ||
+                radPGMultiThread.Checked)
+            {
+                radAtariBreakout.Enabled = false;
+                radAtariPong.Checked = true;
+                radAtariPong.Enabled = true;
+            }
+        }
     }
 }

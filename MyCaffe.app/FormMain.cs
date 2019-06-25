@@ -1215,6 +1215,8 @@ namespace MyCaffe.app
                 bAllowDiscountReset = dlg.AllowDiscountReset;
                 strTrainer = dlg.Trainer;
 
+                Text = "MyCaffe - Cart-Pole " + strTrainer;
+
                 m_log.WriteLine("starting policy gradient cart-pole test...");
                 m_evtCancelTraining.Reset();
                 m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "Cart-Pole", strTrainer, bShowUi, bUseAccelTrain, bAllowDiscountReset, false, false, false, 0, 0));
@@ -1224,6 +1226,8 @@ namespace MyCaffe.app
             }
             else
             {
+                Text = "MyCaffe";
+
                 m_log.WriteLine("stopping policy gradient cart-pole test...");
                 m_evtCancelTraining.Set();                
                 m_trainerTask = null;
@@ -1262,7 +1266,7 @@ namespace MyCaffe.app
                 dfVMin = dlg.VMin;
                 dfVMax = dlg.VMax;
 
-                Text = "MyCaffe - " + strTrainer;
+                Text = "MyCaffe - ATARI(" + m_strAtariRom + ") " + strTrainer;
 
                 m_log.WriteLine("starting " + strTrainer + " ATARI (" + m_strAtariRom + ") test...");
                 m_evtCancelTraining.Reset();
