@@ -615,12 +615,14 @@ namespace MyCaffe.test
             //
             //  - TrainerType = 'PG.MT' ('PG.MT' = use multi-threaded Policy Gradient trainer)
             //  - RewardType = MAX (display the maximum rewards received, a setting of VAL displays the actual reward received)
+            //  - EnableBinaryActions = True (only use actions move left, move right for binary decisions)
             //  - Gamma = 0.99 (discounting factor)
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
             //  - AllowNegativeRewards = False (when enabled and the ball falls behind our player, a -1 reward is given).
             //  - TerminateOnRallyEnd = False (when enabled a termination state is given each time the ball falls behind our player).
             //  - GameROM = 'path to game ROM'
             string strParam = "TrainerType=" + strTrainerType + ";RewardType=VAL;";
+            strParam += "EnableBinaryActions=True;";
             strParam += "UseAcceleratedTraining=" + bUseAcceleratedTraining + ";";
             strParam += "AllowDiscountReset=" + bAllowDiscountReset + ";";
             strParam += "Gamma=0.99;";
@@ -680,12 +682,14 @@ namespace MyCaffe.test
             //
             //  - TrainerType = 'PG.MT' ('PG.MT' = use multi-threaded Policy Gradient trainer)
             //  - RewardType = MAX (display the maximum rewards received, a setting of VAL displays the actual reward received)
+            //  - EnableBinaryActions = True (only use actions move left, move right for binary decisions)
             //  - Gamma = 0.99 (discounting factor)
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
             //  - AllowNegativeRewards = False (when enabled and the ball falls behind our player, a -1 reward is given).
             //  - TerminateOnRallyEnd = False (when enabled a termination state is given each time the ball falls behind our player).
             //  - GameROM = 'path to game ROM'
             string strParam = "TrainerType=" + strTrainerType + ";RewardType=VAL;";
+            strParam += "EnableBinaryActions=True;";
             strParam += "UseAcceleratedTraining=" + bUseAcceleratedTraining + ";";
             strParam += "AllowDiscountReset=" + bAllowDiscountReset + ";";
             strParam += "Gamma=0.99;";
