@@ -431,6 +431,18 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             m_properties = properties;
             m_random = random;
 
+            Blob<T> data = m_net.blob_by_name("data");
+            if (data == null)
+                m_mycaffe.Log.FAIL("Missing the expected input 'data' blob!");
+
+            m_nBatchSize = data.num;
+
+            Blob<T> logits = m_net.blob_by_name("logits");
+            if (logits == null)
+                m_mycaffe.Log.FAIL("Missing the expected input 'logits' blob!");
+
+            m_nActionCount = logits.channels;
+
             m_transformer = m_mycaffe.DataTransformer;
             m_transformer.param.mean_value.Add(255 / 2); // center
             m_transformer.param.mean_value.Add(255 / 2);
@@ -452,19 +464,6 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             m_memLoss = m_net.FindLastLayer(LayerParameter.LayerType.MEMORY_LOSS) as MemoryLossLayer<T>;
             if (m_memLoss == null)
                 m_mycaffe.Log.FAIL("Missing the expected MEMORY_LOSS layer!");
-
-            Blob<T> data = m_net.blob_by_name("data");
-            if (data == null)
-                m_mycaffe.Log.FAIL("Missing the expected input 'data' blob!");
-
-            m_nBatchSize = data.num;
-
-
-            Blob<T> logits = m_net.blob_by_name("logits");
-            if (logits == null)
-                m_mycaffe.Log.FAIL("Missing the expected input 'logits' blob!");
-
-            m_nActionCount = logits.channels;
         }
 
         private void dispose(ref Blob<T> b)
