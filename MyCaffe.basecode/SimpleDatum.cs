@@ -276,7 +276,16 @@ namespace MyCaffe.basecode
         /// are used the output is HxWx[c1,c2,c3].
         /// </remarks>
         /// <param name="rg">Specifies the array of SimpleDatum to append together.</param>
-        public SimpleDatum(List<SimpleDatum> rg)
+        /// <param name="bAlignChannels">When true, the data is packed with each channel following the other.  For example,
+        /// packing three hxw images together using channel ordering, so three single channel images would then result
+        /// in the following ordering:
+        /// 
+        /// h0,w0,c0,c1,c2  h0,w1,c0,c1,c2 ...
+        /// 
+        /// When false (default), the channel data from each data item are stacked back to back similar to the way a single
+        /// data item is already ordered.
+        /// </param>
+        public SimpleDatum(List<SimpleDatum> rg, bool bAlignChannels)
         {
             if (rg.Count == 1)
             {
@@ -288,49 +297,84 @@ namespace MyCaffe.basecode
 
             m_nChannels *= rg.Count;
 
-            if (rg.Count >= 1)
+            if (bAlignChannels)
             {
-                if (rg[0].IsRealData)
+                if (m_nChannels != rg.Count)
+                    throw new Exception("Currently channel alignment is only allowed on single channel data.");
+
+                if (rg.Count >= 1)
                 {
-                    double[] rgData = new double[m_nChannels * Height * Width];
-
-                    for (int h = 0; h < Height; h++)
+                    if (rg[0].IsRealData)
                     {
-                        for (int w = 0; w < Width; w++)
-                        {
-                            int nIdxSrc = (h * Width) + w;
-                            int nIdxDst = nIdxSrc * m_nChannels;
+                        double[] rgData = new double[m_nChannels * Height * Width];
 
-                            for (int c = 0; c < m_nChannels; c++)
+                        for (int h = 0; h < Height; h++)
+                        {
+                            for (int w = 0; w < Width; w++)
                             {
-                                rgData[nIdxDst + c] = rg[c].RealData[nIdxSrc];
+                                int nIdxSrc = (h * Width) + w;
+                                int nIdxDst = nIdxSrc * m_nChannels;
+
+                                for (int c = 0; c < m_nChannels; c++)
+                                {
+                                    rgData[nIdxDst + c] = rg[c].RealData[nIdxSrc];
+                                }
                             }
                         }
-                    }
 
-                    m_rgRealData = rgData;
+                        m_rgRealData = rgData;
+                        m_rgByteData = null;
+                    }
+                    else
+                    {
+                        byte[] rgData = new byte[m_nChannels * Height * Width];
+
+                        for (int h = 0; h < Height; h++)
+                        {
+                            for (int w = 0; w < Width; w++)
+                            {
+                                int nIdxSrc = (h * Width) + w;
+                                int nIdxDst = nIdxSrc * m_nChannels;
+
+                                for (int c = 0; c < m_nChannels; c++)
+                                {
+                                    rgData[nIdxDst + c] = rg[c].ByteData[nIdxSrc];
+                                }
+                            }
+                        }
+
+                        m_rgByteData = rgData;
+                        m_rgRealData = null;
+                    }
+                }
+            }
+            else
+            {
+                bool bReal = rg[0].IsRealData;
+                int nDstIdx = 0;
+                int nItemCount = m_nChannels / rg.Count;
+
+                if (bReal)
+                {
+                    m_rgRealData = new double[m_nChannels * Height * Width];
                     m_rgByteData = null;
+
+                    for (int i = 0; i < rg.Count; i++)
+                    {
+                        Array.Copy(rg[i].RealData, 0, m_rgRealData, nDstIdx, nItemCount);
+                        nDstIdx += nItemCount;
+                    }
                 }
                 else
                 {
-                    byte[] rgData = new byte[m_nChannels * Height * Width];
-
-                    for (int h = 0; h < Height; h++)
-                    {
-                        for (int w = 0; w < Width; w++)
-                        {
-                            int nIdxSrc = (h * Width) + w;
-                            int nIdxDst = nIdxSrc * m_nChannels;
-
-                            for (int c = 0; c < m_nChannels; c++)
-                            {
-                                rgData[nIdxDst + c] = rg[c].ByteData[nIdxSrc];
-                            }
-                        }
-                    }
-
-                    m_rgByteData = rgData;
+                    m_rgByteData = new byte[m_nChannels * Height * Width];
                     m_rgRealData = null;
+
+                    for (int i = 0; i < rg.Count; i++)
+                    {
+                        Array.Copy(rg[i].ByteData, 0, m_rgByteData, nDstIdx, nItemCount);
+                        nDstIdx += nItemCount;
+                    }
                 }
             }
         }
@@ -388,6 +432,32 @@ namespace MyCaffe.basecode
             }
         }
 
+        /// <summary>
+        /// Clip the data length down to a smaller size and copies the clipped data.
+        /// </summary>
+        /// <param name="nDataLen">Specifies the new, smaller, size.</param>
+        /// <param name="nNewChannel">Specifies the new channel size, or null to ignore.</param>
+        /// <param name="nNewHeight">Specifies the new height size, or null to ignore.</param>
+        /// <param name="nNewWidth">Specifies the new width size, or null to ignore.</param>
+        public void Clip(int nDataLen, int? nNewChannel, int? nNewHeight, int? nNewWidth)
+        {           
+            if (m_rgByteData != null && m_rgByteData.Length > nDataLen)
+            {
+                byte[] rgData = new byte[nDataLen];
+                Array.Copy(m_rgByteData, rgData, nDataLen);
+                m_rgByteData = rgData;
+            }
+            if (m_rgRealData != null && m_rgRealData.Length > nDataLen)
+            {
+                double[] rgData = new double[nDataLen];
+                Array.Copy(m_rgRealData, rgData, nDataLen);
+                m_rgRealData = rgData;
+            }
+
+            m_nChannels = nNewChannel.GetValueOrDefault(m_nChannels);
+            m_nHeight = nNewHeight.GetValueOrDefault(m_nHeight);
+            m_nWidth = nNewWidth.GetValueOrDefault(m_nWidth);
+        }
 
         /// <summary>
         /// Returns all indexes with non-zero data.
