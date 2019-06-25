@@ -99,6 +99,7 @@ namespace MyCaffe.trainers
             C51_ST,
             C51b_ST,
             NOISYDQN_ST,
+            NOISYDQN_SIMPLE,
             RNN_SIMPLE
         }
 
@@ -211,6 +212,9 @@ namespace MyCaffe.trainers
                     case TRAINER_TYPE.NOISYDQN_ST:
                         return new noisy.dqn.TrainerNoisyDqn<double>(mycaffe, m_properties, m_random, this);
 
+                    case TRAINER_TYPE.NOISYDQN_SIMPLE:
+                        return new noisy.dqn.simple.TrainerNoisyDqn<double>(mycaffe, m_properties, m_random, this);
+
                     default:
                         throw new Exception("The trainer type '" + m_trainerType.ToString() + "' is not supported in the RL stage!");
                 }
@@ -262,6 +266,9 @@ namespace MyCaffe.trainers
 
                     case TRAINER_TYPE.NOISYDQN_ST:
                         return new noisy.dqn.TrainerNoisyDqn<float>(mycaffe, m_properties, m_random, this);
+
+                    case TRAINER_TYPE.NOISYDQN_SIMPLE:
+                        return new noisy.dqn.simple.TrainerNoisyDqn<float>(mycaffe, m_properties, m_random, this);
 
                     default:
                         throw new Exception("The trainer type '" + m_trainerType.ToString() + "' is not supported in the RL stage!");
@@ -490,6 +497,11 @@ namespace MyCaffe.trainers
 
                 case "NOISYDQN.ST": // single threaded Noisy DQN
                     m_trainerType = TRAINER_TYPE.NOISYDQN_ST;
+                    m_stage = Stage.RL;
+                    break;
+
+                case "NOISYDQN.SIMPLE": // single threaded Noisy DQN
+                    m_trainerType = TRAINER_TYPE.NOISYDQN_SIMPLE;
                     m_stage = Stage.RL;
                     break;
 
