@@ -16,6 +16,48 @@ namespace MyCaffe.test
     public class TestGymPython
     {
         [TestMethod]
+        public void TestGymCartPole()
+        {
+            MyCaffePythonGym gym = new MyCaffePythonGym();
+            Random random = new Random();
+
+            gym.Initialize("Cart-Pole", "");
+
+            string strName = gym.Name;
+            Assert.AreEqual(strName, "MyCaffe Cart-Pole");
+
+            int[] rgActions = gym.Actions;
+            Assert.AreEqual(rgActions.Length, 2);
+            Assert.AreEqual(rgActions[0], 0);
+            Assert.AreEqual(rgActions[1], 1);
+
+            gym.OpenUi();
+
+            for (int i = 0; i < 100; i++)
+            {
+                if (i == 0 || gym.IsTerminal)
+                    gym.Reset();
+
+                int nActionIdx = random.Next(rgActions.Length);
+                gym.Step(rgActions[nActionIdx], 1);
+
+                Assert.AreNotEqual(gym.Data, null);
+
+                List<double> rgData = gym.Data;
+
+                Assert.AreNotEqual(rgData, null);
+                Assert.AreEqual(rgData.Count, 4);
+
+                Trace.WriteLine("Reward = " + gym.Reward);
+
+                if (gym.IsTerminal)
+                    Trace.WriteLine("TERMINAL = TRUE");
+            }
+
+            gym.CloseUi();
+        }
+
+        [TestMethod]
         public void TestGym()
         {
             MyCaffePythonGym gym = new MyCaffePythonGym();
