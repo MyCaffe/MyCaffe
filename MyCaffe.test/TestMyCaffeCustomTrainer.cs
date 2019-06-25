@@ -836,7 +836,7 @@ namespace MyCaffe.test
             strParam += "FrameSkip=1;";             // process one frame of data at a time.
             strParam += "AllowNegativeRewards=" + bAllowNegRewards.ToString() + ";";    // receive -1 reward on rally's where ball not even hit.
             strParam += "TerminateOnRallyEnd=" + bTerminateOnRallyEnd.ToString() + ";"; // play only one rally at a time then restart the game.
-            strParam += "EpsSteps=" + nIterations.ToString() + ";EpsStart=1.0;EpsEnd=0.01;";
+            strParam += "EpsSteps=" + ((int)(0.15 * nIterations)).ToString() + ";EpsStart=1.0;EpsEnd=0.01;";
             strParam += "GameROM=" + strRom;
             itrainer.Initialize(strParam, this);
 
