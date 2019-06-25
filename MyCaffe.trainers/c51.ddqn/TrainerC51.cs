@@ -492,7 +492,9 @@ namespace MyCaffe.trainers.c51.ddqn
             m_transformer.param.mean_value.Add(255 / 2); // center
             m_transformer.param.mean_value.Add(255 / 2);
             m_transformer.param.mean_value.Add(255 / 2);
+            m_transformer.param.mean_value.Add(255 / 2);
             m_transformer.param.scale = 1.0 / 255;       // normalize
+            m_transformer.Update();
 
             m_fGamma = (float)properties.GetPropertyAsDouble("Gamma", m_fGamma);
             m_nAtoms = properties.GetPropertyAsInt("Atoms", m_nAtoms);
@@ -677,7 +679,7 @@ namespace MyCaffe.trainers.c51.ddqn
                 rgSd[i] = m_rgX[nIdx];
             }
 
-            return new SimpleDatum(rgSd.ToList());
+            return new SimpleDatum(rgSd.ToList(), true);
         }
 
         private float[] createZArray(double dfVMin, double dfVMax, int nAtoms, out float fDeltaZ)
