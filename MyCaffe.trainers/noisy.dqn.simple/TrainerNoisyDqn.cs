@@ -19,11 +19,13 @@ using System.Threading.Tasks;
 namespace MyCaffe.trainers.noisy.dqn.simple
 {
     /// <summary>
-    /// The TrainerNoisyDqn implements the Noisy-DQN algorithm as described by Gheshlagi et al., and 'Kyushik'
+    /// The TrainerNoisyDqn implements the Noisy-DQN algorithm as described by Gheshlagi et al. and inspired by 'higgsfield'
     /// </summary>
     /// <remarks>
     /// @see [Noisy Networks for Exploration](https://arxiv.org/abs/1706.10295), Meire Fortunato, Mohammad Gheshlaghi Azar, Bilal Piot, Jacob Menick, Ian Osband, Alex Graves, Vlad Mnih, Remi Munos, Demis Hassabis, Olivier Pietquin, Charles Blundell, Shane Legg, arXiv:1706.10295
-    /// @see [Github:higgsfield/RL-Adventure](https://github.com/higgsfield/RL-Adventure) 2018
+    /// @see [Prioritized Experience Replay](https://arxiv.org/abs/1511.05952), Tom Schaul, John Quan, Ioannis Antonoglou, David Silver, 2016
+    /// @see [Github:higgsfield/RL-Adventure](https://github.com/higgsfield/RL-Adventure), higgsfield, 2018
+    /// @see [Github:openai/baselines](https://github.com/openai/baselines/blob/master/baselines/deepq/replay_buffer.py), OpenAI, 2018
     /// </remarks>
     /// <typeparam name="T"></typeparam>
     public class TrainerNoisyDqn<T> : IxTrainerRL, IDisposable
@@ -341,6 +343,7 @@ namespace MyCaffe.trainers.noisy.dqn.simple
                 rgMemory.Add(new MemoryItem(s, x, action, s_, x_, s_.Reward, s_.Done, nIteration, nEpisode));
                 dfRewardSum += s_.Reward;
 
+                // Do the training
                 if (rgMemory.Count > m_brain.BatchSize)
                 {
                     double dfBeta = beta_by_frame(nIteration);
@@ -404,7 +407,7 @@ namespace MyCaffe.trainers.noisy.dqn.simple
         float m_fGamma = 0.99f;
         int m_nBatchSize = 32;
         Tuple<MemoryCollection, int[], float[]> m_rgSamples;
-        int m_nActionCount = 3;
+        int m_nActionCount = 2;
         bool m_bModelUpdated = false;
         Font m_font = null;
         Dictionary<Color, Tuple<Brush, Brush, Pen, Brush>> m_rgStyle = new Dictionary<Color, Tuple<Brush, Brush, Pen, Brush>>();
@@ -455,6 +458,13 @@ namespace MyCaffe.trainers.noisy.dqn.simple
                 m_mycaffe.Log.FAIL("Missing the expected input 'data' blob!");
 
             m_nBatchSize = data.num;
+
+
+            Blob<T> logits = m_net.blob_by_name("logits");
+            if (logits == null)
+                m_mycaffe.Log.FAIL("Missing the expected input 'logits' blob!");
+
+            m_nActionCount = logits.channels;
         }
 
         private void dispose(ref Blob<T> b)
@@ -633,7 +643,9 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             MemoryCollection rgSamples = rgSamples1.Item1;
 
             m_rgSamples = rgSamples1;
-            m_nActionCount = nActionCount;
+
+            if (m_nActionCount != nActionCount)
+                throw new Exception("The logit output of '" + m_nActionCount.ToString() + "' does not match the action count of '" + nActionCount.ToString() + "'!");
 
             // Get next_q_values
             m_mycaffe.Log.Enable = false;
