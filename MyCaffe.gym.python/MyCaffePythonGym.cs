@@ -358,7 +358,7 @@ namespace MyCaffe.gym.python
                 rgSd[i] = m_rgData[nIdx];
             }
 
-            SimpleDatum sd1 = new SimpleDatum(rgSd.ToList());
+            SimpleDatum sd1 = new SimpleDatum(rgSd.ToList(), true);
 
             return GetDataAs3D(false, 1, sd1);
         }
@@ -377,8 +377,8 @@ namespace MyCaffe.gym.python
             bool bIsOpen = (m_nUiId >= 0) ? true : false;
             Tuple<Bitmap, SimpleDatum> data = m_igym.Render(bIsOpen, 512, 512, true);
             int nDataLen = 0;
-            SimpleDatum stateData = state.Item1.GetData(false, out nDataLen);
-            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, stateData.RealData, state.Item2, state.Item3);
+            SimpleDatum sd = state.Item1.GetData(false, out nDataLen);
+            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, sd.RealData, state.Item2, state.Item3);
 
             if (bIsOpen)
             {
@@ -389,7 +389,12 @@ namespace MyCaffe.gym.python
                 Thread.Sleep(m_igym.UiDelay);
             }
 
-            m_state = new Tuple<SimpleDatum, double, bool>(data.Item2, state.Item2, state.Item3);
+            if (m_igym.SelectedDataType == DATA_TYPE.BLOB)
+                sd = data.Item2;
+            else
+                sd.Clip(nDataLen, null, nDataLen, null);
+
+            m_state = new Tuple<SimpleDatum, double, bool>(sd, state.Item2, state.Item3);
 
             return new Tuple<List<double>, double, bool>(m_state.Item1.GetData<double>().ToList(), m_state.Item2, m_state.Item3);
         }
@@ -400,12 +405,12 @@ namespace MyCaffe.gym.python
         /// <param name="nAction">Specifies the action to run.</param>
         /// <param name="nSteps">Specifies the number of steps to run the action.</param>
         /// <returns>A tuple containing a double[] with the data, a double with the reward and a bool with the terminal state is returned.</returns>
-        public Tuple<List<double>, double, bool> Step(int nAction, int nSteps)
+        public Tuple<List<double>, double, bool> Step(int nAction, int nSteps = 1)
         {
             if (m_igym == null)
                 throw new Exception("You must call 'Initialize' first!");
 
-            for (int i = 0; i < nSteps - 1; i++)
+            for (int i = 0; i < nSteps-1; i++)
             {
                 m_igym.Step(nAction);
             }
@@ -415,8 +420,8 @@ namespace MyCaffe.gym.python
             bool bIsOpen = (m_nUiId >= 0) ? true : false;
             Tuple<Bitmap, SimpleDatum> data = m_igym.Render(bIsOpen, 512, 512, true);
             int nDataLen = 0;
-            SimpleDatum stateData = state.Item1.GetData(false, out nDataLen);
-            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, stateData.RealData, state.Item2, state.Item3);
+            SimpleDatum sd = state.Item1.GetData(false, out nDataLen);
+            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, sd.RealData, state.Item2, state.Item3);
 
             if (bIsOpen)
             {
@@ -427,7 +432,12 @@ namespace MyCaffe.gym.python
                 Thread.Sleep(m_igym.UiDelay);
             }
 
-            m_state = new Tuple<SimpleDatum, double, bool>(data.Item2, state.Item2, state.Item3);
+            if (m_igym.SelectedDataType == DATA_TYPE.BLOB)
+                sd = data.Item2;
+            else
+                sd.Clip(nDataLen, null, nDataLen, null);
+
+            m_state = new Tuple<SimpleDatum, double, bool>(sd, state.Item2, state.Item3);
 
             return new Tuple<List<double>, double, bool>(m_state.Item1.GetData<double>().ToList(), m_state.Item2, m_state.Item3);
         }
