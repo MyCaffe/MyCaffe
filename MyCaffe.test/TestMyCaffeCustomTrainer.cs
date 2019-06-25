@@ -1537,6 +1537,7 @@ namespace MyCaffe.test
         MyCaffeGymUiProxy m_gymui = null;
         string m_strName = "Cart-Pole";
         GymCollection m_colGyms = new GymCollection();
+        EventWaitHandle m_evtOpenUi = new EventWaitHandle(false, EventResetMode.AutoReset, "_MyCaffeTrainer_OpenUi_");
 
         public MyCaffeCartPoleTrainer() 
             : base()
@@ -1609,6 +1610,11 @@ namespace MyCaffe.test
                 m_gymui.Render(m_nUiId, obs);
                 Thread.Sleep(m_igym.UiDelay);
             }
+            else
+            {
+                if (m_evtOpenUi.WaitOne(0))
+                    openUi();
+            }
 
             if (m_sw.Elapsed.TotalMilliseconds > 1000)
             {
@@ -1625,7 +1631,13 @@ namespace MyCaffe.test
         {
             m_gymui = new MyCaffeGymUiProxy(new InstanceContext(this));
             m_gymui.Open();
-            m_nUiId = m_gymui.OpenUi(m_strName, m_nUiId);
+
+            string strName = m_strName;
+            string strTrainer = m_properties.GetProperty("TrainerType");
+            if (!string.IsNullOrEmpty(strTrainer))
+                strName += ": " + strTrainer;
+
+            m_nUiId = m_gymui.OpenUi(strName, m_nUiId);
         }
 
         public void Closing()
@@ -1646,6 +1658,7 @@ namespace MyCaffe.test
         string m_strName = "ATARI";
         GymCollection m_colGyms = new GymCollection();
         DatasetDescriptor m_ds;
+        EventWaitHandle m_evtOpenUi = new EventWaitHandle(false, EventResetMode.AutoReset, "_MyCaffeTrainer_OpenUi_");
 
         public MyCaffeAtariTrainer()
             : base()
@@ -1719,6 +1732,11 @@ namespace MyCaffe.test
                 m_gymui.Render(m_nUiId, obs);
                 Thread.Sleep(m_igym.UiDelay);
             }
+            else
+            {
+                if (m_evtOpenUi.WaitOne(0))
+                    openUi();
+            }
 
             if (m_sw.Elapsed.TotalMilliseconds > 1000)
             {
@@ -1735,7 +1753,13 @@ namespace MyCaffe.test
         {
             m_gymui = new MyCaffeGymUiProxy(new InstanceContext(this));
             m_gymui.Open();
-            m_nUiId = m_gymui.OpenUi(m_strName, m_nUiId);
+
+            string strName = m_strName;
+            string strTrainer = m_properties.GetProperty("TrainerType");
+            if (!string.IsNullOrEmpty(strTrainer))
+                strName += ": " + strTrainer;
+
+            m_nUiId = m_gymui.OpenUi(strName, m_nUiId);
         }
 
         public void Closing()
@@ -2015,7 +2039,13 @@ namespace MyCaffe.test
         {
             m_gymui = new MyCaffeGymUiProxy(new InstanceContext(this));
             m_gymui.Open();
-            m_nUiId = m_gymui.OpenUi(m_strName, m_nUiId);
+
+            string strName = m_strName;
+            string strTrainer = m_properties.GetProperty("TrainerType");
+            if (!string.IsNullOrEmpty(strTrainer))
+                strName += ": " + strTrainer;
+
+            m_nUiId = m_gymui.OpenUi(strName, m_nUiId);
         }
 
         public void Closing()
@@ -2172,7 +2202,13 @@ namespace MyCaffe.test
         {
             m_gymui = new MyCaffeGymUiProxy(new InstanceContext(this));
             m_gymui.Open();
-            m_nUiId = m_gymui.OpenUi(m_strName, m_nUiId);
+
+            string strName = m_strName;
+            string strTrainer = m_properties.GetProperty("TrainerType");
+            if (!string.IsNullOrEmpty(strTrainer))
+                strName += ": " + strTrainer;
+
+            m_nUiId = m_gymui.OpenUi(strName, m_nUiId);
         }
 
         public void Closing()
