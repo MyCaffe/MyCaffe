@@ -91,7 +91,7 @@ namespace MyCaffe.trainers.common
             if (nStart == nNodeStart && nEnd == nNodeEnd)
                 return m_rgfValues[nNode];
 
-            int nMid = (int)Math.Floor((nNodeStart + nNodeEnd) / 2.0);
+            int nMid = (nNodeStart + nNodeEnd) / 2;
 
             if (nEnd <= nMid)
             {
@@ -99,7 +99,7 @@ namespace MyCaffe.trainers.common
             }
             else
             {
-                if (nMid + 1 < nStart)
+                if (nMid + 1 <= nStart)
                 {
                     return reduce_helper(nStart, nMid, 2 * nNode + 1, nMid + 1, nNodeEnd);
                 }
@@ -150,12 +150,12 @@ namespace MyCaffe.trainers.common
                 nIdx += m_nCapacity;
                 m_rgfValues[nIdx] = value;
 
-                nIdx = (int)Math.Floor(nIdx / 2.0);
+                nIdx /= 2;
 
                 while (nIdx >= 1)
                 {
                     m_rgfValues[nIdx] = operation(m_rgfValues[2 * nIdx], m_rgfValues[2 * nIdx + 1]);
-                    nIdx = (int)Math.Floor(nIdx / 2.0);
+                    nIdx /= 2;
                 }
             }
         }
