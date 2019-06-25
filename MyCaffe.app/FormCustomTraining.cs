@@ -38,7 +38,6 @@ namespace MyCaffe.app
                 m_bAllowDiscountReset = true;
                 m_bAllowC51 = true;
                 grpRom.Visible = true;
-
             }
             else
             {
@@ -49,6 +48,9 @@ namespace MyCaffe.app
                 grpRom.Visible = false;
                 chkTerminateOnRallyEnd.Visible = false;
                 chkAllowNegativeRewards.Visible = false;
+                radC51SingleThread.Enabled = false;
+                radNoisyNetSingleThread.Enabled = false;
+                radNoisyNetSimple.Enabled = true;
             }
         }
 
@@ -66,6 +68,10 @@ namespace MyCaffe.app
                 radPGSingleThread.Checked = true;
             else if (m_strTrainer == "C51.ST")
                 radC51SingleThread.Checked = true;
+            else if (m_strTrainer == "NOISYDQN.ST")
+                radNoisyNetSingleThread.Checked = true;
+            else if (m_strTrainer == "NOISYDQN.SIMPLE")
+                radNoisyNetSimple.Checked = true;
             else
                 radPGMultiThread.Checked = true;
 
@@ -90,15 +96,19 @@ namespace MyCaffe.app
                 m_strTrainer = "PG.ST";
             else if (radC51SingleThread.Checked)
                 m_strTrainer = "C51.ST";
-            else if (radNoisyNet.Checked)
+            else if (radNoisyNetSingleThread.Checked)
                 m_strTrainer = "NOISYDQN.ST";
+            else if (radNoisyNetSimple.Checked)
+                m_strTrainer = "NOISYDQN.SIMPLE";
             else
                 m_strTrainer = "PG.MT";
 
             if (radAtariBreakout.Checked)
                 m_strRomName = "breakout";
-            else
+            else if (radAtariPong.Checked)
                 m_strRomName = "pong";
+            else
+                m_strRomName = "";
 
             if (radC51SingleThread.Checked)
             {
@@ -214,7 +224,7 @@ namespace MyCaffe.app
 
         private void radNoisyNet_CheckedChanged(object sender, EventArgs e)
         {
-            if (radNoisyNet.Checked)
+            if (radNoisyNetSingleThread.Checked)
             {
                 radAtariBreakout.Checked = true;
                 chkAllowNegativeRewards.Checked = true;

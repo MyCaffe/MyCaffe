@@ -1303,7 +1303,10 @@ namespace MyCaffe.app
             {
                 if (strGym == "Cart-Pole")
                 {
-                    test.TrainCartPolePG(bShowUi, strTrainer, nIterations, bUseAccelTrain, bAllowDiscountReset);
+                    if (strTrainer.Contains("NOISYDQN"))
+                        test.TrainCartPoleNoisyNetDual(bShowUi, strTrainer, nIterations, bUseAccelTrain, bAllowDiscountReset);
+                    else
+                        test.TrainCartPolePG(bShowUi, strTrainer, nIterations, bUseAccelTrain, bAllowDiscountReset);
                 }
                 else if (strGym == "ATARI")
                 {

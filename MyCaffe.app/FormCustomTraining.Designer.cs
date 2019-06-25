@@ -37,7 +37,7 @@
             this.chkShowUi = new System.Windows.Forms.CheckBox();
             this.chkUseAcceleratedTraining = new System.Windows.Forms.CheckBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.radNoisyNet = new System.Windows.Forms.RadioButton();
+            this.radNoisyNetSingleThread = new System.Windows.Forms.RadioButton();
             this.radC51SingleThread = new System.Windows.Forms.RadioButton();
             this.radPGMultiThread = new System.Windows.Forms.RadioButton();
             this.radPGSingleThread = new System.Windows.Forms.RadioButton();
@@ -55,6 +55,7 @@
             this.lblVMax = new System.Windows.Forms.Label();
             this.edtVMax = new System.Windows.Forms.TextBox();
             this.btnReset = new System.Windows.Forms.Button();
+            this.radNoisyNetSimple = new System.Windows.Forms.RadioButton();
             this.groupBox1.SuspendLayout();
             this.grpRom.SuspendLayout();
             this.SuspendLayout();
@@ -63,10 +64,10 @@
             // 
             this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(579, 194);
+            this.btnCancel.Location = new System.Drawing.Point(611, 194);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(75, 23);
-            this.btnCancel.TabIndex = 7;
+            this.btnCancel.TabIndex = 16;
             this.btnCancel.Text = "Cancel";
             this.btnCancel.UseVisualStyleBackColor = true;
             // 
@@ -74,10 +75,10 @@
             // 
             this.btnOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.btnOK.Location = new System.Drawing.Point(498, 194);
+            this.btnOK.Location = new System.Drawing.Point(530, 194);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(75, 23);
-            this.btnOK.TabIndex = 6;
+            this.btnOK.TabIndex = 15;
             this.btnOK.Text = "OK";
             this.btnOK.UseVisualStyleBackColor = true;
             this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
@@ -102,7 +103,7 @@
             this.lblGymName.ForeColor = System.Drawing.Color.SteelBlue;
             this.lblGymName.Location = new System.Drawing.Point(73, 9);
             this.lblGymName.Name = "lblGymName";
-            this.lblGymName.Size = new System.Drawing.Size(593, 27);
+            this.lblGymName.Size = new System.Drawing.Size(625, 27);
             this.lblGymName.TabIndex = 1;
             // 
             // chkShowUi
@@ -132,28 +133,29 @@
             // 
             this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBox1.Controls.Add(this.radNoisyNet);
+            this.groupBox1.Controls.Add(this.radNoisyNetSimple);
+            this.groupBox1.Controls.Add(this.radNoisyNetSingleThread);
             this.groupBox1.Controls.Add(this.radC51SingleThread);
             this.groupBox1.Controls.Add(this.radPGMultiThread);
             this.groupBox1.Controls.Add(this.radPGSingleThread);
             this.groupBox1.Controls.Add(this.radPGSimple);
             this.groupBox1.Location = new System.Drawing.Point(12, 120);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(642, 51);
-            this.groupBox1.TabIndex = 5;
+            this.groupBox1.Size = new System.Drawing.Size(674, 51);
+            this.groupBox1.TabIndex = 13;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Trainer";
             // 
-            // radNoisyNet
+            // radNoisyNetSingleThread
             // 
-            this.radNoisyNet.AutoSize = true;
-            this.radNoisyNet.Location = new System.Drawing.Point(420, 19);
-            this.radNoisyNet.Name = "radNoisyNet";
-            this.radNoisyNet.Size = new System.Drawing.Size(133, 17);
-            this.radNoisyNet.TabIndex = 3;
-            this.radNoisyNet.Text = "NoisyNet Single-thread";
-            this.radNoisyNet.UseVisualStyleBackColor = true;
-            this.radNoisyNet.CheckedChanged += new System.EventHandler(this.radNoisyNet_CheckedChanged);
+            this.radNoisyNetSingleThread.AutoSize = true;
+            this.radNoisyNetSingleThread.Location = new System.Drawing.Point(420, 19);
+            this.radNoisyNetSingleThread.Name = "radNoisyNetSingleThread";
+            this.radNoisyNetSingleThread.Size = new System.Drawing.Size(133, 17);
+            this.radNoisyNetSingleThread.TabIndex = 4;
+            this.radNoisyNetSingleThread.Text = "NoisyNet Single-thread";
+            this.radNoisyNetSingleThread.UseVisualStyleBackColor = true;
+            this.radNoisyNetSingleThread.CheckedChanged += new System.EventHandler(this.radNoisyNet_CheckedChanged);
             // 
             // radC51SingleThread
             // 
@@ -216,7 +218,7 @@
             this.grpRom.Location = new System.Drawing.Point(12, 177);
             this.grpRom.Name = "grpRom";
             this.grpRom.Size = new System.Drawing.Size(200, 40);
-            this.grpRom.TabIndex = 8;
+            this.grpRom.TabIndex = 14;
             this.grpRom.TabStop = false;
             this.grpRom.Text = "ATARI ROM";
             this.grpRom.Visible = false;
@@ -250,7 +252,7 @@
             this.chkAllowNegativeRewards.Location = new System.Drawing.Point(218, 51);
             this.chkAllowNegativeRewards.Name = "chkAllowNegativeRewards";
             this.chkAllowNegativeRewards.Size = new System.Drawing.Size(135, 17);
-            this.chkAllowNegativeRewards.TabIndex = 9;
+            this.chkAllowNegativeRewards.TabIndex = 5;
             this.chkAllowNegativeRewards.Text = "Allow negative rewards";
             this.chkAllowNegativeRewards.UseVisualStyleBackColor = true;
             // 
@@ -260,7 +262,7 @@
             this.chkTerminateOnRallyEnd.Location = new System.Drawing.Point(218, 74);
             this.chkTerminateOnRallyEnd.Name = "chkTerminateOnRallyEnd";
             this.chkTerminateOnRallyEnd.Size = new System.Drawing.Size(130, 17);
-            this.chkTerminateOnRallyEnd.TabIndex = 9;
+            this.chkTerminateOnRallyEnd.TabIndex = 6;
             this.chkTerminateOnRallyEnd.Text = "Terminate on rally end";
             this.chkTerminateOnRallyEnd.UseVisualStyleBackColor = true;
             // 
@@ -270,35 +272,36 @@
             this.chkLoadWeights.Location = new System.Drawing.Point(218, 97);
             this.chkLoadWeights.Name = "chkLoadWeights";
             this.chkLoadWeights.Size = new System.Drawing.Size(127, 17);
-            this.chkLoadWeights.TabIndex = 9;
+            this.chkLoadWeights.TabIndex = 7;
             this.chkLoadWeights.Text = "Load weights (if exist)";
             this.chkLoadWeights.UseVisualStyleBackColor = true;
             // 
             // lblVMin
             // 
+            this.lblVMin.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblVMin.AutoSize = true;
-            this.lblVMin.Location = new System.Drawing.Point(429, 52);
+            this.lblVMin.Location = new System.Drawing.Point(601, 52);
             this.lblVMin.Name = "lblVMin";
             this.lblVMin.Size = new System.Drawing.Size(34, 13);
-            this.lblVMin.TabIndex = 10;
+            this.lblVMin.TabIndex = 8;
             this.lblVMin.Text = "VMin:";
             this.lblVMin.Visible = false;
             // 
             // edtVMin
             // 
-            this.edtVMin.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.edtVMin.Location = new System.Drawing.Point(469, 49);
+            this.edtVMin.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.edtVMin.Location = new System.Drawing.Point(641, 49);
             this.edtVMin.Name = "edtVMin";
-            this.edtVMin.Size = new System.Drawing.Size(185, 20);
-            this.edtVMin.TabIndex = 11;
+            this.edtVMin.Size = new System.Drawing.Size(45, 20);
+            this.edtVMin.TabIndex = 9;
             this.edtVMin.Text = "-10";
             this.edtVMin.Visible = false;
             // 
             // lblVMax
             // 
+            this.lblVMax.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblVMax.AutoSize = true;
-            this.lblVMax.Location = new System.Drawing.Point(429, 75);
+            this.lblVMax.Location = new System.Drawing.Point(598, 75);
             this.lblVMax.Name = "lblVMax";
             this.lblVMax.Size = new System.Drawing.Size(37, 13);
             this.lblVMax.TabIndex = 10;
@@ -307,18 +310,18 @@
             // 
             // edtVMax
             // 
-            this.edtVMax.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.edtVMax.Location = new System.Drawing.Point(469, 72);
+            this.edtVMax.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.edtVMax.Location = new System.Drawing.Point(641, 72);
             this.edtVMax.Name = "edtVMax";
-            this.edtVMax.Size = new System.Drawing.Size(185, 20);
+            this.edtVMax.Size = new System.Drawing.Size(45, 20);
             this.edtVMax.TabIndex = 11;
             this.edtVMax.Text = "10";
             this.edtVMax.Visible = false;
             // 
             // btnReset
             // 
-            this.btnReset.Location = new System.Drawing.Point(469, 98);
+            this.btnReset.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnReset.Location = new System.Drawing.Point(641, 98);
             this.btnReset.Name = "btnReset";
             this.btnReset.Size = new System.Drawing.Size(45, 21);
             this.btnReset.TabIndex = 12;
@@ -327,13 +330,25 @@
             this.btnReset.Visible = false;
             this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
             // 
+            // radNoisyNetSimple
+            // 
+            this.radNoisyNetSimple.AutoSize = true;
+            this.radNoisyNetSimple.Enabled = false;
+            this.radNoisyNetSimple.Location = new System.Drawing.Point(559, 19);
+            this.radNoisyNetSimple.Name = "radNoisyNetSimple";
+            this.radNoisyNetSimple.Size = new System.Drawing.Size(102, 17);
+            this.radNoisyNetSimple.TabIndex = 5;
+            this.radNoisyNetSimple.TabStop = true;
+            this.radNoisyNetSimple.Text = "NoisyNet Simple";
+            this.radNoisyNetSimple.UseVisualStyleBackColor = true;
+            // 
             // FormCustomTraining
             // 
             this.AcceptButton = this.btnOK;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(666, 229);
+            this.ClientSize = new System.Drawing.Size(698, 229);
             this.Controls.Add(this.btnReset);
             this.Controls.Add(this.edtVMax);
             this.Controls.Add(this.lblVMax);
@@ -395,6 +410,7 @@
         private System.Windows.Forms.Label lblVMax;
         private System.Windows.Forms.TextBox edtVMax;
         private System.Windows.Forms.Button btnReset;
-        private System.Windows.Forms.RadioButton radNoisyNet;
+        private System.Windows.Forms.RadioButton radNoisyNetSingleThread;
+        private System.Windows.Forms.RadioButton radNoisyNetSimple;
     }
 }
