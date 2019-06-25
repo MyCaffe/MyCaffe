@@ -546,12 +546,13 @@ namespace MyCaffe.test
             //  - Mini Batch Size = 10 (defined in train_val.prototxt for MemoryDataLayer)
             //
             //  - TraingerType = 'strTrainerType' ('PG.MT' = use multi-threaded Policy Gradient trainer, 'PG.ST' = single-threaded trainer, 'PG.SIMPLE' = basic trainer with Sigmoid output support only)
+            //  - UseRawData = do not preprocess by subtracting the current from the last for we are using a lot of RelU activations which set negative values to zero.
             //  - RewardType = MAX (display the maximum rewards received, a setting of VAL displays the actual reward received)
             //  - Gamma = 0.99 (discounting factor)
             //  - Init1 = default force of 10.
             //  - Init2 = do not use additive force.                    
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
-            itrainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1", this);
+            itrainer.Initialize("TrainerType=" + strTrainerType + ";UseRawData=True;RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1", this);
 
             // load the project to train (note the project must use the MemoryDataLayer for input).
             mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
