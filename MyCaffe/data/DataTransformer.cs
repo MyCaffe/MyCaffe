@@ -47,19 +47,30 @@ namespace MyCaffe.data
         {
             m_log = log;
 
-            if (p.mean_file != null)
-                m_protoMean = loadProtoMean(p.mean_file);
-
             int nDataSize = nC * nH * nW;
 
-            if (imgMean != null)
-                nDataSize = imgMean.Channels * imgMean.Height * imgMean.Width;
-
-            m_rgTransformedData = new T[nDataSize];
             m_param = p;
             m_phase = phase;
 
             InitRand();
+            Update(nDataSize, imgMean);
+        }
+
+        /// <summary>
+        /// Resync the transformer with changes in its parameter.
+        /// </summary>
+        public void Update(int nDataSize = 0, SimpleDatum imgMean = null)
+        {
+            TransformationParameter p = m_param;
+
+            if (imgMean != null)
+                nDataSize = imgMean.Channels * imgMean.Height * imgMean.Width;
+
+            if (nDataSize > 0 || (m_rgfTransformedData != null &&  nDataSize != m_rgfTransformedData.Length))
+                m_rgTransformedData = new T[nDataSize];
+
+            if (p.mean_file != null)
+                m_protoMean = loadProtoMean(p.mean_file);
 
             if (p.use_imagedb_mean)
             {
