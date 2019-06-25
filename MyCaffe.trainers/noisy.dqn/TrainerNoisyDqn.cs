@@ -490,12 +490,27 @@ namespace MyCaffe.trainers.noisy.dqn
             m_properties = properties;
             m_random = random;
 
+            Blob<T> data = m_net.blob_by_name("data");
+            if (data == null)
+                m_mycaffe.Log.FAIL("Missing the expected input 'data' blob!");
+
+            m_nFramesPerX = data.channels;
+            m_nBatchSize = data.num;
+
+            Blob<T> logits = m_net.blob_by_name("logits");
+            if (logits == null)
+                m_mycaffe.Log.FAIL("Missing the expected input 'logits' blob!");
+
+            m_nActionCount = logits.channels;
+
             m_transformer = m_mycaffe.DataTransformer;
-            m_transformer.param.mean_value.Add(255 / 2); // center
-            m_transformer.param.mean_value.Add(255 / 2);
-            m_transformer.param.mean_value.Add(255 / 2);
-            m_transformer.param.mean_value.Add(255 / 2);
-            m_transformer.param.scale = 1.0 / 255;       // normalize
+
+            for (int i = 0; i < m_nFramesPerX; i++)
+            {
+                m_transformer.param.mean_value.Add(255 / 2); // center each frame
+            }
+
+            m_transformer.param.scale = 1.0 / 255; // normalize
             m_transformer.Update();
 
             m_blobActions = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log, false);
@@ -511,19 +526,6 @@ namespace MyCaffe.trainers.noisy.dqn
             m_memLoss = m_net.FindLastLayer(LayerParameter.LayerType.MEMORY_LOSS) as MemoryLossLayer<T>;
             if (m_memLoss == null)
                 m_mycaffe.Log.FAIL("Missing the expected MEMORY_LOSS layer!");
-
-            Blob<T> data = m_net.blob_by_name("data");
-            if (data == null)
-                m_mycaffe.Log.FAIL("Missing the expected input 'data' blob!");
-
-            m_nFramesPerX = data.channels;
-            m_nBatchSize = data.num;
-
-            Blob<T> logits = m_net.blob_by_name("logits");
-            if (logits == null)
-                m_mycaffe.Log.FAIL("Missing the expected input 'logits' blob!");
-
-            m_nActionCount = logits.channels;
         }
 
         private void dispose(ref Blob<T> b)
