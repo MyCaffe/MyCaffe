@@ -50,6 +50,7 @@
     <Compile Include="c51.ddqn\TrainerC51.cs" />
     <Compile Include="EventArgs.cs" />
     <Compile Include="Interfaces.cs" />
+    <Compile Include="common\MemoryCollection.cs" />
     <Compile Include="MyCaffeTrainerDual.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -72,8 +73,10 @@
     <Compile Include="noisy.dqn\TrainerNoisyDqn.cs" />
     <Compile Include="pg.mt\TrainerPG.cs" />
     <Compile Include="pg.st\TrainerPG.cs" />
+    <Compile Include="common\PrioritizedMemoryCollection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="rnn.simple\TrainerRNN.cs" />
+    <Compile Include="common\SegmentTree.cs" />
     <Compile Include="StateBase.cs" />
     <Compile Include="pg.simple\TrainerPG.cs" />
   </ItemGroup>

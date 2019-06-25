@@ -4,6 +4,7 @@ using MyCaffe.data;
 using MyCaffe.layers;
 using MyCaffe.param;
 using MyCaffe.solvers;
+using MyCaffe.trainers.common;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -358,7 +359,7 @@ namespace MyCaffe.trainers.noisy.dqn
         /// <param name="step">Specifies the training step to take, if any.  This is only used when debugging.</param>
         public void Run(Phase phase, int nN, ITERATOR_TYPE type, TRAIN_STEP step)
         {
-            MemoryEpisodeCollection rgMemory = new MemoryEpisodeCollection(m_nMaxMemory);
+            MemoryCollection rgMemory = new MemoryCollection(m_nMaxMemory);
             int nIteration = 0;
             double? dfRunningReward = null;
             double dfRewardSum = 0;
@@ -698,7 +699,7 @@ namespace MyCaffe.trainers.noisy.dqn
 
             // Get y_prediction
             m_mycaffe.Log.Enable = false;
-            setData1(m_netTarget, rgSamples);
+            setNextStateData(m_netTarget, rgSamples);
             m_netTarget.ForwardFromTo(0, m_netTarget.layers.Count - 2);
 
             Blob<T> logits = m_netTarget.blob_by_name("logits");
@@ -722,7 +723,7 @@ namespace MyCaffe.trainers.noisy.dqn
             m_blobYTarget.Reshape(rgSamples.Count, 1, 1, 1);
             m_blobYTarget.mutable_cpu_data = Utility.ConvertVec<T>(rgYBatch);
 
-            setData0(m_net, rgSamples);
+            setCurrentStateData(m_net, rgSamples);
             m_memLoss.OnGetLoss += m_memLoss_ComputeLoss;
             m_solver.Step(1);
             m_memLoss.OnGetLoss -= m_memLoss_ComputeLoss;
@@ -877,10 +878,10 @@ namespace MyCaffe.trainers.noisy.dqn
             setData(net, rgData, rgClip);
         }
 
-        private void setData0(Net<T> net, MemoryCollection rgSamples)
+        private void setCurrentStateData(Net<T> net, MemoryCollection rgSamples)
         {
-            List<SimpleDatum> rgData0 = rgSamples.GetData0();
-            List<SimpleDatum> rgClip0 = rgSamples.GetClip0();
+            List<SimpleDatum> rgData0 = rgSamples.GetCurrentStateData();
+            List<SimpleDatum> rgClip0 = rgSamples.GetCurrentStateClip();
 
             SimpleDatum[] rgData = rgData0.ToArray();
             SimpleDatum[] rgClip = (rgClip0 != null) ? rgClip0.ToArray() : null;
@@ -888,10 +889,10 @@ namespace MyCaffe.trainers.noisy.dqn
             setData(net, rgData, rgClip);
         }
 
-        private void setData1(Net<T> net, MemoryCollection rgSamples)
+        private void setNextStateData(Net<T> net, MemoryCollection rgSamples)
         {
-            List<SimpleDatum> rgData1 = rgSamples.GetData1();
-            List<SimpleDatum> rgClip1 = rgSamples.GetClip1();
+            List<SimpleDatum> rgData1 = rgSamples.GetNextStateData();
+            List<SimpleDatum> rgClip1 = rgSamples.GetNextStateClip();
 
             SimpleDatum[] rgData = rgData1.ToArray();
             SimpleDatum[] rgClip = (rgClip1 != null) ? rgClip1.ToArray() : null;
@@ -1018,369 +1019,6 @@ namespace MyCaffe.trainers.noisy.dqn
                 g.FillRectangle(brBack, rc1);
                 g.DrawRectangle(penLine, rc1.X, rc1.Y, rc1.Width, rc1.Height);
             }
-        }
-    }
-
-    class MemoryEpisodeCollection /** @private */
-    {
-        int m_nTotalCount = 0;
-        int m_nMax;
-        bool m_bRemoveOldest;
-        List<MemoryCollection> m_rgItems = new List<MemoryCollection>();
-
-        public enum ITEM
-        {
-            DATA0,
-            DATA1,
-            CLIP0,
-            CLIP1
-        }
-
-        public MemoryEpisodeCollection(int nMax, bool bRemoveOldest = true)
-        {
-            m_nMax = nMax;
-            m_bRemoveOldest = bRemoveOldest;
-        }
-
-        public int Count
-        {
-            get { return m_rgItems.Count; }
-        }
-
-        public void Clear()
-        {
-            m_nTotalCount = 0;
-            m_rgItems.Clear();
-        }
-
-        public void Add(MemoryItem item)
-        {
-            m_nTotalCount++;
-
-            if (m_rgItems.Count == 0 || m_rgItems[m_rgItems.Count - 1].Episode != item.Episode)
-            {
-                MemoryCollection col = new MemoryCollection(int.MaxValue);
-                col.Add(item);
-                m_rgItems.Add(col);
-            }
-            else
-            {
-                m_rgItems[m_rgItems.Count - 1].Add(item);
-            }
-
-            if (m_nTotalCount > m_nMax)
-            {
-                if (m_bRemoveOldest)
-                {
-                    m_rgItems[0].RemoveAt(0);
-
-                    if (m_rgItems[0].Count == 0)
-                        m_rgItems.RemoveAt(0);
-
-                    m_nTotalCount--;
-                }
-                else
-                {
-                    List<MemoryCollection> rgItems = m_rgItems.OrderBy(p => p.TotalReward).ToList();
-                    m_nTotalCount -= rgItems[0].Count;
-                    m_rgItems.Remove(rgItems[0]);
-                }
-            }
-        }
-
-        public MemoryCollection GetRandomSamples(CryptoRandom random, int nCount)
-        {
-            MemoryCollection col = new MemoryCollection(nCount);
-            List<string> rgItems = new List<string>();
-
-            for (int i = 0; i < nCount; i++)
-            {
-                int nEpisode = random.Next(m_rgItems.Count);
-                int nItem = random.Next(m_rgItems[nEpisode].Count);
-                string strItem = nEpisode.ToString() + "_" + nItem.ToString();
-
-                if (!rgItems.Contains(strItem))
-                {
-                    col.Add(m_rgItems[nEpisode][nItem]);
-                    rgItems.Add(strItem);
-                }
-            }
-
-            return col;
-        }
-
-        List<StateBase> GetState1()
-        {
-            List<StateBase> rgItems = new List<StateBase>();
-
-            for (int i = 0; i < m_rgItems.Count; i++)
-            {
-                for (int j = 0; j < m_rgItems[i].Count; j++)
-                {
-                    rgItems.Add(m_rgItems[i][j].State1);
-                }
-            }
-
-            return rgItems;
-        }
-
-        List<SimpleDatum> GetItem(ITEM item)
-        {
-            List<SimpleDatum> rgItems = new List<SimpleDatum>();
-
-            for (int i = 0; i < m_rgItems.Count; i++)
-            {
-                switch (item)
-                {
-                    case ITEM.DATA0:
-                        rgItems.AddRange(m_rgItems[i].GetData0());
-                        break;
-
-                    case ITEM.DATA1:
-                        rgItems.AddRange(m_rgItems[i].GetData1());
-                        break;
-
-                    case ITEM.CLIP0:
-                        rgItems.AddRange(m_rgItems[i].GetClip0());
-                        break;
-
-                    case ITEM.CLIP1:
-                        rgItems.AddRange(m_rgItems[i].GetClip1());
-                        break;
-                }
-            }
-
-            return rgItems;
-        }
-    }
-
-    class MemoryCollection : IEnumerable<MemoryItem> /** @private */
-    {
-        double m_dfTotalReward = 0;
-        int m_nEpisode;
-        int m_nMax;
-        List<MemoryItem> m_rgItems = new List<MemoryItem>();
-
-        public MemoryCollection(int nMax)
-        {
-            m_nMax = nMax;
-        }
-
-        public int Count
-        {
-            get { return m_rgItems.Count; }
-        }
-
-        public MemoryItem this[int nIdx]
-        {
-            get { return m_rgItems[nIdx]; }
-        }
-
-        public void RemoveAt(int nIdx)
-        {
-            m_rgItems.RemoveAt(nIdx);
-        }
-
-        public void Add(MemoryItem item)
-        {
-            m_nEpisode = item.Episode;
-            m_dfTotalReward += item.Reward;
-
-            m_rgItems.Add(item);
-
-            if (m_rgItems.Count > m_nMax)
-                m_rgItems.RemoveAt(0);
-        }
-
-        public void Clear()
-        {
-            m_nEpisode = 0;
-            m_dfTotalReward = 0;
-            m_rgItems.Clear();
-        }
-
-        public int Episode
-        {
-            get { return m_nEpisode; }
-        }
-
-        public double TotalReward
-        {
-            get { return m_dfTotalReward; }
-        }
-
-        public MemoryCollection GetRandomSamples(CryptoRandom random, int nCount)
-        {
-            MemoryCollection col = new MemoryCollection(m_nMax);
-            List<int> rgIdx = new List<int>();
-
-            while (col.Count < nCount)
-            {
-                int nIdx = random.Next(m_rgItems.Count);
-                if (!rgIdx.Contains(nIdx))
-                {
-                    col.Add(m_rgItems[nIdx]);
-                    rgIdx.Add(nIdx);
-                }
-            }
-
-            return col;
-        }
-
-        public List<StateBase> GetState1()
-        {
-            return m_rgItems.Select(p => p.State1).ToList();
-        }
-
-        public List<SimpleDatum> GetData1()
-        {
-            return m_rgItems.Select(p => p.Data1).ToList();
-        }
-
-        public List<SimpleDatum> GetClip1()
-        {
-            if (m_rgItems[0].State1.Clip != null)
-                return m_rgItems.Select(p => p.State1.Clip).ToList();
-
-            return null;
-        }
-
-        public List<SimpleDatum> GetData0()
-        {
-            return m_rgItems.Select(p => p.Data0).ToList();
-        }
-
-        public List<SimpleDatum> GetClip0()
-        {
-            if (m_rgItems[0].State0.Clip != null)
-                return m_rgItems.Select(p => p.State0.Clip).ToList();
-
-            return null;
-        }
-
-        public float[] GetActionsAsOneHotVector(int nActionCount)
-        {
-            float[] rg = new float[m_rgItems.Count * nActionCount];
-
-            for (int i = 0; i < m_rgItems.Count; i++)
-            {
-                int nAction = m_rgItems[i].Action;
-
-                for (int j = 0; j < nActionCount; j++)
-                {
-                    rg[(i * nActionCount) + j] = (j == nAction) ? 1 : 0;
-                }
-            }
-
-            return rg;
-        }
-
-        public IEnumerator<MemoryItem> GetEnumerator()
-        {
-            return m_rgItems.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return m_rgItems.GetEnumerator();
-        }
-
-        public override string ToString()
-        {
-            return "Episode #" + m_nEpisode.ToString() + " (" + m_rgItems.Count.ToString() + ") => " + m_dfTotalReward.ToString();
-        }
-    }
-
-    class MemoryItem /** @private */
-    {
-        StateBase m_state0;
-        StateBase m_state1;
-        SimpleDatum m_x0;
-        SimpleDatum m_x1;
-        int m_nAction;
-        int m_nIteration;
-        int m_nEpisode;
-        bool m_bTerminated;
-        double m_dfReward;
-
-        public MemoryItem(StateBase s, SimpleDatum x, int nAction, StateBase s_, SimpleDatum x_, double dfReward, bool bTerminated, int nIteration, int nEpisode)
-        {
-            m_state0 = s;
-            m_state1 = s_;
-            m_x0 = x;
-            m_x1 = x_;
-            m_nAction = nAction;
-            m_bTerminated = bTerminated;
-            m_dfReward = dfReward;
-            m_nIteration = nIteration;
-            m_nEpisode = nEpisode;
-        }
-
-        public bool IsTerminated
-        {
-            get { return m_bTerminated; }
-        }
-
-        public double Reward
-        {
-            get { return m_dfReward; }
-            set { m_dfReward = value; }
-        }
-
-        public StateBase State0
-        {
-            get { return m_state0; }
-        }
-
-        public StateBase State1
-        {
-            get { return m_state1; }
-        }
-
-        public SimpleDatum Data0
-        {
-            get { return m_x0; }
-        }
-
-        public SimpleDatum Data1
-        {
-            get { return m_x1; }
-        }
-
-        public int Action
-        {
-            get { return m_nAction; }
-        }
-
-        public int Iteration
-        {
-            get { return m_nIteration; }
-        }
-
-        public int Episode
-        {
-            get { return m_nEpisode; }
-        }
-
-        public override string ToString()
-        {
-            return "episode = " + m_nEpisode.ToString() + " action = " + m_nAction.ToString() + " reward = " + m_dfReward.ToString("N2");
-        }
-
-        private string tostring(float[] rg)
-        {
-            string str = "{";
-
-            for (int i = 0; i < rg.Length; i++)
-            {
-                str += rg[i].ToString("N5");
-                str += ",";
-            }
-
-            str = str.TrimEnd(',');
-            str += "}";
-
-            return str;
         }
     }
 }

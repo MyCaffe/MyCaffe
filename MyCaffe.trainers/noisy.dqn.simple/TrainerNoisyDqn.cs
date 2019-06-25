@@ -6,6 +6,7 @@ using MyCaffe.layers;
 using MyCaffe.param;
 using MyCaffe.solvers;
 using MyCaffe.trainers;
+using MyCaffe.trainers.common;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -636,10 +637,10 @@ namespace MyCaffe.trainers.noisy.dqn.simple
 
             // Get next_q_values
             m_mycaffe.Log.Enable = false;
-            setData1(m_netTarget, rgSamples);
+            setNextStateData(m_netTarget, rgSamples);
             m_netTarget.ForwardFromTo(0, m_netTarget.layers.Count - 2);
 
-            setData0(m_net, rgSamples);
+            setCurrentStateData(m_net, rgSamples);
             m_memLoss.OnGetLoss += m_memLoss_ComputeTdLoss;
             m_solver.Step(1);
             m_memLoss.OnGetLoss -= m_memLoss_ComputeTdLoss;
@@ -656,10 +657,12 @@ namespace MyCaffe.trainers.noisy.dqn.simple
         /// <param name="e">Specifies the arguments.</param>
         private void m_memLoss_ComputeTdLoss(object sender, MemoryLossLayerGetLossArgs<T> e)
         {
+            MemoryCollection rgMem = m_rgSamples.Item1;
+
             Blob<T> q_values = m_net.blob_by_name("logits");
             Blob<T> next_q_values = m_netTarget.blob_by_name("logits");
 
-            float[] rgActions = m_rgSamples.Item1.GetActionsAsOneHotVector(m_nActionCount);
+            float[] rgActions = rgMem.GetActionsAsOneHotVector(m_nActionCount);
             m_blobActions.ReshapeLike(q_values);
             m_blobActions.mutable_cpu_data = Utility.ConvertVec<T>(rgActions);
             m_blobQValue.ReshapeLike(q_values);
@@ -672,11 +675,11 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             argmax_forward(next_q_values, m_blobNextQValue);
 
             // expected_q_values
-            float[] rgRewards = m_rgSamples.Item1.GetRewards();
+            float[] rgRewards = rgMem.GetRewards();
             m_blobExpectedQValue.ReshapeLike(m_blobQValue);
             m_blobExpectedQValue.mutable_cpu_data = Utility.ConvertVec<T>(rgRewards);
 
-            float[] rgDone = m_rgSamples.Item1.GetInvertedDoneAsOneHotVector();
+            float[] rgDone = rgMem.GetInvertedDoneAsOneHotVector();
             m_blobDone.ReshapeLike(m_blobQValue);
             m_blobDone.mutable_cpu_data = Utility.ConvertVec<T>(rgDone);
 
@@ -867,10 +870,10 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             setData(net, rgData, rgClip);
         }
 
-        private void setData0(Net<T> net, MemoryCollection rgSamples)
+        private void setCurrentStateData(Net<T> net, MemoryCollection rgSamples)
         {
-            List<SimpleDatum> rgData0 = rgSamples.GetData0();
-            List<SimpleDatum> rgClip0 = rgSamples.GetClip0();
+            List<SimpleDatum> rgData0 = rgSamples.GetCurrentStateData();
+            List<SimpleDatum> rgClip0 = rgSamples.GetCurrentStateClip();
 
             SimpleDatum[] rgData = rgData0.ToArray();
             SimpleDatum[] rgClip = (rgClip0 != null) ? rgClip0.ToArray() : null;
@@ -878,10 +881,10 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             setData(net, rgData, rgClip);
         }
 
-        private void setData1(Net<T> net, MemoryCollection rgSamples)
+        private void setNextStateData(Net<T> net, MemoryCollection rgSamples)
         {
-            List<SimpleDatum> rgData1 = rgSamples.GetData1();
-            List<SimpleDatum> rgClip1 = rgSamples.GetClip1();
+            List<SimpleDatum> rgData1 = rgSamples.GetNextStateData();
+            List<SimpleDatum> rgClip1 = rgSamples.GetNextStateClip();
 
             SimpleDatum[] rgData = rgData1.ToArray();
             SimpleDatum[] rgClip = (rgClip1 != null) ? rgClip1.ToArray() : null;
@@ -1008,569 +1011,6 @@ namespace MyCaffe.trainers.noisy.dqn.simple
                 g.FillRectangle(brBack, rc1);
                 g.DrawRectangle(penLine, rc1.X, rc1.Y, rc1.Width, rc1.Height);
             }
-        }
-    }
-
-    /// <summary>
-    /// The PrioritizedMemoryCollection provides a sampling based on prioritizations.
-    /// </summary>
-    class PrioritizedMemoryCollection : MemoryCollection
-    {
-        float m_fAlpha;
-        float m_fMaxPriority = 1.0f;
-        int m_nItCapacity = 1;
-        SumSegmentTree m_ItSum;
-        MinSegmentTree m_ItMin;
-
-        /// <summary>
-        /// The constructor.
-        /// </summary>
-        /// <param name="nMax">Specifies the maximum number of items in the collection.</param>
-        /// <param name="fAlpha">Specifies how much prioritization is used (0 = no prioritization, 1 = full prioritization).</param>
-        public PrioritizedMemoryCollection(int nMax, float fAlpha)
-            : base(nMax)
-        {
-            m_fAlpha = fAlpha;
-
-            while (m_nItCapacity < nMax)
-            {
-                m_nItCapacity *= 2;
-            }
-
-            m_ItSum = new SumSegmentTree(m_nItCapacity);
-            m_ItMin = new MinSegmentTree(m_nItCapacity);
-        }
-
-        /// <summary>
-        /// Add a new item to the collection.
-        /// </summary>
-        /// <param name="m"></param>
-        public override void Add(MemoryItem m)
-        {
-            int nIdx = m_nNextIdx;
-            base.Add(m);
-
-            int nVal = (int)Math.Pow(m_fMaxPriority, m_fAlpha);
-            m_ItSum[nIdx] = nVal;
-            m_ItMin[nIdx] = nVal;
-        }
-
-        private int[] getSamplesProportional(CryptoRandom random, int nCount)
-        {
-            int[] rgIdx = new int[nCount];
-
-            for (int i = 0; i < nCount; i++)
-            {
-                double dfRand = random.NextDouble();
-                double dfMass = dfRand * m_ItSum.sum(0, Count - 1);
-                int nIdx = m_ItSum.find_prefixsum_idx((float)dfMass);
-                rgIdx[i] = nIdx;
-            }
-
-            return rgIdx;
-        }
-
-        /// <summary>
-        /// Return a batch of items.
-        /// </summary>
-        /// <param name="random">Specifies the random number generator.</param>
-        /// <param name="nCount">Specifies the number of items to sample.</param>
-        /// <param name="dfBeta">Specifies the degree to use importance weights (0 = no corrections, 1 = full corrections).</param>
-        /// <returns>The prioritized array of items is returned along with the weights and indexes.</returns>
-        public Tuple<MemoryCollection, int[], float[]> GetSamples(CryptoRandom random, int nCount, double dfBeta)
-        {
-            int[] rgIdx = getSamplesProportional(random, nCount);
-            float[] rgfWeights = new float[nCount];
-            float fSum = m_ItSum.sum();
-            float fMin = m_ItMin.min();
-            float fPMin = fMin / fSum;
-            float fMaxWeight = (float)Math.Pow(fPMin * Count, -dfBeta);
-            MemoryCollection col = new MemoryCollection(nCount);
-
-            for (int i = 0; i < rgIdx.Length; i++)
-            {
-                int nIdx = rgIdx[i];
-                float fItSum = m_ItSum[nIdx];
-                float fPSample = fItSum / fSum;
-                float fWeight = (float)Math.Pow(fPSample * Count, -dfBeta);
-                rgfWeights[i] = fWeight / fMaxWeight;
-
-                col.Add(m_rgItems[nIdx]);
-            }
-
-            return new Tuple<MemoryCollection, int[], float[]>(col, rgIdx, rgfWeights);
-        }
-
-        /// <summary>
-        /// Update the priorities of sampled transitions.
-        /// </summary>
-        /// <remarks>
-        /// Sets priority of transitions at index rgIdx[i] in buffer to priorities[i].
-        /// </remarks>
-        /// <param name="rgIdx">Specifies the list of indexed sampled transitions.</param>
-        /// <param name="rgfPriorities">Specifies the list of updated priorities corresponding to transitions at the sampled indexes donated by variable 'rgIdx'.</param>
-        public void UpdatePriorities(int[] rgIdx, float[] rgfPriorities)
-        {
-            if (rgIdx.Length != rgfPriorities.Length)
-                throw new Exception("The index and priority arrays must have the same length.");
-
-            for (int i = 0; i < rgIdx.Length; i++)
-            {
-                int nIdx = rgIdx[i];
-                float fPriority = rgfPriorities[i];
-
-                if (fPriority <= 0)
-                    throw new Exception("The priority at index '" + i.ToString() + "' is zero!");
-
-                if (nIdx < 0 || nIdx >= m_rgItems.Length)
-                    throw new Exception("The index at index '" + i.ToString() + "' is out of range!");
-
-                float fNewPriority = (float)Math.Pow(fPriority, m_fAlpha);
-                m_ItSum[nIdx] = fNewPriority;
-                m_ItMin[nIdx] = fNewPriority;
-                m_fMaxPriority = Math.Max(m_fMaxPriority, fPriority);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Segment tree data structure
-    /// </summary>
-    /// <remarks>
-    /// The segment tree can be used as a regular array, but with two important differences:
-    /// 
-    ///   a.) Setting an item's value is slightly slower: O(lg capacity) instead of O(1).
-    ///   b.) User has access to an efficient 'reduce' operation which reduces the 'operation' 
-    ///       over a contiguous subsequence of items in the array.
-    /// 
-    /// @see [Wikipedia: Segment tree](https://en.wikipedia.org/wiki/Segment_tree)
-    /// @see [GitHub: openai/baselines](https://github.com/openai/baselines/blob/master/baselines/deepq/replay_buffer.py) 2018
-    /// @see [GitHub: higgsfield/RL-Adventure](https://github.com/higgsfield/RL-Adventure/blob/master/common/replay_buffer.py) 2018
-    /// </remarks>
-    class SegmentTree
-    {
-        protected int m_nCapacity;
-        protected OPERATION m_op;
-        protected float[] m_rgfValues;
-
-        /// <summary>
-        /// Specifies the operations used during the reduction.
-        /// </summary>
-        public enum OPERATION
-        {
-            /// <summary>
-            /// Sum the two elements together.
-            /// </summary>
-            SUM,
-            /// <summary>
-            /// Return the minimum of the two elements.
-            /// </summary>
-            MIN
-        }
-
-        /// <summary>
-        /// The constructor.
-        /// </summary>
-        /// <param name="nCapacity">Specifies the total size of the array - must be a power of two.</param>
-        /// <param name="oper">Specifies the operation for combining elements (e.g. sum, min)</param>
-        /// <param name="fNeutralElement">Specifies the nautral element for the operation above (e.g. float.MaxValue for min and 0 for sum).</param>
-        public SegmentTree(int nCapacity, OPERATION oper, float fNeutralElement)
-        {
-            if (nCapacity <= 0 || (nCapacity % 2) != 0)
-                throw new Exception("The capacity must be positive and a power of 2.");
-
-            m_nCapacity = nCapacity;
-            m_op = oper;
-            m_rgfValues = new float[2 * nCapacity];
-
-            for (int i = 0; i < m_rgfValues.Length; i++)
-            {
-                m_rgfValues[i] = fNeutralElement;
-            }
-        }
-
-        private float operation(float f1, float f2)
-        {
-            switch (m_op)
-            {
-                case OPERATION.MIN:
-                    return Math.Min(f1, f2);
-
-                case OPERATION.SUM:
-                    return f1 + f2;
-
-                default:
-                    throw new Exception("Unknown operation '" + m_op.ToString() + "'!");
-            }
-        }
-
-        private float reduce_helper(int nStart, int nEnd, int nNode, int nNodeStart, int nNodeEnd)
-        {
-            if (nStart == nNodeStart && nEnd == nNodeEnd)
-                return m_rgfValues[nNode];
-
-            int nMid = (int)Math.Floor((nNodeStart + nNodeEnd) / 2.0);
-
-            if (nEnd <= nMid)
-            {
-                return reduce_helper(nStart, nEnd, 2 * nNode, nNodeStart, nMid);
-            }
-            else
-            {
-                if (nMid + 1 < nStart)
-                {
-                    return reduce_helper(nStart, nMid, 2 * nNode + 1, nMid + 1, nNodeEnd);
-                }
-                else
-                {
-                    float f1 = reduce_helper(nStart, nMid, 2 * nNode, nNodeStart, nMid);
-                    float f2 = reduce_helper(nMid + 1, nEnd, 2 * nNode + 1, nMid + 1, nNodeEnd);
-                    return operation(f1, f2);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Returns result of applying self.operation to a contiguous subsequence of the array.
-        /// operation(arr[start], operation(ar[start+1], operation(..., arr[end])))
-        /// </summary>
-        /// <param name="nStart">Beginning of the subsequence.</param>
-        /// <param name="nEnd">End of the subsequence</param>
-        /// <returns></returns>
-        public float reduce(int nStart, int? nEnd1 = null)
-        {
-            int nEnd = nEnd1.GetValueOrDefault(m_nCapacity);
-
-            if (nEnd < 0)
-                nEnd += m_nCapacity;
-
-            nEnd -= 1;
-
-            return reduce_helper(nStart, nEnd, 1, 0, m_nCapacity - 1);
-        }
-
-        /// <summary>
-        /// Element accessor to get and set items.
-        /// </summary>
-        /// <param name="nIdx">Specifies the index of the item to access.</param>
-        /// <returns>The item at the specified index is returned.</returns>
-        public float this[int nIdx]
-        {
-            get
-            {
-                if (nIdx < 0 || nIdx >= m_nCapacity)
-                    throw new Exception("The index is out of range!");
-
-                return m_rgfValues[m_nCapacity + nIdx];
-            }
-            set
-            {
-                nIdx += m_nCapacity;
-                m_rgfValues[nIdx] = value;
-
-                nIdx = (int)Math.Floor(nIdx / 2.0);
-
-                while (nIdx >= 1)
-                {
-                    m_rgfValues[nIdx] = operation(m_rgfValues[2 * nIdx], m_rgfValues[2 * nIdx + 1]);
-                    nIdx = (int)Math.Floor(nIdx / 2.0);
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// The SumSegmentTree provides a sum reduction of the items within the array.
-    /// </summary>
-    class SumSegmentTree : SegmentTree
-    {
-        /// <summary>
-        /// The constructor.
-        /// </summary>
-        /// <param name="nCapacity">Specifies the total size of the array - must be a power of two.</param>
-        public SumSegmentTree(int nCapacity)
-            : base(nCapacity, OPERATION.SUM, 0.0f)
-        {
-        }
-
-        /// <summary>
-        /// Returns arr[start] + ... + arr[end]
-        /// </summary>
-        /// <param name="nStart">Beginning of the subsequence.</param>
-        /// <param name="nEnd">End of the subsequence</param>
-        /// <returns>Returns the sum of all items in the array.</returns>
-        public float sum(int nStart=0, int? nEnd1 = null)
-        {
-            return reduce(nStart, nEnd1);
-        }
-
-        /// <summary>
-        /// Finds the highest indes 'i' in the array such that sum(arr[0] + arr[1] + ... + arr[i-1]) less than or equal to the 'fPrefixSum'
-        /// </summary>
-        /// <remarks>
-        /// If array values are probabilities, this function allows to sample indexes according to the discrete probability efficiently.
-        /// </remarks>
-        /// <param name="fPrefixSum">Specifies the upper bound on the sum of array prefix.</param>
-        /// <returns>The highest index satisfying the prefixsum constraint is returned.</returns>
-        public int find_prefixsum_idx(float fPrefixSum)
-        {
-            if (fPrefixSum < 0)
-                throw new Exception("The prefix sum must be greater than zero.");
-
-            float fSum = sum() + (float)1e-5;
-            if (fPrefixSum > fSum)
-                throw new Exception("The prefix sum cannot exceed the overall sum of '" + fSum.ToString() + "'!");
-
-            int nIdx = 1;
-            while (nIdx < m_nCapacity) // while non-leaf
-            {
-                if (m_rgfValues[2 * nIdx] > fPrefixSum)
-                {
-                    nIdx = 2 * nIdx;
-                }
-                else
-                {
-                    fPrefixSum -= m_rgfValues[2 * nIdx];
-                    nIdx = 2 * nIdx + 1;
-                }
-            }
-
-            return nIdx - m_nCapacity;
-        }
-    }
-
-    /// <summary>
-    /// The MinSegmentTree performs a reduction over the array and returns the minimum value.
-    /// </summary>
-    class MinSegmentTree : SegmentTree
-    {
-        /// <summary>
-        /// The constructor.
-        /// </summary>
-        /// <param name="nCapacity">Specifies the total size of the array - must be a power of two.</param>
-        public MinSegmentTree(int nCapacity)
-            : base(nCapacity, OPERATION.MIN, float.MaxValue)
-        {
-        }
-
-        /// <summary>
-        /// Returns the minimum element in the array.
-        /// </summary>
-        /// <param name="nStart">Beginning of the subsequence.</param>
-        /// <param name="nEnd">End of the subsequence</param>
-        /// <returns>The minimum item in the sequence is returned.</returns>
-        public float min(int nStart = 0, int? nEnd1 = null)
-        {
-            return reduce(nStart, nEnd1);
-        }
-    }
-
-    class MemoryCollection /** @private */
-    {
-        protected MemoryItem[] m_rgItems;
-        protected int m_nNextIdx = 0;
-
-        public MemoryCollection(int nMax)
-        {
-            m_rgItems = new MemoryItem[nMax];
-        }
-
-        public int Count
-        {
-            get { return m_nNextIdx; }
-        }
-
-        public MemoryItem this[int nIdx]
-        {
-            get { return m_rgItems[nIdx]; }
-        }
-
-        public virtual void Add(MemoryItem item)
-        {
-            m_rgItems[m_nNextIdx] = item;
-            m_nNextIdx++;
-
-            if (m_nNextIdx == m_rgItems.Length)
-                m_nNextIdx = 0;
-        }
-
-        public MemoryCollection GetRandomSamples(CryptoRandom random, int nCount)
-        {
-            MemoryCollection col = new MemoryCollection(nCount);
-            List<int> rgIdx = new List<int>();
-
-            while (col.Count < nCount)
-            {
-                int nIdx = random.Next(m_rgItems.Length);
-                if (!rgIdx.Contains(nIdx))
-                {
-                    col.Add(m_rgItems[nIdx]);
-                    rgIdx.Add(nIdx);
-                }
-            }
-
-            return col;
-        }
-
-        public List<StateBase> GetState1()
-        {
-            return m_rgItems.Select(p => p.State1).ToList();
-        }
-
-        public List<SimpleDatum> GetData1()
-        {
-            return m_rgItems.Select(p => p.Data1).ToList();
-        }
-
-        public List<SimpleDatum> GetClip1()
-        {
-            if (m_rgItems[0].State1.Clip != null)
-                return m_rgItems.Select(p => p.State1.Clip).ToList();
-
-            return null;
-        }
-
-        public List<SimpleDatum> GetData0()
-        {
-            return m_rgItems.Select(p => p.Data0).ToList();
-        }
-
-        public List<SimpleDatum> GetClip0()
-        {
-            if (m_rgItems[0].State0.Clip != null)
-                return m_rgItems.Select(p => p.State0.Clip).ToList();
-
-            return null;
-        }
-
-        public float[] GetActionsAsOneHotVector(int nActionCount)
-        {
-            float[] rg = new float[m_rgItems.Length * nActionCount];
-
-            for (int i = 0; i < m_rgItems.Length; i++)
-            {
-                int nAction = m_rgItems[i].Action;
-
-                for (int j = 0; j < nActionCount; j++)
-                {
-                    rg[(i * nActionCount) + j] = (j == nAction) ? 1 : 0;
-                }
-            }
-
-            return rg;
-        }
-
-        public float[] GetInvertedDoneAsOneHotVector()
-        {
-            float[] rgDoneInv = new float[m_rgItems.Length];
-
-            for (int i = 0; i < m_rgItems.Length; i++)
-            {
-                if (m_rgItems[i].IsTerminated)
-                    rgDoneInv[i] = 0;
-                else
-                    rgDoneInv[i] = 1;
-            }
-
-            return rgDoneInv;
-        }
-
-        public float[] GetRewards()
-        {
-            return m_rgItems.Select(p => (float)p.Reward).ToArray();
-        }
-    }
-
-    class MemoryItem /** @private */
-    {
-        StateBase m_state0;
-        StateBase m_state1;
-        SimpleDatum m_x0;
-        SimpleDatum m_x1;
-        int m_nAction;
-        int m_nIteration;
-        int m_nEpisode;
-        bool m_bTerminated;
-        double m_dfReward;
-
-        public MemoryItem(StateBase s, SimpleDatum x, int nAction, StateBase s_, SimpleDatum x_, double dfReward, bool bTerminated, int nIteration, int nEpisode)
-        {
-            m_state0 = s;
-            m_state1 = s_;
-            m_x0 = x;
-            m_x1 = x_;
-            m_nAction = nAction;
-            m_bTerminated = bTerminated;
-            m_dfReward = dfReward;
-            m_nIteration = nIteration;
-            m_nEpisode = nEpisode;
-        }
-
-        public bool IsTerminated
-        {
-            get { return m_bTerminated; }
-        }
-
-        public double Reward
-        {
-            get { return m_dfReward; }
-            set { m_dfReward = value; }
-        }
-
-        public StateBase State0
-        {
-            get { return m_state0; }
-        }
-
-        public StateBase State1
-        {
-            get { return m_state1; }
-        }
-
-        public SimpleDatum Data0
-        {
-            get { return m_x0; }
-        }
-
-        public SimpleDatum Data1
-        {
-            get { return m_x1; }
-        }
-
-        public int Action
-        {
-            get { return m_nAction; }
-        }
-
-        public int Iteration
-        {
-            get { return m_nIteration; }
-        }
-
-        public int Episode
-        {
-            get { return m_nEpisode; }
-        }
-
-        public override string ToString()
-        {
-            return "episode = " + m_nEpisode.ToString() + " action = " + m_nAction.ToString() + " reward = " + m_dfReward.ToString("N2");
-        }
-
-        private string tostring(float[] rg)
-        {
-            string str = "{";
-
-            for (int i = 0; i < rg.Length; i++)
-            {
-                str += rg[i].ToString("N5");
-                str += ",";
-            }
-
-            str = str.TrimEnd(',');
-            str += "}";
-
-            return str;
         }
     }
 }
