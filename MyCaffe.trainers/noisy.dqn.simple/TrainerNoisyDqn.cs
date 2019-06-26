@@ -444,13 +444,6 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             m_nActionCount = logits.channels;
 
             m_transformer = m_mycaffe.DataTransformer;
-            m_transformer.param.mean_value.Add(255 / 2); // center
-            m_transformer.param.mean_value.Add(255 / 2);
-            m_transformer.param.mean_value.Add(255 / 2);
-            m_transformer.param.mean_value.Add(255 / 2);
-            m_transformer.param.scale = 1.0 / 255;       // normalize
-            m_transformer.Update();
-
             m_blobActions = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log, false);
             m_blobQValue = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log);
             m_blobNextQValue = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log);
