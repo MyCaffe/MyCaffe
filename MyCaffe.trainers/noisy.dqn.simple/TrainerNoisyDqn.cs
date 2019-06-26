@@ -346,9 +346,9 @@ namespace MyCaffe.trainers.noisy.dqn.simple
                 // Do the training
                 if (rgMemory.Count > m_brain.BatchSize)
                 {
-                    double dfBeta = beta_by_frame(nIteration);
+                    double dfBeta = beta_by_frame(nIteration + 1);
                     Tuple<MemoryCollection, int[], float[]> rgRandomSamples = rgMemory.GetSamples(m_random, m_brain.BatchSize, dfBeta);
-                    m_brain.Train(rgRandomSamples, s.ActionCount);
+                    m_brain.Train(nIteration, rgRandomSamples, s.ActionCount);
                     rgMemory.UpdatePriorities(rgRandomSamples.Item2, rgRandomSamples.Item3);
 
                     if (nIteration % 1000 == 0)
@@ -404,6 +404,10 @@ namespace MyCaffe.trainers.noisy.dqn.simple
         Blob<T> m_blobDone = null;
         Blob<T> m_blobLoss = null;
         Blob<T> m_blobWeights = null;
+        BlobCollection<T> m_colAccumulatedGradients = new BlobCollection<T>();
+        bool m_bUseAcceleratedTraining = false;
+        double m_dfLearningRate;
+        int m_nMiniBatch = 10;
         float m_fGamma = 0.99f;
         int m_nBatchSize = 32;
         Tuple<MemoryCollection, int[], float[]> m_rgSamples;
@@ -443,6 +447,14 @@ namespace MyCaffe.trainers.noisy.dqn.simple
 
             m_nActionCount = logits.channels;
 
+            m_nMiniBatch = m_properties.GetPropertyAsInt("MiniBatchOverride", m_nMiniBatch);
+
+            double? dfRate = mycaffe.CurrentProject.GetSolverSettingAsNumeric("base_lr");
+            if (dfRate.HasValue)
+                m_dfLearningRate = dfRate.Value;
+
+            m_bUseAcceleratedTraining = properties.GetPropertyAsBool("UseAcceleratedTraining", false);
+
             m_transformer = m_mycaffe.DataTransformer;
             m_blobActions = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log, false);
             m_blobQValue = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log);
@@ -457,6 +469,9 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             m_memLoss = m_net.FindLastLayer(LayerParameter.LayerType.MEMORY_LOSS) as MemoryLossLayer<T>;
             if (m_memLoss == null)
                 m_mycaffe.Log.FAIL("Missing the expected MEMORY_LOSS layer!");
+
+            m_colAccumulatedGradients = m_net.learnable_parameters.Clone();
+            m_colAccumulatedGradients.SetDiff(0);
         }
 
         private void dispose(ref Blob<T> b)
@@ -480,6 +495,12 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             dispose(ref m_blobDone);
             dispose(ref m_blobLoss);
             dispose(ref m_blobWeights);
+
+            if (m_colAccumulatedGradients != null)
+            {
+                m_colAccumulatedGradients.Dispose();
+                m_colAccumulatedGradients = null;
+            }
 
             if (m_argmax != null)
             {
@@ -628,9 +649,10 @@ namespace MyCaffe.trainers.noisy.dqn.simple
         /// <summary>
         /// Train the model at the current iteration.
         /// </summary>
+        /// <param name="nIteration">Specifies the current iteration.</param>
         /// <param name="rgSamples1">Contains the samples to train the model with along with the priorities associated with the samples.</param>
         /// <param name="nActionCount">Specifies the number of actions in the action set.</param>
-        public void Train(Tuple<MemoryCollection, int[], float[]> rgSamples1, int nActionCount)
+        public void Train(int nIteration, Tuple<MemoryCollection, int[], float[]> rgSamples1, int nActionCount)
         {
             MemoryCollection rgSamples = rgSamples1.Item1;
 
@@ -646,9 +668,18 @@ namespace MyCaffe.trainers.noisy.dqn.simple
 
             setCurrentStateData(m_net, rgSamples);
             m_memLoss.OnGetLoss += m_memLoss_ComputeTdLoss;
-            m_solver.Step(1);
+            m_solver.Step(1, TRAIN_STEP.NONE, true, m_bUseAcceleratedTraining, true, true);
+            m_colAccumulatedGradients.Accumulate(m_mycaffe.Cuda, m_net.learnable_parameters, true);
             m_memLoss.OnGetLoss -= m_memLoss_ComputeTdLoss;
             m_mycaffe.Log.Enable = true;
+
+            if (nIteration % m_nMiniBatch == 0)
+            {
+                m_net.learnable_parameters.CopyFrom(m_colAccumulatedGradients, true);
+                m_colAccumulatedGradients.SetDiff(0);
+                m_dfLearningRate = m_solver.ApplyUpdate(nIteration);
+                m_net.ClearParamDiffs();
+            }
 
             resetNoise(m_net);
             resetNoise(m_netTarget);
@@ -704,11 +735,11 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             // prios = loss + 1e-5
             m_mycaffe.Cuda.copy(m_blobLoss.count(), m_blobLoss.gpu_data, m_blobLoss.mutable_gpu_diff);
             m_mycaffe.Cuda.add_scalar(m_blobLoss.count(), 1e-5, m_blobLoss.mutable_gpu_diff);
-            float[] rgWeights = Utility.ConvertVecF<T>(m_blobLoss.mutable_cpu_diff);
+            float[] rgPrios = Utility.ConvertVecF<T>(m_blobLoss.mutable_cpu_diff);
 
-            for (int i = 0; i < rgWeights.Length; i++)
+            for (int i = 0; i < rgPrios.Length; i++)
             {
-                m_rgSamples.Item3[i] = rgWeights[i];
+                m_rgSamples.Item3[i] = rgPrios[i];
             }
 
 
