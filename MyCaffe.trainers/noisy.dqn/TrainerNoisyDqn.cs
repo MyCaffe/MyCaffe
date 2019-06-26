@@ -404,7 +404,7 @@ namespace MyCaffe.trainers.noisy.dqn
                 // Do the training
                 if (m_state == STATE.TRAINING)
                 {
-                    double dfBeta = beta_by_frame(nIteration);
+                    double dfBeta = beta_by_frame(nIteration + 1);
                     Tuple<MemoryCollection, int[], float[]> rgRandomSamples = rgMemory.GetSamples(m_random, m_brain.BatchSize, dfBeta);
                     m_brain.Train(nIteration, rgRandomSamples, s.ActionCount);
 
