@@ -51,9 +51,17 @@ layer
 layer 
 {
    name: "relu1"
-   type: "ReLU"
+   type: "PReLU"
    bottom: "linear"
    top: "linear"
+   prelu_param 
+   {
+      filler 
+      {
+         type: "constant"
+         value: 0.25
+      }
+   }
 }
 layer 
 {
@@ -93,9 +101,17 @@ layer
 layer 
 {
    name: "relu2"
-   type: "ReLU"
+   type: "PReLU"
    bottom: "noisy1"
    top: "noisy1"
+   prelu_param 
+   {
+      filler 
+      {
+         type: "constant"
+         value: 0.25
+      }
+   }
 }
 layer 
 {
@@ -134,8 +150,8 @@ layer
 }
 layer 
 {
-   name: "relu3"
-   type: "ReLU"
+   name: "Softmax1"
+   type: "Softmax"
    bottom: "logits"
    top: "logits"
 }
@@ -151,6 +167,6 @@ layer
    }
    loss_param 
    {
-      normalization: VALID
+      normalization: NONE
    }
 }
