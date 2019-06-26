@@ -1,12 +1,12 @@
 test_interval: 0
 test_compute_loss: False
 test_initialization: False
-base_lr: 0.00025
+base_lr: 0.0001
 display: 100
 average_loss: 1
 max_iter: 10000000
 lr_policy: fixed
-momentum: 0
+momentum: 0.9
 weight_decay: 0
 regularization_type: L2
 snapshot: 5000
@@ -14,7 +14,7 @@ snapshot_prefix: basic
 snapshot_format: BINARYPROTO
 device_id: 1
 type: ADAM
-delta: 0.01
+delta: 0.0001
 momentum2: 0.999
 snapshot_after_train: True
 custom_trainer: Dual.Trainer
