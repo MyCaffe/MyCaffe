@@ -45,20 +45,20 @@
             this.radPGSimple = new System.Windows.Forms.RadioButton();
             this.chkAllowDiscountReset = new System.Windows.Forms.CheckBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.grpRom = new System.Windows.Forms.GroupBox();
             this.radAtariBreakout = new System.Windows.Forms.RadioButton();
             this.radAtariPong = new System.Windows.Forms.RadioButton();
             this.chkAllowNegativeRewards = new System.Windows.Forms.CheckBox();
             this.chkTerminateOnRallyEnd = new System.Windows.Forms.CheckBox();
             this.chkLoadWeights = new System.Windows.Forms.CheckBox();
-            this.lblVMin = new System.Windows.Forms.Label();
             this.edtVMin = new System.Windows.Forms.TextBox();
-            this.lblVMax = new System.Windows.Forms.Label();
             this.edtVMax = new System.Windows.Forms.TextBox();
             this.btnReset = new System.Windows.Forms.Button();
+            this.edtIterations = new System.Windows.Forms.TextBox();
+            this.grpRom = new System.Windows.Forms.GroupBox();
+            this.lblVMin = new System.Windows.Forms.Label();
+            this.lblVMax = new System.Windows.Forms.Label();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.lblIterations = new System.Windows.Forms.Label();
-            this.edtIterations = new System.Windows.Forms.TextBox();
             this.groupBox1.SuspendLayout();
             this.grpRom.SuspendLayout();
             this.SuspendLayout();
@@ -162,6 +162,7 @@
             this.toolTip1.SetToolTip(this.radNoisyNetSimple, "Use the simple noisy net trainer for making more\r\ncomplex decisions with more tha" +
         "n two actions.");
             this.radNoisyNetSimple.UseVisualStyleBackColor = true;
+            this.radNoisyNetSimple.CheckedChanged += new System.EventHandler(this.radNoisyNetSimple_CheckedChanged);
             // 
             // radNoisyNetSingleThread
             // 
@@ -238,18 +239,6 @@
             this.toolTip1.SetToolTip(this.chkAllowDiscountReset, "Allowing the discount reset, resets the running sum on non-zero reward values.");
             this.chkAllowDiscountReset.UseVisualStyleBackColor = true;
             // 
-            // grpRom
-            // 
-            this.grpRom.Controls.Add(this.radAtariBreakout);
-            this.grpRom.Controls.Add(this.radAtariPong);
-            this.grpRom.Location = new System.Drawing.Point(12, 177);
-            this.grpRom.Name = "grpRom";
-            this.grpRom.Size = new System.Drawing.Size(200, 40);
-            this.grpRom.TabIndex = 14;
-            this.grpRom.TabStop = false;
-            this.grpRom.Text = "ATARI ROM";
-            this.grpRom.Visible = false;
-            // 
             // radAtariBreakout
             // 
             this.radAtariBreakout.AutoSize = true;
@@ -309,17 +298,6 @@
             this.toolTip1.SetToolTip(this.chkLoadWeights, "Load any weights previously saved for the training.");
             this.chkLoadWeights.UseVisualStyleBackColor = true;
             // 
-            // lblVMin
-            // 
-            this.lblVMin.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblVMin.AutoSize = true;
-            this.lblVMin.Location = new System.Drawing.Point(601, 52);
-            this.lblVMin.Name = "lblVMin";
-            this.lblVMin.Size = new System.Drawing.Size(34, 13);
-            this.lblVMin.TabIndex = 8;
-            this.lblVMin.Text = "VMin:";
-            this.lblVMin.Visible = false;
-            // 
             // edtVMin
             // 
             this.edtVMin.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
@@ -331,17 +309,6 @@
             this.toolTip1.SetToolTip(this.edtVMin, "Specifies the minimum possible reward that could occur \r\nwhen using the C51 train" +
         "ing algorithm.");
             this.edtVMin.Visible = false;
-            // 
-            // lblVMax
-            // 
-            this.lblVMax.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblVMax.AutoSize = true;
-            this.lblVMax.Location = new System.Drawing.Point(598, 75);
-            this.lblVMax.Name = "lblVMax";
-            this.lblVMax.Size = new System.Drawing.Size(37, 13);
-            this.lblVMax.TabIndex = 10;
-            this.lblVMax.Text = "VMax:";
-            this.lblVMax.Visible = false;
             // 
             // edtVMax
             // 
@@ -368,6 +335,51 @@
             this.btnReset.Visible = false;
             this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
             // 
+            // edtIterations
+            // 
+            this.edtIterations.Location = new System.Drawing.Point(292, 193);
+            this.edtIterations.Name = "edtIterations";
+            this.edtIterations.Size = new System.Drawing.Size(91, 20);
+            this.edtIterations.TabIndex = 16;
+            this.edtIterations.Text = "1000000";
+            this.edtIterations.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.toolTip1.SetToolTip(this.edtIterations, "Specify the number of iterations (frames) to train.  Each\r\nepisode will have mult" +
+        "iple frames.");
+            // 
+            // grpRom
+            // 
+            this.grpRom.Controls.Add(this.radAtariBreakout);
+            this.grpRom.Controls.Add(this.radAtariPong);
+            this.grpRom.Location = new System.Drawing.Point(12, 177);
+            this.grpRom.Name = "grpRom";
+            this.grpRom.Size = new System.Drawing.Size(200, 40);
+            this.grpRom.TabIndex = 14;
+            this.grpRom.TabStop = false;
+            this.grpRom.Text = "ATARI ROM";
+            this.grpRom.Visible = false;
+            // 
+            // lblVMin
+            // 
+            this.lblVMin.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblVMin.AutoSize = true;
+            this.lblVMin.Location = new System.Drawing.Point(601, 52);
+            this.lblVMin.Name = "lblVMin";
+            this.lblVMin.Size = new System.Drawing.Size(34, 13);
+            this.lblVMin.TabIndex = 8;
+            this.lblVMin.Text = "VMin:";
+            this.lblVMin.Visible = false;
+            // 
+            // lblVMax
+            // 
+            this.lblVMax.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblVMax.AutoSize = true;
+            this.lblVMax.Location = new System.Drawing.Point(598, 75);
+            this.lblVMax.Name = "lblVMax";
+            this.lblVMax.Size = new System.Drawing.Size(37, 13);
+            this.lblVMax.TabIndex = 10;
+            this.lblVMax.Text = "VMax:";
+            this.lblVMax.Visible = false;
+            // 
             // timerUI
             // 
             this.timerUI.Enabled = true;
@@ -382,17 +394,6 @@
             this.lblIterations.Size = new System.Drawing.Size(53, 13);
             this.lblIterations.TabIndex = 15;
             this.lblIterations.Text = "Iterations:";
-            // 
-            // edtIterations
-            // 
-            this.edtIterations.Location = new System.Drawing.Point(292, 193);
-            this.edtIterations.Name = "edtIterations";
-            this.edtIterations.Size = new System.Drawing.Size(91, 20);
-            this.edtIterations.TabIndex = 16;
-            this.edtIterations.Text = "1000000";
-            this.edtIterations.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            this.toolTip1.SetToolTip(this.edtIterations, "Specify the number of iterations (frames) to train.  Each\r\nepisode will have mult" +
-        "iple frames.");
             // 
             // FormCustomTraining
             // 

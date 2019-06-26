@@ -267,5 +267,11 @@ namespace MyCaffe.app
                 radAtariPong.Enabled = true;
             }
         }
+
+        private void radNoisyNetSimple_CheckedChanged(object sender, EventArgs e)
+        {
+            if (radNoisyNetSimple.Checked)
+                chkUseAcceleratedTraining.Checked = false;
+        }
     }
 }
