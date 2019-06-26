@@ -58,7 +58,8 @@ namespace MyCaffe.trainers.common
             for (int i = 0; i < nCount; i++)
             {
                 double dfRand = random.NextDouble();
-                double dfMass = dfRand * m_ItSum.sum(0, Count - 1);
+                double dfSum1 = m_ItSum.sum(0, Count - 1);
+                double dfMass = dfRand * dfSum1;
                 int nIdx = m_ItSum.find_prefixsum_idx((float)dfMass);
                 rgIdx[i] = nIdx;
             }
