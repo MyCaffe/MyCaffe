@@ -2032,7 +2032,7 @@ namespace MyCaffe.test
             {
                 double dfPct = (GlobalEpisodeMax == 0) ? 0 : (double)GlobalEpisodeCount / (double)GlobalEpisodeMax;
                 e.OutputLog.Progress = dfPct;
-                e.OutputLog.WriteLine("(" + dfPct.ToString("P") + ") Global Episode #" + GlobalEpisodeCount.ToString() + "  Global Reward = " + GlobalRewards.ToString() + " Exploration Rate = " + ExplorationRate.ToString("P") + " Optimal Selection Rate = " + OptimalSelectionRate.ToString("P"));
+                e.OutputLog.WriteLine("(" + dfPct.ToString("P") + ") Iteration : " + GlobalIteration.ToString() + " Global Episode #" + GlobalEpisodeCount.ToString() + "  Global Reward = " + GlobalRewards.ToString() + " Exploration Rate = " + ExplorationRate.ToString("P") + " Optimal Selection Rate = " + OptimalSelectionRate.ToString("P"));
                 m_sw.Restart();
             }
 
