@@ -320,7 +320,7 @@ namespace MyCaffe.trainers.noisy.dqn.simple
         /// <param name="step">Specifies the training step to take, if any.  This is only used when debugging.</param>
         public void Run(Phase phase, int nN, ITERATOR_TYPE type, TRAIN_STEP step)
         {
-            IMemoryCollection iMemory = MemoryCollectionFactory.CreateMemory(m_memType, m_nMemorySize, m_fPriorityAlpha, "c:\\temp\\samples.txt");
+            IMemoryCollection iMemory = MemoryCollectionFactory.CreateMemory(m_memType, m_nMemorySize, m_fPriorityAlpha);
             int nIteration = 0;
             double dfRunningReward = 0;
             double dfEpisodeReward = 0;
@@ -330,12 +330,6 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             StateBase state = getData(phase, -1, -1);
             // Preprocess the observation.
             SimpleDatum x = m_brain.Preprocess(state, m_bUseRawInput, out bDifferent, true);
-
-            // Used for debugging.
-            if (m_memType == MEMTYPE.SAVING)
-                m_brain.SaveWeights("c:\\temp\\weights.txt");
-            else if (m_memType == MEMTYPE.LOADING)
-                m_brain.LoadWeights("c:\\temp\\weights.txt");
 
             // Set the initial target model to the current model.
             m_brain.UpdateTargetModel();
@@ -363,7 +357,7 @@ namespace MyCaffe.trainers.noisy.dqn.simple
                     double dfBeta = beta_by_frame(nIteration);
                     MemoryCollection rgSamples = iMemory.GetSamples(m_random, m_brain.BatchSize, dfBeta);
                     m_brain.Train(nIteration, rgSamples, state.ActionCount);
-                    //iMemory.Update(rgSamples);
+                    iMemory.Update(rgSamples);
 
                     if (nIteration % m_nUpdateTargetFreq == 0)
                         m_brain.UpdateTargetModel();
@@ -419,7 +413,7 @@ namespace MyCaffe.trainers.noisy.dqn.simple
         BlobCollection<T> m_colAccumulatedGradients = new BlobCollection<T>();
         bool m_bUseAcceleratedTraining = false;
         double m_dfLearningRate;
-        int m_nMiniBatch = 1;
+        int m_nMiniBatch = 1;  
         float m_fGamma = 0.99f;
         int m_nBatchSize = 32;
         MemoryCollection m_rgSamples;
@@ -627,7 +621,7 @@ namespace MyCaffe.trainers.noisy.dqn.simple
                 throw new Exception("Missing expected 'logits' blob!");
 
             // Choose greedy action
-            return argmax(Utility.ConvertVec<T>(output.mutable_cpu_data));
+            return argmax(Utility.ConvertVecF<T>(output.mutable_cpu_data));
         }
 
         /// <summary>
@@ -831,14 +825,14 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             int nNum = b.shape(0);
             int nActions = b.shape(1);
             int nInnerCount = b.count(2);
-            double[] rg = Utility.ConvertVec<T>(b.mutable_cpu_data);
-            double[] rgSum = new double[nNum * nInnerCount];
+            float[] rg = Utility.ConvertVecF<T>(b.mutable_cpu_data);
+            float[] rgSum = new float[nNum * nInnerCount];
 
             for (int i = 0; i < nNum; i++)
             {
                 for (int j = 0; j < nInnerCount; j++)
                 {
-                    double fSum = 0;
+                    float fSum = 0;
 
                     for (int k = 0; k < nActions; k++)
                     {
@@ -860,14 +854,14 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             int nNum = b.shape(0);
             int nActions = b.shape(1);
             int nInnerCount = b.count(2);
-            double[] rg = Utility.ConvertVec<T>(b.mutable_cpu_data);
-            double[] rgMax = new double[nNum * nInnerCount];
+            float[] rg = Utility.ConvertVecF<T>(b.mutable_cpu_data);
+            float[] rgMax = new float[nNum * nInnerCount];
 
             for (int i = 0; i < nNum; i++)
             {
                 for (int j = 0; j < nInnerCount; j++)
                 {
-                    double fMax = -double.MaxValue;
+                    float fMax = -float.MaxValue;
 
                     for (int k = 0; k < nActions; k++)
                     {
@@ -884,9 +878,9 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             b.mutable_cpu_data = Utility.ConvertVec<T>(rgMax);
         }
 
-        private int argmax(double[] rgProb, int nActionCount, int nSampleIdx)
+        private int argmax(float[] rgProb, int nActionCount, int nSampleIdx)
         {
-            double[] rgfProb = new double[nActionCount];
+            float[] rgfProb = new float[nActionCount];
 
             for (int j = 0; j < nActionCount; j++)
             {
@@ -897,9 +891,9 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             return argmax(rgfProb);
         }
 
-        private int argmax(double[] rgfAprob)
+        private int argmax(float[] rgfAprob)
         {
-            double fMax = -double.MaxValue;
+            double fMax = -float.MaxValue;
             int nIdx = 0;
 
             for (int i = 0; i < rgfAprob.Length; i++)
