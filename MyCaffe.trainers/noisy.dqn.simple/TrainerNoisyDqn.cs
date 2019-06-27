@@ -12,6 +12,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -187,6 +188,10 @@ namespace MyCaffe.trainers.noisy.dqn.simple
         bool m_bUseRawInput = true;
         double m_dfBetaStart = 0.4;
         int m_nBetaFrames = 1000;
+        int m_nMemorySize = 10000;
+        float m_fPriorityAlpha = 0.6f;
+        int m_nUpdateTargetFreq = 1000;
+        MEMTYPE m_memType = MEMTYPE.PRIORITY;
 
 
         /// <summary>
@@ -315,69 +320,77 @@ namespace MyCaffe.trainers.noisy.dqn.simple
         /// <param name="step">Specifies the training step to take, if any.  This is only used when debugging.</param>
         public void Run(Phase phase, int nN, ITERATOR_TYPE type, TRAIN_STEP step)
         {
-            PrioritizedMemoryCollection rgMemory = new PrioritizedMemoryCollection(10000, 0.6f);
+            IMemoryCollection iMemory = MemoryCollectionFactory.CreateMemory(m_memType, m_nMemorySize, m_fPriorityAlpha, "c:\\temp\\samples.txt");
             int nIteration = 0;
-            double? dfRunningReward = null;
-            double dfRewardSum = 0;
+            double dfRunningReward = 0;
+            double dfEpisodeReward = 0;
             int nEpisode = 0;
             bool bDifferent = false;
 
-            StateBase s = getData(phase, -1, -1);
+            StateBase state = getData(phase, -1, -1);
             // Preprocess the observation.
-            SimpleDatum x = m_brain.Preprocess(s, m_bUseRawInput, out bDifferent, true);
+            SimpleDatum x = m_brain.Preprocess(state, m_bUseRawInput, out bDifferent, true);
+
+            // Used for debugging.
+            if (m_memType == MEMTYPE.SAVING)
+                m_brain.SaveWeights("c:\\temp\\weights.txt");
+            else if (m_memType == MEMTYPE.LOADING)
+                m_brain.LoadWeights("c:\\temp\\weights.txt");
+
+            // Set the initial target model to the current model.
+            m_brain.UpdateTargetModel();
 
             while (!m_brain.Cancel.WaitOne(0) && !isAtIteration(nN, type, nIteration, nEpisode))
             {
                 // Forward the policy network and sample an action.
-                int action = m_brain.act(x, s.Clip, s.ActionCount);
+                int action = m_brain.act(x, state.Clip, state.ActionCount);
 
                 // Take the next step using the action
-                StateBase s_ = getData(phase, action, nIteration);
+                StateBase state_next = getData(phase, action, nIteration);
 
                 // Preprocess the next observation.
-                SimpleDatum x_ = m_brain.Preprocess(s_, m_bUseRawInput, out bDifferent);
+                SimpleDatum x_next = m_brain.Preprocess(state_next, m_bUseRawInput, out bDifferent);
                 if (!bDifferent)
                     m_brain.Log.WriteLine("WARNING: The current state is the same as the previous state!");
 
                 // Build up episode memory, using reward for taking the action.
-                rgMemory.Add(new MemoryItem(s, x, action, s_, x_, s_.Reward, s_.Done, nIteration, nEpisode));
-                dfRewardSum += s_.Reward;
+                iMemory.Add(new MemoryItem(state, x, action, state_next, x_next, state_next.Reward, state_next.Done, nIteration, nEpisode));
+                dfEpisodeReward += state_next.Reward;
 
                 // Do the training
-                if (rgMemory.Count > m_brain.BatchSize)
+                if (iMemory.Count > m_brain.BatchSize)
                 {
-                    double dfBeta = beta_by_frame(nIteration + 1);
-                    Tuple<MemoryCollection, int[], float[]> rgRandomSamples = rgMemory.GetSamples(m_random, m_brain.BatchSize, dfBeta);
-                    m_brain.Train(nIteration, rgRandomSamples, s.ActionCount);
-                    rgMemory.UpdatePriorities(rgRandomSamples.Item2, rgRandomSamples.Item3);
+                    double dfBeta = beta_by_frame(nIteration);
+                    MemoryCollection rgSamples = iMemory.GetSamples(m_random, m_brain.BatchSize, dfBeta);
+                    m_brain.Train(nIteration, rgSamples, state.ActionCount);
+                    //iMemory.Update(rgSamples);
 
-                    if (nIteration % 1000 == 0)
+                    if (nIteration % m_nUpdateTargetFreq == 0)
                         m_brain.UpdateTargetModel();
                 }
            
-                if (s_.Done)
+                if (state_next.Done)
                 {
                     // Update reward running
-                    if (!dfRunningReward.HasValue)
-                        dfRunningReward = dfRewardSum;
-                    else
-                        dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
+                    dfRunningReward = dfRunningReward * 0.99 + dfEpisodeReward * 0.01;
 
                     nEpisode++;
-                    updateStatus(nIteration, nEpisode, dfRewardSum, dfRunningReward.Value, 0, 0, m_brain.GetModelUpdated());
+                    updateStatus(nIteration, nEpisode, dfEpisodeReward, dfRunningReward, 0, 0, m_brain.GetModelUpdated());
 
-                    s = getData(phase, -1, -1);
-                    x = m_brain.Preprocess(s, m_bUseRawInput, out bDifferent, true);
-                    dfRewardSum = 0;
+                    state = getData(phase, -1, -1);
+                    x = m_brain.Preprocess(state, m_bUseRawInput, out bDifferent, true);
+                    dfEpisodeReward = 0;
                 }
                 else
                 {
-                    s = s_;
-                    x = x_;
+                    state = state_next;
+                    x = x_next;
                 }
                
                 nIteration++;
             }
+
+            iMemory.CleanUp();
         }
     }
 
@@ -396,7 +409,6 @@ namespace MyCaffe.trainers.noisy.dqn.simple
         SimpleDatum m_sdLast = null;
         DataTransformer<T> m_transformer;
         MemoryLossLayer<T> m_memLoss;
-        ArgMaxLayer<T> m_argmax = null;
         Blob<T> m_blobActions = null;
         Blob<T> m_blobQValue = null;
         Blob<T> m_blobNextQValue = null;
@@ -407,10 +419,10 @@ namespace MyCaffe.trainers.noisy.dqn.simple
         BlobCollection<T> m_colAccumulatedGradients = new BlobCollection<T>();
         bool m_bUseAcceleratedTraining = false;
         double m_dfLearningRate;
-        int m_nMiniBatch = 10;
+        int m_nMiniBatch = 1;
         float m_fGamma = 0.99f;
         int m_nBatchSize = 32;
-        Tuple<MemoryCollection, int[], float[]> m_rgSamples;
+        MemoryCollection m_rgSamples;
         int m_nActionCount = 2;
         bool m_bModelUpdated = false;
         Font m_font = null;
@@ -447,14 +459,6 @@ namespace MyCaffe.trainers.noisy.dqn.simple
 
             m_nActionCount = logits.channels;
 
-            m_nMiniBatch = m_properties.GetPropertyAsInt("MiniBatchOverride", m_nMiniBatch);
-
-            double? dfRate = mycaffe.CurrentProject.GetSolverSettingAsNumeric("base_lr");
-            if (dfRate.HasValue)
-                m_dfLearningRate = dfRate.Value;
-
-            m_bUseAcceleratedTraining = properties.GetPropertyAsBool("UseAcceleratedTraining", false);
-
             m_transformer = m_mycaffe.DataTransformer;
             m_blobActions = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log, false);
             m_blobQValue = new Blob<T>(m_mycaffe.Cuda, m_mycaffe.Log);
@@ -469,6 +473,14 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             m_memLoss = m_net.FindLastLayer(LayerParameter.LayerType.MEMORY_LOSS) as MemoryLossLayer<T>;
             if (m_memLoss == null)
                 m_mycaffe.Log.FAIL("Missing the expected MEMORY_LOSS layer!");
+
+            m_nMiniBatch = m_properties.GetPropertyAsInt("MiniBatchOverride", m_nMiniBatch);
+
+            double? dfRate = mycaffe.CurrentProject.GetSolverSettingAsNumeric("base_lr");
+            if (dfRate.HasValue)
+                m_dfLearningRate = dfRate.Value;
+
+            m_bUseAcceleratedTraining = properties.GetPropertyAsBool("UseAcceleratedTraining", false);
 
             m_colAccumulatedGradients = m_net.learnable_parameters.Clone();
             m_colAccumulatedGradients.SetDiff(0);
@@ -500,12 +512,6 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             {
                 m_colAccumulatedGradients.Dispose();
                 m_colAccumulatedGradients = null;
-            }
-
-            if (m_argmax != null)
-            {
-                m_argmax.Dispose();
-                m_argmax = null;
             }
 
             if (m_netTarget != null)
@@ -621,7 +627,7 @@ namespace MyCaffe.trainers.noisy.dqn.simple
                 throw new Exception("Missing expected 'logits' blob!");
 
             // Choose greedy action
-            return argmax(Utility.ConvertVecF<T>(output.mutable_cpu_data));
+            return argmax(Utility.ConvertVec<T>(output.mutable_cpu_data));
         }
 
         /// <summary>
@@ -650,13 +656,11 @@ namespace MyCaffe.trainers.noisy.dqn.simple
         /// Train the model at the current iteration.
         /// </summary>
         /// <param name="nIteration">Specifies the current iteration.</param>
-        /// <param name="rgSamples1">Contains the samples to train the model with along with the priorities associated with the samples.</param>
+        /// <param name="rgSamples">Contains the samples to train the model with along with the priorities associated with the samples.</param>
         /// <param name="nActionCount">Specifies the number of actions in the action set.</param>
-        public void Train(int nIteration, Tuple<MemoryCollection, int[], float[]> rgSamples1, int nActionCount)
+        public void Train(int nIteration, MemoryCollection rgSamples, int nActionCount)
         {
-            MemoryCollection rgSamples = rgSamples1.Item1;
-
-            m_rgSamples = rgSamples1;
+            m_rgSamples = rgSamples;
 
             if (m_nActionCount != nActionCount)
                 throw new Exception("The logit output of '" + m_nActionCount.ToString() + "' does not match the action count of '" + nActionCount.ToString() + "'!");
@@ -668,18 +672,27 @@ namespace MyCaffe.trainers.noisy.dqn.simple
 
             setCurrentStateData(m_net, rgSamples);
             m_memLoss.OnGetLoss += m_memLoss_ComputeTdLoss;
-            m_solver.Step(1, TRAIN_STEP.NONE, true, m_bUseAcceleratedTraining, true, true);
-            m_colAccumulatedGradients.Accumulate(m_mycaffe.Cuda, m_net.learnable_parameters, true);
+
+            if (m_nMiniBatch == 1)
+            {
+                m_solver.Step(1);
+            }
+            else
+            {
+                m_solver.Step(1, TRAIN_STEP.NONE, true, m_bUseAcceleratedTraining, true, true);
+                m_colAccumulatedGradients.Accumulate(m_mycaffe.Cuda, m_net.learnable_parameters, true);
+
+                if (nIteration % m_nMiniBatch == 0)
+                {
+                    m_net.learnable_parameters.CopyFrom(m_colAccumulatedGradients, true);
+                    m_colAccumulatedGradients.SetDiff(0);
+                    m_dfLearningRate = m_solver.ApplyUpdate(nIteration);
+                    m_net.ClearParamDiffs();
+                }
+            }
+
             m_memLoss.OnGetLoss -= m_memLoss_ComputeTdLoss;
             m_mycaffe.Log.Enable = true;
-
-            if (nIteration % m_nMiniBatch == 0)
-            {
-                m_net.learnable_parameters.CopyFrom(m_colAccumulatedGradients, true);
-                m_colAccumulatedGradients.SetDiff(0);
-                m_dfLearningRate = m_solver.ApplyUpdate(nIteration);
-                m_net.ClearParamDiffs();
-            }
 
             resetNoise(m_net);
             resetNoise(m_netTarget);
@@ -692,7 +705,7 @@ namespace MyCaffe.trainers.noisy.dqn.simple
         /// <param name="e">Specifies the arguments.</param>
         private void m_memLoss_ComputeTdLoss(object sender, MemoryLossLayerGetLossArgs<T> e)
         {
-            MemoryCollection rgMem = m_rgSamples.Item1;
+            MemoryCollection rgMem = m_rgSamples;
 
             Blob<T> q_values = m_net.blob_by_name("logits");
             Blob<T> next_q_values = m_netTarget.blob_by_name("logits");
@@ -707,7 +720,8 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             reduce_sum_axis1(m_blobQValue);
 
             // next_q_value = next_q_values.max(1)[0]
-            argmax_forward(next_q_values, m_blobNextQValue);
+            m_blobNextQValue.CopyFrom(next_q_values, false, true);
+            reduce_argmax_axis1(m_blobNextQValue);
 
             // expected_q_values
             float[] rgRewards = rgMem.GetRewards();
@@ -729,17 +743,17 @@ namespace MyCaffe.trainers.noisy.dqn.simple
 
             // loss = (q_value - expected_q_value.detach()).pow(2) * weights
             m_blobWeights.ReshapeLike(m_blobQValue);
-            m_blobWeights.mutable_cpu_data = Utility.ConvertVec<T>(m_rgSamples.Item3); // weights
+            m_blobWeights.mutable_cpu_data = Utility.ConvertVec<T>(m_rgSamples.Priorities); // weights
             m_mycaffe.Cuda.mul(m_blobLoss.count(), m_blobLoss.gpu_data, m_blobWeights.gpu_data, m_blobLoss.mutable_gpu_data);               //    ^ * weights
 
             // prios = loss + 1e-5
             m_mycaffe.Cuda.copy(m_blobLoss.count(), m_blobLoss.gpu_data, m_blobLoss.mutable_gpu_diff);
             m_mycaffe.Cuda.add_scalar(m_blobLoss.count(), 1e-5, m_blobLoss.mutable_gpu_diff);
-            float[] rgPrios = Utility.ConvertVecF<T>(m_blobLoss.mutable_cpu_diff);
+            double[] rgPrios = Utility.ConvertVec<T>(m_blobLoss.mutable_cpu_diff);
 
             for (int i = 0; i < rgPrios.Length; i++)
             {
-                m_rgSamples.Item3[i] = rgPrios[i];
+                m_rgSamples.Priorities[i] = rgPrios[i];
             }
 
 
@@ -753,7 +767,7 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             if (m_memLoss.layer_param.loss_weight.Count > 0)
                 dfGradient *= m_memLoss.layer_param.loss_weight[0];
 
-            // mean gradient - expand and divide by count
+            // mean gradient - expand and divide by batch count
             dfGradient /= m_blobLoss.count();
             m_blobLoss.SetDiff(dfGradient);
 
@@ -771,24 +785,6 @@ namespace MyCaffe.trainers.noisy.dqn.simple
 
             e.Loss = reduce_mean(m_blobLoss, false);
             e.EnableLossUpdate = false;
-        }
-
-        private void argmax_forward(Blob<T> blobBottom, Blob<T> blobTop)
-        {
-            BlobCollection<T> colBottom = new BlobCollection<T>();
-            colBottom.Add(blobBottom);
-            BlobCollection<T> colTop = new BlobCollection<T>();
-            colTop.Add(blobTop);
-
-            if (m_argmax == null)
-            {
-                LayerParameter p = new LayerParameter(LayerParameter.LayerType.ARGMAX);
-                p.argmax_param.axis = 1;
-                m_argmax = Layer<T>.Create(m_mycaffe.Cuda, m_mycaffe.Log, p, null) as ArgMaxLayer<T>;
-                m_argmax.Setup(colBottom, colTop);
-            }
-
-            m_argmax.Forward(colBottom, colTop);
         }
 
         private void resetNoise(Net<T> net)
@@ -835,14 +831,14 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             int nNum = b.shape(0);
             int nActions = b.shape(1);
             int nInnerCount = b.count(2);
-            float[] rg = Utility.ConvertVecF<T>(b.mutable_cpu_data);
-            float[] rgSum = new float[nNum * nInnerCount];
+            double[] rg = Utility.ConvertVec<T>(b.mutable_cpu_data);
+            double[] rgSum = new double[nNum * nInnerCount];
 
             for (int i = 0; i < nNum; i++)
             {
                 for (int j = 0; j < nInnerCount; j++)
                 {
-                    float fSum = 0;
+                    double fSum = 0;
 
                     for (int k = 0; k < nActions; k++)
                     {
@@ -859,9 +855,38 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             b.mutable_cpu_data = Utility.ConvertVec<T>(rgSum);
         }
 
-        private int argmax(float[] rgProb, int nActionCount, int nSampleIdx)
+        private void reduce_argmax_axis1(Blob<T> b)
         {
-            float[] rgfProb = new float[nActionCount];
+            int nNum = b.shape(0);
+            int nActions = b.shape(1);
+            int nInnerCount = b.count(2);
+            double[] rg = Utility.ConvertVec<T>(b.mutable_cpu_data);
+            double[] rgMax = new double[nNum * nInnerCount];
+
+            for (int i = 0; i < nNum; i++)
+            {
+                for (int j = 0; j < nInnerCount; j++)
+                {
+                    double fMax = -double.MaxValue;
+
+                    for (int k = 0; k < nActions; k++)
+                    {
+                        int nIdx = (i * nActions * nInnerCount) + (k * nInnerCount);
+                        fMax = Math.Max(fMax, rg[nIdx + j]);
+                    }
+
+                    int nIdxR = i * nInnerCount;
+                    rgMax[nIdxR + j] = fMax;
+                }
+            }
+
+            b.Reshape(nNum, nInnerCount, 1, 1);
+            b.mutable_cpu_data = Utility.ConvertVec<T>(rgMax);
+        }
+
+        private int argmax(double[] rgProb, int nActionCount, int nSampleIdx)
+        {
+            double[] rgfProb = new double[nActionCount];
 
             for (int j = 0; j < nActionCount; j++)
             {
@@ -872,9 +897,9 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             return argmax(rgfProb);
         }
 
-        private int argmax(float[] rgfAprob)
+        private int argmax(double[] rgfAprob)
         {
-            float fMax = -float.MaxValue;
+            double fMax = -double.MaxValue;
             int nIdx = 0;
 
             for (int i = 0; i < rgfAprob.Length; i++)
@@ -1046,6 +1071,86 @@ namespace MyCaffe.trainers.noisy.dqn.simple
                 g.FillRectangle(brBack, rc1);
                 g.DrawRectangle(penLine, rc1.X, rc1.Y, rc1.Width, rc1.Height);
             }
+        }
+
+        public void SaveWeights(string strFile)
+        {
+            if (File.Exists(strFile))
+                File.Delete(strFile);
+
+            using (StreamWriter sw = new StreamWriter(strFile))
+            {
+                save(sw, m_net.layer_by_name("linear") as InnerProductLayer<T>);
+                save(sw, m_net.layer_by_name("noisy1") as InnerProductLayer<T>);
+                save(sw, m_net.layer_by_name("noisy2") as InnerProductLayer<T>);
+                save(sw, m_netTarget.layer_by_name("linear") as InnerProductLayer<T>);
+                save(sw, m_netTarget.layer_by_name("noisy1") as InnerProductLayer<T>);
+                save(sw, m_netTarget.layer_by_name("noisy2") as InnerProductLayer<T>);
+            }
+        }
+
+        private void save(StreamWriter sw, InnerProductLayer<T> layer)
+        {
+            float[] rgfwt = Utility.ConvertVecF<T>(layer.blobs[0].mutable_cpu_data);
+            float[] rgfb = Utility.ConvertVecF<T>(layer.blobs[1].mutable_cpu_data);
+            string strLine = "";
+
+            for (int i = 0; i < rgfwt.Length; i++)
+            {
+                strLine += rgfwt[i].ToString() + ",";
+            }
+
+            sw.WriteLine(strLine.TrimEnd(','));
+            strLine = "";
+
+            for (int i = 0; i < rgfb.Length; i++)
+            {
+                strLine += rgfb[i].ToString() + ",";
+            }
+
+            sw.WriteLine(strLine.TrimEnd(','));
+        }
+
+        public void LoadWeights(string strFile)
+        {
+            if (!File.Exists(strFile))
+                return;
+
+            using (StreamReader sr = new StreamReader(strFile))
+            {
+                load(sr, m_net.layer_by_name("linear") as InnerProductLayer<T>);
+                load(sr, m_net.layer_by_name("noisy1") as InnerProductLayer<T>);
+                load(sr, m_net.layer_by_name("noisy2") as InnerProductLayer<T>);
+                load(sr, m_netTarget.layer_by_name("linear") as InnerProductLayer<T>);
+                load(sr, m_netTarget.layer_by_name("noisy1") as InnerProductLayer<T>);
+                load(sr, m_netTarget.layer_by_name("noisy2") as InnerProductLayer<T>);
+            }
+        }
+
+        private void load(StreamReader sr, InnerProductLayer<T> layer)
+        {
+            List<float> rgfwt = new List<float>();
+            List<float> rgfb = new List<float>();
+            string strLine;
+
+            strLine = sr.ReadLine();
+            string[] rgstr = strLine.Split(',');
+
+            for (int i = 0; i < rgstr.Length; i++)
+            {
+                rgfwt.Add(float.Parse(rgstr[i]));
+            }
+
+            strLine = sr.ReadLine();
+            rgstr = strLine.Split(',');
+
+            for (int i = 0; i < rgstr.Length; i++)
+            {
+                rgfb.Add(float.Parse(rgstr[i]));
+            }
+
+            layer.blobs[0].mutable_cpu_data = Utility.ConvertVec<T>(rgfwt.ToArray());
+            layer.blobs[1].mutable_cpu_data = Utility.ConvertVec<T>(rgfb.ToArray());
         }
     }
 }
