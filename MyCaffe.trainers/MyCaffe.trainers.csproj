@@ -48,6 +48,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="c51.ddqn\TrainerC51.cs" />
+    <Compile Include="common\FileMemoryCollection.cs" />
+    <Compile Include="common\Interfaces.cs" />
+    <Compile Include="common\MemoryCollectionFactory.cs" />
+    <Compile Include="common\RandomMemoryCollection.cs" />
     <Compile Include="EventArgs.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="common\MemoryCollection.cs" />
