@@ -190,5 +190,41 @@ namespace MyCaffe.app.Properties {
                 this["CustVmax"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("32")]
+        public int CustBatch {
+            get {
+                return ((int)(this["CustBatch"]));
+            }
+            set {
+                this["CustBatch"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1")]
+        public int CustMiniBatch {
+            get {
+                return ((int)(this["CustMiniBatch"]));
+            }
+            set {
+                this["CustMiniBatch"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("1000000")]
+        public int CustIteration {
+            get {
+                return ((int)(this["CustIteration"]));
+            }
+            set {
+                this["CustIteration"] = value;
+            }
+        }
     }
 }

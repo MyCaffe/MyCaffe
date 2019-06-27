@@ -394,7 +394,7 @@ namespace MyCaffe.trainers.c51.ddqn
                 if (m_state == STATE.TRAINING)
                 {
                     MemoryCollection rgRandomSamples = rgMemory.GetRandomSamples(m_random, m_brain.BatchSize);
-                    m_brain.Train(rgRandomSamples, s.ActionCount);
+                    m_brain.Train(nIteration, rgRandomSamples, s.ActionCount);
 
                     if (nIteration % m_nTrainingUpdateFreq == 0)
                         m_brain.UpdateTargetModel();
@@ -462,6 +462,10 @@ namespace MyCaffe.trainers.c51.ddqn
         int m_nFramesPerX = 4;
         int m_nStackPerX = 4;
         int m_nBatchSize = 32;
+        int m_nMiniBatch = 1;
+        BlobCollection<T> m_colAccumulatedGradients = new BlobCollection<T>();
+        bool m_bUseAcceleratedTraining = false;
+        double m_dfLearningRate;
         MemoryCollection m_rgSamples;
         int m_nActionCount = 3;
         bool m_bModelUpdated = false;
@@ -516,6 +520,9 @@ namespace MyCaffe.trainers.c51.ddqn
             if (m_memLoss == null)
                 m_mycaffe.Log.FAIL("Missing the expected MEMORY_LOSS layer!");
 
+            m_nMiniBatch = m_properties.GetPropertyAsInt("MiniBatch", m_nMiniBatch);
+            m_bUseAcceleratedTraining = properties.GetPropertyAsBool("UseAcceleratedTraining", false);
+
             Blob<T> data = m_net.blob_by_name("data");
             if (data == null)
                 m_mycaffe.Log.FAIL("Missing the expected input 'data' blob!");
@@ -524,6 +531,12 @@ namespace MyCaffe.trainers.c51.ddqn
             m_nBatchSize = data.num;
 
             m_solver.parameter.delta = 0.01 / (double)m_nBatchSize;
+
+            if (m_nMiniBatch > 1)
+            {
+                m_colAccumulatedGradients = m_net.learnable_parameters.Clone();
+                m_colAccumulatedGradients.SetDiff(0);
+            }
         }
 
         private void dispose(ref Blob<T> b)
@@ -549,6 +562,12 @@ namespace MyCaffe.trainers.c51.ddqn
             dispose(ref m_blobActionTarget);
             dispose(ref m_blobAction);
             dispose(ref m_blobLabel);
+
+            if (m_colAccumulatedGradients != null)
+            {
+                m_colAccumulatedGradients.Dispose();
+                m_colAccumulatedGradients = null;
+            }
 
             if (m_softmax != null)
             {
@@ -779,9 +798,10 @@ namespace MyCaffe.trainers.c51.ddqn
         /// <summary>
         /// Train the model at the current iteration.
         /// </summary>
+        /// <param name="nIteration">Specifies the current iteration.</param>
         /// <param name="rgSamples">Contains the samples to train the model with.</param>
         /// <param name="nActionCount">Specifies the number of actions in the action set.</param>
-        public void Train(MemoryCollection rgSamples, int nActionCount)
+        public void Train(int nIteration, MemoryCollection rgSamples, int nActionCount)
         {
             m_rgSamples = rgSamples;
             m_nActionCount = nActionCount;
@@ -797,7 +817,25 @@ namespace MyCaffe.trainers.c51.ddqn
 
             setData0(m_net, rgSamples);
             m_memLoss.OnGetLoss += m_memLoss_ProjectDistribution;
-            m_solver.Step(1);
+
+            if (m_nMiniBatch == 1)
+            {
+                m_solver.Step(1);
+            }
+            else
+            {
+                m_solver.Step(1, TRAIN_STEP.NONE, true, m_bUseAcceleratedTraining, true, true);
+                m_colAccumulatedGradients.Accumulate(m_mycaffe.Cuda, m_net.learnable_parameters, true);
+
+                if (nIteration % m_nMiniBatch == 0)
+                {
+                    m_net.learnable_parameters.CopyFrom(m_colAccumulatedGradients, true);
+                    m_colAccumulatedGradients.SetDiff(0);
+                    m_dfLearningRate = m_solver.ApplyUpdate(nIteration);
+                    m_net.ClearParamDiffs();
+                }
+            }
+
             m_memLoss.OnGetLoss -= m_memLoss_ProjectDistribution;
             m_mycaffe.Log.Enable = true;
         }

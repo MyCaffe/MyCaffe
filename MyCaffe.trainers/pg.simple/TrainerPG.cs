@@ -423,6 +423,8 @@ namespace MyCaffe.trainers.pg.simple
             int nMiniBatch = mycaffe.CurrentProject.GetBatchSize(phase);
             if (nMiniBatch != 0)
                 m_nMiniBatch = nMiniBatch;
+
+            m_nMiniBatch = m_properties.GetPropertyAsInt("MiniBatch", m_nMiniBatch);
         }
 
         private void dispose(ref Blob<T> b)

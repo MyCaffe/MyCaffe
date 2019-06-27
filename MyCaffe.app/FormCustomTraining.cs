@@ -25,6 +25,8 @@ namespace MyCaffe.app
         double m_dfVMin = -10;
         double m_dfVMax = 10;
         int m_nIterations = 1000000;
+        int m_nMiniBatch = 1;
+        bool m_bCartPole = false;
 
         public FormCustomTraining(string strName)
         {
@@ -42,6 +44,7 @@ namespace MyCaffe.app
             }
             else
             {
+                m_bCartPole = true;
                 m_strTrainer = "PG.MT";
                 m_bShowUi = false;
                 m_bUseAcceleratedTraining = true;
@@ -80,7 +83,12 @@ namespace MyCaffe.app
 
             edtVMin.Text = Properties.Settings.Default.CustVmin.ToString();
             edtVMax.Text = Properties.Settings.Default.CustVmax.ToString();
+
+            m_nIterations = Properties.Settings.Default.CustIteration;
+            m_nMiniBatch = Properties.Settings.Default.CustMiniBatch;
+
             edtIterations.Text = m_nIterations.ToString();
+            edtMiniBatch.Text = m_nMiniBatch.ToString();
         }
 
         private void btnOK_Click(object sender, EventArgs e)
@@ -92,6 +100,17 @@ namespace MyCaffe.app
                 DialogResult = DialogResult.None;
                 return;
             }
+
+            if (!int.TryParse(edtMiniBatch.Text, out m_nMiniBatch) || m_nMiniBatch < 1)
+            {
+                MessageBox.Show("The 'Mini-Batch' value is invalid - please enter a valid positive integer value greater than or equal to 1.", "Invalid Mini-Batch", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                edtMiniBatch.Focus();
+                DialogResult = DialogResult.None;
+                return;
+            }
+
+            Properties.Settings.Default.CustIteration = m_nIterations;
+            Properties.Settings.Default.CustMiniBatch = m_nMiniBatch;
 
             m_bShowUi = chkShowUi.Checked;
             m_bUseAcceleratedTraining = chkUseAcceleratedTraining.Checked;
@@ -154,8 +173,9 @@ namespace MyCaffe.app
 
                 Properties.Settings.Default.CustVmin = m_dfVMin;
                 Properties.Settings.Default.CustVmax = m_dfVMax;
-                Properties.Settings.Default.Save();
             }
+
+            Properties.Settings.Default.Save();
         }
 
         public string RomName
@@ -166,6 +186,11 @@ namespace MyCaffe.app
         public int Iterations
         {
             get { return m_nIterations; }
+        }
+
+        public int MiniBatch
+        {
+            get { return m_nMiniBatch; }
         }
 
         public double VMin
@@ -219,7 +244,6 @@ namespace MyCaffe.app
             lblVMax.Visible = radC51SingleThread.Checked;
             edtVMin.Visible = radC51SingleThread.Checked;
             edtVMax.Visible = radC51SingleThread.Checked;
-            btnReset.Visible = radC51SingleThread.Checked;
 
             if (radC51SingleThread.Checked)
             {
@@ -229,12 +253,38 @@ namespace MyCaffe.app
                 chkUseAcceleratedTraining.Checked = false;
                 chkAllowDiscountReset.Checked = false;
             }
+
+            setMiniBatchDefault();
+        }
+
+        private void setMiniBatchDefault()
+        {
+            if (m_bCartPole)
+            {
+                if (radPGSimple.Checked || radPGSingleThread.Checked || radPGMultiThread.Checked)
+                    edtMiniBatch.Text = "32";
+                else if (radC51SingleThread.Checked || radNoisyNetSimple.Checked || radNoisyNetSingleThread.Checked)
+                    edtMiniBatch.Text = "1";
+                else
+                    edtMiniBatch.Text = "10";
+            }
+            else
+            {
+                if (radPGSimple.Checked || radPGSingleThread.Checked || radPGMultiThread.Checked)
+                    edtMiniBatch.Text = "10";
+                else if (radC51SingleThread.Checked || radNoisyNetSimple.Checked || radNoisyNetSingleThread.Checked)
+                    edtMiniBatch.Text = "1";
+                else
+                    edtMiniBatch.Text = "10";
+            }
         }
 
         private void btnReset_Click(object sender, EventArgs e)
         {
             edtVMin.Text = "-10";
             edtVMax.Text = "10";
+            edtIterations.Text = "1000000";
+            setMiniBatchDefault();
         }
 
         private void radNoisyNet_CheckedChanged(object sender, EventArgs e)
@@ -247,6 +297,8 @@ namespace MyCaffe.app
                 chkUseAcceleratedTraining.Checked = false;
                 chkAllowDiscountReset.Checked = false;
             }
+
+            setMiniBatchDefault();
         }
 
         private void timerUI_Tick(object sender, EventArgs e)
@@ -272,6 +324,81 @@ namespace MyCaffe.app
         {
             if (radNoisyNetSimple.Checked)
                 chkUseAcceleratedTraining.Checked = false;
+
+            setMiniBatchDefault();
+        }
+
+        private void edtMiniBatch_TextChanged(object sender, EventArgs e)
+        {
+            int nVal;
+
+            if (int.TryParse(edtMiniBatch.Text, out nVal) && nVal >= 1)
+            {
+                edtMiniBatch.BackColor = Color.White;
+                chkUseAcceleratedTraining.Enabled = true;
+            }
+            else
+            {
+                edtMiniBatch.BackColor = Color.LightSalmon;
+                chkUseAcceleratedTraining.Enabled = false;
+            }
+        }
+
+        private void edtIterations_TextChanged(object sender, EventArgs e)
+        {
+            int nVal;
+
+            if (int.TryParse(edtIterations.Text, out nVal) && nVal >= 1)
+            {
+                edtIterations.BackColor = Color.White;
+            }
+            else
+            {
+                edtIterations.BackColor = Color.LightSalmon;
+            }
+        }
+
+        private void edtVMin_TextChanged(object sender, EventArgs e)
+        {
+            double dfVal;
+
+            if (double.TryParse(edtVMin.Text, out dfVal))
+            {
+                edtVMin.BackColor = Color.White;
+            }
+            else
+            {
+                edtIterations.BackColor = Color.LightSalmon;
+            }
+        }
+
+        private void edtVMax_TextChanged(object sender, EventArgs e)
+        {
+            double dfVal;
+
+            if (double.TryParse(edtVMax.Text, out dfVal))
+            {
+                edtVMin.BackColor = Color.White;
+            }
+            else
+            {
+                edtIterations.BackColor = Color.LightSalmon;
+            }
+        }
+
+        private void radPGSimple_CheckedChanged(object sender, EventArgs e)
+        {
+            setMiniBatchDefault();
+        }
+
+        private void radPGSingleThread_CheckedChanged(object sender, EventArgs e)
+        {
+            setMiniBatchDefault();
+        }
+
+        private void radPGMultiThread_CheckedChanged(object sender, EventArgs e)
+        {
+            setMiniBatchDefault();
         }
     }
 }

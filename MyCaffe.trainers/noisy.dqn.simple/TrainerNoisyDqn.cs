@@ -468,16 +468,18 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             if (m_memLoss == null)
                 m_mycaffe.Log.FAIL("Missing the expected MEMORY_LOSS layer!");
 
-            m_nMiniBatch = m_properties.GetPropertyAsInt("MiniBatchOverride", m_nMiniBatch);
-
             double? dfRate = mycaffe.CurrentProject.GetSolverSettingAsNumeric("base_lr");
             if (dfRate.HasValue)
                 m_dfLearningRate = dfRate.Value;
 
+            m_nMiniBatch = m_properties.GetPropertyAsInt("MiniBatch", m_nMiniBatch);
             m_bUseAcceleratedTraining = properties.GetPropertyAsBool("UseAcceleratedTraining", false);
 
-            m_colAccumulatedGradients = m_net.learnable_parameters.Clone();
-            m_colAccumulatedGradients.SetDiff(0);
+            if (m_nMiniBatch > 1)
+            {
+                m_colAccumulatedGradients = m_net.learnable_parameters.Clone();
+                m_colAccumulatedGradients.SetDiff(0);
+            }
         }
 
         private void dispose(ref Blob<T> b)

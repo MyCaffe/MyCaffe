@@ -44,5 +44,14 @@
     <Setting Name="CustVmax" Type="System.Double" Scope="User">
       <Value Profile="(Default)">10</Value>
     </Setting>
+    <Setting Name="CustBatch" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">32</Value>
+    </Setting>
+    <Setting Name="CustMiniBatch" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
+    <Setting Name="CustIteration" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1000000</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

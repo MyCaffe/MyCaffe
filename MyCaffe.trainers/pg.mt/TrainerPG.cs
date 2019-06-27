@@ -957,7 +957,7 @@ namespace MyCaffe.trainers.pg.mt
             if (nMiniBatch != 0)
                 m_nMiniBatch = nMiniBatch;
 
-            m_nMiniBatch = m_properties.GetPropertyAsInt("MiniBatchOverride", m_nMiniBatch);
+            m_nMiniBatch = m_properties.GetPropertyAsInt("MiniBatch", m_nMiniBatch);
 
             double? dfRate = mycaffe.CurrentProject.GetSolverSettingAsNumeric("base_lr");
             if (dfRate.HasValue)

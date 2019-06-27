@@ -54,11 +54,13 @@
             this.edtVMax = new System.Windows.Forms.TextBox();
             this.btnReset = new System.Windows.Forms.Button();
             this.edtIterations = new System.Windows.Forms.TextBox();
+            this.edtMiniBatch = new System.Windows.Forms.TextBox();
             this.grpRom = new System.Windows.Forms.GroupBox();
             this.lblVMin = new System.Windows.Forms.Label();
             this.lblVMax = new System.Windows.Forms.Label();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.lblIterations = new System.Windows.Forms.Label();
+            this.lblMiniBatch = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.grpRom.SuspendLayout();
             this.SuspendLayout();
@@ -115,7 +117,7 @@
             this.chkShowUi.Location = new System.Drawing.Point(12, 51);
             this.chkShowUi.Name = "chkShowUi";
             this.chkShowUi.Size = new System.Drawing.Size(120, 17);
-            this.chkShowUi.TabIndex = 2;
+            this.chkShowUi.TabIndex = 0;
             this.chkShowUi.Text = "Show user-interface";
             this.toolTip1.SetToolTip(this.chkShowUi, "Show the gym user interface.");
             this.chkShowUi.UseVisualStyleBackColor = true;
@@ -123,10 +125,11 @@
             // chkUseAcceleratedTraining
             // 
             this.chkUseAcceleratedTraining.AutoSize = true;
+            this.chkUseAcceleratedTraining.Enabled = false;
             this.chkUseAcceleratedTraining.Location = new System.Drawing.Point(12, 74);
             this.chkUseAcceleratedTraining.Name = "chkUseAcceleratedTraining";
             this.chkUseAcceleratedTraining.Size = new System.Drawing.Size(141, 17);
-            this.chkUseAcceleratedTraining.TabIndex = 3;
+            this.chkUseAcceleratedTraining.TabIndex = 1;
             this.chkUseAcceleratedTraining.Text = "Use accelerated training";
             this.toolTip1.SetToolTip(this.chkUseAcceleratedTraining, "Enable accelerated training which focuses on gradient changes (Note this works be" +
         "st with Cart-Pole)");
@@ -145,7 +148,7 @@
             this.groupBox1.Location = new System.Drawing.Point(12, 120);
             this.groupBox1.Name = "groupBox1";
             this.groupBox1.Size = new System.Drawing.Size(674, 51);
-            this.groupBox1.TabIndex = 13;
+            this.groupBox1.TabIndex = 14;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Trainer";
             // 
@@ -201,6 +204,7 @@
             this.toolTip1.SetToolTip(this.radPGMultiThread, "Use the multi-threaded policy gradient trainer for \r\nbinary decisions (left or ri" +
         "ght).");
             this.radPGMultiThread.UseVisualStyleBackColor = true;
+            this.radPGMultiThread.CheckedChanged += new System.EventHandler(this.radPGMultiThread_CheckedChanged);
             // 
             // radPGSingleThread
             // 
@@ -213,6 +217,7 @@
             this.toolTip1.SetToolTip(this.radPGSingleThread, "Use the single-threaded policy gradient trainer for \r\nbinary decisions (left or r" +
         "ight).");
             this.radPGSingleThread.UseVisualStyleBackColor = true;
+            this.radPGSingleThread.CheckedChanged += new System.EventHandler(this.radPGSingleThread_CheckedChanged);
             // 
             // radPGSimple
             // 
@@ -227,6 +232,7 @@
             this.toolTip1.SetToolTip(this.radPGSimple, "Use the simple policy gradient trainer which only \r\nperforms binary decision maki" +
         "ng (left or right).");
             this.radPGSimple.UseVisualStyleBackColor = true;
+            this.radPGSimple.CheckedChanged += new System.EventHandler(this.radPGSimple_CheckedChanged);
             // 
             // chkAllowDiscountReset
             // 
@@ -234,7 +240,7 @@
             this.chkAllowDiscountReset.Location = new System.Drawing.Point(12, 97);
             this.chkAllowDiscountReset.Name = "chkAllowDiscountReset";
             this.chkAllowDiscountReset.Size = new System.Drawing.Size(120, 17);
-            this.chkAllowDiscountReset.TabIndex = 4;
+            this.chkAllowDiscountReset.TabIndex = 2;
             this.chkAllowDiscountReset.Text = "Allow discount reset";
             this.toolTip1.SetToolTip(this.chkAllowDiscountReset, "Allowing the discount reset, resets the running sum on non-zero reward values.");
             this.chkAllowDiscountReset.UseVisualStyleBackColor = true;
@@ -270,7 +276,7 @@
             this.chkAllowNegativeRewards.Location = new System.Drawing.Point(218, 51);
             this.chkAllowNegativeRewards.Name = "chkAllowNegativeRewards";
             this.chkAllowNegativeRewards.Size = new System.Drawing.Size(135, 17);
-            this.chkAllowNegativeRewards.TabIndex = 5;
+            this.chkAllowNegativeRewards.TabIndex = 3;
             this.chkAllowNegativeRewards.Text = "Allow negative rewards";
             this.toolTip1.SetToolTip(this.chkAllowNegativeRewards, "Allowing negative rewards instructs the Gym to return -1 on \r\non failures, such a" +
         "s not hitting the ball, etc.");
@@ -282,7 +288,7 @@
             this.chkTerminateOnRallyEnd.Location = new System.Drawing.Point(218, 74);
             this.chkTerminateOnRallyEnd.Name = "chkTerminateOnRallyEnd";
             this.chkTerminateOnRallyEnd.Size = new System.Drawing.Size(130, 17);
-            this.chkTerminateOnRallyEnd.TabIndex = 6;
+            this.chkTerminateOnRallyEnd.TabIndex = 4;
             this.chkTerminateOnRallyEnd.Text = "Terminate on rally end";
             this.toolTip1.SetToolTip(this.chkTerminateOnRallyEnd, resources.GetString("chkTerminateOnRallyEnd.ToolTip"));
             this.chkTerminateOnRallyEnd.UseVisualStyleBackColor = true;
@@ -293,7 +299,7 @@
             this.chkLoadWeights.Location = new System.Drawing.Point(218, 97);
             this.chkLoadWeights.Name = "chkLoadWeights";
             this.chkLoadWeights.Size = new System.Drawing.Size(127, 17);
-            this.chkLoadWeights.TabIndex = 7;
+            this.chkLoadWeights.TabIndex = 5;
             this.chkLoadWeights.Text = "Load weights (if exist)";
             this.toolTip1.SetToolTip(this.chkLoadWeights, "Load any weights previously saved for the training.");
             this.chkLoadWeights.UseVisualStyleBackColor = true;
@@ -304,11 +310,12 @@
             this.edtVMin.Location = new System.Drawing.Point(641, 49);
             this.edtVMin.Name = "edtVMin";
             this.edtVMin.Size = new System.Drawing.Size(45, 20);
-            this.edtVMin.TabIndex = 9;
+            this.edtVMin.TabIndex = 11;
             this.edtVMin.Text = "-10";
             this.toolTip1.SetToolTip(this.edtVMin, "Specifies the minimum possible reward that could occur \r\nwhen using the C51 train" +
         "ing algorithm.");
             this.edtVMin.Visible = false;
+            this.edtVMin.TextChanged += new System.EventHandler(this.edtVMin_TextChanged);
             // 
             // edtVMax
             // 
@@ -316,35 +323,47 @@
             this.edtVMax.Location = new System.Drawing.Point(641, 72);
             this.edtVMax.Name = "edtVMax";
             this.edtVMax.Size = new System.Drawing.Size(45, 20);
-            this.edtVMax.TabIndex = 11;
+            this.edtVMax.TabIndex = 13;
             this.edtVMax.Text = "10";
             this.toolTip1.SetToolTip(this.edtVMax, "Specifies the maximum possible reward that could occur\r\nwhen training with the C5" +
         "1 trainer.");
             this.edtVMax.Visible = false;
+            this.edtVMax.TextChanged += new System.EventHandler(this.edtVMax_TextChanged);
             // 
             // btnReset
             // 
             this.btnReset.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnReset.Location = new System.Drawing.Point(641, 98);
+            this.btnReset.Location = new System.Drawing.Point(453, 194);
             this.btnReset.Name = "btnReset";
-            this.btnReset.Size = new System.Drawing.Size(45, 21);
-            this.btnReset.TabIndex = 12;
-            this.btnReset.Text = "reset";
-            this.toolTip1.SetToolTip(this.btnReset, "Reset the VMin, VMax to their default values.");
+            this.btnReset.Size = new System.Drawing.Size(71, 22);
+            this.btnReset.TabIndex = 16;
+            this.btnReset.Text = "Reset";
+            this.toolTip1.SetToolTip(this.btnReset, "Reset the to the default settings.");
             this.btnReset.UseVisualStyleBackColor = true;
-            this.btnReset.Visible = false;
             this.btnReset.Click += new System.EventHandler(this.btnReset_Click);
             // 
             // edtIterations
             // 
-            this.edtIterations.Location = new System.Drawing.Point(292, 193);
+            this.edtIterations.Location = new System.Drawing.Point(463, 49);
             this.edtIterations.Name = "edtIterations";
-            this.edtIterations.Size = new System.Drawing.Size(91, 20);
-            this.edtIterations.TabIndex = 16;
+            this.edtIterations.Size = new System.Drawing.Size(61, 20);
+            this.edtIterations.TabIndex = 7;
             this.edtIterations.Text = "1000000";
             this.edtIterations.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.toolTip1.SetToolTip(this.edtIterations, "Specify the number of iterations (frames) to train.  Each\r\nepisode will have mult" +
         "iple frames.");
+            this.edtIterations.TextChanged += new System.EventHandler(this.edtIterations_TextChanged);
+            // 
+            // edtMiniBatch
+            // 
+            this.edtMiniBatch.Location = new System.Drawing.Point(463, 75);
+            this.edtMiniBatch.Name = "edtMiniBatch";
+            this.edtMiniBatch.Size = new System.Drawing.Size(28, 20);
+            this.edtMiniBatch.TabIndex = 9;
+            this.edtMiniBatch.Text = "1";
+            this.edtMiniBatch.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.toolTip1.SetToolTip(this.edtMiniBatch, resources.GetString("edtMiniBatch.ToolTip"));
+            this.edtMiniBatch.TextChanged += new System.EventHandler(this.edtMiniBatch_TextChanged);
             // 
             // grpRom
             // 
@@ -353,7 +372,7 @@
             this.grpRom.Location = new System.Drawing.Point(12, 177);
             this.grpRom.Name = "grpRom";
             this.grpRom.Size = new System.Drawing.Size(200, 40);
-            this.grpRom.TabIndex = 14;
+            this.grpRom.TabIndex = 15;
             this.grpRom.TabStop = false;
             this.grpRom.Text = "ATARI ROM";
             this.grpRom.Visible = false;
@@ -365,7 +384,7 @@
             this.lblVMin.Location = new System.Drawing.Point(601, 52);
             this.lblVMin.Name = "lblVMin";
             this.lblVMin.Size = new System.Drawing.Size(34, 13);
-            this.lblVMin.TabIndex = 8;
+            this.lblVMin.TabIndex = 10;
             this.lblVMin.Text = "VMin:";
             this.lblVMin.Visible = false;
             // 
@@ -376,7 +395,7 @@
             this.lblVMax.Location = new System.Drawing.Point(598, 75);
             this.lblVMax.Name = "lblVMax";
             this.lblVMax.Size = new System.Drawing.Size(37, 13);
-            this.lblVMax.TabIndex = 10;
+            this.lblVMax.TabIndex = 12;
             this.lblVMax.Text = "VMax:";
             this.lblVMax.Visible = false;
             // 
@@ -389,11 +408,20 @@
             // lblIterations
             // 
             this.lblIterations.AutoSize = true;
-            this.lblIterations.Location = new System.Drawing.Point(233, 196);
+            this.lblIterations.Location = new System.Drawing.Point(404, 52);
             this.lblIterations.Name = "lblIterations";
             this.lblIterations.Size = new System.Drawing.Size(53, 13);
-            this.lblIterations.TabIndex = 15;
+            this.lblIterations.TabIndex = 6;
             this.lblIterations.Text = "Iterations:";
+            // 
+            // lblMiniBatch
+            // 
+            this.lblMiniBatch.AutoSize = true;
+            this.lblMiniBatch.Location = new System.Drawing.Point(397, 78);
+            this.lblMiniBatch.Name = "lblMiniBatch";
+            this.lblMiniBatch.Size = new System.Drawing.Size(60, 13);
+            this.lblMiniBatch.TabIndex = 8;
+            this.lblMiniBatch.Text = "Mini-Batch:";
             // 
             // FormCustomTraining
             // 
@@ -402,6 +430,8 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
             this.ClientSize = new System.Drawing.Size(698, 229);
+            this.Controls.Add(this.edtMiniBatch);
+            this.Controls.Add(this.lblMiniBatch);
             this.Controls.Add(this.edtIterations);
             this.Controls.Add(this.lblIterations);
             this.Controls.Add(this.btnReset);
@@ -470,5 +500,7 @@
         private System.Windows.Forms.Timer timerUI;
         private System.Windows.Forms.Label lblIterations;
         private System.Windows.Forms.TextBox edtIterations;
+        private System.Windows.Forms.Label lblMiniBatch;
+        private System.Windows.Forms.TextBox edtMiniBatch;
     }
 }

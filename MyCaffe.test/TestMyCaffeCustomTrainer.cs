@@ -347,11 +347,11 @@ namespace MyCaffe.test
 
     interface IMyCaffeCustomTrainerTest : ITest
     {
-        void TrainCartPolePG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
-        void TrainCartPoleNoisyNetDual(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
-        void TrainAtariPG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false);
-        void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int nIteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExist = false, double dfVMin = -10, double dfVMax = 10);
-        void TrainAtariNoisyNetDual(bool bShowUi, string strTrainerType, int nIterations = 100, int nIteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExist = false);
+        void TrainCartPolePG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, int nMiniBatch = 10, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
+        void TrainCartPoleNoisyNetDual(bool bShowUi, string strTrainerType, int nIterations = 1000, int nMiniBatch = 10, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
+        void TrainAtariPG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, int nMiniBatch = 10, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false);
+        void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int nMiniBatch = 1, bool bUseAccelTrain = false, int nIteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExist = false, double dfVMin = -10, double dfVMax = 10);
+        void TrainAtariNoisyNetDual(bool bShowUi, string strTrainerType, int nIterations = 100, int nMiniBatch = 1, bool bUseAccelTrain = false, int nIteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExist = false);
 
         void TrainCharRNN(bool bDual, bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
         void TrainWavRNN(bool bDual, bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
@@ -402,15 +402,15 @@ namespace MyCaffe.test
         }
 
 
-        public void TrainCartPolePG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
+        public void TrainCartPolePG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, int nMiniBatch = 10, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
         {
             if (bDual)
-                TrainCartPolePGDual(bShowUi, strTrainerType, nIterations, bUseAcceleratedTraining, bAllowDiscountReset);
+                TrainCartPolePGDual(bShowUi, strTrainerType, nIterations, nMiniBatch, bUseAcceleratedTraining, bAllowDiscountReset);
             else
-                TrainCartPolePG(bShowUi, strTrainerType, nIterations, bUseAcceleratedTraining, bAllowDiscountReset);
+                TrainCartPolePG(bShowUi, strTrainerType, nIterations, nMiniBatch, bUseAcceleratedTraining, bAllowDiscountReset);
         }
 
-        public void TrainCartPolePG(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
+        public void TrainCartPolePG(bool bShowUi, string strTrainerType, int nIterations = 1000, int nMiniBatch = 10, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
         {
             m_evtCancel.Reset();
 
@@ -446,7 +446,7 @@ namespace MyCaffe.test
             //  - Init1 = default force of 10.
             //  - Init2 = do not use additive force.                    
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
-            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1", this);
+            trainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1;MiniBatch=" + nMiniBatch.ToString() + ";", this);
 
             if (bShowUi)
                 trainer.OpenUi();
@@ -459,7 +459,7 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TrainCartPolePGDual(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
+        public void TrainCartPolePGDual(bool bShowUi, string strTrainerType, int nIterations = 1000, int nMiniBatch = 10, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
         {
             m_evtCancel.Reset();
 
@@ -497,7 +497,7 @@ namespace MyCaffe.test
             //  - Init1 = default force of 10.
             //  - Init2 = do not use additive force.                    
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
-            itrainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1", this);
+            itrainer.Initialize("TrainerType=" + strTrainerType + ";RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1;MiniBatch=" + nMiniBatch.ToString() + ";", this);
 
             // load the project to train (note the project must use the MemoryDataLayer for input).
             mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
@@ -513,7 +513,7 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TrainCartPoleNoisyNetDual(bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
+        public void TrainCartPoleNoisyNetDual(bool bShowUi, string strTrainerType, int nIterations = 1000, int nMiniBatch = 10, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
         {
             m_evtCancel.Reset();
 
@@ -552,7 +552,7 @@ namespace MyCaffe.test
             //  - Init1 = default force of 10.
             //  - Init2 = do not use additive force.                    
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
-            itrainer.Initialize("TrainerType=" + strTrainerType + ";UseRawInput=True;RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1", this);
+            itrainer.Initialize("TrainerType=" + strTrainerType + ";UseRawInput=True;RewardType=VAL;UseAcceleratedTraining=" + bUseAcceleratedTraining.ToString() + ";AllowDiscountReset=" + bAllowDiscountReset.ToString() + ";Gamma=0.99;Init1=10;Init2=0;Threads=1;MiniBatch=" + nMiniBatch.ToString() + ";", this);
 
             // load the project to train (note the project must use the MemoryDataLayer for input).
             mycaffe.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, false, null, false, true, itrainer.Stage.ToString());
@@ -569,15 +569,15 @@ namespace MyCaffe.test
         }
 
 
-        public void TrainAtariPG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false)
+        public void TrainAtariPG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, int nMiniBatch = 10, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false)
         {
             if (bDual)
-                TrainAtariPGDual(bShowUi, strTrainerType, nIterations, bUseAcceleratedTraining, bAllowDiscountReset, strAtariRom, bAllowNegRewards, bTerminateOnRallyEnd);
+                TrainAtariPGDual(bShowUi, strTrainerType, nIterations, nMiniBatch, bUseAcceleratedTraining, bAllowDiscountReset, strAtariRom, bAllowNegRewards, bTerminateOnRallyEnd);
             else
-                TrainAtariPG(bShowUi, strTrainerType, nIterations, bUseAcceleratedTraining, bAllowDiscountReset, strAtariRom, bAllowNegRewards, bTerminateOnRallyEnd);
+                TrainAtariPG(bShowUi, strTrainerType, nIterations, nMiniBatch, bUseAcceleratedTraining, bAllowDiscountReset, strAtariRom, bAllowNegRewards, bTerminateOnRallyEnd);
         }
 
-        public void TrainAtariPG(bool bShowUi, string strTrainerType, int nIterations = 100, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false)
+        public void TrainAtariPG(bool bShowUi, string strTrainerType, int nIterations = 100, int nMiniBatch = 10, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false)
         {
             m_evtCancel.Reset();
 
@@ -624,6 +624,7 @@ namespace MyCaffe.test
             string strParam = "TrainerType=" + strTrainerType + ";RewardType=VAL;";
             strParam += "EnableBinaryActions=True;";
             strParam += "UseAcceleratedTraining=" + bUseAcceleratedTraining + ";";
+            strParam += "MiniBatch=" + nMiniBatch.ToString() + ";";
             strParam += "AllowDiscountReset=" + bAllowDiscountReset + ";";
             strParam += "Gamma=0.99;";
             strParam += "AllowNegativeRewards=" + bAllowNegRewards.ToString() + ";";
@@ -642,7 +643,7 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TrainAtariPGDual(bool bShowUi, string strTrainerType, int nIterations = 100, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false)
+        public void TrainAtariPGDual(bool bShowUi, string strTrainerType, int nIterations = 100, int nMiniBatch = 1, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false)
         {
             m_evtCancel.Reset();
 
@@ -691,6 +692,7 @@ namespace MyCaffe.test
             string strParam = "TrainerType=" + strTrainerType + ";RewardType=VAL;";
             strParam += "EnableBinaryActions=True;";
             strParam += "UseAcceleratedTraining=" + bUseAcceleratedTraining + ";";
+            strParam += "MiniBatch=" + nMiniBatch.ToString() + ";";
             strParam += "AllowDiscountReset=" + bAllowDiscountReset + ";";
             strParam += "Gamma=0.99;";
             strParam += "AllowNegativeRewards=" + bAllowNegRewards.ToString() + ";";
@@ -712,7 +714,7 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int iteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExists = false, double dfVMin = -10, double dfVMax = 10)
+        public void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int nMiniBatch = 1, bool bUseAcceleratedTraining = false, int iteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExists = false, double dfVMin = -10, double dfVMax = 10)
         {
             m_evtCancel.Reset();
 
@@ -752,12 +754,16 @@ namespace MyCaffe.test
             //
             //  - TrainerType = 'C51.ST' ('C51.ST' = use single-threaded C51 trainer)
             //  - RewardType = MAX (display the maximum rewards received, a setting of VAL displays the actual reward received)
+            //  - UseAcceleratedTraining = False (when using a minibatch > 1, accelerated training both applies and accumulates the grads)
+            //  - MiniBatch = 1 (when greater than 1, accumulates the gradients over the mini-batch)
             //  - Gamma = 0.99 (discounting factor)
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
             //  - AllowNegativeRewards = False (when enabled and the ball falls behind our player, a -1 reward is given).
             //  - TerminateOnRallyEnd = False (when enabled a termination state is given each time the ball falls behind our player).
             //  - GameROM = 'path to game ROM'
             string strParam = "TrainerType=" + strTrainerType + ";RewardType=VAL;Gamma=0.99;";
+            strParam += "UseAcceleratedTraining=" + bUseAcceleratedTraining + ";";
+            strParam += "MiniBatch=" + nMiniBatch.ToString() + ";";
             strParam += "UseRawInput=True;";        // use the input values directly, do not take a difference of them with the previous.
             strParam += "Preprocess=False;";        // do not preprocess (turn inputs to 1 or 0).
             strParam += "ActionForceGray=True;";    // force inputs to gray with a single color channel.
@@ -783,7 +789,7 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TrainAtariNoisyNetDual(bool bShowUi, string strTrainerType, int nIterations = 100, int iteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExists = false)
+        public void TrainAtariNoisyNetDual(bool bShowUi, string strTrainerType, int nIterations = 100, int nMiniBatch = 1, bool bUseAcceleratedTraining = false, int iteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExists = false)
         {
             m_evtCancel.Reset();
 
@@ -822,7 +828,9 @@ namespace MyCaffe.test
             //  - Learning rate = 0.001 (defined in solver.prototxt)
             //  - Mini Batch Size = 10 (defined in train_val.prototxt for MemoryDataLayer)
             //
-            //  - TrainerType = 'C51.ST' ('C51.ST' = use single-threaded C51 trainer)
+            //  - TrainerType = 'NOISYNET.ST' or 'NOISYNET.SIMPLE' ('NOISYNET.ST' = use single-threaded NoisyNet trainer)
+            //  - UseAcceleratedTraining = False (when using a minibatch > 1, accelerated training both applies and accumulates the grads)
+            //  - MiniBatch = 1 (when greater than 1, accumulates the gradients over the mini-batch)
             //  - RewardType = MAX (display the maximum rewards received, a setting of VAL displays the actual reward received)
             //  - Gamma = 0.99 (discounting factor)
             //  - Threads = 1 (only use 1 thread if multi-threading is supported)
@@ -830,6 +838,8 @@ namespace MyCaffe.test
             //  - TerminateOnRallyEnd = False (when enabled a termination state is given each time the ball falls behind our player).
             //  - GameROM = 'path to game ROM'
             string strParam = "TrainerType=" + strTrainerType + ";RewardType=VAL;Gamma=0.99;";
+            strParam += "UseAcceleratedTraining=" + bUseAcceleratedTraining + ";";
+            strParam += "MiniBatch=" + nMiniBatch.ToString() + ";";
             strParam += "UseRawInput=True;";        // use the input values directly, do not take a difference of them with the previous.
             strParam += "Preprocess=False;";        // do not preprocess (turn inputs to 1 or 0).
             strParam += "ActionForceGray=True;";    // force inputs to gray with a single color channel.
