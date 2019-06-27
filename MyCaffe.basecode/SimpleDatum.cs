@@ -1226,6 +1226,34 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns a string containing the items of the SimpleDatum.
+        /// </summary>
+        /// <param name="nMaxItems">Specifies the maximum number of items to output.</param>
+        /// <returns>Returns a string containing the data items.</returns>
+        public string ToArrayAsString(int nMaxItems)
+        {
+            string str = "";
+
+            if (m_bIsRealData)
+            {
+                for (int i=0; i<m_rgRealData.Length && i < nMaxItems; i++)
+                {
+                    str += m_rgRealData[i].ToString() + ",";
+                }
+            }
+            else
+            {
+                for (int i = 0; i < m_rgByteData.Length && i < nMaxItems; i++)
+                {
+                    str += m_rgByteData[i].ToString() + ",";
+                }
+            }
+
+            return str.TrimEnd(',');
+        }
+
+
+        /// <summary>
         /// Return the SimpleData data as a Bytemap.
         /// </summary>
         /// <remarks>
