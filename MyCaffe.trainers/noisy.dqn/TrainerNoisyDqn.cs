@@ -751,7 +751,7 @@ namespace MyCaffe.trainers.noisy.dqn
         /// Train the model at the current iteration.
         /// </summary>
         /// <param name="nIteration">Specifies the current iteration.</param>
-        /// <param name="rgSamples1">Contains the samples to train the model with.</param>
+        /// <param name="rgSamples">Contains the samples to train the model with.</param>
         /// <param name="nActionCount">Specifies the number of actions in the action set.</param>
         public void Train(int nIteration, MemoryCollection rgSamples, int nActionCount)
         {

@@ -1069,6 +1069,10 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             }
         }
 
+        /// <summary>
+        /// Save the weight and bias values to file.
+        /// </summary>
+        /// <param name="strFile">Specifies the file to save the weights to.</param>
         public void SaveWeights(string strFile)
         {
             if (File.Exists(strFile))
@@ -1107,6 +1111,10 @@ namespace MyCaffe.trainers.noisy.dqn.simple
             sw.WriteLine(strLine.TrimEnd(','));
         }
 
+        /// <summary>
+        /// Load the weight and bias values from file.
+        /// </summary>
+        /// <param name="strFile">Specifies the file to load the weights from.</param>
         public void LoadWeights(string strFile)
         {
             if (!File.Exists(strFile))

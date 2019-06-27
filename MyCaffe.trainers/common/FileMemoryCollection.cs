@@ -60,7 +60,7 @@ namespace MyCaffe.trainers.common
         /// <summary>
         /// Add a new item to the collection.
         /// </summary>
-        /// <param name="m">Specifies the item to add.</param>
+        /// <param name="mi">Specifies the item to add.</param>
         public void Add(MemoryItem mi)
         {
             if (!m_bPreLoaded)
