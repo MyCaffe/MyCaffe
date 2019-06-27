@@ -132,8 +132,7 @@ namespace MyCaffe.param
             if (ignore_label.HasValue)
                 rgChildren.Add("ignore_label", ignore_label);
 
-            if (normalization != NormalizationMode.NONE)
-                rgChildren.Add("normalization", normalization.ToString());
+            rgChildren.Add("normalization", normalization.ToString());
 
             if (normalization == NormalizationMode.NONE && normalize != false)
                 rgChildren.Add("normalize", normalize.ToString());
