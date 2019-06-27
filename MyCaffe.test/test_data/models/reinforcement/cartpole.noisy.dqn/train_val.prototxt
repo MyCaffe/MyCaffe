@@ -24,7 +24,7 @@ layer
    param 
    {
       lr_mult: 1
-      decay_mult: 2
+      decay_mult: 0
    }
    param 
    {
@@ -37,13 +37,15 @@ layer
       bias_term: True
       weight_filler 
       {
-         type: "xavier"
-         variance_norm: FAN_IN
+         type: "uniform"
+		 min: -0.3
+		 max: 0.3
       }
       bias_filler 
       {
-         type: "constant"
-         value: 0.1
+         type: "uniform"
+		 min: -0.3
+		 max: 0.3
       }
       axis: 1
    }
@@ -51,17 +53,9 @@ layer
 layer 
 {
    name: "relu1"
-   type: "PReLU"
+   type: "ReLU"
    bottom: "linear"
    top: "linear"
-   prelu_param 
-   {
-      filler 
-      {
-         type: "constant"
-         value: 0.25
-      }
-   }
 }
 layer 
 {
@@ -72,7 +66,7 @@ layer
    param 
    {
       lr_mult: 1
-      decay_mult: 2
+      decay_mult: 0
    }
    param 
    {
@@ -85,13 +79,15 @@ layer
       bias_term: True
       weight_filler 
       {
-         type: "xavier"
-         variance_norm: FAN_IN
+         type: "uniform"
+		 min: -0.3
+		 max: 0.3
       }
       bias_filler 
       {
-         type: "constant"
-         value: 0.1
+         type: "uniform"
+		 min: -0.3
+		 max: 0.3
       }
       axis: 1
       enable_noise: True
@@ -101,17 +97,9 @@ layer
 layer 
 {
    name: "relu2"
-   type: "PReLU"
+   type: "ReLU"
    bottom: "noisy1"
    top: "noisy1"
-   prelu_param 
-   {
-      filler 
-      {
-         type: "constant"
-         value: 0.25
-      }
-   }
 }
 layer 
 {
@@ -122,7 +110,7 @@ layer
    param 
    {
       lr_mult: 1
-      decay_mult: 2
+      decay_mult: 0
    }
    param 
    {
@@ -135,25 +123,20 @@ layer
       bias_term: True
       weight_filler 
       {
-         type: "xavier"
-         variance_norm: FAN_IN
+         type: "uniform"
+		 min: -0.3
+		 max: 0.3
       }
       bias_filler 
       {
-         type: "constant"
-         value: 0.1
+         type: "uniform"
+		 min: -0.3
+		 max: 0.3
       }
       axis: 1
       enable_noise: True
       sigma_init: 0.4
    }
-}
-layer 
-{
-   name: "Softmax1"
-   type: "Softmax"
-   bottom: "logits"
-   top: "logits"
 }
 layer 
 {
