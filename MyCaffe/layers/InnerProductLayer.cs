@@ -31,6 +31,7 @@ namespace MyCaffe.layers
         Blob<T> m_blobEpsilonWeight = null;
         Blob<T> m_blobEpsilonBias = null;
         Filler<T> m_fillerEpsilon = null;
+        Filler<T> m_fillerEpsilonBias = null;
 
         /// <summary>
         /// The InnerProductLayer constructor.
@@ -231,10 +232,9 @@ namespace MyCaffe.layers
                 // Add Noise sigma weight and bias
                 if (m_bEnableNoise)
                 {
-                    double dfRange = 1.0 / Math.Sqrt(blobWeight.num);
                     FillerParameter fp = new FillerParameter("uniform");
-                    fp.min = -dfRange;
-                    fp.max = dfRange;
+                    fp.min = -1;
+                    fp.max = 1;
                     m_fillerEpsilon = Filler<T>.Create(m_cuda, m_log, fp);
 
                     Blob<T> blobSigmaWeight = new Blob<T>(m_cuda, m_log);
@@ -324,11 +324,6 @@ namespace MyCaffe.layers
         private void resetNoise(Blob<T> b)
         {
             m_fillerEpsilon.Fill(b);
-
-            m_cuda.abs(b.count(), b.gpu_data, b.mutable_gpu_diff);
-            m_cuda.sqrt(b.count(), b.gpu_diff, b.mutable_gpu_diff);
-            m_cuda.sign(b.count(), b.gpu_data, b.mutable_gpu_data);
-            m_cuda.mul(b.count(), b.gpu_data, b.gpu_diff, b.mutable_gpu_data);
         }
 
         /// <summary>
