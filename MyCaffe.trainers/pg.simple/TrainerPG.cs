@@ -283,8 +283,8 @@ namespace MyCaffe.trainers.pg.simple
         public void Run(Phase phase, int nN, ITERATOR_TYPE type)
         {
             MemoryCollection m_rgMemory = new MemoryCollection();
-            double? dfRunningReward = null;
-            double dfRewardSum = 0;
+            double dfRunningReward = 0;
+            double dfEpisodeReward = 0;
             int nEpisode = 0;
             int nIteration = 0;
 
@@ -304,7 +304,7 @@ namespace MyCaffe.trainers.pg.simple
 
                 // Take the next step using the action
                 StateBase s_ = getData(phase, action);
-                dfRewardSum += s_.Reward;
+                dfEpisodeReward += s_.Reward;
 
                 if (phase == Phase.TRAIN)
                 {
@@ -335,13 +335,10 @@ namespace MyCaffe.trainers.pg.simple
                         m_brain.Train(nIteration);
 
                         // Update reward running
-                        if (!dfRunningReward.HasValue)
-                            dfRunningReward = dfRewardSum;
-                        else
-                            dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
+                        dfRunningReward = dfRunningReward * 0.99 + dfEpisodeReward * 0.01;
 
-                        updateStatus(nIteration, nEpisode, dfRewardSum, dfRunningReward.Value);
-                        dfRewardSum = 0;
+                        updateStatus(nIteration, nEpisode, dfEpisodeReward, dfRunningReward);
+                        dfEpisodeReward = 0;
 
                         s = getData(phase, -1);
                         m_rgMemory.Clear();
@@ -358,13 +355,10 @@ namespace MyCaffe.trainers.pg.simple
                         nEpisode++;
 
                         // Update reward running
-                        if (!dfRunningReward.HasValue)
-                            dfRunningReward = dfRewardSum;
-                        else
-                            dfRunningReward = dfRunningReward.Value * 0.99 + dfRewardSum * 0.01;
+                        dfRunningReward = dfRunningReward * 0.99 + dfEpisodeReward * 0.01;
 
-                        updateStatus(nIteration, nEpisode, dfRewardSum, dfRunningReward.Value);
-                        dfRewardSum = 0;
+                        updateStatus(nIteration, nEpisode, dfEpisodeReward, dfRunningReward);
+                        dfEpisodeReward = 0;
 
                         s = getData(phase, -1);
                     }
