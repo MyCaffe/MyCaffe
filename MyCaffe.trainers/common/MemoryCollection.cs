@@ -1,6 +1,7 @@
 ﻿using MyCaffe.basecode;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,8 +11,11 @@ namespace MyCaffe.trainers.common
     /// <summary>
     /// The memory collection stores a set of memory items.
     /// </summary>
-    public class MemoryCollection 
+    public class MemoryCollection
     {
+        int m_nCount = 0;
+        int[] m_rgIdx = null;
+        double[] m_rgfPriorities = null;
         /// <summary>
         /// Specifies the memory item list.
         /// </summary>
@@ -31,11 +35,37 @@ namespace MyCaffe.trainers.common
         }
 
         /// <summary>
+        /// Get/set the indexes associated with the collection (if any).
+        /// </summary>
+        public int[] Indexes
+        {
+            get { return m_rgIdx; }
+            set { m_rgIdx = value; }
+        }
+
+        /// <summary>
+        /// Get/set the priorities associated with the collection (if any).
+        /// </summary>
+        public double[] Priorities
+        {
+            get { return m_rgfPriorities; }
+            set { m_rgfPriorities = value; }
+        }
+
+        /// <summary>
+        /// Returns the next index.
+        /// </summary>
+        public int NextIndex
+        {
+            get { return m_nNextIdx; }
+        }
+
+        /// <summary>
         /// Returns the current count of items.
         /// </summary>
         public int Count
         {
-            get { return m_nNextIdx; }
+            get { return m_nCount; }
         }
 
         /// <summary>
@@ -59,6 +89,9 @@ namespace MyCaffe.trainers.common
 
             if (m_nNextIdx == m_rgItems.Length)
                 m_nNextIdx = 0;
+
+            if (m_nCount < m_rgItems.Length)
+                m_nCount++;
         }
 
         /// <summary>
@@ -69,17 +102,15 @@ namespace MyCaffe.trainers.common
         /// <returns>The sampled items are returned in a new MemoryCollection.</returns>
         public MemoryCollection GetRandomSamples(CryptoRandom random, int nCount)
         {
+            if (nCount >= Count)
+                return this;
+
             MemoryCollection col = new MemoryCollection(nCount);
-            List<int> rgIdx = new List<int>();
 
             while (col.Count < nCount)
             {
-                int nIdx = random.Next(m_rgItems.Length);
-                if (!rgIdx.Contains(nIdx))
-                {
-                    col.Add(m_rgItems[nIdx]);
-                    rgIdx.Add(nIdx);
-                }
+                int nIdx = random.Next(Count);
+                col.Add(m_rgItems[nIdx]);
             }
 
             return col;
@@ -109,7 +140,7 @@ namespace MyCaffe.trainers.common
         /// <returns>The data items are returned.</returns>
         public List<SimpleDatum> GetNextStateClip()
         {
-            if (m_rgItems[0].NextState.Clip != null)
+            if (m_rgItems[0].NextState != null && m_rgItems[0].NextState.Clip != null)
                 return m_rgItems.Select(p => p.NextState.Clip).ToList();
 
             return null;
@@ -130,7 +161,7 @@ namespace MyCaffe.trainers.common
         /// <returns>The data items are returned.</returns>
         public List<SimpleDatum> GetCurrentStateClip()
         {
-            if (m_rgItems[0].CurrentState.Clip != null)
+            if (m_rgItems[0].CurrentState != null && m_rgItems[0].CurrentState.Clip != null)
                 return m_rgItems.Select(p => p.CurrentState.Clip).ToList();
 
             return null;
@@ -184,6 +215,75 @@ namespace MyCaffe.trainers.common
         public float[] GetRewards()
         {
             return m_rgItems.Select(p => (float)p.Reward).ToArray();
+        }
+
+        /// <summary>
+        /// Save the memory items to file.
+        /// </summary>
+        /// <param name="strFile">Specifies the file name.</param>
+        public void Save(string strFile)
+        {
+            if (File.Exists(strFile))
+                File.Delete(strFile);
+
+            using (StreamWriter sw = new StreamWriter(strFile))
+            {
+                for (int i = 0; i < Count; i++)
+                {
+                    MemoryItem mi = m_rgItems[i];
+                    string strLine = mi.CurrentData.ToArrayAsString(4) + "," + mi.Action.ToString() + "," + mi.Reward.ToString() + "," + (mi.IsTerminated ? 1 : 0).ToString() + "," + mi.NextData.ToArrayAsString(4);
+                    sw.WriteLine(strLine);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Load all memory items from file.
+        /// </summary>
+        /// <param name="strFile">Specifies the file containing the memory items.</param>
+        public void Load(string strFile)
+        {
+            m_nNextIdx = 0;
+            m_nCount = 0;
+
+            List<MemoryItem> rg = new List<MemoryItem>();
+
+            using (StreamReader sr = new StreamReader(strFile))
+            {
+                string strLine = sr.ReadLine();
+
+                while (strLine != null)
+                {
+                    string[] rgstr = strLine.Split(',');
+                    int nIdx = 0;
+
+                    List<double> rgdfData = new List<double>();
+                    rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
+                    rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
+                    rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
+                    rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
+                    SimpleDatum sdCurrent = new SimpleDatum(true, 4, 1, 1, -1, DateTime.MinValue, null, rgdfData, 0, false, -1);
+
+                    int nAction = int.Parse(rgstr[nIdx]); nIdx++;
+                    double dfReward = double.Parse(rgstr[nIdx]); nIdx++;
+                    bool bTerminated = (int.Parse(rgstr[nIdx]) == 1) ? true : false; nIdx++;
+
+                    rgdfData = new List<double>();
+                    rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
+                    rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
+                    rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
+                    rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
+                    SimpleDatum sdNext = new SimpleDatum(true, 4, 1, 1, -1, DateTime.MinValue, null, rgdfData, 0, false, -1);
+
+                    rg.Add(new MemoryItem(null, sdCurrent, nAction, null, sdNext, dfReward, bTerminated, 0, 0));
+                    strLine = sr.ReadLine();
+                }
+            }
+
+            foreach (MemoryItem m in rg)
+            {
+                Add(m);
+            }
         }
     }
 

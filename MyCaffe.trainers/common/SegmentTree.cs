@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -33,7 +34,7 @@ namespace MyCaffe.trainers.common
         /// <summary>
         /// Specifies the data of the tree.
         /// </summary>
-        protected float[] m_rgfValues;
+        protected double[] m_rgfValues;
 
         /// <summary>
         /// Specifies the operations used during the reduction.
@@ -63,7 +64,7 @@ namespace MyCaffe.trainers.common
 
             m_nCapacity = nCapacity;
             m_op = oper;
-            m_rgfValues = new float[2 * nCapacity];
+            m_rgfValues = new double[2 * nCapacity];
 
             for (int i = 0; i < m_rgfValues.Length; i++)
             {
@@ -71,7 +72,7 @@ namespace MyCaffe.trainers.common
             }
         }
 
-        private float operation(float f1, float f2)
+        private double operation(double f1, double f2)
         {
             switch (m_op)
             {
@@ -86,8 +87,14 @@ namespace MyCaffe.trainers.common
             }
         }
 
-        private float reduce_helper(int nStart, int nEnd, int nNode, int nNodeStart, int nNodeEnd)
+        private double reduce_helper(int nStart, int nEnd, int nNode, int nNodeStart, int nNodeEnd)
         {
+            if (nEnd < 0)
+            {
+                Trace.WriteLine("**SegmentTree: nEnd is less than zero and should not be.");
+                return m_rgfValues[nNode];
+            }
+
             if (nStart == nNodeStart && nEnd == nNodeEnd)
                 return m_rgfValues[nNode];
 
@@ -105,8 +112,8 @@ namespace MyCaffe.trainers.common
                 }
                 else
                 {
-                    float f1 = reduce_helper(nStart, nMid, 2 * nNode, nNodeStart, nMid);
-                    float f2 = reduce_helper(nMid + 1, nEnd, 2 * nNode + 1, nMid + 1, nNodeEnd);
+                    double f1 = reduce_helper(nStart, nMid, 2 * nNode, nNodeStart, nMid);
+                    double f2 = reduce_helper(nMid + 1, nEnd, 2 * nNode + 1, nMid + 1, nNodeEnd);
                     return operation(f1, f2);
                 }
             }
@@ -119,16 +126,17 @@ namespace MyCaffe.trainers.common
         /// <param name="nStart">Beginning of the subsequence.</param>
         /// <param name="nEnd">End of the subsequence</param>
         /// <returns></returns>
-        public float reduce(int nStart, int? nEnd = null)
+        public double reduce(int nStart, int? nEnd = null)
         {
-            int nEnd1 = nEnd.GetValueOrDefault(m_nCapacity);
+            if (!nEnd.HasValue)
+                nEnd = m_nCapacity;
 
-            if (nEnd1 < 0)
-                nEnd1 += m_nCapacity;
+            if (nEnd < 0)
+                nEnd += m_nCapacity;
 
-            nEnd1 -= 1;
+            nEnd -= 1;
 
-            return reduce_helper(nStart, nEnd1, 1, 0, m_nCapacity - 1);
+            return reduce_helper(nStart, nEnd.Value, 1, 0, m_nCapacity - 1);
         }
 
         /// <summary>
@@ -136,7 +144,7 @@ namespace MyCaffe.trainers.common
         /// </summary>
         /// <param name="nIdx">Specifies the index of the item to access.</param>
         /// <returns>The item at the specified index is returned.</returns>
-        public float this[int nIdx]
+        public double this[int nIdx]
         {
             get
             {
@@ -181,7 +189,7 @@ namespace MyCaffe.trainers.common
         /// <param name="nStart">Beginning of the subsequence.</param>
         /// <param name="nEnd">End of the subsequence</param>
         /// <returns>Returns the sum of all items in the array.</returns>
-        public float sum(int nStart = 0, int? nEnd = null)
+        public double sum(int nStart = 0, int? nEnd = null)
         {
             return reduce(nStart, nEnd);
         }
@@ -194,12 +202,12 @@ namespace MyCaffe.trainers.common
         /// </remarks>
         /// <param name="fPrefixSum">Specifies the upper bound on the sum of array prefix.</param>
         /// <returns>The highest index satisfying the prefixsum constraint is returned.</returns>
-        public int find_prefixsum_idx(float fPrefixSum)
+        public int find_prefixsum_idx(double fPrefixSum)
         {
             if (fPrefixSum < 0)
                 throw new Exception("The prefix sum must be greater than zero.");
 
-            float fSum = sum() + (float)1e-5;
+            double fSum = sum() + 1e-5;
             if (fPrefixSum > fSum)
                 throw new Exception("The prefix sum cannot exceed the overall sum of '" + fSum.ToString() + "'!");
 
@@ -241,7 +249,7 @@ namespace MyCaffe.trainers.common
         /// <param name="nStart">Beginning of the subsequence.</param>
         /// <param name="nEnd">End of the subsequence</param>
         /// <returns>The minimum item in the sequence is returned.</returns>
-        public float min(int nStart = 0, int? nEnd = null)
+        public double min(int nStart = 0, int? nEnd = null)
         {
             return reduce(nStart, nEnd);
         }
