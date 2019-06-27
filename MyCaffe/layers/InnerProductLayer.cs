@@ -31,7 +31,6 @@ namespace MyCaffe.layers
         Blob<T> m_blobEpsilonWeight = null;
         Blob<T> m_blobEpsilonBias = null;
         Filler<T> m_fillerEpsilon = null;
-        Filler<T> m_fillerEpsilonBias = null;
 
         /// <summary>
         /// The InnerProductLayer constructor.
