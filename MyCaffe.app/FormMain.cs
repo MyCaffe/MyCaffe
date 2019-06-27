@@ -1219,7 +1219,7 @@ namespace MyCaffe.app
                 bAllowDiscountReset = dlg.AllowDiscountReset;
                 strTrainer = dlg.Trainer;
 
-                Text = "MyCaffe - Cart-Pole " + strTrainer + " [MiniBatch = " + nMiniBatch.ToString() + " UseAccelTrain=" + bUseAccelTrain.ToString() + " DiscountReset=" + bAllowDiscountReset.ToString() + "]";
+                Text = "MyCaffe - Cart-Pole " + strTrainer + " [MiniBatch = " + nMiniBatch.ToString() + ", UseAccelTrain=" + bUseAccelTrain.ToString() + ", DiscountReset=" + bAllowDiscountReset.ToString() + "]";
 
                 m_log.WriteLine("starting policy gradient cart-pole test...");
                 m_evtCancelTraining.Reset();
@@ -1274,7 +1274,12 @@ namespace MyCaffe.app
                 dfVMin = dlg.VMin;
                 dfVMax = dlg.VMax;
 
-                Text = "MyCaffe - ATARI(" + m_strAtariRom + ") " + strTrainer + " [MiniBatch = " + nMiniBatch.ToString() + " UseAccelTrain=" + bUseAccelTrain.ToString() + " DiscountReset=" + bAllowDiscountReset.ToString() + " VMin=" + dfVMin.ToString("N1") + " VMax=" + dfVMax.ToString("N1") + "]";
+                string strVMinMax = "";
+
+                if (strTrainer.Contains("C51"))
+                    strVMinMax = ", VMin=" + dfVMin.ToString("N1") + " VMax=" + dfVMax.ToString("N1");
+
+                Text = "MyCaffe - ATARI(" + m_strAtariRom + ") " + strTrainer + " [MiniBatch = " + nMiniBatch.ToString() + ", UseAccelTrain=" + bUseAccelTrain.ToString() + ", DiscountReset=" + bAllowDiscountReset.ToString() + strVMinMax + "]";
 
                 m_log.WriteLine("starting " + strTrainer + " ATARI (" + m_strAtariRom + ") test...");
                 m_evtCancelTraining.Reset();
