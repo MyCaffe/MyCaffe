@@ -1232,6 +1232,28 @@ template long Device<float>::cuda_gemv(long lInput, float* pfInput, long* plOutp
 
 
 template <class T>
+long Device<T>::cuda_ger(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	int m = (int)pfInput[1];
+	T fAlpha = pfInput[2];
+	long hA = (long)pfInput[3];
+	long hB = (long)pfInput[4];
+	long hC = (long)pfInput[5];
+
+	return m_math.ger(m, n, fAlpha, hA, hB, hC);
+}
+
+template long Device<double>::cuda_ger(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_ger(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_axpy(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
@@ -2053,6 +2075,25 @@ long Device<T>::cuda_sum(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 
 template long Device<double>::cuda_sum(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
 template long Device<float>::cuda_sum(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
+long Device<T>::cuda_sqrt_scale(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	long hX = (long)pfInput[1];
+	long hY = (long)pfInput[2];
+
+	return m_math.sqrt_scale(n, hX, hY);
+}
+
+template long Device<double>::cuda_sqrt_scale(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_sqrt_scale(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>

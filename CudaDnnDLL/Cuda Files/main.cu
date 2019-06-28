@@ -413,6 +413,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_GEMV:
 			return m_device.cuda_gemv(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_GER:
+			return m_device.cuda_ger(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_AXPY:
 			return m_device.cuda_axpy(lCount, pfInput, plCount, ppfOutput);
 
@@ -508,6 +511,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 
 		case CUDA_FN_SUM:
 			return m_device.cuda_sum(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_SQRT_SCALE:
+			return m_device.cuda_sqrt_scale(lCount, pfInput, plCount, ppfOutput);
 
 		case CUDA_FN_WIDTH:
 			return m_device.cuda_width(lCount, pfInput, plCount, ppfOutput);
@@ -1224,6 +1230,9 @@ char* GetApiName(long lfnIdx)
 	case CUDA_FN_GEMV:
 		return "CUDA_FN_GEMV";
 
+	case CUDA_FN_GER:
+		return "CUDA_FN_GER";
+
 	case CUDA_FN_AXPY:
 		return "CUDA_FN_AXPY";
 
@@ -1283,6 +1292,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_SQRT:
 		return "CUDA_FN_SQRT";
+
+	case CUDA_FN_SQRT_SCALE:
+		return "CUDA_FN_SQRT_SCALE";
 
 	case CUDA_FN_RECIPROCOL:
 		return "CUDA_FN_RECIPROCOL";

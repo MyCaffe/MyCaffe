@@ -268,6 +268,7 @@ class Device
 		long cuda_gemm(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_gemm2(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_gemv(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_ger(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_axpy(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_axpby(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_scal(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -288,6 +289,7 @@ class Device
 		long cuda_powx(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_sign(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_sqrt(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_sqrt_scale(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_reciprocol(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_student(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_logistic1(long lInput, T* pfInput, long* plOutput, T** ppfOutput);

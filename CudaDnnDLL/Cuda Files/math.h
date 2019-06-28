@@ -125,6 +125,7 @@ class Math
 		long powx(int n, long hA, T fAlpha, long hY, int nAOff = 0, int nYOff = 0);
 		long sign(int n, long hX, long hY, int nXOff = 0, int nYOff = 0);
 		long sqrt(int n, long hX, long hY);
+		long sqrt_scale(int n, long hX, long hY);
 		long reciprocol(int n, long hX, long hY);
 		long student(int n, long hX, long hY);
 		long logistic1(int n, long hX, long hY);

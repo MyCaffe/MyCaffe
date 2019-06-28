@@ -445,6 +445,8 @@ namespace MyCaffe.common
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, long hA, long hB, float fBeta, long hC);
         void gemv(bool bTransA, int m, int n, double fAlpha, long hA, long hX, double fBeta, long hY);
         void gemv(bool bTransA, int m, int n, float fAlpha, long hA, long hX, float fBeta, long hY);
+        void ger(int m, int n, double fAlpha, long hX, long hY, long hA);
+        void ger(int m, int n, float fAlpha, long hX, long hY, long hA);
         void axpy(int n, double fAlpha, long hX, long hY);
         void axpy(int n, float fAlpha, long hX, long hY);
         void axpby(int n, double fAlpha, long hX, double fBeta, long hY);
@@ -477,6 +479,8 @@ namespace MyCaffe.common
         double max(int n, long hA, int nAOff = 0);
         double sumsq(int n, long hW, long hA, int nAOff = 0);
         double sumsqdiff(int n, long hW, long hA, long hB, int nAOff = 0, int nBOff = 0);
+        void sqrt(int n, long hA, long hY);
+        void sqrt_scale(int n, long hA, long hY);
 
         void im2col(long hDataIm, int nDataImOffset, int nChannels, int nHeight, int nWidth, int nKernelH, int nKernelW, int nPadH, int nPadW, int nStrideH, int nStrideW, int nDilationH, int nDilationW, long hDataCol, int nDataColOffset);
         void im2col_nd(long hDataIm, int nDataImOffset, int nNumSpatialAxes, int nColCount, int nChannelAxis, long hImShape, long hColShape, long hKernelShape, long hPad, long hStride, long hDilation, long hDataCol, int nDataColOffset);
@@ -744,6 +748,8 @@ namespace MyCaffe.common
             CUDA_SUB_AND_DOT = 253,
             CUDA_MINMAXVAL = 254,
             CUDA_SUM = 255,
+            CUDA_SQRT_SCALE = 256,
+            CUDA_GER = 257,
 
             CUDA_IM2COL = 280,
             CUDA_IM2COL_ND = 281,
@@ -4593,6 +4599,60 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Perform a vector-vector multiplication operation: A = x * (fAlpha * y) (where x and y are vectors and A is an m x n Matrix)
+        /// </summary>
+        /// <remarks>
+        /// This function uses [NVIDIA's cuBlas](https://developer.nvidia.com/cublas) but with a different parameter ordering.
+        /// </remarks>
+        /// <param name="m">Specifies the length of X and rows in A (m x n).</param>
+        /// <param name="n">Specifies the length of Y and cols in A (m x n).</param>
+        /// <param name="fAlpha">Specifies a scalar multiplied by y where the scalar is of type 'T'.</param>
+        /// <param name="hX">Specifies a handle to the data for matrix X (m in length) in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the data for vector Y (n in length) in GPU memory.</param>
+        /// <param name="hA">Specifies a handle to the data for matrix A (m x n) in GPU memory.</param>
+        public void ger(int m, int n, double fAlpha, long hX, long hY, long hA)
+        {
+            ger(m, n, (T)Convert.ChangeType(fAlpha, typeof(T)), hX, hY, hA);
+        }
+
+        /// <summary>
+        /// Perform a vector-vector multiplication operation: A = x * (fAlpha * y) (where x and y are vectors and A is an m x n Matrix)
+        /// </summary>
+        /// <remarks>
+        /// This function uses [NVIDIA's cuBlas](https://developer.nvidia.com/cublas) but with a different parameter ordering.
+        /// </remarks>
+        /// <param name="m">Specifies the length of X and rows in A (m x n).</param>
+        /// <param name="n">Specifies the length of Y and cols in A (m x n).</param>
+        /// <param name="fAlpha">Specifies a scalar multiplied by y where the scalar is of type 'T'.</param>
+        /// <param name="hX">Specifies a handle to the data for matrix X (m in length) in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the data for vector Y (n in length) in GPU memory.</param>
+        /// <param name="hA">Specifies a handle to the data for matrix A (m x n) in GPU memory.</param>
+        public void ger(int m, int n, float fAlpha, long hX, long hY, long hA)
+        {
+            ger(m, n, (T)Convert.ChangeType(fAlpha, typeof(T)), hX, hY, hA);
+        }
+
+        /// <summary>
+        /// Perform a vector-vector multiplication operation: A = x * (fAlpha * y) (where x and y are vectors and A is an m x n Matrix)
+        /// </summary>
+        /// <remarks>
+        /// This function uses [NVIDIA's cuBlas](https://developer.nvidia.com/cublas) but with a different parameter ordering.
+        /// </remarks>
+        /// <param name="m">Specifies the length of X and rows in A (m x n).</param>
+        /// <param name="n">Specifies the length of Y and cols in A (m x n).</param>
+        /// <param name="fAlpha">Specifies a scalar multiplied by y where the scalar is of type 'T'.</param>
+        /// <param name="hX">Specifies a handle to the data for matrix X (m in length) in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the data for vector Y (n in length) in GPU memory.</param>
+        /// <param name="hA">Specifies a handle to the data for matrix A (m x n) in GPU memory.</param>
+        public void ger(int m, int n, T fAlpha, long hX, long hY, long hA)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GER, new double[] { m, n, convertD(fAlpha), hX, hY, hA });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GER, new float[] { m, n, convertF(fAlpha), hX, hY, hA });
+        }
+
+        /// <summary>
         /// Multiply the vector X by a scalar and add the result to the vector Y.
         /// </summary>
         /// <remarks>
@@ -5343,6 +5403,20 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SQRT, new double[] { n, hX, hY });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SQRT, new float[] { n, hX, hY });
+        }
+
+        /// <summary>
+        /// Scale the data by the sqrt of the data.  y = sqrt(abs(x)) * sign(x)
+        /// </summary>
+        /// <param name="nCount">Specifies the number of elements.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
+        public void sqrt_scale(int nCount, long hX, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SQRT_SCALE, new double[] { nCount, hX, hY });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SQRT_SCALE, new float[] { nCount, hX, hY });
         }
 
         public void reciprocol(int n, long hX, long hY) /** @private */

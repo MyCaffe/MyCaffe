@@ -211,6 +211,8 @@ const int CUDA_FN_DENAN = 252;
 const int CUDA_FN_SUB_AND_DOT = 253;
 const int CUDA_FN_MINMAXVAL = 254;
 const int CUDA_FN_SUM = 255;
+const int CUDA_FN_SQRT_SCALE = 256;
+const int CUDA_FN_GER = 257;
 
 const int CUDA_FN_IM2COL = 280;
 const int CUDA_FN_IM2COL_ND = 281;

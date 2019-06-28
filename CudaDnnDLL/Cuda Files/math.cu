@@ -198,6 +198,12 @@ inline __device__ double math_atomic_max(double* address, double val)
 	return __longlong_as_double(ret);
 }
 
+template<typename T>
+inline __device__ T math_sign(T val)
+{
+	return (T(0) < val) - (val < T(0));
+}
+
 
 //=============================================================================
 //	Class Methods
@@ -582,7 +588,7 @@ long Math<double>::ger(int m, int n, double fAlpha, long hA, long hB, long hC, i
 	if (lErr = cublasGetStream(m_cublas, &stream))
 		return lErr | ERROR_CUBLAS_OFFSET;
 
-	if (lErr = cublasDger(m_cublas, m, n, &fAlpha, a, 1, b, 1, c, 1))
+	if (lErr = cublasDger(m_cublas, n, m, &fAlpha, a, 1, b, 1, c, m))
 		return lErr | ERROR_CUBLAS_OFFSET;
 
 	return cudaStreamSynchronize(stream);
@@ -626,7 +632,7 @@ long Math<float>::ger(int m, int n, float fAlpha, long hA, long hB, long hC, int
 	if (lErr = cublasGetStream(m_cublas, &stream))
 		return lErr | ERROR_CUBLAS_OFFSET;
 
-	if (lErr = cublasSger(m_cublas, m, n, &fAlpha, a, 1, b, 1, c, 1))
+	if (lErr = cublasSger(m_cublas, n, m, &fAlpha, a, 1, b, 1, c, m))
 		return lErr | ERROR_CUBLAS_OFFSET;
 
 	return cudaStreamSynchronize(stream);
@@ -3386,6 +3392,37 @@ long Math<T>::sqrt(int n, long hX, long hY)
 
 template long Math<double>::sqrt(int n, long hA, long hY);
 template long Math<float>::sqrt(int n, long hA, long hY);
+
+
+template <typename T>
+__global__ void sqrt_scale_kernel(const int n, T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		y[i] = math_sign(x[i]) * sqrt(abs(x[i]));
+	}
+}
+
+template <typename T>
+long Math<T>::sqrt_scale(int n, long hX, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	sqrt_scale_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >>>(n, (T*)pX->Data(), (T*)pY->Data());
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::sqrt_scale(int n, long hX, long hY);
+template long Math<float>::sqrt_scale(int n, long hX, long hY);
 
 
 template <class T>
