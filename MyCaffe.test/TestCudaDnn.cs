@@ -962,6 +962,165 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestMath_sqrt_scale()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    long h1 = 0;
+                    long h2 = 0;
+
+                    try
+                    {
+                        List<double> rg1 = new List<double>();
+                        int nCount = 1000;
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            rg1.Add((i - nCount/2) * 0.1);
+                        }
+
+                        h1 = t.Cuda.AllocMemory(rg1);
+                        h2 = t.Cuda.AllocMemory(nCount);
+
+                        t.Cuda.sqrt_scale(nCount, h1, h2);
+
+                        if (t.DataType == DataType.DOUBLE)
+                        {
+                            double[] rg2 = t.Cuda.get_double(nCount, h2);
+
+                            for (int i = 0; i < rg1.Count; i++)
+                            {
+                                double dfSqrtScale = Math.Abs(rg1[i]);
+                                dfSqrtScale = Math.Sqrt(dfSqrtScale);
+                                dfSqrtScale *= Math.Sign(rg1[i]);
+
+                                t.Log.CHECK_EQ(dfSqrtScale, rg2[i], "The scaled values at i=" + i.ToString() + " are not the same!");
+                            }
+                        }
+                        else
+                        {
+                            float[] rg2 = t.Cuda.get_float(nCount, h2);
+
+                            for (int i = 0; i < rg1.Count; i++)
+                            {
+                                float dfSqrtScale = (float)Math.Abs(rg1[i]);
+                                dfSqrtScale = (float)Math.Sqrt(dfSqrtScale);
+                                dfSqrtScale *= Math.Sign(rg1[i]);
+
+                                t.Log.CHECK_EQ(dfSqrtScale, rg2[i], "The scaled values at i=" + i.ToString() + " are not the same!");
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        if (h1 > 0)
+                            t.Cuda.FreeMemory(h1);
+
+                        if (h2 > 0)
+                            t.Cuda.FreeMemory(h2);
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
+        public void TestMath_ger()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    long hX = 0;
+                    long hY = 0;
+                    long hA = 0;
+
+                    try
+                    {
+                        List<double> rgX = new List<double>();
+                        List<double> rgY = new List<double>();
+                        int nM = 12;
+                        int nN = 12;
+
+                        for (int i = 0; i < nM; i++)
+                        {
+                            rgX.Add((i - nM / 2) * 0.1);
+                        }
+
+                        for (int i = 0; i < nN; i++)
+                        {
+                            rgY.Add((i - nN / 4) * 0.4);
+                        }
+
+                        hX = t.Cuda.AllocMemory(rgX);
+                        hY = t.Cuda.AllocMemory(rgY);
+                        hA = t.Cuda.AllocMemory(nM * nN);
+
+                        t.Cuda.ger(nM, nN, 1.0f, hX, hY, hA);
+
+                        if (t.DataType == DataType.DOUBLE)
+                        {
+                            double[] rgX1 = t.Cuda.get_double(nM, hX);
+                            double[] rgY1 = t.Cuda.get_double(nN, hY);
+                            double[] rgA1 = t.Cuda.get_double(nM * nN, hA);
+
+                            for (int i = 0; i < rgY1.Length; i++)
+                            {
+                                for (int j = 0; j < rgX1.Length; j++)
+                                {
+                                    double dfValExpected = rgY1[i] * rgX1[j];
+                                    double dfVal = rgA1[i * rgX1.Length + j];
+                                    t.Log.EXPECT_NEAR(dfVal, dfValExpected, 0.00001, "The value is not as expected.");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            double[] rgX1 = t.Cuda.get_double(nM, hX);
+                            double[] rgY1 = t.Cuda.get_double(nN, hY);
+                            double[] rgA1 = t.Cuda.get_double(nM * nN, hA);
+
+                            for (int i = 0; i < rgY1.Length; i++)
+                            {
+                                for (int j = 0; j < rgX1.Length; j++)
+                                {
+                                    double dfValExpected = rgY1[i] * rgX1[j];
+                                    double dfVal = rgA1[i * rgX1.Length + j];
+                                    t.Log.EXPECT_NEAR(dfVal, dfValExpected, 0.00001, "The value is not as expected.");
+                                }
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        if (hX > 0)
+                            t.Cuda.FreeMemory(hX);
+
+                        if (hY > 0)
+                            t.Cuda.FreeMemory(hY);
+
+                        if (hA > 0)
+                            t.Cuda.FreeMemory(hA);
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestMath_setget()
         {
             CudaDnnTest test = new CudaDnnTest();
