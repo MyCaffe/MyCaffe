@@ -321,7 +321,7 @@ namespace MyCaffe.trainers.noisy.dqn.simple
         public void Run(Phase phase, int nN, ITERATOR_TYPE type, TRAIN_STEP step)
         {
             IMemoryCollection iMemory = MemoryCollectionFactory.CreateMemory(m_memType, m_nMemorySize, m_fPriorityAlpha);
-            int nIteration = 0;
+            int nIteration = 1;
             double dfRunningReward = 0;
             double dfEpisodeReward = 0;
             int nEpisode = 0;
@@ -644,6 +644,7 @@ namespace MyCaffe.trainers.noisy.dqn.simple
         {
             m_mycaffe.Log.Enable = false;
             m_net.CopyTrainedLayersTo(m_netTarget);
+            m_net.CopyInternalBlobsTo(m_netTarget);
             m_mycaffe.Log.Enable = true;
             m_bModelUpdated = true;
         }
@@ -1091,24 +1092,31 @@ namespace MyCaffe.trainers.noisy.dqn.simple
 
         private void save(StreamWriter sw, InnerProductLayer<T> layer)
         {
-            float[] rgfwt = Utility.ConvertVecF<T>(layer.blobs[0].mutable_cpu_data);
-            float[] rgfb = Utility.ConvertVecF<T>(layer.blobs[1].mutable_cpu_data);
-            string strLine = "";
-
-            for (int i = 0; i < rgfwt.Length; i++)
+            for (int i = 0; i < layer.blobs.Count; i++)
             {
-                strLine += rgfwt[i].ToString() + ",";
+                float[] rgf = Utility.ConvertVecF<T>(layer.blobs[i].mutable_cpu_data);
+                string strLine = "";
+
+                for (int j = 0; j < rgf.Length; j++)
+                {
+                    strLine += rgf[j].ToString() + ",";
+                }
+
+                sw.WriteLine(strLine.TrimEnd(','));
             }
 
-            sw.WriteLine(strLine.TrimEnd(','));
-            strLine = "";
-
-            for (int i = 0; i < rgfb.Length; i++)
+            for (int i = 0; i < layer.internal_blobs.Count; i++)
             {
-                strLine += rgfb[i].ToString() + ",";
-            }
+                float[] rgf = Utility.ConvertVecF<T>(layer.internal_blobs[i].mutable_cpu_data);
+                string strLine = "";
 
-            sw.WriteLine(strLine.TrimEnd(','));
+                for (int j = 0; j < rgf.Length; j++)
+                {
+                    strLine += rgf[j].ToString() + ",";
+                }
+
+                sw.WriteLine(strLine.TrimEnd(','));
+            }
         }
 
         /// <summary>
@@ -1133,28 +1141,33 @@ namespace MyCaffe.trainers.noisy.dqn.simple
 
         private void load(StreamReader sr, InnerProductLayer<T> layer)
         {
-            List<float> rgfwt = new List<float>();
-            List<float> rgfb = new List<float>();
-            string strLine;
-
-            strLine = sr.ReadLine();
-            string[] rgstr = strLine.Split(',');
-
-            for (int i = 0; i < rgstr.Length; i++)
+            for (int i = 0; i < layer.blobs.Count; i++)
             {
-                rgfwt.Add(float.Parse(rgstr[i]));
+                List<float> rgf = new List<float>();
+                string strLine = sr.ReadLine();
+                string[] rgstr = strLine.Split(',');
+
+                for (int j = 0; j < rgstr.Length; j++)
+                {
+                    rgf.Add(float.Parse(rgstr[j]));
+                }
+
+                layer.blobs[i].mutable_cpu_data = Utility.ConvertVec<T>(rgf.ToArray());
             }
 
-            strLine = sr.ReadLine();
-            rgstr = strLine.Split(',');
-
-            for (int i = 0; i < rgstr.Length; i++)
+            for (int i = 0; i < layer.internal_blobs.Count; i++)
             {
-                rgfb.Add(float.Parse(rgstr[i]));
-            }
+                List<float> rgf = new List<float>();
+                string strLine = sr.ReadLine();
+                string[] rgstr = strLine.Split(',');
 
-            layer.blobs[0].mutable_cpu_data = Utility.ConvertVec<T>(rgfwt.ToArray());
-            layer.blobs[1].mutable_cpu_data = Utility.ConvertVec<T>(rgfb.ToArray());
+                for (int j = 0; j < rgstr.Length; j++)
+                {
+                    rgf.Add(float.Parse(rgstr[j]));
+                }
+
+                layer.internal_blobs[i].mutable_cpu_data = Utility.ConvertVec<T>(rgf.ToArray());
+            }
         }
     }
 }
