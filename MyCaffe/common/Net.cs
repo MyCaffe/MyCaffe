@@ -31,6 +31,7 @@ namespace MyCaffe.common
 
         // The phase: TRAIN or TEST
         Phase m_phase = Phase.NONE;
+        Phase m_phaseOriginal = Phase.NONE;
 
         // Individual layers in the net.
         List<Layer<T>> m_rgLayers = new List<Layer<T>>();
@@ -289,6 +290,8 @@ namespace MyCaffe.common
                 {
                     m_phase = p.state.phase;
                 }
+
+                m_phaseOriginal = m_phase;
 
                 scanForRecommendations(p);
 
@@ -746,6 +749,38 @@ namespace MyCaffe.common
 
             e.Data = m_hWorkspaceData;
             e.Size = m_lWorkspaceSize;
+        }
+
+        /// <summary>
+        /// Change the phase of the network.
+        /// </summary>
+        /// <param name="phase">Specifies the new phase.</param>
+        /// <returns>The previous phase is returned.</returns>
+        public Phase SetPhase(Phase phase)
+        {
+            Phase phaseOriginal = m_phase;
+
+            m_phase = phase;
+
+            for (int i = 0; i < m_rgLayers.Count; i++)
+            {
+                m_rgLayers[i].SetPhase(phase);
+            }
+
+            return phaseOriginal;
+        }
+
+        /// <summary>
+        /// Restore the network phase to its original state.
+        /// </summary>
+        public void RestorePhase()
+        {
+            m_phase = m_phaseOriginal;
+
+            for (int i = 0; i < m_rgLayers.Count; i++)
+            {
+                m_rgLayers[i].SetPhase(m_phase);
+            }
         }
 
         /// <summary>
@@ -1508,6 +1543,21 @@ namespace MyCaffe.common
                     m_log.CHECK(Utility.Compare<int>(target_blobs[j].shape(), source_blob.shape()), "Cannot share param " + j.ToString() + " weights from layer '" + source_layer_name + "'; shape mismatch.  Source param shape is " + source_blob.shape_string + "; target param shape is " + target_blobs[j].shape_string);
                     target_blobs[j].ShareData(source_blob);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Copy the internal blobs from one net to another.
+        /// </summary>
+        /// <param name="dstNet">Specifies the destination net.</param>
+        public void CopyInternalBlobsTo(Net<T> dstNet)
+        {
+            m_log.CHECK_EQ(m_rgLayers.Count, dstNet.m_rgLayers.Count, "Both networks must have the same number of layers!");
+
+            for (int i = 0; i < m_rgLayers.Count; i++)
+            {
+                m_log.CHECK_EQ(m_rgLayers[i].internal_blobs.Count, dstNet.m_rgLayers[i].internal_blobs.Count, "Both networks must have the same number of internal blobs at layer " + i.ToString());
+                dstNet.m_rgLayers[i].internal_blobs.CopyFrom(m_rgLayers[i].internal_blobs);
             }
         }
 
