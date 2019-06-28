@@ -25,10 +25,10 @@ namespace MyCaffe.trainers.noisy.dqn.simple
     /// <remarks>
     /// @see [Noisy Networks for Exploration](https://arxiv.org/abs/1706.10295), Meire Fortunato, Mohammad Gheshlaghi Azar, Bilal Piot, Jacob Menick, Ian Osband, Alex Graves, Vlad Mnih, Remi Munos, Demis Hassabis, Olivier Pietquin, Charles Blundell, Shane Legg, arXiv:1706.10295
     /// @see [Prioritized Experience Replay](https://arxiv.org/abs/1511.05952), Tom Schaul, John Quan, Ioannis Antonoglou, David Silver, 2016
-    /// @see [Github:google/dopamine](https://github.com/google/dopamine/blob/master/dopamine/agents/dqn/dqn_agent.py), Google, 2018 Apache 2.0
-    /// @see [GitHub:Kyushik/DRL](https://github.com/Kyushik/DRL/blob/master/06_NoisyNet_DQN.py), Kyushik 2019
+    /// @see [Github:google/dopamine](https://github.com/google/dopamine/blob/master/dopamine/agents/dqn/dqn_agent.py), Google, 2018, license Apache 2.0
+    /// @see [GitHub:Kyushik/DRL](https://github.com/Kyushik/DRL/blob/master/06_NoisyNet_DQN.py), Kyushik 2019, license MIT
+    /// @see [Github:openai/baselines](https://github.com/openai/baselines/blob/master/baselines/deepq/replay_buffer.py), OpenAI, 2018, license MIT
     /// @see [Github:higgsfield/RL-Adventure](https://github.com/higgsfield/RL-Adventure), higgsfield, 2018
-    /// @see [Github:openai/baselines](https://github.com/openai/baselines/blob/master/baselines/deepq/replay_buffer.py), OpenAI, 2018
     /// </remarks>
     /// <typeparam name="T"></typeparam>
     public class TrainerNoisyDqn<T> : IxTrainerRL, IDisposable
