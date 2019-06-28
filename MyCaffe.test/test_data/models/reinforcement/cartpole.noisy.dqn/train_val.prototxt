@@ -38,14 +38,14 @@ layer
       weight_filler 
       {
          type: "uniform"
-		 min: -0.3
-		 max: 0.3
+		 min: -1
+		 max: 1
       }
       bias_filler 
       {
          type: "uniform"
-		 min: -0.3
-		 max: 0.3
+		 min: -1
+		 max: 1
       }
       axis: 1
    }
@@ -80,18 +80,18 @@ layer
       weight_filler 
       {
          type: "uniform"
-		 min: -0.3
-		 max: 0.3
+		 min: -1
+		 max: 1
       }
       bias_filler 
       {
          type: "uniform"
-		 min: -0.3
-		 max: 0.3
+		 min: -1
+		 max: 1
       }
       axis: 1
       enable_noise: True
-      sigma_init: 0.4
+      sigma_init: 0.17
    }
 }
 layer 
@@ -135,7 +135,7 @@ layer
       }
       axis: 1
       enable_noise: True
-      sigma_init: 0.4
+      sigma_init: 0.17
    }
 }
 layer 
