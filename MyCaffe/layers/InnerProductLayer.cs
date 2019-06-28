@@ -28,7 +28,6 @@ namespace MyCaffe.layers
         bool m_bTranspose;
         bool m_bEnableNoise = false;
         double m_dfSigmaInit = 0;
-        Blob<T> m_blobNoise = null;
         Blob<T> m_blobEpsilonWeight = null;
         Blob<T> m_blobEpsilonBias = null;
         Filler<T> m_fillerEpsilon = null;
@@ -60,8 +59,6 @@ namespace MyCaffe.layers
 
             if (p.inner_product_param.enable_noise)
             {
-                m_blobNoise = new Blob<T>(m_cuda, m_log);
-
                 m_blobEpsilonWeight = new Blob<T>(cuda, log);
                 m_blobEpsilonWeight.Name = "epsilon_wt";
 
@@ -88,12 +85,6 @@ namespace MyCaffe.layers
             {
                 m_blobEpsilonWeight.Dispose();
                 m_blobEpsilonWeight = null;
-            }
-
-            if (m_blobNoise != null)
-            {
-                m_blobNoise.Dispose();
-                m_blobNoise = null;
             }
 
             base.dispose();
@@ -270,8 +261,6 @@ namespace MyCaffe.layers
                         m_colBlobs.Add(blobSigmaBias);
                         m_blobEpsilonBias.ReshapeLike(blobSigmaBias);
                     }
-
-                    m_blobNoise.Reshape(Math.Max(m_nN, m_nK), 1, 1, 1);
 
                     ResetNoise();
                 }
