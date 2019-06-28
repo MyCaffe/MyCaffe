@@ -374,7 +374,7 @@ namespace MyCaffe.trainers.noisy.dqn
         public void Run(Phase phase, int nN, ITERATOR_TYPE type, TRAIN_STEP step)
         {
             IMemoryCollection iMemory = MemoryCollectionFactory.CreateMemory(m_memType, m_nMemorySize, m_fPriorityAlpha);
-            int nIteration = 0;
+            int nIteration = 1;
             double dfRunningReward = 0;
             double dfEpisodeReward = 0;
             int nEpisode = 0;
@@ -743,6 +743,7 @@ namespace MyCaffe.trainers.noisy.dqn
         {
             m_mycaffe.Log.Enable = false;
             m_net.CopyTrainedLayersTo(m_netTarget);
+            m_net.CopyInternalBlobsTo(m_netTarget);
             m_mycaffe.Log.Enable = true;
             m_bModelUpdated = true;
         }
