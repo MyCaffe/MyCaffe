@@ -747,14 +747,14 @@ license and copyright terms herein.
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ** end fzliu/style-transfer License**
 
-  Some portions of the DQN.SIMPLE and DQN.ST use or were inspired by 
-  the open-source Google dopamine project (including the DQN Agent) available on
+  Some portions of the DQN.SIMPLE and DQN.ST use directly or derivative versions
+  of the open-source Google dopamine project (including the DQN Agent) available on
   GitHub at: https://github.com/google/dopamine/blob/master/dopamine/agents/dqn/dqn_agent.py 
   and licensed under the Apache License, version 2.0, available at
   https://github.com/google/dopamine/blob/master/LICENSE.
 
-  Some portions of the DQN.SIMPLE and DQN.ST (and other trainers) use, or 
-  were inspired by the open-source OpenAI baselines available on GitHub
+  Some portions of the DQN.SIMPLE and DQN.ST (and other trainers) use directly or
+  derivative versions of the open-source OpenAI baselines available on GitHub
   at: https://github.com/openai/baselines and licensed under the MIT license,
   available at https://github.com/openai/baselines/blob/master/LICENSE.
 
