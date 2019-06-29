@@ -31,7 +31,7 @@ namespace MyCaffe.test
             Assert.AreEqual(rgActions[0], 0);
             Assert.AreEqual(rgActions[1], 1);
 
-            gym.OpenUi();
+            //gym.OpenUi();
 
             for (int i = 0; i < 100; i++)
             {
@@ -54,7 +54,7 @@ namespace MyCaffe.test
                     Trace.WriteLine("TERMINAL = TRUE");
             }
 
-            gym.CloseUi();
+            //gym.CloseUi();
         }
 
         [TestMethod]
@@ -74,7 +74,7 @@ namespace MyCaffe.test
             Assert.AreEqual(rgActions[1], 1);
             Assert.AreEqual(rgActions[2], 2);
 
-            gym.OpenUi();
+            //gym.OpenUi();
 
             for (int i = 0; i < 100; i++)
             {
@@ -106,7 +106,7 @@ namespace MyCaffe.test
                     Trace.WriteLine("TERMINAL = TRUE");
             }
 
-            gym.CloseUi();
+            //gym.CloseUi();
         }
 
         [TestMethod]
@@ -115,7 +115,7 @@ namespace MyCaffe.test
             MyCaffePythonGym gym = new MyCaffePythonGym();
             Random random = new Random();
 
-            gym.Initialize("ATARI", "Preprocess=False;ForceGray=True;AllowNegativeRewards=True;TerminateOnRallyEnd=True;FrameSkip=4;GameROM=C:\\ProgramData\\MyCaffe\\test_data\\roms\\breakout.bin");
+            gym.Initialize("ATARI", "Preprocess=False;ActionForceGray=True;ForceGray=True;AllowNegativeRewards=True;TerminateOnRallyEnd=True;FrameSkip=4;GameROM=C:\\ProgramData\\MyCaffe\\test_data\\roms\\breakout.bin");
 
             string strName = gym.Name;
             Assert.AreEqual(strName, "MyCaffe ATARI");
@@ -126,7 +126,7 @@ namespace MyCaffe.test
             Assert.AreEqual(rgActions[1], 1);
             Assert.AreEqual(rgActions[2], 2);
 
-            gym.OpenUi();
+            //gym.OpenUi();
 
             for (int i = 0; i < 100; i++)
             {
@@ -151,7 +151,7 @@ namespace MyCaffe.test
                     Trace.WriteLine("TERMINAL = TRUE");
             }
 
-            gym.CloseUi();
+            //gym.CloseUi();
         }
 
         [TestMethod]
@@ -171,7 +171,7 @@ namespace MyCaffe.test
             Assert.AreEqual(rgActions[1], 1);
             Assert.AreEqual(rgActions[2], 2);
 
-            gym.OpenUi();
+            //gym.OpenUi();
 
             List<double[]> rgrgActions = new List<double[]>();
             double[] rgProb = new double[51];
@@ -218,7 +218,7 @@ namespace MyCaffe.test
                 gym.SetActionDistributions(rgrgActions.ToArray());
             }
 
-            gym.CloseUi();
+            //gym.CloseUi();
         }
     }
 }
