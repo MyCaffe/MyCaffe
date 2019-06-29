@@ -98,8 +98,8 @@ namespace MyCaffe.trainers
             PG_SIMPLE,
             C51_ST,
             C51b_ST,
-            NOISYDQN_ST,
-            NOISYDQN_SIMPLE,
+            DQN_ST,
+            DQN_SIMPLE,
             RNN_SIMPLE
         }
 
@@ -209,10 +209,10 @@ namespace MyCaffe.trainers
                     case TRAINER_TYPE.C51_ST:
                         return new c51.ddqn.TrainerC51<double>(mycaffe, m_properties, m_random, this);
 
-                    case TRAINER_TYPE.NOISYDQN_ST:
+                    case TRAINER_TYPE.DQN_ST:
                         return new noisy.dqn.TrainerNoisyDqn<double>(mycaffe, m_properties, m_random, this);
 
-                    case TRAINER_TYPE.NOISYDQN_SIMPLE:
+                    case TRAINER_TYPE.DQN_SIMPLE:
                         return new noisy.dqn.simple.TrainerNoisyDqn<double>(mycaffe, m_properties, m_random, this);
 
                     default:
@@ -264,10 +264,10 @@ namespace MyCaffe.trainers
                     case TRAINER_TYPE.C51_ST:
                         return new c51.ddqn.TrainerC51<float>(mycaffe, m_properties, m_random, this);
 
-                    case TRAINER_TYPE.NOISYDQN_ST:
+                    case TRAINER_TYPE.DQN_ST:
                         return new noisy.dqn.TrainerNoisyDqn<float>(mycaffe, m_properties, m_random, this);
 
-                    case TRAINER_TYPE.NOISYDQN_SIMPLE:
+                    case TRAINER_TYPE.DQN_SIMPLE:
                         return new noisy.dqn.simple.TrainerNoisyDqn<float>(mycaffe, m_properties, m_random, this);
 
                     default:
@@ -495,13 +495,13 @@ namespace MyCaffe.trainers
                     m_stage = Stage.RL;
                     break;
 
-                case "NOISYDQN.ST": // single threaded Noisy DQN
-                    m_trainerType = TRAINER_TYPE.NOISYDQN_ST;
+                case "DQN.ST": // single threaded Noisy DQN
+                    m_trainerType = TRAINER_TYPE.DQN_ST;
                     m_stage = Stage.RL;
                     break;
 
-                case "NOISYDQN.SIMPLE": // single threaded Noisy DQN
-                    m_trainerType = TRAINER_TYPE.NOISYDQN_SIMPLE;
+                case "DQN.SIMPLE": // single threaded Noisy DQN
+                    m_trainerType = TRAINER_TYPE.DQN_SIMPLE;
                     m_stage = Stage.RL;
                     break;
 

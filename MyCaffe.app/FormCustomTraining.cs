@@ -72,9 +72,9 @@ namespace MyCaffe.app
                 radPGSingleThread.Checked = true;
             else if (m_strTrainer == "C51.ST")
                 radC51SingleThread.Checked = true;
-            else if (m_strTrainer == "NOISYDQN.ST")
+            else if (m_strTrainer == "DQN.ST")
                 radNoisyNetSingleThread.Checked = true;
-            else if (m_strTrainer == "NOISYDQN.SIMPLE")
+            else if (m_strTrainer == "DQN.SIMPLE")
                 radNoisyNetSimple.Checked = true;
             else
                 radPGMultiThread.Checked = true;
@@ -126,9 +126,9 @@ namespace MyCaffe.app
             else if (radC51SingleThread.Checked)
                 m_strTrainer = "C51.ST";
             else if (radNoisyNetSingleThread.Checked)
-                m_strTrainer = "NOISYDQN.ST";
+                m_strTrainer = "DQN.ST";
             else if (radNoisyNetSimple.Checked)
-                m_strTrainer = "NOISYDQN.SIMPLE";
+                m_strTrainer = "DQN.SIMPLE";
             else
                 m_strTrainer = "PG.MT";
 

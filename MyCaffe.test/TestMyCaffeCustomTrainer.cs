@@ -179,7 +179,7 @@ namespace MyCaffe.test
             {
                 foreach (IMyCaffeCustomTrainerTest t in test.Tests)
                 {
-                    t.TrainAtariC51Dual(true, "C51.ST", 10);
+                    t.TrainAtariC51Dual(false, "C51.ST", 10);
                 }
             }
             finally
@@ -189,7 +189,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void Train_NoisyNetST_AtariWithOutUi_Dual()
+        public void Train_DqnST_AtariWithOutUi_Dual()
         {
             MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
 
@@ -197,7 +197,7 @@ namespace MyCaffe.test
             {
                 foreach (IMyCaffeCustomTrainerTest t in test.Tests)
                 {
-                    t.TrainAtariNoisyNetDual(true, "NOISYDQN.ST", 10);
+                    t.TrainAtariDqnDual(false, "DQN.ST", 10);
                 }
             }
             finally
@@ -207,7 +207,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void Train_NoisyNetSimple_AtariWithOutUi_Dual()
+        public void Train_DqnSimple_AtariWithOutUi_Dual()
         {
             MyCaffeCustomTrainerTest test = new MyCaffeCustomTrainerTest();
 
@@ -215,7 +215,7 @@ namespace MyCaffe.test
             {
                 foreach (IMyCaffeCustomTrainerTest t in test.Tests)
                 {
-                    t.TrainAtariNoisyNetDual(true, "NOISYDQN.SIMPLE", 10);
+                    t.TrainAtariDqnDual(false, "DQN.SIMPLE", 10);
                 }
             }
             finally
@@ -348,10 +348,10 @@ namespace MyCaffe.test
     interface IMyCaffeCustomTrainerTest : ITest
     {
         void TrainCartPolePG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, int nMiniBatch = 10, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
-        void TrainCartPoleNoisyNetDual(bool bShowUi, string strTrainerType, int nIterations = 1000, int nMiniBatch = 10, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
+        void TrainCartPoleDqmDual(bool bShowUi, string strTrainerType, int nIterations = 1000, int nMiniBatch = 10, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
         void TrainAtariPG(bool bDual, bool bShowUi, string strTrainerType, int nIterations = 1000, int nMiniBatch = 10, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false);
         void TrainAtariC51Dual(bool bShowUi, string strTrainerType, int nIterations = 100, int nMiniBatch = 1, bool bUseAccelTrain = false, int nIteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExist = false, double dfVMin = -10, double dfVMax = 10);
-        void TrainAtariNoisyNetDual(bool bShowUi, string strTrainerType, int nIterations = 100, int nMiniBatch = 1, bool bUseAccelTrain = false, int nIteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExist = false);
+        void TrainAtariDqnDual(bool bShowUi, string strTrainerType, int nIterations = 100, int nMiniBatch = 1, bool bUseAccelTrain = false, int nIteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExist = false);
 
         void TrainCharRNN(bool bDual, bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
         void TrainWavRNN(bool bDual, bool bShowUi, string strTrainerType, LayerParameter.LayerType lstm, int nIterations = 1000, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false);
@@ -513,7 +513,7 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TrainCartPoleNoisyNetDual(bool bShowUi, string strTrainerType, int nIterations = 1000, int nMiniBatch = 10, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
+        public void TrainCartPoleDqmDual(bool bShowUi, string strTrainerType, int nIterations = 1000, int nMiniBatch = 10, bool bUseAcceleratedTraining = false, bool bAllowDiscountReset = false)
         {
             m_evtCancel.Reset();
 
@@ -523,7 +523,7 @@ namespace MyCaffe.test
             string strAccelTrain = (bUseAcceleratedTraining) ? "ON" : "OFF";
             string strAllowReset = (bAllowDiscountReset) ? "YES" : "NO";
 
-            if (strTrainerType != "NOISYDQN.SIMPLE")
+            if (strTrainerType != "DQN.SIMPLE")
                 strAccelTrain = "NOT SUPPORTED";
 
             m_log.WriteHeader("Test Training Cart-Pole for " + nIterations.ToString("N0") + " iterations.");
@@ -789,13 +789,13 @@ namespace MyCaffe.test
             mycaffe.Dispose();
         }
 
-        public void TrainAtariNoisyNetDual(bool bShowUi, string strTrainerType, int nIterations = 100, int nMiniBatch = 1, bool bUseAcceleratedTraining = false, int iteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExists = false)
+        public void TrainAtariDqnDual(bool bShowUi, string strTrainerType, int nIterations = 100, int nMiniBatch = 1, bool bUseAcceleratedTraining = false, int iteratorType = 0, string strAtariRom = null, bool bAllowNegRewards = false, bool bTerminateOnRallyEnd = false, bool bLoadWeightsIfExists = false)
         {
             m_evtCancel.Reset();
 
-            if (strTrainerType != "NOISYDQN.ST" && 
-                strTrainerType != "NOISYDQN.SIMPLE")
-                throw new Exception("Currently only the NOISYDQN.ST and NOISYDQN.SIMPLE trainers support NoisyNet training.");
+            if (strTrainerType != "DQN.ST" && 
+                strTrainerType != "DQN.SIMPLE")
+                throw new Exception("Only the DQN.ST and DQN.SIMPLE trainers support DQN training.");
 
             GymCollection col = new GymCollection();
             col.Load();
@@ -828,7 +828,7 @@ namespace MyCaffe.test
             //  - Learning rate = 0.001 (defined in solver.prototxt)
             //  - Mini Batch Size = 10 (defined in train_val.prototxt for MemoryDataLayer)
             //
-            //  - TrainerType = 'NOISYNET.ST' or 'NOISYNET.SIMPLE' ('NOISYNET.ST' = use single-threaded NoisyNet trainer)
+            //  - TrainerType = 'DQN.ST' or 'DQN.SIMPLE' ('DQN.ST' = use single-threaded Dqn trainer)
             //  - UseAcceleratedTraining = False (when using a minibatch > 1, accelerated training both applies and accumulates the grads)
             //  - MiniBatch = 1 (when greater than 1, accumulates the gradients over the mini-batch)
             //  - RewardType = MAX (display the maximum rewards received, a setting of VAL displays the actual reward received)

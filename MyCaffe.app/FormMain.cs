@@ -1322,7 +1322,7 @@ namespace MyCaffe.app
                 if (strGym == "Cart-Pole")
                 {
                     if (strTrainer.Contains("NOISYDQN"))
-                        test.TrainCartPoleNoisyNetDual(bShowUi, strTrainer, nIterations, nMiniBatch, bUseAccelTrain, bAllowDiscountReset);
+                        test.TrainCartPoleDqmDual(bShowUi, strTrainer, nIterations, nMiniBatch, bUseAccelTrain, bAllowDiscountReset);
                     else
                         test.TrainCartPolePG(bShowUi, strTrainer, nIterations, nMiniBatch, bUseAccelTrain, bAllowDiscountReset);
                 }
@@ -1331,7 +1331,7 @@ namespace MyCaffe.app
                     if (strTrainer.Contains("C51"))
                         test.TrainAtariC51Dual(bShowUi, strTrainer, nIterations, nMiniBatch, bUseAccelTrain, 1, m_strAtariRom, arg.AllowNegativeRewards, arg.TerminateOnRallyEnd, arg.LoadWeights, arg.VMin, arg.VMax);
                     else if (strTrainer.Contains("NOISYDQN"))
-                        test.TrainAtariNoisyNetDual(bShowUi, strTrainer, nIterations, nMiniBatch, bUseAccelTrain, 1, m_strAtariRom, arg.AllowNegativeRewards, arg.TerminateOnRallyEnd, arg.LoadWeights);
+                        test.TrainAtariDqnDual(bShowUi, strTrainer, nIterations, nMiniBatch, bUseAccelTrain, 1, m_strAtariRom, arg.AllowNegativeRewards, arg.TerminateOnRallyEnd, arg.LoadWeights);
                     else
                         test.TrainAtariPG(bShowUi, strTrainer, nIterations, nMiniBatch, bUseAccelTrain, bAllowDiscountReset, m_strAtariRom, arg.AllowNegativeRewards, arg.TerminateOnRallyEnd);
                 }
