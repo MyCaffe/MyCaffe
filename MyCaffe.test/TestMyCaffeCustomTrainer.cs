@@ -1389,7 +1389,7 @@ namespace MyCaffe.test
         {
             ProjectEx p = new ProjectEx("test");
 
-            string strType = (strTrainerType.Contains("SIMPLE") ? "cartpole.noisy.dqn" : "atari.noisy.dqn");
+            string strType = ((igym.Name == "Cart-Pole") ? "cartpole.noisy.dqn" : "atari.noisy.dqn");
             string strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\reinforcement\\" + strType + "\\train_val.prototxt");
             string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\reinforcement\\" + strType + "\\solver.prototxt");
 
