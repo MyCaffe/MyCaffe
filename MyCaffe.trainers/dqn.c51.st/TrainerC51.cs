@@ -24,6 +24,8 @@ namespace MyCaffe.trainers.dqn.c51.st
     /// @see [Github:google/dopamine](https://github.com/google/dopamine), Google, 2018, license Apache 2.0 (https://github.com/google/dopamine/blob/master/LICENSE)
     /// @see [Github:openai/baselines](https://github.com/openai/baselines/blob/master/baselines/deepq/replay_buffer.py), OpenAI, 2018, license MIT (https://github.com/openai/baselines/blob/master/LICENSE)
     /// @see [GitHub:flyyufelix/C51-DDQN-Keras](https://github.com/flyyufelix/C51-DDQN-Keras/blob/master/c51_ddqn.py) 2017, MIT License (https://github.com/flyyufelix/C51-DDQN-Keras/blob/master/LICENSE)
+    /// @see [GitHub:Kyushik/DRL](https://github.com/Kyushik/DRL/blob/master/07_C51.py), Kyushik, 2019
+    /// @see [Github:higgsfield/RL-Adventure](https://github.com/higgsfield/RL-Adventure), higgsfield, 2018
     /// </remarks>
     /// <typeparam name="T"></typeparam>
     public class TrainerC51<T> : IxTrainerRL, IDisposable
