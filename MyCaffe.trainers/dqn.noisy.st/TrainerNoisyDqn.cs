@@ -108,7 +108,7 @@ namespace MyCaffe.trainers.dqn.noisy.st
         public ResultCollection RunOne(int nDelay = 1000)
         {
             m_mycaffe.CancelEvent.Reset();
-            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN);
+            DqnAgent<T> agent = new DqnAgent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN);
             agent.Run(Phase.TEST, 1, ITERATOR_TYPE.ITERATION, TRAIN_STEP.NONE);
             agent.Dispose();
             return null;
@@ -124,7 +124,7 @@ namespace MyCaffe.trainers.dqn.noisy.st
         public byte[] Run(int nN, string strRunProperties, out string type)
         {
             m_mycaffe.CancelEvent.Reset();
-            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN);
+            DqnAgent<T> agent = new DqnAgent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.RUN);
             byte[] rgResults = agent.Run(nN, out type);
             agent.Dispose();
 
@@ -147,7 +147,7 @@ namespace MyCaffe.trainers.dqn.noisy.st
             PropertySet properties = new PropertySet(strProp);
 
             m_mycaffe.CancelEvent.Reset();
-            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, properties, m_random, Phase.TRAIN);
+            DqnAgent<T> agent = new DqnAgent<T>(m_icallback, m_mycaffe, properties, m_random, Phase.TRAIN);
             agent.Run(Phase.TEST, nN, type, TRAIN_STEP.NONE);
 
             agent.Dispose();
@@ -166,7 +166,7 @@ namespace MyCaffe.trainers.dqn.noisy.st
         public bool Train(int nN, ITERATOR_TYPE type, TRAIN_STEP step)
         {
             m_mycaffe.CancelEvent.Reset();
-            Agent<T> agent = new Agent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN);
+            DqnAgent<T> agent = new DqnAgent<T>(m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN);
             agent.Run(Phase.TRAIN, nN, type, step);
             agent.Dispose();
 
@@ -176,10 +176,10 @@ namespace MyCaffe.trainers.dqn.noisy.st
 
 
     /// <summary>
-    /// The Agent both builds episodes from the envrionment and trains on them using the Brain.
+    /// The DqnAgent both builds episodes from the envrionment and trains on them using the Brain.
     /// </summary>
     /// <typeparam name="T">Specifies the base type, which should be the same base type used for MyCaffe.  This type is either <i>double</i> or <i>float</i>.</typeparam>
-    class Agent<T> : IDisposable 
+    class DqnAgent<T> : IDisposable 
     {
         IxTrainerCallback m_icallback;
         Brain<T> m_brain;
@@ -217,7 +217,7 @@ namespace MyCaffe.trainers.dqn.noisy.st
         /// <param name="properties">Specifies the properties passed into the trainer.</param>
         /// <param name="random">Specifies the random number generator used.</param>
         /// <param name="phase">Specifies the phase of the internal network to use.</param>
-        public Agent(IxTrainerCallback icallback, MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase)
+        public DqnAgent(IxTrainerCallback icallback, MyCaffeControl<T> mycaffe, PropertySet properties, CryptoRandom random, Phase phase)
         {
             m_icallback = icallback;
             m_brain = new Brain<T>(mycaffe, properties, random, phase);
