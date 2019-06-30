@@ -47,7 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="c51.ddqn\TrainerC51.cs" />
+    <Compile Include="dqn.c51.st\TrainerC51.cs" />
     <Compile Include="common\FileMemoryCollection.cs" />
     <Compile Include="common\Interfaces.cs" />
     <Compile Include="common\MemoryCollectionFactory.cs" />
@@ -73,8 +73,8 @@
     <Compile Include="MyCaffeTrainerRL.Designer.cs">
       <DependentUpon>MyCaffeTrainerRL.cs</DependentUpon>
     </Compile>
-    <Compile Include="noisy.dqn.simple\TrainerNoisyDqn.cs" />
-    <Compile Include="noisy.dqn\TrainerNoisyDqn.cs" />
+    <Compile Include="dqn.noisy.simple\TrainerNoisyDqn.cs" />
+    <Compile Include="dqn.noisy.st\TrainerNoisyDqn.cs" />
     <Compile Include="pg.mt\TrainerPG.cs" />
     <Compile Include="pg.st\TrainerPG.cs" />
     <Compile Include="common\PrioritizedMemoryCollection.cs" />

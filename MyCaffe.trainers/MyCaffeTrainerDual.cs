@@ -207,13 +207,13 @@ namespace MyCaffe.trainers
                         return new pg.mt.TrainerPG<double>(mycaffe, m_properties, m_random, this);
 
                     case TRAINER_TYPE.C51_ST:
-                        return new c51.ddqn.TrainerC51<double>(mycaffe, m_properties, m_random, this);
+                        return new dqn.c51.st.TrainerC51<double>(mycaffe, m_properties, m_random, this);
 
                     case TRAINER_TYPE.DQN_ST:
-                        return new noisy.dqn.TrainerNoisyDqn<double>(mycaffe, m_properties, m_random, this);
+                        return new dqn.noisy.st.TrainerNoisyDqn<double>(mycaffe, m_properties, m_random, this);
 
                     case TRAINER_TYPE.DQN_SIMPLE:
-                        return new noisy.dqn.simple.TrainerNoisyDqn<double>(mycaffe, m_properties, m_random, this);
+                        return new dqn.noisy.simple.TrainerNoisyDqn<double>(mycaffe, m_properties, m_random, this);
 
                     default:
                         throw new Exception("The trainer type '" + m_trainerType.ToString() + "' is not supported in the RL stage!");
@@ -262,13 +262,13 @@ namespace MyCaffe.trainers
                         return new pg.mt.TrainerPG<float>(mycaffe, m_properties, m_random, this);
 
                     case TRAINER_TYPE.C51_ST:
-                        return new c51.ddqn.TrainerC51<float>(mycaffe, m_properties, m_random, this);
+                        return new dqn.c51.st.TrainerC51<float>(mycaffe, m_properties, m_random, this);
 
                     case TRAINER_TYPE.DQN_ST:
-                        return new noisy.dqn.TrainerNoisyDqn<float>(mycaffe, m_properties, m_random, this);
+                        return new dqn.noisy.st.TrainerNoisyDqn<float>(mycaffe, m_properties, m_random, this);
 
                     case TRAINER_TYPE.DQN_SIMPLE:
-                        return new noisy.dqn.simple.TrainerNoisyDqn<float>(mycaffe, m_properties, m_random, this);
+                        return new dqn.noisy.simple.TrainerNoisyDqn<float>(mycaffe, m_properties, m_random, this);
 
                     default:
                         throw new Exception("The trainer type '" + m_trainerType.ToString() + "' is not supported in the RL stage!");

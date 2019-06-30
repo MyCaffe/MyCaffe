@@ -13,7 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyCaffe.trainers.c51.ddqn
+namespace MyCaffe.trainers.dqn.c51.st
 {
     /// <summary>
     /// The TrainerC51 implements the C51-DDQN algorithm as described by Bellemare et al., and 'flyyufelix'
