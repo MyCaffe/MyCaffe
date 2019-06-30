@@ -20,15 +20,15 @@ using System.Threading.Tasks;
 namespace MyCaffe.trainers.dqn.noisy.simple
 {
     /// <summary>
-    /// The TrainerNoisyDqn implements the Noisy-DQN algorithm as described by Gheshlagi et al. and inspired by 'higgsfield'
+    /// The TrainerNoisyDqn implements the Noisy-DQN algorithm as described by Google Dopamine DNQAgent, Gheshlagi et al. and inspired by 'higgsfield'
     /// </summary>
     /// <remarks>
     /// @see [Noisy Networks for Exploration](https://arxiv.org/abs/1706.10295), Meire Fortunato, Mohammad Gheshlaghi Azar, Bilal Piot, Jacob Menick, Ian Osband, Alex Graves, Vlad Mnih, Remi Munos, Demis Hassabis, Olivier Pietquin, Charles Blundell, Shane Legg, arXiv:1706.10295
     /// @see [Prioritized Experience Replay](https://arxiv.org/abs/1511.05952), Tom Schaul, John Quan, Ioannis Antonoglou, David Silver, 2016
     /// @see [Dopamine: A Research Framework for Deep Reinforcement Learning](https://arxiv.org/abs/1812.06110) Pablo Samuel Castro, Subhodeep Moitra, Carles Gelada, Saurabh Kumar, and Marc G. Bellemare, 2018, Google Brain
-    /// @see [Github:google/dopamine](https://github.com/google/dopamine/blob/master/dopamine/agents/dqn/dqn_agent.py), Google, 2018, license Apache 2.0
-    /// @see [GitHub:Kaixhin/NoisyNet-A3C](https://github.com/Kaixhin/NoisyNet-A3C), Kaixhin 2018, license MIT
-    /// @see [Github:openai/baselines](https://github.com/openai/baselines/blob/master/baselines/deepq/replay_buffer.py), OpenAI, 2018, license MIT
+    /// @see [Github:google/dopamine](https://github.com/google/dopamine), Google, 2018, license Apache 2.0 (https://github.com/google/dopamine/blob/master/LICENSE)
+    /// @see [GitHub:Kaixhin/NoisyNet-A3C](https://github.com/Kaixhin/NoisyNet-A3C), Kaixhin 2018, license MIT (https://github.com/Kaixhin/NoisyNet-A3C/blob/master/LICENSE.md)
+    /// @see [Github:openai/baselines](https://github.com/openai/baselines/blob/master/baselines/deepq/replay_buffer.py), OpenAI, 2018, license MIT (https://github.com/openai/baselines/blob/master/LICENSE)
     /// @see [GitHub:Kyushik/DRL](https://github.com/Kyushik/DRL/blob/master/06_NoisyNet_DQN.py), Kyushik, 2019
     /// @see [Github:higgsfield/RL-Adventure](https://github.com/higgsfield/RL-Adventure), higgsfield, 2018
     /// </remarks>

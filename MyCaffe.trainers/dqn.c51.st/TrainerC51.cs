@@ -16,11 +16,14 @@ using System.Threading.Tasks;
 namespace MyCaffe.trainers.dqn.c51.st
 {
     /// <summary>
-    /// The TrainerC51 implements the C51-DDQN algorithm as described by Bellemare et al., and 'flyyufelix'
+    /// The TrainerC51 implements the C51-DQN algorithm as described by Bellemare et al., Google Dopamine RainboAgent and 'flyyufelix'
     /// </summary>
     /// <remarks>
     /// @see [A Distributional Perspective on Reinforcement Learning](https://arxiv.org/abs/1707.06887), Marc G. Bellemare, Will Dabney, Remi Munos, 2017, arXiv:1707.06887
-    /// @see [GitHub:flyyufelix/C51-DDQN-Keras](https://github.com/flyyufelix/C51-DDQN-Keras/blob/master/c51_ddqn.py) 2017, MIT License
+    /// @see [Dopamine: A Research Framework for Deep Reinforcement Learning](https://arxiv.org/abs/1812.06110) Pablo Samuel Castro, Subhodeep Moitra, Carles Gelada, Saurabh Kumar, and Marc G. Bellemare, 2018, Google Brain
+    /// @see [Github:google/dopamine](https://github.com/google/dopamine), Google, 2018, license Apache 2.0 (https://github.com/google/dopamine/blob/master/LICENSE)
+    /// @see [Github:openai/baselines](https://github.com/openai/baselines/blob/master/baselines/deepq/replay_buffer.py), OpenAI, 2018, license MIT (https://github.com/openai/baselines/blob/master/LICENSE)
+    /// @see [GitHub:flyyufelix/C51-DDQN-Keras](https://github.com/flyyufelix/C51-DDQN-Keras/blob/master/c51_ddqn.py) 2017, MIT License (https://github.com/flyyufelix/C51-DDQN-Keras/blob/master/LICENSE)
     /// </remarks>
     /// <typeparam name="T"></typeparam>
     public class TrainerC51<T> : IxTrainerRL, IDisposable
