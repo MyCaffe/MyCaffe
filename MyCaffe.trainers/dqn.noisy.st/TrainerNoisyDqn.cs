@@ -455,7 +455,7 @@ namespace MyCaffe.trainers.dqn.noisy.st
     {
         MyCaffeControl<T> m_mycaffe;
         Solver<T> m_solver;
-        Net<T> m_net;
+        Net<T> m_netOutput;
         Net<T> m_netTarget;
         PropertySet m_properties;
         CryptoRandom m_random;
@@ -497,19 +497,19 @@ namespace MyCaffe.trainers.dqn.noisy.st
         {
             m_mycaffe = mycaffe;
             m_solver = mycaffe.GetInternalSolver();
-            m_net = mycaffe.GetInternalNet(phase);
-            m_netTarget = new Net<T>(m_mycaffe.Cuda, m_mycaffe.Log, m_net.net_param, m_mycaffe.CancelEvent, null, phase);
+            m_netOutput = mycaffe.GetInternalNet(phase);
+            m_netTarget = new Net<T>(m_mycaffe.Cuda, m_mycaffe.Log, m_netOutput.net_param, m_mycaffe.CancelEvent, null, phase);
             m_properties = properties;
             m_random = random;
 
-            Blob<T> data = m_net.blob_by_name("data");
+            Blob<T> data = m_netOutput.blob_by_name("data");
             if (data == null)
                 m_mycaffe.Log.FAIL("Missing the expected input 'data' blob!");
 
             m_nFramesPerX = data.channels;
             m_nBatchSize = data.num;
 
-            Blob<T> logits = m_net.blob_by_name("logits");
+            Blob<T> logits = m_netOutput.blob_by_name("logits");
             if (logits == null)
                 m_mycaffe.Log.FAIL("Missing the expected input 'logits' blob!");
 
@@ -535,7 +535,7 @@ namespace MyCaffe.trainers.dqn.noisy.st
 
             m_fGamma = (float)properties.GetPropertyAsDouble("Gamma", m_fGamma);
 
-            m_memLoss = m_net.FindLastLayer(LayerParameter.LayerType.MEMORY_LOSS) as MemoryLossLayer<T>;
+            m_memLoss = m_netOutput.FindLastLayer(LayerParameter.LayerType.MEMORY_LOSS) as MemoryLossLayer<T>;
             if (m_memLoss == null)
                 m_mycaffe.Log.FAIL("Missing the expected MEMORY_LOSS layer!");
 
@@ -548,7 +548,7 @@ namespace MyCaffe.trainers.dqn.noisy.st
 
             if (m_nMiniBatch > 1)
             {
-                m_colAccumulatedGradients = m_net.learnable_parameters.Clone();
+                m_colAccumulatedGradients = m_netOutput.learnable_parameters.Clone();
                 m_colAccumulatedGradients.SetDiff(0);
             }
         }
@@ -717,10 +717,10 @@ namespace MyCaffe.trainers.dqn.noisy.st
         /// <returns>The action value is returned.</returns>
         public int act(SimpleDatum sd, SimpleDatum sdClip, int nActionCount)
         {
-            setData(m_net, sd, sdClip);
-            m_net.ForwardFromTo(0, m_net.layers.Count - 2);
+            setData(m_netOutput, sd, sdClip);
+            m_netOutput.ForwardFromTo(0, m_netOutput.layers.Count - 2);
 
-            Blob<T> output = m_net.blob_by_name("logits");
+            Blob<T> output = m_netOutput.blob_by_name("logits");
             if (output == null)
                 throw new Exception("Missing expected 'logits' blob!");
 
@@ -745,8 +745,8 @@ namespace MyCaffe.trainers.dqn.noisy.st
         public void UpdateTargetModel()
         {
             m_mycaffe.Log.Enable = false;
-            m_net.CopyTrainedLayersTo(m_netTarget);
-            m_net.CopyInternalBlobsTo(m_netTarget);
+            m_netOutput.CopyTrainedLayersTo(m_netTarget);
+            m_netOutput.CopyInternalBlobsTo(m_netTarget);
             m_mycaffe.Log.Enable = true;
             m_bModelUpdated = true;
         }
@@ -769,7 +769,7 @@ namespace MyCaffe.trainers.dqn.noisy.st
             setNextStateData(m_netTarget, rgSamples);
             m_netTarget.ForwardFromTo(0, m_netTarget.layers.Count - 2);
 
-            setCurrentStateData(m_net, rgSamples);
+            setCurrentStateData(m_netOutput, rgSamples);
             m_memLoss.OnGetLoss += m_memLoss_ComputeTdLoss;
 
             if (m_nMiniBatch == 1)
@@ -779,21 +779,21 @@ namespace MyCaffe.trainers.dqn.noisy.st
             else
             {
                 m_solver.Step(1, TRAIN_STEP.NONE, true, m_bUseAcceleratedTraining, true, true);
-                m_colAccumulatedGradients.Accumulate(m_mycaffe.Cuda, m_net.learnable_parameters, true);
+                m_colAccumulatedGradients.Accumulate(m_mycaffe.Cuda, m_netOutput.learnable_parameters, true);
 
                 if (nIteration % m_nMiniBatch == 0)
                 {
-                    m_net.learnable_parameters.CopyFrom(m_colAccumulatedGradients, true);
+                    m_netOutput.learnable_parameters.CopyFrom(m_colAccumulatedGradients, true);
                     m_colAccumulatedGradients.SetDiff(0);
                     m_dfLearningRate = m_solver.ApplyUpdate(nIteration);
-                    m_net.ClearParamDiffs();
+                    m_netOutput.ClearParamDiffs();
                 }
             }
 
             m_memLoss.OnGetLoss -= m_memLoss_ComputeTdLoss;
             m_mycaffe.Log.Enable = true;
 
-            resetNoise(m_net);
+            resetNoise(m_netOutput);
             resetNoise(m_netTarget);
         }
 
@@ -806,7 +806,7 @@ namespace MyCaffe.trainers.dqn.noisy.st
         {
             MemoryCollection rgMem = m_rgSamples;
 
-            Blob<T> q_values = m_net.blob_by_name("logits");
+            Blob<T> q_values = m_netOutput.blob_by_name("logits");
             Blob<T> next_q_values = m_netTarget.blob_by_name("logits");
 
             float[] rgActions = rgMem.GetActionsAsOneHotVector(m_nActionCount);
@@ -1076,7 +1076,7 @@ namespace MyCaffe.trainers.dqn.noisy.st
         /// <param name="e">Specifies the arguments to the callback which contains the original display image.</param>
         public void OnOverlay(OverlayArgs e)
         {
-            Blob<T> logits = m_net.blob_by_name("logits");
+            Blob<T> logits = m_netOutput.blob_by_name("logits");
             if (logits == null)
                 return;
 
