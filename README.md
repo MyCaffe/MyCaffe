@@ -18,11 +18,11 @@ maintaining compatibility with CAFFE's solver descriptions, model descriptions a
 The C# based MyCaffe open-source project is independently maintained by <a href="http://www.signalpop.com">SignalPop LLC</a> and made 
 available under the Apache 2.0 License.
 <h3>Supported Development Environments:</h3>
-* Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 10.1.168</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.6</a> </br>
-* Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 10.1.168</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.6</a> </br>
+* Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 10.1.168</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.6.1</a> </br>
+* Visual Studio 2015 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 10.1.168</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 7.6.1</a> </br>
 </br>
 
-NOTE: Compute 5.3 now required for CUDA 10.1.168/cuDNN 7.6 to support __half sized memory.
+NOTE: Compute 5.3 now required for CUDA 10.1.168/cuDNN 7.6.1 to support __half sized memory.
 
 IMPORTANT: The open-source MyCaffe project on GitHub is considered 'pre-release' and may have bugs.  When you find bugs or other issues, please report them here - or better yet, get involved
 and propose a fix!
@@ -43,7 +43,7 @@ For more information, get the <a href="https://www.nuget.org/packages?q=AleContr
 <h2>License and Citation</h2>
 MyCaffe is released under the [Apache License 2.0](https://github.com/MyCaffe/MyCaffe/blob/master/LICENSE).  
 
-Please cite MyCaffe in your publications and projects if it helps you:
+Please cite MyCaffe in your publications and projects if MyCaffe helps you in your research or applications:
 <pre>
 <code>
 	@article 
