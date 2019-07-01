@@ -627,7 +627,7 @@ license and copyright terms herein.
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   ** end fzliu/style-transfer License**
 
-  Some portions of the DNQ.ST, DQN.SIMPLE and C51.ST use directly or derivative versions
+  Some portions of the DNQ.ST, DQN.SIMPLE and C51.ST use directly or derivative from versions
   of the open-source Google dopamine project (including the DQN and Rainbow Agents) available on
   GitHub at: https://github.com/google/dopamine/blob/master/dopamine/agents/dqn/dqn_agent.py 
   and https://github.com/google/dopamine/blob/master/dopamine/agents/rainbow/rainbow_agent.py
