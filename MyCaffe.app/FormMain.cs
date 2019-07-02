@@ -1223,7 +1223,7 @@ namespace MyCaffe.app
 
                 m_log.WriteLine("starting policy gradient cart-pole test...");
                 m_evtCancelTraining.Reset();
-                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "Cart-Pole", strTrainer, nIterations, nMiniBatch, bShowUi, bUseAccelTrain, bAllowDiscountReset, false, false, false, 0, 0));
+                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, getGpu(), "Cart-Pole", strTrainer, nIterations, nMiniBatch, bShowUi, bUseAccelTrain, bAllowDiscountReset, false, false, false, 0, 0));
                 startAtariTrainerToolStripMenuItem.Enabled = false;
                 startNeuralStyleTransferToolStripMenuItem.Enabled = false;
                 startCartPoleTrainerToolStripMenuItem.Text = "Stop Cart-Pole Training";
@@ -1283,7 +1283,7 @@ namespace MyCaffe.app
 
                 m_log.WriteLine("starting " + strTrainer + " ATARI (" + m_strAtariRom + ") test...");
                 m_evtCancelTraining.Reset();
-                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, "ATARI", strTrainer, nIterations, nMiniBatch, bShowUi, bUseAccelTrain, bAllowDiscountReset, bAllowNegativeRewards, bTerminateOnRallyEnd, bLoadWeights, dfVMin, dfVMax));
+                m_trainerTask = Task.Factory.StartNew(new Action<object>(trainerThread), new Settings(m_evtCancelTraining, getGpu(), "ATARI", strTrainer, nIterations, nMiniBatch, bShowUi, bUseAccelTrain, bAllowDiscountReset, bAllowNegativeRewards, bTerminateOnRallyEnd, bLoadWeights, dfVMin, dfVMax));
                 startCartPoleTrainerToolStripMenuItem.Enabled = false;
                 startNeuralStyleTransferToolStripMenuItem.Enabled = false;
                 startAtariTrainerToolStripMenuItem.Text = "Stop ATARI Training";
@@ -1306,7 +1306,7 @@ namespace MyCaffe.app
             Settings arg = obj as Settings;
             CancelEvent evtCancel = arg.Cancel;
             string strGym = arg.Gym;
-            MyCaffeCustomTrainerTest<float> test = new MyCaffeCustomTrainerTest<float>(strGym, 0, EngineParameter.Engine.DEFAULT);
+            MyCaffeCustomTrainerTest<float> test = new MyCaffeCustomTrainerTest<float>(strGym, arg.Gpu, EngineParameter.Engine.DEFAULT);
             int nIterations = arg.Iterations;
             int nMiniBatch = arg.MiniBatch;
             bool bShowUi = arg.ShowUi;
@@ -1496,10 +1496,12 @@ namespace MyCaffe.app
         int m_nMiniBatch;
         double m_dfVMin;
         double m_dfVMax;
+        int m_nGPU;
 
-        public Settings(CancelEvent evtCancel, string strGym, string strTrainer, int nIterations, int nMiniBatch, bool bShowUi, bool bUseAccelTrain, bool bAllowDiscountReset, bool bAllowNegRewards, bool bTerminateOnRallyEnd, bool bLoadWeights, double dfVMin, double dfVMax)
+        public Settings(CancelEvent evtCancel, int nGpu, string strGym, string strTrainer, int nIterations, int nMiniBatch, bool bShowUi, bool bUseAccelTrain, bool bAllowDiscountReset, bool bAllowNegRewards, bool bTerminateOnRallyEnd, bool bLoadWeights, double dfVMin, double dfVMax)
         {
             m_evtCancel = evtCancel;
+            m_nGPU = nGpu;
             m_strGym = strGym;
             m_strTrainer = strTrainer;
             m_nIterations = nIterations;
@@ -1517,6 +1519,11 @@ namespace MyCaffe.app
         public CancelEvent Cancel
         {
             get { return m_evtCancel; }
+        }
+
+        public int Gpu
+        {
+            get { return m_nGPU; }
         }
 
         public string Gym
