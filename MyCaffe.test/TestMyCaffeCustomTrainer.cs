@@ -1394,6 +1394,23 @@ namespace MyCaffe.test
             string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\reinforcement\\" + strType + "\\solver.prototxt");
 
             RawProto protoM = RawProtoFile.LoadFromFile(strModelFile);
+
+            if (strTrainerType.Contains("SIMPLE"))
+            {
+                RawProto layer = protoM.FindChild("layer");
+                RawProto input_param = layer.FindChild("input_param");
+                if (input_param != null)
+                {
+                    RawProto shape = input_param.FindChild("shape");
+                    if (shape != null)
+                    {
+                        RawProtoCollection dim = shape.FindChildren("dim");
+                        if (dim.Count > 2)
+                            dim[1].Value = "1"; // simple model only supports single frames.
+                    }
+                }
+            }
+
             p.ModelDescription = protoM.ToString();
 
             RawProto protoS = RawProtoFile.LoadFromFile(strSolverFile);
