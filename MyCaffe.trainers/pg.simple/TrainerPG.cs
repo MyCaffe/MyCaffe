@@ -283,7 +283,7 @@ namespace MyCaffe.trainers.pg.simple
         public void Run(Phase phase, int nN, ITERATOR_TYPE type)
         {
             MemoryCollection m_rgMemory = new MemoryCollection();
-            double dfRunningReward = 0;
+            double? dfRunningReward = null;
             double dfEpisodeReward = 0;
             int nEpisode = 0;
             int nIteration = 0;
@@ -335,9 +335,12 @@ namespace MyCaffe.trainers.pg.simple
                         m_brain.Train(nIteration);
 
                         // Update reward running
-                        dfRunningReward = dfRunningReward * 0.99 + dfEpisodeReward * 0.01;
+                        if (!dfRunningReward.HasValue)
+                            dfRunningReward = dfEpisodeReward;
+                        else
+                            dfRunningReward = dfRunningReward * 0.99 + dfEpisodeReward * 0.01;
 
-                        updateStatus(nIteration, nEpisode, dfEpisodeReward, dfRunningReward);
+                        updateStatus(nIteration, nEpisode, dfEpisodeReward, dfRunningReward.Value);
                         dfEpisodeReward = 0;
 
                         s = getData(phase, -1);
@@ -355,9 +358,12 @@ namespace MyCaffe.trainers.pg.simple
                         nEpisode++;
 
                         // Update reward running
-                        dfRunningReward = dfRunningReward * 0.99 + dfEpisodeReward * 0.01;
+                        if (!dfRunningReward.HasValue)
+                            dfRunningReward = dfEpisodeReward;
+                        else
+                            dfRunningReward = dfRunningReward * 0.99 + dfEpisodeReward * 0.01;
 
-                        updateStatus(nIteration, nEpisode, dfEpisodeReward, dfRunningReward);
+                        updateStatus(nIteration, nEpisode, dfEpisodeReward, dfRunningReward.Value);
                         dfEpisodeReward = 0;
 
                         s = getData(phase, -1);
