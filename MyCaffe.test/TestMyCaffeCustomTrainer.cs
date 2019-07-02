@@ -1395,7 +1395,7 @@ namespace MyCaffe.test
 
             RawProto protoM = RawProtoFile.LoadFromFile(strModelFile);
 
-            if (strTrainerType.Contains("SIMPLE"))
+            if (strTrainerType.Contains("SIMPLE") && igym.Name == "ATARI")
             {
                 RawProto layer = protoM.FindChild("layer");
                 RawProto input_param = layer.FindChild("input_param");
