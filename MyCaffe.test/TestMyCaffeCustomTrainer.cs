@@ -547,7 +547,7 @@ namespace MyCaffe.test
             //
             //  - TraingerType = 'strTrainerType' ('PG.MT' = use multi-threaded Policy Gradient trainer, 'PG.ST' = single-threaded trainer, 'PG.SIMPLE' = basic trainer with Sigmoid output support only)
             //  - UseRawInput = do not preprocess by subtracting the current from the last for we are using a lot of RelU activations which set negative values to zero.
-            //  - RewardType = MAX (display the maximum rewards received, a setting of VAL displays the actual reward received)
+            //  - RewardType = VAL (display the actual rewards received, a setting of MAX displays the maximum reward received)
             //  - Gamma = 0.99 (discounting factor)
             //  - Init1 = default force of 10.
             //  - Init2 = do not use additive force.                    
