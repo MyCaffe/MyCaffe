@@ -34,6 +34,7 @@ We have several new models supported by MyCaffe with the train_val and solution 
  - Policy Gradient Reinforcement Learning networks as described in [5].
  - Recurrent Learning of Char-RNN as described in [8] and [9].
  - Neural Style Transfer as described in [10] and [11] using the VGG model described in [12]
+ - Deep Q-Learning [14][15] with Noisy-Net [16] and Prioritized Replay Buffer [17]
 
 For more information on the MyCaffe implementation of Policy Gradient Reinforcement Learning, see [MyCaffe: A Complete C# Re-Write of Caffe with Reinforcement Learning](https://arxiv.org/abs/1810.02272) by D. Brown, 2018. 
 
@@ -85,6 +86,14 @@ Source code available on GitHub at <a href="https://github.com/stella-emu/stella
 [11] [ftokarev/caffe Github](https://github.com/ftokarev/caffe-neural-style) by ftokarev, 2017
 
 [12] [Very Deep Convolutional Networks for Large-Scale Image Recognition](https://arxiv.org/pdf/1409.1556.pdf) by K. Simonyan, A. Zisserman, arXiv:1409.1556
+
+[14] [GitHub: Google/dopamine](https://github.com/google/dopamine) licensed under the [Apache 2.0 License](https://github.com/google/dopamine/blob/master/LICENSE);
+
+[15] [Dopamine: A Research Framework for Deep Reinforcement Learning](https://arxiv.org/abs/1812.06110) by Pablo Samuel Castro, Subhodeep Moitra, Carles Gelada, Saurabh Kumar, Marc G. Bellemare, 2018, arXiv:1812.06110
+
+[16] [Noisy Networks for Exploration](https://arxiv.org/abs/1706.10295) by Meire Fortunato, Mohammad Gheshlaghi Azar, Bilal Piot, Jacob Menick, Ian Osband, Alex Graves, Vlad Mnih, Remi Munos, Demis Hassabis, Olivier Pietquin, Charles Blundell, Shane Legg, 2018, arXiv:1706.10295
+
+[17] [Prioritized Experience Replay](https://arxiv.org/abs/1511.05952) by Tom Schaul, John Quan, Ioannis Antonoglou, David Silver, 2016, arXiv:1511.05952
 
 For more information on the C++ CAFFE open-source project, please see the following <a href="http://caffe.berkeleyvision.org/">link</a>.
 
