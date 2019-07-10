@@ -1031,7 +1031,6 @@ namespace MyCaffe.test
             }
         }
 
-
         [TestMethod]
         public void TestMath_ger()
         {
@@ -1914,6 +1913,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestMatrix()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITestCudaDnn t in test.Tests)
+                {
+                    t.TestMatrix();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     public interface ITestCudaDnn : ITest
@@ -1926,6 +1943,7 @@ namespace MyCaffe.test
         void TestMemoryTestAll();
         void TestMemoryPointers();
         void TestHammingDistance();
+        void TestMatrix();
     }
 
     class CudaDnnTest : TestBase
@@ -2392,6 +2410,55 @@ namespace MyCaffe.test
             for (int i = 0; i < rgDataC.Length; i++)
             {
                 m_log.CHECK_EQ(rgExpected[i], rgDataC[i], "The values at " + i.ToString() + " are not as expected.");
+            }
+        }
+
+        public void TestMatrix()
+        {
+            double[] rgDataA = new double[] { 3.2, 4.5, 8.3, -1.2, 0.03, 0.22, 0.2, 4.9, 8.1, 9.3, 0.1, 0.88 };
+            double[] rgDataB;
+                
+            m_A = new Blob<T>(m_cuda, m_log, new List<int>() { 1, 1, 2, rgDataA.Length/2 });
+            m_B = new Blob<T>(m_cuda, m_log);
+            m_B.ReshapeLike(m_A);
+            m_C = new Blob<T>(m_cuda, m_log);
+            m_C.Reshape(1, 1, 1, m_A.shape(3));
+            m_C.SetData(1);
+
+            // Sum all columns and test the results.
+            m_A.mutable_cpu_data = convert(rgDataA);
+            m_cuda.matrix_aggregate_cols(AGGREGATIONS.SUM, m_A.width, m_A.height, m_A.gpu_data, m_B.mutable_gpu_data);
+            rgDataB = convert(m_B.mutable_cpu_data);
+
+            double[] rgExpected = new double[rgDataA.Length / 2];
+            for (int j = 0; j < m_A.width; j++)
+            { 
+                for (int i = 0; i < m_A.height; i++)
+                {
+                    rgExpected[j] += rgDataA[i * m_A.width + j];
+                }
+
+                double dfExpected = rgExpected[j];
+                double dfActual = rgDataB[j];
+                m_log.EXPECT_NEAR(dfExpected, dfActual, 0.00001, "The expected and actual are not the same!");
+            }
+
+            // Sum all rows and test the results.
+            m_A.mutable_cpu_data = convert(rgDataA);
+            m_cuda.matrix_aggregate_rows(AGGREGATIONS.SUM, m_A.width, m_A.height, m_A.gpu_data, m_C.gpu_data, m_B.mutable_gpu_data);
+            rgDataB = convert(m_B.mutable_cpu_data);
+
+            rgExpected = new double[2];
+            for (int i = 0; i < m_A.height; i++)
+            {
+                for (int j = 0; j < m_A.width; j++)
+                {
+                    rgExpected[i] += rgDataA[i * m_A.width + j];
+                }
+
+                double dfExpected = rgExpected[i];
+                double dfActual = rgDataB[i];
+                m_log.EXPECT_NEAR(dfExpected, dfActual, 0.00001, "The expected and actual are not the same!");
             }
         }
     }
