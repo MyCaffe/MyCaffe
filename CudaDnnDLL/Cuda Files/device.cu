@@ -2920,6 +2920,52 @@ long Device<T>::cuda_mtx_dot(long lInput, T* pfInput, long* plOutput, T** ppfOut
 template long Device<double>::cuda_mtx_dot(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
 template long Device<float>::cuda_mtx_dot(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
 
+
+template <class T>
+long Device<T>::cuda_mtx_mean(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+		return lErr;
+
+	int nWid = (int)pfInput[0];	// cols in A and Y
+	int nHt = (int)pfInput[1];	// rows in A and Y
+	long hA = (long)pfInput[2];	// 
+	long hOnes = (long)pfInput[3]; // nWid in length, contains 1 on each column to include in the mean calculation.
+	T fAlpha = pfInput[4];
+	long hY = (long)pfInput[5]; // reduction leaves results in first nHt items of hY
+
+	return m_math.mtx_mean(nWid, nHt, hA, hOnes, fAlpha, hY);
+}
+
+template long Device<double>::cuda_mtx_mean(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mtx_mean(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
+long Device<T>::cuda_mtx_stdev(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+		return lErr;
+
+	int nWid = (int)pfInput[0];	// cols in A and Y
+	int nHt = (int)pfInput[1];	// rows in A and Y
+	long hA = (long)pfInput[2];	// 
+	long hOnes = (long)pfInput[3]; // nWid in length, contains 1 on each column to include in the mean calculation.
+	long hMean = (long)pfInput[4]; // nHt items containing the mean of each row.
+	long hWork = (long)pfInput[5]; // same size as A.
+	long hY = (long)pfInput[6]; // reduction leaves results in first nHt items of hY
+
+	return m_math.mtx_stdev(nWid, nHt, hA, hOnes, hMean, hWork, hY);
+}
+
+template long Device<double>::cuda_mtx_stdev(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mtx_stdev(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
 template <class T>
 long Device<T>::cuda_tsne_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {

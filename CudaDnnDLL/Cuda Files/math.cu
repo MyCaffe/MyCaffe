@@ -9159,6 +9159,68 @@ long Math<float>::mtx_dot(int nM, int nN, int nK, long hA, long hB, long hC)
 	return cudaStreamSynchronize(0);
 }
 
+template <typename T>
+long Math<T>::mtx_mean(int nWidth, int nHeight, long hA, long hOnes, T fAlpha, long hY)
+{
+	LONG lErr;
+
+	// Sum the rows
+	lErr = mtx_aggregate_rows(AGGREGATION_SUM, nWidth, nHeight, hA, hOnes, hY);
+	if (lErr)
+		return lErr;
+
+	lErr = set((nWidth * nHeight) - nHeight, hY, 0, -1, nHeight);
+	if (lErr)
+		return lErr;
+
+	// Divide by the row item count (the width)
+	return mul_scalar(nHeight, fAlpha / T(nWidth), hY, 0);
+}
+
+template long Math<double>::mtx_mean(int nWidth, int nHeight, long hA, long hOnes, double dfAlpha, long hY);
+template long Math<float>::mtx_mean(int nWidth, int nHeight, long hA, long hOnes, float fAlpha, long hY);
+
+
+template <typename T>
+long Math<T>::mtx_stdev(int nWidth, int nHeight, long hA, long hOnes, long hMean, long hWork, long hY)
+{
+	LONG lErr;
+
+	// subtract the row mean from each item within each row.
+	if (lErr = mtx_add_vector(ORIENTATION_COLS, nWidth, nHeight, T(-1.0), hA, hMean, hY))
+		return lErr;
+
+	// Calculate the square of each row item.
+	if (lErr = powx(nWidth * nHeight, hY, T(2.0), hY))
+		return lErr;
+
+	// Sum the rows
+	lErr = mtx_aggregate_rows(AGGREGATION_SUM, nWidth, nHeight, hY, hOnes, hWork);
+	if (lErr)
+		return lErr;
+
+	lErr = set(nWidth * nHeight, hY, 0, -1, 0);
+	if (lErr)
+		return lErr;
+
+	lErr = copy(nHeight, hWork, hY, 0, 0, 0);
+	if (lErr)
+		return lErr;
+
+	// Divide by the row item count (the width)
+	lErr = mul_scalar(nHeight, 1 / (double)(nWidth - 1), hY, 0);
+	if (lErr)
+		return lErr;
+
+	// Calculate the square root for the stddev.
+	lErr = sqrt(nHeight, hY, hY);
+	if (lErr)
+		return lErr;
+}
+
+template long Math<double>::mtx_stdev(int nWidth, int nHeight, long hA, long hOnes, long hMean, long hWork, long hY);
+template long Math<float>::mtx_stdev(int nWidth, int nHeight, long hA, long hOnes, long hMean, long hWork, long hY);
+
 
 template <typename T> 
 __device__ int sgn(T val) 

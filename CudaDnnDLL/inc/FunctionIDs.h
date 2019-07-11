@@ -333,6 +333,8 @@ const int CUDA_FN_MTX_TRANSPOSE = 706;
 const int CUDA_FN_MTX_MEANCENTER_BY_COL = 707;
 const int CUDA_FN_MTX_EUCLIDEAN_DIST = 709;
 const int CUDA_FN_MTX_DOT = 710;
+const int CUDA_FN_MTX_MEAN = 711;
+const int CUDA_FN_MTX_STDEV = 712;
 
 const int CUDA_FN_CREATE_PCA = 800;
 const int CUDA_FN_RUN_PCA = 801;

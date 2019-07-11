@@ -872,6 +872,8 @@ namespace MyCaffe.common
             CUDA_MTX_MEANCENTER_BY_ROW = 708,
             CUDA_MTX_EUCLIDEAN_DIST = 709,
             CUDA_MTX_DOT = 710,
+            CUDA_MTX_MEAN = 711,
+            CUDA_MTX_STDEV = 712,
 
             CUDA_CREATE_PCA = 800,
             CUDA_RUN_PCA = 801,
@@ -7404,6 +7406,22 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_DOT, new double[] { m, n, k, hA, hB, hC });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_DOT, new float[] { m, n, k, hA, hB, hC });
+        }
+
+        public void matrix_mean_rows(int nWidth, int nHeight, long hA, long hOnes, double dfAlpha, long hY) /** @private */
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_MEAN, new double[] { nWidth, nHeight, hA, hOnes, dfAlpha, hY });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_MEAN, new float[] { nWidth, nHeight, hA, hOnes, (float)dfAlpha, hY });
+        }
+
+        public void matrix_stdev_rows(int nWidth, int nHeight, long hA, long hOnes, long hMean, long hWork, long hY) /** @private */
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_STDEV, new double[] { nWidth, nHeight, hA, hOnes, hMean, hWork, hY });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_STDEV, new float[] { nWidth, nHeight, hA, hOnes, hMean, hWork, hY });
         }
 
         #endregion

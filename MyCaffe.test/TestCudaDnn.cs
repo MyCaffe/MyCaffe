@@ -1931,6 +1931,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestMatrixMeanStdev()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITestCudaDnn t in test.Tests)
+                {
+                    t.TestMatrixMeanStdev();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     public interface ITestCudaDnn : ITest
@@ -1944,6 +1962,7 @@ namespace MyCaffe.test
         void TestMemoryPointers();
         void TestHammingDistance();
         void TestMatrix();
+        void TestMatrixMeanStdev();
     }
 
     class CudaDnnTest : TestBase
@@ -2417,8 +2436,10 @@ namespace MyCaffe.test
         {
             double[] rgDataA = new double[] { 3.2, 4.5, 8.3, -1.2, 0.03, 0.22, 0.2, 4.9, 8.1, 9.3, 0.1, 0.88 };
             double[] rgDataB;
+            int nWid = rgDataA.Length / 2;
+            int nHt = 2;
                 
-            m_A = new Blob<T>(m_cuda, m_log, new List<int>() { 1, 1, 2, rgDataA.Length/2 });
+            m_A = new Blob<T>(m_cuda, m_log, new List<int>() { 1, 1, nHt, nWid });
             m_B = new Blob<T>(m_cuda, m_log);
             m_B.ReshapeLike(m_A);
             m_C = new Blob<T>(m_cuda, m_log);
@@ -2430,7 +2451,7 @@ namespace MyCaffe.test
             m_cuda.matrix_aggregate_cols(AGGREGATIONS.SUM, m_A.width, m_A.height, m_A.gpu_data, m_B.mutable_gpu_data);
             rgDataB = convert(m_B.mutable_cpu_data);
 
-            double[] rgExpected = new double[rgDataA.Length / 2];
+            double[] rgExpected = new double[nWid];
             for (int j = 0; j < m_A.width; j++)
             { 
                 for (int i = 0; i < m_A.height; i++)
@@ -2448,7 +2469,7 @@ namespace MyCaffe.test
             m_cuda.matrix_aggregate_rows(AGGREGATIONS.SUM, m_A.width, m_A.height, m_A.gpu_data, m_C.gpu_data, m_B.mutable_gpu_data);
             rgDataB = convert(m_B.mutable_cpu_data);
 
-            rgExpected = new double[2];
+            rgExpected = new double[nHt];
             for (int i = 0; i < m_A.height; i++)
             {
                 for (int j = 0; j < m_A.width; j++)
@@ -2458,6 +2479,172 @@ namespace MyCaffe.test
 
                 double dfExpected = rgExpected[i];
                 double dfActual = rgDataB[i];
+                m_log.EXPECT_NEAR(dfExpected, dfActual, 0.00001, "The expected and actual are not the same!");
+            }
+
+            //---------------------------------------------
+            // Calculate the Standard Deviation of each row
+            //---------------------------------------------
+
+            // Clip to actual values (remaining values are temporary)
+            m_B.Reshape(1, 1, nHt, 1);
+
+            // Calcualte row negative means (that will later be added).
+            m_cuda.mul_scalar(m_B.count(), -1/(double)nWid, m_B.mutable_gpu_data);
+
+            // Subtract row means from each row.
+            m_cuda.matrix_add_vector(ORIENTATION.COL, nWid, nHt, 1.0, m_A.gpu_data, m_B.gpu_data, m_A.mutable_gpu_diff);
+            m_cuda.copy(m_A.count(), m_A.gpu_diff, m_A.mutable_gpu_data);
+
+            // Calculate square of each item.
+            m_cuda.powx(m_A.count(), m_A.gpu_data, 2.0, m_A.mutable_gpu_data);
+
+            // Sum the rows again
+            m_B.ReshapeLike(m_A);
+            m_cuda.matrix_aggregate_rows(AGGREGATIONS.SUM, nWid, nHt, m_A.gpu_data, m_C.gpu_data, m_B.mutable_gpu_data);
+            m_B.Reshape(1, 1, nHt, 1);
+
+            // Divide by n-1
+            m_cuda.mul_scalar(m_B.count(), 1 / (double)(nWid - 1), m_B.mutable_gpu_data);
+
+            // Calculate sqrt to get standard deviation of each row.
+            m_cuda.sqrt(m_B.count(), m_B.gpu_data, m_B.mutable_gpu_data);
+
+
+            //---------------------------------------------
+            // Verify the Standard Deviation of each row
+            //---------------------------------------------
+
+            double[] rgDataC = new double[nWid * nHt];
+
+            // Calculate the row mean
+            for (int i = 0; i < nHt; i++)
+            {
+                rgDataB[i] /= (double)nWid;
+            }
+
+            // Subtract mean and square
+            for (int i = 0; i < nHt; i++)
+            {
+                for (int j = 0; j < nWid; j++)
+                {
+                    rgDataC[i * nWid + j] = Math.Pow(rgDataA[i * nWid + j] - rgDataB[i], 2.0);
+                }
+            }
+
+            // Sum the rows.
+            rgExpected = new double[nHt];
+            for (int i = 0; i < nHt; i++)
+            {
+                for (int j = 0; j < nWid; j++)
+                {
+                    rgExpected[i] += rgDataC[i * m_A.width + j];
+                }
+            }
+
+            // Divide by n-1 and Square to get expected stddev
+            rgDataB = convert(m_B.mutable_cpu_data);
+            for (int i = 0; i < nHt; i++)
+            {
+                rgExpected[i] = Math.Sqrt(rgExpected[i] / (double)(nWid - 1));
+
+                double dfExpected = rgExpected[i];
+                double dfActual = rgDataB[i];
+                m_log.EXPECT_NEAR(dfExpected, dfActual, 0.00001, "The expected and actual are not the same!");
+            }
+        }
+
+        public void TestMatrixMeanStdev()
+        {
+            double[] rgDataA = new double[] { 3.2, 4.5, 8.3, -1.2, 0.03, 0.22, 0.2, 4.9, 8.1, 9.3, 0.1, 0.88 };
+            double[] rgDataB;
+            double[] rgExpected;
+            int nWid = rgDataA.Length / 2;
+            int nHt = 2;
+
+            m_A = new Blob<T>(m_cuda, m_log, new List<int>() { 1, 1, nHt, nWid });
+            m_B = new Blob<T>(m_cuda, m_log);
+            m_B.ReshapeLike(m_A);
+            m_C = new Blob<T>(m_cuda, m_log);
+            m_C.Reshape(1, 1, 1, m_A.shape(3));
+            m_C.SetData(1);
+            m_y = new Blob<T>(m_cuda, m_log);
+            m_y.ReshapeLike(m_A);
+
+            //----------------------------------------
+            //  Calculate the row means
+            //
+            //  Results are placed in the first of
+            //  the resulting memory (m_B.gpu_data)
+            //  and each entry represents the mean
+            //  of a row.
+            //----------------------------------------
+            m_A.mutable_cpu_data = convert(rgDataA);
+            m_cuda.matrix_mean_rows(nWid, nHt, m_A.gpu_data, m_C.gpu_data, 1.0, m_B.mutable_gpu_data);
+
+            // Sum all rows and test the results.
+            rgExpected = new double[nHt];
+            for (int i = 0; i < m_A.height; i++)
+            {
+                for (int j = 0; j < m_A.width; j++)
+                {
+                    rgExpected[i] += rgDataA[i * m_A.width + j];
+                }
+            }
+
+            // Calculate the row mean
+            for (int i = 0; i < nHt; i++)
+            {
+                rgExpected[i] /= (double)nWid;
+            }
+
+            // Verify the row means.
+            rgDataB = convert(m_B.mutable_cpu_data);
+            for (int i = 0; i < nHt; i++)
+            {
+                double dfExpected = rgExpected[i];
+                double dfActual = rgDataB[i];
+                m_log.EXPECT_NEAR(dfExpected, dfActual, 0.00001, "The expected and actual are not the same!");
+            }
+
+            //----------------------------------------
+            //  Calculate the stddev
+            //
+            //  Results are placed in the first of
+            //  the resulting memory (m_y.gpu_data)
+            //  and each entry represents the stddev
+            //  of a row.
+            //----------------------------------------
+            m_cuda.matrix_stdev_rows(nWid, nHt, m_A.gpu_data, m_C.gpu_data, m_B.gpu_data, m_A.mutable_gpu_diff, m_y.mutable_gpu_data);
+
+            double[] rgDataC = new double[nHt * nWid];
+            // Subtract mean and square
+            for (int i = 0; i < nHt; i++)
+            {
+                for (int j = 0; j < nWid; j++)
+                {
+                    rgDataC[i * nWid + j] = Math.Pow(rgDataA[i * nWid + j] - rgDataB[i], 2.0);
+                }
+            }
+
+            // Sum the rows.
+            rgExpected = new double[nHt];
+            for (int i = 0; i < nHt; i++)
+            {
+                for (int j = 0; j < nWid; j++)
+                {
+                    rgExpected[i] += rgDataC[i * m_A.width + j];
+                }
+            }
+
+            // Divide by n-1 and Square to get expected stddev
+            double[] rgDataY = convert(m_y.mutable_cpu_data);
+            for (int i = 0; i < nHt; i++)
+            {
+                rgExpected[i] = Math.Sqrt(rgExpected[i] / (double)(nWid - 1));
+
+                double dfExpected = rgExpected[i];
+                double dfActual = rgDataY[i];
                 m_log.EXPECT_NEAR(dfExpected, dfActual, 0.00001, "The expected and actual are not the same!");
             }
         }

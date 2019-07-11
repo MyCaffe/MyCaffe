@@ -263,6 +263,8 @@ class Math
 		long mtx_transpose(int nWidth, int nHeight, long hA, long hY);
 		long mtx_meancenter_by_column(int nWidth, int nHeight, long hA, long hB, long hY, bool bNormalize);
 		long mtx_euclidean_dist(long hX, long hY, long hOut, int n, int d, int nStart, int nEnd);
+		long mtx_mean(int nWidth, int nHeight, long hA, long hOnes, T fAlpha, long hY);
+		long mtx_stdev(int nWidth, int nHeight, long hA, long hOnes, long hMean, long hWork, long hY);
 		
 		// hC(k rows x m cols) = hA(m rows x n cols) * hB(n rows x k cols)
 		long mtx_dot(int m, int n, int k, long hA, long hB, long hC);

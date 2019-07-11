@@ -779,6 +779,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_MTX_DOT:
 			return m_device.cuda_mtx_dot(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_MTX_MEAN:
+			return m_device.cuda_mtx_mean(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_MTX_STDEV:
+			return m_device.cuda_mtx_stdev(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_TSNE_UPDATE:
 			return m_device.cuda_tsne_update(lCount, pfInput, plCount, ppfOutput);
 
