@@ -426,6 +426,7 @@ class Device
 		long cuda_mtx_dot(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_mtx_mean(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_mtx_stdev(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_mtx_correlation(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long cuda_tsne_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_tsne_update_grad(long lInput, T* pfInput, long* plOutput, T** ppfOutput);

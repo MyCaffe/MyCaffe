@@ -874,6 +874,7 @@ namespace MyCaffe.common
             CUDA_MTX_DOT = 710,
             CUDA_MTX_MEAN = 711,
             CUDA_MTX_STDEV = 712,
+            CUDA_MTX_CORRELATIONS = 714,
 
             CUDA_CREATE_PCA = 800,
             CUDA_RUN_PCA = 801,
@@ -7422,6 +7423,14 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_STDEV, new double[] { nWidth, nHeight, hA, hOnes, hMean, hWork, hY });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_STDEV, new float[] { nWidth, nHeight, hA, hOnes, hMean, hWork, hY });
+        }
+
+        public void matrix_correlations(int nWidth, int nHeight, long hA, long hOnes, long hMean, long hStdev, long hWork, long hY) /** @private */
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MTX_CORRELATIONS, new double[] { nWidth, nHeight, hA, hOnes, hMean, hStdev, hWork, hY });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_CORRELATIONS, new float[] { nWidth, nHeight, hA, hOnes, hMean, hStdev, hWork, hY });
         }
 
         #endregion

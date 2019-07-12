@@ -9222,6 +9222,145 @@ template long Math<double>::mtx_stdev(int nWidth, int nHeight, long hA, long hOn
 template long Math<float>::mtx_stdev(int nWidth, int nHeight, long hA, long hOnes, long hMean, long hWork, long hY);
 
 
+template <>
+long Math<float>::mtx_correlation(int nWidth, int nHeight, long hA, long hOnes, long hMean, long hStdev, long hWork, long hY)
+{
+	LONG lErr;
+
+	MemoryItem* pY;
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	MemoryItem* pStdev;
+	if (lErr = m_pMemCol->GetData(hStdev, &pStdev))
+		return lErr;
+
+	MemoryItem* pWork;
+	if (lErr = m_pMemCol->GetData(hWork, &pWork))
+		return lErr;
+
+	// subtract the row mean from each item within each row.
+	if (lErr = mtx_add_vector(ORIENTATION_COLS, nWidth, nHeight, -1.0f, hA, hMean, hY))
+		return lErr;
+
+	// Calculate (x-xmean)(y-ymean) between the first row
+	// and all other rows.
+	int nOffset = nWidth;
+	for (int i = 1; i < nHeight; i++)
+	{
+		mul(nWidth, hY, hY, hWork, 0, nOffset, nOffset);
+		nOffset += nWidth;
+	}
+
+	// Sum the rows
+	lErr = mtx_aggregate_rows(AGGREGATION_SUM, nWidth, nHeight, hWork, hOnes, hY);
+	if (lErr)
+		return lErr;
+
+	// Calculate StdevXY = sx * sy
+	float* pfStdev = pStdev->GetHostDataAsFloat();
+	if (pfStdev == NULL)
+		return ERROR_OUTOFMEMORY;
+
+	float* pfSxSy = pWork->GetHostDataAsFloat();
+	if (pfSxSy == NULL)
+	{
+		free(pfStdev);
+		return ERROR_OUTOFMEMORY;
+	}
+
+	for (int i = 1; i < nHeight; i++)
+	{
+		pfSxSy[i] = pfStdev[0] * pfStdev[i];
+	}
+
+	pfSxSy[0] = 1;
+
+	lErr = pWork->SetData(pY->Size(), pfSxSy);
+	free(pfStdev);
+	free(pfSxSy);
+
+	if (lErr)
+		return lErr;
+
+	// Divide Sum by StdevXY
+	div(nHeight, hY, hWork, hY);
+	mul_scalar(nHeight, 1.0f / (nWidth - 1), hY);
+	set(1, hY, 1.0f, 0);
+
+	return 0;
+}
+
+template <>
+long Math<double>::mtx_correlation(int nWidth, int nHeight, long hA, long hOnes, long hMean, long hStdev, long hWork, long hY)
+{
+	LONG lErr;
+
+	MemoryItem* pY;
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	MemoryItem* pStdev;
+	if (lErr = m_pMemCol->GetData(hStdev, &pStdev))
+		return lErr;
+
+	MemoryItem* pWork;
+	if (lErr = m_pMemCol->GetData(hWork, &pWork))
+		return lErr;
+
+	// subtract the row mean from each item within each row.
+	if (lErr = mtx_add_vector(ORIENTATION_COLS, nWidth, nHeight, -1.0f, hA, hMean, hY))
+		return lErr;
+
+	// Calculate (x-xmean)(y-ymean) between the first row
+	// and all other rows.
+	int nOffset = nWidth;
+	for (int i = 1; i < nHeight; i++)
+	{
+		mul(nWidth, hY, hY, hWork, 0, nOffset, nOffset);
+		nOffset += nWidth;
+	}
+
+	// Sum the rows
+	lErr = mtx_aggregate_rows(AGGREGATION_SUM, nWidth, nHeight, hWork, hOnes, hY);
+	if (lErr)
+		return lErr;
+
+	// Calculate StdevXY = sx * sy
+	double* pfStdev = pStdev->GetHostDataAsDouble();
+	if (pfStdev == NULL)
+		return ERROR_OUTOFMEMORY;
+
+	double* pfSxSy = pWork->GetHostDataAsDouble();
+	if (pfSxSy == NULL)
+	{
+		free(pfStdev);
+		return ERROR_OUTOFMEMORY;
+	}
+
+	for (int i = 1; i < nHeight; i++)
+	{
+		pfSxSy[i] = pfStdev[0] * pfStdev[i];
+	}
+
+	pfSxSy[0] = 1;
+
+	lErr = pWork->SetData(pY->Size(), pfSxSy);
+	free(pfStdev);
+	free(pfSxSy);
+
+	if (lErr)
+		return lErr;
+
+	// Divide Sum by StdevXY
+	div(nHeight, hY, hWork, hY);
+	mul_scalar(nHeight, 1.0f / (nWidth - 1), hY);
+	set(1, hY, 1.0f, 0);
+
+	return 0;
+}
+
+
 template <typename T> 
 __device__ int sgn(T val) 
 {

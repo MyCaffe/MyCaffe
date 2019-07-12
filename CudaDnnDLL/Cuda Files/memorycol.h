@@ -231,6 +231,17 @@ class MemoryItem
 			}
 			return fp;
 		}
+
+		double* GetHostDataAsDouble()
+		{
+			double* fp = (double*)malloc(Size());
+			if (cudaMemcpy(fp, Data(), Size(), cudaMemcpyDeviceToHost))
+			{
+				free(fp);
+				return NULL;
+			}
+			return fp;
+		}
 };
 
 

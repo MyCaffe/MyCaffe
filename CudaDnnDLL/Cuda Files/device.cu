@@ -2967,6 +2967,30 @@ template long Device<float>::cuda_mtx_stdev(long lInput, float* pfInput, long* p
 
 
 template <class T>
+long Device<T>::cuda_mtx_correlation(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 8, 8))
+		return lErr;
+
+	int nWid = (int)pfInput[0];	// cols in A and Y
+	int nHt = (int)pfInput[1];	// rows in A and Y
+	long hA = (long)pfInput[2];	// 
+	long hOnes = (long)pfInput[3]; // nWid in length, contains 1 on each column to include in the mean calculation.
+	long hMean = (long)pfInput[4]; // nHt items containing the mean of each row.
+	long hStdev = (long)pfInput[5]; // nHt items containing the stdev of each row.
+	long hWork = (long)pfInput[6]; // same size as A.
+	long hY = (long)pfInput[7]; // reduction leaves results in first nHt items of hY
+
+	return m_math.mtx_correlation(nWid, nHt, hA, hOnes, hMean, hStdev, hWork, hY);
+}
+
+template long Device<double>::cuda_mtx_correlation(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mtx_correlation(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_tsne_update(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

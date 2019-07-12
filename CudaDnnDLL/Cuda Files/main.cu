@@ -785,6 +785,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_MTX_STDEV:
 			return m_device.cuda_mtx_stdev(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_MTX_CORRELATION:
+			return m_device.cuda_mtx_correlation(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_TSNE_UPDATE:
 			return m_device.cuda_tsne_update(lCount, pfInput, plCount, ppfOutput);
 
@@ -1592,6 +1595,15 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_MTX_DOT:
 		return "CUDA_FN_MTX_DOT";
+
+	case CUDA_FN_MTX_MEAN:
+		return "CUDA_FN_MTX_MEAN";
+
+	case CUDA_FN_MTX_STDEV:
+		return "CUDA_FN_MTX_STDEV";
+
+	case CUDA_FN_MTX_CORRELATION:
+		return "CUDA_FN_MTX_CORRELATION";
 
 	case CUDA_FN_TSNE_UPDATE:
 		return "CUDA_FN_TSNE_UPDATE";
