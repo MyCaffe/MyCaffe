@@ -8,12 +8,12 @@ using MyCaffe.basecode;
 namespace MyCaffe.param
 {
     /// <summary>
-    /// Specifies the parameters for the NormalizationLayer.
+    /// Specifies the parameters for the Normalization1Layer.
     /// </summary>
     /// <remarks>
     /// @see [Layer Normalization](https://arxiv.org/abs/1607.06450) by Jimmy Lei Ba, Jamie Ryan Kiros, and Geoffrey E. Hinton, 2016.
     /// </remarks>
-    public class NormalizationParameter : LayerParameterBase 
+    public class Normalization1Parameter : LayerParameterBase 
     {
         Norm m_norm = Norm.L2;
 
@@ -33,7 +33,7 @@ namespace MyCaffe.param
         }
 
         /** @copydoc LayerParameterBase */
-        public NormalizationParameter()
+        public Normalization1Parameter()
         {
         }
 
@@ -51,7 +51,7 @@ namespace MyCaffe.param
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
             RawProto proto = RawProto.Parse(br.ReadString());
-            NormalizationParameter p = FromProto(proto);
+            Normalization1Parameter p = FromProto(proto);
 
             if (!bNewInstance)
                 Copy(p);
@@ -62,14 +62,14 @@ namespace MyCaffe.param
         /** @copydoc LayerParameterBase::Copy */
         public override void Copy(LayerParameterBase src)
         {
-            NormalizationParameter p = (NormalizationParameter)src;
+            Normalization1Parameter p = (Normalization1Parameter)src;
             m_norm = p.m_norm;
         }
 
         /** @copydoc LayerParameterBase::Clone */
         public override LayerParameterBase Clone()
         {
-            NormalizationParameter p = new NormalizationParameter();
+            Normalization1Parameter p = new Normalization1Parameter();
             p.Copy(this);
             return p;
         }
@@ -89,10 +89,10 @@ namespace MyCaffe.param
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static NormalizationParameter FromProto(RawProto rp)
+        public static Normalization1Parameter FromProto(RawProto rp)
         {
             string strVal;
-            NormalizationParameter p = new NormalizationParameter();
+            Normalization1Parameter p = new Normalization1Parameter();
 
             if ((strVal = rp.FindValue("norm")) != null)
             {

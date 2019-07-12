@@ -13,16 +13,16 @@ using MyCaffe.layers.beta;
 namespace MyCaffe.test
 {
     [TestClass]
-    public class TestNormalizationLayer
+    public class TestNormalization1Layer
     {
         [TestMethod]
         public void TestForward()
         {
-            NormalizationLayerTest test = new NormalizationLayerTest();
+            Normalization1LayerTest test = new Normalization1LayerTest();
 
             try
             {
-                foreach (INormalizationLayerTest t in test.Tests)
+                foreach (INormalization1LayerTest t in test.Tests)
                 {
                     t.TestForward();
                 }
@@ -36,11 +36,11 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestGradient()
         {
-            NormalizationLayerTest test = new NormalizationLayerTest();
+            Normalization1LayerTest test = new Normalization1LayerTest();
 
             try
             {
-                foreach (INormalizationLayerTest t in test.Tests)
+                foreach (INormalization1LayerTest t in test.Tests)
                 {
                     t.TestGradient();
                 }
@@ -52,31 +52,31 @@ namespace MyCaffe.test
         }
     }
 
-    interface INormalizationLayerTest : ITest
+    interface INormalization1LayerTest : ITest
     {
         void TestForward();
         void TestGradient();
     }
 
-    class NormalizationLayerTest : TestBase
+    class Normalization1LayerTest : TestBase
     {
-        public NormalizationLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("Normalization Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
+        public Normalization1LayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
+            : base("Normalization1 Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 
         protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
         {
             if (dt == common.DataType.DOUBLE)
-                return new NormalizationLayerTest<double>(strName, nDeviceID, engine);
+                return new Normalization1LayerTest<double>(strName, nDeviceID, engine);
             else
-                return new NormalizationLayerTest<float>(strName, nDeviceID, engine);
+                return new Normalization1LayerTest<float>(strName, nDeviceID, engine);
         }
     }
 
-    class NormalizationLayerTest<T> : TestEx<T>, INormalizationLayerTest
+    class Normalization1LayerTest<T> : TestEx<T>, INormalization1LayerTest
     {
-        public NormalizationLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
+        public Normalization1LayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 10, 4, 2, 3 }, nDeviceID)
         {
             m_engine = engine;
@@ -95,8 +95,8 @@ namespace MyCaffe.test
         public void TestForward()
         {
             double dfPrecision = 1e-5;
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.NORMALIZATION);
-            NormalizationLayer<T> layer = new NormalizationLayer<T>(m_cuda, m_log, p);
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.NORMALIZATION1);
+            Normalization1Layer<T> layer = new Normalization1Layer<T>(m_cuda, m_log, p);
 
             layer.Setup(BottomVec, TopVec);
             layer.Forward(BottomVec, TopVec);
@@ -142,8 +142,8 @@ namespace MyCaffe.test
 
         public void TestGradient()
         {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.NORMALIZATION);
-            NormalizationLayer<T> layer = new NormalizationLayer<T>(m_cuda, m_log, p);
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.NORMALIZATION1);
+            Normalization1Layer<T> layer = new Normalization1Layer<T>(m_cuda, m_log, p);
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-3);
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
         }

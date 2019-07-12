@@ -111,7 +111,7 @@
     <Compile Include="TestTripletSelectLayer.cs" />
     <Compile Include="TestTripletLossLayer.cs" />
     <Compile Include="TestSimpleTripletLossLayer.cs" />
-    <Compile Include="TestNormalizationLayer.cs" />
+    <Compile Include="TestNormalization1Layer.cs" />
     <Compile Include="TestGradientBasedSolver.cs" />
     <Compile Include="TestNCCL.cs" />
     <Compile Include="TestRandomNumberGenerator.cs" />

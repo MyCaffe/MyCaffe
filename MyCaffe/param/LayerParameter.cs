@@ -370,7 +370,7 @@ namespace MyCaffe.param
             /// <summary>
             /// Initializes a parameter for the NormalizationLayer.
             /// </summary>
-            NORMALIZATION,
+            NORMALIZATION1,
             /// <summary>
             /// Initializes a parameter for the TripletLossSimpleLayer.
             /// </summary>
@@ -911,10 +911,10 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new OneHotParameter();
                     break;
 
-                case LayerType.NORMALIZATION:
+                case LayerType.NORMALIZATION1:
                     expected_bottom.Add("input");
                     expected_top.Add("norm");
-                    m_rgLayerParameters[lt] = new NormalizationParameter();
+                    m_rgLayerParameters[lt] = new Normalization1Parameter();
                     break;
 
                 case LayerType.PARAMETER:
@@ -1582,10 +1582,10 @@ namespace MyCaffe.param
         /// <summary>
         /// Returns the parameter set when initialized with LayerType.NORMALIZATION
         /// </summary>
-        public NormalizationParameter normalization_param
+        public Normalization1Parameter normalization_param
         {
-            get { return (NormalizationParameter)m_rgLayerParameters[LayerType.NORMALIZATION]; }
-            set { m_rgLayerParameters[LayerType.NORMALIZATION] = value; }
+            get { return (Normalization1Parameter)m_rgLayerParameters[LayerType.NORMALIZATION1]; }
+            set { m_rgLayerParameters[LayerType.NORMALIZATION1] = value; }
         }
 
         /// <summary>
@@ -2057,7 +2057,7 @@ namespace MyCaffe.param
                 case LayerType.ONEHOT:
                     return "OneHot";
 
-                case LayerType.NORMALIZATION:
+                case LayerType.NORMALIZATION1:
                     return "Normalization";
 
                 case LayerType.PARAMETER:
@@ -2469,7 +2469,7 @@ namespace MyCaffe.param
                 p.mvn_param = MVNParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("normalization_param")) != null)
-                p.normalization_param = NormalizationParameter.FromProto(rpp);
+                p.normalization_param = Normalization1Parameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("onehot_param")) != null)
                 p.onehot_param = OneHotParameter.FromProto(rpp);
@@ -2722,7 +2722,7 @@ namespace MyCaffe.param
                     return LayerType.ONEHOT;
 
                 case "normalization":
-                    return LayerType.NORMALIZATION;
+                    return LayerType.NORMALIZATION1;
 
                 case "parameter":
                     return LayerType.PARAMETER;

@@ -9,7 +9,7 @@ using MyCaffe.param;
 namespace MyCaffe.layers.beta
 {
     /// <summary>
-    /// The NormalizationLayer performs an L2 normalization over the input data.
+    /// The Normalization1Layer performs an L2 normalization over the input data.
     /// This layer is initialized with the MyCaffe.param.NormalizationParameter.
     /// </summary>
     /// <remarks>
@@ -18,7 +18,7 @@ namespace MyCaffe.layers.beta
     /// @see [Layer Normalization](https://arxiv.org/abs/1607.06450) by Jimmy Lei Ba, Jamie Ryan Kiros, and Geoffrey E. Hinton, 2016.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class NormalizationLayer<T> : Layer<T>
+    public class Normalization1Layer<T> : Layer<T>
     {
         Blob<T> m_blobSquared;
 
@@ -31,10 +31,10 @@ namespace MyCaffe.layers.beta
         /// with options:
         ///   - norm (\b optional, default L2). The normalization mode to use: L1 or L2.
         /// </param>
-        public NormalizationLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
+        public Normalization1Layer(CudaDnn<T> cuda, Log log, LayerParameter p)
             : base(cuda, log, p)
         {
-            m_type = LayerParameter.LayerType.NORMALIZATION;
+            m_type = LayerParameter.LayerType.NORMALIZATION1;
             m_blobSquared = new Blob<T>(cuda, log);
             m_blobSquared.Name = "squared";
         }
