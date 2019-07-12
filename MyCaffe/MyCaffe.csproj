@@ -216,7 +216,7 @@
     <Compile Include="param\SwishParameter.cs" />
     <Compile Include="param\TripletLossParameter.cs" />
     <Compile Include="param\TripletLossSimpleParameter.cs" />
-    <Compile Include="param\NormalizationParameter.cs" />
+    <Compile Include="param\Normalization1Parameter.cs" />
     <Compile Include="param\AccuracyParameter.cs" />
     <Compile Include="param\ArgMaxParameter.cs" />
     <Compile Include="param\BaseParameter.cs" />
