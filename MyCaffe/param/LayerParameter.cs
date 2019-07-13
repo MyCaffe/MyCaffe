@@ -296,6 +296,10 @@ namespace MyCaffe.param
             /// </summary>
             SOFTMAXWITH_LOSS,
             /// <summary>
+            /// Intiializes a parameter for the SmoothL1LossLayer.
+            /// </summary>
+            SMOOTHL1_LOSS,
+            /// <summary>
             /// Initializes a parameter for the SPPLayer.
             /// </summary>
             SPP,
@@ -1037,6 +1041,13 @@ namespace MyCaffe.param
                     expected_bottom.Add("label");
                     expected_top.Add("loss");
                     m_rgLayerParameters[LayerType.SOFTMAX] = new SoftmaxParameter();
+                    m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
+                    break;
+
+                case LayerType.SMOOTHL1_LOSS:
+                    expected_bottom.Add("pred");
+                    expected_bottom.Add("label");
+                    expected_top.Add("loss");
                     m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
                     break;
 
@@ -2136,6 +2147,9 @@ namespace MyCaffe.param
                 case LayerType.SOFTMAXWITH_LOSS:
                     return "SoftmaxWithLoss";
 
+                case LayerType.SMOOTHL1_LOSS:
+                    return "SmoothL1Loss";
+
                 case LayerType.SPLIT:
                     return "Split";
 
@@ -2807,6 +2821,10 @@ namespace MyCaffe.param
                 case "softmaxwith_loss":
                 case "softmax_loss":
                     return LayerType.SOFTMAXWITH_LOSS;
+
+                case "smoothl1loss":
+                case "smoothl1_loss":
+                    return LayerType.SMOOTHL1_LOSS;
 
                 case "split":
                     return LayerType.SPLIT;

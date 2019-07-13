@@ -95,6 +95,7 @@
     <Compile Include="fillers\UniformFiller.cs" />
     <Compile Include="fillers\XavierFiller.cs" />
     <Compile Include="layers\DataNormalizerLayer.cs" />
+    <Compile Include="layers\SmoothL1LossLayer.cs" />
     <Compile Include="layers_beta\Normalization2Layer.cs" />
     <Compile Include="layers_beta\OneHotLayer.cs" />
     <Compile Include="layers_beta\EventLayer.cs" />

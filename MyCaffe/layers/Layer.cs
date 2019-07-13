@@ -1300,6 +1300,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.SOFTMAXWITH_LOSS:
                     return new SoftmaxLossLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.SMOOTHL1_LOSS:
+                    return new SmoothL1LossLayer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.SPLIT:
                     return new SplitLayer<T>(cuda, log, p);
 
