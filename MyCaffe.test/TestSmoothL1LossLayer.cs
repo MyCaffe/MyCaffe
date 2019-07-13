@@ -9,6 +9,7 @@ using MyCaffe.common;
 using MyCaffe.layers;
 using MyCaffe.fillers;
 using MyCaffe.basecode;
+using MyCaffe.layers.ssd;
 
 namespace MyCaffe.test
 {

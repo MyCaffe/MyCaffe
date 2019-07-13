@@ -12,6 +12,7 @@ using MyCaffe.param;
 using MyCaffe.layers.alpha;
 using MyCaffe.layers.beta;
 using MyCaffe.layers_beta;
+using MyCaffe.layers.ssd;
 
 /// <summary>
 /// The MyCaffe.layers namespace contains all layers that have a solidified code base, including the Layer class.

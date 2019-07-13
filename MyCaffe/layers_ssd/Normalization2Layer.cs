@@ -7,7 +7,7 @@ using MyCaffe.common;
 using MyCaffe.fillers;
 using MyCaffe.param;
 
-namespace MyCaffe.layers.beta
+namespace MyCaffe.layers.ssd
 {
     /// <summary>
     /// The Normalization2Layer performs normalization used by the SSD algorithm.

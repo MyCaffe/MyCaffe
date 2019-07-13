@@ -6,7 +6,7 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
 
-namespace MyCaffe.layers
+namespace MyCaffe.layers.ssd
 {
     /// <summary>
     /// Fast R-CNN
