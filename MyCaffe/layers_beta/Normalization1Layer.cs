@@ -26,7 +26,7 @@ namespace MyCaffe.layers.beta
         /// </summary>
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
-        /// <param name="p">Specifies the LayerParameter of type NORMALIZATION with parameter normalization_param,
+        /// <param name="p">Specifies the LayerParameter of type NORMALIZATION1 with parameter normalization_param,
         /// with options:
         ///   - norm (\b optional, default L2). The normalization mode to use: L1 or L2.
         /// </param>
