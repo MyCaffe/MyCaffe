@@ -1390,6 +1390,58 @@ template long Device<float>::cuda_asum(long lInput, float* pfInput, long* plOutp
 
 
 template <class T>
+long Device<T>::cuda_mulbsx(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 10, 10))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	long hA = (long)pfInput[1];
+	int nAOff = (int)pfInput[2];
+	long hX = (long)pfInput[3];
+	int nXOff = (int)pfInput[4];
+	int nC = (int)pfInput[5];
+	int nSpatialDim = (int)pfInput[6];
+	bool bTranspose = (pfInput[7] == 0) ? false : true;
+	long hB = (long)pfInput[8];
+	int nBOff = (int)pfInput[9];
+
+	return m_math.mulbsx(n, hA, nAOff, hX, nXOff, nC, nSpatialDim, bTranspose, hB, nBOff);
+}
+
+template long Device<double>::cuda_mulbsx(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_mulbsx(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
+long Device<T>::cuda_divbsx(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 10, 10))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	long hA = (long)pfInput[1];
+	int nAOff = (int)pfInput[2];
+	long hX = (long)pfInput[3];
+	int nXOff = (int)pfInput[4];
+	int nC = (int)pfInput[5];
+	int nSpatialDim = (int)pfInput[6];
+	bool bTranspose = (pfInput[7] == 0) ? false : true;
+	long hB = (long)pfInput[8];
+	int nBOff = (int)pfInput[9];
+
+	return m_math.divbsx(n, hA, nAOff, hX, nXOff, nC, nSpatialDim, bTranspose, hB, nBOff);
+}
+
+template long Device<double>::cuda_divbsx(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_divbsx(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_scale(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

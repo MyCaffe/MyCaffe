@@ -1722,6 +1722,7 @@ long Math<float>::scale(int n, float fAlpha, long hX, long hY, int nXOff, int nY
 	return cudaStreamSynchronize(stream);
 }
 
+
 template <typename T>
 __global__ void add_scalar_kernel(const int n, const T alpha, T* y)
 {
@@ -1969,6 +1970,112 @@ long Math<T>::add2(int n, long hA, long hB, long hY, T dfAlphaA, T dfAlphaB, int
 
 template long Math<double>::add2(int n, long hA, long hB, long hY, double dfAlphaA, double dfAlphaB, int nAOff, int nBOff, int nYOff);
 template long Math<float>::add2(int n, long hA, long hB, long hY, float dfAlphaA, float dfAlphaB, int nAOff, int nBOff, int nYOff);
+
+
+template <typename T>
+__global__ void mulbsx_kernel(const int n, const T* a, const T* x, const int rows, const int cols, const bool bTrans, T* b)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		int c = i % cols;
+		int r = (i / cols) % rows;
+		if (!bTrans)
+			b[i] = a[i] * x[c];
+		else
+			b[i] = a[i] * x[r];
+	}
+}
+
+template <class T>
+long Math<T>::mulbsx(int n, long hA, int nAOff, long hX, int nXOff, int nChannels, int nSpatialDim, bool bTranspose, long hB, int nBOff)
+{
+	LONG lErr;
+	MemoryItem* pA;
+	MemoryItem* pX;
+	MemoryItem* pB;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hB, &pB))
+		return lErr;
+
+	T* a = (T*)pA->Data();
+	T* x = (T*)pX->Data();
+	T* b = (T*)pB->Data();
+
+	if (nAOff > 0)
+		a += nAOff;
+
+	if (nXOff > 0)
+		x += nXOff;
+
+	if (nBOff > 0)
+		b += nBOff;
+
+	mulbsx_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, x, nChannels, nSpatialDim, bTranspose, b);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::mulbsx(int n, long hA, int nAOff, long hX, int nXOff, int nChannels, int nSpatialDim, bool bTranspose, long hB, int nBOff);
+template long Math<float>::mulbsx(int n, long hA, int nAOff, long hX, int nXOff, int nChannels, int nSpatialDim, bool bTranspose, long hB, int nBOff);
+
+
+template <typename T>
+__global__ void divbsx_kernel(const int n, const T* a, const T* x, const int rows, const int cols, const bool bTrans, T* b)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		int c = i % cols;
+		int r = (i / cols) % rows;
+		if (!bTrans)
+			b[i] = a[i] / x[c];
+		else
+			b[i] = a[i] / x[r];
+	}
+}
+
+template <class T>
+long Math<T>::divbsx(int n, long hA, int nAOff, long hX, int nXOff, int nChannels, int nSpatialDim, bool bTranspose, long hB, int nBOff)
+{
+	LONG lErr;
+	MemoryItem* pA;
+	MemoryItem* pX;
+	MemoryItem* pB;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hB, &pB))
+		return lErr;
+
+	T* a = (T*)pA->Data();
+	T* x = (T*)pX->Data();
+	T* b = (T*)pB->Data();
+
+	if (nAOff > 0)
+		a += nAOff;
+
+	if (nXOff > 0)
+		x += nXOff;
+
+	if (nBOff > 0)
+		b += nBOff;
+
+	divbsx_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, x, nChannels, nSpatialDim, bTranspose, b);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::divbsx(int n, long hA, int nAOff, long hX, int nXOff, int nChannels, int nSpatialDim, bool bTranspose, long hB, int nBOff);
+template long Math<float>::divbsx(int n, long hA, int nAOff, long hX, int nXOff, int nChannels, int nSpatialDim, bool bTranspose, long hB, int nBOff);
 
 
 template <typename T>

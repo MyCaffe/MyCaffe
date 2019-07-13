@@ -472,8 +472,8 @@ namespace MyCaffe.common
         void abs(int n, long hA, long hY);
         void exp(int n, long hA, long hY);
         void log(int n, long hA, long hY);
-        void powx(int n, long hA, double fAlpha, long hY);
-        void powx(int n, long hA, float fAlpha, long hY);
+        void powx(int n, long hA, double fAlpha, long hY, int nAOff = 0, int nYOff = 0);
+        void powx(int n, long hA, float fAlpha, long hY, int nAOff = 0, int nYOff = 0);
         void sign(int n, long hX, long hY, int nXOff = 0, int nYOff = 0);
         double min(int n, long hA, int nAOff = 0);
         double max(int n, long hA, int nAOff = 0);
@@ -750,6 +750,9 @@ namespace MyCaffe.common
             CUDA_SUM = 255,
             CUDA_SQRT_SCALE = 256,
             CUDA_GER = 257,
+
+            CUDA_MULBSX = 270,
+            CUDA_DIVBSX = 271,
 
             CUDA_IM2COL = 280,
             CUDA_IM2COL_ND = 281,
@@ -4759,6 +4762,48 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Multiply a matrix with a vector.
+        /// </summary>
+        /// <param name="n">Specifies the number of items.</param>
+        /// <param name="hA">Specifies the matrix to multiply.</param>
+        /// <param name="nAOff">Specifies the offset to apply to the GPU memory of hA.</param>
+        /// <param name="hX">Specifies the vector to multiply.</param>
+        /// <param name="nXOff">Specifies the offset to apply to the GPU memory of hX.</param>
+        /// <param name="nC">Specifies the number of channels.</param>
+        /// <param name="nSpatialDim">Specifies the spatial dimension.</param>
+        /// <param name="bTranspose">Specifies whether or not to transpose the matrix.</param>
+        /// <param name="hB">Specifies the output matrix.</param>
+        /// <param name="nBOff">Specifies the offset to apply to the GPU memory of hB.</param>
+        public void mulbsx(int n, long hA, int nAOff, long hX, int nXOff, int nC, int nSpatialDim, bool bTranspose, long hB, int nBOff)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MULBSX, new double[] { n, hA, nAOff, hX, nXOff, nC, nSpatialDim, (bTranspose) ? 1 : 0, hB, nBOff });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MULBSX, new float[] { n, hA, nAOff, hX, nXOff, nC, nSpatialDim, (bTranspose) ? 1 : 0, hB, nBOff });
+        }
+
+        /// <summary>
+        /// Multiply a matrix with a vector.
+        /// </summary>
+        /// <param name="n">Specifies the number of items.</param>
+        /// <param name="hA">Specifies the matrix to divide.</param>
+        /// <param name="nAOff">Specifies the offset to apply to the GPU memory of hA.</param>
+        /// <param name="hX">Specifies the divisor vector.</param>
+        /// <param name="nXOff">Specifies the offset to apply to the GPU memory of hX.</param>
+        /// <param name="nC">Specifies the number of channels.</param>
+        /// <param name="nSpatialDim">Specifies the spatial dimension.</param>
+        /// <param name="bTranspose">Specifies whether or not to transpose the matrix.</param>
+        /// <param name="hB">Specifies the output matrix.</param>
+        /// <param name="nBOff">Specifies the offset to apply to the GPU memory of hB.</param>
+        public void divbsx(int n, long hA, int nAOff, long hX, int nXOff, int nC, int nSpatialDim, bool bTranspose, long hB, int nBOff)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DIVBSX, new double[] { n, hA, nAOff, hX, nXOff, nC, nSpatialDim, (bTranspose) ? 1 : 0, hB, nBOff });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DIVBSX, new float[] { n, hA, nAOff, hX, nXOff, nC, nSpatialDim, (bTranspose) ? 1 : 0, hB, nBOff });
+        }
+
+        /// <summary>
         /// Scales the data in X by a scaling factor.
         /// </summary>
         /// <remarks>
@@ -5316,9 +5361,11 @@ namespace MyCaffe.common
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
         /// <param name="fAlpha">Specifies the scalar in type <code>double</code></param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
-        public void powx(int n, long hA, double fAlpha, long hY)
+        /// <param name="nAOff">Optionally, specifies the offset for hA memory (default = 0).</param>
+        /// <param name="nYOff">Optionally, specifies the offset for hY memory (default = 0).</param>
+        public void powx(int n, long hA, double fAlpha, long hY, int nAOff = 0, int nYOff = 0)
         {
-            powx(n, hA, (T)Convert.ChangeType(fAlpha, typeof(T)), hY);
+            powx(n, hA, (T)Convert.ChangeType(fAlpha, typeof(T)), hY, nAOff, nYOff);
         }
 
         /// <summary>
@@ -5331,9 +5378,11 @@ namespace MyCaffe.common
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
         /// <param name="fAlpha">Specifies the scalar in type <code>float</code></param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
-        public void powx(int n, long hA, float fAlpha, long hY)
+        /// <param name="nAOff">Optionally, specifies the offset for hA memory (default = 0).</param>
+        /// <param name="nYOff">Optionally, specifies the offset for hY memory (default = 0).</param>
+        public void powx(int n, long hA, float fAlpha, long hY, int nAOff = 0, int nYOff = 0)
         {
-            powx(n, hA, (T)Convert.ChangeType(fAlpha, typeof(T)), hY);
+            powx(n, hA, (T)Convert.ChangeType(fAlpha, typeof(T)), hY, nAOff, nYOff);
         }
 
         /// <summary>
@@ -5346,12 +5395,14 @@ namespace MyCaffe.common
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
         /// <param name="fAlpha">Specifies the scalar in type 'T'.</param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
-        public void powx(int n, long hA, T fAlpha, long hY)
+        /// <param name="nAOff">Optionally, specifies the offset for hA memory (default = 0).</param>
+        /// <param name="nYOff">Optionally, specifies the offset for hY memory (default = 0).</param>
+        public void powx(int n, long hA, T fAlpha, long hY, int nAOff = 0, int nYOff = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_POWX, new double[] { n, hA, convertD(fAlpha), hY });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_POWX, new double[] { n, hA, convertD(fAlpha), hY, nAOff, nYOff });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_POWX, new float[] { n, hA, convertF(fAlpha), hY });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_POWX, new float[] { n, hA, convertF(fAlpha), hY, nAOff, nYOff });
         }
 
         /// <summary>

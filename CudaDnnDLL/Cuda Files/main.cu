@@ -422,6 +422,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_AXPBY:
 			return m_device.cuda_axpby(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_MULBSX:
+			return m_device.cuda_mulbsx(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_DIVBSX:
+			return m_device.cuda_divbsx(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_SCAL:
 			return m_device.cuda_scal(lCount, pfInput, plCount, ppfOutput);
 
@@ -1247,6 +1253,12 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_AXPBY:
 		return "CUDA_FN_AXPBY";
+
+	case CUDA_FN_MULBSX:
+		return "CUDA_FN_MULBSX";
+
+	case CUDA_FN_DIVBSX:
+		return "CUDA_FN_DIVBSX";
 
 	case CUDA_FN_SCAL:
 		return "CUDA_FN_SCAL";

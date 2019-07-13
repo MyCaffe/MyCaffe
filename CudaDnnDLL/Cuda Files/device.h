@@ -274,6 +274,8 @@ class Device
 		long cuda_scal(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_dot(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_asum(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_mulbsx(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_divbsx(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_scale(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_add_scalar(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_add(long lInput, T* pfInput, long* plOutput, T** ppfOutput);

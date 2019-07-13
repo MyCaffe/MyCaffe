@@ -214,6 +214,9 @@ const int CUDA_FN_SUM = 255;
 const int CUDA_FN_SQRT_SCALE = 256;
 const int CUDA_FN_GER = 257;
 
+const int CUDA_FN_MULBSX = 270;
+const int CUDA_FN_DIVBSX = 271;
+
 const int CUDA_FN_IM2COL = 280;
 const int CUDA_FN_IM2COL_ND = 281;
 const int CUDA_FN_COL2IM = 282;
