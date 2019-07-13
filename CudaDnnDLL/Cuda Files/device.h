@@ -395,6 +395,8 @@ class Device
 		long cuda_smoothl1_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_smoothl1_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
+		long cuda_permute(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
 		long cuda_lrn_fillscale(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_lrn_computeoutput(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_lrn_computediff(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -3671,6 +3673,27 @@ inline long Device<T>::cuda_smoothl1_bwd(long lInput, T* pfInput, long* plOutput
 	long hY = (long)pfInput[2];
 
 	return m_math.smoothl1_bwd(nCount, hX, hY);
+}
+
+
+template <class T>
+inline long Device<T>::cuda_permute(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 8, 8))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hX = (long)pfInput[1];
+	bool bFwd = (pfInput[2] == 0) ? false : true;
+	long hPermuteOrder = (long)pfInput[3];
+	long hOldSteps = (long)pfInput[4];
+	long hNewSteps = (long)pfInput[5];
+	int nNumAxes = (int)pfInput[6];
+	long hY = (long)pfInput[7];
+
+	return m_math.permute(nCount, hX, bFwd, hPermuteOrder, hOldSteps, hNewSteps, nNumAxes, hY);
 }
 
 

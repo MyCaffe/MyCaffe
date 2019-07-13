@@ -707,6 +707,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_SMOOTHL1_BWD:
 			return m_device.cuda_smoothl1_bwd(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_PERMUTE:
+			return m_device.cuda_permute(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_LRN_FILLSCALE:
 			return m_device.cuda_lrn_fillscale(lCount, pfInput, plCount, ppfOutput);
 

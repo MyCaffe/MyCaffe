@@ -7349,6 +7349,72 @@ template long Math<double>::smoothl1_bwd(int n, long hX, long hY);
 template long Math<float>::smoothl1_bwd(int n, long hX, long hY);
 
 
+
+template <typename T>
+__global__ void permute_kernel(int n, T* x, const bool bFwd, const T* permute_order, const T* oldsteps, const T* newsteps, const int num_axes, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		int temp_idx = i;
+		int old_idx = 0;
+
+		for (int j = 0; j < num_axes; j++)
+		{
+			int order = (int)permute_order[j];
+			int newstep = (int)newsteps[j];
+			int oldstep = (int)oldsteps[order];
+
+			old_idx += (temp_idx / newstep) * oldstep;
+			temp_idx %= newstep;
+		}
+
+		if (bFwd)
+			y[i] = x[old_idx];
+		else
+			x[old_idx] = y[i];
+	}
+}
+
+template <class T>
+long Math<T>::permute(int n, long hX, bool bFwd, long hPermuteOrder, long hOldSteps, long hNewSteps, int nNumAxes, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pOrder;
+	MemoryItem* pOldSteps;
+	MemoryItem* pNewSteps;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hPermuteOrder, &pOrder))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hOldSteps, &pOldSteps))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hNewSteps, &pNewSteps))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* order = (T*)pOrder->Data();
+	T* oldsteps = (T*)pOldSteps->Data();
+	T* newsteps = (T*)pNewSteps->Data();
+	T* y = (T*)pY->Data();
+
+	permute_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, bFwd, order, oldsteps, newsteps, nNumAxes, y);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::permute(int n, long hX, bool bFwd, long hPermuteOrder, long hOldSteps, long hNewSteps, int nNumAxes, long hY);
+template long Math<float>::permute(int n, long hX, bool bFwd, long hPermuteOrder, long hOldSteps, long hNewSteps, int nNumAxes, long hY);
+
+
 template <typename T>
 __global__ void cll_bwd_kernel_legacy(const int nCount, const int nChannels, const T fMargin, const T fAlpha, const T* y, const T* diff, const T* dist_sq, T* btm_diff)
 {

@@ -846,6 +846,8 @@ namespace MyCaffe.common
             CUDA_SMOOTHL1_FWD = 470,
             CUDA_SMOOTHL1_BWD = 471,
 
+            CUDA_PERMUTE = 474,
+
             CUDA_LSTM_FWD = 480,
             CUDA_LSTM_BWD = 481,
 
@@ -7018,6 +7020,25 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SMOOTHL1_BWD, new double[] { nCount, hX, hY });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SMOOTHL1_BWD, new float[] { nCount, hX, hY });
+        }
+
+        /// <summary>
+        /// Performs data permutation on the input and reorders the data which is placed in the output.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hBottom">Specifies the input data.</param>
+        /// <param name="bFwd">Specifies whether or not this is a forward (<i>true</i>) or backwards (<i>true</i>) operation.</param>
+        /// <param name="hPermuteOrder">Specifies the permuation order values in GPU memory.</param>
+        /// <param name="hOldSteps">Specifies the old step values in GPU memory.</param>
+        /// <param name="hNewSteps">Specifies the new step values in GPU memory.</param>
+        /// <param name="nNumAxes">Specifies the number of axes.</param>
+        /// <param name="hTop">Specifies the output data.</param>
+        public void permute(int nCount, long hBottom, bool bFwd, long hPermuteOrder, long hOldSteps, long hNewSteps, int nNumAxes, long hTop)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_PERMUTE, new double[] { nCount, hBottom, (bFwd) ? 1 : 0, hPermuteOrder, hOldSteps, hNewSteps, nNumAxes, hTop });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_PERMUTE, new float[] { nCount, hBottom, (bFwd) ? 1 : 0, hPermuteOrder, hOldSteps, hNewSteps, nNumAxes, hTop });
         }
 
         /// <summary>
