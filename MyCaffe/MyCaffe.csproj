@@ -95,6 +95,7 @@
     <Compile Include="fillers\UniformFiller.cs" />
     <Compile Include="fillers\XavierFiller.cs" />
     <Compile Include="layers\DataNormalizerLayer.cs" />
+    <Compile Include="layers_beta\Normalization2Layer.cs" />
     <Compile Include="layers_beta\OneHotLayer.cs" />
     <Compile Include="layers_beta\EventLayer.cs" />
     <Compile Include="layers_beta\ScalarLayer.cs" />
@@ -117,7 +118,7 @@
     <Compile Include="layers_alpha\TripletSelectLayer.cs" />
     <Compile Include="layers_alpha\TripletLossLayer.cs" />
     <Compile Include="layers_alpha\TripletLossSimpleLayer.cs" />
-    <Compile Include="layers_beta\NormalizationLayer.cs" />
+    <Compile Include="layers_beta\Normalization1Layer.cs" />
     <Compile Include="layers\SPPLayer.cs" />
     <Compile Include="layers\BatchReindexLayer.cs" />
     <Compile Include="layers\EmbedLayer.cs" />
@@ -187,6 +188,7 @@
     </Compile>
     <Compile Include="param.ui\CsvConverter.cs" />
     <Compile Include="param\DataNormalizerParameter.cs" />
+    <Compile Include="param\Normalization2Parameter.cs" />
     <Compile Include="param\OneHotParameter.cs" />
     <Compile Include="param\ScalarParameter.cs" />
     <Compile Include="param\ParameterParameter.cs" />

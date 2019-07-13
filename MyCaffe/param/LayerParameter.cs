@@ -368,9 +368,13 @@ namespace MyCaffe.param
             /// </summary>
             UNPOOLING,
             /// <summary>
-            /// Initializes a parameter for the NormalizationLayer.
+            /// Initializes a parameter for the Normalization1Layer.
             /// </summary>
             NORMALIZATION1,
+            /// <summary>
+            /// Initializes a parameter for the Normalization2Layer used with SSD.
+            /// </summary>
+            NORMALIZATION2,
             /// <summary>
             /// Initializes a parameter for the TripletLossSimpleLayer.
             /// </summary>
@@ -915,6 +919,12 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("norm");
                     m_rgLayerParameters[lt] = new Normalization1Parameter();
+                    break;
+
+                case LayerType.NORMALIZATION2:
+                    expected_bottom.Add("input");
+                    expected_top.Add("norm");
+                    m_rgLayerParameters[lt] = new Normalization2Parameter();
                     break;
 
                 case LayerType.PARAMETER:
@@ -1589,6 +1599,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.NORMALIZATION2
+        /// </summary>
+        public Normalization2Parameter normalization2_param
+        {
+            get { return (Normalization2Parameter)m_rgLayerParameters[LayerType.NORMALIZATION2]; }
+            set { m_rgLayerParameters[LayerType.NORMALIZATION2] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.POOLING
         /// </summary>
         public PoolingParameter pooling_param
@@ -2058,7 +2077,10 @@ namespace MyCaffe.param
                     return "OneHot";
 
                 case LayerType.NORMALIZATION1:
-                    return "Normalization";
+                    return "Normalization1";
+
+                case LayerType.NORMALIZATION2:
+                    return "Normalization2";
 
                 case LayerType.PARAMETER:
                     return "Parameter";
@@ -2721,8 +2743,12 @@ namespace MyCaffe.param
                 case "onehot":
                     return LayerType.ONEHOT;
 
-                case "normalization":
+                case "normalization1":
                     return LayerType.NORMALIZATION1;
+
+                case "normalize":
+                case "normalization2":
+                    return LayerType.NORMALIZATION2;
 
                 case "parameter":
                     return LayerType.PARAMETER;

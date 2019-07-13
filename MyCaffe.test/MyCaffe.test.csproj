@@ -88,6 +88,7 @@
     <Compile Include="TestGymPython.cs" />
     <Compile Include="TestBinaryHashLayer.cs" />
     <Compile Include="TestColorMapper.cs" />
+    <Compile Include="TestNormalization2Layer.cs" />
     <Compile Include="TestOneHotLayer.cs" />
     <Compile Include="TestNeuralStyleTransfer.cs" />
     <Compile Include="TestTVLossLayer.cs" />

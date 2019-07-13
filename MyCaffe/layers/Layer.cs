@@ -1243,6 +1243,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.NORMALIZATION1:
                     return new Normalization1Layer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.NORMALIZATION2:
+                    return new Normalization2Layer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.PARAMETER:
                     return new ParameterLayer<T>(cuda, log, p);
 
