@@ -35,9 +35,12 @@ namespace MyCaffe.layers.beta
         /// </summary>
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
-        /// <param name="p">Specifies the LayerParameter of type NORMALIZATION with parameter normalization_param,
+        /// <param name="p">Specifies the LayerParameter of type NORMALIZATION2 with parameter normalization_param,
         /// with options:
-        ///   - norm (\b optional, default L2). The normalization mode to use: L1 or L2.
+        ///   - across_spatial (\b optional, default true). Normalize across spatial dimensions.
+        ///   - channel_shared (\b optional, default true). Whether or not to scale parameters are shared across channels.
+        ///   - eps (\b optional, default = 1e-10f). The epsilon to avoid dividing by zero while normalizing variance.
+        ///   - scale_filler (\b optional, default = 'constant',1.0). The filler for the initial value of scale.
         /// </param>
         public Normalization2Layer(CudaDnn<T> cuda, Log log, LayerParameter p)
             : base(cuda, log, p)
@@ -325,7 +328,7 @@ namespace MyCaffe.layers.beta
                     double dfA = Utility.ConvertVal<T>(m_cuda.dot(nCount, hTopData, hTopDiff));
 
                     dfScaleDiff += (dfA / dfScale);
-                    m_colBlobs[0].SetData(dfScaleDiff, 0);
+                    m_colBlobs[0].SetDiff(dfScaleDiff, 0);
                 }
                 else
                 {
@@ -361,7 +364,7 @@ namespace MyCaffe.layers.beta
                         m_cuda.scale(nDim, Utility.ConvertVal<T>(dfScale1), hBottomData, hBottomDiff, nBottomDataOffset, nBottomDiffOffset);
                         m_cuda.sub(nDim, hTopDiff, hBottomDiff, hBottomDiff, nTopDiffOffset, nBottomDiffOffset, nBottomDiffOffset);
 
-                        dfScale1 = dfA / rgNormData[n];
+                        dfScale1 = 1.0 / rgNormData[n];
                         m_cuda.scale(nDim, Utility.ConvertVal<T>(dfScale1), hBottomDiff, hBottomDiff, nBottomDiffOffset, nBottomDiffOffset);
                     }
                     else
