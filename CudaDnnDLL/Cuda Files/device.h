@@ -392,6 +392,9 @@ class Device
 
 		long cuda_cll_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
+		long cuda_smoothl1_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_smoothl1_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
 		long cuda_lrn_fillscale(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_lrn_computeoutput(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_lrn_computediff(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -3636,6 +3639,38 @@ inline long Device<T>::cuda_cll_bwd(long lInput, T* pfInput, long* plOutput, T**
 	long hBottomDiff = (long)pfInput[8];
 
 	return m_math.cll_bwd(nCount, nChannels, fMargin, bLegacyVersion, fAlpha, hY, hDiff, hDistSq, hBottomDiff);
+}
+
+
+template <class T>
+inline long Device<T>::cuda_smoothl1_fwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hX = (long)pfInput[1];
+	long hY = (long)pfInput[2];
+
+	return m_math.smoothl1_fwd(nCount, hX, hY);
+}
+
+
+template <class T>
+inline long Device<T>::cuda_smoothl1_bwd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	long hX = (long)pfInput[1];
+	long hY = (long)pfInput[2];
+
+	return m_math.smoothl1_bwd(nCount, hX, hY);
 }
 
 

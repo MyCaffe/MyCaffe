@@ -231,6 +231,9 @@ class Math
 
 		long cll_bwd(int nCount, int nChannels, T fMargin, bool bLegacyVersion, T fAlpha, long hY, long hDiff, long hDistSq, long hBottomDiff);
 
+		long smoothl1_fwd(int nCount, long hX, long hY);
+		long smoothl1_bwd(int nCount, long hX, long hY);
+
 		long lrn_fillscale(int nCount, long hBottomData, int nNum, int nChannels, int nHeight, int nWidth, int nSize, T fA, T fB, long hScaleData);
 		long lrn_computeoutput(int nCount, long hBottomData, long hScaleData, T fA, long hTopData);
 		long lrn_computediff(int nCount, long hBottomData, long hTopData, long hScaleData, long hTopDiff, int nNum, int nChannels, int nHeight, int nWidth, int nSize, T fB, T fA, long hBottomDiff);

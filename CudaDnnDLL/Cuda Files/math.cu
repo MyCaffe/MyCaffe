@@ -7266,6 +7266,90 @@ template long Math<float>::threshold_fwd(int n, float dfThreshold, long hX, long
 
 
 template <typename T>
+__global__ void smoothl1_fwd_kernel(int n, const T* in, T* out)
+{
+	// f(x) = 0.5 * x^2		if |x| < 1
+	//        |x| - 0.5		otherwise
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		T val = in[i];
+		T abs_val = abs(val);
+
+		if (abs_val < 1)
+			out[i] = 0.5 * val * val;
+		else
+			out[i] = abs_val - 0.5;
+	}
+}
+
+template <class T>
+long Math<T>::smoothl1_fwd(int n, long hX, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* y = (T*)pY->Data();
+
+	smoothl1_fwd_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, x, y);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::smoothl1_fwd(int n, long hX, long hY);
+template long Math<float>::smoothl1_fwd(int n, long hX, long hY);
+
+
+template <typename T>
+__global__ void smoothl1_bwd_kernel(int n, const T* in, T* out)
+{
+	// f'(x) = x			if |x| < 1
+	//         sign(x)		otherwise
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		T val = in[i];
+		T abs_val = abs(val);
+
+		if (abs_val < 1)
+			out[i] = val;
+		else
+			out[i] = (T(0) < val) - (val < T(0));
+	}
+}
+
+template <class T>
+long Math<T>::smoothl1_bwd(int n, long hX, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+	T* y = (T*)pY->Data();
+
+	smoothl1_bwd_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, x, y);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::smoothl1_bwd(int n, long hX, long hY);
+template long Math<float>::smoothl1_bwd(int n, long hX, long hY);
+
+
+template <typename T>
 __global__ void cll_bwd_kernel_legacy(const int nCount, const int nChannels, const T fMargin, const T fAlpha, const T* y, const T* diff, const T* dist_sq, T* btm_diff)
 {
 	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nCount; i += blockDim.x * gridDim.x)

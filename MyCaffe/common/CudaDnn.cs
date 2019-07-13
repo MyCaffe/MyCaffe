@@ -843,6 +843,9 @@ namespace MyCaffe.common
             CUDA_LRN_COMPUTEOUTPUT = 466,
             CUDA_LRN_COMPUTEDIFF = 467,
 
+            CUDA_SMOOTHL1_FWD = 470,
+            CUDA_SMOOTHL1_BWD = 471,
+
             CUDA_LSTM_FWD = 480,
             CUDA_LSTM_BWD = 481,
 
@@ -6977,6 +6980,44 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CLL_BWD, new double[] { nCount, nChannels, dfMargin, (bLegacyVersion) ? 1.0 : 0.0, dfAlpha, hY, hDiff, hDistSq, hBottomDiff });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CLL_BWD, new float[] { nCount, nChannels, (float)dfMargin, (bLegacyVersion) ? 1.0f : 0.0f, (float)dfAlpha, hY, hDiff, hDistSq, hBottomDiff });
+        }
+
+        /// <summary>
+        /// Performs the forward operation for the SmoothL1 loss.
+        /// </summary>
+        /// <remarks>
+        /// Calculation: 
+        ///     f(x) = 0.5 * x^2, if |x| lt 1
+        ///          = |x| - 0.5, otherwise
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hX">Specifies the input data X in GPU memory.</param>
+        /// <param name="hY">Specifies the output data Y in GPU memory.</param>
+        public void smoothl1_fwd(int nCount, long hX, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SMOOTHL1_FWD, new double[] { nCount, hX, hY });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SMOOTHL1_FWD, new float[] { nCount, hX, hY });
+        }
+
+        /// <summary>
+        /// Performs the backward operation for the SmoothL1 loss.
+        /// </summary>
+        /// <remarks>
+        /// Calculation: 
+        ///     f'(x) = x, if |x| lt 1
+        ///           = sign(x), otherwise
+        /// </remarks>
+        /// <param name="nCount">Specifies the number of items.</param>
+        /// <param name="hX">Specifies the input data X in GPU memory.</param>
+        /// <param name="hY">Specifies the output data Y in GPU memory.</param>
+        public void smoothl1_bwd(int nCount, long hX, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SMOOTHL1_BWD, new double[] { nCount, hX, hY });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SMOOTHL1_BWD, new float[] { nCount, hX, hY });
         }
 
         /// <summary>

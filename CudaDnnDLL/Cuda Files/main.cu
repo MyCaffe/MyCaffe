@@ -701,6 +701,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_CLL_BWD:
 			return m_device.cuda_cll_bwd(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_SMOOTHL1_FWD:
+			return m_device.cuda_smoothl1_fwd(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_SMOOTHL1_BWD:
+			return m_device.cuda_smoothl1_bwd(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_LRN_FILLSCALE:
 			return m_device.cuda_lrn_fillscale(lCount, pfInput, plCount, ppfOutput);
 
@@ -1523,6 +1529,12 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_CLL_BWD:
 		return "CUDA_FN_CLL_BWD";
+
+	case CUDA_FN_SMOOTHL1_FWD:
+		return "CUDA_FN_SMOOTHL1_FWD";
+
+	case CUDA_FN_SMOOTHL1_BWD:
+		return "CUDA_FN_SMOOTHL1_BWD";
 
 	case CUDA_FN_LRN_FILLSCALE:
 		return "CUDA_FN_LRN_FILLSCALE";
