@@ -31,11 +31,11 @@ namespace MyCaffe.layers.ssd
         float m_fEps;
 
         /// <summary>
-        /// The NormalizationLayer constructor.
+        /// The Normalization2Layer constructor.
         /// </summary>
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
-        /// <param name="p">Specifies the LayerParameter of type NORMALIZATION2 with parameter normalization_param,
+        /// <param name="p">Specifies the LayerParameter of type NORMALIZATION2 with parameter normalization1_param,
         /// with options:
         ///   - across_spatial (\b optional, default true). Normalize across spatial dimensions.
         ///   - channel_shared (\b optional, default true). Whether or not to scale parameters are shared across channels.
