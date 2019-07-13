@@ -244,6 +244,10 @@ namespace MyCaffe.param
             /// </summary>
             PARAMETER,
             /// <summary>
+            /// Initializes a parameter for the PermuteLayer used with SSD.
+            /// </summary>
+            PERMUTE,
+            /// <summary>
             /// Initializes a parameter for the PoolingLayer.
             /// </summary>
             POOLING,
@@ -935,6 +939,12 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("param");
                     m_rgLayerParameters[lt] = new ParameterParameter();
+                    break;
+
+                case LayerType.PERMUTE:
+                    expected_bottom.Add("input");
+                    expected_top.Add("permute");
+                    m_rgLayerParameters[lt] = new PermuteParameter();
                     break;
 
                 case LayerType.POOLING:
@@ -1646,6 +1656,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.PERMUTE
+        /// </summary>
+        public PermuteParameter permute_param
+        {
+            get { return (PermuteParameter)m_rgLayerParameters[LayerType.PERMUTE]; }
+            set { m_rgLayerParameters[LayerType.PERMUTE] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.POWER
         /// </summary>
         public PowerParameter power_param
@@ -2095,6 +2114,9 @@ namespace MyCaffe.param
 
                 case LayerType.PARAMETER:
                     return "Parameter";
+
+                case LayerType.PERMUTE:
+                    return "Permute";
 
                 case LayerType.POOLING:
                     return "Pooling";
@@ -2766,6 +2788,9 @@ namespace MyCaffe.param
 
                 case "parameter":
                     return LayerType.PARAMETER;
+
+                case "permute":
+                    return LayerType.PERMUTE;
 
                 case "pooling":
                     return LayerType.POOLING;

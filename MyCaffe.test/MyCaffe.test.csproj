@@ -88,6 +88,7 @@
     <Compile Include="TestGymPython.cs" />
     <Compile Include="TestBinaryHashLayer.cs" />
     <Compile Include="TestColorMapper.cs" />
+    <Compile Include="TestPermuteLayer.cs" />
     <Compile Include="TestSmoothL1LossLayer.cs" />
     <Compile Include="TestNormalization2Layer.cs" />
     <Compile Include="TestOneHotLayer.cs" />

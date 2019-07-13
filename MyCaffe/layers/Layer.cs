@@ -1250,6 +1250,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.PARAMETER:
                     return new ParameterLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.PERMUTE:
+                    return new PermuteLayer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.POOLING:
                     return new PoolingLayer<T>(cuda, log, p);
 

@@ -95,6 +95,7 @@
     <Compile Include="fillers\UniformFiller.cs" />
     <Compile Include="fillers\XavierFiller.cs" />
     <Compile Include="layers\DataNormalizerLayer.cs" />
+    <Compile Include="layers_ssd\PermuteLayer.cs" />
     <Compile Include="layers_ssd\SmoothL1LossLayer.cs" />
     <Compile Include="layers_ssd\Normalization2Layer.cs" />
     <Compile Include="layers_beta\OneHotLayer.cs" />
@@ -189,6 +190,7 @@
     </Compile>
     <Compile Include="param.ui\CsvConverter.cs" />
     <Compile Include="param\DataNormalizerParameter.cs" />
+    <Compile Include="param\PermuteParameter.cs" />
     <Compile Include="param\Normalization2Parameter.cs" />
     <Compile Include="param\OneHotParameter.cs" />
     <Compile Include="param\ScalarParameter.cs" />
