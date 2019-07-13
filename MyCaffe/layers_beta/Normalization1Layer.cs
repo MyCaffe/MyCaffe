@@ -10,11 +10,10 @@ namespace MyCaffe.layers.beta
 {
     /// <summary>
     /// The Normalization1Layer performs an L2 normalization over the input data.
-    /// This layer is initialized with the MyCaffe.param.NormalizationParameter.
+    /// This layer is initialized with the MyCaffe.param.Normalization1Parameter.
     /// </summary>
     /// <remarks>
     /// Original C++ code added by Binbin Xu; declanxu@gmail.com or declanxu@126.com
-    /// 
     /// @see [Layer Normalization](https://arxiv.org/abs/1607.06450) by Jimmy Lei Ba, Jamie Ryan Kiros, and Geoffrey E. Hinton, 2016.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
