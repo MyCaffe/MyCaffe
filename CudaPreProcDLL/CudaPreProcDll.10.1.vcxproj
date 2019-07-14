@@ -129,7 +129,7 @@
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
     <CudaCompile>
-      <CodeGeneration>compute_35,sm_35</CodeGeneration>
+      <CodeGeneration>compute_53,sm_53</CodeGeneration>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <AdditionalOptions>-lineinfo --default-stream per-thread %(AdditionalOptions)</AdditionalOptions>
       <Include>$(CUDA_PATH_V10_1)\cudann_10.1-win-v7.6.1.34;$(SolutionDir)CudaDnnDLL\inc</Include>
@@ -191,7 +191,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <CudaCompile>
-      <CodeGeneration>compute_35,sm_35</CodeGeneration>
+      <CodeGeneration>compute_53,sm_53</CodeGeneration>
       <Optimization>O2</Optimization>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <Include>$(CUDA_PATH_V10_1)\cudann_10.1-win-v7.6.1.34;$(SolutionDir)CudaDnnDLL\inc</Include>
