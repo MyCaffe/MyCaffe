@@ -2570,7 +2570,6 @@ namespace MyCaffe.test
         {
             double[] rgDataA = new double[] { 3.2, 4.5, 8.3, -1.2, 0.03, 0.22, 0.2, 4.9, 8.1, 9.3, 0.1, 0.88 };
             double[] rgDataB;
-            double[] rgExpected;
             int nWid = rgDataA.Length / 2;
             int nHt = 2;
 
