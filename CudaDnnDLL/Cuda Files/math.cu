@@ -9465,7 +9465,7 @@ long Math<T>::mtx_stdev(int nWidth, int nHeight, long hA, long hOnes, long hMean
 		return lErr;
 
 	// Divide by the row item count (the width)
-	lErr = mul_scalar(nHeight, 1 / (double)(nWidth - 1), hY, 0);
+	lErr = mul_scalar(nHeight, 1 / (T)(nWidth - 1), hY, 0);
 	if (lErr)
 		return lErr;
 
@@ -9473,6 +9473,8 @@ long Math<T>::mtx_stdev(int nWidth, int nHeight, long hA, long hOnes, long hMean
 	lErr = sqrt(nHeight, hY, hY);
 	if (lErr)
 		return lErr;
+
+	return 0;
 }
 
 template long Math<double>::mtx_stdev(int nWidth, int nHeight, long hA, long hOnes, long hMean, long hWork, long hY);
