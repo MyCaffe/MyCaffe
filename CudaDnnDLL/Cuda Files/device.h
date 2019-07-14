@@ -97,6 +97,7 @@ class Device
 		long ResetDevice(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SynchronizeDevice(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long GetDeviceProperty(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long GetRequiredCompute(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long CheckMemoryAttributes(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long GetDeviceMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long CanAccessPeer(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -696,6 +697,38 @@ inline long Device<T>::GetDeviceMemory(long lInput, T* pfInput, long* plOutput, 
 
 	*ppfOutput = pfOutput;
 	*plOutput = 4;
+
+	return 0;
+}
+
+template <class T>
+inline long Device<T>::GetRequiredCompute(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	long lErr;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	T* pfOutput = NULL;
+
+	if (lErr = m_memory.AllocHost(2, &pfOutput, NULL, false, false))
+		return lErr;
+
+	int nMajor = 3;
+	int nMinor = 5;
+
+#ifdef __SM__
+#if (__SM__ >= 530)
+	nMajor = 5;
+	nMinor = 3;
+#endif
+#endif
+
+	pfOutput[0] = nMajor;
+	pfOutput[1] = nMinor;
+
+	*ppfOutput = pfOutput;
+	*plOutput = 2;
 
 	return 0;
 }

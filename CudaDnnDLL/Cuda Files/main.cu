@@ -74,6 +74,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_GETDEVICEPROP:
 			return m_device.GetDeviceProperty(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_GET_REQUIRED_COMPUTE:
+			return m_device.GetRequiredCompute(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_CHECKMEMORYATTRIB:
 			return m_device.CheckMemoryAttributes(lCount, pfInput, plCount, ppfOutput);
 
@@ -929,6 +932,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_GETDEVICEPROP:
 		return "CUDA_FN_GETDEVICEPROP";
+
+	case CUDA_FN_GET_REQUIRED_COMPUTE:
+		return "CUDA_FN_GET_REQUIRED_COMPUTE";
 
 	case CUDA_FN_CHECKMEMORYATTRIB:
 		return "CUDA_FN_CHECKMEMORYATTRIB";
