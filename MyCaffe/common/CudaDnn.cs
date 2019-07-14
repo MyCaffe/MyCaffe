@@ -584,6 +584,7 @@ namespace MyCaffe.common
             GETDEVICEPROP = 6,
             CHECKMEMORYATTRIB = 7,
             GETDEVICEMEMORY = 8,
+            GETREQUIREDCOMPUTE = 9,
 
             DEVICE_CANACCESSPEER = 10,
             DEVICE_ENABLEPEERACCESS = 11,
@@ -1488,6 +1489,35 @@ namespace MyCaffe.common
                 bCudaCallUsed = (rg[3] == 0) ? false : true;
                 return (double)rg[0];
             }
+        }
+
+        /// <summary>
+        /// The GetRequiredCompute function returns the Major and Minor compute values required by the current CudaDNN DLL used.
+        /// </summary>
+        /// <param name="nMajor">Specifies the minimum required major compute value.</param>
+        /// <param name="nMinor">Specifies the minimum required minor compute value.</param>
+        /// <remarks>
+        /// Together the Major.Minor compute values define the minimum required compute for the CudaDNN DLL used.
+        /// </remarks>
+        /// <returns>
+        /// The path to the CudaDNN dll in use is returned.
+        /// </returns>
+        public string GetRequiredCompute(out int nMinMajor, out int nMinMinor)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETREQUIREDCOMPUTE, null);
+                nMinMajor = (int)rg[0];
+                nMinMinor = (int)rg[1];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETREQUIREDCOMPUTE, null);
+                nMinMajor = (int)rg[0];
+                nMinMinor = (int)rg[1];
+            }
+
+            return m_strPath;
         }
 
         /// <summary>
