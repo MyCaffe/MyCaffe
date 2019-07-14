@@ -86,7 +86,7 @@ long MemoryCollection::Allocate(int nDeviceID, bool bHalf, void* pData, size_t l
 		{
 			m_nLastIdx = i;
 
-			if (lErr = m_rgHandles[i].Allocate(nDeviceID, pData, lSize))
+			if (lErr = m_rgHandles[i].Allocate(nDeviceID, bHalf, pData, lSize))
 				return lErr;
 
 			m_lTotalMem += (unsigned long)m_rgHandles[i].Size();
