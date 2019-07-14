@@ -85,7 +85,6 @@ namespace MyCaffe.param
         /// <returns>A new instance of the parameter is returned.</returns>
         public static PermuteParameter FromProto(RawProto rp)
         {
-            string strVal;
             PermuteParameter p = new PermuteParameter();
 
             RawProtoCollection rgChildren = rp.FindChildren("order");
