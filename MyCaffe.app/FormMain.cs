@@ -55,7 +55,11 @@ namespace MyCaffe.app
         TestingProgressGet m_progress = new TestingProgressGet();
         string m_strNsResults = null;
         string m_strAtariRom = "pong";
+        int m_nMinComputeMajor = 0;
+        int m_nMinComputeMinor = 0;
+        string m_strDllPath = null;
 
+        delegate void fnVerifyGpu(int nGpuId);
         delegate void fnSetStatus(string strMsg, STATUS status, bool bBreath);
         delegate void fnNsDone();
 
@@ -224,6 +228,8 @@ namespace MyCaffe.app
                 rgstrGpu.Add(strDevice);
             }
 
+            m_strDllPath = cuda.GetRequiredCompute(out m_nMinComputeMajor, out m_nMinComputeMinor);
+
             cuda.Dispose();
 
             e.Result = rgstrGpu;
@@ -252,7 +258,10 @@ namespace MyCaffe.app
                         menu.Click += menuGpu_Click;
 
                         if (i == nGpu)
+                        {
                             menu.Checked = true;
+                            verifyGpuId(strDevice, i);
+                        }
 
                         gpuToolStripMenuItem.DropDownItems.Add(menu);
                     }
@@ -270,17 +279,62 @@ namespace MyCaffe.app
             }
 
             menu.Checked = true;
+
+            verifyGpuId(menu.Text, (int)menu.Tag);
         }
 
         private int getGpu()
         {
+            int nGpuId = 0;
+
             foreach (ToolStripMenuItem menu in gpuToolStripMenuItem.DropDownItems)
             {
                 if (menu.Checked)
-                    return (int)menu.Tag;
+                {
+                    nGpuId = (int)menu.Tag;
+                    break;
+                }
             }
 
-            return 0;
+            return nGpuId;
+        }
+
+        private void getMajorMinor(string strName, out int nMajor, out int nMinor)
+        {
+            nMajor = 0;
+            nMinor = 0;
+
+            string strTarget = "compute ";
+            int nPos = strName.IndexOf(strTarget);
+            if (nPos <= 0)
+                return;
+
+            strName = strName.Substring(nPos + strTarget.Length);
+            strName = strName.TrimEnd(')');
+
+            nPos = strName.IndexOf('.');
+            if (nPos <= 0)
+                return;
+
+            string strMajor = strName.Substring(0, nPos);
+            string strMinor = strName.Substring(nPos + 1);
+
+            nMajor = int.Parse(strMajor);
+            nMinor = int.Parse(strMinor);
+        }
+
+        private void verifyGpuId(string strName, int nGpuId)
+        {
+            int nActualMajor;
+            int nActualMinor;
+            getMajorMinor(strName, out nActualMajor, out nActualMinor);
+
+            if (nActualMajor < m_nMinComputeMajor || (nActualMajor == m_nMinComputeMajor && nActualMinor < m_nMinComputeMinor))
+            {
+                setStatus("The current DLL '" + m_strDllPath + "' requires a minimum compute value of " + m_nMinComputeMajor.ToString() + "." + m_nMinComputeMinor.ToString(), STATUS.WARNING);
+                setStatus("The current GPU (ID=" + nGpuId.ToString() + ") has a lower compute of " + nActualMajor.ToString() + "." + nActualMinor, STATUS.ERROR);
+                setStatus("Please use a different GPU or use a different CudaDNN dll version that supports a lower compute value.", STATUS.WARNING);
+            }
         }
 
         private string getGpuName()
