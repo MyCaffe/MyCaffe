@@ -102,7 +102,7 @@ long Device<T>::GetDeviceName(int nDevice, LPTSTR* pszDevice)
 		return ERROR_OUTOFMEMORY;
 
 	memset(pDst, 0, sizeof(TCHAR) * 512);
-	_sntprintf(pDst, 511, _T("%s (%0.2lf GB - %s)"), A2T(prop.name), dfGB, (b64Bit && bTcc && bVer) ? _T("P2P on") : _T("P2P off"));
+	_sntprintf(pDst, 511, _T("%s (%0.2lf GB - %s, compute %d.%d)"), A2T(prop.name), dfGB, (b64Bit && bTcc && bVer) ? _T("P2P on") : _T("P2P off"), m_nMajor, m_nMinor);
 	*pszDevice = pDst;
 
 	return lErr;
