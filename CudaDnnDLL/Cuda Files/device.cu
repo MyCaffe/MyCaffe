@@ -156,11 +156,14 @@ int getSPcores(cudaDeviceProp prop)
 			return mp * 128;
 
 		case 6: // Pascal
-			if (prop.minor == 1)
+			if (prop.minor >= 1)
 				return mp * 128;
 			if (prop.minor == 0)
 				return mp * 64;
 			break;
+
+		case 7: // Turing
+			return mp * 64;
 	}
 
 	return -1;
