@@ -8,7 +8,7 @@ using MyCaffe.basecode;
 namespace MyCaffe.param
 {
     /// <summary>
-    /// Specifies the parameters for the Normalization2Layer.
+    /// Specifies the parameters for the Normalization2Layer used in SSD.
     /// </summary>
     /// <remarks>
     /// @see [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.

@@ -67,6 +67,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="common\BatchInput.cs" />
+    <Compile Include="common\BBoxUtility.cs" />
     <Compile Include="common\Blob.cs" />
     <Compile Include="common\BlobCollection.cs" />
     <Compile Include="common\BlockingQueue.cs" />
@@ -86,6 +87,7 @@
     <Compile Include="common\WeightInfo.cs" />
     <Compile Include="data\DataTransformer.cs" />
     <Compile Include="data\DB.cs" />
+    <Compile Include="data\ImageTransforms.cs" />
     <Compile Include="fillers\BilinearFiller.cs" />
     <Compile Include="fillers\ConstantFiller.cs" />
     <Compile Include="fillers\Filler.cs" />
@@ -95,6 +97,7 @@
     <Compile Include="fillers\UniformFiller.cs" />
     <Compile Include="fillers\XavierFiller.cs" />
     <Compile Include="layers\DataNormalizerLayer.cs" />
+    <Compile Include="layers_ssd\AnnotatedDataLayer.cs" />
     <Compile Include="layers_ssd\PermuteLayer.cs" />
     <Compile Include="layers_ssd\SmoothL1LossLayer.cs" />
     <Compile Include="layers_ssd\Normalization2Layer.cs" />
@@ -189,6 +192,16 @@
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
     <Compile Include="param.ui\CsvConverter.cs" />
+    <Compile Include="param\BatchSampler.cs" />
+    <Compile Include="param\AnnotatedDataParameter.cs" />
+    <Compile Include="param\ExpansionParameter.cs" />
+    <Compile Include="param\DistortionParameter.cs" />
+    <Compile Include="param\NoiseParameter.cs" />
+    <Compile Include="param\SaltPepperParameter.cs" />
+    <Compile Include="param\ResizeParameter.cs" />
+    <Compile Include="param\EmitConstraint.cs" />
+    <Compile Include="param\Sampler.cs" />
+    <Compile Include="param\SamplerConstraint.cs" />
     <Compile Include="param\DataNormalizerParameter.cs" />
     <Compile Include="param\PermuteParameter.cs" />
     <Compile Include="param\Normalization2Parameter.cs" />
