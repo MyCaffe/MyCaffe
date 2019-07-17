@@ -52,6 +52,29 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Convert a string into a CodeType.
+        /// </summary>
+        /// <param name="str">Specifies the string.</param>
+        /// <returns>The associated CodeType is returned.</returns>
+        public static CodeType CodeTypeFromString(string str)
+        {
+            switch (str)
+            {
+                case "CORNER":
+                    return CodeType.CORNER;
+
+                case "CENTER_SIZE":
+                    return CodeType.CENTER_SIZE;
+
+                case "CORNER_SIZE":
+                    return CodeType.CORNER_SIZE;
+
+                default:
+                    throw new Exception("Unknown CodeType '" + str + "'!");
+            }
+        }
+
+        /// <summary>
         /// The constructor.
         /// </summary>
         public PriorBoxParameter()
