@@ -37,7 +37,7 @@ namespace MyCaffe.basecode
         string m_strDesc = null;
         int m_nSourceID = 0;
         object m_tag = null;
-        ANNOTATION_TYPE m_nAnnoationType = ANNOTATION_TYPE.NONE;
+        ANNOTATION_TYPE m_nAnnotationType = ANNOTATION_TYPE.NONE;
         List<AnnotationGroup> m_rgAnnotationGroup = null;
 
         /// <summary>
@@ -1235,8 +1235,8 @@ namespace MyCaffe.basecode
         /// </summary>
         public ANNOTATION_TYPE annoation_type
         {
-            get { return m_nAnnoationType; }
-            set { m_nAnnoationType = value; }
+            get { return m_nAnnotationType; }
+            set { m_nAnnotationType = value; }
         }
 
         /// <summary>
