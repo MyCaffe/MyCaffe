@@ -859,7 +859,7 @@ namespace MyCaffe
                     m_log.CHECK_EQ(nW, sdMean.Width, "The mean width count does not match the datasets width count.");
                 }
 
-                m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, nC, nH, nW, sdMean);
+                m_dataTransformer = new DataTransformer<T>(m_cuda, m_log, tp, Phase.RUN, nC, nH, nW, sdMean);
             }
 
             if (phase == Phase.RUN)
@@ -1007,7 +1007,7 @@ namespace MyCaffe
                 if (nC == 0 || nH == 0 || nW == 0)
                     throw new Exception("Unable to size the Data Transformer for there is no Mean or Project to gather the sizing information from.");
 
-                m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, nC, nH, nW, sdMean);
+                m_dataTransformer = new DataTransformer<T>(m_cuda, m_log, tp, Phase.RUN, nC, nH, nW, sdMean);
             }
 
             if (phase == Phase.RUN)
@@ -1064,7 +1064,7 @@ namespace MyCaffe
                 if (tp.use_imagedb_mean && sdMean == null)
                     throw new Exception("The transformer expects an image mean, yet the sdMean parameter is null!");
 
-                m_dataTransformer = new DataTransformer<T>(m_log, tp, Phase.RUN, shape.dim[1], shape.dim[2], shape.dim[3], sdMean);
+                m_dataTransformer = new DataTransformer<T>(m_cuda, m_log, tp, Phase.RUN, shape.dim[1], shape.dim[2], shape.dim[3], sdMean);
             }
             else
             {
