@@ -34,6 +34,209 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Find matches between a list of two bounding boxes.
+        /// </summary>
+        /// <param name="rgGtBboxes">Specifies a list of ground truth bounding boxes.</param>
+        /// <param name="rgPredBboxes">Specifies a list of predicted bounding boxes.</param>
+        /// <param name="nLabel">Specifies the label.</param>
+        /// <param name="match_type">Specifies the matching type.</param>
+        /// <param name="fOverlap">Specifies the overlap.</param>
+        /// <param name="bIgnoreCrossBoundaryBbox">Specifies whether or not to ignore corss boundary bounding boxes.</param>
+        /// <param name="rgMatchIndices">Specifies the list where the indexes of matches are placed.</param>
+        /// <param name="rgMatchOverlaps">Specifies the list where the overlaps of matches are placed.</param>
+        public void Match(List<NormalizedBBox> rgGtBboxes, List<NormalizedBBox> rgPredBboxes, int nLabel, MultiBoxLossParameter.MatchType match_type, float fOverlapThreshold, bool bIgnoreCrossBoundaryBbox, out List<int> rgMatchIndices, out List<float> rgMatchOverlaps)
+        {
+            int nNumPred = rgPredBboxes.Count;
+            rgMatchIndices = Utility.Create<int>(nNumPred, -1);
+            rgMatchOverlaps = Utility.Create<float>(nNumPred, 0);
+
+            int nNumGt = 0;
+            List<int> rgGtIndices = new List<int>();
+
+            // label -1 means comparing against all ground truth.
+            if (nLabel == -1)
+            {
+                nNumGt = rgGtBboxes.Count;
+                for (int i = 0; i < nNumGt; i++)
+                {
+                    rgGtIndices.Add(i);
+                }
+            }
+
+            // Otherwise match gt boxes with the specified label.
+            else
+            {
+                for (int i = 0; i < rgGtBboxes.Count; i++)
+                {
+                    if (rgGtBboxes[i].label == nLabel)
+                    {
+                        nNumGt++;
+                        rgGtIndices.Add(i);
+                    }
+                }
+            }
+
+            if (nNumGt == 0)
+                return;
+
+            // Store the positive overlap between predictions and ground truth.
+            Dictionary<int, Dictionary<int, float>> rgOverlaps = new Dictionary<int, Dictionary<int, float>>();
+            for (int i = 0; i < nNumPred; i++)
+            {
+                rgOverlaps.Add(i, new Dictionary<int, float>());
+
+                if (bIgnoreCrossBoundaryBbox && IsCrossBoundary(rgPredBboxes[i]))
+                {
+                    rgMatchIndices.Add(-2);
+                    continue;
+                }
+
+                for (int j = 0; j < nNumGt; j++)
+                {
+                    float fOverlap = JaccardOverlap(rgPredBboxes[i], rgGtBboxes[rgGtIndices[j]]);
+                    if (fOverlap > 1e-6f)
+                    {
+                        rgMatchOverlaps[i] = Math.Max(rgMatchOverlaps[i], fOverlap);
+                        rgOverlaps[i].Add(j, fOverlap);
+                    }
+                }
+            }
+
+            // Bipartite matching.
+            List<int> rgGtPool = new List<int>();
+            for (int i = 0; i < nNumGt; i++)
+            {
+                rgGtPool.Add(i);
+            }
+
+            // Find the most overlapped gt and corresponding predictions.
+            while (rgGtPool.Count > 0)
+            {
+                int nMaxIdx = -1;
+                int nMaxGtIdx = -1;
+                float fMaxOverlap = -1;
+
+                foreach (KeyValuePair<int, Dictionary<int, float>> kv in rgOverlaps)
+                {
+                    int i = kv.Key;
+
+                    // The prediction already has match ground truth or is ignored.
+                    if (rgMatchIndices[i] != -1)
+                        continue;
+
+                    for (int p = 0; p < rgGtPool.Count; p++)
+                    {
+                        int j = rgGtPool[p];
+
+                        // No overlap between the i'th prediction and j'th ground truth.
+                        if (!kv.Value.ContainsKey(j))
+                            continue;
+
+                        // Find the maximum overlap pair.
+                        if (kv.Value[j] > fMaxOverlap)
+                        {
+                            // If the prediction has not been matched to any ground truth,
+                            // and the overlap is larger than the maximum overlap, update.
+                            nMaxIdx = i;
+                            nMaxGtIdx = j;
+                            fMaxOverlap = kv.Value[j];
+                        }
+                    }
+                }
+
+                // Cannot find a good match.
+                if (nMaxIdx == -1)
+                {
+                    break;
+                }
+                else
+                {
+                    m_log.CHECK_EQ(rgMatchIndices[nMaxIdx], -1, "The match index at index=" + nMaxIdx.ToString() + " should be -1.");
+                    rgMatchIndices[nMaxIdx] = rgGtIndices[nMaxGtIdx];
+                    rgMatchOverlaps[nMaxIdx] = fMaxOverlap;
+
+                    // Remove the ground truth.
+                    rgGtPool.Remove(nMaxGtIdx);
+                }
+            }
+
+            // Do the matching
+            switch (match_type)
+            {
+                case MultiBoxLossParameter.MatchType.BIPARTITE:
+                    // Already done.
+                    break;
+
+                case MultiBoxLossParameter.MatchType.PER_PREDICTION:
+                    // Get most overlapped for the rest of the prediction bboxes.
+                    foreach (KeyValuePair<int, Dictionary<int, float>> kv in rgOverlaps)
+                    {
+                        int i = kv.Key;
+
+                        // The prediction already has matched ground truth or is ignored.
+                        if (rgMatchIndices[i] != -1)
+                            continue;
+
+                        int nMaxGtIdx = -1;
+                        float fMaxOverlap = -1;
+
+                        for (int j = 0; j < nNumGt; j++)
+                        {
+                            // No overlap between the i'th prediction and j'th ground truth.
+                            if (!kv.Value.ContainsKey(j))
+                                continue;
+
+                            // Find the maximum overlapped pair.
+                            float fOverlap = kv.Value[j];
+
+                            // If the prediction has not been matched on any ground truth,
+                            // and the overlap is larger than the maximum overlap, update.
+                            if (fOverlap >= fOverlapThreshold && fOverlap > fMaxOverlap)
+                            {
+                                nMaxGtIdx = j;
+                                fMaxOverlap = fOverlap;
+                            }
+                        }
+
+                        // Found a matched ground truth.
+                        if (nMaxGtIdx != -1)
+                        {
+                            m_log.CHECK_EQ(rgMatchIndices[i], -1, "The match index at index=" + i.ToString() + " should be -1.");
+                            rgMatchIndices[i] = rgGtIndices[nMaxGtIdx];
+                            rgMatchOverlaps[i] = fMaxOverlap;
+                        }
+                    }
+                    break;
+
+                default:
+                    m_log.FAIL("Unknown matching type '" + match_type.ToString() + "'!");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Returns whether or not the bbox is overlaps outside the range [0,1]
+        /// </summary>
+        /// <param name="bbox">Specifies the bounding box to test.</param>
+        /// <returns>If the bbox overlaps, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public bool IsCrossBoundary(NormalizedBBox bbox)
+        {
+            if (bbox.xmin < 0 || bbox.xmin > 1)
+                return true;
+
+            if (bbox.ymin < 0 || bbox.ymin > 1)
+                return true;
+
+            if (bbox.xmax < 0 || bbox.xmax > 1)
+                return true;
+
+            if (bbox.ymax < 0 || bbox.ymax > 1)
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
         /// Decode a set of bounding box.
         /// </summary>
         /// <param name="rgPriorBbox">Specifies an list of prior bounding boxs.</param>
