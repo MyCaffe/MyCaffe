@@ -50,6 +50,41 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// The AdjustContrast function adjusts the brightness, contrast and gamma of the image and returns the newly adjusted image.
+        /// </summary>
+        /// <param name="bmp">Specifies the image to adjust.</param>
+        /// <param name="fBrightness">Specifies the brightness to apply.</param>
+        /// <param name="fContrast">Specifies the contrast to apply.</param>
+        /// <param name="fGamma">Specifies the gamma to apply.</param>
+        /// <returns>The updated image is returned.</returns>
+        public static Bitmap AdjustContrast(Image bmp, float fBrightness = 1.0f, float fContrast = 1.0f, float fGamma = 1.0f)
+        {
+            float fAdjBrightNess = fBrightness - 1.0f;
+            float[][] ptsArray =
+            {
+                new float[] { fContrast, 0, 0, 0, 0 },  // scale red.
+                new float[] { 0, fContrast, 0, 0, 0 },  // scale green.
+                new float[] { 0, 0, fContrast, 0, 0 },  // scale blue.
+                new float[] { 0, 0, 0, 1.0f, 0 }, // don't scale alpha.
+                new float[] { fAdjBrightNess, fAdjBrightNess, fAdjBrightNess, 0, 1 }
+            };
+
+            ImageAttributes imageAttributes = new ImageAttributes();
+            imageAttributes.ClearColorMatrix();
+            imageAttributes.SetColorMatrix(new ColorMatrix(ptsArray), ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
+            imageAttributes.SetGamma(fGamma, ColorAdjustType.Bitmap);
+
+            Bitmap bmpNew = new Bitmap(bmp.Width, bmp.Height);
+
+            using (Graphics g = Graphics.FromImage(bmpNew))
+            {
+                g.DrawImage(bmp, new Rectangle(0, 0, bmpNew.Width, bmpNew.Height), 0, 0, bmp.Width, bmp.Height, GraphicsUnit.Pixel, imageAttributes);
+            }
+
+            return bmpNew;
+        }
+
+        /// <summary>
         /// Converts an Image into an array of <i>byte</i>.
         /// </summary>
         /// <param name="imageIn">Specifies the Image.</param>
