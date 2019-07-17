@@ -85,6 +85,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="SqlServerTypes\Loader.cs" />
+    <Compile Include="TestBBoxUtil.cs" />
     <Compile Include="TestImageTransforms.cs" />
     <Compile Include="TestGymPython.cs" />
     <Compile Include="TestBinaryHashLayer.cs" />
