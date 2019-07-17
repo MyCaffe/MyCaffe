@@ -32,6 +32,8 @@ namespace MyCaffe.data
         double m_dfLastMin = 0;
         double m_dfLastMax = 0;
         BlobProto m_protoMean = null;
+        BBoxUtility<T> m_bbox = null;
+        ImageTransforms<T> m_imgTransforms = null;
 
         /// <summary>
         /// The DataTransformer constructor.
@@ -43,16 +45,19 @@ namespace MyCaffe.data
         /// <param name="nH">Specifies the height.</param>
         /// <param name="nW">Specifies the width.</param>
         /// <param name="imgMean">Optionally, specifies the image mean to use.</param>
-        public DataTransformer(Log log, TransformationParameter p, Phase phase, int nC, int nH, int nW, SimpleDatum imgMean = null)
+        public DataTransformer(CudaDnn<T> cuda, Log log, TransformationParameter p, Phase phase, int nC, int nH, int nW, SimpleDatum imgMean = null)
         {
             m_log = log;
 
             int nDataSize = nC * nH * nW;
 
             m_param = p;
-            m_phase = phase;
-
             InitRand();
+
+            m_phase = phase;
+            m_bbox = new BBoxUtility<T>(cuda, log);
+            m_imgTransforms = new ImageTransforms<T>(cuda, log, m_random);
+
             Update(nDataSize, imgMean);
         }
 
@@ -526,6 +531,163 @@ namespace MyCaffe.data
 
             b.add_scalar(-dfMin);
             b.scale_data(dfScale);
+        }
+
+        /// <summary>
+        /// Crop the SimpleDatum according to the bbox.
+        /// </summary>
+        /// <param name="d">Specifies the SimpleDatum to crop.</param>
+        /// <param name="bbox">Specifies the bounding box.</param>
+        /// <returns>The cropped SimpleDatum is returned.</returns>
+        public SimpleDatum CropImage(SimpleDatum d, NormalizedBBox bbox)
+        {
+            int nDatumChannels = d.Channels;
+            int nDatumHeight = d.Height;
+            int nDatumWidth = d.Width;
+
+            // Get the bbox dimension.
+            NormalizedBBox clipped_bbox = m_bbox.Clip(bbox);
+            NormalizedBBox scaled_bbox = m_bbox.Scale(bbox, nDatumHeight, nDatumWidth);
+            int w_off = (int)scaled_bbox.xmin;
+            int h_off = (int)scaled_bbox.ymin;
+            int width = (int)(scaled_bbox.xmax - scaled_bbox.xmin);
+            int height = (int)(scaled_bbox.ymax - scaled_bbox.ymin);
+
+            // Crop the image using bbox.
+            SimpleDatum crop_datum = new SimpleDatum(d, height, width);
+            int nCropDatumSize = nDatumChannels * height * width;
+
+            if (d.IsRealData)
+            {
+                double[] rgData = new double[nCropDatumSize];
+
+                for (int h = h_off; h < h_off + height; h++)
+                {
+                    for (int w = w_off; w < w_off + width; w++)
+                    {
+                        for (int c = 0; c < nDatumChannels; c++)
+                        {
+                            int nDatumIdx = (c * nDatumHeight + h) * nDatumWidth + w;
+                            int nCropDatumIdx = (c * height + h - h_off) * width + w - w_off;
+                            rgData[nCropDatumIdx] = d.RealData[nDatumIdx];
+                        }
+                    }
+                }
+
+                crop_datum.SetData(rgData.ToList(), d.Label);
+            }
+            else
+            {
+                byte[] rgData = new byte[nCropDatumSize];
+
+                for (int h = h_off; h < h_off + height; h++)
+                {
+                    for (int w = w_off; w < w_off + width; w++)
+                    {
+                        for (int c = 0; c < nDatumChannels; c++)
+                        {
+                            int nDatumIdx = (c * nDatumHeight + h) * nDatumWidth + w;
+                            int nCropDatumIdx = (c * height + h - h_off) * width + w - w_off;
+                            rgData[nCropDatumIdx] = d.ByteData[nDatumIdx];
+                        }
+                    }
+                }
+
+                crop_datum.SetData(rgData.ToList(), d.Label);
+            }
+
+            return crop_datum;
+        }
+
+        /// <summary>
+        /// Expand the SimpleDatum according to the bbox.
+        /// </summary>
+        /// <param name="d">Specifies the SimpleDatum to expand.</param>
+        /// <param name="bbox">Specifies the bounding box.</param>
+        /// <param name="fExpandRatio">Specifies the expansion ratio.</param>
+        /// <returns>The expanded SimpleDatum is returned.</returns>
+        public SimpleDatum ExpandImage(SimpleDatum d, NormalizedBBox expand_bbox, float fExpandRatio)
+        {
+            int nDatumChannels = d.Channels;
+            int nDatumHeight = d.Height;
+            int nDatumWidth = d.Width;
+
+            // Get the bbox dimension.
+            int width = (int)(nDatumHeight * fExpandRatio);
+            int height = (int)(nDatumWidth * fExpandRatio);
+            float h_off = (float)m_random.NextDouble();
+            float w_off = (float)m_random.NextDouble();
+
+            h_off = (float)Math.Floor(h_off);
+            w_off = (float)Math.Floor(w_off);
+
+            expand_bbox.xmin = -w_off / nDatumWidth;
+            expand_bbox.ymin = -h_off / nDatumHeight;
+            expand_bbox.xmax = (width - w_off) / nDatumWidth;
+            expand_bbox.ymax = (height - h_off) / nDatumHeight;
+
+            // Crop the image using bbox.
+            SimpleDatum expand_datum = new SimpleDatum(d, height, width);
+            int nExpandDatumSize = nDatumChannels * height * width;
+
+            if (d.IsRealData)
+            {
+                double[] rgData = new double[nExpandDatumSize];
+
+                for (int h = (int)h_off; h < (int)h_off + nDatumHeight; h++)
+                {
+                    for (int w = (int)w_off; w < (int)w_off + nDatumWidth; w++)
+                    {
+                        for (int c = 0; c < nDatumChannels; c++)
+                        {
+                            int nDatumIdx = (int)((c * nDatumHeight + h - h_off) * nDatumWidth + w - w_off);
+                            int nExpandIdx = (c * height + h) * width + w;
+                            rgData[nExpandIdx] = d.RealData[nDatumIdx];
+                        }
+                    }
+                }
+
+                expand_datum.SetData(rgData.ToList(), d.Label);
+            }
+            else
+            {
+                byte[] rgData = new byte[nExpandDatumSize];
+
+                for (int h = (int)h_off; h < (int)h_off + nDatumHeight; h++)
+                {
+                    for (int w = (int)w_off; w < (int)w_off + nDatumWidth; w++)
+                    {
+                        for (int c = 0; c < nDatumChannels; c++)
+                        {
+                            int nDatumIdx = (int)((c * nDatumHeight + h - h_off) * nDatumWidth + w - w_off);
+                            int nExpandIdx = (c * height + h) * width + w;
+                            rgData[nExpandIdx] = d.ByteData[nDatumIdx];
+                        }
+                    }
+                }
+
+                expand_datum.SetData(rgData.ToList(), d.Label);
+            }
+
+            return expand_datum;
+        }
+
+        /// <summary>
+        /// Distort the SimpleDatum.
+        /// </summary>
+        /// <param name="d">Specifies the SimpleDatum to distort.</param>
+        /// <returns>The distorted SimpleDatum is returned.</returns>
+        public SimpleDatum DistortImage(SimpleDatum d)
+        {
+            if (m_param.distortion_param == null)
+                return d;
+
+            if (m_param.distortion_param.brightness_prob == 0 &&
+                m_param.distortion_param.contrast_prob == 0 &&
+                m_param.distortion_param.saturation_prob == 0)
+                return d;
+
+            return m_imgTransforms.ApplyDistort(d, m_param.distortion_param);
         }
 
         /// <summary>
