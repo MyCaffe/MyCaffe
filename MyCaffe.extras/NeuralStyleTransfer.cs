@@ -484,7 +484,7 @@ namespace MyCaffe.extras
         private void prepare_data_blob(Net<T> net, Bitmap bmp)
         {
             List<int> rgDataShape = new List<int>() { 1, 3, bmp.Height, bmp.Width };
-            m_transformer = new DataTransformer<T>(m_log, m_transformationParam, Phase.TEST, 3, bmp.Height, bmp.Width);
+            m_transformer = new DataTransformer<T>(m_cuda, m_log, m_transformationParam, Phase.TEST, 3, bmp.Height, bmp.Width);
 
             Blob<T> data = net.blob_by_name(m_strDataBlobName);
             data.Reshape(rgDataShape, data.HalfSize);
@@ -494,7 +494,7 @@ namespace MyCaffe.extras
         private void prepare_input_param(Net<T> net, Bitmap bmp)
         {
             List<int> rgDataShape = new List<int>() { 1, 3, bmp.Height, bmp.Width };
-            m_transformer = new DataTransformer<T>(m_log, m_transformationParam, Phase.TEST, 3, bmp.Height, bmp.Width);
+            m_transformer = new DataTransformer<T>(m_cuda, m_log, m_transformationParam, Phase.TEST, 3, bmp.Height, bmp.Width);
 
             Blob<T> data = net.param_by_name("input1");
             data.Reshape(rgDataShape, data.HalfSize);
