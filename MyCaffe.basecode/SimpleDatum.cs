@@ -37,6 +37,23 @@ namespace MyCaffe.basecode
         string m_strDesc = null;
         int m_nSourceID = 0;
         object m_tag = null;
+        ANNOTATION_TYPE m_nAnnoationType = ANNOTATION_TYPE.NONE;
+        List<AnnotationGroup> m_rgAnnotationGroup = null;
+
+        /// <summary>
+        /// Specifies the annotation type when using annotations.
+        /// </summary>
+        public enum ANNOTATION_TYPE
+        {
+            /// <summary>
+            /// Specifies that annotations are not used.
+            /// </summary>
+            NONE = -1,
+            /// <summary>
+            /// Specifies to use the bounding box annoation type.
+            /// </summary>
+            BBOX = 0
+        }
 
         /// <summary>
         /// Defines the data format of the DebugData and DataCriteria when specified.
@@ -266,6 +283,18 @@ namespace MyCaffe.basecode
         public SimpleDatum(SimpleDatum d, bool bCopyData = false)
         {
             Copy(d, bCopyData);
+        }
+
+        /// <summary>
+        /// The SimpleDatum constructor.
+        /// </summary>
+        /// <param name="d">Specifies a SimpleDatum used to create this new Datum.</param>
+        /// <param name="bCopyData">Specifies whether or not to copy the data, or just share it (default = false, share the data).</param>
+        /// <param name="nHeight">Specifies a height override.</param>
+        /// <param name="nWidth">Specifies a width override.</param>
+        public SimpleDatum(SimpleDatum d, int nHeight, int nWidth)
+        {
+            Copy(d, false, nHeight, nWidth);
         }
 
         /// <summary>
@@ -545,14 +574,16 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="d">Specifies the SimpleDatum to copy.</param>
         /// <param name="bCopyData">Specifies whether or not to copy the data.</param>
-        public void Copy(SimpleDatum d, bool bCopyData)
+        /// <param name="nHeight">Optionally, specifies a height override.</param>
+        /// <param name="nWidth">Optionally, specifies a width override.</param>
+        public void Copy(SimpleDatum d, bool bCopyData, int? nHeight = null, int? nWidth = null)
         {
             m_bIsRealData = d.m_bIsRealData;
             m_nLabel = d.m_nLabel;
             m_nOriginalLabel = d.m_nOriginalLabel;
             m_nChannels = d.m_nChannels;
-            m_nHeight = d.m_nHeight;
-            m_nWidth = d.m_nWidth;
+            m_nHeight = nHeight.GetValueOrDefault(d.m_nHeight);
+            m_nWidth = nWidth.GetValueOrDefault(d.m_nWidth);
 
             if (bCopyData)
             {
@@ -1196,6 +1227,25 @@ namespace MyCaffe.basecode
         {
             get { return m_strDesc; }
             set { m_strDesc = value; }
+        }
+
+        /// <summary>
+        /// When using annotations, the annotation type specifies the type of annotation.  Currently, only
+        /// the BBOX annotation type is supported.
+        /// </summary>
+        public ANNOTATION_TYPE annoation_type
+        {
+            get { return m_nAnnoationType; }
+            set { m_nAnnoationType = value; }
+        }
+
+        /// <summary>
+        /// When using annoations, each annotation group contains an annotation for a particular class used with SSD.
+        /// </summary>
+        public List<AnnotationGroup> annotation_group
+        {
+            get { return m_rgAnnotationGroup; }
+            set { m_rgAnnotationGroup = value; }
         }
 
         /// <summary>
