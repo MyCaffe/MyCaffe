@@ -194,6 +194,7 @@
     <Compile Include="param.ui\CsvConverter.cs" />
     <Compile Include="param\BatchSampler.cs" />
     <Compile Include="param\AnnotatedDataParameter.cs" />
+    <Compile Include="param\PriorBoxParameter.cs" />
     <Compile Include="param\ExpansionParameter.cs" />
     <Compile Include="param\DistortionParameter.cs" />
     <Compile Include="param\NoiseParameter.cs" />
