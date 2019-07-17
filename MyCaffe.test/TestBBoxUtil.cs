@@ -230,6 +230,42 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestMatchBBoxLabelOneBipartite()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestMatchBBoxLabelOneBipartite();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMatchBBoxLabelAllBipartite()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestMatchBBoxLabelAllBipartite();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -247,6 +283,8 @@ namespace MyCaffe.test
         void TestDecoderBBoxCenterSize();
         void TestDecodeBBoxesCorner();
         void TestDecodeBBoxesCenterSize();
+        void TestMatchBBoxLabelOneBipartite();
+        void TestMatchBBoxLabelAllBipartite();
     }
 
     class BBoxUtilTest : TestBase
@@ -288,33 +326,33 @@ namespace MyCaffe.test
             pred_bboxes.Clear();
 
             // Fill in ground truth bboxes.
-            gt_bboxes.Add(new NormalizedBBox(0.1f, 0.1f, 0.3f, 0.1f, 1));
+            gt_bboxes.Add(new NormalizedBBox(0.1f, 0.1f, 0.3f, 0.3f, 1));
             gt_bboxes.Add(new NormalizedBBox(0.3f, 0.3f, 0.6f, 0.5f, 2));
 
             // Fill in prediction bboxes
             // 4/9 with label 1
             // 0 with label 2
-            pred_bboxes.Add(new NormalizedBBox(0.1f, 0.0f, 0.4f, 0.3f));
+            pred_bboxes.Add(new NormalizedBBox(0.1f, 0.0f, 0.4f, 0.3f, 2));
 
             // 2/6 with label 1
             // 0 with label 2
-            pred_bboxes.Add(new NormalizedBBox(0.0f, 0.1f, 0.2f, 0.3f));
+            pred_bboxes.Add(new NormalizedBBox(0.0f, 0.1f, 0.2f, 0.3f, 2));
 
             // 2/8 with label 1
             // 1/11 with label 2
-            pred_bboxes.Add(new NormalizedBBox(0.2f, 0.1f, 0.4f, 0.4f));
+            pred_bboxes.Add(new NormalizedBBox(0.2f, 0.1f, 0.4f, 0.4f, 2));
 
             // 0 with label 1
             // 4/8 with label 2
-            pred_bboxes.Add(new NormalizedBBox(0.4f, 0.3f, 0.7f, 0.5f));
+            pred_bboxes.Add(new NormalizedBBox(0.4f, 0.3f, 0.7f, 0.5f, 2));
 
             // 0 with label 1
             // 1/11 with label 2
-            pred_bboxes.Add(new NormalizedBBox(0.5f, 0.4f, 0.7f, 0.7f));
+            pred_bboxes.Add(new NormalizedBBox(0.5f, 0.4f, 0.7f, 0.7f, 2));
 
             // 0 with label 1
             // 0 with label 2
-            pred_bboxes.Add(new NormalizedBBox(0.7f, 0.7f, 0.8f, 0.8f));
+            pred_bboxes.Add(new NormalizedBBox(0.7f, 0.7f, 0.8f, 0.8f, 2));
         }
 
         private void checkBBox(NormalizedBBox bbox, float fxmin, float fymin, float fxmax, float fymax, float? fSize = null, float? fEps = null)
@@ -627,8 +665,72 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestMatchBBoxLabelOnBipartite()
+        public void TestMatchBBoxLabelOneBipartite()
         {
+            List<NormalizedBBox> rgGtBboxes = new List<NormalizedBBox>();
+            List<NormalizedBBox> rgPredBboxes = new List<NormalizedBBox>();
+
+            fillBBoxes(rgGtBboxes, rgPredBboxes);
+
+            int nLabel = 1;
+            MultiBoxLossParameter.MatchType match_type = MultiBoxLossParameter.MatchType.BIPARTITE;
+            float fOverlap = -1;
+
+            List<int> rgMatchIndices;
+            List<float> rgMatchOverlaps;
+            m_util.Match(rgGtBboxes, rgPredBboxes, nLabel, match_type, fOverlap, true, out rgMatchIndices, out rgMatchOverlaps);
+
+            m_log.CHECK_EQ(rgMatchIndices.Count, 6, "There should be 6 matches!");
+            m_log.CHECK_EQ(rgMatchOverlaps.Count, 6, "There should be 6 matches!");
+
+            m_log.CHECK_EQ(rgMatchIndices[0], 0, "The index match is incorrect.");
+            m_log.CHECK_EQ(rgMatchIndices[1], -1, "The index match is incorrect.");
+            m_log.CHECK_EQ(rgMatchIndices[2], -1, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[0], 4.0/9, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[1], 2.0/6, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[2], 2.0/8, m_fEps, "The index match is incorrect.");
+
+            for (int i = 3; i < 6; i++)
+            {
+                m_log.CHECK_EQ(rgMatchIndices[i], -1, "The index match is incorrect.");
+                m_log.EXPECT_NEAR(rgMatchOverlaps[i], 0, m_fEps, "The overlap is incorrect");
+            }
+        }
+
+        public void TestMatchBBoxLabelAllBipartite()
+        {
+            List<NormalizedBBox> rgGtBboxes = new List<NormalizedBBox>();
+            List<NormalizedBBox> rgPredBboxes = new List<NormalizedBBox>();
+
+            fillBBoxes(rgGtBboxes, rgPredBboxes);
+
+            int nLabel = -1;
+            MultiBoxLossParameter.MatchType match_type = MultiBoxLossParameter.MatchType.BIPARTITE;
+            float fOverlap = -1;
+
+            List<int> rgMatchIndices;
+            List<float> rgMatchOverlaps;
+            m_util.Match(rgGtBboxes, rgPredBboxes, nLabel, match_type, fOverlap, true, out rgMatchIndices, out rgMatchOverlaps);
+
+            m_log.CHECK_EQ(rgMatchIndices.Count, 6, "There should be 6 matches!");
+            m_log.CHECK_EQ(rgMatchOverlaps.Count, 6, "There should be 6 matches!");
+
+            m_log.CHECK_EQ(rgMatchIndices[0], 0, "The index match is incorrect.");
+            m_log.CHECK_EQ(rgMatchIndices[3], 1, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[0], 4.0 / 9, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[1], 2.0 / 6, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[2], 2.0 / 8, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[3], 4.0 / 8, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[4], 1.0 / 11, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[5], 0, m_fEps, "The index match is incorrect.");
+
+            for (int i = 0; i < 6; i++)
+            {
+                if (i == 0 || i == 3)
+                    continue;
+
+                m_log.CHECK_EQ(rgMatchIndices[i], -1, "The index match is incorrect.");
+            }
         }
     }
 }
