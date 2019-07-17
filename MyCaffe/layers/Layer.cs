@@ -1118,6 +1118,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.ACCURACY:
                     return new AccuracyLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.ANNOTATED_DATA:
+                    return new AnnotatedDataLayer<T>(cuda, log, p, imgDb, evtCancel);
+
                 case LayerParameter.LayerType.ARGMAX:
                     return new ArgMaxLayer<T>(cuda, log, p);
 
@@ -1213,6 +1216,9 @@ namespace MyCaffe.layers
 
                 case LayerParameter.LayerType.INNERPRODUCT:
                     return new InnerProductLayer<T>(cuda, log, p);
+
+                case LayerParameter.LayerType.INPUT:
+                    return new InputLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.KNN:
                     return new KnnLayer<T>(cuda, log, p);
@@ -1351,9 +1357,6 @@ namespace MyCaffe.layers
 
                 case LayerParameter.LayerType.LSTM_UNIT:
                     return new LSTMUnitLayer<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.INPUT:
-                    return new InputLayer<T>(cuda, log, p);
 
                 default:
                     log.FAIL("Unknown layer type: " + p.type.ToString());

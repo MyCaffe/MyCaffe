@@ -84,6 +84,10 @@ namespace MyCaffe.param
             /// </summary>
             ACCURACY,
             /// <summary>
+            /// Initializes a parameter for the AnnotatedDataLayer.
+            /// </summary>
+            ANNOTATED_DATA,
+            /// <summary>
             /// Initializes a parameter for the ArgMaxLayer.
             /// </summary>
             ARGMAX,
@@ -203,6 +207,10 @@ namespace MyCaffe.param
             /// Initializes a parameter for the InnerProductLayer.
             /// </summary>
             INNERPRODUCT,
+            /// <summary>
+            /// Initializes a parameter for the InputLayer.
+            /// </summary>
+            INPUT,
             /// <summary>
             /// Initializes a parameter for the LabelMappingLayer.
             /// </summary>
@@ -364,10 +372,6 @@ namespace MyCaffe.param
             /// </summary>
             LSTM_UNIT,
             /// <summary>
-            /// Initializes a parameter for the InputLayer.
-            /// </summary>
-            INPUT,
-            /// <summary>
             /// DEPRECIATED - Initializes a parameter for the UnpoolingLayer1 which uses a CPU based implementation (slower).
             /// </summary>
             UNPOOLING1,
@@ -520,6 +524,12 @@ namespace MyCaffe.param
 
             switch (m_type)
             {
+                case LayerType.ANNOTATED_DATA:
+                    annotated_data_param = (AnnotatedDataParameter)p.annotated_data_param.Clone();
+                    data_param = (DataParameter)p.data_param.Clone();
+                    transform_param = (TransformationParameter)p.transform_param.Clone();
+                    break;
+
                 case LayerType.DATA:
                 case LayerType.TRIPLET_DATA:       
                     data_param = (DataParameter)p.data_param.Clone();
@@ -738,6 +748,14 @@ namespace MyCaffe.param
                     m_rgLayerParameters[LayerType.CROP] = new CropParameter();
                     break;
 
+                case LayerType.ANNOTATED_DATA:
+                    expected_top.Add("data");
+                    expected_top.Add("label");
+                    m_rgLayerParameters[LayerType.TRANSFORM] = new TransformationParameter();
+                    m_rgLayerParameters[LayerType.ANNOTATED_DATA] = new AnnotatedDataParameter();
+                    m_rgLayerParameters[LayerType.DATA] = new DataParameter();
+                    break;
+
                 case LayerType.DATA:
                 case LayerType.TRIPLET_DATA:
                     expected_top.Add("data");
@@ -870,6 +888,12 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("ip");
                     m_rgLayerParameters[lt] = new InnerProductParameter();
+                    break;
+
+                case LayerType.INPUT:
+                    expected_top.Add("data");
+                    expected_top.Add("label");
+                    m_rgLayerParameters[LayerType.INPUT] = new InputParameter();
                     break;
 
                 case LayerType.LABELMAPPING:
@@ -1150,12 +1174,6 @@ namespace MyCaffe.param
                     expected_top.Add("lstm");
                     m_rgLayerParameters[LayerType.RECURRENT] = new RecurrentParameter();
                     break;
-
-                case LayerType.INPUT:
-                    expected_top.Add("data");
-                    expected_top.Add("label");
-                    m_rgLayerParameters[LayerType.INPUT] = new InputParameter();
-                    break;
             }
         } 
 
@@ -1401,6 +1419,15 @@ namespace MyCaffe.param
         {
             get { return (CropParameter)m_rgLayerParameters[LayerType.CROP]; }
             set { m_rgLayerParameters[LayerType.CROP] = value; }
+        }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.ANNOTATED_DATA
+        /// </summary>
+        public AnnotatedDataParameter annotated_data_param
+        {
+            get { return (AnnotatedDataParameter)m_rgLayerParameters[LayerType.ANNOTATED_DATA]; }
+            set { m_rgLayerParameters[LayerType.ANNOTATED_DATA] = value; }
         }
 
         /// <summary>
@@ -1979,6 +2006,9 @@ namespace MyCaffe.param
 
                 case LayerType.ARGMAX:
                     return "ArgMax";
+
+                case LayerType.ANNOTATED_DATA:
+                    return "AnnotatedData";
 
                 case LayerType.BATCHNORM:
                     return "BatchNorm";
@@ -2639,6 +2669,9 @@ namespace MyCaffe.param
 
                 case "argmax":
                     return LayerType.ARGMAX;
+
+                case "annotateddata":
+                    return LayerType.ANNOTATED_DATA;
 
                 case "batchnorm":
                     return LayerType.BATCHNORM;
