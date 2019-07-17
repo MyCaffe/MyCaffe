@@ -25,6 +25,11 @@ namespace MyCaffe.param
         int? m_nRandomSeed = null;
         string m_strMeanFile = null;
         COLOR_ORDER m_colorOrder = COLOR_ORDER.RGB;
+        ResizeParameter m_resize = null;
+        NoiseParameter m_noise = null;
+        DistortionParameter m_distortion = null;
+        ExpansionParameter m_expansion = null;
+        EmitConstraint m_emitConstraint = null;
 
         /// <summary>
         /// Defines the color ordering used to tranform the input data.
@@ -174,6 +179,56 @@ namespace MyCaffe.param
             set { m_colorOrder = value; }
         }
 
+        /// <summary>
+        /// Optionally specifies the resize policy, otherwise this is <i>null</i>.
+        /// </summary>
+        [Category("Image"), Description("When specifies, used as the resize policy for altering image data.")]
+        public ResizeParameter resize_param
+        {
+            get { return m_resize; }
+            set { m_resize = value; }
+        }
+
+        /// <summary>
+        /// Optionally specifies the noise policy, otherwise this is <i>null</i>.
+        /// </summary>
+        [Category("Image"), Description("When specifies, used as the noise policy for altering image data.")]
+        public NoiseParameter noise_param
+        {
+            get { return m_noise; }
+            set { m_noise = value; }
+        }
+
+        /// <summary>
+        /// Optionally specifies the distortion policy, otherwise this is <i>null</i>.
+        /// </summary>
+        [Category("Image"), Description("When specifies, used as the distortion policy for altering image data.")]
+        public DistortionParameter distortion_param
+        {
+            get { return m_distortion; }
+            set { m_distortion = value; }
+        }
+
+        /// <summary>
+        /// Optionally specifies the expansion policy, otherwise this is <i>null</i>.
+        /// </summary>
+        [Category("Image"), Description("When specifies, used as the expansion policy for altering image data.")]
+        public ExpansionParameter expansion_param
+        {
+            get { return m_expansion; }
+            set { m_expansion = value; }
+        }
+
+        /// <summary>
+        /// Optionally specifies the emit constraint on emitting annotation after transformation, otherwise this is <i>null</i>.
+        /// </summary>
+        [Category("Image"), Description("When specifies, used as the emit constratin for emitting annotation after transformation.")]
+        public EmitConstraint emit_constraint
+        {
+            get { return m_emitConstraint; }
+            set { m_emitConstraint = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -202,6 +257,12 @@ namespace MyCaffe.param
             m_nRandomSeed = p.m_nRandomSeed;
             m_strMeanFile = p.m_strMeanFile;
             m_colorOrder = p.m_colorOrder;
+
+            m_resize = (p.resize_param != null) ? p.resize_param.Clone() : null;
+            m_noise = (p.noise_param != null) ? p.noise_param.Clone() : null;
+            m_distortion = (p.distortion_param != null) ? p.distortion_param.Clone() : null;
+            m_expansion = (p.expansion_param != null) ? p.expansion_param.Clone() : null;
+            m_emitConstraint = (p.emit_constraint != null) ? p.emit_constraint.Clone() : null;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -244,6 +305,21 @@ namespace MyCaffe.param
                 rgChildren.Add("mean_file", mean_file);
 
             rgChildren.Add("color_order", m_colorOrder.ToString());
+
+            if (m_resize != null)
+                rgChildren.Add(m_resize.ToProto("resize_param"));
+
+            if (m_noise != null)
+                rgChildren.Add(m_noise.ToProto("noise_param"));
+
+            if (m_distortion != null)
+                rgChildren.Add(m_distortion.ToProto("distortion_param"));
+
+            if (m_expansion != null)
+                rgChildren.Add(m_expansion.ToProto("expansion_param"));
+
+            if (m_emitConstraint != null)
+                rgChildren.Add(m_emitConstraint.ToProto("emit_constraint"));
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -295,6 +371,21 @@ namespace MyCaffe.param
                 else
                     p.color_order = COLOR_ORDER.RGB;
             }
+
+            RawProto rpResize = rp.FindChild("resize_param");
+            p.resize_param = (rpResize != null) ? ResizeParameter.FromProto(rpResize) : null;
+
+            RawProto rpNoise = rp.FindChild("noise_param");
+            p.noise_param = (rpNoise != null) ? NoiseParameter.FromProto(rpNoise) : null;
+
+            RawProto rpDistort = rp.FindChild("distortion_param");
+            p.distortion_param = (rpDistort != null) ? DistortionParameter.FromProto(rpDistort) : null;
+
+            RawProto rpExpand = rp.FindChild("expansion_param");
+            p.expansion_param = (rpExpand != null) ? ExpansionParameter.FromProto(rpExpand) : null;
+
+            RawProto rpEmitCon = rp.FindChild("emit_constraint");
+            p.emit_constraint = (rpEmitCon != null) ? EmitConstraint.FromProto(rpEmitCon) : null;
 
             return p;
         }
