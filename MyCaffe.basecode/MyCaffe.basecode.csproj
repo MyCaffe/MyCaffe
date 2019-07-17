@@ -61,8 +61,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Annotation.cs" />
     <Compile Include="BinaryData.cs" />
     <Compile Include="BucketCollection.cs" />
+    <Compile Include="NormalizedBBox.cs" />
     <Compile Include="Valuemap.cs" />
     <Compile Include="Bytemap.cs" />
     <Compile Include="CancelEvent.cs" />
