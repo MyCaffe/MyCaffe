@@ -35,7 +35,7 @@ namespace MyCaffe.basecode
         /// <param name="bDifficult">Specifies the difficulty.</param>
         /// <param name="fScore">Specifies the score.</param>
         /// <param name="fSize">Specifies the size.</param>
-        public NormalizedBBox(float fxmin, float fymin, float fxmax, float fymax, int nLabel, bool bDifficult, float fScore, float fSize)
+        public NormalizedBBox(float fxmin, float fymin, float fxmax, float fymax, int nLabel = 0, bool bDifficult = false, float fScore = 0, float fSize = 0)
         {
             m_fxmin = fxmin;
             m_fxmax = fxmax;
