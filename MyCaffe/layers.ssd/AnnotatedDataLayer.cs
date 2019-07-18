@@ -9,6 +9,7 @@ using MyCaffe.common;
 using MyCaffe.data;
 using MyCaffe.db.image;
 using MyCaffe.param;
+using MyCaffe.param.ssd;
 
 namespace MyCaffe.layers.ssd
 {

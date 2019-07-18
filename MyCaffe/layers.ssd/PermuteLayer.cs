@@ -6,6 +6,7 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.fillers;
 using MyCaffe.param;
+using MyCaffe.param.ssd;
 
 namespace MyCaffe.layers.ssd
 {
