@@ -8,6 +8,7 @@ using MyCaffe.param;
 using MyCaffe.common;
 using MyCaffe.layers;
 using MyCaffe.data;
+using MyCaffe.param.ssd;
 
 namespace MyCaffe.test
 {

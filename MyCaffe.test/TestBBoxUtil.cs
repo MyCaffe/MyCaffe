@@ -9,6 +9,7 @@ using MyCaffe.common;
 using MyCaffe.layers;
 using MyCaffe.data;
 using System.Drawing;
+using MyCaffe.param.ssd;
 
 namespace MyCaffe.test
 {

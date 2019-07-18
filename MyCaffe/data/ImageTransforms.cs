@@ -1,6 +1,7 @@
 ﻿using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
+using MyCaffe.param.ssd;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
