@@ -34,6 +34,19 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Add a new bbox to the label.
+        /// </summary>
+        /// <param name="nLabel"></param>
+        /// <param name="bbox"></param>
+        public void Add(int nLabel, NormalizedBBox bbox)
+        {
+            if (!m_rgItems.ContainsKey(nLabel))
+                m_rgItems.Add(nLabel, new List<NormalizedBBox>());
+
+            m_rgItems[nLabel].Add(bbox);
+        }
+
+        /// <summary>
         /// Returns the number of items.
         /// </summary>
         public int Count
