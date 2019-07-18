@@ -34,6 +34,83 @@ namespace MyCaffe.common
             m_log = log;
         }
 
+        /// <summary>
+        /// Get detection results from rgData.
+        /// </summary>
+        /// <param name="rgData">Specifies a 1 x 1 x nNumDet x 7 blob data.</param>
+        /// <param name="nNumDet">Specifies the number of detections.</param>
+        /// <param name="nBackgroundLabelId">Specifies the label for the background class which is used to do a
+        /// sanity check so that no detection contains it.</param>
+        /// <returns>The detection results are returned for each class from each image.</returns>
+        public Dictionary<int, LabelBBox> GetDetectionResults(float[] rgData, int nNumDet, int nBackgroundLabelId)
+        {
+            Dictionary<int, LabelBBox> rgAllDetections = new Dictionary<int, LabelBBox>();
+
+            for (int i = 0; i < nNumDet; i++)
+            {
+                int nStartIdx = i * 7;
+                int nItemId = (int)rgData[nStartIdx];
+                if (nItemId == -1)
+                    continue;
+
+                int nLabel = (int)rgData[nStartIdx + 1];
+                m_log.CHECK_NE(nBackgroundLabelId, nLabel, "Found background label in the detection results.");
+
+                NormalizedBBox bbox = new NormalizedBBox(rgData[nStartIdx + 3],
+                                                         rgData[nStartIdx + 4],
+                                                         rgData[nStartIdx + 5],
+                                                         rgData[nStartIdx + 6],
+                                                         nLabel,
+                                                         false,
+                                                         rgData[nStartIdx + 2]);
+                bbox.size = Size(bbox);
+
+                if (!rgAllDetections.ContainsKey(nItemId))
+                    rgAllDetections.Add(nItemId, new LabelBBox());
+
+                rgAllDetections[nItemId].Add(nLabel, bbox);
+            }
+
+            return rgAllDetections;
+        }
+
+        /// <summary>
+        /// Get the prior boundary boxes from the rgPriorData.
+        /// </summary>
+        /// <param name="rgPriorData">Specifies the prior data as a 1 x 2 x nNumPriors x 4 x 1 blob.</param>
+        /// <param name="nNumPriors">Specifies the number of priors.</param>
+        /// <param name="rgPriorBboxes">Specifies the prior box list in the format of NormalizedBBox.</param>
+        /// <param name="rgPriorVariances">Specifies the prior variances need by prior bboxes.</param>
+        public void GetPrior(float[] rgPriorData, int nNumPriors, out List<NormalizedBBox> rgPriorBboxes, out List<List<float>> rgPriorVariances)
+        {
+            rgPriorBboxes = new List<NormalizedBBox>();
+            rgPriorVariances = new List<List<float>>();
+
+            for (int i = 0; i < nNumPriors; i++)
+            {
+                int nStartIdx = i * 4;
+                NormalizedBBox bbox = new NormalizedBBox(rgPriorData[nStartIdx + 0],
+                                                         rgPriorData[nStartIdx + 1],
+                                                         rgPriorData[nStartIdx + 2],
+                                                         rgPriorData[nStartIdx + 3]);
+                bbox.size = Size(bbox);
+                rgPriorBboxes.Add(bbox);
+            }
+
+            for (int i = 0; i < nNumPriors; i++)
+            {
+                int nStartIdx = (nNumPriors + i) * 4;
+                List<float> rgVariance = new List<float>();
+
+                for (int j = 0; j < 4; j++)
+                {
+                    rgVariance.Add(rgPriorData[nStartIdx + j]);
+                }
+
+                rgPriorVariances.Add(rgVariance);
+            }
+        }
+
         private int getLabel(int nPredIdx, int nNumPredsPerClass, int nNumClasses, int nBackgroundLabel, Dictionary<int, List<int>> rgMatchIndices, List<NormalizedBBox> rgGtBoxes)
         {
             int nLabel = nBackgroundLabel;
@@ -67,17 +144,17 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Compute the confidence loss values.
+        /// Compute the confidence loss for each prior from rgConfData.
         /// </summary>
-        /// <param name="rgConfData">Specifies the confidence data.</param>
-        /// <param name="nNum">Specifies the number of items.</param>
+        /// <param name="rgConfData">Specifies the nNum x nNumPredsPerClass * nNumClasses blob of confidence data.</param>
+        /// <param name="nNum">Specifies the number of images.</param>
         /// <param name="nNumPredsPerClass">Specifies the number of predictions per class.</param>
         /// <param name="nNumClasses">Specifies the number of classes.</param>
         /// <param name="nBackgroundLabelId">Specifies the background label.</param>
-        /// <param name="loss_type">Specifies the loss type.</param>
-        /// <param name="rgAllMatchIndices">Specifies all match indices.</param>
-        /// <param name="rgAllGtBoxes">Specifies all ground truth bboxes.</param>
-        /// <returns>The confidence loss values are returned.</returns>
+        /// <param name="loss_type">Specifies the loss type used to compute the confidence.</param>
+        /// <param name="rgAllMatchIndices">Specifies all match indices storing a mapping between predictions and ground truth.</param>
+        /// <param name="rgAllGtBoxes">Specifies all ground truth bboxes from the batch.</param>
+        /// <returns>The confidence loss values are returned with confidence loss per location for each image.</returns>
         public List<List<float>> ComputeConfLoss(float[] rgConfData, int nNum, int nNumPredsPerClass, int nNumClasses, int nBackgroundLabelId, MultiBoxLossParameter.ConfLossType loss_type, List<Dictionary<int, List<int>>> rgAllMatchIndices = null, Dictionary<int, List<NormalizedBBox>> rgAllGtBoxes = null)
         {
             List<List<float>> rgrgConfLoss = new List<List<float>>();
@@ -150,13 +227,13 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Calculate the confidence scores.
+        /// Calculate the confidence predictions from rgConfData.
         /// </summary>
-        /// <param name="rgConfData">Specifies the confidence data.</param>
-        /// <param name="nNum">Specifies the number of items.</param>
+        /// <param name="rgConfData">Specifies the nNum x nNumPredsPerClass * nNumClasses blob of confidence data.</param>
+        /// <param name="nNum">Specifies the number of images.</param>
         /// <param name="nNumPredsPerClass">Specifies the number of predictions per class.</param>
         /// <param name="nNumClasses">Specifies the number of classes.</param>
-        /// <returns>The confidence scores are returned.</returns>
+        /// <returns>The confidence scores are returned as the confidence predictions which contains a confidence prediction for an image.</returns>
         public List<Dictionary<int, List<float>>> GetConfidenceScores(float[] rgConfData, int nNum, int nNumPredsPerClass, int nNumClasses)
         {
             List<Dictionary<int, List<float>>> rgConfPreds = new List<Dictionary<int, List<float>>>();
@@ -189,14 +266,16 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Create a set of local predictions.
+        /// Create a set of local predictions from the rgLocData.
         /// </summary>
-        /// <param name="rgLocData">Specifies the prediction initialization data.</param>
-        /// <param name="nNum">Specifies the number of label boxes to create.</param>
+        /// <param name="rgLocData">Specifies the nNum x nNumPredsPerClass * nNumLocClasses * 4 blbo with prediction initialization data.</param>
+        /// <param name="nNum">Specifies the number of images.</param>
         /// <param name="nNumPredsPerClass">Specifies the number of predictions per class.</param>
-        /// <param name="nNumLocClasses">Specifies the number of local classes.</param>
-        /// <param name="bShareLocation">Specifies whether or not to share the location.</param>
-        /// <returns>A list of created location predictions is returned as a list of LabelBBox items.</returns>
+        /// <param name="nNumLocClasses">Specifies the number of local classes  It is 1 if bShareLocation is true; and it is equal to the number
+        /// of classes needed to predict otherwise.</param>
+        /// <param name="bShareLocation">Specifies whether or not to share the location.  If true, all classes share the same location prediction.</param>
+        /// <returns>A list of created location predictions is returned as a list of LabelBBox items where each item contains a location prediction
+        /// for the image.</returns>
         public List<LabelBBox> GetLocPredictions(float[] rgLocData, int nNum, int nNumPredsPerClass, int nNumLocClasses, bool bShareLocation)
         {
             List<LabelBBox> rgLocPreds = new List<LabelBBox>();
@@ -232,13 +311,13 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Create a set of ground truth bounding boxes.
+        /// Create a set of ground truth bounding boxes from the rgGtData.
         /// </summary>
-        /// <param name="rgGtData">Specifies the ground truth initialization data.</param>
+        /// <param name="rgGtData">Specifies the 1 x 1 x nNumGt x 7 blob with ground truth initialization data.</param>
         /// <param name="nNumGt">Specifies the number of ground truths.</param>
         /// <param name="nBackgroundLabelId">Specifies the background label.</param>
         /// <param name="bUseDifficultGt">Specifies whether or not to use the difficult ground truth.</param>
-        /// <returns>A dictionary containing the ground truth's is returned.</returns>
+        /// <returns>A dictionary containing the ground truth's (one per image) is returned with the label of each bbox stored in the NormalizedBBox.</returns>
         public Dictionary<int, List<NormalizedBBox>> GetGroundTruth(float[] rgGtData, int nNumGt, int nBackgroundLabelId, bool bUseDifficultGt)
         {
             Dictionary<int, List<NormalizedBBox>> rgAllGt = new Dictionary<int, List<NormalizedBBox>>();

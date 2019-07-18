@@ -447,6 +447,42 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestGetPriorBBoxes()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestGetPriorBBoxes();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGetDetectionResults()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestGetDetectionResults();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -476,6 +512,8 @@ namespace MyCaffe.test
         void TestGetConfidenceScores();
         void TestComputeConfLoss();
         void TestComputeConfLossMatch();
+        void TestGetPriorBBoxes();
+        void TestGetDetectionResults();
     }
 
     class BBoxUtilTest : TestBase
@@ -1470,6 +1508,113 @@ namespace MyCaffe.test
                         m_log.EXPECT_NEAR(rgAllConfLoss[i][j], -Math.Log(1.0 / (1 + Math.Exp(-0.1))), m_fEps, "The confidence is incorrect.");
                     }
                 }
+            }
+
+            blob.Dispose();
+        }
+
+        public void TestGetPriorBBoxes()
+        {
+            int nNumChannels = 2;
+            int nNumPriors = 2;
+            int nDim = nNumPriors * 4;
+            Blob<T> blob = new Blob<T>(m_cuda, m_log, 1, nNumChannels, nDim, 1);
+            double[] rgData1 = convert(blob.mutable_cpu_data);
+            float[] rgData = rgData1.Select(p => (float)p).ToArray();
+
+            for (int i = 0; i < nNumPriors; i++)
+            {
+                rgData[i * 4 + 0] = i * 0.1f;
+                rgData[i * 4 + 1] = i * 0.1f;
+                rgData[i * 4 + 2] = i * 0.1f + 0.2f;
+                rgData[i * 4 + 3] = i * 0.1f + 0.1f;
+
+                for (int j = 0; j < 4; j++)
+                {
+                    rgData[nDim + i * 4 + j] = 0.1f;
+                }
+            }
+
+            List<NormalizedBBox> rgPriorBboxes;
+            List<List<float>> rgPriorVariances;
+            m_util.GetPrior(rgData, nNumPriors, out rgPriorBboxes, out rgPriorVariances);
+
+            m_log.CHECK_EQ(rgPriorBboxes.Count, nNumPriors, "The prior box count is incorrect.");
+            m_log.CHECK_EQ(rgPriorVariances.Count, nNumPriors, "The prior variance count is incorrect.");
+
+            for (int i = 0; i < nNumPriors; i++)
+            {
+                checkBBox(rgPriorBboxes[i], i * 0.1f, i * 0.1f, i * 0.1f + 0.2f, i * 0.1f + 0.1f);
+                m_log.CHECK_EQ(rgPriorVariances[i].Count, 4, "The variance count at " + i.ToString() + " is incorrect.");
+
+                for (int j = 0; j < 4; j++)
+                {
+                    m_log.EXPECT_NEAR(rgPriorVariances[i][j], 0.1, m_fEps, "The variance value is incorrect.");
+                }
+            }
+
+            blob.Dispose();
+        }
+
+        public void TestGetDetectionResults()
+        {
+            int nNum = 4;
+            int nNumDet = (1 + nNum) * nNum / 2;
+            Blob<T> blob = new Blob<T>(m_cuda, m_log, 1, 1, nNumDet, 7);
+            double[] rgData1 = convert(blob.mutable_cpu_data);
+            float[] rgData = rgData1.Select(p => (float)p).ToArray();
+            int nIdx = 0;
+
+            for (int i = 0; i < nNum; i++)
+            {
+                int nImageId = (int)Math.Ceiling(i / 2.0);
+
+                for (int j = 0; j <= i; j++)
+                {
+                    rgData[nIdx * 7 + 0] = nImageId;
+                    rgData[nIdx * 7 + 1] = i;
+                    rgData[nIdx * 7 + 2] = 0;
+                    rgData[nIdx * 7 + 3] = 0.1f + j * 0.1f;
+                    rgData[nIdx * 7 + 4] = 0.1f + j * 0.1f;
+                    rgData[nIdx * 7 + 5] = 0.3f + j * 0.1f;
+                    rgData[nIdx * 7 + 6] = 0.3f + j * 0.1f;
+                    nIdx++;
+                }
+            }
+
+            m_log.CHECK_EQ(nIdx, nNumDet, "The index should equal the number of detections.");
+            Dictionary<int, LabelBBox> rgAllDetections = m_util.GetDetectionResults(rgData, nNumDet, -1);
+
+            m_log.CHECK_EQ(rgAllDetections.Count, 3, "The detection count is incorrect.");
+
+            m_log.CHECK_EQ(rgAllDetections[0].Count, 1, "The number of detections at 0 is incorrect.");
+            m_log.CHECK_EQ(rgAllDetections[0][0].Count, 1, "The label bbox item count is incorrect.");
+            checkBBox(rgAllDetections[0][0][0], 0.1f, 0.1f, 0.3f, 0.3f, 0.04f);
+
+            m_log.CHECK_EQ(rgAllDetections[1].Count, 2, "The number of detections at 1 is incorrect.");
+            for (int i = 1; i < 3; i++)
+            {
+                m_log.CHECK_EQ(rgAllDetections[1][i].Count, i + 1, "The label bbox item count is incorrect.");
+
+                for (int j = 0; j <= i; j++)
+                {
+                    checkBBox(rgAllDetections[1][i][j], 0.1f + j * 0.1f,
+                                                        0.1f + j * 0.1f, 
+                                                        0.3f + j * 0.1f, 
+                                                        0.3f + j * 0.1f, 
+                                                        0.04f);
+                }
+            }
+
+            m_log.CHECK_EQ(rgAllDetections[2].Count, 1, "The number of detections at 2 is incorrect.");
+            m_log.CHECK_EQ(rgAllDetections[2][3].Count, 4, "The label bbox item count is incorrect.");
+            for (int j=0; j<=3; j++)
+            {
+                checkBBox(rgAllDetections[2][3][j], 0.1f + j * 0.1f,
+                                                    0.1f + j * 0.1f,
+                                                    0.3f + j * 0.1f,
+                                                    0.3f + j * 0.1f,
+                                                    0.04f);
             }
 
             blob.Dispose();
