@@ -64,6 +64,7 @@
     <Compile Include="Annotation.cs" />
     <Compile Include="BinaryData.cs" />
     <Compile Include="BucketCollection.cs" />
+    <Compile Include="LabelBBox.cs" />
     <Compile Include="NormalizedBBox.cs" />
     <Compile Include="Valuemap.cs" />
     <Compile Include="Bytemap.cs" />
