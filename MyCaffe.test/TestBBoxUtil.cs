@@ -393,6 +393,60 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestGetConfidenceScores()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestGetConfidenceScores();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestComputeConfLoss()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestComputeConfLoss();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestComputeConfLossMatch()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestComputeConfLossMatch();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -419,6 +473,9 @@ namespace MyCaffe.test
         void TestGetGroundTruthLabelBBox();
         void TestGetLocPredictionsShared();
         void TestGetLocPredictionsUnshared();
+        void TestGetConfidenceScores();
+        void TestComputeConfLoss();
+        void TestComputeConfLossMatch();
     }
 
     class BBoxUtilTest : TestBase
@@ -1215,6 +1272,207 @@ namespace MyCaffe.test
             }
 
             loc_blob.Dispose();
+        }
+
+        public void TestGetConfidenceScores()
+        {
+            int nNum = 2;
+            int nNumPredsPerClass = 2;
+            int nNumClasses = 2;
+            int nDim = nNumPredsPerClass * nNumClasses;
+            Blob<T> blob = new Blob<T>(m_cuda, m_log, nNum, nDim, 1, 1);
+            double[] rgData1 = convert(blob.mutable_cpu_data);
+            float[] rgData = rgData1.Select(p => (float)p).ToArray();
+
+            for (int i = 0; i < nNum; i++)
+            {
+                for (int j = 0; j < nNumPredsPerClass; j++)
+                {
+                    for (int c = 0; c < nNumClasses; c++)
+                    {
+                        int nIdx = (i * nNumPredsPerClass + j) * nNumClasses + c;
+                        rgData[nIdx] = nIdx * 0.1f;
+                    }
+                }
+            }
+
+            List<Dictionary<int, List<float>>> rgAllConfPreds = m_util.GetConfidenceScores(rgData, nNum, nNumPredsPerClass, nNumClasses);
+            m_log.CHECK_EQ(rgAllConfPreds.Count, nNum, "There confidence score count is incorrect.");
+
+            for (int i = 0; i < nNum; i++)
+            {
+                m_log.CHECK_EQ(rgAllConfPreds[i].Count, nNumClasses, "The number of classes is incorrect.");
+                Dictionary<int, List<float>> rgItems = rgAllConfPreds[i];
+
+                for (int c = 0; c < nNumClasses; c++)
+                {
+                    List<float> rgConfidences = rgItems[c];
+
+                    m_log.CHECK_EQ(rgConfidences.Count, nNumPredsPerClass, "The number of predictions is incorrect.");
+
+                    for (int j = 0; j < nNumPredsPerClass; j++)
+                    {
+                        int nIdx = (i * nNumPredsPerClass + j) * nNumClasses + c;
+                        m_log.EXPECT_NEAR(rgConfidences[j], nIdx * 0.1f, m_fEps, "The confidence is incorrect.");
+                    }
+                }
+            }
+
+            blob.Dispose();
+        }
+
+        public void TestComputeConfLoss()
+        {
+            int nNum = 2;
+            int nNumPredsPerClass = 2;
+            int nNumClasses = 2;
+            int nDim = nNumPredsPerClass * nNumClasses;
+            Blob<T> blob = new Blob<T>(m_cuda, m_log, nNum, nDim, 1, 1);
+            double[] rgData1 = convert(blob.mutable_cpu_data);
+            float[] rgData = rgData1.Select(p => (float)p).ToArray();
+
+            for (int i = 0; i < nNum; i++)
+            {
+                int nSign = (i % 2 == 1) ? 1 : -1;
+
+                for (int j = 0; j < nNumPredsPerClass; j++)
+                {
+                    for (int c = 0; c < nNumClasses; c++)
+                    {
+                        int nIdx = (i * nNumPredsPerClass + j) * nNumClasses + c;
+                        rgData[nIdx] = nSign * nIdx * 0.1f;
+                    }
+                }
+            }
+
+            MultiBoxLossParameter.ConfLossType loss_type = MultiBoxLossParameter.ConfLossType.LOGISTIC;
+            List<List<float>> rgAllConfLoss = m_util.ComputeConfLoss(rgData, nNum, nNumPredsPerClass, nNumClasses, -1, loss_type);
+
+            m_log.CHECK_EQ(rgAllConfLoss.Count, nNum, "The loss count is incorrect.");
+            m_log.CHECK_EQ(rgAllConfLoss[0].Count, nNumPredsPerClass, "The number of predictions per class is incorrect.");
+            m_log.EXPECT_NEAR(rgAllConfLoss[0][0], -(Math.Log(Math.Exp(0.0) / (1 + Math.Exp(0.0))) + Math.Log(Math.Exp(0.1) / (1 + Math.Exp(0.1)))), m_fEps, "The loss is incorrect.");
+            m_log.EXPECT_NEAR(rgAllConfLoss[0][1], -(Math.Log(Math.Exp(0.2) / (1 + Math.Exp(0.2))) + Math.Log(Math.Exp(0.3) / (1 + Math.Exp(0.3)))), m_fEps, "The loss is incorrect.");
+            m_log.CHECK_EQ(rgAllConfLoss[1].Count, nNumPredsPerClass, "The number of predictions per class is incorrect.");
+            m_log.EXPECT_NEAR(rgAllConfLoss[1][0], -(Math.Log(Math.Exp(-0.4) / (1 + Math.Exp(-0.4))) + Math.Log(Math.Exp(-0.5) / (1 + Math.Exp(-0.5)))), m_fEps, "The loss is incorrect.");
+            m_log.EXPECT_NEAR(rgAllConfLoss[1][1], -(Math.Log(Math.Exp(-0.6) / (1 + Math.Exp(-0.6))) + Math.Log(Math.Exp(-0.7) / (1 + Math.Exp(-0.7)))), m_fEps, "The loss is incorrect.");
+
+            rgAllConfLoss = m_util.ComputeConfLoss(rgData, nNum, nNumPredsPerClass, nNumClasses, 0, loss_type);
+
+            m_log.CHECK_EQ(rgAllConfLoss.Count, nNum, "The loss count is incorrect.");
+            m_log.CHECK_EQ(rgAllConfLoss[0].Count, nNumPredsPerClass, "The number of predictions per class is incorrect.");
+            m_log.EXPECT_NEAR(rgAllConfLoss[0][0], -(Math.Log(1.0 / (1 + Math.Exp(0.0))) + Math.Log(Math.Exp(0.1) / (1 + Math.Exp(0.1)))), m_fEps, "The loss is incorrect.");
+            m_log.EXPECT_NEAR(rgAllConfLoss[0][1], -(Math.Log(1.0 / (1 + Math.Exp(0.2))) + Math.Log(Math.Exp(0.3) / (1 + Math.Exp(0.3)))), m_fEps, "The loss is incorrect.");
+            m_log.CHECK_EQ(rgAllConfLoss[1].Count, nNumPredsPerClass, "The number of predictions per class is incorrect.");
+            m_log.EXPECT_NEAR(rgAllConfLoss[1][0], -(Math.Log(1.0 / (1 + Math.Exp(-0.4))) + Math.Log(Math.Exp(-0.5) / (1 + Math.Exp(-0.5)))), m_fEps, "The loss is incorrect.");
+            m_log.EXPECT_NEAR(rgAllConfLoss[1][1], -(Math.Log(1.0 / (1 + Math.Exp(-0.6))) + Math.Log(Math.Exp(-0.7) / (1 + Math.Exp(-0.7)))), m_fEps, "The loss is incorrect.");
+
+            loss_type = MultiBoxLossParameter.ConfLossType.SOFTMAX;
+            rgAllConfLoss = m_util.ComputeConfLoss(rgData, nNum, nNumPredsPerClass, nNumClasses, 0, loss_type);
+
+            m_log.CHECK_EQ(rgAllConfLoss.Count, nNum, "The loss count is incorrect.");
+            for (int i = 0; i < nNum; i++)
+            {
+                m_log.CHECK_EQ(rgAllConfLoss[i].Count, nNumPredsPerClass, "The number of predictions per class is incorrect.");
+                int nSign = (i % 2) == 1 ? 1 : -1;
+
+                for (int j = 0; j < nNumPredsPerClass; j++)
+                {
+                    if (nSign == 1)
+                        m_log.EXPECT_NEAR(rgAllConfLoss[i][j], -Math.Log(Math.Exp(-0.1) / (1 + Math.Exp(-0.1))), m_fEps, "The confidence is incorrect.");
+                    else
+                        m_log.EXPECT_NEAR(rgAllConfLoss[i][j], -Math.Log(1.0 / (1 + Math.Exp(-0.1))), m_fEps, "The confidence is incorrect.");
+                }
+            }
+
+            blob.Dispose();
+        }
+
+        public void TestComputeConfLossMatch()
+        {
+            int nNum = 2;
+            int nNumPredsPerClass = 2;
+            int nNumClasses = 2;
+            int nDim = nNumPredsPerClass * nNumClasses;
+            Blob<T> blob = new Blob<T>(m_cuda, m_log, nNum, nDim, 1, 1);
+            double[] rgData1 = convert(blob.mutable_cpu_data);
+            float[] rgData = rgData1.Select(p => (float)p).ToArray();
+            Dictionary<int, List<NormalizedBBox>> rgAllGtBboxes = new Dictionary<int, List<NormalizedBBox>>();
+            List<Dictionary<int, List<int>>> rgAllMatchIndices = new List<Dictionary<int, List<int>>>();
+
+            for (int i = 0; i < nNum; i++)
+            {
+                int nSign = (i % 2 == 1) ? 1 : -1;
+
+                for (int j = 0; j < nNumPredsPerClass; j++)
+                {
+                    for (int c = 0; c < nNumClasses; c++)
+                    {
+                        int nIdx = (i * nNumPredsPerClass + j) * nNumClasses + c;
+                        rgData[nIdx] = nSign * nIdx * 0.1f;
+                    }
+                }
+
+                rgAllGtBboxes.Add(i, new List<NormalizedBBox>());
+                Dictionary<int, List<int>> rgMatchIndices = new Dictionary<int, List<int>>();
+                rgMatchIndices.Add(-1, Utility.Create<int>(nNumPredsPerClass, -1));
+
+                if (i == 1)
+                {
+                    rgAllGtBboxes[i].Add(new NormalizedBBox(0, 0, 0, 0, 1));
+                    // The first prior in second image is matched to a gt bbox of label 1.
+                    rgMatchIndices[-1][0] = 0;
+                }
+
+                rgAllMatchIndices.Add(rgMatchIndices);
+            }
+
+            MultiBoxLossParameter.ConfLossType loss_type = MultiBoxLossParameter.ConfLossType.LOGISTIC;
+            List<List<float>> rgAllConfLoss = m_util.ComputeConfLoss(rgData, nNum, nNumPredsPerClass, nNumClasses, -1, loss_type, rgAllMatchIndices, rgAllGtBboxes);
+
+            m_log.CHECK_EQ(rgAllConfLoss.Count, nNum, "The loss count is incorrect.");
+            m_log.CHECK_EQ(rgAllConfLoss[0].Count, nNumPredsPerClass, "The number of predictions per class is incorrect.");
+            m_log.EXPECT_NEAR(rgAllConfLoss[0][0], -(Math.Log(Math.Exp(0.0) / (1 + Math.Exp(0.0))) + Math.Log(Math.Exp(0.1) / (1 + Math.Exp(0.1)))), m_fEps, "The loss is incorrect.");
+            m_log.EXPECT_NEAR(rgAllConfLoss[0][1], -(Math.Log(Math.Exp(0.2) / (1 + Math.Exp(0.2))) + Math.Log(Math.Exp(0.3) / (1 + Math.Exp(0.3)))), m_fEps, "The loss is incorrect.");
+            m_log.CHECK_EQ(rgAllConfLoss[1].Count, nNumPredsPerClass, "The number of predictions per class is incorrect.");
+            m_log.EXPECT_NEAR(rgAllConfLoss[1][0], -(Math.Log(Math.Exp(-0.4) / (1 + Math.Exp(-0.4))) + Math.Log(1.0 / (1 + Math.Exp(-0.5)))), m_fEps, "The loss is incorrect.");
+            m_log.EXPECT_NEAR(rgAllConfLoss[1][1], -(Math.Log(Math.Exp(-0.6) / (1 + Math.Exp(-0.6))) + Math.Log(Math.Exp(-0.7) / (1 + Math.Exp(-0.7)))), m_fEps, "The loss is incorrect.");
+
+            rgAllConfLoss = m_util.ComputeConfLoss(rgData, nNum, nNumPredsPerClass, nNumClasses, 0, loss_type, rgAllMatchIndices, rgAllGtBboxes);
+
+            m_log.CHECK_EQ(rgAllConfLoss.Count, nNum, "The loss count is incorrect.");
+            m_log.CHECK_EQ(rgAllConfLoss[0].Count, nNumPredsPerClass, "The number of predictions per class is incorrect.");
+            m_log.EXPECT_NEAR(rgAllConfLoss[0][0], -(Math.Log(1.0 / (1 + Math.Exp(0.0))) + Math.Log(Math.Exp(0.1) / (1 + Math.Exp(0.1)))), m_fEps, "The loss is incorrect.");
+            m_log.EXPECT_NEAR(rgAllConfLoss[0][1], -(Math.Log(1.0 / (1 + Math.Exp(0.2))) + Math.Log(Math.Exp(0.3) / (1 + Math.Exp(0.3)))), m_fEps, "The loss is incorrect.");
+            m_log.CHECK_EQ(rgAllConfLoss[1].Count, nNumPredsPerClass, "The number of predictions per class is incorrect.");
+            m_log.EXPECT_NEAR(rgAllConfLoss[1][0], -(Math.Log(Math.Exp(-0.4) / (1 + Math.Exp(-0.4))) + Math.Log(1.0 / (1 + Math.Exp(-0.5)))), m_fEps, "The loss is incorrect.");
+            m_log.EXPECT_NEAR(rgAllConfLoss[1][1], -(Math.Log(1.0 / (1 + Math.Exp(-0.6))) + Math.Log(Math.Exp(-0.7) / (1 + Math.Exp(-0.7)))), m_fEps, "The loss is incorrect.");
+
+            loss_type = MultiBoxLossParameter.ConfLossType.SOFTMAX;
+            rgAllConfLoss = m_util.ComputeConfLoss(rgData, nNum, nNumPredsPerClass, nNumClasses, 0, loss_type, rgAllMatchIndices, rgAllGtBboxes);
+
+            m_log.CHECK_EQ(rgAllConfLoss.Count, nNum, "The loss count is incorrect.");
+            for (int i = 0; i < nNum; i++)
+            {
+                m_log.CHECK_EQ(rgAllConfLoss[i].Count, nNumPredsPerClass, "The number of predictions per class is incorrect.");
+                int nSign = (i % 2) == 1 ? 1 : -1;
+
+                for (int j = 0; j < nNumPredsPerClass; j++)
+                {
+                    if (nSign == 1)
+                    {
+                        if (j == 0)
+                            m_log.EXPECT_NEAR(rgAllConfLoss[i][j], -Math.Log(1.0 / (1 + Math.Exp(-0.1))), m_fEps, "The confidence is incorrect.");
+                        else
+                            m_log.EXPECT_NEAR(rgAllConfLoss[i][j], -Math.Log(Math.Exp(-0.1) / (1 + Math.Exp(-0.1))), m_fEps, "The confidence is incorrect.");
+                    }
+                    else
+                    {
+                        m_log.EXPECT_NEAR(rgAllConfLoss[i][j], -Math.Log(1.0 / (1 + Math.Exp(-0.1))), m_fEps, "The confidence is incorrect.");
+                    }
+                }
+            }
+
+            blob.Dispose();
         }
     }
 }

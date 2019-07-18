@@ -34,6 +34,160 @@ namespace MyCaffe.common
             m_log = log;
         }
 
+        private int getLabel(int nPredIdx, int nNumPredsPerClass, int nNumClasses, int nBackgroundLabel, Dictionary<int, List<int>> rgMatchIndices, List<NormalizedBBox> rgGtBoxes)
+        {
+            int nLabel = nBackgroundLabel;
+
+            if (rgMatchIndices != null && rgMatchIndices.Count > 0 && rgGtBoxes != null && rgGtBoxes.Count > 0)
+            {
+                List<KeyValuePair<int, List<int>>> rgMatches = rgMatchIndices.ToList();
+
+                foreach (KeyValuePair<int, List<int>> match in rgMatches)
+                {
+                    List<int> rgMatchIdx = match.Value;
+                    m_log.CHECK_EQ(rgMatchIdx.Count, nNumPredsPerClass, "The match count should equal the number of predictions per class.");
+
+                    if (rgMatchIdx[nPredIdx] > -1)
+                    {
+                        int nIdx = rgMatchIdx[nPredIdx];
+                        m_log.CHECK_LT(nIdx, rgGtBoxes.Count, "The match index should be less than the number of ground truth boxes.");
+                        nLabel = rgGtBoxes[nIdx].label;
+
+                        m_log.CHECK_GE(nLabel, 0, "The label must be >= 0.");
+                        m_log.CHECK_NE(nLabel, nBackgroundLabel, "The label cannot equal the background label.");
+                        m_log.CHECK_LT(nLabel, nNumClasses, "The label must be less than the number of classes.");
+
+                        // A prior can only be matched to one ground-truth bbox.
+                        return nLabel;
+                    }
+                }
+            }
+
+            return nLabel;
+        }
+
+        /// <summary>
+        /// Compute the confidence loss values.
+        /// </summary>
+        /// <param name="rgConfData">Specifies the confidence data.</param>
+        /// <param name="nNum">Specifies the number of items.</param>
+        /// <param name="nNumPredsPerClass">Specifies the number of predictions per class.</param>
+        /// <param name="nNumClasses">Specifies the number of classes.</param>
+        /// <param name="nBackgroundLabelId">Specifies the background label.</param>
+        /// <param name="loss_type">Specifies the loss type.</param>
+        /// <param name="rgAllMatchIndices">Specifies all match indices.</param>
+        /// <param name="rgAllGtBoxes">Specifies all ground truth bboxes.</param>
+        /// <returns>The confidence loss values are returned.</returns>
+        public List<List<float>> ComputeConfLoss(float[] rgConfData, int nNum, int nNumPredsPerClass, int nNumClasses, int nBackgroundLabelId, MultiBoxLossParameter.ConfLossType loss_type, List<Dictionary<int, List<int>>> rgAllMatchIndices = null, Dictionary<int, List<NormalizedBBox>> rgAllGtBoxes = null)
+        {
+            List<List<float>> rgrgConfLoss = new List<List<float>>();
+            int nOffset = 0;
+
+            for (int i = 0; i < nNum; i++)
+            {
+                List<float> rgConfLoss = new List<float>();
+
+                for (int p = 0; p < nNumPredsPerClass; p++)
+                {
+                    int nStartIdx = p * nNumPredsPerClass;
+                    // Get the label index.
+                    int nLabel = getLabel(p, nNumPredsPerClass, nNumClasses, nBackgroundLabelId, (rgAllMatchIndices == null) ? null : rgAllMatchIndices[i], (rgAllGtBoxes == null) ? null : rgAllGtBoxes[i]);
+                    float fLoss = 0;
+
+                    switch (loss_type)
+                    {
+                        case MultiBoxLossParameter.ConfLossType.SOFTMAX:
+                            {
+                                m_log.CHECK_GE(nLabel, 0, "The label must be >= 0 for the SOFTMAX loss type.");
+                                m_log.CHECK_LT(nLabel, nNumClasses, "The label must be < NumClasses for the SOFTMAX loss type.");
+                                // Compute softmax probability.
+                                // We need to subtract the max to avoid numerical issues.
+                                float fMaxVal = -float.MaxValue;
+                                for (int c = 0; c < nNumClasses; c++)
+                                {
+                                    float fVal = rgConfData[nOffset + nStartIdx + c];
+                                    fMaxVal = Math.Max(fMaxVal, fVal);
+                                }
+
+                                float fSum = 0;
+                                for (int c = 0; c < nNumClasses; c++)
+                                {
+                                    float fVal = rgConfData[nOffset + nStartIdx + c];
+                                    fSum += (float)Math.Exp(fVal - fMaxVal);
+                                }
+
+                                float fValAtLabel = rgConfData[nOffset + nStartIdx + nLabel];
+                                float fProb = (float)Math.Exp(fValAtLabel - fMaxVal) / fSum;
+                                fLoss = (float)-Math.Log(Math.Max(fProb, float.MinValue));
+                            }
+                            break;
+
+                        case MultiBoxLossParameter.ConfLossType.LOGISTIC:
+                            {
+                                int nTarget = 0;
+                                for (int c = 0; c < nNumClasses; c++)
+                                {
+                                    nTarget = (c == nLabel) ? 1 : 0;
+                                    float fInput = rgConfData[nOffset + nStartIdx + c];
+                                    fLoss -= fInput * (nTarget - ((fInput >= 0) ? 1.0f : 0.0f)) - (float)Math.Log(1 + Math.Exp(fInput - 2 * fInput * ((fInput >= 0) ? 1.0f : 0.0f)));
+                                }
+                            }
+                            break;
+
+                        default:
+                            m_log.FAIL("Unknown loss type '" + loss_type.ToString() + "'!");
+                            break;
+                    }
+
+                    rgConfLoss.Add(fLoss);
+                }
+
+                rgrgConfLoss.Add(rgConfLoss);
+                nOffset += nNumPredsPerClass * nNumClasses;
+            }
+
+            return rgrgConfLoss;
+        }
+
+        /// <summary>
+        /// Calculate the confidence scores.
+        /// </summary>
+        /// <param name="rgConfData">Specifies the confidence data.</param>
+        /// <param name="nNum">Specifies the number of items.</param>
+        /// <param name="nNumPredsPerClass">Specifies the number of predictions per class.</param>
+        /// <param name="nNumClasses">Specifies the number of classes.</param>
+        /// <returns>The confidence scores are returned.</returns>
+        public List<Dictionary<int, List<float>>> GetConfidenceScores(float[] rgConfData, int nNum, int nNumPredsPerClass, int nNumClasses)
+        {
+            List<Dictionary<int, List<float>>> rgConfPreds = new List<Dictionary<int, List<float>>>();
+            int nOffset = 0;
+
+            for (int i = 0; i < nNum; i++)
+            {
+                Dictionary<int, List<float>> rgLabelScores = new Dictionary<int, List<float>>();
+
+                for (int p = 0; p < nNumPredsPerClass; p++)
+                {
+                    int nStartIdx = p * nNumClasses;
+
+                    for (int c = 0; c < nNumClasses; c++)
+                    {
+                        float fConf = rgConfData[nOffset + nStartIdx + c];
+
+                        if (!rgLabelScores.ContainsKey(c))
+                            rgLabelScores.Add(c, new List<float>());
+
+                        rgLabelScores[c].Add(fConf);
+                    }
+                }
+
+                rgConfPreds.Add(rgLabelScores);
+                nOffset += nNumPredsPerClass * nNumClasses;
+            }
+
+            return rgConfPreds;
+        }
+
         /// <summary>
         /// Create a set of local predictions.
         /// </summary>
