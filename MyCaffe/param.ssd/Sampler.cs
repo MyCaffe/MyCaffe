@@ -6,7 +6,7 @@ using System.IO;
 using MyCaffe.basecode;
 using MyCaffe.common;
 
-namespace MyCaffe.param
+namespace MyCaffe.param.ssd
 {
     /// <summary>
     /// Specifies the sample of a bbox in the normalized space [0,1] with provided constraints used in SSD.

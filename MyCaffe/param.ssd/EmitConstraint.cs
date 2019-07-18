@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MyCaffe.basecode;
 
-namespace MyCaffe.param
+namespace MyCaffe.param.ssd
 {
     /// <summary>
     /// Specifies the parameters for the EmitConstraint.
@@ -75,7 +75,7 @@ namespace MyCaffe.param
         /// <returns>A new copy of the object is returned.</returns>
         public EmitConstraint Clone()
         {
-            EmitConstraint p = new param.EmitConstraint();
+            EmitConstraint p = new param.ssd.EmitConstraint();
             p.Copy(this);
             return p;
         }

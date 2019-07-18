@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MyCaffe.basecode;
 
-namespace MyCaffe.param
+namespace MyCaffe.param.ssd
 {
     /// <summary>
     /// Specifies the parameters for the NoiseParameter.
@@ -171,7 +171,7 @@ namespace MyCaffe.param
         /// <returns>A new copy of the object is returned.</returns>
         public NoiseParameter Clone()
         {
-            NoiseParameter p = new param.NoiseParameter();
+            NoiseParameter p = new param.ssd.NoiseParameter();
             p.Copy(this);
             return p;
         }

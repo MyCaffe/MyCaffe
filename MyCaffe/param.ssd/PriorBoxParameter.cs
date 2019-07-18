@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MyCaffe.basecode;
 
-namespace MyCaffe.param
+namespace MyCaffe.param.ssd
 {
     /// <summary>
     /// Specifies the parameters for the PriorBoxParameter.
@@ -252,7 +252,7 @@ namespace MyCaffe.param
         /// <returns>A new copy of the object is returned.</returns>
         public PriorBoxParameter Clone()
         {
-            PriorBoxParameter p = new param.PriorBoxParameter();
+            PriorBoxParameter p = new param.ssd.PriorBoxParameter();
             p.Copy(this);
             return p;
         }

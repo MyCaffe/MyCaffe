@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MyCaffe.basecode;
 
-namespace MyCaffe.param
+namespace MyCaffe.param.ssd
 {
     /// <summary>
     /// Specifies the parameters for the SaltPepperParameter.
@@ -67,7 +67,7 @@ namespace MyCaffe.param
         /// <returns>A new copy of the object is returned.</returns>
         public SaltPepperParameter Clone()
         {
-            SaltPepperParameter p = new param.SaltPepperParameter();
+            SaltPepperParameter p = new param.ssd.SaltPepperParameter();
             p.Copy(this);
             return p;
         }

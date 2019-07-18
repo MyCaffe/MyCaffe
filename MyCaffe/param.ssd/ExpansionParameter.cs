@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MyCaffe.basecode;
 
-namespace MyCaffe.param
+namespace MyCaffe.param.ssd
 {
     /// <summary>
     /// Specifies the parameters for the ExpansionParameter used with SSD.
@@ -62,7 +62,7 @@ namespace MyCaffe.param
         /// <returns>A new copy of the object is returned.</returns>
         public ExpansionParameter Clone()
         {
-            ExpansionParameter p = new param.ExpansionParameter();
+            ExpansionParameter p = new param.ssd.ExpansionParameter();
             p.Copy(this);
             return p;
         }

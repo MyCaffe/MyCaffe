@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MyCaffe.basecode;
 
-namespace MyCaffe.param
+namespace MyCaffe.param.ssd
 {
     /// <summary>
     /// Specifies the parameters for the DistortionParameter.
@@ -145,7 +145,7 @@ namespace MyCaffe.param
         /// <returns>A new copy of the object is returned.</returns>
         public DistortionParameter Clone()
         {
-            DistortionParameter p = new param.DistortionParameter();
+            DistortionParameter p = new param.ssd.DistortionParameter();
             p.Copy(this);
             return p;
         }

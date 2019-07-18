@@ -7,10 +7,10 @@ using System.Text;
 using System.Threading.Tasks;
 using MyCaffe.basecode;
 
-namespace MyCaffe.param
+namespace MyCaffe.param.ssd
 {
     /// <summary>
-    /// Specifies the parameters for the ResizeParameter.
+    /// Specifies the parameters for the ResizeParameter for use with SSD.
     /// </summary>
     /// <remarks>
     /// @see [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.
@@ -233,7 +233,7 @@ namespace MyCaffe.param
         /// <returns>A new copy of the object is returned.</returns>
         public ResizeParameter Clone()
         {
-            ResizeParameter p = new param.ResizeParameter();
+            ResizeParameter p = new param.ssd.ResizeParameter();
             p.Copy(this);
             return p;
         }

@@ -6,7 +6,7 @@ using System.IO;
 using MyCaffe.basecode;
 using MyCaffe.common;
 
-namespace MyCaffe.param
+namespace MyCaffe.param.ssd
 {
     /// <summary>
     /// Specifies a sample of batch of bboxes with provided constraints in SSD.

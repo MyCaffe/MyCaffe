@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MyCaffe.basecode;
 
-namespace MyCaffe.param
+namespace MyCaffe.param.ssd
 {
     /// <summary>
     /// Specifies the parameters for the MultiBoxLossParameter.
@@ -428,7 +428,7 @@ namespace MyCaffe.param
         /// <returns>A new copy of the object is returned.</returns>
         public MultiBoxLossParameter Clone()
         {
-            MultiBoxLossParameter p = new param.MultiBoxLossParameter();
+            MultiBoxLossParameter p = new param.ssd.MultiBoxLossParameter();
             p.Copy(this);
             return p;
         }

@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MyCaffe.basecode;
 
-namespace MyCaffe.param
+namespace MyCaffe.param.ssd
 {
     /// <summary>
     /// Specifies the parameters for the InputLayer.
@@ -85,7 +85,7 @@ namespace MyCaffe.param
         /** @copydoc LayerParameterBase::Clone */
         public override LayerParameterBase Clone()
         {
-            AnnotatedDataParameter p = new param.AnnotatedDataParameter();
+            AnnotatedDataParameter p = new param.ssd.AnnotatedDataParameter();
             p.Copy(this);
             return p;
         }

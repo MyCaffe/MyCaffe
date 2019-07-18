@@ -5,6 +5,7 @@ using System.Text;
 using System.ComponentModel;
 using MyCaffe.basecode;
 using MyCaffe.common;
+using MyCaffe.param.ssd;
 
 namespace MyCaffe.param
 {
