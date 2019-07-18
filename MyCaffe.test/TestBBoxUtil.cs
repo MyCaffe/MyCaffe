@@ -266,6 +266,132 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestMatchBBoxLabelOnePerPrediction()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestMatchBBoxLabelOnePerPrediction();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMatchBBoxLabelAllPerPrediction()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestMatchBBoxLabelAllPerPrediction();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMatchBBoxLabelAllPerPredictionEx()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestMatchBBoxLabelAllPerPredictionEx();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGetGroundTruth()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestGetGroundTruth();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGetGroundTruthLabelBBox()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestGetGroundTruthLabelBBox();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGetLocPredictionsShared()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestGetLocPredictionsShared();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGetLocPredictionsUnshared()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestGetLocPredictionsUnshared();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -285,6 +411,13 @@ namespace MyCaffe.test
         void TestDecodeBBoxesCenterSize();
         void TestMatchBBoxLabelOneBipartite();
         void TestMatchBBoxLabelAllBipartite();
+        void TestMatchBBoxLabelOnePerPrediction();
+        void TestMatchBBoxLabelAllPerPrediction();
+        void TestMatchBBoxLabelAllPerPredictionEx();
+        void TestGetGroundTruth();
+        void TestGetGroundTruthLabelBBox();
+        void TestGetLocPredictionsShared();
+        void TestGetLocPredictionsUnshared();
     }
 
     class BBoxUtilTest : TestBase
@@ -731,6 +864,356 @@ namespace MyCaffe.test
 
                 m_log.CHECK_EQ(rgMatchIndices[i], -1, "The index match is incorrect.");
             }
+        }
+
+        public void TestMatchBBoxLabelOnePerPrediction()
+        {
+            List<NormalizedBBox> rgGtBboxes = new List<NormalizedBBox>();
+            List<NormalizedBBox> rgPredBboxes = new List<NormalizedBBox>();
+
+            fillBBoxes(rgGtBboxes, rgPredBboxes);
+
+            int nLabel = 1;
+            MultiBoxLossParameter.MatchType match_type = MultiBoxLossParameter.MatchType.PER_PREDICTION;
+            float fOverlap = 0.3f;
+
+            List<int> rgMatchIndices;
+            List<float> rgMatchOverlaps;
+            m_util.Match(rgGtBboxes, rgPredBboxes, nLabel, match_type, fOverlap, true, out rgMatchIndices, out rgMatchOverlaps);
+
+            m_log.CHECK_EQ(rgMatchIndices.Count, 6, "There should be 6 matches!");
+            m_log.CHECK_EQ(rgMatchOverlaps.Count, 6, "There should be 6 matches!");
+
+            m_log.CHECK_EQ(rgMatchIndices[0], 0, "The index match is incorrect.");
+            m_log.CHECK_EQ(rgMatchIndices[1], 0, "The index match is incorrect.");
+            m_log.CHECK_EQ(rgMatchIndices[2], -1, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[0], 4.0 / 9, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[1], 2.0 / 6, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[2], 2.0 / 8, m_fEps, "The index match is incorrect.");
+
+            for (int i = 3; i < 6; i++)
+            {
+                m_log.CHECK_EQ(rgMatchIndices[i], -1, "The index match is incorrect.");
+                m_log.EXPECT_NEAR(rgMatchOverlaps[i], 0, m_fEps, "The overlap is incorrect");
+            }
+        }
+
+        public void TestMatchBBoxLabelAllPerPrediction()
+        {
+            List<NormalizedBBox> rgGtBboxes = new List<NormalizedBBox>();
+            List<NormalizedBBox> rgPredBboxes = new List<NormalizedBBox>();
+
+            fillBBoxes(rgGtBboxes, rgPredBboxes);
+
+            int nLabel = -1;
+            MultiBoxLossParameter.MatchType match_type = MultiBoxLossParameter.MatchType.PER_PREDICTION;
+            float fOverlap = 0.3f;
+
+            List<int> rgMatchIndices;
+            List<float> rgMatchOverlaps;
+            m_util.Match(rgGtBboxes, rgPredBboxes, nLabel, match_type, fOverlap, true, out rgMatchIndices, out rgMatchOverlaps);
+
+            m_log.CHECK_EQ(rgMatchIndices.Count, 6, "There should be 6 matches!");
+            m_log.CHECK_EQ(rgMatchOverlaps.Count, 6, "There should be 6 matches!");
+
+            m_log.CHECK_EQ(rgMatchIndices[0], 0, "The index match is incorrect.");
+            m_log.CHECK_EQ(rgMatchIndices[1], 0, "The index match is incorrect.");
+            m_log.CHECK_EQ(rgMatchIndices[2], -1, "The index match is incorrect.");
+            m_log.CHECK_EQ(rgMatchIndices[3], 1, "The index match is incorrect.");
+            m_log.CHECK_EQ(rgMatchIndices[4], -1, "The index match is incorrect.");
+            m_log.CHECK_EQ(rgMatchIndices[5], -1, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[0], 4.0 / 9, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[1], 2.0 / 6, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[2], 2.0 / 8, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[3], 4.0 / 8, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[4], 1.0 / 11, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[5], 0, m_fEps, "The index match is incorrect.");
+        }
+
+        public void TestMatchBBoxLabelAllPerPredictionEx()
+        {
+            List<NormalizedBBox> rgGtBboxes = new List<NormalizedBBox>();
+            List<NormalizedBBox> rgPredBboxes = new List<NormalizedBBox>();
+
+            fillBBoxes(rgGtBboxes, rgPredBboxes);
+
+            int nLabel = -1;
+            MultiBoxLossParameter.MatchType match_type = MultiBoxLossParameter.MatchType.PER_PREDICTION;
+            float fOverlap = 0.001f;
+
+            List<int> rgMatchIndices;
+            List<float> rgMatchOverlaps;
+            m_util.Match(rgGtBboxes, rgPredBboxes, nLabel, match_type, fOverlap, true, out rgMatchIndices, out rgMatchOverlaps);
+
+            m_log.CHECK_EQ(rgMatchIndices.Count, 6, "There should be 6 matches!");
+            m_log.CHECK_EQ(rgMatchOverlaps.Count, 6, "There should be 6 matches!");
+
+            m_log.CHECK_EQ(rgMatchIndices[0], 0, "The index match is incorrect.");
+            m_log.CHECK_EQ(rgMatchIndices[1], 0, "The index match is incorrect.");
+            m_log.CHECK_EQ(rgMatchIndices[2], 0, "The index match is incorrect.");
+            m_log.CHECK_EQ(rgMatchIndices[3], 1, "The index match is incorrect.");
+            m_log.CHECK_EQ(rgMatchIndices[4], 1, "The index match is incorrect.");
+            m_log.CHECK_EQ(rgMatchIndices[5], -1, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[0], 4.0 / 9, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[1], 2.0 / 6, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[2], 2.0 / 8, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[3], 4.0 / 8, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[4], 1.0 / 11, m_fEps, "The index match is incorrect.");
+            m_log.EXPECT_NEAR(rgMatchOverlaps[5], 0, m_fEps, "The index match is incorrect.");
+        }
+
+        public void TestGetGroundTruth()
+        {
+            int nNumGt = 4;
+            Blob<T> blobGt = new Blob<T>(m_cuda, m_log, 1, 1, nNumGt, 8);
+            double[] rgGt1 = convert(blobGt.mutable_cpu_data);
+            float[] rgGt = rgGt1.Select(p => (float)p).ToArray();
+            for (int i = 0; i < 4; i++)
+            {
+                int nImageId = (int)Math.Ceiling(i / 2.0);
+                rgGt[i * 8 + 0] = nImageId;
+                rgGt[i * 8 + 1] = i;
+                rgGt[i * 8 + 2] = 0;
+                rgGt[i * 8 + 3] = 0.1f;
+                rgGt[i * 8 + 4] = 0.1f;
+                rgGt[i * 8 + 5] = 0.3f;
+                rgGt[i * 8 + 6] = 0.3f;
+                rgGt[i * 8 + 7] = i % 2;
+            }
+
+            Dictionary<int, List<NormalizedBBox>> rgAllGtBboxes = m_util.GetGroundTruth(rgGt, nNumGt, -1, true);
+
+            m_log.CHECK_EQ(rgAllGtBboxes.Count, 3, "There should be 3 ground truths.");
+
+            List<KeyValuePair<int, List<NormalizedBBox>>> rgAllGtList = rgAllGtBboxes.ToList();
+            m_log.CHECK_EQ(rgAllGtBboxes[0].Count, 1, "The ground truth at 0 should have 1 bbox.");
+            m_log.CHECK_EQ(rgAllGtBboxes[0][0].label, 0, "The label should be 0.");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].xmin, 0.1, m_fEps, "The xmin should be 0.1");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].ymin, 0.1, m_fEps, "The ymin should be 0.1");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].xmax, 0.3, m_fEps, "The xmax should be 0.3");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].ymax, 0.3, m_fEps, "The ymax should be 0.3");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].size, 0.04, m_fEps, "The size should be 0.04");
+            m_log.CHECK(rgAllGtBboxes[0][0].difficult == false, "The difficult should be false.");
+
+            m_log.CHECK_EQ(rgAllGtBboxes[1].Count, 2, "The ground truth at 1 should have 2 bboxes.");
+            for (int i = 1; i < 3; i++)
+            {
+                m_log.CHECK_EQ(rgAllGtBboxes[1][i-1].label, i, "The label should be 0.");
+                m_log.EXPECT_NEAR(rgAllGtBboxes[1][i-1].xmin, 0.1, m_fEps, "The xmin should be 0.1");
+                m_log.EXPECT_NEAR(rgAllGtBboxes[1][i-1].ymin, 0.1, m_fEps, "The ymin should be 0.1");
+                m_log.EXPECT_NEAR(rgAllGtBboxes[1][i-1].xmax, 0.3, m_fEps, "The xmax should be 0.3");
+                m_log.EXPECT_NEAR(rgAllGtBboxes[1][i-1].ymax, 0.3, m_fEps, "The ymax should be 0.3");
+                m_log.EXPECT_NEAR(rgAllGtBboxes[1][i-1].size, 0.04, m_fEps, "The size should be 0.04");
+                m_log.CHECK(rgAllGtBboxes[1][i - 1].difficult == (i % 2 == 1), "The difficult should be " + (i % 2 == 0).ToString() + ".");
+            }
+
+            m_log.CHECK_EQ(rgAllGtBboxes[2].Count, 1, "The ground truth at 0 should have 1 bbox.");
+            m_log.CHECK_EQ(rgAllGtBboxes[2][0].label, 3, "The label should be 0.");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[2][0].xmin, 0.1, m_fEps, "The xmin should be 0.1");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[2][0].ymin, 0.1, m_fEps, "The ymin should be 0.1");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[2][0].xmax, 0.3, m_fEps, "The xmax should be 0.3");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[2][0].ymax, 0.3, m_fEps, "The ymax should be 0.3");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[2][0].size, 0.04, m_fEps, "The size should be 0.04");
+            m_log.CHECK(rgAllGtBboxes[2][0].difficult == true, "The difficult should be true.");
+
+            // Skip difficult ground truth.
+            rgAllGtBboxes = m_util.GetGroundTruth(rgGt, nNumGt, -1, false);
+
+            m_log.CHECK_EQ(rgAllGtBboxes.Count, 2, "There should be 3 ground truths.");
+
+            rgAllGtList = rgAllGtBboxes.ToList();
+            m_log.CHECK_EQ(rgAllGtBboxes[0].Count, 1, "The ground truth at 0 should have 1 bbox.");
+            m_log.CHECK_EQ(rgAllGtBboxes[0][0].label, 0, "The label should be 0.");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].xmin, 0.1, m_fEps, "The xmin should be 0.1");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].ymin, 0.1, m_fEps, "The ymin should be 0.1");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].xmax, 0.3, m_fEps, "The xmax should be 0.3");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].ymax, 0.3, m_fEps, "The ymax should be 0.3");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].size, 0.04, m_fEps, "The size should be 0.04");
+            m_log.CHECK(rgAllGtBboxes[0][0].difficult == false, "The difficult should be false.");
+
+            m_log.CHECK_EQ(rgAllGtBboxes[1].Count, 1, "The ground truth at 0 should have 1 bbox.");
+            m_log.CHECK_EQ(rgAllGtBboxes[1][0].label, 2, "The label should be 0.");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[1][0].xmin, 0.1, m_fEps, "The xmin should be 0.1");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[1][0].ymin, 0.1, m_fEps, "The ymin should be 0.1");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[1][0].xmax, 0.3, m_fEps, "The xmax should be 0.3");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[1][0].ymax, 0.3, m_fEps, "The ymax should be 0.3");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[1][0].size, 0.04, m_fEps, "The size should be 0.04");
+            m_log.CHECK(rgAllGtBboxes[1][0].difficult == false, "The difficult should be true.");
+
+            blobGt.Dispose();
+        }
+
+        public void TestGetGroundTruthLabelBBox()
+        {
+            int nNumGt = 4;
+            Blob<T> blobGt = new Blob<T>(m_cuda, m_log, 1, 1, nNumGt, 8);
+            double[] rgGt1 = convert(blobGt.mutable_cpu_data);
+            float[] rgGt = rgGt1.Select(p => (float)p).ToArray();
+            for (int i = 0; i < 4; i++)
+            {
+                int nImageId = (int)Math.Ceiling(i / 2.0);
+                rgGt[i * 8 + 0] = nImageId;
+                rgGt[i * 8 + 1] = i;
+                rgGt[i * 8 + 2] = 0;
+                rgGt[i * 8 + 3] = 0.1f;
+                rgGt[i * 8 + 4] = 0.1f;
+                rgGt[i * 8 + 5] = 0.3f;
+                rgGt[i * 8 + 6] = 0.3f;
+                rgGt[i * 8 + 7] = i % 2;
+            }
+
+            Dictionary<int, List<NormalizedBBox>> rgAllGtBboxes = m_util.GetGroundTruth(rgGt, nNumGt, -1, true);
+
+            m_log.CHECK_EQ(rgAllGtBboxes.Count, 3, "There should be 3 ground truths.");
+
+            List<KeyValuePair<int, List<NormalizedBBox>>> rgAllGtList = rgAllGtBboxes.ToList();
+            m_log.CHECK_EQ(rgAllGtBboxes[0].Count, 1, "The ground truth at 0 should have 1 bbox.");
+            m_log.CHECK_EQ(rgAllGtBboxes[0][0].label, 0, "The label should be 0.");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].xmin, 0.1, m_fEps, "The xmin should be 0.1");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].ymin, 0.1, m_fEps, "The ymin should be 0.1");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].xmax, 0.3, m_fEps, "The xmax should be 0.3");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].ymax, 0.3, m_fEps, "The ymax should be 0.3");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].size, 0.04, m_fEps, "The size should be 0.04");
+            m_log.CHECK(rgAllGtBboxes[0][0].difficult == false, "The difficult should be false.");
+
+            m_log.CHECK_EQ(rgAllGtBboxes[1].Count, 2, "The ground truth at 1 should have 2 bboxes.");
+            for (int i = 1; i < 3; i++)
+            {
+                m_log.CHECK_EQ(rgAllGtBboxes[1][i - 1].label, i, "The label should be 0.");
+                m_log.EXPECT_NEAR(rgAllGtBboxes[1][i - 1].xmin, 0.1, m_fEps, "The xmin should be 0.1");
+                m_log.EXPECT_NEAR(rgAllGtBboxes[1][i - 1].ymin, 0.1, m_fEps, "The ymin should be 0.1");
+                m_log.EXPECT_NEAR(rgAllGtBboxes[1][i - 1].xmax, 0.3, m_fEps, "The xmax should be 0.3");
+                m_log.EXPECT_NEAR(rgAllGtBboxes[1][i - 1].ymax, 0.3, m_fEps, "The ymax should be 0.3");
+                m_log.EXPECT_NEAR(rgAllGtBboxes[1][i - 1].size, 0.04, m_fEps, "The size should be 0.04");
+                m_log.CHECK(rgAllGtBboxes[1][i - 1].difficult == (i % 2 == 1), "The difficult should be " + (i % 2 == 0).ToString() + ".");
+            }
+
+            m_log.CHECK_EQ(rgAllGtBboxes[2].Count, 1, "The ground truth at 0 should have 1 bbox.");
+            m_log.CHECK_EQ(rgAllGtBboxes[2][0].label, 3, "The label should be 0.");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[2][0].xmin, 0.1, m_fEps, "The xmin should be 0.1");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[2][0].ymin, 0.1, m_fEps, "The ymin should be 0.1");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[2][0].xmax, 0.3, m_fEps, "The xmax should be 0.3");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[2][0].ymax, 0.3, m_fEps, "The ymax should be 0.3");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[2][0].size, 0.04, m_fEps, "The size should be 0.04");
+            m_log.CHECK(rgAllGtBboxes[2][0].difficult == true, "The difficult should be true.");
+
+            // Skip difficult ground truth.
+            rgAllGtBboxes = m_util.GetGroundTruth(rgGt, nNumGt, -1, false);
+
+            m_log.CHECK_EQ(rgAllGtBboxes.Count, 2, "There should be 3 ground truths.");
+
+            rgAllGtList = rgAllGtBboxes.ToList();
+            m_log.CHECK_EQ(rgAllGtBboxes[0].Count, 1, "The ground truth at 0 should have 1 bbox.");
+            m_log.CHECK_EQ(rgAllGtBboxes[0][0].label, 0, "The label should be 0.");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].xmin, 0.1, m_fEps, "The xmin should be 0.1");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].ymin, 0.1, m_fEps, "The ymin should be 0.1");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].xmax, 0.3, m_fEps, "The xmax should be 0.3");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].ymax, 0.3, m_fEps, "The ymax should be 0.3");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].size, 0.04, m_fEps, "The size should be 0.04");
+            m_log.CHECK(rgAllGtBboxes[0][0].difficult == false, "The difficult should be false.");
+
+            m_log.CHECK_EQ(rgAllGtBboxes[1].Count, 1, "The ground truth at 0 should have 1 bbox.");
+            m_log.CHECK_EQ(rgAllGtBboxes[1][0].label, 2, "The label should be 0.");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[1][0].xmin, 0.1, m_fEps, "The xmin should be 0.1");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[1][0].ymin, 0.1, m_fEps, "The ymin should be 0.1");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[1][0].xmax, 0.3, m_fEps, "The xmax should be 0.3");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[1][0].ymax, 0.3, m_fEps, "The ymax should be 0.3");
+            m_log.EXPECT_NEAR(rgAllGtBboxes[1][0].size, 0.04, m_fEps, "The size should be 0.04");
+            m_log.CHECK(rgAllGtBboxes[1][0].difficult == false, "The difficult should be true.");
+
+            blobGt.Dispose();
+        }
+
+        public void TestGetLocPredictionsShared()
+        {
+            int nNum = 2;
+            int nNumPredsPerClass = 2;
+            int nNumLocClasses = 1;
+            bool bShareLocation = true;
+            int nDim = nNumPredsPerClass * nNumLocClasses * 4;
+            Blob<T> loc_blob = new Blob<T>(m_cuda, m_log, nNum, nDim, 1, 1);
+            double[] rgLoc1 = convert(loc_blob.mutable_cpu_data);
+            float[] rgLoc = rgLoc1.Select(p => (float)p).ToArray();
+
+            for (int i = 0; i < nNum; i++)
+            {
+                for (int j = 0; j < nNumPredsPerClass; j++)
+                {
+                    int nStartIdx = i * nDim + j * 4;
+                    rgLoc[nStartIdx + 0] = i * nNumPredsPerClass * 0.1f + j * 0.1f;
+                    rgLoc[nStartIdx + 1] = i * nNumPredsPerClass * 0.1f + j * 0.1f;
+                    rgLoc[nStartIdx + 2] = i * nNumPredsPerClass * 0.1f + j * 0.1f + 0.2f;
+                    rgLoc[nStartIdx + 3] = i * nNumPredsPerClass * 0.1f + j * 0.1f + 0.2f;
+                }
+            }
+
+            List<LabelBBox> rgAllLocBBoxes = m_util.GetLocPredictions(rgLoc, nNum, nNumPredsPerClass, nNumLocClasses, bShareLocation);
+            m_log.CHECK_EQ(rgAllLocBBoxes.Count, 2, "There should be only 2 label bboxes.");
+
+            for (int i = 0; i < nNum; i++)
+            {
+                List<KeyValuePair<int, List<NormalizedBBox>>> rg = rgAllLocBBoxes[i].ToList();
+
+                m_log.CHECK_EQ(rg.Count, 1, "There should be 1 Normalized box in the label BBox.");
+                m_log.CHECK_EQ(rg[0].Key, -1, "The label should be -1.");
+
+                List<NormalizedBBox> rgBBoxes = rg[0].Value;
+                m_log.CHECK_EQ(rgBBoxes.Count, nNumPredsPerClass, "The number of Normalized bboxes should equal the number of predictions per class.");
+                float fStartVal = i * nNumPredsPerClass * 0.1f;
+
+                for (int j = 0; j < nNumPredsPerClass; j++)
+                {
+                    checkBBox(rgBBoxes[j], fStartVal + j * 0.1f, fStartVal + j * 0.1f, fStartVal + j * 0.1f + 0.2f, fStartVal + j * 0.1f + 0.2f);
+                }
+            }
+
+            loc_blob.Dispose();
+        }
+
+        public void TestGetLocPredictionsUnshared()
+        {
+            int nNum = 2;
+            int nNumPredsPerClass = 2;
+            int nNumLocClasses = 1;
+            bool bShareLocation = true;
+            int nDim = nNumPredsPerClass * nNumLocClasses * 4;
+            Blob<T> loc_blob = new Blob<T>(m_cuda, m_log, nNum, nDim, 1, 1);
+            double[] rgLoc1 = convert(loc_blob.mutable_cpu_data);
+            float[] rgLoc = rgLoc1.Select(p => (float)p).ToArray();
+
+            for (int i = 0; i < nNum; i++)
+            {
+                for (int j = 0; j < nNumPredsPerClass; j++)
+                {
+                    int nStartIdx = i * nDim + j * 4;
+                    rgLoc[nStartIdx + 0] = i * nNumPredsPerClass * 0.1f + j * 0.1f;
+                    rgLoc[nStartIdx + 1] = i * nNumPredsPerClass * 0.1f + j * 0.1f;
+                    rgLoc[nStartIdx + 2] = i * nNumPredsPerClass * 0.1f + j * 0.1f + 0.2f;
+                    rgLoc[nStartIdx + 3] = i * nNumPredsPerClass * 0.1f + j * 0.1f + 0.2f;
+                }
+            }
+
+            List<LabelBBox> rgAllLocBBoxes = m_util.GetLocPredictions(rgLoc, nNum, nNumPredsPerClass, nNumLocClasses, bShareLocation);
+            m_log.CHECK_EQ(rgAllLocBBoxes.Count, 2, "There should be only 2 label bboxes.");
+
+            for (int i = 0; i < nNum; i++)
+            {
+                List<KeyValuePair<int, List<NormalizedBBox>>> rg = rgAllLocBBoxes[i].ToList();
+
+                m_log.CHECK_EQ(rg.Count, 1, "There should be 1 Normalized box in the label BBox.");
+                m_log.CHECK_EQ(rg[0].Key, -1, "The label should be -1.");
+
+                List<NormalizedBBox> rgBBoxes = rg[0].Value;
+                m_log.CHECK_EQ(rgBBoxes.Count, nNumPredsPerClass, "The number of Normalized bboxes should equal the number of predictions per class.");
+                float fStartVal = i * nNumPredsPerClass * 0.1f;
+
+                for (int j = 0; j < nNumPredsPerClass; j++)
+                {
+                    checkBBox(rgBBoxes[j], fStartVal + j * 0.1f, fStartVal + j * 0.1f, fStartVal + j * 0.1f + 0.2f, fStartVal + j * 0.1f + 0.2f);
+                }
+            }
+
+            loc_blob.Dispose();
         }
     }
 }

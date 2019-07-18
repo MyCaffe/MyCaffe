@@ -34,6 +34,93 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Create a set of local predictions.
+        /// </summary>
+        /// <param name="rgLocData">Specifies the prediction initialization data.</param>
+        /// <param name="nNum">Specifies the number of label boxes to create.</param>
+        /// <param name="nNumPredsPerClass">Specifies the number of predictions per class.</param>
+        /// <param name="nNumLocClasses">Specifies the number of local classes.</param>
+        /// <param name="bShareLocation">Specifies whether or not to share the location.</param>
+        /// <returns>A list of created location predictions is returned as a list of LabelBBox items.</returns>
+        public List<LabelBBox> GetLocPredictions(float[] rgLocData, int nNum, int nNumPredsPerClass, int nNumLocClasses, bool bShareLocation)
+        {
+            List<LabelBBox> rgLocPreds = new List<LabelBBox>();
+
+            if (bShareLocation)
+                m_log.CHECK_EQ(nNumLocClasses, 1, "When shareing locations, the nNumLocClasses must be 1.");
+
+            int nOffset = 0;
+
+            for (int i = 0; i < nNum; i++)
+            {
+                LabelBBox labelBbox = new LabelBBox();
+
+                for (int p = 0; p < nNumPredsPerClass; p++)
+                {
+                    int nStartIdx = p * nNumLocClasses * 4;
+
+                    for (int c = 0; c < nNumLocClasses; c++)
+                    {
+                        int nLabel = (bShareLocation) ? -1 : c;
+                        labelBbox[nLabel].Add(new NormalizedBBox(rgLocData[nStartIdx + nOffset + c * 4 + 0],
+                                                                 rgLocData[nStartIdx + nOffset + c * 4 + 1],
+                                                                 rgLocData[nStartIdx + nOffset + c * 4 + 2],
+                                                                 rgLocData[nStartIdx + nOffset + c * 4 + 3]));
+                    }
+                }
+
+                nOffset += nNumPredsPerClass * nNumLocClasses * 4;
+                rgLocPreds.Add(labelBbox);
+            }
+
+            return rgLocPreds;
+        }
+
+        /// <summary>
+        /// Create a set of ground truth bounding boxes.
+        /// </summary>
+        /// <param name="rgGtData">Specifies the ground truth initialization data.</param>
+        /// <param name="nNumGt">Specifies the number of ground truths.</param>
+        /// <param name="nBackgroundLabelId">Specifies the background label.</param>
+        /// <param name="bUseDifficultGt">Specifies whether or not to use the difficult ground truth.</param>
+        /// <returns>A dictionary containing the ground truth's is returned.</returns>
+        public Dictionary<int, List<NormalizedBBox>> GetGroundTruth(float[] rgGtData, int nNumGt, int nBackgroundLabelId, bool bUseDifficultGt)
+        {
+            Dictionary<int, List<NormalizedBBox>> rgAllGt = new Dictionary<int, List<NormalizedBBox>>();
+
+            for (int i = 0; i < nNumGt; i++)
+            {
+                int nStartIdx = i * 8;
+                int nItemId = (int)rgGtData[nStartIdx];
+                if (nItemId == -1)
+                    continue;
+
+                int nLabel = (int)rgGtData[nStartIdx + 1];
+                m_log.CHECK_NE(nBackgroundLabelId, nLabel, "Found the background label in the dataset!");
+
+                bool bDifficult = (rgGtData[nStartIdx + 7] == 0) ? false : true;
+                // Skip reading the difficult ground truth.
+                if (!bUseDifficultGt && bDifficult)
+                    continue;
+
+                NormalizedBBox bbox = new NormalizedBBox(rgGtData[nStartIdx + 3],
+                                                         rgGtData[nStartIdx + 4],
+                                                         rgGtData[nStartIdx + 5],
+                                                         rgGtData[nStartIdx + 6],
+                                                         nLabel,
+                                                         bDifficult);
+                bbox.size = Size(bbox);
+
+                if (!rgAllGt.ContainsKey(nItemId))
+                    rgAllGt.Add(nItemId, new List<NormalizedBBox>());
+
+                rgAllGt[nItemId].Add(bbox);
+            }
+
+            return rgAllGt;
+        }
+
+        /// <summary>
         /// Find matches between a list of two bounding boxes.
         /// </summary>
         /// <param name="rgGtBboxes">Specifies a list of ground truth bounding boxes.</param>
