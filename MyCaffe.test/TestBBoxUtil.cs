@@ -483,6 +483,78 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestApplyNMS()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestApplyNMS();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestApplyNMSFast()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestApplyNMSFast();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCumSum()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestCumSum();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestComputeAP()
+        {
+            BBoxUtilTest test = new BBoxUtilTest();
+
+            try
+            {
+                foreach (IBBoxUtilTest t in test.Tests)
+                {
+                    t.TestComputeAP();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -514,6 +586,10 @@ namespace MyCaffe.test
         void TestComputeConfLossMatch();
         void TestGetPriorBBoxes();
         void TestGetDetectionResults();
+        void TestApplyNMS();
+        void TestApplyNMSFast();
+        void TestCumSum();
+        void TestComputeAP();
     }
 
     class BBoxUtilTest : TestBase
@@ -1618,6 +1694,271 @@ namespace MyCaffe.test
             }
 
             blob.Dispose();
+        }
+
+        public void TestApplyNMS()
+        {
+            List<NormalizedBBox> rgBBoxes = new List<NormalizedBBox>();
+            List<float> rgScores = new List<float>();
+            float fNmsThreshold = 0.3f;
+            int nTopK = -1;
+            bool bReuseOverlaps = false;
+            Dictionary<int, Dictionary<int, float>> rgOverlaps;
+            List<int> rgIndices;
+
+            // Fill in bboxes and confidence
+            rgBBoxes.Add(new NormalizedBBox(0.1f, 0.1f, 0.3f, 0.3f));
+            rgScores.Add(0.8f);
+
+            rgBBoxes.Add(new NormalizedBBox(0.2f, 0.1f, 0.4f, 0.3f));
+            rgScores.Add(0.7f);
+
+            rgBBoxes.Add(new NormalizedBBox(0.2f, 0.0f, 0.4f, 0.2f));
+            rgScores.Add(0.4f);
+
+            rgBBoxes.Add(new NormalizedBBox(0.1f, 0.2f, 0.4f, 0.4f));
+            rgScores.Add(0.5f);
+
+            m_util.ApplyNMS(rgBBoxes, rgScores, fNmsThreshold, nTopK, bReuseOverlaps, out rgOverlaps, out rgIndices);
+
+            m_log.CHECK_EQ(rgOverlaps.Count, 0, "The overlap count should be zero.");  // reuse overlaps is false.
+            m_log.CHECK_EQ(rgIndices.Count, 3, "There should be 3 indices.");
+            m_log.CHECK_EQ(rgIndices[0], 0, "The index is incorrect.");
+            m_log.CHECK_EQ(rgIndices[1], 3, "The index is incorrect.");
+            m_log.CHECK_EQ(rgIndices[2], 2, "The index is incorrect.");
+
+            nTopK = 2;
+            m_util.ApplyNMS(rgBBoxes, rgScores, fNmsThreshold, nTopK, bReuseOverlaps, out rgOverlaps, out rgIndices);
+
+            m_log.CHECK_EQ(rgOverlaps.Count, 0, "The overlap count should be zero.");  // reuse overlaps is false.
+            m_log.CHECK_EQ(rgIndices.Count, 1, "There should be 3 indices.");
+            m_log.CHECK_EQ(rgIndices[0], 0, "The index is incorrect.");
+
+            nTopK = 3;
+            fNmsThreshold = 0.2f;
+            m_util.ApplyNMS(rgBBoxes, rgScores, fNmsThreshold, nTopK, bReuseOverlaps, out rgOverlaps, out rgIndices);
+
+            m_log.CHECK_EQ(rgOverlaps.Count, 0, "The overlap count should be zero.");  // reuse overlaps is false.
+            m_log.CHECK_EQ(rgIndices.Count, 1, "There should be 3 indices.");
+            m_log.CHECK_EQ(rgIndices[0], 0, "The index is incorrect.");
+
+            bReuseOverlaps = true;
+            m_util.ApplyNMS(rgBBoxes, rgScores, fNmsThreshold, nTopK, bReuseOverlaps, out rgOverlaps, out rgIndices);
+
+            m_log.CHECK_EQ(rgOverlaps.Count, 1, "The overlap count should be one.");
+            m_log.EXPECT_NEAR(rgOverlaps[0][1], 1.0 / 3, m_fEps, "The overlap is incorrect.");
+#warning FAILURE - only two overlaps produced, overlap for 2 does not exist.
+            m_log.EXPECT_NEAR(rgOverlaps[0][2], 0.0, m_fEps, "The overlap is incorrect.");
+            m_log.EXPECT_NEAR(rgOverlaps[0][3], 2.0 / 8, m_fEps, "The overlap is incorrect.");
+
+            Dictionary<int, Dictionary<int, float>> rgOldOverlaps = rgOverlaps;
+            m_util.ApplyNMS(rgBBoxes, rgScores, fNmsThreshold, nTopK, bReuseOverlaps, out rgOverlaps, out rgIndices);
+
+            for (int i = 1; i <= 3; i++)
+            {
+                m_log.EXPECT_NEAR(rgOldOverlaps[0][i], rgOverlaps[0][i], m_fEps, "The overlap is incorrect.");
+            }
+        }
+
+        public void TestApplyNMSFast()
+        {
+            List<NormalizedBBox> rgBBoxes = new List<NormalizedBBox>();
+            List<float> rgScores = new List<float>();
+            float fScoreThreshold = 0.0f;
+            float fNmsThreshold = 0.3f;
+            float fEta = 1.0f;
+            int nTopK = -1;
+            List<int> rgIndices;
+
+            // Fill in bboxes and confidence
+            rgBBoxes.Add(new NormalizedBBox(0.1f, 0.1f, 0.3f, 0.3f));
+            rgScores.Add(0.8f);
+
+            rgBBoxes.Add(new NormalizedBBox(0.2f, 0.1f, 0.4f, 0.3f));
+            rgScores.Add(0.7f);
+
+            rgBBoxes.Add(new NormalizedBBox(0.2f, 0.0f, 0.4f, 0.2f));
+            rgScores.Add(0.4f);
+
+            rgBBoxes.Add(new NormalizedBBox(0.1f, 0.2f, 0.4f, 0.4f));
+            rgScores.Add(0.5f);
+
+            m_util.ApplyNMSFast(rgBBoxes, rgScores, fScoreThreshold, fNmsThreshold, fEta, nTopK, out rgIndices);
+
+            m_log.CHECK_EQ(rgIndices.Count, 3, "There should be 3 indices.");
+            m_log.CHECK_EQ(rgIndices[0], 0, "The index is incorrect.");
+            m_log.CHECK_EQ(rgIndices[1], 3, "The index is incorrect.");
+            m_log.CHECK_EQ(rgIndices[2], 2, "The index is incorrect.");
+
+            nTopK = 2;
+            m_util.ApplyNMSFast(rgBBoxes, rgScores, fScoreThreshold, fNmsThreshold, fEta, nTopK, out rgIndices);
+
+            m_log.CHECK_EQ(rgIndices.Count, 1, "There should be 3 indices.");
+            m_log.CHECK_EQ(rgIndices[0], 0, "The index is incorrect.");
+
+            nTopK = 3;
+            fNmsThreshold = 0.2f;
+            m_util.ApplyNMSFast(rgBBoxes, rgScores, fScoreThreshold, fNmsThreshold, fEta, nTopK, out rgIndices);
+
+            m_log.CHECK_EQ(rgIndices.Count, 1, "There should be 3 indices.");
+            m_log.CHECK_EQ(rgIndices[0], 0, "The index is incorrect.");
+
+            nTopK = -1;
+            fScoreThreshold = 0.5f;
+            m_util.ApplyNMSFast(rgBBoxes, rgScores, fScoreThreshold, fNmsThreshold, fEta, nTopK, out rgIndices);
+
+            m_log.CHECK_EQ(rgIndices.Count, 1, "There should be 3 indices.");
+            m_log.CHECK_EQ(rgIndices[0], 0, "The index is incorrect.");
+        }
+
+        public void TestCumSum()
+        {
+            List<Tuple<float, int>> rgPairs = new List<Tuple<float, int>>();
+            List<int> rgCumSum;
+
+            rgPairs.Add(new Tuple<float, int>(0.1f, 0));
+            rgPairs.Add(new Tuple<float, int>(0.2f, 1));
+            rgPairs.Add(new Tuple<float, int>(0.3f, 0));
+
+            rgCumSum = m_util.CumSum(rgPairs);
+
+            m_log.CHECK_EQ(rgCumSum.Count, 3, "The cumulative sum item count should equal 3.");
+            m_log.CHECK_EQ(rgCumSum[0], 0, "The item value is incorrect.");
+            m_log.CHECK_EQ(rgCumSum[1], 1, "The item value is incorrect.");
+            m_log.CHECK_EQ(rgCumSum[2], 1, "The item value is incorrect.");
+        }
+
+        public void TestComputeAP()
+        {
+            List<Tuple<float, int>> rgTp = new List<Tuple<float, int>>();
+            List<Tuple<float, int>> rgFp = new List<Tuple<float, int>>();
+
+            rgTp.Add(new Tuple<float, int>(1.0f, 0));
+            rgTp.Add(new Tuple<float, int>(1.0f, 1));
+            rgTp.Add(new Tuple<float, int>(0.9f, 1));
+            rgTp.Add(new Tuple<float, int>(0.9f, 0));
+            rgTp.Add(new Tuple<float, int>(0.8f, 1));
+            rgTp.Add(new Tuple<float, int>(0.7f, 0));
+            rgTp.Add(new Tuple<float, int>(0.7f, 1));
+            rgTp.Add(new Tuple<float, int>(0.6f, 0));
+            rgTp.Add(new Tuple<float, int>(0.5f, 0));
+            rgTp.Add(new Tuple<float, int>(0.4f, 0));
+            rgTp.Add(new Tuple<float, int>(0.4f, 1));
+
+            rgFp.Add(new Tuple<float, int>(1.0f, 1));
+            rgFp.Add(new Tuple<float, int>(1.0f, 0));
+            rgFp.Add(new Tuple<float, int>(0.9f, 0));
+            rgFp.Add(new Tuple<float, int>(0.9f, 1));
+            rgFp.Add(new Tuple<float, int>(0.8f, 0));
+            rgFp.Add(new Tuple<float, int>(0.7f, 1));
+            rgFp.Add(new Tuple<float, int>(0.7f, 0));
+            rgFp.Add(new Tuple<float, int>(0.6f, 1));
+            rgFp.Add(new Tuple<float, int>(0.5f, 1));
+            rgFp.Add(new Tuple<float, int>(0.4f, 1));
+            rgFp.Add(new Tuple<float, int>(0.4f, 0));
+
+            float fEps = 1e-5f;
+            List<float> rgPrec;
+            List<float> rgRec;
+            float fAp = m_util.ComputeAP(rgTp, 5, rgFp, "Integral", out rgPrec, out rgRec);
+
+            m_log.EXPECT_NEAR(fAp, 0.558528, fEps, "The AP is incorrect.");
+
+            m_log.CHECK_EQ(rgPrec.Count, 11, "The prec count should equal 11.");
+            m_log.EXPECT_NEAR(rgPrec[0], 0.0 / 1.0, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgPrec[1], 1.0 / 2.0, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgPrec[2], 2.0 / 3.0, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgPrec[3], 2.0 / 4.0, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgPrec[4], 3.0 / 5.0, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgPrec[5], 3.0 / 6.0, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgPrec[6], 4.0 / 7.0, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgPrec[7], 4.0 / 8.0, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgPrec[8], 4.0 / 9.0, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgPrec[9], 4.0 / 10.0, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgPrec[10], 5.0 / 11.0, fEps, "The prec value is incorrect.");
+
+            m_log.CHECK_EQ(rgRec.Count, 11, "The prec count should equal 11.");
+            m_log.EXPECT_NEAR(rgRec[0], 0.0, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgRec[1], 0.2, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgRec[2], 0.4, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgRec[3], 0.4, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgRec[4], 0.6, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgRec[5], 0.6, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgRec[6], 0.8, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgRec[7], 0.8, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgRec[8], 0.8, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgRec[9], 0.8, fEps, "The prec value is incorrect.");
+            m_log.EXPECT_NEAR(rgRec[10], 1.0, fEps, "The prec value is incorrect.");
+
+            List<float> rgOldPrec = rgPrec;
+            List<float> rgOldRec = rgRec;
+
+            fAp = m_util.ComputeAP(rgTp, 5, rgFp, "MaxIntegral", out rgPrec, out rgRec);
+
+            m_log.EXPECT_NEAR(fAp, 0.591861, fEps, "The AP is incorrect.");
+            m_log.CHECK_EQ(rgPrec.Count, 11, "The prec count should equal 11.");
+            m_log.CHECK_EQ(rgRec.Count, 11, "The prec count should equal 11.");
+
+            for (int i = 0; i < 11; i++)
+            {
+                m_log.EXPECT_NEAR(rgOldPrec[i], rgPrec[i], fEps, "The prec values do not match!");
+                m_log.EXPECT_NEAR(rgOldRec[i], rgRec[i], fEps, "The rec values do not match!");
+            }
+
+            fAp = m_util.ComputeAP(rgTp, 5, rgFp, "11point", out rgPrec, out rgRec);
+
+            m_log.EXPECT_NEAR(fAp, 0.598662, fEps, "The AP is incorrect.");
+            m_log.CHECK_EQ(rgPrec.Count, 11, "The prec count should equal 11.");
+            m_log.CHECK_EQ(rgRec.Count, 11, "The prec count should equal 11.");
+
+            for (int i = 0; i < 11; i++)
+            {
+                m_log.EXPECT_NEAR(rgOldPrec[i], rgPrec[i], fEps, "The prec values do not match!");
+                m_log.EXPECT_NEAR(rgOldRec[i], rgRec[i], fEps, "The rec values do not match!");
+            }
+
+            // Cut the last 4 predictions.
+            for (int i = 0; i < 4; i++)
+            {
+                rgTp.RemoveAt(rgTp.Count - 1);
+                rgFp.RemoveAt(rgFp.Count - 1);
+            }
+
+            fAp = m_util.ComputeAP(rgTp, 5, rgFp, "Integral", out rgPrec, out rgRec);
+
+            m_log.EXPECT_NEAR(fAp, 0.558528 - rgOldPrec.Last() * 0.2, fEps, "The AP is incorrect.");
+            m_log.CHECK_EQ(rgPrec.Count, 7, "The prec count should equal 7.");
+            m_log.CHECK_EQ(rgRec.Count, 7, "The prec count should equal 7.");
+
+            for (int i = 0; i < 7; i++)
+            {
+                m_log.EXPECT_NEAR(rgOldPrec[i], rgPrec[i], fEps, "The prec values do not match!");
+                m_log.EXPECT_NEAR(rgOldRec[i], rgRec[i], fEps, "The rec values do not match!");
+            }
+
+            fAp = m_util.ComputeAP(rgTp, 5, rgFp, "MaxIntegral", out rgPrec, out rgRec);
+
+            m_log.EXPECT_NEAR(fAp, 0.591861 - rgOldPrec.Last() * 0.2, fEps, "The AP is incorrect.");
+            m_log.CHECK_EQ(rgPrec.Count, 7, "The prec count should equal 7.");
+            m_log.CHECK_EQ(rgRec.Count, 7, "The prec count should equal 7.");
+
+            for (int i = 0; i < 7; i++)
+            {
+                m_log.EXPECT_NEAR(rgOldPrec[i], rgPrec[i], fEps, "The prec values do not match!");
+                m_log.EXPECT_NEAR(rgOldRec[i], rgRec[i], fEps, "The rec values do not match!");
+            }
+
+            fAp = m_util.ComputeAP(rgTp, 5, rgFp, "11point", out rgPrec, out rgRec);
+
+            m_log.EXPECT_NEAR(fAp, 0.598662 - rgOldPrec.Last() * 2 / 11.0, fEps, "The AP is incorrect.");
+            m_log.CHECK_EQ(rgPrec.Count, 7, "The prec count should equal 7.");
+            m_log.CHECK_EQ(rgRec.Count, 7, "The prec count should equal 7.");
+
+            for (int i = 0; i < 7; i++)
+            {
+                m_log.EXPECT_NEAR(rgOldPrec[i], rgPrec[i], fEps, "The prec values do not match!");
+                m_log.EXPECT_NEAR(rgOldRec[i], rgRec[i], fEps, "The rec values do not match!");
+            }
         }
     }
 }

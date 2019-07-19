@@ -35,6 +35,386 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Compute the average precision given true positive and false positive vectors.
+        /// </summary>
+        /// <param name="rgTp">Specifies a list of scores and true positive.</param>
+        /// <param name="nNumPos">Specifies the number of true positives.</param>
+        /// <param name="rgFp">Specifies a list of scores and false positive.</param>
+        /// <param name="strApVersion">Specifies the different ways of computing the Average Precisions.
+        /// @see [Tag: Average Precision](https://sanchom.wordpress.com/tag/average-precision/)
+        ///   
+        /// Versions:
+        /// 11point: The 11-point interpolated average precision, used in VOC2007.
+        /// MaxIntegral: maximally interpolated AP. Used in VOC2012/ILSVRC.
+        /// Integral: the natrual integral of the precision-recall curve.
+        /// <param name="rgPrec">Returns the computed precisions.</param>
+        /// <param name="rgRec">Returns the computed recalls.</param>
+        /// <returns>The Average Precision value is returned.</returns>
+        public float ComputeAP(List<Tuple<float, int>> rgTp, int nNumPos, List<Tuple<float, int>> rgFp, string strApVersion, out List<float> rgPrec, out List<float> rgRec)
+        {
+            float fEps = 1e-6f;
+            int nNum = rgTp.Count;
+
+            // Make sure that rgTp and rgFp have complement values.
+            for (int i = 0; i < nNum; i++)
+            {
+                m_log.CHECK_LE(Math.Abs(rgTp[i].Item1 - rgFp[i].Item1), fEps, "The Tp[i] - Fp[i] is less than the threshold " + fEps.ToString());
+                m_log.CHECK_EQ(rgTp[i].Item2, 1 - rgFp[i].Item2, "The Tp[i].second should be one less than Fp[i].second!");
+            }
+
+            rgPrec = new List<float>();
+            rgRec = new List<float>();
+            float fAp = 0;
+
+            if (rgTp.Count == 0 || nNumPos == 0)
+                return fAp;
+
+            // Compute cumsum of rgTp
+            List<int> rgTpCumSum = CumSum(rgTp);
+            m_log.CHECK_EQ(rgTpCumSum.Count, nNum, "The tp cumulative sum should equal the number of rgTp items (" + nNum.ToString() + ")");
+
+            // Compute cumsum of rgFp
+            List<int> rgFpCumSum = CumSum(rgFp);
+            m_log.CHECK_EQ(rgFpCumSum.Count, nNum, "The fp cumulative sum should equal the number of rgFp items (" + nNum.ToString() + ")");
+
+            // Compute precision.
+            for (int i = 0; i < nNum; i++)
+            {
+                rgPrec.Add((float)rgTpCumSum[i] / (float)(rgTpCumSum[i] + rgFpCumSum[i]));
+            }
+
+            // Compute recall
+            for (int i = 0; i < nNum; i++)
+            {
+                m_log.CHECK_LE(rgTpCumSum[i], nNumPos, "The Tp cumulative sum must be less than the num pos of " + nNumPos.ToString());
+                rgRec.Add((float)rgTpCumSum[i] / nNumPos);
+            }
+
+            switch (strApVersion)
+            {
+                // VOC2007 style for computing AP
+                case "11point":
+                    {
+                        List<float> rgMaxPrec = Utility.Create<float>(11, 0);
+                        int nStartIdx = nNum - 1;
+
+                        for (int j = 10; j >= 0; j--)
+                        {
+                            for (int i = nStartIdx; i >= 0; i--)
+                            {
+                                if (rgRec[i] < j / 10.0f)
+                                {
+                                    nStartIdx = i;
+                                    if (j > 0)
+                                        rgMaxPrec[j - 1] = rgMaxPrec[j];
+                                    break;
+                                }
+                                else
+                                {
+                                    if (rgMaxPrec[j] < rgPrec[i])
+                                        rgMaxPrec[j] = rgPrec[i];
+                                }
+                            }
+                        }
+                        for (int j = 10; j >= 0; j--)
+                        {
+                            fAp += rgMaxPrec[j] / 11.0f;
+                        }
+                    }
+                    break;
+
+                // VOC2012 or ILSVRC style of computing AP.
+                case "MaxIntegral":
+                    {
+                        float fCurRec = rgRec.Last();
+                        float fCurPrec = rgPrec.Last();
+
+                        for (int i = nNum - 2; i >= 0; i--)
+                        {
+                            fCurPrec = Math.Max(rgPrec[i], fCurPrec);
+                            float fAbsRec = Math.Abs(fCurRec - rgRec[i]);
+                            if (fAbsRec > fEps)
+                                fAp += fCurPrec * fAbsRec;
+                            fCurRec = rgRec[i];
+                        }
+                        fAp += fCurRec * fCurPrec;
+                    }
+                    break;
+
+                // Natural integral.
+                case "Integral":
+                    {
+                        float fPrevRec = 0.0f;
+                        for (int i = 0; i < nNum; i++)
+                        {
+                            float fAbsRec = Math.Abs(rgRec[i] - fPrevRec);
+                            if (fAbsRec > fEps)
+                                fAp += rgPrec[i] * fAbsRec;
+                            fPrevRec = rgRec[i];
+                        }
+                    }
+                    break;
+
+                default:
+                    m_log.FAIL("Unknown ap version '" + strApVersion + "'!");
+                    break;
+            }
+
+            return fAp;
+        }
+
+        /// <summary>
+        /// Calculate the cumulative sum of a set of pairs.
+        /// </summary>
+        /// <param name="rgPairs"></param>
+        /// <returns></returns>
+        public List<int> CumSum(List<Tuple<float, int>> rgPairs)
+        {
+            // Sort the pairs based on the first item of the pair.
+            List<Tuple<float, int>> rgSortPairs = rgPairs.OrderByDescending(p => p.Item1).ToList();
+            List<int> rgCumSum = new List<int>();
+
+            for (int i = 0; i < rgSortPairs.Count; i++)
+            {
+                if (i == 0)
+                    rgCumSum.Add(rgSortPairs[i].Item2);
+                else
+                    rgCumSum.Add(rgCumSum.Last() + rgSortPairs[i].Item2);
+            }
+
+            return rgCumSum;
+        }
+
+        /// <summary>
+        /// Create the TopK ordered score list.
+        /// </summary>
+        /// <param name="rgScores">Specifies the scores.</param>
+        /// <param name="rgIdx">Specifies the indexes.</param>
+        /// <param name="nTopK">Specifies the top k items or -1 for all items.</param>
+        /// <returns>The items listed by highest score is returned.</returns>
+        List<Tuple<float, int>> GetTopKScoreIndex(List<float> rgScores, List<int> rgIdx, int nTopK)
+        {
+            List<Tuple<float, int>> rgItems = new List<Tuple<float, int>>();
+
+            for (int i = 0; i < rgScores.Count; i++)
+            {
+                rgItems.Add(new Tuple<float, int>(rgScores[i], rgIdx[i]));
+            }
+
+            rgItems = rgItems.OrderByDescending(p => p.Item1).ToList();
+
+            if (nTopK > -1)
+            {
+                List<Tuple<float, int>> rgItems1 = new List<Tuple<float, int>>();
+
+                for (int i = 0; i < nTopK; i++)
+                {
+                    rgItems1.Add(rgItems[i]);
+                }
+
+                rgItems = rgItems1;
+            }
+
+            return rgItems;
+        }
+
+        /// <summary>
+        /// Create the max ordered score list.
+        /// </summary>
+        /// <param name="rgScores">Specifies the scores.</param>
+        /// <param name="fThreshold">Specifies the threshold of score to consider.</param>
+        /// <param name="nTopK">Specifies the top k items or -1 for all items.</param>
+        /// <returns>The items listed by highest score is returned.</returns>
+        List<Tuple<float, int>> GetMaxScoreIndex(List<float> rgScores, float fThreshold, int nTopK)
+        {
+            List<Tuple<float, int>> rgItems = new List<Tuple<float, int>>();
+
+            for (int i = 0; i < rgScores.Count; i++)
+            {
+                if (rgScores[i] > fThreshold)
+                    rgItems.Add(new Tuple<float, int>(rgScores[i], i));
+            }
+
+            rgItems = rgItems.OrderByDescending(p => p.Item1).ToList();
+
+            if (nTopK > -1)
+            {
+                List<Tuple<float, int>> rgItems1 = new List<Tuple<float, int>>();
+
+                for (int i = 0; i < nTopK; i++)
+                {
+                    rgItems1.Add(rgItems[i]);
+                }
+
+                rgItems = rgItems1;
+            }
+
+            return rgItems;
+        }
+
+        /// <summary>
+        /// Do a fast non maximum supression given bboxes and scores.
+        /// </summary>
+        /// <param name="rgBBoxes">Specifies a set of bounding boxes.</param>
+        /// <param name="rgScores">Specifies a seto of corresponding confidences.</param>
+        /// <param name="fScoreThreshold">Specifies the score threshold used in non maximum suppression.</param>
+        /// <param name="fNmsThreshold">Specifies the nms threshold used in non maximum suppression.</param>
+        /// <param name="fEta">Specifies the eta value.</param>
+        /// <param name="nTopK">Specifies the top k picked indices or -1 for all.</param>
+        /// <param name="rgIndices">Returns the kept indices of bboxes after nms.</param>
+        public void ApplyNMSFast(List<NormalizedBBox> rgBBoxes, List<float> rgScores, float fScoreThreshold, float fNmsThreshold, float fEta, int nTopK, out List<int> rgIndices)
+        {
+            rgIndices = new List<int>();
+
+            // Sanity check.
+            m_log.CHECK_EQ(rgBBoxes.Count, rgScores.Count, "The number of BBoxes and scores must be the same.");
+
+            List<Tuple<float, int>> rgScoresIndex = GetMaxScoreIndex(rgScores, fScoreThreshold, nTopK);
+
+            // Do nms.
+            float fAdaptiveThreshold = fNmsThreshold;
+
+            while (rgScoresIndex.Count > 0)
+            {
+                int nIdx = rgScoresIndex[0].Item2;
+                bool bKeep = true;
+
+                for (int k = 0; k < rgIndices.Count; k++)
+                {
+                    if (!bKeep)
+                        break;
+
+                    int nKeptIdx = rgIndices[k];
+                    float fOverlap = JaccardOverlap(rgBBoxes[nIdx], rgBBoxes[nKeptIdx]);
+
+                    if (fOverlap <= fAdaptiveThreshold)
+                        bKeep = true;
+                    else
+                        bKeep = false;
+                }
+
+                if (bKeep)
+                    rgIndices.Add(nIdx);
+
+                rgScoresIndex.RemoveAt(0);
+
+                if (bKeep && fEta < 1 && fAdaptiveThreshold > 0.5f)
+                    fAdaptiveThreshold *= fEta;
+            }
+        }
+
+        /// <summary>
+        /// Do non maximum supression given bboxes and scores.
+        /// </summary>
+        /// <param name="rgBBoxes">Specifies a set of bounding boxes.</param>
+        /// <param name="rgScores">Specifies a seto of corresponding confidences.</param>
+        /// <param name="fThreshold">Specifies the threshold used in non maximum suppression.</param>
+        /// <param name="nTopK">Specifies the top k picked indices or -1 for all.</param>
+        /// <param name="bReuseOverlaps">Specifies whether or not to use and update overlaps (true) or alwasy compute the overlap (false).</param>
+        /// <param name="rgOverlaps">Returns the overlaps between pairs of bboxes if bReuseOverlaps is true.</param>
+        /// <param name="rgIndices">Returns the kept indices of bboxes after nms.</param>
+        public void ApplyNMS(List<NormalizedBBox> rgBBoxes, List<float> rgScores, float fThreshold, int nTopK, bool bReuseOverlaps, out Dictionary<int, Dictionary<int, float>> rgOverlaps, out List<int> rgIndices)
+        {
+            rgIndices = new List<int>();
+            rgOverlaps = new Dictionary<int, Dictionary<int, float>>();
+
+            // Sanity check.
+            m_log.CHECK_EQ(rgBBoxes.Count, rgScores.Count, "The number of BBoxes and scores must be the same.");
+
+            // Get top_k scores (with corresponding indices)
+            List<int> rgIdx = new List<int>();
+            for (int i = 0; i < rgScores.Count; i++)
+            {
+                rgIdx.Add(i);
+            }
+
+            List<Tuple<float, int>> rgScoresIndex = GetTopKScoreIndex(rgScores, rgIdx, nTopK);
+
+            // Do nms.
+            while (rgScoresIndex.Count > 0)
+            {
+                // Get the current highest score box.
+                int nBestIdx = rgScoresIndex[0].Item2;
+                NormalizedBBox best_bbox = rgBBoxes[nBestIdx];
+                float fSize = Size(best_bbox);
+
+                // Erase small box.
+                if (fSize < 1e-5f)
+                {
+                    rgScoresIndex.RemoveAt(0);
+                    continue;
+                }
+
+                rgIndices.Add(nBestIdx);
+
+                // Erase the best box.
+                rgScoresIndex.RemoveAt(0);
+
+                // Stop if finding enough boxes for nms.
+                if (nTopK > -1 && rgIndices.Count >= nTopK)
+                    break;
+
+                // Compute overlap between best_bbox and other remaining bboxes.
+                // Remove a bbox if the overlap with the best_bbox is larger than nms_threshold.
+                int nIdx = 0;
+                while (nIdx < rgScoresIndex.Count)
+                {
+                    Tuple<float, int> item = rgScoresIndex[nIdx];
+                    int nCurIdx = item.Item2;
+                    NormalizedBBox cur_bbox = rgBBoxes[nCurIdx];
+                    fSize = Size(cur_bbox);
+
+                    if (fSize < 1e-5f)
+                    {
+                        rgScoresIndex.RemoveAt(nIdx);
+                        continue;
+                    }
+
+                    float fCurOverlap = 0.0f;
+
+                    if (bReuseOverlaps)
+                    {
+                        // Use the compute overlap
+                        if (rgOverlaps.ContainsKey(nBestIdx) &&
+                            rgOverlaps[nBestIdx].ContainsKey(nCurIdx))
+                            fCurOverlap = rgOverlaps[nBestIdx][nCurIdx];
+                        else if (rgOverlaps.ContainsKey(nCurIdx) &&
+                            rgOverlaps[nCurIdx].ContainsKey(nBestIdx))
+                            fCurOverlap = rgOverlaps[nCurIdx][nBestIdx];
+                        else
+                        {
+                            fCurOverlap = JaccardOverlap(best_bbox, cur_bbox);
+
+                            if (!rgOverlaps.ContainsKey(nBestIdx))
+                            {
+                                rgOverlaps.Add(nBestIdx, new Dictionary<int, float>());
+                                rgOverlaps[nBestIdx].Add(nCurIdx, fCurOverlap);
+                            }
+                            else if (!rgOverlaps[nBestIdx].ContainsKey(nCurIdx))
+                            {
+                                rgOverlaps[nBestIdx].Add(nCurIdx, fCurOverlap);
+                            }
+                            else
+                            {
+                                rgOverlaps[nBestIdx][nCurIdx] = fCurOverlap;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        fCurOverlap = JaccardOverlap(best_bbox, cur_bbox);
+                    }
+
+                    // Remove if necessary
+                    if (fCurOverlap > fThreshold)
+                        rgScoresIndex.RemoveAt(nIdx);
+                    else
+                        nIdx++;
+                }
+            }
+        }
+
+        /// <summary>
         /// Get detection results from rgData.
         /// </summary>
         /// <param name="rgData">Specifies a 1 x 1 x nNumDet x 7 blob data.</param>
