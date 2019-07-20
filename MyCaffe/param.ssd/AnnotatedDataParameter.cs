@@ -7,6 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 using MyCaffe.basecode;
 
+/// <summary>
+/// The MyCaffe.param.ssd namespace contains all SSD related parameter objects that correspond to the native C++ %Caffe prototxt file.
+/// </summary>
 namespace MyCaffe.param.ssd
 {
     /// <summary>
