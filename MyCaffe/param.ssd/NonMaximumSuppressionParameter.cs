@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MyCaffe.basecode;
 
-namespace MyCaffe.param
+namespace MyCaffe.param.ssd
 {
     /// <summary>
     /// Specifies the parameters for the NonMaximumSuppressionParameter used with SSD.
@@ -59,7 +59,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Copy the object.
         /// </summary>
-        /// <param name="p">The copy is placed in this parameter.</param>
+        /// <param name="src">The copy is placed in this parameter.</param>
         public void Copy(NonMaximumSuppressionParameter src)
         {
             m_fNmsThreshold = src.nms_threshold;
@@ -73,7 +73,7 @@ namespace MyCaffe.param
         /// <returns>A new copy of the object is returned.</returns>
         public NonMaximumSuppressionParameter Clone()
         {
-            NonMaximumSuppressionParameter p = new param.NonMaximumSuppressionParameter();
+            NonMaximumSuppressionParameter p = new param.ssd.NonMaximumSuppressionParameter();
             p.Copy(this);
             return p;
         }
