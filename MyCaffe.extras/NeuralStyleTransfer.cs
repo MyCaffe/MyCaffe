@@ -2,6 +2,7 @@
 using MyCaffe.common;
 using MyCaffe.data;
 using MyCaffe.layers;
+using MyCaffe.layers.beta;
 using MyCaffe.param;
 using MyCaffe.solvers;
 using System;
