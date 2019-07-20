@@ -1494,8 +1494,8 @@ namespace MyCaffe.common
         /// <summary>
         /// The GetRequiredCompute function returns the Major and Minor compute values required by the current CudaDNN DLL used.
         /// </summary>
-        /// <param name="nMajor">Specifies the minimum required major compute value.</param>
-        /// <param name="nMinor">Specifies the minimum required minor compute value.</param>
+        /// <param name="nMinMajor">Specifies the minimum required major compute value.</param>
+        /// <param name="nMinMinor">Specifies the minimum required minor compute value.</param>
         /// <remarks>
         /// Together the Major.Minor compute values define the minimum required compute for the CudaDNN DLL used.
         /// </remarks>

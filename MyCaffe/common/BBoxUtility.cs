@@ -741,7 +741,7 @@ namespace MyCaffe.common
         /// <param name="rgPredBboxes">Specifies a list of predicted bounding boxes.</param>
         /// <param name="nLabel">Specifies the label.</param>
         /// <param name="match_type">Specifies the matching type.</param>
-        /// <param name="fOverlap">Specifies the overlap.</param>
+        /// <param name="fOverlapThreshold">Specifies the overlap.</param>
         /// <param name="bIgnoreCrossBoundaryBbox">Specifies whether or not to ignore corss boundary bounding boxes.</param>
         /// <param name="rgMatchIndices">Specifies the list where the indexes of matches are placed.</param>
         /// <param name="rgMatchOverlaps">Specifies the list where the overlaps of matches are placed.</param>
@@ -973,6 +973,7 @@ namespace MyCaffe.common
         /// <param name="rgfPriorVariance">Specifies the prior variance (must have 4 elements each of which are > 0).</param>
         /// <param name="code_type">Specifies the code type.</param>
         /// <param name="bEncodeVarianceInTarget">Specifies whether or not to encode the variance in the target.</param>
+        /// <param name="bClip">Specifies whether or not to enable clip or not.</param>
         /// <param name="bbox">Specifies the bounding box.</param>
         /// <returns>The decoded bounding box is returned.</returns>
         public NormalizedBBox Decode(NormalizedBBox prior_bbox, List<float> rgfPriorVariance, PriorBoxParameter.CodeType code_type, bool bEncodeVarianceInTarget, bool bClip, NormalizedBBox bbox)
@@ -1213,6 +1214,7 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="bbox1">Specifies the first bounding box.</param>
         /// <param name="bbox2">Specifies the second bounding box.</param>
+        /// <param name="bNormalized">Specifies whether or not the bboxes are normalized or not.</param>
         /// <returns>The Jaccard overlap is returned.</returns>
         public float JaccardOverlap(NormalizedBBox bbox1, NormalizedBBox bbox2, bool bNormalized = true)
         {
@@ -1313,6 +1315,7 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="src">Specifies the source bbox.</param>
         /// <param name="bbox">Specifies the second bbox.</param>
+        /// <param name="proj_bbox">Returns the projected bbox here.</param>
         /// <returns>The new project bbox is returned if a projection was made, otherwise the original bbox is returned.</returns>
         public bool Project(NormalizedBBox src, NormalizedBBox bbox, out NormalizedBBox proj_bbox)
         {
@@ -1379,8 +1382,8 @@ namespace MyCaffe.common
         /// Scale the BBox to a set range.
         /// </summary>
         /// <param name="bbox">Specifies the input bounding box.</param>
-        /// <param name="fHeight">Specifies the scaling height.</param>
-        /// <param name="fWidth">Specifies the scaling width.</param>
+        /// <param name="nHeight">Specifies the scaling height.</param>
+        /// <param name="nWidth">Specifies the scaling width.</param>
         /// <returns>A new, scaled NormalizedBBox is returned.</returns>
         public NormalizedBBox Scale(NormalizedBBox bbox, int nHeight, int nWidth)
         {

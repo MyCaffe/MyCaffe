@@ -289,7 +289,6 @@ namespace MyCaffe.basecode
         /// The SimpleDatum constructor.
         /// </summary>
         /// <param name="d">Specifies a SimpleDatum used to create this new Datum.</param>
-        /// <param name="bCopyData">Specifies whether or not to copy the data, or just share it (default = false, share the data).</param>
         /// <param name="nHeight">Specifies a height override.</param>
         /// <param name="nWidth">Specifies a width override.</param>
         public SimpleDatum(SimpleDatum d, int nHeight, int nWidth)
