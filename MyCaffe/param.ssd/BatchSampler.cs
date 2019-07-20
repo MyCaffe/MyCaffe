@@ -112,6 +112,9 @@ namespace MyCaffe.param.ssd
             set { m_sampler = value; }
         }
 
+        /// <summary>
+        /// Get/set the sample constraint.
+        /// </summary>
         public SamplerConstraint sample_constraint
         {
             get { return m_constraint; }

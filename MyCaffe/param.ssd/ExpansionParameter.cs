@@ -49,7 +49,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Copy the object.
         /// </summary>
-        /// <param name="p">The copy is placed in this parameter.</param>
+        /// <param name="src">The copy is placed in this parameter.</param>
         public void Copy(ExpansionParameter src)
         {
             m_fProb = src.prob;

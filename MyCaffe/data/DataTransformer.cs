@@ -38,6 +38,7 @@ namespace MyCaffe.data
         /// <summary>
         /// The DataTransformer constructor.
         /// </summary>
+        /// <param name="cuda">Specifies the connection to the CudaDnn dll which is only needed when using the bbox or image transformation functionality.</param>
         /// <param name="log">Specifies the Log used for output.</param>
         /// <param name="p">Specifies the TransformationParameter used to create the DataTransformer.</param>
         /// <param name="phase">Specifies the Phase under which the DataTransformer is run.</param>
@@ -603,7 +604,7 @@ namespace MyCaffe.data
         /// Expand the SimpleDatum according to the bbox.
         /// </summary>
         /// <param name="d">Specifies the SimpleDatum to expand.</param>
-        /// <param name="bbox">Specifies the bounding box.</param>
+        /// <param name="expand_bbox">Specifies the bounding box.</param>
         /// <param name="fExpandRatio">Specifies the expansion ratio.</param>
         /// <returns>The expanded SimpleDatum is returned.</returns>
         public SimpleDatum ExpandImage(SimpleDatum d, NormalizedBBox expand_bbox, float fExpandRatio)

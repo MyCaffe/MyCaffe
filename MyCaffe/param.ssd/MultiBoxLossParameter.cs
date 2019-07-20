@@ -396,7 +396,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Copy the object.
         /// </summary>
-        /// <param name="p">The copy is placed in this parameter.</param>
+        /// <param name="src">The copy is placed in this parameter.</param>
         public void Copy(MultiBoxLossParameter src)
         {
             m_locLossType = src.loc_loss_type;

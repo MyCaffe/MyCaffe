@@ -44,7 +44,7 @@ namespace MyCaffe.data
         /// <param name="p">Specifies the ResizeParameter with the resize policy.</param>
         /// <param name="nOldWidth">Specifies the old width.</param>
         /// <param name="nOldHeight">Specifies the old height.</param>
-        /// <param name="bbox">Specifies the BBox to update.</param>
+        /// <param name="bbox1">Specifies the BBox to update.</param>
         /// <returns>The update NormalizedBBox is returned.</returns>
         public NormalizedBBox UpdateBBoxByResizePolicy(ResizeParameter p, int nOldWidth, int nOldHeight, NormalizedBBox bbox1)
         {
