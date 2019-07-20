@@ -8,6 +8,9 @@ using MyCaffe.common;
 using MyCaffe.param;
 using System.Diagnostics;
 
+/// <summary>
+/// The MyCaffe.layers.alpha namespace contains all experimental layers that have a fluid and changing code base.
+/// </summary>
 namespace MyCaffe.layers.alpha
 {
     /// <summary>

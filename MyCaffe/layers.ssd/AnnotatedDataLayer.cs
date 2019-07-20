@@ -11,6 +11,9 @@ using MyCaffe.db.image;
 using MyCaffe.param;
 using MyCaffe.param.ssd;
 
+/// <summary>
+/// The MyCaffe.layers.ssd namespace contains all SSD related layers.
+/// </summary>
 namespace MyCaffe.layers.ssd
 {
     /// <summary>
