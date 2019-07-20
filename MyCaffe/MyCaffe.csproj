@@ -194,7 +194,7 @@
     <Compile Include="param.ui\CsvConverter.cs" />
     <Compile Include="param.ssd\BatchSampler.cs" />
     <Compile Include="param.ssd\AnnotatedDataParameter.cs" />
-    <Compile Include="param\NonMaximumSuppressionParameter.cs" />
+    <Compile Include="param.ssd\NonMaximumSuppressionParameter.cs" />
     <Compile Include="param.ssd\MultiBoxLossParameter.cs" />
     <Compile Include="param.ssd\PriorBoxParameter.cs" />
     <Compile Include="param.ssd\ExpansionParameter.cs" />
