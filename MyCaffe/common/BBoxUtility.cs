@@ -944,6 +944,7 @@ namespace MyCaffe.common
         /// <param name="rgrgfPriorVariance">Specifies the list of prior variance (must have 4 elements each of which are > 0).</param>
         /// <param name="code_type">Specifies the code type.</param>
         /// <param name="bEncodeVarianceInTarget">Specifies whether or not to encode the variance in the target.</param>
+        /// <param name="bClip">Specifies to enable/disable the clipping.</param>
         /// <param name="rgBbox">Specifies a list of bounding boxs.</param>
         /// <returns>A list of decoded bounding box is returned.</returns>
         public List<NormalizedBBox> Decode(List<NormalizedBBox> rgPriorBbox, List<List<float>> rgrgfPriorVariance, PriorBoxParameter.CodeType code_type, bool bEncodeVarianceInTarget, bool bClip, List<NormalizedBBox> rgBbox)
@@ -1239,6 +1240,13 @@ namespace MyCaffe.common
             return 0;
         }
 
+        /// <summary>
+        /// Output the predicted bbox on the actual image.
+        /// </summary>
+        /// <param name="bbox">Specifies the bbox.</param>
+        /// <param name="szImg">Specifies the image size.</param>
+        /// <param name="p">Specifies the resize parameter.</param>
+        /// <returns>The predicted bbox is returned.</returns>
         public NormalizedBBox Output(NormalizedBBox bbox, SizeF szImg, ResizeParameter p)
         {
             int height = (int)szImg.Height;
