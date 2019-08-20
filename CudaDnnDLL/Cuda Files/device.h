@@ -724,8 +724,8 @@ inline long Device<T>::GetRequiredCompute(long lInput, T* pfInput, long* plOutpu
 #endif
 #endif
 
-	pfOutput[0] = nMajor;
-	pfOutput[1] = nMinor;
+	pfOutput[0] = (T)nMajor;
+	pfOutput[1] = (T)nMinor;
 
 	*ppfOutput = pfOutput;
 	*plOutput = 2;
