@@ -75,7 +75,6 @@
     <Compile Include="common\CudaDnnMemoryTracker.cs" />
     <Compile Include="common\DebugInformation.cs" />
     <Compile Include="common\DictionaryEx.cs" />
-    <Compile Include="common\DictionaryMap.cs" />
     <Compile Include="common\EventArgs.cs" />
     <Compile Include="common\Interfaces.cs" />
     <Compile Include="common\InternalThread.cs" />
@@ -96,6 +95,8 @@
     <Compile Include="fillers\PositiveUnitballFiller.cs" />
     <Compile Include="fillers\UniformFiller.cs" />
     <Compile Include="fillers\XavierFiller.cs" />
+    <Compile Include="layers.ssd\MultiBoxLossLayer.cs" />
+    <Compile Include="layers.ssd\PriorBoxLayer.cs" />
     <Compile Include="layers\DataNormalizerLayer.cs" />
     <Compile Include="layers.ssd\AnnotatedDataLayer.cs" />
     <Compile Include="layers.ssd\PermuteLayer.cs" />
