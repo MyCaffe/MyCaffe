@@ -85,6 +85,8 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="SqlServerTypes\Loader.cs" />
+    <Compile Include="TestPriorBoxLayer.cs" />
+    <Compile Include="TestMultiBboxLossLayer.cs" />
     <Compile Include="TestBBoxUtil.cs" />
     <Compile Include="TestImageTransforms.cs" />
     <Compile Include="TestGymPython.cs" />
