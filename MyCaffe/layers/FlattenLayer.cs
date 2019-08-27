@@ -105,7 +105,8 @@ namespace MyCaffe.layers
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            colTop[0].ShareData(colBottom[0]);
+            m_cuda.copy(colTop[0].count(), colBottom[0].gpu_data, colTop[0].mutable_gpu_data);
+//            colTop[0].ShareData(colBottom[0]);
         }
 
         /// <summary>
@@ -118,7 +119,8 @@ namespace MyCaffe.layers
         /// gradient is (virtually) copied.</param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            colBottom[0].ShareDiff(colTop[0]);
+            m_cuda.copy(colBottom[0].count(), colTop[0].gpu_diff, colBottom[0].mutable_gpu_diff);
+//            colBottom[0].ShareDiff(colTop[0]);
         }
     }
 }
