@@ -67,30 +67,44 @@ namespace MyCaffe.layers
         /// <returns>The normalization value is returned.</returns>
         protected virtual double get_normalizer(LossParameter.NormalizationMode normalization_mode, int nValidCount)
         {
+            return GetNormalizer(normalization_mode, m_nOuterNum, m_nInnerNum, nValidCount);
+        }
+
+
+        /// <summary>
+        /// Returns the normalizer used to normalize the loss.
+        /// </summary>
+        /// <param name="normalization_mode">Specifies the normalization mode to use.</param>
+        /// <param name="nOuterNum">Specifies the outer number.</param>
+        /// <param name="nInnerNum">Specifies the inner number.</param>
+        /// <param name="nValidCount">Specifies the number of valid.</param>
+        /// <returns>The normalization value is returned.</returns>
+        public double GetNormalizer(LossParameter.NormalizationMode normalization_mode, int nOuterNum, int nInnerNum, int nValidCount)
+        {
             double dfNormalizer = 0.0;
 
             switch (normalization_mode)
             {
                 case LossParameter.NormalizationMode.FULL:
-                    m_log.CHECK_GT(m_nInnerNum, 0, "The inner number must be set.");
-                    m_log.CHECK_GT(m_nOuterNum, 0, "The outer number must be set.");
-                    dfNormalizer = m_nOuterNum * m_nInnerNum;
+                    m_log.CHECK_GT(nInnerNum, 0, "The inner number must be set.");
+                    m_log.CHECK_GT(nOuterNum, 0, "The outer number must be set.");
+                    dfNormalizer = nOuterNum * nInnerNum;
                     break;
 
                 case LossParameter.NormalizationMode.VALID:
                     if (nValidCount == -1)
                     {
-                        m_log.CHECK_GT(m_nInnerNum, 0, "The inner number must be set.");
-                        m_log.CHECK_GT(m_nOuterNum, 0, "The outer number must be set.");
-                        dfNormalizer = m_nOuterNum * m_nInnerNum;
+                        m_log.CHECK_GT(nInnerNum, 0, "The inner number must be set.");
+                        m_log.CHECK_GT(nOuterNum, 0, "The outer number must be set.");
+                        dfNormalizer = nOuterNum * nInnerNum;
                     }
                     else
                         dfNormalizer = nValidCount;
                     break;
 
                 case LossParameter.NormalizationMode.BATCH_SIZE:
-                    m_log.CHECK_GT(m_nOuterNum, 0, "The outer number must be set.");
-                    dfNormalizer = m_nOuterNum;
+                    m_log.CHECK_GT(nOuterNum, 0, "The outer number must be set.");
+                    dfNormalizer = nOuterNum;
                     break;
 
                 case LossParameter.NormalizationMode.NONE:
