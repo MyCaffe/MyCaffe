@@ -1238,6 +1238,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.MEMORY_LOSS:
                     return new MemoryLossLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.MULTIBOX_LOSS:
+                    return new MultiBoxLossLayer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.MULTINOMIALLOGISTIC_LOSS:
                     return new MultinomialLogisticLossLayer<T>(cuda, log, p);
 
@@ -1273,6 +1276,9 @@ namespace MyCaffe.layers
 
                 case LayerParameter.LayerType.PRELU:
                     return new PReLULayer<T>(cuda, log, p);
+
+                case LayerParameter.LayerType.PRIORBOX:
+                    return new PriorBoxLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.REDUCTION:
                     return new ReductionLayer<T>(cuda, log, p);
