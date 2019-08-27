@@ -414,6 +414,15 @@ namespace MyCaffe.test
             m_filler.Fill(m_blob_bottom);
         }
 
+        protected void dispose(ref Blob<T> b)
+        {
+            if (b != null)
+            {
+                b.Dispose();
+                b = null;
+            }
+        }
+
         protected override void dispose()
         {
             m_blob_bottom.Dispose();
