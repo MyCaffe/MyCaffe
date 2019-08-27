@@ -17,8 +17,9 @@ namespace MyCaffe.common
     /// @see [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.
     /// @see [GitHub: SSD: Single Shot MultiBox Detector](https://github.com/weiliu89/caffe/tree/ssd), by weiliu89/caffe, 2016
     /// </remarks>
-    public class BBoxUtility<T>
+    public class BBoxUtility<T> : IDisposable
     {
+        Blob<T> m_blobDiff;
         CudaDnn<T> m_cuda;
         Log m_log;
 
@@ -32,6 +33,19 @@ namespace MyCaffe.common
         {
             m_cuda = cuda;
             m_log = log;
+            m_blobDiff = new Blob<T>(cuda, log);
+        }
+
+        /// <summary>
+        /// Clean up all resources.
+        /// </summary>
+        public void Dispose()
+        {
+            if (m_blobDiff != null)
+            {
+                m_blobDiff.Dispose();
+                m_blobDiff = null;
+            }
         }
 
         /// <summary>
@@ -310,12 +324,26 @@ namespace MyCaffe.common
         /// <param name="rgScores">Specifies a seto of corresponding confidences.</param>
         /// <param name="fThreshold">Specifies the threshold used in non maximum suppression.</param>
         /// <param name="nTopK">Specifies the top k picked indices or -1 for all.</param>
+        /// <returns>The indices of the bboxes after nms are returned.</returns>
+        public List<int> ApplyNMS(List<NormalizedBBox> rgBBoxes, List<float> rgScores, float fThreshold, int nTopK)
+        {
+            Dictionary<int, Dictionary<int, float>> rgOverlaps;
+            return ApplyNMS(rgBBoxes, rgScores, fThreshold, nTopK, false, out rgOverlaps);
+        }
+
+        /// <summary>
+        /// Do non maximum supression given bboxes and scores.
+        /// </summary>
+        /// <param name="rgBBoxes">Specifies a set of bounding boxes.</param>
+        /// <param name="rgScores">Specifies a seto of corresponding confidences.</param>
+        /// <param name="fThreshold">Specifies the threshold used in non maximum suppression.</param>
+        /// <param name="nTopK">Specifies the top k picked indices or -1 for all.</param>
         /// <param name="bReuseOverlaps">Specifies whether or not to use and update overlaps (true) or alwasy compute the overlap (false).</param>
         /// <param name="rgOverlaps">Returns the overlaps between pairs of bboxes if bReuseOverlaps is true.</param>
-        /// <param name="rgIndices">Returns the kept indices of bboxes after nms.</param>
-        public void ApplyNMS(List<NormalizedBBox> rgBBoxes, List<float> rgScores, float fThreshold, int nTopK, bool bReuseOverlaps, out Dictionary<int, Dictionary<int, float>> rgOverlaps, out List<int> rgIndices)
+        /// <returns>The indices of the bboxes after nms are returned.</returns>
+        public List<int> ApplyNMS(List<NormalizedBBox> rgBBoxes, List<float> rgScores, float fThreshold, int nTopK, bool bReuseOverlaps, out Dictionary<int, Dictionary<int, float>> rgOverlaps)
         {
-            rgIndices = new List<int>();
+            List<int> rgIndices = new List<int>();
             rgOverlaps = new Dictionary<int, Dictionary<int, float>>();
 
             // Sanity check.
@@ -412,6 +440,8 @@ namespace MyCaffe.common
                         nIdx++;
                 }
             }
+
+            return rgIndices;
         }
 
         /// <summary>
@@ -459,11 +489,11 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="rgPriorData">Specifies the prior data as a 1 x 2 x nNumPriors x 4 x 1 blob.</param>
         /// <param name="nNumPriors">Specifies the number of priors.</param>
-        /// <param name="rgPriorBboxes">Specifies the prior box list in the format of NormalizedBBox.</param>
         /// <param name="rgPriorVariances">Specifies the prior variances need by prior bboxes.</param>
-        public void GetPrior(float[] rgPriorData, int nNumPriors, out List<NormalizedBBox> rgPriorBboxes, out List<List<float>> rgPriorVariances)
+        /// <returns>The prior bbox list is returned.</returns>
+        public List<NormalizedBBox> GetPrior(float[] rgPriorData, int nNumPriors, out List<List<float>> rgPriorVariances)
         {
-            rgPriorBboxes = new List<NormalizedBBox>();
+            List<NormalizedBBox> rgPriorBboxes = new List<NormalizedBBox>();
             rgPriorVariances = new List<List<float>>();
 
             for (int i = 0; i < nNumPriors; i++)
@@ -489,15 +519,17 @@ namespace MyCaffe.common
 
                 rgPriorVariances.Add(rgVariance);
             }
+
+            return rgPriorBboxes;
         }
 
-        private int getLabel(int nPredIdx, int nNumPredsPerClass, int nNumClasses, int nBackgroundLabel, Dictionary<int, List<int>> rgMatchIndices, List<NormalizedBBox> rgGtBoxes)
+        private int getLabel(int nPredIdx, int nNumPredsPerClass, int nNumClasses, int nBackgroundLabel, DictionaryMap<List<int>> rgMatchIndices, List<NormalizedBBox> rgGtBoxes)
         {
             int nLabel = nBackgroundLabel;
 
             if (rgMatchIndices != null && rgMatchIndices.Count > 0 && rgGtBoxes != null && rgGtBoxes.Count > 0)
             {
-                List<KeyValuePair<int, List<int>>> rgMatches = rgMatchIndices.ToList();
+                List<KeyValuePair<int, List<int>>> rgMatches = rgMatchIndices.Map.ToList();
 
                 foreach (KeyValuePair<int, List<int>> match in rgMatches)
                 {
@@ -526,7 +558,7 @@ namespace MyCaffe.common
         /// <summary>
         /// Compute the confidence loss for each prior from rgConfData.
         /// </summary>
-        /// <param name="rgConfData">Specifies the nNum x nNumPredsPerClass * nNumClasses blob of confidence data.</param>
+        /// <param name="blobConfData">Specifies the nNum x nNumPredsPerClass * nNumClasses blob of confidence data.</param>
         /// <param name="nNum">Specifies the number of images.</param>
         /// <param name="nNumPredsPerClass">Specifies the number of predictions per class.</param>
         /// <param name="nNumClasses">Specifies the number of classes.</param>
@@ -535,9 +567,9 @@ namespace MyCaffe.common
         /// <param name="rgAllMatchIndices">Specifies all match indices storing a mapping between predictions and ground truth.</param>
         /// <param name="rgAllGtBoxes">Specifies all ground truth bboxes from the batch.</param>
         /// <returns>The confidence loss values are returned with confidence loss per location for each image.</returns>
-        public List<List<float>> ComputeConfLoss(float[] rgConfData, int nNum, int nNumPredsPerClass, int nNumClasses, int nBackgroundLabelId, MultiBoxLossParameter.ConfLossType loss_type, List<Dictionary<int, List<int>>> rgAllMatchIndices = null, Dictionary<int, List<NormalizedBBox>> rgAllGtBoxes = null)
+        public List<List<float>> ComputeConfLoss(float[] rgConfData, int nNum, int nNumPredsPerClass, int nNumClasses, int nBackgroundLabelId, MultiBoxLossParameter.ConfLossType loss_type, List<DictionaryMap<List<int>>> rgAllMatchIndices = null, DictionaryMap<List<NormalizedBBox>> rgAllGtBoxes = null)
         {
-            List<List<float>> rgrgConfLoss = new List<List<float>>();
+            List<List<float>> rgrgAllConfLoss = new List<List<float>>();
             int nOffset = 0;
 
             for (int i = 0; i < nNum; i++)
@@ -546,9 +578,9 @@ namespace MyCaffe.common
 
                 for (int p = 0; p < nNumPredsPerClass; p++)
                 {
-                    int nStartIdx = p * nNumPredsPerClass;
+                    int nStartIdx = p * nNumClasses;
                     // Get the label index.
-                    int nLabel = getLabel(p, nNumPredsPerClass, nNumClasses, nBackgroundLabelId, (rgAllMatchIndices == null) ? null : rgAllMatchIndices[i], (rgAllGtBoxes == null) ? null : rgAllGtBoxes[i]);
+                    int nLabel = nBackgroundLabelId;
                     float fLoss = 0;
 
                     switch (loss_type)
@@ -599,11 +631,11 @@ namespace MyCaffe.common
                     rgConfLoss.Add(fLoss);
                 }
 
-                rgrgConfLoss.Add(rgConfLoss);
+                rgrgAllConfLoss.Add(rgConfLoss);
                 nOffset += nNumPredsPerClass * nNumClasses;
             }
 
-            return rgrgConfLoss;
+            return rgrgAllConfLoss;
         }
 
         /// <summary>
@@ -698,9 +730,9 @@ namespace MyCaffe.common
         /// <param name="nBackgroundLabelId">Specifies the background label.</param>
         /// <param name="bUseDifficultGt">Specifies whether or not to use the difficult ground truth.</param>
         /// <returns>A dictionary containing the ground truth's (one per image) is returned with the label of each bbox stored in the NormalizedBBox.</returns>
-        public Dictionary<int, List<NormalizedBBox>> GetGroundTruth(float[] rgGtData, int nNumGt, int nBackgroundLabelId, bool bUseDifficultGt)
+        public DictionaryMap<List<NormalizedBBox>> GetGroundTruth(float[] rgGtData, int nNumGt, int nBackgroundLabelId, bool bUseDifficultGt)
         {
-            Dictionary<int, List<NormalizedBBox>> rgAllGt = new Dictionary<int, List<NormalizedBBox>>();
+            DictionaryMap<List<NormalizedBBox>> rgAllGt = new DictionaryMap<List<NormalizedBBox>>(null);
 
             for (int i = 0; i < nNumGt; i++)
             {
@@ -725,8 +757,8 @@ namespace MyCaffe.common
                                                          bDifficult);
                 bbox.size = Size(bbox);
 
-                if (!rgAllGt.ContainsKey(nItemId))
-                    rgAllGt.Add(nItemId, new List<NormalizedBBox>());
+                if (rgAllGt[nItemId] == null)
+                    rgAllGt[nItemId] = new List<NormalizedBBox>();
 
                 rgAllGt[nItemId].Add(bbox);
             }
@@ -1426,6 +1458,651 @@ namespace MyCaffe.common
                 return fWidth * fHeight;
             else // bbox is not in range [0,1]
                 return (fWidth + 1) * (fHeight + 1);
+        }
+
+        /// <summary>
+        /// Find matches between prediction bboxes and ground truth bboxes.
+        /// </summary>
+        /// <param name="rgAllLocPreds">Specifies the location prediction, where each item contains location prediction for an image.</param>
+        /// <param name="rgAllGtBboxes">Specifies the ground truth bboxes for the batch.</param>
+        /// <param name="rgPrioBboxes">Specifies all prior bboxes in the format of NormalizedBBox.</param>
+        /// <param name="rgrgPriorVariances">Specifies all the variances needed by prior bboxes.</param>
+        /// <param name="p">Specifies the parameter for the MultiBoxLossLayer.</param>
+        /// <param name="rgAllMatchOverlaps">Returns the jaccard overlaps between predictions and ground truth.</param>
+        /// <param name="rgAllMatchIndices">Returns the mapping between predictions and ground truth.</param>
+        public void FindMatches(List<LabelBBox> rgAllLocPreds, DictionaryMap<List<NormalizedBBox>> rgAllGtBboxes, List<NormalizedBBox> rgPriorBboxes, List<List<float>> rgrgPriorVariances, MultiBoxLossParameter p, out List<DictionaryMap<List<float>>> rgAllMatchOverlaps, out List<DictionaryMap<List<int>>> rgAllMatchIndices)
+        {
+            rgAllMatchOverlaps = new List<DictionaryMap<List<float>>>();
+            rgAllMatchIndices = new List<DictionaryMap<List<int>>>();
+
+            int nNumClasses = (int)p.num_classes;
+            m_log.CHECK_GE(nNumClasses, 1, "The num_classes should not be less than 1.");
+
+            bool bShareLocation = p.share_location;
+            int nLocClasses = (bShareLocation) ? 1 : nNumClasses;
+            MultiBoxLossParameter.MatchType matchType = p.match_type;
+            float fOverlapThreshold = p.overlap_threshold;
+            bool bUsePriorForMatching = p.use_prior_for_matching;
+            int nBackgroundLabelId = (int)p.background_label_id;
+            PriorBoxParameter.CodeType codeType = p.code_type;
+            bool bEncodeVarianceInTarget = p.encode_variance_in_target;
+            bool bIgnoreCrossBoundaryBbox = p.ignore_cross_boundary_bbox;
+
+            // Find the matches.
+            int nNum = rgAllLocPreds.Count;
+            for (int i = 0; i < nNum; i++)
+            {
+                DictionaryMap<List<int>> rgMatchIndices = new DictionaryMap<List<int>>(null);
+                DictionaryMap<List<float>> rgMatchOverlaps = new DictionaryMap<List<float>>(null);
+
+                // Check if there is a ground truth for the current image.
+                if (!rgAllGtBboxes.Map.ContainsKey(i))
+                {
+                    // There is no gt for current image.  All predictions are negative.
+                    rgAllMatchIndices.Add(rgMatchIndices);
+                    rgAllMatchOverlaps.Add(rgMatchOverlaps);
+                    continue;
+                }
+
+                // Find match between predictions and ground truth.
+                List<NormalizedBBox> rgGtBboxes = rgAllGtBboxes[i];
+                if (!bUsePriorForMatching)
+                {
+                    for (int c = 0; c < nLocClasses; c++)
+                    {
+                        int nLabel = (bShareLocation) ? -1 : c;
+
+                        // Ignore background loc predictions.
+                        if (!bShareLocation && nLabel == nBackgroundLabelId)
+                            continue;
+
+                        // Decode the prediction into bbox first.
+                        bool bClipBbox = false;
+                        List<NormalizedBBox> rgLocBBoxes = Decode(rgPriorBboxes, rgrgPriorVariances, codeType, bEncodeVarianceInTarget, bClipBbox, rgAllLocPreds[i][nLabel]);
+
+                        List<int> rgMatchIndices1;
+                        List<float> rgMatchOverlaps1;
+                        Match(rgGtBboxes, rgLocBBoxes, nLabel, matchType, fOverlapThreshold, bIgnoreCrossBoundaryBbox, out rgMatchIndices1, out rgMatchOverlaps1);
+
+                        rgMatchIndices[nLabel] = rgMatchIndices1;
+                        rgMatchOverlaps[nLabel] = rgMatchOverlaps1;
+                    }
+                }
+                else
+                {
+                    // Use prior bboxes to match against all ground truth.
+                    List<int> rgTempMatchIndices = new List<int>();
+                    List<float> rgTempMatchOverlaps = new List<float>();
+                    int nLabel = -1;
+
+                    Match(rgGtBboxes, rgPriorBboxes, nLabel, matchType, fOverlapThreshold, bIgnoreCrossBoundaryBbox, out rgTempMatchIndices, out rgTempMatchOverlaps);
+
+                    if (bShareLocation)
+                    {
+                        rgMatchIndices[nLabel] = rgTempMatchIndices;
+                        rgMatchOverlaps[nLabel] = rgTempMatchOverlaps;
+                    }
+                    else
+                    {
+                        // Get ground truth label for each ground truth bbox.
+                        List<int> rgGtLabels = new List<int>();
+                        for (int g = 0; g < rgGtBboxes.Count; g++)
+                        {
+                            rgGtLabels.Add(rgGtBboxes[g].label);
+                        }
+
+                        // Distribute the matching results to different loc_class.
+                        for (int c = 0; c < nLocClasses; c++)
+                        {
+                            // Ignore background loc predictions.
+                            if (c == nBackgroundLabelId)
+                                continue;
+
+                            rgMatchIndices[c] = rgTempMatchIndices;
+                            rgMatchOverlaps[c] = rgTempMatchOverlaps;
+
+                            for (int m = 0; m < rgTempMatchIndices.Count; m++)
+                            {
+                                if (rgTempMatchIndices[m] > -1)
+                                {
+                                    int nGtIdx = rgTempMatchIndices[m];
+                                    m_log.CHECK_LT(nGtIdx, rgGtLabels.Count, "The gt index is larger than the number of gt labels.");
+                                    if (c == rgGtLabels[nGtIdx])
+                                        rgMatchIndices[c][m] = nGtIdx;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                rgAllMatchIndices.Add(rgMatchIndices);
+                rgAllMatchOverlaps.Add(rgMatchOverlaps);
+            }
+        }
+
+        public int CountNumMatches(List<DictionaryMap<List<int>>> rgAllMatchIndices, int nNum)
+        {
+            int nNumMatches = 0;
+
+            for (int i = 0; i < nNum; i++)
+            {
+                Dictionary<int, List<int>> rgMatchIndices = rgAllMatchIndices[i].Map;
+
+                foreach (KeyValuePair<int, List<int>> kv in rgMatchIndices)
+                {
+                    List<int> rgMatchIndex = kv.Value;
+
+                    for (int m = 0; m < rgMatchIndex.Count; m++)
+                    {
+                        if (rgMatchIndex[m] > -1)
+                            nNumMatches++;
+                    }
+                }
+            }
+
+            return nNumMatches;
+        }
+
+        public bool IsEligibleMining(MultiBoxLossParameter.MiningType miningType, int nMatchIdx, float fMatchOverlap, float fNegOverlap)
+        {
+            if (miningType == MultiBoxLossParameter.MiningType.MAX_NEGATIVE)
+            {
+                if (nMatchIdx == -1 && fMatchOverlap < fNegOverlap)
+                    return true;
+                else
+                    return false;
+            }
+            else if (miningType == MultiBoxLossParameter.MiningType.HARD_EXAMPLE)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public int MineHardExamples(Blob<T> blobConf, List<LabelBBox> rgAllLocPreds, DictionaryMap<List<NormalizedBBox>> rgAllGtBBoxes, List<NormalizedBBox> rgPriorBboxes, List<List<float>> rgrgPriorVariances, List<DictionaryMap<List<float>>> rgAllMatchOverlaps, MultiBoxLossParameter p, List<DictionaryMap<List<int>>> rgAllMatchIndices, List<List<int>> rgAllNegIndices, out int nNumNegs)
+        {
+            int nNum = rgAllLocPreds.Count;
+            int nNumMatches = CountNumMatches(rgAllMatchIndices, nNum);
+
+            nNumNegs = 0;
+
+            int nNumPriors = rgPriorBboxes.Count;
+            m_log.CHECK_EQ(nNumPriors, rgrgPriorVariances.Count, "The number of priors must be the same as the number of prior variances.");
+
+            // Get parameters.
+            int nNumClasses = (int)p.num_classes;
+            m_log.CHECK_GE(nNumClasses, 1, "num_classes should be at least 1.");
+
+            int nBackgroundLabelId = (int)p.background_label_id;
+            bool bUsePriorForNms = p.use_prior_for_nms;
+            MultiBoxLossParameter.ConfLossType confLossType = p.conf_loss_type;
+            MultiBoxLossParameter.MiningType miningType = p.mining_type;
+
+            if (miningType == MultiBoxLossParameter.MiningType.NONE)
+                return nNumMatches;
+
+            MultiBoxLossParameter.LocLossType locLossType = p.loc_loss_type;
+            float fNegPosRatio = p.neg_pos_ratio;
+            float fNegOverlap = p.neg_overlap;
+            PriorBoxParameter.CodeType codeType = p.code_type;
+            bool bEncodeVarianceInTarget = p.encode_variance_in_target;
+            float fNmsThreshold = 0;
+            int nTopK = -1;
+
+            if (p.nms_param != null)
+            {
+                fNmsThreshold = p.nms_param.nms_threshold;
+                nTopK = p.nms_param.top_k;
+            }
+
+            int nSampleSize = p.sample_size;
+
+            // Compute confidence losses based on matching results.
+            float[] rgConfData = Utility.ConvertVecF<T>(blobConf.mutable_cpu_data);
+            List<List<float>> rgAllConfLoss = ComputeConfLoss(rgConfData, nNum, nNumPriors, nNumClasses, nBackgroundLabelId, confLossType, rgAllMatchIndices, rgAllGtBBoxes);
+
+            List<List<float>> rgAllLocLoss = new List<List<float>>();
+
+            // Compute localization losses based on matching results.
+            if (miningType == MultiBoxLossParameter.MiningType.HARD_EXAMPLE)
+            {
+                Blob<T> blobLocPred = new Blob<T>(m_cuda, m_log);
+                Blob<T> blobLocGt = new Blob<T>(m_cuda, m_log);
+
+                if (nNumMatches != 0)
+                {
+                    List<int> rgLocShape = Utility.Create<int>(2, 1);
+                    rgLocShape[1] = nNumMatches * 4;
+                    blobLocPred.Reshape(rgLocShape);
+                    blobLocGt.Reshape(rgLocShape);
+                    EncodeLocPrediction(rgAllLocPreds, rgAllGtBBoxes, rgAllMatchIndices, rgPriorBboxes, rgrgPriorVariances, p, blobLocPred, blobLocGt);
+                }
+
+                rgAllLocLoss = ComputeLocLoss(blobLocPred, blobLocGt, rgAllMatchIndices, nNum, nNumPriors, locLossType);
+            }
+            // No localization loss.
+            else
+            {
+                for (int i = 0; i < nNum; i++)
+                {
+                    List<float> rgLocLoss = Utility.Create<float>(nNumPriors, 0.0f);
+                    rgAllLocLoss.Add(rgLocLoss);
+                }
+            }
+
+            for (int i = 0; i < nNum; i++)
+            {
+                DictionaryMap<List<int>> rgMatchIndices = rgAllMatchIndices[i];
+                DictionaryMap<List<float>> rgMatchOverlaps = rgAllMatchOverlaps[i];
+
+                // loc + conf loss.
+                List<float> rgConfLoss = rgAllConfLoss[i];
+                List<float> rgLocLoss = rgAllLocLoss[i];
+                List<float> rgLoss = new List<float>();
+
+                for (int j = 0; j < rgConfLoss.Count; j++)
+                {
+                    rgLoss.Add(rgConfLoss[j] + rgLocLoss[j]);
+                }
+
+                // Pick negatives or hard examples based on loss.
+                List<int> rgSelIndices = new List<int>();
+                List<int> rgNegIndices = new List<int>();
+
+                foreach (KeyValuePair<int, List<int>> kv in rgMatchIndices.Map)
+                {
+                    int nLabel = kv.Key;
+                    int nNumSel = 0;
+
+                    // Get potential indices and loss pairs.
+                    List<KeyValuePair<float, int>> rgLossIndices = new List<KeyValuePair<float, int>>();
+
+                    for (int m = 0; m < rgMatchIndices[nLabel].Count; m++)
+                    {
+                        if (IsEligibleMining(miningType, rgMatchIndices[nLabel][m], rgMatchOverlaps[nLabel][m], fNegOverlap))
+                        {
+                            rgLossIndices.Add(new KeyValuePair<float, int>(rgLoss[m], m));
+                            nNumSel++;
+                        }
+                    }
+
+                    if (miningType == MultiBoxLossParameter.MiningType.MAX_NEGATIVE)
+                    {
+                        int nNumPos = 0;
+
+                        for (int m = 0; m < rgMatchIndices[nLabel].Count; m++)
+                        {
+                            if (rgMatchIndices[nLabel][m] > -1)
+                                nNumPos++;
+                        }
+
+                        nNumSel = Math.Min((int)(nNumPos * fNegPosRatio), nNumSel);
+                    }
+                    else if (miningType == MultiBoxLossParameter.MiningType.HARD_EXAMPLE)
+                    {
+                        m_log.CHECK_GT(nSampleSize, 0, "The sample size must be greater than 0 for HARD_EXAMPLE mining.");
+                        nNumSel = Math.Min(nSampleSize, nNumSel);
+                    }
+
+                    // Select samples.
+                    if (p.nms_param != null && fNmsThreshold > 0)
+                    {
+                        // Do nms before selecting samples.
+                        List<float> rgSelLoss = new List<float>();
+                        List<NormalizedBBox> rgSelBoxes = new List<NormalizedBBox>();
+
+                        if (bUsePriorForNms)
+                        {
+                            for (int m = 0; m < rgMatchIndices[nLabel].Count; m++)
+                            {
+                                if (IsEligibleMining(miningType, rgMatchIndices[nLabel][m], rgMatchOverlaps[nLabel][m], fNegOverlap))
+                                {
+                                    rgSelLoss.Add(rgLoss[m]);
+                                    rgSelBoxes.Add(rgPriorBboxes[m]);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            // Decode the prediction into bbox first.
+                            bool bClipBbox = false;
+                            List<NormalizedBBox> rgLocBBoxes = Decode(rgPriorBboxes, rgrgPriorVariances, codeType, bEncodeVarianceInTarget, bClipBbox, rgAllLocPreds[i][nLabel]);
+
+                            for (int m = 0; m < rgMatchIndices[nLabel].Count; m++)
+                            {
+                                if (IsEligibleMining(miningType, rgMatchIndices[nLabel][m], rgMatchOverlaps[nLabel][m], fNegOverlap))
+                                {
+                                    rgSelLoss.Add(rgLoss[m]);
+                                    rgSelBoxes.Add(rgLocBBoxes[m]);
+                                }
+                            }
+                        }
+
+                        // Do non-maximum suppression based on the loss.
+                        List<int> rgNmsIndices = ApplyNMS(rgSelBoxes, rgSelLoss, fNmsThreshold, nTopK);
+                        if (rgNegIndices.Count < nNumSel)
+                            m_log.WriteLine("WARNING: Not enough samples after NMS: " + rgNegIndices.Count.ToString());
+
+                        // Pick top example indices after nms.
+                        nNumSel = Math.Min(rgNmsIndices.Count, nNumSel);
+                        for (int n = 0; n < nNumSel; n++)
+                        {
+                            rgSelIndices.Insert(0, rgLossIndices[rgNmsIndices[n]].Value);
+                        }
+                    }
+                    else
+                    {
+                        // Pick top exampel indices based on loss.
+                        rgLossIndices = rgLossIndices.OrderByDescending(p1 => p1.Key).ToList();
+                        for (int n = 0; n < nNumSel; n++)
+                        {
+                            rgSelIndices.Insert(0, rgLossIndices[n].Value);
+                        }
+                    }
+
+                    // Update the match_indices and select neg_indices.
+                    for (int m = 0; m < rgMatchIndices[nLabel].Count; m++)
+                    {
+                        if (rgMatchIndices[nLabel][m] > -1)
+                        {
+                            if (miningType == MultiBoxLossParameter.MiningType.HARD_EXAMPLE && !rgSelIndices.Contains(m))
+                            {
+                                rgMatchIndices[nLabel][m] = -1;
+                                nNumMatches -= 1;
+                            }
+                        }
+                        else if (rgMatchIndices[nLabel][m] == -1)
+                        {
+                            if (!rgSelIndices.Contains(m))
+                            {
+                                rgNegIndices.Add(m);
+                                nNumNegs += 1;
+                            }
+                        }
+                    }
+                }
+
+                rgAllNegIndices.Add(rgNegIndices);
+            }
+
+            return nNumMatches;
+        }
+
+        public void EncodeLocPrediction(List<LabelBBox> rgAllLocPreds, DictionaryMap<List<NormalizedBBox>> rgAllGtBboxes, List<DictionaryMap<List<int>>> rgAllMatchIndices, List<NormalizedBBox> rgPriorBBoxes, List<List<float>> rgrgPriorVariances, MultiBoxLossParameter p, Blob<T> blobLocPred, Blob<T> blobLocGt)
+        {
+            float[] rgLocPredData = Utility.ConvertVecF<T>(blobLocPred.mutable_cpu_data);
+            float[] rgLocGtData = Utility.ConvertVecF<T>(blobLocGt.mutable_cpu_data);
+
+            int nNum = rgAllLocPreds.Count;
+            // Get parameters.
+            PriorBoxParameter.CodeType codeType = p.code_type;
+            bool bEncodeVarianceInTarget = p.encode_variance_in_target;
+            bool bBpInside = p.bp_inside;
+            bool bUsePriorForMatching = p.use_prior_for_matching;
+            int nCount = 0;
+
+            for (int i = 0; i < nNum; i++)
+            {
+                foreach (KeyValuePair<int, List<int>> kv in rgAllMatchIndices[i].Map)
+                {
+                    int nLabel = kv.Key;
+                    List<int> rgMatchIndex = kv.Value;
+
+                    m_log.CHECK(rgAllLocPreds[i].Contains(nLabel), "The all local pred must contain the label '" + nLabel.ToString() + "'!");
+                    List<NormalizedBBox> rgLocPred = rgAllLocPreds[i][nLabel];
+
+                    for (int j = 0; j < rgMatchIndex.Count; j++)
+                    {
+                        if (rgMatchIndex[j] <= -1)
+                            continue;
+
+                        // Store encoded ground truth.
+                        int nGtIdx = rgMatchIndex[j];
+                        m_log.CHECK(rgAllGtBboxes.Map.ContainsKey(i), "All gt bboxes should contain '" + i.ToString() + "'!");
+                        m_log.CHECK_LT(nGtIdx, rgAllGtBboxes[i].Count, "The ground truth index should be less than the number of ground truths at '" + i.ToString() + "'!");
+                        NormalizedBBox gtBbox = rgAllGtBboxes[i][nGtIdx];
+                        m_log.CHECK_LT(j, rgPriorBBoxes.Count, "The prior bbox count is too small!");
+                        NormalizedBBox gtEncode = Encode(rgPriorBBoxes[j], rgrgPriorVariances[j], codeType, bEncodeVarianceInTarget, gtBbox);
+
+                        rgLocGtData[nCount * 4 + 0] = gtEncode.xmin;
+                        rgLocGtData[nCount * 4 + 1] = gtEncode.ymin;
+                        rgLocGtData[nCount * 4 + 2] = gtEncode.xmax;
+                        rgLocGtData[nCount * 4 + 3] = gtEncode.ymax;
+
+                        // Store location prediction.
+                        m_log.CHECK_LT(j, rgLocPred.Count, "The loc pred count is too small!");
+
+                        if (bBpInside)
+                        {
+                            NormalizedBBox matchBbox = rgPriorBBoxes[j];
+
+                            if (!bUsePriorForMatching)
+                            {
+                                bool bClipBbox = false;
+                                matchBbox = Decode(rgPriorBBoxes[j], rgrgPriorVariances[j], codeType, bEncodeVarianceInTarget, bClipBbox, rgLocPred[j]);
+                            }
+
+                            // When a dimension of match_bbox is outside of image region, use
+                            // gt_encode to simulate zero gradient.
+                            rgLocPredData[nCount * 4 + 0] = (matchBbox.xmin < 0 || matchBbox.xmin > 1) ? gtEncode.xmin : rgLocPred[j].xmin;
+                            rgLocPredData[nCount * 4 + 1] = (matchBbox.ymin < 0 || matchBbox.ymin > 1) ? gtEncode.ymin : rgLocPred[j].ymin;
+                            rgLocPredData[nCount * 4 + 2] = (matchBbox.xmax < 0 || matchBbox.xmax > 1) ? gtEncode.xmax : rgLocPred[j].xmax;
+                            rgLocPredData[nCount * 4 + 3] = (matchBbox.ymax < 0 || matchBbox.ymax > 1) ? gtEncode.ymax : rgLocPred[j].ymax;
+                        }
+                        else
+                        {
+                            rgLocPredData[nCount * 4 + 0] = rgLocPred[j].xmin;
+                            rgLocPredData[nCount * 4 + 1] = rgLocPred[j].ymin;
+                            rgLocPredData[nCount * 4 + 2] = rgLocPred[j].xmax;
+                            rgLocPredData[nCount * 4 + 3] = rgLocPred[j].ymax;
+                        }
+
+                        if (bEncodeVarianceInTarget)
+                        {
+                            for (int k = 0; k < 4; k++)
+                            {
+                                m_log.CHECK_GT(rgrgPriorVariances[j][k], 0, "The variance at " + j.ToString() + ", " + k.ToString() + " must be greater than zero.");
+                                rgLocPredData[nCount * 4 + k] /= rgrgPriorVariances[j][k];
+                                rgLocGtData[nCount * 4 + k] /= rgrgPriorVariances[j][k];
+                            }
+                        }
+
+                        nCount++;
+                    }
+                }
+            }
+
+            blobLocPred.mutable_cpu_data = Utility.ConvertVec<T>(rgLocPredData);
+            blobLocGt.mutable_cpu_data = Utility.ConvertVec<T>(rgLocGtData);
+        }
+
+        public void EncodeConfPrediction(float[] rgfConfData, int nNum, int nNumPriors, MultiBoxLossParameter p, List<DictionaryMap<List<int>>> rgAllMatchIndices, List<List<int>> rgAllNegIndices, DictionaryMap<List<NormalizedBBox>> rgAllGtBBoxes, Blob<T> blobConfPred, Blob<T> blobConfGt)
+        {
+            float[] rgConfPredData = Utility.ConvertVecF<T>(blobConfPred.mutable_cpu_data);
+            float[] rgConfGtData = Utility.ConvertVecF<T>(blobConfGt.mutable_cpu_data);
+            int nConfDataOffset = 0;
+            int nConfGtDataOffset = 0;
+
+            // Get parameters.
+            int nNumClasses = (int)p.num_classes;
+            m_log.CHECK_GE(nNumClasses, 1, "The the num_classes should not be less than 1.");
+            int nBackgroundLabelId = (int)p.background_label_id;
+            bool bMapObjectToAgnostic = p.map_object_to_agnostic;
+
+            if (bMapObjectToAgnostic)
+            {
+                if (nBackgroundLabelId >= 0)
+                    m_log.CHECK_EQ(nNumClasses, 2, "There should be 2 classes when mapping obect to agnostic with a background label.");
+                else
+                    m_log.CHECK_EQ(nNumClasses, 1, "There should only b 1 class when mapping object to agnostic with no background label.");
+            }
+
+            MultiBoxLossParameter.MiningType miningType = p.mining_type;
+            bool bDoNegMining;
+
+            if (p.do_neg_mining.HasValue)
+            {
+                m_log.WriteLine("WARNING: do_neg_mining is depreciated, using mining_type instead.");
+                bDoNegMining = p.do_neg_mining.Value;
+                m_log.CHECK(bDoNegMining == (miningType != MultiBoxLossParameter.MiningType.NONE), "The mining_type and do_neg_mining settings are inconsistent.");
+            }
+
+            bDoNegMining = (miningType != MultiBoxLossParameter.MiningType.NONE) ? true : false;
+            MultiBoxLossParameter.ConfLossType confLossType = p.conf_loss_type;
+            int nCount = 0;
+
+            for (int i = 0; i < nNum; i++)
+            {
+                if (rgAllGtBBoxes.Map.ContainsKey(i))
+                {
+                    // Save matched (positive) bboxes scores and labels.
+                    DictionaryMap<List<int>> rgMatchIndicies = rgAllMatchIndices[i];
+
+                    foreach (KeyValuePair<int, List<int>> kv in rgAllMatchIndices[i].Map)
+                    {
+                        List<int> rgMatchIndex = kv.Value;
+                        m_log.CHECK_EQ(rgMatchIndex.Count, nNumPriors, "The match index count should equal the number of priors '" + nNumPriors.ToString() + "'!");
+
+                        for (int j = 0; j < nNumPriors; j++)
+                        {
+                            if (rgMatchIndex[j] <= -1)
+                                continue;
+
+                            int nGtLabel = (bMapObjectToAgnostic) ? nBackgroundLabelId + 1 : rgAllGtBBoxes[i][rgMatchIndex[j]].label;
+                            int nIdx = (bDoNegMining) ? nCount : j;
+
+                            switch (confLossType)
+                            {
+                                case MultiBoxLossParameter.ConfLossType.SOFTMAX:
+                                    rgConfGtData[nConfGtDataOffset + nIdx] = nGtLabel;
+                                    break;
+
+                                case MultiBoxLossParameter.ConfLossType.LOGISTIC:
+                                    rgConfGtData[nConfGtDataOffset + nIdx * nNumClasses + nGtLabel] = 1;
+                                    break;
+
+                                default:
+                                    m_log.FAIL("Unknown conf loss type.");
+                                    break;
+                            }
+
+                            if (bDoNegMining)
+                            {
+                                Array.Copy(rgfConfData, nConfDataOffset + j * nNumClasses, rgConfPredData, nCount * nNumClasses, nNumClasses);
+                                nCount++;
+                            }
+                        }
+                    }
+
+                    // Go to next image.
+                    if (bDoNegMining)
+                    {
+                        // Save negative bboxes scores and labels.
+                        for (int n = 0; n < rgAllNegIndices[i].Count; n++)
+                        {
+                            int j = rgAllNegIndices[i][n];
+                            m_log.CHECK_LT(j, nNumPriors, "The number of priors is too small!");
+
+                            Array.Copy(rgfConfData, nConfDataOffset + j * nNumClasses, rgConfPredData, nCount * nNumClasses, nNumClasses);
+
+                            switch (confLossType)
+                            {
+                                case MultiBoxLossParameter.ConfLossType.SOFTMAX:
+                                    rgConfGtData[nConfGtDataOffset + nCount] = nBackgroundLabelId;
+                                    break;
+
+                                case MultiBoxLossParameter.ConfLossType.LOGISTIC:
+                                    if (nBackgroundLabelId >= 0 && nBackgroundLabelId < nNumClasses)
+                                        rgConfGtData[nConfGtDataOffset + nCount * nNumClasses + nBackgroundLabelId] = 1;
+                                    break;
+
+                                default:
+                                    m_log.FAIL("Unknown conf loss type.");
+                                    break;
+                            }
+
+                            nCount++;
+                        }
+                    }
+                }
+
+                if (bDoNegMining)
+                    nConfDataOffset += nNumPriors * nNumClasses;
+                else
+                    nConfGtDataOffset += nNumPriors;
+            }
+
+            blobConfPred.mutable_cpu_data = Utility.ConvertVec<T>(rgConfPredData);
+            blobConfGt.mutable_cpu_data = Utility.ConvertVec<T>(rgConfGtData);
+        }
+
+        public List<List<float>> ComputeLocLoss(Blob<T> blobLocPred, Blob<T> blobLocGt, List<DictionaryMap<List<int>>> rgAllMatchIndices, int nNum, int nNumPriors, MultiBoxLossParameter.LocLossType lossType)
+        {
+            List<List<float>> rgLocAllLoss = new List<List<float>>();
+            int nLocCount = blobLocPred.count();
+            m_log.CHECK_EQ(nLocCount, blobLocGt.count(), "The loc pred and loc gt must have the same count!");
+            float[] rgfDiff = null;
+
+            if (nLocCount != 0)
+            {
+                m_blobDiff.ReshapeLike(blobLocPred);
+                m_cuda.sub(nLocCount, blobLocPred.gpu_data, blobLocGt.gpu_data, m_blobDiff.mutable_gpu_data);
+                rgfDiff = Utility.ConvertVecF<T>(m_blobDiff.mutable_cpu_data);
+            }
+
+            int nCount = 0;
+
+            for (int i = 0; i < nNum; i++)
+            {
+                List<float> rgLocLoss = Utility.Create<float>(nNumPriors, 0.0f);
+
+                foreach (KeyValuePair<int, List<int>> kv in rgAllMatchIndices[i].Map)
+                {
+                    List<int> rgMatchIndex = kv.Value;
+                    m_log.CHECK_EQ(nNumPriors, rgMatchIndex.Count, "The match index count at " + i.ToString() + " is too small.");
+
+                    for (int j = 0; j < rgMatchIndex.Count; j++)
+                    {
+                        if (rgMatchIndex[j] <= -1)
+                            continue;
+
+                        double dfLoss = 0;
+
+                        for (int k = 0; k < 4; k++)
+                        {
+                            float fVal = rgfDiff[nCount * 4 + k];
+
+                            if (lossType == MultiBoxLossParameter.LocLossType.SMOOTH_L1)
+                            {
+                                float fAbsVal = Math.Abs(fVal);
+
+                                if (fAbsVal < 1.0f)
+                                    dfLoss += 0.5 * fVal * fVal;
+                                else
+                                    dfLoss += fAbsVal - 0.5;
+                            }
+                            else if (lossType == MultiBoxLossParameter.LocLossType.L2)
+                            {
+                                dfLoss += 0.5 * fVal * fVal;
+                            }
+                            else
+                            {
+                                m_log.FAIL("Unknown loc loss type!");
+                            }
+                        }
+
+                        rgLocLoss[j] = (float)dfLoss;
+                        nCount++;
+                    }
+                }
+
+                rgLocAllLoss.Add(rgLocLoss);
+            }
+
+            return rgLocAllLoss;
         }
     }
 }
