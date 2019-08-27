@@ -1153,11 +1153,11 @@ namespace MyCaffe.test
                 rgGt[i * 8 + 7] = i % 2;
             }
 
-            Dictionary<int, List<NormalizedBBox>> rgAllGtBboxes = m_util.GetGroundTruth(rgGt, nNumGt, -1, true);
+            DictionaryMap<List<NormalizedBBox>> rgAllGtBboxes = m_util.GetGroundTruth(rgGt, nNumGt, -1, true);
 
-            m_log.CHECK_EQ(rgAllGtBboxes.Count, 3, "There should be 3 ground truths.");
+            m_log.CHECK_EQ(rgAllGtBboxes.Map.Count, 3, "There should be 3 ground truths.");
 
-            List<KeyValuePair<int, List<NormalizedBBox>>> rgAllGtList = rgAllGtBboxes.ToList();
+            List<KeyValuePair<int, List<NormalizedBBox>>> rgAllGtList = rgAllGtBboxes.Map.ToList();
             m_log.CHECK_EQ(rgAllGtBboxes[0].Count, 1, "The ground truth at 0 should have 1 bbox.");
             m_log.CHECK_EQ(rgAllGtBboxes[0][0].label, 0, "The label should be 0.");
             m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].xmin, 0.1, m_fEps, "The xmin should be 0.1");
@@ -1193,7 +1193,7 @@ namespace MyCaffe.test
 
             m_log.CHECK_EQ(rgAllGtBboxes.Count, 2, "There should be 3 ground truths.");
 
-            rgAllGtList = rgAllGtBboxes.ToList();
+            rgAllGtList = rgAllGtBboxes.Map.ToList();
             m_log.CHECK_EQ(rgAllGtBboxes[0].Count, 1, "The ground truth at 0 should have 1 bbox.");
             m_log.CHECK_EQ(rgAllGtBboxes[0][0].label, 0, "The label should be 0.");
             m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].xmin, 0.1, m_fEps, "The xmin should be 0.1");
@@ -1234,11 +1234,11 @@ namespace MyCaffe.test
                 rgGt[i * 8 + 7] = i % 2;
             }
 
-            Dictionary<int, List<NormalizedBBox>> rgAllGtBboxes = m_util.GetGroundTruth(rgGt, nNumGt, -1, true);
+            DictionaryMap<List<NormalizedBBox>> rgAllGtBboxes = m_util.GetGroundTruth(rgGt, nNumGt, -1, true);
 
             m_log.CHECK_EQ(rgAllGtBboxes.Count, 3, "There should be 3 ground truths.");
 
-            List<KeyValuePair<int, List<NormalizedBBox>>> rgAllGtList = rgAllGtBboxes.ToList();
+            List<KeyValuePair<int, List<NormalizedBBox>>> rgAllGtList = rgAllGtBboxes.Map.ToList();
             m_log.CHECK_EQ(rgAllGtBboxes[0].Count, 1, "The ground truth at 0 should have 1 bbox.");
             m_log.CHECK_EQ(rgAllGtBboxes[0][0].label, 0, "The label should be 0.");
             m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].xmin, 0.1, m_fEps, "The xmin should be 0.1");
@@ -1274,7 +1274,7 @@ namespace MyCaffe.test
 
             m_log.CHECK_EQ(rgAllGtBboxes.Count, 2, "There should be 3 ground truths.");
 
-            rgAllGtList = rgAllGtBboxes.ToList();
+            rgAllGtList = rgAllGtBboxes.Map.ToList();
             m_log.CHECK_EQ(rgAllGtBboxes[0].Count, 1, "The ground truth at 0 should have 1 bbox.");
             m_log.CHECK_EQ(rgAllGtBboxes[0][0].label, 0, "The label should be 0.");
             m_log.EXPECT_NEAR(rgAllGtBboxes[0][0].xmin, 0.1, m_fEps, "The xmin should be 0.1");
@@ -1510,8 +1510,8 @@ namespace MyCaffe.test
             Blob<T> blob = new Blob<T>(m_cuda, m_log, nNum, nDim, 1, 1);
             double[] rgData1 = convert(blob.mutable_cpu_data);
             float[] rgData = rgData1.Select(p => (float)p).ToArray();
-            Dictionary<int, List<NormalizedBBox>> rgAllGtBboxes = new Dictionary<int, List<NormalizedBBox>>();
-            List<Dictionary<int, List<int>>> rgAllMatchIndices = new List<Dictionary<int, List<int>>>();
+            DictionaryMap<List<NormalizedBBox>> rgAllGtBboxes = new DictionaryMap<List<NormalizedBBox>>(new List<NormalizedBBox>());
+            List<DictionaryMap<List<int>>> rgAllMatchIndices = new List<DictionaryMap<List<int>>>();
 
             for (int i = 0; i < nNum; i++)
             {
@@ -1526,9 +1526,9 @@ namespace MyCaffe.test
                     }
                 }
 
-                rgAllGtBboxes.Add(i, new List<NormalizedBBox>());
-                Dictionary<int, List<int>> rgMatchIndices = new Dictionary<int, List<int>>();
-                rgMatchIndices.Add(-1, Utility.Create<int>(nNumPredsPerClass, -1));
+                rgAllGtBboxes.Map.Add(i, new List<NormalizedBBox>());
+                DictionaryMap<List<int>> rgMatchIndices = new DictionaryMap<List<int>>(new List<int>());
+                rgMatchIndices.Map.Add(-1, Utility.Create<int>(nNumPredsPerClass, -1));
 
                 if (i == 1)
                 {
@@ -1611,9 +1611,8 @@ namespace MyCaffe.test
                 }
             }
 
-            List<NormalizedBBox> rgPriorBboxes;
             List<List<float>> rgPriorVariances;
-            m_util.GetPrior(rgData, nNumPriors, out rgPriorBboxes, out rgPriorVariances);
+            List<NormalizedBBox> rgPriorBboxes = m_util.GetPrior(rgData, nNumPriors, out rgPriorVariances);
 
             m_log.CHECK_EQ(rgPriorBboxes.Count, nNumPriors, "The prior box count is incorrect.");
             m_log.CHECK_EQ(rgPriorVariances.Count, nNumPriors, "The prior variance count is incorrect.");
@@ -1719,7 +1718,7 @@ namespace MyCaffe.test
             rgBBoxes.Add(new NormalizedBBox(0.1f, 0.2f, 0.4f, 0.4f));
             rgScores.Add(0.5f);
 
-            m_util.ApplyNMS(rgBBoxes, rgScores, fNmsThreshold, nTopK, bReuseOverlaps, out rgOverlaps, out rgIndices);
+            rgIndices = m_util.ApplyNMS(rgBBoxes, rgScores, fNmsThreshold, nTopK, bReuseOverlaps, out rgOverlaps);
 
             m_log.CHECK_EQ(rgOverlaps.Count, 0, "The overlap count should be zero.");  // reuse overlaps is false.
             m_log.CHECK_EQ(rgIndices.Count, 3, "There should be 3 indices.");
@@ -1728,7 +1727,7 @@ namespace MyCaffe.test
             m_log.CHECK_EQ(rgIndices[2], 2, "The index is incorrect.");
 
             nTopK = 2;
-            m_util.ApplyNMS(rgBBoxes, rgScores, fNmsThreshold, nTopK, bReuseOverlaps, out rgOverlaps, out rgIndices);
+            rgIndices = m_util.ApplyNMS(rgBBoxes, rgScores, fNmsThreshold, nTopK, bReuseOverlaps, out rgOverlaps);
 
             m_log.CHECK_EQ(rgOverlaps.Count, 0, "The overlap count should be zero.");  // reuse overlaps is false.
             m_log.CHECK_EQ(rgIndices.Count, 1, "There should be 3 indices.");
@@ -1736,14 +1735,14 @@ namespace MyCaffe.test
 
             nTopK = 3;
             fNmsThreshold = 0.2f;
-            m_util.ApplyNMS(rgBBoxes, rgScores, fNmsThreshold, nTopK, bReuseOverlaps, out rgOverlaps, out rgIndices);
+            rgIndices = m_util.ApplyNMS(rgBBoxes, rgScores, fNmsThreshold, nTopK, bReuseOverlaps, out rgOverlaps);
 
             m_log.CHECK_EQ(rgOverlaps.Count, 0, "The overlap count should be zero.");  // reuse overlaps is false.
             m_log.CHECK_EQ(rgIndices.Count, 1, "There should be 3 indices.");
             m_log.CHECK_EQ(rgIndices[0], 0, "The index is incorrect.");
 
             bReuseOverlaps = true;
-            m_util.ApplyNMS(rgBBoxes, rgScores, fNmsThreshold, nTopK, bReuseOverlaps, out rgOverlaps, out rgIndices);
+            rgIndices = m_util.ApplyNMS(rgBBoxes, rgScores, fNmsThreshold, nTopK, bReuseOverlaps, out rgOverlaps);
 
             m_log.CHECK_EQ(rgOverlaps.Count, 1, "The overlap count should be one.");
             m_log.EXPECT_NEAR(rgOverlaps[0][1], 1.0 / 3, m_fEps, "The overlap is incorrect.");
@@ -1752,7 +1751,7 @@ namespace MyCaffe.test
             m_log.EXPECT_NEAR(rgOverlaps[0][3], 2.0 / 8, m_fEps, "The overlap is incorrect.");
 
             Dictionary<int, Dictionary<int, float>> rgOldOverlaps = rgOverlaps;
-            m_util.ApplyNMS(rgBBoxes, rgScores, fNmsThreshold, nTopK, bReuseOverlaps, out rgOverlaps, out rgIndices);
+            rgIndices = m_util.ApplyNMS(rgBBoxes, rgScores, fNmsThreshold, nTopK, bReuseOverlaps, out rgOverlaps);
 
             for (int i = 1; i <= 3; i++)
             {
