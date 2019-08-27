@@ -172,7 +172,7 @@ namespace MyCaffe.layers
                 }
             }
 
-            m_rgbParamPropagateDown = new common.DictionaryMap<bool>(m_colBlobs.Count, true);
+            m_rgbParamPropagateDown = new DictionaryMap<bool>(m_colBlobs.Count, true);
         }
 
         /// <summary>
