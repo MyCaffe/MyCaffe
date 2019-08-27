@@ -15,7 +15,7 @@ namespace MyCaffe.basecode
     /// </remarks>
     public class LabelBBox
     {
-        Dictionary<int, List<NormalizedBBox>> m_rgItems = new Dictionary<int, List<NormalizedBBox>>();
+        DictionaryMap<List<NormalizedBBox>> m_rgItems = new DictionaryMap<List<NormalizedBBox>>(null);
 
         /// <summary>
         /// The constructor.
@@ -30,7 +30,7 @@ namespace MyCaffe.basecode
         /// <returns></returns>
         public List<KeyValuePair<int, List<NormalizedBBox>>> ToList()
         {
-            return m_rgItems.ToList();
+            return m_rgItems.Map.ToList();
         }
 
         /// <summary>
@@ -40,8 +40,8 @@ namespace MyCaffe.basecode
         /// <param name="bbox"></param>
         public void Add(int nLabel, NormalizedBBox bbox)
         {
-            if (!m_rgItems.ContainsKey(nLabel))
-                m_rgItems.Add(nLabel, new List<NormalizedBBox>());
+            if (m_rgItems[nLabel] == null)
+                m_rgItems[nLabel] = new List<NormalizedBBox>();
 
             m_rgItems[nLabel].Add(bbox);
         }
@@ -61,7 +61,7 @@ namespace MyCaffe.basecode
         /// <returns>If the label exists, <i>true</i> is returned, otherwise, <i>false</i> is returned.</returns>
         public bool Contains(int nLabel)
         {
-            return m_rgItems.ContainsKey(nLabel);
+            return m_rgItems.Map.ContainsKey(nLabel);
         }
 
         /// <summary>
@@ -73,8 +73,8 @@ namespace MyCaffe.basecode
         {
             get
             {
-                if (!m_rgItems.ContainsKey(nLabel))
-                    m_rgItems.Add(nLabel, new List<NormalizedBBox>());
+                if (m_rgItems[nLabel] == null)
+                    m_rgItems[nLabel] = new List<NormalizedBBox>();
 
                 return m_rgItems[nLabel];
             }
