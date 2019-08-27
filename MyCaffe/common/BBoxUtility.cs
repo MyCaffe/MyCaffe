@@ -558,7 +558,7 @@ namespace MyCaffe.common
         /// <summary>
         /// Compute the confidence loss for each prior from rgConfData.
         /// </summary>
-        /// <param name="blobConfData">Specifies the nNum x nNumPredsPerClass * nNumClasses blob of confidence data.</param>
+        /// <param name="rgConfData">Specifies the nNum x nNumPredsPerClass * nNumClasses blob of confidence data.</param>
         /// <param name="nNum">Specifies the number of images.</param>
         /// <param name="nNumPredsPerClass">Specifies the number of predictions per class.</param>
         /// <param name="nNumClasses">Specifies the number of classes.</param>
@@ -1465,7 +1465,7 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="rgAllLocPreds">Specifies the location prediction, where each item contains location prediction for an image.</param>
         /// <param name="rgAllGtBboxes">Specifies the ground truth bboxes for the batch.</param>
-        /// <param name="rgPrioBboxes">Specifies all prior bboxes in the format of NormalizedBBox.</param>
+        /// <param name="rgPriorBboxes">Specifies all prior bboxes in the format of NormalizedBBox.</param>
         /// <param name="rgrgPriorVariances">Specifies all the variances needed by prior bboxes.</param>
         /// <param name="p">Specifies the parameter for the MultiBoxLossLayer.</param>
         /// <param name="rgAllMatchOverlaps">Returns the jaccard overlaps between predictions and ground truth.</param>
@@ -1580,6 +1580,12 @@ namespace MyCaffe.common
             }
         }
 
+        /// <summary>
+        /// Counts the number of matches in the list of maps.
+        /// </summary>
+        /// <param name="rgAllMatchIndices">Specifies the list of match indices.</param>
+        /// <param name="nNum">Specifies the number of items.</param>
+        /// <returns>The total matches found in the number of items is returned.</returns>
         public int CountNumMatches(List<DictionaryMap<List<int>>> rgAllMatchIndices, int nNum)
         {
             int nNumMatches = 0;
@@ -1603,6 +1609,14 @@ namespace MyCaffe.common
             return nNumMatches;
         }
 
+        /// <summary>
+        /// Returns whether or not mining is eligible given the mining type and match index.
+        /// </summary>
+        /// <param name="miningType">Specifies the mining type.</param>
+        /// <param name="nMatchIdx">Specifies the matching index.</param>
+        /// <param name="fMatchOverlap">Specifies the matching overlap.</param>
+        /// <param name="fNegOverlap">Specifies the negative overlap.</param>
+        /// <returns>If mining is allowed, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
         public bool IsEligibleMining(MultiBoxLossParameter.MiningType miningType, int nMatchIdx, float fMatchOverlap, float fNegOverlap)
         {
             if (miningType == MultiBoxLossParameter.MiningType.MAX_NEGATIVE)
@@ -1622,6 +1636,20 @@ namespace MyCaffe.common
             }
         }
 
+        /// <summary>
+        /// Mine the hard examples from the batch.
+        /// </summary>
+        /// <param name="blobConf">Specifies the confidence prediction.</param>
+        /// <param name="rgAllLocPreds">Specifies the location prediction, where each item contains the location prediction for an image.</param>
+        /// <param name="rgAllGtBBoxes">Specifies the ground truth bboxes for the batch.</param>
+        /// <param name="rgPriorBboxes">Specifies the prior bboxes in the format of NormalizedBBox.</param>
+        /// <param name="rgrgPriorVariances">Specifies the variances needed by the prior bboxes.</param>
+        /// <param name="rgAllMatchOverlaps">Specifies the jaccard overlap between predictions and the ground truth.</param>
+        /// <param name="p">Specifies the parameters for the MultiBoxLossLayer.</param>
+        /// <param name="rgAllMatchIndices">Specifies the mapping between predictions and the ground truth.</param>
+        /// <param name="rgAllNegIndices">Specifies the indices for negative samples.</param>
+        /// <param name="nNumNegs">Specifies the numberof negative indices.</param>
+        /// <returns>The number of matches is returned.</returns>
         public int MineHardExamples(Blob<T> blobConf, List<LabelBBox> rgAllLocPreds, DictionaryMap<List<NormalizedBBox>> rgAllGtBBoxes, List<NormalizedBBox> rgPriorBboxes, List<List<float>> rgrgPriorVariances, List<DictionaryMap<List<float>>> rgAllMatchOverlaps, MultiBoxLossParameter p, List<DictionaryMap<List<int>>> rgAllMatchIndices, List<List<int>> rgAllNegIndices, out int nNumNegs)
         {
             int nNum = rgAllLocPreds.Count;
@@ -1831,7 +1859,18 @@ namespace MyCaffe.common
             return nNumMatches;
         }
 
-        public void EncodeLocPrediction(List<LabelBBox> rgAllLocPreds, DictionaryMap<List<NormalizedBBox>> rgAllGtBboxes, List<DictionaryMap<List<int>>> rgAllMatchIndices, List<NormalizedBBox> rgPriorBBoxes, List<List<float>> rgrgPriorVariances, MultiBoxLossParameter p, Blob<T> blobLocPred, Blob<T> blobLocGt)
+        /// <summary>
+        /// Encode the localization prediction and ground truth for each matched prior.
+        /// </summary>
+        /// <param name="rgAllLocPreds">Specifies the location prediction, where each item contains the location prediction for an image.</param>
+        /// <param name="rgAllGtBboxes">Specifies the ground truth bboxes for the batch.</param>
+        /// <param name="rgAllMatchIndices">Specifies the mapping between predictions and the ground truth.</param>
+        /// <param name="rgPriorBboxes">Specifies the prior bboxes in the format of NormalizedBBox.</param>
+        /// <param name="rgrgPriorVariances">Specifies the variances needed by the prior bboxes.</param>
+        /// <param name="p">Specifies the parameters for the MultiBoxLossLayer.</param>
+        /// <param name="blobLocPred">Specifies the location prediction results.</param>
+        /// <param name="blobLocGt">Specifies the encoded location ground truth.</param>
+        public void EncodeLocPrediction(List<LabelBBox> rgAllLocPreds, DictionaryMap<List<NormalizedBBox>> rgAllGtBboxes, List<DictionaryMap<List<int>>> rgAllMatchIndices, List<NormalizedBBox> rgPriorBboxes, List<List<float>> rgrgPriorVariances, MultiBoxLossParameter p, Blob<T> blobLocPred, Blob<T> blobLocGt)
         {
             float[] rgLocPredData = Utility.ConvertVecF<T>(blobLocPred.mutable_cpu_data);
             float[] rgLocGtData = Utility.ConvertVecF<T>(blobLocGt.mutable_cpu_data);
@@ -1864,8 +1903,8 @@ namespace MyCaffe.common
                         m_log.CHECK(rgAllGtBboxes.Map.ContainsKey(i), "All gt bboxes should contain '" + i.ToString() + "'!");
                         m_log.CHECK_LT(nGtIdx, rgAllGtBboxes[i].Count, "The ground truth index should be less than the number of ground truths at '" + i.ToString() + "'!");
                         NormalizedBBox gtBbox = rgAllGtBboxes[i][nGtIdx];
-                        m_log.CHECK_LT(j, rgPriorBBoxes.Count, "The prior bbox count is too small!");
-                        NormalizedBBox gtEncode = Encode(rgPriorBBoxes[j], rgrgPriorVariances[j], codeType, bEncodeVarianceInTarget, gtBbox);
+                        m_log.CHECK_LT(j, rgPriorBboxes.Count, "The prior bbox count is too small!");
+                        NormalizedBBox gtEncode = Encode(rgPriorBboxes[j], rgrgPriorVariances[j], codeType, bEncodeVarianceInTarget, gtBbox);
 
                         rgLocGtData[nCount * 4 + 0] = gtEncode.xmin;
                         rgLocGtData[nCount * 4 + 1] = gtEncode.ymin;
@@ -1877,12 +1916,12 @@ namespace MyCaffe.common
 
                         if (bBpInside)
                         {
-                            NormalizedBBox matchBbox = rgPriorBBoxes[j];
+                            NormalizedBBox matchBbox = rgPriorBboxes[j];
 
                             if (!bUsePriorForMatching)
                             {
                                 bool bClipBbox = false;
-                                matchBbox = Decode(rgPriorBBoxes[j], rgrgPriorVariances[j], codeType, bEncodeVarianceInTarget, bClipBbox, rgLocPred[j]);
+                                matchBbox = Decode(rgPriorBboxes[j], rgrgPriorVariances[j], codeType, bEncodeVarianceInTarget, bClipBbox, rgLocPred[j]);
                             }
 
                             // When a dimension of match_bbox is outside of image region, use
@@ -1919,6 +1958,18 @@ namespace MyCaffe.common
             blobLocGt.mutable_cpu_data = Utility.ConvertVec<T>(rgLocGtData);
         }
 
+        /// <summary>
+        /// Encode the confidence predictions and ground truth for each matched prior.
+        /// </summary>
+        /// <param name="rgfConfData">Specifies the num x num_priors * num_classes blob.</param>
+        /// <param name="nNum">Specifies the number of images.</param>
+        /// <param name="nNumPriors">Specifies the number of priors (predictions) per image.</param>
+        /// <param name="p">Specifies the parameters for the MultiBoxLossLayer.</param>
+        /// <param name="rgAllMatchIndices">Specifies the mapping between predictions and the ground truth.</param>
+        /// <param name="rgAllNegIndices">Specifies the indices for negative samples.</param>
+        /// <param name="rgAllGtBBoxes">Specifies the ground truth bboxes for the batch.</param>
+        /// <param name="blobConfPred">Specifies the confidence prediction results.</param>
+        /// <param name="blobConfGt">Specifies the confidence ground truth.</param>
         public void EncodeConfPrediction(float[] rgfConfData, int nNum, int nNumPriors, MultiBoxLossParameter p, List<DictionaryMap<List<int>>> rgAllMatchIndices, List<List<int>> rgAllNegIndices, DictionaryMap<List<NormalizedBBox>> rgAllGtBBoxes, Blob<T> blobConfPred, Blob<T> blobConfGt)
         {
             float[] rgConfPredData = Utility.ConvertVecF<T>(blobConfPred.mutable_cpu_data);
@@ -2039,6 +2090,16 @@ namespace MyCaffe.common
             blobConfGt.mutable_cpu_data = Utility.ConvertVec<T>(rgConfGtData);
         }
 
+        /// <summary>
+        /// Compute the localization loss per matched prior.
+        /// </summary>
+        /// <param name="blobLocPred">Specifies the location prediction results.</param>
+        /// <param name="blobLocGt">Specifies the encoded location ground truth.</param>
+        /// <param name="rgAllMatchIndices">Specifies the mapping between predictions and the ground truth.</param>
+        /// <param name="nNum">Specifies the number of images in the batch.</param>
+        /// <param name="nNumPriors">Specifies the total number of priors.</param>
+        /// <param name="lossType">Specifies the type of localization loss, Smooth_L1 or L2.</param>
+        /// <returns>Returns the localization loss for all priors in the batch.</returns>
         public List<List<float>> ComputeLocLoss(Blob<T> blobLocPred, Blob<T> blobLocGt, List<DictionaryMap<List<int>>> rgAllMatchIndices, int nNum, int nNumPriors, MultiBoxLossParameter.LocLossType lossType)
         {
             List<List<float>> rgLocAllLoss = new List<List<float>>();
