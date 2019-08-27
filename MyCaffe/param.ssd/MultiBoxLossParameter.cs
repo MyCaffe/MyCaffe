@@ -17,7 +17,7 @@ namespace MyCaffe.param.ssd
     /// @see [GitHub: SSD: Single Shot MultiBox Detector](https://github.com/weiliu89/caffe/tree/ssd), by weiliu89/caffe, 2016
     /// @see [Training Region-based Object Detectors with Online Hard Example Mining](https://arxiv.org/abs/1604.03540) by Abhinav Shrivastava, Abhinav Gupta, Ross Girshick, 2016.
     /// </remarks>
-    public class MultiBoxLossParameter
+    public class MultiBoxLossParameter : LayerParameterBase
     {
         LocLossType m_locLossType = LocLossType.SMOOTH_L1;
         ConfLossType m_confLossType = ConfLossType.SOFTMAX;
@@ -28,7 +28,7 @@ namespace MyCaffe.param.ssd
         float m_fOverlapThreshold = 0.5f;
         uint m_nBackgroundLabelId = 0;
         bool m_bUseDifficultGt = true;
-        bool m_bDoNegMining = false;
+        bool? m_bDoNegMining = null;
         float m_fNegPosRatio = 3.0f;
         float m_fNegOverlap = 0.5f;
         PriorBoxParameter.CodeType m_codeType = PriorBoxParameter.CodeType.CORNER;
@@ -40,6 +40,7 @@ namespace MyCaffe.param.ssd
         NonMaximumSuppressionParameter m_nmsParam = new NonMaximumSuppressionParameter();
         int m_nSampleSize = 64;
         bool m_bUsePriorForNms = false;
+        bool m_bUsePriorForMatching = true;
 
         /// <summary>
         /// Defines the localization loss types.
@@ -287,7 +288,7 @@ namespace MyCaffe.param.ssd
         /// <remarks>
         /// DEPRECIATED: using 'mining_type' instead.
         /// </remarks>
-        public bool do_neg_mining
+        public bool? do_neg_mining
         {
             get { return m_bDoNegMining; }
             set { m_bDoNegMining = value; }
@@ -394,51 +395,65 @@ namespace MyCaffe.param.ssd
         }
 
         /// <summary>
-        /// Copy the object.
+        /// Get/set whether or not to use prior for matching.
         /// </summary>
-        /// <param name="src">The copy is placed in this parameter.</param>
-        public void Copy(MultiBoxLossParameter src)
+        public bool use_prior_for_matching
         {
-            m_locLossType = src.loc_loss_type;
-            m_confLossType = src.conf_loss_type;
-            m_fLocWeight = src.loc_weight;
-            m_nNumClasses = src.num_classes;
-            m_bShareLocation = src.share_location;
-            m_matchType = src.match_type;
-            m_fOverlapThreshold = src.overlap_threshold;
-            m_nBackgroundLabelId = src.background_label_id;
-            m_bUseDifficultGt = src.use_difficult_gt;
-            m_bDoNegMining = src.do_neg_mining;
-            m_fNegPosRatio = src.neg_pos_ratio;
-            m_fNegOverlap = src.neg_overlap;
-            m_codeType = src.code_type;
-            m_bEncodeVarianceInTarget = src.encode_variance_in_target;
-            m_bMapObjectToAgnostic = src.map_object_to_agnostic;
-            m_bIgnoreCrossBoundaryBbox = src.ignore_cross_boundary_bbox;
-            m_bBpInside = src.bp_inside;
-            m_miningType = src.mining_type;
-            m_nmsParam = src.nms_param.Clone();
-            m_nSampleSize = src.sample_size;
-            m_bUsePriorForNms = src.use_prior_for_nms;
+            get { return m_bUsePriorForMatching; }
+            set { m_bUsePriorForMatching = value; }
         }
 
-        /// <summary>
-        /// Return a clone of the object.
-        /// </summary>
-        /// <returns>A new copy of the object is returned.</returns>
-        public MultiBoxLossParameter Clone()
+        /** @copydoc LayerParameterBase::Load */
+        public override object Load(BinaryReader br, bool bNewInstance = true)
+        {
+            RawProto proto = RawProto.Parse(br.ReadString());
+            MultiBoxLossParameter p = FromProto(proto);
+
+            if (!bNewInstance)
+                Copy(p);
+
+            return p;
+        }
+
+        /** @copydoc LayerParameterBase::Copy */
+        public override void Copy(LayerParameterBase src)
+        {
+            MultiBoxLossParameter p = src as MultiBoxLossParameter;
+
+            m_locLossType = p.loc_loss_type;
+            m_confLossType = p.conf_loss_type;
+            m_fLocWeight = p.loc_weight;
+            m_nNumClasses = p.num_classes;
+            m_bShareLocation = p.share_location;
+            m_matchType = p.match_type;
+            m_fOverlapThreshold = p.overlap_threshold;
+            m_nBackgroundLabelId = p.background_label_id;
+            m_bUseDifficultGt = p.use_difficult_gt;
+            m_bDoNegMining = p.do_neg_mining;
+            m_fNegPosRatio = p.neg_pos_ratio;
+            m_fNegOverlap = p.neg_overlap;
+            m_codeType = p.code_type;
+            m_bEncodeVarianceInTarget = p.encode_variance_in_target;
+            m_bMapObjectToAgnostic = p.map_object_to_agnostic;
+            m_bIgnoreCrossBoundaryBbox = p.ignore_cross_boundary_bbox;
+            m_bBpInside = p.bp_inside;
+            m_miningType = p.mining_type;
+            m_nmsParam = p.nms_param.Clone();
+            m_nSampleSize = p.sample_size;
+            m_bUsePriorForNms = p.use_prior_for_nms;
+            m_bUsePriorForMatching = p.use_prior_for_matching;
+        }
+
+        /** @copydoc LayerParameterBase::Clone */
+        public override LayerParameterBase Clone()
         {
             MultiBoxLossParameter p = new param.ssd.MultiBoxLossParameter();
             p.Copy(this);
             return p;
         }
 
-        /// <summary>
-        /// Convert this object to a raw proto.
-        /// </summary>
-        /// <param name="strName">Specifies the name of the proto.</param>
-        /// <returns>The new proto is returned.</returns>
-        public RawProto ToProto(string strName)
+        /** @copydoc LayerParameterBase::ToProto */
+        public override RawProto ToProto(string strName)
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
@@ -463,6 +478,7 @@ namespace MyCaffe.param.ssd
             rgChildren.Add(nms_param.ToProto("nms_param"));
             rgChildren.Add(new RawProto("sample_size", sample_size.ToString()));
             rgChildren.Add(new RawProto("use_prior_for_nms", use_prior_for_nms.ToString()));
+            rgChildren.Add(new RawProto("use_prior_for_matching", use_prior_for_matching.ToString()));
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -540,6 +556,9 @@ namespace MyCaffe.param.ssd
 
             if ((strVal = rp.FindValue("use_prior_for_nms")) != null)
                 p.use_prior_for_nms = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("use_prior_for_matching")) != null)
+                p.use_prior_for_matching = bool.Parse(strVal);
 
             return p;
         }

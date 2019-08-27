@@ -237,6 +237,10 @@ namespace MyCaffe.param
             /// </summary>
             MEMORY_LOSS,
             /// <summary>
+            /// Initialize a parameter for the MultiBoxLossLayer.
+            /// </summary>
+            MULTIBOX_LOSS,
+            /// <summary>
             /// Initializes a parameter for the MultinomialLogisticLossLayer.
             /// </summary>
             MULTINOMIALLOGISTIC_LOSS,
@@ -268,6 +272,10 @@ namespace MyCaffe.param
             /// Initializes a parameter for the PReLULayer.
             /// </summary>
             PRELU,
+            /// <summary>
+            /// Initializes a parameter for the PriorBoxLayer.
+            /// </summary>
+            PRIORBOX,
             /// <summary>
             /// Initializes a parameter for the ReductionLayer.
             /// </summary>
@@ -929,6 +937,13 @@ namespace MyCaffe.param
                     m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
                     break;
 
+                case LayerType.MULTIBOX_LOSS:
+                    expected_bottom.Add("input");
+                    expected_top.Add("loss");
+                    m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
+                    m_rgLayerParameters[lt] = new MultiBoxLossParameter();
+                    break;
+
                 case LayerType.MULTINOMIALLOGISTIC_LOSS:
                     expected_bottom.Add("pred");
                     expected_bottom.Add("label");
@@ -1001,6 +1016,12 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("prelu");
                     m_rgLayerParameters[lt] = new PReLUParameter();
+                    break;
+
+                case LayerType.PRIORBOX:
+                    expected_bottom.Add("input");
+                    expected_top.Add("priorbox");
+                    m_rgLayerParameters[lt] = new PriorBoxParameter();
                     break;
 
                 case LayerType.REDUCTION:
@@ -1621,6 +1642,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initializing with LayerType.MULTIBOX_LOSS
+        /// </summary>
+        public MultiBoxLossParameter multiboxloss_param
+        {
+            get { return (MultiBoxLossParameter)m_rgLayerParameters[LayerType.MULTIBOX_LOSS]; }
+            set { m_rgLayerParameters[LayerType.MULTIBOX_LOSS] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.MVN
         /// </summary>
         public MVNParameter mvn_param
@@ -1708,6 +1738,15 @@ namespace MyCaffe.param
         {
             get { return (PReLUParameter)m_rgLayerParameters[LayerType.PRELU]; }
             set { m_rgLayerParameters[LayerType.PRELU] = value; }
+        }
+
+        /// <summary>
+        /// Returns the parameter set when initialized with LayerType.PRIORBOX
+        /// </summary>
+        public PriorBoxParameter prior_box_param
+        {
+            get { return (PriorBoxParameter)m_rgLayerParameters[LayerType.PRIORBOX]; }
+            set { m_rgLayerParameters[LayerType.PRIORBOX] = value; }
         }
 
         /// <summary>
@@ -2125,6 +2164,9 @@ namespace MyCaffe.param
                 case LayerType.MEMORYDATA:
                     return "MemoryData";
 
+                case LayerType.MULTIBOX_LOSS:
+                    return "MultiBoxLoss";
+
                 case LayerType.MEMORY_LOSS:
                     return "MemoryLoss";
 
@@ -2163,6 +2205,9 @@ namespace MyCaffe.param
 
                 case LayerType.PRELU:
                     return "PReLU";
+
+                case LayerType.PRIORBOX:
+                    return "PriorBox";
 
                 case LayerType.REDUCTION:
                     return "Reduction";
@@ -2800,6 +2845,10 @@ namespace MyCaffe.param
                 case "memorydata":
                     return LayerType.MEMORYDATA;
 
+                case "multiboxloss":
+                case "multibox_loss":
+                    return LayerType.MULTIBOX_LOSS;
+
                 case "memoryloss":
                     return LayerType.MEMORY_LOSS;
 
@@ -2840,6 +2889,9 @@ namespace MyCaffe.param
 
                 case "prelu":
                     return LayerType.PRELU;
+
+                case "priorbox":
+                    return LayerType.PRIORBOX;
 
                 case "reduction":
                     return LayerType.REDUCTION;

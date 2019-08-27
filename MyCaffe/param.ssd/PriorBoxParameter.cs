@@ -16,7 +16,7 @@ namespace MyCaffe.param.ssd
     /// @see [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.
     /// @see [GitHub: SSD: Single Shot MultiBox Detector](https://github.com/weiliu89/caffe/tree/ssd), by weiliu89/caffe, 2016
     /// </remarks>
-    public class PriorBoxParameter
+    public class PriorBoxParameter : LayerParameterBase
     {
         List<float> m_rgMinSize = new List<float>();
         List<float> m_rgMaxSize = new List<float>();
@@ -225,44 +225,48 @@ namespace MyCaffe.param.ssd
             set { m_fOffset = value; }
         }
 
-        /// <summary>
-        /// Copy the object.
-        /// </summary>
-        /// <param name="src">The copy is placed in this parameter.</param>
-        public void Copy(PriorBoxParameter src)
+        /** @copydoc LayerParameterBase::Load */
+        public override object Load(BinaryReader br, bool bNewInstance = true)
         {
-            m_rgMinSize = Utility.Clone<float>(src.min_size);
-            m_rgMaxSize = Utility.Clone<float>(src.max_size);
-            m_rgAspectRatio = Utility.Clone<float>(src.aspect_ratio);
-            m_bFlip = src.flip;
-            m_bClip = src.clip;
-            m_rgVariance = Utility.Clone<float>(src.variance);
-            m_nImgSize = src.img_size;
-            m_nImgH = src.img_h;
-            m_nImgW = src.img_w;
-            m_fStep = src.step;
-            m_fStepH = src.step_h;
-            m_fStepW = src.step_w;
-            m_fOffset = src.offset;
+            RawProto proto = RawProto.Parse(br.ReadString());
+            PriorBoxParameter p = FromProto(proto);
+
+            if (!bNewInstance)
+                Copy(p);
+
+            return p;
         }
 
-        /// <summary>
-        /// Return a clone of the object.
-        /// </summary>
-        /// <returns>A new copy of the object is returned.</returns>
-        public PriorBoxParameter Clone()
+        /** @copydoc LayerParameterBase::Copy */
+        public override void Copy(LayerParameterBase src)
+        {
+            PriorBoxParameter p = src as PriorBoxParameter;
+
+            m_rgMinSize = Utility.Clone<float>(p.min_size);
+            m_rgMaxSize = Utility.Clone<float>(p.max_size);
+            m_rgAspectRatio = Utility.Clone<float>(p.aspect_ratio);
+            m_bFlip = p.flip;
+            m_bClip = p.clip;
+            m_rgVariance = Utility.Clone<float>(p.variance);
+            m_nImgSize = p.img_size;
+            m_nImgH = p.img_h;
+            m_nImgW = p.img_w;
+            m_fStep = p.step;
+            m_fStepH = p.step_h;
+            m_fStepW = p.step_w;
+            m_fOffset = p.offset;
+        }
+
+        /** @copydoc LayerParameterBase::Clone */
+        public override LayerParameterBase Clone()
         {
             PriorBoxParameter p = new param.ssd.PriorBoxParameter();
             p.Copy(this);
             return p;
         }
 
-        /// <summary>
-        /// Convert this object to a raw proto.
-        /// </summary>
-        /// <param name="strName">Specifies the name of the proto.</param>
-        /// <returns>The new proto is returned.</returns>
-        public RawProto ToProto(string strName)
+        /** @copydoc LayerParameterBase::ToProto */
+        public override RawProto ToProto(string strName)
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
