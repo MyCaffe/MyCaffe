@@ -25,6 +25,8 @@ namespace MyCaffe.basecode
         string m_strGpuIds = "0";
         IMAGEDB_LOAD_METHOD m_imageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
         int m_nImageDbLoadLimit = 0;
+        bool m_bImageDbLoadDataCriteria = false;
+        bool m_bImageDbLoadDebugData = false;
         SNAPSHOT_WEIGHT_UPDATE_METHOD m_snapshotWeightUpdateMethod = SNAPSHOT_WEIGHT_UPDATE_METHOD.FAVOR_ACCURACY;
         SNAPSHOT_LOAD_METHOD m_snapshotLoadMethod = SNAPSHOT_LOAD_METHOD.STATE_BEST_ACCURACY;
 
@@ -53,6 +55,8 @@ namespace MyCaffe.basecode
             m_strGpuIds = s.m_strGpuIds;
             m_imageDbLoadMethod = s.m_imageDbLoadMethod;
             m_nImageDbLoadLimit = s.m_nImageDbLoadLimit;
+            m_bImageDbLoadDataCriteria = s.m_bImageDbLoadDataCriteria;
+            m_bImageDbLoadDebugData = s.m_bImageDbLoadDebugData;
             m_snapshotWeightUpdateMethod = s.m_snapshotWeightUpdateMethod;
             m_snapshotLoadMethod = s.m_snapshotLoadMethod;
         }
@@ -77,6 +81,8 @@ namespace MyCaffe.basecode
             m_nMaskAllButLastColumns = getInt(info, "nMaskAllButLastColumns", m_nMaskAllButLastColumns);
             m_imageDbLoadMethod = (IMAGEDB_LOAD_METHOD)getInt(info, "ImageDbLoadMethod", (int)m_imageDbLoadMethod);
             m_nImageDbLoadLimit = getInt(info, "ImageDbLoadLimit", m_nImageDbLoadLimit);
+            m_bImageDbLoadDataCriteria = getBool(info, "ImageDbLoadDataCriteria", m_bImageDbLoadDataCriteria);
+            m_bImageDbLoadDebugData = getBool(info, "ImageDbLoadDebugData", m_bImageDbLoadDebugData);
             m_snapshotWeightUpdateMethod = (SNAPSHOT_WEIGHT_UPDATE_METHOD)getInt(info, "SnapshotWeightUpdateMethod", (int)m_snapshotWeightUpdateMethod);
             m_snapshotLoadMethod = (SNAPSHOT_LOAD_METHOD)getInt(info, "SnapshotLoadMethod", (int)m_snapshotLoadMethod);
         }
@@ -149,6 +155,8 @@ namespace MyCaffe.basecode
             info.AddValue("nMaskAllButLastColumns", m_nMaskAllButLastColumns);
             info.AddValue("ImageDbLoadMethod", (int)m_imageDbLoadMethod);
             info.AddValue("ImageDbLoadLimit", m_nImageDbLoadLimit);
+            info.AddValue("ImageDbLoadDataCriteria", m_bImageDbLoadDataCriteria);
+            info.AddValue("ImageDbLoadDebugData", m_bImageDbLoadDebugData);
             info.AddValue("SnapshotWeightUpdateMethod", (int)m_snapshotWeightUpdateMethod);
             info.AddValue("SnapshotLoadMethod", (int)m_snapshotLoadMethod);
         }
@@ -174,6 +182,8 @@ namespace MyCaffe.basecode
             s.m_nMaskAllButLastColumns = m_nMaskAllButLastColumns;
             s.m_imageDbLoadMethod = m_imageDbLoadMethod;
             s.m_nImageDbLoadLimit = m_nImageDbLoadLimit;
+            s.m_bImageDbLoadDataCriteria = m_bImageDbLoadDataCriteria;
+            s.m_bImageDbLoadDebugData = m_bImageDbLoadDebugData;
             s.m_snapshotWeightUpdateMethod = m_snapshotWeightUpdateMethod;
             s.m_snapshotLoadMethod = m_snapshotLoadMethod;
 
@@ -304,6 +314,24 @@ namespace MyCaffe.basecode
         {
             get { return m_nImageDbLoadLimit; }
             set { m_nImageDbLoadLimit = value; }
+        }
+
+        /// <summary>
+        /// Specifies whether or not to load the image criteria data from file (default = false).
+        /// </summary>
+        public bool ImageDbLoadDataCriteria
+        {
+            get { return m_bImageDbLoadDataCriteria; }
+            set { m_bImageDbLoadDataCriteria = value; }
+        }
+
+        /// <summary>
+        /// Specifies whether or not to load the debug data from file (default = false).
+        /// </summary>
+        public bool ImageDbLoadDebugData
+        {
+            get { return m_bImageDbLoadDebugData; }
+            set { m_bImageDbLoadDebugData = value; }
         }
 
         /// <summary>

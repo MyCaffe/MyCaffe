@@ -1002,18 +1002,20 @@ namespace MyCaffe.db.image
         /// If the RawImage uses its Virtual ID, the RawImage with that ID is queried from the database and its raw data is returned.
         /// </remarks>
         /// <param name="img">Specifies the RawImage to use.</param>
+        /// <param name="bLoadDataCriteria">Specifies whether or not to load the data criteria data if any exists.  When false, the data criteria data is not loaded from file.</param>
+        /// <param name="bLoadDebugData">Specifies whether or not to load the debug data if any exists.  When false, the debug data is not loaded from file.</param>
         /// <param name="rgDataCriteria">Returns the image data criteria (if any).</param>
         /// <param name="nDataCriteriaFmtId">Returns the image data criteria format (if any).</param>
         /// <param name="rgDebugData">Returns the image debug data (if any).</param>
         /// <param name="nDebugDataFmtId">Returns the debug data format (if any).</param>
         /// <returns>The raw data is returned as a array of <i>byte</i> values.</returns>
-        public byte[] GetRawImageData(RawImage img, out byte[] rgDataCriteria, out int? nDataCriteriaFmtId, out byte[] rgDebugData, out int? nDebugDataFmtId)
+        public byte[] GetRawImageData(RawImage img, bool bLoadDataCriteria, bool bLoadDebugData, out byte[] rgDataCriteria, out int? nDataCriteriaFmtId, out byte[] rgDebugData, out int? nDebugDataFmtId)
         {
             if (img.VirtualID == 0)
             {
-                rgDataCriteria = getRawImage(img.DataCriteria, img.OriginalSourceID);
+                rgDataCriteria = (bLoadDataCriteria) ? getRawImage(img.DataCriteria, img.OriginalSourceID) : img.DataCriteria;
                 nDataCriteriaFmtId = img.DataCriteriaFormatID;
-                rgDebugData = getRawImage(img.DebugData, img.OriginalSourceID);
+                rgDebugData = (bLoadDebugData) ? getRawImage(img.DebugData, img.OriginalSourceID) : img.DebugData;
                 nDebugDataFmtId = img.DebugDataFormatID;
                 return getRawImage(img.Data, img.OriginalSourceID);
             }
@@ -1031,9 +1033,9 @@ namespace MyCaffe.db.image
                     return null;
                 }
 
-                rgDataCriteria = getRawImage(rgImg[0].DataCriteria, img.OriginalSourceID);
+                rgDataCriteria = (bLoadDataCriteria) ? getRawImage(rgImg[0].DataCriteria, img.OriginalSourceID) : rgImg[0].DataCriteria;
                 nDataCriteriaFmtId = rgImg[0].DataCriteriaFormatID;
-                rgDebugData = getRawImage(rgImg[0].DebugData, img.OriginalSourceID);
+                rgDebugData = (bLoadDebugData) ? getRawImage(rgImg[0].DebugData, img.OriginalSourceID) : rgImg[0].DebugData;
                 nDebugDataFmtId = rgImg[0].DebugDataFormatID;
 
                 return getRawImage(rgImg[0].Data, img.OriginalSourceID);
@@ -1069,6 +1071,38 @@ namespace MyCaffe.db.image
 
                 nDataCriteriaFmtId = rgImg[0].DataCriteriaFormatID;
                 return getRawImage(rgImg[0].DataCriteria, img.OriginalSourceID);
+            }
+        }
+
+        /// <summary>
+        /// Returns the raw debug data data of the RawImage.
+        /// </summary>
+        /// <remarks>
+        /// If the RawImage uses its Virtual ID, the RawImage with that ID is queried from the database and its raw data is returned.
+        /// </remarks>
+        /// <param name="img">Specifies the RawImage to use.</param>
+        /// <param name="nDebugDataFmtId">Returns the image debug data format (if any).</param>
+        /// <returns>The raw debug data is returned as a array of <i>byte</i> values.</returns>
+        public byte[] GetRawImageDebugData(RawImage img, out int? nDebugDataFormatId)
+        {
+            if (img.VirtualID == 0)
+            {
+                nDebugDataFormatId = img.DebugDataFormatID;
+                return getRawImage(img.DebugData, img.OriginalSourceID);
+            }
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<RawImage> rgImg = entities.RawImages.Where(p => p.ID == img.VirtualID).ToList();
+
+                if (rgImg.Count == 0)
+                {
+                    nDebugDataFormatId = null;
+                    return null;
+                }
+
+                nDebugDataFormatId = rgImg[0].DebugDataFormatID;
+                return getRawImage(rgImg[0].DebugData, img.OriginalSourceID);
             }
         }
 

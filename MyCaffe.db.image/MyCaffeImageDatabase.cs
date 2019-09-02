@@ -366,6 +366,8 @@ namespace MyCaffe.db.image
                 {
                     m_evtInitializing.Set();
 
+                    m_factory.SetLoadingParameters(s.ImageDbLoadDataCriteria, s.ImageDbLoadDebugData);
+
                     DatasetDescriptor ds = m_factory.LoadDataset(nDataSetID);
                     if (ds == null)
                         throw new Exception("Could not find dataset with ID = " + nDataSetID.ToString());

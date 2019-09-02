@@ -28,6 +28,14 @@ namespace MyCaffe.db.image
         /// Specifies the original source ID (if any).
         /// </summary>
         protected int? m_nOriginalSourceID = null;
+        /// <summary>
+        /// Specifies whether or not to load the data criteria data if any exists.  When false, the data criteria data is not loaded from file (default = false).
+        /// </summary>
+        protected bool m_bLoadDataCriteria = false;
+        /// <summary>
+        /// Specifies whether or not to load the debug data if any exists.  When false, the debug data is not loaded from file (default = false).
+        /// </summary>
+        protected bool m_bLoadDebugData = false;
 
         ImageCache m_imageCache;
 
@@ -43,9 +51,11 @@ namespace MyCaffe.db.image
         /// <summary>
         /// The DatasetFactory constructor.
         /// </summary>
-        /// <param name="factory">Specifies another DatasetFactory to create this one from.</param>
+        /// <param name="factory">Specifies the DatasetFactory to create this one from.</param>
         public DatasetFactory(DatasetFactory factory)
         {
+            m_bLoadDebugData = factory.m_bLoadDebugData;
+            m_bLoadDataCriteria = factory.m_bLoadDataCriteria;
         }
 
         /// <summary>
@@ -62,6 +72,17 @@ namespace MyCaffe.db.image
         /// </summary>
         public void Dispose()
         {
+        }
+
+        /// <summary>
+        /// Sets the loading parameters that are used to determine which data to load with each image.
+        /// </summary>
+        /// <param name="bLoadDataCriteria">Specifies whether or not to load the data criteria data if any exists.  When false, the data criteria data is not loaded from file. (default = true).</param>
+        /// <param name="bLoadDebugData">Specifies whether or not to load the debug data if any exists.  When false, the debug data is not loaded from file. (default = true).</param>
+        public void SetLoadingParameters(bool bLoadDataCriteria, bool bLoadDebugData)
+        {
+            m_bLoadDataCriteria = bLoadDataCriteria;
+            m_bLoadDebugData = bLoadDebugData;
         }
 
         /// <summary>
@@ -1211,7 +1232,7 @@ namespace MyCaffe.db.image
             int? nDataCriteriaFormatId = null;
             byte[] rgDebugData = null;
             int? nDebugDataFormatId = null;
-            byte[] rgData = m_db.GetRawImageData(img, out rgDataCriteria, out nDataCriteriaFormatId, out rgDebugData, out nDebugDataFormatId);
+            byte[] rgData = m_db.GetRawImageData(img, m_bLoadDataCriteria, m_bLoadDebugData, out rgDataCriteria, out nDataCriteriaFormatId, out rgDebugData, out nDebugDataFormatId);
             List<byte> rgDataBytes = null;
             List<double> rgDataDouble = null;
             int nHeight = img.Height.GetValueOrDefault();
