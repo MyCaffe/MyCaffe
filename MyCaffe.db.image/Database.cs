@@ -1107,6 +1107,32 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Converts the raw image debug data which may be stored as a path to the underlying data file, to the actual data.
+        /// </summary>
+        /// <param name="rgData">Specifies the raw data, which may contain an image path.</param>
+        /// <remarks>
+        /// You must Open the database with the source under which the image is stored.
+        /// </remarks>
+        /// <returns>The actual raw data is returned.</returns>
+        public byte[] GetRawImageDebugData(byte[] rgData)
+        {
+            return getRawImage(rgData, null);
+        }
+
+        /// <summary>
+        /// Converts the raw image data criteria data which may be stored as a path to the underlying data file, to the actual data.
+        /// </summary>
+        /// <param name="rgData">Specifies the raw data, which may contain an image path.</param>
+        /// <remarks>
+        /// You must Open the database with the source under which the image is stored.
+        /// </remarks>
+        /// <returns>The actual raw data is returned.</returns>
+        public byte[] GetRawImageDataCriteria(byte[] rgData)
+        {
+            return getRawImage(rgData, null);
+        }
+
+        /// <summary>
         /// Converts a set of bytes from a file path\name by loading its bytes and returning them, or if the original bytes do not
         /// contain a path, just returns the original bytes.
         /// </summary>
