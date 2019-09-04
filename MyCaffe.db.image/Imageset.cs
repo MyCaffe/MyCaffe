@@ -422,12 +422,18 @@ namespace MyCaffe.db.image
         /// <param name="bSuperboostOnly">Specifies whether or not to return images with super-boost.</param>
         /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nStartIdx">Optionally, specifies a starting index from which the query is to start within the set of images (default = 0).</param>
+        /// <param name="nQueryCount">Optionally, specifies a number of images to retrieve within the set (default = int.MaxValue).</param>
         /// <returns>The list of images is returned.</returns>
         /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
-        public List<SimpleDatum> GetImages(bool bSuperboostOnly, string strFilterVal = null, int? nBoostVal = null)
+        public List<SimpleDatum> GetImages(bool bSuperboostOnly, string strFilterVal = null, int? nBoostVal = null, int nStartIdx = 0, int nQueryCount = int.MaxValue)
         {
             IEnumerable<SimpleDatum> iQuery = getQuery(bSuperboostOnly, strFilterVal, nBoostVal);
+
+            if (nStartIdx != 0 || nQueryCount != int.MaxValue)
+                iQuery = iQuery.Where(p => p.Index >= nStartIdx && p.Index < nStartIdx + nQueryCount);
+
             return iQuery.ToList();
         }
 
