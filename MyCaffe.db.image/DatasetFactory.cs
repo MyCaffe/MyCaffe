@@ -1347,17 +1347,40 @@ namespace MyCaffe.db.image
         /// Load an image at a given index.
         /// </summary>
         /// <param name="nIdx">Specifies the image index.</param>
+        /// <param name="bLoadDataCriteria">Specifies to load the data criteria data (default = false).</param>
+        /// <param name="bLoadDebugData">Specifies to load the debug data (default = false).</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <param name="nPadW">Optionally, specifies a pad to apply to the width (default = 0).</param>
         /// <param name="nPadH">Optionally, specifies a pad to apply to the height (default = 0).</param>
         /// <returns>A new SimpleDatum is returned containing the image.</returns>
-        public SimpleDatum LoadImageAt(int nIdx, int nSrcId = 0, int nPadW = 0, int nPadH = 0)
+        public SimpleDatum LoadImageAt(int nIdx, bool bLoadDataCriteria, bool bLoadDebugData, int nSrcId = 0, int nPadW = 0, int nPadH = 0)
         {            
             RawImage img = m_db.GetRawImageAt(nIdx, nSrcId);
             if (img == null)
                 return null;
 
+            if (bLoadDataCriteria && img.DataCriteria != null)
+                img.DataCriteria = m_db.GetRawImageDataCriteria(img.DataCriteria);
+
+            if (bLoadDebugData && img.DebugData != null)
+                img.DebugData = m_db.GetRawImageDebugData(img.DebugData);
+
             return LoadDatum(img, nPadW, nPadH);
+        }
+
+        /// <summary>
+        /// Load the data criteria and/or debug data.
+        /// </summary>
+        /// <param name="sd">Specifies the SimpleDatum to load.</param>
+        /// <param name="bLoadDataCriteria">Specifies to load the data criteria data (default = false).</param>
+        /// <param name="bLoadDebugData">Specifies to load the debug data (default = false).</param>
+        public void LoadRawData(SimpleDatum sd, bool bLoadDataCriteria, bool bLoadDebugData)
+        {
+            if (bLoadDataCriteria && sd.DataCriteria != null)
+                sd.DataCriteria = m_db.GetRawImageDataCriteria(sd.DataCriteria);
+
+            if (bLoadDebugData && sd.DebugData != null)
+                sd.DebugData = m_db.GetRawImageDebugData(sd.DebugData);
         }
 
         /// <summary>

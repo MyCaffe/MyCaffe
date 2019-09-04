@@ -167,9 +167,13 @@ namespace MyCaffe.layers
         public override void DataLayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             int nBatchSize = (int)m_param.data_param.batch_size;
+            bool bLoadDataCriteria = false;
+
+            if (m_bOutputLabels && m_param.data_param.label_type == DataParameter.LABEL_TYPE.MULTIPLE)
+                bLoadDataCriteria = true;
 
             // Read a data point, and use it to initialize the top blob.
-            Datum datum = m_cursor.GetValue();
+            Datum datum = m_cursor.GetValue(null, bLoadDataCriteria);
 
             // Use data transformer to infer the expected blob shape from the datum.
             List<int> rgTopShape = m_transformer.InferBlobShape(datum);
@@ -297,6 +301,10 @@ namespace MyCaffe.layers
         {
             m_log.CHECK(batch.Data.count() > 0, "There is no space allocated for data!");
             int nBatchSize = (int)m_param.data_param.batch_size;
+            bool bLoadDataCriteria = false;
+
+            if (m_bOutputLabels && m_param.data_param.label_type == DataParameter.LABEL_TYPE.MULTIPLE)
+                bLoadDataCriteria = true;
 
             T[] rgTopLabel = null;
 
@@ -337,9 +345,9 @@ namespace MyCaffe.layers
                 }
 
                 if (rgTargetLabels == null)
-                    datum = m_cursor.GetValue();
+                    datum = m_cursor.GetValue(null, bLoadDataCriteria);
                 else
-                    datum = m_cursor.GetValue(rgTargetLabels[i]);
+                    datum = m_cursor.GetValue(rgTargetLabels[i], bLoadDataCriteria);
 
                 if (m_param.data_param.display_timing)
                 {

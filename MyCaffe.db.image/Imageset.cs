@@ -438,8 +438,10 @@ namespace MyCaffe.db.image
         /// <param name="labelSelectionMethod">Specifies the label selection method.</param>
         /// <param name="imageSelectionMethod">Specifies the image selection method.</param>
         /// <param name="log">Specifies the Log for status output.</param>
+        /// <param name="bLoadDataCriteria">Specifies to load the data criteria data (default = false).</param>
+        /// <param name="bLoadDebugData">Specifies to load the debug data (default = false).</param>
         /// <returns>The SimpleDatum containing the image is returned.</returns>
-        public SimpleDatum GetImage(int nIdx, IMGDB_LABEL_SELECTION_METHOD labelSelectionMethod, IMGDB_IMAGE_SELECTION_METHOD imageSelectionMethod, Log log)
+        public SimpleDatum GetImage(int nIdx, IMGDB_LABEL_SELECTION_METHOD labelSelectionMethod, IMGDB_IMAGE_SELECTION_METHOD imageSelectionMethod, Log log, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
         {
             lock (m_syncObj)
             {
@@ -472,6 +474,8 @@ namespace MyCaffe.db.image
                 //  Handle dynamic loading of the image.
                 //-----------------------------------------
 
+                bool bRawDataLoaded = false;
+
                 if (sd == null)
                 {
                     int nRetries = 1;
@@ -481,9 +485,10 @@ namespace MyCaffe.db.image
 
                     for (int i = 0; i < nRetries; i++)
                     {
-                        sd = m_factory.LoadImageAt(nImageIdx);
+                        sd = m_factory.LoadImageAt(nImageIdx, bLoadDataCriteria, bLoadDebugData);
                         if (sd != null)
                         {
+                            bRawDataLoaded = true;
                             Add(nImageIdx, sd);
                             break;
                         }
@@ -495,6 +500,9 @@ namespace MyCaffe.db.image
                     if (sd == null)
                         log.WriteLine("WARNING! The dataset needs to be re-indexed. Could not find the image at index " + nImageIdx.ToString() + " - attempting several random queries to get an image.");
                 }
+
+                if (!bRawDataLoaded)
+                    m_factory.LoadRawData(sd, bLoadDebugData, bLoadDataCriteria);
 
                 return sd;
             }

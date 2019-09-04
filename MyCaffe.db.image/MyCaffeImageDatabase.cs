@@ -678,8 +678,10 @@ namespace MyCaffe.db.image
         /// <param name="labelSelectionOverride">Optionally, specifies the label selection method override.  The default = null, which directs the method to use the label selection method specified during Initialization.</param>
         /// <param name="imageSelectionOverride">Optionally, specifies the image selection method override.  The default = null, which directs the method to use the image selection method specified during Initialization.</param>
         /// <param name="nLabel">Optionally, specifies a label set to use for the image selection.  When specified only images of this label are returned using the image selection method.</param>
+        /// <param name="bLoadDataCriteria">Specifies to load the data criteria data (default = false).</param>
+        /// <param name="bLoadDebugData">Specifies to load the debug data (default = false).</param>
         /// <returns>The image SimpleDatum is returned.</returns>
-        public SimpleDatum QueryImage(int nSrcId, int nIdx, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null)
+        public SimpleDatum QueryImage(int nSrcId, int nIdx, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
 
@@ -707,13 +709,13 @@ namespace MyCaffe.db.image
                 if (lblSet.IsLoaded)
                     sd = lblSet.GetImage(0, imageSelectionMethod);
             }
-
+           
             if (m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND && (imageSelectionMethod & IMGDB_IMAGE_SELECTION_METHOD.PAIR) == IMGDB_IMAGE_SELECTION_METHOD.PAIR)
                 throw new Exception("PAIR selection is not supported whith the LOAD_ON_DEMAND loading method.");
 
             if (sd == null)
             {
-                sd = imgSet.GetImage(nIdx, labelSelectionMethod, imageSelectionMethod, m_log);
+                sd = imgSet.GetImage(nIdx, labelSelectionMethod, imageSelectionMethod, m_log, bLoadDataCriteria, bLoadDebugData);
                 if (sd == null)
                 {
                     Exception err = new Exception("Could not acquire an image - re-index the dataset.");
@@ -725,7 +727,7 @@ namespace MyCaffe.db.image
                 {
                     while (sd.Label != nLabel.Value)
                     {
-                        sd = imgSet.GetImage(nIdx, labelSelectionMethod, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, m_log);
+                        sd = imgSet.GetImage(nIdx, labelSelectionMethod, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, m_log, bLoadDataCriteria, bLoadDebugData);
                     }
 
                     lblSet.Add(sd);

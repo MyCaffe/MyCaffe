@@ -120,10 +120,11 @@ namespace MyCaffe.data
         /// Retrieve the Datum at the current cursor location within the data source.
         /// </summary>
         /// <param name="nLabel">Optionally, specifies a label for which the cursor should query from.</param>
+        /// <param name="bLoadDataCriteria">Specifies whether or not to load the data criteria.</param>
         /// <returns>The Datum retrieved is returned.</returns>
-        public Datum GetValue(int? nLabel = null)
+        public Datum GetValue(int? nLabel = null, bool bLoadDataCriteria = false)
         {
-            SimpleDatum sd = m_db.QueryImage(m_nSrcID, m_nIdx, null, null, nLabel);
+            SimpleDatum sd = m_db.QueryImage(m_nSrcID, m_nIdx, null, null, nLabel, bLoadDataCriteria, false);
             return new Datum(sd);
         }
     }
