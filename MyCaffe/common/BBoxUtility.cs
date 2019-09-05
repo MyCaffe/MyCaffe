@@ -1243,6 +1243,43 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Compute the coverage of bbox1 by bbox2.
+        /// </summary>
+        /// <param name="bbox1">Specifies the first BBox.</param>
+        /// <param name="bbox2">Specifies the second BBox.</param>
+        /// <returns>The coverage of bbox1 by bbox2 is returned.</returns>
+        public float Coverage(NormalizedBBox bbox1, NormalizedBBox bbox2)
+        {
+            NormalizedBBox intersectBBox = Intersect(bbox1, bbox2);
+            float fIntersectSize = Size(intersectBBox);
+
+            if (fIntersectSize > 0)
+            {
+                float fBbox1Size = Size(bbox1);
+                return fBbox1Size / fIntersectSize;
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Locate bbox in the coordinate system of the source Bbox.
+        /// </summary>
+        /// <param name="srcBbox">Specifies the source Bbox.</param>
+        /// <param name="bbox">Specifies the bbox to locate.</param>
+        /// <returns>The bbox located within the source Bbox is returned.</returns>
+        public NormalizedBBox Locate(NormalizedBBox srcBbox, NormalizedBBox bbox)
+        {
+            float fSrcWidth = srcBbox.xmax - srcBbox.xmin;
+            float fSrcHeight = srcBbox.ymax - srcBbox.ymin;
+
+            return new NormalizedBBox(srcBbox.xmin + bbox.xmin * fSrcWidth,
+                                      srcBbox.ymin + bbox.ymin * fSrcHeight,
+                                      srcBbox.xmax + bbox.xmax * fSrcWidth,
+                                      srcBbox.ymax + bbox.ymax * fSrcHeight, 0, bbox.difficult);
+        }
+
+        /// <summary>
         /// Calculates the Jaccard overlap between two bounding boxes.
         /// </summary>
         /// <param name="bbox1">Specifies the first bounding box.</param>
