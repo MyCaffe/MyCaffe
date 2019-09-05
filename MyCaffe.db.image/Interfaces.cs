@@ -234,7 +234,7 @@ namespace MyCaffe.db.image
         /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
         [OperationContract(IsOneWay = false)]
-        List<SimpleDatum> GetImages(int nSrcId, bool bSuperboostOnly, string strFilterVal, int? nBoostVal, int[] rgIdx);
+        List<SimpleDatum> GetImagesEx(int nSrcId, bool bSuperboostOnly, string strFilterVal, int? nBoostVal, int[] rgIdx);
 
         /// <summary>
         /// Query an image in a given data source.
