@@ -54,26 +54,28 @@ namespace MyCaffe.basecode
     public class AnnotationGroup
     {
         int m_nGroupLabel = 0;
-        NormalizedBBox m_bbox = null;
+        List<Annotation> m_rgAnnotations = new List<Annotation>();
 
         /// <summary>
         /// The constructor.
         /// </summary>
-        /// <param name="bbox">Specifies the group bounding box.</param>
+        /// <param name="rgAnnotations">Optionally, specifies the list of group annotations.</param>
         /// <param name="nGroupLabel">Specifies the group label.</param>
-        public AnnotationGroup(NormalizedBBox bbox, int nGroupLabel = 0)
+        public AnnotationGroup(List<Annotation> rgAnnotations = null, int nGroupLabel = 0)
         {
-            m_bbox = bbox;
+            if (rgAnnotations != null && rgAnnotations.Count > 0)
+                m_rgAnnotations.AddRange(rgAnnotations);
+
             m_nGroupLabel = nGroupLabel;
         }
 
         /// <summary>
-        /// Get/set the group bounding box.
+        /// Get/set the group annoations.
         /// </summary>
-        public NormalizedBBox bbox
+        public List<Annotation> annotations
         {
-            get { return m_bbox; }
-            set { m_bbox = value; }
+            get { return m_rgAnnotations; }
+            set { m_rgAnnotations = value; }
         }
 
         /// <summary>
