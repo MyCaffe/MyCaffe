@@ -585,6 +585,27 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <param name="bSuperboostOnly">Specifies whether or not to return images with super-boost.</param>
+        /// <param name="strFilterVal">specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="rgIdx">Specifies a set of indexes of the images to retrieve.</param>
+        /// <returns>The list of images is returned.</returns>
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
+        public List<SimpleDatum> GetImages(int nSrcId, bool bSuperboostOnly, string strFilterVal, int? nBoostVal, int[] rgIdx)
+        {
+            int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
+
+            if (nWait == 0)
+                return null;
+
+            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImages(bSuperboostOnly, strFilterVal, nBoostVal, rgIdx);
+        }
+
+        /// <summary>
         /// Get a set of images, listed in chronological order starting at the next date greater than or equal to 'dt'.
         /// </summary>
         /// <param name="nSrcId">Specifies the databse ID of the data source.</param>

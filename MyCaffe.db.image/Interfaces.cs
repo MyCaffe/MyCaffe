@@ -223,6 +223,20 @@ namespace MyCaffe.db.image
         List<SimpleDatum> GetImages(int nSrcId, bool bSuperboostOnly, string strFilterVal = null, int? nBoostVal = null, int nStartIdx = 0, int nQueryCount = int.MaxValue);
 
         /// <summary>
+        /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <param name="bSuperboostOnly">Specifies whether or not to return images with super-boost.</param>
+        /// <param name="strFilterVal">specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="rgIdx">Specifies a set of indexes to search for where the images returned must have an index greater than or equal to the individual index.</param>
+        /// <returns>The list of images is returned.</returns>
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
+        [OperationContract(IsOneWay = false)]
+        List<SimpleDatum> GetImages(int nSrcId, bool bSuperboostOnly, string strFilterVal, int? nBoostVal, int[] rgIdx);
+
+        /// <summary>
         /// Query an image in a given data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the databse ID of the data source.</param>
