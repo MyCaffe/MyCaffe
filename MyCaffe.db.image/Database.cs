@@ -1081,7 +1081,7 @@ namespace MyCaffe.db.image
         /// If the RawImage uses its Virtual ID, the RawImage with that ID is queried from the database and its raw data is returned.
         /// </remarks>
         /// <param name="img">Specifies the RawImage to use.</param>
-        /// <param name="nDebugDataFmtId">Returns the image debug data format (if any).</param>
+        /// <param name="nDebugDataFormatId">Returns the image debug data format (if any).</param>
         /// <returns>The raw debug data is returned as a array of <i>byte</i> values.</returns>
         public byte[] GetRawImageDebugData(RawImage img, out int? nDebugDataFormatId)
         {
