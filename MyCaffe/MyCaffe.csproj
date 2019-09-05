@@ -81,6 +81,7 @@
     <Compile Include="common\Net.cs" />
     <Compile Include="common\PersistCaffe.cs" />
     <Compile Include="common\ResultCollection.cs" />
+    <Compile Include="common\SsdSampler.cs" />
     <Compile Include="common\SyncedMemory.cs" />
     <Compile Include="common\TransferInput.cs" />
     <Compile Include="common\WeightInfo.cs" />
