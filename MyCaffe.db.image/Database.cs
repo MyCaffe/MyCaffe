@@ -225,653 +225,654 @@ namespace MyCaffe.db.image
         #region Labels
 
         private List<Label> loadLabelCache(int nSrcId)
+        {
+            return m_entities.Labels.Where(p => p.SourceID == nSrcId).ToList();
+        }
+
+        /// <summary>
+        /// Update the name of a label.
+        /// </summary>
+        /// <param name="nLabel">Specifies the label.</param>
+        /// <param name="strName">Specifies the new name.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        public void UpdateLabelName(int nLabel, string strName, int nSrcId = 0)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<Label> rg = entities.Labels.Where(p => p.SourceID == nSrcId && p.ActiveLabel == nLabel).ToList();
+                Label l;
+
+                if (rg.Count == 0)
                 {
-                    return m_entities.Labels.Where(p => p.SourceID == nSrcId).ToList();
+                    l = new Label();
+                    l.Label1 = nLabel;
+                    l.ActiveLabel = nLabel;
+                    l.ImageCount = 0;
+                    l.SourceID = nSrcId;
+
+                    entities.Labels.Add(l);
+                }
+                else
+                {
+                    l = rg[0];
                 }
 
-                /// <summary>
-                /// Update the name of a label.
-                /// </summary>
-                /// <param name="nLabel">Specifies the label.</param>
-                /// <param name="strName">Specifies the new name.</param>
-                /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-                public void UpdateLabelName(int nLabel, string strName, int nSrcId = 0)
+                l.Name = strName;
+
+                entities.SaveChanges();
+            }
+        }
+
+        /// <summary>
+        /// Return the Label with the given ID.
+        /// </summary>
+        /// <param name="nID">Specifies the Label ID.</param>
+        /// <returns>When found, the Label with the ID is returned, otherwise <i>null</i> is returned.</returns>
+        public Label GetLabel(int nID)
+        {
+            foreach (Label l in m_rgLabelCache)
+            {
+                if (l.ID == nID)
+                    return l;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Get the Label name of a label within a data source.
+        /// </summary>
+        /// <param name="nLabel">Specifies the label.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <returns>When found, the Label is returned, otherwise <i>null</i> is returned.</returns>
+        public string GetLabelName(int nLabel, int nSrcId = 0)
+        {
+            if (nSrcId == 0)
+            {
+                foreach (Label l in m_rgLabelCache)
                 {
-                    if (nSrcId == 0)
-                        nSrcId = m_src.ID;
-
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                    {
-                        List<Label> rg = entities.Labels.Where(p => p.SourceID == nSrcId && p.ActiveLabel == nLabel).ToList();
-                        Label l;
-
-                        if (rg.Count == 0)
-                        {
-                            l = new Label();
-                            l.Label1 = nLabel;
-                            l.ActiveLabel = nLabel;
-                            l.ImageCount = 0;
-                            l.SourceID = nSrcId;
-
-                            entities.Labels.Add(l);
-                        }
-                        else
-                        {
-                            l = rg[0];
-                        }
-
-                        l.Name = strName;
-
-                        entities.SaveChanges();
-                    }
+                    if (l.Label1 == nLabel)
+                        return l.Name;
                 }
 
-                /// <summary>
-                /// Return the Label with the given ID.
-                /// </summary>
-                /// <param name="nID">Specifies the Label ID.</param>
-                /// <returns>When found, the Label with the ID is returned, otherwise <i>null</i> is returned.</returns>
-                public Label GetLabel(int nID)
+                return null;
+            }
+            else
+            {
+                using (DNNEntities entities = EntitiesConnection.CreateEntities())
                 {
-                    foreach (Label l in m_rgLabelCache)
-                    {
-                        if (l.ID == nID)
-                            return l;
-                    }
+                    List<Label> rg = entities.Labels.Where(p => p.SourceID == nSrcId && p.Label1 == nLabel).ToList();
 
-                    return null;
-                }
-
-                /// <summary>
-                /// Get the Label name of a label within a data source.
-                /// </summary>
-                /// <param name="nLabel">Specifies the label.</param>
-                /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-                /// <returns>When found, the Label is returned, otherwise <i>null</i> is returned.</returns>
-                public string GetLabelName(int nLabel, int nSrcId = 0)
-                {
-                    if (nSrcId == 0)
-                    {
-                        foreach (Label l in m_rgLabelCache)
-                        {
-                            if (l.Label1 == nLabel)
-                                return l.Name;
-                        }
-
+                    if (rg.Count == 0)
                         return null;
-                    }
-                    else
+
+                    return rg[0].Name;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Search for a Label in the label cache.
+        /// </summary>
+        /// <param name="nLabel">Specifies the label.</param>
+        /// <returns>When found, the Label is returned, otherwise <i>null</i> is returned.</returns>
+        public Label FindLabelInCache(int nLabel)
+        {
+            foreach (Label l in m_rgLabelCache)
+            {
+                if (l.ActiveLabel == nLabel)
+                    return l;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Returns the label ID associated with a label value.
+        /// </summary>
+        /// <param name="nLabel">Specifies the label.</param>
+        /// <returns>The ID of the Label is returned.</returns>
+        public int GetLabelID(int nLabel)
+        {
+            foreach (Label l in m_rgLabelCache)
+            {
+                if (l.ActiveLabel == nLabel)
+                    return l.ID;
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Returns the number of images under a given label.
+        /// </summary>
+        /// <param name="nLabel">Specifies the label.</param>
+        /// <returns>The number of images is returned.</returns>
+        public int GetLabelCount(int nLabel)
+        {
+            foreach (Label l in m_rgLabelCache)
+            {
+                if (l.ActiveLabel == nLabel)
+                    return l.ImageCount.GetValueOrDefault(0);
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Adds a label to the label cache.
+        /// </summary>
+        /// <param name="nLabel">Specifies the label.</param>
+        public void AddLabelToCache(int nLabel)
+        {
+            Label l = FindLabelInCache(nLabel);
+
+            if (l == null)
+            {
+                l = new Label();
+                l.ImageCount = 1;
+                l.Name = "";
+                l.SourceID = m_src.ID;
+                l.Label1 = nLabel;
+                l.ActiveLabel = nLabel;
+                m_rgLabelCache.Add(l);
+            }
+            else
+            {
+                l.ImageCount++;
+            }
+        }
+
+        /// <summary>
+        /// Saves the label cache to the database.
+        /// </summary>
+        public void SaveLabelCache()
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                foreach (Label l in m_rgLabelCache)
+                {
+                    List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == m_src.ID && p.Label1 == l.Label1).ToList();
+
+                    if (rgLabels.Count == 0)
                     {
-                        using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                        {
-                            List<Label> rg = entities.Labels.Where(p => p.SourceID == nSrcId && p.Label1 == nLabel).ToList();
+                        if (!l.ActiveLabel.HasValue)
+                            l.ActiveLabel = l.Label1;
 
-                            if (rg.Count == 0)
-                                return null;
-
-                            return rg[0].Name;
-                        }
+                        entities.Labels.Add(l);
                     }
                 }
 
-                /// <summary>
-                /// Search for a Label in the label cache.
-                /// </summary>
-                /// <param name="nLabel">Specifies the label.</param>
-                /// <returns>When found, the Label is returned, otherwise <i>null</i> is returned.</returns>
-                public Label FindLabelInCache(int nLabel)
-                {
-                    foreach (Label l in m_rgLabelCache)
-                    {
-                        if (l.ActiveLabel == nLabel)
-                            return l;
-                    }
+                entities.SaveChanges();
+            }
+        }
 
-                    return null;
+        /// <summary>
+        /// Updates the label counts in the database for the open data source.
+        /// </summary>
+        /// <param name="rgCounts">Specifies a dictionary containing (int nLabel, int nCount) pairs.</param>
+        public void UpdateLabelCounts(Dictionary<int, int> rgCounts)
+        {
+            foreach (Label l in m_rgLabelCache)
+            {
+                l.ImageCount = 0;
+            }
+
+            foreach (KeyValuePair<int, int> kv in rgCounts)
+            {
+                List<Label> rgLabel = m_rgLabelCache.Where(p => p.ActiveLabel == kv.Key).ToList();
+
+                if (rgLabel.Count > 0)
+                    rgLabel[0].ImageCount = kv.Value;
+            }
+
+            m_entities.SaveChanges();
+        }
+
+        /// <summary>
+        /// Load the label counts from the database for a data source.
+        /// </summary>
+        /// <param name="rgCounts">Specifies where the counts are loaded.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        public void LoadLabelCounts(Dictionary<int, int> rgCounts, int nSrcId = 0)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).ToList();
+
+                foreach (Label l in rgLabels)
+                {
+                    int nCount = entities.RawImages.Where(p => p.SourceID == nSrcId && p.ActiveLabel == l.ActiveLabel && p.Active == true).Count();
+                    rgCounts.Add(l.ActiveLabel.GetValueOrDefault(), nCount);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the label counts for a given data source.
+        /// </summary>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <returns>A string containing the label counts is returned.</returns>
+        public string GetLabelCountsAsText(int nSrcId = 0)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).OrderBy(p => p.Label1).ToList();
+
+                string strOut = "(" + rgLabels.Count.ToString() + ") {";
+
+                foreach (Label l in rgLabels)
+                {
+                    strOut += l.ImageCount.GetValueOrDefault().ToString();
+                    strOut += ",";
                 }
 
-                /// <summary>
-                /// Returns the label ID associated with a label value.
-                /// </summary>
-                /// <param name="nLabel">Specifies the label.</param>
-                /// <returns>The ID of the Label is returned.</returns>
-                public int GetLabelID(int nLabel)
-                {
-                    foreach (Label l in m_rgLabelCache)
-                    {
-                        if (l.ActiveLabel == nLabel)
-                            return l.ID;
-                    }
+                strOut = strOut.TrimEnd(',');
+                strOut += "}";
 
-                    return 0;
+                return strOut;
+            }
+        }
+
+        /// <summary>
+        /// Update the label counts for a given data source.
+        /// </summary>
+        /// <param name="rgCounts">Specifies the counts.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        public void UpdateLabelCounts(Dictionary<int, int> rgCounts, int nSrcId = 0)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).ToList();
+
+                foreach (Label l in rgLabels)
+                {
+                    l.ImageCount = 0;
                 }
 
-                /// <summary>
-                /// Returns the number of images under a given label.
-                /// </summary>
-                /// <param name="nLabel">Specifies the label.</param>
-                /// <returns>The number of images is returned.</returns>
-                public int GetLabelCount(int nLabel)
+                foreach (KeyValuePair<int, int> kv in rgCounts)
                 {
-                    foreach (Label l in m_rgLabelCache)
-                    {
-                        if (l.ActiveLabel == nLabel)
-                            return l.ImageCount.GetValueOrDefault(0);
-                    }
+                    List<Label> rgLabel = rgLabels.Where(p => p.ActiveLabel == kv.Key).ToList();
 
-                    return 0;
+                    if (rgLabel.Count > 0)
+                        rgLabel[0].ImageCount = kv.Value;
                 }
 
-                /// <summary>
-                /// Adds a label to the label cache.
-                /// </summary>
-                /// <param name="nLabel">Specifies the label.</param>
-                public void AddLabelToCache(int nLabel)
+                entities.SaveChanges();
+            }
+        }
+
+        /// <summary>
+        /// Update the label counts for a given data source and project (optionally) by querying the database for the actual counts.
+        /// </summary>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="nProjectId">Optionally, specifies the ID of a project to use (default = 0).</param>
+        public void UpdateLabelCounts(int nSrcId = 0, int nProjectId = 0)
+        {
+            Dictionary<int, double> rgLabelBoosts = null;
+            double dfTotal = 0;
+
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            if (nProjectId > 0)
+                rgLabelBoosts = new Dictionary<int, double>();
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).ToList();
+
+                foreach (Label l in rgLabels)
                 {
-                    Label l = FindLabelInCache(nLabel);
-
-                    if (l == null)
-                    {
-                        l = new Label();
-                        l.ImageCount = 1;
-                        l.Name = "";
-                        l.SourceID = m_src.ID;
-                        l.Label1 = nLabel;
-                        l.ActiveLabel = nLabel;
-                        m_rgLabelCache.Add(l);
-                    }
-                    else
-                    {
-                        l.ImageCount++;
-                    }
-                }
-
-                /// <summary>
-                /// Saves the label cache to the database.
-                /// </summary>
-                public void SaveLabelCache()
-                {
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                    {
-                        foreach (Label l in m_rgLabelCache)
-                        {
-                            List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == m_src.ID && p.Label1 == l.Label1).ToList();
-
-                            if (rgLabels.Count == 0)
-                            {
-                                if (!l.ActiveLabel.HasValue)
-                                    l.ActiveLabel = l.Label1;
-
-                                entities.Labels.Add(l);
-                            }
-                        }
-
-                        entities.SaveChanges();
-                    }
-                }
-
-                /// <summary>
-                /// Updates the label counts in the database for the open data source.
-                /// </summary>
-                /// <param name="rgCounts">Specifies a dictionary containing (int nLabel, int nCount) pairs.</param>
-                public void UpdateLabelCounts(Dictionary<int, int> rgCounts)
-                {
-                    foreach (Label l in m_rgLabelCache)
-                    {
-                        l.ImageCount = 0;
-                    }
-
-                    foreach (KeyValuePair<int, int> kv in rgCounts)
-                    {
-                        List<Label> rgLabel = m_rgLabelCache.Where(p => p.ActiveLabel == kv.Key).ToList();
-
-                        if (rgLabel.Count > 0)
-                            rgLabel[0].ImageCount = kv.Value;
-                    }
-
-                    m_entities.SaveChanges();
-                }
-
-                /// <summary>
-                /// Load the label counts from the database for a data source.
-                /// </summary>
-                /// <param name="rgCounts">Specifies where the counts are loaded.</param>
-                /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-                public void LoadLabelCounts(Dictionary<int, int> rgCounts, int nSrcId = 0)
-                {
-                    if (nSrcId == 0)
-                        nSrcId = m_src.ID;
-
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                    {
-                        List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).ToList();
-
-                        foreach (Label l in rgLabels)
-                        {
-                            int nCount = entities.RawImages.Where(p => p.SourceID == nSrcId && p.ActiveLabel == l.ActiveLabel && p.Active == true).Count();
-                            rgCounts.Add(l.ActiveLabel.GetValueOrDefault(), nCount);
-                        }
-                    }
-                }
-
-                /// <summary>
-                /// Returns the label counts for a given data source.
-                /// </summary>
-                /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-                /// <returns>A string containing the label counts is returned.</returns>
-                public string GetLabelCountsAsText(int nSrcId = 0)
-                {
-                    if (nSrcId == 0)
-                        nSrcId = m_src.ID;
-
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                    {
-                        List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).OrderBy(p => p.Label1).ToList();
-
-                        string strOut = "(" + rgLabels.Count.ToString() + ") {";
-
-                        foreach (Label l in rgLabels)
-                        {
-                            strOut += l.ImageCount.GetValueOrDefault().ToString();
-                            strOut += ",";
-                        }
-
-                        strOut = strOut.TrimEnd(',');
-                        strOut += "}";
-
-                        return strOut;
-                    }
-                }
-
-                /// <summary>
-                /// Update the label counts for a given data source.
-                /// </summary>
-                /// <param name="rgCounts">Specifies the counts.</param>
-                /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-                public void UpdateLabelCounts(Dictionary<int, int> rgCounts, int nSrcId = 0)
-                {
-                    if (nSrcId == 0)
-                        nSrcId = m_src.ID;
-
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                    {
-                        List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).ToList();
-
-                        foreach (Label l in rgLabels)
-                        {
-                            l.ImageCount = 0;
-                        }
-
-                        foreach (KeyValuePair<int, int> kv in rgCounts)
-                        {
-                            List<Label> rgLabel = rgLabels.Where(p => p.ActiveLabel == kv.Key).ToList();
-
-                            if (rgLabel.Count > 0)
-                                rgLabel[0].ImageCount = kv.Value;
-                        }
-
-                        entities.SaveChanges();
-                    }
-                }
-
-                /// <summary>
-                /// Update the label counts for a given data source and project (optionally) by querying the database for the actual counts.
-                /// </summary>
-                /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-                /// <param name="nProjectId">Optionally, specifies the ID of a project to use (default = 0).</param>
-                public void UpdateLabelCounts(int nSrcId = 0, int nProjectId = 0)
-                {
-                    Dictionary<int, double> rgLabelBoosts = null;
-                    double dfTotal = 0;
-
-                    if (nSrcId == 0)
-                        nSrcId = m_src.ID;
-
-                    if (nProjectId > 0)
-                        rgLabelBoosts = new Dictionary<int, double>();
-
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                    {
-                        List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).ToList();
-
-                        foreach (Label l in rgLabels)
-                        {
-                            int nCount = entities.RawImages.Where(p => p.SourceID == nSrcId && p.ActiveLabel == l.ActiveLabel && p.Active == true).Count();
-                            l.ImageCount = nCount;
-
-                            if (nProjectId > 0)
-                            {
-                                rgLabelBoosts.Add(l.ActiveLabel.GetValueOrDefault(0), nCount);
-                                dfTotal += nCount;
-                            }
-                        }
-
-                        entities.SaveChanges();
-                    }
+                    int nCount = entities.RawImages.Where(p => p.SourceID == nSrcId && p.ActiveLabel == l.ActiveLabel && p.Active == true).Count();
+                    l.ImageCount = nCount;
 
                     if (nProjectId > 0)
                     {
-                        if (dfTotal == 0)
-                            throw new Exception("There are no images for label boost!");
-
-                        foreach (int nKey in rgLabelBoosts.Keys)
-                        {
-                            AddLabelBoost(nProjectId, nKey, rgLabelBoosts[nKey] / dfTotal, nSrcId);
-                        }
+                        rgLabelBoosts.Add(l.ActiveLabel.GetValueOrDefault(0), nCount);
+                        dfTotal += nCount;
                     }
                 }
 
-                /// <summary>
-                /// Update the label counts for the currently open data source by querying the database for the actual counts.
-                /// </summary>
-                public void UpdateLabelCounts()
+                entities.SaveChanges();
+            }
+
+            if (nProjectId > 0)
+            {
+                if (dfTotal == 0)
+                    throw new Exception("There are no images for label boost!");
+
+                foreach (int nKey in rgLabelBoosts.Keys)
                 {
-                    UpdateLabelCounts(m_src.ID, 0);
+                    AddLabelBoost(nProjectId, nKey, rgLabelBoosts[nKey] / dfTotal, nSrcId);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Update the label counts for the currently open data source by querying the database for the actual counts.
+        /// </summary>
+        public void UpdateLabelCounts()
+        {
+            UpdateLabelCounts(m_src.ID, 0);
+        }
+
+        /// <summary>
+        /// Returns a list of all labels used by a data source.
+        /// </summary>
+        /// <param name="bSort">Specifies to sort the labels by label.</param>
+        /// <param name="bWithImagesOnly">Specifies to only return labels that actually have images associated with them.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <returns></returns>
+        public List<Label> GetLabels(bool bSort = true, bool bWithImagesOnly = false, int nSrcId = 0)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).ToList();
+
+                if (bWithImagesOnly)
+                    rgLabels = rgLabels.Where(p => p.ImageCount > 0).ToList();
+
+                if (bSort)
+                    rgLabels = rgLabels.OrderBy(p => p.Label1).ToList();
+
+                return rgLabels;
+            }
+        }
+
+        /// <summary>
+        /// Delete the labels of a data source from the database.
+        /// </summary>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        public void DeleteLabels(int nSrcId = 0)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                string strCmd = "DELETE FROM [DNN].[dbo].[Labels] WHERE (SourceID = " + nSrcId.ToString() + ")";
+                entities.Database.ExecuteSqlCommand(strCmd);
+            }
+        }
+
+        /// <summary>
+        /// Add a label to the database for a data source.
+        /// </summary>
+        /// <param name="nLabel">Specifies the label.</param>
+        /// <param name="strName">Optionally, specifies a label name (default = "").</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <returns>The ID of the added label is returned.</returns>
+        public int AddLabel(int nLabel, string strName = "", int nSrcId = 0)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<Label> rgLabel = entities.Labels.Where(p => p.SourceID == nSrcId && p.Label1 == nLabel).ToList();
+                Label l; 
+        
+                if (rgLabel.Count > 0)
+                {
+                    l = rgLabel[0];
+                }
+                else
+                {
+                    l = new Label();
+                    l.Label1 = nLabel;
+                    l.SourceID = nSrcId;
                 }
 
-                /// <summary>
-                /// Returns a list of all labels used by a data source.
-                /// </summary>
-                /// <param name="bSort">Specifies to sort the labels by label.</param>
-                /// <param name="bWithImagesOnly">Specifies to only return labels that actually have images associated with them.</param>
-                /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-                /// <returns></returns>
-                public List<Label> GetLabels(bool bSort = true, bool bWithImagesOnly = false, int nSrcId = 0)
+                l.ActiveLabel = nLabel;
+                l.ImageCount = 0;
+                l.Name = strName;
+
+                if (rgLabel.Count == 0)
+                    entities.Labels.Add(l);
+
+                entities.SaveChanges();
+
+                return l.ID;
+            }
+        }
+
+        /// <summary>
+        /// Add a label boost to the database for a given project.
+        /// </summary>
+        /// <param name="nProjectId">Specifies the ID of the project for which the label boost is to be added.</param>
+        /// <param name="nLabel">Specifies the label.</param>
+        /// <param name="dfBoost">Specifies the boost.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        public void AddLabelBoost(int nProjectId, int nLabel, double dfBoost, int nSrcId = 0)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<LabelBoost> rgLabelBoosts = entities.LabelBoosts.Where(p => p.ProjectID == nProjectId && p.SourceID == nSrcId && p.ActiveLabel == nLabel).ToList();
+                LabelBoost lb;
+
+                if (rgLabelBoosts.Count > 0)
                 {
-                    if (nSrcId == 0)
-                        nSrcId = m_src.ID;
-
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                    {
-                        List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).ToList();
-
-                        if (bWithImagesOnly)
-                            rgLabels = rgLabels.Where(p => p.ImageCount > 0).ToList();
-
-                        if (bSort)
-                            rgLabels = rgLabels.OrderBy(p => p.Label1).ToList();
-
-                        return rgLabels;
-                    }
+                    lb = rgLabelBoosts[0];
+                }
+                else
+                {
+                    lb = new LabelBoost();
+                    lb.ActiveLabel = nLabel;
+                    lb.ProjectID = nProjectId;
+                    lb.SourceID = nSrcId;
                 }
 
-                /// <summary>
-                /// Delete the labels of a data source from the database.
-                /// </summary>
-                /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-                public void DeleteLabels(int nSrcId = 0)
+                lb.Boost = (decimal)dfBoost;
+
+                if (rgLabelBoosts.Count == 0)
+                    entities.LabelBoosts.Add(lb);
+
+                entities.SaveChanges();
+            }
+        }
+
+        /// <summary>
+        /// Saves a label mapping in the database for a data source.
+        /// </summary>
+        /// <param name="map">Specifies the label mapping.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        public void SetLabelMapping(LabelMapping map, int nSrcId = 0)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                entities.Database.CommandTimeout = 180;
+                string strCmd = "UPDATE [DNN].[dbo].[RawImages] SET [ActiveLabel] = " + map.NewLabel.ToString() + " WHERE (SourceID = " + nSrcId.ToString() + ")";
+                strCmd += " AND (OriginalLabel = " + map.OriginalLabel.ToString() + ")";
+
+                if (map.ConditionBoostEquals.HasValue)
+                    strCmd += " AND (ActiveBoost = " + map.ConditionBoostEquals.Value.ToString() + ")";
+
+                entities.Database.ExecuteSqlCommand(strCmd);
+
+                if (map.ConditionBoostEquals.HasValue)
                 {
-                    if (nSrcId == 0)
-                        nSrcId = m_src.ID;
-
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
+                    if (map.NewLabelConditionFalse.HasValue)
                     {
-                        string strCmd = "DELETE FROM [DNN].[dbo].[Labels] WHERE (SourceID = " + nSrcId.ToString() + ")";
-                        entities.Database.ExecuteSqlCommand(strCmd);
-                    }
-                }
+                        strCmd = "UPDATE [DNN].[dbo].[RawImages] SET [ActiveLabel] = " + map.NewLabelConditionFalse.Value.ToString() + " WHERE (SourceID = " + nSrcId.ToString() + ")";
 
-                /// <summary>
-                /// Add a label to the database for a data source.
-                /// </summary>
-                /// <param name="nLabel">Specifies the label.</param>
-                /// <param name="strName">Optionally, specifies a label name (default = "").</param>
-                /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-                /// <returns>The ID of the added label is returned.</returns>
-                public int AddLabel(int nLabel, string strName = "", int nSrcId = 0)
-                {
-                    if (nSrcId == 0)
-                        nSrcId = m_src.ID;
-
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                    {
-                        List<Label> rgLabel = entities.Labels.Where(p => p.SourceID == nSrcId && p.Label1 == nLabel).ToList();
-                        Label l; 
-                
-                        if (rgLabel.Count > 0)
-                        {
-                            l = rgLabel[0];
-                        }
-                        else
-                        {
-                            l = new Label();
-                            l.Label1 = nLabel;
-                            l.SourceID = nSrcId;
-                        }
-
-                        l.ActiveLabel = nLabel;
-                        l.ImageCount = 0;
-                        l.Name = strName;
-
-                        if (rgLabel.Count == 0)
-                            entities.Labels.Add(l);
-
-                        entities.SaveChanges();
-
-                        return l.ID;
-                    }
-                }
-
-                /// <summary>
-                /// Add a label boost to the database for a given project.
-                /// </summary>
-                /// <param name="nProjectId">Specifies the ID of the project for which the label boost is to be added.</param>
-                /// <param name="nLabel">Specifies the label.</param>
-                /// <param name="dfBoost">Specifies the boost.</param>
-                /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-                public void AddLabelBoost(int nProjectId, int nLabel, double dfBoost, int nSrcId = 0)
-                {
-                    if (nSrcId == 0)
-                        nSrcId = m_src.ID;
-
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                    {
-                        List<LabelBoost> rgLabelBoosts = entities.LabelBoosts.Where(p => p.ProjectID == nProjectId && p.SourceID == nSrcId && p.ActiveLabel == nLabel).ToList();
-                        LabelBoost lb;
-
-                        if (rgLabelBoosts.Count > 0)
-                        {
-                            lb = rgLabelBoosts[0];
-                        }
-                        else
-                        {
-                            lb = new LabelBoost();
-                            lb.ActiveLabel = nLabel;
-                            lb.ProjectID = nProjectId;
-                            lb.SourceID = nSrcId;
-                        }
-
-                        lb.Boost = (decimal)dfBoost;
-
-                        if (rgLabelBoosts.Count == 0)
-                            entities.LabelBoosts.Add(lb);
-
-                        entities.SaveChanges();
-                    }
-                }
-
-                /// <summary>
-                /// Saves a label mapping in the database for a data source.
-                /// </summary>
-                /// <param name="map">Specifies the label mapping.</param>
-                /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-                public void SetLabelMapping(LabelMapping map, int nSrcId = 0)
-                {
-                    if (nSrcId == 0)
-                        nSrcId = m_src.ID;
-
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                    {
-                        entities.Database.CommandTimeout = 180;
-                        string strCmd = "UPDATE [DNN].[dbo].[RawImages] SET [ActiveLabel] = " + map.NewLabel.ToString() + " WHERE (SourceID = " + nSrcId.ToString() + ")";
                         strCmd += " AND (OriginalLabel = " + map.OriginalLabel.ToString() + ")";
-
-                        if (map.ConditionBoostEquals.HasValue)
-                            strCmd += " AND (ActiveBoost = " + map.ConditionBoostEquals.Value.ToString() + ")";
-
-                        entities.Database.ExecuteSqlCommand(strCmd);
-
-                        if (map.ConditionBoostEquals.HasValue)
-                        {
-                            if (map.NewLabelConditionFalse.HasValue)
-                            {
-                                strCmd = "UPDATE [DNN].[dbo].[RawImages] SET [ActiveLabel] = " + map.NewLabelConditionFalse.Value.ToString() + " WHERE (SourceID = " + nSrcId.ToString() + ")";
-
-                                strCmd += " AND (OriginalLabel = " + map.OriginalLabel.ToString() + ")";
-                                strCmd += " AND (ActiveBoost != " + map.ConditionBoostEquals.Value.ToString() + ")";
-                                entities.Database.ExecuteSqlCommand(strCmd);
-                            }
-                        }
-                    }
-                }
-
-                /// <summary>
-                /// Update a label mapping in the database for a data source.
-                /// </summary>
-                /// <param name="nNewLabel">Specifies the new label.</param>
-                /// <param name="rgOriginalLabels">Specifies the original labels that are to be mapped to the new label.</param>
-                /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-                public void UpdateLabelMapping(int nNewLabel, List<int> rgOriginalLabels, int nSrcId = 0)
-                {
-                    if (nSrcId == 0)
-                        nSrcId = m_src.ID;
-
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                    {
-                        string strCmd = "UPDATE [DNN].[dbo].[RawImages] SET [ActiveLabel] = " + nNewLabel.ToString() + " WHERE (SourceID = " + nSrcId.ToString() + ") AND (";
-
-                        for (int i = 0; i < rgOriginalLabels.Count; i++)
-                        {
-                            strCmd += "OriginalLabel = " + rgOriginalLabels[i].ToString();
-
-                            if (i < rgOriginalLabels.Count - 1)
-                                strCmd += " OR ";
-                        }
-
-                        strCmd += ")";
-
+                        strCmd += " AND (ActiveBoost != " + map.ConditionBoostEquals.Value.ToString() + ")";
                         entities.Database.ExecuteSqlCommand(strCmd);
                     }
                 }
+            }
+        }
 
-                /// <summary>
-                /// Resets all labels back to their original labels for a project.
-                /// </summary>
-                /// <param name="nProjectId">Specifies the ID of a project.</param>
-                /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-                public void ResetLabels(int nProjectId, int nSrcId = 0)
+        /// <summary>
+        /// Update a label mapping in the database for a data source.
+        /// </summary>
+        /// <param name="nNewLabel">Specifies the new label.</param>
+        /// <param name="rgOriginalLabels">Specifies the original labels that are to be mapped to the new label.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        public void UpdateLabelMapping(int nNewLabel, List<int> rgOriginalLabels, int nSrcId = 0)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                string strCmd = "UPDATE [DNN].[dbo].[RawImages] SET [ActiveLabel] = " + nNewLabel.ToString() + " WHERE (SourceID = " + nSrcId.ToString() + ") AND (";
+
+                for (int i = 0; i < rgOriginalLabels.Count; i++)
                 {
-                    if (nSrcId == 0)
-                        nSrcId = m_src.ID;
+                    strCmd += "OriginalLabel = " + rgOriginalLabels[i].ToString();
 
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                    {
-                        entities.Database.CommandTimeout = 180;
-
-                        string strResetCmd = "UPDATE [DNN].[dbo].[RawImages] SET [ActiveLabel] = [OriginalLabel] WHERE (SourceID = " + nSrcId.ToString() + ")";
-                        entities.Database.ExecuteSqlCommand(strResetCmd);
-
-                        DeleteLabelBoosts(nProjectId, nSrcId);
-                    }
+                    if (i < rgOriginalLabels.Count - 1)
+                        strCmd += " OR ";
                 }
 
-                /// <summary>
-                /// Delete all label boosts for a project.
-                /// </summary>
-                /// <param name="nProjectId">Specifies the ID of a project.</param>
-                /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-                public void DeleteLabelBoosts(int nProjectId, int nSrcId = 0)
-                {
-                    if (nSrcId == 0)
-                        nSrcId = m_src.ID;
+                strCmd += ")";
 
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                    {
-                        string strCmd = "DELETE FROM [DNN].[dbo].[LabelBoosts] WHERE (ProjectID = " + nProjectId.ToString() + ") AND (SourceID = " + nSrcId.ToString() + ")";
-                        entities.Database.ExecuteSqlCommand(strCmd);
-                    }
+                entities.Database.ExecuteSqlCommand(strCmd);
+            }
+        }
+
+        /// <summary>
+        /// Resets all labels back to their original labels for a project.
+        /// </summary>
+        /// <param name="nProjectId">Specifies the ID of a project.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        public void ResetLabels(int nProjectId, int nSrcId = 0)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                entities.Database.CommandTimeout = 180;
+
+                string strResetCmd = "UPDATE [DNN].[dbo].[RawImages] SET [ActiveLabel] = [OriginalLabel] WHERE (SourceID = " + nSrcId.ToString() + ")";
+                entities.Database.ExecuteSqlCommand(strResetCmd);
+
+                if (nProjectId > 0)
+                    DeleteLabelBoosts(nProjectId, nSrcId);
+            }
+        }
+
+        /// <summary>
+        /// Delete all label boosts for a project.
+        /// </summary>
+        /// <param name="nProjectId">Specifies the ID of a project.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        public void DeleteLabelBoosts(int nProjectId, int nSrcId = 0)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                string strCmd = "DELETE FROM [DNN].[dbo].[LabelBoosts] WHERE (ProjectID = " + nProjectId.ToString() + ") AND (SourceID = " + nSrcId.ToString() + ")";
+                entities.Database.ExecuteSqlCommand(strCmd);
+            }
+        }
+
+        /// <summary>
+        /// Delete all label boosts for a project.
+        /// </summary>
+        /// <param name="nProjectId">Specifies the ID of a project.</param>
+        public void DeleteLabelBoosts(int nProjectId)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                string strCmd = "DELETE FROM [DNN].[dbo].[LabelBoosts] WHERE (ProjectID = " + nProjectId.ToString() + ")";
+                entities.Database.ExecuteSqlCommand(strCmd);
+            }
+        }
+
+        /// <summary>
+        /// Reset all label boosts to their orignal settings for a project.
+        /// </summary>
+        /// <param name="nProjectId">Specifies the ID of a project.</param>
+        public void ResetLabelBoosts(int nProjectId)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<LabelBoost> rgLabels = entities.LabelBoosts.Where(p => p.ProjectID == nProjectId).ToList();
+
+                foreach (LabelBoost l in rgLabels)
+                {
+                    l.Boost = 1;
                 }
 
-                /// <summary>
-                /// Delete all label boosts for a project.
-                /// </summary>
-                /// <param name="nProjectId">Specifies the ID of a project.</param>
-                public void DeleteLabelBoosts(int nProjectId)
-                {
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                    {
-                        string strCmd = "DELETE FROM [DNN].[dbo].[LabelBoosts] WHERE (ProjectID = " + nProjectId.ToString() + ")";
-                        entities.Database.ExecuteSqlCommand(strCmd);
-                    }
-                }
+                entities.SaveChanges();
+            }
+        }
 
-                /// <summary>
-                /// Reset all label boosts to their orignal settings for a project.
-                /// </summary>
-                /// <param name="nProjectId">Specifies the ID of a project.</param>
-                public void ResetLabelBoosts(int nProjectId)
-                {
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                    {
-                        List<LabelBoost> rgLabels = entities.LabelBoosts.Where(p => p.ProjectID == nProjectId).ToList();
+        /// <summary>
+        /// Returns a list of all label boosts set on a project.
+        /// </summary>
+        /// <param name="nProjectId">Specifies the ID of a project.</param>
+        /// <param name="bSort">Optionally, specifies whether or not to sort the labels by active label (default = true).</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <returns>A list of LabelBoosts is returned.</returns>
+        public List<LabelBoost> GetLabelBoosts(int nProjectId, bool bSort = true, int nSrcId = 0)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
 
-                        foreach (LabelBoost l in rgLabels)
-                        {
-                            l.Boost = 1;
-                        }
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<LabelBoost> rgBoosts = entities.LabelBoosts.Where(p => p.ProjectID == nProjectId && p.SourceID == nSrcId).ToList();
 
-                        entities.SaveChanges();
-                    }
-                }
+                if (bSort)
+                    rgBoosts = rgBoosts.OrderBy(p => p.ActiveLabel).ToList();
 
-                /// <summary>
-                /// Returns a list of all label boosts set on a project.
-                /// </summary>
-                /// <param name="nProjectId">Specifies the ID of a project.</param>
-                /// <param name="bSort">Optionally, specifies whether or not to sort the labels by active label (default = true).</param>
-                /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-                /// <returns>A list of LabelBoosts is returned.</returns>
-                public List<LabelBoost> GetLabelBoosts(int nProjectId, bool bSort = true, int nSrcId = 0)
-                {
-                    if (nSrcId == 0)
-                        nSrcId = m_src.ID;
+                return rgBoosts;
+            }
+        }
 
-                    using (DNNEntities entities = EntitiesConnection.CreateEntities())
-                    {
-                        List<LabelBoost> rgBoosts = entities.LabelBoosts.Where(p => p.ProjectID == nProjectId && p.SourceID == nSrcId).ToList();
+        /// <summary>
+        /// Returns the Label boosts as a string.
+        /// </summary>
+        /// <param name="nProjectId">Specifies the ID of a project.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="bSort">Optionally, specifies whether or not to sort the labels by active label (default = true).</param>
+        /// <returns></returns>
+        public string GetLabelBoostsAsText(int nProjectId, int nSrcId = 0, bool bSort = true)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
 
-                        if (bSort)
-                            rgBoosts = rgBoosts.OrderBy(p => p.ActiveLabel).ToList();
+            List<LabelBoost> rgLb = GetLabelBoosts(nProjectId, bSort, nSrcId);
+            string strOut = "";
 
-                        return rgBoosts;
-                    }
-                }
+            foreach (LabelBoost lb in rgLb)
+            {
+                strOut += lb.Boost.GetValueOrDefault().ToString("N2");
+                strOut += ",";
+            }
 
-                /// <summary>
-                /// Returns the Label boosts as a string.
-                /// </summary>
-                /// <param name="nProjectId">Specifies the ID of a project.</param>
-                /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-                /// <param name="bSort">Optionally, specifies whether or not to sort the labels by active label (default = true).</param>
-                /// <returns></returns>
-                public string GetLabelBoostsAsText(int nProjectId, int nSrcId = 0, bool bSort = true)
-                {
-                    if (nSrcId == 0)
-                        nSrcId = m_src.ID;
+            return strOut.TrimEnd(',');
+        }
 
-                    List<LabelBoost> rgLb = GetLabelBoosts(nProjectId, bSort, nSrcId);
-                    string strOut = "";
-
-                    foreach (LabelBoost lb in rgLb)
-                    {
-                        strOut += lb.Boost.GetValueOrDefault().ToString("N2");
-                        strOut += ",";
-                    }
-
-                    return strOut.TrimEnd(',');
-                }
-
-                #endregion
+        #endregion
 
 
         //---------------------------------------------------------------------
@@ -1675,7 +1676,7 @@ namespace MyCaffe.db.image
                             }
 
                             if (!String.IsNullOrEmpty(strVal) || rgData != null)
-                                SetRawImageParameter(rgImg[i].ID, strName, strVal, rgData, false, entities);
+                                SetRawImageParameter(rgImg[i].ID, strName, strVal, rgData, false, false, entities);
                         }
                     }
 
@@ -2365,9 +2366,10 @@ namespace MyCaffe.db.image
         /// <param name="strValue">Specifies the value of the parameter as a string.</param>
         /// <param name="rgData">Optionally, specifies the <i>byte</i> data associated with the parameter (default = null).</param>
         /// <param name="bSave">Optionally, specifies to save the data to the database (default = true).</param>
+        /// <param name="bOnlyAddNew">Optionally, specifies to only add the parameter if it doesnt exist (default = false).</param>
         /// <param name="entities">Optionally, specifies the entities to use (default = null in which case the open data source entities are used).</param>
         /// <returns>The ID of the RawImageParameter is returned.</returns>
-        public int SetRawImageParameter(int nRawImageID, string strName, string strValue, byte[] rgData = null, bool bSave = true, DNNEntities entities = null)
+        public int SetRawImageParameter(int nRawImageID, string strName, string strValue, byte[] rgData = null, bool bSave = true, bool bOnlyAddNew = false, DNNEntities entities = null)
         {
             if (entities == null)
                 entities = m_entities;
@@ -2384,6 +2386,9 @@ namespace MyCaffe.db.image
             }
             else
             {
+                if (bOnlyAddNew)
+                    return rgP[0].ID;
+
                 riP = rgP[0];
             }
 
