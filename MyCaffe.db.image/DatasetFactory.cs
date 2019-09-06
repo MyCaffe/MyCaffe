@@ -37,8 +37,8 @@ namespace MyCaffe.db.image
         /// </summary>
         protected bool m_bLoadDebugData = false;
 
-        ImageCache m_imageCache;
-        ParamCache m_paramCache;
+        ImageCache m_imageCache = null;
+        ParamCache m_paramCache = null;
 
 
         /// <summary>
@@ -113,12 +113,19 @@ namespace MyCaffe.db.image
         /// <param name="bForceLoadImageFilePath">Optionally specfies to force load the image file path (default = <i>false</i>) and use file based data.</param>
         public void Open(int nSrcId, int nCacheMax = 500, bool bForceLoadImageFilePath = false)
         {
-            if (m_openSource == null)
-                m_openSource = LoadSource(nSrcId);
+            if (m_openSource != null)
+            {
+                if (m_openSource.ID != nSrcId)
+                    throw new Exception("The dataset factory is already open with the source id = " + m_openSource.ID.ToString() + "!");
 
+                return;
+            }
+
+            m_openSource = LoadSource(nSrcId);
             m_db.Open(nSrcId, bForceLoadImageFilePath);
-            m_imageCache = new db.image.ImageCache(nCacheMax);
-            m_paramCache = new db.image.ParamCache(nCacheMax);
+
+            m_imageCache = new ImageCache(nCacheMax);
+            m_paramCache = new ParamCache(nCacheMax);
         }
 
         /// <summary>
@@ -160,9 +167,9 @@ namespace MyCaffe.db.image
         /// <param name="strVal">Specifies the parameter value.</param>
         /// <param name="rgData">Specifies the parameter data.</param>
         /// <param name="bOnlyAddNew">Specifies to only add the parameter if it does not already exist.</param>
-        public void PutRawImageParameterCache(int nSrcId, int nImageID, string strParam, string strVal, byte[] rgData, bool bOnlyAddNew)
+        public void PutRawImageParameterCache(int nImageID, string strParam, string strVal, byte[] rgData, bool bOnlyAddNew)
         {
-            if (m_paramCache.Add(new ParameterData(strParam, strVal, rgData, nImageID, bOnlyAddNew, nSrcId)))
+            if (m_paramCache.Add(new ParameterData(strParam, strVal, rgData, nImageID, bOnlyAddNew, m_openSource.ID)))
                 ClearParamCache(true);
         }
 
@@ -1785,11 +1792,15 @@ namespace MyCaffe.db.image
                 string strTag = d.TagName as string;
 
                 if (!String.IsNullOrEmpty(strTag) && !String.IsNullOrEmpty(strVal))
-                    rgParam.Add(new db.image.ParameterData(strTag, strVal, null));
+                    rgParam.Add(new db.image.ParameterData(strTag, strVal, null, img.ID, false, img.SourceID.GetValueOrDefault()));
             }
 
-            if (rgParams.Length > 0)
-                rgParam.AddRange(rgParams);
+            foreach (ParameterData param in rgParams)
+            {
+                param.ImageID = img.ID;
+                param.SourceID = img.SourceID.GetValueOrDefault();
+                rgParam.Add(param);
+            }
 
             m_rgrgParams.Add(rgParam);
 
