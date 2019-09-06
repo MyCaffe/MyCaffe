@@ -38,6 +38,7 @@ namespace MyCaffe.db.image
         protected bool m_bLoadDebugData = false;
 
         ImageCache m_imageCache;
+        ParamCache m_paramCache;
 
 
         /// <summary>
@@ -117,6 +118,7 @@ namespace MyCaffe.db.image
 
             m_db.Open(nSrcId, bForceLoadImageFilePath);
             m_imageCache = new db.image.ImageCache(nCacheMax);
+            m_paramCache = new db.image.ParamCache(nCacheMax);
         }
 
         /// <summary>
@@ -151,6 +153,35 @@ namespace MyCaffe.db.image
         #region RawImages
 
         /// <summary>
+        /// Add a new parameter to the parameter cache making sure to save once a maximum count is reached.
+        /// </summary>
+        /// <param name="nImageID">Specifies the image ID associated with the parameter.</param>
+        /// <param name="strParam">Specifies the parameter name.</param>
+        /// <param name="strVal">Specifies the parameter value.</param>
+        /// <param name="rgData">Specifies the parameter data.</param>
+        /// <param name="bOnlyAddNew">Specifies to only add the parameter if it does not already exist.</param>
+        public void PutRawImageParameterCache(int nSrcId, int nImageID, string strParam, string strVal, byte[] rgData, bool bOnlyAddNew)
+        {
+            if (m_paramCache.Add(new ParameterData(strParam, strVal, rgData, nImageID, bOnlyAddNew, nSrcId)))
+                ClearParamCache(true);
+        }
+
+        /// <summary>
+        /// Clear the param cache and save when specified.
+        /// </summary>
+        /// <param name="bSave">Specifies to save the parameter values in the cache before clearing.</param>
+        public void ClearParamCache(bool bSave)
+        {
+            if (m_paramCache.Count == 0)
+                return;
+
+            if (bSave)
+                m_db.PutRawImageParameters(m_paramCache.Parameters);
+
+            m_paramCache.Clear();
+        }
+
+        /// <summary>
         /// Add a SimpleDatum to the RawImage cache.
         /// </summary>
         /// <param name="nIdx">Specifies the RawImage index.</param>
@@ -162,14 +193,14 @@ namespace MyCaffe.db.image
             RawImage img = m_db.CreateRawImage(nIdx, sd, strDescription, m_nOriginalSourceID);
 
             if (m_imageCache.Add(img, sd, rgParams))
-                ClearImageCash(true);
+                ClearImageCashe(true);
         }
 
         /// <summary>
         /// Clear the RawImage cache and optionally save the images.
         /// </summary>
         /// <param name="bSave">When <i>true</i> the images in the cache are saved to the database in a bulk save, otherwise they are just flushed from the cache.</param>
-        public void ClearImageCash(bool bSave)
+        public void ClearImageCashe(bool bSave)
         {
             if (m_imageCache.Count == 0)
                 return;
@@ -217,6 +248,17 @@ namespace MyCaffe.db.image
         public int SetRawImageParameterAt(DateTime dt, string strName, string strValue, byte[] rgData = null)
         {
             return m_db.SetRawImageParameterAt(dt, strName, strValue, rgData);
+        }
+
+        /// <summary>
+        /// Query a list of all raw image parameters of a give name stored with a given source ID.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the source ID.</param>
+        /// <param name="strName">Specifies the parameter name.</param>
+        /// <returns>The list of RawImageParameter values is returned.</returns>
+        public List<RawImageParameter> QueryRawImageParameters(int nSrcId, string strName)
+        {
+            return m_db.QueryRawImageParameters(nSrcId, strName);
         }
 
         /// <summary>
@@ -1670,6 +1712,42 @@ namespace MyCaffe.db.image
         }
 
         #endregion
+    }
+
+    class ParamCache /** @private */
+    {
+        List<ParameterData> m_rgParam = new List<ParameterData>();
+        int m_nMax;
+
+        public ParamCache(int nMax)
+        {
+            m_nMax = nMax;
+        }
+
+        public int Count
+        {
+            get { return m_rgParam.Count; }
+        }
+
+        public void Clear()
+        {
+            m_rgParam.Clear();
+        }
+
+        public bool Add(ParameterData p)
+        {
+            m_rgParam.Add(p);
+
+            if (m_rgParam.Count == m_nMax)
+                return true;
+
+            return false;
+        }
+
+        public List<ParameterData> Parameters
+        {
+            get { return m_rgParam; }
+        }
     }
 
     class ImageCache /** @private */

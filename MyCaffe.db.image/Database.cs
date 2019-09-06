@@ -910,6 +910,22 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Query a list of all raw image parameters of a give name stored with a given source ID.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the source ID.</param>
+        /// <param name="strName">Specifies the parameter name.</param>
+        /// <returns>The list of RawImageParameter values is returned.</returns>
+        public List<RawImageParameter> QueryRawImageParameters(int nSrcId, string strName)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                IQueryable<RawImageParameter> iQuery = entities.RawImageParameters.Where(p => p.SourceID == nSrcId && p.Name == strName);
+                return iQuery.ToList();
+            }
+        }
+
+
+        /// <summary>
         /// Returns the list of raw images that have a source ID from a selected list.
         /// </summary>
         /// <param name="nSrcId">Specifies the source ID.</param>
@@ -1634,6 +1650,47 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Save a list of raw image parameters.
+        /// </summary>
+        /// <param name="rgParam">Specifies the list of parameters to save.</param>
+        public void PutRawImageParameters(List<ParameterData> rgParam)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                entities.Configuration.AutoDetectChangesEnabled = false;
+                entities.Configuration.ValidateOnSaveEnabled = false;
+
+                foreach (ParameterData param in rgParam)
+                {
+                    IQueryable<RawImageParameter> iquery = entities.RawImageParameters.Where(p => p.SourceID == param.SourceID && p.RawImageID == param.ImageID && p.Name == param.Name);
+
+                    int nCount = iquery.Count();
+                    if (nCount == 0)
+                    {
+                        RawImageParameter rip = new RawImageParameter();
+                        rip.RawImageID = param.ImageID;
+                        rip.Name = param.Name;
+                        rip.SourceID = param.SourceID;
+                        rip.TextValue = param.Value;
+                        rip.Value = param.Data;
+                        entities.RawImageParameters.Add(rip);
+                    }
+                    else
+                    {
+                        if (!param.OnlyAddNew)
+                        {
+                            List<RawImageParameter> rg = iquery.ToList();
+                            rg[0].TextValue = param.Value;
+                            rg[0].Value = param.Data;
+                        }
+                    }
+                }
+
+                entities.SaveChanges();
+            }
+        }
+
+        /// <summary>
         /// Saves a List of RawImages to the database.
         /// </summary>
         /// <param name="rgImg">Specifies the list of RawImages.</param>
@@ -1664,9 +1721,9 @@ namespace MyCaffe.db.image
                             string strVal = p.Value;
                             byte[] rgData = p.Data;
 
-                            if (p.QueryValueFromImageID != 0)
+                            if (p.ImageID != 0)
                             {
-                                RawImageParameter imgParam = GetRawImageParameterEx(p.QueryValueFromImageID, strName);
+                                RawImageParameter imgParam = GetRawImageParameterEx(p.ImageID, strName);
 
                                 if (imgParam != null)
                                 {
@@ -4180,7 +4237,9 @@ namespace MyCaffe.db.image
         string m_strName;
         string m_strValue = null;
         byte[] m_rgValue = null;
-        int m_nQueryFromImageID = 0;
+        int m_nImageID = 0;
+        bool m_bOnlyAddNew = false;
+        int m_nSrcId = 0;
 
         /// <summary>
         /// The ParameterData constructor.
@@ -4188,22 +4247,28 @@ namespace MyCaffe.db.image
         /// <param name="strName">Specifies the name of the parameter.</param>
         /// <param name="strValue">Specifies the value of the parameter.</param>
         /// <param name="rgData">Specifies the raw data associated with the parameter.</param>
-        public ParameterData(string strName, string strValue, byte[] rgData)
+        /// <param name="nImageID">Specifies a RawImage ID from which the parameter should be associated.</param>
+        /// <param name="bOnlyAddNew">Optionally, specifies to only add new parameters (default = false).</param>
+        /// <param name="nSrcId">Optionally, specifies the source ID of the images.</param>
+        public ParameterData(string strName, string strValue, byte[] rgData, int nImageID = 0, bool bOnlyAddNew = false, int nSrcId = 0)
         {
             m_strName = strName;
             m_strValue = strValue;
             m_rgValue = rgData;
+            m_nImageID = nImageID;
+            m_bOnlyAddNew = bOnlyAddNew;
+            m_nSrcId = nSrcId;
         }
 
         /// <summary>
         /// The ParameterData constructor.
         /// </summary>
         /// <param name="strName">Specifies the name of the parameter.</param>
-        /// <param name="nQueryFromImageID">Specifies a RawImage ID from which the parameter should be queried.</param>
-        public ParameterData(string strName, int nQueryFromImageID)
+        /// <param name="nImageID">Specifies a RawImage ID from which the parameter should be queried.</param>
+        public ParameterData(string strName, int nImageID)
         {
             m_strName = strName;
-            m_nQueryFromImageID = nQueryFromImageID;
+            m_nImageID = nImageID;
         }
 
         /// <summary>
@@ -4212,6 +4277,22 @@ namespace MyCaffe.db.image
         public string Name
         {
             get { return m_strName; }
+        }
+
+        /// <summary>
+        /// Specifies the source ID that the images belong to.
+        /// </summary>
+        public int SourceID
+        {
+            get { return m_nSrcId; }
+        }
+
+        /// <summary>
+        /// Returns whether or not to only add the parameter if it does not exist.
+        /// </summary>
+        public bool OnlyAddNew
+        {
+            get { return m_bOnlyAddNew; }
         }
 
         /// <summary>
@@ -4231,11 +4312,11 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
-        /// When specified, returns the RawImage ID from which the parameter is to be queried, otherwise returns 0.
+        /// When specified, returns the RawImage ID from which the parameter is to be queried or is associated, otherwise returns 0.
         /// </summary>
-        public int QueryValueFromImageID
+        public int ImageID
         {
-            get { return m_nQueryFromImageID; }
+            get { return m_nImageID; }
         }
     }
 }
