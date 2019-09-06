@@ -114,7 +114,7 @@ namespace MyCaffe.app
                         }
                     }
 
-                    m_factory.ClearImageCash(true);
+                    m_factory.ClearImageCashe(true);
 
                     if (nIdx == nTotal)
                         m_factory.UpdateSourceCounts();

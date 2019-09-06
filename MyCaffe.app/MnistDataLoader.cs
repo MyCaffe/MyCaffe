@@ -125,7 +125,7 @@ namespace MyCaffe.app
                     rgImg.Add(new SimpleDatum(datum));
                 }
 
-                m_factory.ClearImageCash(true);
+                m_factory.ClearImageCashe(true);
                 m_factory.UpdateSourceCounts();
                 m_factory.SaveImageMean(SimpleDatum.CalculateMean(log, rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true);
 
