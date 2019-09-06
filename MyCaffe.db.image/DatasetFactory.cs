@@ -199,10 +199,11 @@ namespace MyCaffe.db.image
         /// <param name="strName">Specifies the name of the parameter.</param>
         /// <param name="strValue">Specifies the value of the parameter.</param>
         /// <param name="rgData">Optionally, specifies raw data to associate with the RawImage.</param>
+        /// <param name="bOnlyAddNew">Optionally, specifies to only add the parameter if it doesnt exist (default = false).</param>
         /// <returns>The ID of the parameter is returned.</returns>
-        public int SetRawImageParameter(int nRawImageID, string strName, string strValue, byte[] rgData = null)
+        public int SetRawImageParameter(int nRawImageID, string strName, string strValue, byte[] rgData = null, bool bOnlyAddNew = false)
         {
-            return m_db.SetRawImageParameter(nRawImageID, strName, strValue, rgData);
+            return m_db.SetRawImageParameter(nRawImageID, strName, strValue, rgData, true, bOnlyAddNew);
         }
 
         /// <summary>
@@ -246,14 +247,15 @@ namespace MyCaffe.db.image
         /// <param name="nSrcId">Specifies the source ID.</param>
         /// <param name="bActive">Optionally, specifies to query active (or non active) images (default = <i>null</i>, which queries all images).</param>
         /// <param name="bLoadCriteria">Optionally, specifies to load the data criteria which can take longer (default = <i>false</i>).</param>
+        /// <param name="bLoadDebug">Optionally, specifies to load the debug data which can take longer (default = <i>false</i>).</param>
         /// <param name="log">Optionally, specifies the output log (default = <i>null</i>).</param>
         /// <param name="evtCancel">Optionally, specifies the cancel event to abort loading (default = <i>null</i>).</param>
         /// <returns>The list of RawImage's is returned.</returns>
-        public List<RawImage> QueryRawImages(int nSrcId, bool? bActive = null, bool bLoadCriteria = false, Log log = null, CancelEvent evtCancel = null)
+        public List<RawImage> QueryRawImages(int nSrcId, bool? bActive = null, bool bLoadCriteria = false, bool bLoadDebug = false, Log log = null, CancelEvent evtCancel = null)
         {
             List<RawImage> rgImg = m_db.QueryRawImages(nSrcId, bActive);
 
-            if (!bLoadCriteria)
+            if (!bLoadCriteria && !bLoadDebug)
                 return rgImg;
 
             Stopwatch sw = new Stopwatch();
@@ -262,7 +264,12 @@ namespace MyCaffe.db.image
             for (int i = 0; i < rgImg.Count; i++)
             {
                 int? nFmt;
-                rgImg[i].DataCriteria = m_db.GetRawImageDataCriteria(rgImg[i], out nFmt);
+
+                if (bLoadCriteria)
+                    rgImg[i].DataCriteria = m_db.GetRawImageDataCriteria(rgImg[i], out nFmt);
+
+                if (bLoadDebug)
+                    rgImg[i].DebugData = m_db.GetRawImageDebugData(rgImg[i], out nFmt);
 
                 if (evtCancel != null && evtCancel.WaitOne(0))
                     return null;
@@ -279,6 +286,24 @@ namespace MyCaffe.db.image
             }
 
             return rgImg;
+        }
+
+
+        /// <summary>
+        /// Returns the list of raw images that have a source ID from a selected list.
+        /// </summary>
+        /// <param name="img">Specifies the Raw Image.</param>
+        /// <param name="bLoadCriteria">Optionally, specifies to load the data criteria.</param>
+        /// <param name="bLoadDebug">Optionally, specifies to load the debug data.</param>
+        public void LoadRawImageData(RawImage img, bool bLoadCriteria, bool bLoadDebug)
+        {
+            int? nFmt;
+
+            if (bLoadCriteria)
+                img.DataCriteria = m_db.GetRawImageDataCriteria(img, out nFmt);
+
+            if (bLoadDebug)
+                img.DebugData = m_db.GetRawImageDebugData(img, out nFmt);
         }
 
 
