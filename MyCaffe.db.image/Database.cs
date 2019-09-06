@@ -4285,6 +4285,7 @@ namespace MyCaffe.db.image
         public int SourceID
         {
             get { return m_nSrcId; }
+            set { m_nSrcId = value; }
         }
 
         /// <summary>
@@ -4317,6 +4318,7 @@ namespace MyCaffe.db.image
         public int ImageID
         {
             get { return m_nImageID; }
+            set { m_nImageID = value; }
         }
     }
 }
