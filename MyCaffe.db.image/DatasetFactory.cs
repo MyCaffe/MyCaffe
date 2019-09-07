@@ -117,8 +117,6 @@ namespace MyCaffe.db.image
             {
                 if (m_openSource.ID != nSrcId)
                     throw new Exception("The dataset factory is already open with the source id = " + m_openSource.ID.ToString() + "!");
-
-                return;
             }
 
             m_openSource = LoadSource(nSrcId);
