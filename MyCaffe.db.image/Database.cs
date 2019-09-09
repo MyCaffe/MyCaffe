@@ -1672,6 +1672,7 @@ namespace MyCaffe.db.image
                         rip.Name = param.Name;
                         rip.SourceID = param.SourceID;
                         rip.TextValue = param.Value;
+                        rip.NumericValue2 = param.NumericValue;
                         rip.Value = param.Data;
                         entities.RawImageParameters.Add(rip);
                     }
@@ -1681,6 +1682,7 @@ namespace MyCaffe.db.image
                         {
                             List<RawImageParameter> rg = iquery.ToList();
                             rg[0].TextValue = param.Value;
+                            rg[0].NumericValue2 = param.NumericValue;
                             rg[0].Value = param.Data;
                         }
                     }
@@ -1719,6 +1721,7 @@ namespace MyCaffe.db.image
                             ParameterData p = rgrgParam[i][j];
                             string strName = p.Name;
                             string strVal = p.Value;
+                            double? dfVal = p.NumericValue;
                             byte[] rgData = p.Data;
 
                             if (p.ImageID != 0)
@@ -1732,8 +1735,8 @@ namespace MyCaffe.db.image
                                 }
                             }
 
-                            if (!String.IsNullOrEmpty(strVal) || rgData != null)
-                                SetRawImageParameter(rgImg[i].ID, strName, strVal, rgData, false, false, entities);
+                            if (!String.IsNullOrEmpty(strVal) || dfVal.HasValue || rgData != null)
+                                SetRawImageParameter(rgImg[i].ID, strName, strVal, dfVal, rgData, false, false, entities);
                         }
                     }
 
@@ -2421,12 +2424,13 @@ namespace MyCaffe.db.image
         /// <param name="nRawImageID">Specifies the ID of the RawImage.</param>
         /// <param name="strName">Specifies the name of the parameter.</param>
         /// <param name="strValue">Specifies the value of the parameter as a string.</param>
+        /// <param name="dfVal">Specifies the value of the parameter as a numeric value (default = null).</param>
         /// <param name="rgData">Optionally, specifies the <i>byte</i> data associated with the parameter (default = null).</param>
         /// <param name="bSave">Optionally, specifies to save the data to the database (default = true).</param>
         /// <param name="bOnlyAddNew">Optionally, specifies to only add the parameter if it doesnt exist (default = false).</param>
         /// <param name="entities">Optionally, specifies the entities to use (default = null in which case the open data source entities are used).</param>
         /// <returns>The ID of the RawImageParameter is returned.</returns>
-        public int SetRawImageParameter(int nRawImageID, string strName, string strValue, byte[] rgData = null, bool bSave = true, bool bOnlyAddNew = false, DNNEntities entities = null)
+        public int SetRawImageParameter(int nRawImageID, string strName, string strValue, double? dfVal = null, byte[] rgData = null, bool bSave = true, bool bOnlyAddNew = false, DNNEntities entities = null)
         {
             if (entities == null)
                 entities = m_entities;
@@ -2450,6 +2454,8 @@ namespace MyCaffe.db.image
             }
 
             riP.TextValue = strValue;
+            riP.NumericValue2 = dfVal;
+            riP.NumericValue = null;
             riP.Value = setImageByteData(rgData, "param_" + strName);
 
             if (rgP.Count == 0)
@@ -2468,9 +2474,10 @@ namespace MyCaffe.db.image
         /// <param name="nRawImageID">Specifies the ID of the RawImage.</param>
         /// <param name="strName">Specifies the name of the parameter.</param>
         /// <param name="strValue">Specifies the value of the parameter as a string.</param>
+        /// <param name="dfVal">Specifies the value of the parameter as a numeric value (default = null).</param>
         /// <param name="rgData">Optionally, specifies the <i>byte</i> data associated with the parameter (default = null).</param>
         /// <returns>The ID of the RawImageParameter is returned.</returns>
-        public int SetRawImageParameter(int nSrcId, int nRawImageID, string strName, string strValue, byte[] rgData = null)
+        public int SetRawImageParameter(int nSrcId, int nRawImageID, string strName, string strValue, double? dfVal = null, byte[] rgData = null)
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
@@ -2490,6 +2497,7 @@ namespace MyCaffe.db.image
                 }
 
                 riP.TextValue = strValue;
+                riP.NumericValue2 = dfVal;
                 riP.Value = setImageByteData(rgData, "param_" + strName);
 
                 if (rgP.Count == 0)
@@ -2507,16 +2515,17 @@ namespace MyCaffe.db.image
         /// <param name="dt">Specifies the time-stamp.</param>
         /// <param name="strName">Specifies the name of the parameter.</param>
         /// <param name="strValue">Specifies the value of the parameter as a string.</param>
+        /// <param name="dfVal">Specifies the value of the parameter as a numeric value.</param>
         /// <param name="rgData">Optionally, specifies the <i>byte</i> data associated with the parameter (default = null).</param>
         /// <returns>The ID of the RawImageParameter is returned.</returns>
-        public int SetRawImageParameterAt(DateTime dt, string strName, string strValue, byte[] rgData)
+        public int SetRawImageParameterAt(DateTime dt, string strName, string strValue, double? dfVal, byte[] rgData)
         {
             List<RawImage> rg = m_entities.RawImages.Where(p => p.SourceID == m_src.ID && p.TimeStamp == dt).ToList();
 
             if (rg.Count == 0)
                 return 0;
 
-            return SetRawImageParameter(m_src.ID, rg[0].ID, strName, strValue, rgData);
+            return SetRawImageParameter(m_src.ID, rg[0].ID, strName, strValue, dfVal, rgData);
         }
 
         /// <summary>
@@ -2538,7 +2547,7 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="strName">Specifies the parameter name.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-        /// <param name="strType">Optionally, specifies the parameter type (default = "TEXT").</param>
+        /// <param name="strType">Optionally, specifies the parameter type of 'TEXT', 'NUMERIC' or 'VALUE' (default = "TEXT").</param>
         /// <returns>The number of RawImage parameters is returned.</returns>
         public int GetRawImageParameterCount(string strName, int nSrcId = 0, string strType = "TEXT")
         {
@@ -2549,6 +2558,9 @@ namespace MyCaffe.db.image
             {
                 if (strType.ToLower() == "text")
                     return entities.RawImageParameters.Where(p => p.SourceID == nSrcId && p.Name == strName && p.TextValue != null).Count();
+
+                if (strType.ToLower() == "numeric")
+                    return entities.RawImageParameters.Where(p => p.SourceID == nSrcId && p.Name == strName && p.NumericValue != null).Count();
 
                 if (strType.ToLower() == "value")
                     return entities.RawImageParameters.Where(p => p.SourceID == nSrcId && p.Name == strName && p.Value != null).Count();
@@ -2562,7 +2574,7 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="strName">Specifies the parameter name.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-        /// <param name="strType">Optionally, specifies the parameter type (default = "TEXT").</param>
+        /// <param name="strType">Optionally, specifies the parameter type of 'TEXT', 'NUMERIC' or 'VALUE' (default = "TEXT").</param>
         /// <returns>Returns <i>true</i> if the parameter exists, <i>false</i> otherwise.</returns>
         public bool GetRawImageParameterExist(string strName, int nSrcId = 0, string strType = "TEXT")
         {
@@ -2574,6 +2586,12 @@ namespace MyCaffe.db.image
                 if (strType.ToLower() == "text")
                 {
                     int nCount = entities.RawImageParameters.Where(p => p.SourceID == nSrcId && p.Name == strName && p.TextValue != null).Take(1).Count();
+                    return (nCount > 0) ? true : false;
+                }
+
+                if (strType.ToLower() == "numeric")
+                {
+                    int nCount = entities.RawImageParameters.Where(p => p.SourceID == nSrcId && p.Name == strName && p.NumericValue != null).Take(1).Count();
                     return (nCount > 0) ? true : false;
                 }
 
@@ -2619,8 +2637,8 @@ namespace MyCaffe.db.image
 
 
         //---------------------------------------------------------------------
-            //  RawImage Groups
-            //---------------------------------------------------------------------
+        //  RawImage Groups
+        //---------------------------------------------------------------------
         #region RawImage Groups
 
         /// <summary>
@@ -4236,6 +4254,7 @@ namespace MyCaffe.db.image
     {
         string m_strName;
         string m_strValue = null;
+        double? m_dfValue = null;
         byte[] m_rgValue = null;
         int m_nImageID = 0;
         bool m_bOnlyAddNew = false;
@@ -4246,14 +4265,16 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="strName">Specifies the name of the parameter.</param>
         /// <param name="strValue">Specifies the value of the parameter.</param>
-        /// <param name="rgData">Specifies the raw data associated with the parameter.</param>
-        /// <param name="nImageID">Specifies a RawImage ID from which the parameter should be associated.</param>
+        /// <param name="dfVal">Specifies the numeric value of the parameter (default = null).</param>
+        /// <param name="rgData">Specifies the raw data associated with the parameter (default = null).</param>
+        /// <param name="nImageID">Specifies a RawImage ID from which the parameter should be associated (default = 0).</param>
         /// <param name="bOnlyAddNew">Optionally, specifies to only add new parameters (default = false).</param>
-        /// <param name="nSrcId">Optionally, specifies the source ID of the images.</param>
-        public ParameterData(string strName, string strValue, byte[] rgData, int nImageID = 0, bool bOnlyAddNew = false, int nSrcId = 0)
+        /// <param name="nSrcId">Optionally, specifies the source ID of the images (default = 0).</param>
+        public ParameterData(string strName, string strValue, double? dfVal = null, byte[] rgData = null, int nImageID = 0, bool bOnlyAddNew = false, int nSrcId = 0)
         {
             m_strName = strName;
             m_strValue = strValue;
+            m_dfValue = dfVal;
             m_rgValue = rgData;
             m_nImageID = nImageID;
             m_bOnlyAddNew = bOnlyAddNew;
@@ -4302,6 +4323,14 @@ namespace MyCaffe.db.image
         public string Value
         {
             get { return m_strValue; }
+        }
+
+        /// <summary>
+        /// Returns the parameter numeric value.
+        /// </summary>
+        public double? NumericValue
+        {
+            get { return m_dfValue; }
         }
 
         /// <summary>

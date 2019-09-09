@@ -163,11 +163,12 @@ namespace MyCaffe.db.image
         /// <param name="nImageID">Specifies the image ID associated with the parameter.</param>
         /// <param name="strParam">Specifies the parameter name.</param>
         /// <param name="strVal">Specifies the parameter value.</param>
+        /// <param name="dfVal">Specifies the parameter numeric value.</param>
         /// <param name="rgData">Specifies the parameter data.</param>
         /// <param name="bOnlyAddNew">Specifies to only add the parameter if it does not already exist.</param>
-        public void PutRawImageParameterCache(int nImageID, string strParam, string strVal, byte[] rgData, bool bOnlyAddNew)
+        public void PutRawImageParameterCache(int nImageID, string strParam, string strVal, double? dfVal, byte[] rgData, bool bOnlyAddNew)
         {
-            if (m_paramCache.Add(new ParameterData(strParam, strVal, rgData, nImageID, bOnlyAddNew, m_openSource.ID)))
+            if (m_paramCache.Add(new ParameterData(strParam, strVal, dfVal, rgData, nImageID, bOnlyAddNew, m_openSource.ID)))
                 ClearParamCache(true);
         }
 
@@ -234,12 +235,13 @@ namespace MyCaffe.db.image
         /// <param name="nRawImageID">Specifies the ID of the RawImage.</param>
         /// <param name="strName">Specifies the name of the parameter.</param>
         /// <param name="strValue">Specifies the value of the parameter.</param>
-        /// <param name="rgData">Optionally, specifies raw data to associate with the RawImage.</param>
+        /// <param name="dfVal">Specifies the numeric value of the parameter (default = null).</param>
+        /// <param name="rgData">Optionally, specifies raw data to associate with the RawImage (default = null).</param>
         /// <param name="bOnlyAddNew">Optionally, specifies to only add the parameter if it doesnt exist (default = false).</param>
         /// <returns>The ID of the parameter is returned.</returns>
-        public int SetRawImageParameter(int nRawImageID, string strName, string strValue, byte[] rgData = null, bool bOnlyAddNew = false)
+        public int SetRawImageParameter(int nRawImageID, string strName, string strValue, double? dfVal = null, byte[] rgData = null, bool bOnlyAddNew = false)
         {
-            return m_db.SetRawImageParameter(nRawImageID, strName, strValue, rgData, true, bOnlyAddNew);
+            return m_db.SetRawImageParameter(nRawImageID, strName, strValue, dfVal, rgData, true, bOnlyAddNew);
         }
 
         /// <summary>
@@ -248,11 +250,12 @@ namespace MyCaffe.db.image
         /// <param name="dt">Specifies the time-stamp.</param>
         /// <param name="strName">Specifies the name of the parameter.</param>
         /// <param name="strValue">Specifies the value of the parameter as a string.</param>
+        /// <param name="dfVal">Specifies the numeric value of the parameter (default = null).</param>
         /// <param name="rgData">Optionally, specifies the <i>byte</i> data associated with the parameter (default = null).</param>
         /// <returns>The ID of the RawImageParameter is returned.</returns>
-        public int SetRawImageParameterAt(DateTime dt, string strName, string strValue, byte[] rgData = null)
+        public int SetRawImageParameterAt(DateTime dt, string strName, string strValue, double? dfVal = null, byte[] rgData = null)
         {
-            return m_db.SetRawImageParameterAt(dt, strName, strValue, rgData);
+            return m_db.SetRawImageParameterAt(dt, strName, strValue, dfVal, rgData);
         }
 
         /// <summary>
@@ -1790,7 +1793,7 @@ namespace MyCaffe.db.image
                 string strTag = d.TagName as string;
 
                 if (!String.IsNullOrEmpty(strTag) && !String.IsNullOrEmpty(strVal))
-                    rgParam.Add(new db.image.ParameterData(strTag, strVal, null, img.ID, false, img.SourceID.GetValueOrDefault()));
+                    rgParam.Add(new db.image.ParameterData(strTag, strVal, null, null, img.ID, false, img.SourceID.GetValueOrDefault()));
             }
 
             foreach (ParameterData param in rgParams)

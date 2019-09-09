@@ -120,6 +120,8 @@
           <Property Name="SourceID" Type="int" />
           <Property Name="RawImageID" Type="int" />
           <Property Name="TextValue" Type="nvarchar" MaxLength="1024" />
+          <Property Name="NumericValue" Type="numeric" Precision="12" Scale="5" />
+          <Property Name="NumericValue2" Type="float" />
         </EntityType>
         <EntityType Name="RawImageResults">
           <Key>
@@ -283,6 +285,8 @@
           <Property Name="SourceID" Type="Int32" />
           <Property Name="RawImageID" Type="Int32" />
           <Property Name="TextValue" Type="String" MaxLength="1024" FixedLength="false" Unicode="true" />
+          <Property Name="NumericValue" Type="Decimal" Precision="12" Scale="5" />
+          <Property Name="NumericValue2" Type="Double" />
         </EntityType>
         <EntityType Name="RawImageResult">
           <Key>
@@ -485,6 +489,8 @@
           <EntitySetMapping Name="RawImageParameters">
             <EntityTypeMapping TypeName="DNNModel.RawImageParameter">
               <MappingFragment StoreEntitySet="RawImageParameters">
+                <ScalarProperty Name="NumericValue2" ColumnName="NumericValue2" />
+                <ScalarProperty Name="NumericValue" ColumnName="NumericValue" />
                 <ScalarProperty Name="ID" ColumnName="ID" />
                 <ScalarProperty Name="Name" ColumnName="Name" />
                 <ScalarProperty Name="Value" ColumnName="Value" />
