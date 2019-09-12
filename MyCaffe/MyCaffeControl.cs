@@ -1027,6 +1027,65 @@ namespace MyCaffe
         }
 
         /// <summary>
+        /// Load a solver and model without using the MyCaffeImageDatabase.
+        /// </summary>
+        /// <remarks>
+        /// This load function is a load lite that does not use the MyCaffeImageDatabase.
+        /// </remarks>
+        /// <param name="phase">Specifies the Phase for which the load should focus.</param>
+        /// <param name="strSolver">Specifies the solver descriptor.</param>
+        /// <param name="strModel">Specifies the model desciptor.</param>
+        /// <param name="rgWeights">Optionally, specifies the weights to load, or <i>null</i> to ignore.</param>
+        /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
+        /// <param name="bCreateRunNet">Optionally, specifies whether or not to create the Run net (default = true).</param>
+        /// <param name="strStage">Optionally, specifies a stage under which to load the model.</param>
+        /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
+        /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
+        public bool LoadLite(Phase phase, string strSolver, string strModel, byte[] rgWeights, bool bResetFirst = false, string strStage = null, bool bEnableMemTrace = false)
+        {
+            m_strStage = strStage;
+            m_imgDb = null;
+            m_bImgDbOwner = false;
+
+            RawProto protoSolver = RawProto.Parse(strSolver);
+            SolverParameter solverParam = SolverParameter.FromProto(protoSolver);
+
+            strModel = addStage(strModel, phase, strStage);
+
+            RawProto protoModel = RawProto.Parse(strModel);
+            solverParam.net_param = NetParameter.FromProto(protoModel);
+
+            m_dataSet = findDataset(solverParam.net_param);
+            m_project = null;
+
+            if (m_cuda != null)
+                m_cuda.Dispose();
+
+            m_cuda = new CudaDnn<T>(m_rgGpu[0], DEVINIT.CUBLAS | DEVINIT.CURAND, null, m_strCudaPath, bResetFirst, bEnableMemTrace);
+            m_log.WriteLine("Cuda Connection created using '" + m_cuda.Path + "'.");
+
+            if (phase == Phase.TEST || phase == Phase.TRAIN)
+            {
+                m_log.WriteLine("Creating solver...");
+
+                m_solver = Solver<T>.Create(m_cuda, m_log, solverParam, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_imgDb, m_persist, m_rgGpu.Count, 0);
+
+                if (rgWeights != null)
+                    m_solver.Restore(rgWeights, null);
+
+                m_solver.OnSnapshot += new EventHandler<SnapshotArgs>(m_solver_OnSnapshot);
+                m_solver.OnTrainingIteration += new EventHandler<TrainingIterationArgs<T>>(m_solver_OnTrainingIteration);
+                m_solver.OnTestingIteration += new EventHandler<TestingIterationArgs<T>>(m_solver_OnTestingIteration);
+                m_log.WriteLine("Solver created.");
+            }
+
+            if (phase == Phase.RUN)
+                throw new Exception("You cannot opt out of creating the Run net when using the RUN phase.");
+
+            return true;
+        }
+
+        /// <summary>
         /// The LoadToRun method loads the MyCaffeControl for running only (e.g. deployment).
         /// </summary>
         /// <remarks>
