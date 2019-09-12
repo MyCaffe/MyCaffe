@@ -1037,7 +1037,6 @@ namespace MyCaffe
         /// <param name="strModel">Specifies the model desciptor.</param>
         /// <param name="rgWeights">Optionally, specifies the weights to load, or <i>null</i> to ignore.</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
-        /// <param name="bCreateRunNet">Optionally, specifies whether or not to create the Run net (default = true).</param>
         /// <param name="strStage">Optionally, specifies a stage under which to load the model.</param>
         /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>

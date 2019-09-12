@@ -440,7 +440,6 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
         /// </summary>
-        /// <param name="nSrcId">Specifies the data source ID.</param>
         /// <param name="bSuperboostOnly">Specifies whether or not to return images with super-boost.</param>
         /// <param name="strFilterVal">specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <param name="nBoostVal">specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
