@@ -300,13 +300,13 @@ namespace MyCaffe.layers
             if (m_nPooledHeight <= 0)
             {
                 m_nPooledHeight = 1;
-                m_log.WriteLine("WARNING: pooling height was 0, setting to 1.");
+                m_log.WriteLine("WARNING: pooling height was 0 in layer '" + m_param.name + "', setting to 1.");
             }
 
             if (m_nPooledWidth <= 0)
             {
                 m_nPooledWidth = 1;
-                m_log.WriteLine("WARNING: pooling width was 0, setting to 1.");
+                m_log.WriteLine("WARNING: pooling width was 0 in layer '" + m_param.name +"', setting to 1.");
             }
 
             if (m_nPadH > 0 || m_nPadW > 0)
