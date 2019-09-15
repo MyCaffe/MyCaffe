@@ -100,26 +100,32 @@ namespace MyCaffe.db.image
         /// <summary>
         /// No sorting performed.
         /// </summary>
+        [EnumMember]
         NONE = 0x0000,
         /// <summary>
         /// Sort by description first.
         /// </summary>
+        [EnumMember]
         BYDESC = 0x0001,
         /// <summary>
         /// Sort by time.
         /// </summary>
+        [EnumMember]
         BYTIME = 0x0002,
         /// <summary>
         /// Sort by image ID.
         /// </summary>
+        [EnumMember]
         BYID = 0x0004,
         /// <summary>
         /// Sort by image ID in decending order.
         /// </summary>
+        [EnumMember]
         BYID_DESC = 0x0008,
         /// <summary>
         /// Sort by image Index.
         /// </summary>
+        [EnumMember]
         BYIDX = 0x0010
     }
 
