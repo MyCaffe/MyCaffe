@@ -1152,9 +1152,25 @@ namespace MyCaffe.db.image
         /// <param name="nDsId">Specifies the ID of the dataset.</param>
         /// <param name="strParam">Specifies the name of the parameter.</param>
         /// <param name="strValue">Specifies the value of the parameter.</param>
-        public void SetDatasetParameter(int nDsId, string strParam, string strValue)
+        /// <param name="dfVal">Optionally, specifies a numeric value (default = null).</param>
+        public void SetDatasetParameter(int nDsId, string strParam, string strValue, double? dfVal = null)
         {
-            m_db.SetDatasetParameter(nDsId, strParam, strValue);
+            if (dfVal.HasValue)
+                m_db.SetDatasetParameter(nDsId, strParam, strValue, dfVal.Value);
+            else
+                m_db.SetDatasetParameter(nDsId, strParam, strValue);
+        }
+
+        /// <summary>
+        /// Returns the value of a dataset parameter as a string.
+        /// </summary>
+        /// <param name="nDsId">Specifies the ID of the dataset.</param>
+        /// <param name="strParam">Specifies the name of the parameter.</param>
+        /// <param name="dfVal">Returns the numberic value is one exists.</param>
+        /// <returns>If the parameter is found it is returned as a string, otherwise <i>null</i> is returned.</returns>
+        public string GetDatasetParameter(int nDsId, string strParam, out double? dfVal)
+        {
+            return m_db.GetDatasetParameter(nDsId, strParam, out dfVal);
         }
 
         /// <summary>
