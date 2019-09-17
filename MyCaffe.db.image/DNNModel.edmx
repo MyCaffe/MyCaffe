@@ -30,6 +30,7 @@
           <Property Name="Name" Type="nvarchar" MaxLength="256" />
           <Property Name="Value" Type="nvarchar" MaxLength="1024" />
           <Property Name="DatasetID" Type="int" />
+          <Property Name="ValueNumeric" Type="float" />
         </EntityType>
         <EntityType Name="Datasets">
           <Key>
@@ -225,6 +226,7 @@
           <Property Name="Name" Type="String" MaxLength="256" FixedLength="false" Unicode="true" />
           <Property Name="Value" Type="String" MaxLength="1024" FixedLength="false" Unicode="true" />
           <Property Name="DatasetID" Type="Int32" />
+          <Property Name="ValueNumeric" Type="Double" />
         </EntityType>
         <EntityType Name="LabelBoost">
           <Key>
@@ -426,6 +428,7 @@
           <EntitySetMapping Name="DatasetParameters">
             <EntityTypeMapping TypeName="DNNModel.DatasetParameter">
               <MappingFragment StoreEntitySet="DatasetParameters">
+                <ScalarProperty Name="ValueNumeric" ColumnName="ValueNumeric" />
                 <ScalarProperty Name="ID" ColumnName="ID" />
                 <ScalarProperty Name="Name" ColumnName="Name" />
                 <ScalarProperty Name="Value" ColumnName="Value" />
