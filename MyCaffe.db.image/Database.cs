@@ -3796,6 +3796,7 @@ namespace MyCaffe.db.image
         /// <param name="nDsId">Specifies the ID of the dataset.</param>
         /// <param name="strName">Specifies the name of the parameter.</param>
         /// <param name="strValue">Specifies the value of the parameter.</param>
+        /// <param name="dfNumericValue">Specifies the numeric value of the parameter.</param>
         public void SetDatasetParameter(int nDsId, string strName, string strValue, double dfNumericValue)
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
