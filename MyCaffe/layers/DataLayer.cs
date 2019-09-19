@@ -27,7 +27,7 @@ namespace MyCaffe.layers
         /// Specifies the database used to traverse through the database.
         /// </summary>
         protected Cursor m_cursor;
-        UInt64 m_nOffset;
+        UInt64 m_nOffset = 0;
         /// <summary>
         /// Specifies a first timer used to calcualte the batch time.
         /// </summary>
