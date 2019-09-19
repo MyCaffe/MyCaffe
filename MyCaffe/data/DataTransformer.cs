@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using MyCaffe.param;
 using MyCaffe.common;
+using MyCaffe.param.ssd;
 
 /// <summary>
 /// The MyCaffe.data namespace contains data related classes.
@@ -166,7 +167,7 @@ namespace MyCaffe.data
         /// </summary>
         /// <param name="d">Data containing the data to be transformed.</param>
         /// <returns>The inferred shape.</returns>
-        public List<int> InferBlobShape(Datum d)
+        public List<int> InferBlobShape(SimpleDatum d)
         {
             int nCropSize = (int)m_param.crop_size;
             int nDatumChannels = d.Channels;
@@ -369,8 +370,10 @@ namespace MyCaffe.data
         /// Transform the data into an array of transformed values.
         /// </summary>
         /// <param name="d">Data to transform.</param>
+        /// <param name="bMirror">Returns whether or not a mirror occurred.</param>
+        /// <param name="crop_bbox">Optionally, specifies a crop bbox to fill out.</param>
         /// <returns>Transformed data.</returns>
-        public T[] Transform(SimpleDatum d)
+        public T[] Transform(SimpleDatum d, out bool bMirror, NormalizedBBox crop_bbox = null)
         {
             m_dfLastMax = -double.MaxValue;
             m_dfLastMin = double.MaxValue;
@@ -392,6 +395,8 @@ namespace MyCaffe.data
             List<double> rgMeanValues = null;
             double[] rgMean = null;
             bool bUseReal = d.IsRealData;
+
+            bMirror = bDoMirror;
 
             m_log.CHECK_GT(nDatumChannels, 0, "The datum must have at least 1 channel.");
             m_log.CHECK_GE(nDatumHeight, nCropSize, "The datum height must be at least as great as the crop size " + nCropSize.ToString());
@@ -446,6 +451,10 @@ namespace MyCaffe.data
                     w_off = (nDatumWidth - nCropSize) / 2;
                 }
             }
+
+            // Return the normalized crop bbox if specified
+            if (crop_bbox != null)
+                crop_bbox.Set((float)w_off / nDatumWidth, (float)h_off / nDatumHeight, (float)(w_off + nWidth) / nDatumWidth, (float)(h_off + nHeight) / nDatumHeight);
 
             double dfDataElement;
             double dfTransformedElement;
@@ -513,6 +522,117 @@ namespace MyCaffe.data
 
             List<T> rg = new List<T>(m_rgTransformedData);
             return rg.GetRange(0, nItemCount).ToArray();
+        }
+
+        /// <summary>
+        /// Transform the data into an array of transformed values.
+        /// </summary>
+        /// <param name="d">Data to transform.</param>
+        /// <returns>Transformed data.</returns>
+        public T[] Transform(SimpleDatum d)
+        {
+            bool bMirror;
+            return Transform(d, out bMirror, null);
+        }
+
+        /// <summary>
+        /// Transform the data into an array of transformed values.
+        /// </summary>
+        /// <param name="d">Data to transform.</param>
+        /// <param name="rgTransformedAnnoVec">Returns the list of transfomed annoations.</param>
+        /// <param name="bMirror">Returns whether or not a mirror occurred.</param>
+        /// <param name="bResize">Specifies to resize the data.</param>
+        /// <returns>Transformed data.</returns>
+        public T[] Transform(SimpleDatum d, out List<AnnotationGroup> rgTransformedAnnoVec, out bool bMirror, bool bResize = true)
+        {
+            // Transform the datum.
+            NormalizedBBox crop_bbox = new NormalizedBBox(0, 0, 0, 0);
+            T[] rgTrans = Transform(d, out bMirror, crop_bbox);
+
+            // Transform annoation.
+            rgTransformedAnnoVec = TransformAnnotation(d, crop_bbox, bMirror, bResize);
+
+            return rgTrans;
+        }
+
+        /// <summary>
+        /// Transform the annotation data.
+        /// </summary>
+        /// <param name="d">Data to transform.</param>
+        /// <param name="crop_bbox">Specifies the crop_bbox defined for the data.</param>
+        /// <param name="bMirror">Specifies to mirror the data.</param>
+        /// <param name="bResize">Specifies to resize the data.</param>
+        /// <returns></returns>
+        public List<AnnotationGroup> TransformAnnotation(SimpleDatum d, NormalizedBBox crop_bbox, bool bMirror, bool bResize)
+        {
+            int nImgHt = d.Height;
+            int nImgWd = d.Width;
+            List<AnnotationGroup> rgTransformedAnnotationGroup = new List<AnnotationGroup>();
+
+            if (d.annoation_type == SimpleDatum.ANNOTATION_TYPE.BBOX)
+            {
+                // Go through each AnnotationGroup.
+                for (int g = 0; g < d.annotation_group.Count; g++)
+                {
+                    // Go through each Annoation.
+                    bool bHasValidAnnotation = false;
+                    AnnotationGroup anno_group = d.annotation_group[g];
+                    AnnotationGroup transformed_anno_group = new AnnotationGroup();
+
+                    for (int a = 0; a < anno_group.annotations.Count; a++)
+                    {
+
+                        Annotation anno = anno_group.annotations[a];
+                        NormalizedBBox bbox = anno.bbox;
+
+                        // Adjust bounding box annoation.
+                        NormalizedBBox resize_bbox = bbox;
+                        if (bResize && m_param.resize_param != null)
+                        {
+                            m_log.CHECK_GT(nImgHt, 0, "The image height must be > 0!");
+                            m_log.CHECK_GT(nImgWd, 0, "The image width must be > 0!");
+                            resize_bbox = m_imgTransforms.UpdateBBoxByResizePolicy(m_param.resize_param, nImgWd, nImgHt, resize_bbox);
+                        }
+
+                        if (m_param.emit_constraint != null && m_bbox.MeetEmitConstraint(crop_bbox, resize_bbox, m_param.emit_constraint))
+                            continue;
+
+                        NormalizedBBox proj_bbox;
+                        if (m_bbox.Project(crop_bbox, resize_bbox, out proj_bbox))
+                        {
+                            bHasValidAnnotation = true;
+                            Annotation transformed_anno = new Annotation(proj_bbox.Clone(), anno.instance_id);
+                            NormalizedBBox transformed_bbox = transformed_anno.bbox;
+
+                            if (bMirror)
+                            {
+                                float fTemp = transformed_bbox.xmin;
+                                transformed_bbox.xmin = 1 - transformed_bbox.xmax;
+                                transformed_bbox.xmax = 1 - fTemp;
+                            }
+                            else if (bResize && m_param.resize_param != null)
+                            {
+                                m_bbox.Extrapolate(m_param.resize_param, nImgHt, nImgWd, crop_bbox, transformed_bbox);
+                            }
+
+                            transformed_anno_group.annotations.Add(transformed_anno);
+                        }
+                    }
+
+                    // Save for output.
+                    if (bHasValidAnnotation)
+                    {
+                        transformed_anno_group.group_label = anno_group.group_label;
+                        rgTransformedAnnotationGroup.Add(transformed_anno_group);
+                    }
+                }
+            }
+            else
+            {
+                m_log.FAIL("Unknown annotation type.");
+            }
+
+            return rgTransformedAnnotationGroup;
         }
 
         /// <summary>
@@ -671,6 +791,47 @@ namespace MyCaffe.data
             }
 
             return expand_datum;
+        }
+
+        private float randomValue(float fMin, float fMax)
+        {
+            float fVal = (float)m_random.NextDouble();
+            return (fVal * (fMax - fMin)) + fMin;
+        }
+
+        /// <summary>
+        /// Expand the datum and adjust the AnnotationGroup.
+        /// </summary>
+        /// <param name="d">Specifies the datum to expand.</param>
+        /// <returns>The newly expanded datum is returned.</returns>
+        public SimpleDatum ExpandImage(SimpleDatum d)
+        {
+            if (m_param.expansion_param == null)
+                return new SimpleDatum(d, true);
+
+            float fExpandProb = m_param.expansion_param.prob;
+            float fProb = (float)m_random.NextDouble();
+
+            if (fProb > fExpandProb)
+                return new SimpleDatum(d, true);
+
+            float fMaxExpandRatio = m_param.expansion_param.max_expand_ratio;
+            if (Math.Abs(fMaxExpandRatio - 1.0f) < 1e-2)
+                return new SimpleDatum(d, true);
+
+            float fExpandRatio = randomValue(1.0f, fMaxExpandRatio);
+
+            // Expand the datum.
+            NormalizedBBox expand_bbox = new NormalizedBBox(0, 0, 0, 0); ;
+            SimpleDatum expanded_datum = ExpandImage(d, expand_bbox, fExpandRatio);
+            expanded_datum.annoation_type = d.annoation_type;
+
+            // Transform the annotation according to the crop_bbox.
+            bool bMirror = false;
+            bool bResize = false;
+            expanded_datum.annotation_group = TransformAnnotation(d, expand_bbox, bMirror, bResize);
+
+            return expanded_datum;
         }
 
         /// <summary>
