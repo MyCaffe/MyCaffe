@@ -37,14 +37,27 @@ namespace MyCaffe.basecode
         /// <param name="fSize">Specifies the size.</param>
         public NormalizedBBox(float fxmin, float fymin, float fxmax, float fymax, int nLabel = 0, bool bDifficult = false, float fScore = 0, float fSize = 0)
         {
+            Set(fxmin, fymin, fxmax, fymax, nLabel, bDifficult, fScore, fSize);
+        }
+
+        public void Set(float fxmin, float fymin, float fxmax, float fymax, int? nLabel = null, bool? bDifficult = null, float? fScore = null, float? fSize = null)
+        {
             m_fxmin = fxmin;
             m_fxmax = fxmax;
             m_fymin = fymin;
             m_fymax = fymax;
-            m_nLabel = nLabel;
-            m_bDifficult = bDifficult;
-            m_fScore = fScore;
-            m_fSize = fSize;
+
+            if (nLabel.HasValue)
+                m_nLabel = nLabel.Value;
+
+            if (bDifficult.HasValue)
+                m_bDifficult = bDifficult.Value;
+
+            if (fScore.HasValue)
+                m_fScore = fScore.Value;
+
+            if (fSize.HasValue)
+                m_fSize = fSize.Value;
         }
 
         /// <summary>
