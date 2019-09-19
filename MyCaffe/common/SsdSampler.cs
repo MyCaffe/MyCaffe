@@ -52,7 +52,7 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="anno_datum">Specifies the annotated datum.</param>
         /// <returns>The grouped object BBoxes are returned.</returns>
-        public List<NormalizedBBox> GroupObjectBBoxes(Datum anno_datum)
+        public List<NormalizedBBox> GroupObjectBBoxes(SimpleDatum anno_datum)
         {
             List<NormalizedBBox> rgObjectBboxes = new List<NormalizedBBox>();
 
@@ -227,7 +227,7 @@ namespace MyCaffe.common
         /// <param name="anno_datum"></param>
         /// <param name="rgBatchSamplers"></param>
         /// <returns>All samples bboxes that satisfy the constraints defined in the BatchSampler are returned.</returns>
-        public List<NormalizedBBox> GenerateBatchSamples(Datum anno_datum, List<BatchSampler> rgBatchSamplers)
+        public List<NormalizedBBox> GenerateBatchSamples(SimpleDatum anno_datum, List<BatchSampler> rgBatchSamplers)
         {
             List<NormalizedBBox> rgSampledBBoxes = new List<NormalizedBBox>();
             List<NormalizedBBox> rgObjectBBoxes = GroupObjectBBoxes(anno_datum);
