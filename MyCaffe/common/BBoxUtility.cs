@@ -1243,6 +1243,41 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Check if a bbox meets the emit constraint w.r.t the src_bbox.
+        /// </summary>
+        /// <param name="src_bbox">Specifies the source Bbox.</param>
+        /// <param name="bbox">Specifies the Bbox to check.</param>
+        /// <param name="emit_constraint">Specifies the emit constraint.</param>
+        /// <returns>If the emit constraint is met, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public bool MeetEmitConstraint(NormalizedBBox src_bbox, NormalizedBBox bbox, EmitConstraint emit_constraint)
+        {
+            if (emit_constraint.emit_type == EmitConstraint.EmitType.CENTER)
+            {
+                float fXCenter = (bbox.xmin + bbox.xmax) / 2;
+                float fYCenter = (bbox.ymin + bbox.ymax) / 2;
+
+                if ((fXCenter >= src_bbox.xmin && fXCenter <= src_bbox.xmax) &&
+                    (fYCenter >= src_bbox.ymin && fYCenter <= src_bbox.ymax))
+                    return true;
+                else
+                    return false;
+            }
+            else if (emit_constraint.emit_type == EmitConstraint.EmitType.MIN_OVERLAP)
+            {
+                float fBboxCoverage = Coverage(bbox, src_bbox);
+                if (fBboxCoverage > emit_constraint.emit_overlap)
+                    return true;
+                else
+                    return false;
+            }
+            else
+            {
+                m_log.FAIL("Unknown emit type!");
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Compute the coverage of bbox1 by bbox2.
         /// </summary>
         /// <param name="bbox1">Specifies the first BBox.</param>
@@ -1416,6 +1451,44 @@ namespace MyCaffe.common
                 return true;
 
             return false;
+        }
+
+        /// <summary>
+        /// Extrapolate the transformed bbox if height_scale and width_scale are explicitly
+        /// provied, and the FIT_SMALL_SIZE resize mode is specified.
+        /// </summary>
+        /// <param name="param">Specifies the resize parameter.</param>
+        /// <param name="nHeight">Specifies the height.</param>
+        /// <param name="nWidth">Specifies the width.</param>
+        /// <param name="crop_bbox">Specifies the crop Bbox.</param>
+        /// <param name="bbox">Specifies the Bbox to be updated.</param>
+        public void Extrapolate(ResizeParameter param, int nHeight, int nWidth, NormalizedBBox crop_bbox, NormalizedBBox bbox)
+        {
+            float fHeightScale = param.height_scale;
+            float fWidthScale = param.width_scale;
+
+            if (fHeightScale > 0 && fWidthScale > 0 && param.resize_mode == ResizeParameter.ResizeMode.FIT_SMALL_SIZE)
+            {
+                float fOrigAspect = (float)nWidth / (float)nHeight;
+                float fResizeHeight = param.height;
+                float fResizeWidth = param.width;
+                float fResizeAspect = fResizeWidth / fResizeHeight;
+
+                if (fOrigAspect < fResizeAspect)
+                    fResizeHeight = fResizeWidth / fOrigAspect;
+                else
+                    fResizeWidth = fResizeHeight * fOrigAspect;
+
+                float fCropHeight = fResizeHeight * (crop_bbox.ymax - crop_bbox.ymin);
+                float fCropWidth = fResizeWidth * (crop_bbox.xmax - crop_bbox.xmin);
+                m_log.CHECK_GE(fCropWidth, fWidthScale, "The crop width must be >= the width scale!");
+                m_log.CHECK_GE(fCropHeight, fHeightScale, "The crop height must be >= the height scale!");
+
+                bbox.Set(bbox.xmin * fCropWidth / fWidthScale,
+                         bbox.xmax * fCropWidth / fWidthScale,
+                         bbox.ymin * fCropHeight / fHeightScale,
+                         bbox.ymax * fCropHeight / fHeightScale);
+            }
         }
 
         /// <summary>
