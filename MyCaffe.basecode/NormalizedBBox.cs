@@ -40,6 +40,17 @@ namespace MyCaffe.basecode
             Set(fxmin, fymin, fxmax, fymax, nLabel, bDifficult, fScore, fSize);
         }
 
+        /// <summary>
+        /// Set the values of the NormalizedBbox.
+        /// </summary>
+        /// <param name="fxmin">Specifies the bounding box x minimum.</param>
+        /// <param name="fymin">Specifies the bounding box y minimum.</param>
+        /// <param name="fxmax">Specifies the bounding box x maximum.</param>
+        /// <param name="fymax">Specifies the bounding box y maximum.</param>
+        /// <param name="nLabel">Optionally, specifies the label (default = null, which is ignored).</param>
+        /// <param name="bDifficult">Optionally, specifies the difficulty (default = null, which is ignored).</param>
+        /// <param name="fScore">Optionally, specifies the score (default = null, which is ignored).</param>
+        /// <param name="fSize">Optionally, specifies the size (default = null, which is ignored).</param>
         public void Set(float fxmin, float fymin, float fxmax, float fymax, int? nLabel = null, bool? bDifficult = null, float? fScore = null, float? fSize = null)
         {
             m_fxmin = fxmin;
