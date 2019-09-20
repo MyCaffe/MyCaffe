@@ -132,12 +132,12 @@ namespace MyCaffe.test
             m_settings.EnableLabelBoosting = false;
             m_settings.EnablePairInputSelection = false;
             m_settings.EnableRandomInputSelection = false;
+            m_settings.ImageDbLoadDataCriteria = true;  // Required, for Annotation Data is stored in the Data Criteria.
+
+            m_db = new MyCaffeImageDatabase();
 
             if (strDs != null && strDs.Length > 0)
-            {
-                m_db = new MyCaffeImageDatabase();
                 m_db.InitializeWithDsName(m_settings, strDs);
-            }
         }
 
         protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
@@ -165,11 +165,6 @@ namespace MyCaffe.test
             }
 
             base.dispose();
-        }
-
-        public string SourceName
-        {
-            get { return "MNIST.training"; }
         }
 
         public MyCaffeImageDatabase db
@@ -203,6 +198,7 @@ namespace MyCaffe.test
         bool m_bUseUniqueAnnotation;
         bool m_bUseRichAnnotation;
         SimpleDatum.ANNOTATION_TYPE m_annoType;
+        string m_strDs = "test_ssd_data";
         string m_strSrc1 = "test_ssd_data";
         string m_strSrc2 = "test_ssd_data.t";
         int m_nSrcID1 = 0;
@@ -214,7 +210,7 @@ namespace MyCaffe.test
 
         public AnnotatedDataLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine, AnnotatedDataLayerTest parent)
             : base(strName, new List<int>() { 6, 2, 10, 10 }, nDeviceID)
-        {
+        {           
             m_parent = parent;
             m_engine = engine;
             m_blobTopLabel = new Blob<T>(m_cuda, m_log);
@@ -236,9 +232,11 @@ namespace MyCaffe.test
         {
             m_nSpatialDim = m_nHeight * m_nWidth;
             m_nSize = m_nChannels * m_nSpatialDim;
+            BottomVec.Clear();
             TopVec.Clear();
             TopVec.Add(Top);
             TopVec.Add(m_blobTopLabel);
+            cleanupData();
         }
 
         /// <summary>
@@ -268,9 +266,6 @@ namespace MyCaffe.test
             SourceDescriptor srcTest = new SourceDescriptor(0, m_strSrc2, m_nWidth, m_nHeight, m_nChannels, false, true);
             srcTest.ID = factory.AddSource(srcTest);
             m_nSrcID2 = srcTest.ID;
-
-            factory.DeleteSourceData(srcTrain.ID);
-            factory.DeleteSourceData(srcTest.ID);
 
             List<SourceDescriptor> rgSrcId = new List<SourceDescriptor>() { srcTrain, srcTest };
 
@@ -323,7 +318,7 @@ namespace MyCaffe.test
                 factory.Close();
             }
 
-            DatasetDescriptor ds = new DatasetDescriptor(0, "test_data", null, null, srcTrain, srcTest, null, null);
+            DatasetDescriptor ds = new DatasetDescriptor(0, m_strDs, null, null, srcTrain, srcTest, null, null);
             ds.ID = factory.AddDataset(ds);
 
             factory.UpdateDatasetCounts(ds.ID);
@@ -359,133 +354,183 @@ namespace MyCaffe.test
             return nSum;
         }
 
+        private void cleanupData()
+        {
+            DatasetFactory factory = new DatasetFactory();           
+            Database db = new Database();
+
+            int nId = factory.GetSourceID(m_strSrc1);
+            factory.DeleteSourceData(nId);
+            nId = factory.GetSourceID(m_strSrc2);
+            factory.DeleteSourceData(nId);
+
+            db.DeleteDataset(m_strDs, false, m_log, m_parent.CancelEvent);
+        }
+
+        private void initDb()
+        {
+            ((MyCaffeImageDatabase)m_parent.db).OutputLog = m_log;
+            m_parent.db.UnloadDatasetByName(m_strDs);
+            m_parent.db.InitializeWithDsName(m_parent.Settings, m_strDs);
+        }
+
+        private void cleanupDb()
+        {
+            m_parent.db.CleanUp();
+        }
+
         public void TestRead()
         {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.ANNOTATED_DATA);
-            p.phase = Phase.TRAIN;
-            p.data_param.batch_size = (uint)m_nNum;
-            p.data_param.source = m_strSrc1;
-            p.data_param.backend = m_backend;
+            initDb();
 
-            double dfScale = 3;
-            p.transform_param.scale = dfScale;
-
-            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
-            layer.Setup(BottomVec, TopVec);
-
-            m_log.CHECK_EQ(Top.num, m_nNum, "The top num is incorrect.");
-            m_log.CHECK_EQ(Top.channels, m_nChannels, "The top channels are incorrect.");
-            m_log.CHECK_EQ(Top.height, m_nHeight, "The top height is incorrect.");
-            m_log.CHECK_EQ(Top.width, m_nWidth, "The top width is incorrect.");
-
-            if (m_bUseRichAnnotation)
+            try
             {
-                switch (m_annoType)
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.ANNOTATED_DATA);
+                p.phase = Phase.TRAIN;
+                p.data_param.batch_size = (uint)m_nNum;
+                p.data_param.source = m_strSrc1;
+                p.data_param.backend = m_backend;
+
+                double dfScale = 3;
+                p.transform_param.scale = dfScale;
+
+                Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(Top.num, m_nNum, "The top num is incorrect.");
+                m_log.CHECK_EQ(Top.channels, m_nChannels, "The top channels are incorrect.");
+                m_log.CHECK_EQ(Top.height, m_nHeight, "The top height is incorrect.");
+                m_log.CHECK_EQ(Top.width, m_nWidth, "The top width is incorrect.");
+
+                if (m_bUseRichAnnotation)
                 {
-                    case SimpleDatum.ANNOTATION_TYPE.BBOX:
-                        m_log.CHECK_EQ(m_blobTopLabel.num, 1, "The top label num is incorrect.");
-                        m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top channels are incorrect.");
-                        m_log.CHECK_EQ(m_blobTopLabel.height, 1, "The top height is incorrect.");
-                        m_log.CHECK_EQ(m_blobTopLabel.width, 8, "The top width is incorrect.");
-                        break;
-
-                    default:
-                        m_log.FAIL("Unknown annotation type.");
-                        break;
-                }
-            }
-            else
-            {
-                m_log.CHECK_EQ(m_blobTopLabel.num, m_nNum, "The top label num is incorrect.");
-                m_log.CHECK_EQ(m_blobTopLabel.channels, m_nChannels, "The top channels are incorrect.");
-                m_log.CHECK_EQ(m_blobTopLabel.height, m_nHeight, "The top height is incorrect.");
-                m_log.CHECK_EQ(m_blobTopLabel.width, m_nWidth, "The top width is incorrect.");
-            }
-
-            for (int n = 0; n < 5; n++)
-            {
-                layer.Forward(BottomVec, TopVec);
-
-                // Check the label.
-                double[] rgLabelData = convert(m_blobTopLabel.mutable_cpu_data);
-                double[] rgTopData = convert(Top.mutable_cpu_data);
-                int nCurBbox = 0;
-
-                for (int i = 0; i < m_nNum; i++)
-                {
-                    if (m_bUseRichAnnotation)
+                    switch (m_annoType)
                     {
-                        if (m_annoType == SimpleDatum.ANNOTATION_TYPE.BBOX)
-                        {
+                        case SimpleDatum.ANNOTATION_TYPE.BBOX:
                             m_log.CHECK_EQ(m_blobTopLabel.num, 1, "The top label num is incorrect.");
                             m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top channels are incorrect.");
-                            m_log.CHECK_EQ(m_blobTopLabel.height, BBoxNum(i), "The top height is incorrect.");
-                            m_log.CHECK_EQ(m_blobTopLabel.width, m_nWidth, "The top width is incorrect.");
+                            m_log.CHECK_EQ(m_blobTopLabel.height, 1, "The top height is incorrect.");
+                            m_log.CHECK_EQ(m_blobTopLabel.width, 8, "The top width is incorrect.");
+                            break;
 
-                            for (int g = 0; g < i; g++)
+                        default:
+                            m_log.FAIL("Unknown annotation type.");
+                            break;
+                    }
+                }
+                else
+                {
+                    m_log.CHECK_EQ(m_blobTopLabel.num, m_nNum, "The top label num is incorrect.");
+                    m_log.CHECK_EQ(m_blobTopLabel.channels, m_nChannels, "The top channels are incorrect.");
+                    m_log.CHECK_EQ(m_blobTopLabel.height, m_nHeight, "The top height is incorrect.");
+                    m_log.CHECK_EQ(m_blobTopLabel.width, m_nWidth, "The top width is incorrect.");
+                }
+
+                for (int n = 0; n < 5; n++)
+                {
+                    layer.Forward(BottomVec, TopVec);
+
+                    // Check the label.
+                    double[] rgLabelData = convert(m_blobTopLabel.mutable_cpu_data);
+                    double[] rgTopData = convert(Top.mutable_cpu_data);
+                    int nCurBbox = 0;
+
+                    for (int i = 0; i < m_nNum; i++)
+                    {
+                        if (m_bUseRichAnnotation)
+                        {
+                            if (m_annoType == SimpleDatum.ANNOTATION_TYPE.BBOX)
                             {
-                                for (int a = 0; a < g; a++)
+                                m_log.CHECK_EQ(m_blobTopLabel.num, 1, "The top label num is incorrect.");
+                                m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top channels are incorrect.");
+                                m_log.CHECK_EQ(m_blobTopLabel.height, BBoxNum(m_nNum), "The top height is incorrect.");
+                                m_log.CHECK_EQ(m_blobTopLabel.width, 8, "The top width is incorrect.");
+
+                                for (int g = 0; g < i; g++)
                                 {
-                                    m_log.CHECK_EQ(i, rgLabelData[nCurBbox * 8 + 0], "The label data is incorrect.");
-                                    m_log.CHECK_EQ(g, rgLabelData[nCurBbox * 8 + 1], "The label data is incorrect.");
-                                    m_log.CHECK_EQ(a, rgLabelData[nCurBbox * 8 + 2], "The label data is incorrect.");
-                                    int b = (m_bUseUniqueAnnotation) ? a : g;
-
-                                    for (int p1 = 3; p1 < 5; p1++)
+                                    for (int a = 0; a < g; a++)
                                     {
-                                        m_log.EXPECT_NEAR_FLOAT(Math.Min(b * 0.1f + 0.2f, 1.0f), rgLabelData[nCurBbox * 8 + p1], m_dfEps);
-                                    }
+                                        m_log.CHECK_EQ(i, rgLabelData[nCurBbox * 8 + 0], "The label data is incorrect.");
+                                        m_log.CHECK_EQ(g, rgLabelData[nCurBbox * 8 + 1], "The label data is incorrect.");
+                                        m_log.CHECK_EQ(a, rgLabelData[nCurBbox * 8 + 2], "The label data is incorrect.");
+                                        int b = (m_bUseUniqueAnnotation) ? a : g;
 
-                                    m_log.CHECK_EQ(a % 2, rgLabelData[nCurBbox * 8 + 7], "The label data is incorrect.");
-                                    nCurBbox++;
+                                        for (int p1 = 3; p1 < 5; p1++)
+                                        {
+                                            m_log.EXPECT_NEAR_FLOAT(b * 0.1f, rgLabelData[nCurBbox * 8 + p1], m_dfEps);
+                                        }
+
+                                        for (int p1 = 5; p1 < 7; p1++)
+                                        {
+                                            m_log.EXPECT_NEAR_FLOAT(Math.Min(b * 0.1f + 0.2f, 1.0f), rgLabelData[nCurBbox * 8 + p1], m_dfEps);
+                                        }
+
+                                        m_log.CHECK_EQ(a % 2, rgLabelData[nCurBbox * 8 + 7], "The label data is incorrect.");
+                                        nCurBbox++;
+                                    }
                                 }
+                            }
+                            else
+                            {
+                                m_log.FAIL("Unknown annoation type.");
                             }
                         }
                         else
                         {
-                            m_log.FAIL("Unknown annoation type.");
+                            m_log.CHECK_EQ(i, rgLabelData[i], "The label is incorrect.");
                         }
                     }
-                    else
+
+                    // Check data.
+                    for (int i = 0; i < m_nNum; i++)
                     {
-                        m_log.CHECK_EQ(i, rgLabelData[i], "The label is incorrect.");
+                        for (int j = 0; j < m_nSize; j++)
+                        {
+                            m_log.CHECK_EQ(dfScale * ((m_bUseUniquePixel) ? j : i), rgTopData[i * m_nSize + j], "debug: iter " + n.ToString() + " i " + i.ToString() + " j " + j.ToString());
+                        }
                     }
                 }
 
-                // Check data.
-                for (int i = 0; i < m_nNum; i++)
-                {
-                    for (int j = 0; j < m_nSize; j++)
-                    {
-                        m_log.CHECK_EQ(dfScale * ((m_bUseUniquePixel) ? j : i), rgTopData[i * m_nSize + j], "debug: iter " + n.ToString() + " i " + i.ToString() + " j " + j.ToString());
-                    }
-                }
+                layer.Dispose();
             }
-
-            layer.Dispose();
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                cleanupDb();
+            }
         }
 
         public void TestReshape(bool bUniquePixel, bool bUniqueAnnotation, bool bUseRichAnnotation, SimpleDatum.ANNOTATION_TYPE type)
         {
             DatasetFactory factory = new DatasetFactory();
 
-            m_log.WriteLine("Creating temporary dataset '" + m_strSrc2 + "'.");
+            m_log.WriteLine("Creating temporary dataset '" + m_strSrc1 + "'.");
+            SourceDescriptor srcTrain = new SourceDescriptor(0, m_strSrc1, m_nWidth, m_nHeight, m_nChannels, false, true);
+            srcTrain.ID = factory.AddSource(srcTrain);
+            m_nSrcID1 = srcTrain.ID;
             SourceDescriptor srcTest = new SourceDescriptor(0, m_strSrc2, m_nWidth, m_nHeight, m_nChannels, false, true);
             srcTest.ID = factory.AddSource(srcTest);
-            m_nSrcID1 = srcTest.ID;
+            m_nSrcID2 = srcTest.ID;
 
-            factory.DeleteSourceData(srcTest.ID);
             factory.Open(srcTest.ID);
+            factory.DeleteSourceData();
 
             for (int i = 0; i < m_nNum; i++)
             {
                 SimpleDatum datum = new SimpleDatum(true, m_nChannels, i % 4 + 1, i % 2 + 1, 0, DateTime.Now);
+                int nSize = datum.Channels * datum.Height * datum.Width;
+                double[] rgData = new double[nSize];
 
                 // Fill data.
-                for (int j = 0; j < datum.ByteData.Length; j++)
+                for (int j = 0; j < rgData.Length; j++)
                 {
-                    datum.RealData[j] = j;
+                    rgData[j] = j;
                 }
+
+                datum.SetData(rgData.ToList(), 0);
 
                 // Fill annotation.
                 if (bUseRichAnnotation)
@@ -506,6 +551,7 @@ namespace MyCaffe.test
                             {
                                 int b = (bUniqueAnnotation) ? a : g;
                                 anno.bbox = new NormalizedBBox(b * 0.1f, b * 0.1f, Math.Min(b * 0.1f + 0.2f, 1.0f), Math.Min(b * 0.1f + 0.2f, 1.0f), 0, (a % 2 == 0) ? false : true);
+                                anno_group.annotations.Add(anno);
                             }
                         }
                     }
@@ -520,216 +566,286 @@ namespace MyCaffe.test
 
             factory.Close();
 
-            // Load and check data of various shapes.
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.ANNOTATED_DATA);
-            p.phase = Phase.TEST;
-            p.data_param.batch_size = (uint)m_nNum;
-            p.data_param.source = srcTest.Name;
-            p.data_param.backend = DataParameter.DB.IMAGEDB;
+            DatasetDescriptor ds = new DatasetDescriptor(0, m_strDs, null, null, srcTrain, srcTest, null, null);
+            ds.ID = factory.AddDataset(ds);
 
-            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
-            layer.Setup(BottomVec, TopVec);
+            factory.UpdateDatasetCounts(ds.ID);
+            m_nDsID = ds.ID;
 
-            m_log.CHECK_EQ(Top.num, 1, "The top should have a num = 1.");
-            m_log.CHECK_EQ(Top.channels, m_nChannels, "The top should have channels = " + m_nChannels.ToString() + ".");
+            initDb();
 
-            if (bUseRichAnnotation)
+            try
             {
-                switch (type)
-                {
-                    case SimpleDatum.ANNOTATION_TYPE.BBOX:
-                        m_log.CHECK_EQ(m_blobTopLabel.num, 1, "The top label should have num = 1.");
-                        m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top label should have channels = 1.");
-                        m_log.CHECK_EQ(m_blobTopLabel.height, 1, "The top label should have height = 1.");
-                        m_log.CHECK_EQ(m_blobTopLabel.width, 8, "The top label should have width = 8.");
-                        break;
+                // Load and check data of various shapes.
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.ANNOTATED_DATA);
+                p.phase = Phase.TEST;
+                p.data_param.batch_size = 1;
+                p.data_param.source = srcTest.Name;
+                p.data_param.backend = DataParameter.DB.IMAGEDB;
 
-                    default:
-                        m_log.FAIL("Unknown annotation type.");
-                        break;
-                }
-            }
-            else
-            {
-                m_log.CHECK_EQ(m_blobTopLabel.num, 1, "The top label should have num = 1.");
-                m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top label should have channels = 1.");
-                m_log.CHECK_EQ(m_blobTopLabel.height, 1, "The top label should have height = 1.");
-                m_log.CHECK_EQ(m_blobTopLabel.width, 1, "The top label should have width = 1.");
-            }
+                Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
+                layer.Setup(BottomVec, TopVec);
 
-            for (int i=0; i<3; i++)
-            {
-                layer.Forward(BottomVec, TopVec);
-                m_log.CHECK_EQ(Top.height, i % 2 + 1, "The top height is incorrect.");
-                m_log.CHECK_EQ(Top.width, i % 2 + 1, "The top width is incorrect.");
-
-                // Check label.
-                double[] rgLabelData = convert(m_blobTopLabel.mutable_cpu_data);
+                m_log.CHECK_EQ(Top.num, 1, "The top should have a num = 1.");
+                m_log.CHECK_EQ(Top.channels, m_nChannels, "The top should have channels = " + m_nChannels.ToString() + ".");
 
                 if (bUseRichAnnotation)
                 {
-                    if (type == SimpleDatum.ANNOTATION_TYPE.BBOX)
+                    switch (type)
                     {
-                        if (i <= 1)
-                        {
-                            m_log.CHECK_EQ(m_blobTopLabel.num, 1, "The top label num should = 1.");
-                            m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top label channels should = 1.");
-                            m_log.CHECK_EQ(m_blobTopLabel.height, 1, "The top label height should = 1.");
-                            m_log.CHECK_EQ(m_blobTopLabel.width, 8, "The top label width should = 8.");
+                        case SimpleDatum.ANNOTATION_TYPE.BBOX:
+                            m_log.CHECK_EQ(m_blobTopLabel.num, 1, "The top label should have num = 1.");
+                            m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top label should have channels = 1.");
+                            m_log.CHECK_EQ(m_blobTopLabel.height, 1, "The top label should have height = 1.");
+                            m_log.CHECK_EQ(m_blobTopLabel.width, 8, "The top label should have width = 8.");
+                            break;
 
-                            for (int k = 0; k < 8; k++)
-                            {
-                                m_log.EXPECT_NEAR_FLOAT(rgLabelData[k], -1, m_dfEps);
-                            }
-                        }
-                        else
-                        {
-                            int nCurBox = 0;
-                            m_log.CHECK_EQ(m_blobTopLabel.num, 1, "The top label num should = 1.");
-                            m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top label channels should = 1.");
-                            m_log.CHECK_EQ(m_blobTopLabel.height, OneBBoxNum(i), "The top label height shoudl = " + OneBBoxNum(i).ToString() + ".");
-                            m_log.CHECK_EQ(m_blobTopLabel.width, 8, "The top label width should = 8.");
-
-                            for (int g = 0; g < i; g++)
-                            {
-                                for (int a = 0; a < g; a++)
-                                {
-                                    m_log.CHECK_EQ(0, rgLabelData[nCurBox * 8 + 0], "The label data is incorrect.");
-                                    m_log.CHECK_EQ(g, rgLabelData[nCurBox * 8 + 1], "The label data is incorrect.");
-                                    m_log.CHECK_EQ(a, rgLabelData[nCurBox * 8 + 1], "The label data is incorrect.");
-
-                                    int b = (bUniqueAnnotation) ? a : g;
-                                    for (int p1 = 3; p1 < 5; p1++)
-                                    {
-                                        m_log.EXPECT_NEAR_FLOAT(b * 0.1f, rgLabelData[nCurBox * 8 + p1], m_dfEps);
-                                    }
-
-                                    for (int p1 = 5; p1 < 7; p1++)
-                                    {
-                                        m_log.EXPECT_NEAR_FLOAT(Math.Min(b * 0.1f + 0.2f, 1.0f), rgLabelData[nCurBox * 8 + p1], m_dfEps);
-                                    }
-
-                                    m_log.CHECK_EQ(a % 2, rgLabelData[nCurBox * 8 + 7], "The label data is incorrect.");
-                                    nCurBox++;
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        m_log.FAIL("Unknown annotation type.");
+                        default:
+                            m_log.FAIL("Unknown annotation type.");
+                            break;
                     }
                 }
                 else
                 {
-                    m_log.CHECK_EQ(rgLabelData[0], i, "The label is incorrect.");
+                    m_log.CHECK_EQ(m_blobTopLabel.num, 1, "The top label should have num = 1.");
+                    m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top label should have channels = 1.");
+                    m_log.CHECK_EQ(m_blobTopLabel.height, 1, "The top label should have height = 1.");
+                    m_log.CHECK_EQ(m_blobTopLabel.width, 1, "The top label should have width = 1.");
                 }
 
-                // Check the data.
-                int nChannels = Bottom.channels;
-                int nHeight = Bottom.height;
-                int nWidth = Bottom.width;
-                double[] rgTopData = convert(Top.mutable_cpu_data);
-
-                for (int c = 0; c < nChannels; c++)
+                for (int i = 0; i < 3; i++)
                 {
-                    for (int h = 0; h < nHeight; h++)
+                    layer.Forward(BottomVec, TopVec);
+                    m_log.CHECK_EQ(Top.height, i % 2 + 1, "The top height is incorrect.");
+                    m_log.CHECK_EQ(Top.width, i % 4 + 1, "The top width is incorrect.");
+
+                    // Check label.
+                    double[] rgLabelData = convert(m_blobTopLabel.mutable_cpu_data);
+
+                    if (bUseRichAnnotation)
                     {
-                        for (int w = 0; w < nWidth; w++)
+                        if (type == SimpleDatum.ANNOTATION_TYPE.BBOX)
                         {
-                            int nIdx = (c * nHeight + h) * nWidth + w;
-                            m_log.CHECK_EQ(nIdx, (int)rgTopData[nIdx], "debug: iter " + i.ToString() + " c " + c.ToString() + " h " + h.ToString() + " w " + w.ToString());
+                            if (i <= 1)
+                            {
+                                m_log.CHECK_EQ(m_blobTopLabel.num, 1, "The top label num should = 1.");
+                                m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top label channels should = 1.");
+                                m_log.CHECK_EQ(m_blobTopLabel.height, 1, "The top label height should = 1.");
+                                m_log.CHECK_EQ(m_blobTopLabel.width, 8, "The top label width should = 8.");
+
+                                for (int k = 0; k < 8; k++)
+                                {
+                                    m_log.EXPECT_NEAR_FLOAT(rgLabelData[k], -1, m_dfEps);
+                                }
+                            }
+                            else
+                            {
+                                int nCurBox = 0;
+                                m_log.CHECK_EQ(m_blobTopLabel.num, 1, "The top label num should = 1.");
+                                m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top label channels should = 1.");
+                                m_log.CHECK_EQ(m_blobTopLabel.height, OneBBoxNum(i), "The top label height shoudl = " + OneBBoxNum(i).ToString() + ".");
+                                m_log.CHECK_EQ(m_blobTopLabel.width, 8, "The top label width should = 8.");
+
+                                for (int g = 0; g < i; g++)
+                                {
+                                    for (int a = 0; a < g; a++)
+                                    {
+                                        m_log.CHECK_EQ(0, rgLabelData[nCurBox * 8 + 0], "The label data is incorrect.");
+                                        m_log.CHECK_EQ(g, rgLabelData[nCurBox * 8 + 1], "The label data is incorrect.");
+                                        m_log.CHECK_EQ(a, rgLabelData[nCurBox * 8 + 2], "The label data is incorrect.");
+
+                                        int b = (bUniqueAnnotation) ? a : g;
+                                        for (int p1 = 3; p1 < 5; p1++)
+                                        {
+                                            m_log.EXPECT_NEAR_FLOAT(b * 0.1f, rgLabelData[nCurBox * 8 + p1], m_dfEps);
+                                        }
+
+                                        for (int p1 = 5; p1 < 7; p1++)
+                                        {
+                                            m_log.EXPECT_NEAR_FLOAT(Math.Min(b * 0.1f + 0.2f, 1.0f), rgLabelData[nCurBox * 8 + p1], m_dfEps);
+                                        }
+
+                                        m_log.CHECK_EQ(a % 2, rgLabelData[nCurBox * 8 + 7], "The label data is incorrect.");
+                                        nCurBox++;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            m_log.FAIL("Unknown annotation type.");
+                        }
+                    }
+                    else
+                    {
+                        m_log.CHECK_EQ(rgLabelData[0], i, "The label is incorrect.");
+                    }
+
+                    // Check the data.
+                    int nChannels = Top.channels;
+                    int nHeight = Top.height;
+                    int nWidth = Top.width;
+                    double[] rgTopData = convert(Top.mutable_cpu_data);
+
+                    for (int c = 0; c < nChannels; c++)
+                    {
+                        for (int h = 0; h < nHeight; h++)
+                        {
+                            for (int w = 0; w < nWidth; w++)
+                            {
+                                int nIdx = (c * nHeight + h) * nWidth + w;
+                                m_log.CHECK_EQ(nIdx, (int)rgTopData[nIdx], "debug: iter " + i.ToString() + " c " + c.ToString() + " h " + h.ToString() + " w " + w.ToString());
+                            }
                         }
                     }
                 }
-            }
 
-            layer.Dispose();
+                layer.Dispose();
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                cleanupDb();
+            }
         }
 
         public void TestReadCrop(Phase phase)
         {
-            double dfScale = 3;
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.ANNOTATED_DATA);
-            p.phase = phase;
-            p.data_param.batch_size = (uint)m_nNum;
-            p.data_param.source = (phase == Phase.TRAIN) ? m_strSrc1 : m_strSrc2;
-            p.data_param.backend = DataParameter.DB.IMAGEDB;
+            initDb();
 
-            p.transform_param.scale = dfScale;
-            p.transform_param.crop_size = 1;
-
-            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
-            layer.Setup(BottomVec, TopVec);
-
-            m_log.CHECK_EQ(Top.num, m_nNum, "The top num is incorrect.");
-            m_log.CHECK_EQ(Top.channels, m_nChannels, "The top channels is incorrect.");
-            m_log.CHECK_EQ(Top.height, 1, "The top height should = 1.");
-            m_log.CHECK_EQ(Top.width, 1, "The top width should = 1.");
-            m_log.CHECK_EQ(m_blobTopLabel.num, m_nNum, "The top label num is incorrect.");
-            m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top label channels should = 1.");
-            m_log.CHECK_EQ(m_blobTopLabel.height, 1, "The top label height should = 1.");
-            m_log.CHECK_EQ(m_blobTopLabel.width, 1, "The top label width should = 1.");
-
-            for (int iter = 0; iter < 5; iter++)
+            try
             {
-                layer.Forward(BottomVec, TopVec);
+                double dfScale = 3;
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.ANNOTATED_DATA);
+                p.phase = phase;
+                p.data_param.batch_size = (uint)m_nNum;
+                p.data_param.source = (phase == Phase.TRAIN) ? m_strSrc1 : m_strSrc2;
+                p.data_param.backend = DataParameter.DB.IMAGEDB;
 
-                double[] rgTopLabel = convert(m_blobTopLabel.mutable_cpu_data);
-                double[] rgTopData = convert(Top.mutable_cpu_data);
+                p.transform_param.scale = dfScale;
+                p.transform_param.crop_size = 1;
 
-                for (int i = 0; i < m_nNum; i++)
+                Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
+                layer.Setup(BottomVec, TopVec);
+
+                m_log.CHECK_EQ(Top.num, m_nNum, "The top num is incorrect.");
+                m_log.CHECK_EQ(Top.channels, m_nChannels, "The top channels is incorrect.");
+                m_log.CHECK_EQ(Top.height, 1, "The top height should = 1.");
+                m_log.CHECK_EQ(Top.width, 1, "The top width should = 1.");
+                m_log.CHECK_EQ(m_blobTopLabel.num, m_nNum, "The top label num is incorrect.");
+                m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top label channels should = 1.");
+                m_log.CHECK_EQ(m_blobTopLabel.height, 1, "The top label height should = 1.");
+                m_log.CHECK_EQ(m_blobTopLabel.width, 1, "The top label width should = 1.");
+
+                for (int iter = 0; iter < 5; iter++)
                 {
-                    m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
-                }
+                    layer.Forward(BottomVec, TopVec);
 
-                int nNumWithCenterValue = 0;
-                for (int i = 0; i < m_nNum; i++)
-                {
-                    for (int j = 0; j < m_nChannels; j++)
+                    double[] rgTopLabel = convert(m_blobTopLabel.mutable_cpu_data);
+                    double[] rgTopData = convert(Top.mutable_cpu_data);
+
+                    for (int i = 0; i < m_nNum; i++)
                     {
-                        double dfCenterValue = dfScale * ((Math.Ceiling(m_nHeight / 2.0) - 1) * m_nWidth +
-                                                          (Math.Ceiling(m_nWidth / 2.0) - 1) + j * m_nSpatialDim);
-                        nNumWithCenterValue += (dfCenterValue == rgTopData[i * 2 + j]) ? 1 : 0;
+                        m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
+                    }
 
-                        // At TEST time, check that we always get center values.
-                        if (phase == Phase.TEST)
+                    int nNumWithCenterValue = 0;
+                    for (int i = 0; i < m_nNum; i++)
+                    {
+                        for (int j = 0; j < m_nChannels; j++)
                         {
-                            m_log.CHECK_EQ(dfCenterValue, rgTopData[i * m_nChannels + j], "debug : iter " + iter.ToString() + " i " + i.ToString() + " j " + j.ToString());
+                            double dfCenterValue = dfScale * ((Math.Ceiling(m_nHeight / 2.0) - 1) * m_nWidth +
+                                                              (Math.Ceiling(m_nWidth / 2.0) - 1) + j * m_nSpatialDim);
+                            nNumWithCenterValue += (dfCenterValue == rgTopData[i * 2 + j]) ? 1 : 0;
+
+                            // At TEST time, check that we always get center values.
+                            if (phase == Phase.TEST)
+                            {
+                                m_log.CHECK_EQ(dfCenterValue, rgTopData[i * m_nChannels + j], "debug : iter " + iter.ToString() + " i " + i.ToString() + " j " + j.ToString());
+                            }
                         }
                     }
+
+                    // At TRAIN time, check that we did not get the center crop all 10 times.
+                    // (This check fails with probability 1-1/12^10 in a correct
+                    // implementation.
+                    if (phase == Phase.TRAIN)
+                        m_log.CHECK_LT(nNumWithCenterValue, 10, "The center count is too large!");
                 }
 
-                // At TRAIN time, check that we did not get the center crop all 10 times.
-                // (This check fails with probability 1-1/12^10 in a correct
-                // implementation.
-                if (phase == Phase.TRAIN)
-                    m_log.CHECK_LT(nNumWithCenterValue, 10, "The center count is too large!");
+                layer.Dispose();
             }
-
-            layer.Dispose();
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                cleanupDb();
+            }
         }
 
         public void TestReadCropTrainSequenceSeeded()
         {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.ANNOTATED_DATA);
-            p.phase = Phase.TRAIN;
-            p.data_param.batch_size = (uint)m_nNum;
-            p.data_param.source = m_strSrc1;
-            p.data_param.backend = DataParameter.DB.IMAGEDB;
+            initDb();
 
-            p.transform_param.crop_size = 1;
-            p.transform_param.mirror = true;
-            
-            // Get crop sequence.
-            List<List<double>> rgrgCropSequence = new List<List<double>>();
+            try
             {
-                Layer<T> layer1 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
-                layer1.Setup(BottomVec, TopVec);
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.ANNOTATED_DATA);
+                p.phase = Phase.TRAIN;
+                p.data_param.batch_size = (uint)m_nNum;
+                p.data_param.source = m_strSrc1;
+                p.data_param.backend = DataParameter.DB.IMAGEDB;
+
+                p.transform_param.crop_size = 1;
+                p.transform_param.mirror = true;
+
+                // Get crop sequence.
+                List<List<double>> rgrgCropSequence = new List<List<double>>();
+                {
+                    Layer<T> layer1 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
+                    layer1.Setup(BottomVec, TopVec);
+
+                    for (int iter = 0; iter < 2; iter++)
+                    {
+                        layer1.Forward(BottomVec, TopVec);
+
+                        double[] rgTopLabel = convert(m_blobTopLabel.mutable_cpu_data);
+                        double[] rgTopData = convert(Top.mutable_cpu_data);
+
+                        for (int i = 0; i < m_nNum; i++)
+                        {
+                            m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
+                        }
+
+                        List<double> rgIterCropSequence = new List<double>();
+
+                        for (int i = 0; i < m_nNum; i++)
+                        {
+                            for (int j = 0; j < m_nChannels; j++)
+                            {
+                                double dfData = rgTopData[i * m_nChannels + j];
+                                rgIterCropSequence.Add(dfData);
+                            }
+                        }
+
+                        rgrgCropSequence.Add(rgIterCropSequence);
+                    }
+
+                    layer1.Dispose();
+                }
+
+                // Get crop sequence after reseeding.
+                m_cuda.SetRandomSeed(m_lSeed);
+                Layer<T> layer2 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
+                layer2.Setup(BottomVec, TopVec);
 
                 for (int iter = 0; iter < 2; iter++)
                 {
-                    layer1.Forward(BottomVec, TopVec);
+                    layer2.Forward(BottomVec, TopVec);
 
                     double[] rgTopLabel = convert(m_blobTopLabel.mutable_cpu_data);
                     double[] rgTopData = convert(Top.mutable_cpu_data);
@@ -739,74 +855,87 @@ namespace MyCaffe.test
                         m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
                     }
 
-                    List<double> rgIterCropSequence = new List<double>();
-
                     for (int i = 0; i < m_nNum; i++)
                     {
                         for (int j = 0; j < m_nChannels; j++)
                         {
-                            double dfData = rgTopData[i * m_nChannels + j];
-                            rgIterCropSequence.Add(dfData);
+                            double dfCrop = rgrgCropSequence[iter][i * m_nChannels + j];
+                            double dfVal = rgTopData[i * m_nChannels + j];
+                            m_log.CHECK_EQ(dfCrop, dfVal, "debug: iter " + iter.ToString() + " i " + i.ToString() + " j " + j.ToString());
                         }
                     }
-
-                    rgrgCropSequence.Add(rgIterCropSequence);
                 }
 
-                layer1.Dispose();
+                layer2.Dispose();
             }
-
-            // Get crop sequence after reseeding.
-            m_cuda.SetRandomSeed(m_lSeed);
-            Layer<T> layer2 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
-            layer2.Setup(BottomVec, TopVec);
-
-            for (int iter = 0; iter < 2; iter++)
+            catch (Exception excpt)
             {
-                layer2.Forward(BottomVec, TopVec);
-
-                double[] rgTopLabel = convert(m_blobTopLabel.mutable_cpu_data);
-                double[] rgTopData = convert(Top.mutable_cpu_data);
-
-                for (int i = 0; i < m_nNum; i++)
-                {
-                    m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
-                }
-
-                for (int i = 0; i < m_nNum; i++)
-                {
-                    for (int j = 0; j < m_nChannels; j++)
-                    {
-                        double dfCrop = rgrgCropSequence[iter][i * m_nChannels + j];
-                        double dfVal = rgTopData[i * m_nChannels + j];
-                        m_log.CHECK_EQ(dfCrop, dfVal, "debug: iter " + iter.ToString() + " i " + i.ToString() + " j " + j.ToString());
-                    }
-                }
+                throw excpt;
             }
-
-            layer2.Dispose();
+            finally
+            {
+                cleanupDb();
+            }
         }
 
         public void TestReadCropTrainSequenceUnseeded()
         {
-            LayerParameter p = new LayerParameter(LayerParameter.LayerType.ANNOTATED_DATA);
-            p.phase = Phase.TRAIN;
-            p.data_param.batch_size = (uint)m_nNum;
-            p.data_param.source = m_strSrc1;
-            p.data_param.backend = DataParameter.DB.IMAGEDB;
+            initDb();
 
-            p.transform_param.crop_size = 1;
-            p.transform_param.mirror = true;
-
-            // Get crop sequence.
-            List<List<double>> rgrgCropSequence = new List<List<double>>();
+            try
             {
-                Layer<T> layer1 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
-                layer1.Setup(BottomVec, TopVec);
+                LayerParameter p = new LayerParameter(LayerParameter.LayerType.ANNOTATED_DATA);
+                p.phase = Phase.TRAIN;
+                p.data_param.batch_size = (uint)m_nNum;
+                p.data_param.source = m_strSrc1;
+                p.data_param.backend = DataParameter.DB.IMAGEDB;
+
+                p.transform_param.crop_size = 1;
+                p.transform_param.mirror = true;
+
+                // Get crop sequence.
+                List<List<double>> rgrgCropSequence = new List<List<double>>();
+                {
+                    Layer<T> layer1 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
+                    layer1.Setup(BottomVec, TopVec);
+
+                    for (int iter = 0; iter < 2; iter++)
+                    {
+                        layer1.Forward(BottomVec, TopVec);
+
+                        double[] rgTopLabel = convert(m_blobTopLabel.mutable_cpu_data);
+                        double[] rgTopData = convert(Top.mutable_cpu_data);
+
+                        for (int i = 0; i < m_nNum; i++)
+                        {
+                            m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
+                        }
+
+                        List<double> rgIterCropSequence = new List<double>();
+
+                        for (int i = 0; i < m_nNum; i++)
+                        {
+                            for (int j = 0; j < m_nChannels; j++)
+                            {
+                                double dfData = rgTopData[i * m_nChannels + j];
+                                rgIterCropSequence.Add(dfData);
+                            }
+                        }
+
+                        rgrgCropSequence.Add(rgIterCropSequence);
+                    }
+
+                    layer1.Dispose();
+                }
+
+                // Get crop sequence continuing from prevous RNG state; 
+                // Check that the sequence differs from the original.
+                Layer<T> layer2 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
+                layer2.Setup(BottomVec, TopVec);
 
                 for (int iter = 0; iter < 2; iter++)
                 {
-                    layer1.Forward(BottomVec, TopVec);
+                    layer2.Forward(BottomVec, TopVec);
 
                     double[] rgTopLabel = convert(m_blobTopLabel.mutable_cpu_data);
                     double[] rgTopData = convert(Top.mutable_cpu_data);
@@ -816,56 +945,31 @@ namespace MyCaffe.test
                         m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
                     }
 
-                    List<double> rgIterCropSequence = new List<double>();
+                    int nNumSequenceMatches = 0;
 
                     for (int i = 0; i < m_nNum; i++)
                     {
                         for (int j = 0; j < m_nChannels; j++)
                         {
-                            double dfData = rgTopData[i * m_nChannels + j];
-                            rgIterCropSequence.Add(dfData);
+                            double dfCrop = rgrgCropSequence[iter][i * m_nChannels + j];
+                            double dfVal = rgTopData[i * m_nChannels + j];
+                            nNumSequenceMatches = (dfCrop == dfVal) ? 1 : 0;
                         }
                     }
 
-                    rgrgCropSequence.Add(rgIterCropSequence);
+                    m_log.CHECK_LT(nNumSequenceMatches, m_nNum * m_nChannels, "The sequence matches is too high!");
                 }
 
-                layer1.Dispose();
+                layer2.Dispose();
             }
-
-            // Get crop sequence continuing from prevous RNG state; 
-            // Check that the sequence differs from the original.
-            Layer<T> layer2 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
-            layer2.Setup(BottomVec, TopVec);
-
-            for (int iter = 0; iter < 2; iter++)
+            catch (Exception excpt)
             {
-                layer2.Forward(BottomVec, TopVec);
-
-                double[] rgTopLabel = convert(m_blobTopLabel.mutable_cpu_data);
-                double[] rgTopData = convert(Top.mutable_cpu_data);
-
-                for (int i = 0; i < m_nNum; i++)
-                {
-                    m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
-                }
-
-                int nNumSequenceMatches = 0;
-
-                for (int i = 0; i < m_nNum; i++)
-                {
-                    for (int j = 0; j < m_nChannels; j++)
-                    {
-                        double dfCrop = rgrgCropSequence[iter][i * m_nChannels + j];
-                        double dfVal = rgTopData[i * m_nChannels + j];
-                        nNumSequenceMatches = (dfCrop == dfVal) ? 1 : 0;
-                    }
-                }
-
-                m_log.CHECK_LT(nNumSequenceMatches, m_nNum * m_nChannels, "The sequence matches is too high!");
+                throw excpt;
             }
-
-            layer2.Dispose();
+            finally
+            {
+                cleanupDb();
+            }
         }
 
         public void TestReadDb()
@@ -925,6 +1029,7 @@ namespace MyCaffe.test
             SimpleDatum.ANNOTATION_TYPE type = SimpleDatum.ANNOTATION_TYPE.BBOX;
 
             Fill(DataParameter.DB.IMAGEDB, bUniquePixel, bUniqueAnnotation, bUseRichAnnotation, type);
+
             TestReadCrop(Phase.TRAIN);
         }
 
