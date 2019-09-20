@@ -87,6 +87,22 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Returns whether or not the image data criteria is to be loaded when loading each image.
+        /// </summary>
+        public bool LoadDataCriteria
+        {
+            get { return m_bLoadDataCriteria; }
+        }
+
+        /// <summary>
+        /// Returns whether or not the image debug data is to be loaded when loading each image.
+        /// </summary>
+        public bool LoadDebugData
+        {
+            get { return m_bLoadDebugData; }
+        }
+
+        /// <summary>
         /// Save the changes on the open data source.
         /// </summary>
         public void SaveChanges()
@@ -1357,6 +1373,8 @@ namespace MyCaffe.db.image
             sd.DataCriteriaFormat = (SimpleDatum.DATA_FORMAT)nDataCriteriaFormatId.GetValueOrDefault(0);
             sd.DebugData = rgDebugData;
             sd.DebugDataFormat = (SimpleDatum.DATA_FORMAT)nDebugDataFormatId.GetValueOrDefault(0);
+
+            sd.LoadAnnotationDataFromDataCriteria();
 
             return sd;
         }
