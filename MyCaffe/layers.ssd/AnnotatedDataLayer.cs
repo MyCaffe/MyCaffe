@@ -100,6 +100,9 @@ namespace MyCaffe.layers.ssd
                     imgSel &= (~IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
             }
 
+            if (!db.GetLoadImageDataCriteria())
+                m_log.WriteError(new Exception("The 'Load Image Data Criteria' must be set to TRUE in order to load the Annotation data."));
+
             db.SetSelectionMethod(null, imgSel);
 
             m_db = new data.DB(db);
@@ -365,7 +368,6 @@ namespace MyCaffe.layers.ssd
                 }
 
                 SimpleDatum sampled_datum = expand_datum;
-                bool bHasSampled = false;
 
                 // Generate sampled bboxes from expand_datum.
                 if (m_rgBatchSamplers.Count > 0)
@@ -377,7 +379,6 @@ namespace MyCaffe.layers.ssd
                     {
                         int nIdx = m_random.Next(rgSampledBboxes.Count);
                         sampled_datum = m_transformer.CropImage(expand_datum, rgSampledBboxes[nIdx]);
-                        bHasSampled = true;
                     }
                 }
 
@@ -477,7 +478,15 @@ namespace MyCaffe.layers.ssd
                         // Store all -1 in the label.
                         rgLabelShape[2] = 1;
                         batch.Label.Reshape(rgLabelShape);
-                        batch.Label.SetData(-1);
+                        T[] rgLabel = new T[batch.Label.count()];
+
+                        T tNegOne = (T)Convert.ChangeType(-1, typeof(T));
+                        for (int i = 0; i < rgLabel.Length; i++)
+                        {
+                            rgLabel[i] = tNegOne;
+                        }
+
+                        batch.Label.SetCPUData(rgLabel);
                     }
                     else
                     {
@@ -519,6 +528,8 @@ namespace MyCaffe.layers.ssd
                                 }
                             }
                         }
+
+                        batch.Label.SetCPUData(convert(rgTopLabel1));
                     }
                 }
                 else
