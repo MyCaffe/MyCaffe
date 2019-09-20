@@ -1362,6 +1362,9 @@ namespace MyCaffe.db.image
                 img.DebugDataFormatID = (byte)d.DebugDataFormat;
             }
 
+            if (d.annotation_group != null || d.annotation_type != SimpleDatum.ANNOTATION_TYPE.NONE)
+                d.SaveAnnotationDataToDataCriteria();
+
             if (d.DataCriteria != null)
             {
                 img.DataCriteria = setImageByteData(d.DataCriteria, "criteria", strGuid);
@@ -1890,6 +1893,9 @@ namespace MyCaffe.db.image
         /// <returns>The ID of the RawImageMean is returned.</returns>
         public int PutRawImageMean(SimpleDatum sd, bool bUpdate, int nSrcId = 0)
         {
+            if (sd == null)
+                return 0;
+
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
 
@@ -3082,7 +3088,12 @@ namespace MyCaffe.db.image
         public void DeleteSourceData(int nSrcId = 0)
         {
             if (nSrcId == 0)
+            {
+                if (m_src == null)
+                    return;
+
                 nSrcId = m_src.ID;
+            }
 
             DeleteRawImageMeans(nSrcId);
             DeleteRawImageResults(nSrcId);
@@ -3835,6 +3846,9 @@ namespace MyCaffe.db.image
         public virtual void DeleteDataset(string strDsName, bool bDeleteRelatedProjects, Log log, CancelEvent evtCancel)
         {
             Dataset ds = GetDataset(strDsName);
+            if (ds == null)
+                return;
+
             Source srcTraining = GetSource(ds.TrainingSourceID.GetValueOrDefault());
             Source srcTesting = GetSource(ds.TestingSourceID.GetValueOrDefault());
             string strCmd;
