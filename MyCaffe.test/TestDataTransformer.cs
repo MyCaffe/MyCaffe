@@ -247,6 +247,60 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestRichLabel()
+        {
+            DataTransformerTest test = new DataTransformerTest();
+
+            try
+            {
+                foreach (IDataTransformerTest t in test.Tests)
+                {
+                    t.TestRichLabel();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestRichLabelCrop()
+        {
+            DataTransformerTest test = new DataTransformerTest();
+
+            try
+            {
+                foreach (IDataTransformerTest t in test.Tests)
+                {
+                    t.TestRichLabelCrop();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestRichLabelCropMirror()
+        {
+            DataTransformerTest test = new DataTransformerTest();
+
+            try
+            {
+                foreach (IDataTransformerTest t in test.Tests)
+                {
+                    t.TestRichLabelCropMirror();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -266,6 +320,9 @@ namespace MyCaffe.test
         void TestCropMirrorTest();
         void TestMeanValue();
         void TestMeanValues();
+        void TestRichLabel();
+        void TestRichLabelCrop();
+        void TestRichLabelCropMirror();
     }
 
     class DataTransformerTest : TestBase
@@ -408,7 +465,7 @@ namespace MyCaffe.test
             }
         }
 
-        public Datum CreateDatum(int nLabel, int nChannels, int nHeight, int nWidth, bool bUniquePixels)
+        public Datum CreateDatum(int nLabel, int nChannels, int nHeight, int nWidth, bool bUniquePixels, bool bUseRichAnnotation = false, SimpleDatum.ANNOTATION_TYPE type = SimpleDatum.ANNOTATION_TYPE.NONE)
         {
             List<byte> rgData = new List<byte>();
 
@@ -418,7 +475,27 @@ namespace MyCaffe.test
                 rgData.Add((byte)(bUniquePixels ? i : nLabel));
             }
 
-            return new Datum(false, nChannels, nWidth, nHeight, nLabel, DateTime.Today, rgData, null, 0, false, 0);
+            Datum d = new Datum(false, nChannels, nWidth, nHeight, nLabel, DateTime.Today, rgData, null, 0, false, 0);
+
+            // Fill annotation.
+            if (bUseRichAnnotation)
+            {
+                d.annotation_type = type;
+                d.annotation_group = new List<AnnotationGroup>();
+                AnnotationGroup anno_group = new AnnotationGroup(null, nLabel);
+                d.annotation_group.Add(anno_group);
+
+                for (int a = 0; a < 9; a++)
+                {
+                    Annotation anno = new Annotation(null, a);
+                    anno_group.annotations.Add(anno);
+
+                    if (type == SimpleDatum.ANNOTATION_TYPE.BBOX)
+                        anno.bbox = new NormalizedBBox(a * 0.1f, a * 0.1f, Math.Min(a * 0.1f + 0.2f, 1.0f), Math.Min(a * 0.1f + 0.2f, 1.0f));
+                }
+            }
+
+            return d;
         }
 
         public int NumSequenceMatches(TransformationParameter p, Datum d, Phase phase)
@@ -731,6 +808,130 @@ namespace MyCaffe.test
                     double dfVal = rgData[nIdx];
 
                     m_log.CHECK_EQ(dfVal, nLabel - c, "The data at " + j.ToString() + " is not as expected.");
+                }
+            }
+        }
+
+        public void TestRichLabel()
+        {
+            TransformationParameter p = new TransformationParameter();
+            bool unique_pixels = false; // pixels are equal to label
+            int nLabel = 0;
+            bool bUseRichAnnotation = true;
+            SimpleDatum.ANNOTATION_TYPE type = SimpleDatum.ANNOTATION_TYPE.BBOX;
+            float fEps = 1e-6f;
+            int nChannels = 2;
+            int nHeight = 10;
+            int nWidth = 10;
+
+            Datum datum = CreateDatum(nLabel, nChannels, nHeight, nWidth, unique_pixels, bUseRichAnnotation, type);
+            Blob<T> blob = new Blob<T>(m_cuda, m_log, 1, nChannels, nHeight, nWidth);
+
+            DataTransformer<T> transformer = new DataTransformer<T>(m_cuda, m_log, p, Phase.TEST, nChannels, nHeight, nWidth);
+            transformer.InitRand();
+            List<AnnotationGroup> transformed_anno_vec = transformer.Transform(datum, blob);
+
+            m_log.CHECK_EQ(transformed_anno_vec.Count, 1, "There should only be one Annotation group!");
+            AnnotationGroup anno_group = transformed_anno_vec[0];
+            m_log.CHECK_EQ(anno_group.group_label, nLabel, "The anno group label is incorrect!");
+            m_log.CHECK_EQ(anno_group.annotations.Count, 9, "There should be 9 annotations!");
+
+            for (int a = 0; a < 9; a++)
+            {
+                Annotation anno = anno_group.annotations[a];
+                m_log.CHECK_EQ(anno.instance_id, a, "The annotation instance id is incorrect!");
+                m_log.EXPECT_NEAR_FLOAT(anno.bbox.xmin, a * 0.1f, fEps);
+                m_log.EXPECT_NEAR_FLOAT(anno.bbox.ymin, a * 0.1f, fEps);
+                m_log.EXPECT_NEAR_FLOAT(anno.bbox.xmax, a * 0.1f + 0.2f, fEps);
+                m_log.EXPECT_NEAR_FLOAT(anno.bbox.ymax, a * 0.1f + 0.2f, fEps);
+            }
+        }
+
+        public void TestRichLabelCrop()
+        {
+            TransformationParameter p = new TransformationParameter();
+            bool unique_pixels = false; // pixels are equal to label
+            int nLabel = 0;
+            bool bUseRichAnnotation = true;
+            SimpleDatum.ANNOTATION_TYPE type = SimpleDatum.ANNOTATION_TYPE.BBOX;
+            float fEps = 1e-6f;
+            int nChannels = 2;
+            int nHeight = 10;
+            int nWidth = 10;
+            int nCropSize = 1;
+
+            Datum datum = CreateDatum(nLabel, nChannels, nHeight, nWidth, unique_pixels, bUseRichAnnotation, type);
+            Blob<T> blob = new Blob<T>(m_cuda, m_log, 1, nChannels, nHeight, nWidth);
+
+            p.crop_size = (uint)nCropSize;
+            DataTransformer<T> transformer = new DataTransformer<T>(m_cuda, m_log, p, Phase.TEST, nChannels, nHeight, nWidth);
+            transformer.InitRand();
+            List<AnnotationGroup> transformed_anno_vec = transformer.Transform(datum, blob);
+
+            m_log.CHECK_EQ(transformed_anno_vec.Count, 1, "There should only be one Annotation group!");
+            AnnotationGroup anno_group = transformed_anno_vec[0];
+            m_log.CHECK_EQ(anno_group.group_label, nLabel, "The anno group label is incorrect!");
+            m_log.CHECK_EQ(anno_group.annotations.Count, 2, "There should be 2 annotations!");
+
+            for (int a = 0; a < anno_group.annotations.Count; a++)
+            {
+                Annotation anno = anno_group.annotations[a];
+                m_log.EXPECT_NEAR_FLOAT(anno.bbox.xmin, 0.0f, fEps);
+                m_log.EXPECT_NEAR_FLOAT(anno.bbox.ymin, 0.0f, fEps);
+                m_log.EXPECT_NEAR_FLOAT(anno.bbox.xmax, 1.0f, fEps);
+                m_log.EXPECT_NEAR_FLOAT(anno.bbox.ymax, 1.0f, fEps);
+            }
+        }
+
+        public void TestRichLabelCropMirror()
+        {
+            TransformationParameter p = new TransformationParameter();
+            bool unique_pixels = false; // pixels are equal to label
+            int nLabel = 0;
+            bool bUseRichAnnotation = true;
+            SimpleDatum.ANNOTATION_TYPE type = SimpleDatum.ANNOTATION_TYPE.BBOX;
+            float fEps = 1e-6f;
+            int nChannels = 2;
+            int nHeight = 10;
+            int nWidth = 10;
+            int nCropSize = 4;
+
+            Datum datum = CreateDatum(nLabel, nChannels, nHeight, nWidth, unique_pixels, bUseRichAnnotation, type);
+            Blob<T> blob = new Blob<T>(m_cuda, m_log, 1, nChannels, nHeight, nWidth);
+
+            p.crop_size = (uint)nCropSize;
+            p.mirror = true;
+            DataTransformer<T> transformer = new DataTransformer<T>(m_cuda, m_log, p, Phase.TEST, nChannels, nHeight, nWidth);
+            transformer.InitRand();
+            bool bDoMirror;
+
+            for (int i = 0; i < 10; i++)
+            {
+                List<AnnotationGroup> transformed_anno_vec = transformer.Transform(datum, blob, out bDoMirror);
+
+                m_log.CHECK_EQ(transformed_anno_vec.Count, 1, "There should only be one Annotation group!");
+                AnnotationGroup anno_group = transformed_anno_vec[0];
+                m_log.CHECK_EQ(anno_group.group_label, nLabel, "The anno group label is incorrect!");
+                m_log.CHECK_EQ(anno_group.annotations.Count, 5, "There should be 5 annotations!");
+
+                for (int a = 2; a < 7; a++)
+                {
+                    Annotation anno = anno_group.annotations[a - 2];
+
+                    if (bDoMirror)
+                    {
+                        m_log.EXPECT_NEAR_FLOAT(anno.bbox.xmin, 1.0f - Math.Min((a-1), 4)/4.0f, fEps);
+                        m_log.EXPECT_NEAR_FLOAT(anno.bbox.ymin, Math.Max((a - 3), 0)/4.0f, fEps);
+                        m_log.EXPECT_NEAR_FLOAT(anno.bbox.xmax, 1.0 - Math.Max((a - 3), 0)/4.0f, fEps);
+                        m_log.EXPECT_NEAR_FLOAT(anno.bbox.ymax, Math.Min((a - 1), 4)/ 4.0f, fEps);
+                    }
+                    else
+                    {
+                        m_log.EXPECT_NEAR_FLOAT(anno.bbox.xmin, Math.Max((a - 3), 0) / 4.0f, fEps);
+                        m_log.EXPECT_NEAR_FLOAT(anno.bbox.ymin, Math.Max((a - 3), 0) / 4.0f, fEps);
+                        m_log.EXPECT_NEAR_FLOAT(anno.bbox.xmax, Math.Min((a - 1), 4) / 4.0f, fEps);
+                        m_log.EXPECT_NEAR_FLOAT(anno.bbox.ymax, Math.Min((a - 1), 4) / 4.0f, fEps);
+                    }
                 }
             }
         }
