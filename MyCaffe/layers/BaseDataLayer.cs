@@ -53,6 +53,7 @@ namespace MyCaffe.layers
                 m_imgdb = db;
 
                 if (p.type == LayerParameter.LayerType.DATA ||
+                    p.type == LayerParameter.LayerType.ANNOTATED_DATA || 
                     p.type == LayerParameter.LayerType.TRIPLET_DATA)
                     m_src = m_imgdb.GetSourceByName(p.data_param.source);
 
