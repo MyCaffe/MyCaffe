@@ -334,7 +334,21 @@ namespace MyCaffe.data
         /// </summary>
         /// <param name="d">Specifies the Datum to transform.</param>
         /// <param name="blob">Specifies the Blob where the transformed data is placed.</param>
-        public void Transform(SimpleDatum d, Blob<T> blob)
+        /// <returns>When a datum contains annotations, the tranformed annotation groups are returned, otherwise <i>null</i> is returned.</returns>
+        public List<AnnotationGroup> Transform(SimpleDatum d, Blob<T> blob)
+        {
+            bool bDoMirror;
+            return Transform(d, blob, out bDoMirror);
+        }
+
+        /// <summary>
+        /// Transforms a Datum and places the dat ainto a Blob.
+        /// </summary>
+        /// <param name="d">Specifies the Datum to transform.</param>
+        /// <param name="blob">Specifies the Blob where the transformed data is placed.</param>
+        /// <param name="bDoMirror">Returns whether or not a mirror took place.</param>
+        /// <returns>When a datum contains annotations, the tranformed annotation groups are returned, otherwise <i>null</i> is returned.</returns>
+        public List<AnnotationGroup> Transform(SimpleDatum d, Blob<T> blob, out bool bDoMirror)
         {
             int nCropSize = (int)m_param.crop_size;
             int nDatumChannels = d.Channels;
@@ -352,18 +366,20 @@ namespace MyCaffe.data
             m_log.CHECK_LE(nWidth, nDatumWidth, "The datum and blob must have equal width.");
             m_log.CHECK_GE(nNum, 1, "The blob must have at least 1 item.");
 
-            if (nCropSize > 0)
-            {
-                m_log.CHECK_EQ(nCropSize, nHeight, "The blob height must equal the crop size.");
-                m_log.CHECK_EQ(nCropSize, nWidth, "The blob width must equal the crop size.");
-            }
-            else
+            if (nCropSize == 0)
             {
                 m_log.CHECK_EQ(nDatumHeight, nHeight, "The blob height must equal the datum height.");
                 m_log.CHECK_EQ(nDatumWidth, nWidth, "The blob width must equal the datum width.");
             }
 
-            blob.mutable_cpu_data = Transform(d);
+            NormalizedBBox crop_bbox = (d.annotation_type != SimpleDatum.ANNOTATION_TYPE.NONE) ? new NormalizedBBox(0, 0, 0, 0) : null;
+
+            blob.mutable_cpu_data = Transform(d, out bDoMirror, crop_bbox);
+
+            if (d.annotation_type != SimpleDatum.ANNOTATION_TYPE.NONE)
+                return TransformAnnotation(d, crop_bbox, bDoMirror, true);
+
+            return null;
         }
 
         /// <summary>
@@ -569,7 +585,7 @@ namespace MyCaffe.data
             int nImgWd = d.Width;
             List<AnnotationGroup> rgTransformedAnnotationGroup = new List<AnnotationGroup>();
 
-            if (d.annoation_type == SimpleDatum.ANNOTATION_TYPE.BBOX)
+            if (d.annotation_type == SimpleDatum.ANNOTATION_TYPE.BBOX)
             {
                 // Go through each AnnotationGroup.
                 for (int g = 0; g < d.annotation_group.Count; g++)
@@ -824,7 +840,7 @@ namespace MyCaffe.data
             // Expand the datum.
             NormalizedBBox expand_bbox = new NormalizedBBox(0, 0, 0, 0); ;
             SimpleDatum expanded_datum = ExpandImage(d, expand_bbox, fExpandRatio);
-            expanded_datum.annoation_type = d.annoation_type;
+            expanded_datum.annotation_type = d.annotation_type;
 
             // Transform the annotation according to the crop_bbox.
             bool bMirror = false;
