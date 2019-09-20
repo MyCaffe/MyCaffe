@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -150,6 +151,41 @@ namespace MyCaffe.basecode
         {
             get { return m_fSize; }
             set { m_fSize = value; }
+        }
+
+        /// <summary>
+        /// Save the NormalizedBbox using the binary writer.
+        /// </summary>
+        /// <param name="bw">Specifies the binary writer used to save the data.</param>
+        public void Save(BinaryWriter bw)
+        {
+            bw.Write(m_fxmin);
+            bw.Write(m_fxmax);
+            bw.Write(m_fymin);
+            bw.Write(m_fymax);
+            bw.Write(m_nLabel);
+            bw.Write(m_bDifficult);
+            bw.Write(m_fScore);
+            bw.Write(m_fSize);
+        }
+
+        /// <summary>
+        /// Load and return a new NormalizedBbox.
+        /// </summary>
+        /// <param name="br">Specifies the binary reader used to load the data.</param>
+        /// <returns>The newly loaded NormalizedBbox is returned.</returns>
+        public static NormalizedBBox Load(BinaryReader br)
+        {
+            float fXmin = br.ReadSingle();
+            float fXmax = br.ReadSingle();
+            float fYmin = br.ReadSingle();
+            float fYmax = br.ReadSingle();
+            int nLabel = br.ReadInt32();
+            bool bDifficult = br.ReadBoolean();
+            float fScore = br.ReadSingle();
+            float fSize = br.ReadSingle();
+
+            return new NormalizedBBox(fXmin, fYmin, fXmax, fYmax, nLabel, bDifficult, fScore, fSize);
         }
     }
 }

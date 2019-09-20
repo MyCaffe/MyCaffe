@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,6 +31,20 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns a copy of the Annotation.
+        /// </summary>
+        /// <returns>A new copy of the annotation is returned.</returns>
+        public Annotation Clone()
+        {
+            NormalizedBBox bbox = null;
+
+            if (m_bbox != null)
+                bbox = m_bbox.Clone();
+
+            return new Annotation(bbox, m_nInstanceId);
+        }
+
+        /// <summary>
         /// Get/set the instance ID.
         /// </summary>
         public int instance_id
@@ -45,6 +60,29 @@ namespace MyCaffe.basecode
         {
             get { return m_bbox; }
             set { m_bbox = value; }
+        }
+
+        /// <summary>
+        /// Save the annotation data using the binary writer.
+        /// </summary>
+        /// <param name="bw">Specifies the binary writer used to save the data.</param>
+        public void Save(BinaryWriter bw)
+        {
+            bw.Write(m_nInstanceId);
+            m_bbox.Save(bw);
+        }
+
+        /// <summary>
+        /// Load the annotation using a binary reader.
+        /// </summary>
+        /// <param name="br">Specifies the binary reader used to load the data.</param>
+        /// <returns>The newly loaded annoation is returned.</returns>
+        public static Annotation Load(BinaryReader br)
+        {
+            int nInstanceId = br.ReadInt32();
+            NormalizedBBox bbox = NormalizedBBox.Load(br);
+
+            return new Annotation(bbox, nInstanceId);
         }
     }
 
@@ -70,6 +108,27 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Create a copy of the annotation group.
+        /// </summary>
+        /// <returns>A copy of the annotation group is returned.</returns>
+        public AnnotationGroup Clone()
+        {
+            List<Annotation> rg = null;
+
+            if (m_rgAnnotations != null)
+            {
+                rg = new List<Annotation>();
+
+                foreach (Annotation a in m_rgAnnotations)
+                {
+                    rg.Add(a.Clone());
+                }
+            }
+
+            return new AnnotationGroup(rg, m_nGroupLabel);
+        }
+
+        /// <summary>
         /// Get/set the group annoations.
         /// </summary>
         public List<Annotation> annotations
@@ -85,6 +144,40 @@ namespace MyCaffe.basecode
         {
             get { return m_nGroupLabel; }
             set { m_nGroupLabel = value; }
+        }
+
+        /// <summary>
+        /// Save the annotation group to the binary writer.
+        /// </summary>
+        /// <param name="bw">Specifies the binary writer used to write the data.</param>
+        public void Save(BinaryWriter bw)
+        {
+            bw.Write(m_nGroupLabel);
+            bw.Write(m_rgAnnotations.Count);
+
+            for (int i = 0; i < m_rgAnnotations.Count; i++)
+            {
+                m_rgAnnotations[i].Save(bw);
+            }
+        }
+
+        /// <summary>
+        /// Load an annotation group using the binary reader.
+        /// </summary>
+        /// <param name="br">Specifies the binary reader used to load the data.</param>
+        /// <returns>The new AnnotationGroup loaded is returned.</returns>
+        public static AnnotationGroup Load(BinaryReader br)
+        {
+            int nGroupLabel = br.ReadInt32();
+            int nCount = br.ReadInt32();
+            List<Annotation> rgAnnotations = new List<Annotation>();
+
+            for (int i = 0; i < nCount; i++)
+            {
+                rgAnnotations.Add(Annotation.Load(br));
+            }
+
+            return new AnnotationGroup(rgAnnotations, nGroupLabel);
         }
     }
 }
