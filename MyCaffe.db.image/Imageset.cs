@@ -634,7 +634,11 @@ namespace MyCaffe.db.image
                 return m_imgMean;
 
             if (m_rgImages.Length == 0)
-                throw new Exception("Cannot create image mean with no images!");
+            {
+                if (log != null)
+                    log.WriteLine("WARNING: Cannot create image mean with no images!");
+                return null;
+            }
 
             if (m_loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ALL)
                 throw new Exception("Can only create image mean when using LOAD_ALL.");
