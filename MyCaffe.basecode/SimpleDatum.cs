@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -96,7 +97,11 @@ namespace MyCaffe.basecode
             /// <summary>
             /// Specifies that the data contains a list of float values where the first item is an Int32 which is the count followed by that many float values.
             /// </summary>
-            LIST_FLOAT
+            LIST_FLOAT,
+            /// <summary>
+            /// Specifies that the data contains annotation data used with SSD.
+            /// </summary>
+            ANNOTATION_DATA
         }
 
 
@@ -610,6 +615,19 @@ namespace MyCaffe.basecode
             m_debugDataFormat = d.m_debugDataFormat;
             m_nSourceID = d.m_nSourceID;
             m_tag = d.m_tag;
+
+            m_nAnnotationType = d.m_nAnnotationType;
+            m_rgAnnotationGroup = null;
+
+            if (d.m_rgAnnotationGroup != null)
+            {
+                m_rgAnnotationGroup = new List<AnnotationGroup>();
+
+                foreach (AnnotationGroup g in d.m_rgAnnotationGroup)
+                {
+                    m_rgAnnotationGroup.Add(g.Clone());
+                }
+            }
         }
 
         /// <summary>
@@ -1397,6 +1415,65 @@ namespace MyCaffe.basecode
             finally
             {
             }
+        }
+
+        /// <summary>
+        /// Save the annotation data and type to the data criteria.
+        /// </summary>
+        public void SaveAnnotationDataToDataCriteria()
+        {
+            using (MemoryStream ms = new MemoryStream())
+            using (BinaryWriter bw = new BinaryWriter(ms))
+            {
+                bw.Write((int)m_nAnnotationType);
+
+                int nCount = 0;
+                if (m_rgAnnotationGroup != null)
+                    nCount = m_rgAnnotationGroup.Count;
+
+                bw.Write(nCount);
+
+                for (int i = 0; i < m_rgAnnotationGroup.Count; i++)
+                {
+                    m_rgAnnotationGroup[i].Save(bw);
+                }
+
+                bw.Flush();
+                DataCriteria = ms.ToArray();
+                DataCriteriaFormat = DATA_FORMAT.ANNOTATION_DATA;
+            }
+        }
+
+        /// <summary>
+        /// Load the annotation data and type from the data criteria.
+        /// </summary>
+        /// <returns>When successfully loaded <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public bool LoadAnnotationDataFromDataCriteria()
+        {
+            if (DataCriteria == null || DataCriteriaFormat != DATA_FORMAT.ANNOTATION_DATA)
+            {
+                m_nAnnotationType = ANNOTATION_TYPE.NONE;
+                m_rgAnnotationGroup = null;
+                return false;
+            }
+
+            using (MemoryStream ms = new MemoryStream(DataCriteria))
+            using (BinaryReader br = new BinaryReader(ms))
+            {
+                m_nAnnotationType = (ANNOTATION_TYPE)br.ReadInt32();
+                m_rgAnnotationGroup = new List<AnnotationGroup>();
+
+                int nCount = br.ReadInt32();
+                if (nCount > 0)
+                {
+                    for (int i = 0; i < nCount; i++)
+                    {
+                        m_rgAnnotationGroup.Add(AnnotationGroup.Load(br));
+                    }
+                }
+            }
+
+            return true;
         }
     }
 }
