@@ -1232,7 +1232,7 @@ namespace MyCaffe.basecode
         /// When using annotations, the annotation type specifies the type of annotation.  Currently, only
         /// the BBOX annotation type is supported.
         /// </summary>
-        public ANNOTATION_TYPE annoation_type
+        public ANNOTATION_TYPE annotation_type
         {
             get { return m_nAnnotationType; }
             set { m_nAnnotationType = value; }
