@@ -299,6 +299,7 @@ namespace MyCaffe.test
         protected EngineParameter.Engine m_engine;
         protected bool m_bEnabled = true;
         protected bool m_bHalf = false;
+        protected long m_lSeed = 1701;
 
         public Test(string strName, int nDeviceID = TestBase.DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, bool bHalf = false)
         {
@@ -340,10 +341,9 @@ namespace MyCaffe.test
         public CudaDnn<T> GetCuda(int nDeviceID = TestBase.DEFAULT_DEVICE_ID)
         {
             DEVINIT flags = DEVINIT.CUBLAS | DEVINIT.CURAND;
-            long lSeed = 1701;
 
             // NOTE: CudaPath set in TestBase will be used, see CudaPath and SetDefaultCudaPath() above.
-            CudaDnn<T> cuda = new CudaDnn<T>(nDeviceID, flags, lSeed);
+            CudaDnn<T> cuda = new CudaDnn<T>(nDeviceID, flags, m_lSeed);
 
             Trace.WriteLine("TestBase using Cuda Connection: '" + cuda.Path + "'");
 
