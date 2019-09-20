@@ -185,12 +185,12 @@ namespace MyCaffe.layers.ssd
             // Label
             if (m_bOutputLabels)
             {
-                bool bHasAnnoType = (anno_datum.annoation_type != SimpleDatum.ANNOTATION_TYPE.NONE) && (m_param.annotated_data_param.anno_type != SimpleDatum.ANNOTATION_TYPE.NONE);
+                bool bHasAnnoType = (anno_datum.annotation_type != SimpleDatum.ANNOTATION_TYPE.NONE) && (m_param.annotated_data_param.anno_type != SimpleDatum.ANNOTATION_TYPE.NONE);
                 List<int> rgLabelShape = Utility.Create<int>(4, 1);
 
                 if (bHasAnnoType)
                 {
-                    m_AnnoType = anno_datum.annoation_type;
+                    m_AnnoType = anno_datum.annotation_type;
 
                     // If anno_type is provided in AnnotatedDataParameter, replace the type stored
                     // in each individual AnnotatedDatum.
@@ -400,9 +400,9 @@ namespace MyCaffe.layers.ssd
                     {
                         // Make sure all data have same annoation type.
                         if (m_param.annotated_data_param.anno_type != SimpleDatum.ANNOTATION_TYPE.NONE)
-                            sampled_datum.annoation_type = m_AnnoType;
+                            sampled_datum.annotation_type = m_AnnoType;
                         else
-                            m_log.CHECK_EQ((int)m_AnnoType, (int)sampled_datum.annoation_type, "The sampled datum has a different AnnoationType!");
+                            m_log.CHECK_EQ((int)m_AnnoType, (int)sampled_datum.annotation_type, "The sampled datum has a different AnnoationType!");
 
                         // Transform datum and annotation_group at the same time.
                         bool bMirror;
