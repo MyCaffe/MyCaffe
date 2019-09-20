@@ -118,6 +118,15 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Get/set the output log.
+        /// </summary>
+        public Log OutputLog
+        {
+            get { return m_log; }
+            set { m_log = value; }
+        }
+
+        /// <summary>
         /// Set the database instance to use.
         /// </summary>
         /// <param name="strInstance">Specifies the instance name to use in '.\\name' format.</param>
@@ -209,6 +218,22 @@ namespace MyCaffe.db.image
 
             if (img.HasValue)
                 m_imageSelectionMethod = img.Value;
+        }
+
+        /// <summary>
+        /// Returns whether or not the image data criteria is loaded with each image.
+        /// </summary>
+        public bool GetLoadImageDataCriteria()
+        {
+            return m_factory.LoadDataCriteria;
+        }
+
+        /// <summary>
+        /// Returns whether or not the image debug data is loaded with each image.
+        /// </summary>
+        public bool GetLoadImageDebugData()
+        {
+            return m_factory.LoadDebugData;
         }
 
         /// <summary>

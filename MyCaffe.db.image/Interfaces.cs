@@ -193,6 +193,18 @@ namespace MyCaffe.db.image
         void CleanUp(int nDsId = 0);
 
         /// <summary>
+        /// Returns whether or not the image data criteria is loaded with each image.
+        /// </summary>
+        [OperationContract(IsOneWay = true)]
+        bool GetLoadImageDataCriteria();
+
+        /// <summary>
+        /// Returns whether or not the image debug data is loaded with each image.
+        /// </summary>
+        [OperationContract(IsOneWay = true)]
+        bool GetLoadImageDebugData();
+
+        /// <summary>
         /// Updates the label boosts for the images based on the label boosts set for the given project.
         /// </summary>
         /// <param name="nProjectId">Specifies the project ID in the database.</param>
