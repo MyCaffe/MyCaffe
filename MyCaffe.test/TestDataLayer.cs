@@ -409,7 +409,7 @@ namespace MyCaffe.test
             }
             else
             {
-                CudaDnn<double>.SetDefaultCudaPath(strPath);
+                CudaDnn<float>.SetDefaultCudaPath(strPath);
                 return new DataLayerTest<float>(strName, nDeviceID, this);
             }
         }
