@@ -37,6 +37,7 @@ namespace MyCaffe.basecode
         DATA_FORMAT m_debugDataFormat = DATA_FORMAT.NONE;
         string m_strDesc = null;
         int m_nSourceID = 0;
+        int m_nOriginalSourceID = 0;
         object m_tag = null;
         ANNOTATION_TYPE m_nAnnotationType = ANNOTATION_TYPE.NONE;
         List<AnnotationGroup> m_rgAnnotationGroup = null;
@@ -129,7 +130,8 @@ namespace MyCaffe.basecode
         /// <param name="nVirtualID">Specifies a virtual index for the data (default = 0).  When specified, the SimpleDatum is used to reference another.</param>
         /// <param name="nImageID">Specifies the image ID within the database.</param>
         /// <param name="nSourceID">Specifies the data source ID of the data source that owns this image.</param>
-        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, List<byte> rgData, List<double> rgfData, int nBoost, bool bAutoLabeled, int nIdx, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0)
+        /// <param name="nOriginalSourceID">Optionally, specifies the ogiginal source ID which is set when using a virtual ID - the original source ID is the ID of the source associated with the image with the ID of the virtual ID.</param>
+        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, List<byte> rgData, List<double> rgfData, int nBoost, bool bAutoLabeled, int nIdx, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0, int nOriginalSourceID = 0)
         {
             m_nChannels = nChannels;
             m_nWidth = nWidth;
@@ -145,6 +147,7 @@ namespace MyCaffe.basecode
             m_nIndex = nIdx;
             m_nImageID = nImageID;
             m_nSourceID = nSourceID;
+            m_nOriginalSourceID = nOriginalSourceID;
 
             if (rgData != null)
             {
@@ -179,7 +182,8 @@ namespace MyCaffe.basecode
         /// <param name="nVirtualID">Specifies a virtual index for the data (default = 0).  When specified, the SimpleDatum is used to reference another.</param>
         /// <param name="nImageID">Specifies the image ID within the database.</param>
         /// <param name="nSourceID">Specifies the data source ID of the data source that owns this image.</param>
-        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, byte[] rgData, double[] rgfData, int nBoost, bool bAutoLabeled, int nIdx, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0)
+        /// <param name="nOriginalSourceID">Optionally, specifies the ogiginal source ID which is set when using a virtual ID - the original source ID is the ID of the source associated with the image with the ID of the virtual ID.</param>
+        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, byte[] rgData, double[] rgfData, int nBoost, bool bAutoLabeled, int nIdx, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0, int nOriginalSourceID = 0)
         {
             m_nChannels = nChannels;
             m_nWidth = nWidth;
@@ -195,6 +199,7 @@ namespace MyCaffe.basecode
             m_nIndex = nIdx;
             m_nImageID = nImageID;
             m_nSourceID = nSourceID;
+            m_nOriginalSourceID = nOriginalSourceID;
 
             if (rgData != null)
             {
@@ -228,7 +233,8 @@ namespace MyCaffe.basecode
         /// <param name="nVirtualID">Specifies a virtual index for the data (default = 0).  When specified, the SimpleDatum is used to reference another.</param>
         /// <param name="nImageID">Specifies the image ID within the database.</param>
         /// <param name="nSourceID">Specifies the data source ID of the data source that owns this image.</param>
-        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, int nBoost = 0, bool bAutoLabeled = false, int nIdx = -1, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0)
+        /// <param name="nOriginalSourceID">Optionally, specifies the ogiginal source ID which is set when using a virtual ID - the original source ID is the ID of the source associated with the image with the ID of the virtual ID.</param>
+        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, int nBoost = 0, bool bAutoLabeled = false, int nIdx = -1, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0, int nOriginalSourceID = 0)
         {
             m_nChannels = nChannels;
             m_nWidth = nWidth;
@@ -244,6 +250,7 @@ namespace MyCaffe.basecode
             m_nIndex = nIdx;
             m_nImageID = nImageID;
             m_nSourceID = nSourceID;
+            m_nOriginalSourceID = nOriginalSourceID;
             m_rgByteData = null;
             m_rgRealData = null;
         }
@@ -614,6 +621,7 @@ namespace MyCaffe.basecode
             m_rgDebugData = d.m_rgDebugData;
             m_debugDataFormat = d.m_debugDataFormat;
             m_nSourceID = d.m_nSourceID;
+            m_nOriginalSourceID = d.m_nOriginalSourceID;
             m_tag = d.m_tag;
 
             m_nAnnotationType = d.m_nAnnotationType;
@@ -1065,6 +1073,14 @@ namespace MyCaffe.basecode
         public int SourceID
         {
             get { return m_nSourceID; }
+        }
+
+        /// <summary>
+        /// Returns the original source ID which is set when using a virtual ID.
+        /// </summary>
+        public int OriginalSourceID
+        {
+            get { return m_nOriginalSourceID; }
         }
 
         /// <summary>
