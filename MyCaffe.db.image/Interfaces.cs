@@ -195,13 +195,13 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Returns whether or not the image data criteria is loaded with each image.
         /// </summary>
-        [OperationContract(IsOneWay = true)]
+        [OperationContract(IsOneWay = false)]
         bool GetLoadImageDataCriteria();
 
         /// <summary>
         /// Returns whether or not the image debug data is loaded with each image.
         /// </summary>
-        [OperationContract(IsOneWay = true)]
+        [OperationContract(IsOneWay = false)]
         bool GetLoadImageDebugData();
 
         /// <summary>
