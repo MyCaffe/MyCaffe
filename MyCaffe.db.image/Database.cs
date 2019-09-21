@@ -1127,26 +1127,28 @@ namespace MyCaffe.db.image
         /// Converts the raw image debug data which may be stored as a path to the underlying data file, to the actual data.
         /// </summary>
         /// <param name="rgData">Specifies the raw data, which may contain an image path.</param>
+        /// <param name="nOriginalSourceID">Optionally, specifies the original source ID that stores the image.</param>
         /// <remarks>
         /// You must Open the database with the source under which the image is stored.
         /// </remarks>
         /// <returns>The actual raw data is returned.</returns>
-        public byte[] GetRawImageDebugData(byte[] rgData)
+        public byte[] GetRawImageDebugData(byte[] rgData, int? nOriginalSourceID = null)
         {
-            return getRawImage(rgData, null);
+            return getRawImage(rgData, nOriginalSourceID);
         }
 
         /// <summary>
         /// Converts the raw image data criteria data which may be stored as a path to the underlying data file, to the actual data.
         /// </summary>
         /// <param name="rgData">Specifies the raw data, which may contain an image path.</param>
+        /// <param name="nOriginalSourceID">Optionally, specifies the original source ID that stores the image.</param>
         /// <remarks>
         /// You must Open the database with the source under which the image is stored.
         /// </remarks>
         /// <returns>The actual raw data is returned.</returns>
-        public byte[] GetRawImageDataCriteria(byte[] rgData)
+        public byte[] GetRawImageDataCriteria(byte[] rgData, int? nOriginalSourceID = null)
         {
-            return getRawImage(rgData, null);
+            return getRawImage(rgData, nOriginalSourceID);
         }
 
         /// <summary>
