@@ -607,6 +607,28 @@ namespace MyCaffe.db.image
             m_db.FixupRawImageCopy(nImageID, nSecondarySrcId);
         }
 
+        /// <summary>
+        /// Converts the raw image data criteria data which may be stored as a path to the underlying data file, to the actual data.
+        /// </summary>
+        /// <param name="rgData">Specifies the raw data, which may contain an image path.</param>
+        /// <param name="nOriginalSourceID">Specifies the original source ID that stores the image.</param>
+        /// <returns>The actual raw data is returned.</returns>
+        public byte[] GetRawImageDataCriteria(byte[] rgData, int nOriginalSourceID)
+        {
+            return m_db.GetRawImageDataCriteria(rgData, nOriginalSourceID);
+        }
+
+        /// <summary>
+        /// Converts the raw image debug data which may be stored as a path to the underlying data file, to the actual data.
+        /// </summary>
+        /// <param name="rgData">Specifies the raw data, which may contain an image path.</param>
+        /// <param name="nOriginalSourceID">Specifies the original source ID that stores the image.</param>
+        /// <returns>The actual raw data is returned.</returns>
+        public byte[] GetRawImageDebugData(byte[] rgData, int nOriginalSourceID)
+        {
+            return m_db.GetRawImageDebugData(rgData, nOriginalSourceID);
+        }
+
         #endregion
 
 
@@ -1364,7 +1386,8 @@ namespace MyCaffe.db.image
                                    img.Idx.GetValueOrDefault(),
                                    img.VirtualID.GetValueOrDefault(),
                                    img.ID,
-                                   img.SourceID.GetValueOrDefault());
+                                   img.SourceID.GetValueOrDefault(),
+                                   img.OriginalSourceID.GetValueOrDefault());
 
             sd.OriginalLabel = img.OriginalLabel.GetValueOrDefault();
             sd.Description = img.Description;
