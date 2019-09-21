@@ -90,6 +90,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestReadCropDb()
+        {
+            AnnotatedDataLayerTest test = new AnnotatedDataLayerTest();
+
+            try
+            {
+                foreach (IAnnotatedDataLayerTest t in test.Tests)
+                {
+                    t.TestReadCropDb();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestReadCropTestDb()
         {
             AnnotatedDataLayerTest test = new AnnotatedDataLayerTest();
@@ -115,6 +133,7 @@ namespace MyCaffe.test
         void TestReshapeDb();
         void TestReadCropTrainSequenceSeededDb();
         void TestReadCropTrainSequenceUnseededDb();
+        void TestReadCropDb();
         void TestReadCropTestDb();
     }
 
@@ -228,6 +247,31 @@ namespace MyCaffe.test
             base.dispose();
         }
 
+        private void cleanupData()
+        {
+            DatasetFactory factory = new DatasetFactory();
+            Database db = new Database();
+
+            int nId = factory.GetSourceID(m_strSrc1);
+            factory.DeleteSourceData(nId);
+            nId = factory.GetSourceID(m_strSrc2);
+            factory.DeleteSourceData(nId);
+
+            db.DeleteDataset(m_strDs, false, m_log, m_parent.CancelEvent);
+        }
+
+        private void initDb()
+        {
+            ((MyCaffeImageDatabase)m_parent.db).OutputLog = m_log;
+            m_parent.db.UnloadDatasetByName(m_strDs);
+            m_parent.db.InitializeWithDsName(m_parent.Settings, m_strDs);
+        }
+
+        private void cleanupDb()
+        {
+            m_parent.db.CleanUp();
+        }
+
         public void Setup()
         {
             m_nSpatialDim = m_nHeight * m_nWidth;
@@ -237,6 +281,33 @@ namespace MyCaffe.test
             TopVec.Add(Top);
             TopVec.Add(m_blobTopLabel);
             cleanupData();
+        }
+
+        private int OneBBoxNum(int n)
+        {
+            int nSum = 0;
+
+            for (int g = 0; g < n; g++)
+            {
+                nSum += g;
+            }
+
+            return nSum;
+        }
+
+        private int BBoxNum(int n)
+        {
+            int nSum = 0;
+
+            for (int i = 0; i < n; i++)
+            {
+                for (int g = 0; g < i; g++)
+                {
+                    nSum += g;
+                }
+            }
+
+            return nSum;
         }
 
         /// <summary>
@@ -325,58 +396,6 @@ namespace MyCaffe.test
             m_nDsID = ds.ID;
 
             return m_strSrc1;
-        }
-
-        private int OneBBoxNum(int n)
-        {
-            int nSum = 0;
-
-            for (int g = 0; g < n; g++)
-            {
-                nSum += g;
-            }
-
-            return nSum;
-        }
-
-        private int BBoxNum(int n)
-        {
-            int nSum = 0;
-
-            for (int i = 0; i < n; i++)
-            {
-                for (int g = 0; g < i; g++)
-                {
-                    nSum += g;
-                }
-            }
-
-            return nSum;
-        }
-
-        private void cleanupData()
-        {
-            DatasetFactory factory = new DatasetFactory();           
-            Database db = new Database();
-
-            int nId = factory.GetSourceID(m_strSrc1);
-            factory.DeleteSourceData(nId);
-            nId = factory.GetSourceID(m_strSrc2);
-            factory.DeleteSourceData(nId);
-
-            db.DeleteDataset(m_strDs, false, m_log, m_parent.CancelEvent);
-        }
-
-        private void initDb()
-        {
-            ((MyCaffeImageDatabase)m_parent.db).OutputLog = m_log;
-            m_parent.db.UnloadDatasetByName(m_strDs);
-            m_parent.db.InitializeWithDsName(m_parent.Settings, m_strDs);
-        }
-
-        private void cleanupDb()
-        {
-            m_parent.db.CleanUp();
         }
 
         public void TestRead()
