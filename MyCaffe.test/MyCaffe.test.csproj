@@ -98,6 +98,7 @@
     <Compile Include="TestNormalization2Layer.cs" />
     <Compile Include="TestOneHotLayer.cs" />
     <Compile Include="TestNeuralStyleTransfer.cs" />
+    <Compile Include="TestDetectionEvaluateLayer.cs" />
     <Compile Include="TestTVLossLayer.cs" />
     <Compile Include="TestGramLayer.cs" />
     <Compile Include="TestDeepDraw.cs" />
