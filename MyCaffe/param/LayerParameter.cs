@@ -133,6 +133,10 @@ namespace MyCaffe.param
             /// </summary>
             DECONVOLUTION,
             /// <summary>
+            /// Initializes a parameter for the DetectionEvaluateLayer.
+            /// </summary>
+            DETECTION_EVALUATE,
+            /// <summary>
             /// Initializes a parameter for the DataLayer.
             /// </summary>
             DATA,
@@ -754,7 +758,7 @@ namespace MyCaffe.param
                     expected_bottom.Add("upscore");
                     expected_bottom.Add("data");
                     expected_top.Add("score");
-                    m_rgLayerParameters[LayerType.CROP] = new CropParameter();
+                    m_rgLayerParameters[lt] = new CropParameter();
                     break;
 
                 case LayerType.ANNOTATED_DATA:
@@ -763,6 +767,12 @@ namespace MyCaffe.param
                     m_rgLayerParameters[LayerType.TRANSFORM] = new TransformationParameter();
                     m_rgLayerParameters[LayerType.ANNOTATED_DATA] = new AnnotatedDataParameter();
                     m_rgLayerParameters[LayerType.DATA] = new DataParameter();
+                    break;
+
+                case LayerType.DETECTION_EVALUATE:
+                    expected_bottom.Add("input");
+                    expected_top.Add("output");
+                    m_rgLayerParameters[lt] = new DetectionEvaluateParameter();
                     break;
 
                 case LayerType.DATA:
@@ -778,7 +788,7 @@ namespace MyCaffe.param
                     expected_bottom.Add("label");
                     expected_top.Add("ndata");
                     expected_bottom.Add("nlabel");
-                    m_rgLayerParameters[LayerType.DATA_NORMALIZER] = new DataNormalizerParameter();
+                    m_rgLayerParameters[lt] = new DataNormalizerParameter();
                     break;
 
                 case LayerType.MEMORYDATA:
@@ -1453,6 +1463,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parmeter set when initialized with LayerType.DETECTION_EVALUATE
+        /// </summary>
+        public DetectionEvaluateParameter detection_evaluate_param
+        {
+            get { return (DetectionEvaluateParameter)m_rgLayerParameters[LayerType.DETECTION_EVALUATE]; }
+            set { m_rgLayerParameters[LayerType.DETECTION_EVALUATE] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.DATA
         /// </summary>
         public DataParameter data_param
@@ -2091,6 +2110,9 @@ namespace MyCaffe.param
 
                 case LayerType.DECONVOLUTION:
                     return "Deconvolution";
+
+                case LayerType.DETECTION_EVALUATE:
+                    return "DetectionEvaluate";
 
                 case LayerType.DROPOUT:
                     return "Dropout";
@@ -2762,6 +2784,10 @@ namespace MyCaffe.param
 
                 case "deconvolution":
                     return LayerType.DECONVOLUTION;
+
+                case "detectionevaluate":
+                case "detection_evaluate":
+                    return LayerType.DETECTION_EVALUATE;
 
                 case "dropout":
                     return LayerType.DROPOUT;

@@ -97,6 +97,7 @@
     <Compile Include="fillers\UniformFiller.cs" />
     <Compile Include="fillers\XavierFiller.cs" />
     <Compile Include="layers.ssd\MultiBoxLossLayer.cs" />
+    <Compile Include="layers.ssd\DetectionEvaluateLayer.cs" />
     <Compile Include="layers.ssd\PriorBoxLayer.cs" />
     <Compile Include="layers\DataNormalizerLayer.cs" />
     <Compile Include="layers.ssd\AnnotatedDataLayer.cs" />
@@ -193,6 +194,7 @@
     <Compile Include="MyCaffeControl.Designer.cs">
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="param.ssd\DetectionEvaluateParameter.cs" />
     <Compile Include="param.ui\CsvConverter.cs" />
     <Compile Include="param.ssd\BatchSampler.cs" />
     <Compile Include="param.ssd\AnnotatedDataParameter.cs" />
