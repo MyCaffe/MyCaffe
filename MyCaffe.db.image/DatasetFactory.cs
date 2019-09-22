@@ -354,7 +354,6 @@ namespace MyCaffe.db.image
             return rgImg;
         }
 
-
         /// <summary>
         /// Returns the list of raw images that have a source ID from a selected list.
         /// </summary>
@@ -371,7 +370,6 @@ namespace MyCaffe.db.image
             if (bLoadDebug)
                 img.DebugData = m_db.GetRawImageDebugData(img, out nFmt);
         }
-
 
         /// <summary>
         /// Save the SimpleDatum as a RawImageMean in the database for the open data source.
@@ -803,6 +801,17 @@ namespace MyCaffe.db.image
         public void DeleteLabels(int nSrcId = 0)
         {
             m_db.DeleteLabels(nSrcId);
+        }
+
+        /// <summary>
+        /// Activate (or deactivate) the labels specified for each of the source ID's specified.
+        /// </summary>
+        /// <param name="rgLabels">Specifies the labels.</param>
+        /// <param name="bActive">Specifies whether to activate (<i>true</i>) or deactivate (<i>false</i>) the labels.</param>
+        /// <param name="rgSrcId">Specifies the source ID's who's labels are to be activated.</param>
+        public void ActivateLabels(List<int> rgLabels, bool bActive, params int[] rgSrcId)
+        {
+            m_db.ActivateLabels(rgLabels, bActive, rgSrcId);
         }
 
         #endregion

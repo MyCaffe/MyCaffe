@@ -872,6 +872,42 @@ namespace MyCaffe.db.image
             return strOut.TrimEnd(',');
         }
 
+        /// <summary>
+        /// Activate (or deactivate) the labels specified for each of the source ID's specified.
+        /// </summary>
+        /// <param name="rgLabels">Specifies the labels.</param>
+        /// <param name="bActive">Specifies whether to activate (<i>true</i>) or deactivate (<i>false</i>) the labels.</param>
+        /// <param name="rgSrcId">Specifies the source ID's who's labels are to be activated.</param>
+        public void ActivateLabels(List<int> rgLabels, bool bActive, params int[] rgSrcId)
+        {
+            string strSQL = "UPDATE [dbo].[RawImages] SET [Active] = " + ((bActive) ? "1" : "0") + " WHERE (";
+
+            for (int i = 0; i < rgSrcId.Length; i++)
+            {
+                strSQL += "(SourceID = " + rgSrcId[i].ToString() + ")";
+
+                if (i < rgSrcId.Length - 1)
+                    strSQL += " OR ";
+            }
+
+            strSQL += ") AND (";
+
+            for (int i = 0; i < rgLabels.Count; i++)
+            {
+                strSQL += "(ActiveLabel = " + rgLabels[i].ToString() + ")";
+
+                if (i < rgLabels.Count - 1)
+                    strSQL += " OR ";
+            }
+
+            strSQL += ")";
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                entities.Database.ExecuteSqlCommand(strSQL);
+            }
+        }
+
         #endregion
 
 
