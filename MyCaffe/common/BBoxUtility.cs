@@ -767,6 +767,50 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Create a set of ground truth bounding boxes from the rgGtData.
+        /// </summary>
+        /// <param name="rgGtData">Specifies the 1 x 1 x nNumGt x 7 blob with ground truth initialization data.</param>
+        /// <param name="nNumGt">Specifies the number of ground truths.</param>
+        /// <param name="nBackgroundLabelId">Specifies the background label.</param>
+        /// <param name="bUseDifficultGt">Specifies whether or not to use the difficult ground truth.</param>
+        /// <returns>A dictionary containing the ground truths per label is returned.</returns>
+        public Dictionary<int, LabelBBox> GetGroundTruthEx(float[] rgGtData, int nNumGt, int nBackgroundLabelId, bool bUseDifficultGt)
+        {
+            Dictionary<int, LabelBBox> rgAllGtBboxes = new Dictionary<int, LabelBBox>();
+
+            for (int i = 0; i < nNumGt; i++)
+            {
+                int nStartIdx = i * 8;
+                int nItemId = (int)rgGtData[nStartIdx];
+                if (nItemId == -1)
+                    break;
+
+                int nLabel = (int)rgGtData[nStartIdx + 1];
+                m_log.CHECK_NE(nBackgroundLabelId, nLabel, "Found the background label in the dataset!");
+
+                bool bDifficult = (rgGtData[nStartIdx + 7] == 0) ? false : true;
+                // Skip reading the difficult ground truth.
+                if (!bUseDifficultGt && bDifficult)
+                    continue;
+
+                NormalizedBBox bbox = new NormalizedBBox(rgGtData[nStartIdx + 3],
+                                                         rgGtData[nStartIdx + 4],
+                                                         rgGtData[nStartIdx + 5],
+                                                         rgGtData[nStartIdx + 6],
+                                                         nLabel,
+                                                         bDifficult);
+                bbox.size = Size(bbox);
+
+                if (!rgAllGtBboxes.ContainsKey(nItemId))
+                    rgAllGtBboxes.Add(nItemId, new LabelBBox());
+
+                rgAllGtBboxes[nItemId].Add(nLabel, bbox);
+            }
+
+            return rgAllGtBboxes;
+        }
+
+        /// <summary>
         /// Find matches between a list of two bounding boxes.
         /// </summary>
         /// <param name="rgGtBboxes">Specifies a list of ground truth bounding boxes.</param>
