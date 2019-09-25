@@ -1160,6 +1160,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.DETECTION_EVALUATE:
                     return new DetectionEvaluateLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.DETECTION_OUTPUT:
+                    return new DetectionOutputLayer<T>(cuda, log, p);
+
                 case LayerParameter.LayerType.IM2COL:
                     return new Im2colLayer<T>(cuda, log, p);
 

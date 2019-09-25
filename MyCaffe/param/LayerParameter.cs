@@ -137,6 +137,10 @@ namespace MyCaffe.param
             /// </summary>
             DETECTION_EVALUATE,
             /// <summary>
+            /// Initializes a parameter for the DetectionOutputLayer.
+            /// </summary>
+            DETECTION_OUTPUT,
+            /// <summary>
             /// Initializes a parameter for the DataLayer.
             /// </summary>
             DATA,
@@ -773,6 +777,12 @@ namespace MyCaffe.param
                     expected_bottom.Add("input");
                     expected_top.Add("output");
                     m_rgLayerParameters[lt] = new DetectionEvaluateParameter();
+                    break;
+
+                case LayerType.DETECTION_OUTPUT:
+                    expected_bottom.Add("input");
+                    expected_top.Add("output");
+                    m_rgLayerParameters[lt] = new DetectionOutputParameter();
                     break;
 
                 case LayerType.DATA:
@@ -1472,6 +1482,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parmeter set when initialized with LayerType.DETECTION_OUTPUT
+        /// </summary>
+        public DetectionOutputParameter detection_output_param
+        {
+            get { return (DetectionOutputParameter)m_rgLayerParameters[LayerType.DETECTION_OUTPUT]; }
+            set { m_rgLayerParameters[LayerType.DETECTION_OUTPUT] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.DATA
         /// </summary>
         public DataParameter data_param
@@ -2113,6 +2132,9 @@ namespace MyCaffe.param
 
                 case LayerType.DETECTION_EVALUATE:
                     return "DetectionEvaluate";
+
+                case LayerType.DETECTION_OUTPUT:
+                    return "DetectionOutput";
 
                 case LayerType.DROPOUT:
                     return "Dropout";
@@ -2788,6 +2810,10 @@ namespace MyCaffe.param
                 case "detectionevaluate":
                 case "detection_evaluate":
                     return LayerType.DETECTION_EVALUATE;
+
+                case "detectionoutput":
+                case "detection_output":
+                    return LayerType.DETECTION_OUTPUT;
 
                 case "dropout":
                     return LayerType.DROPOUT;

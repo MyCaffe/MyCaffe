@@ -80,6 +80,7 @@
     <Compile Include="common\InternalThread.cs" />
     <Compile Include="common\Net.cs" />
     <Compile Include="common\PersistCaffe.cs" />
+    <Compile Include="common\PropertyTree.cs" />
     <Compile Include="common\ResultCollection.cs" />
     <Compile Include="common\SsdSampler.cs" />
     <Compile Include="common\SyncedMemory.cs" />
@@ -96,6 +97,7 @@
     <Compile Include="fillers\PositiveUnitballFiller.cs" />
     <Compile Include="fillers\UniformFiller.cs" />
     <Compile Include="fillers\XavierFiller.cs" />
+    <Compile Include="layers.ssd\DetectionOutputLayer.cs" />
     <Compile Include="layers.ssd\MultiBoxLossLayer.cs" />
     <Compile Include="layers.ssd\DetectionEvaluateLayer.cs" />
     <Compile Include="layers.ssd\PriorBoxLayer.cs" />
@@ -194,6 +196,9 @@
     <Compile Include="MyCaffeControl.Designer.cs">
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="param.ssd\LabelMap.cs" />
+    <Compile Include="param.ssd\SaveOutputParameter.cs" />
+    <Compile Include="param.ssd\DetectionOutputParameter.cs" />
     <Compile Include="param.ssd\DetectionEvaluateParameter.cs" />
     <Compile Include="param.ui\CsvConverter.cs" />
     <Compile Include="param.ssd\BatchSampler.cs" />
