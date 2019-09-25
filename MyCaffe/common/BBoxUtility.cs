@@ -1014,6 +1014,51 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Decode all bboxes in a batch.
+        /// </summary>
+        /// <param name="rgAllLocPreds">Specifies the batch of local predictions.</param>
+        /// <param name="rgPriorBboxes">Specifies the set of prior bboxes.</param>
+        /// <param name="rgrgfPrioVariances">Specifies the prior variances.</param>
+        /// <param name="nNum">Specifies the number of items in the batch.</param>
+        /// <param name="bShareLocation">Specifies whether or not to share locations.</param>
+        /// <param name="nNumLocClasses">Specifies the number of local classes.</param>
+        /// <param name="nBackgroundLabelId">Specifies the background label.</param>
+        /// <param name="codeType">Specifies the coding type.</param>
+        /// <param name="bVarianceEncodedInTarget">Specifies whether or not the variance is encoded in the target or not.</param>
+        /// <param name="bClip">Specifies whether or not to clip.</param>
+        /// <returns>The decoded Bboxes are returned.</returns>
+        public List<LabelBBox> DecodeAll(List<LabelBBox> rgAllLocPreds, List<NormalizedBBox> rgPriorBboxes, List<List<float>> rgrgfPrioVariances, int nNum, bool bShareLocation, int nNumLocClasses, int nBackgroundLabelId, PriorBoxParameter.CodeType codeType, bool bVarianceEncodedInTarget, bool bClip)
+        {
+            List<LabelBBox> rgAllDecodedBboxes = new List<LabelBBox>();
+
+            m_log.CHECK_EQ(rgAllLocPreds.Count, nNum, "The number of Loc Preds does not equal the expected Num!");
+
+            for (int i = 0; i < nNum; i++)
+            {
+                // Decode predictions into bboxes.
+                LabelBBox decode_bboxes = new LabelBBox();
+
+                for (int c = 0; c < nNumLocClasses; c++)
+                {
+                    int nLabel = (bShareLocation) ? -1 : c;
+
+                    // Ignore background class.
+                    if (nLabel == nBackgroundLabelId)
+                        continue;
+
+                    // Something bad happened if there are not predictions for current label.
+                    if (!rgAllLocPreds[i].Contains(nLabel))
+                        m_log.FAIL("Could not find the location predictions for label '" + nLabel.ToString() + "'!");
+
+                    List<NormalizedBBox> rgLabelLocPreds = rgAllLocPreds[i][nLabel];
+                    decode_bboxes[nLabel] = Decode(rgPriorBboxes, rgrgfPrioVariances, codeType, bVarianceEncodedInTarget, bClip, rgLabelLocPreds);
+                }
+            }
+
+            return rgAllDecodedBboxes;
+        }
+
+        /// <summary>
         /// Decode a set of bounding box.
         /// </summary>
         /// <param name="rgPriorBbox">Specifies an list of prior bounding boxs.</param>
@@ -1837,7 +1882,7 @@ namespace MyCaffe.common
             if (p.nms_param != null)
             {
                 fNmsThreshold = p.nms_param.nms_threshold;
-                nTopK = p.nms_param.top_k;
+                nTopK = p.nms_param.top_k.GetValueOrDefault(1);
             }
 
             int nSampleSize = p.sample_size;
