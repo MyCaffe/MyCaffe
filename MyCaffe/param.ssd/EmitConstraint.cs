@@ -36,7 +36,9 @@ namespace MyCaffe.param.ssd
             MIN_OVERLAP = 1
         }
 
-        /** @copydoc LayerParameterBase */
+        /// <summary>
+        /// The constructor.
+        /// </summary>
         public EmitConstraint()
         {
         }

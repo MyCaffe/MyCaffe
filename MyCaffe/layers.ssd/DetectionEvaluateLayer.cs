@@ -38,9 +38,7 @@ namespace MyCaffe.layers.ssd
         /// </summary>
         /// <param name="cuda">Specifies the CudaDnn connection to Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
-        /// <param name="p">Specifies the LayerParameter of type PERMUTE with parameter permute_param,
-        /// with options:
-        ///   - order Specifies the order of the permuations.
+        /// <param name="p">Specifies the LayerParameter of type DETECTION_EVALUATE with parameter detection_evaluate_param.
         /// </param>
         public DetectionEvaluateLayer(CudaDnn<T> cuda, Log log, LayerParameter p)
             : base(cuda, log, p)
@@ -73,7 +71,7 @@ namespace MyCaffe.layers.ssd
         }
 
         /// <summary>
-        /// Returns the exact number of required bottom (input) Blobs: data
+        /// Returns the exact number of required bottom (input) Blobs: det res, gt
         /// </summary>
         public override int ExactNumBottomBlobs
         {
@@ -81,7 +79,7 @@ namespace MyCaffe.layers.ssd
         }
 
         /// <summary>
-        /// Returns the exact number of required top (output) Blobs: permute
+        /// Returns the exact number of required top (output) Blobs: det
         /// </summary>
         public override int ExactNumTopBlobs
         {
