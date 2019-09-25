@@ -19,7 +19,7 @@ namespace MyCaffe.param.ssd
     public class NonMaximumSuppressionParameter
     {
         float m_fNmsThreshold = 0.3f;
-        int m_nTopK = 1;
+        int? m_nTopK = 1;
         float m_fEta = 1.0f;
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the maximum number of results kept.
         /// </summary>
-        public int top_k
+        public int? top_k
         {
             get { return m_nTopK; }
             set { m_nTopK = value; }
@@ -88,7 +88,10 @@ namespace MyCaffe.param.ssd
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             rgChildren.Add(new RawProto("nms_threshold", nms_threshold.ToString()));
-            rgChildren.Add(new RawProto("top_k", top_k.ToString()));
+
+            if (top_k.HasValue)
+                rgChildren.Add(new RawProto("top_k", top_k.Value.ToString()));
+
             rgChildren.Add(new RawProto("eta", eta.ToString()));
 
             return new RawProto(strName, "", rgChildren);
