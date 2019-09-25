@@ -78,6 +78,10 @@ namespace MyCaffe.basecode
 
                 return m_rgItems[nLabel];
             }
+            set
+            {
+                m_rgItems[nLabel] = value;
+            }
         }
 
         /// <summary>
