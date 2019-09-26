@@ -485,33 +485,24 @@ namespace MyCaffe.test
             return (T)Convert.ChangeType(df, typeof(T));
         }
 
+        protected float[] convertF(T[] rg)
+        {
+            return Utility.ConvertVecF<T>(rg);
+        }
+
         protected double[] convert(T[] rg)
         {
-            double[] rgdf = new double[rg.Length];
-            Array.Copy(rg, rgdf, rg.Length);
-
-            return rgdf;
+            return Utility.ConvertVec<T>(rg);
         }
 
         protected T[] convert(double[] rg)
         {
-            T[] rgt = new T[rg.Length];
-
-            if (typeof(T) == typeof(float))
-                Array.Copy(Array.ConvertAll(rg, p => Convert.ToSingle(p)), rgt, rg.Length);
-            else
-                Array.Copy(rg, rgt, rg.Length);
-
-            return rgt;
+            return Utility.ConvertVec<T>(rg);
         }
 
         protected T[] convert(float[] rg)
         {
-            T[] rgt = new T[rg.Length];
-
-            Array.Copy(rg, rgt, rg.Length);
-
-            return rgt;
+            return Utility.ConvertVec<T>(rg);
         }
     }
 }
