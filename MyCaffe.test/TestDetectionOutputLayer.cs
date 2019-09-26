@@ -175,7 +175,6 @@ namespace MyCaffe.test
         int m_nNumClasses = 2;
         bool m_bShareLocation = true;
         int m_nNumLocClasses = 1;
-        int m_nBackgroundLabelId = 0;
         float m_fNmsTheshold = 0.1f;
         int m_nTopK = 2;
         Blob<T> m_blobBottomLoc;
@@ -371,7 +370,7 @@ namespace MyCaffe.test
             p.detection_output_param.nms_param.nms_threshold = m_fNmsTheshold;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            FillLocData();
+            FillLocData(true);
 
             layer.Setup(BottomVec, TopVec);
             layer.Forward(BottomVec, TopVec);
@@ -399,7 +398,7 @@ namespace MyCaffe.test
             p.detection_output_param.nms_param.top_k = m_nTopK;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            FillLocData();
+            FillLocData(true);
 
             layer.Setup(BottomVec, TopVec);
             layer.Forward(BottomVec, TopVec);
@@ -423,7 +422,7 @@ namespace MyCaffe.test
             p.detection_output_param.nms_param.nms_threshold = m_fNmsTheshold;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            FillLocData();
+            FillLocData(false);
 
             layer.Setup(BottomVec, TopVec);
             layer.Forward(BottomVec, TopVec);
@@ -456,7 +455,7 @@ namespace MyCaffe.test
             p.detection_output_param.nms_param.top_k = m_nTopK;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            FillLocData();
+            FillLocData(false);
 
             layer.Setup(BottomVec, TopVec);
             layer.Forward(BottomVec, TopVec);
@@ -483,7 +482,7 @@ namespace MyCaffe.test
             p.detection_output_param.nms_param.nms_threshold = m_fNmsTheshold;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            FillLocData();
+            FillLocData(false);
 
             layer.Setup(BottomVec, TopVec);
             layer.Forward(BottomVec, TopVec);
@@ -510,7 +509,7 @@ namespace MyCaffe.test
             p.detection_output_param.nms_param.top_k = m_nTopK;
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null);
 
-            FillLocData();
+            FillLocData(false);
 
             layer.Setup(BottomVec, TopVec);
             layer.Forward(BottomVec, TopVec);
