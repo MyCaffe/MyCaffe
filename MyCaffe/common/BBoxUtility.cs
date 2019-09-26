@@ -251,17 +251,8 @@ namespace MyCaffe.common
 
             rgItems = rgItems.OrderByDescending(p => p.Item1).ToList();
 
-            if (nTopK > -1)
-            {
-                List<Tuple<float, int>> rgItems1 = new List<Tuple<float, int>>();
-
-                for (int i = 0; i < nTopK; i++)
-                {
-                    rgItems1.Add(rgItems[i]);
-                }
-
-                rgItems = rgItems1;
-            }
+            if (nTopK > -1 && nTopK < rgItems.Count)
+                rgItems = rgItems.Take(nTopK).ToList();
 
             return rgItems;
         }
@@ -1053,6 +1044,8 @@ namespace MyCaffe.common
                     List<NormalizedBBox> rgLabelLocPreds = rgAllLocPreds[i][nLabel];
                     decode_bboxes[nLabel] = Decode(rgPriorBboxes, rgrgfPrioVariances, codeType, bVarianceEncodedInTarget, bClip, rgLabelLocPreds);
                 }
+
+                rgAllDecodedBboxes.Add(decode_bboxes);
             }
 
             return rgAllDecodedBboxes;
