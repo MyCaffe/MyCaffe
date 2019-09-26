@@ -154,7 +154,6 @@ namespace MyCaffe.param.ssd
         public static LabelMap FromProto(RawProto rp)
         {
             LabelMap p = new LabelMap();
-            string strVal;
 
             RawProtoCollection col = rp.FindChildren("item");
             foreach (RawProto child in col)
@@ -220,11 +219,11 @@ namespace MyCaffe.param.ssd
         /// Copy the source object.
         /// </summary>
         /// <param name="src">Specifies the source data.</param>
-        public void Copy(LabelMapItem l)
+        public void Copy(LabelMapItem src)
         {
-            m_strName = l.m_strName;
-            m_strDisplay = l.m_strDisplay;
-            m_nLabel = l.m_nLabel;
+            m_strName = src.m_strName;
+            m_strDisplay = src.m_strDisplay;
+            m_nLabel = src.m_nLabel;
         }
 
         /// <summary>
