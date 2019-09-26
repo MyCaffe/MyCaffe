@@ -19,7 +19,7 @@ namespace MyCaffe.param.ssd
     public class NonMaximumSuppressionParameter
     {
         float m_fNmsThreshold = 0.3f;
-        int? m_nTopK = 1;
+        int? m_nTopK = null;
         float m_fEta = 1.0f;
 
         /// <summary>
