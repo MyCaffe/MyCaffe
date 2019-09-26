@@ -431,7 +431,7 @@ namespace MyCaffe.layers.ssd
                     List<int> rgIndexes;
                     m_bboxUtil.ApplyNMSFast(rgBboxes, rgfScores, m_fConfidenceThreshold, m_fNmsThreshold, m_fEta, m_nTopK, out rgIndexes);
                     rgIndices[c] = rgIndexes;
-                    nNumDet += rgIndexes.Count;
+                    nNumDet += rgIndices[c].Count;
                 }
 
                 if (m_nKeepTopK > -1 && nNumDet > m_nKeepTopK)
@@ -532,10 +532,10 @@ namespace MyCaffe.layers.ssd
                     int nLocLabel = (m_bShareLocations) ? -1 : nLabel;
 
                     // Something bad happened if therea re no predictions for the current label.
-                    if (!decode_bboxes.Contains(nLabel))
+                    if (!decode_bboxes.Contains(nLocLabel))
                         m_log.FAIL("COuld not find location predictions for label '" + nLabel.ToString() + "'!");
 
-                    List<NormalizedBBox> rgBboxes = decode_bboxes[nLabel];
+                    List<NormalizedBBox> rgBboxes = decode_bboxes[nLocLabel];
                     List<int> rgIndices = kv.Value;
 
                     if (m_bNeedSave)
@@ -708,6 +708,8 @@ namespace MyCaffe.layers.ssd
                     // TBD.
                 }
             }
+
+            colTop[0].mutable_cpu_data = convert(rgfTopData);
         }
 
         /// <summary>
