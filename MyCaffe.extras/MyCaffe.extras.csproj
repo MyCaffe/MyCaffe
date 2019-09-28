@@ -63,6 +63,10 @@
       <Project>{642BA581-59CB-445E-8D7D-81E67B748D77}</Project>
       <Name>MyCaffe.db.image</Name>
     </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.layers.beta\MyCaffe.layers.beta.csproj">
+      <Project>{db6986db-ab61-4bd5-828e-a8eda0a6f56e}</Project>
+      <Name>MyCaffe.layers.beta</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MyCaffe\MyCaffe.csproj">
       <Project>{28e430dd-bd6c-4a4c-9454-1eeb4ad63a5c}</Project>
       <Name>MyCaffe</Name>
