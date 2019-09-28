@@ -390,7 +390,7 @@ namespace MyCaffe.test
 
             project = getProject();
 
-            ctrl.Load(Phase.NONE, project, db.image.IMGDB_LABEL_SELECTION_METHOD.NONE, db.image.IMGDB_IMAGE_SELECTION_METHOD.NONE);
+            ctrl.Load(Phase.NONE, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
 
             ctrl.Dispose();
         }
@@ -402,7 +402,7 @@ namespace MyCaffe.test
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
             ProjectEx project = getProject();
 
-            ctrl.Load(Phase.NONE, project, db.image.IMGDB_LABEL_SELECTION_METHOD.NONE, db.image.IMGDB_IMAGE_SELECTION_METHOD.NONE);
+            ctrl.Load(Phase.NONE, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
 
             int nLabel;
             int nLabel2;
@@ -441,7 +441,7 @@ namespace MyCaffe.test
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
             ProjectEx project = getProject();
 
-            ctrl.Load(Phase.TRAIN, project, db.image.IMGDB_LABEL_SELECTION_METHOD.NONE, db.image.IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+            ctrl.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
             ctrl.Train();
 
             ctrl.Dispose();
@@ -454,7 +454,7 @@ namespace MyCaffe.test
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, rgGpu.ToList(), m_cuda.Path);
             ProjectEx project = getProject();
 
-            ctrl.Load(Phase.TRAIN, project, db.image.IMGDB_LABEL_SELECTION_METHOD.NONE, db.image.IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+            ctrl.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
             ctrl.Train();
 
             ctrl.Dispose();
@@ -467,7 +467,7 @@ namespace MyCaffe.test
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
             ProjectEx project = getProject();
 
-            ctrl.Load(Phase.TEST, project, db.image.IMGDB_LABEL_SELECTION_METHOD.NONE, db.image.IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+            ctrl.Load(Phase.TEST, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
             ctrl.Train();
             double dfLoss = ctrl.Test();
 
@@ -483,7 +483,7 @@ namespace MyCaffe.test
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
             ProjectEx project = getProject();
 
-            ctrl.Load(Phase.TRAIN, project, db.image.IMGDB_LABEL_SELECTION_METHOD.NONE, db.image.IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+            ctrl.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
             ctrl.Train();
             ctrl.TestMany(1000, false);
 
@@ -497,7 +497,7 @@ namespace MyCaffe.test
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
             ProjectEx project = getProject();
 
-            ctrl.Load(Phase.TRAIN, project, db.image.IMGDB_LABEL_SELECTION_METHOD.NONE, db.image.IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+            ctrl.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
             ctrl.Train();
             ctrl.TestMany(1000, true);
 
@@ -513,7 +513,7 @@ namespace MyCaffe.test
             string strDs = createSimpleDataset();
             ProjectEx project = getSimpleProject(strDs);
 
-            ctrl.Load(Phase.TRAIN, project, db.image.IMGDB_LABEL_SELECTION_METHOD.NONE, db.image.IMGDB_IMAGE_SELECTION_METHOD.NONE);
+            ctrl.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
             ctrl.Train();
             ctrl.TestMany(1000, false);
 
