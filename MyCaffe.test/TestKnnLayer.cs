@@ -11,7 +11,6 @@ using MyCaffe.layers;
 using MyCaffe.db.image;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.data;
-using MyCaffe.layers.alpha;
 using MyCaffe.layers.beta;
 
 /// <summary>

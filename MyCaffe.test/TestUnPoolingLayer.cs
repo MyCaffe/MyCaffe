@@ -7,7 +7,6 @@ using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.fillers;
 using MyCaffe.layers;
-using MyCaffe.layers.alpha;
 
 namespace MyCaffe.test
 {

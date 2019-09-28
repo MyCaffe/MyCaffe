@@ -242,6 +242,18 @@
       <Project>{C14BEDC8-FF66-4118-BE66-675F26BE7EE0}</Project>
       <Name>MyCaffe.gym</Name>
     </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.layers.alpha\MyCaffe.layers.alpha.csproj">
+      <Project>{4e057228-71d3-4575-ae50-71e6fc970501}</Project>
+      <Name>MyCaffe.layers.alpha</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.layers.beta\MyCaffe.layers.beta.csproj">
+      <Project>{db6986db-ab61-4bd5-828e-a8eda0a6f56e}</Project>
+      <Name>MyCaffe.layers.beta</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.layers.ssd\MyCaffe.layers.ssd.csproj">
+      <Project>{679fabca-e889-428c-a59e-261af1af1cf2}</Project>
+      <Name>MyCaffe.layers.ssd</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MyCaffe.preprocessor\MyCaffe.preprocessor.csproj">
       <Project>{94643CDE-A28A-473B-8A50-86471A47D33D}</Project>
       <Name>MyCaffe.preprocessor</Name>
