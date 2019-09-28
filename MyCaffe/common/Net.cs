@@ -10,7 +10,6 @@ using MyCaffe.db.image;
 using MyCaffe.param;
 using MyCaffe.data;
 using MyCaffe.layers;
-using MyCaffe.layers.alpha;
 using MyCaffe.fillers;
 
 namespace MyCaffe.common
