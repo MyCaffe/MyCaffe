@@ -49,6 +49,7 @@
     <Reference Include="System.Drawing" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Security" />
+    <Reference Include="System.ServiceModel" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -62,6 +63,7 @@
     <Compile Include="BucketCollection.cs" />
     <Compile Include="DictionaryMap.cs" />
     <Compile Include="LabelBBox.cs" />
+    <Compile Include="LabelMapping.cs" />
     <Compile Include="NormalizedBBox.cs" />
     <Compile Include="Valuemap.cs" />
     <Compile Include="Bytemap.cs" />
