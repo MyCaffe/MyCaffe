@@ -7,7 +7,7 @@ using MyCaffe.common;
 using MyCaffe.layers;
 using MyCaffe.param;
 
-namespace MyCaffe.layers.beta
+namespace MyCaffe.layers.nt
 {
     /// <summary>
     /// The GramLayer computes the Gram matrix used in Neural Style.

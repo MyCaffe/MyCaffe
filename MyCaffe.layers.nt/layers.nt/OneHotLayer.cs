@@ -7,7 +7,7 @@ using MyCaffe.common;
 using MyCaffe.param;
 using MyCaffe.fillers;
 
-namespace MyCaffe.layers.beta
+namespace MyCaffe.layers.nt
 {
     /// <summary>
     /// The OneHotLayer is a layer for converting real values into a one-hot vector where a 1 is placed

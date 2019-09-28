@@ -48,14 +48,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="LayerFactory.cs" />
-    <Compile Include="layers.beta\EventLayer.cs" />
-    <Compile Include="layers.beta\GramLayer.cs" />
     <Compile Include="layers.beta\GRNLayer.cs" />
     <Compile Include="layers.beta\KnnLayer.cs" />
     <Compile Include="layers.beta\Normalization1Layer.cs" />
-    <Compile Include="layers.beta\OneHotLayer.cs" />
-    <Compile Include="layers.beta\ScalarLayer.cs" />
-    <Compile Include="layers.beta\TVLossLayer.cs" />
     <Compile Include="layers.beta\UnPoolingLayer.cs" />
     <Compile Include="layers.beta\UnPoolingLayer1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

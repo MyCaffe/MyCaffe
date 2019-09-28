@@ -9,9 +9,9 @@ using MyCaffe.db.image;
 using MyCaffe.param;
 
 /// <summary>
-/// The MyCaffe.layers.ssd namespace contains all SSD related layers.
+/// The MyCaffe.layers.nt namespace contains all Neural Transfer related layers.
 /// </summary>
-namespace MyCaffe.layers.beta
+namespace MyCaffe.layers.nt
 {
     /// <summary>
     /// The LayerFactor is responsible for creating all layers implemented in the MyCaffe.layers.ssd namespace.
@@ -31,20 +31,20 @@ namespace MyCaffe.layers.beta
         {
             switch (p.type)
             {
-                case LayerParameter.LayerType.GRN:
-                    return new GRNLayer<double>(cuda, log, p);
+                case LayerParameter.LayerType.EVENT:
+                    return new EventLayer<double>(cuda, log, p);
 
-                case LayerParameter.LayerType.KNN:
-                    return new KnnLayer<double>(cuda, log, p);
+                case LayerParameter.LayerType.GRAM:
+                    return new GramLayer<double>(cuda, log, p);
 
-                case LayerParameter.LayerType.NORMALIZATION1:
-                    return new Normalization1Layer<double>(cuda, log, p);
+                case LayerParameter.LayerType.ONEHOT:
+                    return new OneHotLayer<double>(cuda, log, p);
 
-                case LayerParameter.LayerType.UNPOOLING1:
-                    return new UnPoolingLayer1<double>(cuda, log, p);
+                case LayerParameter.LayerType.SCALAR:
+                    return new ScalarLayer<double>(cuda, log, p);
 
-                case LayerParameter.LayerType.UNPOOLING:
-                    return new UnPoolingLayer<double>(cuda, log, p);
+                case LayerParameter.LayerType.TV_LOSS:
+                    return new TVLossLayer<double>(cuda, log, p);
 
                 default:
                     return null;
@@ -64,20 +64,20 @@ namespace MyCaffe.layers.beta
         {
             switch (p.type)
             {
-                case LayerParameter.LayerType.GRN:
-                    return new GRNLayer<float>(cuda, log, p);
+                case LayerParameter.LayerType.EVENT:
+                    return new EventLayer<float>(cuda, log, p);
 
-                case LayerParameter.LayerType.KNN:
-                    return new KnnLayer<float>(cuda, log, p);
+                case LayerParameter.LayerType.GRAM:
+                    return new GramLayer<float>(cuda, log, p);
 
-                case LayerParameter.LayerType.NORMALIZATION1:
-                    return new Normalization1Layer<float>(cuda, log, p);
+                case LayerParameter.LayerType.ONEHOT:
+                    return new OneHotLayer<float>(cuda, log, p);
 
-                case LayerParameter.LayerType.UNPOOLING1:
-                    return new UnPoolingLayer1<float>(cuda, log, p);
+                case LayerParameter.LayerType.SCALAR:
+                    return new ScalarLayer<float>(cuda, log, p);
 
-                case LayerParameter.LayerType.UNPOOLING:
-                    return new UnPoolingLayer<float>(cuda, log, p);
+                case LayerParameter.LayerType.TV_LOSS:
+                    return new TVLossLayer<float>(cuda, log, p);
 
                 default:
                     return null;

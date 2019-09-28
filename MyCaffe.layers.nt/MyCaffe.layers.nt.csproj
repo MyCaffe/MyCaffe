@@ -4,13 +4,14 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{9376B860-9896-40E5-8746-8ABF1F0A8B3D}</ProjectGuid>
+    <ProjectGuid>{BAC34BE4-818E-4F59-821B-FECFD6C797AA}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MyCaffe.extras</RootNamespace>
-    <AssemblyName>MyCaffe.extras</AssemblyName>
+    <RootNamespace>MyCaffe.layers.nt</RootNamespace>
+    <AssemblyName>MyCaffe.layers.nt</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -33,12 +34,11 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>mycaffe.extras.pfx</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>mycaffe.layers.nt.pfx</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -47,12 +47,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DeepDraw.cs" />
-    <Compile Include="NeuralStyleTransfer.cs" />
+    <Compile Include="LayerFactory.cs" />
+    <Compile Include="layers.nt\EventLayer.cs" />
+    <Compile Include="layers.nt\GramLayer.cs" />
+    <Compile Include="layers.nt\OneHotLayer.cs" />
+    <Compile Include="layers.nt\ScalarLayer.cs" />
+    <Compile Include="layers.nt\TVLossLayer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="mycaffe.extras.pfx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MyCaffe.basecode\MyCaffe.basecode.csproj">
@@ -60,17 +61,16 @@
       <Name>MyCaffe.basecode</Name>
     </ProjectReference>
     <ProjectReference Include="..\MyCaffe.db.image\MyCaffe.db.image.csproj">
-      <Project>{642BA581-59CB-445E-8D7D-81E67B748D77}</Project>
+      <Project>{642ba581-59cb-445e-8d7d-81e67b748d77}</Project>
       <Name>MyCaffe.db.image</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\MyCaffe.layers.nt\MyCaffe.layers.nt.csproj">
-      <Project>{bac34be4-818e-4f59-821b-fecfd6c797aa}</Project>
-      <Name>MyCaffe.layers.nt</Name>
     </ProjectReference>
     <ProjectReference Include="..\MyCaffe\MyCaffe.csproj">
       <Project>{28e430dd-bd6c-4a4c-9454-1eeb4ad63a5c}</Project>
       <Name>MyCaffe</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="mycaffe.layers.nt.pfx" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

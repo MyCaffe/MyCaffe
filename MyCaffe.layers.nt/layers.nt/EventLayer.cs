@@ -9,7 +9,7 @@ using MyCaffe.param;
 /// <summary>
 /// The MyCaffe.layers.beta namespace contains all early release layers that have a fluid and changing code base.
 /// </summary>
-namespace MyCaffe.layers.beta
+namespace MyCaffe.layers.nt
 {
     /// <summary>
     /// The EventLayer provides an event that fires on the forward pass and another that fires on the backward pass.

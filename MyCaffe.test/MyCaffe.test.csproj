@@ -250,6 +250,10 @@
       <Project>{db6986db-ab61-4bd5-828e-a8eda0a6f56e}</Project>
       <Name>MyCaffe.layers.beta</Name>
     </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.layers.nt\MyCaffe.layers.nt.csproj">
+      <Project>{bac34be4-818e-4f59-821b-fecfd6c797aa}</Project>
+      <Name>MyCaffe.layers.nt</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MyCaffe.layers.ssd\MyCaffe.layers.ssd.csproj">
       <Project>{679fabca-e889-428c-a59e-261af1af1cf2}</Project>
       <Name>MyCaffe.layers.ssd</Name>

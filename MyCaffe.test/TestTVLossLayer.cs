@@ -11,7 +11,7 @@ using MyCaffe.layers;
 using MyCaffe.db.image;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.data;
-using MyCaffe.layers.beta;
+using MyCaffe.layers.nt;
 
 /// <summary>
 /// Testing the TVLoss layer.
