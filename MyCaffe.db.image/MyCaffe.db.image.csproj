@@ -109,7 +109,6 @@
     <Compile Include="LabelBoost.cs">
       <DependentUpon>DNNModel.tt</DependentUpon>
     </Compile>
-    <Compile Include="LabelMapping.cs" />
     <Compile Include="Labelset.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="ModelGroup.cs">
