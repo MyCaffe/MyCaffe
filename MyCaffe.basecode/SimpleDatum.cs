@@ -735,6 +735,36 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Set the data to the array specified.
+        /// </summary>
+        /// <param name="rgdf">Specifies the data to set.</param>
+        /// <param name="nLabel">Specifies the label to set.</param>
+        /// <remarks>
+        /// The data of the array is cast to either (double) for real data, or (byte) for the byte data.
+        /// </remarks>
+        public void SetData(double[] rgdf, int nLabel)
+        {
+            if (rgdf.Length != ItemCount)
+                throw new Exception("The array does not match the ItemCount!");
+
+            m_nLabel = nLabel;
+
+            if (m_bIsRealData)
+            {
+                m_rgRealData = new double[rgdf.Length];
+                Array.Copy(rgdf, m_rgRealData, rgdf.Length);
+            }
+            else
+            {
+                m_rgByteData = new byte[rgdf.Length];
+                for (int i = 0; i < rgdf.Length; i++)
+                {
+                    m_rgByteData[i] = (byte)(int)rgdf[i];
+                }
+            }
+        }
+
+        /// <summary>
         /// Sets the label.
         /// </summary>
         /// <param name="nLabel">Specifies the label.</param>
@@ -1348,6 +1378,24 @@ namespace MyCaffe.basecode
             if (m_rgByteData == null)
                 throw new Exception("Bytemaps are only supported with byte based data.");
             return new Bytemap(m_nChannels, m_nHeight, m_nWidth, m_rgByteData);
+        }
+
+        /// <summary>
+        /// Accumulate a portion of a SimpleDatum to calculate the mean value.
+        /// </summary>
+        /// <param name="rgdfMean">Specifies the accumulated mean value.</param>
+        /// <param name="sd">Specifies the SimpleDatum to add to the mean.</param>
+        /// <param name="nTotal">Specifies the overall total used to calculate the portion of the sd to add to the mean value.</param>
+        public static void AccumulateMean(ref double[] rgdfMean, SimpleDatum sd, int nTotal)
+        {
+            if (rgdfMean == null)
+                rgdfMean = new double[sd.ItemCount];
+
+            for (int i = 0; i < sd.ItemCount; i++)
+            {
+                double dfVal = (sd.ByteData != null) ? (double)sd.ByteData[i] : sd.RealData[i];
+                rgdfMean[i] += dfVal / nTotal;
+            }
         }
 
         /// <summary>
