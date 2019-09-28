@@ -97,21 +97,9 @@
     <Compile Include="fillers\PositiveUnitballFiller.cs" />
     <Compile Include="fillers\UniformFiller.cs" />
     <Compile Include="fillers\XavierFiller.cs" />
-    <Compile Include="layers.ssd\DetectionOutputLayer.cs" />
-    <Compile Include="layers.ssd\MultiBoxLossLayer.cs" />
-    <Compile Include="layers.ssd\DetectionEvaluateLayer.cs" />
-    <Compile Include="layers.ssd\PriorBoxLayer.cs" />
+    <Compile Include="Interfaces.cs" />
     <Compile Include="layers\DataNormalizerLayer.cs" />
-    <Compile Include="layers.ssd\AnnotatedDataLayer.cs" />
-    <Compile Include="layers.ssd\PermuteLayer.cs" />
-    <Compile Include="layers.ssd\SmoothL1LossLayer.cs" />
-    <Compile Include="layers.ssd\Normalization2Layer.cs" />
-    <Compile Include="layers.beta\OneHotLayer.cs" />
-    <Compile Include="layers.beta\EventLayer.cs" />
-    <Compile Include="layers.beta\ScalarLayer.cs" />
     <Compile Include="layers\ParameterLayer.cs" />
-    <Compile Include="layers.beta\TVLossLayer.cs" />
-    <Compile Include="layers.beta\GramLayer.cs" />
     <Compile Include="layers\CropLayer.cs" />
     <Compile Include="layers\GradientScaleLayer.cs" />
     <Compile Include="layers\MemoryLossLayer.cs" />
@@ -121,14 +109,6 @@
     <Compile Include="layers\MemoryDataLayer.cs" />
     <Compile Include="layers\DebugLayer.cs" />
     <Compile Include="layers\SoftmaxLayer.cs" />
-    <Compile Include="layers.alpha\BinaryHashLayer.cs" />
-    <Compile Include="layers.beta\GRNLayer.cs" />
-    <Compile Include="layers.alpha\TripletDataLayer.cs" />
-    <Compile Include="layers.beta\KnnLayer.cs" />
-    <Compile Include="layers.alpha\TripletSelectLayer.cs" />
-    <Compile Include="layers.alpha\TripletLossLayer.cs" />
-    <Compile Include="layers.alpha\TripletLossSimpleLayer.cs" />
-    <Compile Include="layers.beta\Normalization1Layer.cs" />
     <Compile Include="layers\SPPLayer.cs" />
     <Compile Include="layers\BatchReindexLayer.cs" />
     <Compile Include="layers\EmbedLayer.cs" />
@@ -188,14 +168,13 @@
     <Compile Include="layers\SoftmaxLossLayer.cs" />
     <Compile Include="layers\SplitLayer.cs" />
     <Compile Include="layers\TanhLayer.cs" />
-    <Compile Include="layers.beta\UnPoolingLayer1.cs" />
-    <Compile Include="layers.beta\UnPoolingLayer.cs" />
     <Compile Include="MyCaffeControl.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="MyCaffeControl.Designer.cs">
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="param.ssd\VideoDataParameter.cs" />
     <Compile Include="param.ssd\LabelMap.cs" />
     <Compile Include="param.ssd\SaveOutputParameter.cs" />
     <Compile Include="param.ssd\DetectionOutputParameter.cs" />

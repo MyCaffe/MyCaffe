@@ -9,10 +9,8 @@ using MyCaffe.basecode;
 using MyCaffe.db.image;
 using MyCaffe.common;
 using MyCaffe.param;
-using MyCaffe.layers.alpha;
-using MyCaffe.layers.beta;
-using MyCaffe.layers_beta;
-using MyCaffe.layers.ssd;
+using System.IO;
+using System.Reflection;
 
 /// <summary>
 /// The MyCaffe.layers namespace contains all layers that have a solidified code base, including the Layer class.
@@ -1118,9 +1116,6 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.ACCURACY:
                     return new AccuracyLayer<T>(cuda, log, p);
 
-                case LayerParameter.LayerType.ANNOTATED_DATA:
-                    return new AnnotatedDataLayer<T>(cuda, log, p, imgDb, evtCancel);
-
                 case LayerParameter.LayerType.ARGMAX:
                     return new ArgMaxLayer<T>(cuda, log, p);
 
@@ -1135,9 +1130,6 @@ namespace MyCaffe.layers
 
                 case LayerParameter.LayerType.BIAS:
                     return new BiasLayer<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.BINARYHASH:
-                    return new BinaryHashLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.CLIP:
                     return new ClipLayer<T>(cuda, log, p);
@@ -1156,12 +1148,6 @@ namespace MyCaffe.layers
 
                 case LayerParameter.LayerType.DECONVOLUTION:
                     return new DeconvolutionLayer<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.DETECTION_EVALUATE:
-                    return new DetectionEvaluateLayer<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.DETECTION_OUTPUT:
-                    return new DetectionOutputLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.IM2COL:
                     return new Im2colLayer<T>(cuda, log, p);
@@ -1193,9 +1179,6 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.EUCLIDEAN_LOSS:
                     return new EuclideanLossLayer<T>(cuda, log, p);
 
-                case LayerParameter.LayerType.EVENT:
-                    return new EventLayer<T>(cuda, log, p);
-
                 case LayerParameter.LayerType.EXP:
                     return new ExpLayer<T>(cuda, log, p);
 
@@ -1205,14 +1188,8 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.FLATTEN:
                     return new FlattenLayer<T>(cuda, log, p);
 
-                case LayerParameter.LayerType.GRN:
-                    return new GRNLayer<T>(cuda, log, p);
-
                 case LayerParameter.LayerType.GRADIENTSCALER:
                     return new GradientScaleLayer<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.GRAM:
-                    return new GramLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.HINGE_LOSS:
                     return new HingeLossLayer<T>(cuda, log, p);
@@ -1225,9 +1202,6 @@ namespace MyCaffe.layers
 
                 case LayerParameter.LayerType.INPUT:
                     return new InputLayer<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.KNN:
-                    return new KnnLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.LOG:
                     return new LogLayer<T>(cuda, log, p);
@@ -1244,47 +1218,23 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.MEMORY_LOSS:
                     return new MemoryLossLayer<T>(cuda, log, p);
 
-                case LayerParameter.LayerType.MULTIBOX_LOSS:
-                    return new MultiBoxLossLayer<T>(cuda, log, p);
-
                 case LayerParameter.LayerType.MULTINOMIALLOGISTIC_LOSS:
                     return new MultinomialLogisticLossLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.MVN:
                     return new MVNLayer<T>(cuda, log, p);
 
-                case LayerParameter.LayerType.ONEHOT:
-                    return new OneHotLayer<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.NORMALIZATION1:
-                    return new Normalization1Layer<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.NORMALIZATION2:
-                    return new Normalization2Layer<T>(cuda, log, p);
-
                 case LayerParameter.LayerType.PARAMETER:
                     return new ParameterLayer<T>(cuda, log, p);
 
-                case LayerParameter.LayerType.PERMUTE:
-                    return new PermuteLayer<T>(cuda, log, p);
-
                 case LayerParameter.LayerType.POOLING:
                     return new PoolingLayer<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.UNPOOLING1:
-                    return new UnPoolingLayer1<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.UNPOOLING:
-                    return new UnPoolingLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.POWER:
                     return new PowerLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.PRELU:
                     return new PReLULayer<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.PRIORBOX:
-                    return new PriorBoxLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.REDUCTION:
                     return new ReductionLayer<T>(cuda, log, p);
@@ -1294,9 +1244,6 @@ namespace MyCaffe.layers
 
                 case LayerParameter.LayerType.RESHAPE:
                     return new ReshapeLayer<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.SCALAR:
-                    return new ScalarLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.SCALE:
                     return new ScaleLayer<T>(cuda, log, p);
@@ -1322,9 +1269,6 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.SOFTMAXWITH_LOSS:
                     return new SoftmaxLossLayer<T>(cuda, log, p);
 
-                case LayerParameter.LayerType.SMOOTHL1_LOSS:
-                    return new SmoothL1LossLayer<T>(cuda, log, p);
-
                 case LayerParameter.LayerType.SPLIT:
                     return new SplitLayer<T>(cuda, log, p);
 
@@ -1340,23 +1284,8 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.THRESHOLD:
                     return new ThresholdLayer<T>(cuda, log, p);
 
-                case LayerParameter.LayerType.TRIPLET_LOSS_SIMPLE:
-                    return new TripletLossSimpleLayer<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.TRIPLET_LOSS:
-                    return new TripletLossLayer<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.TRIPLET_SELECT:
-                    return new TripletSelectLayer<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.TRIPLET_DATA:
-                    return new TripletDataLayer<T>(cuda, log, p, imgDb, evtCancel);
-
                 case LayerParameter.LayerType.TILE:
                     return new TileLayer<T>(cuda, log, p);
-
-                case LayerParameter.LayerType.TV_LOSS:
-                    return new TVLossLayer<T>(cuda, log, p);
 
                 case LayerParameter.LayerType.LSTM_SIMPLE:
                     return new LSTMSimpleLayer<T>(cuda, log, p);
@@ -1371,11 +1300,71 @@ namespace MyCaffe.layers
                     return new LSTMUnitLayer<T>(cuda, log, p);
 
                 default:
+                    Layer<T> layer = createDynamicLayer(cuda, log, p, imgDb, evtCancel);
+                    if (layer != null)
+                        return layer;
+
                     log.FAIL("Unknown layer type: " + p.type.ToString());
                     break;
             }
 
             throw new NotImplementedException("The layer type: " + p.type.ToString() + " is not implemented yet.");
+        }
+
+        private static Layer<T> createDynamicLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabase imgDb, CancelEvent evtCancel)
+        {
+            string strDir = System.IO.Path.GetDirectoryName(new System.Uri(System.Reflection.Assembly.GetExecutingAssembly().CodeBase).LocalPath);
+            string[] rgstrFiles = Directory.GetFiles(strDir);
+
+            foreach (string strFile in rgstrFiles)
+            {
+                FileInfo fi = new FileInfo(strFile);
+                if (fi.Name.ToLower().IndexOf("mycaffe.layers.") == 0 && fi.Extension.ToLower() == ".dll")
+                {
+                    ILayerCreator icreator = loadCreator(strFile);
+                    if (icreator != null)
+                    {
+                        Layer<T> layer;
+
+                        if (typeof(T) == typeof(double))
+                            layer = icreator.CreateDouble(cuda as CudaDnn<double>, log, p, evtCancel, imgDb) as Layer<T>;
+                        else
+                            layer = icreator.CreateSingle(cuda as CudaDnn<float>, log, p, evtCancel, imgDb) as Layer<T>;
+
+                        if (layer != null)
+                            return layer;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static ILayerCreator loadCreator(string strPath)
+        {
+            try
+            {
+                Assembly a = Assembly.LoadFile(strPath);
+
+                foreach (Type t in a.GetTypes())
+                {
+                    if (t.IsPublic)
+                    {
+                        Type iface = t.GetInterface("ILayerCreator");
+                        if (iface != null)
+                        {
+                            object obj = Activator.CreateInstance(t);
+                            return (ILayerCreator)obj;
+                        }
+                    }
+                }
+
+                return null;
+            }
+            catch (Exception excpt)
+            {
+                return null;
+            }
         }
     }
 
