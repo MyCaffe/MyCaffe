@@ -432,6 +432,10 @@ namespace MyCaffe.param
             /// Initializes a parameter for the BinaryHashLayer.
             /// </summary>
             BINARYHASH,
+            /// <summary>
+            /// Initializes a parameter for the VideoDataLayer.
+            /// </summary>
+            VIDEO_DATA,
             _MAX
         }
 
@@ -1216,6 +1220,12 @@ namespace MyCaffe.param
                     expected_top.Add("lstm");
                     m_rgLayerParameters[LayerType.RECURRENT] = new RecurrentParameter();
                     break;
+
+                case LayerType.VIDEO_DATA:
+                    expected_top.Add("data");
+                    expected_top.Add("label");
+                    m_rgLayerParameters[LayerType.VIDEO_DATA] = new VideoDataParameter();
+                    break;
             }
         } 
 
@@ -1951,6 +1961,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.VIDEO_DATA
+        /// </summary>
+        public VideoDataParameter video_data_param
+        {
+            get { return (VideoDataParameter)m_rgLayerParameters[LayerType.VIDEO_DATA]; }
+            set { m_rgLayerParameters[LayerType.VIDEO_DATA] = value; }
+        }
+
+        /// <summary>
         /// Clears the collection of Blobs used by this layer.
         /// </summary>
         public void clear_blobs()
@@ -2336,6 +2355,9 @@ namespace MyCaffe.param
 
                 case LayerType.LSTM_UNIT:
                     return "Lstm_Unit";
+
+                case LayerType.VIDEO_DATA:
+                    return "VideoData";
 
                 default:
                     return "Unknown";
@@ -3042,6 +3064,10 @@ namespace MyCaffe.param
 
                 case "lstm_unit":
                     return LayerType.LSTM_UNIT;
+
+                case "videodata":
+                case "video_data":
+                    return LayerType.VIDEO_DATA;
 
                 default:
                     throw new Exception("Unknown 'layertype' value: " + str);
