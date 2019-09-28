@@ -1054,7 +1054,7 @@ namespace MyCaffe
             RawProto protoModel = RawProto.Parse(strModel);
             solverParam.net_param = NetParameter.FromProto(protoModel);
 
-            m_dataSet = findDataset(solverParam.net_param);
+            m_dataSet = null;
             m_project = null;
 
             if (m_cuda != null)
