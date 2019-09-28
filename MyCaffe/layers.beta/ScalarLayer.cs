@@ -7,7 +7,7 @@ using MyCaffe.common;
 using MyCaffe.layers;
 using MyCaffe.param;
 
-namespace MyCaffe.layers_beta
+namespace MyCaffe.layers.beta
 {
     /// <summary>
     /// The ScalarLayer computes the operation with the value on the input.

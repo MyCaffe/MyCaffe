@@ -7,7 +7,7 @@ using MyCaffe.common;
 using MyCaffe.layers;
 using MyCaffe.param;
 
-namespace MyCaffe.layers_beta
+namespace MyCaffe.layers.beta
 {
     /// <summary>
     /// The TVLossLayer computes total variation loss as described by 'Mahendran' et al., and used in Neural Style.
