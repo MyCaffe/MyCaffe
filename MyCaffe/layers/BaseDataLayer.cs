@@ -136,6 +136,12 @@ namespace MyCaffe.layers
                 if (m_param.input_param.shape[0].dim.Count > 3)
                     nW = (int)m_param.input_param.shape[0].dim[3];
             }
+            else if (m_param.type == LayerParameter.LayerType.VIDEO_DATA)
+            {
+                nC = 3;
+                nH = (int)m_param.video_data_param.video_height;
+                nW = (int)m_param.video_data_param.video_width;
+            }
 
             if (nC == 0 && nH == 0 && nW == 0)
                 throw new Exception("The sizing of C, H, W cannot be zero for all three!");
