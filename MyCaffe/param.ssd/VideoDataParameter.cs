@@ -20,6 +20,8 @@ namespace MyCaffe.param.ssd
         int m_nDeviceID = 0;
         string m_strVideoFile;
         uint m_nSkipFrames = 0;
+        uint m_nVideoWidth = 400;
+        uint m_nVideoHeight = 300;
 
         /// <summary>
         /// Defines the video type.
@@ -81,6 +83,26 @@ namespace MyCaffe.param.ssd
             set { m_nSkipFrames = value; }
         }
 
+        /// <summary>
+        /// Optionally, specifies the video width (default = 400).
+        /// </summary>
+        [Description("Optionally, specifies the video width (default = 400).")]
+        public uint video_width
+        {
+            get { return m_nVideoWidth; }
+            set { m_nVideoWidth = value; }
+        }
+
+        /// <summary>
+        /// Optionally, specifies the video height (default = 300).
+        /// </summary>
+        [Description("Optionally, specifies the video height (default = 300).")]
+        public uint video_height
+        {
+            get { return m_nVideoHeight; }
+            set { m_nVideoHeight = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -102,6 +124,8 @@ namespace MyCaffe.param.ssd
             m_nDeviceID = p.m_nDeviceID;
             m_strVideoFile = p.m_strVideoFile;
             m_nSkipFrames = p.m_nSkipFrames;
+            m_nVideoWidth = p.m_nVideoWidth;
+            m_nVideoHeight = p.m_nVideoHeight;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -124,6 +148,8 @@ namespace MyCaffe.param.ssd
                 rgChildren.Add(new RawProto("video_file", m_strVideoFile.ToString()));
 
             rgChildren.Add(new RawProto("skip_frames", m_nSkipFrames.ToString()));
+            rgChildren.Add(new RawProto("video_width", m_nVideoWidth.ToString()));
+            rgChildren.Add(new RawProto("video_height", m_nVideoHeight.ToString()));
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -154,6 +180,12 @@ namespace MyCaffe.param.ssd
 
             if ((strVal = rp.FindValue("skip_frames")) != null)
                 p.skip_frames = uint.Parse(strVal);
+
+            if ((strVal = rp.FindValue("video_width")) != null)
+                p.video_width = uint.Parse(strVal);
+
+            if ((strVal = rp.FindValue("video_height")) != null)
+                p.video_height = uint.Parse(strVal);
 
             return p;
         }
