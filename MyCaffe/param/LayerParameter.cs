@@ -1225,6 +1225,8 @@ namespace MyCaffe.param
                     expected_top.Add("data");
                     expected_top.Add("label");
                     m_rgLayerParameters[LayerType.VIDEO_DATA] = new VideoDataParameter();
+                    m_rgLayerParameters[LayerType.DATA] = new DataParameter();
+                    m_rgLayerParameters[LayerType.TRANSFORM] = new TransformationParameter();
                     break;
             }
         } 
