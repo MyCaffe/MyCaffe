@@ -137,6 +137,9 @@ namespace MyCaffe.layers
                 {
                     load_batch(batch);
 
+                    if (m_internalThread.CancellationPending)
+                        return;
+
                     batch.Data.AsyncGpuPush(hStream);
                     if (hStream != 0)
                         m_cuda.SynchronizeStream(hStream);
