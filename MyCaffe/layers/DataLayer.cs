@@ -104,13 +104,13 @@ namespace MyCaffe.layers
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
+            base.dispose();
+
             if (m_rgBatchLabels != null)
             {
                 m_rgBatchLabels.Dispose();
                 m_rgBatchLabels = null;
             }
-
-            base.dispose();
         }
 
         /// <summary>

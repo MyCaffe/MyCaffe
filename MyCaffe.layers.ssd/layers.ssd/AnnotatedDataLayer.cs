@@ -118,13 +118,13 @@ namespace MyCaffe.layers.ssd
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
+            base.dispose();
+
             if (m_sampler != null)
             {
                 m_sampler.Dispose();
                 m_sampler = null;
             }
-
-            base.dispose();
         }
 
         /// <summary>
