@@ -258,6 +258,44 @@ namespace MyCaffe.basecode
         /// <summary>
         /// The SimpleDatum constructor.
         /// </summary>
+        /// <param name="nChannels">Specifies the number of channels in the data (e.g. 3 for color, 1 for black and white images)</param>
+        /// <param name="nWidth">Specifies the width of the data (e.g. the number of pixels wide).</param>
+        /// <param name="nHeight">Specifies the height of the data (e.g. the number of pixels high).</param>
+        /// <param name="rgf">Specifies the data to copy.</param>
+        /// <param name="nOffset">Specifies the offset into the data where the copying should start.</param>
+        /// <param name="nCount">Specifies the number of data items to copy.</param>
+        public SimpleDatum(int nChannels, int nWidth, int nHeight, float[] rgf, int nOffset, int nCount)
+        {
+            m_nChannels = nChannels;
+            m_nWidth = nWidth;
+            m_nHeight = nHeight;
+            m_nOriginalLabel = 0;
+            m_nOriginalBoost = 0;
+            m_dt = DateTime.MinValue;
+            m_bAutoLabeled = false;
+            m_nVirtualID = 0;
+            m_bIsRealData = true;
+            m_nImageID = 0;
+            m_nImageID = 0;
+            m_nSourceID = 0;
+            m_nOriginalSourceID = 0;
+            m_rgByteData = null;
+
+            int nLen = nChannels * nWidth * nHeight;
+            if (nLen != nCount)
+                throw new Exception("The channel x width x height should equal the count!");
+
+            m_rgRealData = new double[nCount];
+
+            for (int i = 0; i < nCount; i++)
+            {
+                m_rgRealData[i] = rgf[nOffset + i];
+            }
+        }
+
+        /// <summary>
+        /// The SimpleDatum constructor.
+        /// </summary>
         /// <param name="data">Specifies the byte data to fill the SimpleDatum with.</param>
         public SimpleDatum(Bytemap data)
         {
