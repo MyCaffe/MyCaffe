@@ -1,12 +1,12 @@
 <H2>Installation Instructions</H2>
-To install and run <b>MyCaffe</b> you will need to do the following steps.  As a side note, we are using (and recommend) CUDA 10.1.243 with cuDNN 7.6.3 and Visual Studio 2017 on Windows 10 Pro for all of our testing.
+To install and run <b>MyCaffe</b> you will need to do the following steps.  As a side note, we are using (and recommend) CUDA 10.1.243 with cuDNN 7.6.4 and Visual Studio 2017 on Windows 10 Pro for all of our testing.
 </br>
 <H3>I. CUDA - Install NVIDIA CUDA and cuDNN Libraries</H3>
 Install CUDA 10.1.243 as shown below.
 <H4>A. CUDA 10.1.243 - Install NVIDIA CUDA and cuDNN Libraries</H4>
 1.) Install the NVIDIA CUDA 10.1.243 Toolkit for Windows 10 from https://developer.nvidia.com/cuda-downloads. 
-</br>2.) Install the NVIDIA cuDNN 7.6.3 Accelerated Libraries for CUDA 10.1 on Windows 10 from https://developer.nvidia.com/cuDNN.
-</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V10_1)</i></b> installation location named <b><i>cudann_10.1-win-v7.6.3.30</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
+</br>2.) Install the NVIDIA cuDNN 7.6.4 Accelerated Libraries for CUDA 10.1 on Windows 10 from https://developer.nvidia.com/cuDNN.
+</br>3.) Create a new directory off your <b><i>$(CUDA_PATH_V10_1)</i></b> installation location named <b><i>cudann_10.1-win-v7.6.4.38</i></b> and copy the cuDNN <b><i>cudnn.h</i></b> and <b><i>cudnn.lib</i></b> files into it.
 </br>4.) Copy the <b><i>cudnn64_7.dll</i></b> file into the <b><i>$(CUDA_PATH_V10_1)\bin</i></b> directory.
 </br>5.) Install the NVIDIA NVAPI (r430) from https://developer.nvidia.com/nvapi.
 </br>6.) Create anew directory off your <b><i>$(CUDA_PATH_V10_1)</i></b> installation location named <b><i>nvapi_430</i></b> and copy the NVAPI header and library files into it.
