@@ -209,6 +209,32 @@ namespace MyCaffe.data
         }
 
         /// <summary>
+        /// Infers the shape of the transformed blow will have with the given channel, width and height.
+        /// </summary>
+        /// <param name="nChannels">Specifies the channels.</param>
+        /// <param name="nWidth">Specifies the width.</param>
+        /// <param name="nHeight">Specifies the height.</param>
+        /// <returns>The inferred blob shape is returned.</returns>
+        public List<int> InferBlobShape(int nChannels, int nWidth, int nHeight)
+        {
+            int nCropSize = (int)m_param.crop_size;
+
+            // Check dimensions
+            m_log.CHECK_GT(nChannels, 0, "There must be 1 or more data channels in the datum.");
+            m_log.CHECK_GE(nHeight, nCropSize, "The height must be >= the crop size of " + nCropSize.ToString() + ". To fix this change the 'crop_size' DataLayer property.");
+            m_log.CHECK_GE(nWidth, nCropSize, "The width must be >= the crop size of " + nCropSize.ToString() + ". To fix this change the 'crop_size' DataLayer property.");
+
+            // Build BlobShape.
+            List<int> rgShape = new List<int>();
+            rgShape.Add(1);
+            rgShape.Add(nChannels);
+            rgShape.Add((nCropSize > 0) ? nCropSize : nHeight);
+            rgShape.Add((nCropSize > 0) ? nCropSize : nWidth);
+
+            return rgShape;
+        }
+
+        /// <summary>
         /// Initialize the underlying random number generator.
         /// </summary>
         public virtual void InitRand()
