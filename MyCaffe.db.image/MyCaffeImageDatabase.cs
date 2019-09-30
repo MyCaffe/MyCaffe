@@ -44,6 +44,7 @@ namespace MyCaffe.db.image
         Log m_log;
         IMAGEDB_LOAD_METHOD m_loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
         int m_nLoadLimit = 0;
+        bool m_bSkipMeanCheck = false;
         int m_nPadW = 0;
         int m_nPadH = 0;
         Guid m_userGuid;
@@ -354,6 +355,7 @@ namespace MyCaffe.db.image
             m_dfSuperBoostProbability = s.SuperBoostProbability;
             m_loadMethod = s.ImageDbLoadMethod;
             m_nLoadLimit = s.ImageDbLoadLimit;
+            m_bSkipMeanCheck = s.SkipMeanCheck;
 
             if (m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_EXTERNAL)
                 m_loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
@@ -427,7 +429,7 @@ namespace MyCaffe.db.image
                     if (m_log != null)
                         m_log.WriteLine("Loading dataset '" + ds.Name + "'...");
 
-                    if (!ds0.Initialize(ds, rgAbort.ToArray(), nPadW, nPadH, m_log, m_loadMethod, m_nLoadLimit))
+                    if (!ds0.Initialize(ds, rgAbort.ToArray(), nPadW, nPadH, m_log, m_loadMethod, m_nLoadLimit, m_bSkipMeanCheck))
                     {
                         col.Dispose();
                         return false;

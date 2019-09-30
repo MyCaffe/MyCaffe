@@ -77,8 +77,9 @@ namespace MyCaffe.db.image
         /// <param name="log">Optionally, specifies an external Log to output status (default = null).</param>
         /// <param name="loadMethod">Optionally, specifies the load method to use (default = LOAD_ALL).</param>
         /// <param name="nImageDbLoadLimit">Optionally, specifies the load limit (default = 0).</param>
-        /// <returns></returns>
-        public bool Initialize(DatasetDescriptor ds, WaitHandle[] rgAbort, int nPadW = 0, int nPadH = 0, Log log = null, IMAGEDB_LOAD_METHOD loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL, int nImageDbLoadLimit = 0)
+        /// <param name="bSkipMeanCheck">Optionally, specifies to skip the mean check (default = false).</param>
+        /// <returns>Upon loading the dataset <i>true</i> is returned, otherwise on failure or abort <i>false</i> is returned.</returns>
+        public bool Initialize(DatasetDescriptor ds, WaitHandle[] rgAbort, int nPadW = 0, int nPadH = 0, Log log = null, IMAGEDB_LOAD_METHOD loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL, int nImageDbLoadLimit = 0, bool bSkipMeanCheck = false)
         {
             lock (m_syncObj)
             {
@@ -90,14 +91,14 @@ namespace MyCaffe.db.image
                 if (ds != null)
                     m_ds = ds;
 
-                m_TrainingImages = loadImageset("Training", m_ds.TrainingSource, rgAbort, ref imgMean, out m_nLastTrainingImageIdx, nPadW, nPadH, log, loadMethod, nImageDbLoadLimit, m_nLastTrainingImageIdx, (ds == null) ? true : false);
+                m_TrainingImages = loadImageset("Training", m_ds.TrainingSource, rgAbort, ref imgMean, out m_nLastTrainingImageIdx, nPadW, nPadH, log, loadMethod, nImageDbLoadLimit, m_nLastTrainingImageIdx, (ds == null) ? true : false, bSkipMeanCheck);
                 if (m_nLastTrainingImageIdx >= m_ds.TrainingSource.ImageCount)
                     m_nLastTrainingImageIdx = 0;
 
                 if (EventWaitHandle.WaitAny(rgAbort, 0) != EventWaitHandle.WaitTimeout)
                     return false;
 
-                m_TestingImages = loadImageset("Testing", m_ds.TestingSource, rgAbort, ref imgMean, out m_nLastTestingImageIdx, nPadW, nPadH, log, loadMethod, nImageDbLoadLimit, m_nLastTestingImageIdx, (ds == null) ? true : false);
+                m_TestingImages = loadImageset("Testing", m_ds.TestingSource, rgAbort, ref imgMean, out m_nLastTestingImageIdx, nPadW, nPadH, log, loadMethod, nImageDbLoadLimit, m_nLastTestingImageIdx, (ds == null) ? true : false, bSkipMeanCheck);
                 if (m_nLastTestingImageIdx >= m_ds.TestingSource.ImageCount)
                     m_nLastTestingImageIdx = 0;
 
@@ -198,7 +199,7 @@ namespace MyCaffe.db.image
             set { m_bUseTrainingImagesForTesting = value; }
         }
 
-        private ImageSet loadImageset(string strType, SourceDescriptor src, WaitHandle[] rgAbort, ref SimpleDatum imgMean, out int nLastImageIdx, int nPadW = 0, int nPadH = 0, Log log = null, IMAGEDB_LOAD_METHOD loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL, int nImageDbLoadLimit = 0, int nImageDbLoadLimitStartIdx = 0, bool bLoadNext = false)
+        private ImageSet loadImageset(string strType, SourceDescriptor src, WaitHandle[] rgAbort, ref SimpleDatum imgMean, out int nLastImageIdx, int nPadW = 0, int nPadH = 0, Log log = null, IMAGEDB_LOAD_METHOD loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL, int nImageDbLoadLimit = 0, int nImageDbLoadLimitStartIdx = 0, bool bLoadNext = false, bool bSkipMeanCheck = false)
         {
             try
             {
@@ -207,7 +208,7 @@ namespace MyCaffe.db.image
                 m_factory.Open(src);
                 nLastImageIdx = nImageDbLoadLimitStartIdx;
 
-                if (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ALL)
+                if (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ALL && !bSkipMeanCheck)
                 {
                     if (imgMean == null)
                     {
@@ -315,7 +316,7 @@ namespace MyCaffe.db.image
                     nLastImageIdx += nImageDbLoadLimit;
                 }
 
-                if (imgMean == null)
+                if (imgMean == null && !bSkipMeanCheck)
                 {
                     if (imgMeanRaw == null)
                         imgMeanRaw = m_factory.GetRawImageMean();

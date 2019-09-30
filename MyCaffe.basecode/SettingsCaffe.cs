@@ -29,6 +29,7 @@ namespace MyCaffe.basecode
         bool m_bImageDbLoadDebugData = false;
         SNAPSHOT_WEIGHT_UPDATE_METHOD m_snapshotWeightUpdateMethod = SNAPSHOT_WEIGHT_UPDATE_METHOD.FAVOR_ACCURACY;
         SNAPSHOT_LOAD_METHOD m_snapshotLoadMethod = SNAPSHOT_LOAD_METHOD.STATE_BEST_ACCURACY;
+        bool m_bSkipMeanCheck = false;
 
         /// <summary>
         /// The SettingsCaffe constructor.
@@ -59,6 +60,7 @@ namespace MyCaffe.basecode
             m_bImageDbLoadDebugData = s.m_bImageDbLoadDebugData;
             m_snapshotWeightUpdateMethod = s.m_snapshotWeightUpdateMethod;
             m_snapshotLoadMethod = s.m_snapshotLoadMethod;
+            m_bSkipMeanCheck = s.m_bSkipMeanCheck;
         }
 
         /// <summary>
@@ -85,6 +87,7 @@ namespace MyCaffe.basecode
             m_bImageDbLoadDebugData = getBool(info, "ImageDbLoadDebugData", m_bImageDbLoadDebugData);
             m_snapshotWeightUpdateMethod = (SNAPSHOT_WEIGHT_UPDATE_METHOD)getInt(info, "SnapshotWeightUpdateMethod", (int)m_snapshotWeightUpdateMethod);
             m_snapshotLoadMethod = (SNAPSHOT_LOAD_METHOD)getInt(info, "SnapshotLoadMethod", (int)m_snapshotLoadMethod);
+            m_bSkipMeanCheck = getBool(info, "SkipMeanCheck", m_bSkipMeanCheck);
         }
 
         private bool getBool(SerializationInfo info, string str, bool bDefault)
@@ -159,6 +162,7 @@ namespace MyCaffe.basecode
             info.AddValue("ImageDbLoadDebugData", m_bImageDbLoadDebugData);
             info.AddValue("SnapshotWeightUpdateMethod", (int)m_snapshotWeightUpdateMethod);
             info.AddValue("SnapshotLoadMethod", (int)m_snapshotLoadMethod);
+            info.AddValue("SkipMeanCheck", m_bSkipMeanCheck);
         }
 
         /// <summary>
@@ -186,6 +190,7 @@ namespace MyCaffe.basecode
             s.m_bImageDbLoadDebugData = m_bImageDbLoadDebugData;
             s.m_snapshotWeightUpdateMethod = m_snapshotWeightUpdateMethod;
             s.m_snapshotLoadMethod = m_snapshotLoadMethod;
+            s.m_bSkipMeanCheck = m_bSkipMeanCheck;
 
             return s;
         }
@@ -350,6 +355,15 @@ namespace MyCaffe.basecode
         {
             get { return m_snapshotLoadMethod; }
             set { m_snapshotLoadMethod = value; }
+        }
+
+        /// <summary>
+        /// Skip checking for the mean of the dataset - this is not recommended for if the mean does not exist, using the mean value from the dataset will fail.
+        /// </summary>
+        public bool SkipMeanCheck
+        {
+            get { return m_bSkipMeanCheck; }
+            set { m_bSkipMeanCheck = value; }
         }
     }
 }
