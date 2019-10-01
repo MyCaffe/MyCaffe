@@ -795,6 +795,7 @@ namespace MyCaffe.basecode
             else
             {
                 m_rgByteData = new byte[rgdf.Length];
+
                 for (int i = 0; i < rgdf.Length; i++)
                 {
                     m_rgByteData[i] = (byte)(int)rgdf[i];
