@@ -18,6 +18,5 @@ namespace MyCaffe.db.image
         public string Name { get; set; }
         public string Value { get; set; }
         public Nullable<int> DatasetID { get; set; }
-        public Nullable<double> ValueNumeric { get; set; }
     }
 }

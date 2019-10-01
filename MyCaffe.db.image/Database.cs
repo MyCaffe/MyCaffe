@@ -3729,31 +3729,6 @@ namespace MyCaffe.db.image
             }
         }
 
-
-        /// <summary>
-        /// Returns the value of a dataset parameter as a string.
-        /// </summary>
-        /// <param name="nDsId">Specifies the ID of the dataset.</param>
-        /// <param name="strName">Specifies the name of the parameter.</param>
-        /// <param name="dfNumericValue">Returns the parameter numeric value if one exists.</param>
-        /// <returns>If the parameter is found it is returned as a string, otherwise <i>null</i> is returned.</returns>
-        public string GetDatasetParameter(int nDsId, string strName, out double? dfNumericValue)
-        {
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
-            {
-                List<DatasetParameter> rgP = entities.DatasetParameters.Where(p => p.DatasetID == nDsId && p.Name == strName).ToList();
-
-                dfNumericValue = null;
-
-                if (rgP.Count == 0)
-                    return null;
-
-                dfNumericValue = rgP[0].ValueNumeric;
-
-                return rgP[0].Value;
-            }
-        }
-
         /// <summary>
         /// Returns the value of a dataset parameter as an <i>int</i>.
         /// </summary>
@@ -3830,7 +3805,6 @@ namespace MyCaffe.db.image
                 }
 
                 dsP.Value = strValue;
-                dsP.ValueNumeric = null;
 
                 if (rgP.Count == 0)
                     entities.DatasetParameters.Add(dsP);
@@ -3839,40 +3813,6 @@ namespace MyCaffe.db.image
             }
         }
 
-        /// <summary>
-        /// Adds a new parameter or Sets the value of an existing dataset parameter.
-        /// </summary>
-        /// <param name="nDsId">Specifies the ID of the dataset.</param>
-        /// <param name="strName">Specifies the name of the parameter.</param>
-        /// <param name="strValue">Specifies the value of the parameter.</param>
-        /// <param name="dfNumericValue">Specifies the numeric value of the parameter.</param>
-        public void SetDatasetParameter(int nDsId, string strName, string strValue, double dfNumericValue)
-        {
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
-            {
-                List<DatasetParameter> rgP = entities.DatasetParameters.Where(p => p.DatasetID == nDsId && p.Name == strName).ToList();
-                DatasetParameter dsP = null;
-
-                if (rgP.Count == 0)
-                {
-                    dsP = new DatasetParameter();
-                    dsP.Name = strName;
-                    dsP.DatasetID = nDsId;
-                }
-                else
-                {
-                    dsP = rgP[0];
-                }
-
-                dsP.Value = strValue;
-                dsP.ValueNumeric = dfNumericValue;
-
-                if (rgP.Count == 0)
-                    entities.DatasetParameters.Add(dsP);
-
-                entities.SaveChanges();
-            }
-        }
 
         /// <summary>
         /// Delete a dataset.
