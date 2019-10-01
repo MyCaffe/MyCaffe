@@ -93,7 +93,7 @@ namespace MyCaffe.app
 
                 int nSrcId = m_factory.AddSource(strSourceName, nChannels, (int)cols, (int)rows, false, 0, true);
 
-                m_factory.Open(nSrcId);
+                m_factory.Open(nSrcId, 500, false, log);
                 m_factory.DeleteSourceData();
 
                 // Storing to database;

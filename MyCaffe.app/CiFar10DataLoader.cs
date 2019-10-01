@@ -41,18 +41,18 @@ namespace MyCaffe.app
 
             DatasetFactory factory = new DatasetFactory();
 
-            loadFile(m_param.DataBatchFile1, "CIFAR-10.training", nTotal, ref nIdx);
-            loadFile(m_param.DataBatchFile2, "CIFAR-10.training", nTotal, ref nIdx);
-            loadFile(m_param.DataBatchFile3, "CIFAR-10.training", nTotal, ref nIdx);
-            loadFile(m_param.DataBatchFile4, "CIFAR-10.training", nTotal, ref nIdx);
-            loadFile(m_param.DataBatchFile5, "CIFAR-10.training", nTotal, ref nIdx);
+            loadFile(m_param.DataBatchFile1, "CIFAR-10.training", nTotal, ref nIdx, log);
+            loadFile(m_param.DataBatchFile2, "CIFAR-10.training", nTotal, ref nIdx, log);
+            loadFile(m_param.DataBatchFile3, "CIFAR-10.training", nTotal, ref nIdx, log);
+            loadFile(m_param.DataBatchFile4, "CIFAR-10.training", nTotal, ref nIdx, log);
+            loadFile(m_param.DataBatchFile5, "CIFAR-10.training", nTotal, ref nIdx, log);
             SourceDescriptor srcTrain = factory.LoadSource("CIFAR-10.training");
             m_factory.SaveImageMean(SimpleDatum.CalculateMean(log, m_rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true, srcTrain.ID);
 
             m_rgImg = new List<SimpleDatum>();
             nIdx = 0;
             nTotal = 10000;
-            loadFile(m_param.TestBatchFile, "CIFAR-10.testing", nTotal, ref nIdx);
+            loadFile(m_param.TestBatchFile, "CIFAR-10.testing", nTotal, ref nIdx, log);
             SourceDescriptor srcTest = factory.LoadSource("CIFAR-10.testing");
             m_factory.SaveImageMean(SimpleDatum.CalculateMean(log, m_rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true, srcTest.ID);
 
@@ -69,7 +69,7 @@ namespace MyCaffe.app
             reportProgress((int)(e.Progress * 1000), 1000, e.Message);
         }
 
-        private void loadFile(string strImagesFile, string strSourceName, int nTotal, ref int nIdx)
+        private void loadFile(string strImagesFile, string strSourceName, int nTotal, ref int nIdx, Log log)
         {
             Stopwatch sw = new Stopwatch();
             int nStart = nIdx;
@@ -88,7 +88,7 @@ namespace MyCaffe.app
 
                     int nSrcId = m_factory.AddSource(strSourceName, 3, 32, 32, false, 0, true);
 
-                    m_factory.Open(nSrcId);
+                    m_factory.Open(nSrcId, 500, false, log);
                     if (nIdx == 0)
                         m_factory.DeleteSourceData();
 

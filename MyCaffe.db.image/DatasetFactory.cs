@@ -126,13 +126,18 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source to use.</param>
         /// <param name="nCacheMax">Optionally, specifies the maximum cache count to use when adding RawImages (default = 500).</param>
-        /// <param name="bForceLoadImageFilePath">Optionally specfies to force load the image file path (default = <i>false</i>) and use file based data.</param>
-        public void Open(int nSrcId, int nCacheMax = 500, bool bForceLoadImageFilePath = false)
+        /// <param name="bForceLoadImageFilePath">Optionally, specfies to force load the image file path (default = <i>false</i>) and use file based data.</param>
+        /// <param name="log">Optionally, specifies the output log (default = null).</param>
+        public void Open(int nSrcId, int nCacheMax = 500, bool bForceLoadImageFilePath = false, Log log = null)
         {
             if (m_openSource != null)
             {
                 if (m_openSource.ID != nSrcId)
+                {
+                    if (log != null)
+                        log.WriteLine("WARNING: Closing currently open source ID of " + m_openSource.ID.ToString() + " and opening new Source ID of " + nSrcId.ToString() + ".");
                     Close();
+                }
             }
 
             m_openSource = LoadSource(nSrcId);
