@@ -71,6 +71,22 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Set an entire row to the same color.
+        /// </summary>
+        /// <param name="y">Specifies the row.</param>
+        /// <param name="colour">Specifies the color.</param>
+        public void SetRow(int y, Color colour)
+        {
+            int col = colour.ToArgb();
+            int index = y * Width;
+
+            for (int x = 0; x < Width; x++)
+            {
+                Bits[index + x] = col;
+            }
+        }
+
+        /// <summary>
         /// Returns the color of a pixel in the bitmap.
         /// </summary>
         /// <param name="x">Specifies the x position of the pixel.</param>
