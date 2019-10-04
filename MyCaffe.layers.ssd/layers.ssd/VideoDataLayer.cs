@@ -15,6 +15,7 @@ using DirectX.Capture;
 using System.Windows.Forms;
 using System.Drawing;
 using System.Threading;
+using System.IO;
 
 /// <summary>
 /// The MyCaffe.layers.ssd namespace contains all SSD related layers.
@@ -137,10 +138,11 @@ namespace MyCaffe.layers.ssd
                 m_webcam = new WebCam.WebCam();
                 m_webcam.OnSnapshot += m_webcam_OnSnapshot;
 
-                if (m_webcam.VideoInputDevices.Count == 0)
+                // Default 'source' is a Video File.
+                if (m_webcam.VideoInputDevices.Count > 1)
                     m_log.FAIL("Could not find a web-cam!");
 
-                if (m_param.video_data_param.device_id >= m_webcam.VideoInputDevices.Count)
+                if (m_param.video_data_param.device_id >= m_webcam.VideoInputDevices.Count - 1)
                     m_log.FAIL("The video device_id is greater than the number of web cam devices detected (" + m_webcam.VideoInputDevices.Count.ToString() + ").");
 
                 m_filter = m_webcam.VideoInputDevices[m_param.video_data_param.device_id];
@@ -158,7 +160,29 @@ namespace MyCaffe.layers.ssd
             }
             else if (m_videoType == VideoDataParameter.VideoType.VIDEO)
             {
-#warning VIDEO FILE SUPPORT NOT COMPLETED YET.
+                m_webcam = new WebCam.WebCam();
+                m_webcam.OnSnapshot += m_webcam_OnSnapshot;
+
+                // Default 'source' is a Video File.
+                if (m_webcam.VideoInputDevices.Count == 0)
+                    m_log.FAIL("The default video input should be a file!");
+
+                if (!File.Exists(m_param.video_data_param.video_file))
+                    m_log.FAIL("The video file '" + m_param.video_data_param.video_file + "' does not exist!");
+
+                m_pictureBox = new PictureBox();
+                m_pictureBox.SetBounds(0, 0, m_nVideoWidth, m_nVideoHeight);
+
+                m_filter = m_webcam.VideoInputDevices[m_webcam.VideoInputDevices.Count - 1];
+                m_log.WriteLine("Using video source '" + m_filter.Name + "' for video input.");
+
+                m_webcam.Open(null, m_pictureBox, m_param.video_data_param.video_file);
+                m_webcam.Step(1);
+                m_webcam.GetImage();
+                if (!m_evtSnapshotReady.WaitOne(1000))
+                    m_log.FAIL("Failed to get a video snapshot!");
+
+                bmp = m_bmpSnapshot;
             }
             else
             {
@@ -257,7 +281,19 @@ namespace MyCaffe.layers.ssd
                     }
                     else if (m_videoType == VideoDataParameter.VideoType.VIDEO)
                     {
-#warning VIDEO FILE SUPPORT NOT COMPLETED YET.
+                        if (m_webcam == null)
+                            return;
+
+                        if (nSkipFrames == 0)
+                            nSkipFrames++;
+
+                        m_webcam.Step(nSkipFrames);
+                        m_webcam.GetImage();
+
+                        if (!m_evtSnapshotReady.WaitOne(1000))
+                            m_log.FAIL("Failed to get video file snapshot!");
+
+                        bmp = m_bmpSnapshot;
                     }
                     else
                     {
