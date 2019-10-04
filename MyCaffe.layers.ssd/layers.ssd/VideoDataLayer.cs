@@ -149,8 +149,7 @@ namespace MyCaffe.layers.ssd
                 m_pictureBox = new PictureBox();
                 m_pictureBox.SetBounds(0, 0, m_nVideoWidth, m_nVideoHeight);
 
-                m_webcam.Open(m_filter, m_pictureBox);
-
+                m_webcam.Open(m_filter, m_pictureBox, null);
                 m_webcam.GetImage();
                 if (!m_evtSnapshotReady.WaitOne(1000))
                     m_log.FAIL("Failed to get a web-cam snapshot!");
@@ -191,7 +190,7 @@ namespace MyCaffe.layers.ssd
             // Label.
             if (m_bOutputLabels)
             {
-                List<int> rgLabelShape = Utility.Create<int>(1, nBatchSize);
+                List<int> rgLabelShape = MyCaffe.basecode.Utility.Create<int>(1, nBatchSize);
                 colTop[1].Reshape(rgLabelShape);
 
                 for (int i = 0; i < m_rgPrefetch.Length; i++)
