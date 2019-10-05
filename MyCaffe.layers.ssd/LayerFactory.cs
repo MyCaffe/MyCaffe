@@ -9,8 +9,12 @@ using MyCaffe.db.image;
 using MyCaffe.param;
 
 /// <summary>
-/// The MyCaffe.layers.ssd namespace contains all SSD related layers.
+/// The MyCaffe.layers.ssd namespace contains all Single-Shot MultiBox (SSD) related layers.
 /// </summary>
+/// <remarks>
+/// @see [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.
+/// @see [GitHub: SSD: Single Shot MultiBox Detector](https://github.com/weiliu89/caffe/tree/ssd), by weiliu89/caffe, 2016
+/// </remarks>
 namespace MyCaffe.layers.ssd
 {
     /// <summary>

@@ -11,6 +11,10 @@ using MyCaffe.param;
 /// <summary>
 /// The MyCaffe.layers.nt namespace contains all Neural Transfer related layers.
 /// </summary>
+/// <remarks>
+/// @see [A Neural Algorithm of Artistic Style](https://arxiv.org/abs/1508.06576) by Leon A. Gatys, Alexander S. Ecker, and Matthias Bethge, 2015 
+/// @see [ftokarev/caffe-neural-style Github](https://github.com/ftokarev/caffe-neural-style) by ftokarev, 2017. 
+/// </remarks>
 namespace MyCaffe.layers.nt
 {
     /// <summary>
