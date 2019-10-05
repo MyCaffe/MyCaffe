@@ -15,7 +15,10 @@ namespace MyCaffe.common
     public class InternalThread<T> : IDisposable
     {
         Task m_task = null;
+        Thread m_thread = null;
         ManualResetEvent m_evtCancel = new ManualResetEvent(false);
+        AutoResetEvent m_evtDone = new AutoResetEvent(false);
+        bool m_bUseThread = true;
 
         /// <summary>
         /// The DoWork event is the working thread function.
@@ -25,8 +28,10 @@ namespace MyCaffe.common
         /// <summary>
         /// The InternalThread constructor.
         /// </summary>
-        public InternalThread()
+        /// <param name="bUseThreadVsTask">Optionally, specifies to use a Thread vs a Task (default = true).</param>
+        public InternalThread(bool bUseThreadVsTask = true)
         {
+            m_bUseThread = bUseThreadVsTask;
         }
 
         /// <summary>
@@ -36,17 +41,26 @@ namespace MyCaffe.common
         protected virtual void Dispose(bool bDisposing)
         {
             if (m_evtCancel != null)
-            {
                 m_evtCancel.Set();
-                m_evtCancel.Dispose();
-                m_evtCancel = null;
-            }
 
             if (m_task != null)
             {
                 m_task.Wait(2000);
                 m_task.Dispose();
                 m_task = null;
+            }
+
+            if (m_thread != null)
+            {
+                m_evtDone.WaitOne(2000);
+                m_thread.Abort();
+                m_thread = null;
+            }
+
+            if (m_evtCancel != null)
+            {
+                m_evtCancel.Dispose();
+                m_evtCancel = null;
             }
         }
 
@@ -67,10 +81,23 @@ namespace MyCaffe.common
         /// <param name="arg">Optionally, specifies an argument defined by the caller.</param>
         public void StartInternalThread(CudaDnn<T> cuda, Log log, int nDeviceID = 0, object arg = null)
         {
-            if (m_task == null)
+            m_evtCancel.Reset();
+
+            if (m_bUseThread)
             {
-                Action<object> action = new Action<object>(InternalThreadEntry);
-                m_task = Task.Factory.StartNew(action, new ActionStateArgs<T>(cuda, log, m_evtCancel, nDeviceID, arg), TaskCreationOptions.LongRunning);
+                if (m_thread == null)
+                {
+                    m_thread = new Thread(new ParameterizedThreadStart(InternalThreadEntry));
+                    m_thread.Start(new ActionStateArgs<T>(cuda, log, m_evtCancel, nDeviceID, arg));
+                }
+            }
+            else
+            {
+                if (m_task == null)
+                {
+                    Action<object> action = new Action<object>(InternalThreadEntry);
+                    m_task = Task.Factory.StartNew(action, new ActionStateArgs<T>(cuda, log, m_evtCancel, nDeviceID, arg), TaskCreationOptions.LongRunning);
+                }
             }
         }
 
@@ -79,12 +106,19 @@ namespace MyCaffe.common
         /// </summary>
         public void StopInternalThread()
         {
-            if (m_task == null)
-                return;
+            if (m_thread != null)
+            {
+                m_evtCancel.Set();
+                m_evtDone.WaitOne(1000);
+                m_thread = null;
+            }
 
-            m_evtCancel.Set();
-            m_task.Wait(1000);
-            m_task = null;
+            if (m_task != null)
+            {
+                m_evtCancel.Set();
+                m_evtDone.WaitOne(1000);
+                m_task = null;
+            }
         }
 
         /// <summary>
@@ -97,8 +131,19 @@ namespace MyCaffe.common
 
             m_evtCancel.Reset();
 
-            if (DoWork != null)
-                DoWork(this, state);
+            try
+            {
+                if (DoWork != null)
+                    DoWork(this, state);
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                m_evtDone.Set();
+            }
         }
 
         /// <summary>
