@@ -63,6 +63,7 @@ namespace MyCaffe.layers.ssd
         /// </summary>
         protected double m_dfTransTime;
         private T[] m_rgTopData = null;
+        private long m_lDuration = 0;
 
         /// <summary>
         /// The VideoDataLayer constructor.
@@ -139,19 +140,16 @@ namespace MyCaffe.layers.ssd
                 m_webcam.OnSnapshot += m_webcam_OnSnapshot;
 
                 // Default 'source' is a Video File.
-                if (m_webcam.VideoInputDevices.Count > 1)
+                if (m_webcam.VideoInputDevices.Count == 0)
                     m_log.FAIL("Could not find a web-cam!");
 
-                if (m_param.video_data_param.device_id >= m_webcam.VideoInputDevices.Count - 1)
+                if (m_param.video_data_param.device_id >= m_webcam.VideoInputDevices.Count)
                     m_log.FAIL("The video device_id is greater than the number of web cam devices detected (" + m_webcam.VideoInputDevices.Count.ToString() + ").");
 
                 m_filter = m_webcam.VideoInputDevices[m_param.video_data_param.device_id];
                 m_log.WriteLine("Using web-cam '" + m_filter.Name + "' for video input.");
 
-                m_pictureBox = new PictureBox();
-                m_pictureBox.SetBounds(0, 0, m_nVideoWidth, m_nVideoHeight);
-
-                m_webcam.Open(m_filter, m_pictureBox, null);
+                m_webcam.Open(m_filter, null, null);
                 m_webcam.GetImage();
                 if (!m_evtSnapshotReady.WaitOne(1000))
                     m_log.FAIL("Failed to get a web-cam snapshot!");
@@ -163,21 +161,12 @@ namespace MyCaffe.layers.ssd
                 m_webcam = new WebCam.WebCam();
                 m_webcam.OnSnapshot += m_webcam_OnSnapshot;
 
-                // Default 'source' is a Video File.
-                if (m_webcam.VideoInputDevices.Count == 0)
-                    m_log.FAIL("The default video input should be a file!");
-
                 if (!File.Exists(m_param.video_data_param.video_file))
                     m_log.FAIL("The video file '" + m_param.video_data_param.video_file + "' does not exist!");
 
-                m_pictureBox = new PictureBox();
-                m_pictureBox.SetBounds(0, 0, m_nVideoWidth, m_nVideoHeight);
+                m_log.WriteLine("Using video source '" + m_param.video_data_param.video_file + "' for video input.");
 
-                m_filter = m_webcam.VideoInputDevices[m_webcam.VideoInputDevices.Count - 1];
-                m_log.WriteLine("Using video source '" + m_filter.Name + "' for video input.");
-
-                m_webcam.Open(null, m_pictureBox, m_param.video_data_param.video_file);
-                m_webcam.Step(1);
+                m_lDuration = m_webcam.Open(null, null, m_param.video_data_param.video_file);
                 m_webcam.GetImage();
                 if (!m_evtSnapshotReady.WaitOne(1000))
                     m_log.FAIL("Failed to get a video snapshot!");
@@ -284,14 +273,19 @@ namespace MyCaffe.layers.ssd
                         if (m_webcam == null)
                             return;
 
-                        if (nSkipFrames == 0)
-                            nSkipFrames++;
+                        if (nSkipFrames > 0)
+                            nSkipFrames--;
 
-                        m_webcam.Step(nSkipFrames);
+                        if (nSkipFrames > 0)
+                            m_webcam.Step(nSkipFrames);
+
                         m_webcam.GetImage();
 
                         if (!m_evtSnapshotReady.WaitOne(1000))
                             m_log.FAIL("Failed to get video file snapshot!");
+
+                        if (m_webcam.IsAtEnd)
+                            m_webcam.SetPosition(0);
 
                         bmp = m_bmpSnapshot;
                     }
@@ -342,26 +336,18 @@ namespace MyCaffe.layers.ssd
                             m_rgTopData = new T[nTopLen];
                     }
 
-                    if (nSkipFrames > 0)
-                    {
-                        nSkipFrames--;
-                        i--;
-                    }
-                    else
-                    {
-                        nSkipFrames = m_nSkipFrames;
+                    nSkipFrames = m_nSkipFrames;
 
-                        if (datum == null)
-                            datum = ImageData.GetImageData(bmp, batch.Data.channels, false, 0);
+                    if (datum == null)
+                        datum = ImageData.GetImageData(bmp, batch.Data.channels, false, 0);
 
-                        // Apply transformations (mirror, crop...) to the image.
-                        T[] rgTrans = m_transformer.Transform(datum);
-                        Array.Copy(rgTrans, 0, m_rgTopData, nDim * i, nDim);
+                    // Apply transformations (mirror, crop...) to the image.
+                    T[] rgTrans = m_transformer.Transform(datum);
+                    Array.Copy(rgTrans, 0, m_rgTopData, nDim * i, nDim);
 
-                        // Copy label.
-                        if (m_bOutputLabels)
-                            rgTopLabel[i] = (T)Convert.ChangeType(datum.Label, typeof(T));
-                    }
+                    // Copy label.
+                    if (m_bOutputLabels)
+                        rgTopLabel[i] = (T)Convert.ChangeType(datum.Label, typeof(T));
 
                     if (m_param.data_param.display_timing)
                         m_dfTransTime += m_swTimerTransaction.Elapsed.TotalMilliseconds;

@@ -55,19 +55,53 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestSetupVideoFile()
+        {
+            VideoDataLayerTest test = new VideoDataLayerTest(VideoDataParameter.VideoType.VIDEO);
+
+            try
+            {
+                foreach (IVideoDataLayerTest t in test.Tests)
+                {
+                    t.TestSetup();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardVideoFile()
+        {
+            VideoDataLayerTest test = new VideoDataLayerTest(VideoDataParameter.VideoType.VIDEO);
+
+            try
+            {
+                foreach (IVideoDataLayerTest t in test.Tests)
+                {
+                    t.TestForward();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     class VideoDataLayerTest : TestBase
     {
         CancelEvent m_evtCancel = new CancelEvent();
         VideoDataParameter.VideoType m_videoType = VideoDataParameter.VideoType.WEBCAM;
-        string m_strVideoFile = null;
 
-        public VideoDataLayerTest(VideoDataParameter.VideoType videoType, string strFile = null)
+        public VideoDataLayerTest(VideoDataParameter.VideoType videoType)
             : base("VideoData Layer Test")
         {
             m_videoType = videoType;
-            m_strVideoFile = strFile;
         }
 
         protected override ITest create(DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
@@ -94,11 +128,6 @@ namespace MyCaffe.test
         public VideoDataParameter.VideoType VideoType
         {
             get { return m_videoType; }
-        }
-
-        public string VideoFile
-        {
-            get { return m_strVideoFile; }
         }
 
         public CancelEvent CancelEvent
@@ -135,13 +164,23 @@ namespace MyCaffe.test
             get { return m_dt; }
         }
 
+        public string VideoFile
+        {
+            get
+            {
+                string strDataDir = getTestPath("\\MyCaffe\\test_data\\data\\video\\", true);
+                string strFile = strDataDir + "PET717_Var3.300x225.wmv";
+                return strFile;
+            }
+        }
+
         public void TestSetup()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.VIDEO_DATA);
             int nBatchSize = 8;
             p.data_param.batch_size = (uint)nBatchSize;
             p.video_data_param.video_type = m_parent.VideoType;
-            p.video_data_param.video_file = m_parent.VideoFile;
+            p.video_data_param.video_file = VideoFile;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent);
             layer.Setup(BottomVec, TopVec);
@@ -166,7 +205,7 @@ namespace MyCaffe.test
             int nBatchSize = 8;
             p.data_param.batch_size = (uint)nBatchSize;
             p.video_data_param.video_type = m_parent.VideoType;
-            p.video_data_param.video_file = m_parent.VideoFile;
+            p.video_data_param.video_file = VideoFile;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent);
             layer.Setup(BottomVec, TopVec);
