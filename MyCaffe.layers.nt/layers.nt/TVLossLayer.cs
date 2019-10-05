@@ -13,9 +13,9 @@ namespace MyCaffe.layers.nt
     /// The TVLossLayer computes total variation loss as described by 'Mahendran' et al., and used in Neural Style.
     /// </summary>
     /// <remarks>
+    /// @see [A Neural Algorithm of Artistic Style](https://arxiv.org/abs/1508.06576) by Leon A. Gatys, Alexander S. Ecker, and Matthias Bethge, 2015 
     /// @see [ftokarev/caffe-neural-style Github](https://github.com/ftokarev/caffe-neural-style) by ftokarev, 2017. 
     /// @see [Understanding Deep Image Representations by Inverting Them](https://arxiv.org/abs/1412.0035) by A. Mahendran and A. Vedaldi, CVPR, 2015.
-    /// @see [A Neural Algorithm of Artistic Style](https://arxiv.org/abs/1508.06576) by Leon A. Gatys, Alexander S. Ecker, and Matthias Bethge, 2015 
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class TVLossLayer<T> : LossLayer<T>
