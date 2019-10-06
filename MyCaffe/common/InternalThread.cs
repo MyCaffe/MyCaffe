@@ -28,8 +28,8 @@ namespace MyCaffe.common
         /// <summary>
         /// The InternalThread constructor.
         /// </summary>
-        /// <param name="bUseThreadVsTask">Optionally, specifies to use a Thread vs a Task (default = true).</param>
-        public InternalThread(bool bUseThreadVsTask = true)
+        /// <param name="bUseThreadVsTask">Optionally, specifies to use a Thread vs a Task (default = false).</param>
+        public InternalThread(bool bUseThreadVsTask = false)
         {
             m_bUseThread = bUseThreadVsTask;
         }
