@@ -63,7 +63,7 @@ namespace MyCaffe.layers.ssd
         protected double m_dfTransTime;
         private T[] m_rgTopData = null;
         SsdSampler<T> m_sampler = null;
-        CryptoRandom m_random = new CryptoRandom();
+        CryptoRandom m_random = null;
 
         /// <summary>
         /// The AnnotatedDataLayer constructor.
@@ -77,6 +77,7 @@ namespace MyCaffe.layers.ssd
             : base(cuda, log, p, db, evtCancel)
         {
             m_type = LayerParameter.LayerType.ANNOTATED_DATA;
+            m_random = new CryptoRandom(true, p.transform_param.random_seed.GetValueOrDefault(0));
 
             Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> kvSel = db.GetSelectionMethod();
             IMGDB_IMAGE_SELECTION_METHOD imgSel = kvSel.Item2;

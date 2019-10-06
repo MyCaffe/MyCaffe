@@ -821,6 +821,10 @@ namespace MyCaffe.test
 
                 p.transform_param.crop_size = 1;
                 p.transform_param.mirror = true;
+                p.transform_param.random_seed = 1701;
+
+                // Turn off random selection;
+                m_parent.db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
 
                 // Get crop sequence.
                 List<List<double>> rgrgCropSequence = new List<List<double>>();
@@ -858,7 +862,6 @@ namespace MyCaffe.test
                 }
 
                 // Get crop sequence after reseeding.
-                m_cuda.SetRandomSeed(m_lSeed);
                 Layer<T> layer2 = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
                 layer2.Setup(BottomVec, TopVec);
 
