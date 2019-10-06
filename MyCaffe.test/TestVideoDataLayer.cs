@@ -183,14 +183,24 @@ namespace MyCaffe.test
             p.video_data_param.video_file = VideoFile;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent);
-            layer.Setup(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, nBatchSize, "The top num should = the batch size of 8.");
-            m_log.CHECK_EQ(Top.channels, 3, "The top channels should = 3.");
-            m_log.CHECK_EQ(Top.width, p.video_data_param.video_width, "The top width should = the video width of " + p.video_data_param.video_width.ToString());
-            m_log.CHECK_EQ(Top.height, p.video_data_param.video_height, "The top width should = the video height of " + p.video_data_param.video_height.ToString());
+            try
+            {
+                layer.Setup(BottomVec, TopVec);
 
-            layer.Dispose();
+                m_log.CHECK_EQ(Top.num, nBatchSize, "The top num should = the batch size of 8.");
+                m_log.CHECK_EQ(Top.channels, 3, "The top channels should = 3.");
+                m_log.CHECK_EQ(Top.width, p.video_data_param.video_width, "The top width should = the video width of " + p.video_data_param.video_width.ToString());
+                m_log.CHECK_EQ(Top.height, p.video_data_param.video_height, "The top width should = the video height of " + p.video_data_param.video_height.ToString());
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForward()
@@ -202,37 +212,48 @@ namespace MyCaffe.test
                 Directory.CreateDirectory(strResultDir);
 
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.VIDEO_DATA);
+
             int nBatchSize = 8;
             p.data_param.batch_size = (uint)nBatchSize;
             p.video_data_param.video_type = m_parent.VideoType;
             p.video_data_param.video_file = VideoFile;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent);
-            layer.Setup(BottomVec, TopVec);
-            layer.Forward(BottomVec, TopVec);
 
-            m_log.CHECK_EQ(Top.num, nBatchSize, "The top num should = the batch size of 8.");
-            m_log.CHECK_EQ(Top.channels, 3, "The top channels should = 3.");
-            m_log.CHECK_EQ(Top.width, p.video_data_param.video_width, "The top width should = the video width of " + p.video_data_param.video_width.ToString());
-            m_log.CHECK_EQ(Top.height, p.video_data_param.video_height, "The top width should = the video height of " + p.video_data_param.video_height.ToString());
-
-            int nDim = Top.count(1);
-            T[] rgTopData1 = new T[nDim];
-            T[] rgTopData = Top.mutable_cpu_data;
-
-            // Check the data.
-            for (int i = 0; i < Top.num; i++)
+            try
             {
-                Array.Copy(rgTopData, nDim * i, rgTopData1, 0, nDim);
-                float[] rgf = convertF(rgTopData1);
+                layer.Setup(BottomVec, TopVec);
+                layer.Forward(BottomVec, TopVec);
 
-                SimpleDatum sd = new SimpleDatum(Top.channels, Top.width, Top.height, rgf, 0, nDim);
-                Bitmap bmp = ImageData.GetImage(sd);
+                m_log.CHECK_EQ(Top.num, nBatchSize, "The top num should = the batch size of 8.");
+                m_log.CHECK_EQ(Top.channels, 3, "The top channels should = 3.");
+                m_log.CHECK_EQ(Top.width, p.video_data_param.video_width, "The top width should = the video width of " + p.video_data_param.video_width.ToString());
+                m_log.CHECK_EQ(Top.height, p.video_data_param.video_height, "The top width should = the video height of " + p.video_data_param.video_height.ToString());
 
-                bmp.Save(strResultDir + "bmp_" + i.ToString() + ".png");
+                int nDim = Top.count(1);
+                T[] rgTopData1 = new T[nDim];
+                T[] rgTopData = Top.mutable_cpu_data;
+
+                // Check the data.
+                for (int i = 0; i < Top.num; i++)
+                {
+                    Array.Copy(rgTopData, nDim * i, rgTopData1, 0, nDim);
+                    float[] rgf = convertF(rgTopData1);
+
+                    SimpleDatum sd = new SimpleDatum(Top.channels, Top.width, Top.height, rgf, 0, nDim);
+                    Bitmap bmp = ImageData.GetImage(sd);
+
+                    bmp.Save(strResultDir + "bmp_" + i.ToString() + ".png");
+                }
             }
-
-            layer.Dispose();
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
     }
 }
