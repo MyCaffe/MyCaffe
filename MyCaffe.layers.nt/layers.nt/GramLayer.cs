@@ -6,6 +6,7 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.layers;
 using MyCaffe.param;
+using MyCaffe.param.nt;
 
 namespace MyCaffe.layers.nt
 {

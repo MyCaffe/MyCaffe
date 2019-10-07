@@ -5,7 +5,14 @@ using System.Text;
 using MyCaffe.basecode;
 using System.ComponentModel;
 
-namespace MyCaffe.param
+/// <summary>
+/// The MyCaffe.param.nt namespace defines the parameters used by the Nerual Style Transfer layers.
+/// </summary>
+/// <remarks>
+/// @see [A Neural Algorithm of Artistic Style](https://arxiv.org/abs/1508.06576) by Leon A. Gatys, Alexander S. Ecker, and Matthias Bethge, 2015 
+/// @see [ftokarev/caffe-neural-style Github](https://github.com/ftokarev/caffe-neural-style) by ftokarev, 2017. 
+/// </remarks>
+namespace MyCaffe.param.nt
 {
     /// <summary>
     /// Specifies the parameters for the GramLayer

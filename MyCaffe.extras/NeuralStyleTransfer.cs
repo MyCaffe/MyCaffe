@@ -4,6 +4,7 @@ using MyCaffe.data;
 using MyCaffe.layers;
 using MyCaffe.layers.nt;
 using MyCaffe.param;
+using MyCaffe.param.nt;
 using MyCaffe.solvers;
 using System;
 using System.Collections.Generic;

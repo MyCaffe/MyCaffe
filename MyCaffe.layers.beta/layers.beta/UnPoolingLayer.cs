@@ -6,6 +6,7 @@ using System.Drawing;
 using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
+using MyCaffe.param.beta;
 
 namespace MyCaffe.layers.beta
 {

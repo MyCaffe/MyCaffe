@@ -196,12 +196,12 @@
     <Compile Include="param\DataNormalizerParameter.cs" />
     <Compile Include="param.ssd\PermuteParameter.cs" />
     <Compile Include="param.ssd\Normalization2Parameter.cs" />
-    <Compile Include="param\OneHotParameter.cs" />
-    <Compile Include="param\ScalarParameter.cs" />
+    <Compile Include="param.nt\OneHotParameter.cs" />
+    <Compile Include="param.nt\ScalarParameter.cs" />
     <Compile Include="param\ParameterParameter.cs" />
-    <Compile Include="param\TVLossParameter.cs" />
-    <Compile Include="param\GramParameter.cs" />
-    <Compile Include="param\BinaryHashParameter.cs" />
+    <Compile Include="param.nt\TVLossParameter.cs" />
+    <Compile Include="param.nt\GramParameter.cs" />
+    <Compile Include="param.alpha\BinaryHashParameter.cs" />
     <Compile Include="param\CropParameter.cs" />
     <Compile Include="param.ui\FormProperty.cs">
       <SubType>Form</SubType>
@@ -212,7 +212,7 @@
     <Compile Include="param\GradientScaleParameter.cs" />
     <Compile Include="param\MemoryDataParameter.cs" />
     <Compile Include="param\DebugParameter.cs" />
-    <Compile Include="param\KnnParameter.cs" />
+    <Compile Include="param.beta\KnnParameter.cs" />
     <Compile Include="param.ui\DictionaryParamEditor.cs" />
     <Compile Include="param.ui\DictionaryParameterEditorControl.cs">
       <SubType>UserControl</SubType>
@@ -221,11 +221,11 @@
       <DependentUpon>DictionaryParameterEditorControl.cs</DependentUpon>
     </Compile>
     <Compile Include="param\ClipParameter.cs" />
-    <Compile Include="param\UnPoolingParameter.cs" />
+    <Compile Include="param.beta\UnPoolingParameter.cs" />
     <Compile Include="param\SwishParameter.cs" />
-    <Compile Include="param\TripletLossParameter.cs" />
-    <Compile Include="param\TripletLossSimpleParameter.cs" />
-    <Compile Include="param\Normalization1Parameter.cs" />
+    <Compile Include="param.alpha\TripletLossParameter.cs" />
+    <Compile Include="param.alpha\TripletLossSimpleParameter.cs" />
+    <Compile Include="param.beta\Normalization1Parameter.cs" />
     <Compile Include="param\AccuracyParameter.cs" />
     <Compile Include="param\ArgMaxParameter.cs" />
     <Compile Include="param\BaseParameter.cs" />

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyCaffe.param
+namespace MyCaffe.param.nt
 {
     /// <summary>
     /// Specifies the parameters used by the OneHotLayer

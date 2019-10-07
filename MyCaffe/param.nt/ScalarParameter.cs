@@ -5,7 +5,7 @@ using System.Text;
 using MyCaffe.basecode;
 using System.ComponentModel;
 
-namespace MyCaffe.param
+namespace MyCaffe.param.nt
 {
     /// <summary>
     /// Specifies the parameters for the ScalarLayer

@@ -5,7 +5,10 @@ using System.Text;
 using MyCaffe.basecode;
 using System.ComponentModel;
 
-namespace MyCaffe.param
+/// <summary>
+/// The MyCaffe.param.alpha parameters are used by the MyCaffe.layer.alpha layers.
+/// </summary>
+namespace MyCaffe.param.alpha
 {
     /// <summary>
     /// Specifies the parameters for the BinaryHashLayer

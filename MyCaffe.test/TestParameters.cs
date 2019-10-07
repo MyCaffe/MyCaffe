@@ -5,6 +5,7 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MyCaffe.param;
 using MyCaffe.basecode;
+using MyCaffe.param.nt;
 
 namespace MyCaffe.test
 {

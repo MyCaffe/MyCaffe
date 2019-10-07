@@ -5,7 +5,7 @@ using System.Text;
 using System.ComponentModel;
 using MyCaffe.basecode;
 
-namespace MyCaffe.param
+namespace MyCaffe.param.alpha
 {
     /// <summary>
     /// Simple triplet loss layer

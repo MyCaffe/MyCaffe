@@ -5,7 +5,10 @@ using System.Text;
 using MyCaffe.basecode;
 using System.ComponentModel;
 
-namespace MyCaffe.param
+/// <summary>
+/// The MyCaffe.param.beta parameters are used by the MyCaffe.layer.beta layers.
+/// </summary>
+namespace MyCaffe.param.beta
 {
     /// <summary>
     /// Specifies the parameters for the KnnLayer.

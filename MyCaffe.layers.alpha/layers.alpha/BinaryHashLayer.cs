@@ -7,6 +7,7 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
 using System.Diagnostics;
+using MyCaffe.param.alpha;
 
 namespace MyCaffe.layers.alpha
 {
