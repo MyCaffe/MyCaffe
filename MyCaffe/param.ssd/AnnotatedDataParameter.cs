@@ -11,7 +11,7 @@ using MyCaffe.basecode;
 /// The MyCaffe.param.ssd namespace contains all SSD related parameter objects that correspond to the native C++ %Caffe prototxt file.
 /// </summary>
 /// <remarks>
-/// Using parameters within the MyCaffe.layer.ssd namespace will require the use of the MyCaffe.layers.ssd.dll.
+/// Using parameters within the MyCaffe.layer.ssd namespace are used by layers that require the MyCaffe.layers.ssd.dll.
 /// 
 /// @see [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.
 /// @see [GitHub: SSD: Single Shot MultiBox Detector](https://github.com/weiliu89/caffe/tree/ssd), by weiliu89/caffe, 2016

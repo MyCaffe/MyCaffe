@@ -9,7 +9,7 @@ using System.ComponentModel;
 /// The MyCaffe.param.nt namespace defines the parameters used by the Nerual Style Transfer layers.
 /// </summary>
 /// <remarks>
-/// Using parameters within the MyCaffe.layer.nt namespace will require the use of the MyCaffe.layers.nt.dll.
+/// Using parameters within the MyCaffe.layer.nt namespace are used by layers that require the MyCaffe.layers.nt.dll.
 /// 
 /// @see [A Neural Algorithm of Artistic Style](https://arxiv.org/abs/1508.06576) by Leon A. Gatys, Alexander S. Ecker, and Matthias Bethge, 2015 
 /// @see [ftokarev/caffe-neural-style Github](https://github.com/ftokarev/caffe-neural-style) by ftokarev, 2017. 
