@@ -8,6 +8,9 @@ using System.ComponentModel;
 /// <summary>
 /// The MyCaffe.param.alpha parameters are used by the MyCaffe.layer.alpha layers.
 /// </summary>
+/// <remarks>
+/// Using parameters within the MyCaffe.layer.alpha namespace will require the use of the MyCaffe.layers.alpha.dll.
+/// </remarks>
 namespace MyCaffe.param.alpha
 {
     /// <summary>
