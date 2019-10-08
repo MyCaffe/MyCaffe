@@ -1508,10 +1508,9 @@ namespace MyCaffe.test
             int nNumClasses = 2;
             int nDim = nNumPredsPerClass * nNumClasses;
             Blob<T> blob = new Blob<T>(m_cuda, m_log, nNum, nDim, 1, 1);
-            double[] rgData1 = convert(blob.mutable_cpu_data);
-            float[] rgData = rgData1.Select(p => (float)p).ToArray();
-            DictionaryMap<List<NormalizedBBox>> rgAllGtBboxes = new DictionaryMap<List<NormalizedBBox>>(new List<NormalizedBBox>());
-            List<DictionaryMap<List<int>>> rgAllMatchIndices = new List<DictionaryMap<List<int>>>();
+            float[] rgConfData = convertF(blob.mutable_cpu_data);
+            List<Dictionary<int, List<int>>> rgAllMatchIndices = new List<Dictionary<int, List<int>>>();
+            Dictionary<int, List<NormalizedBBox>> rgAllGtBboxes = new Dictionary<int, List<NormalizedBBox>>();
 
             for (int i = 0; i < nNum; i++)
             {
@@ -1522,16 +1521,19 @@ namespace MyCaffe.test
                     for (int c = 0; c < nNumClasses; c++)
                     {
                         int nIdx = (i * nNumPredsPerClass + j) * nNumClasses + c;
-                        rgData[nIdx] = nSign * nIdx * 0.1f;
+                        rgConfData[nIdx] = nSign * nIdx * 0.1f;
                     }
                 }
 
-                rgAllGtBboxes.Map.Add(i, new List<NormalizedBBox>());
-                DictionaryMap<List<int>> rgMatchIndices = new DictionaryMap<List<int>>(new List<int>());
-                rgMatchIndices.Map.Add(-1, Utility.Create<int>(nNumPredsPerClass, -1));
+                Dictionary<int, List<int>> rgMatchIndices = new Dictionary<int, List<int>>();
+                List<int> rgIndices = Utility.Create<int>(nNumPredsPerClass, -1);
+                rgMatchIndices.Add(-1, rgIndices);
 
                 if (i == 1)
                 {
+                    if (!rgAllGtBboxes.ContainsKey(i))
+                        rgAllGtBboxes.Add(i, new List<NormalizedBBox>());
+
                     rgAllGtBboxes[i].Add(new NormalizedBBox(0, 0, 0, 0, 1));
                     // The first prior in second image is matched to a gt bbox of label 1.
                     rgMatchIndices[-1][0] = 0;
@@ -1541,7 +1543,7 @@ namespace MyCaffe.test
             }
 
             MultiBoxLossParameter.ConfLossType loss_type = MultiBoxLossParameter.ConfLossType.LOGISTIC;
-            List<List<float>> rgAllConfLoss = m_util.ComputeConfLoss(rgData, nNum, nNumPredsPerClass, nNumClasses, -1, loss_type, rgAllMatchIndices, rgAllGtBboxes);
+            List<List<float>> rgAllConfLoss = m_util.ComputeConfLoss(rgConfData, nNum, nNumPredsPerClass, nNumClasses, -1, loss_type, rgAllMatchIndices, rgAllGtBboxes);
 
             m_log.CHECK_EQ(rgAllConfLoss.Count, nNum, "The loss count is incorrect.");
             m_log.CHECK_EQ(rgAllConfLoss[0].Count, nNumPredsPerClass, "The number of predictions per class is incorrect.");
@@ -1551,7 +1553,7 @@ namespace MyCaffe.test
             m_log.EXPECT_NEAR(rgAllConfLoss[1][0], -(Math.Log(Math.Exp(-0.4) / (1 + Math.Exp(-0.4))) + Math.Log(1.0 / (1 + Math.Exp(-0.5)))), m_fEps, "The loss is incorrect.");
             m_log.EXPECT_NEAR(rgAllConfLoss[1][1], -(Math.Log(Math.Exp(-0.6) / (1 + Math.Exp(-0.6))) + Math.Log(Math.Exp(-0.7) / (1 + Math.Exp(-0.7)))), m_fEps, "The loss is incorrect.");
 
-            rgAllConfLoss = m_util.ComputeConfLoss(rgData, nNum, nNumPredsPerClass, nNumClasses, 0, loss_type, rgAllMatchIndices, rgAllGtBboxes);
+            rgAllConfLoss = m_util.ComputeConfLoss(rgConfData, nNum, nNumPredsPerClass, nNumClasses, 0, loss_type, rgAllMatchIndices, rgAllGtBboxes);
 
             m_log.CHECK_EQ(rgAllConfLoss.Count, nNum, "The loss count is incorrect.");
             m_log.CHECK_EQ(rgAllConfLoss[0].Count, nNumPredsPerClass, "The number of predictions per class is incorrect.");
@@ -1562,7 +1564,7 @@ namespace MyCaffe.test
             m_log.EXPECT_NEAR(rgAllConfLoss[1][1], -(Math.Log(1.0 / (1 + Math.Exp(-0.6))) + Math.Log(Math.Exp(-0.7) / (1 + Math.Exp(-0.7)))), m_fEps, "The loss is incorrect.");
 
             loss_type = MultiBoxLossParameter.ConfLossType.SOFTMAX;
-            rgAllConfLoss = m_util.ComputeConfLoss(rgData, nNum, nNumPredsPerClass, nNumClasses, 0, loss_type, rgAllMatchIndices, rgAllGtBboxes);
+            rgAllConfLoss = m_util.ComputeConfLoss(rgConfData, nNum, nNumPredsPerClass, nNumClasses, 0, loss_type, rgAllMatchIndices, rgAllGtBboxes);
 
             m_log.CHECK_EQ(rgAllConfLoss.Count, nNum, "The loss count is incorrect.");
             for (int i = 0; i < nNum; i++)
