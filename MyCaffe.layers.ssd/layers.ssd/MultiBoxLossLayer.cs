@@ -95,12 +95,18 @@ namespace MyCaffe.layers.ssd
             m_type = LayerParameter.LayerType.MULTIBOX_LOSS;
 
             m_blobLocPred = new Blob<T>(cuda, log);
+            m_blobLocPred.Name = "loc_pred";
             m_blobLocGt = new Blob<T>(cuda, log);
+            m_blobLocGt.Name = "loc_gt";
             m_blobLocLoss = new Blob<T>(cuda, log);
+            m_blobLocLoss.Name = "loc_loss";
 
             m_blobConfPred = new Blob<T>(cuda, log);
+            m_blobConfPred.Name = "conf_pred";
             m_blobConfGt = new Blob<T>(cuda, log);
+            m_blobConfGt.Name = "conf_gt";
             m_blobConfLoss = new Blob<T>(cuda, log);
+            m_blobConfLoss.Name = "conf_loss";
 
             m_bboxUtil = new BBoxUtility<T>(cuda, log);
         }
@@ -111,6 +117,25 @@ namespace MyCaffe.layers.ssd
             {
                 b.Dispose();
                 b = null;
+            }
+        }
+
+        public override BlobCollection<T> internal_blobs
+        {
+            get
+            {
+                {
+                    BlobCollection<T> col = new BlobCollection<T>();
+
+                    col.Add(m_blobConfPred);
+                    col.Add(m_blobLocGt);
+                    col.Add(m_blobLocLoss);
+                    col.Add(m_blobConfPred);
+                    col.Add(m_blobConfGt);
+                    col.Add(m_blobConfLoss);
+
+                    return col;
+                }
             }
         }
 
