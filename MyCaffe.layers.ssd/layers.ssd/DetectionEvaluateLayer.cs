@@ -200,7 +200,7 @@ namespace MyCaffe.layers.ssd
             float[] rgfGtData = convertF(colBottom[1].mutable_cpu_data);
 
             // Retrieve all detection results.
-            Dictionary<int, LabelBBox> rgAllDetections = m_bboxUtil.GetDetectionResults(rgfDetData, colBottom[0].height, m_nBackgroundLabelId);
+            Dictionary<int, Dictionary<int, List<NormalizedBBox>>> rgAllDetections = m_bboxUtil.GetDetectionResults(rgfDetData, colBottom[0].height, m_nBackgroundLabelId);
 
             // Retrieve all ground truth (including difficult ones).
             Dictionary<int, LabelBBox> rgAllGtBboxes = m_bboxUtil.GetGroundTruthEx(rgfGtData, colBottom[1].height, m_nBackgroundLabelId, true);
@@ -229,7 +229,7 @@ namespace MyCaffe.layers.ssd
                         // Get number of non difficult ground truth.
                         for (int i = 0; i < kvLabel.Value.Count; i++)
                         {
-                            if (kvLabel.Value[i].difficult)
+                            if (!kvLabel.Value[i].difficult)
                                 nCount++;
                         }
                     }
@@ -260,15 +260,15 @@ namespace MyCaffe.layers.ssd
             }
 
             // Insert detection evaluate status.
-            foreach (KeyValuePair<int, LabelBBox> kv in rgAllDetections)
+            foreach (KeyValuePair<int, Dictionary<int, List<NormalizedBBox>>> kv in rgAllDetections)
             {
                 int nImageId = kv.Key;
-                LabelBBox detections = kv.Value;
+                Dictionary<int, List<NormalizedBBox>> detections = kv.Value;
 
                 // No ground truth for current image.  All detections become false_pos.
                 if (!rgAllGtBboxes.ContainsKey(nImageId))
                 {
-                    List<KeyValuePair<int, List<NormalizedBBox>>> kvLabels = detections.ToList();
+                    List<KeyValuePair<int, List<NormalizedBBox>>> kvLabels = detections.OrderBy(p => p.Key).ToList();
                     foreach (KeyValuePair<int, List<NormalizedBBox>> kvLabel in kvLabels)
                     {
                         int nLabel = kvLabel.Key;
@@ -293,7 +293,7 @@ namespace MyCaffe.layers.ssd
                 {
                     LabelBBox label_bboxes = rgAllGtBboxes[nImageId];
 
-                    List<KeyValuePair<int, List<NormalizedBBox>>> kvLabels = detections.ToList();
+                    List<KeyValuePair<int, List<NormalizedBBox>>> kvLabels = detections.OrderBy(p => p.Key).ToList();
                     foreach (KeyValuePair<int, List<NormalizedBBox>> kvLabel in kvLabels)
                     {
                         int nLabel = kvLabel.Key;

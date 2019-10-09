@@ -1660,7 +1660,7 @@ namespace MyCaffe.test
             }
 
             m_log.CHECK_EQ(nIdx, nNumDet, "The index should equal the number of detections.");
-            Dictionary<int, LabelBBox> rgAllDetections = m_util.GetDetectionResults(rgData, nNumDet, -1);
+            Dictionary<int, Dictionary<int, List<NormalizedBBox>>> rgAllDetections = m_util.GetDetectionResults(rgData, nNumDet, -1);
 
             m_log.CHECK_EQ(rgAllDetections.Count, 3, "The detection count is incorrect.");
 

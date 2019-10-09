@@ -443,9 +443,9 @@ namespace MyCaffe.common
         /// <param name="nBackgroundLabelId">Specifies the label for the background class which is used to do a
         /// sanity check so that no detection contains it.</param>
         /// <returns>The detection results are returned for each class from each image.</returns>
-        public Dictionary<int, LabelBBox> GetDetectionResults(float[] rgData, int nNumDet, int nBackgroundLabelId)
+        public Dictionary<int, Dictionary<int, List<NormalizedBBox>>> GetDetectionResults(float[] rgData, int nNumDet, int nBackgroundLabelId)
         {
-            Dictionary<int, LabelBBox> rgAllDetections = new Dictionary<int, LabelBBox>();
+            Dictionary<int, Dictionary<int, List<NormalizedBBox>>> rgAllDetections = new Dictionary<int, Dictionary<int, List<NormalizedBBox>>>();
 
             for (int i = 0; i < nNumDet; i++)
             {
@@ -467,9 +467,12 @@ namespace MyCaffe.common
                 bbox.size = Size(bbox);
 
                 if (!rgAllDetections.ContainsKey(nItemId))
-                    rgAllDetections.Add(nItemId, new LabelBBox());
+                    rgAllDetections.Add(nItemId, new Dictionary<int, List<NormalizedBBox>>());
 
-                rgAllDetections[nItemId].Add(nLabel, bbox);
+                if (!rgAllDetections[nItemId].ContainsKey(nLabel))
+                    rgAllDetections[nItemId].Add(nLabel, new List<NormalizedBBox>());
+
+                rgAllDetections[nItemId][nLabel].Add(bbox);
             }
 
             return rgAllDetections;
