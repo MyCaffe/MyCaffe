@@ -186,7 +186,7 @@ namespace MyCaffe.test
             FillItem(rgfGt, 8 * 0, "0, 1, 0, 0.1, 0.1, 0.3, 0.3, 0");
             FillItem(rgfGt, 8 * 1, "2, 1, 0, 0.1, 0.1, 0.3, 0.3, 0");
             FillItem(rgfGt, 8 * 2, "2, 2, 0, 0.2, 0.2, 0.4, 0.4, 0");
-            FillItem(rgfGt, 8 * 3, "2, 2, 1, 0.6, 0.6, 0.8, 0.8, 1");
+            FillItem(rgfGt, 8 * 3, "2, 2, 1, 0.6, 0.6, 0.8, 0.9, 1");
             m_blobBottomGt.mutable_cpu_data = Utility.ConvertVec<T>(rgfGt);
 
             // Fake layer
