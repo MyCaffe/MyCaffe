@@ -121,10 +121,15 @@ namespace MyCaffe.test
             m_engine = engine;
             m_nNumPriors = m_nWidth * m_nHeight * m_nNumPriorsPerLocation;
             m_blobBottomLoc = new Blob<T>(m_cuda, m_log, m_nNum, m_nNumPriors * 4, 1, 1);
+            m_blobBottomLoc.Name = "bottom loc";
             m_blobBottomConf = new Blob<T>(m_cuda, m_log, m_nNum, m_nNumPriors * m_nNumClasses, 1, 1);
+            m_blobBottomConf.Name = "bottom conf";
             m_blobBottomPrior = new Blob<T>(m_cuda, m_log, m_nNum, 2, m_nNumPriors * 4, 1);
+            m_blobBottomPrior.Name = "bottom prior";
             m_blobBottomGt = new Blob<T>(m_cuda, m_log, 1, 1, 4, 8);
+            m_blobBottomGt.Name = "bottom gt";
             m_blobTopLoss = new Blob<T>(m_cuda, m_log);
+            m_blobTopLoss.Name = "top loss";
 
             BottomVec.Clear();
             BottomVec.Add(m_blobBottomLoc);
