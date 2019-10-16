@@ -78,7 +78,7 @@ namespace MyCaffe.test
             NormalizedBBox bbox = new NormalizedBBox(0.1f, 0.3f, 0.3f, 0.6f, 0, false, 0, 0);
             int img_height = 600;
             int img_width = 1000;
-            ResizeParameter resize_param = new ResizeParameter();
+            ResizeParameter resize_param = new ResizeParameter(true);
             resize_param.height = 300;
             resize_param.width = 300;
             NormalizedBBox out_bbox;
