@@ -1005,7 +1005,12 @@ namespace MyCaffe.param
 
             // SSD Parameters
             rgChildren.Add("eval_type", eval_type.ToString().ToLower());
-            rgChildren.Add("ap_version", ap_version.ToString().ToLower());
+
+            if (ap_version == ApVersion.ELEVENPOINT)
+                rgChildren.Add("ap_version", "11point");
+            else
+                rgChildren.Add("ap_version", ap_version.ToString().ToLower());
+
             rgChildren.Add("show_per_class_result", show_per_class_result.ToString());
 
             return new RawProto(strName, "", rgChildren);
