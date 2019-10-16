@@ -85,9 +85,9 @@ namespace MyCaffe.test
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestSimpleTripletLossLayer", "TestGradient", "SKIPPED - Values 0.9923858 and 0.354433 are NOT within the range 0.01 of one another."));
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestContrastiveLossLayer", "TestGradientLegacy", "SKIPPED - Values -0.400000 and 0.158390 are NOT within the range 0.01 of one another."));
 
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestQuerySequential2LoadLimit", "SKIPPED - Assert.AreEqual failed. Expected:<1>. Actual:<10>."));
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestQuerySequential4LoadLimit", "SKIPPED - Assert.AreEqual failed. Expected:<1>. Actual:<10>."));
-                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestQueryPairLoadLimit", "SKIPPED - Assert.AreEqual failed. Expected:<100>. Actual:<10>."));
+//                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestQuerySequential2LoadLimit", "SKIPPED - Assert.AreEqual failed. Expected:<1>. Actual:<10>."));
+//                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestQuerySequential4LoadLimit", "SKIPPED - Assert.AreEqual failed. Expected:<1>. Actual:<10>."));
+//                rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestQueryPairLoadLimit", "SKIPPED - Assert.AreEqual failed. Expected:<100>. Actual:<10>."));
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestMyCaffeImageDatabase", "TestLoadLimitNextSequential", "SKIPPED - currently causes lock-up."));
 
                 rgKnownFailures.Add(new Tuple<string, string, string>("TestConvolutionLayer", "TestNDAgainst2D", "SKIPPED - FLOAT:CAFFE Values 0.251427710056305 and -0.860932171344757 are NOT within the range 0.01 of one another.  The 2d and ND backward results are not the same at 1"));
