@@ -86,6 +86,7 @@
     </Compile>
     <Compile Include="SqlServerTypes\Loader.cs" />
     <Compile Include="TestAnnotatedDataLayer.cs" />
+    <Compile Include="TestModelBuilder.cs" />
     <Compile Include="TestVideoDataLayer.cs" />
     <Compile Include="TestDetectionOutputLayer.cs" />
     <Compile Include="TestPriorBoxLayer.cs" />
@@ -258,6 +259,10 @@
     <ProjectReference Include="..\MyCaffe.layers.ssd\MyCaffe.layers.ssd.csproj">
       <Project>{679fabca-e889-428c-a59e-261af1af1cf2}</Project>
       <Name>MyCaffe.layers.ssd</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.model\MyCaffe.model.csproj">
+      <Project>{32581551-7AE2-4EBD-9030-A1DF0DCF97B5}</Project>
+      <Name>MyCaffe.model</Name>
     </ProjectReference>
     <ProjectReference Include="..\MyCaffe.preprocessor\MyCaffe.preprocessor.csproj">
       <Project>{94643CDE-A28A-473B-8A50-86471A47D33D}</Project>
