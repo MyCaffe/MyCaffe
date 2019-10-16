@@ -44,6 +44,24 @@ namespace MyCaffe.model
         }
 
         /// <summary>
+        /// Create the base solver to use.
+        /// </summary>
+        /// <returns>
+        /// The solver parameter created is returned.
+        /// </returns>
+        public abstract SolverParameter CreateSolver();
+
+        /// <summary>
+        /// Create the training/testing/deploy model to use.
+        /// </summary>
+        public abstract NetParameter CreateModel(bool bDeploy = false);
+
+        /// <summary>
+        /// Create the deploy model to use.
+        /// </summary>
+        public abstract NetParameter CreateDeployModel();
+
+        /// <summary>
         /// Returns the full path of the filename using the base directory original set when creating the ModelBuilder.
         /// </summary>
         /// <param name="strFile">Specifies the partial path of the file.</param>
@@ -52,21 +70,6 @@ namespace MyCaffe.model
         {
             return m_strBaseDir + "\\" + strFile;
         }
-
-        /// <summary>
-        /// Create the base solver to use.
-        /// </summary>
-        public abstract void CreateSolver();
-
-        /// <summary>
-        /// Create the training model to use.
-        /// </summary>
-        public abstract NetParameter CreateTrainingModel();
-
-        /// <summary>
-        /// Create the testing model to use.
-        /// </summary>
-        public abstract NetParameter CreateTestingModel();
 
         /// <summary>
         /// Add extra layers on top of a 'base' network (e.g. VGGNet or Inception)
@@ -92,23 +95,34 @@ namespace MyCaffe.model
         }
 
         /// <summary>
-        /// Create a new network that starts with an Annotated Data layer.
+        /// Create the base network parameter for the model and set its name to the 'm_strModel' name.
+        /// </summary>
+        /// <param name="strName">Specifies the model name.</param>
+        /// <returns>The NetParameter created is returned.</returns>
+        protected NetParameter createNet(string strName)
+        {
+            NetParameter net = new NetParameter();
+
+            net.name = strName;
+
+            return net;
+        }
+
+        /// <summary>
+        /// Add the Annotated Data layer.
         /// </summary>
         /// <param name="strSource">Specifies the data source.</param>
         /// <param name="nBatchSize">Optionally, specifies the batch size (default = 32).</param>
         /// <param name="bOutputLabel">Optionally, specifies whether or not to output the label (default = true).</param>
-        /// <param name="bTrain">Optionally, specifies whether or not to create the layer for training (default = true).</param>
+        /// <param name="phase">Optionally, specifies whether or not to create the layer for training (default = true).</param>
         /// <param name="strLabelMapFile">Optionally, specifies the label file (default = "").</param>
         /// <param name="anno_type">Optionally, specifies the annotation type (default = NONE).</param>
         /// <param name="transform">Optionally, specifies the transformation parameter (default = null, ignored).</param>
         /// <param name="rgSampler">Optionally, specifies the list of batch samplers (default = null, ignored).</param>
         /// <returns>The annotated data layer is retunred after it is added to the network.</returns>
-        protected LayerParameter createAnnotatedDataLayer(string strSource, int nBatchSize = 32, bool bOutputLabel = true, bool bTrain = true, string strLabelMapFile = "", SimpleDatum.ANNOTATION_TYPE anno_type = SimpleDatum.ANNOTATION_TYPE.NONE, TransformationParameter transform = null, List<BatchSampler> rgSampler = null)
+        protected LayerParameter addAnnotatedDataLayer(string strSource, int nBatchSize = 32, bool bOutputLabel = true, Phase phase = Phase.TRAIN, string strLabelMapFile = "", SimpleDatum.ANNOTATION_TYPE anno_type = SimpleDatum.ANNOTATION_TYPE.NONE, TransformationParameter transform = null, List<BatchSampler> rgSampler = null)
         {
-            m_net = new NetParameter();
-
             LayerParameter data = new LayerParameter(LayerParameter.LayerType.ANNOTATED_DATA);
-            Phase phase = (bTrain) ? Phase.TRAIN : Phase.TEST;
             data.include.Add(new NetStateRule(phase));
 
             if (transform != null)
@@ -120,7 +134,7 @@ namespace MyCaffe.model
                 data.annotated_data_param.batch_sampler = rgSampler;
 
             data.annotated_data_param.anno_type = anno_type;
-            data.name = "Data";
+            data.name = "data";
             data.data_param.batch_size = (uint)nBatchSize;
             data.data_param.source = strSource;
 
@@ -138,7 +152,8 @@ namespace MyCaffe.model
         /// <summary>
         /// Create the multi-box head layers.
         /// </summary>
-        /// <param name="strDataLayer">Specifies the data layer name.</param>
+        /// <param name="data">Specifies the data layer.</param>
+        /// <param name="bDeploy">Specifies that the model created is for deployment.</param>
         /// <param name="nNumClasses">Specifies the number of classes.</param>
         /// <param name="rgInfo">Specifies the info associated with the layers to connect to.</param>
         /// <param name="rgPriorVariance">Specifies the prior variance.</param>
@@ -157,7 +172,7 @@ namespace MyCaffe.model
         /// <param name="strConfPostfix">Optionally, specifies the confidence postfix (default = "").</param>
         /// <param name="strLocPostfix">Optionally, specifies the location postifix (default = "").</param>
         /// <returns></returns>
-        protected List<LayerParameter> createMultiBoxHead(string strDataLayer, int nNumClasses, List<MultiBoxHeadInfo> rgInfo, List<float> rgPriorVariance, bool bUseObjectness = false, bool bUseBatchNorm = true, double dfLrMult = 1.0, bool bUseScale = true, int nImageHt = 0, int nImageWd = 0, bool bShareLocation = true, bool bFlip = true, bool bClip = true, double dfOffset = 0.5, int nKernelSize = 1, int nPad = 0, string strConfPostfix = "", string strLocPostfix = "")
+        protected List<LayerParameter> createMultiBoxHead(LayerParameter data, bool bDeploy, int nNumClasses, List<MultiBoxHeadInfo> rgInfo, List<float> rgPriorVariance, bool bUseObjectness = false, bool bUseBatchNorm = true, double dfLrMult = 1.0, bool bUseScale = true, int nImageHt = 0, int nImageWd = 0, bool bShareLocation = true, bool bFlip = true, bool bClip = true, double dfOffset = 0.5, int nKernelSize = 1, int nPad = 0, string strConfPostfix = "", string strLocPostfix = "")
         {
             LayerParameter lastLayer;
             string strName;
@@ -180,7 +195,9 @@ namespace MyCaffe.model
             {
                 LayerParameter fromLayer = findLayer(rgInfo[i].SourceLayer);
 
+                //---------------------------------------------------
                 // Get the normalize value.
+                //---------------------------------------------------
                 if (rgInfo[i].Normalization.HasValue && rgInfo[i].Normalization.Value != -1)
                 {
                     LayerParameter norm = new LayerParameter(LayerParameter.LayerType.NORMALIZATION2);
@@ -188,14 +205,19 @@ namespace MyCaffe.model
                     norm.normalization2_param.scale_filler = new FillerParameter("constant", rgInfo[i].Normalization.Value);
                     norm.normalization2_param.across_spatial = false;
                     norm.normalization2_param.channel_shared = false;
+                    norm.top.Add(norm.name);
                     fromLayer = connectAndAddLayer(fromLayer, norm);
                 }
 
+                //---------------------------------------------------
                 // Intermediate layers.
+                //---------------------------------------------------
                 if (rgInfo[i].InterLayerDepth.HasValue && rgInfo[i].InterLayerDepth.Value > 0)
                     fromLayer = addConvBNLayer(fromLayer.name, fromLayer.name + "_inter", bUseBatchNorm, true, (int)rgInfo[i].InterLayerDepth.Value, 3, 1, 1, dfLrMult);
 
+                //---------------------------------------------------
                 // Estimate number of priors per location given provided parameters.
+                //---------------------------------------------------
                 double? dfMinSize = rgInfo[i].MinSize;
                 double? dfMaxSize = rgInfo[i].MaxSize;
                 double? dfAspectHt = rgInfo[i].AspectRatioHeight;
@@ -210,7 +232,9 @@ namespace MyCaffe.model
                 if (bFlip)
                     nNumPriorsPerLocation += nAspectLen * rgInfo.Count;
 
+                //---------------------------------------------------
                 // Create location prediction layer.
+                //---------------------------------------------------
                 int nNumLocOutput = nNumPriorsPerLocation * 4;
                 if (!bShareLocation)
                     nNumLocOutput *= nNumClasses;
@@ -221,15 +245,19 @@ namespace MyCaffe.model
                 LayerParameter permute = new LayerParameter(LayerParameter.LayerType.PERMUTE);
                 permute.name = strName + "_perm";
                 permute.permute_param.order = new List<int>() { 0, 2, 3, 1 };
+                permute.top.Add(permute.name);
                 lastLayer = connectAndAddLayer(lastLayer, permute);
 
                 LayerParameter flatten = new LayerParameter(LayerParameter.LayerType.FLATTEN);
                 flatten.name = strName + "_flat";
                 flatten.flatten_param.axis = 1;
+                flatten.top.Add(flatten.name);
                 lastLayer = connectAndAddLayer(lastLayer, flatten);
                 rgstrLocLayers.Add(lastLayer.name);
 
+                //---------------------------------------------------
                 // Create confidence prediction layer.
+                //---------------------------------------------------
                 strName = fromLayer.name + "_mbox_conf" + strConfPostfix;
                 int nNumConfOutput = nNumPriorsPerLocation * nNumClasses;
                 lastLayer = addConvBNLayer(fromLayer.name, strName, bUseBatchNorm, false, nNumConfOutput, nKernelSize, nPad, 1, dfLrMult);
@@ -237,63 +265,74 @@ namespace MyCaffe.model
                 permute = new LayerParameter(LayerParameter.LayerType.PERMUTE);
                 permute.name = strName + "_perm";
                 permute.permute_param.order = new List<int>() { 0, 2, 3, 1 };
+                permute.top.Add(permute.name);
                 lastLayer = connectAndAddLayer(lastLayer, permute);
 
                 flatten = new LayerParameter(LayerParameter.LayerType.FLATTEN);
                 flatten.name = strName + "_flat";
                 flatten.flatten_param.axis = 1;
+                flatten.top.Add(flatten.name);
                 lastLayer = connectAndAddLayer(lastLayer, flatten);
                 rgstrConfLayers.Add(lastLayer.name);
 
+                //---------------------------------------------------
                 // Create prior generation layer.
-                strName = fromLayer.name + "_mbox_priorbox";
-                LayerParameter priorbox = new LayerParameter(LayerParameter.LayerType.PRIORBOX);
-                priorbox.name = strName;
-                priorbox.prior_box_param.min_size.Add((float)dfMinSize.Value);
-                priorbox.prior_box_param.clip = bClip;
-                priorbox.prior_box_param.variance = rgPriorVariance;
-                priorbox.prior_box_param.offset = (float)dfOffset;
-
-                if (dfMaxSize.HasValue)
-                    priorbox.prior_box_param.max_size.Add((float)dfMaxSize.Value);
-
-                if (dfAspectWd.HasValue)
-                    priorbox.prior_box_param.aspect_ratio.Add((float)dfAspectWd.Value);
-
-                if (dfAspectHt.HasValue)
-                    priorbox.prior_box_param.aspect_ratio.Add((float)dfAspectHt.Value);
-
-                if (dfStepWd.HasValue && dfStepHt.HasValue)
+                //---------------------------------------------------
+                if (!bDeploy)
                 {
-                    if (dfStepWd.Value == dfStepHt.Value)
+                    strName = fromLayer.name + "_mbox_priorbox";
+                    LayerParameter priorbox = new LayerParameter(LayerParameter.LayerType.PRIORBOX);
+                    priorbox.name = strName;
+                    priorbox.top.Add(priorbox.name);
+                    priorbox.prior_box_param.min_size.Add((float)dfMinSize.Value);
+                    priorbox.prior_box_param.clip = bClip;
+                    priorbox.prior_box_param.variance = rgPriorVariance;
+                    priorbox.prior_box_param.offset = (float)dfOffset;
+
+                    if (dfMaxSize.HasValue)
+                        priorbox.prior_box_param.max_size.Add((float)dfMaxSize.Value);
+
+                    if (dfAspectWd.HasValue)
+                        priorbox.prior_box_param.aspect_ratio.Add((float)dfAspectWd.Value);
+
+                    if (dfAspectHt.HasValue)
+                        priorbox.prior_box_param.aspect_ratio.Add((float)dfAspectHt.Value);
+
+                    if (dfStepWd.HasValue && dfStepHt.HasValue)
                     {
-                        priorbox.prior_box_param.step = (float)dfStepWd.Value;
+                        if (dfStepWd.Value == dfStepHt.Value)
+                        {
+                            priorbox.prior_box_param.step = (float)dfStepWd.Value;
+                        }
+                        else
+                        {
+                            priorbox.prior_box_param.step_h = (float)dfStepHt.Value;
+                            priorbox.prior_box_param.step_w = (float)dfStepWd.Value;
+                        }
                     }
-                    else
+
+                    if (nImageHt != 0 && nImageWd != 0)
                     {
-                        priorbox.prior_box_param.step_h = (float)dfStepHt.Value;
-                        priorbox.prior_box_param.step_w = (float)dfStepWd.Value;
+                        if (nImageHt == nImageWd)
+                        {
+                            priorbox.prior_box_param.img_size = (uint)nImageHt;
+                        }
+                        else
+                        {
+                            priorbox.prior_box_param.img_h = (uint)nImageHt;
+                            priorbox.prior_box_param.img_w = (uint)nImageWd;
+                        }
                     }
+
+                    lastLayer = connectAndAddLayer(fromLayer, priorbox);
+                    lastLayer.bottom.Add(data.top[0]);
+                    rgstrPriorBoxLayers.Add(lastLayer.name);
                 }
 
-                if (nImageHt != 0 && nImageWd != 0)
-                {
-                    if (nImageHt == nImageWd)
-                    {
-                        priorbox.prior_box_param.img_size = (uint)nImageHt;
-                    }
-                    else
-                    {
-                        priorbox.prior_box_param.img_h = (uint)nImageHt;
-                        priorbox.prior_box_param.img_w = (uint)nImageWd;
-                    }
-                }
-
-                lastLayer = connectAndAddLayer(fromLayer, priorbox);
-                rgstrPriorBoxLayers.Add(lastLayer.name);
-
+                //---------------------------------------------------
                 // Create objectness prediction layer
-                if (bUseObjectness)
+                //---------------------------------------------------
+                if (bUseObjectness && !bDeploy)
                 {
                     strName = fromLayer.name + "_mbox_objectness";
                     int nNumObjOutput = nNumPriorsPerLocation * 2;
@@ -312,7 +351,9 @@ namespace MyCaffe.model
                 }
             }
 
+            //---------------------------------------------------
             // Concatenate priorbox, loc, and conf layers.
+            //---------------------------------------------------
             List<LayerParameter> rgMboxLayers = new List<LayerParameter>();
             strName = "mbox_loc";
 
@@ -320,6 +361,7 @@ namespace MyCaffe.model
             concat.name = strName;
             concat.concat_param.axis = 1;
             concat.bottom = rgstrLocLayers;
+            concat.top.Add(concat.name);
             m_net.layer.Add(concat);
             rgMboxLayers.Add(concat);
 
@@ -328,26 +370,32 @@ namespace MyCaffe.model
             concat.name = strName;
             concat.concat_param.axis = 1;
             concat.bottom = rgstrConfLayers;
+            concat.top.Add(concat.name);
             m_net.layer.Add(concat);
             rgMboxLayers.Add(concat);
 
-            strName = "mbox_priorbox";
-            concat = new LayerParameter(LayerParameter.LayerType.CONCAT);
-            concat.name = strName;
-            concat.concat_param.axis = 2;
-            concat.bottom = rgstrPriorBoxLayers;
-            m_net.layer.Add(concat);
-            rgMboxLayers.Add(concat);
-
-            if (bUseObjectness)
+            if (!bDeploy)
             {
-                strName = "mbox_objectness";
+                strName = "mbox_priorbox";
                 concat = new LayerParameter(LayerParameter.LayerType.CONCAT);
                 concat.name = strName;
-                concat.concat_param.axis = 1;
-                concat.bottom = rgstrObjLayers;
+                concat.concat_param.axis = 2;
+                concat.bottom = rgstrPriorBoxLayers;
+                concat.top.Add(concat.name);
                 m_net.layer.Add(concat);
                 rgMboxLayers.Add(concat);
+
+                if (bUseObjectness)
+                {
+                    strName = "mbox_objectness";
+                    concat = new LayerParameter(LayerParameter.LayerType.CONCAT);
+                    concat.name = strName;
+                    concat.concat_param.axis = 1;
+                    concat.bottom = rgstrObjLayers;
+                    concat.top.Add(concat.name);
+                    m_net.layer.Add(concat);
+                    rgMboxLayers.Add(concat);
+                }
             }
 
             return rgMboxLayers;
@@ -390,7 +438,7 @@ namespace MyCaffe.model
             convLayer.convolution_param.stride.Add((uint)nStride);
             convLayer.convolution_param.dilation.Add((uint)nDilation);
             convLayer.convolution_param.num_output = (uint)nNumOutput;
-            convLayer.top[0] = strOutputLayer + "_" + convLayer.top[0];
+            convLayer.top.Add(convLayer.name);
 
             LayerParameter bnLayer = null;
             LayerParameter scaleLayer = null;
@@ -405,14 +453,14 @@ namespace MyCaffe.model
                 convLayer.convolution_param.bias_term = false;
 
                 bnLayer = new LayerParameter(LayerParameter.LayerType.BATCHNORM);
+                bnLayer.name = strBnPrefix + strOutputLayer + strBnPostfix;
                 bnLayer.batch_norm_param.eps = 0.001;
                 bnLayer.batch_norm_param.moving_average_fraction = 0.999;
                 bnLayer.batch_norm_param.use_global_stats = false;
                 bnLayer.parameters.Add(new ParamSpec(0.0, 0.0));
                 bnLayer.parameters.Add(new ParamSpec(0.0, 0.0));
                 bnLayer.parameters.Add(new ParamSpec(0.0, 0.0));
-                bnLayer.name = strBnPrefix + strOutputLayer + strBnPostfix;
-                bnLayer.top[0] = strOutputLayer + "_" + bnLayer.top[0];
+                bnLayer.top.Add(bnLayer.name);
 
                 double dfBnLrMult = dfLrMult;
 
@@ -424,21 +472,21 @@ namespace MyCaffe.model
                 if (bUseScale)
                 {
                     scaleLayer = new LayerParameter(LayerParameter.LayerType.SCALE);
+                    scaleLayer.name = strScalePrefix + strOutputLayer + strScalePostFix;
                     scaleLayer.scale_param.bias_term = true;
                     scaleLayer.scale_param.filler = new FillerParameter("constant", 1.0);
                     scaleLayer.scale_param.bias_filler = new FillerParameter("constant", 0.0);
                     scaleLayer.parameters.Add(new ParamSpec(dfBnLrMult, 0.0));
                     scaleLayer.parameters.Add(new ParamSpec(dfBnLrMult, 0.0));
-                    scaleLayer.name = strScalePrefix + strOutputLayer + strScalePostFix;
-                    scaleLayer.top[0] = strOutputLayer + "_" + scaleLayer.top[0];
+                    scaleLayer.top.Add(scaleLayer.name);
                 }
                 else
                 {
                     biasLayer = new LayerParameter(LayerParameter.LayerType.BIAS);
+                    biasLayer.name = strBiasPrefix + strOutputLayer + strBiasPostfix;
                     biasLayer.bias_param.filler = new FillerParameter("constant", 0.0);
                     biasLayer.parameters.Add(new ParamSpec(dfBnLrMult, 0.0));
-                    biasLayer.name = strBiasPrefix + strOutputLayer + strBiasPostfix;
-                    biasLayer.top[0] = strOutputLayer + "_" + biasLayer.top[0];
+                    biasLayer.top.Add(biasLayer.name);
                 }
             }
             else
@@ -449,13 +497,6 @@ namespace MyCaffe.model
 
             lastLayer = connectAndAddLayer(lastLayer, convLayer);
 
-            if (bUseRelU)
-            {
-                reluLayer = new LayerParameter(LayerParameter.LayerType.RELU);
-                reluLayer.name = convLayer.name + "_relu";
-                lastLayer = connectAndAddLayer(lastLayer, reluLayer);
-            }
-
             if (bnLayer != null)
                 lastLayer = connectAndAddLayer(lastLayer, bnLayer);
 
@@ -465,8 +506,12 @@ namespace MyCaffe.model
             if (biasLayer != null)
                 lastLayer = connectAndAddLayer(lastLayer, biasLayer);
 
-            if (reluLayer != null)
+            if (bUseRelU)
+            {
+                reluLayer = new LayerParameter(LayerParameter.LayerType.RELU);
+                reluLayer.name = convLayer.name + "_relu";
                 lastLayer = connectAndAddLayer(lastLayer, reluLayer, true);
+            }
 
             return lastLayer;
         }
@@ -520,6 +565,7 @@ namespace MyCaffe.model
             conv.convolution_param.bias_filler = new FillerParameter("constant", 0.0);
             conv.parameters.Add(new ParamSpec(1.0, 1.0));
             conv.parameters.Add(new ParamSpec(2.0, 0.0));
+            conv.top.Add(strName);
 
             return conv;
         }
@@ -540,6 +586,7 @@ namespace MyCaffe.model
             pool.pooling_param.kernel_size.Add((uint)nKernelSize);
             pool.pooling_param.stride.Add((uint)nStride);
             pool.pooling_param.pool = method;
+            pool.top.Add(strName);
 
             return pool;
         }
@@ -569,7 +616,7 @@ namespace MyCaffe.model
 
                 LayerParameter relu = new LayerParameter(LayerParameter.LayerType.RELU);
                 relu.name = "relu" + nBlockIdx.ToString();
-                lastLayer = connectAndAddLayer(lastLayer, relu);
+                lastLayer = connectAndAddLayer(lastLayer, relu, true);
 
                 nConvIdx++;
             }
@@ -679,14 +726,14 @@ namespace MyCaffe.model
 
                 LayerParameter relu = new LayerParameter(LayerParameter.LayerType.RELU);
                 relu.name = "relu" + nBlockIdx.ToString();
-                lastLayer = connectAndAddLayer(lastLayer, relu);
+                lastLayer = connectAndAddLayer(lastLayer, relu, true);
 
                 if (bDropout)
                 {
                     LayerParameter dropout = new LayerParameter(LayerParameter.LayerType.DROPOUT);
                     dropout.name = "dropout6";
                     dropout.dropout_param.dropout_ratio = 0.5;
-                    lastLayer = connectAndAddLayer(lastLayer, dropout);
+                    lastLayer = connectAndAddLayer(lastLayer, dropout, true);
                 }
 
                 LayerParameter fc7 = createConvolution("fc7", nNumOutput, 1);
@@ -697,7 +744,7 @@ namespace MyCaffe.model
                     LayerParameter dropout = new LayerParameter(LayerParameter.LayerType.DROPOUT);
                     dropout.name = "dropout7";
                     dropout.dropout_param.dropout_ratio = 0.5;
-                    lastLayer = connectAndAddLayer(lastLayer, dropout);
+                    lastLayer = connectAndAddLayer(lastLayer, dropout, true);
                 }
             }
             else
@@ -705,14 +752,14 @@ namespace MyCaffe.model
                 LayerParameter fc6 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
                 fc6.inner_product_param.num_output = 4096;
                 fc6.name = "fc6";
-                lastLayer = connectAndAddLayer(lastLayer, fc6);
+                lastLayer = connectAndAddLayer(lastLayer, fc6, true);
 
                 if (bDropout)
                 {
                     LayerParameter dropout = new LayerParameter(LayerParameter.LayerType.DROPOUT);
                     dropout.name = "dropout6";
                     dropout.dropout_param.dropout_ratio = 0.5;
-                    lastLayer = connectAndAddLayer(lastLayer, dropout);
+                    lastLayer = connectAndAddLayer(lastLayer, dropout, true);
                 }
 
                 LayerParameter fc7 = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
@@ -725,7 +772,7 @@ namespace MyCaffe.model
                     LayerParameter dropout = new LayerParameter(LayerParameter.LayerType.DROPOUT);
                     dropout.name = "dropout7";
                     dropout.dropout_param.dropout_ratio = 0.5;
-                    lastLayer = connectAndAddLayer(lastLayer, dropout);
+                    lastLayer = connectAndAddLayer(lastLayer, dropout, true);
                 }
             }
 
@@ -755,10 +802,10 @@ namespace MyCaffe.model
             int nDilation = (bDilatePool4) ? 2 : 1;
             int nKernelSize = 3;
             int nPad = (int)((nKernelSize + (nDilation - 1) * (nKernelSize - 1)) - 1) / 2;
-            lastLayer = addVGGBlock(lastLayer, 0, 5, 4, 512, 3, null, false, nKernelSize, nPad);
+            lastLayer = addVGGBlock(lastLayer, 0, 5, 1, 512, 3, null, false, nKernelSize, nPad);
 
             if (bNeedFc)    
-                lastLayer = addVGGfc(lastLayer, 5, 3, 512, nDilation, bDilated, bNoPool, bFullConv, bReduced, bDropout);
+                lastLayer = addVGGfc(lastLayer, 5, 4, 512, nDilation, bDilated, bNoPool, bFullConv, bReduced, bDropout);
 
             if (rgstrFreezeLayers != null)
             {
