@@ -347,33 +347,32 @@ namespace MyCaffe.param.ssd
             RawProtoCollection col1 = rp.FindChildren("interp_mode");
             foreach (RawProto pr1 in col1)
             {
-                if ((strVal = rp.FindValue("interp_mode")) != null)
+                strVal = pr1.Value;
+
+                switch (strVal)
                 {
-                    switch (strVal)
-                    {
-                        case "LINEAR":
-                            p.interp_mode.Add(InterpMode.LINEAR);
-                            break;
-
-                        case "AREA":
-                            p.interp_mode.Add(InterpMode.AREA);
-                            break;
-
-                        case "NEAREST":
-                            p.interp_mode.Add(InterpMode.NEAREST);
-                            break;
-
-                        case "CUBIC":
-                            p.interp_mode.Add(InterpMode.CUBIC);
-                            break;
-
-                        case "LANCZOS4":
-                            p.interp_mode.Add(InterpMode.LANCZOS4);
-                            break;
-
-                        default:
-                            throw new Exception("Unknown interp_mode '" + strVal + "'!");
-                    }
+                    case "LINEAR":
+                        p.interp_mode.Add(InterpMode.LINEAR);
+                        break;
+                
+                    case "AREA":
+                        p.interp_mode.Add(InterpMode.AREA);
+                        break;
+                
+                    case "NEAREST":
+                        p.interp_mode.Add(InterpMode.NEAREST);
+                        break;
+                
+                    case "CUBIC":
+                        p.interp_mode.Add(InterpMode.CUBIC);
+                        break;
+                
+                    case "LANCZOS4":
+                        p.interp_mode.Add(InterpMode.LANCZOS4);
+                        break;
+                
+                    default:
+                        throw new Exception("Unknown interp_mode '" + strVal + "'!");
                 }
             }
 
