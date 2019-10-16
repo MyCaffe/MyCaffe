@@ -1861,7 +1861,7 @@ namespace MyCaffe.test
             float fEps = 1e-5f;
             List<float> rgPrec;
             List<float> rgRec;
-            float fAp = m_util.ComputeAP(rgTp, 5, rgFp, "Integral", out rgPrec, out rgRec);
+            float fAp = m_util.ComputeAP(rgTp, 5, rgFp, ApVersion.INTEGRAL, out rgPrec, out rgRec);
 
             m_log.EXPECT_NEAR(fAp, 0.558528, fEps, "The AP is incorrect.");
 
@@ -1894,7 +1894,7 @@ namespace MyCaffe.test
             List<float> rgOldPrec = rgPrec;
             List<float> rgOldRec = rgRec;
 
-            fAp = m_util.ComputeAP(rgTp, 5, rgFp, "MaxIntegral", out rgPrec, out rgRec);
+            fAp = m_util.ComputeAP(rgTp, 5, rgFp, ApVersion.MAXINTEGRAL, out rgPrec, out rgRec);
 
             m_log.EXPECT_NEAR(fAp, 0.591861, fEps, "The AP is incorrect.");
             m_log.CHECK_EQ(rgPrec.Count, 11, "The prec count should equal 11.");
@@ -1906,7 +1906,7 @@ namespace MyCaffe.test
                 m_log.EXPECT_NEAR(rgOldRec[i], rgRec[i], fEps, "The rec values do not match!");
             }
 
-            fAp = m_util.ComputeAP(rgTp, 5, rgFp, "11point", out rgPrec, out rgRec);
+            fAp = m_util.ComputeAP(rgTp, 5, rgFp, ApVersion.ELEVENPOINT, out rgPrec, out rgRec);
 
             m_log.EXPECT_NEAR(fAp, 0.598662, fEps, "The AP is incorrect.");
             m_log.CHECK_EQ(rgPrec.Count, 11, "The prec count should equal 11.");
@@ -1925,7 +1925,7 @@ namespace MyCaffe.test
                 rgFp.RemoveAt(rgFp.Count - 1);
             }
 
-            fAp = m_util.ComputeAP(rgTp, 5, rgFp, "Integral", out rgPrec, out rgRec);
+            fAp = m_util.ComputeAP(rgTp, 5, rgFp, ApVersion.INTEGRAL, out rgPrec, out rgRec);
 
             m_log.EXPECT_NEAR(fAp, 0.558528 - rgOldPrec.Last() * 0.2, fEps, "The AP is incorrect.");
             m_log.CHECK_EQ(rgPrec.Count, 7, "The prec count should equal 7.");
@@ -1937,7 +1937,7 @@ namespace MyCaffe.test
                 m_log.EXPECT_NEAR(rgOldRec[i], rgRec[i], fEps, "The rec values do not match!");
             }
 
-            fAp = m_util.ComputeAP(rgTp, 5, rgFp, "MaxIntegral", out rgPrec, out rgRec);
+            fAp = m_util.ComputeAP(rgTp, 5, rgFp, ApVersion.MAXINTEGRAL, out rgPrec, out rgRec);
 
             m_log.EXPECT_NEAR(fAp, 0.591861 - rgOldPrec.Last() * 0.2, fEps, "The AP is incorrect.");
             m_log.CHECK_EQ(rgPrec.Count, 7, "The prec count should equal 7.");
@@ -1949,7 +1949,7 @@ namespace MyCaffe.test
                 m_log.EXPECT_NEAR(rgOldRec[i], rgRec[i], fEps, "The rec values do not match!");
             }
 
-            fAp = m_util.ComputeAP(rgTp, 5, rgFp, "11point", out rgPrec, out rgRec);
+            fAp = m_util.ComputeAP(rgTp, 5, rgFp, ApVersion.ELEVENPOINT, out rgPrec, out rgRec);
 
             m_log.EXPECT_NEAR(fAp, 0.598662 - rgOldPrec.Last() * 2 / 11.0, fEps, "The AP is incorrect.");
             m_log.CHECK_EQ(rgPrec.Count, 7, "The prec count should equal 7.");
