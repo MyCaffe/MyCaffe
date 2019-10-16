@@ -79,6 +79,9 @@ namespace MyCaffe.layers.ssd
             m_type = LayerParameter.LayerType.ANNOTATED_DATA;
             m_random = new CryptoRandom(true, p.transform_param.random_seed.GetValueOrDefault(0));
 
+            if (db == null)
+                m_log.FAIL("Currently, the AnnotatedDataLayer requires the MyCaffe Image Database!");
+
             Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> kvSel = db.GetSelectionMethod();
             IMGDB_IMAGE_SELECTION_METHOD imgSel = kvSel.Item2;
 
