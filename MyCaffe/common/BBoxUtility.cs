@@ -64,7 +64,7 @@ namespace MyCaffe.common
         /// <param name="rgPrec">Returns the computed precisions.</param>
         /// <param name="rgRec">Returns the computed recalls.</param>
         /// <returns>The Average Precision value is returned.</returns>
-        public float ComputeAP(List<Tuple<float, int>> rgTp, int nNumPos, List<Tuple<float, int>> rgFp, string strApVersion, out List<float> rgPrec, out List<float> rgRec)
+        public float ComputeAP(List<Tuple<float, int>> rgTp, int nNumPos, List<Tuple<float, int>> rgFp, ApVersion apVersion, out List<float> rgPrec, out List<float> rgRec)
         {
             float fEps = 1e-6f;
             int nNum = rgTp.Count;
@@ -104,10 +104,10 @@ namespace MyCaffe.common
                 rgRec.Add((float)rgTpCumSum[i] / nNumPos);
             }
 
-            switch (strApVersion)
+            switch (apVersion)
             {
                 // VOC2007 style for computing AP
-                case "11point":
+                case ApVersion.ELEVENPOINT:
                     {
                         List<float> rgMaxPrec = Utility.Create<float>(11, 0);
                         int nStartIdx = nNum - 1;
@@ -138,7 +138,7 @@ namespace MyCaffe.common
                     break;
 
                 // VOC2012 or ILSVRC style of computing AP.
-                case "MaxIntegral":
+                case ApVersion.MAXINTEGRAL:
                     {
                         float fCurRec = rgRec.Last();
                         float fCurPrec = rgPrec.Last();
@@ -156,7 +156,7 @@ namespace MyCaffe.common
                     break;
 
                 // Natural integral.
-                case "Integral":
+                case ApVersion.INTEGRAL:
                     {
                         float fPrevRec = 0.0f;
                         for (int i = 0; i < nNum; i++)
@@ -170,7 +170,7 @@ namespace MyCaffe.common
                     break;
 
                 default:
-                    m_log.FAIL("Unknown ap version '" + strApVersion + "'!");
+                    m_log.FAIL("Unknown ap version '" + apVersion.ToString() + "'!");
                     break;
             }
 

@@ -171,6 +171,28 @@ namespace MyCaffe.basecode
     }
 
     /// <summary>
+    /// Defines the different way of computing average precision.
+    /// </summary>
+    /// <remarks>
+    /// @see [Tag: Average Precision](https://sanchom.wordpress.com/tag/average-precision) by Sanchom
+    /// </remarks>
+    public enum ApVersion
+    {
+        /// <summary>
+        /// Specifies the 11-point interpolated average precision, used in VOC2007.
+        /// </summary>
+        ELEVENPOINT,
+        /// <summary>
+        /// Specifies the maximally interpolated AP, used in VOC2012/ILSVRC.
+        /// </summary>
+        MAXINTEGRAL,
+        /// <summary>
+        /// Specifies the natural integral of the precision-recall curve.
+        /// </summary>
+        INTEGRAL
+    }
+
+    /// <summary>
     /// Defines the ITest interface used by the Test module to return its known failures.
     /// </summary>
     public interface ITestKnownFailures
