@@ -13,6 +13,8 @@ namespace MyCaffe.param
     /// Stores parameters used to apply transformation 
     /// to the data layer's data.
     /// </summary>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class TransformationParameter : LayerParameterBase 
     {
         double m_dfScale = 1;
@@ -26,11 +28,11 @@ namespace MyCaffe.param
         int? m_nRandomSeed = null;
         string m_strMeanFile = null;
         COLOR_ORDER m_colorOrder = COLOR_ORDER.RGB;
-        ResizeParameter m_resize = null;
-        NoiseParameter m_noise = null;
-        DistortionParameter m_distortion = null;
-        ExpansionParameter m_expansion = null;
-        EmitConstraint m_emitConstraint = null;
+        ResizeParameter m_resize = new ResizeParameter(false);
+        NoiseParameter m_noise = new NoiseParameter(false);
+        DistortionParameter m_distortion = new DistortionParameter(false);
+        ExpansionParameter m_expansion = new ExpansionParameter(false);
+        EmitConstraint m_emitConstraint = new EmitConstraint(false);
 
         /// <summary>
         /// Defines the color ordering used to tranform the input data.

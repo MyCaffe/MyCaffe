@@ -16,7 +16,9 @@ namespace MyCaffe.param.ssd
     /// @see [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.
     /// @see [GitHub: SSD: Single Shot MultiBox Detector](https://github.com/weiliu89/caffe/tree/ssd), by weiliu89/caffe, 2016
     /// </remarks>
-    public class SaltPepperParameter
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class SaltPepperParameter : OptionalParameter
     {
         float m_fFraction = 0;
         List<float> m_rgValue = new List<float>();
@@ -24,7 +26,8 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// The constructor.
         /// </summary>
-        public SaltPepperParameter()
+        /// <param name="bActive">Specifies whether or not the parameter is active or not.</param>
+        public SaltPepperParameter(bool bActive) : base(bActive)
         {
         }
 
@@ -67,7 +70,7 @@ namespace MyCaffe.param.ssd
         /// <returns>A new copy of the object is returned.</returns>
         public SaltPepperParameter Clone()
         {
-            SaltPepperParameter p = new param.ssd.SaltPepperParameter();
+            SaltPepperParameter p = new param.ssd.SaltPepperParameter(Active);
             p.Copy(this);
             return p;
         }
@@ -81,6 +84,7 @@ namespace MyCaffe.param.ssd
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add(new RawProto("active", Active.ToString()));
             rgChildren.Add(new RawProto("fraction", m_fFraction.ToString()));
 
             foreach (float fVal in m_rgValue)
@@ -98,8 +102,11 @@ namespace MyCaffe.param.ssd
         /// <returns>A new instance of the parameter is returned.</returns>
         public static SaltPepperParameter FromProto(RawProto rp)
         {
-            SaltPepperParameter p = new SaltPepperParameter();
+            SaltPepperParameter p = new SaltPepperParameter(true);
             string strVal;
+
+            if ((strVal = rp.FindValue("active")) != null)
+                p.Active = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("fraction")) != null)
                 p.fraction = float.Parse(strVal);

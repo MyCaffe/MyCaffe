@@ -19,8 +19,8 @@ namespace MyCaffe.param.ssd
         uint m_nNumClasses;
         bool m_bShareLocation = true;
         int m_nBackgroundLabelId = 0;
-        NonMaximumSuppressionParameter m_nmsParam = new NonMaximumSuppressionParameter();
-        SaveOutputParameter m_saveOutputParam = new SaveOutputParameter();
+        NonMaximumSuppressionParameter m_nmsParam = new NonMaximumSuppressionParameter(true);
+        SaveOutputParameter m_saveOutputParam = new SaveOutputParameter(true);
         PriorBoxParameter.CodeType m_codeType = PriorBoxParameter.CodeType.CORNER;
         bool m_bVarianceEncodedInTarget = false;
         int m_nKeepTopK = -1;

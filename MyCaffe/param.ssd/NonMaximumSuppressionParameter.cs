@@ -16,7 +16,9 @@ namespace MyCaffe.param.ssd
     /// @see [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.
     /// @see [GitHub: SSD: Single Shot MultiBox Detector](https://github.com/weiliu89/caffe/tree/ssd), by weiliu89/caffe, 2016
     /// </remarks>
-    public class NonMaximumSuppressionParameter
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class NonMaximumSuppressionParameter : OptionalParameter
     {
         float m_fNmsThreshold = 0.3f;
         int? m_nTopK = null;
@@ -25,7 +27,8 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// The constructor.
         /// </summary>
-        public NonMaximumSuppressionParameter()
+        /// <param name="bActive">Specifies whether or not the parameter is active or not.</param>
+        public NonMaximumSuppressionParameter(bool bActive) : base(bActive)
         {
         }
 
@@ -73,7 +76,7 @@ namespace MyCaffe.param.ssd
         /// <returns>A new copy of the object is returned.</returns>
         public NonMaximumSuppressionParameter Clone()
         {
-            NonMaximumSuppressionParameter p = new param.ssd.NonMaximumSuppressionParameter();
+            NonMaximumSuppressionParameter p = new param.ssd.NonMaximumSuppressionParameter(Active);
             p.Copy(this);
             return p;
         }
@@ -87,6 +90,7 @@ namespace MyCaffe.param.ssd
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add(new RawProto("active", Active.ToString()));
             rgChildren.Add(new RawProto("nms_threshold", nms_threshold.ToString()));
 
             if (top_k.HasValue)
@@ -104,8 +108,11 @@ namespace MyCaffe.param.ssd
         /// <returns>A new instance of the parameter is returned.</returns>
         public static NonMaximumSuppressionParameter FromProto(RawProto rp)
         {
-            NonMaximumSuppressionParameter p = new NonMaximumSuppressionParameter();
+            NonMaximumSuppressionParameter p = new NonMaximumSuppressionParameter(true);
             string strVal;
+
+            if ((strVal = rp.FindValue("active")) != null)
+                p.Active = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("nms_threshold")) != null)
                 p.nms_threshold = float.Parse(strVal);

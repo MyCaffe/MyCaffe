@@ -16,7 +16,9 @@ namespace MyCaffe.param.ssd
     /// @see [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.
     /// @see [GitHub: SSD: Single Shot MultiBox Detector](https://github.com/weiliu89/caffe/tree/ssd), by weiliu89/caffe, 2016
     /// </remarks>
-    public class EmitConstraint
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class EmitConstraint : OptionalParameter
     {
         EmitType m_emitType = EmitType.CENTER;
         float m_fEmitOverlap = 0;
@@ -39,7 +41,8 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// The constructor.
         /// </summary>
-        public EmitConstraint()
+        /// <param name="bActive">Specifies whether or not the parameter is active or not.</param>
+        public EmitConstraint(bool bActive) : base(bActive)
         {
         }
 
@@ -77,7 +80,7 @@ namespace MyCaffe.param.ssd
         /// <returns>A new copy of the object is returned.</returns>
         public EmitConstraint Clone()
         {
-            EmitConstraint p = new param.ssd.EmitConstraint();
+            EmitConstraint p = new param.ssd.EmitConstraint(Active);
             p.Copy(this);
             return p;
         }
@@ -91,6 +94,7 @@ namespace MyCaffe.param.ssd
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add(new RawProto("active", Active.ToString()));
             rgChildren.Add(new RawProto("emit_type", m_emitType.ToString()));
             rgChildren.Add(new RawProto("emit_overlap", m_fEmitOverlap.ToString()));
 
@@ -104,8 +108,11 @@ namespace MyCaffe.param.ssd
         /// <returns>A new instance of the parameter is returned.</returns>
         public static EmitConstraint FromProto(RawProto rp)
         {
-            EmitConstraint p = new EmitConstraint();
+            EmitConstraint p = new EmitConstraint(true);
             string strVal;
+
+            if ((strVal = rp.FindValue("active")) != null)
+                p.Active = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("emit_type")) != null)
             {

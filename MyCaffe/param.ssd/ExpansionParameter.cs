@@ -16,7 +16,9 @@ namespace MyCaffe.param.ssd
     /// @see [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.
     /// @see [GitHub: SSD: Single Shot MultiBox Detector](https://github.com/weiliu89/caffe/tree/ssd), by weiliu89/caffe, 2016
     /// </remarks>
-    public class ExpansionParameter
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class ExpansionParameter : OptionalParameter
     {
         float m_fProb = 0;
         float m_fMaxExpandRatio = 1.0f;
@@ -24,7 +26,8 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// The constructor.
         /// </summary>
-        public ExpansionParameter()
+        /// <param name="bActive">Specifies whether or not the parameter is active or not.</param>
+        public ExpansionParameter(bool bActive) : base(bActive)
         {
         }
 
@@ -62,7 +65,7 @@ namespace MyCaffe.param.ssd
         /// <returns>A new copy of the object is returned.</returns>
         public ExpansionParameter Clone()
         {
-            ExpansionParameter p = new param.ssd.ExpansionParameter();
+            ExpansionParameter p = new param.ssd.ExpansionParameter(Active);
             p.Copy(this);
             return p;
         }
@@ -76,6 +79,7 @@ namespace MyCaffe.param.ssd
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add(new RawProto("active", Active.ToString()));
             rgChildren.Add(new RawProto("prob", prob.ToString()));
             rgChildren.Add(new RawProto("max_expand_ratio", max_expand_ratio.ToString()));
 
@@ -89,8 +93,11 @@ namespace MyCaffe.param.ssd
         /// <returns>A new instance of the parameter is returned.</returns>
         public static ExpansionParameter FromProto(RawProto rp)
         {
-            ExpansionParameter p = new ExpansionParameter();
+            ExpansionParameter p = new ExpansionParameter(true);
             string strVal;
+
+            if ((strVal = rp.FindValue("active")) != null)
+                p.Active = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("prob")) != null)
                 p.prob = float.Parse(strVal);

@@ -629,14 +629,14 @@ namespace MyCaffe.data
 
                         // Adjust bounding box annoation.
                         NormalizedBBox resize_bbox = bbox;
-                        if (bResize && m_param.resize_param != null)
+                        if (bResize && m_param.resize_param != null && m_param.resize_param.Active)
                         {
                             m_log.CHECK_GT(nImgHt, 0, "The image height must be > 0!");
                             m_log.CHECK_GT(nImgWd, 0, "The image width must be > 0!");
                             resize_bbox = m_imgTransforms.UpdateBBoxByResizePolicy(m_param.resize_param, nImgWd, nImgHt, resize_bbox);
                         }
 
-                        if (m_param.emit_constraint != null && m_bbox.MeetEmitConstraint(crop_bbox, resize_bbox, m_param.emit_constraint))
+                        if (m_param.emit_constraint != null && m_param.emit_constraint.Active && m_bbox.MeetEmitConstraint(crop_bbox, resize_bbox, m_param.emit_constraint))
                             continue;
 
                         NormalizedBBox proj_bbox;
@@ -652,7 +652,7 @@ namespace MyCaffe.data
                                 transformed_bbox.xmin = 1 - transformed_bbox.xmax;
                                 transformed_bbox.xmax = 1 - fTemp;
                             }
-                            else if (bResize && m_param.resize_param != null)
+                            else if (bResize && m_param.resize_param != null && m_param.resize_param.Active)
                             {
                                 m_bbox.Extrapolate(m_param.resize_param, nImgHt, nImgWd, crop_bbox, transformed_bbox);
                             }
@@ -848,7 +848,7 @@ namespace MyCaffe.data
         /// <returns>The newly expanded datum is returned.</returns>
         public SimpleDatum ExpandImage(SimpleDatum d)
         {
-            if (m_param.expansion_param == null)
+            if (m_param.expansion_param == null || !m_param.expansion_param.Active)
                 return new SimpleDatum(d, true);
 
             float fExpandProb = m_param.expansion_param.prob;
@@ -883,7 +883,7 @@ namespace MyCaffe.data
         /// <returns>The distorted SimpleDatum is returned.</returns>
         public SimpleDatum DistortImage(SimpleDatum d)
         {
-            if (m_param.distortion_param == null)
+            if (m_param.distortion_param == null || !m_param.distortion_param.Active)
                 return d;
 
             if (m_param.distortion_param.brightness_prob == 0 &&

@@ -21,7 +21,7 @@ namespace MyCaffe.param.ssd
         float m_fOverlapThreshold = 0.5f;
         bool m_bEvaluateDifficultGt = true;
         string m_strNameSizeFile;
-        ResizeParameter m_resizeParam = null;
+        ResizeParameter m_resizeParam = new ResizeParameter(false);
 
         /** @copydoc LayerParameterBase */
         public DetectionEvaluateParameter()

@@ -15,7 +15,9 @@ namespace MyCaffe.param.ssd
     /// @see [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.
     /// @see [GitHub: SSD: Single Shot MultiBox Detector](https://github.com/weiliu89/caffe/tree/ssd), by weiliu89/caffe, 2016
     /// </remarks>
-    public class SaveOutputParameter 
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class SaveOutputParameter : OptionalParameter
     {
         string m_strOutputDirectory;
         string m_strOutputNamePrefix;
@@ -44,8 +46,11 @@ namespace MyCaffe.param.ssd
             ILSVRC
         }
 
-        /** @copydoc LayerParameterBase */
-        public SaveOutputParameter()
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="bActive">Specifies whether or not the parameter is active or not.</param>
+        public SaveOutputParameter(bool bActive) : base(bActive)
         {
         }
 
@@ -170,7 +175,7 @@ namespace MyCaffe.param.ssd
         /// <returns>A new copy of the object is returned.</returns>
         public SaveOutputParameter Clone()
         {
-            SaveOutputParameter p = new SaveOutputParameter();
+            SaveOutputParameter p = new SaveOutputParameter(Active);
             p.Copy(this);
             return p;
         }
@@ -184,6 +189,7 @@ namespace MyCaffe.param.ssd
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add(new RawProto("active", Active.ToString()));
             rgChildren.Add(new RawProto("output_directory", m_strOutputDirectory));
             rgChildren.Add(new RawProto("output_name_prefix", m_strOutputNamePrefix));
             rgChildren.Add(new RawProto("output_format", m_outputFormat.ToString()));
@@ -206,8 +212,11 @@ namespace MyCaffe.param.ssd
         /// <returns>A new instance of the parameter is returned.</returns>
         public static SaveOutputParameter FromProto(RawProto rp)
         {
-            SaveOutputParameter p = new SaveOutputParameter();
+            SaveOutputParameter p = new SaveOutputParameter(true);
             string strVal;
+
+            if ((strVal = rp.FindValue("active")) != null)
+                p.Active = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("output_directory")) != null)
                 p.output_directory = strVal;

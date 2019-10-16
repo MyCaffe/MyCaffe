@@ -16,7 +16,9 @@ namespace MyCaffe.param.ssd
     /// @see [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.
     /// @see [GitHub: SSD: Single Shot MultiBox Detector](https://github.com/weiliu89/caffe/tree/ssd), by weiliu89/caffe, 2016
     /// </remarks>
-    public class DistortionParameter
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class DistortionParameter : OptionalParameter
     {
         float m_fBrightnessProb = 0;
         float m_fBrightnessDelta = 0.0f;
@@ -34,7 +36,8 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// The constructor.
         /// </summary>
-        public DistortionParameter()
+        /// <param name="bActive">Specifies whether or not the parameter is active or not.</param>
+        public DistortionParameter(bool bActive) : base(bActive)
         {
         }
 
@@ -145,7 +148,7 @@ namespace MyCaffe.param.ssd
         /// <returns>A new copy of the object is returned.</returns>
         public DistortionParameter Clone()
         {
-            DistortionParameter p = new param.ssd.DistortionParameter();
+            DistortionParameter p = new param.ssd.DistortionParameter(Active);
             p.Copy(this);
             return p;
         }
@@ -159,6 +162,7 @@ namespace MyCaffe.param.ssd
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add(new RawProto("active", Active.ToString()));
             rgChildren.Add(new RawProto("brightness_prob", brightness_prob.ToString()));
             rgChildren.Add(new RawProto("brightness_delta", brightness_delta.ToString()));
             rgChildren.Add(new RawProto("contrast_prob", contrast_prob.ToString()));
@@ -179,8 +183,11 @@ namespace MyCaffe.param.ssd
         /// <returns>A new instance of the parameter is returned.</returns>
         public static DistortionParameter FromProto(RawProto rp)
         {
-            DistortionParameter p = new DistortionParameter();
+            DistortionParameter p = new DistortionParameter(true);
             string strVal;
+
+            if ((strVal = rp.FindValue("active")) != null)
+                p.Active = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("brightness_prob")) != null)
                 p.brightness_prob = float.Parse(strVal);
