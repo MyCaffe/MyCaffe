@@ -70,6 +70,26 @@ namespace MyCaffe.param
         bool m_bSnapshotIncludeWeights = true;
         bool m_bSnapshotIncludeState = true;
 
+        // SSD Parameters
+        EvaluationType m_evalType = EvaluationType.CLASSIFICATION;
+        ApVersion m_apVersion = ApVersion.INTEGRAL;
+        bool m_bShowPerClassResult = false;
+
+        /// <summary>
+        /// Defines the evaluation method used in the SSD algorithm.
+        /// </summary>
+        public enum EvaluationType
+        {
+            /// <summary>
+            /// Specifies to run a standard classification evaluation.
+            /// </summary>
+            CLASSIFICATION,
+            /// <summary>
+            /// Specifies detection evaluation used in the SSD algorithm.
+            /// </summary>
+            DETECTION
+        }
+
         /// <summary>
         /// Defines the format of each snapshot.
         /// </summary>
@@ -844,6 +864,39 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Specifies the evaluation type to use when using Single-Shot Detection (SSD) - (default = NONE, SSD not used).
+        /// </summary>
+        [Category("SSD")]
+        [Description("Specifies the evaluation type to use when using Single-Shot Detection (SSD) - (default = NONE, SSD not used).")]
+        public EvaluationType eval_type
+        {
+            get { return m_evalType; }
+            set { m_evalType = value; }
+        }
+
+        /// <summary>
+        /// Specifies the AP Version to use for average precision when using Single-Shot Detection (SSD) - (default = INTEGRAL).
+        /// </summary>
+        [Category("SSD")]
+        [Description("Specifies the AP Version to use for average precision when using Single-Shot Detection (SSD) - (default = INTEGRAL).")]
+        public ApVersion ap_version
+        {
+            get { return m_apVersion; }
+            set { m_apVersion = value; }
+        }
+
+        /// <summary>
+        /// Specifies whether or not to display results per class when using Single-Shot Detection (SSD) - (default = false).
+        /// </summary>
+        [Category("SSD")]
+        [Description("Specifies whether or not to display results per class when using Single-Shot Detection (SSD) - (default = false).")]
+        public bool show_per_class_result
+        {
+            get { return m_bShowPerClassResult; }
+            set { m_bShowPerClassResult = value; }
+        }
+
+        /// <summary>
         /// Converts the SolverParameter into a RawProto.
         /// </summary>
         /// <param name="strName">Specifies a name given to the RawProto.</param>
@@ -949,6 +1002,11 @@ namespace MyCaffe.param
 
             rgChildren.Add("snapshot_include_weights", snapshot_include_weights.ToString());
             rgChildren.Add("snapshot_include_state", snapshot_include_state.ToString());
+
+            // SSD Parameters
+            rgChildren.Add("eval_type", eval_type.ToString().ToLower());
+            rgChildren.Add("ap_version", ap_version.ToString().ToLower());
+            rgChildren.Add("show_per_class_result", show_per_class_result.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -1142,6 +1200,51 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("snapshot_include_state")) != null)
                 p.snapshot_include_state = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("eval_type")) != null)
+            {
+                strVal = strVal.ToLower();
+
+                switch (strVal)
+                {
+                    case "classification":
+                        p.eval_type = EvaluationType.CLASSIFICATION;
+                        break;
+
+                    case "detection":
+                        p.eval_type = EvaluationType.DETECTION;
+                        break;
+
+                    default:
+                        throw new Exception("Unknown eval_type '" + strVal + "'!");
+                }
+            }
+
+            if ((strVal = rp.FindValue("ap_version")) != null)
+            {
+                strVal = strVal.ToLower();
+
+                switch (strVal)
+                {
+                    case "11point":
+                        p.ap_version = ApVersion.ELEVENPOINT;
+                        break;
+
+                    case "maxintegral":
+                        p.ap_version = ApVersion.MAXINTEGRAL;
+                        break;
+
+                    case "integral":
+                        p.ap_version = ApVersion.INTEGRAL;
+                        break;
+
+                    default:
+                        throw new Exception("Unknown ap_type '" + strVal + "'!");
+                }
+            }
+
+            if ((strVal = rp.FindValue("show_per_class_result")) != null)
+                p.show_per_class_result = bool.Parse(strVal);
 
             return p;
         }

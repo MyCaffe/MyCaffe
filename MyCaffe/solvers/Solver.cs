@@ -1223,6 +1223,10 @@ namespace MyCaffe.solvers
         /// <summary>
         /// Run a TestAll by running all test Nets.
         /// </summary>
+        /// <remarks>
+        /// Depending on the eval_type tests are run as Test (default), TestClassification (for SSD Classification),
+        /// or TestDetection (for SSD Detection).
+        /// </remarks>
         /// <param name="nIterationOverride">Specifies an override to the iterations to run.</param>
         /// <returns>The accuracy of the testing run is returned as a percentage value in the range [0, 1].</returns>
         public double TestAll(int nIterationOverride = -1)
@@ -1243,7 +1247,7 @@ namespace MyCaffe.solvers
                     dfTotalAccuracy += args.Accuracy;
                 }
                 else
-                    dfTotalAccuracy += Test(nIterationOverride, test_net_id);
+                    dfTotalAccuracy += testOne(nIterationOverride, test_net_id);
 
                 dfTotalTime += m_dfAverageTestTime;
                 nTotalCount++;
@@ -1258,7 +1262,7 @@ namespace MyCaffe.solvers
                     dfTotalAccuracy += args.Accuracy;
                 }
                 else
-                    dfTotalAccuracy += Test(nIterationOverride, 0);
+                    dfTotalAccuracy += testOne(nIterationOverride, 0);
             }
 
             double dfAccuracy = (m_rgTestNets.Count > 0) ? dfTotalAccuracy / m_rgTestNets.Count : 0;
@@ -1272,13 +1276,218 @@ namespace MyCaffe.solvers
             return dfAccuracy;
         }
 
+        private double testOne(int nIterationOverride = -1, int nTestNetId = 0)
+        {
+            switch (m_param.eval_type)
+            {
+                // Test SSD Detection
+                case SolverParameter.EvaluationType.DETECTION:
+                    return TestDetection(nIterationOverride, nTestNetId);
+
+                // Perform regular classification Test.
+                default:
+                    return TestClassification(nIterationOverride, nTestNetId);
+            }
+        }
+
+        /// <summary>
+        /// Run an SSD detection test on a given test Net by running it through its iterations.
+        /// </summary>
+        /// <param name="nIterationOverride">Specifies an override the the number of iterations to run.</param>
+        /// <param name="nTestNetId">Specifies the ID of the test Net to run.</param>
+        /// <returns>The accuracy of the test run is returned as a percentage in the range [0, 1].</returns>
+        public double TestDetection(int nIterationOverride = -1, int nTestNetId = 0)
+        {
+            BBoxUtility<T> bboxUtil = new BBoxUtility<T>(m_cuda, m_log);
+
+            try
+            {
+                if (is_root_solver)
+                    m_log.WriteLine("Iteration " + m_nIter.ToString() + ", Testing net (#" + nTestNetId.ToString() + ")");
+
+                Net<T> test_net = m_net;
+
+                if (m_rgTestNets.Count > nTestNetId)
+                {
+                    m_log.CHECK(m_rgTestNets[nTestNetId] != null, "The test net at " + nTestNetId.ToString() + " is null!");
+                    m_rgTestNets[nTestNetId].ShareTrainedLayersWith(m_net);
+                    test_net = m_rgTestNets[nTestNetId];
+                }
+
+                Dictionary<int, Dictionary<int, List<Tuple<float, int>>>> rgAllTruePos = new Dictionary<int, Dictionary<int, List<Tuple<float, int>>>>();
+                Dictionary<int, Dictionary<int, List<Tuple<float, int>>>> rgAllFalsePos = new Dictionary<int, Dictionary<int, List<Tuple<float, int>>>>();
+                Dictionary<int, Dictionary<int, int>> rgAllNumPos = new Dictionary<int, Dictionary<int, int>>();
+
+                double dfLoss = 0;
+
+                if (nIterationOverride <= 0)
+                    nIterationOverride = TestingIterations;
+
+                int nIter = nIterationOverride;
+
+                for (int i = 0; i < nIter; i++)
+                {
+                    // Check to see if stoppage of testing/training has been requested.
+                    if (m_evtCancel.WaitOne(0))
+                        break;
+
+                    if (OnTestStart != null)
+                        OnTestStart(this, new EventArgs());
+
+                    double iter_loss;
+                    BlobCollection<T> colResult = test_net.Forward(out iter_loss);
+
+                    if (m_param.test_compute_loss)
+                        dfLoss += iter_loss;
+
+                    for (int j = 0; j < colResult.Count; j++)
+                    {
+                        m_log.CHECK_EQ(colResult[j].width, 5, "The width must be = 5 for SSD.");
+                        double[] result_vec = Utility.ConvertVec<T>(colResult[j].update_cpu_data());
+                        int num_det = colResult[j].height;
+
+                        for (int k = 0; k < num_det; k++)
+                        {
+                            int item_id = (int)result_vec[k * 5];
+                            int nLabel = (int)result_vec[k * 5 + 1];
+
+                            // Special reow for storing number of positives for a label.
+                            if (item_id == -1)
+                            {
+                                if (!rgAllNumPos.ContainsKey(j))
+                                    rgAllNumPos.Add(j, new Dictionary<int, int>());
+
+                                if (!rgAllNumPos[j].ContainsKey(nLabel))
+                                    rgAllNumPos[j].Add(nLabel, (int)result_vec[k * 5 + 2]);
+                                else
+                                    rgAllNumPos[j][nLabel] += (int)result_vec[k * 5 + 2];
+                            }
+                            // Normal row sotring detection status.
+                            else
+                            {
+                                float fScore = (float)result_vec[k * 5 + 2];
+                                int tp = (int)result_vec[k * 5 + 3];
+                                int fp = (int)result_vec[k * 5 + 4];
+
+                                // Ignore such case, which happens when a detection bbox is matched to
+                                // a difficult gt bbox and we don't evaluate on difficult gt bbox.
+                                if (tp == 0 && fp == 0)
+                                    continue;
+
+                                if (!rgAllTruePos.ContainsKey(j))
+                                    rgAllTruePos.Add(j, new Dictionary<int, List<Tuple<float, int>>>());
+
+                                if (!rgAllTruePos[j].ContainsKey(nLabel))
+                                    rgAllTruePos[j].Add(nLabel, new List<Tuple<float, int>>());
+
+                                if (!rgAllFalsePos.ContainsKey(j))
+                                    rgAllFalsePos.Add(j, new Dictionary<int, List<Tuple<float, int>>>());
+
+                                if (!rgAllFalsePos[j].ContainsKey(nLabel))
+                                    rgAllFalsePos[j].Add(nLabel, new List<Tuple<float, int>>());
+
+                                rgAllTruePos[j][nLabel].Add(new Tuple<float, int>(fScore, tp));
+                                rgAllTruePos[j][nLabel].Add(new Tuple<float, int>(fScore, fp));
+                            }
+                        }
+                    }
+                }
+
+                if (m_evtCancel.WaitOne(0))
+                {
+                    m_log.WriteLine("Test interrupted.");
+                    return 0;
+                }
+
+                if (m_param.test_compute_loss)
+                {
+                    dfLoss /= m_param.test_iter[nTestNetId];
+                    m_log.WriteLine("Test loss: " + dfLoss.ToString());
+                }
+
+                for (int i = 0; i < rgAllTruePos.Count; i++)
+                {
+                    if (!rgAllTruePos.ContainsKey(i))
+                        m_log.FAIL("Missing output_blob true_pos: " + i.ToString());
+
+                    Dictionary<int, List<Tuple<float, int>>> rgTruePos = rgAllTruePos[i];
+
+                    if (!rgAllFalsePos.ContainsKey(i))
+                        m_log.FAIL("Missing output_blob false_pos: " + i.ToString());
+
+                    Dictionary<int, List<Tuple<float, int>>> rgFalsePos = rgAllFalsePos[i];
+
+                    if (!rgAllNumPos.ContainsKey(i))
+                        m_log.FAIL("Missing output_blob num_pos: " + i.ToString());
+
+                    Dictionary<int, int> rgNumPos = rgAllNumPos[i];
+
+                    Dictionary<int, float> rgAPs = new Dictionary<int, float>();
+                    float fmAP = 0.0f;
+
+                    // Sort true_pos and false_pos with descending scores.
+                    foreach (KeyValuePair<int, int> kv in rgNumPos)
+                    {
+                        int nLabel = kv.Key;
+                        int nLabelNumPos = kv.Value;
+
+                        if (!rgTruePos.ContainsKey(nLabel))
+                        {
+                            m_log.WriteLine("WARNING: Missing true_pos for label: " + nLabel.ToString() + "!");
+                            continue;
+                        }
+                        List<Tuple<float, int>> rgLabelTruePos = rgTruePos[nLabel];
+
+                        if (!rgFalsePos.ContainsKey(nLabel))
+                        {
+                            m_log.WriteLine("WARNING: Missing false_pos for label: " + nLabel.ToString() + "!");
+                            continue;
+                        }
+                        List<Tuple<float, int>> rgLabelFalsePos = rgFalsePos[nLabel];
+
+                        List<float> rgPrec;
+                        List<float> rgRec;
+                        float fAp = bboxUtil.ComputeAP(rgLabelTruePos, nLabelNumPos, rgLabelFalsePos, m_param.ap_version, out rgPrec, out rgRec);
+
+                        if (!rgAPs.ContainsKey(nLabel))
+                            rgAPs.Add(nLabel, fAp);
+                        else
+                            rgAPs[nLabel] = fAp;
+
+                        fmAP += fAp;
+
+                        if (m_param.show_per_class_result)
+                            m_log.WriteLine("class " + nLabel.ToString() + ": " + fAp.ToString());
+                    }
+
+                    fmAP /= rgNumPos.Count;
+
+                    int nOutputBlobIdx = test_net.output_blob_indices[i];
+                    string strOutputName = test_net.blob_names[nOutputBlobIdx];
+
+                    m_log.WriteLine("    Test net output #" + i.ToString() + ": " + strOutputName + " = " + fmAP.ToString());
+                }
+
+#warning TODO: fix accuracy for TestDetection.
+                return 0;
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                bboxUtil.Dispose();
+            }
+        }
+
         /// <summary>
         /// Run a test on a given test Net by running it through its iterations.
         /// </summary>
         /// <param name="nIterationOverride">Specifies an override the the number of iterations to run.</param>
         /// <param name="nTestNetId">Specifies the ID of the test Net to run.</param>
         /// <returns>The accuracy of the test run is returned as a percentage in the range [0, 1].</returns>
-        public double Test(int nIterationOverride = -1, int nTestNetId = 0)
+        public double TestClassification(int nIterationOverride = -1, int nTestNetId = 0)
         {
             if (is_root_solver)
                 m_log.WriteLine("Iteration " + m_nIter.ToString() + ", Testing net (#" + nTestNetId.ToString() + ")");
