@@ -456,6 +456,7 @@ namespace MyCaffe.model
         /// <param name="toLayer">Specifies the layer who's top is connected to the from layer's bottom.</param>
         /// <param name="bInPlace">Optionally, specifies whether or not to connect both the top and bottom of the toLayer to the top of the from layer.</param>
         /// <param name="bAdd">Optionally, specifies whether or not to add the layer to the network (default = true).</param>
+        /// <param name="nTopIdx">Optionally, specifies the top index of the item to connect.</param>
         /// <returns>The toLayer is returned as the next layer.</returns>
         protected LayerParameter connectAndAddLayer(LayerParameter fromLayer, LayerParameter toLayer, bool bInPlace = false, bool bAdd = true, int nTopIdx = 0)
         {
