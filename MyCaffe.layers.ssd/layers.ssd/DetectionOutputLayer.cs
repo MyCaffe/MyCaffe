@@ -278,7 +278,7 @@ namespace MyCaffe.layers.ssd
                 m_bNeedSave = false;
             }
 
-            if (m_param.detection_output_param.save_output_param.resize_param != null)
+            if (m_param.detection_output_param.save_output_param.resize_param != null && m_param.detection_output_param.save_output_param.resize_param.Active)
                 m_resizeParam = m_param.detection_output_param.save_output_param.resize_param;
 
             m_nNameCount = 0;

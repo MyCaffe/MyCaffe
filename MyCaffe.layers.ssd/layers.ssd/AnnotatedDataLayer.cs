@@ -164,7 +164,7 @@ namespace MyCaffe.layers.ssd
             m_strLabelMapFile = m_param.annotated_data_param.label_map_file;
 
             // Make sure dimension is consistent within batch.
-            if (m_param.transform_param.resize_param != null)
+            if (m_param.transform_param.resize_param != null && m_param.transform_param.resize_param.Active)
             {
                 if (m_param.transform_param.resize_param.resize_mode == ResizeParameter.ResizeMode.FIT_SMALL_SIZE)
                     m_log.CHECK_EQ(nBatchSize, 1, "The FIT_MSALL_SIZE resize mode only supports a batch size of 1.");
@@ -350,16 +350,16 @@ namespace MyCaffe.layers.ssd
                 SimpleDatum distort_datum = null;
                 SimpleDatum expand_datum = null;
 
-                if (m_param.transform_param.distortion_param != null)
+                if (m_param.transform_param.distortion_param != null && m_param.transform_param.distortion_param.Active)
                 {
                     distort_datum = m_transformer.DistortImage(datum);
 
-                    if (m_param.transform_param.expansion_param != null)
+                    if (m_param.transform_param.expansion_param != null && m_param.transform_param.expansion_param.Active)
                         expand_datum = m_transformer.ExpandImage(distort_datum);
                     else
                         expand_datum = distort_datum;
                 }
-                else if (m_param.transform_param.expansion_param != null)
+                else if (m_param.transform_param.expansion_param != null && m_param.transform_param.expansion_param.Active)
                 {
                     expand_datum = m_transformer.ExpandImage(datum);
                 }
@@ -386,7 +386,7 @@ namespace MyCaffe.layers.ssd
                 m_log.CHECK(sampled_datum != null, "The sampled datum cannot be null!");
                 List<int> rgShape = m_transformer.InferBlobShape(sampled_datum);
 
-                if (m_param.transform_param.resize_param != null)
+                if (m_param.transform_param.resize_param != null && m_param.transform_param.resize_param.Active)
                 {
                     if (m_param.transform_param.resize_param.resize_mode == ResizeParameter.ResizeMode.FIT_SMALL_SIZE)
                         batch.Data.Reshape(rgShape);

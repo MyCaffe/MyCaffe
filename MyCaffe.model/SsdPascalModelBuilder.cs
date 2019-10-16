@@ -122,7 +122,7 @@ namespace MyCaffe.model
             m_transformTrain.mean_value.Add(104);
             m_transformTrain.mean_value.Add(117);
             m_transformTrain.mean_value.Add(123);
-            m_transformTrain.resize_param = new ResizeParameter();
+            m_transformTrain.resize_param = new ResizeParameter(true);
             m_transformTrain.resize_param.prob = 1;
             m_transformTrain.resize_param.resize_mode = ResizeParameter.ResizeMode.WARP;
             m_transformTrain.resize_param.height = (uint)m_nResizeHeight;
@@ -132,7 +132,7 @@ namespace MyCaffe.model
             m_transformTrain.resize_param.interp_mode.Add(ResizeParameter.InterpMode.NEAREST);
             m_transformTrain.resize_param.interp_mode.Add(ResizeParameter.InterpMode.CUBIC);
             m_transformTrain.resize_param.interp_mode.Add(ResizeParameter.InterpMode.LANCZOS4);
-            m_transformTrain.distortion_param = new DistortionParameter();
+            m_transformTrain.distortion_param = new DistortionParameter(true);
             m_transformTrain.distortion_param.brightness_prob = 0.5f;
             m_transformTrain.distortion_param.brightness_delta = 32;
             m_transformTrain.distortion_param.contrast_prob = 0.5f;
@@ -142,10 +142,10 @@ namespace MyCaffe.model
             m_transformTrain.distortion_param.saturation_lower = 0.5f;
             m_transformTrain.distortion_param.saturation_upper = 1.5f;
             m_transformTrain.distortion_param.random_order_prob = 0.0f;
-            m_transformTrain.expansion_param = new ExpansionParameter();
+            m_transformTrain.expansion_param = new ExpansionParameter(true);
             m_transformTrain.expansion_param.prob = 0.5f;
             m_transformTrain.expansion_param.max_expand_ratio = 4.0f;
-            m_transformTrain.emit_constraint = new EmitConstraint();
+            m_transformTrain.emit_constraint = new EmitConstraint(true);
             m_transformTrain.emit_constraint.emit_type = EmitConstraint.EmitType.CENTER;
 
             //-------------------------------------------------------
@@ -155,7 +155,7 @@ namespace MyCaffe.model
             m_transformTest.mean_value.Add(104);
             m_transformTest.mean_value.Add(117);
             m_transformTest.mean_value.Add(123);
-            m_transformTest.resize_param = new ResizeParameter();
+            m_transformTest.resize_param = new ResizeParameter(true);
             m_transformTest.resize_param.prob = 1;
             m_transformTest.resize_param.resize_mode = ResizeParameter.ResizeMode.WARP;
             m_transformTest.resize_param.height = (uint)m_nResizeHeight;
@@ -219,10 +219,10 @@ namespace MyCaffe.model
             m_detectionOut.num_classes = (uint)m_nNumClasses;
             m_detectionOut.share_location = m_bShareLocation;
             m_detectionOut.background_label_id = m_nBackgroundLabelId;
-            m_detectionOut.nms_param = new NonMaximumSuppressionParameter();
+            m_detectionOut.nms_param = new NonMaximumSuppressionParameter(true);
             m_detectionOut.nms_param.nms_threshold = 0.45f;
             m_detectionOut.nms_param.top_k = 400;
-            m_detectionOut.save_output_param = new SaveOutputParameter();
+            m_detectionOut.save_output_param = new SaveOutputParameter(true);
             m_detectionOut.save_output_param.output_directory = m_strBaseDir + "\\results";
             m_detectionOut.save_output_param.output_name_prefix = "comp4_det_test_";
             m_detectionOut.save_output_param.label_map_file = m_strLabelMapFile;
