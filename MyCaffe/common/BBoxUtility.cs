@@ -54,7 +54,7 @@ namespace MyCaffe.common
         /// <param name="rgTp">Specifies a list of scores and true positive.</param>
         /// <param name="nNumPos">Specifies the number of true positives.</param>
         /// <param name="rgFp">Specifies a list of scores and false positive.</param>
-        /// <param name="strApVersion">Specifies the different ways of computing the Average Precisions.
+        /// <param name="apVersion">Specifies the different ways of computing the Average Precisions.
         /// @see [Tag: Average Precision](https://sanchom.wordpress.com/tag/average-precision/)
         ///   
         /// Versions:

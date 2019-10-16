@@ -135,6 +135,28 @@ namespace MyCaffe.model
             return data;
         }
 
+        /// <summary>
+        /// Create the multi-box head layers.
+        /// </summary>
+        /// <param name="strDataLayer">Specifies the data layer name.</param>
+        /// <param name="nNumClasses">Specifies the number of classes.</param>
+        /// <param name="rgInfo">Specifies the info associated with the layers to connect to.</param>
+        /// <param name="rgPriorVariance">Specifies the prior variance.</param>
+        /// <param name="bUseObjectness">Optionally, specifies whether or not to use objectness (default = false).</param>
+        /// <param name="bUseBatchNorm">Optionally, specifies whether or not to use batch-norm layers (default = true).</param>
+        /// <param name="dfLrMult">Optionally, specifies the learning multiplier (default = 1.0).</param>
+        /// <param name="bUseScale">Optionally, specifies whether or not to use scale layers (default = true).</param>
+        /// <param name="nImageHt">Optionally, specifies the image height (default = 0, ignore).</param>
+        /// <param name="nImageWd">Optionally, specifies the image width (default = 0, ignore).</param>
+        /// <param name="bShareLocation">Optionally, specifies whether or not to share the location (default = true).</param>
+        /// <param name="bFlip">Optionally, specifies whether or not to flip (default = true).</param>
+        /// <param name="bClip">Optionally, specifies whether or not to clip (default = true).</param>
+        /// <param name="dfOffset">Optionally, specifies the offset (default = 0.5).</param>
+        /// <param name="nKernelSize">Optionally, specifies the kernel size (default = 1).</param>
+        /// <param name="nPad">Optionally, specifies the pad (default = 0).</param>
+        /// <param name="strConfPostfix">Optionally, specifies the confidence postfix (default = "").</param>
+        /// <param name="strLocPostfix">Optionally, specifies the location postifix (default = "").</param>
+        /// <returns></returns>
         protected List<LayerParameter> createMultiBoxHead(string strDataLayer, int nNumClasses, List<MultiBoxHeadInfo> rgInfo, List<float> rgPriorVariance, bool bUseObjectness = false, bool bUseBatchNorm = true, double dfLrMult = 1.0, bool bUseScale = true, int nImageHt = 0, int nImageWd = 0, bool bShareLocation = true, bool bFlip = true, bool bClip = true, double dfOffset = 0.5, int nKernelSize = 1, int nPad = 0, string strConfPostfix = "", string strLocPostfix = "")
         {
             LayerParameter lastLayer;
@@ -530,7 +552,6 @@ namespace MyCaffe.model
         /// <param name="nConvIdx">Specifies the convolution index.</param>
         /// <param name="nNumOutput">Specifies the number of outputs.</param>
         /// <param name="nConvCount">Specifies the number of convolution layers to add.</param>
-        /// <param name="nPoolCount">Specifies the number of pooling layers to add.</param>
         /// <param name="bNoPool">When adding the last layer, specifies whether or not to add a pooling (false) or convolution (true) layer.  When this parameter is null, the adding of the last layer is skipped.</param>
         /// <param name="bDilatePool">Optionally, specifies whether or not to dilate the last pooling layer (default = false).</param>
         /// <param name="nKernelSize">Optionally, specifies the kernel size (default = 3).</param>
@@ -724,7 +745,7 @@ namespace MyCaffe.model
         /// <param name="rgstrFreezeLayers">Optionally, specifies a set of layers who's training is to be frozen (default = null to ignore).</param>
         /// <param name="bDilatePool4">Optionally, specifies whether or not to dilate pool #4 (default = false).</param>
         /// <returns>The last layer is returned.</returns>
-        protected LayerParameter addVGGNetBody(LayerParameter lastLayer, int nTopIdx, bool bNeedFc = true, bool bFullyConv = true, bool bReduced = true, bool bDilated = true, bool bNoPool = false, bool bDropout = false, List<string> rgstrFreezeLayers = null, bool bDilatePool4 = false)
+        protected LayerParameter addVGGNetBody(LayerParameter lastLayer, int nTopIdx, bool bNeedFc = true, bool bFullConv = true, bool bReduced = true, bool bDilated = true, bool bNoPool = false, bool bDropout = false, List<string> rgstrFreezeLayers = null, bool bDilatePool4 = false)
         {
             lastLayer = addVGGBlock(lastLayer, nTopIdx, 1, 1, 64, 2, bNoPool);
             lastLayer = addVGGBlock(lastLayer, 0, 2, 1, 128, 2, bNoPool);
@@ -737,7 +758,7 @@ namespace MyCaffe.model
             lastLayer = addVGGBlock(lastLayer, 0, 5, 4, 512, 3, null, false, nKernelSize, nPad);
 
             if (bNeedFc)    
-                lastLayer = addVGGfc(lastLayer, 5, 3, 512, nDilation, bDilated, bNoPool, bFullyConv, bReduced, bDropout);
+                lastLayer = addVGGfc(lastLayer, 5, 3, 512, nDilation, bDilated, bNoPool, bFullConv, bReduced, bDropout);
 
             if (rgstrFreezeLayers != null)
             {
