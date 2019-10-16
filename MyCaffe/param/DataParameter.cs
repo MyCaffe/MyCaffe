@@ -14,6 +14,8 @@ namespace MyCaffe.param
     /// Note: given the new use of the Transformation Parameter, the
     /// depreciated elements of the DataParameter have been removed.
     /// </remarks>
+    [Serializable]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
     public class DataParameter : LayerParameterBase
     {
         /// <summary>

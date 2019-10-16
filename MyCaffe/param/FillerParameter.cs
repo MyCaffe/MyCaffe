@@ -10,6 +10,7 @@ namespace MyCaffe.param
     /// <summary>
     /// Specifies the filler parameters used to create each Filler.
     /// </summary>
+    [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class FillerParameter : BaseParameter, ICloneable 
     {

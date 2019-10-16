@@ -37,7 +37,7 @@ namespace MyCaffe.param.ssd
         bool m_bIgnoreCrossBoundaryBbox = false;
         bool m_bBpInside = false;
         MiningType m_miningType = MiningType.MAX_NEGATIVE;
-        NonMaximumSuppressionParameter m_nmsParam = new NonMaximumSuppressionParameter();
+        NonMaximumSuppressionParameter m_nmsParam = new NonMaximumSuppressionParameter(true);
         int m_nSampleSize = 64;
         bool m_bUsePriorForNms = false;
         bool m_bUsePriorForMatching = true;
