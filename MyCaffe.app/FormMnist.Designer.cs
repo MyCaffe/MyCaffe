@@ -237,6 +237,7 @@
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "MNIST Data Files";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormMnist_FormClosing);
             this.Load += new System.EventHandler(this.FormMnist_Load);
             this.ResumeLayout(false);
             this.PerformLayout();

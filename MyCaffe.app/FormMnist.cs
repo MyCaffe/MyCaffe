@@ -39,7 +39,23 @@ namespace MyCaffe.app
 
         private void FormMnist_Load(object sender, EventArgs e)
         {
+            string strFile;
 
+            strFile = Properties.Settings.Default.MnistFile1;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                edtTestImagesFile.Text = strFile;
+
+            strFile = Properties.Settings.Default.MnistFile2;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                edtTestLabelsFile.Text = strFile;
+
+            strFile = Properties.Settings.Default.MnistFile3;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                edtTrainImagesFile.Text = strFile;
+
+            strFile = Properties.Settings.Default.MnistFile4;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                edtTrainLabelsFile.Text = strFile;
         }
 
         private void lblDownloadSite_MouseHover(object sender, EventArgs e)
@@ -101,6 +117,29 @@ namespace MyCaffe.app
         private void btnOK_Click(object sender, EventArgs e)
         {
             m_param = new MnistDataParameters(edtTrainImagesFile.Text, edtTrainLabelsFile.Text, edtTestImagesFile.Text, edtTestLabelsFile.Text);
+        }
+
+        private void FormMnist_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            string strFile;
+
+            strFile = edtTestImagesFile.Text;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                Properties.Settings.Default.MnistFile1 = strFile;
+
+            strFile = edtTestLabelsFile.Text;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                Properties.Settings.Default.MnistFile2 = strFile;
+
+            strFile = edtTrainImagesFile.Text;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                Properties.Settings.Default.MnistFile3 = strFile;
+
+            strFile = edtTrainLabelsFile.Text;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                Properties.Settings.Default.MnistFile4 = strFile;
+
+            Properties.Settings.Default.Save();
         }
     }
 }

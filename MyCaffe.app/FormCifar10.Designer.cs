@@ -302,6 +302,7 @@
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "CIFAR-10 Data File";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormCifar10_FormClosing);
             this.Load += new System.EventHandler(this.FormCiFar10_Load);
             this.ResumeLayout(false);
             this.PerformLayout();

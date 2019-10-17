@@ -43,6 +43,31 @@ namespace MyCaffe.app
 
         private void FormCiFar10_Load(object sender, EventArgs e)
         {
+            string strFile;
+
+            strFile = Properties.Settings.Default.CiFarFile1;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                edtCifarDataFile1.Text = strFile;
+
+            strFile = Properties.Settings.Default.CiFarFile2;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                edtCifarDataFile2.Text = strFile;
+
+            strFile = Properties.Settings.Default.CiFarFile3;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                edtCifarDataFile3.Text = strFile;
+
+            strFile = Properties.Settings.Default.CiFarFile4;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                edtCifarDataFile4.Text = strFile;
+
+            strFile = Properties.Settings.Default.CiFarFile5;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                edtCifarDataFile5.Text = strFile;
+
+            strFile = Properties.Settings.Default.CiFarFileTest;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                edtCifarDataFile6.Text = strFile;
         }
 
         private void lblDownloadSite_MouseHover(object sender, EventArgs e)
@@ -104,6 +129,37 @@ namespace MyCaffe.app
         private void btnOK_Click(object sender, EventArgs e)
         {
             m_param = new app.CiFar10DataParameters(edtCifarDataFile1.Text, edtCifarDataFile2.Text, edtCifarDataFile3.Text, edtCifarDataFile4.Text, edtCifarDataFile5.Text, edtCifarDataFile6.Text);
+        }
+
+        private void FormCifar10_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            string strFile;
+
+            strFile = edtCifarDataFile1.Text;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                Properties.Settings.Default.CiFarFile1 = strFile;
+
+            strFile = edtCifarDataFile2.Text;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                Properties.Settings.Default.CiFarFile2 = strFile;
+
+            strFile = edtCifarDataFile3.Text;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                Properties.Settings.Default.CiFarFile3 = strFile;
+
+            strFile = edtCifarDataFile4.Text;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                Properties.Settings.Default.CiFarFile4 = strFile;
+
+            strFile = edtCifarDataFile5.Text;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                Properties.Settings.Default.CiFarFile5 = strFile;
+
+            strFile = edtCifarDataFile6.Text;
+            if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
+                Properties.Settings.Default.CiFarFileTest = strFile;
+
+            Properties.Settings.Default.Save();
         }
     }
 }

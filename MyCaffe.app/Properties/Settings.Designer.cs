@@ -226,5 +226,161 @@ namespace MyCaffe.app.Properties {
                 this["CustIteration"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string VocFile1 {
+            get {
+                return ((string)(this["VocFile1"]));
+            }
+            set {
+                this["VocFile1"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string VocFile2 {
+            get {
+                return ((string)(this["VocFile2"]));
+            }
+            set {
+                this["VocFile2"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string VocFile3 {
+            get {
+                return ((string)(this["VocFile3"]));
+            }
+            set {
+                this["VocFile3"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string CiFarFile1 {
+            get {
+                return ((string)(this["CiFarFile1"]));
+            }
+            set {
+                this["CiFarFile1"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string CiFarFile2 {
+            get {
+                return ((string)(this["CiFarFile2"]));
+            }
+            set {
+                this["CiFarFile2"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string CiFarFile3 {
+            get {
+                return ((string)(this["CiFarFile3"]));
+            }
+            set {
+                this["CiFarFile3"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string CiFarFile4 {
+            get {
+                return ((string)(this["CiFarFile4"]));
+            }
+            set {
+                this["CiFarFile4"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string CiFarFile5 {
+            get {
+                return ((string)(this["CiFarFile5"]));
+            }
+            set {
+                this["CiFarFile5"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string CiFarFileTest {
+            get {
+                return ((string)(this["CiFarFileTest"]));
+            }
+            set {
+                this["CiFarFileTest"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string MnistFile1 {
+            get {
+                return ((string)(this["MnistFile1"]));
+            }
+            set {
+                this["MnistFile1"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string MnistFile2 {
+            get {
+                return ((string)(this["MnistFile2"]));
+            }
+            set {
+                this["MnistFile2"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string MnistFile3 {
+            get {
+                return ((string)(this["MnistFile3"]));
+            }
+            set {
+                this["MnistFile3"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string MnistFile4 {
+            get {
+                return ((string)(this["MnistFile4"]));
+            }
+            set {
+                this["MnistFile4"] = value;
+            }
+        }
     }
 }
