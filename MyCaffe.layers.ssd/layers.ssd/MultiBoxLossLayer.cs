@@ -120,6 +120,9 @@ namespace MyCaffe.layers.ssd
             }
         }
 
+        /// <summary>
+        /// Returns the internal blobs of this layer.
+        /// </summary>
         public override BlobCollection<T> internal_blobs
         {
             get
