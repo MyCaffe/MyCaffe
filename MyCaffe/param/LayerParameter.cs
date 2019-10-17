@@ -781,13 +781,16 @@ namespace MyCaffe.param
                     break;
 
                 case LayerType.DETECTION_EVALUATE:
-                    expected_bottom.Add("input");
+                    expected_bottom.Add("det");
+                    expected_bottom.Add("gt");
                     expected_top.Add("output");
                     m_rgLayerParameters[lt] = new DetectionEvaluateParameter();
                     break;
 
                 case LayerType.DETECTION_OUTPUT:
-                    expected_bottom.Add("input");
+                    expected_bottom.Add("loc");
+                    expected_bottom.Add("conf");
+                    expected_bottom.Add("prior");
                     expected_top.Add("output");
                     m_rgLayerParameters[lt] = new DetectionOutputParameter();
                     break;
@@ -880,7 +883,6 @@ namespace MyCaffe.param
 
                 case LayerType.FLATTEN:
                     expected_bottom.Add("x_1");
-                    expected_bottom.Add("x_2");
                     expected_top.Add("flatten");
                     m_rgLayerParameters[lt] = new FlattenParameter();
                     break;
@@ -965,7 +967,10 @@ namespace MyCaffe.param
                     break;
 
                 case LayerType.MULTIBOX_LOSS:
-                    expected_bottom.Add("input");
+                    expected_bottom.Add("loc");
+                    expected_bottom.Add("conf");
+                    expected_bottom.Add("prior");
+                    expected_bottom.Add("gt");
                     expected_top.Add("loss");
                     m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
                     m_rgLayerParameters[lt] = new MultiBoxLossParameter();
