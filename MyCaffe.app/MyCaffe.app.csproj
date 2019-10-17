@@ -69,11 +69,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="VOCDataLoader.cs" />
+    <Compile Include="VOCDataParameters.cs" />
     <Compile Include="FormAbout.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FormAbout.Designer.cs">
       <DependentUpon>FormAbout.cs</DependentUpon>
+    </Compile>
+    <Compile Include="FormVOC.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormVOC.Designer.cs">
+      <DependentUpon>FormVOC.cs</DependentUpon>
     </Compile>
     <Compile Include="FormCreateDatabase.cs">
       <SubType>Form</SubType>
@@ -142,6 +150,9 @@
     <Compile Include="SqlServerTypes\Loader.cs" />
     <EmbeddedResource Include="FormAbout.resx">
       <DependentUpon>FormAbout.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormVOC.resx">
+      <DependentUpon>FormVOC.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormCreateDatabase.resx">
       <DependentUpon>FormCreateDatabase.cs</DependentUpon>

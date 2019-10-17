@@ -511,6 +511,7 @@ namespace MyCaffe.app
                 m_evtCancel.Set();
                 loadMNISTToolStripMenuItem.Enabled = false;
                 loadCIFAR10ToolStripMenuItem.Enabled = false;
+                loadVOC2007ToolStripMenuItem.Enabled = false;
                 trainMNISTToolStripMenuItem.Enabled = false;
                 testMNISTToolStripMenuItem.Enabled = false;
                 createMyCaffeToolStripMenuItem.Enabled = false;
@@ -530,6 +531,7 @@ namespace MyCaffe.app
                 m_bLoading = true;
                 loadMNISTToolStripMenuItem.Enabled = false;
                 loadCIFAR10ToolStripMenuItem.Enabled = false;
+                loadVOC2007ToolStripMenuItem.Enabled = false;
                 trainMNISTToolStripMenuItem.Enabled = false;
                 testMNISTToolStripMenuItem.Enabled = false;
                 createMyCaffeToolStripMenuItem.Enabled = false;
@@ -537,6 +539,27 @@ namespace MyCaffe.app
                 deviceInformationToolStripMenuItem.Enabled = false;
                 runTestImageToolStripMenuItem.Enabled = false;
                 m_bwLoadCiFar10Database.RunWorkerAsync(dlg.Parameters);
+            }
+        }
+
+        private void loadVOC2007ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            FormVOC dlg = new FormVOC();
+
+            if (dlg.ShowDialog() == DialogResult.OK)
+            {
+                m_bLoading = true;
+                loadMNISTToolStripMenuItem.Enabled = false;
+                loadCIFAR10ToolStripMenuItem.Enabled = false;
+                loadVOC2007ToolStripMenuItem.Enabled = false;
+                trainMNISTToolStripMenuItem.Enabled = false;
+                testMNISTToolStripMenuItem.Enabled = false;
+                createMyCaffeToolStripMenuItem.Enabled = false;
+                destroyMyCaffeToolStripMenuItem.Enabled = false;
+                deviceInformationToolStripMenuItem.Enabled = false;
+                runTestImageToolStripMenuItem.Enabled = false;
+                cancelToolStripMenuItem.Enabled = true;
+                m_bwLoadVOCDatabase.RunWorkerAsync(dlg.Parameters);
             }
         }
 
@@ -568,6 +591,7 @@ namespace MyCaffe.app
             specialTestsToolStripMenuItem.Enabled = !m_bLoading && !m_bCaffeCreated;
             loadMNISTToolStripMenuItem.Enabled = !m_bLoading;
             loadCIFAR10ToolStripMenuItem.Enabled = !m_bLoading;
+            loadVOC2007ToolStripMenuItem.Enabled = !m_bLoading;
             runTestImageToolStripMenuItem.Enabled = !m_bLoading && m_bCaffeCreated;
             cancelToolStripMenuItem.Enabled = false;
         }
@@ -648,6 +672,18 @@ namespace MyCaffe.app
             loader.LoadDatabase();
         }
 
+        private void m_bwLoadVOCDatabase_DoWork(object sender, DoWorkEventArgs e)
+        {
+            m_evtCaffeCancel.Reset();
+            VOCDataLoader loader = new VOCDataLoader(e.Argument as VOCDataParameters, m_evtCaffeCancel);
+
+            loader.OnProgress += loader_OnProgress;
+            loader.OnError += loader_OnError;
+            loader.OnCompleted += loader_OnCompleted;
+
+            loader.LoadDatabase();
+        }
+
         private void loader_OnCompleted(object sender, EventArgs e)
         {
             m_bLoading = false;
@@ -657,8 +693,10 @@ namespace MyCaffe.app
         {
             if (sender.GetType() == typeof(MnistDataLoader))
                 m_bwLoadMnistDatabase.ReportProgress((int)e.Progress.Percentage, e.Progress);
-            else
+            else if (sender.GetType() == typeof(CiFar10DataLoader))
                 m_bwLoadCiFar10Database.ReportProgress((int)e.Progress.Percentage, e.Progress);
+            else if (sender.GetType() == typeof(VOCDataLoader))
+                m_bwLoadVOCDatabase.ReportProgress((int)e.Progress.Percentage, e.Progress);
 
             m_bLoading = false;
         }
@@ -667,8 +705,10 @@ namespace MyCaffe.app
         {
             if (sender.GetType() == typeof(MnistDataLoader))
                 m_bwLoadMnistDatabase.ReportProgress((int)e.Progress.Percentage, e.Progress);
-            else
+            else if (sender.GetType() == typeof(CiFar10DataLoader))
                 m_bwLoadCiFar10Database.ReportProgress((int)e.Progress.Percentage, e.Progress);
+            else if (sender.GetType() == typeof(VOCDataLoader))
+                m_bwLoadVOCDatabase.ReportProgress((int)e.Progress.Percentage, e.Progress);
         }
 
         private void createMyCaffeToolStripMenuItem_Click(object sender, EventArgs e)
@@ -678,7 +718,8 @@ namespace MyCaffe.app
             destroyMyCaffeToolStripMenuItem.Enabled = false;
             trainMNISTToolStripMenuItem.Enabled = false;
             testMNISTToolStripMenuItem.Enabled = false;
-            loadMNISTToolStripMenuItem.Enabled = false;
+            loadCIFAR10ToolStripMenuItem.Enabled = false;
+            loadVOC2007ToolStripMenuItem.Enabled = false;
             deviceInformationToolStripMenuItem.Enabled = false;
             specialTestsToolStripMenuItem.Enabled = false;
             abortToolStripMenuItem.Enabled = true;
@@ -715,6 +756,8 @@ namespace MyCaffe.app
             trainMNISTToolStripMenuItem.Enabled = false;
             testMNISTToolStripMenuItem.Enabled = false;
             loadMNISTToolStripMenuItem.Enabled = false;
+            loadCIFAR10ToolStripMenuItem.Enabled = false;
+            loadVOC2007ToolStripMenuItem.Enabled = false;
             deviceInformationToolStripMenuItem.Enabled = false;
             abortToolStripMenuItem.Enabled = true;
             m_evtCancel.Reset();
@@ -732,6 +775,8 @@ namespace MyCaffe.app
             trainMNISTToolStripMenuItem.Enabled = false;
             testMNISTToolStripMenuItem.Enabled = false;
             loadMNISTToolStripMenuItem.Enabled = false;
+            loadCIFAR10ToolStripMenuItem.Enabled = false;
+            loadVOC2007ToolStripMenuItem.Enabled = false;
             deviceInformationToolStripMenuItem.Enabled = false;
             abortToolStripMenuItem.Enabled = true;
             m_evtCancel.Reset();
@@ -775,6 +820,8 @@ namespace MyCaffe.app
             trainMNISTToolStripMenuItem.Enabled = false;
             testMNISTToolStripMenuItem.Enabled = false;
             loadMNISTToolStripMenuItem.Enabled = false;
+            loadCIFAR10ToolStripMenuItem.Enabled = false;
+            loadVOC2007ToolStripMenuItem.Enabled = false;
             deviceInformationToolStripMenuItem.Enabled = false;
             abortToolStripMenuItem.Enabled = true;
             m_evtCancel.Reset();
@@ -1008,6 +1055,8 @@ namespace MyCaffe.app
             trainMNISTToolStripMenuItem.Enabled = false;
             testMNISTToolStripMenuItem.Enabled = false;
             loadMNISTToolStripMenuItem.Enabled = false;
+            loadCIFAR10ToolStripMenuItem.Enabled = false;
+            loadVOC2007ToolStripMenuItem.Enabled = false;
             deviceInformationToolStripMenuItem.Enabled = false;
             specialTestsToolStripMenuItem.Enabled = false;
             abortToolStripMenuItem.Enabled = true;
@@ -1030,6 +1079,8 @@ namespace MyCaffe.app
             trainMNISTToolStripMenuItem.Enabled = false;
             testMNISTToolStripMenuItem.Enabled = false;
             loadMNISTToolStripMenuItem.Enabled = false;
+            loadCIFAR10ToolStripMenuItem.Enabled = false;
+            loadVOC2007ToolStripMenuItem.Enabled = false;
             deviceInformationToolStripMenuItem.Enabled = false;
             specialTestsToolStripMenuItem.Enabled = false;
             abortToolStripMenuItem.Enabled = true;

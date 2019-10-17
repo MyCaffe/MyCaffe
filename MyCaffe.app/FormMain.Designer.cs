@@ -37,6 +37,7 @@
             this.createDatabaseToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loadMNISTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loadCIFAR10ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.loadVOC2007ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.testToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.runAutotestsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
@@ -60,6 +61,7 @@
             this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.startCartPoleTrainerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.startAtariTrainerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.showGymUiToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.startNeuralStyleTransferToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -78,7 +80,7 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.lblGpu = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
-            this.showGymUiToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.m_bwLoadVOCDatabase = new System.ComponentModel.BackgroundWorker();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -108,7 +110,7 @@
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(92, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(93, 22);
             this.exitToolStripMenuItem.Text = "E&xit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
@@ -117,7 +119,8 @@
             this.databaseToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.createDatabaseToolStripMenuItem,
             this.loadMNISTToolStripMenuItem,
-            this.loadCIFAR10ToolStripMenuItem});
+            this.loadCIFAR10ToolStripMenuItem,
+            this.loadVOC2007ToolStripMenuItem});
             this.databaseToolStripMenuItem.Name = "databaseToolStripMenuItem";
             this.databaseToolStripMenuItem.Size = new System.Drawing.Size(67, 20);
             this.databaseToolStripMenuItem.Text = "&Database";
@@ -143,6 +146,13 @@
             this.loadCIFAR10ToolStripMenuItem.Text = "Load CIFAR-10...";
             this.loadCIFAR10ToolStripMenuItem.Click += new System.EventHandler(this.loadCIFAR10ToolStripMenuItem_Click);
             // 
+            // loadVOC2007ToolStripMenuItem
+            // 
+            this.loadVOC2007ToolStripMenuItem.Name = "loadVOC2007ToolStripMenuItem";
+            this.loadVOC2007ToolStripMenuItem.Size = new System.Drawing.Size(160, 22);
+            this.loadVOC2007ToolStripMenuItem.Text = "Load VOC2007...";
+            this.loadVOC2007ToolStripMenuItem.Click += new System.EventHandler(this.loadVOC2007ToolStripMenuItem_Click);
+            // 
             // testToolStripMenuItem
             // 
             this.testToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -162,7 +172,7 @@
             this.toolStripSeparator3,
             this.specialTestsToolStripMenuItem});
             this.testToolStripMenuItem.Name = "testToolStripMenuItem";
-            this.testToolStripMenuItem.Size = new System.Drawing.Size(40, 20);
+            this.testToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
             this.testToolStripMenuItem.Text = "&Test";
             // 
             // runAutotestsToolStripMenuItem
@@ -266,7 +276,7 @@
             this.abortToolStripMenuItem.Name = "abortToolStripMenuItem";
             this.abortToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.abortToolStripMenuItem.Text = "Abort";
-            this.abortToolStripMenuItem.ToolTipText = "Abort the engire command thread.";
+            this.abortToolStripMenuItem.ToolTipText = "Abort the command thread.";
             this.abortToolStripMenuItem.Click += new System.EventHandler(this.abortToolStripMenuItem_Click);
             // 
             // cancelToolStripMenuItem
@@ -301,45 +311,52 @@
             // alexNetToolStripMenuItem
             // 
             this.alexNetToolStripMenuItem.Name = "alexNetToolStripMenuItem";
-            this.alexNetToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
+            this.alexNetToolStripMenuItem.Size = new System.Drawing.Size(242, 22);
             this.alexNetToolStripMenuItem.Text = "AlexNet-Cifar Load Storage Bug";
             this.alexNetToolStripMenuItem.Click += new System.EventHandler(this.alexNetToolStripMenuItem_Click);
             // 
             // resNet56CifarAccuracyBugToolStripMenuItem
             // 
             this.resNet56CifarAccuracyBugToolStripMenuItem.Name = "resNet56CifarAccuracyBugToolStripMenuItem";
-            this.resNet56CifarAccuracyBugToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
+            this.resNet56CifarAccuracyBugToolStripMenuItem.Size = new System.Drawing.Size(242, 22);
             this.resNet56CifarAccuracyBugToolStripMenuItem.Text = "ResNet56-Cifar Accuracy Bug";
             this.resNet56CifarAccuracyBugToolStripMenuItem.Click += new System.EventHandler(this.resNet56CifarAccuracyBugToolStripMenuItem_Click);
             // 
             // toolStripSeparator5
             // 
             this.toolStripSeparator5.Name = "toolStripSeparator5";
-            this.toolStripSeparator5.Size = new System.Drawing.Size(238, 6);
+            this.toolStripSeparator5.Size = new System.Drawing.Size(239, 6);
             // 
             // startCartPoleTrainerToolStripMenuItem
             // 
             this.startCartPoleTrainerToolStripMenuItem.Name = "startCartPoleTrainerToolStripMenuItem";
-            this.startCartPoleTrainerToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
+            this.startCartPoleTrainerToolStripMenuItem.Size = new System.Drawing.Size(242, 22);
             this.startCartPoleTrainerToolStripMenuItem.Text = "Start Cart-Pole Trainer";
             this.startCartPoleTrainerToolStripMenuItem.Click += new System.EventHandler(this.startCartPoleTrainerToolStripMenuItem_Click);
             // 
             // startAtariTrainerToolStripMenuItem
             // 
             this.startAtariTrainerToolStripMenuItem.Name = "startAtariTrainerToolStripMenuItem";
-            this.startAtariTrainerToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
+            this.startAtariTrainerToolStripMenuItem.Size = new System.Drawing.Size(242, 22);
             this.startAtariTrainerToolStripMenuItem.Text = "Start Atari Trainer";
             this.startAtariTrainerToolStripMenuItem.Click += new System.EventHandler(this.startAtariTrainerToolStripMenuItem_Click);
+            // 
+            // showGymUiToolStripMenuItem
+            // 
+            this.showGymUiToolStripMenuItem.Name = "showGymUiToolStripMenuItem";
+            this.showGymUiToolStripMenuItem.Size = new System.Drawing.Size(242, 22);
+            this.showGymUiToolStripMenuItem.Text = "Show Gym Ui";
+            this.showGymUiToolStripMenuItem.Click += new System.EventHandler(this.showGymUiToolStripMenuItem_Click);
             // 
             // toolStripSeparator4
             // 
             this.toolStripSeparator4.Name = "toolStripSeparator4";
-            this.toolStripSeparator4.Size = new System.Drawing.Size(238, 6);
+            this.toolStripSeparator4.Size = new System.Drawing.Size(239, 6);
             // 
             // startNeuralStyleTransferToolStripMenuItem
             // 
             this.startNeuralStyleTransferToolStripMenuItem.Name = "startNeuralStyleTransferToolStripMenuItem";
-            this.startNeuralStyleTransferToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
+            this.startNeuralStyleTransferToolStripMenuItem.Size = new System.Drawing.Size(242, 22);
             this.startNeuralStyleTransferToolStripMenuItem.Text = "Start Neural Style Transfer";
             this.startNeuralStyleTransferToolStripMenuItem.Click += new System.EventHandler(this.startNeuralStyleTransferToolStripMenuItem_Click);
             // 
@@ -431,6 +448,7 @@
             this.colStatus});
             this.lvStatus.Font = new System.Drawing.Font("Courier New", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lvStatus.FullRowSelect = true;
+            this.lvStatus.HideSelection = false;
             this.lvStatus.Location = new System.Drawing.Point(0, 27);
             this.lvStatus.Name = "lvStatus";
             this.lvStatus.Size = new System.Drawing.Size(957, 403);
@@ -464,12 +482,13 @@
             this.timerUI.Interval = 1000;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
-            // showGymUiToolStripMenuItem
+            // m_bwLoadVOCDatabase
             // 
-            this.showGymUiToolStripMenuItem.Name = "showGymUiToolStripMenuItem";
-            this.showGymUiToolStripMenuItem.Size = new System.Drawing.Size(241, 22);
-            this.showGymUiToolStripMenuItem.Text = "Show Gym Ui";
-            this.showGymUiToolStripMenuItem.Click += new System.EventHandler(this.showGymUiToolStripMenuItem_Click);
+            this.m_bwLoadVOCDatabase.WorkerReportsProgress = true;
+            this.m_bwLoadVOCDatabase.WorkerSupportsCancellation = true;
+            this.m_bwLoadVOCDatabase.DoWork += new System.ComponentModel.DoWorkEventHandler(this.m_bwLoadVOCDatabase_DoWork);
+            this.m_bwLoadVOCDatabase.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
+            this.m_bwLoadVOCDatabase.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
             // 
             // FormMain
             // 
@@ -546,6 +565,8 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
         private System.Windows.Forms.ToolStripMenuItem startNeuralStyleTransferToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem showGymUiToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem loadVOC2007ToolStripMenuItem;
+        private System.ComponentModel.BackgroundWorker m_bwLoadVOCDatabase;
     }
 }
 
