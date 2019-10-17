@@ -33,7 +33,7 @@ namespace MyCaffe.model
         /// <summary>
         /// The constructor.
         /// </summary>
-        /// <param name="strBaseDirectory">Specifies the base directory that contains the data and models.</param>
+        /// <param name="strBaseDir">Specifies the base directory that contains the data and models.</param>
         /// <param name="net">Optionally, specifies the 'base' net parameter that is to be altered (default = null).</param>
         /// <param name="solver">Optionally, specifies the 'base' solver parameter to use (default = null).</param>
         public ModelBuilder(string strBaseDir, NetParameter net = null, SolverParameter solver = null)
@@ -627,7 +627,7 @@ namespace MyCaffe.model
         /// <param name="nPad">Optionally, specifies the pad (default = 1).</param>
         /// <param name="nStride">Optionally, specifies the stride (default = 1).</param>
         /// <returns></returns>
-        protected LayerParameter addVGGBlock(LayerParameter lastLayer, int nTopIdx, int nBlockIdx, int nConvIdx, int nNumOutput, int nConvCount, bool? bNoPool, bool bDilatePool = false, int nKernelSize = 3, int nPad = 1, int nStride = 1)
+        protected LayerParameter addVGGBlock(LayerParameter lastLayer, int nBlockIdx, int nConvIdx, int nNumOutput, int nConvCount, bool? bNoPool, bool bDilatePool = false, int nKernelSize = 3, int nPad = 1, int nStride = 1)
         {
             for (int i = 0; i < nConvCount; i++)
             {
@@ -814,17 +814,17 @@ namespace MyCaffe.model
         /// <param name="rgstrFreezeLayers">Optionally, specifies a set of layers who's training is to be frozen (default = null to ignore).</param>
         /// <param name="bDilatePool4">Optionally, specifies whether or not to dilate pool #4 (default = false).</param>
         /// <returns>The last layer is returned.</returns>
-        protected LayerParameter addVGGNetBody(LayerParameter lastLayer, int nTopIdx, bool bNeedFc = true, bool bFullConv = true, bool bReduced = true, bool bDilated = true, bool bNoPool = false, bool bDropout = false, List<string> rgstrFreezeLayers = null, bool bDilatePool4 = false)
+        protected LayerParameter addVGGNetBody(LayerParameter lastLayer, bool bNeedFc = true, bool bFullConv = true, bool bReduced = true, bool bDilated = true, bool bNoPool = false, bool bDropout = false, List<string> rgstrFreezeLayers = null, bool bDilatePool4 = false)
         {
-            lastLayer = addVGGBlock(lastLayer, nTopIdx, 1, 1, 64, 2, bNoPool);
-            lastLayer = addVGGBlock(lastLayer, 0, 2, 1, 128, 2, bNoPool);
-            lastLayer = addVGGBlock(lastLayer, 0, 3, 1, 256, 3, bNoPool);
-            lastLayer = addVGGBlock(lastLayer, 0, 4, 1, 512, 3, bNoPool, bDilatePool4);
+            lastLayer = addVGGBlock(lastLayer, 1, 1, 64, 2, bNoPool);
+            lastLayer = addVGGBlock(lastLayer, 2, 1, 128, 2, bNoPool);
+            lastLayer = addVGGBlock(lastLayer, 3, 1, 256, 3, bNoPool);
+            lastLayer = addVGGBlock(lastLayer, 4, 1, 512, 3, bNoPool, bDilatePool4);
 
             int nDilation = (bDilatePool4) ? 2 : 1;
             int nKernelSize = 3;
             int nPad = (int)((nKernelSize + (nDilation - 1) * (nKernelSize - 1)) - 1) / 2;
-            lastLayer = addVGGBlock(lastLayer, 0, 5, 1, 512, 3, null, false, nKernelSize, nPad);
+            lastLayer = addVGGBlock(lastLayer, 5, 1, 512, 3, null, false, nKernelSize, nPad);
 
             if (bNeedFc)    
                 lastLayer = addVGGfc(lastLayer, 5, 4, 512, nDilation, bDilated, bNoPool, bFullConv, bReduced, bDropout);
