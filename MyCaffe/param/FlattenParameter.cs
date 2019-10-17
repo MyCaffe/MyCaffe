@@ -103,5 +103,39 @@ namespace MyCaffe.param
 
             return p;
         }
+
+        /// <summary>
+        /// Calculate the reshape array given the parameters.
+        /// </summary>
+        /// <param name="nParamAxis">Specifies the parameter start axis.</param>
+        /// <param name="nParamEndAxis">Specifies the parameter end axis.</param>
+        /// <param name="rgShape">Specifies the shape parameter.</param>
+        /// <param name="nStartAxis">Specifies the already initialized canonical start axis, or -1 if not initialized (default = -1).</param>
+        /// <param name="nEndAxis">Specifies the already initialized canonical end axis or -1 if not initialized (default = -1).</param>
+        /// <returns></returns>
+        public static List<int> Reshape(int nParamAxis, int nParamEndAxis, List<int> rgShape, int nStartAxis = -1, int nEndAxis = -1)
+        {
+            if (nStartAxis < 0)
+                nStartAxis = Utility.CanonicalAxisIndex(nParamAxis, rgShape.Count);
+
+            if (nEndAxis < 0)
+                nEndAxis = Utility.CanonicalAxisIndex(nParamEndAxis, rgShape.Count);
+
+            List<int> rgTopShape = new List<int>();
+            for (int i = 0; i < nStartAxis; i++)
+            {
+                rgTopShape.Add(rgShape[i]);
+            }
+
+            int nFlattenDim = Utility.Count(rgShape, nStartAxis, nEndAxis + 1);
+            rgTopShape.Add(nFlattenDim);
+
+            for (int i = nEndAxis + 1; i < rgShape.Count; i++)
+            {
+                rgTopShape.Add(rgShape[i]);
+            }
+
+            return rgTopShape;
+        }
     }
 }

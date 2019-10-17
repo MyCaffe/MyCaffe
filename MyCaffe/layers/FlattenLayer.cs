@@ -76,19 +76,21 @@ namespace MyCaffe.layers
             int nStartAxis = colBottom[0].CanonicalAxisIndex(m_param.flatten_param.axis);
             int nEndAxis = colBottom[0].CanonicalAxisIndex(m_param.flatten_param.end_axis);
 
-            List<int> rgTopShape = new List<int>();
-            for (int i = 0; i < nStartAxis; i++)
-            {
-                rgTopShape.Add(colBottom[0].shape(i));
-            }
+            //List<int> rgTopShape = new List<int>();
+            //for (int i = 0; i < nStartAxis; i++)
+            //{
+            //    rgTopShape.Add(colBottom[0].shape(i));
+            //}
 
-            int nFlattenDim = colBottom[0].count(nStartAxis, nEndAxis + 1);
-            rgTopShape.Add(nFlattenDim);
+            //int nFlattenDim = colBottom[0].count(nStartAxis, nEndAxis + 1);
+            //rgTopShape.Add(nFlattenDim);
 
-            for (int i = nEndAxis + 1; i < colBottom[0].num_axes; i++)
-            {
-                rgTopShape.Add(colBottom[0].shape(i));
-            }
+            //for (int i = nEndAxis + 1; i < colBottom[0].num_axes; i++)
+            //{
+            //    rgTopShape.Add(colBottom[0].shape(i));
+            //}
+
+            List<int> rgTopShape = FlattenParameter.Reshape(m_param.flatten_param.axis, m_param.flatten_param.end_axis, colBottom[0].shape(), nStartAxis, nEndAxis);
 
             colTop[0].Reshape(rgTopShape);
             m_log.CHECK_EQ(colTop[0].count(), colBottom[0].count(), "The top[0] and bottom[0] should have the same count.");
