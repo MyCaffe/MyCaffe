@@ -563,14 +563,7 @@ namespace MyCaffe.common
             m_log.CHECK_LE(nStartIdx, num_axes, "The start axis must be <= the number of axes.");
             m_log.CHECK_LE(nEndIdx, num_axes, "The end axis must be <= the number of axes.");
 
-            int nCount = 1;
-
-            for (int i = nStartIdx; i < nEndIdx; i++)
-            {
-                nCount *= shape(i);
-            }
-
-            return nCount;
+            return Utility.Count(shape(), nStartIdx, nEndIdx);
         }
 
         /// <summary>
@@ -590,16 +583,13 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="nIdx">The axis index. 
         /// </param>
-        /// <returns></returns>
+        /// <returns>The zero based index is returned.</returns>
         public int CanonicalAxisIndex(int nIdx)
         {
             m_log.CHECK_GE(nIdx, -num_axes, "The axis " + nIdx.ToString() + " out of range for " + num_axes.ToString() + " -D Blob with shape " + shape_string);
             m_log.CHECK_LT(nIdx, num_axes, "The axis " + nIdx.ToString() + " out of range for " + num_axes.ToString() + " -D Blob with shape " + shape_string);
 
-            if (nIdx < 0)
-                return nIdx + num_axes;
-            else
-                return nIdx;
+            return Utility.CanonicalAxisIndex(nIdx, num_axes);
         }
 
         /// <summary>
