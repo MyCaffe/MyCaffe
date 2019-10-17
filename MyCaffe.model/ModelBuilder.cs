@@ -543,6 +543,28 @@ namespace MyCaffe.model
         }
 
         /// <summary>
+        /// Connect the from layer to the 'to' layer.
+        /// </summary>
+        /// <param name="rgFromLayer">Specifies a list of layers who's bottoms are connected to the toLayer's top.</param>
+        /// <param name="toLayer">Specifies the layer who's top is connected to the from layer's bottom.</param>
+        /// <param name="bAdd">Optionally, specifies whether or not to add the layer to the network (default = true).</param>
+        /// <returns>The toLayer is returned as the next layer.</returns>
+        protected LayerParameter connectAndAddLayer(List<LayerParameter> rgFromLayer, LayerParameter toLayer, bool bAdd = true)
+        {
+            toLayer.bottom.Clear();
+
+            for (int i = 0; i < rgFromLayer.Count; i++)
+            {
+                toLayer.bottom.Add(rgFromLayer[i].top[0]);
+            }
+
+            if (bAdd)
+                m_net.layer.Add(toLayer);
+
+            return toLayer;
+        }
+
+        /// <summary>
         /// Create a new convolution layer parameter.
         /// </summary>
         /// <param name="strName">Specifies the layer name.</param>
