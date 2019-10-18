@@ -676,7 +676,7 @@ namespace MyCaffe.app
         private void m_bwLoadVOCDatabase_DoWork(object sender, DoWorkEventArgs e)
         {
             m_evtCaffeCancel.Reset();
-            VOCDataLoader loader = new VOCDataLoader(e.Argument as VOCDataParameters, m_evtCaffeCancel);
+            VOCDataLoader loader = new VOCDataLoader(e.Argument as VOCDataParameters, m_log, m_evtCaffeCancel);
 
             loader.OnProgress += loader_OnProgress;
             loader.OnError += loader_OnError;

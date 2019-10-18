@@ -29,6 +29,7 @@ namespace MyCaffe.data
         VOCDataParameters m_param;
         DatasetFactory m_factory = new DatasetFactory();
         CancelEvent m_evtCancel = null;
+        Log m_log;
 
         /// <summary>
         /// The OnProgress event fires during the creation process to show the progress.
@@ -48,9 +49,10 @@ namespace MyCaffe.data
         /// </summary>
         /// <param name="param">Specifies the creation parameters.</param>
         /// <param name="evtCancel">Specfies the cancel event used to cancel the process.</param>
-        public VOCDataLoader(VOCDataParameters param, CancelEvent evtCancel)
+        public VOCDataLoader(VOCDataParameters param, Log log, CancelEvent evtCancel)
         {
             m_param = param;
+            m_log = log;
             m_evtCancel = evtCancel;
         }
 
@@ -67,22 +69,20 @@ namespace MyCaffe.data
                 int nTotal = 5011 + 17125;
                 int nExtractIdx = 0;
                 int nExtractTotal = 10935 + 40178;
-                Log log = new Log("VOC");
-                log.OnWriteLine += Log_OnWriteLine;
 
                 // Get the label map.
                 LabelMap labelMap = loadLabelMap();
-                Dictionary<string, int> rgNameToLabel = labelMap.MapToLabel(log, true);
+                Dictionary<string, int> rgNameToLabel = labelMap.MapToLabel(m_log, true);
                 string strSrc = "VOC.training";
 
                 int nSrcId = m_factory.GetSourceID(strSrc);
                 if (nSrcId > 0)
                     m_factory.DeleteSourceData(nSrcId);
 
-                if (!loadFile(m_param.DataBatchFileTrain2007, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, log, m_param.ExtractFiles, rgNameToLabel))
+                if (!loadFile(m_param.DataBatchFileTrain2007, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, m_log, m_param.ExtractFiles, rgNameToLabel))
                     return;
 
-                if (!loadFile(m_param.DataBatchFileTrain2012, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, log, m_param.ExtractFiles, rgNameToLabel))
+                if (!loadFile(m_param.DataBatchFileTrain2012, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, m_log, m_param.ExtractFiles, rgNameToLabel))
                     return;
 
                 SourceDescriptor srcTrain = m_factory.LoadSource("VOC.training");
@@ -99,7 +99,7 @@ namespace MyCaffe.data
                 if (nSrcId > 0)
                     m_factory.DeleteSourceData(nSrcId);
 
-                if (!loadFile(m_param.DataBatchFileTest2007, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, log, m_param.ExtractFiles, rgNameToLabel))
+                if (!loadFile(m_param.DataBatchFileTest2007, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, m_log, m_param.ExtractFiles, rgNameToLabel))
                     return;
 
                 SourceDescriptor srcTest = m_factory.LoadSource("VOC.testing");
@@ -117,11 +117,6 @@ namespace MyCaffe.data
                 if (OnCompleted != null)
                     OnCompleted(this, new EventArgs());
             }
-        }
-
-        private void Log_OnWriteLine(object sender, LogArg e)
-        {
-            reportProgress((int)(e.Progress * 1000), 1000, e.Message);
         }
 
         private bool loadFile(string strImagesFile, string strSourceName, int nExtractTotal, ref int nExtractIdx, int nTotal, ref int nIdx, Log log, bool bExtractFiles, Dictionary<string, int> rgNameToLabel)
