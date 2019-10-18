@@ -32,7 +32,8 @@ namespace MyCaffe.basecode
         /// <param name="strOutputDir">Specifies the output directory.</param>
         /// <param name="evtCancel">Optionally, specifies the cancel event used to cancel the extraction (default = null).</param>
         /// <param name="log">Optionally, specifies the Log used to output status of the extraction (default = null).</param>
-        /// <param name="nExpectedTotal">Optionally, specifies the expected total number of files.</param>
+        /// <param name="nExpectedTotal">Optionally, specifies the expected total number of files (default = 0).</param>
+        /// <param name="nIdx">Optionally, specifies an item index (default = 0).</param>
         /// <returns>Upon a successful extraction, the number of files extracted offset by the index is returned, or 0 on abort.</returns>
         public static int ExtractTar(string strFileName, string strOutputDir, CancelEvent evtCancel = null, Log log = null, int nExpectedTotal = 0, int nIdx = 0)
         {
@@ -49,7 +50,8 @@ namespace MyCaffe.basecode
         /// <param name="strOutputDir">Specifies the output directory.</param>
         /// <param name="evtCancel">Optionally, specifies the cancel event used to cancel the extraction (default = null).</param>
         /// <param name="log">Optionally, specifies the Log used to output status of the extraction (default = null).</param>
-        /// <param name="nExpectedTotal">Optionally, specifies the expected total number of files.</param>
+        /// <param name="nExpectedTotal">Optionally, specifies the expected total number of files (default = 0).</param>
+        /// <param name="nIdx">Optionally, specifies an item index (default = 0).</param>
         /// <returns>Upon a successful extraction, the number of files extracted offset by the index is returned, or 0 on abort.</returns>
         public static int ExtractTar(Stream stream, string strOutputDir, CancelEvent evtCancel = null, Log log = null, int nExpectedTotal = 0, int nIdx = 0)
         {

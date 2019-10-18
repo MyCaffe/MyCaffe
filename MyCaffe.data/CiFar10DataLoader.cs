@@ -45,6 +45,8 @@ namespace MyCaffe.data
         /// The constructor.
         /// </summary>
         /// <param name="param">Specifies the creation parameters.</param>
+        /// <param name="log">Specifies the output log used to show status updates.</param>
+        /// <param name="evtCancel">Specifies the cancel event used to abort the creation process.</param>
         public CiFar10DataLoader(CiFar10DataParameters param, Log log, CancelEvent evtCancel)
         {
             m_param = param;

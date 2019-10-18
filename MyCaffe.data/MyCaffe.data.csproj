@@ -56,6 +56,7 @@
     <Compile Include="CiFar10DataParameters.cs" />
     <Compile Include="MnistDataLoader.cs" />
     <Compile Include="MnistDataParameters.cs" />
+    <Compile Include="ProgressArgs.cs" />
     <Compile Include="ProgressInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="VOCDataLoader.cs" />

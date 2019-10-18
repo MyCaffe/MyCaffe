@@ -238,19 +238,4 @@ namespace MyCaffe.data
                 OnError(this, new ProgressArgs(new ProgressInfo(nIdx, nTotal, "ERROR", err)));
         }
     }
-
-    public class ProgressArgs : EventArgs
-    {
-        ProgressInfo m_pi;
-
-        public ProgressArgs(ProgressInfo pi)
-        {
-            m_pi = pi;
-        }
-
-        public ProgressInfo Progress
-        {
-            get { return m_pi; }
-        }
-    }
 }
