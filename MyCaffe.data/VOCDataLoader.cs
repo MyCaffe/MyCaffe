@@ -57,6 +57,11 @@ namespace MyCaffe.data
             m_evtCancel.Reset();
         }
 
+        private string dataset_name
+        {
+            get { return "VOC0712"; }
+        }
+
         /// <summary>
         /// Create the dataset and load it into the database.
         /// </summary>
@@ -65,7 +70,7 @@ namespace MyCaffe.data
         {
             try
             {
-                reportProgress(0, 0, "Loading database...");
+                reportProgress(0, 0, "Loading " + dataset_name + " database...");
 
                 int nIdx = 0;
                 int nTotal = 5011 + 17125;
@@ -75,7 +80,7 @@ namespace MyCaffe.data
                 // Get the label map.
                 LabelMap labelMap = loadLabelMap();
                 Dictionary<string, int> rgNameToLabel = labelMap.MapToLabel(m_log, true);
-                string strSrc = "VOC.training";
+                string strSrc = dataset_name + ".training";
 
                 int nSrcId = m_factory.GetSourceID(strSrc);
                 if (nSrcId > 0)
@@ -87,7 +92,7 @@ namespace MyCaffe.data
                 if (!loadFile(m_param.DataBatchFileTrain2012, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, m_log, m_param.ExtractFiles, rgNameToLabel))
                     return false;
 
-                SourceDescriptor srcTrain = m_factory.LoadSource("VOC.training");
+                SourceDescriptor srcTrain = m_factory.LoadSource(strSrc);
 
                 m_rgImg = new List<SimpleDatum>();
                 nIdx = 0;
@@ -95,7 +100,7 @@ namespace MyCaffe.data
                 nExtractIdx = 0;
                 nExtractTotal = 10347;
 
-                strSrc = "VOC.testing";
+                strSrc = dataset_name + ".testing";
 
                 nSrcId = m_factory.GetSourceID(strSrc);
                 if (nSrcId > 0)
@@ -104,9 +109,9 @@ namespace MyCaffe.data
                 if (!loadFile(m_param.DataBatchFileTest2007, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, m_log, m_param.ExtractFiles, rgNameToLabel))
                     return false;
 
-                SourceDescriptor srcTest = m_factory.LoadSource("VOC.testing");
+                SourceDescriptor srcTest = m_factory.LoadSource(strSrc);
 
-                DatasetDescriptor ds = new DatasetDescriptor(0, "VOC", null, null, srcTrain, srcTest, "VOC", "VOC Dataset");
+                DatasetDescriptor ds = new DatasetDescriptor(0, dataset_name, null, null, srcTrain, srcTest, dataset_name, dataset_name + " Dataset");
                 m_factory.AddDataset(ds);
                 m_factory.UpdateDatasetCounts(ds.ID);
 
@@ -375,11 +380,6 @@ namespace MyCaffe.data
             {
                 rgFiles.Add(new Tuple<string, string>(rgImgFiles[i], rgLabelFiles[i]));
             }
-        }
-
-        private string dataset_name
-        {
-            get { return "VOC0712"; }
         }
 
         private string test_data_path
