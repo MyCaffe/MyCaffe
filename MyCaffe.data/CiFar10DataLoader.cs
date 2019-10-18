@@ -25,6 +25,8 @@ namespace MyCaffe.data
         List<SimpleDatum> m_rgImg = new List<SimpleDatum>();
         CiFar10DataParameters m_param;
         DatasetFactory m_factory = new DatasetFactory();
+        CancelEvent m_evtCancel;
+        Log m_log;
 
         /// <summary>
         /// The OnProgress event fires during the creation process to show the progress.
@@ -43,47 +45,80 @@ namespace MyCaffe.data
         /// The constructor.
         /// </summary>
         /// <param name="param">Specifies the creation parameters.</param>
-        public CiFar10DataLoader(CiFar10DataParameters param)
+        public CiFar10DataLoader(CiFar10DataParameters param, Log log, CancelEvent evtCancel)
         {
             m_param = param;
+            m_log = log;
+            m_evtCancel = evtCancel;
+            m_evtCancel.Reset();
         }
 
         /// <summary>
         /// Create the dataset and load it into the database.
         /// </summary>
-        public void LoadDatabase()
+        /// <returns>On successful creation, <i>true</i> is returned, otherwise <i>false</i> is returned on abort.</returns>
+        public bool LoadDatabase()
         {
-            int nIdx = 0;
-            int nTotal = 50000;
+            try
+            {
+                int nIdx = 0;
+                int nTotal = 50000;
 
-            reportProgress(nIdx, 0, "Loading database...");
+                reportProgress(nIdx, 0, "Loading database CIFAR-10...");
 
-            Log log = new Log("MNIST");
-            log.OnWriteLine += Log_OnWriteLine;
+                DatasetFactory factory = new DatasetFactory();
 
-            DatasetFactory factory = new DatasetFactory();
+                int nSrcId = factory.GetSourceID("CIFAR-10.training");
+                if (nSrcId != 0)
+                    factory.DeleteSourceData(nSrcId);
 
-            loadFile(m_param.DataBatchFile1, "CIFAR-10.training", nTotal, ref nIdx, log);
-            loadFile(m_param.DataBatchFile2, "CIFAR-10.training", nTotal, ref nIdx, log);
-            loadFile(m_param.DataBatchFile3, "CIFAR-10.training", nTotal, ref nIdx, log);
-            loadFile(m_param.DataBatchFile4, "CIFAR-10.training", nTotal, ref nIdx, log);
-            loadFile(m_param.DataBatchFile5, "CIFAR-10.training", nTotal, ref nIdx, log);
-            SourceDescriptor srcTrain = factory.LoadSource("CIFAR-10.training");
-            m_factory.SaveImageMean(SimpleDatum.CalculateMean(log, m_rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true, srcTrain.ID);
+                if (!loadFile(m_param.DataBatchFile1, "CIFAR-10.training", nTotal, ref nIdx, m_log))
+                    return false;
 
-            m_rgImg = new List<SimpleDatum>();
-            nIdx = 0;
-            nTotal = 10000;
-            loadFile(m_param.TestBatchFile, "CIFAR-10.testing", nTotal, ref nIdx, log);
-            SourceDescriptor srcTest = factory.LoadSource("CIFAR-10.testing");
-            m_factory.SaveImageMean(SimpleDatum.CalculateMean(log, m_rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true, srcTest.ID);
+                if (!loadFile(m_param.DataBatchFile2, "CIFAR-10.training", nTotal, ref nIdx, m_log))
+                    return false;
 
-            DatasetDescriptor ds = new DatasetDescriptor(0, "CIFAR-10", null, null, srcTrain, srcTest, "CIFAR-10", "CiFar-10 Dataset");
-            factory.AddDataset(ds);
-            factory.UpdateDatasetCounts(ds.ID);
+                if (!loadFile(m_param.DataBatchFile3, "CIFAR-10.training", nTotal, ref nIdx, m_log))
+                    return false;
 
-            if (OnCompleted != null)
-                OnCompleted(this, new EventArgs());
+                if (!loadFile(m_param.DataBatchFile4, "CIFAR-10.training", nTotal, ref nIdx, m_log))
+                    return false;
+
+                if (!loadFile(m_param.DataBatchFile5, "CIFAR-10.training", nTotal, ref nIdx, m_log))
+                    return false;
+
+                SourceDescriptor srcTrain = factory.LoadSource("CIFAR-10.training");
+                m_factory.SaveImageMean(SimpleDatum.CalculateMean(m_log, m_rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true, srcTrain.ID);
+
+                m_rgImg = new List<SimpleDatum>();
+                nIdx = 0;
+                nTotal = 10000;
+
+                nSrcId = factory.GetSourceID("CIFAR-10.testing");
+                if (nSrcId != 0)
+                    factory.DeleteSourceData(nSrcId);
+
+                if (!loadFile(m_param.TestBatchFile, "CIFAR-10.testing", nTotal, ref nIdx, m_log))
+                    return false;
+
+                SourceDescriptor srcTest = factory.LoadSource("CIFAR-10.testing");
+                m_factory.SaveImageMean(SimpleDatum.CalculateMean(m_log, m_rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true, srcTest.ID);
+
+                DatasetDescriptor ds = new DatasetDescriptor(0, "CIFAR-10", null, null, srcTrain, srcTest, "CIFAR-10", "CiFar-10 Dataset");
+                factory.AddDataset(ds);
+                factory.UpdateDatasetCounts(ds.ID);
+
+                return true;
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                if (OnCompleted != null)
+                    OnCompleted(this, new EventArgs());
+            }
         }
 
         private void Log_OnWriteLine(object sender, LogArg e)
@@ -91,7 +126,7 @@ namespace MyCaffe.data
             reportProgress((int)(e.Progress * 1000), 1000, e.Message);
         }
 
-        private void loadFile(string strImagesFile, string strSourceName, int nTotal, ref int nIdx, Log log)
+        private bool loadFile(string strImagesFile, string strSourceName, int nTotal, ref int nIdx, Log log)
         {
             Stopwatch sw = new Stopwatch();
             int nStart = nIdx;
@@ -134,6 +169,9 @@ namespace MyCaffe.data
                             reportProgress(nStart + i, nTotal, "loading " + strImagesFile + "   " + i.ToString("N0") + " of 10,000...");
                             sw.Restart();
                         }
+
+                        if (m_evtCancel.WaitOne(0))
+                            return false;
                     }
 
                     m_factory.ClearImageCashe(true);
@@ -147,6 +185,8 @@ namespace MyCaffe.data
                 if (fs != null)
                     fs.Dispose();
             }
+
+            return true;
         }
 
         private Bitmap createImage(byte[] rgImg)

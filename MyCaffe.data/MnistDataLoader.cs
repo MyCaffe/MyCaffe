@@ -23,6 +23,8 @@ namespace MyCaffe.data
     {
         MnistDataParameters m_param;
         DatasetFactory m_factory = new DatasetFactory();
+        Log m_log;
+        CancelEvent m_evtCancel;
 
         /// <summary>
         /// The OnProgress event fires during the creation process to show the progress.
@@ -41,42 +43,71 @@ namespace MyCaffe.data
         /// The constructor.
         /// </summary>
         /// <param name="param">Specifies the creation parameters.</param>
-        public MnistDataLoader(MnistDataParameters param)
+        /// <param name="log">Specifies the output log used to show status updates.</param>
+        /// <param name="evtCancel">Specifies the cancel event used to abort the creation process.</param>
+        public MnistDataLoader(MnistDataParameters param, Log log, CancelEvent evtCancel)
         {
             m_param = param;
+            m_log = log;
+            m_evtCancel = evtCancel;
+            m_evtCancel.Reset();
         }
 
         /// <summary>
         /// Create the dataset and load it into the database.
         /// </summary>
-        public void LoadDatabase()
+        /// <returns>On successful creation, <i>true</i> is returned, otherwise <i>false</i> is returned on abort.</returns>
+        public bool LoadDatabase()
         {
             int nIdx = 0;
             int nTotal = 0;
 
-            reportProgress(nIdx, nTotal, "Unpacking files...");
-            string strTrainImagesBin = expandFile(m_param.TrainImagesFile);
-            string strTrainLabelsBin = expandFile(m_param.TrainLabelsFile);
-            string strTestImagesBin = expandFile(m_param.TestImagesFile);
-            string strTestLabelsBin = expandFile(m_param.TestLabelsFile);
+            try
+            {
+                reportProgress(nIdx, nTotal, "Unpacking files...");
+                string strTrainImagesBin = expandFile(m_param.TrainImagesFile);
+                string strTrainLabelsBin = expandFile(m_param.TrainLabelsFile);
+                string strTestImagesBin = expandFile(m_param.TestImagesFile);
+                string strTestLabelsBin = expandFile(m_param.TestLabelsFile);
 
-            reportProgress(nIdx, nTotal, "Loading database...");
+                reportProgress(nIdx, nTotal, "Loading MNIST database...");
 
-            loadFile(strTrainImagesBin, strTrainLabelsBin, "MNIST.training");
-            loadFile(strTestImagesBin, strTestLabelsBin, "MNIST.testing");
+                DatasetFactory factory = new DatasetFactory();
 
-            DatasetFactory factory = new DatasetFactory();
-            SourceDescriptor srcTrain = factory.LoadSource("MNIST.training");
-            SourceDescriptor srcTest = factory.LoadSource("MNIST.testing");
-            DatasetDescriptor ds = new DatasetDescriptor(0, "MNIST", null, null, srcTrain, srcTest, "MNIST", "MNIST Character Dataset");
-            factory.AddDataset(ds);
-            factory.UpdateDatasetCounts(ds.ID);
+                int nSrcId = factory.GetSourceID("MNIST.training");
+                if (nSrcId != 0)
+                    factory.DeleteSourceData(nSrcId);
 
-            if (OnCompleted != null)
-                OnCompleted(this, new EventArgs());
+                if (!loadFile(strTrainImagesBin, strTrainLabelsBin, "MNIST.training"))
+                    return false;
+
+                nSrcId = factory.GetSourceID("MNIST.testing");
+                if (nSrcId != 0)
+                    factory.DeleteSourceData(nSrcId);
+
+                if (!loadFile(strTestImagesBin, strTestLabelsBin, "MNIST.testing"))
+                    return false;
+
+                SourceDescriptor srcTrain = factory.LoadSource("MNIST.training");
+                SourceDescriptor srcTest = factory.LoadSource("MNIST.testing");
+                DatasetDescriptor ds = new DatasetDescriptor(0, "MNIST", null, null, srcTrain, srcTest, "MNIST", "MNIST Character Dataset");
+                factory.AddDataset(ds);
+                factory.UpdateDatasetCounts(ds.ID);
+
+                return true;
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                if (OnCompleted != null)
+                    OnCompleted(this, new EventArgs());
+            }
         }
 
-        private void loadFile(string strImagesFile, string strLabelsFile, string strSourceName)
+        private bool loadFile(string strImagesFile, string strLabelsFile, string strSourceName)
         {
             Stopwatch sw = new Stopwatch();
 
@@ -85,9 +116,6 @@ namespace MyCaffe.data
 
             BinaryFile image_file = new BinaryFile(strImagesFile);
             BinaryFile label_file = new BinaryFile(strLabelsFile);
-
-            Log log = new Log("MNIST");
-            log.OnWriteLine += Log_OnWriteLine;
 
             try
             {
@@ -115,7 +143,7 @@ namespace MyCaffe.data
 
                 int nSrcId = m_factory.AddSource(strSourceName, nChannels, (int)cols, (int)rows, false, 0, true);
 
-                m_factory.Open(nSrcId, 500, false, log);
+                m_factory.Open(nSrcId, 500, false, m_log);
                 m_factory.DeleteSourceData();
 
                 // Storing to database;
@@ -145,11 +173,14 @@ namespace MyCaffe.data
                     datum.SetData(rgPixels.ToList(), (int)rgLabel[0]);
                     m_factory.PutRawImageCache(i, datum);
                     rgImg.Add(new SimpleDatum(datum));
+
+                    if (m_evtCancel.WaitOne(0))
+                        return false;
                 }
 
                 m_factory.ClearImageCashe(true);
                 m_factory.UpdateSourceCounts();
-                m_factory.SaveImageMean(SimpleDatum.CalculateMean(log, rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true);
+                m_factory.SaveImageMean(SimpleDatum.CalculateMean(m_log, rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true);
 
                 reportProgress((int)num_items, (int)num_items, " loading completed.");
             }
@@ -158,6 +189,8 @@ namespace MyCaffe.data
                 image_file.Dispose();
                 label_file.Dispose();
             }
+
+            return true;
         }
 
         private void Log_OnWriteLine(object sender, LogArg e)

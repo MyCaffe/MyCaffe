@@ -653,7 +653,7 @@ namespace MyCaffe.app
 
         private void m_bwLoadMnistDatabase_DoWork(object sender, DoWorkEventArgs e)
         {
-            MnistDataLoader loader = new MnistDataLoader(e.Argument as MnistDataParameters);
+            MnistDataLoader loader = new MnistDataLoader(e.Argument as MnistDataParameters, m_log, m_evtCaffeCancel);
 
             loader.OnProgress += loader_OnProgress;
             loader.OnError += loader_OnError;
@@ -664,7 +664,7 @@ namespace MyCaffe.app
 
         private void m_bwLoadCiFar10Database_DoWork(object sender, DoWorkEventArgs e)
         {
-            CiFar10DataLoader loader = new CiFar10DataLoader(e.Argument as CiFar10DataParameters);
+            CiFar10DataLoader loader = new CiFar10DataLoader(e.Argument as CiFar10DataParameters, m_log, m_evtCaffeCancel);
 
             loader.OnProgress += loader_OnProgress;
             loader.OnError += loader_OnError;
@@ -675,7 +675,6 @@ namespace MyCaffe.app
 
         private void m_bwLoadVOCDatabase_DoWork(object sender, DoWorkEventArgs e)
         {
-            m_evtCaffeCancel.Reset();
             VOCDataLoader loader = new VOCDataLoader(e.Argument as VOCDataParameters, m_log, m_evtCaffeCancel);
 
             loader.OnProgress += loader_OnProgress;

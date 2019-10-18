@@ -54,12 +54,14 @@ namespace MyCaffe.data
             m_param = param;
             m_log = log;
             m_evtCancel = evtCancel;
+            m_evtCancel.Reset();
         }
 
         /// <summary>
         /// Create the dataset and load it into the database.
         /// </summary>
-        public void LoadDatabase()
+        /// <returns>On successful creation, <i>true</i> is returned, otherwise <i>false</i> is returned on abort.</returns>
+        public bool LoadDatabase()
         {
             try
             {
@@ -80,10 +82,10 @@ namespace MyCaffe.data
                     m_factory.DeleteSourceData(nSrcId);
 
                 if (!loadFile(m_param.DataBatchFileTrain2007, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, m_log, m_param.ExtractFiles, rgNameToLabel))
-                    return;
+                    return false;
 
                 if (!loadFile(m_param.DataBatchFileTrain2012, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, m_log, m_param.ExtractFiles, rgNameToLabel))
-                    return;
+                    return false;
 
                 SourceDescriptor srcTrain = m_factory.LoadSource("VOC.training");
 
@@ -100,13 +102,15 @@ namespace MyCaffe.data
                     m_factory.DeleteSourceData(nSrcId);
 
                 if (!loadFile(m_param.DataBatchFileTest2007, strSrc, nExtractTotal, ref nExtractIdx, nTotal, ref nIdx, m_log, m_param.ExtractFiles, rgNameToLabel))
-                    return;
+                    return false;
 
                 SourceDescriptor srcTest = m_factory.LoadSource("VOC.testing");
 
                 DatasetDescriptor ds = new DatasetDescriptor(0, "VOC", null, null, srcTrain, srcTest, "VOC", "VOC Dataset");
                 m_factory.AddDataset(ds);
                 m_factory.UpdateDatasetCounts(ds.ID);
+
+                return true;
             }
             catch (Exception excpt)
             {
