@@ -97,6 +97,40 @@ namespace MyCaffe.param.ssd
         }
 
         /// <summary>
+        /// Map the names to their labels.
+        /// </summary>
+        /// <param name="log">Specifies the output log.</param>
+        /// <param name="bStrict">Specifies whether or not to allow duplicates, when allowed, the duplicate overwrites previous labels with the same ID.</param>
+        /// <returns>The name to label mapping is returned.</returns>
+        public Dictionary<string, int> MapToLabel(Log log, bool bStrict)
+        {
+            Dictionary<string, int> rgNameToLabel = new Dictionary<string, int>();
+
+            for (int i = 0; i < m_rgItems.Count; i++)
+            {
+                string strName = m_rgItems[i].name;
+                int nLabel = m_rgItems[i].label;
+
+                if (bStrict)
+                {
+                    if (rgNameToLabel.ContainsKey(strName))
+                        log.FAIL("There are duplicates of the name: " + strName.ToLower());
+
+                    rgNameToLabel.Add(strName, nLabel);
+                }
+                else
+                {
+                    if (rgNameToLabel.ContainsKey(strName))
+                        rgNameToLabel[strName] = nLabel;
+                    else
+                        rgNameToLabel.Add(strName, nLabel);
+                }
+            }
+
+            return rgNameToLabel;
+        }
+
+        /// <summary>
         /// Specifies the list of label items.
         /// </summary>
         public List<LabelMapItem> item
