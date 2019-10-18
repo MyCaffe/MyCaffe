@@ -20,6 +20,7 @@ using System.IO;
 using System.Net;
 using System.Reflection;
 using MyCaffe.test;
+using MyCaffe.data;
 
 namespace MyCaffe.app
 {
@@ -652,7 +653,7 @@ namespace MyCaffe.app
 
         private void m_bwLoadMnistDatabase_DoWork(object sender, DoWorkEventArgs e)
         {
-            MnistDataLoader loader = new app.MnistDataLoader(e.Argument as MnistDataParameters);
+            MnistDataLoader loader = new MnistDataLoader(e.Argument as MnistDataParameters);
 
             loader.OnProgress += loader_OnProgress;
             loader.OnError += loader_OnError;

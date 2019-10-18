@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyCaffe.data;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -101,7 +102,7 @@ namespace MyCaffe.app
 
         private void btnOK_Click(object sender, EventArgs e)
         {
-            m_param = new app.VOCDataParameters(edtDataFile1.Text, edtDataFile2.Text, edtDataFile3.Text, chkExtractFiles.Checked);
+            m_param = new VOCDataParameters(edtDataFile1.Text, edtDataFile2.Text, edtDataFile3.Text, chkExtractFiles.Checked);
         }
 
         private void btnDownload_Click(object sender, EventArgs e)

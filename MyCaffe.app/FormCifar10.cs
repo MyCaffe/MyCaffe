@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyCaffe.data;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -128,7 +129,7 @@ namespace MyCaffe.app
 
         private void btnOK_Click(object sender, EventArgs e)
         {
-            m_param = new app.CiFar10DataParameters(edtCifarDataFile1.Text, edtCifarDataFile2.Text, edtCifarDataFile3.Text, edtCifarDataFile4.Text, edtCifarDataFile5.Text, edtCifarDataFile6.Text);
+            m_param = new CiFar10DataParameters(edtCifarDataFile1.Text, edtCifarDataFile2.Text, edtCifarDataFile3.Text, edtCifarDataFile4.Text, edtCifarDataFile5.Text, edtCifarDataFile6.Text);
         }
 
         private void FormCifar10_FormClosing(object sender, FormClosingEventArgs e)

@@ -69,8 +69,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="VOCDataLoader.cs" />
-    <Compile Include="VOCDataParameters.cs" />
     <Compile Include="FormAbout.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -107,7 +105,6 @@
     <Compile Include="FormMnist.Designer.cs">
       <DependentUpon>FormMnist.cs</DependentUpon>
     </Compile>
-    <Compile Include="CiFar10DataLoader.cs" />
     <Compile Include="FormNeuralStyle.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -141,11 +138,7 @@
     <Compile Include="ListViewEx.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="MnistDataLoader.cs" />
-    <Compile Include="CiFar10DataParameters.cs" />
-    <Compile Include="MnistDataParameters.cs" />
     <Compile Include="Program.cs" />
-    <Compile Include="ProgressInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SqlServerTypes\Loader.cs" />
     <EmbeddedResource Include="FormAbout.resx">
@@ -237,6 +230,10 @@
     <ProjectReference Include="..\MyCaffe.basecode\MyCaffe.basecode.csproj">
       <Project>{d168418c-cdcc-4f5b-bf55-292a38cc2429}</Project>
       <Name>MyCaffe.basecode</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MyCaffe.data\MyCaffe.data.csproj">
+      <Project>{a1d61032-4937-49a3-984d-be1f272a02b4}</Project>
+      <Name>MyCaffe.data</Name>
     </ProjectReference>
     <ProjectReference Include="..\MyCaffe.db.image\MyCaffe.db.image.csproj">
       <Project>{642ba581-59cb-445e-8d7d-81e67b748d77}</Project>
