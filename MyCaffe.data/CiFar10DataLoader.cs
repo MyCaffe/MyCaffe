@@ -55,6 +55,11 @@ namespace MyCaffe.data
             m_evtCancel.Reset();
         }
 
+        private string dataset_name
+        {
+            get { return "CIFAR-10"; }
+        }
+
         /// <summary>
         /// Create the dataset and load it into the database.
         /// </summary>
@@ -66,47 +71,49 @@ namespace MyCaffe.data
                 int nIdx = 0;
                 int nTotal = 50000;
 
-                reportProgress(nIdx, 0, "Loading database CIFAR-10...");
+                reportProgress(nIdx, 0, "Loading database " + dataset_name + "...");
 
                 DatasetFactory factory = new DatasetFactory();
 
-                int nSrcId = factory.GetSourceID("CIFAR-10.training");
+                string strTrainSrc = dataset_name + ".training";
+                int nSrcId = factory.GetSourceID(strTrainSrc);
                 if (nSrcId != 0)
                     factory.DeleteSourceData(nSrcId);
 
-                if (!loadFile(m_param.DataBatchFile1, "CIFAR-10.training", nTotal, ref nIdx, m_log))
+                if (!loadFile(m_param.DataBatchFile1, strTrainSrc, nTotal, ref nIdx, m_log))
                     return false;
 
-                if (!loadFile(m_param.DataBatchFile2, "CIFAR-10.training", nTotal, ref nIdx, m_log))
+                if (!loadFile(m_param.DataBatchFile2, strTrainSrc, nTotal, ref nIdx, m_log))
                     return false;
 
-                if (!loadFile(m_param.DataBatchFile3, "CIFAR-10.training", nTotal, ref nIdx, m_log))
+                if (!loadFile(m_param.DataBatchFile3, strTrainSrc, nTotal, ref nIdx, m_log))
                     return false;
 
-                if (!loadFile(m_param.DataBatchFile4, "CIFAR-10.training", nTotal, ref nIdx, m_log))
+                if (!loadFile(m_param.DataBatchFile4, strTrainSrc, nTotal, ref nIdx, m_log))
                     return false;
 
-                if (!loadFile(m_param.DataBatchFile5, "CIFAR-10.training", nTotal, ref nIdx, m_log))
+                if (!loadFile(m_param.DataBatchFile5, strTrainSrc, nTotal, ref nIdx, m_log))
                     return false;
 
-                SourceDescriptor srcTrain = factory.LoadSource("CIFAR-10.training");
+                SourceDescriptor srcTrain = factory.LoadSource(strTrainSrc);
                 m_factory.SaveImageMean(SimpleDatum.CalculateMean(m_log, m_rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true, srcTrain.ID);
 
                 m_rgImg = new List<SimpleDatum>();
                 nIdx = 0;
                 nTotal = 10000;
 
-                nSrcId = factory.GetSourceID("CIFAR-10.testing");
+                string strTestSrc = dataset_name + ".testing";
+                nSrcId = factory.GetSourceID(strTestSrc);
                 if (nSrcId != 0)
                     factory.DeleteSourceData(nSrcId);
 
-                if (!loadFile(m_param.TestBatchFile, "CIFAR-10.testing", nTotal, ref nIdx, m_log))
+                if (!loadFile(m_param.TestBatchFile, strTestSrc, nTotal, ref nIdx, m_log))
                     return false;
 
-                SourceDescriptor srcTest = factory.LoadSource("CIFAR-10.testing");
+                SourceDescriptor srcTest = factory.LoadSource(strTestSrc);
                 m_factory.SaveImageMean(SimpleDatum.CalculateMean(m_log, m_rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true, srcTest.ID);
 
-                DatasetDescriptor ds = new DatasetDescriptor(0, "CIFAR-10", null, null, srcTrain, srcTest, "CIFAR-10", "CiFar-10 Dataset");
+                DatasetDescriptor ds = new DatasetDescriptor(0, dataset_name, null, null, srcTrain, srcTest, dataset_name, dataset_name + " Dataset");
                 factory.AddDataset(ds);
                 factory.UpdateDatasetCounts(ds.ID);
 

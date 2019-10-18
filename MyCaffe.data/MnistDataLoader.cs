@@ -53,6 +53,11 @@ namespace MyCaffe.data
             m_evtCancel.Reset();
         }
 
+        private string dataset_name
+        {
+            get { return "MNIST"; }
+        }
+
         /// <summary>
         /// Create the dataset and load it into the database.
         /// </summary>
@@ -70,27 +75,29 @@ namespace MyCaffe.data
                 string strTestImagesBin = expandFile(m_param.TestImagesFile);
                 string strTestLabelsBin = expandFile(m_param.TestLabelsFile);
 
-                reportProgress(nIdx, nTotal, "Loading MNIST database...");
+                reportProgress(nIdx, nTotal, "Loading " + dataset_name + " database...");
 
                 DatasetFactory factory = new DatasetFactory();
 
-                int nSrcId = factory.GetSourceID("MNIST.training");
+                string strTrainSrc = dataset_name + ".training";
+                int nSrcId = factory.GetSourceID(strTrainSrc);
                 if (nSrcId != 0)
                     factory.DeleteSourceData(nSrcId);
 
-                if (!loadFile(strTrainImagesBin, strTrainLabelsBin, "MNIST.training"))
+                if (!loadFile(strTrainImagesBin, strTrainLabelsBin, strTrainSrc))
                     return false;
 
-                nSrcId = factory.GetSourceID("MNIST.testing");
+                string strTestSrc = dataset_name + ".testing";
+                nSrcId = factory.GetSourceID(strTestSrc);
                 if (nSrcId != 0)
                     factory.DeleteSourceData(nSrcId);
 
-                if (!loadFile(strTestImagesBin, strTestLabelsBin, "MNIST.testing"))
+                if (!loadFile(strTestImagesBin, strTestLabelsBin, strTestSrc))
                     return false;
 
-                SourceDescriptor srcTrain = factory.LoadSource("MNIST.training");
-                SourceDescriptor srcTest = factory.LoadSource("MNIST.testing");
-                DatasetDescriptor ds = new DatasetDescriptor(0, "MNIST", null, null, srcTrain, srcTest, "MNIST", "MNIST Character Dataset");
+                SourceDescriptor srcTrain = factory.LoadSource(strTrainSrc);
+                SourceDescriptor srcTest = factory.LoadSource(strTestSrc);
+                DatasetDescriptor ds = new DatasetDescriptor(0, dataset_name, null, null, srcTrain, srcTest, dataset_name, dataset_name + " Character Dataset");
                 factory.AddDataset(ds);
                 factory.UpdateDatasetCounts(ds.ID);
 
