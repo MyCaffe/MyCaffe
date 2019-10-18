@@ -38,7 +38,7 @@ namespace MyCaffe.app
 
             edtDataFile1.Tag = "VOCtrainval_11-May-2012.tar";
             edtDataFile2.Tag = "VOCtrainval_06-Nov-2007.tar";
-            edtDataFile3.Tag = "OCtest_06-Nov-2007.tar";
+            edtDataFile3.Tag = "VOCtest_06-Nov-2007.tar";
             btnDownload1.Tag = new Tuple<string, TextBox, Label, Button, Button>("VOCtrainval_11-May-2012.tar", edtDataFile1, lblDownloadPct1, btnDownload1, btnBrowseTar1);
             btnDownload2.Tag = new Tuple<string, TextBox, Label, Button, Button>("VOCtrainval_06-Nov-2007.tar", edtDataFile2, lblDownloadPct2, btnDownload2, btnBrowseTar2);
             btnDownload3.Tag = new Tuple<string, TextBox, Label, Button, Button>("VOCtest_06-Nov-2007.tar", edtDataFile3, lblDownloadPct3, btnDownload3, btnBrowseTar3);
@@ -55,6 +55,7 @@ namespace MyCaffe.app
 
         private void FormCiFar10_Load(object sender, EventArgs e)
         {
+            chkExtractFiles.Checked = Properties.Settings.Default.ExpandFiles;
         }
 
         private void lblDownloadSite_MouseHover(object sender, EventArgs e)
@@ -165,6 +166,8 @@ namespace MyCaffe.app
             strFile = edtDataFile3.Text;
             if (btnDownload1.Enabled && !string.IsNullOrEmpty(strFile) && File.Exists(strFile))
                 Properties.Settings.Default.VocFile3 = strFile;
+
+            Properties.Settings.Default.ExpandFiles = chkExtractFiles.Checked;
 
             Properties.Settings.Default.Save();
 

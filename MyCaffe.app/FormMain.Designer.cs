@@ -150,7 +150,7 @@
             // 
             this.loadVOC2007ToolStripMenuItem.Name = "loadVOC2007ToolStripMenuItem";
             this.loadVOC2007ToolStripMenuItem.Size = new System.Drawing.Size(160, 22);
-            this.loadVOC2007ToolStripMenuItem.Text = "Load VOC2007...";
+            this.loadVOC2007ToolStripMenuItem.Text = "Load VOC0712...";
             this.loadVOC2007ToolStripMenuItem.Click += new System.EventHandler(this.loadVOC2007ToolStripMenuItem_Click);
             // 
             // testToolStripMenuItem

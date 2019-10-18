@@ -382,5 +382,17 @@ namespace MyCaffe.app.Properties {
                 this["MnistFile4"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ExpandFiles {
+            get {
+                return ((bool)(this["ExpandFiles"]));
+            }
+            set {
+                this["ExpandFiles"] = value;
+            }
+        }
     }
 }

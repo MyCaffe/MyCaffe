@@ -70,7 +70,7 @@
             this.lblDownloadSite.Location = new System.Drawing.Point(456, 13);
             this.lblDownloadSite.Name = "lblDownloadSite";
             this.lblDownloadSite.Size = new System.Drawing.Size(234, 16);
-            this.lblDownloadSite.TabIndex = 0;
+            this.lblDownloadSite.TabIndex = 1;
             this.lblDownloadSite.Text = "host.robots.ox.ac.uk/pascal/VOC/";
             this.lblDownloadSite.Click += new System.EventHandler(this.lblDownloadSite_Click);
             this.lblDownloadSite.MouseLeave += new System.EventHandler(this.lblDownloadSite_MouseLeave);
@@ -79,25 +79,25 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(31, 47);
+            this.label1.Location = new System.Drawing.Point(31, 99);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(146, 13);
-            this.label1.TabIndex = 1;
+            this.label1.TabIndex = 12;
             this.label1.Text = "VOCtrainval_11-May-2012.tar";
             // 
             // edtDataFile1
             // 
-            this.edtDataFile1.Location = new System.Drawing.Point(183, 44);
+            this.edtDataFile1.Location = new System.Drawing.Point(183, 96);
             this.edtDataFile1.Name = "edtDataFile1";
             this.edtDataFile1.Size = new System.Drawing.Size(472, 20);
-            this.edtDataFile1.TabIndex = 2;
+            this.edtDataFile1.TabIndex = 13;
             // 
             // btnBrowseTar1
             // 
-            this.btnBrowseTar1.Location = new System.Drawing.Point(661, 44);
+            this.btnBrowseTar1.Location = new System.Drawing.Point(661, 96);
             this.btnBrowseTar1.Name = "btnBrowseTar1";
             this.btnBrowseTar1.Size = new System.Drawing.Size(29, 20);
-            this.btnBrowseTar1.TabIndex = 3;
+            this.btnBrowseTar1.TabIndex = 14;
             this.btnBrowseTar1.Text = "...";
             this.btnBrowseTar1.UseVisualStyleBackColor = true;
             this.btnBrowseTar1.Click += new System.EventHandler(this.btnBrowseBin_Click);
@@ -111,10 +111,10 @@
             // 
             this.btnOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.btnOK.Location = new System.Drawing.Point(659, 129);
+            this.btnOK.Location = new System.Drawing.Point(659, 127);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(75, 23);
-            this.btnOK.TabIndex = 4;
+            this.btnOK.TabIndex = 18;
             this.btnOK.Text = "OK";
             this.btnOK.UseVisualStyleBackColor = true;
             this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
@@ -123,10 +123,10 @@
             // 
             this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(740, 129);
+            this.btnCancel.Location = new System.Drawing.Point(740, 127);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(75, 23);
-            this.btnCancel.TabIndex = 4;
+            this.btnCancel.TabIndex = 19;
             this.btnCancel.Text = "Cancel";
             this.btnCancel.UseVisualStyleBackColor = true;
             // 
@@ -142,7 +142,7 @@
             this.label2.Location = new System.Drawing.Point(31, 73);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(146, 13);
-            this.label2.TabIndex = 1;
+            this.label2.TabIndex = 7;
             this.label2.Text = "VOCtrainval_06-Nov-2007.tar";
             // 
             // edtDataFile2
@@ -150,14 +150,14 @@
             this.edtDataFile2.Location = new System.Drawing.Point(183, 70);
             this.edtDataFile2.Name = "edtDataFile2";
             this.edtDataFile2.Size = new System.Drawing.Size(472, 20);
-            this.edtDataFile2.TabIndex = 2;
+            this.edtDataFile2.TabIndex = 8;
             // 
             // btnBrowseTar2
             // 
             this.btnBrowseTar2.Location = new System.Drawing.Point(661, 70);
             this.btnBrowseTar2.Name = "btnBrowseTar2";
             this.btnBrowseTar2.Size = new System.Drawing.Size(29, 20);
-            this.btnBrowseTar2.TabIndex = 3;
+            this.btnBrowseTar2.TabIndex = 9;
             this.btnBrowseTar2.Text = "...";
             this.btnBrowseTar2.UseVisualStyleBackColor = true;
             this.btnBrowseTar2.Click += new System.EventHandler(this.btnBrowseBin_Click);
@@ -165,35 +165,35 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(31, 99);
+            this.label3.Location = new System.Drawing.Point(31, 47);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(129, 13);
-            this.label3.TabIndex = 1;
+            this.label3.TabIndex = 2;
             this.label3.Text = "VOCtest_06-Nov-2007.tar";
             // 
             // edtDataFile3
             // 
-            this.edtDataFile3.Location = new System.Drawing.Point(183, 96);
+            this.edtDataFile3.Location = new System.Drawing.Point(183, 44);
             this.edtDataFile3.Name = "edtDataFile3";
             this.edtDataFile3.Size = new System.Drawing.Size(472, 20);
-            this.edtDataFile3.TabIndex = 2;
+            this.edtDataFile3.TabIndex = 3;
             // 
             // btnBrowseTar3
             // 
-            this.btnBrowseTar3.Location = new System.Drawing.Point(661, 96);
+            this.btnBrowseTar3.Location = new System.Drawing.Point(661, 44);
             this.btnBrowseTar3.Name = "btnBrowseTar3";
             this.btnBrowseTar3.Size = new System.Drawing.Size(29, 20);
-            this.btnBrowseTar3.TabIndex = 3;
+            this.btnBrowseTar3.TabIndex = 4;
             this.btnBrowseTar3.Text = "...";
             this.btnBrowseTar3.UseVisualStyleBackColor = true;
             this.btnBrowseTar3.Click += new System.EventHandler(this.btnBrowseBin_Click);
             // 
             // btnDownload1
             // 
-            this.btnDownload1.Location = new System.Drawing.Point(696, 44);
+            this.btnDownload1.Location = new System.Drawing.Point(696, 96);
             this.btnDownload1.Name = "btnDownload1";
             this.btnDownload1.Size = new System.Drawing.Size(69, 20);
-            this.btnDownload1.TabIndex = 3;
+            this.btnDownload1.TabIndex = 15;
             this.btnDownload1.Text = "download...";
             this.btnDownload1.UseVisualStyleBackColor = true;
             this.btnDownload1.Click += new System.EventHandler(this.btnDownload_Click);
@@ -203,17 +203,17 @@
             this.btnDownload2.Location = new System.Drawing.Point(696, 69);
             this.btnDownload2.Name = "btnDownload2";
             this.btnDownload2.Size = new System.Drawing.Size(69, 20);
-            this.btnDownload2.TabIndex = 3;
+            this.btnDownload2.TabIndex = 10;
             this.btnDownload2.Text = "download...";
             this.btnDownload2.UseVisualStyleBackColor = true;
             this.btnDownload2.Click += new System.EventHandler(this.btnDownload_Click);
             // 
             // btnDownload3
             // 
-            this.btnDownload3.Location = new System.Drawing.Point(696, 96);
+            this.btnDownload3.Location = new System.Drawing.Point(696, 44);
             this.btnDownload3.Name = "btnDownload3";
             this.btnDownload3.Size = new System.Drawing.Size(69, 20);
-            this.btnDownload3.TabIndex = 3;
+            this.btnDownload3.TabIndex = 5;
             this.btnDownload3.Text = "download...";
             this.btnDownload3.UseVisualStyleBackColor = true;
             this.btnDownload3.Click += new System.EventHandler(this.btnDownload_Click);
@@ -221,10 +221,10 @@
             // lblDownloadPct1
             // 
             this.lblDownloadPct1.Font = new System.Drawing.Font("Century Gothic", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblDownloadPct1.Location = new System.Drawing.Point(771, 47);
+            this.lblDownloadPct1.Location = new System.Drawing.Point(771, 99);
             this.lblDownloadPct1.Name = "lblDownloadPct1";
             this.lblDownloadPct1.Size = new System.Drawing.Size(53, 17);
-            this.lblDownloadPct1.TabIndex = 1;
+            this.lblDownloadPct1.TabIndex = 16;
             this.lblDownloadPct1.Text = "0.00 %";
             this.lblDownloadPct1.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
@@ -234,17 +234,17 @@
             this.lblDownloadPct2.Location = new System.Drawing.Point(771, 72);
             this.lblDownloadPct2.Name = "lblDownloadPct2";
             this.lblDownloadPct2.Size = new System.Drawing.Size(53, 17);
-            this.lblDownloadPct2.TabIndex = 1;
+            this.lblDownloadPct2.TabIndex = 11;
             this.lblDownloadPct2.Text = "0.00 %";
             this.lblDownloadPct2.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // lblDownloadPct3
             // 
             this.lblDownloadPct3.Font = new System.Drawing.Font("Century Gothic", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblDownloadPct3.Location = new System.Drawing.Point(771, 98);
+            this.lblDownloadPct3.Location = new System.Drawing.Point(771, 46);
             this.lblDownloadPct3.Name = "lblDownloadPct3";
             this.lblDownloadPct3.Size = new System.Drawing.Size(53, 17);
-            this.lblDownloadPct3.TabIndex = 1;
+            this.lblDownloadPct3.TabIndex = 6;
             this.lblDownloadPct3.Text = "0.00 %";
             this.lblDownloadPct3.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
@@ -261,7 +261,7 @@
             this.chkExtractFiles.Location = new System.Drawing.Point(183, 133);
             this.chkExtractFiles.Name = "chkExtractFiles";
             this.chkExtractFiles.Size = new System.Drawing.Size(396, 17);
-            this.chkExtractFiles.TabIndex = 5;
+            this.chkExtractFiles.TabIndex = 17;
             this.chkExtractFiles.Text = "Extract files (when unchecked, only extracted files are added to the database).";
             this.chkExtractFiles.UseVisualStyleBackColor = true;
             // 
@@ -269,7 +269,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(827, 164);
+            this.ClientSize = new System.Drawing.Size(827, 162);
             this.Controls.Add(this.chkExtractFiles);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOK);
