@@ -63,8 +63,9 @@ namespace MyCaffe.data
         /// <summary>
         /// Create the dataset and load it into the database.
         /// </summary>
+        /// <param name="nCreatorID">Specifies the creator ID.</param>
         /// <returns>On successful creation, <i>true</i> is returned, otherwise <i>false</i> is returned on abort.</returns>
-        public bool LoadDatabase()
+        public bool LoadDatabase(int nCreatorID = 0)
         {
             try
             {
@@ -113,7 +114,7 @@ namespace MyCaffe.data
                 SourceDescriptor srcTest = factory.LoadSource(strTestSrc);
                 m_factory.SaveImageMean(SimpleDatum.CalculateMean(m_log, m_rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true, srcTest.ID);
 
-                DatasetDescriptor ds = new DatasetDescriptor(0, dataset_name, null, null, srcTrain, srcTest, dataset_name, dataset_name + " Dataset");
+                DatasetDescriptor ds = new DatasetDescriptor(nCreatorID, dataset_name, null, null, srcTrain, srcTest, dataset_name, dataset_name + " Dataset");
                 factory.AddDataset(ds);
                 factory.UpdateDatasetCounts(ds.ID);
 
