@@ -1361,6 +1361,15 @@ namespace MyCaffe.db.image
             int? nDebugDataFormatId = null;
             byte[] rgData = m_db.GetRawImageData(img, m_bLoadDataCriteria, m_bLoadDebugData, out rgDataCriteria, out nDataCriteriaFormatId, out rgDebugData, out nDebugDataFormatId);
 
+            // Annotation Data is used as the label, so it must be loaded.
+            if (!m_bLoadDataCriteria &&
+                (nDataCriteriaFormatId.GetValueOrDefault(0) == (int)SimpleDatum.DATA_FORMAT.SEGMENTATION ||
+                 nDataCriteriaFormatId.GetValueOrDefault(0) == (int)SimpleDatum.DATA_FORMAT.ANNOTATION_DATA))
+            {
+                LoadRawImageData(img, true, false);
+                rgDataCriteria = img.DataCriteria;
+            }
+
             List<byte> rgDataBytes = null;
             List<double> rgDataDouble = null;
             int nHeight = img.Height.GetValueOrDefault();

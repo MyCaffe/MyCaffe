@@ -1559,7 +1559,7 @@ namespace MyCaffe.basecode
                 m_rgAnnotationGroup = null;
                 return false;
             }
-
+          
             using (MemoryStream ms = new MemoryStream(DataCriteria))
             using (BinaryReader br = new BinaryReader(ms))
             {
