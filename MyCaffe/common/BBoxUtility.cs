@@ -393,30 +393,26 @@ namespace MyCaffe.common
 
                     if (bReuseOverlaps)
                     {
-                        // Use the compute overlap
                         if (rgOverlaps.ContainsKey(nBestIdx) &&
                             rgOverlaps[nBestIdx].ContainsKey(nCurIdx))
+                            // Use the computed overlap.
                             fCurOverlap = rgOverlaps[nBestIdx][nCurIdx];
                         else if (rgOverlaps.ContainsKey(nCurIdx) &&
                             rgOverlaps[nCurIdx].ContainsKey(nBestIdx))
+                            // Use the computed overlap.
                             fCurOverlap = rgOverlaps[nCurIdx][nBestIdx];
                         else
                         {
                             fCurOverlap = JaccardOverlap(best_bbox, cur_bbox);
 
+                            // Store the overlap for future use.
                             if (!rgOverlaps.ContainsKey(nBestIdx))
-                            {
                                 rgOverlaps.Add(nBestIdx, new Dictionary<int, float>());
+
+                            if (!rgOverlaps[nBestIdx].ContainsKey(nCurIdx))
                                 rgOverlaps[nBestIdx].Add(nCurIdx, fCurOverlap);
-                            }
-                            else if (!rgOverlaps[nBestIdx].ContainsKey(nCurIdx))
-                            {
-                                rgOverlaps[nBestIdx].Add(nCurIdx, fCurOverlap);
-                            }
                             else
-                            {
                                 rgOverlaps[nBestIdx][nCurIdx] = fCurOverlap;
-                            }
                         }
                     }
                     else
