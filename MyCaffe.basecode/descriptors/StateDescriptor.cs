@@ -114,5 +114,14 @@ namespace MyCaffe.basecode.descriptors
             get { return m_nIterations; }
             set { m_nIterations = value; }
         }
+
+        /// <summary>
+        /// Creates the string representation of the descriptor.
+        /// </summary>
+        /// <returns>The string representation of the descriptor is returned.</returns>
+        public override string ToString()
+        {
+            return m_nIterations.ToString() + " -> error = " + m_dfError.ToString() + " accuracy = " + m_dfAccuracy.ToString();
+        }
     }
 }

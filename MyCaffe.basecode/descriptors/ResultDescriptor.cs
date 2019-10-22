@@ -143,5 +143,14 @@ namespace MyCaffe.basecode.descriptors
 
             return rgResults;
         }
+
+        /// <summary>
+        /// Creates the string representation of the descriptor.
+        /// </summary>
+        /// <returns>The string representation of the descriptor is returned.</returns>
+        public override string ToString()
+        {
+            return m_dt.ToString() + " ~ " + m_nLabel.ToString();
+        }
     }
 }

@@ -149,5 +149,14 @@ namespace MyCaffe.basecode.descriptors
         {
             get { return m_dt; }
         }
+
+        /// <summary>
+        /// Creates the string representation of the descriptor.
+        /// </summary>
+        /// <returns>The string representation of the descriptor is returned.</returns>
+        public override string ToString()
+        {
+            return m_nID.ToString() + ": " + m_nChannels.ToString() + " x " + m_nHeight.ToString() + " x " + m_nWidth.ToString();
+        }
     }
 }

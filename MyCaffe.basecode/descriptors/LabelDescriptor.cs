@@ -73,5 +73,14 @@ namespace MyCaffe.basecode.descriptors
             get { return m_nImageCount; }
             set { m_nActiveLabel = value; }
         }
+
+        /// <summary>
+        /// Creates the string representation of the descriptor.
+        /// </summary>
+        /// <returns>The string representation of the descriptor is returned.</returns>
+        public override string ToString()
+        {
+            return m_nActiveLabel.ToString() + " -> " + m_strName;
+        }
     }
 }

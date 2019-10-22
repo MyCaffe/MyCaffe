@@ -217,5 +217,14 @@ namespace MyCaffe.basecode.descriptors
             get { return m_settings; }
             set { m_settings = value; }
         }
+
+        /// <summary>
+        /// Creates the string representation of the descriptor.
+        /// </summary>
+        /// <returns>The string representation of the descriptor is returned.</returns>
+        public override string ToString()
+        {
+            return Name + ": model = " + m_strModelName + " solver = " + m_strSolverName;
+        }
     }
 }

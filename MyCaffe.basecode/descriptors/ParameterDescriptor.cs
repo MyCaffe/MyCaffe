@@ -62,5 +62,14 @@ namespace MyCaffe.basecode.descriptors
             get { return m_strValue; }
             set { m_strValue = value; }
         }
+
+        /// <summary>
+        /// Creates the string representation of the descriptor.
+        /// </summary>
+        /// <returns>The string representation of the descriptor is returned.</returns>
+        public override string ToString()
+        {
+            return m_strName + " -> " + m_strValue;
+        }
     }
 }

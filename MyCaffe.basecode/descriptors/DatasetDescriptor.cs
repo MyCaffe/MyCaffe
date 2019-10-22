@@ -310,5 +310,14 @@ namespace MyCaffe.basecode.descriptors
                 return bf.Deserialize(ms) as DatasetDescriptor;
             }
         }
+
+        /// <summary>
+        /// Creates the string representation of the descriptor.
+        /// </summary>
+        /// <returns>The string representation of the descriptor is returned.</returns>
+        public override string ToString()
+        {
+            return m_strCreatorName + ":" + Name;
+        }
     }
 }
