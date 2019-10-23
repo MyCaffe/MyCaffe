@@ -33,6 +33,7 @@ namespace MyCaffe.db.image
         DatasetFactory m_factory;
         int m_nLastImageIdxFromLoad = 0;
         int m_nLoadedCount = 0;
+        LabelStats m_rgLabelStats;
 
         /// <summary>
         /// The OnCalculateImageMean event fires when the ImageSet needs to calculate the image mean for the image set.
@@ -56,6 +57,7 @@ namespace MyCaffe.db.image
             m_imgMean = null;
 
             m_rgImages = new SimpleDatum[m_src.ImageCount];
+            m_rgLabelStats = new LabelStats(src.Labels.Count);
 
             foreach (LabelDescriptor label in src.Labels)
             {
@@ -63,6 +65,8 @@ namespace MyCaffe.db.image
                 {
                     m_rgLabelSet.Add(new LabelSet(label));
                 }
+
+                m_rgLabelStats.Add(label);
             }
         }
 
@@ -100,6 +104,52 @@ namespace MyCaffe.db.image
         public void Dispose()
         {
             Dispose(true);
+        }
+
+        /// <summary>
+        /// Retrieves the label counts.
+        /// </summary>
+        /// <returns>The label counts is returned.</returns>
+        public Dictionary<int, ulong> GetQueryLabelCounts()
+        {
+            if (m_rgLabelStats == null)
+                return new Dictionary<int, ulong>();
+
+            return m_rgLabelStats.GetCounts(); ;
+        }
+
+        /// <summary>
+        /// Increase the query label count for a specific label.
+        /// </summary>
+        /// <param name="nLabel">Specifies the label who's query count is to be increased.</param>
+        public void SetQueryLabelCount(int nLabel)
+        {
+            if (m_rgLabelStats != null)
+                m_rgLabelStats.Update(nLabel);
+        }
+
+        /// <summary>
+        /// Get the queried label hit percents as a string.
+        /// </summary>
+        /// <returns>The queried label hit percent is returned as a string where each % represents the percentage of the queried made for that label.</returns>
+        public string GetQueryLabelHitPrecentsAsText()
+        {
+            if (m_rgLabelStats == null)
+                return "n/a";
+
+            return m_rgLabelStats.GetQueryLabelHitPercentsAsText();
+        }
+
+        /// <summary>
+        /// Get the queried label epoc per label as a text string.
+        /// </summary>
+        /// <returns>The label epoc per label is returned as a string.</returns>
+        public string GetQueryLabelEpocsAsText()
+        {
+            if (m_rgLabelStats == null)
+                return "n/a";
+
+            return m_rgLabelStats.GetQueryLabelEpochAsText();
         }
 
 

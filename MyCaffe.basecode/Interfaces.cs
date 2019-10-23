@@ -715,6 +715,22 @@ namespace MyCaffe.basecode
         string GetLabelCountsAsTextFromSourceName(string strSource);
 
         /// <summary>
+        /// Returns a string with the query hit percent for each label (e.g. the percentage that each label has been queried).
+        /// </summary>
+        /// <param name="strSource">Specifies the data source who's hit percentages are to be retrieved.</param>
+        /// <returns>A string representing the query hit percentages is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        string GetLabelQueryHitPercentsAsTextFromSourceName(string strSource);
+
+        /// <summary>
+        /// Returns a string with the query epoch counts for each label (e.g. the number of times all images with the label have been queried).
+        /// </summary>
+        /// <param name="strSource">Specifies the data source who's query epochs are to be retrieved.</param>
+        /// <returns>A string representing the query epoch counts is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        string GetLabelQueryEpocsAsTextFromSourceName(string strSource);
+
+        /// <summary>
         /// Returns the label boosts as a text string for all boosted labels within a data source associated with a given project. 
         /// </summary>
         /// <param name="nProjectId">Specifies the project ID.</param>
@@ -723,6 +739,7 @@ namespace MyCaffe.basecode
         [OperationContract(IsOneWay = false)]
         string GetLabelBoostsAsTextFromProject(int nProjectId, int nSrcId);
 
+    
         /// <summary>
         /// Load another, 'secondary' dataset.
         /// </summary>

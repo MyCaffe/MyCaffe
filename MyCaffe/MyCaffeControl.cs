@@ -541,11 +541,33 @@ namespace MyCaffe
         /// Returns a string describing the active label counts observed during training.
         /// </summary>
         /// <remarks>
-        /// This string can help diagnos label balancing issue.
+        /// This string can help diagnose label balancing issue.
         /// </remarks>
         public string ActiveLabelCounts
         {
             get { return m_solver.ActiveLabelCounts; }
+        }
+
+        /// <summary>
+        /// Returns a string describing the label query hit percentages observed during training.
+        /// </summary>
+        /// <remarks>
+        /// This string can help diagnose label balancing issue.
+        /// </remarks>
+        public string LabelQueryHitPercents
+        {
+            get { return m_solver.LabelQueryHitPercents; }
+        }
+
+        /// <summary>
+        /// Returns a string describing the label query epochs observed during training.
+        /// </summary>
+        /// <remarks>
+        /// This string can help diagnose label balancing issue.
+        /// </remarks>
+        public string LabelQueryEpochs
+        {
+            get { return m_solver.LabelQueryEpochs; }
         }
 
         /// <summary>

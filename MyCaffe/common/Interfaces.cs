@@ -249,6 +249,20 @@ namespace MyCaffe.common
         /// </remarks>
         string ActiveLabelCounts { get; }
         /// <summary>
+        /// Returns a string describing the label query hit percentages observed during training.
+        /// </summary>
+        /// <remarks>
+        /// This string can help diagnose label balancing issue.
+        /// </remarks>
+        string LabelQueryHitPercents { get; }
+        /// <summary>
+        /// Returns a string describing the label query epochs observed during training.
+        /// </summary>
+        /// <remarks>
+        /// This string can help diagnose label balancing issue.
+        /// </remarks>
+        string LabelQueryEpochs { get; }
+        /// <summary>
         /// Returns the name of the current device used.
         /// </summary>
         string CurrentDevice { get; }

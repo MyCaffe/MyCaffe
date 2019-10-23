@@ -874,6 +874,52 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Return the label query hit percentages for the active datasource.
+        /// </summary>
+        public string LabelQueryHitPercents
+        {
+            get
+            {
+                string strSrc = null;
+
+                foreach (Layer<T> layer in m_rgLayers)
+                {
+                    if (layer.type == LayerParameter.LayerType.DATA ||
+                        layer.type == LayerParameter.LayerType.TRIPLET_DATA)
+                        strSrc = layer.layer_param.data_param.source;
+                }
+
+                if (string.IsNullOrEmpty(strSrc))
+                    return "n/a";
+
+                return m_db.GetLabelQueryHitPercentsAsTextFromSourceName(strSrc);
+            }
+        }
+
+        /// <summary>
+        /// Return the label query epochs for the active datasource.
+        /// </summary>
+        public string LabelQueryEpochs
+        {
+            get
+            {
+                string strSrc = null;
+
+                foreach (Layer<T> layer in m_rgLayers)
+                {
+                    if (layer.type == LayerParameter.LayerType.DATA ||
+                        layer.type == LayerParameter.LayerType.TRIPLET_DATA)
+                        strSrc = layer.layer_param.data_param.source;
+                }
+
+                if (string.IsNullOrEmpty(strSrc))
+                    return "n/a";
+
+                return m_db.GetLabelQueryEpocsAsTextFromSourceName(strSrc);
+            }
+        }
+
+        /// <summary>
         /// Enables/disables passthrough on each layer of the net.
         /// </summary>
         /// <remarks>

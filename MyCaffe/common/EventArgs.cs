@@ -216,6 +216,8 @@ namespace MyCaffe.common
         double m_dfBestSmoothedLoss;
         bool m_bWeightsUpdated = false;
         string m_strActiveLabelCounts = "";
+        string m_strLabelQueryHitPercents = "";
+        string m_strLabelQueryEpochs = "";
         double m_dfLearningRate = 0;
         DebugInformation<T> m_dbgInfo = null;
 
@@ -229,10 +231,12 @@ namespace MyCaffe.common
         /// <param name="dfBestSmoothedLoss">Specifies the best smoothed loss observed so far during the training.</param>
         /// <param name="bWeightsUpdated">Specifies whether or not the weights have been updated.</param>
         /// <param name="strActiveLabelCounts">Specifies the current active label counts observed.</param>
+        /// <param name="strLabelQueryHitPercents">Specifies the current label query hit percentages observed.</param>
+        /// <param name="strLabelQueryEpochs">Specifies the current label epoch count per label observed.</param>
         /// <param name="dfLearningRate">Specifies the current learning rate.</param>
         /// <param name="dfMsTiming">Specifies the timing of the training cycle.</param>
         /// <param name="dbgInfo">Optionally, specifies the DebugInformation of the training cycle.  This value is set when Solver::EnableBlobDebugging == <i>true</i>.</param>
-        public TrainingIterationArgs(int nIteration, double dfAccuracy, double dfLoss, double dfSmoothedLoss, double dfBestSmoothedLoss, bool bWeightsUpdated, string strActiveLabelCounts, double dfLearningRate, double dfMsTiming, DebugInformation<T> dbgInfo = null)
+        public TrainingIterationArgs(int nIteration, double dfAccuracy, double dfLoss, double dfSmoothedLoss, double dfBestSmoothedLoss, bool bWeightsUpdated, string strActiveLabelCounts, string strLabelQueryHitPercents, string strLabelQueryEpochs, double dfLearningRate, double dfMsTiming, DebugInformation<T> dbgInfo = null)
             : base(nIteration, dfAccuracy, dfMsTiming)
         {
             m_dfLoss = dfLoss;
@@ -240,6 +244,8 @@ namespace MyCaffe.common
             m_dfBestSmoothedLoss = dfBestSmoothedLoss;
             m_bWeightsUpdated = bWeightsUpdated;
             m_strActiveLabelCounts = strActiveLabelCounts;
+            m_strLabelQueryHitPercents = strLabelQueryHitPercents;
+            m_strLabelQueryEpochs = strLabelQueryEpochs;
             m_dfLearningRate = dfLearningRate;
             m_dbgInfo = dbgInfo;
         }
@@ -282,6 +288,22 @@ namespace MyCaffe.common
         public string ActiveLabelCounts
         {
             get { return m_strActiveLabelCounts; }
+        }
+
+        /// <summary>
+        /// Returns the current label query hit percentages observed at this point in training.
+        /// </summary>
+        public string LabelQueryHitPercents
+        {
+            get { return m_strLabelQueryHitPercents; }
+        }
+
+        /// <summary>
+        /// Returns the current label epochs per label observed at this point in training.
+        /// </summary>
+        public string LabelQueryEpochs
+        {
+            get { return m_strLabelQueryEpochs; }
         }
 
         /// <summary>

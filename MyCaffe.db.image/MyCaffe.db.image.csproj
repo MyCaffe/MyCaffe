@@ -111,6 +111,7 @@
     </Compile>
     <Compile Include="Labelset.cs" />
     <Compile Include="Interfaces.cs" />
+    <Compile Include="LabelStats.cs" />
     <Compile Include="ModelGroup.cs">
       <DependentUpon>DNNModel.tt</DependentUpon>
     </Compile>
