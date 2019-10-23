@@ -12,7 +12,6 @@ namespace MyCaffe.basecode
     [Serializable]
     public class SettingsCaffe : ISerializable
     {
-        int m_nMaskAllButLastColumns = 0;
         bool m_bEnableLabelBalancing = false;
         bool m_bEnableLabelBoosting = false;
         bool m_bEnableRandomInputSelection = true;
@@ -43,7 +42,6 @@ namespace MyCaffe.basecode
         /// </summary>
         public SettingsCaffe(SettingsCaffe s)
         {
-            m_nMaskAllButLastColumns = s.m_nMaskAllButLastColumns;
             m_bEnableLabelBalancing = s.m_bEnableLabelBalancing;
             m_bEnableLabelBoosting = s.m_bEnableLabelBoosting;
             m_bEnableRandomInputSelection = s.m_bEnableRandomInputSelection;
@@ -80,7 +78,6 @@ namespace MyCaffe.basecode
             m_nTestingIterationOverride = getInt(info, "nTestingIterationOverride", m_nTestingIterationOverride);
             m_strDefaultModelGroup = info.GetString("strDefaultModelGroup");
             m_strGpuIds = getString(info, "strGpuIds", m_strGpuIds);
-            m_nMaskAllButLastColumns = getInt(info, "nMaskAllButLastColumns", m_nMaskAllButLastColumns);
             m_imageDbLoadMethod = (IMAGEDB_LOAD_METHOD)getInt(info, "ImageDbLoadMethod", (int)m_imageDbLoadMethod);
             m_nImageDbLoadLimit = getInt(info, "ImageDbLoadLimit", m_nImageDbLoadLimit);
             m_bImageDbLoadDataCriteria = getBool(info, "ImageDbLoadDataCriteria", m_bImageDbLoadDataCriteria);
@@ -155,7 +152,6 @@ namespace MyCaffe.basecode
             info.AddValue("nTestingIterationOverride", m_nTestingIterationOverride);
             info.AddValue("strDefaultModelGroup", m_strDefaultModelGroup);
             info.AddValue("strGpuIds", m_strGpuIds);
-            info.AddValue("nMaskAllButLastColumns", m_nMaskAllButLastColumns);
             info.AddValue("ImageDbLoadMethod", (int)m_imageDbLoadMethod);
             info.AddValue("ImageDbLoadLimit", m_nImageDbLoadLimit);
             info.AddValue("ImageDbLoadDataCriteria", m_bImageDbLoadDataCriteria);
@@ -183,7 +179,6 @@ namespace MyCaffe.basecode
             s.m_nTestingIterationOverride = m_nTestingIterationOverride;
             s.m_strDefaultModelGroup = m_strDefaultModelGroup;
             s.m_strGpuIds = m_strGpuIds;
-            s.m_nMaskAllButLastColumns = m_nMaskAllButLastColumns;
             s.m_imageDbLoadMethod = m_imageDbLoadMethod;
             s.m_nImageDbLoadLimit = m_nImageDbLoadLimit;
             s.m_bImageDbLoadDataCriteria = m_bImageDbLoadDataCriteria;
@@ -292,15 +287,6 @@ namespace MyCaffe.basecode
         {
             get { return m_strGpuIds; }
             set { m_strGpuIds = value; }
-        }
-
-        /// <summary>
-        /// Get/set the number of columns to leave un-masked (by default this is disabled).
-        /// </summary>
-        public int MaskAllButLastColumns
-        {
-            get { return m_nMaskAllButLastColumns; }
-            set { m_nMaskAllButLastColumns = value; }
         }
 
         /// <summary>

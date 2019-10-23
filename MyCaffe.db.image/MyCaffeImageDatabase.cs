@@ -28,7 +28,6 @@ namespace MyCaffe.db.image
         DatasetFactory m_factory;
         string m_strID = "";
         int m_nStrIDHashCode = 0;
-        int m_nMaskOutAllButLastColumns = 0;
         EventWaitHandle m_evtInitializing = null;
         EventWaitHandle m_evtInitialized = null;
         EventWaitHandle m_evtAbortInitialization = null;
@@ -48,6 +47,7 @@ namespace MyCaffe.db.image
         int m_nPadW = 0;
         int m_nPadH = 0;
         Guid m_userGuid;
+
 
         /// <summary>
         /// The OnCalculateImageMean event fires each time the MyCaffeImageDatabase wants to access the image mean for a data set.
@@ -349,7 +349,6 @@ namespace MyCaffe.db.image
 
             m_nPadW = nPadW;
             m_nPadH = nPadH;
-            m_nMaskOutAllButLastColumns = s.MaskAllButLastColumns;
             m_labelSelectionMethod = selMethod.Item1;
             m_imageSelectionMethod = selMethod.Item2;
             m_dfSuperBoostProbability = s.SuperBoostProbability;
@@ -784,7 +783,8 @@ namespace MyCaffe.db.image
                 }
             }
 
-            sd.MaskOutAllButLastColumns(m_nMaskOutAllButLastColumns, 0);
+            imgSet.SetQueryLabelCount(sd.Label);
+
             return sd;
         }
 
@@ -990,7 +990,6 @@ namespace MyCaffe.db.image
             }
 
             SimpleDatum sd = m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImageMean(null, null);
-            sd.MaskOutAllButLastColumns(m_nMaskOutAllButLastColumns, 0);
 
             if (!m_rgMeanCache.ContainsKey(nSrcId))
                 m_rgMeanCache.Add(nSrcId, sd);
@@ -1205,6 +1204,25 @@ namespace MyCaffe.db.image
             return m_colDatasets[m_nStrIDHashCode].FindImageset(strSource).GetLabelCountsAsText();
         }
 
+        /// <summary>
+        /// Returns a string with the query hit percent for each label (e.g. the percentage that each label has been queried).
+        /// </summary>
+        /// <param name="strSource">Specifies the data source who's hit percentages are to be retrieved.</param>
+        /// <returns>A string representing the query hit percentages is returned.</returns>
+        public string GetLabelQueryHitPercentsAsTextFromSourceName(string strSource)
+        {
+            return m_colDatasets[m_nStrIDHashCode].FindImageset(strSource).GetQueryLabelHitPrecentsAsText();
+        }
+
+        /// <summary>
+        /// Returns a string with the query epoch counts for each label (e.g. the number of times all images with the label have been queried).
+        /// </summary>
+        /// <param name="strSource">Specifies the data source who's query epochs are to be retrieved.</param>
+        /// <returns>A string representing the query epoch counts is returned.</returns>
+        public string GetLabelQueryEpocsAsTextFromSourceName(string strSource)
+        {
+            return m_colDatasets[m_nStrIDHashCode].FindImageset(strSource).GetQueryLabelEpocsAsText();
+        }
 
         /// <summary>
         /// Load another 'secondary' dataset.
