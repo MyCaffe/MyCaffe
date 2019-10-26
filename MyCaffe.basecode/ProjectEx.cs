@@ -1429,18 +1429,21 @@ namespace MyCaffe.basecode
                     string strType = type.Value.ToLower();
                     bool bKeepLayer = false;
 
-                    if (!includeLayer(layer, stage, out psInclude, out psExclude))
+                    bool bInclude = includeLayer(layer, stage, out psInclude, out psExclude);
+
+                    if (strType == "data" || strType == "annotated_data" || strType == "batchdata")
+                    {
+                        if (psInclude.Find(Phase.TEST, stage) != null)
+                            protoTransform = layer.FindChild("transform_param");
+                    }
+
+                    if (!bInclude)
                     {
                         rgRemove.Add(layer);
                     }
                     else if (psExclude.Find(Phase.RUN, stage) != null)
                     {
                         rgRemove.Add(layer);
-                    }
-                    else if (strType == "data" || strType == "batchdata")
-                    {
-                        if (psInclude.Find(Phase.TEST, stage) != null)
-                            protoTransform = layer.FindChild("transform_param");
                     }
                     else if (strType == "input")
                     {
