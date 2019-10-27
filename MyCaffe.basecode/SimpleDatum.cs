@@ -1425,8 +1425,12 @@ namespace MyCaffe.basecode
         /// <param name="rgdfMean">Specifies the accumulated mean value.</param>
         /// <param name="sd">Specifies the SimpleDatum to add to the mean.</param>
         /// <param name="nTotal">Specifies the overall total used to calculate the portion of the sd to add to the mean value.</param>
-        public static void AccumulateMean(ref double[] rgdfMean, SimpleDatum sd, int nTotal)
+        /// <returns>After successfully adding to the total used to calculate the mean, <i>true</i> is returned, otherwise if the SimpleDatum is a virtual datum <i>false</i> is returned.</returns>
+        public static bool AccumulateMean(ref double[] rgdfMean, SimpleDatum sd, int nTotal)
         {
+            if (sd.VirtualID != 0)
+                return false;
+
             if (rgdfMean == null)
                 rgdfMean = new double[sd.ItemCount];
 
@@ -1435,6 +1439,8 @@ namespace MyCaffe.basecode
                 double dfVal = (sd.ByteData != null) ? (double)sd.ByteData[i] : sd.RealData[i];
                 rgdfMean[i] += dfVal / nTotal;
             }
+
+            return true;
         }
 
         /// <summary>
