@@ -91,6 +91,12 @@ namespace MyCaffe.db.image
                 if (ds != null)
                     m_ds = ds;
 
+                if (m_ds.TrainingSource.ImageWidth == -1 || m_ds.TrainingSource.ImageHeight == -1)
+                {
+                    log.WriteLine("WARNING: Cannot create a mean image for data sources that contain variable sized images.  The mean check will be skipped.");
+                    bSkipMeanCheck = true;
+                }
+
                 m_TrainingImages = loadImageset("Training", m_ds.TrainingSource, rgAbort, ref imgMean, out m_nLastTrainingImageIdx, nPadW, nPadH, log, loadMethod, nImageDbLoadLimit, m_nLastTrainingImageIdx, (ds == null) ? true : false, bSkipMeanCheck);
                 if (m_nLastTrainingImageIdx >= m_ds.TrainingSource.ImageCount)
                     m_nLastTrainingImageIdx = 0;
@@ -204,7 +210,7 @@ namespace MyCaffe.db.image
             try
             {
                 RawImageMean imgMeanRaw = null;
-
+               
                 m_factory.Open(src);
                 nLastImageIdx = nImageDbLoadLimitStartIdx;
 
