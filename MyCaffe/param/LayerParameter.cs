@@ -1118,6 +1118,12 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new SliceParameter();
                     break;
 
+                case LayerType.SPLIT:
+                    expected_bottom.Add("input");
+                    expected_top.Add("sp1");
+                    expected_top.Add("sp2");
+                    break;
+
                 case LayerType.SOFTMAX:
                     expected_bottom.Add("input");
                     expected_top.Add("softmax");
@@ -1137,12 +1143,6 @@ namespace MyCaffe.param
                     expected_bottom.Add("label");
                     expected_top.Add("loss");
                     m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
-                    break;
-
-                case LayerType.SPLIT:
-                    expected_bottom.Add("input");
-                    expected_top.Add("sp1");
-                    expected_top.Add("sp2");
                     break;
 
                 case LayerType.SPP:
