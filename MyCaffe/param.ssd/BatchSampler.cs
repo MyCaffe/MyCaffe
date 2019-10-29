@@ -222,7 +222,7 @@ namespace MyCaffe.param.ssd
             if ((strVal = rp.FindValue("use_original_image")) != null)
                 p.use_original_image = bool.Parse(strVal);
 
-            if ((strVal = rp.FindValue("max_sampler")) != null)
+            if ((strVal = rp.FindValue("max_sample")) != null)
                 p.max_sample = uint.Parse(strVal);
 
             if ((strVal = rp.FindValue("max_trials")) != null)
