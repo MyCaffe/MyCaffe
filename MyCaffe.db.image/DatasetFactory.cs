@@ -1032,6 +1032,18 @@ namespace MyCaffe.db.image
             return m_db.GetLastTimeStamp(nSrcId, strDesc);
         }
 
+        /// <summary>
+        /// Returns the last time-stamp and index in the data source.
+        /// </summary>
+        /// <param name="nIndex">Specifies the index of the last item.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="strDesc">Optionally, specifies a description to filter the values with (default = null, no filter).</param>
+        /// <returns>If found, the time-stamp is returned, otherwise, DateTime.MinValue is returned.</returns>
+        public DateTime GetLastTimeStamp(out int nIndex, int nSrcId = 0, string strDesc = null)
+        {
+            return m_db.GetLastTimeStamp(out nIndex, nSrcId, strDesc);
+        }
+
         public List<int> GetAllDataSourceIDs() /** @private */
         {
             return m_db.GetAllDataSourcesIDs();
