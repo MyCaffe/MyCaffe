@@ -441,6 +441,12 @@ namespace MyCaffe.data
             m_dfLastMax = -double.MaxValue;
             m_dfLastMin = double.MaxValue;
 
+            if (m_param.resize_param != null && m_param.resize_param.Active)
+                d = m_imgTransforms.ApplyResize(d, m_param.resize_param);
+
+            if (m_param.noise_param != null && m_param.noise_param.Active)
+                d = m_imgTransforms.ApplyNoise(d, m_param.noise_param);
+
             int nDatumChannels = d.Channels;
             int nDatumHeight = d.Height;
             int nDatumWidth = d.Width;

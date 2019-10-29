@@ -301,16 +301,38 @@ namespace MyCaffe.data
         }
 
         /// <summary>
-        /// The ApplyNoise method applies the noise policy to the Blob.
+        /// The ApplyNoise method applies the noise policy to the SimpleDatum.
         /// </summary>
         /// <param name="b">Specifies the blob for which noise is to be added.</param>
         /// <param name="p">Specifies the NoiseParameter that defines the noise policy.</param>
         /// <remarks>
         /// NOTE: This method is not yet complete.
         /// </remarks>
-        public void ApplyNoise(Blob<T> b, NoiseParameter p)
+        public SimpleDatum ApplyNoise(SimpleDatum sd, NoiseParameter p)
         {
             m_log.WriteLine("WARNING: noise application not yet implemented.");
+            return sd;
+        }
+
+        /// <summary>
+        /// The ApplyResize method resizes the SimpleDatum containing an image to a newly resized image as specified by the resize parameter.
+        /// </summary>
+        /// <param name="sd">Specifies the SimpleDatum to resize - must contain a 3 channel image.</param>
+        /// <param name="p">Specifies the resize parameter to apply.</param>
+        /// <returns>The newly resized SimpleDatum is returned.</returns>
+        public SimpleDatum ApplyResize(SimpleDatum sd, ResizeParameter p)
+        {
+            if (p.width == sd.Width && p.height == sd.Height)
+                return sd;
+
+            Bitmap bmp = ImageData.GetImage(sd);
+            Bitmap bmpNew = ImageTools.ResizeImage(bmp, (int)p.width, (int)p.height);
+            SimpleDatum sdNew = ImageData.GetImageData(bmpNew, sd.Channels, false, sd.Label);
+
+            bmp.Dispose();
+            bmpNew.Dispose();
+
+            return sdNew;
         }
     }
 }
