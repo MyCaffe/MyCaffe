@@ -677,6 +677,20 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Copy just the data from another SimpleDatum, making sure to update the C x H x W dimensions and IsReal settings to fit the new data.
+        /// </summary>
+        /// <param name="d">Specifies the SimpleDatum whos data is to be copied.</param>
+        public void CopyData(SimpleDatum d)
+        {
+            m_nHeight = d.m_nHeight;
+            m_nWidth = d.m_nWidth;
+            m_nChannels = d.m_nChannels;
+            m_rgByteData = d.m_rgByteData;
+            m_bIsRealData = d.m_bIsRealData;
+            m_rgRealData = d.m_rgRealData;
+        }
+
+        /// <summary>
         /// Clips the SimpleDatum to the last <i>nLastColumns</i> and returns the data.
         /// </summary>
         /// <typeparam name="T">Specifies base the type of data returned, either <i>double</i> or <i>float</i>.</typeparam>
