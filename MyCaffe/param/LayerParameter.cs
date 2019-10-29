@@ -2427,13 +2427,13 @@ namespace MyCaffe.param
 
             List<KeyValuePair<BaseParameter, string>> rgParam = new List<KeyValuePair<BaseParameter,string>>();
 
+            // Standard layers.
             rgParam.Add(new KeyValuePair<BaseParameter,string>(transform_param, "transform_param"));
             rgParam.Add(new KeyValuePair<BaseParameter,string>(loss_param, "loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter,string>(accuracy_param, "accuracy_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(argmax_param, "argmax_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(batch_norm_param, "batch_norm_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(bias_param, "bias_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(binary_hash_param, "binaryhash_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(clip_param, "clip_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(concat_param, "concat_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(contrastive_loss_param, "contrastive_loss_param"));
@@ -2449,28 +2449,22 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(exp_param, "exp_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(flatten_param, "flatten_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gradient_scale_param, "gradient_scale_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(hinge_loss_param, "hinge_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(infogain_loss_param, "infogain_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(inner_product_param, "inner_product_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(input_param, "input_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(knn_param, "knn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(labelmapping_param, "labelmapping_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(log_param, "log_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(lrn_param, "lrn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(memory_data_param, "memory_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(mvn_param, "mvn_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization1_param, "normalization_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(onehot_param, "onehot_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(pooling_param, "pooling_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(parameter_param, "parameter_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(power_param, "power_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(prelu_param, "prelu_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(reduction_param, "reduction_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(relu_param, "relu_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(reshape_param, "reshape_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(scalar_param, "scalar_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(scale_param, "scale_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(sigmoid_param, "sigmoid_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(softmax_param, "softmax_param"));
@@ -2480,11 +2474,33 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tanh_param, "tanh_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(threshold_param, "threshold_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(tile_param, "tile_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_param, "triplet_loss_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_simple_param, "triplet_loss_simple_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(tv_loss_param, "tv_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(lstm_simple_param, "lstm_simple_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(recurrent_param, "recurrent_param"));
+
+            // Alpha layers.
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(binary_hash_param, "binaryhash_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_param, "triplet_loss_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_simple_param, "triplet_loss_simple_param"));
+
+            // Beta layers.
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(knn_param, "knn_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization1_param, "normalization_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
+
+            // Nt layers.
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(gram_param, "gram_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(onehot_param, "onehot_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(scalar_param, "scalar_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(tv_loss_param, "tv_loss_param"));
+
+            // Ssd layers.
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(annotated_data_param, "annotated_data_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(detection_evaluate_param, "detection_evaluate_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(detection_output_param, "detection_output_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(multiboxloss_param, "multiboxloss_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization2_param, "normalization2_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(annotated_data_param, "annotateddata_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(video_data_param, "video_data_param"));
 
             foreach (KeyValuePair<BaseParameter, string> kv in rgParam)
             {
@@ -2579,6 +2595,7 @@ namespace MyCaffe.param
 
             RawProto rpp;
 
+            // Standard layers
             if ((rpp = rp.FindChild("transform_param")) != null)
                 p.transform_param = TransformationParameter.FromProto(rpp);
 
@@ -2596,9 +2613,6 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("bias_param")) != null)
                 p.bias_param = BiasParameter.FromProto(rpp);
-
-            if ((rpp = rp.FindChild("binaryhash_param")) != null)
-                p.binary_hash_param = BinaryHashParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("clip_param")) != null)
                 p.clip_param = ClipParameter.FromProto(rpp);
@@ -2645,9 +2659,6 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("gradient_scale_param")) != null)
                 p.gradient_scale_param = GradientScaleParameter.FromProto(rpp);
 
-            if ((rpp = rp.FindChild("gram_param")) != null)
-                p.gram_param = GramParameter.FromProto(rpp);
-
             if ((rpp = rp.FindChild("hinge_loss_param")) != null)
                 p.hinge_loss_param = HingeLossParameter.FromProto(rpp);
 
@@ -2659,9 +2670,6 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("input_param")) != null)
                 p.input_param = InputParameter.FromProto(rpp);
-
-            if ((rpp = rp.FindChild("knn_param")) != null)
-                p.knn_param = KnnParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("labelmapping_param")) != null)
                 p.labelmapping_param = LabelMappingParameter.FromProto(rpp);
@@ -2678,17 +2686,8 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("mvn_param")) != null)
                 p.mvn_param = MVNParameter.FromProto(rpp);
 
-            if ((rpp = rp.FindChild("normalization_param")) != null)
-                p.normalization1_param = Normalization1Parameter.FromProto(rpp);
-
-            if ((rpp = rp.FindChild("onehot_param")) != null)
-                p.onehot_param = OneHotParameter.FromProto(rpp);
-
             if ((rpp = rp.FindChild("pooling_param")) != null)
                 p.pooling_param = PoolingParameter.FromProto(rpp);
-
-            if ((rpp = rp.FindChild("unpooling_param")) != null)
-                p.unpooling_param = UnPoolingParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("parameter_param")) != null)
                 p.parameter_param = ParameterParameter.FromProto(rpp);
@@ -2707,9 +2706,6 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("reshape_param")) != null)
                 p.reshape_param = ReshapeParameter.FromProto(rpp);
-
-            if ((rpp = rp.FindChild("scalar_param")) != null)
-                p.scalar_param = ScalarParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("scale_param")) != null)
                 p.scale_param = ScaleParameter.FromProto(rpp);
@@ -2738,21 +2734,64 @@ namespace MyCaffe.param
             if ((rpp = rp.FindChild("tile_param")) != null)
                 p.tile_param = TileParameter.FromProto(rpp);
 
+            if ((rpp = rp.FindChild("lstm_simple_param")) != null)
+                p.lstm_simple_param = LSTMSimpleParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("recurrent_param")) != null)
+                p.recurrent_param = RecurrentParameter.FromProto(rpp);
+
+            // Alpha layers
+            if ((rpp = rp.FindChild("binaryhash_param")) != null)
+                p.binary_hash_param = BinaryHashParameter.FromProto(rpp);
+
             if ((rpp = rp.FindChild("triplet_loss_param")) != null)
                 p.triplet_loss_param = TripletLossParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("triplet_loss_simple_param")) != null)
                 p.triplet_loss_simple_param = TripletLossSimpleParameter.FromProto(rpp);
 
+            // Beta layers.
+            if ((rpp = rp.FindChild("knn_param")) != null)
+                p.knn_param = KnnParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("normalization_param")) != null)
+                p.normalization1_param = Normalization1Parameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("unpooling_param")) != null)
+                p.unpooling_param = UnPoolingParameter.FromProto(rpp);
+
+            // Nt layers.
+            if ((rpp = rp.FindChild("gram_param")) != null)
+                p.gram_param = GramParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("onehot_param")) != null)
+                p.onehot_param = OneHotParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("scalar_param")) != null)
+                p.scalar_param = ScalarParameter.FromProto(rpp);
+
             if ((rpp = rp.FindChild("tv_loss_param")) != null)
                 p.tv_loss_param = TVLossParameter.FromProto(rpp);
 
-            if ((rpp = rp.FindChild("lstm_simple_param")) != null)
-                p.lstm_simple_param = LSTMSimpleParameter.FromProto(rpp);
+            // Ssd layers.
+            if ((rpp = rp.FindChild("annotated_data_param")) != null)
+                p.annotated_data_param = AnnotatedDataParameter.FromProto(rpp);
 
-            if ((rpp = rp.FindChild("recurrent_param")) != null)
-                p.recurrent_param = RecurrentParameter.FromProto(rpp);
-            
+            if ((rpp = rp.FindChild("detection_evaluate_param")) != null)
+                p.detection_evaluate_param = DetectionEvaluateParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("detection_output_param")) != null)
+                p.detection_output_param = DetectionOutputParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("multiboxloss_param")) != null)
+                p.multiboxloss_param = MultiBoxLossParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("normalization2_param")) != null)
+                p.normalization2_param = Normalization2Parameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("video_data_param")) != null)
+                p.video_data_param = VideoDataParameter.FromProto(rpp);
+
             return p;
         }
 
