@@ -283,8 +283,10 @@ namespace MyCaffe.param.ssd
             }
             else
             {
-                rgChildren.Add("img_h", img_h.Value.ToString());
-                rgChildren.Add("img_w", img_w.Value.ToString());
+                if (img_h.HasValue)
+                    rgChildren.Add("img_h", img_h.Value.ToString());
+                if (img_w.HasValue)
+                    rgChildren.Add("img_w", img_w.Value.ToString());
             }
 
             if (step.HasValue)
@@ -293,8 +295,10 @@ namespace MyCaffe.param.ssd
             }
             else
             {
-                rgChildren.Add("step_h", step_h.Value.ToString());
-                rgChildren.Add("step_w", step_w.Value.ToString());
+                if (step_h.HasValue)
+                    rgChildren.Add("step_h", step_h.Value.ToString());
+                if (step_w.HasValue)
+                    rgChildren.Add("step_w", step_w.Value.ToString());
             }
 
             rgChildren.Add("offset", offset.ToString());
