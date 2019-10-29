@@ -48,6 +48,7 @@ namespace MyCaffe.data
         /// The constructor.
         /// </summary>
         /// <param name="param">Specifies the creation parameters.</param>
+        /// <param name="log">Specifies the output log.</param>
         /// <param name="evtCancel">Specfies the cancel event used to cancel the process.</param>
         public VOCDataLoader(VOCDataParameters param, Log log, CancelEvent evtCancel)
         {

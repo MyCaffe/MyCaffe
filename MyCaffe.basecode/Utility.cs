@@ -44,9 +44,9 @@ namespace MyCaffe.basecode
         /// Returns the 'canonical' version of a (usually) user-specified axis,
         /// allowing for negative indexing (e.g., -1 for the last axis).
         /// </summary>
-        /// <param name="nIdx">The axis index. 
+        /// <param name="nIdx">The axis index.</param> 
         /// <param name="nNumAxes">The total number of axes.</param>
-        /// <returns>THe zero based index is returned.</returns>
+        /// <returns>The zero based index is returned.</returns>
         public static int CanonicalAxisIndex(int nIdx, int nNumAxes)
         {
             if (nIdx < 0)
