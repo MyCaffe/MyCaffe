@@ -2499,7 +2499,8 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(detection_output_param, "detection_output_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(multiboxloss_param, "multiboxloss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization2_param, "normalization2_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(annotated_data_param, "annotateddata_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(permute_param, "permute_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(prior_box_param, "prior_box_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(video_data_param, "video_data_param"));
 
             foreach (KeyValuePair<BaseParameter, string> kv in rgParam)
@@ -2788,6 +2789,12 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("normalization2_param")) != null)
                 p.normalization2_param = Normalization2Parameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("permute_param")) != null)
+                p.permute_param = PermuteParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("prior_box_param")) != null)
+                p.prior_box_param = PriorBoxParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("video_data_param")) != null)
                 p.video_data_param = VideoDataParameter.FromProto(rpp);
