@@ -664,7 +664,7 @@ namespace MyCaffe.basecode
 
         private string toString(RawProto rp, string strIndent)
         {
-            if (rp.Value.Length == 0 && rp.Children.Count == 0)
+            if ((rp.Value == null || rp.Value.Length == 0) && rp.Children.Count == 0)
                 return "";
 
             string str = strIndent + rp.Name;
