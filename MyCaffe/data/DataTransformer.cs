@@ -111,6 +111,17 @@ namespace MyCaffe.data
                     m_rgMeanValues.Add(p.mean_value[c]);
                 }
             }
+
+            if (m_param.resize_param != null && m_param.resize_param.Active)
+            {
+                m_log.CHECK_GT(m_param.resize_param.height, 0, "The resize height must be > 0.");
+                m_log.CHECK_GT(m_param.resize_param.width, 0, "The resize width must be > 0.");
+            }
+
+            if (m_param.expansion_param != null && m_param.expansion_param.Active)
+            {
+                m_log.CHECK_GT(m_param.expansion_param.max_expand_ratio, 1.0, "The expansion ratio must be > 1.0.");
+            }
         }
 
         /// <summary>
@@ -176,6 +187,11 @@ namespace MyCaffe.data
 
             // Check dimensions
             m_log.CHECK_GT(nDatumChannels, 0, "There must be 1 or more data channels in the datum.");
+
+            // If exists and active, resize based on resize parameter.
+            if (m_param.resize_param != null && m_param.resize_param.Active)
+                m_imgTransforms.InferNewSize(m_param.resize_param, nDatumWidth, nDatumHeight, out nDatumWidth, out nDatumHeight);
+
             m_log.CHECK_GE(nDatumHeight, nCropSize, "The datum height must be >= the crop size of " + nCropSize.ToString() + ". To fix this change the 'crop_size' DataLayer property.");
             m_log.CHECK_GE(nDatumWidth, nCropSize, "The datum width must be >= the crop size of " + nCropSize.ToString() + ". To fix this change the 'crop_size' DataLayer property.");
 
@@ -221,6 +237,11 @@ namespace MyCaffe.data
 
             // Check dimensions
             m_log.CHECK_GT(nChannels, 0, "There must be 1 or more data channels in the datum.");
+
+            // If exists and active, resize based on resize parameter.
+            if (m_param.resize_param != null && m_param.resize_param.Active)
+                m_imgTransforms.InferNewSize(m_param.resize_param, nWidth, nWidth, out nWidth, out nHeight);
+
             m_log.CHECK_GE(nHeight, nCropSize, "The height must be >= the crop size of " + nCropSize.ToString() + ". To fix this change the 'crop_size' DataLayer property.");
             m_log.CHECK_GE(nWidth, nCropSize, "The width must be >= the crop size of " + nCropSize.ToString() + ". To fix this change the 'crop_size' DataLayer property.");
 
