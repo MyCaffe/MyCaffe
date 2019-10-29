@@ -327,7 +327,10 @@ namespace MyCaffe.data
 
             Bitmap bmp = ImageData.GetImage(sd);
             Bitmap bmpNew = ImageTools.ResizeImage(bmp, (int)p.width, (int)p.height);
-            SimpleDatum sdNew = ImageData.GetImageData(bmpNew, sd.Channels, false, sd.Label);
+            SimpleDatum sdResize = ImageData.GetImageData(bmpNew, sd.Channels, false, sd.Label);
+            SimpleDatum sdNew = new SimpleDatum(sd);
+
+            sdNew.CopyData(sdResize);
 
             bmp.Dispose();
             bmpNew.Dispose();
