@@ -220,19 +220,16 @@ namespace MyCaffe.layers.ssd
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            int nLayerW = colBottom[0].width;
-            int nLayerH = colBottom[0].height;
-            List<int> rgTopShape = Utility.Create<int>(3, 1);
+            List<int> rgTopShape = PriorBoxParameter.Reshape(m_param.prior_box_param, colBottom[0].width, colBottom[0].height);
 
             // Since all images in a batch have the same height and width, we only need to
             // generate one set of priors which can be shared across all images.
-            rgTopShape[0] = 1;
+            m_log.CHECK_EQ(rgTopShape[0], 1, "The topshape(0) should be 1.");
 
             // 2 channels. 
             // First channel stores the mean of each prior coordinate.
             // Second channel stores the variance of each prior coordiante.
-            rgTopShape[1] = 2;
-            rgTopShape[2] = nLayerW * nLayerH * m_nNumPriors * 4;
+            m_log.CHECK_EQ(rgTopShape[1], 2, "The topshape(1) should be 1.");
             m_log.CHECK_GT(rgTopShape[2], 0, "The top shape at index 2 must be greater than zero.");
 
             colTop[0].Reshape(rgTopShape);
