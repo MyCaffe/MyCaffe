@@ -95,5 +95,26 @@ namespace MyCaffe.param.ssd
 
             return p;
         }
+
+        /// <summary>
+        /// Calculates the top shape by running the Reshape calculation.
+        /// </summary>
+        /// <param name="rgOrder">Specifies the ordering to use.</param>
+        /// <param name="rgShape">Specifies the original shape to re-order.</param>
+        /// <param name="nNumAxes">Specifies the number of axes.</param>
+        /// <returns>The new shape based on the ordering is returned.</returns>
+        public static List<int> Reshape(List<int> rgOrder, List<int> rgShape, int nNumAxes)
+        {
+            List<int> rgTopShape = new List<int>();
+
+            for (int i = 0; i < nNumAxes; i++)
+            {
+                int nOrder = rgOrder[i];
+                int nShape = rgShape[nOrder];
+                rgTopShape.Add(nShape);
+            }
+
+            return rgTopShape;
+        }
     }
 }

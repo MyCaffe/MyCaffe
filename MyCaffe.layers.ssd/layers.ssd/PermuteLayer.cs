@@ -177,24 +177,26 @@ namespace MyCaffe.layers.ssd
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            List<int> rgTopShape = new List<int>();
             T[] rgOldSteps = new T[m_nNumAxes];
             T[] rgNewSteps = new T[m_nNumAxes];
-            T[] rgOrder = m_blobPermuteOrder.mutable_cpu_data;
+            T[] rgOrder1 = m_blobPermuteOrder.mutable_cpu_data;
+            List<int> rgOrder = new List<int>();
 
-            for (int i = 0; i < m_nNumAxes; i++)
+            for (int i = 0; i < rgOrder1.Length; i++)
             {
-                if (i == m_nNumAxes - 1)
-                    rgOldSteps[i] = m_tOne;
-                else
-                    rgOldSteps[i] = Utility.ConvertVal<T>(colBottom[0].count(i + 1));
+                if (i < m_nNumAxes)
+                {
+                    if (i == m_nNumAxes - 1)
+                        rgOldSteps[i] = m_tOne;
+                    else
+                        rgOldSteps[i] = Utility.ConvertVal<T>(colBottom[0].count(i + 1));
+                }
 
-                int nOrder = (int)Utility.ConvertVal<T>(rgOrder[i]);
-                int nShape = colBottom[0].shape(nOrder);
-                rgTopShape.Add(nShape);
+                rgOrder.Add((int)Utility.ConvertVal<T>(rgOrder1[i]));
             }
 
             m_blobOldSteps.mutable_cpu_data = rgOldSteps;
+            List<int> rgTopShape = PermuteParameter.Reshape(rgOrder, colBottom[0].shape(), colBottom[0].num_axes);
             colTop[0].Reshape(rgTopShape);
 
             for (int i = 0; i < m_nNumAxes; i++)
