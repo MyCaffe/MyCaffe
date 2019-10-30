@@ -368,13 +368,25 @@ namespace MyCaffe.param.ssd
         /// <param name="p">Specifies the PriorBox parameter.</param>
         /// <param name="nLayerWid">Specifies the image width.</param>
         /// <param name="nLayerHt">Specifies the image height.</param>
+        /// <param name="nNumPriors">Optionally, specifies a num priors override (default = null).</param>
         /// <returns>The new shape is returned.</returns>
-        public static List<int> Reshape(PriorBoxParameter p, int nLayerWid, int nLayerHt)
+        public static List<int> Reshape(PriorBoxParameter p, int nLayerWid, int nLayerHt, int? nNumPriors = null)
         {
             List<int> rgTopShape = Utility.Create<int>(3, 1);
-            int nMinCount = (p.min_size == null) ? 0 : p.min_size.Count;
-            int nAspectCount = (p.aspect_ratio == null) ? 0 : p.aspect_ratio.Count;
-            int nNumPriors = nMinCount * nAspectCount;
+            if (!nNumPriors.HasValue)
+            {
+                int nMinCount = (p.min_size == null) ? 0 : p.min_size.Count;
+                int nAspectCount = (p.aspect_ratio == null) ? 0  : p.aspect_ratio.Count;
+
+                if (p.flip)
+                    nAspectCount *= 2;
+
+                nAspectCount += 1;
+                nNumPriors = nMinCount * nAspectCount;
+
+                if (p.max_size != null)
+                    nNumPriors += p.max_size.Count;
+            }
 
             // Since all images in a batch have the same height and width, we only need to
             // generate one set of priors which can be shared across all images.
@@ -384,7 +396,7 @@ namespace MyCaffe.param.ssd
             // First channel stores the mean of each prior coordinate.
             // Second channel stores the variance of each prior coordiante.
             rgTopShape[1] = 2;
-            rgTopShape[2] = nLayerWid * nLayerHt * nNumPriors * 4;
+            rgTopShape[2] = nLayerWid * nLayerHt * nNumPriors.Value * 4;
 
             return rgTopShape;
         }

@@ -220,7 +220,7 @@ namespace MyCaffe.layers.ssd
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            List<int> rgTopShape = PriorBoxParameter.Reshape(m_param.prior_box_param, colBottom[0].width, colBottom[0].height);
+            List<int> rgTopShape = PriorBoxParameter.Reshape(m_param.prior_box_param, colBottom[0].width, colBottom[0].height, m_nNumPriors);
 
             // Since all images in a batch have the same height and width, we only need to
             // generate one set of priors which can be shared across all images.
