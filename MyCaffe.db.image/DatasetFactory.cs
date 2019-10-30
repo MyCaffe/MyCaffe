@@ -76,6 +76,14 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Returns the index of the last image added to the database.
+        /// </summary>
+        public int LastIndex
+        {
+            get { return m_db.LastIndex; }
+        }
+
+        /// <summary>
         /// Sets the loading parameters that are used to determine which data to load with each image.
         /// </summary>
         /// <param name="bLoadDataCriteria">Specifies whether or not to load the data criteria data if any exists.  When false, the data criteria data is not loaded from file. (default = true).</param>

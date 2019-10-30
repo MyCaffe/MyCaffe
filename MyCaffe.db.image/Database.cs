@@ -37,12 +37,24 @@ namespace MyCaffe.db.image
         /// Specifies whether or not file based data is enabled.
         /// </summary>
         protected bool m_bEnableFileBasedData = false;
+        /// <summary>
+        /// Specifies the last index added to the data source.
+        /// </summary>
+        protected int m_nLastIndex = -1;
 
         /// <summary>
         /// The Database constructor.
         /// </summary>
         public Database()
         {
+        }
+
+        /// <summary>
+        /// Returns the last image index added to the database.
+        /// </summary>
+        public int LastIndex
+        {
+            get { return m_nLastIndex; }
         }
 
         private string convertWs(string str, char chReplacement)
@@ -1747,6 +1759,7 @@ namespace MyCaffe.db.image
 
                 foreach (RawImage img in rgImg)
                 {
+                    m_nLastIndex = Math.Max(m_nLastIndex, img.Idx.GetValueOrDefault(0));
                     entities.RawImages.Add(img);
                     AddLabelToCache(img.ActiveLabel.GetValueOrDefault());
                 }
