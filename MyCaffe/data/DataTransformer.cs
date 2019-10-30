@@ -803,8 +803,8 @@ namespace MyCaffe.data
             int nDatumWidth = d.Width;
 
             // Get the bbox dimension.
-            int width = (int)(nDatumHeight * fExpandRatio);
-            int height = (int)(nDatumWidth * fExpandRatio);
+            int width = (int)(nDatumWidth * fExpandRatio);
+            int height = (int)(nDatumHeight * fExpandRatio);
             float h_off = (float)m_random.NextDouble();
             float w_off = (float)m_random.NextDouble();
 
@@ -891,7 +891,7 @@ namespace MyCaffe.data
             float fExpandRatio = randomValue(1.0f, fMaxExpandRatio);
 
             // Expand the datum.
-            NormalizedBBox expand_bbox = new NormalizedBBox(0, 0, 0, 0); ;
+            NormalizedBBox expand_bbox = new NormalizedBBox(0, 0, 0, 0);
             SimpleDatum expanded_datum = ExpandImage(d, expand_bbox, fExpandRatio);
             expanded_datum.annotation_type = d.annotation_type;
 
