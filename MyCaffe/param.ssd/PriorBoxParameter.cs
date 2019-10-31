@@ -363,6 +363,42 @@ namespace MyCaffe.param.ssd
         }
 
         /// <summary>
+        /// Return the list of aspect ratios to use based on the parameters.
+        /// </summary>
+        /// <param name="p">Specifies the prior box parameters.</param>
+        /// <returns>The list of aspect ratios is returned.</returns>
+        public static List<float> GetAspectRatios(PriorBoxParameter p)
+        {
+            List<float> rgAspectRatios = new List<float>();
+
+            rgAspectRatios.Add(1.0f);
+
+            for (int i = 0; i < p.aspect_ratio.Count; i++)
+            {
+                float fAr = p.aspect_ratio[i];
+                bool bAlreadyExists = false;
+
+                for (int j = 0; j < rgAspectRatios.Count; j++)
+                {
+                    if (Math.Abs(fAr - rgAspectRatios[j]) < 1e-6f)
+                    {
+                        bAlreadyExists = true;
+                        break;
+                    }
+                }
+
+                if (!bAlreadyExists)
+                {
+                    rgAspectRatios.Add(fAr);
+                    if (p.flip)
+                        rgAspectRatios.Add(1.0f / fAr);
+                }
+            }
+
+            return rgAspectRatios;
+        }
+
+        /// <summary>
         /// Calculate the reshape size based on the parameters.
         /// </summary>
         /// <param name="p">Specifies the PriorBox parameter.</param>
@@ -376,12 +412,9 @@ namespace MyCaffe.param.ssd
             if (!nNumPriors.HasValue)
             {
                 int nMinCount = (p.min_size == null) ? 0 : p.min_size.Count;
-                int nAspectCount = (p.aspect_ratio == null) ? 0  : p.aspect_ratio.Count;
+                List<float> rgAspectRatios = GetAspectRatios(p);
+                int nAspectCount = rgAspectRatios.Count;
 
-                if (p.flip)
-                    nAspectCount *= 2;
-
-                nAspectCount += 1;
                 nNumPriors = nMinCount * nAspectCount;
 
                 if (p.max_size != null)

@@ -102,32 +102,8 @@ namespace MyCaffe.layers.ssd
                 m_rgfMinSizes.Add(fMin);
             }
 
-            m_rgfAspectRatios.Clear();
-            m_rgfAspectRatios.Add(1.0f);
+            m_rgfAspectRatios = PriorBoxParameter.GetAspectRatios(p);
             m_bFlip = p.flip;
-
-            for (int i = 0; i < p.aspect_ratio.Count; i++)
-            {
-                float fAr = p.aspect_ratio[i];
-                bool bAlreadyExists = false;
-
-                for (int j = 0; j < m_rgfAspectRatios.Count; j++)
-                {
-                    if (Math.Abs(fAr - m_rgfAspectRatios[j]) < 1e-6f)
-                    {
-                        bAlreadyExists = true;
-                        break;
-                    }
-                }
-
-                if (!bAlreadyExists)
-                {
-                    m_rgfAspectRatios.Add(fAr);
-                    if (m_bFlip)
-                        m_rgfAspectRatios.Add(1.0f / fAr);
-                }
-            }
-
             m_nNumPriors = m_rgfAspectRatios.Count * m_rgfMinSizes.Count;
 
             if (p.max_size.Count > 0)
