@@ -156,11 +156,13 @@ namespace MyCaffe.data
             nNewWidth = width;
         }
 
-        private float getRandom(float fMin, float fMax)
+        private float getRandom(float fMin, float fMax, float fTotal = 256)
         {
             float fRange = fMax - fMin;
             double dfVal = m_random.NextDouble();
-            return fMin + (float)(fRange * dfVal);
+            double dfPct = ((fMin + (float)(fRange * dfVal)) / fTotal);
+
+            return 1.0f + (float)dfPct;
         }
 
         private Bitmap randomBrightness(Bitmap bmp, float fProb, float fDelta)
@@ -222,13 +224,18 @@ namespace MyCaffe.data
                         nOffset += nCount;
                     }
 
-                    nOffset = 0;
-                    while (rgIdx.Count > 0)
+                    List<int> rgOrder = new List<int>();
+                    while (rgOrder.Count < sd.Channels)
                     {
-                        int nIdx = m_random.Next(rgIdx.Count);
-                        nIdx = rgIdx[nIdx];
-                        rgIdx.RemoveAt(nIdx);
+                        int nIdx = m_random.Next(sd.Channels);
+                        if (!rgOrder.Contains(nIdx))
+                            rgOrder.Add(nIdx);
+                    }
 
+                    nOffset = 0;
+                    for (int i = 0; i < sd.Channels; i++)
+                    {
+                        int nIdx = rgOrder[i];
                         Array.Copy(rgrgData[nIdx], 0, sd.RealData, nOffset, nCount);
                         nOffset += nCount;
                     }
@@ -249,13 +256,18 @@ namespace MyCaffe.data
                         nOffset += nCount;
                     }
 
-                    nOffset = 0;
-                    while (rgIdx.Count > 0)
+                    List<int> rgOrder = new List<int>();
+                    while (rgOrder.Count < sd.Channels)
                     {
-                        int nIdx = m_random.Next(rgIdx.Count);
-                        nIdx = rgIdx[nIdx];
-                        rgIdx.RemoveAt(nIdx);
+                        int nIdx = m_random.Next(sd.Channels);
+                        if (!rgOrder.Contains(nIdx))
+                            rgOrder.Add(nIdx);
+                    }
 
+                    nOffset = 0;
+                    for (int i = 0; i < sd.Channels; i++)
+                    {
+                        int nIdx = rgOrder[i];
                         Array.Copy(rgrgData[nIdx], 0, sd.ByteData, nOffset, nCount);
                         nOffset += nCount;
                     }
@@ -276,7 +288,6 @@ namespace MyCaffe.data
             double dfProb = m_random.NextDouble();
             Bitmap bmp = ImageData.GetImage(sd);
 
-
             if (dfProb > 0.5)
             {
                 bmp = randomBrightness(bmp, p.brightness_prob, p.brightness_delta);
@@ -296,6 +307,8 @@ namespace MyCaffe.data
                 sd.SetData(sd1.RealData.ToList(), sd.Label);
             else
                 sd.SetData(sd1.ByteData.ToList(), sd.Label);
+
+            bmp.Dispose();
 
             return randomChannelOrder(sd, p.random_order_prob);
         }
