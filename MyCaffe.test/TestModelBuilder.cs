@@ -108,7 +108,7 @@ namespace MyCaffe.test
             : base(strName, null, nDeviceID)
         {
             m_engine = engine;
-            m_strBaseDir = TestBase.GetTestPath("\\MyCaffe\\test_data\\modelbuilder", true, true);
+            m_strBaseDir = TestBase.GetTestPath("\\MyCaffe\\test_data", true, true);
         }
 
         protected override void dispose()
