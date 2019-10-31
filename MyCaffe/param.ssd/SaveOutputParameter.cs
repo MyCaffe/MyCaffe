@@ -106,8 +106,8 @@ namespace MyCaffe.param.ssd
         [Description("Optionally, specifies output name size file.")]
         public string name_size_file
         {
-            get { return m_strLabelMapFile; }
-            set { m_strLabelMapFile = value; }
+            get { return m_strNameSizeFile; }
+            set { m_strNameSizeFile = value; }
         }
 
         /// <summary>
