@@ -318,7 +318,7 @@ namespace MyCaffe.layers.ssd
                     Next();
                 }
 
-                datum = m_cursor.GetValue();
+                datum = m_cursor.GetValue(null, true);
 
                 if (m_param.data_param.display_timing)
                 {
