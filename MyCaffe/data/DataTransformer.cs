@@ -51,6 +51,14 @@ namespace MyCaffe.data
         {
             m_log = log;
 
+            if (p.resize_param != null && p.resize_param.Active)
+            {
+                m_log.CHECK_GT(p.resize_param.height, 0, "The resize height must be > 0.");
+                m_log.CHECK_GT(p.resize_param.width, 0, "The resize width must be > 0.");
+                nH = (int)p.resize_param.height;
+                nW = (int)p.resize_param.width;
+            }
+
             int nDataSize = nC * nH * nW;
 
             m_param = p;
