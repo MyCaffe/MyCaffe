@@ -224,13 +224,11 @@ namespace MyCaffe.model
                 double? dfAspectWd = rgInfo[i].AspectRatioWidth;
                 double? dfStepWd = rgInfo[i].StepWidth;
                 double? dfStepHt = rgInfo[i].StepHeight;
-                int nAspectLen = (dfAspectHt == dfAspectWd) ? 1 : 2;
+                int nAspectLen = (dfAspectWd == dfAspectHt) ? 1 : 2;
                 int nNumPriorsPerLocation = (dfMaxSize.HasValue) ? (2 + nAspectLen) : (1 + nAspectLen);
 
-                nNumPriorsPerLocation *= rgInfo.Count;
-
                 if (bFlip)
-                    nNumPriorsPerLocation += nAspectLen * rgInfo.Count;
+                    nNumPriorsPerLocation += nAspectLen;
 
                 //---------------------------------------------------
                 // Create location prediction layer.
@@ -607,6 +605,7 @@ namespace MyCaffe.model
             pool.name = strName;
             pool.pooling_param.kernel_size.Add((uint)nKernelSize);
             pool.pooling_param.stride.Add((uint)nStride);
+            pool.pooling_param.pad.Add((uint)nPad);
             pool.pooling_param.pool = method;
             pool.top.Add(strName);
 
@@ -626,14 +625,15 @@ namespace MyCaffe.model
         /// <param name="nKernelSize">Optionally, specifies the kernel size (default = 3).</param>
         /// <param name="nPad">Optionally, specifies the pad (default = 1).</param>
         /// <param name="nStride">Optionally, specifies the stride (default = 1).</param>
+        /// <param name="nDilation">Optionally, specifies the dilation (default = 1).</param>
         /// <returns></returns>
-        protected LayerParameter addVGGBlock(LayerParameter lastLayer, int nBlockIdx, int nConvIdx, int nNumOutput, int nConvCount, bool? bNoPool, bool bDilatePool = false, int nKernelSize = 3, int nPad = 1, int nStride = 1)
+        protected LayerParameter addVGGBlock(LayerParameter lastLayer, int nBlockIdx, int nConvIdx, int nNumOutput, int nConvCount, bool? bNoPool, bool bDilatePool = false, int nKernelSize = 3, int nPad = 1, int nStride = 1, int nDilation = 1)
         {
             for (int i = 0; i < nConvCount; i++)
             {
                 string strConvName = "conv" + nBlockIdx.ToString() + "_" + nConvIdx.ToString();
 
-                LayerParameter conv = createConvolution(strConvName, nNumOutput, nKernelSize, nPad, nStride);
+                LayerParameter conv = createConvolution(strConvName, nNumOutput, nKernelSize, nPad, nStride, nDilation);
                 lastLayer = connectAndAddLayer(lastLayer, conv);
 
                 LayerParameter relu = new LayerParameter(LayerParameter.LayerType.RELU);
@@ -816,15 +816,15 @@ namespace MyCaffe.model
         /// <returns>The last layer is returned.</returns>
         protected LayerParameter addVGGNetBody(LayerParameter lastLayer, bool bNeedFc = true, bool bFullConv = true, bool bReduced = true, bool bDilated = true, bool bNoPool = false, bool bDropout = false, List<string> rgstrFreezeLayers = null, bool bDilatePool4 = false)
         {
-            lastLayer = addVGGBlock(lastLayer, 1, 1, 64, 2, bNoPool);
-            lastLayer = addVGGBlock(lastLayer, 2, 1, 128, 2, bNoPool);
-            lastLayer = addVGGBlock(lastLayer, 3, 1, 256, 3, bNoPool);
-            lastLayer = addVGGBlock(lastLayer, 4, 1, 512, 3, bNoPool, bDilatePool4);
+            lastLayer = addVGGBlock(lastLayer, 1, 1, 64, 2, bNoPool, false, 3, 1, 1);
+            lastLayer = addVGGBlock(lastLayer, 2, 1, 128, 2, bNoPool, false, 3, 1, 1);
+            lastLayer = addVGGBlock(lastLayer, 3, 1, 256, 3, bNoPool, false, 3, 1, 1);
+            lastLayer = addVGGBlock(lastLayer, 4, 1, 512, 3, bNoPool, bDilatePool4, 3, 1, 1);
 
             int nDilation = (bDilatePool4) ? 2 : 1;
             int nKernelSize = 3;
             int nPad = (int)((nKernelSize + (nDilation - 1) * (nKernelSize - 1)) - 1) / 2;
-            lastLayer = addVGGBlock(lastLayer, 5, 1, 512, 3, null, false, nKernelSize, nPad);
+            lastLayer = addVGGBlock(lastLayer, 5, 1, 512, 3, null, false, nKernelSize, nPad, 1, nDilation);
 
             if (bNeedFc)    
                 lastLayer = addVGGfc(lastLayer, 5, 4, 512, nDilation, bDilated, bNoPool, bFullConv, bReduced, bDropout);
