@@ -536,7 +536,8 @@ namespace MyCaffe.db.image
                         throw new Exception("There are no label specified in the Labels table for the dataset '" + m_src.Name + "'!");
 
                     LabelSet labelSet = getLabelSet(labelSelectionMethod);
-                    sd = labelSet.GetImage(nIdx, imageSelectionMethod);
+                    if (labelSet != null)
+                        sd = labelSet.GetImage(nIdx, imageSelectionMethod);
                 }
 
                 int nImageIdx = 0;
@@ -628,6 +629,9 @@ namespace MyCaffe.db.image
 
             if ((labelSelectionMethod & IMGDB_LABEL_SELECTION_METHOD.BOOST) != IMGDB_LABEL_SELECTION_METHOD.BOOST)
             {
+                if (m_rgLabelSetWithData.Count == 0)
+                    return null;
+
                 nIdx = m_random.Next(m_rgLabelSetWithData.Count);
                 return m_rgLabelSetWithData[nIdx];
             }
