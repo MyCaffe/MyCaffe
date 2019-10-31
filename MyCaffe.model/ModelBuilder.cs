@@ -112,17 +112,18 @@ namespace MyCaffe.model
         /// Add the Annotated Data layer.
         /// </summary>
         /// <param name="strSource">Specifies the data source.</param>
+        /// <param name="phase">Specifies the phase under which to run the layer (e.g. TRAIN, TEST, RUN).</param>
         /// <param name="nBatchSize">Optionally, specifies the batch size (default = 32).</param>
         /// <param name="bOutputLabel">Optionally, specifies whether or not to output the label (default = true).</param>
-        /// <param name="phase">Optionally, specifies whether or not to create the layer for training (default = true).</param>
         /// <param name="strLabelMapFile">Optionally, specifies the label file (default = "").</param>
         /// <param name="anno_type">Optionally, specifies the annotation type (default = NONE).</param>
         /// <param name="transform">Optionally, specifies the transformation parameter (default = null, ignored).</param>
         /// <param name="rgSampler">Optionally, specifies the list of batch samplers (default = null, ignored).</param>
         /// <returns>The annotated data layer is retunred after it is added to the network.</returns>
-        protected LayerParameter addAnnotatedDataLayer(string strSource, int nBatchSize = 32, bool bOutputLabel = true, Phase phase = Phase.TRAIN, string strLabelMapFile = "", SimpleDatum.ANNOTATION_TYPE anno_type = SimpleDatum.ANNOTATION_TYPE.NONE, TransformationParameter transform = null, List<BatchSampler> rgSampler = null)
+        protected LayerParameter addAnnotatedDataLayer(string strSource, Phase phase, int nBatchSize = 32, bool bOutputLabel = true, string strLabelMapFile = "", SimpleDatum.ANNOTATION_TYPE anno_type = SimpleDatum.ANNOTATION_TYPE.NONE, TransformationParameter transform = null, List<BatchSampler> rgSampler = null)
         {
             LayerParameter data = new LayerParameter(LayerParameter.LayerType.ANNOTATED_DATA);
+
             data.include.Add(new NetStateRule(phase));
 
             if (transform != null)
@@ -172,7 +173,7 @@ namespace MyCaffe.model
         /// <param name="strConfPostfix">Optionally, specifies the confidence postfix (default = "").</param>
         /// <param name="strLocPostfix">Optionally, specifies the location postifix (default = "").</param>
         /// <returns></returns>
-        protected List<LayerParameter> createMultiBoxHead(LayerParameter data, bool bDeploy, int nNumClasses, List<MultiBoxHeadInfo> rgInfo, List<float> rgPriorVariance, bool bUseObjectness = false, bool bUseBatchNorm = true, double dfLrMult = 1.0, bool bUseScale = true, int nImageHt = 0, int nImageWd = 0, bool bShareLocation = true, bool bFlip = true, bool bClip = true, double dfOffset = 0.5, int nKernelSize = 1, int nPad = 0, string strConfPostfix = "", string strLocPostfix = "")
+        protected List<LayerParameter> createMultiBoxHead(LayerParameter data, int nNumClasses, List<MultiBoxHeadInfo> rgInfo, List<float> rgPriorVariance, bool bUseObjectness = false, bool bUseBatchNorm = true, double dfLrMult = 1.0, bool bUseScale = true, int nImageHt = 0, int nImageWd = 0, bool bShareLocation = true, bool bFlip = true, bool bClip = true, double dfOffset = 0.5, int nKernelSize = 1, int nPad = 0, string strConfPostfix = "", string strLocPostfix = "")
         {
             LayerParameter lastLayer;
             string strName;
@@ -276,61 +277,58 @@ namespace MyCaffe.model
                 //---------------------------------------------------
                 // Create prior generation layer.
                 //---------------------------------------------------
-                if (!bDeploy)
+                strName = fromLayer.name + "_mbox_priorbox";
+                LayerParameter priorbox = new LayerParameter(LayerParameter.LayerType.PRIORBOX);
+                priorbox.name = strName;
+                priorbox.top.Add(priorbox.name);
+                priorbox.prior_box_param.min_size.Add((float)dfMinSize.Value);
+                priorbox.prior_box_param.clip = bClip;
+                priorbox.prior_box_param.variance = rgPriorVariance;
+                priorbox.prior_box_param.offset = (float)dfOffset;
+
+                if (dfMaxSize.HasValue)
+                    priorbox.prior_box_param.max_size.Add((float)dfMaxSize.Value);
+
+                if (dfAspectWd.HasValue)
+                    priorbox.prior_box_param.aspect_ratio.Add((float)dfAspectWd.Value);
+
+                if (dfAspectHt.HasValue)
+                    priorbox.prior_box_param.aspect_ratio.Add((float)dfAspectHt.Value);
+
+                if (dfStepWd.HasValue && dfStepHt.HasValue)
                 {
-                    strName = fromLayer.name + "_mbox_priorbox";
-                    LayerParameter priorbox = new LayerParameter(LayerParameter.LayerType.PRIORBOX);
-                    priorbox.name = strName;
-                    priorbox.top.Add(priorbox.name);
-                    priorbox.prior_box_param.min_size.Add((float)dfMinSize.Value);
-                    priorbox.prior_box_param.clip = bClip;
-                    priorbox.prior_box_param.variance = rgPriorVariance;
-                    priorbox.prior_box_param.offset = (float)dfOffset;
-
-                    if (dfMaxSize.HasValue)
-                        priorbox.prior_box_param.max_size.Add((float)dfMaxSize.Value);
-
-                    if (dfAspectWd.HasValue)
-                        priorbox.prior_box_param.aspect_ratio.Add((float)dfAspectWd.Value);
-
-                    if (dfAspectHt.HasValue)
-                        priorbox.prior_box_param.aspect_ratio.Add((float)dfAspectHt.Value);
-
-                    if (dfStepWd.HasValue && dfStepHt.HasValue)
+                    if (dfStepWd.Value == dfStepHt.Value)
                     {
-                        if (dfStepWd.Value == dfStepHt.Value)
-                        {
-                            priorbox.prior_box_param.step = (float)dfStepWd.Value;
-                        }
-                        else
-                        {
-                            priorbox.prior_box_param.step_h = (float)dfStepHt.Value;
-                            priorbox.prior_box_param.step_w = (float)dfStepWd.Value;
-                        }
+                        priorbox.prior_box_param.step = (float)dfStepWd.Value;
                     }
-
-                    if (nImageHt != 0 && nImageWd != 0)
+                    else
                     {
-                        if (nImageHt == nImageWd)
-                        {
-                            priorbox.prior_box_param.img_size = (uint)nImageHt;
-                        }
-                        else
-                        {
-                            priorbox.prior_box_param.img_h = (uint)nImageHt;
-                            priorbox.prior_box_param.img_w = (uint)nImageWd;
-                        }
+                        priorbox.prior_box_param.step_h = (float)dfStepHt.Value;
+                        priorbox.prior_box_param.step_w = (float)dfStepWd.Value;
                     }
-
-                    lastLayer = connectAndAddLayer(fromLayer, priorbox);
-                    lastLayer.bottom.Add(data.top[0]);
-                    rgstrPriorBoxLayers.Add(lastLayer.name);
                 }
+
+                if (nImageHt != 0 && nImageWd != 0)
+                {
+                    if (nImageHt == nImageWd)
+                    {
+                        priorbox.prior_box_param.img_size = (uint)nImageHt;
+                    }
+                    else
+                    {
+                        priorbox.prior_box_param.img_h = (uint)nImageHt;
+                        priorbox.prior_box_param.img_w = (uint)nImageWd;
+                    }
+                }
+
+                lastLayer = connectAndAddLayer(fromLayer, priorbox);
+                lastLayer.bottom.Add(data.top[0]);
+                rgstrPriorBoxLayers.Add(lastLayer.name);
 
                 //---------------------------------------------------
                 // Create objectness prediction layer
                 //---------------------------------------------------
-                if (bUseObjectness && !bDeploy)
+                if (bUseObjectness)
                 {
                     strName = fromLayer.name + "_mbox_objectness";
                     int nNumObjOutput = nNumPriorsPerLocation * 2;
@@ -372,28 +370,25 @@ namespace MyCaffe.model
             m_net.layer.Add(concat);
             rgMboxLayers.Add(concat);
 
-            if (!bDeploy)
+            strName = "mbox_priorbox";
+            concat = new LayerParameter(LayerParameter.LayerType.CONCAT);
+            concat.name = strName;
+            concat.concat_param.axis = 2;
+            concat.bottom = rgstrPriorBoxLayers;
+            concat.top.Add(concat.name);
+            m_net.layer.Add(concat);
+            rgMboxLayers.Add(concat);
+
+            if (bUseObjectness)
             {
-                strName = "mbox_priorbox";
+                strName = "mbox_objectness";
                 concat = new LayerParameter(LayerParameter.LayerType.CONCAT);
                 concat.name = strName;
-                concat.concat_param.axis = 2;
-                concat.bottom = rgstrPriorBoxLayers;
+                concat.concat_param.axis = 1;
+                concat.bottom = rgstrObjLayers;
                 concat.top.Add(concat.name);
                 m_net.layer.Add(concat);
                 rgMboxLayers.Add(concat);
-
-                if (bUseObjectness)
-                {
-                    strName = "mbox_objectness";
-                    concat = new LayerParameter(LayerParameter.LayerType.CONCAT);
-                    concat.name = strName;
-                    concat.concat_param.axis = 1;
-                    concat.bottom = rgstrObjLayers;
-                    concat.top.Add(concat.name);
-                    m_net.layer.Add(concat);
-                    rgMboxLayers.Add(concat);
-                }
             }
 
             return rgMboxLayers;

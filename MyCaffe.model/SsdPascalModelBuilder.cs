@@ -353,17 +353,19 @@ namespace MyCaffe.model
         public override NetParameter CreateModel(bool bDeploy = false)
         {
             string strLabelMapFile = getFileName(m_strLabelMapFile);
+            LayerParameter data = null;
 
             m_net = createNet(m_strModel);
 
             if (!bDeploy)
-                addAnnotatedDataLayer(m_strTrainDataSource, m_nBatchSizePerDevice, true, Phase.TRAIN, strLabelMapFile, SimpleDatum.ANNOTATION_TYPE.NONE, m_transformTrain, m_rgBatchSampler);
+                addAnnotatedDataLayer(m_strTrainDataSource, Phase.TRAIN, m_nBatchSizePerDevice, true, strLabelMapFile, SimpleDatum.ANNOTATION_TYPE.NONE, m_transformTrain, m_rgBatchSampler);
 
-            LayerParameter data = addAnnotatedDataLayer(m_strTestDataSource, m_nBatchSizePerDevice, true, (bDeploy) ? Phase.RUN : Phase.TEST, strLabelMapFile, SimpleDatum.ANNOTATION_TYPE.NONE, m_transformTrain, m_rgBatchSampler);
+            data = addAnnotatedDataLayer(m_strTestDataSource, Phase.TEST, 1, true, strLabelMapFile, SimpleDatum.ANNOTATION_TYPE.NONE, m_transformTest);
+
             LayerParameter lastLayer = addVGGNetBody(data, true, true, true, true, false, false);
             lastLayer = addExtraLayers(m_bUseBatchNorm, m_dfLrMult);
 
-            List<LayerParameter> rgMboxLayers = createMultiBoxHead(data, bDeploy, m_nNumClasses, m_rgMultiBoxInfo, m_rgPriorVariance, false, m_bUseBatchNorm, m_dfLrMult, true, 0, 0, m_bShareLocation, m_bFlip, m_bClip, 0.5, 3, 1);
+            List<LayerParameter> rgMboxLayers = createMultiBoxHead(data, m_nNumClasses, m_rgMultiBoxInfo, m_rgPriorVariance, false, m_bUseBatchNorm, m_dfLrMult, true, 0, 0, m_bShareLocation, m_bFlip, m_bClip, 0.5, 3, 1);
 
             // Create the MultiboxLossLayer.
             if (!bDeploy)
@@ -395,7 +397,10 @@ namespace MyCaffe.model
                 reshape.top.Add(reshape.name);
                 reshape.reshape_param.shape = new BlobShape(new List<int>() { 0, -1, (int)m_multiBoxLossLayer.multiboxloss_param.num_classes });
                 if (!bDeploy)
+                {
                     reshape.include.Add(new NetStateRule(Phase.TEST));
+                    reshape.include.Add(new NetStateRule(Phase.RUN));
+                }
                 lastLayer = connectAndAddLayer(lastLayer, reshape);
 
                 string strSoftmaxName = strConfName + "_softmax";
@@ -404,7 +409,10 @@ namespace MyCaffe.model
                 softmax.top.Add(softmax.name);
                 softmax.softmax_param.axis = 2;
                 if (!bDeploy)
+                {
                     softmax.include.Add(new NetStateRule(Phase.TEST));
+                    softmax.include.Add(new NetStateRule(Phase.RUN));
+                }
                 lastLayer = connectAndAddLayer(lastLayer, softmax);
 
                 string strFlattentName = strConfName + "_flatten";
@@ -413,7 +421,10 @@ namespace MyCaffe.model
                 flatten.top.Add(flatten.name);
                 flatten.flatten_param.axis = 1;
                 if (!bDeploy)
+                {
                     flatten.include.Add(new NetStateRule(Phase.TEST));
+                    flatten.include.Add(new NetStateRule(Phase.RUN));
+                }
                 lastLayer = connectAndAddLayer(lastLayer, flatten);
 
                 rgMboxLayers[1] = lastLayer;
@@ -425,7 +436,10 @@ namespace MyCaffe.model
                 sigmoid.name = strSigmoidName;
                 sigmoid.top.Add(sigmoid.name);
                 if (!bDeploy)
+                {
                     sigmoid.include.Add(new NetStateRule(Phase.TEST));
+                    sigmoid.include.Add(new NetStateRule(Phase.RUN));
+                }
 
                 lastLayer = connectAndAddLayer(lastLayer, sigmoid);
                 rgMboxLayers[1] = lastLayer;
@@ -436,7 +450,10 @@ namespace MyCaffe.model
             detectionOut.top.Add(detectionOut.name);
             detectionOut.detection_output_param = m_detectionOut;
             if (!bDeploy)
+            {
                 detectionOut.include.Add(new NetStateRule(Phase.TEST));
+                detectionOut.include.Add(new NetStateRule(Phase.RUN));
+            }
             lastLayer = connectAndAddLayer(rgMboxLayers, detectionOut);
 
             if (!bDeploy)
