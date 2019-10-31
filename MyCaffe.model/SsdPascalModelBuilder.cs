@@ -28,8 +28,8 @@ namespace MyCaffe.model
         int m_nTestIter;
         string m_strTrainDataSource = "VOC0712.training";
         string m_strTestDataSource = "VOC0712.testing";
-        string m_strNameSizeFile = "data\\VOC0712\\test_name_size.txt";
-        string m_strLabelMapFile = "data\\VOC0712\\labelmap_voc.prototxt";
+        string m_strNameSizeFile = "data\\ssd\\VOC0712\\test_name_size.txt";
+        string m_strLabelMapFile = "data\\ssd\\VOC0712\\labelmap_voc.prototxt";
         string m_strPreTrainModel = "models\\VGGNet\\VGG_ILSVRC_16_layers_fc_reduced.caffemodel";
         TransformationParameter m_transformTrain = null;
         TransformationParameter m_transformTest = null;
@@ -225,8 +225,8 @@ namespace MyCaffe.model
             m_detectionOut.save_output_param = new SaveOutputParameter(true);
             m_detectionOut.save_output_param.output_directory = m_strBaseDir + "\\results";
             m_detectionOut.save_output_param.output_name_prefix = "comp4_det_test_";
-            m_detectionOut.save_output_param.label_map_file = m_strLabelMapFile;
-            m_detectionOut.save_output_param.name_size_file = m_strNameSizeFile;
+            m_detectionOut.save_output_param.label_map_file = getFileName(m_strLabelMapFile, null);
+            m_detectionOut.save_output_param.name_size_file = getFileName(m_strNameSizeFile, null);
             m_detectionOut.save_output_param.num_test_image = (uint)m_nNumTestImage;
             m_detectionOut.keep_top_k = 200;
             m_detectionOut.confidence_threshold = 0.01f;
@@ -240,7 +240,7 @@ namespace MyCaffe.model
             m_detectionEval.background_label_id = (uint)m_nBackgroundLabelId;
             m_detectionEval.overlap_threshold = 0.5f;
             m_detectionEval.evaulte_difficult_gt = false;
-            m_detectionEval.name_size_file = m_strNameSizeFile;
+            m_detectionEval.name_size_file = getFileName(m_strNameSizeFile, null);
 
             //-------------------------------------------------------
             // Setup the MultiBox head layer info.
@@ -352,7 +352,7 @@ namespace MyCaffe.model
         /// </summary>
         public override NetParameter CreateModel(bool bDeploy = false)
         {
-            string strLabelMapFile = getFileName(m_strLabelMapFile);
+            string strLabelMapFile = getFileName(m_strLabelMapFile, null);
             LayerParameter data = null;
 
             m_net = createNet(m_strModel);
