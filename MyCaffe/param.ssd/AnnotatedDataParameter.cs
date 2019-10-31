@@ -81,15 +81,17 @@ namespace MyCaffe.param.ssd
         /** @copydoc LayerParameterBase::Copy */
         public override void Copy(LayerParameterBase src)
         {
-            AnnotatedDataParameter p = (AnnotatedDataParameter)src;
-
-            p.m_type = m_type;
-            p.m_strLabelFile = m_strLabelFile;
-
-            p.m_rgBatchSampler = new List<BatchSampler>();
-            foreach (BatchSampler bs in m_rgBatchSampler)
+            if (src is AnnotatedDataParameter)
             {
-                m_rgBatchSampler.Add(bs.Clone());
+                AnnotatedDataParameter p = (AnnotatedDataParameter)src;
+                m_type = p.m_type;
+                m_strLabelFile = p.m_strLabelFile;
+
+                m_rgBatchSampler = new List<BatchSampler>();
+                foreach (BatchSampler bs in p.m_rgBatchSampler)
+                {
+                    m_rgBatchSampler.Add(bs.Clone());
+                }
             }
         }
 
