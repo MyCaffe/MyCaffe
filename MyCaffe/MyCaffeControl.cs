@@ -1412,7 +1412,7 @@ namespace MyCaffe
                     return;
                 }
 
-                SimpleDatum sd = m_imgDb.QueryImage(nSrcId, i);
+                SimpleDatum sd = m_imgDb.QueryImage(nSrcId, i, null, null, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
 
                 if (sd.ByteData == null && sd.RealData == null)
                 {
@@ -1486,7 +1486,7 @@ namespace MyCaffe
         /// <returns>The result of the run is returned.</returns>
         public ResultCollection Run(int nImageIdx)
         {
-            SimpleDatum sd = m_imgDb.QueryImage(m_dataSet.TrainingSource.ID, nImageIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+            SimpleDatum sd = m_imgDb.QueryImage(m_dataSet.TrainingSource.ID, nImageIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
             return Run(sd, true, true);
         }
 
@@ -1501,7 +1501,7 @@ namespace MyCaffe
 
             foreach (int nImageIdx in rgImageIdx)
             {
-                SimpleDatum sd = m_imgDb.QueryImage(m_dataSet.TrainingSource.ID, nImageIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                SimpleDatum sd = m_imgDb.QueryImage(m_dataSet.TrainingSource.ID, nImageIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
                 rgSd.Add(sd);
             }
 
@@ -1674,7 +1674,7 @@ namespace MyCaffe
         public Bitmap GetTestImage(Phase phase, out int nLabel, out string strLabel)
         {
             int nSrcId = (phase == Phase.TRAIN) ? m_dataSet.TrainingSource.ID : m_dataSet.TestingSource.ID;
-            SimpleDatum d = m_imgDb.QueryImage(nSrcId, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM | IMGDB_IMAGE_SELECTION_METHOD.BOOST);
+            SimpleDatum d = m_imgDb.QueryImage(nSrcId, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM | IMGDB_IMAGE_SELECTION_METHOD.BOOST, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
 
             nLabel = d.Label;
             strLabel = m_imgDb.GetLabelName(nSrcId, nLabel);
@@ -1694,7 +1694,7 @@ namespace MyCaffe
         public Bitmap GetTestImage(Phase phase, int nLabel)
         {
             int nSrcId = (phase == Phase.TRAIN) ? m_dataSet.TrainingSource.ID : m_dataSet.TestingSource.ID;
-            SimpleDatum d = m_imgDb.QueryImage(nSrcId, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM | IMGDB_IMAGE_SELECTION_METHOD.BOOST, nLabel);
+            SimpleDatum d = m_imgDb.QueryImage(nSrcId, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM | IMGDB_IMAGE_SELECTION_METHOD.BOOST, nLabel, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
 
             return new Bitmap(ImageData.GetImage(new Datum(d), null));
         }
@@ -1711,7 +1711,7 @@ namespace MyCaffe
         /// <returns>The image queried is returned.</returns>
         public Bitmap GetTargetImage(int nSrcId, int nIdx, out int nLabel, out string strLabel, out byte[] rgCriteria, out SimpleDatum.DATA_FORMAT fmtCriteria)
         {
-            SimpleDatum d = m_imgDb.QueryImage(nSrcId, nIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+            SimpleDatum d = m_imgDb.QueryImage(nSrcId, nIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
 
             nLabel = d.Label;
             strLabel = m_imgDb.GetLabelName(nSrcId, nLabel);
