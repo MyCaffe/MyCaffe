@@ -1431,7 +1431,7 @@ namespace MyCaffe.basecode
 
                     bool bInclude = includeLayer(layer, stage, out psInclude, out psExclude);
 
-                    if (strType == "data" || strType == "annotated_data" || strType == "batchdata")
+                    if (strType == "data" || strType == "annotateddata" || strType == "batchdata")
                     {
                         if (psInclude.Find(Phase.TEST, stage) != null)
                             protoTransform = layer.FindChild("transform_param");
@@ -1558,6 +1558,37 @@ namespace MyCaffe.basecode
 
             if (input != null && input_shape != null)
             {
+                if (protoTransform != null)
+                {
+                    RawProto resize = protoTransform.FindChild("resize_param");
+                    
+                    if (resize != null)
+                    {
+                        bool bActive = (bool)resize.FindValue("active", typeof(bool));
+                        if (bActive)
+                        {
+                            int nNewHeight = (int)resize.FindValue("height", typeof(int));
+                            int nNewWidth = (int)resize.FindValue("width", typeof(int));
+
+                            if (rgInputShape[0].Children.Count < 1)
+                                rgInputShape[0].Children.Add(new RawProto("dim", "1"));
+
+                            if (rgInputShape[0].Children.Count < 2)
+                                rgInputShape[0].Children.Add(new RawProto("dim", "1"));
+
+                            if (rgInputShape[0].Children.Count < 3)
+                                rgInputShape[0].Children.Add(new RawProto("dim", nNewHeight.ToString()));
+                            else
+                                rgInputShape[0].Children[2] = new RawProto("dim", nNewHeight.ToString());
+
+                            if (rgInputShape[0].Children.Count < 4)
+                                rgInputShape[0].Children.Add(new RawProto("dim", nNewWidth.ToString()));
+                            else
+                                rgInputShape[0].Children[3] = new RawProto("dim", nNewWidth.ToString());
+                        }
+                    }
+                }
+
                 for (int i = rgInputShape.Count - 1; i >= 0; i--)
                 {
                     proto.Children.Insert(0, rgInputShape[i]);

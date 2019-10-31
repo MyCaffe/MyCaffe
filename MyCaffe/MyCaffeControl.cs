@@ -660,7 +660,8 @@ namespace MyCaffe
         /// <returns>The new NetParameter suitable for the RUN phase is returned.</returns>
         protected NetParameter createNetParameterForRunning(DatasetDescriptor ds, string strModel, out TransformationParameter transform_param, Stage stage = Stage.NONE)
         {
-            return createNetParameterForRunning(datasetToShape(ds), strModel, out transform_param, stage);
+            BlobShape shape = datasetToShape(ds);
+            return createNetParameterForRunning(shape, strModel, out transform_param, stage);
         }
 
         /// <summary>
@@ -676,8 +677,9 @@ namespace MyCaffe
         /// <returns>The new NetParameter suitable for the RUN phase is returned.</returns>
         public NetParameter createNetParameterForRunning(BlobShape shape, string strModel, out TransformationParameter transform_param, Stage stage = Stage.NONE)
         {
+            NetParameter param = CreateNetParameterForRunning(shape, strModel, out transform_param, stage);
             m_inputShape = shape;
-            return CreateNetParameterForRunning(shape, strModel, out transform_param, stage);
+            return param;
         }
 
         /// <summary>
@@ -704,6 +706,12 @@ namespace MyCaffe
                 transform_param = TransformationParameter.FromProto(protoTransform);
             else
                 transform_param = new param.TransformationParameter();
+
+            if (transform_param.resize_param != null && transform_param.resize_param.Active)
+            {
+                shape.dim[2] = (int)transform_param.resize_param.height;
+                shape.dim[3] = (int)transform_param.resize_param.width;
+            }
 
             NetParameter np = NetParameter.FromProto(protoModel);
 
