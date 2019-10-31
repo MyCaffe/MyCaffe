@@ -65,10 +65,18 @@ namespace MyCaffe.model
         /// Returns the full path of the filename using the base directory original set when creating the ModelBuilder.
         /// </summary>
         /// <param name="strFile">Specifies the partial path of the file.</param>
+        /// <param name="strSubDir">Specifies the sub-directory off the path (or null for none).</param>
         /// <returns>The full path of the file is returned.</returns>
-        protected string getFileName(string strFile)
+        protected string getFileName(string strFile, string strSubDir)
         {
-            return m_strBaseDir + "\\" + strFile;
+            string strOut = m_strBaseDir + "\\";
+
+            if (!string.IsNullOrEmpty(strSubDir))
+                strOut += strSubDir + "\\";
+
+            strOut += strFile;
+
+            return strOut;
         }
 
         /// <summary>
