@@ -389,7 +389,7 @@ namespace MyCaffe.layers.ssd
             List<LabelBBox> rgAllLocPreds = m_bboxUtil.GetLocPredictions(rgfLocData, nNum, m_nNumPriors, m_nNumLocClasses, m_bShareLocations);
 
             // Retrieve all confidence scores.
-            List<Dictionary<int, List<float>>> rgAllConfScores = m_bboxUtil.GetConfidenceScores(rgfConfData, m_nNumClasses, m_nNumPriors, m_nNumClasses);
+            List<Dictionary<int, List<float>>> rgAllConfScores = m_bboxUtil.GetConfidenceScores(rgfConfData, nNum, m_nNumPriors, m_nNumClasses);
 
             // Retrieve all prior bboxes, which is the same within a batch since we assume all
             // images in a batch are of the same dimension.
