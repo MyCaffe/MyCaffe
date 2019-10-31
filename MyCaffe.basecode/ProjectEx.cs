@@ -76,6 +76,19 @@ namespace MyCaffe.basecode
             m_bExistTrain = bExistTrain;
         }
 
+        public bool RequiresDataCriteria()
+        {
+            RawProtoCollection col = m_protoModel.FindChildren("layer");
+            foreach (RawProto layer in col)
+            {
+                RawProto type = layer.FindChild("type");
+                if (type.Value.ToLower() == "annotateddata")
+                    return true;
+            }
+
+            return false;
+        }
+
         private string parse(string str, string strTarget, string strDefault = "UNKNOWN")
         {
             if (str == null)
