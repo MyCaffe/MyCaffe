@@ -745,7 +745,7 @@ namespace MyCaffe.data
 
             // Get the bbox dimension.
             NormalizedBBox clipped_bbox = m_bbox.Clip(bbox);
-            NormalizedBBox scaled_bbox = m_bbox.Scale(bbox, nDatumHeight, nDatumWidth);
+            NormalizedBBox scaled_bbox = m_bbox.Scale(clipped_bbox, nDatumHeight, nDatumWidth);
             int w_off = (int)scaled_bbox.xmin;
             int h_off = (int)scaled_bbox.ymin;
             int width = (int)(scaled_bbox.xmax - scaled_bbox.xmin);
