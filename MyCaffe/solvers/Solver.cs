@@ -1314,6 +1314,7 @@ namespace MyCaffe.solvers
         /// <returns>The accuracy of the test run is returned as a percentage in the range [0, 1].</returns>
         public double TestDetection(int nIterationOverride = -1, int nTestNetId = 0)
         {
+            Stopwatch sw = new Stopwatch();
             BBoxUtility<T> bboxUtil = new BBoxUtility<T>(m_cuda, m_log);
 
             try
@@ -1340,6 +1341,7 @@ namespace MyCaffe.solvers
                     nIterationOverride = TestingIterations;
 
                 int nIter = nIterationOverride;
+                sw.Start();
 
                 for (int i = 0; i < nIter; i++)
                 {
@@ -1378,7 +1380,7 @@ namespace MyCaffe.solvers
                                 else
                                     rgAllNumPos[j][nLabel] += (int)result_vec[k * 5 + 2];
                             }
-                            // Normal row sotring detection status.
+                            // Normal row storing detection status.
                             else
                             {
                                 float fScore = (float)result_vec[k * 5 + 2];
@@ -1403,9 +1405,16 @@ namespace MyCaffe.solvers
                                     rgAllFalsePos[j].Add(nLabel, new List<Tuple<float, int>>());
 
                                 rgAllTruePos[j][nLabel].Add(new Tuple<float, int>(fScore, tp));
-                                rgAllTruePos[j][nLabel].Add(new Tuple<float, int>(fScore, fp));
+                                rgAllFalsePos[j][nLabel].Add(new Tuple<float, int>(fScore, fp));
                             }
                         }
+                    }
+
+                    if (sw.Elapsed.TotalMilliseconds > 1000)
+                    {
+                        m_log.Progress = (double)i / (double)nIter;
+                        m_log.WriteLine("Testing at " + m_log.Progress.ToString("P") + " " + i.ToString() + " of " + nIter.ToString() + "...");
+                        sw.Restart();
                     }
                 }
 
