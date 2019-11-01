@@ -237,7 +237,7 @@ namespace MyCaffe.db.image
         /// <param name="bSave">When <i>true</i> the images in the cache are saved to the database in a bulk save, otherwise they are just flushed from the cache.</param>
         public void ClearImageCashe(bool bSave)
         {
-            if (m_imageCache.Count == 0)
+            if (m_imageCache == null || m_imageCache.Count == 0)
                 return;
 
             if (bSave)
