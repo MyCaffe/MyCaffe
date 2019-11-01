@@ -189,7 +189,7 @@ namespace MyCaffe.layers.ssd
             // Label
             if (m_bOutputLabels)
             {
-                bool bHasAnnoType = (anno_datum.annotation_type != SimpleDatum.ANNOTATION_TYPE.NONE) && (m_param.annotated_data_param.anno_type != SimpleDatum.ANNOTATION_TYPE.NONE);
+                bool bHasAnnoType = (anno_datum.annotation_type != SimpleDatum.ANNOTATION_TYPE.NONE) || (m_param.annotated_data_param.anno_type != SimpleDatum.ANNOTATION_TYPE.NONE);
                 List<int> rgLabelShape = Utility.Create<int>(4, 1);
 
                 if (bHasAnnoType)
