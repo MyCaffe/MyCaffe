@@ -286,22 +286,22 @@ namespace MyCaffe.data
 
                 val = bndbox.Descendants("xmin").First();
                 float fxmin = float.Parse(val.Value);
-                if (fxmin > datum.Width || fxmin < 0)
+                if (fxmin > nWidth || fxmin < 0)
                     log.WriteLine("WARNING: '" + strFile + "' bounding box exceeds image boundary.");
 
                 val = bndbox.Descendants("ymin").First();
                 float fymin = float.Parse(val.Value);
-                if (fymin > datum.Height || fymin < 0)
+                if (fymin > nHeight || fymin < 0)
                     log.WriteLine("WARNING: '" + strFile + "' bounding box exceeds image boundary.");
 
                 val = bndbox.Descendants("xmax").First();
                 float fxmax = float.Parse(val.Value);
-                if (fxmax > datum.Width || fxmax < 0)
+                if (fxmax > nWidth || fxmax < 0)
                     log.WriteLine("WARNING: '" + strFile + "' bounding box exceeds image boundary.");
 
                 val = bndbox.Descendants("ymax").First();
                 float fymax = float.Parse(val.Value);
-                if (fymax > datum.Height || fymax < 0)
+                if (fymax > nHeight || fymax < 0)
                     log.WriteLine("WARNING: '" + strFile + "' bounding box exceeds image boundary.");
 
                 if (!rgNameToLabel.ContainsKey(strName))
@@ -311,7 +311,7 @@ namespace MyCaffe.data
                 }
 
                 int nLabel = rgNameToLabel[strName];
-                NormalizedBBox bbox = new NormalizedBBox(fxmin, fymin, fxmax, fymax, nLabel, bDifficult);
+                NormalizedBBox bbox = new NormalizedBBox(fxmin / nWidth, fymin / nHeight, fxmax / nWidth, fymax / nHeight, nLabel, bDifficult);
 
                 foreach (AnnotationGroup g in datum.annotation_group)
                 {
