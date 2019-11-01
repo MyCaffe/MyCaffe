@@ -171,7 +171,7 @@ namespace MyCaffe.layers.ssd
             }
 
             // Read a data point, and use it to initialize the top blob.
-            Datum anno_datum = m_cursor.GetValue();
+            Datum anno_datum = m_cursor.GetValue(null, true);
 
             // Use data_transformer to infer the expected blob shape from anno_datum.
             List<int> rgTopShape = m_transformer.InferBlobShape(anno_datum);
@@ -216,9 +216,12 @@ namespace MyCaffe.layers.ssd
                     // instance_id.
                     if (m_AnnoType == SimpleDatum.ANNOTATION_TYPE.BBOX)
                     {
-                        for (int g = 0; g < anno_datum.annotation_group.Count; g++)
+                        if (anno_datum.annotation_group != null)
                         {
-                            nNumBboxes += anno_datum.annotation_group[g].annotations.Count;
+                            for (int g = 0; g < anno_datum.annotation_group.Count; g++)
+                            {
+                                nNumBboxes += anno_datum.annotation_group[g].annotations.Count;
+                            }
                         }
 
                         rgLabelShape[0] = 1;
