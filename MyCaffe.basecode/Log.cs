@@ -375,6 +375,19 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Test whether a number falls within a set bound or not.
+        /// </summary>
+        /// <param name="f1">Specifies the number to test.</param>
+        /// <param name="fmin">Specifies the lower bound.</param>
+        /// <param name="fmax">Specifies the upper bound.</param>
+        /// <param name="str">Specifies the message to output on failure.</param>
+        public void CHECK_BOUNDS(float f1, float fmin, float fmax, string str)
+        {
+            CHECK_GE(f1, fmin, str);
+            CHECK_LE(f1, fmax, str);
+        }
+
+        /// <summary>
         /// Causes a failure which throws an exception with the desciptive text.
         /// </summary>
         /// <param name="str">Specifies the descriptive text to output.</param>
