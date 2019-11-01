@@ -124,6 +124,78 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestReadCropTrainSequenceSeededDbWithAnno()
+        {
+            AnnotatedDataLayerTest test = new AnnotatedDataLayerTest();
+
+            try
+            {
+                foreach (IAnnotatedDataLayerTest t in test.Tests)
+                {
+                    t.TestReadCropTrainSequenceSeededDb(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestReadCropTrainSequenceUnseededDbWithAnno()
+        {
+            AnnotatedDataLayerTest test = new AnnotatedDataLayerTest();
+
+            try
+            {
+                foreach (IAnnotatedDataLayerTest t in test.Tests)
+                {
+                    t.TestReadCropTrainSequenceUnseededDb(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestReadCropDbWithAnno()
+        {
+            AnnotatedDataLayerTest test = new AnnotatedDataLayerTest();
+
+            try
+            {
+                foreach (IAnnotatedDataLayerTest t in test.Tests)
+                {
+                    t.TestReadCropDb(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestReadCropTestDbWithAnno()
+        {
+            AnnotatedDataLayerTest test = new AnnotatedDataLayerTest();
+
+            try
+            {
+                foreach (IAnnotatedDataLayerTest t in test.Tests)
+                {
+                    t.TestReadCropTestDb(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -131,10 +203,10 @@ namespace MyCaffe.test
     {
         void TestReadDb();
         void TestReshapeDb();
-        void TestReadCropTrainSequenceSeededDb();
-        void TestReadCropTrainSequenceUnseededDb();
-        void TestReadCropDb();
-        void TestReadCropTestDb();
+        void TestReadCropTrainSequenceSeededDb(bool bUseRichAnnotation = false);
+        void TestReadCropTrainSequenceUnseededDb(bool bUseRichAnnotation = false);
+        void TestReadCropDb(bool bUseRichAnnotation = false);
+        void TestReadCropTestDb(bool bUseRichAnnotation = false);
     }
 
     class AnnotatedDataLayerTest : TestBase
@@ -396,6 +468,49 @@ namespace MyCaffe.test
             m_nDsID = ds.ID;
 
             return m_strSrc1;
+        }
+
+        /// <summary>
+        /// Verify the annotation label, based on the order filled.
+        /// </summary>
+        /// <param name="nIter">Specifies the iteration (the image queried)</param>
+        /// <param name="i">Specifis the batch index.</param>
+        /// <param name="nNumBoxes">Specifies the number of boxes.</param>
+        /// <param name="rgTopLabel">Specifies the top label data.</param>
+        private void verifyAnnoLabel(int nIter, int i, int nNumBoxes, double[] rgTopLabel)
+        {
+            for (int j = 0; j < nNumBoxes; j++)
+            {
+                int nIdx = (int)rgTopLabel[j * 8 + 0];
+                int nLabel = (int)rgTopLabel[j * 8 + 1];
+                int nInstId = (int)rgTopLabel[j * 8 + 2];
+                float fxmin = (float)rgTopLabel[j * 8 + 3];
+                float fymin = (float)rgTopLabel[j * 8 + 4];
+                float fxmax = (float)rgTopLabel[j * 8 + 5];
+                float fymax = (float)rgTopLabel[j * 8 + 6];
+                bool bDifficult = (rgTopLabel[j * 8 + 7] == 1) ? true : false;
+
+                if (nIdx != -1)
+                    m_log.CHECK_GE(nIdx, 0, "The index should be >= 0.");
+
+                if (nLabel != -1)
+                    m_log.CHECK_GE(nLabel, 0, "The label should be >= 0.");
+
+                if (nInstId != -1)
+                    m_log.CHECK_GE(nInstId, 0, "The instance ID should be >= 0.");
+
+                if (fxmin != -1)
+                    m_log.CHECK_BOUNDS(fxmin, 0, 1, "The value should be in the range [0,1].");
+
+                if (fxmax != -1)
+                    m_log.CHECK_BOUNDS(fxmax, 0, 1, "The value should be in the range [0,1].");
+
+                if (fymin != -1)
+                    m_log.CHECK_BOUNDS(fymin, 0, 1, "The value should be in the range [0,1].");
+
+                if (fymax != -1)
+                    m_log.CHECK_BOUNDS(fymax, 0, 1, "The value should be in the range [0,1].");
+            }
         }
 
         public void TestRead()
@@ -731,7 +846,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestReadCrop(Phase phase)
+        public void TestReadCrop(Phase phase, bool bUseRichAnnotation)
         {
             initDb();
 
@@ -754,10 +869,21 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(Top.channels, m_nChannels, "The top channels is incorrect.");
                 m_log.CHECK_EQ(Top.height, 1, "The top height should = 1.");
                 m_log.CHECK_EQ(Top.width, 1, "The top width should = 1.");
-                m_log.CHECK_EQ(m_blobTopLabel.num, m_nNum, "The top label num is incorrect.");
-                m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top label channels should = 1.");
-                m_log.CHECK_EQ(m_blobTopLabel.height, 1, "The top label height should = 1.");
-                m_log.CHECK_EQ(m_blobTopLabel.width, 1, "The top label width should = 1.");
+
+                if (bUseRichAnnotation)
+                {
+                    m_log.CHECK_EQ(m_blobTopLabel.num, 1, "The top label num is incorrect.");
+                    m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top label channels should = 1.");
+                    m_log.CHECK_GE(m_blobTopLabel.height, 1, "The top label height should be >= 1.");
+                    m_log.CHECK_EQ(m_blobTopLabel.width, 8, "The top label width should = 8.");
+                }
+                else
+                {
+                    m_log.CHECK_EQ(m_blobTopLabel.num, m_nNum, "The top label num is incorrect.");
+                    m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top label channels should = 1.");
+                    m_log.CHECK_EQ(m_blobTopLabel.height, 1, "The top label height should = 1.");
+                    m_log.CHECK_EQ(m_blobTopLabel.width, 1, "The top label width should = 1.");
+                }
 
                 for (int iter = 0; iter < 5; iter++)
                 {
@@ -766,14 +892,20 @@ namespace MyCaffe.test
                     double[] rgTopLabel = convert(m_blobTopLabel.mutable_cpu_data);
                     double[] rgTopData = convert(Top.mutable_cpu_data);
 
-                    for (int i = 0; i < m_nNum; i++)
+                    if (!bUseRichAnnotation)
                     {
-                        m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
+                        for (int i = 0; i < m_nNum; i++)
+                        {
+                            m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
+                        }
                     }
 
                     int nNumWithCenterValue = 0;
                     for (int i = 0; i < m_nNum; i++)
                     {
+                        if (bUseRichAnnotation)
+                            verifyAnnoLabel(iter, i, m_blobTopLabel.height, rgTopLabel);
+
                         for (int j = 0; j < m_nChannels; j++)
                         {
                             double dfCenterValue = dfScale * ((Math.Ceiling(m_nHeight / 2.0) - 1) * m_nWidth +
@@ -807,7 +939,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestReadCropTrainSequenceSeeded()
+        public void TestReadCropTrainSequenceSeeded(bool bUseRichAnnotation)
         {
             initDb();
 
@@ -839,15 +971,21 @@ namespace MyCaffe.test
                         double[] rgTopLabel = convert(m_blobTopLabel.mutable_cpu_data);
                         double[] rgTopData = convert(Top.mutable_cpu_data);
 
-                        for (int i = 0; i < m_nNum; i++)
+                        if (!bUseRichAnnotation)
                         {
-                            m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
+                            for (int i = 0; i < m_nNum; i++)
+                            {
+                                m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
+                            }
                         }
 
                         List<double> rgIterCropSequence = new List<double>();
 
                         for (int i = 0; i < m_nNum; i++)
                         {
+                            if (bUseRichAnnotation)
+                                verifyAnnoLabel(iter, i, m_blobTopLabel.height, rgTopLabel);
+
                             for (int j = 0; j < m_nChannels; j++)
                             {
                                 double dfData = rgTopData[i * m_nChannels + j];
@@ -872,13 +1010,19 @@ namespace MyCaffe.test
                     double[] rgTopLabel = convert(m_blobTopLabel.mutable_cpu_data);
                     double[] rgTopData = convert(Top.mutable_cpu_data);
 
-                    for (int i = 0; i < m_nNum; i++)
+                    if (!bUseRichAnnotation)
                     {
-                        m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
+                        for (int i = 0; i < m_nNum; i++)
+                        {
+                            m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
+                        }
                     }
 
                     for (int i = 0; i < m_nNum; i++)
                     {
+                        if (bUseRichAnnotation)
+                            verifyAnnoLabel(iter, i, m_blobTopLabel.height, rgTopLabel);
+
                         for (int j = 0; j < m_nChannels; j++)
                         {
                             double dfCrop = rgrgCropSequence[iter][i * m_nChannels + j];
@@ -900,7 +1044,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestReadCropTrainSequenceUnseeded()
+        public void TestReadCropTrainSequenceUnseeded(bool bUseRichAnnotation)
         {
             initDb();
 
@@ -928,15 +1072,21 @@ namespace MyCaffe.test
                         double[] rgTopLabel = convert(m_blobTopLabel.mutable_cpu_data);
                         double[] rgTopData = convert(Top.mutable_cpu_data);
 
-                        for (int i = 0; i < m_nNum; i++)
+                        if (!bUseRichAnnotation)
                         {
-                            m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
+                            for (int i = 0; i < m_nNum; i++)
+                            {
+                                m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
+                            }
                         }
 
                         List<double> rgIterCropSequence = new List<double>();
 
                         for (int i = 0; i < m_nNum; i++)
                         {
+                            if (bUseRichAnnotation)
+                                verifyAnnoLabel(iter, i, m_blobTopLabel.height, rgTopLabel);
+
                             for (int j = 0; j < m_nChannels; j++)
                             {
                                 double dfData = rgTopData[i * m_nChannels + j];
@@ -962,15 +1112,21 @@ namespace MyCaffe.test
                     double[] rgTopLabel = convert(m_blobTopLabel.mutable_cpu_data);
                     double[] rgTopData = convert(Top.mutable_cpu_data);
 
-                    for (int i = 0; i < m_nNum; i++)
+                    if (!bUseRichAnnotation)
                     {
-                        m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
+                        for (int i = 0; i < m_nNum; i++)
+                        {
+                            m_log.CHECK_EQ(i, rgTopLabel[i], "The top label is incorrect.");
+                        }
                     }
 
                     int nNumSequenceMatches = 0;
 
                     for (int i = 0; i < m_nNum; i++)
                     {
+                        if (bUseRichAnnotation)
+                            verifyAnnoLabel(iter, i, m_blobTopLabel.height, rgTopLabel);
+
                         for (int j = 0; j < m_nChannels; j++)
                         {
                             double dfCrop = rgrgCropSequence[iter][i * m_nChannels + j];
@@ -1043,49 +1199,44 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestReadCropDb()
+        public void TestReadCropDb(bool bUseRichAnnotation)
         {
             bool bUniquePixel = true; // all pixels the same; images different.
             bool bUniqueAnnotation = false; // all anno the same; groups different.
-            bool bUseRichAnnotation = false;
             SimpleDatum.ANNOTATION_TYPE type = SimpleDatum.ANNOTATION_TYPE.BBOX;
 
             Fill(DataParameter.DB.IMAGEDB, bUniquePixel, bUniqueAnnotation, bUseRichAnnotation, type);
-
-            TestReadCrop(Phase.TRAIN);
+            TestReadCrop(Phase.TRAIN, bUseRichAnnotation);
         }
 
-        public void TestReadCropTrainSequenceSeededDb()
+        public void TestReadCropTrainSequenceSeededDb(bool bUseRichAnnotation)
         {
             bool bUniquePixel = true; // all pixels the same; images different.
             bool bUniqueAnnotation = false; // all anno the same; groups different.
-            bool bUseRichAnnotation = false;
             SimpleDatum.ANNOTATION_TYPE type = SimpleDatum.ANNOTATION_TYPE.BBOX;
 
             Fill(DataParameter.DB.IMAGEDB, bUniquePixel, bUniqueAnnotation, bUseRichAnnotation, type);
-            TestReadCropTrainSequenceSeeded();
+            TestReadCropTrainSequenceSeeded(bUseRichAnnotation);
         }
 
-        public void TestReadCropTrainSequenceUnseededDb()
+        public void TestReadCropTrainSequenceUnseededDb(bool bUseRichAnnotation)
         {
             bool bUniquePixel = true; // all pixels the same; images different.
             bool bUniqueAnnotation = false; // all anno the same; groups different.
-            bool bUseRichAnnotation = false;
             SimpleDatum.ANNOTATION_TYPE type = SimpleDatum.ANNOTATION_TYPE.BBOX;
 
             Fill(DataParameter.DB.IMAGEDB, bUniquePixel, bUniqueAnnotation, bUseRichAnnotation, type);
-            TestReadCropTrainSequenceUnseeded();
+            TestReadCropTrainSequenceUnseeded(bUseRichAnnotation);
         }
 
-        public void TestReadCropTestDb()
+        public void TestReadCropTestDb(bool bUseRichAnnotation)
         {
             bool bUniquePixel = true; // all pixels the same; images different.
             bool bUniqueAnnotation = false; // all anno the same; groups different.
-            bool bUseRichAnnotation = false;
             SimpleDatum.ANNOTATION_TYPE type = SimpleDatum.ANNOTATION_TYPE.BBOX;
 
             Fill(DataParameter.DB.IMAGEDB, bUniquePixel, bUniqueAnnotation, bUseRichAnnotation, type);
-            TestReadCrop(Phase.TEST);
+            TestReadCrop(Phase.TEST, bUseRichAnnotation);
         }
     }
 }
