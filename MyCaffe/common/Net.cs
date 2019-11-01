@@ -1554,7 +1554,8 @@ namespace MyCaffe.common
         /// additional memory) the pre-trained layers from another Net.
         /// </summary>
         /// <param name="srcNet">Specifies the source Net whos blobs are shared with the calling Net.</param>
-        public void ShareTrainedLayersWith(Net<T> srcNet)
+        /// <param name="bEnableLog">Optionally, specifies to enable the output log (default = false).</param>
+        public void ShareTrainedLayersWith(Net<T> srcNet, bool bEnableLog = false)
         {
             if (srcNet == this)
                 return;
@@ -1574,11 +1575,14 @@ namespace MyCaffe.common
 
                 if (target_layer_id == m_rgstrLayerNames.Count)
                 {
-                    m_log.WriteLine("Ignoring source layer " + source_layer_name, true);
+                    if (bEnableLog)
+                        m_log.WriteLine("Ignoring source layer " + source_layer_name, true);
                     continue;
                 }
 
-                m_log.WriteLine("Copying source layer " + source_layer_name);
+                if (bEnableLog)
+                    m_log.WriteLine("Copying source layer " + source_layer_name);
+
                 BlobCollection<T> target_blobs = m_rgLayers[target_layer_id].blobs;
                 m_log.CHECK_EQ(target_blobs.Count, source_layer.blobs.Count, "Incompatible number of blobs for layer " + source_layer_name);
 
