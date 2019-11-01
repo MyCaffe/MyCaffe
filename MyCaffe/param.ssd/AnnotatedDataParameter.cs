@@ -29,7 +29,7 @@ namespace MyCaffe.param.ssd
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class AnnotatedDataParameter : LayerParameterBase
     {
-        SimpleDatum.ANNOTATION_TYPE m_type = SimpleDatum.ANNOTATION_TYPE.BBOX;
+        SimpleDatum.ANNOTATION_TYPE m_type = SimpleDatum.ANNOTATION_TYPE.NONE;
         List<BatchSampler> m_rgBatchSampler = new List<BatchSampler>();
         string m_strLabelFile;
 
