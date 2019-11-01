@@ -651,18 +651,17 @@ namespace MyCaffe.data
                 // Go through each AnnotationGroup.
                 for (int g = 0; g < d.annotation_group.Count; g++)
                 {
-                    // Go through each Annoation.
+                    // Go through each Annotation.
                     bool bHasValidAnnotation = false;
                     AnnotationGroup anno_group = d.annotation_group[g];
                     AnnotationGroup transformed_anno_group = new AnnotationGroup();
 
                     for (int a = 0; a < anno_group.annotations.Count; a++)
                     {
-
                         Annotation anno = anno_group.annotations[a];
                         NormalizedBBox bbox = anno.bbox;
 
-                        // Adjust bounding box annoation.
+                        // Adjust bounding box annotation.
                         NormalizedBBox resize_bbox = bbox;
                         if (bResize && m_param.resize_param != null && m_param.resize_param.Active)
                         {
@@ -671,7 +670,7 @@ namespace MyCaffe.data
                             resize_bbox = m_imgTransforms.UpdateBBoxByResizePolicy(m_param.resize_param, nImgWd, nImgHt, resize_bbox);
                         }
 
-                        if (m_param.emit_constraint != null && m_param.emit_constraint.Active && m_bbox.MeetEmitConstraint(crop_bbox, resize_bbox, m_param.emit_constraint))
+                        if (m_param.emit_constraint != null && m_param.emit_constraint.Active && !m_bbox.MeetEmitConstraint(crop_bbox, resize_bbox, m_param.emit_constraint))
                             continue;
 
                         NormalizedBBox proj_bbox;
