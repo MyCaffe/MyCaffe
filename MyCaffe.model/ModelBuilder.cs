@@ -162,7 +162,6 @@ namespace MyCaffe.model
         /// Create the multi-box head layers.
         /// </summary>
         /// <param name="data">Specifies the data layer.</param>
-        /// <param name="bDeploy">Specifies that the model created is for deployment.</param>
         /// <param name="nNumClasses">Specifies the number of classes.</param>
         /// <param name="rgInfo">Specifies the info associated with the layers to connect to.</param>
         /// <param name="rgPriorVariance">Specifies the prior variance.</param>

@@ -316,7 +316,7 @@ namespace MyCaffe.data
         /// <summary>
         /// The ApplyNoise method applies the noise policy to the SimpleDatum.
         /// </summary>
-        /// <param name="b">Specifies the blob for which noise is to be added.</param>
+        /// <param name="sd">Specifies the SimpleDatum for which noise is to be added.</param>
         /// <param name="p">Specifies the NoiseParameter that defines the noise policy.</param>
         /// <remarks>
         /// NOTE: This method is not yet complete.

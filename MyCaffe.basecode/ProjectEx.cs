@@ -76,6 +76,10 @@ namespace MyCaffe.basecode
             m_bExistTrain = bExistTrain;
         }
 
+        /// <summary>
+        /// Returns whether or not the data criteria is required by the current project model (e.g. the model contains an AnnotatedData layer).
+        /// </summary>
+        /// <returns>If the model requires the data criteria be loaded, then <i>true</i> is returned, otherwise <i>false</i>.</returns>
         public bool RequiresDataCriteria()
         {
             RawProtoCollection col = m_protoModel.FindChildren("layer");
