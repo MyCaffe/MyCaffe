@@ -354,7 +354,7 @@ namespace MyCaffe.layers.ssd
 
             // Sample hard negative (and positive) examples based on mining type.
             int nNumNegs;
-            m_nNumMatches = m_bboxUtil.MineHardExamples(colBottom[0], rgAllLocPreds, rgAllGtBboxes, rgPriorBboxes, rgrgPriorVariances, rgAllMatchOverlaps, m_param.multiboxloss_param, m_rgAllMatchIndices, m_rgrgAllNegIndices, out nNumNegs);
+            m_nNumMatches = m_bboxUtil.MineHardExamples(colBottom[1], rgAllLocPreds, rgAllGtBboxes, rgPriorBboxes, rgrgPriorVariances, rgAllMatchOverlaps, m_param.multiboxloss_param, m_rgAllMatchIndices, m_rgrgAllNegIndices, out nNumNegs);
 
             if (m_nNumMatches >= 1)
             {
