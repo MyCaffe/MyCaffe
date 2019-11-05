@@ -14,7 +14,7 @@ using MyCaffe.param.ssd;
 namespace MyCaffe.layers.ssd
 {
     /// <summary>
-    /// Generate the detection output based on location and confidence predictions by doing non maximum supression.  Intended for use with MultiBox detection method used in SSD.
+    /// The DetectionOutputLayer generates the detection output based on location and confidence predictions by doing non maximum supression.  Intended for use with MultiBox detection method used in SSD.
     /// </summary>
     /// <remarks>
     /// @see [SSD: Single Shot MultiBox Detector](https://arxiv.org/abs/1512.02325) by Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian Szegedy, Scott Reed, Cheng-Yang Fu, Alexander C. Berg, 2016.
