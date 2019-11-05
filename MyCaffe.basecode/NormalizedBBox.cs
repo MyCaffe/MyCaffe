@@ -187,5 +187,24 @@ namespace MyCaffe.basecode
 
             return new NormalizedBBox(fXmin, fYmin, fXmax, fYmax, nLabel, bDifficult, fScore, fSize);
         }
+
+        /// <summary>
+        /// Returns a string representation of the NormalizedBBox.
+        /// </summary>
+        /// <returns>The string representation is returned.</returns>
+        public override string ToString()
+        {
+            string strOut = "(" + m_nLabel.ToString() + ") { ";
+
+            strOut += m_fxmin.ToString() + ", ";
+            strOut += m_fymin.ToString() + ", ";
+            strOut += m_fxmax.ToString() + ", ";
+            strOut += m_fymax.ToString() + " } -> ";
+            strOut += m_fScore.ToString();
+            strOut += " size = " + m_fSize.ToString();
+            strOut += " difficult = " + m_bDifficult.ToString();
+
+            return strOut;
+        }
     }
 }
