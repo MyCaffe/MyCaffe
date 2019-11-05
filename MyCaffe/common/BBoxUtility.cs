@@ -2002,7 +2002,7 @@ namespace MyCaffe.common
             if (p.nms_param != null)
             {
                 fNmsThreshold = p.nms_param.nms_threshold;
-                nTopK = p.nms_param.top_k.GetValueOrDefault(1);
+                nTopK = p.nms_param.top_k.GetValueOrDefault(-1);
             }
 
             int nSampleSize = p.sample_size;
