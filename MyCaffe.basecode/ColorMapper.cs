@@ -29,7 +29,11 @@ namespace MyCaffe.basecode
             /// <summary>
             /// Use normal coloring where Red is a high value, Blue is a low value, and Green is in the middle.
             /// </summary>
-            NORMAL
+            NORMAL,
+            /// <summary>
+            /// Use coloring where Green is a high value, Red is a low value and Blue is in the middle.
+            /// </summary>
+            GBR
         }
 
         /// <summary>
@@ -49,14 +53,21 @@ namespace MyCaffe.basecode
             m_dfMin = dfMin;
             m_dfMax = dfMax;
 
-            m_rgrgColors.Add(new List<double>() { 0, 0, 0 });   // black
-            m_rgrgColors.Add(new List<double>() { 0, 0, 1 });   // blue
-            m_rgrgColors.Add(new List<double>() { 0, 1, 0 });   // green
-
-            if (clrScheme == COLORSCHEME.NORMAL)
+            if (clrScheme == COLORSCHEME.GBR)
+            {
                 m_rgrgColors.Add(new List<double>() { 1, 0, 0 });   // red
+                m_rgrgColors.Add(new List<double>() { 0, 0, 0.5 });   // blue
+                m_rgrgColors.Add(new List<double>() { 0, 1, 0 });   // green
+            }
+            else
+            {
+                m_rgrgColors.Add(new List<double>() { 0, 0, 0 });   // black
+                m_rgrgColors.Add(new List<double>() { 0, 0, 1 });   // blue
+                m_rgrgColors.Add(new List<double>() { 0, 1, 0 });   // green
+                m_rgrgColors.Add(new List<double>() { 1, 0, 0 });   // red
+                m_rgrgColors.Add(new List<double>() { 1, 1, 0 });   // yellow
+            }
 
-            m_rgrgColors.Add(new List<double>() { 1, 1, 0 });   // yellow
 
             double dfRange = dfMax - dfMin;
             double dfInc = dfRange / m_nResolution;
