@@ -1369,7 +1369,7 @@ namespace MyCaffe.solvers
                             int item_id = (int)result_vec[k * 5];
                             int nLabel = (int)result_vec[k * 5 + 1];
 
-                            // Special reow for storing number of positives for a label.
+                            // Special row for storing number of positives for a label.
                             if (item_id == -1)
                             {
                                 if (!rgAllNumPos.ContainsKey(j))
@@ -1430,6 +1430,7 @@ namespace MyCaffe.solvers
                     m_log.WriteLine("Test loss: " + dfLoss.ToString());
                 }
 
+                float fTotalmAP = 0;
                 for (int i = 0; i < rgAllTruePos.Count; i++)
                 {
                     if (!rgAllTruePos.ContainsKey(i))
@@ -1491,10 +1492,10 @@ namespace MyCaffe.solvers
                     string strOutputName = test_net.blob_names[nOutputBlobIdx];
 
                     m_log.WriteLine("    Test net output #" + i.ToString() + ": " + strOutputName + " = " + fmAP.ToString());
+                    fTotalmAP += fmAP;
                 }
 
-#warning TODO: fix accuracy for TestDetection.
-                return 0;
+                return fTotalmAP / rgAllTruePos.Count;
             }
             catch (Exception excpt)
             {
