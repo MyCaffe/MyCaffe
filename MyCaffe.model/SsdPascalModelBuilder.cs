@@ -376,7 +376,7 @@ namespace MyCaffe.model
                 mbox_loss.multiboxloss_param = m_multiBoxLossLayer.multiboxloss_param;
                 mbox_loss.loss_param = m_multiBoxLossLayer.loss_param;
                 mbox_loss.include.Add(new NetStateRule(Phase.TRAIN));
-                mbox_loss.propagate_down = new List<bool>() { true, true, true, true };
+                mbox_loss.propagate_down = new List<bool>() { true, true, false, false };
                 mbox_loss.top.Add(mbox_loss.name);
                 connectAndAddLayer(rgMboxLayers, mbox_loss);
                 mbox_loss.bottom.Add(data.top[1]); // GT.
