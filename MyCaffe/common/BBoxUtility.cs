@@ -2129,8 +2129,8 @@ namespace MyCaffe.common
 
                         // Do non-maximum suppression based on the loss.
                         List<int> rgNmsIndices = ApplyNMS(rgSelBoxes, rgSelLoss, fNmsThreshold, nTopK);
-                        if (rgNegIndices.Count < nNumSel)
-                            m_log.WriteLine("WARNING: Not enough samples after NMS: " + rgNegIndices.Count.ToString());
+                        if (rgNmsIndices.Count < nNumSel)
+                            m_log.WriteLine("WARNING: Not enough samples after NMS: " + rgNmsIndices.Count.ToString());
 
                         // Pick top example indices after nms.
                         nNumSel = Math.Min(rgNmsIndices.Count, nNumSel);
