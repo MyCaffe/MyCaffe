@@ -109,9 +109,9 @@ namespace MyCaffe.test
         Blob<T> m_blobBottomGt;
         Blob<T> m_blobTopLoss;
         List<bool> m_rgbChoices = new List<bool>() { true, false };
-        List<MultiBoxLossParameter.MatchType> m_rgMatchTypes = new List<MultiBoxLossParameter.MatchType>() { MultiBoxLossParameter.MatchType.BIPARTITE, MultiBoxLossParameter.MatchType.PER_PREDICTION };
         List<MultiBoxLossParameter.LocLossType> m_rgLocLossTypes = new List<MultiBoxLossParameter.LocLossType>() { MultiBoxLossParameter.LocLossType.L2, MultiBoxLossParameter.LocLossType.SMOOTH_L1 };
         List<MultiBoxLossParameter.ConfLossType> m_rgConfLossTypes = new List<MultiBoxLossParameter.ConfLossType>() { MultiBoxLossParameter.ConfLossType.SOFTMAX, MultiBoxLossParameter.ConfLossType.LOGISTIC };
+        List<MultiBoxLossParameter.MatchType> m_rgMatchTypes = new List<MultiBoxLossParameter.MatchType>() { MultiBoxLossParameter.MatchType.BIPARTITE, MultiBoxLossParameter.MatchType.PER_PREDICTION };
         List<LossParameter.NormalizationMode> m_rgNormalizationMode = new List<LossParameter.NormalizationMode>() { LossParameter.NormalizationMode.BATCH_SIZE, LossParameter.NormalizationMode.FULL, LossParameter.NormalizationMode.VALID, LossParameter.NormalizationMode.NONE };
         List<MultiBoxLossParameter.MiningType> m_rgMiningType = new List<MultiBoxLossParameter.MiningType>() { MultiBoxLossParameter.MiningType.NONE, MultiBoxLossParameter.MiningType.MAX_NEGATIVE, MultiBoxLossParameter.MiningType.HARD_EXAMPLE };
 
@@ -189,7 +189,7 @@ namespace MyCaffe.test
 
             float[] rgfGt = Utility.ConvertVecF<T>(m_blobBottomGt.mutable_cpu_data);
             FillItem(rgfGt, 8 * 0, "0, 1, 0, 0.1, 0.1, 0.3, 0.3, 0");
-            FillItem(rgfGt, 8 * 1, "2, 1, 0, 0.1, 0.1, 0.3, 0.3, 0");
+            FillItem(rgfGt, 8 * 1, "1, 1, 0, 0.1, 0.1, 0.3, 0.3, 0");
             FillItem(rgfGt, 8 * 2, "2, 2, 0, 0.2, 0.2, 0.4, 0.4, 0");
             FillItem(rgfGt, 8 * 3, "2, 2, 1, 0.6, 0.6, 0.8, 0.9, 1");
             m_blobBottomGt.mutable_cpu_data = Utility.ConvertVec<T>(rgfGt);
@@ -378,10 +378,14 @@ namespace MyCaffe.test
 
         public void TestLocGradient()
         {
+            TestingProgressSet progress = new TestingProgressSet();
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MULTIBOX_LOSS);
             p.propagate_down.Add(true);
             p.propagate_down.Add(false);
             p.multiboxloss_param.num_classes = (uint)m_nNumClasses;
+
+            int nTestTotal = 2 * 2 * 2 * 1 * 4 * 2 * 3;
+            int nTestIdx = 0;
 
             for (int l = 0; l < 2; l++)
             {
@@ -397,7 +401,7 @@ namespace MyCaffe.test
                     {
                         MultiBoxLossParameter.MatchType matchType = m_rgMatchTypes[j];
 
-                        for (int k = 0; k < 2; k++)
+                        for (int k = 0; k < 1; k++)
                         {
                             bool bUsePrior = m_rgbChoices[k];
 
@@ -430,6 +434,9 @@ namespace MyCaffe.test
                                         checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
 
                                         layer.Dispose();
+
+                                        nTestIdx++;
+                                        progress.SetProgress((double)nTestIdx / (double)nTestTotal);
                                     }
                                 }
                             }
@@ -441,10 +448,14 @@ namespace MyCaffe.test
 
         public void TestConfGradient()
         {
+            TestingProgressSet progress = new TestingProgressSet();
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MULTIBOX_LOSS);
             p.propagate_down.Add(false);
             p.propagate_down.Add(true);
             p.multiboxloss_param.num_classes = (uint)m_nNumClasses;
+
+            int nTestTotal = 2 * 2 * 2 * 1 * 4 * 2 * 3;
+            int nTestIdx = 0;
 
             for (int c = 0; c < 2; c++)
             {
@@ -460,7 +471,7 @@ namespace MyCaffe.test
                     {
                         MultiBoxLossParameter.MatchType matchType = m_rgMatchTypes[j];
 
-                        for (int k = 0; k < 2; k++)
+                        for (int k = 0; k < 1; k++)
                         {
                             bool bUsePrior = m_rgbChoices[k];
 
@@ -494,6 +505,9 @@ namespace MyCaffe.test
                                         checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 1);
 
                                         layer.Dispose();
+
+                                        nTestIdx++;
+                                        progress.SetProgress((double)nTestIdx / (double)nTestTotal);
                                     }
                                 }
                             }
