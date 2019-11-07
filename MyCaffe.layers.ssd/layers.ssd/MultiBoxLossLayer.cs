@@ -486,7 +486,7 @@ namespace MyCaffe.layers.ssd
                     // Scale gradient.
                     double dfNormalizer = GetNormalizer(m_param.loss_param.normalization.Value, m_nNum, m_nNumPriors, m_nNumMatches);
                     double dfLossWeight = Utility.ConvertVal<T>(colTop[0].GetDiff(0)) / dfNormalizer;
-                    m_blobLocPred.scale_diff(dfLossWeight);
+                    m_cuda.scal(m_blobLocPred.count(), dfLossWeight, m_blobLocPred.mutable_gpu_diff);
 
                     // Copy gradient back to bottom[0];
                     float[] rgfLocPredDiff = Utility.ConvertVecF<T>(m_blobLocPred.mutable_cpu_diff);
@@ -539,7 +539,7 @@ namespace MyCaffe.layers.ssd
                     // Scale gradient.
                     double dfNormalizer = GetNormalizer(m_param.loss_param.normalization.Value, m_nNum, m_nNumPriors, m_nNumMatches);
                     double dfLossWeight = Utility.ConvertVal<T>(colTop[0].GetDiff(0)) / dfNormalizer;
-                    m_blobConfPred.scale_diff(dfLossWeight);
+                    m_cuda.scal(m_blobConfPred.count(), dfLossWeight, m_blobConfPred.mutable_gpu_diff);
 
                     // Copy gradient back to bottom[1];
                     float[] rgfConfPredDiff = Utility.ConvertVecF<T>(m_blobConfPred.mutable_cpu_diff);
