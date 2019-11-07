@@ -369,7 +369,9 @@ namespace MyCaffe.common
         /// <param name="nCount">Specifies the number of cycles to run.</param>
         /// <param name="bOnTrainingSet">Specifies on whether to select images from the training set, or when <i>false</i> the testing set of data.</param>
         /// <param name="bOnTargetSet">Optionally, specifies to test on the target dataset (if exists) as opposed to the source dataset.</param>
-        void TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false);
+        /// <param name="imgSelMethod">Optionally, specifies the image selection method (default = RANDOM).</param>
+        /// <param name="nImageStartIdx">Optionally, specifies the image start index (default = 0).</param>
+        void TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false, IMGDB_IMAGE_SELECTION_METHOD imgSelMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM, int nImageStartIdx = 0);
         /// <summary>
         /// Run on a given image in the MyCaffeImageDatabase based on its image index.
         /// </summary>

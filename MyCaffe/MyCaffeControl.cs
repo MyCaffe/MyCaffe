@@ -1369,11 +1369,18 @@ namespace MyCaffe
         /// <param name="nCount">Specifies the number of cycles to run.</param>
         /// <param name="bOnTrainingSet">Specifies on whether to select images from the training set, or when <i>false</i> the testing set of data.</param>
         /// <param name="bOnTargetSet">Optionally, specifies to test on the target dataset (if exists) as opposed to the source dataset.  The default is <i>false</i>, which tests on the default (source) dataset.</param>
-        public void TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false)
+        /// <param name="imgSelMethod">Optionally, specifies the image selection method (default = RANDOM).</param>
+        /// <param name="nImageStartIdx">Optionally, specifies the image start index (default = 0).</param>
+        public void TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false, IMGDB_IMAGE_SELECTION_METHOD imgSelMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM, int nImageStartIdx = 0)
         {
             m_lastPhaseRun = Phase.RUN;
 
             Stopwatch sw = new Stopwatch();
+            IMGDB_LABEL_SELECTION_METHOD? lblSelMethod = null;
+
+            if (imgSelMethod == IMGDB_IMAGE_SELECTION_METHOD.NONE)
+                lblSelMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
+
             int nSrcId = (bOnTrainingSet) ? m_dataSet.TrainingSource.ID : m_dataSet.TestingSource.ID;
             string strSrc = (bOnTrainingSet) ? m_dataSet.TrainingSourceName : m_dataSet.TestingSourceName;
             string strSet = (bOnTrainingSet) ? "training" : "test";
@@ -1404,6 +1411,9 @@ namespace MyCaffe
                 }
             }
 
+            if (nImageStartIdx < 0)
+                nImageStartIdx = 0;            
+
             for (int i = 0; i < nCount; i++)
             {
                 if (m_evtCancel.WaitOne(0))
@@ -1412,7 +1422,7 @@ namespace MyCaffe
                     return;
                 }
 
-                SimpleDatum sd = m_imgDb.QueryImage(nSrcId, i, null, null, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+                SimpleDatum sd = m_imgDb.QueryImage(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
 
                 if (sd.ByteData == null && sd.RealData == null)
                 {
@@ -1424,7 +1434,7 @@ namespace MyCaffe
                 int nExpectedLabel = sd.Label;
 
                 if (labelMapping != null)
-                    nExpectedLabel = labelMapping.MapLabel(nExpectedLabel);
+                        nExpectedLabel = labelMapping.MapLabel(nExpectedLabel);
 
                 if (!rgCorrectCounts.ContainsKey(nExpectedLabel))
                     rgCorrectCounts.Add(nExpectedLabel, 0);
