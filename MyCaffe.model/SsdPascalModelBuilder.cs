@@ -119,6 +119,7 @@ namespace MyCaffe.model
             //-------------------------------------------------------
             m_transformTrain = new TransformationParameter();
             m_transformTrain.mirror = true;
+            m_transformTrain.color_order = TransformationParameter.COLOR_ORDER.BGR; // to support caffe models.
             m_transformTrain.mean_value.Add(104);
             m_transformTrain.mean_value.Add(117);
             m_transformTrain.mean_value.Add(123);
@@ -152,6 +153,7 @@ namespace MyCaffe.model
             // Create the transformer for Testing.
             //-------------------------------------------------------
             m_transformTest = new TransformationParameter();
+            m_transformTest.color_order = TransformationParameter.COLOR_ORDER.BGR; // to support caffe models.
             m_transformTest.mean_value.Add(104);
             m_transformTest.mean_value.Add(117);
             m_transformTest.mean_value.Add(123);
