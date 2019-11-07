@@ -216,10 +216,8 @@ namespace MyCaffe.layers.ssd
                 m_bDoNegMining = m_param.multiboxloss_param.do_neg_mining.Value;
                 m_log.CHECK(m_bDoNegMining == (m_miningType != MultiBoxLossParameter.MiningType.NONE), "The mining type specified is inconsistent with do_neg_mining.");
             }
-            else
-            {
-                m_bDoNegMining = (m_miningType != MultiBoxLossParameter.MiningType.NONE);
-            }
+
+            m_bDoNegMining = (m_miningType != MultiBoxLossParameter.MiningType.NONE);
 
             if (m_bDoNegMining)
                 m_log.CHECK(m_bShareLocation, "Currently only support negative mining if share_location is true.");
@@ -415,6 +413,8 @@ namespace MyCaffe.layers.ssd
                 m_blobConfGt.SetData(m_nBackgroundLabelId);
 
                 m_bboxUtil.EncodeConfPrediction(rgfConfData, m_nNum, m_nNumPriors, m_param.multiboxloss_param, m_rgAllMatchIndices, m_rgrgAllNegIndices, rgAllGtBboxes, m_blobConfPred, m_blobConfGt);
+                m_confLossLayer.Reshape(m_colConfBottom, m_colConfTop);
+                m_confLossLayer.Forward(m_colConfBottom, m_colConfTop);
             }
             else
             {
@@ -511,9 +511,9 @@ namespace MyCaffe.layers.ssd
                                 Array.Copy(rgfLocPredDiff, nCount * 4, rgfLocBottomDiff, nLocBottomDiffOffset + nStartIdx, 4);
                                 nCount++;
                             }
-
-                            nLocBottomDiffOffset += colBottom[0].offset(1);
                         }
+
+                        nLocBottomDiffOffset += colBottom[0].offset(1);
                     }
 
                     colBottom[0].mutable_cpu_diff = Utility.ConvertVec<T>(rgfLocBottomDiff);
@@ -541,7 +541,7 @@ namespace MyCaffe.layers.ssd
                     double dfLossWeight = Utility.ConvertVal<T>(colTop[0].GetDiff(0)) / dfNormalizer;
                     m_blobConfPred.scale_diff(dfLossWeight);
 
-                    // Copy gradient back to bottom[0];
+                    // Copy gradient back to bottom[1];
                     float[] rgfConfPredDiff = Utility.ConvertVecF<T>(m_blobConfPred.mutable_cpu_diff);
                     if (m_bDoNegMining)
                     {
@@ -549,12 +549,13 @@ namespace MyCaffe.layers.ssd
 
                         for (int i = 0; i < m_nNum; i++)
                         {
+                            // Copy matched (positive) bboxes scores' diff.
                             Dictionary<int, List<int>> rgMap = m_rgAllMatchIndices[i].Map;
 
                             foreach (KeyValuePair<int, List<int>> kv in rgMap)
                             {
-                                int nLabel = kv.Key;
                                 List<int> rgMatchIndex = kv.Value;
+                                m_log.CHECK_EQ(rgMatchIndex.Count, m_nNumPriors, "The match index count should equal the num priors!");
 
                                 for (int j = 0; j < m_nNumPriors; j++)
                                 {
@@ -562,21 +563,31 @@ namespace MyCaffe.layers.ssd
                                         continue;
 
                                     // Copy the diff to the right place.
-                                    Array.Copy(rgfConfPredDiff, nCount * m_nNumClasses, rgfConfBottomDiff, nConfBottomDiffOffset + j * m_nNumClasses, 4);
+                                    Array.Copy(rgfConfPredDiff, nCount * m_nNumClasses, rgfConfBottomDiff, nConfBottomDiffOffset + j * m_nNumClasses, m_nNumClasses);
                                     nCount++;
                                 }
-
-                                nConfBottomDiffOffset += colBottom[0].offset(1);
                             }
+
+                            // Copy negative bboxes scores' diff
+                            for (int n = 0; n < m_rgrgAllNegIndices[i].Count; n++)
+                            {
+                                int j = m_rgrgAllNegIndices[i][n];
+                                m_log.CHECK_LT(j, m_nNumPriors, "The index must be less than the num priors!");
+
+                                Array.Copy(rgfConfPredDiff, nCount * m_nNumClasses, rgfConfBottomDiff, nConfBottomDiffOffset + j * m_nNumClasses, m_nNumClasses);
+                                nCount++;
+                            }
+
+                            nConfBottomDiffOffset += colBottom[1].offset(1);
                         }
+
+                        colBottom[1].mutable_cpu_diff = Utility.ConvertVec<T>(rgfConfBottomDiff);
                     }
                     else
                     {
                         // The diff is already computed and stored.
                         m_cuda.copy(colBottom[1].count(), m_blobConfPred.gpu_diff, colBottom[1].mutable_gpu_diff);
                     }
-
-                    colBottom[1].mutable_cpu_diff = Utility.ConvertVec<T>(rgfConfBottomDiff);
                 }
             }
 
