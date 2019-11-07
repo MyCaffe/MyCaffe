@@ -1442,9 +1442,6 @@ namespace MyCaffe.basecode
         /// <returns>After successfully adding to the total used to calculate the mean, <i>true</i> is returned, otherwise if the SimpleDatum is a virtual datum <i>false</i> is returned.</returns>
         public static bool AccumulateMean(ref double[] rgdfMean, SimpleDatum sd, int nTotal)
         {
-            if (sd.VirtualID != 0)
-                return false;
-
             if (rgdfMean == null)
                 rgdfMean = new double[sd.ItemCount];
 
