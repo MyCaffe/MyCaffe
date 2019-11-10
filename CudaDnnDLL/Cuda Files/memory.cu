@@ -11,7 +11,7 @@
 //=============================================================================
 
 template <class T>
-Memory<T>::Memory() : m_memory(), m_memoryPointers(), m_hostbuffers(), m_streams(), m_tensorDesc(), m_filterDesc(), m_convDesc(), m_poolDesc(), m_rnnDesc(), m_rnnDataDesc2(), m_lrnDesc(), m_cudnn(), m_pca(), m_tsnegp(), m_tsneg(), m_memtest(), m_nccl()
+Memory<T>::Memory() : m_memory(), m_memoryPointers(), m_hostbuffers(), m_streams(), m_tensorDesc(), m_filterDesc(), m_convDesc(), m_poolDesc(), m_rnnDesc(), m_rnnDataDesc2(), m_lrnDesc(), m_cudnn(), m_pca(), m_tsnegp(), m_tsneg(), m_memtest(), m_nccl(), m_ssd()
 {
 	m_memory.SetMemoryPointers(&m_memoryPointers);
 
@@ -127,6 +127,11 @@ Memory<T>::~Memory()
 	for (int i = 0; i < m_nccl.GetCount(); i++)
 	{
 		FreeNCCL(i);
+	}
+
+	for (int i = 0; i < m_ssd.GetCount(); i++)
+	{
+		FreeSSD(i);
 	}
 }
 

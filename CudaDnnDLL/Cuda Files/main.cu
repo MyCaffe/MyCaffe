@@ -839,6 +839,24 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_CALC_BATCH_DIST:
 			return m_device.cuda_calc_batch_dist(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_CREATE_SSD:
+			return m_device.CreateSsd(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_FREE_SSD:
+			return m_device.FreeSsd(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_SETUP_SSD:
+			return m_device.SetupSsd(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_SSD_FWD_MULTIBOXLOSS:
+			return m_device.SsdMultiboxLossForward(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_SSD_ENCODE_LOCPRED:
+			return m_device.SsdEncodeLocPrediction(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_SSD_ENCODE_CONFPRED:
+			return m_device.SsdEncodeConfPrediction(lCount, pfInput, plCount, ppfOutput);
+
 		default:
 			return ERROR_PARAM_OUT_OF_RANGE;
 	}
@@ -1670,6 +1688,24 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_CALC_BATCH_DIST:
 		return "CUDA_FN_CALC_BATCH_DIST";
+
+	case CUDA_FN_CREATE_SSD:
+		return "CUDA_FN_CREATE_SSD";
+
+	case CUDA_FN_FREE_SSD:
+		return "CUDA_FN_FREE_SSD";
+
+	case CUDA_FN_SETUP_SSD:
+		return "CUDA_FN_SETUP_SSD";
+
+	case CUDA_FN_SSD_FWD_MULTIBOXLOSS:
+		return "CUDA_FN_SSD_FWD_MULTIBOXLOSS";
+
+	case CUDA_FN_SSD_ENCODE_LOCPRED:
+		return "CUDA_FN_SSD_ENCODE_LOCPRED";
+
+	case CUDA_FN_SSD_ENCODE_CONFPRED:
+		return "CUDA_FN_SSD_ENCODE_CONFPRED";
 
 	default:
 		return "UNKNOWN";

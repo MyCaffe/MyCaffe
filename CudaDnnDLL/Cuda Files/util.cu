@@ -140,6 +140,82 @@ bool GetErrorString(long lErr, char* szErr, long lMaxErr)
 		case ERROR_TSNE_NO_DISTANCES_FOUND:
 			_snprintf(szErr, lMaxErr, "TSNE: No differences found between the images - they may all be the same. (%ld)", lErr);
 			return true;
+
+		case ERROR_SSD:
+			_snprintf(szErr, lMaxErr, "SSD: A general SSD error occurred. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_NOT_INITIALIZED:
+			_snprintf(szErr, lMaxErr, "SSD: The SSD is not initialized. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_INVALID_CODE_TYPE:
+			_snprintf(szErr, lMaxErr, "SSD: The SSD code type specified is invalid. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_INVALID_BBOX_DIMENSION:
+			_snprintf(szErr, lMaxErr, "SSD: The SSD bbox dimension (width or height) is invalid (e.g. < 0). (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_HOST_TYPE_NOT_SUPPORTED:
+			_snprintf(szErr, lMaxErr, "SSD: The HOST type specified is not supported for this function. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_BAD_MATCH:
+			_snprintf(szErr, lMaxErr, "SSD: The current matching is bad, expected a match index of -1. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_GT_LABEL_OUT_OF_RANGE:
+			_snprintf(szErr, lMaxErr, "SSD: The ground truth label is out of range. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_PRIOR_VARIANCE_COUNT:
+			_snprintf(szErr, lMaxErr, "SSD: The prior variances count does not match the prior bbox count. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_BACKGROUND_LABEL_OUT_OF_RANGE:
+			_snprintf(szErr, lMaxErr, "SSD: The background label id is out of range. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_COMPUTE_CONF_LOSS_MATCH_INDEX_INCORRECT:
+			_snprintf(szErr, lMaxErr, "SSD: The match_index should equal the number of priors in the compute conf loss calculation. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_COMPUTE_CONF_LOSS_GT_MISSING_ITEM:
+			_snprintf(szErr, lMaxErr, "SSD: The ground-truths are missing an expected itemId in the compute conf loss calculation. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_COMPUTE_CONF_LOSS_MATCH_INDEX_OUT_OF_RANGE:
+			_snprintf(szErr, lMaxErr, "SSD: The match index is out of range of the ground-truths in the compute conf loss calculation. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_COMPUTE_CONF_LOSS_INVALID_LABEL:
+			_snprintf(szErr, lMaxErr, "SSD: The label in the compute conf loss calculation is invalid. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_NOT_SUPPORTED_IN_HALF_BBOX:
+			_snprintf(szErr, lMaxErr, "SSD: The requested query is not supported by the half Bbox - only full BBox's support this type of query. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_LOC_PRED_LABEL_NOT_FOUND:
+			_snprintf(szErr, lMaxErr, "SSD: Could not find an expected label in the loc predictions. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_CODE_TYPE_UNKNOWN:
+			_snprintf(szErr, lMaxErr, "SSD: Unknown Code-Type. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_SAMPLE_SIZE_TOO_SMALL:
+			_snprintf(szErr, lMaxErr, "SSD: The sample size is too small and must be > 0. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_INVALID_NUM_CLASSES:
+			_snprintf(szErr, lMaxErr, "SSD: The number of classes is incorrect (e.g. when using map to agnostic, only 2 classes are valid for backgroundLabel >= 0, otherwise only 1 class is valid). (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_CONF_LOSS_TYPE_UNKNOWN:
+			_snprintf(szErr, lMaxErr, "SSD: The conf loss type is unknown and invalid. (%ld)", lErr);
+			return true;
 	}
 
 	return false;

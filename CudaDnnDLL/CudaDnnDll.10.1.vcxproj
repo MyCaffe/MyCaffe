@@ -107,7 +107,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(CUDA_PATH_V10_1)\cudann_10.1-win-v7.6.5.32;$(CUDA_PATH_V10_1)\nvapi_435;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH_V10_1)\cudann_10.1-win-v7.6.5.32;$(CUDA_PATH_V10_1)\nvapi_435;C:\Data\Data\SS_Projects\Tools\boost_1_66_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>__SM__=530;CUDA10_1;WIN32;_DEBUG;_WINDOWS;_USRDLL;CUDADLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -239,6 +239,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     <ClInclude Include="Cuda Files\nccl.h" />
     <ClInclude Include="Cuda Files\pca.h" />
     <ClInclude Include="Cuda Files\rnnData.h" />
+    <ClInclude Include="Cuda Files\ssd.h" />
     <ClInclude Include="Cuda Files\tsne_g.h" />
     <ClInclude Include="Cuda Files\tsne_gp.h" />
     <ClInclude Include="Cuda Files\util.h" />
@@ -264,6 +265,7 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     </CudaCompile>
     <CudaCompile Include="Cuda Files\pca.cu" />
     <CudaCompile Include="Cuda Files\rnnData.cu" />
+    <CudaCompile Include="Cuda Files\ssd.cu" />
     <CudaCompile Include="Cuda Files\tsne_g.cu" />
     <CudaCompile Include="Cuda Files\tsne_gp.cu" />
     <CudaCompile Include="Cuda Files\util.cu" />

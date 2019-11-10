@@ -257,6 +257,13 @@ class Device
 		long ComputeTsneGradient(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long EvaluateTsneError(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
+		long CreateSsd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long FreeSsd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long SetupSsd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long SsdMultiboxLossForward(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long SsdEncodeLocPrediction(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long SsdEncodeConfPrediction(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
 
 		//---------------------------------------------------------------------------
 		//	Math functions
@@ -2863,6 +2870,164 @@ inline long Device<T>::NcclAllReduce(long lInput, T* pfInput, long* plOutput, T*
 
 	return m_memory.NcclAllReduce(hNccl, hStream, hX, nCount, op, fScale);
 }
+
+
+template <class T>
+inline long Device<T>::CreateSsd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+	long hHandle = 0;
+
+	if (lErr = verifyInput(lInput, pfInput, 21, 24))
+		return lErr;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	int nGpuID = (int)pfInput[0];
+	int nNumClasses = (int)pfInput[1];
+	bool bShareLocation = (pfInput[2] == 0) ? false : true;
+	int nLocClasses = (int)pfInput[3];
+	int nBackgroundLabelId = (int)pfInput[4];
+	bool bUseDifficultGt = (pfInput[5] == 0) ? false : true;
+	SsdMiningType miningType = (SsdMiningType)(int)pfInput[6];
+	SsdMatchingType matchingType = (SsdMatchingType)(int)pfInput[7];
+	T fOverlapThreshold = pfInput[8];
+	bool bUsePriorForMatching = (pfInput[9] == 0) ? false : true;
+	SsdCodeType codeType = (SsdCodeType)(int)pfInput[10];
+	bool bEncodeVariantInTgt = (pfInput[11] == 0) ? false : true;
+	bool bBpInside = (pfInput[12] == 0) ? false : true;
+	bool bIgnoreCrossBoundaryBbox = (pfInput[13] == 0) ? false : true;
+	bool bUsePriorForNms = (pfInput[14] == 0) ? false : true;
+	SsdConfLossType confLossType = (SsdConfLossType)(int)pfInput[15];
+	SsdLocLossType locLossType = (SsdLocLossType)(int)pfInput[16];
+	T fNegPosRatio = pfInput[17];
+	T fNegOverlap = pfInput[18];
+	int nSampleSize = (int)pfInput[19];
+	bool bMapObjectToAgnostic = (pfInput[20] == 0) ? false : true;
+
+	T fNmsThreshold = T(0.3);
+	if (lInput > 21)
+		fNmsThreshold = pfInput[21];
+
+	int nTopK = -1;
+	if (lInput > 22)
+		nTopK = (int)pfInput[22];
+
+	T fEta = 1.0;
+	if (lInput > 23)
+		fEta = pfInput[23];
+
+	if (lErr = m_memory.CreateSSD(nGpuID, nNumClasses, bShareLocation, nLocClasses, nBackgroundLabelId, bUseDifficultGt, miningType, matchingType, fOverlapThreshold, bUsePriorForMatching, codeType, bEncodeVariantInTgt, bBpInside, bIgnoreCrossBoundaryBbox, bUsePriorForNms, confLossType, locLossType, fNegPosRatio, fNegOverlap, nSampleSize, bMapObjectToAgnostic, fNmsThreshold, nTopK, fEta, &m_math, &hHandle))
+		return lErr;
+
+	return setOutput(hHandle, plOutput, ppfOutput);
+}
+
+template <class T>
+inline long Device<T>::FreeSsd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+
+	return m_memory.FreeSSD(hHandle);
+}
+
+template <class T>
+inline long Device<T>::SetupSsd(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+		return lErr;
+
+	long hSsd = (long)pfInput[0];
+	int nNum = (int)pfInput[1];
+	int nNumPriors = (int)pfInput[2];
+	int nNumGt = (int)pfInput[3];
+
+	return m_memory.SetupSSD(hSsd, nNum, nNumPriors, nNumGt);
+}
+
+template <class T>
+inline long Device<T>::SsdMultiboxLossForward(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 9, 9))
+		return lErr;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	long hSsd = (long)pfInput[0];
+	int nLocDataCount = (int)pfInput[1];
+	long hLocData = (long)pfInput[2];
+	int nConfDataCount = (int)pfInput[3];
+	long hConfData = (long)pfInput[4];
+	int nPriorDataCount = (int)pfInput[5];
+	long hPriorData = (long)pfInput[6];
+	int nGtDataCount = (int)pfInput[7];
+	long hGtData = (long)pfInput[8];
+
+	int nNumMatches;
+	int nNumNegs;
+
+	if (lErr = m_memory.SsdMultiboxLossForward(hSsd, nLocDataCount, hLocData, nConfDataCount, hConfData, nPriorDataCount, hPriorData, nGtDataCount, hGtData, &nNumMatches, &nNumNegs))
+		return lErr;
+
+	T* pfOutput = NULL;
+
+	if (lErr = m_memory.AllocHost(2, &pfOutput, NULL, false, false))
+		return lErr;
+
+	pfOutput[0] = T(nNumMatches);
+	pfOutput[1] = T(nNumNegs);
+
+	*plOutput = 2;
+	*ppfOutput = pfOutput;
+
+	return 0;
+}
+
+template <class T>
+inline long Device<T>::SsdEncodeLocPrediction(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+		return lErr;
+
+	long hSsd = (long)pfInput[0];
+	int nLocPredCount = (int)pfInput[1];
+	long hLocPred = (long)pfInput[2];
+	int nLocGtCount = (int)pfInput[3];
+	long hLocGt = (long)pfInput[4];
+
+	return m_memory.SsdEncodeLocPrediction(hSsd, nLocPredCount, hLocPred, nLocGtCount, hLocGt);
+}
+
+template <class T>
+inline long Device<T>::SsdEncodeConfPrediction(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+		return lErr;
+
+	long hSsd = (long)pfInput[0];
+	int nConfPredCount = (int)pfInput[1];
+	long hConfPred = (long)pfInput[2];
+	int nConfGtCount = (int)pfInput[3];
+	long hConfGt = (long)pfInput[4];
+
+	return m_memory.SsdEncodeConfPrediction(hSsd, nConfPredCount, hConfPred, nConfGtCount, hConfGt);
+}
+
 
 template <class T>
 inline long Device<T>::CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, long* plOutput, T** ppfOutput, LPTSTR pszInput)

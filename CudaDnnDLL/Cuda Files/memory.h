@@ -15,6 +15,7 @@
 #include "tsne_gp.h"
 #include "tsne_g.h"
 #include "nccl.h"
+#include "ssd.h"
 #include "extension.h"
 #include <vector>
 #include <algorithm>
@@ -117,6 +118,7 @@ class Memory
 		HandleCollection<MIN_HANDLES> m_tsneg;
 		HandleCollection<MIN_HANDLES> m_memtest;
 		HandleCollection<MIN_HANDLES> m_nccl;
+		HandleCollection<MID_HANDLES> m_ssd;
 		HandleCollection<MIN_HANDLES> m_extensions;
 		T m_tOne;
 		T m_tZero;
@@ -319,6 +321,14 @@ class Memory
 		long NcclInitMultiProcess(long lBufferCount, long hNccl);
 		long NcclBroadcast(long hNccl, long hStream, long hX, int nCount);
 		long NcclAllReduce(long hNccl, long hStream, long hX, int nCount, NCCL_OP op, T fScale);
+
+		long CreateSSD(int nGpuID, int nNumClasses, bool bShareLocation, int nLocClasses, int nBackgroundLabelId, bool bUseDifficultGt, SsdMiningType miningType, SsdMatchingType matchingType, T fOverlapThreshold, bool bUsePriorForMatching, SsdCodeType codeType, bool bEncodeVariantInTgt, bool bBpInside, bool bIgnoreCrossBoundaryBbox, bool bUsePriorForNms, SsdConfLossType confLossType, SsdLocLossType locLossType, T fNegPosRatio, T fNegOverlap, int nSampleSize, bool bMapObjectToAgnostic, T fNmsThreshold, int nTopK, T fEta, Math<T>* pMath, long* phHandle);
+		long FreeSSD(long hHandle);
+		ssdHandle<T>* GetSSD(long hHandle);
+		long SetupSSD(long hSsd, int nNum, int nNumPriors, int nNumGt);
+		long SsdMultiboxLossForward(long hSsd, int nLocDataCount, long hLocData, int nConfDataCount, long hConfData, int nPriorDataCount, long hPriorData, int nGtDataCount, long hGtData, int* pnNumMatches, int* pnNumNegs);
+		long SsdEncodeLocPrediction(long hSsd, int nLocPredCount, long hLocPred, int nLocGtCount, long hLocGt);
+		long SsdEncodeConfPrediction(long hSsd, int nConfPredCount, long hConfPred, int nConfGtCount, long hConfGt);
 
 		long CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
 		long CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
@@ -1383,6 +1393,104 @@ inline long Memory<T>::RunMemoryTest(long hHandle, MEMTEST_TYPE memtestType, siz
 		return ERROR_PARAM_NULL;
 
 	return memtest->Run(memtestType, szStartOffset, szCount, plCount, ppfData, bVerbose, bWrite, bReadWrite, bRead);
+}
+
+
+template <class T>
+inline long Memory<T>::CreateSSD(int nGpuID, int nNumClasses, bool bShareLocation, int nLocClasses, int nBackgroundLabelId, bool bUseDifficultGt, SsdMiningType miningType, SsdMatchingType matchingType, T fOverlapThreshold, bool bUsePriorForMatching, SsdCodeType codeType, bool bEncodeVariantInTgt, bool bBpInside, bool bIgnoreCrossBoundaryBbox, bool bUsePriorForNms, SsdConfLossType confLossType, SsdLocLossType locLossType, T fNegPosRatio, T fNegOverlap, int nSampleSize, bool bMapObjectToAgnostic, T fNmsThreshold, int nTopK, T fEta, Math<T>* pMath, long* phHandle)
+{
+	LONG lErr;
+	ssdHandle<T>* ssd = NULL;
+
+	if (phHandle == NULL)
+		return ERROR_PARAM_NULL;
+
+	if ((ssd = new ssdHandle<T>()) == NULL)
+		return ERROR_MEMORY_OUT;
+
+	if (lErr = ssd->Update(this, pMath))
+	{
+		delete ssd;
+		return lErr;
+	}
+
+	if (lErr = ssd->Initialize(nGpuID, nNumClasses, bShareLocation, nLocClasses, nBackgroundLabelId, bUseDifficultGt, miningType, matchingType, fOverlapThreshold, bUsePriorForMatching, codeType, bEncodeVariantInTgt, bBpInside, bIgnoreCrossBoundaryBbox, bUsePriorForNms, confLossType, locLossType, fNegPosRatio, fNegOverlap, nSampleSize, bMapObjectToAgnostic, fNmsThreshold, nTopK, fEta))
+	{
+		delete ssd;
+		return lErr;
+	}
+
+	long hHandle = m_ssd.Allocate(ssd);
+	if (hHandle < 0)
+	{
+		delete ssd;
+		return ERROR_MEMORY_OUT;
+	}
+
+	*phHandle = hHandle;
+	return 0;
+}
+
+template <class T>
+inline long Memory<T>::FreeSSD(long hHandle)
+{
+	ssdHandle<T>* ssd = (ssdHandle<T>*)m_ssd.Free(hHandle);
+
+	if (ssd != NULL && ssd->IsOwner())
+	{
+		ssd->CleanUp();
+
+		if (ssd->RefCount() == 0)
+			delete ssd;
+	}
+
+	return 0;
+}
+
+template <class T>
+inline ssdHandle<T>* Memory<T>::GetSSD(long hHandle)
+{
+	return (ssdHandle<T>*)m_ssd.GetData(hHandle);
+}
+
+template <class T>
+inline long Memory<T>::SetupSSD(long hSsd, int nNum, int nNumPriors, int nNumGt)
+{
+	ssdHandle<T>* pSsd = (ssdHandle<T>*)m_ssd.GetData(hSsd);
+	if (pSsd == NULL)
+		return ERROR_SSD_NOT_INITIALIZED;
+
+	return pSsd->Setup(nNum, nNumPriors, nNumGt);
+}
+
+template <class T>
+inline long Memory<T>::SsdMultiboxLossForward(long hSsd, int nLocDataCount, long hLocData, int nConfDataCount, long hConfData, int nPriorDataCount, long hPriorData, int nGtDataCount, long hGtData, int* pnNumMatches, int* pnNumNegs)
+{
+	ssdHandle<T>* pSsd = (ssdHandle<T>*)m_ssd.GetData(hSsd);
+	if (pSsd == NULL)
+		return ERROR_SSD_NOT_INITIALIZED;
+
+	return pSsd->MultiboxLossForward(nLocDataCount, hLocData, nConfDataCount, hConfData, nPriorDataCount, hPriorData, nGtDataCount, hGtData, pnNumMatches, pnNumNegs);
+}
+
+template <class T>
+inline long Memory<T>::SsdEncodeLocPrediction(long hSsd, int nLocPredCount, long hLocPred, int nLocGtCount, long hLocGt)
+{
+	ssdHandle<T>* pSsd = (ssdHandle<T>*)m_ssd.GetData(hSsd);
+	if (pSsd == NULL)
+		return ERROR_SSD_NOT_INITIALIZED;
+
+	return pSsd->EncodeLocPrediction(nLocPredCount, hLocPred, nLocGtCount, hLocGt);
+}
+
+template <class T>
+inline long Memory<T>::SsdEncodeConfPrediction(long hSsd, int nConfPredCount, long hConfPred, int nConfGtCount, long hConfGt)
+{
+	ssdHandle<T>* pSsd = (ssdHandle<T>*)m_ssd.GetData(hSsd);
+	if (pSsd == NULL)
+		return ERROR_SSD_NOT_INITIALIZED;
+
+	return pSsd->EncodeLocPrediction(nConfPredCount, hConfPred, nConfGtCount, hConfGt);
 }
 
 

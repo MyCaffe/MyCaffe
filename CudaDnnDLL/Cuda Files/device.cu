@@ -2281,7 +2281,7 @@ long Device<T>::cuda_channel_sub(long lInput, T* pfInput, long* plOutput, T** pp
 	long hX = (long)pfInput[4];
 	long hY = (long)pfInput[5];
 
-	return m_math.channel_sub(n, nOutNum, nChannels, nInNum, hX, hY);
+	return m_math.channel_sub(n, nOutNum, nChannels, nInNum, hY, hX, hY);
 }
 
 template long Device<double>::cuda_channel_sub(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
