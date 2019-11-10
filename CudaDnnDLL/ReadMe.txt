@@ -1,42 +1,25 @@
 ========================================================================
-    DYNAMIC LINK LIBRARY : CudaDLL Project Overview
+    DYNAMIC LINK LIBRARY : CudaDnnDLL Project Overview
 ========================================================================
 
-AppWizard has created this CudaDLL Template DLL for you.  Use this project as the template
-for other CUDA based DLL implementations.
+The CudaDnnDLL provides all low-level CUDA and cuDNN supporting functions including
+all device level kernels used to interact with CUDA to perform AI operations at
+high speed using the massively parallel nature of CUDA.
 
-This file contains a summary of what you will find in each of the files that
-make up your CudaDLL Template application.
+The main entry point to the DLL are the DLL_InvokeFloat and DLL_InvokeDouble functions
+which then delegate each call to the appropriate function.
 
+C# applications interact with the CudaDnnDLL using the CudaControl found on NuGet at:
+https://www.nuget.org/packages/CudaControl or by searching 
+https://www.nuget.org/packages?q=CudaControl
 
-CudaDLL.vcproj
-    This is the main project file for VC++ projects generated using an Application Wizard.
-    It contains information about the version of Visual C++ that generated the file, and
-    information about the platforms, configurations, and project features selected with the
-    Application Wizard.
+Several builds of the CudaDnnDLL are created to support different versions of CUDA
+and in some cases support different compute levels.  The following variantes are
+currently built.
 
-CudaDLL.cpp
-    This is the main DLL source file.
-
-	When created, this DLL does not export any symbols. As a result, it
-	will not produce a .lib file when it is built. If you wish this project
-	to be a project dependency of some other project, you will either need to
-	add code to export some symbols from the DLL so that an export library
-	will be produced, or you can set the Ignore Input Library property to Yes
-	on the General propert page of the Linker folder in the project's Property
-	Pages dialog box.
-
-/////////////////////////////////////////////////////////////////////////////
-Other standard files:
-
-StdAfx.h, StdAfx.cpp
-    These files are used to build a precompiled header (PCH) file
-    named CudaDLL.pch and a precompiled types file named StdAfx.obj.
-
-/////////////////////////////////////////////////////////////////////////////
-Other notes:
-
-AppWizard uses "TODO:" comments to indicate parts of the source code you
-should add to or customize.
+CudaDnnDll.10.1 - supports CUDA 10.1 and 10.2 with compute level 5.3+
+CudaDnnDll.10.0 - supports CUDA 10.0
+CudaDnnDll.9.2  - supports CUDA 9.2
+CudaDnnDll.10.1.3_5 - supports CUDA 10.1 and 10.2 with compute level 3.5
 
 /////////////////////////////////////////////////////////////////////////////
