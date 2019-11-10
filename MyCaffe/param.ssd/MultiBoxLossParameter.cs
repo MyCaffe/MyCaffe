@@ -41,6 +41,7 @@ namespace MyCaffe.param.ssd
         int m_nSampleSize = 64;
         bool m_bUsePriorForNms = false;
         bool m_bUsePriorForMatching = true;
+        bool m_bUseGpu = false;
 
         /// <summary>
         /// Defines the localization loss types.
@@ -403,6 +404,15 @@ namespace MyCaffe.param.ssd
             set { m_bUsePriorForMatching = value; }
         }
 
+        /// <summary>
+        /// Use the GPU version of the algorithm.
+        /// </summary>
+        public bool use_gpu
+        {
+            get { return m_bUseGpu; }
+            set { m_bUseGpu = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(BinaryReader br, bool bNewInstance = true)
         {
@@ -442,6 +452,7 @@ namespace MyCaffe.param.ssd
             m_nSampleSize = p.sample_size;
             m_bUsePriorForNms = p.use_prior_for_nms;
             m_bUsePriorForMatching = p.use_prior_for_matching;
+            m_bUseGpu = p.use_gpu;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -479,6 +490,7 @@ namespace MyCaffe.param.ssd
             rgChildren.Add(new RawProto("sample_size", sample_size.ToString()));
             rgChildren.Add(new RawProto("use_prior_for_nms", use_prior_for_nms.ToString()));
             rgChildren.Add(new RawProto("use_prior_for_matching", use_prior_for_matching.ToString()));
+            rgChildren.Add(new RawProto("use_gpu", use_gpu.ToString()));
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -559,6 +571,9 @@ namespace MyCaffe.param.ssd
 
             if ((strVal = rp.FindValue("use_prior_for_matching")) != null)
                 p.use_prior_for_matching = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("use_gpu")) != null)
+                p.use_gpu = bool.Parse(strVal);
 
             return p;
         }

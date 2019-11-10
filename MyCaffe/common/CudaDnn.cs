@@ -323,6 +323,112 @@ namespace MyCaffe.common
     }
 
     /// <summary>
+    /// Defines the mining type used during SSD cuda training.
+    /// </summary>
+    /// <remarks>
+    /// This enum matches the values of the MultiBoxLossParameter.MiningType with the values supported
+    /// in the low level CudaDnnDll.
+    /// </remarks>
+    public enum SSD_MINING_TYPE
+    {
+        /// <summary>
+        /// Use all negatives.
+        /// </summary>
+        NONE = 0,
+        /// <summary>
+        /// Select negatives based on the score.
+        /// </summary>
+        MAX_NEGATIVE = 1,
+        /// <summary>
+        /// Select hard examples based on Shrivastava et. al. method.
+        /// </summary>
+        /// <remarks>
+        /// @see [Training Region-based Object Detectors with Online Hard Example Mining](https://arxiv.org/abs/1604.03540) by Abhinav Shrivastava, Abhinav Gupta, Ross Girshick, 2016.
+        /// </remarks>
+        HARD_EXAMPLE = 2
+    }
+
+    /// <summary>
+    /// Defines the matching method used during SSD cuda training.
+    /// </summary>
+    /// <remarks>
+    /// This enum matches the values of the MultiBoxLossParameter.MatchType with the values supported
+    /// in the low level CudaDnnDll.
+    /// </remarks>
+    public enum SSD_MATCH_TYPE
+    {
+        /// <summary>
+        /// Specifies to use Bi-Partite.
+        /// </summary>
+        BIPARTITE,
+        /// <summary>
+        /// Specifies to use per-prediction matching.
+        /// </summary>
+        PER_PREDICTION
+    }
+
+    /// <summary>
+    /// Defines the encode/decode type used during SSD cuda training.
+    /// </summary>
+    /// <remarks>
+    /// This enum matches the values of the PriorBoxParameter.CodeType with the values supported
+    /// in the low level CudaDnnDll.
+    /// </remarks>
+    public enum SSD_CODE_TYPE
+    {
+        /// <summary>
+        /// Encode the corner.
+        /// </summary>
+        CORNER = 1,
+        /// <summary>
+        /// Encode the center size.
+        /// </summary>
+        CENTER_SIZE = 2,
+        /// <summary>
+        /// Encode the corner size.
+        /// </summary>
+        CORNER_SIZE = 3
+    }
+
+    /// <summary>
+    /// Defines the confidence loss types used during SSD cuda training.
+    /// </summary>
+    /// <remarks>
+    /// This enum matches the values of the MultiboxLossParameter.ConfLossType with the values supported
+    /// in the low level CudaDnnDll.
+    /// </remarks>
+    public enum SSD_CONF_LOSS_TYPE
+    {
+        /// <summary>
+        /// Specifies to use softmax.
+        /// </summary>
+        SOFTMAX,
+        /// <summary>
+        /// Specifies to use logistic.
+        /// </summary>
+        LOGISTIC
+    }
+
+    /// <summary>
+    /// Defines the location loss types used during SSD cuda training.
+    /// </summary>
+    /// <remarks>
+    /// This enum matches the values of the MultiboxLossParameter.LocLossType with the values supported
+    /// in the low level CudaDnnDll.
+    /// </remarks>
+    public enum SSD_LOC_LOSS_TYPE
+    {
+        /// <summary>
+        /// Specifies to use L2 loss.
+        /// </summary>
+        L2,
+        /// <summary>
+        /// Specifies to use smooth L1 loss.
+        /// </summary>
+        SMOOTH_L1
+    }
+
+    /// <summary>
     /// Specifies the general cuda device interface.
     /// </summary>
     /// <remarks>
@@ -909,7 +1015,14 @@ namespace MyCaffe.common
 
             CUDA_GUASSIAN_BLUR = 900,
             CUDA_HAMMING_DIFF = 901,
-            CUDA_CALC_BATCH_DIST = 902
+            CUDA_CALC_BATCH_DIST = 902,
+
+            CUDA_CREATE_SSD = 950,
+            CUDA_FREE_SSD = 951,
+            CUDA_SETUP_SSD = 952,
+            CUDA_SSD_FWD_MULTIBOXLOSS = 955,
+            CUDA_SSD_ENCODE_LOCPRED = 958,
+            CUDA_SSD_ENCODE_CONFPRED = 959
         }
 
         /// <summary>
@@ -4333,6 +4446,207 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_FREE_PCA, new double[] { hPCA });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_FREE_PCA, new float[] { hPCA });
+        }
+
+        /// <summary>
+        /// Create an instance of the SSD GPU support.
+        /// </summary>
+        /// <param name="nNumClasses">Specifies the number of classes.</param>
+        /// <param name="bShareLocation">Specifies whether or not to share the location.</param>
+        /// <param name="nLocClasses">Specifies the number of location classes.</param>
+        /// <param name="nBackgroundLabelId">Specifies the background label ID.</param>
+        /// <param name="bUseDiffcultGt">Specifies whether or not to use difficult ground truths.</param>
+        /// <param name="miningType">Specifies the mining type to use.</param>
+        /// <param name="matchType">Specifies the matching method to use.</param>
+        /// <param name="fOverlapThreshold">Specifies the overlap threshold for each box.</param>
+        /// <param name="bUsePriorForMatching">Specifies whether or not to use priors for matching.</param>
+        /// <param name="codeType">Specifies the code type to use.</param>
+        /// <param name="bEncodeVariantInTgt">Specifies whether or not to encode the variant in the target.</param>
+        /// <param name="bBpInside">Specifies whether or not the BP is inside or not.</param>
+        /// <param name="bIgnoreCrossBoundaryBbox">Specifies whether or not to ignore cross boundary boxes.</param>
+        /// <param name="bUsePriorForNms">Specifies whether or not to use priors for NMS.</param>
+        /// <param name="confLossType">Specifies the confidence loss type.</param>
+        /// <param name="locLossType">Specifies the location loss type.</param>
+        /// <param name="fNegPosRatio">Specifies the negative/positive ratio to use.</param>
+        /// <param name="fNegOverlap">Specifies the negative overlap to use.</param>
+        /// <param name="nSampleSize">Specifies the sample size.</param>
+        /// <param name="bMapObjectToAgnostic">Specifies whether or not to map objects to agnostic or not.</param>
+        /// <param name="bNmsParam">Specifies whether or not the NMS parameters are specified.</param>
+        /// <param name="fNmsThreshold">Specifies the NMS threshold, which is only used when the 'bNmsParam' = true.</param>
+        /// <param name="nNmsTopK">Specifies the NMS top-k selection, which is only used when the 'bNmsParam' = true.</param>
+        /// <param name="fNmsEta">Specifies the NMS eta, which is only used when the 'bNmsParam' = true.</param>
+        /// <returns>A handle to the SSD instance is returned.</returns>
+        public long CreateSsd(int nNumClasses, bool bShareLocation, int nLocClasses, int nBackgroundLabelId, bool bUseDiffcultGt, SSD_MINING_TYPE miningType, SSD_MATCH_TYPE matchType, float fOverlapThreshold, bool bUsePriorForMatching, SSD_CODE_TYPE codeType, bool bEncodeVariantInTgt, bool bBpInside, bool bIgnoreCrossBoundaryBbox, bool bUsePriorForNms, SSD_CONF_LOSS_TYPE confLossType, SSD_LOC_LOSS_TYPE locLossType, float fNegPosRatio, float fNegOverlap, int nSampleSize, bool bMapObjectToAgnostic, bool bNmsParam, float? fNmsThreshold = null, int? nNmsTopK = null, float? fNmsEta = null)
+        {
+            int nGpuID = GetDeviceID();
+
+            if (m_dt == DataType.DOUBLE)
+            {
+                List<double> rgArg = new List<double>();
+
+                /* 0 */ rgArg.Add(nGpuID);
+                /* 1 */ rgArg.Add(nNumClasses);
+                /* 2 */ rgArg.Add((bShareLocation) ? 1 : 0);
+                /* 3 */ rgArg.Add(nLocClasses);
+                /* 4 */ rgArg.Add(nBackgroundLabelId);
+                /* 5 */ rgArg.Add((bUseDiffcultGt) ? 1 : 0);
+                /* 6 */ rgArg.Add((int)miningType);
+                /* 7 */ rgArg.Add((int)matchType);
+                /* 8 */ rgArg.Add(fOverlapThreshold);
+                /* 9 */ rgArg.Add((bUsePriorForMatching) ? 1 : 0);
+                /* 10 */ rgArg.Add((int)codeType);
+                /* 11 */ rgArg.Add((bEncodeVariantInTgt) ? 1 : 0);
+                /* 12 */ rgArg.Add((bBpInside) ? 1 : 0);
+                /* 13 */ rgArg.Add((bIgnoreCrossBoundaryBbox) ? 1 : 0);
+                /* 14 */ rgArg.Add((bUsePriorForNms) ? 1 : 0);
+                /* 15 */ rgArg.Add((int)confLossType);
+                /* 16 */ rgArg.Add((int)locLossType);
+                /* 17 */ rgArg.Add(fNegPosRatio);
+                /* 18 */ rgArg.Add(fNegOverlap);
+                /* 19 */ rgArg.Add(nSampleSize);
+                /* 20 */ rgArg.Add((bMapObjectToAgnostic) ? 1 : 0);
+
+                if (bNmsParam)
+                {
+                    if (!fNmsThreshold.HasValue)
+                        throw new Exception("An NMS threshold must be specified when the 'bNmsParam' is true.");
+
+                    /* 21 */ rgArg.Add(fNmsThreshold.GetValueOrDefault());
+                    /* 22 */ rgArg.Add(nNmsTopK.GetValueOrDefault(-1));
+                    /* 23 */ rgArg.Add(fNmsEta.GetValueOrDefault(1));
+                }
+
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_SSD, rgArg.ToArray());
+                return (long)rg[0];
+            }
+            else
+            {
+                List<float> rgArg = new List<float>();
+
+                /* 0 */ rgArg.Add(nGpuID);
+                /* 1 */ rgArg.Add(nNumClasses);
+                /* 2 */ rgArg.Add((bShareLocation) ? 1 : 0);
+                /* 3 */ rgArg.Add(nLocClasses);
+                /* 4 */ rgArg.Add(nBackgroundLabelId);
+                /* 5 */ rgArg.Add((bUseDiffcultGt) ? 1 : 0);
+                /* 6 */ rgArg.Add((int)miningType);
+                /* 7 */ rgArg.Add((int)matchType);
+                /* 8 */ rgArg.Add(fOverlapThreshold);
+                /* 9 */ rgArg.Add((bUsePriorForMatching) ? 1 : 0);
+                /* 10 */ rgArg.Add((int)codeType);
+                /* 11 */ rgArg.Add((bEncodeVariantInTgt) ? 1 : 0);
+                /* 12 */ rgArg.Add((bBpInside) ? 1 : 0);
+                /* 13 */ rgArg.Add((bIgnoreCrossBoundaryBbox) ? 1 : 0);
+                /* 14 */ rgArg.Add((bUsePriorForNms) ? 1 : 0);
+                /* 15 */ rgArg.Add((int)confLossType);
+                /* 16 */ rgArg.Add((int)locLossType);
+                /* 17 */ rgArg.Add(fNegPosRatio);
+                /* 18 */ rgArg.Add(fNegOverlap);
+                /* 19 */ rgArg.Add(nSampleSize);
+                /* 20 */ rgArg.Add((bMapObjectToAgnostic) ? 1 : 0);
+
+                if (bNmsParam)
+                {
+                    if (!fNmsThreshold.HasValue)
+                        throw new Exception("An NMS threshold must be specified when the 'bNmsParam' is true.");
+
+                    /* 21 */ rgArg.Add(fNmsThreshold.GetValueOrDefault());
+                    /* 22 */ rgArg.Add(nNmsTopK.GetValueOrDefault(-1));
+                    /* 23 */ rgArg.Add(fNmsEta.GetValueOrDefault(1));
+                }
+
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_SSD, rgArg.ToArray());
+                return (long)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Setup the SSD GPU support.
+        /// </summary>
+        /// <param name="hSSD">Specifies the handle to the SSD instance.</param>
+        /// <param name="nNum">Specifies the number of items.</param>
+        /// <param name="nNumPriors">Specifies the number of priors.</param>
+        /// <param name="nNumGt">Specifies the number of ground truths.</param>
+        public void SetupSsd(long hSSD, int nNum, int nNumPriors, int nNumGt)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SETUP_SSD, new double[] { hSSD, nNum, nNumPriors, nNumGt });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SETUP_SSD, new float[] { hSSD, nNum, nNumPriors, nNumGt });
+        }
+
+        /// <summary>
+        /// Free the instance of SSD GPU support.
+        /// </summary>
+        /// <param name="hSSD">Specifies the handle to the SSD instance.</param>
+        public void FreeSsd(long hSSD)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_FREE_SSD, new double[] { hSSD });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_FREE_SSD, new float[] { hSSD });
+        }
+
+        /// <summary>
+        /// Performs the SSD MultiBoxLoss forward operation.
+        /// </summary>
+        /// <param name="hSSD">Specifies the handle to the SSD instance.</param>
+        /// <param name="nLocDataCount">Specifies the number of location data items.</param>
+        /// <param name="hLocGpuData">Specifies the handle to the location data in GPU memory.</param>
+        /// <param name="nConfDataCount">Specifies the number of confidence data items.</param>
+        /// <param name="hConfGpuData">Specifies the handle to the confidence data in GPU memory.</param>
+        /// <param name="nPriorDataCount">Specifies the number of prior box data.</param>
+        /// <param name="hPriorGpuData">Specifies the prior box data in GPU memory.</param>
+        /// <param name="nGtDataCount">Specifies the number of ground truth items.</param>
+        /// <param name="hGtGpuData">Specifies the ground truth data in GPU memory.</param>
+        /// <param name="nNumNegs">Returns the number of negatives.</param>
+        /// <returns>The number of matches is returned.</returns>
+        public int SsdMultiBoxLossForward(long hSSD, int nLocDataCount, long hLocGpuData, int nConfDataCount, long hConfGpuData, int nPriorDataCount, long hPriorGpuData, int nGtDataCount, long hGtGpuData, out int nNumNegs)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SSD_FWD_MULTIBOXLOSS, new double[] { hSSD, nLocDataCount, hLocGpuData, nConfDataCount, hConfGpuData, nPriorDataCount, hPriorGpuData, nGtDataCount, hGtGpuData });
+                nNumNegs = (int)rg[1];
+                return (int)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SSD_FWD_MULTIBOXLOSS, new float[] { hSSD, nLocDataCount, hLocGpuData, nConfDataCount, hConfGpuData, nPriorDataCount, hPriorGpuData, nGtDataCount, hGtGpuData });
+                nNumNegs = (int)rg[1];
+                return (int)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Encodes the SSD data into the location prediction and location ground truths.
+        /// </summary>
+        /// <param name="hSSD">Specifies the handle to the SSD instance.</param>
+        /// <param name="nLocPredCount">Specifies the number of location prediction items.</param>
+        /// <param name="hLocPred">Specifies the location prediction data in GPU memory.</param>
+        /// <param name="nLocGtCount">Specifies the location ground truth items.</param>
+        /// <param name="hLocGt">Specifies the location ground truth data in GPU memory.</param>
+        public void SsdEncodeLocPrediction(long hSSD, int nLocPredCount, long hLocPred, int nLocGtCount, long hLocGt)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SSD_ENCODE_LOCPRED, new double[] { hSSD, nLocPredCount, hLocPred, nLocGtCount, hLocGt });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SSD_ENCODE_LOCPRED, new float[] { hSSD, nLocPredCount, hLocPred, nLocGtCount, hLocGt });
+        }
+
+        /// <summary>
+        /// Encodes the SSD data into the confidence prediction and confidence ground truths.
+        /// </summary>
+        /// <param name="hSSD">Specifies the handle to the SSD instance.</param>
+        /// <param name="nConfPredCount">Specifies the number of confidence prediction items.</param>
+        /// <param name="hConfPred">Specifies the confidence prediction data in GPU memory.</param>
+        /// <param name="nConfGtCount">Specifies the confidence ground truth items.</param>
+        /// <param name="hConfGt">Specifies the confidence ground truth data in GPU memory.</param>
+        public void SsdEncodeConfPrediction(long hSSD, int nConfPredCount, long hConfPred, int nConfGtCount, long hConfGt)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SSD_ENCODE_CONFPRED, new double[] { hSSD, nConfPredCount, hConfPred, nConfGtCount, hConfGt });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SSD_ENCODE_CONFPRED, new float[] { hSSD, nConfPredCount, hConfPred, nConfGtCount, hConfGt });
         }
 
         #endregion
