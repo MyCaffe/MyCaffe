@@ -1,0 +1,101 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="MyCaffe.test.extension.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="TestFiles\test_ssd.h">
+      <Filter>TestFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\math.h">
+      <Filter>CudaFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\memory.h">
+      <Filter>CudaFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\memorycol.h">
+      <Filter>CudaFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\memtest.h">
+      <Filter>CudaFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\nccl.h">
+      <Filter>CudaFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\pca.h">
+      <Filter>CudaFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\ssd.h">
+      <Filter>CudaFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\tsne_g.h">
+      <Filter>CudaFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\tsne_gp.h">
+      <Filter>CudaFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\util.h">
+      <Filter>CudaFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\ssd_core.h">
+      <Filter>CudaFiles</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MyCaffe.test.extension.10.1.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="MyCaffe.test.extension.10.1.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="TestFiles">
+      <UniqueIdentifier>{bdd62049-194c-42cb-b8a8-f5a9f4fb7aa3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CudaFiles">
+      <UniqueIdentifier>{43668cd1-9ece-498c-b926-e15f5099fd0a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="TestFiles\test_ssd.cu">
+      <Filter>TestFiles</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\math.cu">
+      <Filter>CudaFiles</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\memory.cu">
+      <Filter>CudaFiles</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\memorycol.cu">
+      <Filter>CudaFiles</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\memtest.cu">
+      <Filter>CudaFiles</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\nccl.cu">
+      <Filter>CudaFiles</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\pca.cu">
+      <Filter>CudaFiles</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\ssd.cu">
+      <Filter>CudaFiles</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\tsne_g.cu">
+      <Filter>CudaFiles</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\tsne_gp.cu">
+      <Filter>CudaFiles</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\util.cu">
+      <Filter>CudaFiles</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\ssd_core.cu">
+      <Filter>CudaFiles</Filter>
+    </CudaCompile>
+  </ItemGroup>
+</Project>
