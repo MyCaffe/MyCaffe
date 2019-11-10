@@ -916,7 +916,6 @@ namespace MyCaffe.test
     class NetTest<T> : TestEx<T>, INetTest
     {
         Net<T> m_net;
-        long m_lSeed = 1701;
         MyCaffeImageDatabase m_db;
         CancelEvent m_evtCancel;
 
