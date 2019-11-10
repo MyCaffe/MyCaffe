@@ -36,13 +36,10 @@ namespace MyCaffe.layers.ssd
         VideoDataParameter.VideoType m_videoType;
         object m_objSync = new object();
         WebCam.WebCam m_webcam = null;
-        PictureBox m_pictureBox = null;
         Bitmap m_bmpSnapshot = null;
         AutoResetEvent m_evtSnapshotReady = new AutoResetEvent(false);
         Filter m_filter = null;
         int m_nSkipFrames;
-        int m_nTotalFrames;
-        int m_nProcessedFrames;
         int m_nVideoWidth;
         int m_nVideoHeight;
         List<int> m_rgTopShape;
