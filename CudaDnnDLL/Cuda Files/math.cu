@@ -3843,22 +3843,26 @@ template long Math<float>::channel_max(int n, int nOutNum, int nChannels, int nI
 
 
 template <typename T>
-__global__ void channel_sub_kernel(const int count, const int num, const int channels, const int spatial_dim, const T* x, T* y)
+__global__ void channel_sub_kernel(const int count, const int num, const int channels, const int spatial_dim, const T* a, T* x, T* y)
 {
 	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<count; i += blockDim.x * gridDim.x)
 	{
 		int n = i / channels / spatial_dim;
 		int s = i % spatial_dim;
-		y[i] -= x[n * spatial_dim + s];
+		y[i] = a[i] - x[n * spatial_dim + s];
 	}
 }
 
 template <typename T> 
-long Math<T>::channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY)
+long Math<T>::channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hA, long hX, long hY)
 {
 	LONG lErr;
+	MemoryItem* pA;
 	MemoryItem* pX;
 	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
 
 	if (lErr = m_pMemCol->GetData(hX, &pX))
 		return lErr;
@@ -3866,13 +3870,13 @@ long Math<T>::channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hX
 	if (lErr = m_pMemCol->GetData(hY, &pY))
 		return lErr;
 
-	channel_sub_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+	channel_sub_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, nOutNum, nChannels, nInNum, (T*)pA->Data(), (T*)pX->Data(), (T*)pY->Data());
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
-template long Math<float>::channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+template long Math<double>::channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hA, long hX, long hY);
+template long Math<float>::channel_sub(int n, int nOutNum, int nChannels, int nInNum, long hA, long hX, long hY);
 
 
 template <typename T>
