@@ -1434,7 +1434,7 @@ namespace MyCaffe
                 int nExpectedLabel = sd.Label;
 
                 if (labelMapping != null)
-                        nExpectedLabel = labelMapping.MapLabel(nExpectedLabel);
+                    nExpectedLabel = labelMapping.MapLabel(nExpectedLabel);
 
                 if (!rgCorrectCounts.ContainsKey(nExpectedLabel))
                     rgCorrectCounts.Add(nExpectedLabel, 0);
