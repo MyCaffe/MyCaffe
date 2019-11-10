@@ -36,12 +36,14 @@
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\nccl.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\pca.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\ssd.h" />
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\ssd_core.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\tsne_g.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\tsne_gp.h" />
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\util.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="TestFiles\test_ssd.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MyCaffe.test.extension.10.0.rc" />
@@ -54,9 +56,11 @@
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\nccl.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\pca.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\ssd.cu" />
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\ssd_core.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\tsne_g.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\tsne_gp.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\util.cu" />
+    <CudaCompile Include="TestFiles\test_ssd.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectName>MyCaffe.test.extension.10.0</ProjectName>
