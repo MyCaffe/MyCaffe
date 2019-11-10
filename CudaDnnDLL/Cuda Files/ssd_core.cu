@@ -10,6 +10,7 @@
 #include "memory.h"
 #include "memorycol.h"
 #include "handlecol.h"
+#include <iterator>
 
 //#include "boost/iterator/counting_iterator.hpp"
 
