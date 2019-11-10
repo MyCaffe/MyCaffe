@@ -86,6 +86,7 @@
     </Compile>
     <Compile Include="SqlServerTypes\Loader.cs" />
     <Compile Include="TestAnnotatedDataLayer.cs" />
+    <Compile Include="TestExtensionSsd.cs" />
     <Compile Include="TestModelBuilder.cs" />
     <Compile Include="TestVideoDataLayer.cs" />
     <Compile Include="TestDetectionOutputLayer.cs" />
