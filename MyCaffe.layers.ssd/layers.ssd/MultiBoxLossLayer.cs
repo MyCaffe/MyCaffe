@@ -54,19 +54,9 @@ namespace MyCaffe.layers.ssd
 
         int m_nNumClasses;
         bool m_bShareLocation;
-//        MultiBoxLossParameter.MatchType m_matchType;
-//        float m_fOverlapThreshold;
-//        bool m_bUsePriorForMatching;
         int m_nBackgroundLabelId;
         bool m_bUseDifficultGt;
         bool m_bDoNegMining;
-//        float m_fNegPosRatio;
-//        float m_fNegOverlap;
-//        PriorBoxParameter.CodeType m_codeType;
-//        bool m_bEncodeVarianceInTarget;
-//        bool m_bMapObjectToAgnostic;
-//        bool m_bIgnoreCrossBoundaryBbox;
-//        bool m_bBpInside;
         MultiBoxLossParameter.MiningType m_miningType;
 
         int m_nLocClasses;
@@ -80,6 +70,7 @@ namespace MyCaffe.layers.ssd
         List<DictionaryMap<List<int>>> m_rgAllMatchIndices = new List<DictionaryMap<List<int>>>();
         List<List<int>> m_rgrgAllNegIndices = new List<List<int>>();
         BBoxUtility<T> m_bboxUtil;
+        long m_hSsd = 0;
 
         /// <summary>
         /// Constructor.
@@ -153,6 +144,12 @@ namespace MyCaffe.layers.ssd
             dispose(ref m_blobConfPred);
             dispose(ref m_blobConfGt);
             dispose(ref m_blobConfLoss);
+
+            if (m_hSsd != 0)
+            {
+                m_cuda.FreeSsd(m_hSsd);
+                m_hSsd = 0;
+            }
 
             base.dispose();
         }
@@ -301,6 +298,48 @@ namespace MyCaffe.layers.ssd
             {
                 m_log.FAIL("Unknown confidence loss type.");
             }
+
+            // Create the low-level SSD support.
+            if (m_param.multiboxloss_param.use_gpu)
+            {
+                float? fNmsThreshold = null;
+                int? nNmsTopK = null;
+                float? fNmsEta = null;
+                bool bNmsParam = false;
+
+                if (m_param.multiboxloss_param.nms_param != null)
+                {
+                    bNmsParam = true;
+                    fNmsThreshold = m_param.multiboxloss_param.nms_param.nms_threshold;
+                    nNmsTopK = m_param.multiboxloss_param.nms_param.top_k;
+                    fNmsEta = m_param.multiboxloss_param.nms_param.eta;
+                }
+
+                m_hSsd = m_cuda.CreateSsd(m_nNumClasses,
+                                          m_bShareLocation,
+                                          m_nLocClasses,
+                                          m_nBackgroundLabelId,
+                                          m_bUseDifficultGt,
+                                          (SSD_MINING_TYPE)(int)m_miningType,
+                                          (SSD_MATCH_TYPE)(int)m_param.multiboxloss_param.match_type,
+                                          m_param.multiboxloss_param.overlap_threshold,
+                                          m_param.multiboxloss_param.use_prior_for_matching,
+                                          (SSD_CODE_TYPE)(int)m_param.multiboxloss_param.code_type,
+                                          m_param.multiboxloss_param.encode_variance_in_target,
+                                          m_param.multiboxloss_param.bp_inside,
+                                          m_param.multiboxloss_param.ignore_cross_boundary_bbox,
+                                          m_param.multiboxloss_param.use_prior_for_nms,
+                                          (SSD_CONF_LOSS_TYPE)(int)m_param.multiboxloss_param.conf_loss_type,
+                                          (SSD_LOC_LOSS_TYPE)(int)m_param.multiboxloss_param.loc_loss_type,
+                                          m_param.multiboxloss_param.neg_pos_ratio,
+                                          m_param.multiboxloss_param.neg_overlap,
+                                          m_param.multiboxloss_param.sample_size,
+                                          m_param.multiboxloss_param.map_object_to_agnostic,
+                                          bNmsParam,
+                                          fNmsThreshold,
+                                          nNmsTopK,
+                                          fNmsEta);
+            }
         }
 
         /// <summary>
@@ -316,9 +355,153 @@ namespace MyCaffe.layers.ssd
             m_nNumPriors = colBottom[2].height / 4;
             m_nNumGt = colBottom[3].height;
 
+            if (m_param.multiboxloss_param.use_gpu)
+                m_cuda.SetupSsd(m_hSsd, m_nNum, m_nNumPriors, m_nNumGt);
+
             m_log.CHECK_EQ(colBottom[0].num, colBottom[1].num, "The bottom[0] and bottom[1] num must be equal.");
             m_log.CHECK_EQ(m_nNumPriors * m_nLocClasses * 4, colBottom[0].channels, "The number of priors must match the number of location predictions.");
             m_log.CHECK_EQ(m_nNumPriors * m_nNumClasses, colBottom[1].channels, "The number of priors must match the number of confidence predictions.");
+        }
+
+        /// <summary>
+        /// Forward GPU computation.
+        /// </summary>
+        /// <param name="colBottom">input blob vector.</param>
+        /// <param name="colTop">output blob vector.</param>
+        /// <remarks>
+        /// Work in progress - NOT COMPLETE YET.
+        /// </remarks>
+        protected void forwardGpu(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            float[] rgfLocData = Utility.ConvertVecF<T>(colBottom[0].mutable_cpu_data);
+            float[] rgfConfData = Utility.ConvertVecF<T>(colBottom[1].mutable_cpu_data);
+            float[] rgfPriorData = Utility.ConvertVecF<T>(colBottom[2].mutable_cpu_data);
+            float[] rgfGtData = Utility.ConvertVecF<T>(colBottom[3].mutable_cpu_data);
+
+            // Calculate the Loc and Conf predictions
+            int nLocDataCount = colBottom[0].count();
+            long hLocGpuData = colBottom[0].gpu_data;
+            int nConfDataCount = colBottom[1].count();
+            long hConfGpuData = colBottom[1].gpu_data;
+            int nPriorDataCount = colBottom[2].count();
+            long hPriorGpuData = colBottom[2].gpu_data;
+            int nGtDataCount = colBottom[3].count();
+            long hGtGpuData = colBottom[3].gpu_data;
+            int nNumNegs;
+
+            m_nNumMatches = m_cuda.SsdMultiBoxLossForward(m_hSsd, nLocDataCount, hLocGpuData, nConfDataCount, hConfGpuData, nPriorDataCount, hPriorGpuData, nGtDataCount, hGtGpuData, out nNumNegs);
+
+            // Retrieve all ground truth.
+//            DictionaryMap<List<NormalizedBBox>> rgAllGtBboxes = m_bboxUtil.GetGroundTruth(rgfGtData, m_nNumGt, m_nBackgroundLabelId, m_bUseDifficultGt);
+
+            // Retrieve all prior bboxes. It is the same within a batch since we assume all
+            // images in a batch are of the same dimension.
+//            List<List<float>> rgrgPriorVariances;
+//            List<NormalizedBBox> rgPriorBboxes = m_bboxUtil.GetPrior(rgfPriorData, m_nNumPriors, out rgrgPriorVariances);
+
+            // Retrieve all predictions.
+//            List<LabelBBox> rgAllLocPreds = m_bboxUtil.GetLocPredictions(rgfLocData, m_nNum, m_nNumPriors, m_nLocClasses, m_bShareLocation);
+
+            // Find matches between source bboxes and ground truth bboxes.
+//            List<DictionaryMap<List<float>>> rgAllMatchOverlaps;
+//            m_bboxUtil.FindMatches(rgAllLocPreds, rgAllGtBboxes, rgPriorBboxes, rgrgPriorVariances, m_param.multiboxloss_param, out rgAllMatchOverlaps, out m_rgAllMatchIndices);
+
+            // Sample hard negative (and positive) examples based on mining type.
+//            int nNumNegs;
+//            m_nNumMatches = m_bboxUtil.MineHardExamples(colBottom[1], rgAllLocPreds, rgAllGtBboxes, rgPriorBboxes, rgrgPriorVariances, rgAllMatchOverlaps, m_param.multiboxloss_param, m_rgAllMatchIndices, m_rgrgAllNegIndices, out nNumNegs);
+
+            if (m_nNumMatches >= 1)
+            {
+                // Form data to pass on to loc_loss_layer.
+                List<int> rgLocShape = new List<int>() { 1, m_nNumMatches * 4 };
+                m_blobLocPred.Reshape(rgLocShape);
+                m_blobLocGt.Reshape(rgLocShape);
+
+                m_cuda.SsdEncodeLocPrediction(m_hSsd, m_blobLocPred.count(), m_blobLocPred.mutable_gpu_data, m_blobLocGt.count(), m_blobLocGt.mutable_gpu_data);
+
+//                m_bboxUtil.EncodeLocPrediction(rgAllLocPreds, rgAllGtBboxes, m_rgAllMatchIndices, rgPriorBboxes, rgrgPriorVariances, m_param.multiboxloss_param, m_blobLocPred, m_blobLocGt);
+
+                m_locLossLayer.Reshape(m_colLocBottom, m_colLocTop);
+                m_locLossLayer.Forward(m_colLocBottom, m_colLocTop);
+            }
+            else
+            {
+                m_blobLocLoss.SetData(0, 0);
+            }
+
+            // Form data to pass on to conf_loss_layer
+            if (m_bDoNegMining)
+                m_nNumConf = m_nNumMatches + nNumNegs;
+            else
+                m_nNumConf = m_nNum * m_nNumPriors;
+
+            if (m_nNumConf >= 1)
+            {
+                // Reshape the confidence data.
+                List<int> rgConfShape = new List<int>();
+
+                if (m_confLossType == MultiBoxLossParameter.ConfLossType.SOFTMAX)
+                {
+                    rgConfShape.Add(m_nNumConf);
+                    m_blobConfGt.Reshape(rgConfShape);
+                    rgConfShape.Add(m_nNumClasses);
+                    m_blobConfPred.Reshape(rgConfShape);
+                }
+                else if (m_confLossType == MultiBoxLossParameter.ConfLossType.LOGISTIC)
+                {
+                    rgConfShape.Add(1);
+                    rgConfShape.Add(m_nNumConf);
+                    rgConfShape.Add(m_nNumClasses);
+                    m_blobConfGt.Reshape(rgConfShape);
+                    m_blobConfPred.Reshape(rgConfShape);
+                }
+                else
+                {
+                    m_log.FAIL("Unknown confidence loss type.");
+                }
+
+                if (!m_bDoNegMining)
+                {
+                    // Consider all scores.
+                    // Share data and diff with bottom[1].
+                    m_log.CHECK_EQ(m_blobConfPred.count(), colBottom[1].count(), "The conf pred and bottom[1] should have the same count.");
+                    m_blobConfPred.ShareData(colBottom[1]);
+                }
+
+                m_blobConfGt.SetData(m_nBackgroundLabelId);
+
+                m_cuda.SsdEncodeConfPrediction(m_hSsd, m_blobConfPred.count(), m_blobConfPred.mutable_gpu_data, m_blobConfGt.count(), m_blobConfGt.mutable_gpu_data);
+
+//                m_bboxUtil.EncodeConfPrediction(rgfConfData, m_nNum, m_nNumPriors, m_param.multiboxloss_param, m_rgAllMatchIndices, m_rgrgAllNegIndices, rgAllGtBboxes, m_blobConfPred, m_blobConfGt);
+                m_confLossLayer.Reshape(m_colConfBottom, m_colConfTop);
+                m_confLossLayer.Forward(m_colConfBottom, m_colConfTop);
+            }
+            else
+            {
+                m_blobConfLoss.SetData(0, 0);
+            }
+
+            colTop[0].SetData(0, 0);
+
+            if (m_param.propagate_down[0])
+            {
+                double dfNormalizer = GetNormalizer(m_param.loss_param.normalization.Value, m_nNum, m_nNumPriors, m_nNumMatches);
+                double dfLocLoss = Utility.ConvertVal<T>(m_blobLocLoss.GetData(0));
+                double dfLoss = Utility.ConvertVal<T>(colTop[0].GetData(0));
+
+                dfLoss += m_fLocWeight * dfLocLoss / dfNormalizer;
+                colTop[0].SetData(dfLoss, 0);
+            }
+
+            if (m_param.propagate_down[1])
+            {
+                double dfNormalizer = GetNormalizer(m_param.loss_param.normalization.Value, m_nNum, m_nNumPriors, m_nNumMatches);
+                double dfConfLoss = Utility.ConvertVal<T>(m_blobConfLoss.GetData(0));
+                double dfLoss = Utility.ConvertVal<T>(colTop[0].GetData(0));
+
+                dfLoss += dfConfLoss / dfNormalizer;
+                colTop[0].SetData(dfLoss, 0);
+            }
         }
 
         /// <summary>
@@ -328,7 +511,7 @@ namespace MyCaffe.layers.ssd
         /// </param>
         /// <param name="colTop">output blob vector.
         /// </param>
-        protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        protected void forwardCpu(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             float[] rgfLocData = Utility.ConvertVecF<T>(colBottom[0].mutable_cpu_data);
             float[] rgfConfData = Utility.ConvertVecF<T>(colBottom[1].mutable_cpu_data);
@@ -442,6 +625,21 @@ namespace MyCaffe.layers.ssd
                 dfLoss += dfConfLoss / dfNormalizer;
                 colTop[0].SetData(dfLoss, 0);
             }
+        }
+
+        /// <summary>
+        /// Forward computation.
+        /// </summary>
+        /// <param name="colBottom">input blob vector.
+        /// </param>
+        /// <param name="colTop">output blob vector.
+        /// </param>
+        protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            if (m_param.multiboxloss_param.use_gpu)
+                forwardGpu(colBottom, colTop);
+            else
+                forwardCpu(colBottom, colTop);
         }
 
         /// <summary>
