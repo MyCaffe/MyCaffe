@@ -86,6 +86,9 @@
     <ClInclude Include="Cuda Files\ssd.h">
       <Filter>Cuda Files</Filter>
     </ClInclude>
+    <ClInclude Include="Cuda Files\ssd_core.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Cuda Files\main.cu">
@@ -130,6 +133,7 @@
     <CudaCompile Include="Cuda Files\ssd.cu">
       <Filter>Cuda Files</Filter>
     </CudaCompile>
+    <CudaCompile Include="Cuda Files\ssd_core.cu" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.10.0.rc">
