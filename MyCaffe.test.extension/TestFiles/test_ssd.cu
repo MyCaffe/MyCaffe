@@ -221,95 +221,99 @@ long TestSsd<T>::RunTest(LONG lInput, T* pfInput)
 
 	try
 	{
+		LONG lErr;
+
+		if (lErr = test_create(nConfig))
+			throw lErr;
+
 		switch (tst)
 		{
 			case CREATE:
-				test_create(nConfig);
 				break;
 
 			case BBOX_SIZE:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestBBOX_Size(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Size(nConfig))
+					throw lErr;
 				break;
 
 			case BBOX_BOUNDS:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestBBOX_Bounds(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Bounds(nConfig))
+					throw lErr;
 				break;
 
 			case BBOX_DIVBOUNDS:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestBBOX_DivBounds(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_DivBounds(nConfig))
+					throw lErr;
 				break;
 
 			case BBOX_CLIP:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestBBOX_Clip(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Clip(nConfig))
+					throw lErr;
 				break;
 
 			case BBOX_DECODE:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestBBOX_Decode(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Decode(nConfig))
+					throw lErr;
 				break;
 
 			case BBOX_ENCODE:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestBBOX_Encode(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Encode(nConfig))
+					throw lErr;
 				break;
 
 			case BBOX_INTERSECT:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestBBOX_Intersect(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Intersect(nConfig))
+					throw lErr;
 				break;
 
 			case BBOX_JACCARDOVERLAP:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestBBOX_JaccardOverlap(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_JaccardOverlap(nConfig))
+					throw lErr;
 				break;
 
 			case BBOX_MATCH:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestBBOX_Match(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Match(nConfig))
+					throw lErr;
 				break;
 
 			case FINDMATCHES:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestFindMatches(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestFindMatches(nConfig))
+					throw lErr;
 				break;
 
 			case COUNTMATCHES:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestCountMatches(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestCountMatches(nConfig))
+					throw lErr;
 				break;
 
 			case SOFTMAX:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestSoftMax(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestSoftMax(nConfig))
+					throw lErr;
 				break;
 
 			case COMPUTE_CONF_LOSS:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestComputeConfLoss(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestComputeConfLoss(nConfig))
+					throw lErr;
 				break;
 
 			case COMPUTE_LOC_LOSS:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestComputeLocLoss(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestComputeLocLoss(nConfig))
+					throw lErr;
 				break;
 
 			case GET_TOPK_SCORES:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestGetTopKScores(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestGetTopKScores(nConfig))
+					throw lErr;
 				break;
 
 			case APPLYNMS:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestApplyNMS(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestApplyNMS(nConfig))
+					throw lErr;
 				break;
 
 			case MINE_HARD_EXAMPLES:
-				test_create(nConfig);
-				((TestData<T>*)m_pObj)->TestMineHardExamples(nConfig);
+				if (lErr = ((TestData<T>*)m_pObj)->TestMineHardExamples(nConfig))
+					throw lErr;
 				break;
 
 			default:
@@ -317,6 +321,11 @@ long TestSsd<T>::RunTest(LONG lInput, T* pfInput)
 		}
 
 		cleanup();
+	}
+	catch (long lErrEx)
+	{
+		cleanup();
+		return lErrEx;
 	}
 	catch (...)
 	{
