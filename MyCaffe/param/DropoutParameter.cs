@@ -18,6 +18,7 @@ namespace MyCaffe.param
     {
         double m_dfDropoutRatio = 0.5;
         long m_lSeed = 0;
+        bool m_bActive = true;
 
         /** @copydoc EngineParameter */
         public DropoutParameter()
@@ -72,6 +73,16 @@ namespace MyCaffe.param
             set { m_lSeed = value; }
         }
 
+        /// <summary>
+        /// Specifies whether or not the dropout is active or not.  When inactive and training, the dropout acts the same as it does during testing and is ignored.
+        /// </summary>
+        [Description("Specifies whether or not the dropout is active or not.  When inactive and training, the dropout acts the same as it does during testing and is ignored.")]
+        public bool active
+        {
+            get { return m_bActive; }
+            set { m_bActive = value; }
+        }
+
         /** @copydoc EngineParameter::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -94,6 +105,7 @@ namespace MyCaffe.param
                 DropoutParameter p = (DropoutParameter)src;
                 m_dfDropoutRatio = p.m_dfDropoutRatio;
                 m_lSeed = p.m_lSeed;
+                m_bActive = p.m_bActive;
             }
         }
 
@@ -119,6 +131,9 @@ namespace MyCaffe.param
             if (seed != 0)
                 rgChildren.Add("seed", seed.ToString());
 
+            if (!active)
+                rgChildren.Add("active", active.ToString());
+           
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -135,6 +150,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("seed")) != null)
                 p.seed = long.Parse(strVal);
+
+            if ((strVal = rp.FindValue("active")) != null)
+                p.active = bool.Parse(strVal);
 
             return p;
         }

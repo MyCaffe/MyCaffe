@@ -246,7 +246,7 @@ namespace MyCaffe.layers
             long hTopData = colTop[0].mutable_gpu_data;
             int nCount = colBottom[0].count();
 
-            if (m_phase == Phase.TRAIN)
+            if (m_phase == Phase.TRAIN && m_param.dropout_param.active)
             {
                 long hMask = m_blobRand.mutable_gpu_data;
 
@@ -274,7 +274,7 @@ namespace MyCaffe.layers
             long hTopDiff = colTop[0].gpu_diff;
             long hBottomDiff = colBottom[0].mutable_gpu_diff;
 
-            if (m_phase == Phase.TRAIN)
+            if (m_phase == Phase.TRAIN && m_param.dropout_param.active)
             {
                 long hMask = m_blobRand.gpu_data;
                 int nCount = colBottom[0].count();
