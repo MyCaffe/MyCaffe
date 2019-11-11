@@ -51,12 +51,24 @@ class TestData
 {
 	Memory<T> m_memory;
 	Math<T> m_math;
+	T m_fEps;
 
 public:
 	SsdData<T> m_ssd;
 
 	TestData() : m_memory(), m_math(), m_ssd(&m_memory, &m_math)
 	{
+		m_fEps = (T)1e-6;
+	}
+
+	void EXPECT_NEAR(T t1, T t2, T fErr = 0)
+	{
+		if (fErr == 0)
+			fErr = m_fEps;
+
+		T fDiff = (T)fabs(t1 - t2);
+		if (fDiff > fErr)
+			throw ERROR_PARAM_OUT_OF_RANGE;
 	}
 
 	long TestCreate(int nConfig)
@@ -71,7 +83,33 @@ public:
 
 	long TestBBOX_Size(int nConfig)
 	{
-		return ERROR_NOT_IMPLEMENTED;
+		T fSize;
+
+		// Valid box.
+		T xmin = T(0.2);
+		T ymin = T(0.3);
+		T xmax = T(0.3);
+		T ymax = T(0.5);
+		fSize = SsdBbox<T>::getSize(xmin, ymin, xmax, ymax, true);
+		EXPECT_NEAR(fSize, T(0.02));
+
+		// A line.
+		xmin = T(0.2);
+		ymin = T(0.3);
+		xmax = T(0.2);
+		ymax = T(0.5);
+		fSize = SsdBbox<T>::getSize(xmin, ymin, xmax, ymax, true);
+		EXPECT_NEAR(fSize, T(0.0));
+
+		// Invalid box.
+		xmin = T(0.2);
+		ymin = T(0.3);
+		xmax = T(0.1);
+		ymax = T(0.5);
+		fSize = SsdBbox<T>::getSize(xmin, ymin, xmax, ymax, true);
+		EXPECT_NEAR(fSize, T(0.0));
+
+		return 0;
 	}
 
 	long TestBBOX_Bounds(int nConfig)
@@ -86,7 +124,40 @@ public:
 
 	long TestBBOX_Clip(int nConfig)
 	{
-		return ERROR_NOT_IMPLEMENTED;
+		T xmin = T(0.2);
+		T ymin = T(0.3);
+		T xmax = T(0.3);
+		T ymax = T(0.5);
+
+		T xmin2 = T(0.2);
+		T ymin2 = T(0.3);
+		T xmax2 = T(0.3);
+		T ymax2 = T(0.5);
+
+		SsdBbox<T>::clip(&xmin, &ymin, &xmax, &ymax);
+		T fSize = SsdBbox<T>::getSize(xmin, ymin, xmax, ymax);
+		EXPECT_NEAR(xmin, xmin2);
+		EXPECT_NEAR(ymin, ymin2);
+		EXPECT_NEAR(xmax, xmax2);
+		EXPECT_NEAR(ymax, ymax2);
+		EXPECT_NEAR(fSize, T(0.02));
+
+		xmin = T(-0.2);
+		ymin = T(-0.3);
+		xmax = T(1.3);
+		ymax = T(1.5);
+		SsdBbox<T>::clip(&xmin, &ymin, &xmax, &ymax);
+		fSize = SsdBbox<T>::getSize(xmin, ymin, xmax, ymax);
+		EXPECT_NEAR(xmin, T(0.0));
+		EXPECT_NEAR(ymin, T(0.0));
+		EXPECT_NEAR(xmax, T(1.0));
+		EXPECT_NEAR(ymax, T(1.0));
+		EXPECT_NEAR(fSize, T(1.0));
+
+		fSize = SsdBbox<T>::getSize(xmin, ymin, xmax, ymax);
+		EXPECT_NEAR(fSize, T(1.0));
+
+		return 0;
 	}
 
 	long TestBBOX_Decode(int nConfig)
@@ -101,12 +172,89 @@ public:
 
 	long TestBBOX_Intersect(int nConfig)
 	{
-		return ERROR_NOT_IMPLEMENTED;
+		T xmin;
+		T ymin;
+		T xmax;
+		T ymax;
+
+		T xmin_ref = T(0.2);
+		T ymin_ref = T(0.3);
+		T xmax_ref = T(0.3);
+		T ymax_ref = T(0.5);
+
+		// Partially overlapped.
+		T xmin_test = T(0.1);
+		T ymin_test = T(0.1);
+		T xmax_test = T(0.3);
+		T ymax_test = T(0.4);
+
+		SsdBbox<T>::intersect(xmin_ref, ymin_ref, xmax_ref, ymax_ref, xmin_test, ymin_test, xmax_test, ymax_test, &xmin, &ymin, &xmax, &ymax);
+		EXPECT_NEAR(xmin, T(0.2));
+		EXPECT_NEAR(ymin, T(0.3));
+		EXPECT_NEAR(xmax, T(0.3));
+		EXPECT_NEAR(ymax, T(0.4));
+
+		// Fully contain.
+		xmin_test = T(0.1);
+		ymin_test = T(0.1);
+		xmax_test = T(0.4);
+		ymax_test = T(0.6);
+
+		SsdBbox<T>::intersect(xmin_ref, ymin_ref, xmax_ref, ymax_ref, xmin_test, ymin_test, xmax_test, ymax_test, &xmin, &ymin, &xmax, &ymax);
+		EXPECT_NEAR(xmin, T(0.2));
+		EXPECT_NEAR(ymin, T(0.3));
+		EXPECT_NEAR(xmax, T(0.3));
+		EXPECT_NEAR(ymax, T(0.5));
+
+		// Outside.
+		xmin_test = T(0.0);
+		ymin_test = T(0.0);
+		xmax_test = T(0.1);
+		ymax_test = T(0.1);
+
+		SsdBbox<T>::intersect(xmin_ref, ymin_ref, xmax_ref, ymax_ref, xmin_test, ymin_test, xmax_test, ymax_test, &xmin, &ymin, &xmax, &ymax);
+		EXPECT_NEAR(xmin, T(0.0));
+		EXPECT_NEAR(ymin, T(0.0));
+		EXPECT_NEAR(xmax, T(0.0));
+		EXPECT_NEAR(ymax, T(0.0));
+
+		return 0;
 	}
 
 	long TestBBOX_JaccardOverlap(int nConfig)
 	{
-		return ERROR_NOT_IMPLEMENTED;
+		T fxmin1 = T(0.2);
+		T fymin1 = T(0.3);
+		T fxmax1 = T(0.3);
+		T fymax1 = T(0.5);
+
+		// Partially overlapped
+		T fxmin2 = T(0.1);
+		T fymin2 = T(0.1);
+		T fxmax2 = T(0.3);
+		T fymax2 = T(0.4);
+		T fOverlap = SsdBbox<T>::jaccardOverlap(fxmin1, fymin1, fxmax1, fymax1, fxmin2, fymin2, fxmax2, fymax2);
+		T fExpected = T(1.0 / 7);
+		EXPECT_NEAR(fOverlap, fExpected);
+
+		// Fully contain
+		fxmin2 = T(0.1);
+		fymin2 = T(0.1);
+		fxmax2 = T(0.4);
+		fymax2 = T(0.6);
+		fOverlap = SsdBbox<T>::jaccardOverlap(fxmin1, fymin1, fxmax1, fymax1, fxmin2, fymin2, fxmax2, fymax2);
+		fExpected = T(2.0 / 15);
+		EXPECT_NEAR(fOverlap, fExpected);
+
+		// Outside
+		fxmin2 = T(0.0);
+		fymin2 = T(0.0);
+		fxmax2 = T(0.1);
+		fymax2 = T(0.1);
+		fOverlap = SsdBbox<T>::jaccardOverlap(fxmin1, fymin1, fxmax1, fymax1, fxmin2, fymin2, fxmax2, fymax2);
+		EXPECT_NEAR(fOverlap, T(0));
+
+		return 0;
 	}
 
 	long TestBBOX_Match(int nConfig)
