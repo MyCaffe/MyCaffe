@@ -340,6 +340,44 @@ public:
 		*pfSize = getSize(MEM_DECODE, nIdx * 4);
 	}
 
+	static void intersect(T fxmin1, T fymin1, T fxmax1, T fymax1, T fxmin2, T fymin2, T fxmax2, T fymax2, T* pfxmin, T* pfymin, T* pfxmax, T* pfymax)
+	{
+		if (fxmin2 > fxmax1 || fxmax2 < fxmin1 ||
+			fymin2 > fymax1 || fymax2 < fymin2)
+		{
+			*pfxmin = 0;
+			*pfymin = 0;
+			*pfxmax = 0;
+			*pfymax = 0;
+		}
+		else
+		{
+			*pfxmin = std::max(fxmin1, fxmin2);
+			*pfymin = std::max(fymin1, fymin2);
+			*pfxmax = std::min(fxmax1, fxmax2);
+			*pfymax = std::min(fymax1, fymax2);
+		}
+	}
+
+	static float jaccardOverlap(T fxmin1, T fymin1, T fxmax1, T fymax1, T fxmin2, T fymin2, T fxmax2, T fymax2)
+	{
+		T fxmin_intersect;
+		T fymin_intersect;
+		T fxmax_intersect;
+		T fymax_intersect;
+		intersect(fxmin1, fymin1, fxmax1, fymax1, fxmin2, fymin2, fxmax2, fymax2, &fxmin_intersect, &fymin_intersect, &fxmax_intersect, &fymax_intersect);
+
+		T finter_width = fxmax_intersect - fxmin_intersect;
+		T finter_height = fymax_intersect - fymin_intersect;
+		T finter_size = finter_width * finter_height;
+
+		T fsize1 = getSize(fxmin1, fymin1, fxmax1, fymax1, true);
+		T fsize2 = getSize(fxmin2, fymin2, fxmax2, fymax2, true);
+
+		return (float)(finter_size / (fsize1 + fsize2 - finter_size));
+	}
+
+
 	bool isCrossBoundaryBbox(BBOX idx)
 	{
 		return isCrossBoundaryBbox(std::get<0>(idx));
@@ -653,25 +691,6 @@ public:
 
 	long encode(BBOX priorBbox, int nPriorVar, BBOX gtBbox, T* pfxmin, T* pfymin, T* pfxmax, T* pfymax);
 
-	void intersect(T fxmin1, T fymin1, T fxmax1, T fymax1, T fxmin2, T fymin2, T fxmax2, T fymax2, T* pfxmin, T* pfymin, T* pfxmax, T* pfymax)
-	{
-		if (fxmin2 > fxmax1 || fxmax2 < fxmin1 ||
-			fymin2 > fymax1 || fymax2 < fymin2)
-		{
-			*pfxmin = 0;
-			*pfymin = 0;
-			*pfxmax = 0;
-			*pfymax = 0;
-		}
-		else
-		{
-			*pfxmin = std::max(fxmin1, fxmin2);
-			*pfymin = std::max(fymin1, fymin2);
-			*pfxmax = std::min(fxmax1, fxmax2);
-			*pfymax = std::min(fymax1, fymax2);
-		}
-	}
-
 	int getLabel(BBOX bbox)
 	{
 		int nOffset = std::get<0>(bbox);
@@ -693,7 +712,7 @@ public:
 		return m_rgBbox[type]->isCrossBoundaryBbox(nOffset);
 	}
 
-	long jaccardOverlap(BBOX bbox1, BBOX bbox2, float* pfJaccardOverlap)
+	float jaccardOverlap(BBOX bbox1, BBOX bbox2)
 	{
 		int nOffset = std::get<0>(bbox1);
 		MEM type1 = std::get<1>(bbox1);
@@ -711,22 +730,7 @@ public:
 		T fymax2;
 		m_rgBbox[type2]->getBounds(nOffset, &fxmin2, &fymin2, &fxmax2, &fymax2);
 
-		T fxmin_intersect;
-		T fymin_intersect;
-		T fxmax_intersect;
-		T fymax_intersect;
-		intersect(fxmin1, fymin1, fxmax1, fymax2, fxmin2, fymin2, fxmax2, fymax2, &fxmin_intersect, &fymin_intersect, &fxmax_intersect, &fymax_intersect);
-
-		T finter_width = fxmax_intersect - fxmin_intersect;
-		T finter_height = fymax_intersect - fymin_intersect;
-		T finter_size = finter_width * finter_height;
-
-		T fsize1 = m_rgBbox[type1]->getSize(bbox1);
-		T fsize2 = m_rgBbox[type2]->getSize(bbox2);
-
-		*pfJaccardOverlap = (float)(finter_size / (fsize1 + fsize2 - finter_size));
-
-		return 0;
+		return SsdBbox<T>::jaccardOverlap(fxmin1, fymin1, fxmax1, fymax2, fxmin2, fymin2, fxmax2, fymax2);
 	}
 
 	long match(vector<BBOX>& rgGt, vector<BBOX>& rgPredBBox, int nLabel, vector<int>* match_indices, vector<float>* match_overlaps);
