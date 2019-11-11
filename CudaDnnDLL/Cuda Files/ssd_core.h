@@ -791,7 +791,7 @@ public:
 	{
 		LONG lErr;
 
-		int nNumBoxes = m_nNumPriors;
+		int nNumBoxes = (int)rgPriorBbox.size();
 		rgDecodeBbox.clear();
 
 		for (int i = 0; i < nNumBoxes; i++)
@@ -926,42 +926,56 @@ public:
 
 	int getLabel(BBOX bbox)
 	{
-		int nOffset = std::get<0>(bbox);
+		int nIdx = std::get<0>(bbox);
 		MEM type = std::get<1>(bbox);
-		return m_rgBbox[type]->label(nOffset);
+		return m_rgBbox[type]->label(nIdx);
 	}
 
 	T getSize(BBOX bbox)
 	{
-		int nOffset = std::get<0>(bbox);
+		int nIdx = std::get<0>(bbox);
 		MEM type = std::get<1>(bbox);
-		return m_rgBbox[type]->getSize(nOffset);
+		return m_rgBbox[type]->getSize(nIdx);
+	}
+
+	long getBounds(BBOX bbox, T* pfxmin, T* pfymin, T* pfxmax, T* pfymax)
+	{
+		int nIdx = std::get<0>(bbox);
+		MEM type = std::get<1>(bbox);
+		return m_rgBbox[type]->getBounds(nIdx, pfxmin, pfymin, pfxmax, pfymax);
+	}
+
+	long setBounds(BBOX bbox, T fxmin, T fymin, T fxmax, T fymax)
+	{
+		int nIdx = std::get<0>(bbox);
+		MEM type = std::get<1>(bbox);
+		return m_rgBbox[type]->setBounds(nIdx, fxmin, fymin, fxmax, fymax);
 	}
 
 	bool isCrossBoundaryBbox(BBOX bbox)
 	{
-		int nOffset = std::get<0>(bbox);
+		int nIdx = std::get<0>(bbox);
 		MEM type = std::get<1>(bbox);
-		return m_rgBbox[type]->isCrossBoundaryBbox(nOffset);
+		return m_rgBbox[type]->isCrossBoundaryBbox(nIdx);
 	}
 
 	float jaccardOverlap(BBOX bbox1, BBOX bbox2)
 	{
-		int nOffset = std::get<0>(bbox1);
+		int nIdx = std::get<0>(bbox1);
 		MEM type1 = std::get<1>(bbox1);
 		T fxmin1;
 		T fymin1;
 		T fxmax1;
 		T fymax1;
-		m_rgBbox[type1]->getBounds(nOffset, &fxmin1, &fymin1, &fxmax1, &fymax1);
+		m_rgBbox[type1]->getBounds(nIdx, &fxmin1, &fymin1, &fxmax1, &fymax1);
 
-		nOffset = std::get<0>(bbox2);
+		nIdx = std::get<0>(bbox2);
 		MEM type2 = std::get<1>(bbox2);
 		T fxmin2;
 		T fymin2;
 		T fxmax2;
 		T fymax2;
-		m_rgBbox[type2]->getBounds(nOffset, &fxmin2, &fymin2, &fxmax2, &fymax2);
+		m_rgBbox[type2]->getBounds(nIdx, &fxmin2, &fymin2, &fxmax2, &fymax2);
 
 		return SsdBbox<T>::jaccardOverlap(fxmin1, fymin1, fxmax1, fymax2, fxmin2, fymin2, fxmax2, fymax2);
 	}
