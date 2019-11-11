@@ -112,7 +112,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestBBOX_Decode()
+        public void TestBBOX_Decode1_Corner()
         {
             SsdExtensionTest test = new SsdExtensionTest();
 
@@ -120,7 +120,7 @@ namespace MyCaffe.test
             {
                 foreach (ISsdExtensionTest t in test.Tests)
                 {
-                    t.TestBBOX_Decode(0);
+                    t.TestBBOX_Decode1_Corner(0);
                 }
             }
             finally
@@ -130,7 +130,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestBBOX_Encode()
+        public void TestBBOX_Decode1_CenterSize()
         {
             SsdExtensionTest test = new SsdExtensionTest();
 
@@ -138,7 +138,79 @@ namespace MyCaffe.test
             {
                 foreach (ISsdExtensionTest t in test.Tests)
                 {
-                    t.TestBBOX_Encode(0);
+                    t.TestBBOX_Decode1_CenterSize(0);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBBOX_DecodeN_Corner()
+        {
+            SsdExtensionTest test = new SsdExtensionTest();
+
+            try
+            {
+                foreach (ISsdExtensionTest t in test.Tests)
+                {
+                    t.TestBBOX_DecodeN_Corner(0);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBBOX_DecodeN_CenterSize()
+        {
+            SsdExtensionTest test = new SsdExtensionTest();
+
+            try
+            {
+                foreach (ISsdExtensionTest t in test.Tests)
+                {
+                    t.TestBBOX_DecodeN_CenterSize(0);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBBOX_Encode_Corner()
+        {
+            SsdExtensionTest test = new SsdExtensionTest();
+
+            try
+            {
+                foreach (ISsdExtensionTest t in test.Tests)
+                {
+                    t.TestBBOX_Encode_Corner(0);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBBOX_Encode_CenterSize()
+        {
+            SsdExtensionTest test = new SsdExtensionTest();
+
+            try
+            {
+                foreach (ISsdExtensionTest t in test.Tests)
+                {
+                    t.TestBBOX_Encode_CenterSize(0);
                 }
             }
             finally
@@ -371,8 +443,12 @@ namespace MyCaffe.test
         void TestBBOX_Bounds(int nConfig);
         void TestBBOX_DivBounds(int nConfig);
         void TestBBOX_Clip(int nConfig);
-        void TestBBOX_Decode(int nConfig);
-        void TestBBOX_Encode(int nConfig);
+        void TestBBOX_Decode1_Corner(int nConfig);
+        void TestBBOX_Decode1_CenterSize(int nConfig);
+        void TestBBOX_DecodeN_Corner(int nConfig);
+        void TestBBOX_DecodeN_CenterSize(int nConfig);
+        void TestBBOX_Encode_Corner(int nConfig);
+        void TestBBOX_Encode_CenterSize(int nConfig);
         void TestBBOX_Intersect(int nConfig);
         void TestBBOX_JaccardOverlap(int nConfig);
         void TestBBOX_Match(int nConfig);
@@ -419,20 +495,24 @@ namespace MyCaffe.test
             BBOX_DIVBOUNDS = 4,
             BBOX_CLIP = 5,
 
-            BBOX_DECODE = 6,
-            BBOX_ENCODE = 7,
-            BBOX_INTERSECT = 8,
-            BBOX_JACCARDOVERLAP = 9,
-            BBOX_MATCH = 10,
+            BBOX_DECODE1_CORNER = 6,
+            BBOX_DECODE1_CENTER_SIZE = 7,
+            BBOX_DECODEN_CORNER = 8,
+            BBOX_DECODEN_CENTER_SIZE = 9,
+            BBOX_ENCODE_CORNER = 10,
+            BBOX_ENCODE_CENTER_SIZE = 11,
+            BBOX_INTERSECT = 12,
+            BBOX_JACCARDOVERLAP = 13,
+            BBOX_MATCH = 14,
 
-            FINDMATCHES = 11,
-            COUNTMATCHES = 12,
-            SOFTMAX = 13,
-            COMPUTE_CONF_LOSS = 14,
-            COMPUTE_LOC_LOSS = 15,
-            GET_TOPK_SCORES = 16,
-            APPLYNMS = 17,
-            MINE_HARD_EXAMPLES = 18
+            FINDMATCHES = 15,
+            COUNTMATCHES = 16,
+            SOFTMAX = 17,
+            COMPUTE_CONF_LOSS = 18,
+            COMPUTE_LOC_LOSS = 19,
+            GET_TOPK_SCORES = 20,
+            APPLYNMS = 21,
+            MINE_HARD_EXAMPLES = 22
         }
 
         protected override void dispose()
@@ -536,7 +616,7 @@ namespace MyCaffe.test
             m_cuda.FreeExtension(hExtension);
         }
 
-        public void TestBBOX_Decode(int nConfig)
+        public void TestBBOX_Decode1_Corner(int nConfig)
         {
             string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
             if (!File.Exists(strPath))
@@ -545,13 +625,12 @@ namespace MyCaffe.test
             long hExtension = m_cuda.CreateExtension(strPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_DECODE, nConfig);
+            runTest(hExtension, TEST.BBOX_DECODE1_CORNER, nConfig);
 
             m_cuda.FreeExtension(hExtension);
         }
 
-
-        public void TestBBOX_Encode(int nConfig)
+        public void TestBBOX_Decode1_CenterSize(int nConfig)
         {
             string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
             if (!File.Exists(strPath))
@@ -560,7 +639,63 @@ namespace MyCaffe.test
             long hExtension = m_cuda.CreateExtension(strPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_ENCODE, nConfig);
+            runTest(hExtension, TEST.BBOX_DECODE1_CENTER_SIZE, nConfig);
+
+            m_cuda.FreeExtension(hExtension);
+        }
+
+        public void TestBBOX_DecodeN_Corner(int nConfig)
+        {
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            if (!File.Exists(strPath))
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+
+            long hExtension = m_cuda.CreateExtension(strPath);
+
+            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            runTest(hExtension, TEST.BBOX_DECODEN_CORNER, nConfig);
+
+            m_cuda.FreeExtension(hExtension);
+        }
+
+        public void TestBBOX_DecodeN_CenterSize(int nConfig)
+        {
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            if (!File.Exists(strPath))
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+
+            long hExtension = m_cuda.CreateExtension(strPath);
+
+            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            runTest(hExtension, TEST.BBOX_DECODEN_CENTER_SIZE, nConfig);
+
+            m_cuda.FreeExtension(hExtension);
+        }
+
+        public void TestBBOX_Encode_Corner(int nConfig)
+        {
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            if (!File.Exists(strPath))
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+
+            long hExtension = m_cuda.CreateExtension(strPath);
+
+            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            runTest(hExtension, TEST.BBOX_ENCODE_CORNER, nConfig);
+
+            m_cuda.FreeExtension(hExtension);
+        }
+
+        public void TestBBOX_Encode_CenterSize(int nConfig)
+        {
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            if (!File.Exists(strPath))
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+
+            long hExtension = m_cuda.CreateExtension(strPath);
+
+            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            runTest(hExtension, TEST.BBOX_ENCODE_CENTER_SIZE, nConfig);
 
             m_cuda.FreeExtension(hExtension);
         }

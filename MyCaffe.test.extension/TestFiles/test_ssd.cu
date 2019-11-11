@@ -25,20 +25,24 @@ enum TEST
 	BBOX_DIVBOUNDS = 4,
 	BBOX_CLIP = 5,
 
-	BBOX_DECODE = 6,
-	BBOX_ENCODE = 7,
-	BBOX_INTERSECT = 8,
-	BBOX_JACCARDOVERLAP = 9,
-	BBOX_MATCH = 10,
+	BBOX_DECODE1_CORNER = 6,
+	BBOX_DECODE1_CENTER_SIZE = 7,
+	BBOX_DECODEN_CORNER = 8,
+	BBOX_DECODEN_CENTER_SIZE = 9,
+	BBOX_ENCODE_CORNER = 10,
+	BBOX_ENCODE_CENTER_SIZE = 11,
+	BBOX_INTERSECT = 12,
+	BBOX_JACCARDOVERLAP = 13,
+	BBOX_MATCH = 14,
 
-	FINDMATCHES = 11,
-	COUNTMATCHES = 12,
-	SOFTMAX = 13,
-	COMPUTE_CONF_LOSS = 14,
-	COMPUTE_LOC_LOSS = 15,
-	GET_TOPK_SCORES = 16,
-	APPLYNMS = 17,
-	MINE_HARD_EXAMPLES = 18
+	FINDMATCHES = 15,
+	COUNTMATCHES = 16,
+	SOFTMAX = 17,
+	COMPUTE_CONF_LOSS = 18,
+	COMPUTE_LOC_LOSS = 19,
+	GET_TOPK_SCORES = 20,
+	APPLYNMS = 21,
+	MINE_HARD_EXAMPLES = 22
 };
 
 
@@ -52,6 +56,10 @@ class TestData
 	Memory<T> m_memory;
 	Math<T> m_math;
 	T m_fEps;
+	long m_hLocData;
+	long m_hConfData;
+	long m_hPriorData;
+	long m_hGtData;
 
 public:
 	SsdData<T> m_ssd;
@@ -59,6 +67,23 @@ public:
 	TestData() : m_memory(), m_math(), m_ssd(&m_memory, &m_math)
 	{
 		m_fEps = (T)1e-6;
+	}
+
+	void free(long& h)
+	{
+		if (h != 0)
+		{
+			m_memory.FreeMemory(h);
+			h = 0;
+		}
+	}
+
+	~TestData()
+	{
+		free(m_hLocData);
+		free(m_hConfData);
+		free(m_hPriorData);
+		free(m_hGtData);
 	}
 
 	void EXPECT_NEAR(T t1, T t2, T fErr = 0)
@@ -71,14 +96,89 @@ public:
 			throw ERROR_PARAM_OUT_OF_RANGE;
 	}
 
+	void EXPECT_NEAR(T xmin1, T ymin1, T xmax1, T ymax1, T xmin2, T ymin2, T xmax2, T ymax2, T fErr = 0)
+	{
+		EXPECT_NEAR(xmin1, xmin2, fErr);
+		EXPECT_NEAR(ymin1, ymin2, fErr);
+		EXPECT_NEAR(xmax1, xmax2, fErr);
+		EXPECT_NEAR(ymax1, ymax2, fErr);
+	}
+
+	void CHECK_EQ(T t1, T t2)
+	{
+		if (t1 != t2)
+			throw ERROR_PARAM_OUT_OF_RANGE;
+	}
+
+	void CHECK_EQ(T xmin1, T ymin1, T xmax1, T ymax1, T xmin2, T ymin2, T xmax2, T ymax2)
+	{
+		CHECK_EQ(xmin1, xmin2);
+		CHECK_EQ(ymin1, ymin2);
+		CHECK_EQ(xmax1, xmax2);
+		CHECK_EQ(ymax1, ymax2);
+	}
+
 	long TestCreate(int nConfig)
 	{
 		LONG lErr;
 
-		if (lErr = m_ssd.Initialize(0, 2, true, 2, 0, false, SSD_MINING_TYPE_NONE, SSD_MATCHING_TYPE_BIPARTITE, 0.3, true, SSD_CODE_TYPE_CORNER, true, false, true, true, SSD_CONF_LOSS_TYPE_SOFTMAX, SSD_LOC_LOSS_TYPE_L2, 0, 0, 10, false, 0.1, 10, 0.1))
+		if (lErr = m_ssd.Initialize(0, 2, true, 2, 0, false, SSD_MINING_TYPE_NONE, SSD_MATCHING_TYPE_BIPARTITE, T(0.3), true, SSD_CODE_TYPE_CORNER, true, false, true, true, SSD_CONF_LOSS_TYPE_SOFTMAX, SSD_LOC_LOSS_TYPE_L2, 0, 0, 10, false, T(0.1), 10, T(0.1)))
+			return lErr;
+
+		if (lErr = m_ssd.Setup(1, 2, 2))
+			return lErr;
+
+		if (lErr = m_memory.AllocMemory(0, false, 6 * 4, NULL, 0, &m_hLocData))
+			return lErr;
+
+		if (lErr = m_memory.AllocMemory(0, false, 6 * 4, NULL, 0, &m_hConfData))
+			return lErr;
+
+		if (lErr = m_memory.AllocMemory(0, false, 12 * 4, NULL, 0, &m_hPriorData))
+			return lErr;
+
+		if (lErr = m_memory.AllocMemory(0, false, 6 * 8, NULL, 0, &m_hGtData))
+			return lErr;
+
+		if (lErr = m_ssd.SetMemory(6 * 4, m_hLocData, 6 * 4, m_hConfData, 12 * 4, m_hPriorData, 6 * 8, m_hGtData))
 			return lErr;
 
 		return 0;
+	}
+
+	long FillBBoxes()
+	{
+		// Fill in ground truth bboxes
+		m_ssd.m_rgBbox[MEM_GT]->setBounds(0, T(0.1), T(0.1), T(0.3), T(0.3));
+		m_ssd.m_rgBbox[MEM_GT]->setLabel(0, 1);
+
+		m_ssd.m_rgBbox[MEM_GT]->setBounds(1, T(0.3), T(0.3), T(0.6), T(0.5));
+		m_ssd.m_rgBbox[MEM_GT]->setLabel(1, 2);
+
+		// Fill in the prediction bboxes (use LOC mem)
+		// 4/9 with label 1
+		// 0 with label 2
+		m_ssd.m_rgBbox[MEM_LOC]->setBounds(0, T(0.1), T(0.0), T(0.4), T(0.3));
+
+		// 2/6 with label 1
+		// 0 with label 2
+		m_ssd.m_rgBbox[MEM_LOC]->setBounds(1, T(0.0), T(0.1), T(0.2), T(0.3));
+
+		// 2/8 with label 1
+		// 1/11 with label 2
+		m_ssd.m_rgBbox[MEM_LOC]->setBounds(2, T(0.2), T(0.1), T(0.4), T(0.4));
+
+		// 0 with label 1
+		// 4/8 with label 2
+		m_ssd.m_rgBbox[MEM_LOC]->setBounds(3, T(0.4), T(0.3), T(0.7), T(0.5));
+
+		// 0 with label 1
+		// 1/11 with label 2
+		m_ssd.m_rgBbox[MEM_LOC]->setBounds(4, T(0.5), T(0.4), T(0.7), T(0.7));
+
+		// 0 with label 1
+		// 0 with label 2
+		m_ssd.m_rgBbox[MEM_LOC]->setBounds(5, T(0.7), T(0.7), T(0.8), T(0.8));
 	}
 
 	long TestBBOX_Size(int nConfig)
@@ -114,12 +214,68 @@ public:
 
 	long TestBBOX_Bounds(int nConfig)
 	{
-		return ERROR_NOT_IMPLEMENTED;
+		LONG lErr;
+		T xmin1 = T(0.1);
+		T ymin1 = T(0.2);
+		T xmax1 = T(0.3);
+		T ymax1 = T(0.4);
+		T xmin2 = T(0.0);
+		T ymin2 = T(0.0);
+		T xmax2 = T(0.0);
+		T ymax2 = T(0.0);
+
+		for (int i = 0; i < m_ssd.m_rgBbox.size() && i < 4; i++)
+		{
+			if (lErr = m_ssd.m_rgBbox[i]->setBounds(0, xmin1, ymin1, xmax1, ymax1))
+				return lErr;
+
+			if (lErr = m_ssd.m_rgBbox[i]->getBounds(0, &xmin2, &ymin2, &xmax2, &ymax2))
+				return lErr;
+
+			CHECK_EQ(xmin1, ymin1, xmax1, ymax1, xmin2, ymin2, xmax2, ymax2);
+
+			xmin1 += T(0.01);
+			ymin1 += T(0.01);
+			xmax1 += T(0.01);
+			ymax1 += T(0.01);
+		}
+
+		return 0;
 	}
 
 	long TestBBOX_DivBounds(int nConfig)
 	{
-		return ERROR_NOT_IMPLEMENTED;
+		LONG lErr;
+		T xmin1 = T(0.1);
+		T ymin1 = T(0.2);
+		T xmax1 = T(0.3);
+		T ymax1 = T(0.4);
+		T xmin2 = T(0.1);
+		T ymin2 = T(0.01);
+		T xmax2 = T(0.001);
+		T ymax2 = T(0.0001);
+
+		for (int i = 0; i < m_ssd.m_rgBbox.size() && i < 4; i++)
+		{
+			if (lErr = m_ssd.m_rgBbox[i]->setBounds(0, xmin1, ymin1, xmax1, ymax1))
+				return lErr;
+		}
+
+		for (int i = 0; i < m_ssd.m_rgBbox.size() && i < 4; i++)
+		{
+			if (lErr = m_ssd.m_rgBbox[i]->divBounds(0, xmin2, ymin2, xmax2, ymax2))
+				return lErr;
+		}
+
+		for (int i = 0; i < m_ssd.m_rgBbox.size() && i < 4; i++)
+		{
+			if (lErr = m_ssd.m_rgBbox[i]->getBounds(0, &xmin2, &ymin2, &xmax2, &ymax2))
+				return lErr;
+
+			CHECK_EQ(xmin2, ymin2, xmax2, ymax2, xmin1 / T(0.1), ymin1 / T(0.01), xmax1 / T(0.001), ymax1 / T(0.0001));
+		}
+
+		return 0;
 	}
 
 	long TestBBOX_Clip(int nConfig)
@@ -160,12 +316,94 @@ public:
 		return 0;
 	}
 
-	long TestBBOX_Decode(int nConfig)
+	long TestBBOX_Encode_Corner(int nConfig)
+	{
+		LONG lErr;
+
+		BBOX prior_bbox(0, MEM_PRIOR);
+		if (lErr = m_ssd.m_rgBbox[MEM_PRIOR]->setBounds(0, T(0.1), T(0.1), T(0.3), T(0.3)))
+			return lErr;
+
+		if (lErr = m_ssd.m_rgBbox[MEM_PRIOR]->setBounds(6, T(0.1), T(0.1), T(0.1), T(0.1)))
+			return lErr;
+
+		BBOX bbox(0, MEM_GT);
+		if (lErr = m_ssd.m_rgBbox[MEM_GT]->setBounds(0, T(0.0), T(0.2), T(0.4), T(0.5)))
+			return lErr;
+
+		T xmin;
+		T ymin;
+		T xmax;
+		T ymax;
+
+		m_ssd.m_codeType = SSD_CODE_TYPE_CORNER;
+		m_ssd.m_bEncodeVariantInTgt = true;
+		if (lErr = m_ssd.encode(prior_bbox, 6, bbox, &xmin, &ymin, &xmax, &ymax))
+			return lErr;
+
+		EXPECT_NEAR(xmin, ymin, xmax, ymax, T(-0.1), T(0.1), T(0.1), T(0.2));
+
+		m_ssd.m_bEncodeVariantInTgt = false;
+		if (lErr = m_ssd.encode(prior_bbox, 6, bbox, &xmin, &ymin, &xmax, &ymax))
+			return lErr;
+
+		EXPECT_NEAR(xmin, ymin, xmax, ymax, T(-1), T(1), T(1), T(2));
+
+		return 0;
+	}
+
+	long TestBBOX_Encode_CenterSize(int nConfig)
+	{
+		LONG lErr;
+
+		BBOX prior_bbox(0, MEM_PRIOR);
+		if (lErr = m_ssd.m_rgBbox[MEM_PRIOR]->setBounds(0, T(0.1), T(0.1), T(0.3), T(0.3)))
+			return lErr;
+
+		if (lErr = m_ssd.m_rgBbox[MEM_PRIOR]->setBounds(6, T(0.1), T(0.1), T(0.2), T(0.2)))
+			return lErr;
+
+		BBOX bbox(0, MEM_GT);
+		if (lErr = m_ssd.m_rgBbox[MEM_GT]->setBounds(0, T(0.0), T(0.2), T(0.4), T(0.5)))
+			return lErr;
+
+		T xmin;
+		T ymin;
+		T xmax;
+		T ymax;
+
+		m_ssd.m_codeType = SSD_CODE_TYPE_CENTER_SIZE;
+		m_ssd.m_bEncodeVariantInTgt = true;
+		if (lErr = m_ssd.encode(prior_bbox, 6, bbox, &xmin, &ymin, &xmax, &ymax))
+			return lErr;
+
+		EXPECT_NEAR(xmin, ymin, xmax, ymax, T(0.0), T(0.75), log(T(2.0)), log(T(3.0/2)));
+
+		m_ssd.m_bEncodeVariantInTgt = false;
+		if (lErr = m_ssd.encode(prior_bbox, 6, bbox, &xmin, &ymin, &xmax, &ymax))
+			return lErr;
+
+		EXPECT_NEAR(xmin, ymin, xmax, ymax, T(0.0 / 0.1), T(0.75 / 0.1), log(T(2.0))/T(0.2), log(T(3.0/2))/T(0.2), T(1e-5));
+
+		return 0;
+	}
+
+	long TestBBOX_Decode1_Corner(int nConfig)
 	{
 		return ERROR_NOT_IMPLEMENTED;
 	}
 
-	long TestBBOX_Encode(int nConfig)
+	long TestBBOX_Decode1_CenterSize(int nConfig)
+	{
+		return ERROR_NOT_IMPLEMENTED;
+	}
+
+	long TestBBOX_DecodeN_Corner(int nConfig)
+	{
+		return ERROR_NOT_IMPLEMENTED;
+	}
+
+	long TestBBOX_DecodeN_CenterSize(int nConfig)
 	{
 		return ERROR_NOT_IMPLEMENTED;
 	}
@@ -342,8 +580,6 @@ template long TestSsd<float>::cleanup();
 template <class T>
 long TestSsd<T>::test_create(int nConfig)
 {
-	LONG lErr;
-
 	if ((m_pObj = new TestData<T>()) == NULL)
 		return ERROR_MEMORY_OUT;
 
@@ -399,13 +635,33 @@ long TestSsd<T>::RunTest(LONG lInput, T* pfInput)
 					throw lErr;
 				break;
 
-			case BBOX_DECODE:
-				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Decode(nConfig))
+			case BBOX_DECODE1_CORNER:
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Decode1_Corner(nConfig))
 					throw lErr;
 				break;
 
-			case BBOX_ENCODE:
-				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Encode(nConfig))
+			case BBOX_DECODE1_CENTER_SIZE:
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Decode1_CenterSize(nConfig))
+					throw lErr;
+				break;
+
+			case BBOX_DECODEN_CORNER:
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_DecodeN_Corner(nConfig))
+					throw lErr;
+				break;
+
+			case BBOX_DECODEN_CENTER_SIZE:
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_DecodeN_CenterSize(nConfig))
+					throw lErr;
+				break;
+
+			case BBOX_ENCODE_CORNER:
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Encode_Corner(nConfig))
+					throw lErr;
+				break;
+
+			case BBOX_ENCODE_CENTER_SIZE:
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Encode_CenterSize(nConfig))
 					throw lErr;
 				break;
 
