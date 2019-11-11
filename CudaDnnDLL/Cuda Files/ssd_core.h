@@ -275,10 +275,10 @@ public:
 
 	long divBoundsAtOffset(int nOffset, T fxmin, T fymin, T fxmax, T fymax)
 	{
-		m_host[nOffset + m_nOffset + 0] /= fxmin;
-		m_host[nOffset + m_nOffset + 1] /= fymin;
-		m_host[nOffset + m_nOffset + 2] /= fxmax;
-		m_host[nOffset + m_nOffset + 3] /= fymax;
+		m_host[nOffset + m_nOffset + 0] = (fxmin == 0) ? 0 : m_host[nOffset + m_nOffset + 0]/fxmin;
+		m_host[nOffset + m_nOffset + 1] = (fymin == 0) ? 0 : m_host[nOffset + m_nOffset + 1]/fymin;
+		m_host[nOffset + m_nOffset + 2] = (fxmax == 0) ? 0 : m_host[nOffset + m_nOffset + 2]/fxmax;
+		m_host[nOffset + m_nOffset + 3] = (fymax == 0) ? 0 : m_host[nOffset + m_nOffset + 3]/fymax;
 		return 0;
 	}
 
@@ -318,10 +318,10 @@ public:
 
 	static void clip(T* pfxmin, T* pfymin, T* pfxmax, T* pfymax)
 	{
-		*pfxmin = std::max(std::min(*pfxmin, T(1)), T(0));
-		*pfymin = std::max(std::min(*pfymin, T(1)), T(0));
-		*pfxmax = std::max(std::min(*pfxmax, T(1)), T(0));
-		*pfymax = std::max(std::min(*pfymax, T(1)), T(0));
+		*pfxmin = (std::max)((std::min)(*pfxmin, T(1)), T(0));
+		*pfymin = (std::max)((std::min)(*pfymin, T(1)), T(0));
+		*pfxmax = (std::max)((std::min)(*pfxmax, T(1)), T(0));
+		*pfymax = (std::max)((std::min)(*pfymax, T(1)), T(0));
 	}
 
 	void clip(int nIdx, T* pfSize)
@@ -352,10 +352,10 @@ public:
 		}
 		else
 		{
-			*pfxmin = std::max(fxmin1, fxmin2);
-			*pfymin = std::max(fymin1, fymin2);
-			*pfxmax = std::min(fxmax1, fxmax2);
-			*pfymax = std::min(fymax1, fymax2);
+			*pfxmin = (std::max)(fxmin1, fxmin2);
+			*pfymin = (std::max)(fymin1, fymin2);
+			*pfxmax = (std::min)(fxmax1, fxmax2);
+			*pfymax = (std::min)(fymax1, fymax2);
 		}
 	}
 
@@ -650,7 +650,124 @@ public:
 		return (int)rgLocPreds.size();
 	}
 
-	long decode(BBOX priorBbox, int nPriorVar, bool bClip, BBOX locPred, T* pfxmin, T* pfymin, T* pfxmax, T* pfymax, T* pfsize);
+	long decode(BBOX priorBbox, int nPriorVar, bool bClip, BBOX locPred, T* pfxmin, T* pfymin, T* pfxmax, T* pfymax, T* pfsize)
+	{
+		int nOffset = std::get<0>(priorBbox);
+		MEM memPrior = std::get<1>(priorBbox);
+		T fxmin_prior;
+		T fymin_prior;
+		T fxmax_prior;
+		T fymax_prior;
+		m_rgBbox[memPrior]->getBounds(nOffset, &fxmin_prior, &fymin_prior, &fxmax_prior, &fymax_prior);
+
+		nOffset = nPriorVar;
+		T fxmin_prior_var;
+		T fymin_prior_var;
+		T fxmax_prior_var;
+		T fymax_prior_var;
+		m_rgBbox[memPrior]->getBounds(nOffset, &fxmin_prior_var, &fymin_prior_var, &fxmax_prior_var, &fymax_prior_var);
+
+		nOffset = std::get<0>(locPred);
+		MEM memLoc = std::get<1>(locPred);
+		T fxmin_bbox;
+		T fymin_bbox;
+		T fxmax_bbox;
+		T fymax_bbox;
+		m_rgBbox[memLoc]->getBounds(nOffset, &fxmin_bbox, &fymin_bbox, &fxmax_bbox, &fymax_bbox);
+
+		if (m_codeType == SSD_CODE_TYPE_CORNER)
+		{
+			// Variance is encoded in target, we simply need to add the offset predictions.
+			if (m_bEncodeVariantInTgt)
+			{
+				*pfxmin = fxmin_prior + fxmin_bbox;
+				*pfymin = fymin_prior + fymin_bbox;
+				*pfxmax = fxmax_prior + fxmax_bbox;
+				*pfymax = fymax_prior + fymax_bbox;
+			}
+			// Variance is encoded in bbox, we need to scale the offset accordingly.
+			else
+			{
+				*pfxmin = fxmin_prior + fxmin_prior_var * fxmin_bbox;
+				*pfymin = fymin_prior + fymin_prior_var * fymin_bbox;
+				*pfxmax = fxmax_prior + fxmax_prior_var * fxmax_bbox;
+				*pfymax = fymax_prior + fymax_prior_var * fymax_bbox;
+			}
+		}
+		else if (m_codeType == SSD_CODE_TYPE_CENTER_SIZE)
+		{
+			T fprior_width = fxmax_prior - fxmin_prior;
+			if (fprior_width < 0)
+				return ERROR_SSD_INVALID_BBOX_DIMENSION;
+			T fprior_height = fymax_prior - fymin_prior;
+			if (fprior_height < 0)
+				return ERROR_SSD_INVALID_BBOX_DIMENSION;
+			T fprior_center_x = (fxmin_prior + fxmax_prior) / T(2.0);
+			T fprior_center_y = (fymin_prior + fymax_prior) / T(2.0);
+			T fdecode_center_x;
+			T fdecode_center_y;
+			T fdecode_width;
+			T fdecode_height;
+
+			// Variance is encoded in target, we simply need to add the offset predictions.
+			if (m_bEncodeVariantInTgt)
+			{
+				fdecode_center_x = fxmin_bbox * fprior_width + fprior_center_x;
+				fdecode_center_y = fymin_bbox * fprior_height + fprior_center_y;
+				fdecode_width = exp(fxmax_bbox) * fprior_width;
+				fdecode_height = exp(fymax_bbox) * fprior_height;
+			}
+			// Variance is encoded in bbox, we need to scale the offset accordingly.
+			else
+			{
+				fdecode_center_x = fxmin_prior_var * fxmin_bbox * fprior_width + fprior_center_x;
+				fdecode_center_y = fymin_prior_var * fymin_bbox * fprior_height + fprior_center_y;
+				fdecode_width = exp(fxmax_prior_var * fxmax_bbox) * fprior_width;
+				fdecode_height = exp(fymax_prior_var * fymax_bbox) * fprior_height;
+			}
+
+			*pfxmin = fdecode_center_x - fdecode_width / T(2.0);
+			*pfymin = fdecode_center_y - fdecode_height / T(2.0);
+			*pfxmax = fdecode_center_x + fdecode_width / T(2.0);
+			*pfymax = fdecode_center_y + fdecode_height / T(2.0);
+		}
+		else if (m_codeType == SSD_CODE_TYPE_CORNER_SIZE)
+		{
+			T fprior_width = fxmax_prior - fxmin_prior;
+			if (fprior_width < 0)
+				return ERROR_SSD_INVALID_BBOX_DIMENSION;
+			T fprior_height = fymax_prior - fymin_prior;
+			if (fprior_height < 0)
+				return ERROR_SSD_INVALID_BBOX_DIMENSION;
+
+			// Variance is encoded in target, we simply need to add the offset predictions.
+			if (m_bEncodeVariantInTgt)
+			{
+				*pfxmin = fxmin_prior + fprior_width * fxmin_bbox;
+				*pfymin = fymin_prior + fprior_height * fymin_bbox;
+				*pfxmax = fxmax_prior + fprior_width * fxmax_bbox;
+				*pfymax = fymax_prior + fprior_height * fymax_bbox;
+			}
+			// Variance is encoded in bbox, we need to scale the offset accordingly.
+			else
+			{
+				*pfxmin = fxmin_prior + fxmin_prior_var * fprior_width * fxmin_bbox;
+				*pfymin = fymin_prior + fymin_prior_var * fprior_height * fymin_bbox;
+				*pfxmax = fxmax_prior + fxmax_prior_var * fprior_width * fxmax_bbox;
+				*pfymax = fymax_prior + fymax_prior_var * fprior_height * fymax_bbox;
+			}
+		}
+		else
+		{
+			return ERROR_SSD_INVALID_CODE_TYPE;
+		}
+
+		if (bClip)
+			SsdBbox<T>::clip(pfxmin, pfymin, pfxmax, pfymax);
+
+		*pfsize = SsdBbox<T>::getSize(*pfxmin, *pfymin, *pfxmax, *pfymax);
+		return 0;
+	}
 
 	long decode(int i, BBOX priorBbox, int nPriorVar, bool bClip, BBOX locPred, T* pfDecodeSize)
 	{
@@ -689,7 +806,123 @@ public:
 		return 0;
 	}
 
-	long encode(BBOX priorBbox, int nPriorVar, BBOX gtBbox, T* pfxmin, T* pfymin, T* pfxmax, T* pfymax);
+	long encode(BBOX priorBbox, int nPriorVar, BBOX gtBbox, T* pfxmin, T* pfymin, T* pfxmax, T* pfymax)
+	{
+		int nOffset = std::get<0>(priorBbox);
+		MEM memPrior = std::get<1>(priorBbox);
+		T fxmin_prior;
+		T fymin_prior;
+		T fxmax_prior;
+		T fymax_prior;
+		m_rgBbox[memPrior]->getBounds(nOffset, &fxmin_prior, &fymin_prior, &fxmax_prior, &fymax_prior);
+
+		nOffset = nPriorVar;
+		T fxmin_prior_var;
+		T fymin_prior_var;
+		T fxmax_prior_var;
+		T fymax_prior_var;
+		m_rgBbox[memPrior]->getBounds(nOffset, &fxmin_prior_var, &fymin_prior_var, &fxmax_prior_var, &fymax_prior_var);
+
+		nOffset = std::get<0>(gtBbox);
+		MEM memGt = std::get<1>(gtBbox);
+		T fxmin_bbox;
+		T fymin_bbox;
+		T fxmax_bbox;
+		T fymax_bbox;
+		m_rgBbox[memGt]->getBounds(nOffset, &fxmin_bbox, &fymin_bbox, &fxmax_bbox, &fymax_bbox);
+
+		if (m_codeType == SSD_CODE_TYPE_CORNER)
+		{
+			if (m_bEncodeVariantInTgt)
+			{
+				*pfxmin = fxmin_bbox - fxmin_prior;
+				*pfymin = fymin_bbox - fymin_prior;
+				*pfxmax = fxmax_bbox - fxmax_prior;
+				*pfymax = fymax_bbox - fymax_prior;
+			}
+			// Encode variance in bbox
+			else
+			{
+				if (fxmin_prior_var == 0 || fymin_prior_var == 0 || fxmax_prior_var == 0 || fymax_prior_var == 0)
+					return ERROR_PARAM_OUT_OF_RANGE;
+
+				*pfxmin = (fxmin_bbox - fxmin_prior) / fxmin_prior_var;
+				*pfymin = (fymin_bbox - fymin_prior) / fymin_prior_var;
+				*pfxmax = (fxmax_bbox - fxmax_prior) / fxmax_prior_var;
+				*pfymax = (fymax_bbox - fymax_prior) / fymax_prior_var;
+			}
+		}
+		else if (m_codeType == SSD_CODE_TYPE_CENTER_SIZE)
+		{
+			T fprior_width = fxmax_prior - fxmin_prior;
+			if (fprior_width < 0)
+				return ERROR_SSD_INVALID_BBOX_DIMENSION;
+			T fprior_height = fymax_prior - fymin_prior;
+			if (fprior_height < 0)
+				return ERROR_SSD_INVALID_BBOX_DIMENSION;
+			T fprior_center_x = (fxmin_prior + fxmax_prior) / T(2.0);
+			T fprior_center_y = (fymin_prior + fymax_prior) / T(2.0);
+
+			T fbbox_width = fxmax_bbox - fxmin_bbox;
+			if (fbbox_width < 0)
+				return ERROR_SSD_INVALID_BBOX_DIMENSION;
+			T fbbox_height = fymax_bbox - fymin_bbox;
+			if (fbbox_height < 0)
+				return ERROR_SSD_INVALID_BBOX_DIMENSION;
+			T fbbox_center_x = (fxmin_bbox + fxmax_bbox) / T(2.0);
+			T fbbox_center_y = (fymin_bbox + fymax_bbox) / T(2.0);
+
+			if (m_bEncodeVariantInTgt)
+			{
+				*pfxmin = (fbbox_center_x - fprior_center_x) / fprior_width;
+				*pfymin = (fbbox_center_y - fprior_center_y) / fprior_height;
+				*pfxmax = log(fbbox_width / fprior_width);
+				*pfymax = log(fbbox_height / fprior_height);
+			}
+			// Encode variance in bbox.
+			else
+			{
+				*pfxmin = (fbbox_center_x - fprior_center_x) / fprior_width / fxmin_prior_var;
+				*pfymin = (fbbox_center_y - fprior_center_y) / fprior_height / fymin_prior_var;
+				*pfxmax = log(fbbox_width / fprior_width) / fxmax_prior_var;
+				*pfymax = log(fbbox_height / fprior_height) / fymax_prior_var;
+			}
+		}
+		else if (m_codeType == SSD_CODE_TYPE_CORNER_SIZE)
+		{
+			T fprior_width = fxmax_prior - fxmin_prior;
+			if (fprior_width < 0)
+				return ERROR_SSD_INVALID_BBOX_DIMENSION;
+			T fprior_height = fymax_prior - fymin_prior;
+			if (fprior_height < 0)
+				return ERROR_SSD_INVALID_BBOX_DIMENSION;
+
+			if (m_bEncodeVariantInTgt)
+			{
+				*pfxmin = (fxmin_bbox - fxmin_prior) / fprior_width;
+				*pfymin = (fymin_bbox - fymin_prior) / fprior_height;
+				*pfxmax = (fxmax_bbox - fxmax_prior) / fprior_width;
+				*pfymax = (fymax_bbox - fymax_prior) / fprior_height;
+			}
+			// Encode variance in bbox.
+			else
+			{
+				if (fxmin_prior_var == 0 || fymin_prior_var == 0 || fxmax_prior_var == 0 || fymax_prior_var == 0)
+					return ERROR_PARAM_OUT_OF_RANGE;
+
+				*pfxmin = (fxmin_bbox - fxmin_prior) / fprior_width / fxmin_prior_var;
+				*pfymin = (fymin_bbox - fymin_prior) / fprior_height / fymin_prior_var;
+				*pfxmax = (fxmax_bbox - fxmax_prior) / fprior_width / fxmax_prior_var;
+				*pfymax = (fymax_bbox - fymax_prior) / fprior_height / fymax_prior_var;
+			}
+		}
+		else
+		{
+			return ERROR_SSD_INVALID_CODE_TYPE;
+		}
+
+		return 0;
+	}
 
 	int getLabel(BBOX bbox)
 	{
