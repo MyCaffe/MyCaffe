@@ -513,7 +513,6 @@ template long SsdData<float>::encode(BBOX priorBbox, int nPriorVar, BBOX gtBbox,
 template <class T>
 long SsdData<T>::match(vector<BBOX>& rgGt, vector<BBOX>& rgPredBBox, int nLabel, vector<int>* match_indices, vector<float>* match_overlaps)
 {
-	LONG lErr;
 	int nNumPred = (int)rgPredBBox.size();
 
 	match_indices->clear();
@@ -563,10 +562,7 @@ long SsdData<T>::match(vector<BBOX>& rgGt, vector<BBOX>& rgPredBBox, int nLabel,
 
 		for (int j = 0; j < nNumGt; j++)
 		{
-			float fOverlap;
-			if (lErr = jaccardOverlap(rgPredBBox[i], rgGt[rgGtIndices[j]], &fOverlap))
-				return lErr;
-
+			float fOverlap = jaccardOverlap(rgPredBBox[i], rgGt[rgGtIndices[j]]);
 			if (fOverlap > T(1e-6))
 			{
 				(*match_overlaps)[i] = std::max((*match_overlaps)[i], fOverlap);
@@ -1235,17 +1231,14 @@ long SsdData<T>::applyNMS(vector<BBOX>& bboxes, vector<T>& scores, T fThreshold,
 				}
 				else
 				{
-					if (lErr = jaccardOverlap(best_bbox, cur_bbox, &fCurOverlap))
-						return lErr;
-
+					fCurOverlap = jaccardOverlap(best_bbox, cur_bbox);
 					// Store the overlap for future use.
 					overlaps[nBestIdx][nCurIdx] = fCurOverlap;
 				}
 			}
 			else
 			{
-				if (lErr = jaccardOverlap(best_bbox, cur_bbox, &fCurOverlap))
-					return lErr;
+				fCurOverlap = jaccardOverlap(best_bbox, cur_bbox);
 			}
 
 			// Remove it if necessary.
