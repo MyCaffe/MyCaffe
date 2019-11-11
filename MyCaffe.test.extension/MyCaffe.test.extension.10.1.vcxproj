@@ -19,6 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\CudaDnnDLL\Cuda Files\ssd.cpp" />
+    <ClCompile Include="..\CudaDnnDLL\Cuda Files\ssd_core.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="MyCaffe.test.extension.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -55,7 +57,6 @@
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\memtest.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\nccl.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\pca.cu" />
-    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\ssd.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\ssd_core.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\tsne_g.cu" />
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\tsne_gp.cu" />

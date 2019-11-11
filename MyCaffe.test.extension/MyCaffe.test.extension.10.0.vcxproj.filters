@@ -4,6 +4,12 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="MyCaffe.test.extension.cpp" />
     <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="..\CudaDnnDLL\Cuda Files\ssd.cpp">
+      <Filter>Cuda Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\CudaDnnDLL\Cuda Files\ssd_core.cpp">
+      <Filter>Cuda Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -77,9 +83,6 @@
       <Filter>Cuda Files</Filter>
     </CudaCompile>
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\pca.cu">
-      <Filter>Cuda Files</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\ssd.cu">
       <Filter>Cuda Files</Filter>
     </CudaCompile>
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\ssd_core.cu">

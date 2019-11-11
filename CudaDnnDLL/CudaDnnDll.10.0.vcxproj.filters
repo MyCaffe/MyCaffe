@@ -27,6 +27,12 @@
     <ClCompile Include="CudaDnnDLL.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Cuda Files\ssd_core.cpp">
+      <Filter>Cuda Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cuda Files\ssd.cpp">
+      <Filter>Cuda Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -130,10 +136,9 @@
     <CudaCompile Include="Cuda Files\rnnData.cu">
       <Filter>Cuda Files</Filter>
     </CudaCompile>
-    <CudaCompile Include="Cuda Files\ssd.cu">
+    <CudaCompile Include="Cuda Files\ssd_core.cu">
       <Filter>Cuda Files</Filter>
     </CudaCompile>
-    <CudaCompile Include="Cuda Files\ssd_core.cu" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Resource.10.0.rc">

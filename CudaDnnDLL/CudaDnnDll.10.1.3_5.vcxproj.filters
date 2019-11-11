@@ -31,9 +31,6 @@
     <CudaCompile Include="Cuda Files\rnnData.cu">
       <Filter>Cuda Files</Filter>
     </CudaCompile>
-    <CudaCompile Include="Cuda Files\ssd.cu">
-      <Filter>Cuda Files</Filter>
-    </CudaCompile>
     <CudaCompile Include="Cuda Files\ssd_core.cu">
       <Filter>Cuda Files</Filter>
     </CudaCompile>
@@ -51,6 +48,12 @@
     <ClCompile Include="CudaDnnDLL.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="Cuda Files\ssd_core.cpp">
+      <Filter>Cuda Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cuda Files\ssd.cpp">
+      <Filter>Cuda Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\FunctionIDs.h" />
