@@ -33,16 +33,26 @@ enum TEST
 	BBOX_ENCODE_CENTER_SIZE = 11,
 	BBOX_INTERSECT = 12,
 	BBOX_JACCARDOVERLAP = 13,
-	BBOX_MATCH = 14,
+	BBOX_MATCH_ONEBIPARTITE = 14,
+	BBOX_MATCH_ALLBIPARTITE = 15,
+	BBOX_MATCH_ONEPERPREDICTION = 16,
+	BBOX_MATCH_ALLPERPREDICTION = 17,
+	BBOX_MATCH_ALLPERPREDICTIONEX = 18,
 
-	FINDMATCHES = 15,
-	COUNTMATCHES = 16,
-	SOFTMAX = 17,
-	COMPUTE_CONF_LOSS = 18,
-	COMPUTE_LOC_LOSS = 19,
-	GET_TOPK_SCORES = 20,
-	APPLYNMS = 21,
-	MINE_HARD_EXAMPLES = 22
+	GET_GT1 = 19,
+	GET_GT2 = 20,
+	GET_LOCPRED_SHARED = 21,
+	GET_LOCPRED_UNSHARED = 22,
+	GET_CONF_SCORES = 23,
+
+	FINDMATCHES = 24,
+	COUNTMATCHES = 25,
+	SOFTMAX = 26,
+	COMPUTE_CONF_LOSS = 27,
+	COMPUTE_LOC_LOSS = 28,
+	GET_TOPK_SCORES = 29,
+	APPLYNMS = 30,
+	MINE_HARD_EXAMPLES = 31
 };
 
 
@@ -122,10 +132,39 @@ public:
 	{
 		LONG lErr;
 
-		if (lErr = m_ssd.Initialize(0, 2, true, 2, 0, false, SSD_MINING_TYPE_NONE, SSD_MATCHING_TYPE_BIPARTITE, T(0.3), true, SSD_CODE_TYPE_CORNER, true, false, true, true, SSD_CONF_LOSS_TYPE_SOFTMAX, SSD_LOC_LOSS_TYPE_L2, 0, 0, 10, false, T(0.1), 10, T(0.1)))
+		int nGpuID = 0;
+		int nNumClasses = 2;
+		bool bShareLocation = true;
+		int nLocClasses = 2;
+		int nBackgroundLabelId = 0;
+		SsdMiningType miningType = SSD_MINING_TYPE_NONE;
+		SsdMatchingType matchingType = SSD_MATCHING_TYPE_BIPARTITE;
+		bool bUseDifficultGt = false;
+		T fOverlapThreshold = T(0.3);
+		bool bUsePriorForMatching = true;
+		SsdCodeType codeType = SSD_CODE_TYPE_CORNER;
+		bool bEncodeVariantInTgt = true;
+		bool bBpInsize = false;
+		bool bIgnoreCrossBoundary = true;
+		bool bUsePriorForNms = true;
+		SsdConfLossType confLossType = SSD_CONF_LOSS_TYPE_SOFTMAX;
+		SsdLocLossType locLossType = SSD_LOC_LOSS_TYPE_L2;
+		T fNegPosRatio = 0;
+		T fNegOverlap = 0;
+		int nSampleSize = 10;
+		bool bMapObjectToAgnostic = false;
+		T fNmsThreshold = T(0.1);
+		int nNmsTopK = 10;
+		T fNmsEta = T(0.0);
+
+		if (lErr = m_ssd.Initialize(nGpuID, nNumClasses, bShareLocation, nLocClasses, nBackgroundLabelId, bUseDifficultGt, miningType, matchingType, fOverlapThreshold, bUsePriorForMatching, codeType, bEncodeVariantInTgt, bBpInsize, bIgnoreCrossBoundary, bUsePriorForNms, confLossType, locLossType, fNegPosRatio, fNegOverlap, nSampleSize, bMapObjectToAgnostic, fNmsThreshold, nNmsTopK, fNmsEta))
 			return lErr;
 
-		if (lErr = m_ssd.Setup(2, 6, 2))
+		int nNum = 2;
+		int nNumPriors = 6;
+		int nNumGt = 4;
+
+		if (lErr = m_ssd.Setup(nNum, nNumPriors, nNumGt))
 			return lErr;
 
 		if (lErr = m_memory.AllocMemory(0, false, m_ssd.m_nNum * 4, NULL, 0, &m_hLocData))
@@ -146,39 +185,61 @@ public:
 		return 0;
 	}
 
-	long FillBBoxes()
+	long FillBBoxes(vector<BBOX>& gt_bboxes, vector<BBOX>& pred_bboxes)
 	{
-		// Fill in ground truth bboxes
-		m_ssd.m_rgBbox[MEM_GT]->setBounds(0, T(0.1), T(0.1), T(0.3), T(0.3));
-		m_ssd.m_rgBbox[MEM_GT]->setLabel(0, 1);
+		gt_bboxes.clear();
+		pred_bboxes.clear();
 
-		m_ssd.m_rgBbox[MEM_GT]->setBounds(1, T(0.3), T(0.3), T(0.6), T(0.5));
-		m_ssd.m_rgBbox[MEM_GT]->setLabel(1, 2);
+		// Fill in ground truth bboxes
+		BBOX gt1(0, MEM_GT);
+		m_ssd.setBounds(gt1, T(0.1), T(0.1), T(0.3), T(0.3));
+		m_ssd.setLabel(gt1, 1);
+		gt_bboxes.push_back(gt1);
+
+		BBOX gt2(1, MEM_GT);
+		m_ssd.setBounds(gt2, T(0.3), T(0.3), T(0.6), T(0.5));
+		m_ssd.setLabel(gt2, 2);
+		gt_bboxes.push_back(gt2);
 
 		// Fill in the prediction bboxes (use PRIOR mem)
 		// 4/9 with label 1
 		// 0 with label 2
-		m_ssd.m_rgBbox[MEM_PRIOR]->setBounds(0, T(0.1), T(0.0), T(0.4), T(0.3));
+		MEM type = MEM_PRIOR;
+		BBOX bbox1(0, type);
+		m_ssd.setBounds(bbox1, T(0.1), T(0.0), T(0.4), T(0.3));
+		pred_bboxes.push_back(bbox1);
 
 		// 2/6 with label 1
 		// 0 with label 2
-		m_ssd.m_rgBbox[MEM_PRIOR]->setBounds(1, T(0.0), T(0.1), T(0.2), T(0.3));
+		BBOX bbox2(1, type);
+		m_ssd.setBounds(bbox2, T(0.0), T(0.1), T(0.2), T(0.3));
+		pred_bboxes.push_back(bbox2);
 
 		// 2/8 with label 1
 		// 1/11 with label 2
-		m_ssd.m_rgBbox[MEM_PRIOR]->setBounds(2, T(0.2), T(0.1), T(0.4), T(0.4));
+		BBOX bbox3(2, type);
+		m_ssd.setBounds(bbox3, T(0.2), T(0.1), T(0.4), T(0.4));
+		pred_bboxes.push_back(bbox3);
 
 		// 0 with label 1
 		// 4/8 with label 2
-		m_ssd.m_rgBbox[MEM_PRIOR]->setBounds(3, T(0.4), T(0.3), T(0.7), T(0.5));
+		BBOX bbox4(3, type);
+		m_ssd.setBounds(bbox4, T(0.4), T(0.3), T(0.7), T(0.5));
+		pred_bboxes.push_back(bbox4);
 
 		// 0 with label 1
 		// 1/11 with label 2
-		m_ssd.m_rgBbox[MEM_PRIOR]->setBounds(4, T(0.5), T(0.4), T(0.7), T(0.7));
+		BBOX bbox5(4, type);
+		m_ssd.setBounds(bbox5, T(0.5), T(0.4), T(0.7), T(0.7));
+		pred_bboxes.push_back(bbox5);
 
 		// 0 with label 1
 		// 0 with label 2
-		m_ssd.m_rgBbox[MEM_PRIOR]->setBounds(5, T(0.7), T(0.7), T(0.8), T(0.8));
+		BBOX bbox6(5, type);
+		m_ssd.setBounds(bbox6, T(0.7), T(0.7), T(0.8), T(0.8));
+		pred_bboxes.push_back(bbox6);
+
+		return 0;
 	}
 
 	long TestBBOX_Size(int nConfig)
@@ -715,7 +776,221 @@ public:
 		return 0;
 	}
 
-	long TestBBOX_Match(int nConfig)
+	long TestBBOX_Match_OneBipartite(int nConfig)
+	{
+		LONG lErr;
+		vector<BBOX> gt_bboxes;
+		vector<BBOX> pred_bboxes;
+
+		FillBBoxes(gt_bboxes, pred_bboxes);
+
+		int nLabel = 1;
+		m_ssd.m_matchingType = SSD_MATCHING_TYPE_BIPARTITE;
+		m_ssd.m_fOverlapThreshold = -1;
+		m_ssd.m_bIgnoreCrossBoundaryBbox = true;
+		
+		vector<int> match_indices;
+		vector<float> match_overlaps;
+
+		if (lErr = m_ssd.match(gt_bboxes, pred_bboxes, nLabel, &match_indices, &match_overlaps))
+			return lErr;
+
+		CHECK_EQ(match_indices.size(), 6);
+		CHECK_EQ(match_overlaps.size(), 6);
+
+		CHECK_EQ(match_indices[0], 0);
+		CHECK_EQ(match_indices[1], -1);
+		CHECK_EQ(match_indices[2], -1);
+		EXPECT_NEAR(match_overlaps[0], T(4.0 / 9));
+		EXPECT_NEAR(match_overlaps[1], T(2.0 / 6));
+		EXPECT_NEAR(match_overlaps[2], T(2.0 / 8));
+
+		for (int i = 3; i < 6; i++)
+		{
+			CHECK_EQ(match_indices[i], -1);
+			EXPECT_NEAR(match_overlaps[i], 0);
+		}
+
+		return 0;
+	}
+
+	long TestBBOX_Match_AllBipartite(int nConfig)
+	{
+		LONG lErr;
+		vector<BBOX> gt_bboxes;
+		vector<BBOX> pred_bboxes;
+
+		FillBBoxes(gt_bboxes, pred_bboxes);
+
+		int nLabel = -1;
+		m_ssd.m_matchingType = SSD_MATCHING_TYPE_BIPARTITE;
+		m_ssd.m_fOverlapThreshold = -1;
+		m_ssd.m_bIgnoreCrossBoundaryBbox = true;
+
+		vector<int> match_indices;
+		vector<float> match_overlaps;
+
+		if (lErr = m_ssd.match(gt_bboxes, pred_bboxes, nLabel, &match_indices, &match_overlaps))
+			return lErr;
+
+		CHECK_EQ(match_indices.size(), 6);
+		CHECK_EQ(match_overlaps.size(), 6);
+
+		CHECK_EQ(match_indices[0], 0);
+		CHECK_EQ(match_indices[3], 1);
+		EXPECT_NEAR(match_overlaps[0], T(4.0 / 9));
+		EXPECT_NEAR(match_overlaps[1], T(2.0 / 6));
+		EXPECT_NEAR(match_overlaps[2], T(2.0 / 8));
+		EXPECT_NEAR(match_overlaps[3], T(4.0 / 8));
+		EXPECT_NEAR(match_overlaps[4], T(1.0 / 11));
+		EXPECT_NEAR(match_overlaps[5], T(0));
+
+		for (int i = 0; i < 6; i++)
+		{
+			if (i == 0 || i == 3)
+				continue;
+
+			CHECK_EQ(match_indices[i], -1);
+		}
+
+		return 0;
+	}
+
+	long TestBBOX_Match_OnePerPrediction(int nConfig)
+	{
+		LONG lErr;
+		vector<BBOX> gt_bboxes;
+		vector<BBOX> pred_bboxes;
+
+		FillBBoxes(gt_bboxes, pred_bboxes);
+
+		int nLabel = 1;
+		m_ssd.m_matchingType = SSD_MATCHING_TYPE_PER_PREDICTION;
+		m_ssd.m_fOverlapThreshold = T(0.3);
+		m_ssd.m_bIgnoreCrossBoundaryBbox = true;
+
+		vector<int> match_indices;
+		vector<float> match_overlaps;
+
+		if (lErr = m_ssd.match(gt_bboxes, pred_bboxes, nLabel, &match_indices, &match_overlaps))
+			return lErr;
+
+		CHECK_EQ(match_indices.size(), 6);
+		CHECK_EQ(match_overlaps.size(), 6);
+
+		CHECK_EQ(match_indices[0], 0);
+		CHECK_EQ(match_indices[1], 0);
+		CHECK_EQ(match_indices[2], -1);
+		EXPECT_NEAR(match_overlaps[0], T(4.0 / 9));
+		EXPECT_NEAR(match_overlaps[1], T(2.0 / 6));
+		EXPECT_NEAR(match_overlaps[2], T(2.0 / 8));
+
+		for (int i = 3; i < 6; i++)
+		{
+			CHECK_EQ(match_indices[i], -1);
+			EXPECT_NEAR(match_overlaps[i], 0);
+		}
+
+		return 0;
+	}
+
+	long TestBBOX_Match_AllPerPrediction(int nConfig)
+	{
+		LONG lErr;
+		vector<BBOX> gt_bboxes;
+		vector<BBOX> pred_bboxes;
+
+		FillBBoxes(gt_bboxes, pred_bboxes);
+
+		int nLabel = -1;
+		m_ssd.m_matchingType = SSD_MATCHING_TYPE_PER_PREDICTION;
+		m_ssd.m_fOverlapThreshold = T(0.3);
+		m_ssd.m_bIgnoreCrossBoundaryBbox = true;
+
+		vector<int> match_indices;
+		vector<float> match_overlaps;
+
+		if (lErr = m_ssd.match(gt_bboxes, pred_bboxes, nLabel, &match_indices, &match_overlaps))
+			return lErr;
+
+		CHECK_EQ(match_indices.size(), 6);
+		CHECK_EQ(match_overlaps.size(), 6);
+
+		CHECK_EQ(match_indices[0], 0);
+		CHECK_EQ(match_indices[1], 0);
+		CHECK_EQ(match_indices[2], -1);
+		CHECK_EQ(match_indices[3], 1);
+		CHECK_EQ(match_indices[4], -1);
+		CHECK_EQ(match_indices[5], -1);
+		EXPECT_NEAR(match_overlaps[0], T(4.0 / 9));
+		EXPECT_NEAR(match_overlaps[1], T(2.0 / 6));
+		EXPECT_NEAR(match_overlaps[2], T(2.0 / 8));
+		EXPECT_NEAR(match_overlaps[3], T(4.0 / 8));
+		EXPECT_NEAR(match_overlaps[4], T(1.0 / 11));
+		EXPECT_NEAR(match_overlaps[5], T(0));
+
+		return 0;
+	}
+
+	long TestBBOX_Match_AllPerPredictionEx(int nConfig)
+	{
+		LONG lErr;
+		vector<BBOX> gt_bboxes;
+		vector<BBOX> pred_bboxes;
+
+		FillBBoxes(gt_bboxes, pred_bboxes);
+
+		int nLabel = -1;
+		m_ssd.m_matchingType = SSD_MATCHING_TYPE_PER_PREDICTION;
+		m_ssd.m_fOverlapThreshold = T(0.001);
+		m_ssd.m_bIgnoreCrossBoundaryBbox = true;
+
+		vector<int> match_indices;
+		vector<float> match_overlaps;
+
+		if (lErr = m_ssd.match(gt_bboxes, pred_bboxes, nLabel, &match_indices, &match_overlaps))
+			return lErr;
+
+		CHECK_EQ(match_indices.size(), 6);
+		CHECK_EQ(match_overlaps.size(), 6);
+
+		CHECK_EQ(match_indices[0], 0);
+		CHECK_EQ(match_indices[1], 0);
+		CHECK_EQ(match_indices[2], 0);
+		CHECK_EQ(match_indices[3], 1);
+		CHECK_EQ(match_indices[4], 1);
+		CHECK_EQ(match_indices[5], -1);
+		EXPECT_NEAR(match_overlaps[0], T(4.0 / 9));
+		EXPECT_NEAR(match_overlaps[1], T(2.0 / 6));
+		EXPECT_NEAR(match_overlaps[2], T(2.0 / 8));
+		EXPECT_NEAR(match_overlaps[3], T(4.0 / 8));
+		EXPECT_NEAR(match_overlaps[4], T(1.0 / 11));
+		EXPECT_NEAR(match_overlaps[5], T(0));
+
+		return 0;
+	}
+
+	long TestGetGt1(int nConfig)
+	{
+		return ERROR_NOT_IMPLEMENTED;
+	}
+
+	long TestGetGt2(int nConfig)
+	{
+		return ERROR_NOT_IMPLEMENTED;
+	}
+
+	long TestGetLocPredShared(int nConfig)
+	{
+		return ERROR_NOT_IMPLEMENTED;
+	}
+
+	long TestGetLocPredUnShared(int nConfig)
+	{
+		return ERROR_NOT_IMPLEMENTED;
+	}
+
+	long TestGetConfScores(int nConfig)
 	{
 		return ERROR_NOT_IMPLEMENTED;
 	}
@@ -895,8 +1170,53 @@ long TestSsd<T>::RunTest(LONG lInput, T* pfInput)
 					throw lErr;
 				break;
 
-			case BBOX_MATCH:
-				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Match(nConfig))
+			case BBOX_MATCH_ONEBIPARTITE:
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Match_OneBipartite(nConfig))
+					throw lErr;
+				break;
+
+			case BBOX_MATCH_ALLBIPARTITE:
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Match_AllBipartite(nConfig))
+					throw lErr;
+				break;
+
+			case BBOX_MATCH_ONEPERPREDICTION:
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Match_OnePerPrediction(nConfig))
+					throw lErr;
+				break;
+
+			case BBOX_MATCH_ALLPERPREDICTION:
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Match_AllPerPrediction(nConfig))
+					throw lErr;
+				break;
+
+			case BBOX_MATCH_ALLPERPREDICTIONEX:
+				if (lErr = ((TestData<T>*)m_pObj)->TestBBOX_Match_AllPerPredictionEx(nConfig))
+					throw lErr;
+				break;
+
+			case GET_GT1:
+				if (lErr = ((TestData<T>*)m_pObj)->TestGetGt1(nConfig))
+					throw lErr;
+				break;
+
+			case GET_GT2:
+				if (lErr = ((TestData<T>*)m_pObj)->TestGetGt2(nConfig))
+					throw lErr;
+				break;
+
+			case GET_LOCPRED_SHARED:
+				if (lErr = ((TestData<T>*)m_pObj)->TestGetLocPredShared(nConfig))
+					throw lErr;
+				break;
+
+			case GET_LOCPRED_UNSHARED:
+				if (lErr = ((TestData<T>*)m_pObj)->TestGetLocPredUnShared(nConfig))
+					throw lErr;
+				break;
+
+			case GET_CONF_SCORES:
+				if (lErr = ((TestData<T>*)m_pObj)->TestGetConfScores(nConfig))
 					throw lErr;
 				break;
 

@@ -256,7 +256,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestBBOX_Match()
+        public void TestBBOX_Match_OneBipartite()
         {
             SsdExtensionTest test = new SsdExtensionTest();
 
@@ -264,7 +264,169 @@ namespace MyCaffe.test
             {
                 foreach (ISsdExtensionTest t in test.Tests)
                 {
-                    t.TestBBOX_Match(0);
+                    t.TestBBOX_Match_OneBipartite(0);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBBOX_Match_AllBipartite()
+        {
+            SsdExtensionTest test = new SsdExtensionTest();
+
+            try
+            {
+                foreach (ISsdExtensionTest t in test.Tests)
+                {
+                    t.TestBBOX_Match_AllBipartite(0);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBBOX_Match_OnePerPrediction()
+        {
+            SsdExtensionTest test = new SsdExtensionTest();
+
+            try
+            {
+                foreach (ISsdExtensionTest t in test.Tests)
+                {
+                    t.TestBBOX_Match_OnePerPrediction(0);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBBOX_Match_AllPerPrediction()
+        {
+            SsdExtensionTest test = new SsdExtensionTest();
+
+            try
+            {
+                foreach (ISsdExtensionTest t in test.Tests)
+                {
+                    t.TestBBOX_Match_AllPerPrediction(0);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestBBOX_Match_AllPerPredictionEx()
+        {
+            SsdExtensionTest test = new SsdExtensionTest();
+
+            try
+            {
+                foreach (ISsdExtensionTest t in test.Tests)
+                {
+                    t.TestBBOX_Match_AllPerPredictionEx(0);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGetGt1()
+        {
+            SsdExtensionTest test = new SsdExtensionTest();
+
+            try
+            {
+                foreach (ISsdExtensionTest t in test.Tests)
+                {
+                    t.TestGetGt1(0);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGetGt2()
+        {
+            SsdExtensionTest test = new SsdExtensionTest();
+
+            try
+            {
+                foreach (ISsdExtensionTest t in test.Tests)
+                {
+                    t.TestGetGt2(0);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGetLocPredShared()
+        {
+            SsdExtensionTest test = new SsdExtensionTest();
+
+            try
+            {
+                foreach (ISsdExtensionTest t in test.Tests)
+                {
+                    t.TestGetLocPredShared(0);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGetLocPredUnShared()
+        {
+            SsdExtensionTest test = new SsdExtensionTest();
+
+            try
+            {
+                foreach (ISsdExtensionTest t in test.Tests)
+                {
+                    t.TestGetLocPredUnShared(0);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGetConfScores()
+        {
+            SsdExtensionTest test = new SsdExtensionTest();
+
+            try
+            {
+                foreach (ISsdExtensionTest t in test.Tests)
+                {
+                    t.TestGetConfScores(0);
                 }
             }
             finally
@@ -451,7 +613,16 @@ namespace MyCaffe.test
         void TestBBOX_Encode_CenterSize(int nConfig);
         void TestBBOX_Intersect(int nConfig);
         void TestBBOX_JaccardOverlap(int nConfig);
-        void TestBBOX_Match(int nConfig);
+        void TestBBOX_Match_OneBipartite(int nConfig);
+        void TestBBOX_Match_AllBipartite(int nConfig);
+        void TestBBOX_Match_OnePerPrediction(int nConfig);
+        void TestBBOX_Match_AllPerPrediction(int nConfig);
+        void TestBBOX_Match_AllPerPredictionEx(int nConfig);
+        void TestGetGt1(int nConfig);
+        void TestGetGt2(int nConfig);
+        void TestGetLocPredShared(int nConfig);
+        void TestGetLocPredUnShared(int nConfig);
+        void TestGetConfScores(int nConfig);
         void TestFindMatches(int nConfig);
         void TestCountMatches(int nConfig);
         void TestSoftMax(int nConfig);
@@ -503,16 +674,26 @@ namespace MyCaffe.test
             BBOX_ENCODE_CENTER_SIZE = 11,
             BBOX_INTERSECT = 12,
             BBOX_JACCARDOVERLAP = 13,
-            BBOX_MATCH = 14,
+            BBOX_MATCH_ONEBIPARTITE = 14,
+            BBOX_MATCH_ALLBIPARTITE = 15,
+            BBOX_MATCH_ONEPERPREDICTION = 16,
+            BBOX_MATCH_ALLPERPREDICTION = 17,
+            BBOX_MATCH_ALLPERPREDICTIONEX = 18,
 
-            FINDMATCHES = 15,
-            COUNTMATCHES = 16,
-            SOFTMAX = 17,
-            COMPUTE_CONF_LOSS = 18,
-            COMPUTE_LOC_LOSS = 19,
-            GET_TOPK_SCORES = 20,
-            APPLYNMS = 21,
-            MINE_HARD_EXAMPLES = 22
+            GET_GT1 = 19,
+            GET_GT2 = 20,
+            GET_LOCPRED_SHARED = 21,
+            GET_LOCPRED_UNSHARED = 22,
+            GET_CONF_SCORES = 23,
+
+            FINDMATCHES = 24,
+            COUNTMATCHES = 25,
+            SOFTMAX = 26,
+            COMPUTE_CONF_LOSS = 27,
+            COMPUTE_LOC_LOSS = 28,
+            GET_TOPK_SCORES = 29,
+            APPLYNMS = 30,
+            MINE_HARD_EXAMPLES = 31
         }
 
         protected override void dispose()
@@ -729,7 +910,7 @@ namespace MyCaffe.test
             m_cuda.FreeExtension(hExtension);
         }
 
-        public void TestBBOX_Match(int nConfig)
+        public void TestBBOX_Match_OneBipartite(int nConfig)
         {
             string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
             if (!File.Exists(strPath))
@@ -738,7 +919,133 @@ namespace MyCaffe.test
             long hExtension = m_cuda.CreateExtension(strPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.BBOX_MATCH, nConfig);
+            runTest(hExtension, TEST.BBOX_MATCH_ONEBIPARTITE, nConfig);
+
+            m_cuda.FreeExtension(hExtension);
+        }
+
+        public void TestBBOX_Match_AllBipartite(int nConfig)
+        {
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            if (!File.Exists(strPath))
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+
+            long hExtension = m_cuda.CreateExtension(strPath);
+
+            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            runTest(hExtension, TEST.BBOX_MATCH_ALLBIPARTITE, nConfig);
+
+            m_cuda.FreeExtension(hExtension);
+        }
+
+        public void TestBBOX_Match_OnePerPrediction(int nConfig)
+        {
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            if (!File.Exists(strPath))
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+
+            long hExtension = m_cuda.CreateExtension(strPath);
+
+            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            runTest(hExtension, TEST.BBOX_MATCH_ONEPERPREDICTION, nConfig);
+
+            m_cuda.FreeExtension(hExtension);
+        }
+
+        public void TestBBOX_Match_AllPerPrediction(int nConfig)
+        {
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            if (!File.Exists(strPath))
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+
+            long hExtension = m_cuda.CreateExtension(strPath);
+
+            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            runTest(hExtension, TEST.BBOX_MATCH_ALLPERPREDICTION, nConfig);
+
+            m_cuda.FreeExtension(hExtension);
+        }
+
+        public void TestBBOX_Match_AllPerPredictionEx(int nConfig)
+        {
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            if (!File.Exists(strPath))
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+
+            long hExtension = m_cuda.CreateExtension(strPath);
+
+            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            runTest(hExtension, TEST.BBOX_MATCH_ALLPERPREDICTIONEX, nConfig);
+
+            m_cuda.FreeExtension(hExtension);
+        }
+
+        public void TestGetGt1(int nConfig)
+        {
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            if (!File.Exists(strPath))
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+
+            long hExtension = m_cuda.CreateExtension(strPath);
+
+            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            runTest(hExtension, TEST.GET_GT1, nConfig);
+
+            m_cuda.FreeExtension(hExtension);
+        }
+
+        public void TestGetGt2(int nConfig)
+        {
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            if (!File.Exists(strPath))
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+
+            long hExtension = m_cuda.CreateExtension(strPath);
+
+            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            runTest(hExtension, TEST.GET_GT2, nConfig);
+
+            m_cuda.FreeExtension(hExtension);
+        }
+
+        public void TestGetLocPredShared(int nConfig)
+        {
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            if (!File.Exists(strPath))
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+
+            long hExtension = m_cuda.CreateExtension(strPath);
+
+            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            runTest(hExtension, TEST.GET_LOCPRED_SHARED, nConfig);
+
+            m_cuda.FreeExtension(hExtension);
+        }
+
+        public void TestGetLocPredUnShared(int nConfig)
+        {
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            if (!File.Exists(strPath))
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+
+            long hExtension = m_cuda.CreateExtension(strPath);
+
+            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            runTest(hExtension, TEST.GET_LOCPRED_UNSHARED, nConfig);
+
+            m_cuda.FreeExtension(hExtension);
+        }
+
+        public void TestGetConfScores(int nConfig)
+        {
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            if (!File.Exists(strPath))
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+
+            long hExtension = m_cuda.CreateExtension(strPath);
+
+            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            runTest(hExtension, TEST.GET_CONF_SCORES, nConfig);
 
             m_cuda.FreeExtension(hExtension);
         }
