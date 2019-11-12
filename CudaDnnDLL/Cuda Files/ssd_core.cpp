@@ -249,8 +249,7 @@ long SsdData<T>::match(vector<BBOX>& rgGt, vector<BBOX>& rgPredBBox, int nLabel,
 	{
 		for (int i = 0; i < (int)rgGt.size(); i++)
 		{
-			MEM mem = std::get<1>(rgGt[i]);
-			int nGtLabel = m_rgBbox[mem]->label(rgGt[i]);
+			int nGtLabel = getLabel(rgGt[i]);
 			if (nGtLabel == nLabel)
 			{
 				nNumGt++;
@@ -341,10 +340,16 @@ long SsdData<T>::match(vector<BBOX>& rgGt, vector<BBOX>& rgPredBBox, int nLabel,
 			// Erase the ground truth.
 			rgGtPool.erase(std::find(rgGtPool.begin(), rgGtPool.end(), nMaxGtIdx));
 		}
+	}
 
-		// Perform the per prediction matching (bipartite is aready done)
-		if (m_matchingType == SSD_MATCHING_TYPE_PER_PREDICTION)
-		{
+	// Do the matching
+	switch (m_matchingType)
+	{
+		case SSD_MATCHING_TYPE_BIPARTITE:
+			// Already done.
+			break;
+
+		case SSD_MATCHING_TYPE_PER_PREDICTION:
 			// Get most overlapped for the rest of the prediction bboxes.
 			for (map<int, map<int, float>>::iterator it = overlaps.begin(); it != overlaps.end(); it++)
 			{
@@ -377,14 +382,14 @@ long SsdData<T>::match(vector<BBOX>& rgGt, vector<BBOX>& rgPredBBox, int nLabel,
 				if (nMaxGtIdx != -1)
 				{
 					// Found a matched ground truth.
-					if ((*match_indices)[nMaxIdx] != -1)
+					if ((*match_indices)[i] != -1)
 						return ERROR_SSD_BAD_MATCH;
 
 					(*match_indices)[i] = rgGtIndices[nMaxGtIdx];
 					(*match_overlaps)[i] = fMaxOverlap;
 				}
 			}
-		}
+			break;
 	}
 
 	return 0;
