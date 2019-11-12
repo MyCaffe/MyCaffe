@@ -193,6 +193,16 @@ public:
 		return (int)m_host[nOffset + 1];
 	}
 
+	void setLabel(int nIdx, int nLabel)
+	{
+		setLabelAtOffset(nIdx * m_nTotal, nLabel);
+	}
+
+	void setLabelAtOffset(int nOffset, int nLabel)
+	{
+		m_host[nOffset + 1] = (T)nLabel;
+	}
+
 	T xmin(int nIdx)
 	{
 		int nOffset = offset(nIdx);
@@ -931,6 +941,13 @@ public:
 		return m_rgBbox[type]->label(nIdx);
 	}
 
+	void setLabel(BBOX bbox, int nLabel)
+	{
+		int nIdx = std::get<0>(bbox);
+		MEM type = std::get<1>(bbox);
+		m_rgBbox[type]->setLabel(nIdx, nLabel);
+	}
+
 	T getSize(BBOX bbox)
 	{
 		int nIdx = std::get<0>(bbox);
@@ -977,7 +994,7 @@ public:
 		T fymax2;
 		m_rgBbox[type2]->getBounds(nIdx, &fxmin2, &fymin2, &fxmax2, &fymax2);
 
-		return SsdBbox<T>::jaccardOverlap(fxmin1, fymin1, fxmax1, fymax2, fxmin2, fymin2, fxmax2, fymax2);
+		return SsdBbox<T>::jaccardOverlap(fxmin1, fymin1, fxmax1, fymax1, fxmin2, fymin2, fxmax2, fymax2);
 	}
 
 	long match(vector<BBOX>& rgGt, vector<BBOX>& rgPredBBox, int nLabel, vector<int>* match_indices, vector<float>* match_overlaps);
