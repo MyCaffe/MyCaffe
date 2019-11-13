@@ -43,15 +43,16 @@ enum TEST
 	GET_LOCPRED_SHARED = 21,
 	GET_LOCPRED_UNSHARED = 22,
 	GET_CONF_SCORES = 23,
+	GET_PRIOR_BBOXES = 24,
 
-	FINDMATCHES = 24,
-	COUNTMATCHES = 25,
-	SOFTMAX = 26,
-	COMPUTE_CONF_LOSS = 27,
-	COMPUTE_LOC_LOSS = 28,
-	GET_TOPK_SCORES = 29,
-	APPLYNMS = 30,
-	MINE_HARD_EXAMPLES = 31
+	FINDMATCHES = 25,
+	COUNTMATCHES = 26,
+	SOFTMAX = 27,
+	COMPUTE_CONF_LOSS = 28,
+	COMPUTE_LOC_LOSS = 29,
+	GET_TOPK_SCORES = 30,
+	APPLYNMS = 31,
+	MINE_HARD_EXAMPLES = 32
 };
 
 
@@ -435,13 +436,13 @@ public:
 
 		m_ssd.m_codeType = SSD_CODE_TYPE_CORNER;
 		m_ssd.m_bEncodeVariantInTgt = true;
-		if (lErr = m_ssd.encode(prior_bbox, m_ssd.m_nNumPriors, bbox, &xmin, &ymin, &xmax, &ymax))
+		if (lErr = m_ssd.encode(prior_bbox, prior_bbox_var, bbox, &xmin, &ymin, &xmax, &ymax))
 			return lErr;
 
 		EXPECT_NEAR(xmin, ymin, xmax, ymax, T(-0.1), T(0.1), T(0.1), T(0.2));
 
 		m_ssd.m_bEncodeVariantInTgt = false;
-		if (lErr = m_ssd.encode(prior_bbox, m_ssd.m_nNumPriors, bbox, &xmin, &ymin, &xmax, &ymax))
+		if (lErr = m_ssd.encode(prior_bbox, prior_bbox_var, bbox, &xmin, &ymin, &xmax, &ymax))
 			return lErr;
 
 		EXPECT_NEAR(xmin, ymin, xmax, ymax, T(-1), T(1), T(1), T(2));
@@ -473,13 +474,13 @@ public:
 
 		m_ssd.m_codeType = SSD_CODE_TYPE_CENTER_SIZE;
 		m_ssd.m_bEncodeVariantInTgt = true;
-		if (lErr = m_ssd.encode(prior_bbox, m_ssd.m_nNumPriors, bbox, &xmin, &ymin, &xmax, &ymax))
+		if (lErr = m_ssd.encode(prior_bbox, prior_bbox_var, bbox, &xmin, &ymin, &xmax, &ymax))
 			return lErr;
 
 		EXPECT_NEAR(xmin, ymin, xmax, ymax, T(0.0), T(0.75), log(T(2.0)), log(T(3.0/2)));
 
 		m_ssd.m_bEncodeVariantInTgt = false;
-		if (lErr = m_ssd.encode(prior_bbox, m_ssd.m_nNumPriors, bbox, &xmin, &ymin, &xmax, &ymax))
+		if (lErr = m_ssd.encode(prior_bbox, prior_bbox_var, bbox, &xmin, &ymin, &xmax, &ymax))
 			return lErr;
 
 		EXPECT_NEAR(xmin, ymin, xmax, ymax, T(0.0 / 0.1), T(0.75 / 0.1), log(T(2.0))/T(0.2), log(T(3.0/2))/T(0.2), T(1e-5));
@@ -511,14 +512,14 @@ public:
 		T fsize;
 
 		m_ssd.m_codeType = SSD_CODE_TYPE_CORNER;
-		m_ssd.m_bEncodeVariantInTgt = false;
-		if (lErr = m_ssd.decode(prior_bbox, m_ssd.m_nNumPriors, false, bbox, &xmin, &ymin, &xmax, &ymax, &fsize))
+		m_ssd.m_bEncodeVariantInTgt = false;		
+		if (lErr = m_ssd.decode(prior_bbox, prior_bbox_var, false, bbox, &xmin, &ymin, &xmax, &ymax, &fsize))
 			return lErr;
 
 		EXPECT_NEAR(xmin, ymin, xmax, ymax, T(0.0), T(0.2), T(0.4), T(0.5));
 
 		m_ssd.m_bEncodeVariantInTgt = true;
-		if (lErr = m_ssd.decode(prior_bbox, m_ssd.m_nNumPriors, false, bbox, &xmin, &ymin, &xmax, &ymax, &fsize))
+		if (lErr = m_ssd.decode(prior_bbox, prior_bbox_var, false, bbox, &xmin, &ymin, &xmax, &ymax, &fsize))
 			return lErr;
 
 		EXPECT_NEAR(xmin, ymin, xmax, ymax, T(-0.9), T(1.1), T(1.3), T(2.3));
@@ -551,7 +552,7 @@ public:
 
 		m_ssd.m_codeType = SSD_CODE_TYPE_CENTER_SIZE;
 		m_ssd.m_bEncodeVariantInTgt = true;
-		if (lErr = m_ssd.decode(prior_bbox, m_ssd.m_nNumPriors, false, bbox, &xmin, &ymin, &xmax, &ymax, &fsize))
+		if (lErr = m_ssd.decode(prior_bbox, prior_bbox_var, false, bbox, &xmin, &ymin, &xmax, &ymax, &fsize))
 			return lErr;
 
 		EXPECT_NEAR(xmin, ymin, xmax, ymax, T(0.0), T(0.2), T(0.4), T(0.5));
@@ -560,7 +561,7 @@ public:
 			return lErr;
 
 		m_ssd.m_bEncodeVariantInTgt = false;
-		if (lErr = m_ssd.decode(prior_bbox, m_ssd.m_nNumPriors, false, bbox, &xmin, &ymin, &xmax, &ymax, &fsize))
+		if (lErr = m_ssd.decode(prior_bbox, prior_bbox_var, false, bbox, &xmin, &ymin, &xmax, &ymax, &fsize))
 			return lErr;
 
 		EXPECT_NEAR(xmin, ymin, xmax, ymax, T(0.0), T(0.2), T(0.4), T(0.5));
@@ -573,7 +574,7 @@ public:
 		LONG lErr;
 
 		vector<BBOX> prior_bboxes;
-		vector<int> prior_variances;
+		vector<BBOX> prior_variances;
 		vector<BBOX> bboxes;
 		vector<BBOX> decodeBboxes;
 
@@ -590,7 +591,7 @@ public:
 			if (lErr = m_ssd.setBounds(prior_bbox_var, T(0.1), T(0.1), T(0.1), T(0.1)))
 				return lErr;
 
-			prior_variances.push_back(std::get<0>(prior_bbox_var));
+			prior_variances.push_back(prior_bbox_var);
 
 			BBOX bbox((i - 1), MEM_GT);
 			if (lErr = m_ssd.setBounds(bbox, T(-1.0 * (i%2)), T((i + 1) % 2), T((i + 1) % 2), T(i % 2)))
@@ -647,7 +648,7 @@ public:
 		LONG lErr;
 
 		vector<BBOX> prior_bboxes;
-		vector<int> prior_variances;
+		vector<BBOX> prior_variances;
 		vector<BBOX> bboxes;
 		vector<BBOX> decodeBboxes;
 
@@ -664,7 +665,7 @@ public:
 			if (lErr = m_ssd.setBounds(prior_bbox_var, T(0.1), T(0.1), T(0.2), T(0.2)))
 				return lErr;
 
-			prior_variances.push_back(std::get<0>(prior_bbox_var));
+			prior_variances.push_back(prior_bbox_var);
 
 			BBOX bbox((i - 1), MEM_GT);
 			if (lErr = m_ssd.setBounds(bbox, T(0.0), T(0.75), log(T(2.0)), log(T(3.0/2))))
@@ -1193,6 +1194,53 @@ public:
 
 	long TestGetConfScores(int nConfig);
 
+	long TestGetPriorBBoxes(int nConfig)
+	{
+		LONG lErr;
+		int nNumPriors = 2;
+
+		for (int i = 0; i < nNumPriors; i++)
+		{
+			T xmin = i * T(0.1);
+			T ymin = i * T(0.1);
+			T xmax = i * T(0.1) + T(0.2);
+			T ymax = i * T(0.1) + T(0.1);
+
+			BBOX bbox(i, MEM_PRIOR);
+			m_ssd.setBounds(bbox, xmin, ymin, xmax, ymax);
+
+			BBOX bbox_var(i + nNumPriors, MEM_PRIOR);
+			m_ssd.setBounds(bbox_var, T(0.1), T(0.1), T(0.1), T(0.1));
+		}
+
+		m_ssd.m_nNumPriors = nNumPriors;
+
+		vector<BBOX> prior_bboxes;
+		vector<BBOX> prior_variances;
+
+		if (lErr = m_ssd.getPrior(prior_bboxes, prior_variances))
+			return lErr;
+
+		CHECK_EQ(prior_bboxes.size(), nNumPriors);
+		CHECK_EQ(prior_variances.size(), nNumPriors);
+
+		for (int i = 0; i < nNumPriors; i++)
+		{
+			T xmin1;
+			T ymin1;
+			T xmax1;
+			T ymax1;
+			
+			m_ssd.getBounds(prior_bboxes[i], &xmin1, &ymin1, &xmax1, &ymax1);
+			EXPECT_NEAR(xmin1, ymin1, xmax1, ymax1, i * T(0.1), i * T(0.1), i * T(0.1) + T(0.2), i * T(0.1) + T(0.1));
+
+			m_ssd.getBounds(prior_variances[i], &xmin1, &ymin1, &xmax1, &ymax1);
+			EXPECT_NEAR(xmin1, ymin1, xmax1, ymax1, T(0.1), T(0.1), T(0.1), T(0.1));
+		}
+
+		return 0;
+	}
+
 	long TestFindMatches(int nConfig)
 	{
 		return ERROR_NOT_IMPLEMENTED;
@@ -1256,7 +1304,6 @@ long TestData<float>::TestGetConfScores(int nConfig)
 	int nNum = 2;
 	int nNumPredsPerClass = 2;
 	int nNumClasses = 2;
-	int nIdx;
 	float* conf_data = m_ssd.m_pConf->cpu_data();
 
 	for (int i = 0; i < nNum; i++)
@@ -1307,7 +1354,6 @@ long TestData<double>::TestGetConfScores(int nConfig)
 	int nNum = 2;
 	int nNumPredsPerClass = 2;
 	int nNumClasses = 2;
-	int nIdx;
 	double* conf_data = m_ssd.m_pConf->cpu_data();
 
 	for (int i = 0; i < nNum; i++)
@@ -1512,6 +1558,11 @@ long TestSsd<T>::RunTest(LONG lInput, T* pfInput)
 
 			case GET_CONF_SCORES:
 				if (lErr = ((TestData<T>*)m_pObj)->TestGetConfScores(nConfig))
+					throw lErr;
+				break;
+
+			case GET_PRIOR_BBOXES:
+				if (lErr = ((TestData<T>*)m_pObj)->TestGetPriorBBoxes(nConfig))
 					throw lErr;
 				break;
 

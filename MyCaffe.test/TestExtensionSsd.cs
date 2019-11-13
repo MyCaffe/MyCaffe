@@ -418,6 +418,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestGetPriorBBoxes()
+        {
+            SsdExtensionTest test = new SsdExtensionTest();
+
+            try
+            {
+                foreach (ISsdExtensionTest t in test.Tests)
+                {
+                    t.TestGetPriorBBoxes(0);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestFindMatches()
         {
             SsdExtensionTest test = new SsdExtensionTest();
@@ -604,6 +622,7 @@ namespace MyCaffe.test
         void TestGetLocPredShared(int nConfig);
         void TestGetLocPredUnShared(int nConfig);
         void TestGetConfScores(int nConfig);
+        void TestGetPriorBBoxes(int nConfig);
         void TestFindMatches(int nConfig);
         void TestCountMatches(int nConfig);
         void TestSoftMax(int nConfig);
@@ -665,15 +684,16 @@ namespace MyCaffe.test
             GET_LOCPRED_SHARED = 21,
             GET_LOCPRED_UNSHARED = 22,
             GET_CONF_SCORES = 23,
+            GET_PRIOR_BBOXES = 24,
 
-            FINDMATCHES = 24,
-            COUNTMATCHES = 25,
-            SOFTMAX = 26,
-            COMPUTE_CONF_LOSS = 27,
-            COMPUTE_LOC_LOSS = 28,
-            GET_TOPK_SCORES = 29,
-            APPLYNMS = 30,
-            MINE_HARD_EXAMPLES = 31
+            FINDMATCHES = 25,
+            COUNTMATCHES = 26,
+            SOFTMAX = 27,
+            COMPUTE_CONF_LOSS = 28,
+            COMPUTE_LOC_LOSS = 29,
+            GET_TOPK_SCORES = 30,
+            APPLYNMS = 31,
+            MINE_HARD_EXAMPLES = 32
         }
 
         protected override void dispose()
@@ -1012,6 +1032,20 @@ namespace MyCaffe.test
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.GET_CONF_SCORES, nConfig);
+
+            m_cuda.FreeExtension(hExtension);
+        }
+
+        public void TestGetPriorBBoxes(int nConfig)
+        {
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            if (!File.Exists(strPath))
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+
+            long hExtension = m_cuda.CreateExtension(strPath);
+
+            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            runTest(hExtension, TEST.GET_PRIOR_BBOXES, nConfig);
 
             m_cuda.FreeExtension(hExtension);
         }
