@@ -1804,7 +1804,6 @@ namespace MyCaffe.test
         protected PersistCaffe<T> m_persist;
         SnapshotArgs m_snapshotArgs = null;
         string m_strSnapshotPrefix = "";
-        int m_lSeed;
         // Dimensinos are determined by generate_sample_data.py
         // TODO: this is brittle and the hdf5 file should be checked instead.
         int m_nNum;
