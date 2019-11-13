@@ -166,13 +166,37 @@ public:
 		return nIdx * m_nTotal;
 	}
 
+	bool itemId(BBOX idx)
+	{
+		return itemId(std::get<0>(idx));
+	}
+
 	int itemId(int nIdx)
 	{
 		if (!m_bFull)
 			throw ERROR_SSD_NOT_SUPPORTED_IN_HALF_BBOX;
 
-		int nOffset = nIdx * m_nTotal;
+		int nOffset = offset(nIdx);
+		return itemIdAtOffset(nOffset);
+	}
+
+	int itemIdAtOffset(int nOffset)
+	{
 		return (int)m_host[nOffset];
+	}
+
+	void setItemId(int nIdx, int nId)
+	{
+		if (!m_bFull)
+			throw ERROR_SSD_NOT_SUPPORTED_IN_HALF_BBOX;
+
+		int nOffset = offset(nIdx);
+		setItemIdAtOffset(nOffset, nId);
+	}
+
+	void setItemIdAtOffset(int nOffset, int nId)
+	{
+		m_host[nOffset] = (T)nId;
 	}
 
 	int label(BBOX idx)
@@ -185,7 +209,8 @@ public:
 		if (!m_bFull)
 			throw ERROR_SSD_NOT_SUPPORTED_IN_HALF_BBOX;
 
-		return labelAtOffset(nIdx * m_nTotal);
+		int nOffset = offset(nIdx);
+		return labelAtOffset(nOffset);
 	}
 
 	int labelAtOffset(int nOffset)
@@ -195,12 +220,49 @@ public:
 
 	void setLabel(int nIdx, int nLabel)
 	{
-		setLabelAtOffset(nIdx * m_nTotal, nLabel);
+		if (!m_bFull)
+			throw ERROR_SSD_NOT_SUPPORTED_IN_HALF_BBOX;
+
+		int nOffset = offset(nIdx);
+		setLabelAtOffset(nOffset, nLabel);
 	}
 
 	void setLabelAtOffset(int nOffset, int nLabel)
 	{
 		m_host[nOffset + 1] = (T)nLabel;
+	}
+
+	bool difficult(BBOX idx)
+	{
+		return difficult(std::get<0>(idx));
+	}
+
+	bool difficult(int nIdx)
+	{
+		if (!m_bFull)
+			throw ERROR_SSD_NOT_SUPPORTED_IN_HALF_BBOX;
+
+		int nOffset = offset(nIdx);
+		return difficultAtOffset(nOffset);
+	}
+
+	bool difficultAtOffset(int nOffset)
+	{
+		return (bool)m_host[nOffset + 7];
+	}
+
+	void setDifficult(int nIdx, bool bDifficult)
+	{
+		if (!m_bFull)
+			throw ERROR_SSD_NOT_SUPPORTED_IN_HALF_BBOX;
+
+		int nOffset = offset(nIdx);
+		setDifficultAtOffset(nOffset, bDifficult);
+	}
+
+	void setDifficultAtOffset(int nOffset, bool bDifficult)
+	{
+		m_host[nOffset + 7] = (T)bDifficult;
 	}
 
 	T xmin(int nIdx)
@@ -277,6 +339,24 @@ public:
 		return 0;
 	}
 
+	long setBbox(int nIdx, int nItemId, int nLabel, T fxmin, T fymin, T fxmax, T fymax, bool bDifficult)
+	{
+		if (!m_bFull)
+			throw ERROR_SSD_NOT_SUPPORTED_IN_HALF_BBOX;
+
+		int nOffset = offset(nIdx);
+		return setBboxAtOffset(nOffset, nItemId, nLabel, fxmin, fymin, fxmax, fymax, bDifficult);
+	}
+
+	long setBboxAtOffset(int nOffset, int nItemId, int nLabel, T fxmin, T fymin, T fxmax, T fymax, bool bDifficult)
+	{
+		setItemIdAtOffset(nOffset, nItemId);
+		setLabelAtOffset(nOffset, nLabel);
+		setBoundsAtOffset(nOffset, fxmin, fymin, fxmax, fymax);
+		setDifficultAtOffset(nOffset, bDifficult);
+		return 0;
+	}
+
 	long divBounds(int nIdx, T fxmin, T fymin, T fxmax, T fymax)
 	{
 		int nOffset = offset(nIdx);
@@ -322,7 +402,7 @@ public:
 		T xmax;
 		T ymax;
 
-		getBounds(nOffset, &xmin, &ymin, &xmax, &ymax);
+		getBoundsAtOffset(nOffset, &xmin, &ymin, &xmax, &ymax);
 		return getSize(xmin, ymin, xmax, ymax, bNormalized);
 	}
 
@@ -592,14 +672,15 @@ public:
 		return 0;
 	}
 
-	int getPrior(vector<BBOX>& rgPriorBbox, vector<int>& rgPriorVariances)
+	long getPrior(vector<BBOX>& rgPriorBbox, vector<int>& rgPriorVariances)
 	{
 		rgPriorBbox.clear();
 		rgPriorVariances.clear();
 
 		for (int i = 0; i < m_nNumPriors; i++)
 		{
-			rgPriorBbox.push_back(BBOX(i, MEM_PRIOR));
+			BBOX bbox(i, MEM_PRIOR);
+			rgPriorBbox.push_back(bbox);
 		}
 
 		for (int i = 0; i < m_nNumPriors; i++)
@@ -607,10 +688,10 @@ public:
 			rgPriorVariances.push_back(m_nNumPriors + i);
 		}
 
-		return (int)rgPriorBbox.size();
+		return 0;
 	}
 
-	int getGt(map<int, vector<BBOX>>& rgGt)
+	long getGt(map<int, vector<BBOX>>& rgGt)
 	{
 		rgGt.clear();
 
@@ -620,13 +701,23 @@ public:
 			if (nItemId == -1)
 				continue;
 
-			rgGt[nItemId].push_back(BBOX(i, MEM_GT));
+			BBOX bbox(i, MEM_GT);
+			int nLabel = getLabel(bbox);
+			if (nLabel == m_nBackgroundLabelId)
+				return ERROR_SSD_BACKGROUND_LABEL_IN_DATASET;
+
+			// Skip reading difficult ground truth.
+			bool bDifficult = getDifficult(bbox);
+			if (!m_bUseDifficultGt && bDifficult)
+				continue;
+
+			rgGt[nItemId].push_back(bbox);
 		}
 
-		return (int)rgGt.size();
+		return 0;
 	}
 
-	int getLocPrediction(vector<map<int, vector<BBOX>>>& rgLocPreds)
+	long getLocPrediction(vector<map<int, vector<BBOX>>>& rgLocPreds)
 	{
 		int nNumPredsPerClass = m_nNumPriors;
 		int nNumLocClasses = m_nLocClasses;
@@ -635,29 +726,36 @@ public:
 		rgLocPreds.clear();
 		rgLocPreds.resize(m_nNum);
 
+		if (m_bShareLocation)
+		{
+			if (nNumLocClasses != 1)
+				return ERROR_SSD_NUMLOCCLASSES_INVALID_FOR_SHARED;
+		}
+
 		for (int i = 0; i < m_nNum; i++)
 		{
-			map<int, vector<BBOX>> labelbox = rgLocPreds[i];
+			map<int, vector<BBOX>>& labelbox = rgLocPreds[i];
 
 			for (int p = 0; p < nNumPredsPerClass; p++)
 			{
-				int nStartIdx = p * nNumLocClasses * 4;
+				int nStartIdx = p * nNumLocClasses;
 
 				for (int c = 0; c < nNumLocClasses; c++)
 				{
 					int nLabel = (m_bShareLocation) ? -1 : c;
 
 					if (labelbox.find(nLabel) == labelbox.end())
-						labelbox[nLabel].resize(m_nNumPriors);
+						labelbox[nLabel].resize(nNumPredsPerClass);
 
-					labelbox[nLabel][p] = BBOX(nIdx + nStartIdx + c, MEM_LOC);
+					BBOX bbox(nIdx + nStartIdx + c, MEM_LOC);
+					labelbox[nLabel][p] = bbox;
 				}
 			}
 
 			nIdx += nNumPredsPerClass * nNumLocClasses;
 		}
 
-		return (int)rgLocPreds.size();
+		return 0;
 	}
 
 	long decode(BBOX priorBbox, int nPriorVar, bool bClip, BBOX locPred, T* pfxmin, T* pfymin, T* pfxmax, T* pfymax, T* pfsize)
@@ -946,6 +1044,20 @@ public:
 		int nIdx = std::get<0>(bbox);
 		MEM type = std::get<1>(bbox);
 		m_rgBbox[type]->setLabel(nIdx, nLabel);
+	}
+
+	bool getDifficult(BBOX bbox)
+	{
+		int nIdx = std::get<0>(bbox);
+		MEM type = std::get<1>(bbox);
+		return m_rgBbox[type]->difficult(nIdx);
+	}
+
+	void setBbox(BBOX bbox, int nItemId, int nLabel, T fxmin, T fymin, T fxmax, T fymax, bool bDifficult)
+	{
+		int nIdx = std::get<0>(bbox);
+		MEM type = std::get<1>(bbox);
+		m_rgBbox[type]->setBbox(nIdx, nItemId, nLabel, fxmin, fymin, fxmax, fymax, bDifficult);
 	}
 
 	T getSize(BBOX bbox)

@@ -52,7 +52,8 @@ long ssdHandle<T>::MultiboxLossForward(int nLocDataCount, long hLocData, int nCo
 	//--------------------------------------------------------
 
 	map<int, vector<BBOX>> rgAllGt;
-	m_pData->getGt(rgAllGt);
+	if (lErr = m_pData->getGt(rgAllGt))
+		return lErr;
 
 	vector<BBOX> rgPriorBbox;
 	vector<int> rgPriorVariances;
@@ -94,7 +95,8 @@ long ssdHandle<T>::EncodeLocPrediction(int nLocPredCount, long hLocPred, int nLo
 	m_pData->getPrior(rgPriorBbox, rgPriorVariances);
 
 	map<int, vector<BBOX>> rgAllGt;
-	m_pData->getGt(rgAllGt);
+	if (lErr = m_pData->getGt(rgAllGt))
+		return lErr;
 
 	return m_pData->encodeLocPrediction(rgAllLocPreds, rgAllGt, m_pData->m_all_match_indices, rgPriorBbox, rgPriorVariances, m_pData->m_rgBbox[MEM_LOCPRED], m_pData->m_rgBbox[MEM_LOCGT]);
 }
@@ -112,7 +114,8 @@ long ssdHandle<T>::EncodeConfPrediction(int nConfPredCount, long hConfPred, int 
 		return lErr;
 
 	map<int, vector<BBOX>> rgAllGt;
-	m_pData->getGt(rgAllGt);
+	if (lErr = m_pData->getGt(rgAllGt))
+		return lErr;
 
 	return m_pData->encodeConfPrediction(m_pData->m_rgBbox[MEM_CONF], m_pData->m_all_match_indices, m_pData->m_all_neg_indices, rgAllGt, m_pData->m_rgBbox[MEM_CONFPRED], m_pData->m_rgBbox[MEM_CONFGT]);
 }
