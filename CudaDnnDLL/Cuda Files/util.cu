@@ -216,6 +216,14 @@ bool GetErrorString(long lErr, char* szErr, long lMaxErr)
 		case ERROR_SSD_CONF_LOSS_TYPE_UNKNOWN:
 			_snprintf(szErr, lMaxErr, "SSD: The conf loss type is unknown and invalid. (%ld)", lErr);
 			return true;
+
+		case ERROR_SSD_BACKGROUND_LABEL_IN_DATASET:
+			_snprintf(szErr, lMaxErr, "SSD: The ground truth was found in the dataset. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_NUMLOCCLASSES_INVALID_FOR_SHARED:
+			_snprintf(szErr, lMaxErr, "SSD: The number of loc classes must be 1 when using shared location. (%ld)", lErr);
+			return true;
 	}
 
 	return false;
