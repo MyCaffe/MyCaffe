@@ -205,6 +205,9 @@ SsdData<T>::~SsdData()
 			delete m_rgBbox[i];
 	}
 
+	if (m_pConf != NULL)
+		delete m_pConf;
+
 	if (m_pMatch != NULL)
 		delete m_pMatch;
 
@@ -647,7 +650,7 @@ template long SsdData<float>::encodeLocPrediction(vector<map<int, vector<BBOX>>>
 
 
 template <class T>
-long SsdData<T>::encodeConfPrediction(SsdBbox<T>* pConf, vector<map<int, vector<int>>>& all_match_indices, vector<vector<int>>& all_neg_indices, map<int, vector<BBOX>>& rgAllGt, SsdMemory<T>* pConfPred, SsdMemory<T>* pConfGt)
+long SsdData<T>::encodeConfPrediction(SsdMemory<T>* pConf, vector<map<int, vector<int>>>& all_match_indices, vector<vector<int>>& all_neg_indices, map<int, vector<BBOX>>& rgAllGt, SsdMemory<T>* pConfPred, SsdMemory<T>* pConfGt)
 {
 	LONG lErr;
 
@@ -757,8 +760,8 @@ long SsdData<T>::encodeConfPrediction(SsdBbox<T>* pConf, vector<map<int, vector<
 	return 0;
 }
 
-template long SsdData<double>::encodeConfPrediction(SsdBbox<double>* pConf, vector<map<int, vector<int>>>& all_match_indices, vector<vector<int>>& all_neg_indices, map<int, vector<BBOX>>& rgAllGt, SsdMemory<double>* pConfPred, SsdMemory<double>* pConfGt);
-template long SsdData<float>::encodeConfPrediction(SsdBbox<float>* pConf, vector<map<int, vector<int>>>& all_match_indices, vector<vector<int>>& all_neg_indices, map<int, vector<BBOX>>& rgAllGt, SsdMemory<float>* pConfPred, SsdMemory<float>* pConfGt);
+template long SsdData<double>::encodeConfPrediction(SsdMemory<double>* pConf, vector<map<int, vector<int>>>& all_match_indices, vector<vector<int>>& all_neg_indices, map<int, vector<BBOX>>& rgAllGt, SsdMemory<double>* pConfPred, SsdMemory<double>* pConfGt);
+template long SsdData<float>::encodeConfPrediction(SsdMemory<float>* pConf, vector<map<int, vector<int>>>& all_match_indices, vector<vector<int>>& all_neg_indices, map<int, vector<BBOX>>& rgAllGt, SsdMemory<float>* pConfPred, SsdMemory<float>* pConfGt);
 
 
 template <class T>

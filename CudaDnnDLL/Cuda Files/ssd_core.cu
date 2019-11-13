@@ -118,10 +118,10 @@ long SsdData<T>::computeConfLoss(int nNum, int nNumPriors, int nNumClasses, vect
 	}
 
 	// Get the probability data.
-	SsdMemory<T>* pConf = m_rgBbox[MEM_CONF];
+	SsdMemory<T>* pConf = m_pConf;
 	if (m_confLossType == SSD_CONF_LOSS_TYPE_SOFTMAX)
 	{
-		if (lErr = softmax(m_rgBbox[MEM_CONF], nNum * nNumPriors, m_nNumClasses, 1, m_pProb))
+		if (lErr = softmax(pConf, nNum * nNumPriors, m_nNumClasses, 1, m_pProb))
 			return lErr;
 
 		pConf = m_pProb;

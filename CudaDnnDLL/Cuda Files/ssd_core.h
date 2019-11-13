@@ -53,7 +53,6 @@ enum SsdLocLossType
 enum MEM
 {
 	MEM_LOC,
-	MEM_CONF,
 	MEM_PRIOR,
 	MEM_GT,
 	MEM_DECODE,
@@ -527,6 +526,7 @@ public:
 	vector<vector<int>> m_all_neg_indices;
 
 	vector<SsdBbox<T>*> m_rgBbox;
+	SsdMemory<T>* m_pConf;
 	SsdMemory<T>* m_pMatch;
 	SsdMemory<T>* m_pProb;
 	SsdMemory<T>* m_pConfLoss;
@@ -564,9 +564,6 @@ public:
 		if ((m_rgBbox[MEM_LOC] = new SsdBbox<T>(m_pMem, nGpuID)) == NULL)
 			return ERROR_MEMORY_OUT;
 
-		if ((m_rgBbox[MEM_CONF] = new SsdBbox<T>(m_pMem, nGpuID)) == NULL)
-			return ERROR_MEMORY_OUT;
-
 		if ((m_rgBbox[MEM_PRIOR] = new SsdBbox<T>(m_pMem, nGpuID)) == NULL)
 			return ERROR_MEMORY_OUT;
 
@@ -586,6 +583,9 @@ public:
 			return ERROR_MEMORY_OUT;
 
 		if ((m_rgBbox[MEM_CONFPRED] = new SsdBbox<T>(m_pMem, nGpuID, true)) == NULL)
+			return ERROR_MEMORY_OUT;
+
+		if ((m_pConf = new SsdMemory<T>(m_pMem, nGpuID)) == NULL)
 			return ERROR_MEMORY_OUT;
 
 		if ((m_pMatch = new SsdMemory<T>(m_pMem, nGpuID)) == NULL)
@@ -610,9 +610,6 @@ public:
 		if (lErr = m_rgBbox[MEM_LOC]->Initialize(nLocDataCount, hLocData))
 			return lErr;
 
-		if (lErr = m_rgBbox[MEM_CONF]->Initialize(nConfDataCount, hConfData))
-			return lErr;
-
 		if (lErr = m_rgBbox[MEM_PRIOR]->Initialize(nPriorDataCount, hPriorData))
 			return lErr;
 
@@ -620,6 +617,9 @@ public:
 			return lErr;
 
 		if (lErr = m_rgBbox[MEM_DECODE]->Initialize(nPriorDataCount / 2))
+			return lErr;
+
+		if (lErr = m_pConf->Initialize(nConfDataCount, hConfData))
 			return lErr;
 
 		if (lErr = m_pMatch->Initialize(m_nNum * m_nNumPriors))
@@ -753,6 +753,46 @@ public:
 			}
 
 			nIdx += nNumPredsPerClass * nNumLocClasses;
+		}
+
+		return 0;
+	}
+
+	long getConfidenceScores(bool bClassMajor, vector<map<int, vector<T>>>& conf_preds)
+	{
+		int nNum = m_nNum;
+		int nNumClasses = m_nNumClasses;
+		int nNumPredsPerClass = m_nNumPriors;
+		T* conf_data = m_pConf->cpu_data();
+
+		conf_preds.clear();
+		conf_preds.resize(nNum);
+
+		for (int i = 0; i < nNum; i++)
+		{
+			map<int, vector<T>>& label_scores = conf_preds[i];
+
+			if (bClassMajor)
+			{
+				for (int c = 0; c < nNumClasses; c++)
+				{
+					label_scores[c].assign(conf_data, conf_data + nNumPredsPerClass);
+					conf_data += nNumPredsPerClass;
+				}
+			}
+			else
+			{
+				for (int p = 0; p < nNumPredsPerClass; p++)
+				{
+					int nStartIdx = p * nNumClasses;
+
+					for (int c = 0; c < nNumClasses; c++)
+					{
+						label_scores[c].push_back(conf_data[nStartIdx + c]);
+					}
+				}
+				conf_data += nNumPredsPerClass * nNumClasses;
+			}
 		}
 
 		return 0;
@@ -1144,7 +1184,7 @@ public:
 
 	long encodeLocPrediction(vector<map<int, vector<BBOX>>>& rgAllLocPreds, map<int, vector<BBOX>>& rgAllGt, vector<map<int, vector<int>>>& all_match_indices, vector<BBOX>& rgPriorBboxes, vector<int>& rgPriorVariances, SsdMemory<T>* pLocPred, SsdMemory<T>* pLocGt);
 
-	long encodeConfPrediction(SsdBbox<T>* pConf, vector<map<int, vector<int>>>& all_match_indices, vector<vector<int>>& all_neg_indices, map<int, vector<BBOX>>& rgAllGt, SsdMemory<T>* pConfPred, SsdMemory<T>* pConfGt);
+	long encodeConfPrediction(SsdMemory<T>* pConf, vector<map<int, vector<int>>>& all_match_indices, vector<vector<int>>& all_neg_indices, map<int, vector<BBOX>>& rgAllGt, SsdMemory<T>* pConfPred, SsdMemory<T>* pConfGt);
 
 	long computeLocLoss(SsdMemory<T>* pLocPred, SsdMemory<T>* pLogGt, vector<map<int, vector<int>>>& all_match_indices, int nNum, int nNumPriors, SsdLocLossType loss_type, vector<vector<T>>* pall_loc_loss);
 

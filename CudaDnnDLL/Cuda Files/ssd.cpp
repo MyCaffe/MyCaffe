@@ -117,7 +117,7 @@ long ssdHandle<T>::EncodeConfPrediction(int nConfPredCount, long hConfPred, int 
 	if (lErr = m_pData->getGt(rgAllGt))
 		return lErr;
 
-	return m_pData->encodeConfPrediction(m_pData->m_rgBbox[MEM_CONF], m_pData->m_all_match_indices, m_pData->m_all_neg_indices, rgAllGt, m_pData->m_rgBbox[MEM_CONFPRED], m_pData->m_rgBbox[MEM_CONFGT]);
+	return m_pData->encodeConfPrediction(m_pData->m_pConf, m_pData->m_all_match_indices, m_pData->m_all_neg_indices, rgAllGt, m_pData->m_rgBbox[MEM_CONFPRED], m_pData->m_rgBbox[MEM_CONFGT]);
 }
 
 template long ssdHandle<double>::EncodeConfPrediction(int nConfPredCount, long hConfPred, int nConfGtCount, long hConfGt);
