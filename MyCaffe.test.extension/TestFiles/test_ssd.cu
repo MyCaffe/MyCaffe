@@ -119,6 +119,18 @@ public:
 			throw ERROR_PARAM_OUT_OF_RANGE;
 	}
 
+	void CHECK_EQ(int t1, int t2)
+	{
+		if (t1 != t2)
+			throw ERROR_PARAM_OUT_OF_RANGE;
+	}
+
+	void CHECK_EQ(unsigned long t1, unsigned long t2)
+	{
+		if (t1 != t2)
+			throw ERROR_PARAM_OUT_OF_RANGE;
+	}
+
 	void CHECK_EQ(T xmin1, T ymin1, T xmax1, T ymax1, T xmin2, T ymin2, T xmax2, T ymax2)
 	{
 		CHECK_EQ(xmin1, xmin2);
@@ -184,6 +196,7 @@ public:
 		int nNum = 8;
 		int nNumPriors = 6;
 		int nNumGt = 4;
+		int nNumConf = nNum * nNumPriors * nNumClasses;
 
 		if (lErr = m_ssd.Setup(nNum, nNumPriors, nNumGt))
 			return lErr;
@@ -191,7 +204,7 @@ public:
 		if (lErr = m_memory.AllocMemory(0, false, m_ssd.m_nNum * 4, NULL, 0, &m_hLocData))
 			return lErr;
 
-		if (lErr = m_memory.AllocMemory(0, false, m_ssd.m_nNum * 4, NULL, 0, &m_hConfData))
+		if (lErr = m_memory.AllocMemory(0, false, nNumConf, NULL, 0, &m_hConfData))
 			return lErr;
 
 		if (lErr = m_memory.AllocMemory(0, false, m_ssd.m_nNumPriors * 4 * 2, NULL, 0, &m_hPriorData))
@@ -200,7 +213,7 @@ public:
 		if (lErr = m_memory.AllocMemory(0, false, m_ssd.m_nNumGt * 8, NULL, 0, &m_hGtData))
 			return lErr;
 
-		if (lErr = m_ssd.SetMemory(m_ssd.m_nNum * 4, m_hLocData, m_ssd.m_nNum * 4, m_hConfData, m_ssd.m_nNumPriors * 4, m_hPriorData, m_ssd.m_nNumGt * 8, m_hGtData))
+		if (lErr = m_ssd.SetMemory(m_ssd.m_nNum * 4, m_hLocData, nNumConf, m_hConfData, m_ssd.m_nNumPriors * 4, m_hPriorData, m_ssd.m_nNumGt * 8, m_hGtData))
 			return lErr;
 
 		return 0;
@@ -1178,25 +1191,7 @@ public:
 		return 0;
 	}
 
-	long TestGetConfScores(int nConfig)
-	{
-		int nNum = 2;
-		int nNumPredsPerClass = 2;
-		int nNumClasses = 2;
-		int nIdx;
-
-		for (int i = 0; i < nNum; i++)
-		{
-			for (int j = 0; j < nNumPredsPerClass; j++)
-			{
-				for (int c = 0; c < nNumClasses; c++)
-				{
-				}
-			}
-		}
-
-		return ERROR_NOT_IMPLEMENTED;
-	}
+	long TestGetConfScores(int nConfig);
 
 	long TestFindMatches(int nConfig)
 	{
@@ -1253,6 +1248,108 @@ public:
 		return ERROR_NOT_IMPLEMENTED;
 	}
 };
+
+template <>
+long TestData<float>::TestGetConfScores(int nConfig)
+{
+	LONG lErr;
+	int nNum = 2;
+	int nNumPredsPerClass = 2;
+	int nNumClasses = 2;
+	int nIdx;
+	float* conf_data = m_ssd.m_pConf->cpu_data();
+
+	for (int i = 0; i < nNum; i++)
+	{
+		for (int j = 0; j < nNumPredsPerClass; j++)
+		{
+			for (int c = 0; c < nNumClasses; c++)
+			{
+				int nIdx = (i * nNumPredsPerClass + j) * nNumClasses + c;
+				conf_data[nIdx] = nIdx * float(0.1);
+			}
+		}
+	}
+
+	m_ssd.Setup(nNum, nNumPredsPerClass, 2);
+	m_ssd.m_nNumClasses = nNumClasses;
+
+	vector<map<int, vector<float>>> all_conf_preds;
+	if (lErr = m_ssd.getConfidenceScores(false, all_conf_preds))
+		return lErr;
+
+	for (int i = 0; i < nNum; i++)
+	{
+		CHECK_EQ(all_conf_preds[i].size(), nNumClasses);
+
+		for (int c = 0; c < nNumClasses; c++)
+		{
+			map<int, vector<float>>::iterator it = all_conf_preds[i].find(c);
+
+			CHECK_EQ(it->first, c);
+			const vector<float>& confidences = it->second;
+
+			for (int j = 0; j < nNumPredsPerClass; j++)
+			{
+				int nIdx = (i * nNumPredsPerClass + j) * nNumClasses + c;
+				EXPECT_NEAR(confidences[j], nIdx * float(0.1));
+			}
+		}
+	}
+
+	return 0;
+}
+
+template <>
+long TestData<double>::TestGetConfScores(int nConfig)
+{
+	LONG lErr;
+	int nNum = 2;
+	int nNumPredsPerClass = 2;
+	int nNumClasses = 2;
+	int nIdx;
+	double* conf_data = m_ssd.m_pConf->cpu_data();
+
+	for (int i = 0; i < nNum; i++)
+	{
+		for (int j = 0; j < nNumPredsPerClass; j++)
+		{
+			for (int c = 0; c < nNumClasses; c++)
+			{
+				int nIdx = (i * nNumPredsPerClass + j) * nNumClasses + c;
+				conf_data[nIdx] = nIdx * double(0.1);
+			}
+		}
+	}
+
+	m_ssd.Setup(nNum, nNumPredsPerClass, 2);
+	m_ssd.m_nNumClasses = nNumClasses;
+
+	vector<map<int, vector<double>>> all_conf_preds;
+	if (lErr = m_ssd.getConfidenceScores(false, all_conf_preds))
+		return lErr;
+
+	for (int i = 0; i < nNum; i++)
+	{
+		CHECK_EQ(all_conf_preds[i].size(), nNumClasses);
+
+		for (int c = 0; c < nNumClasses; c++)
+		{
+			map<int, vector<double>>::iterator it = all_conf_preds[i].find(c);
+
+			CHECK_EQ(it->first, c);
+			const vector<double>& confidences = it->second;
+
+			for (int j = 0; j < nNumPredsPerClass; j++)
+			{
+				int nIdx = (i * nNumPredsPerClass + j) * nNumClasses + c;
+				EXPECT_NEAR(confidences[j], nIdx * double(0.1));
+			}
+		}
+	}
+
+	return 0;
+}
 
 
 //=============================================================================
