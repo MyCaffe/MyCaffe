@@ -346,7 +346,7 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestGetGt1()
+        public void TestGetGt()
         {
             SsdExtensionTest test = new SsdExtensionTest();
 
@@ -354,25 +354,7 @@ namespace MyCaffe.test
             {
                 foreach (ISsdExtensionTest t in test.Tests)
                 {
-                    t.TestGetGt1(0);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestGetGt2()
-        {
-            SsdExtensionTest test = new SsdExtensionTest();
-
-            try
-            {
-                foreach (ISsdExtensionTest t in test.Tests)
-                {
-                    t.TestGetGt2(0);
+                    t.TestGetGt(0);
                 }
             }
             finally
@@ -618,8 +600,7 @@ namespace MyCaffe.test
         void TestBBOX_Match_OnePerPrediction(int nConfig);
         void TestBBOX_Match_AllPerPrediction(int nConfig);
         void TestBBOX_Match_AllPerPredictionEx(int nConfig);
-        void TestGetGt1(int nConfig);
-        void TestGetGt2(int nConfig);
+        void TestGetGt(int nConfig);
         void TestGetLocPredShared(int nConfig);
         void TestGetLocPredUnShared(int nConfig);
         void TestGetConfScores(int nConfig);
@@ -680,8 +661,7 @@ namespace MyCaffe.test
             BBOX_MATCH_ALLPERPREDICTION = 17,
             BBOX_MATCH_ALLPERPREDICTIONEX = 18,
 
-            GET_GT1 = 19,
-            GET_GT2 = 20,
+            GET_GT = 19,
             GET_LOCPRED_SHARED = 21,
             GET_LOCPRED_UNSHARED = 22,
             GET_CONF_SCORES = 23,
@@ -980,7 +960,7 @@ namespace MyCaffe.test
             m_cuda.FreeExtension(hExtension);
         }
 
-        public void TestGetGt1(int nConfig)
+        public void TestGetGt(int nConfig)
         {
             string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
             if (!File.Exists(strPath))
@@ -989,21 +969,7 @@ namespace MyCaffe.test
             long hExtension = m_cuda.CreateExtension(strPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.GET_GT1, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
-        }
-
-        public void TestGetGt2(int nConfig)
-        {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.GET_GT2, nConfig);
+            runTest(hExtension, TEST.GET_GT, nConfig);
 
             m_cuda.FreeExtension(hExtension);
         }

@@ -39,8 +39,7 @@ enum TEST
 	BBOX_MATCH_ALLPERPREDICTION = 17,
 	BBOX_MATCH_ALLPERPREDICTIONEX = 18,
 
-	GET_GT1 = 19,
-	GET_GT2 = 20,
+	GET_GT = 19,
 	GET_LOCPRED_SHARED = 21,
 	GET_LOCPRED_UNSHARED = 22,
 	GET_CONF_SCORES = 23,
@@ -128,6 +127,28 @@ public:
 		CHECK_EQ(ymax1, ymax2);
 	}
 
+	void CHECK_BBOX(BBOX b, int nLabel, T fxmin, T fymin, T fxmax, T fymax, bool bDifficult, T fsize)
+	{
+		int nLabel1 = m_ssd.getLabel(b);
+
+		T fxmin1;
+		T fymin1;
+		T fxmax1;
+		T fymax1;
+		m_ssd.getBounds(b, &fxmin1, &fymin1, &fxmax1, &fymax1);
+		bool bDifficult1 = m_ssd.getDifficult(b);
+		T fsize1 = m_ssd.getSize(b);
+
+		if (nLabel1 != nLabel)
+			throw ERROR_PARAM_OUT_OF_RANGE;
+
+		if (bDifficult != bDifficult)
+			throw ERROR_PARAM_OUT_OF_RANGE;
+
+		EXPECT_NEAR(fsize1, fsize);
+		CHECK_EQ(fxmin1, fymin1, fxmax1, fymax1, fxmin, fymin, fxmax, fymax);
+	}
+
 	long TestCreate(int nConfig)
 	{
 		LONG lErr;
@@ -160,7 +181,7 @@ public:
 		if (lErr = m_ssd.Initialize(nGpuID, nNumClasses, bShareLocation, nLocClasses, nBackgroundLabelId, bUseDifficultGt, miningType, matchingType, fOverlapThreshold, bUsePriorForMatching, codeType, bEncodeVariantInTgt, bBpInsize, bIgnoreCrossBoundary, bUsePriorForNms, confLossType, locLossType, fNegPosRatio, fNegOverlap, nSampleSize, bMapObjectToAgnostic, fNmsThreshold, nNmsTopK, fNmsEta))
 			return lErr;
 
-		int nNum = 2;
+		int nNum = 8;
 		int nNumPriors = 6;
 		int nNumGt = 4;
 
@@ -970,28 +991,210 @@ public:
 		return 0;
 	}
 
-	long TestGetGt1(int nConfig)
+	long TestGetGt(int nConfig)
 	{
-		return ERROR_NOT_IMPLEMENTED;
-	}
+		LONG lErr;
+		int nNumGt = 4;
 
-	long TestGetGt2(int nConfig)
-	{
-		return ERROR_NOT_IMPLEMENTED;
+		for (int i = 0; i < nNumGt; i++)
+		{
+			BBOX gt(i, MEM_GT);
+
+			int nImageId = ceil(i / (T)2.0);
+			int nLabel = i;
+			bool bDifficult = (i % 2);
+
+			m_ssd.setBbox(gt, nImageId, nLabel, T(0.1), T(0.1), T(0.3), T(0.3), bDifficult);
+		}
+
+		m_ssd.m_nNumGt = nNumGt;
+		m_ssd.m_nBackgroundLabelId = -1;
+		m_ssd.m_bUseDifficultGt = true;
+
+		map<int, vector<BBOX>> all_gt_bboxes;
+		if (lErr = m_ssd.getGt(all_gt_bboxes))
+			return lErr;
+
+		CHECK_EQ(all_gt_bboxes.size(), 3);
+
+		CHECK_EQ(all_gt_bboxes[0].size(), 1);
+		CHECK_BBOX(all_gt_bboxes[0][0], 0, T(0.1), T(0.1), T(0.3), T(0.3), false, T(0.04));
+
+		CHECK_EQ(all_gt_bboxes[1].size(), 2);
+		for (int i = 1; i < 3; i++)
+		{
+			CHECK_BBOX(all_gt_bboxes[1][i-1], i, T(0.1), T(0.1), T(0.3), T(0.3), i%2, T(0.04));
+		}
+
+		CHECK_EQ(all_gt_bboxes[2].size(), 1);
+		CHECK_BBOX(all_gt_bboxes[2][0], 3, T(0.1), T(0.1), T(0.3), T(0.3), true, T(0.04));
+
+		// Skip difficult ground truth.
+		m_ssd.m_nBackgroundLabelId = -1;
+		m_ssd.m_bUseDifficultGt = false;
+
+		if (lErr = m_ssd.getGt(all_gt_bboxes))
+			return lErr;
+
+		CHECK_EQ(all_gt_bboxes.size(), 2);
+
+		CHECK_EQ(all_gt_bboxes[0].size(), 1);
+		CHECK_BBOX(all_gt_bboxes[0][0], 0, T(0.1), T(0.1), T(0.3), T(0.3), false, T(0.04));
+
+		CHECK_EQ(all_gt_bboxes[1].size(), 1);
+		CHECK_BBOX(all_gt_bboxes[1][0], 2, T(0.1), T(0.1), T(0.3), T(0.3), false, T(0.04));
+
+		return 0;
 	}
 
 	long TestGetLocPredShared(int nConfig)
 	{
-		return ERROR_NOT_IMPLEMENTED;
+		int nNum = 2;
+		int nNumPredsPerClass = 2;
+		int nNumLocClasses = 1;
+		bool bShareLocation = true;
+		int nIdx = 0;
+
+		for (int i = 0; i < nNum; i++)
+		{
+			for (int j = 0; j < nNumPredsPerClass; j++)
+			{
+				BBOX bbox(nIdx, MEM_LOC);
+				T xmin = T(i * nNumPredsPerClass * 0.1 + j * 0.1);
+				T ymin = T(i * nNumPredsPerClass * 0.1 + j * 0.1);
+				T xmax = T(i * nNumPredsPerClass * 0.1 + j * 0.1 + 0.2);
+				T ymax = T(i * nNumPredsPerClass * 0.1 + j * 0.1 + 0.2);
+				m_ssd.setBounds(bbox, xmin, ymin, xmax, ymax);
+				nIdx++;
+			}
+		}
+
+		m_ssd.Setup(nNum, nNumPredsPerClass, 2);
+		m_ssd.m_bShareLocation = bShareLocation;
+		m_ssd.m_nLocClasses = nNumLocClasses;
+
+		vector<map<int, vector<BBOX>>> all_loc_bboxes;
+		m_ssd.getLocPrediction(all_loc_bboxes);
+
+		CHECK_EQ(all_loc_bboxes.size(), nNum);
+
+		for (int i = 0; i < nNum; i++)
+		{
+			CHECK_EQ(all_loc_bboxes[i].size(), 1);
+
+			map<int, vector<BBOX>>::iterator it = all_loc_bboxes[i].begin();
+			CHECK_EQ(it->first, -1);
+
+			vector<BBOX> bboxes = it->second;
+			CHECK_EQ(bboxes.size(), nNumPredsPerClass);
+
+			T fStartVal = T(i * nNumPredsPerClass * 0.1);
+
+			for (int j = 0; j < nNumPredsPerClass; j++)
+			{
+				T xmin1 = fStartVal + j * T(0.1);
+				T ymin1 = fStartVal + j * T(0.1);
+				T xmax1 = fStartVal + j * T(0.1) + T(0.2);
+				T ymax1 = fStartVal + j * T(0.1) + T(0.2);
+				T xmin;
+				T ymin;
+				T xmax;
+				T ymax;
+				
+				m_ssd.getBounds(bboxes[j], &xmin, &ymin, &xmax, &ymax);
+				CHECK_EQ(xmin1, ymin1, xmax1, ymax1, xmin, ymin, xmax, ymax);
+			}
+		}
+
+		return 0;
 	}
 
 	long TestGetLocPredUnShared(int nConfig)
 	{
-		return ERROR_NOT_IMPLEMENTED;
+		int nNum = 2;
+		int nNumPredsPerClass = 2;
+		int nNumLocClasses = 2;
+		bool bShareLocation = false;
+		int nIdx = 0;
+
+		for (int i = 0; i < nNum; i++)
+		{
+			for (int j = 0; j < nNumPredsPerClass; j++)
+			{
+				T fStartValue = T((i * nNumPredsPerClass + j) * nNumLocClasses * 0.1);
+
+				for (int c = 0; c < nNumLocClasses; c++)
+				{
+					nIdx = ((i * nNumPredsPerClass + j) * nNumLocClasses + c);
+					BBOX bbox(nIdx, MEM_LOC);
+					T xmin = T(fStartValue + c * 0.1);
+					T ymin = T(fStartValue + c * 0.1);
+					T xmax = T(fStartValue + c * 0.1 + 0.2);
+					T ymax = T(fStartValue + c * 0.1 + 0.2);
+					m_ssd.setBounds(bbox, xmin, ymin, xmax, ymax);
+				}
+			}
+		}
+
+		m_ssd.Setup(nNum, nNumPredsPerClass, 2);
+		m_ssd.m_bShareLocation = bShareLocation;
+		m_ssd.m_nLocClasses = nNumLocClasses;
+
+		vector<map<int, vector<BBOX>>> all_loc_bboxes;
+		m_ssd.getLocPrediction(all_loc_bboxes);
+
+		CHECK_EQ(all_loc_bboxes.size(), nNum);
+
+		for (int i = 0; i < nNum; i++)
+		{
+			CHECK_EQ(all_loc_bboxes[i].size(), nNumLocClasses);
+
+			for (int c = 0; c < nNumLocClasses; c++)
+			{
+				map<int, vector<BBOX>>::iterator it = all_loc_bboxes[i].find(c);
+				CHECK_EQ(it->first, c);
+
+				vector<BBOX> bboxes = it->second;
+				CHECK_EQ(bboxes.size(), nNumPredsPerClass);
+
+				for (int j = 0; j < nNumPredsPerClass; j++)
+				{
+					T fStartVal = T(i * nNumPredsPerClass + j) * T(nNumLocClasses * 0.1);
+					T xmin1 = fStartVal + c * T(0.1);
+					T ymin1 = fStartVal + c * T(0.1);
+					T xmax1 = fStartVal + c * T(0.1) + T(0.2);
+					T ymax1 = fStartVal + c * T(0.1) + T(0.2);
+					T xmin;
+					T ymin;
+					T xmax;
+					T ymax;
+
+					m_ssd.getBounds(bboxes[j], &xmin, &ymin, &xmax, &ymax);
+					CHECK_EQ(xmin1, ymin1, xmax1, ymax1, xmin, ymin, xmax, ymax);
+				}
+			}
+		}
+
+		return 0;
 	}
 
 	long TestGetConfScores(int nConfig)
 	{
+		int nNum = 2;
+		int nNumPredsPerClass = 2;
+		int nNumClasses = 2;
+		int nIdx;
+
+		for (int i = 0; i < nNum; i++)
+		{
+			for (int j = 0; j < nNumPredsPerClass; j++)
+			{
+				for (int c = 0; c < nNumClasses; c++)
+				{
+				}
+			}
+		}
+
 		return ERROR_NOT_IMPLEMENTED;
 	}
 
@@ -1195,13 +1398,8 @@ long TestSsd<T>::RunTest(LONG lInput, T* pfInput)
 					throw lErr;
 				break;
 
-			case GET_GT1:
-				if (lErr = ((TestData<T>*)m_pObj)->TestGetGt1(nConfig))
-					throw lErr;
-				break;
-
-			case GET_GT2:
-				if (lErr = ((TestData<T>*)m_pObj)->TestGetGt2(nConfig))
+			case GET_GT:
+				if (lErr = ((TestData<T>*)m_pObj)->TestGetGt(nConfig))
 					throw lErr;
 				break;
 
