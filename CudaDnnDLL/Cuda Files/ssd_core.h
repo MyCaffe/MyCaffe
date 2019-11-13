@@ -308,6 +308,13 @@ public:
 		return m_host[nOffset + m_nOffset + 3];
 	}
 
+	long getBounds(BBOX bbox, T* pfxmin, T* pfymin, T* pfxmax, T* pfymax)
+	{
+		int nIdx = std::get<0>(bbox);
+		int nOffset = offset(nIdx);
+		return getBoundsAtOffset(nOffset, pfxmin, pfymin, pfxmax, pfymax);
+	}
+
 	long getBounds(int nIdx, T* pfxmin, T* pfymin, T* pfxmax, T* pfymax)
 	{
 		int nOffset = offset(nIdx);
@@ -672,7 +679,7 @@ public:
 		return 0;
 	}
 
-	long getPrior(vector<BBOX>& rgPriorBbox, vector<int>& rgPriorVariances)
+	long getPrior(vector<BBOX>& rgPriorBbox, vector<BBOX>& rgPriorVariances)
 	{
 		rgPriorBbox.clear();
 		rgPriorVariances.clear();
@@ -685,7 +692,8 @@ public:
 
 		for (int i = 0; i < m_nNumPriors; i++)
 		{
-			rgPriorVariances.push_back(m_nNumPriors + i);
+			BBOX bbox(m_nNumPriors + i, MEM_PRIOR);
+			rgPriorVariances.push_back(bbox);
 		}
 
 		return 0;
@@ -798,7 +806,7 @@ public:
 		return 0;
 	}
 
-	long decode(BBOX priorBbox, int nPriorVar, bool bClip, BBOX locPred, T* pfxmin, T* pfymin, T* pfxmax, T* pfymax, T* pfsize)
+	long decode(BBOX priorBbox, BBOX priorVar, bool bClip, BBOX locPred, T* pfxmin, T* pfymin, T* pfxmax, T* pfymax, T* pfsize)
 	{
 		int nOffset = std::get<0>(priorBbox);
 		MEM memPrior = std::get<1>(priorBbox);
@@ -808,12 +816,13 @@ public:
 		T fymax_prior;
 		m_rgBbox[memPrior]->getBounds(nOffset, &fxmin_prior, &fymin_prior, &fxmax_prior, &fymax_prior);
 
-		nOffset = nPriorVar;
+		nOffset = std::get<0>(priorVar);
+		MEM memVar = std::get<1>(priorVar);
 		T fxmin_prior_var;
 		T fymin_prior_var;
 		T fxmax_prior_var;
 		T fymax_prior_var;
-		m_rgBbox[memPrior]->getBounds(nOffset, &fxmin_prior_var, &fymin_prior_var, &fxmax_prior_var, &fymax_prior_var);
+		m_rgBbox[memVar]->getBounds(nOffset, &fxmin_prior_var, &fymin_prior_var, &fxmax_prior_var, &fymax_prior_var);
 
 		nOffset = std::get<0>(locPred);
 		MEM memLoc = std::get<1>(locPred);
@@ -917,7 +926,7 @@ public:
 		return 0;
 	}
 
-	long decode(int i, BBOX priorBbox, int nPriorVar, bool bClip, BBOX locPred, T* pfDecodeSize)
+	long decode(int i, BBOX priorBbox, BBOX priorVar, bool bClip, BBOX locPred, T* pfDecodeSize)
 	{
 		LONG lErr;
 
@@ -927,7 +936,7 @@ public:
 		T fymax_decode;
 		T fsize_decode;
 
-		if (lErr = decode(priorBbox, nPriorVar, bClip, locPred, &fxmin_decode, &fymin_decode, &fxmax_decode, &fymax_decode, &fsize_decode))
+		if (lErr = decode(priorBbox, priorVar, bClip, locPred, &fxmin_decode, &fymin_decode, &fxmax_decode, &fymax_decode, &fsize_decode))
 			return lErr;
 
 		m_rgBbox[MEM_DECODE]->setBounds(i, fxmin_decode, fymin_decode, fxmax_decode, fymax_decode);
@@ -935,7 +944,7 @@ public:
 		return 0;
 	}
 
-	long decode(vector<BBOX>& rgPriorBbox, vector<int>& rgPriorVariances, bool bClip, vector<BBOX>& rgLocPreds, vector<BBOX>& rgDecodeBbox)
+	long decode(vector<BBOX>& rgPriorBbox, vector<BBOX>& rgPriorVariances, bool bClip, vector<BBOX>& rgLocPreds, vector<BBOX>& rgDecodeBbox)
 	{
 		LONG lErr;
 
@@ -954,7 +963,7 @@ public:
 		return 0;
 	}
 
-	long encode(BBOX priorBbox, int nPriorVar, BBOX gtBbox, T* pfxmin, T* pfymin, T* pfxmax, T* pfymax)
+	long encode(BBOX priorBbox, BBOX priorVar, BBOX gtBbox, T* pfxmin, T* pfymin, T* pfxmax, T* pfymax)
 	{
 		int nOffset = std::get<0>(priorBbox);
 		MEM memPrior = std::get<1>(priorBbox);
@@ -964,12 +973,13 @@ public:
 		T fymax_prior;
 		m_rgBbox[memPrior]->getBounds(nOffset, &fxmin_prior, &fymin_prior, &fxmax_prior, &fymax_prior);
 
-		nOffset = nPriorVar;
+		nOffset = std::get<0>(priorVar);
+		MEM memVar = std::get<1>(priorVar);
 		T fxmin_prior_var;
 		T fymin_prior_var;
 		T fxmax_prior_var;
 		T fymax_prior_var;
-		m_rgBbox[memPrior]->getBounds(nOffset, &fxmin_prior_var, &fymin_prior_var, &fxmax_prior_var, &fymax_prior_var);
+		m_rgBbox[memVar]->getBounds(nOffset, &fxmin_prior_var, &fymin_prior_var, &fxmax_prior_var, &fymax_prior_var);
 
 		nOffset = std::get<0>(gtBbox);
 		MEM memGt = std::get<1>(gtBbox);
@@ -1151,7 +1161,7 @@ public:
 
 	long match(vector<BBOX>& rgGt, vector<BBOX>& rgPredBBox, int nLabel, vector<int>* match_indices, vector<float>* match_overlaps);
 
-	long findMatches(vector<map<int, vector<BBOX>>>& rgAllLocPreds, map<int, vector<BBOX>>& rgAllGt, vector<BBOX>& rgPriorBbox, vector<int>& rgPriorVariances, vector<map<int, vector<float>>>& all_match_overlaps, vector<map<int, vector<int>>>& all_match_indices);
+	long findMatches(vector<map<int, vector<BBOX>>>& rgAllLocPreds, map<int, vector<BBOX>>& rgAllGt, vector<BBOX>& rgPriorBbox, vector<BBOX>& rgPriorVariances, vector<map<int, vector<float>>>& all_match_overlaps, vector<map<int, vector<int>>>& all_match_indices);
 
 	int countNumMatches(vector<map<int, vector<int>>>& all_match_indices, int nNum)
 	{
@@ -1182,7 +1192,7 @@ public:
 
 	long load_conf_loss(int nNum, int nNumPriors, SsdMemory<T>* pConfLoss, vector<vector<T>>* pall_conf_loss);
 
-	long encodeLocPrediction(vector<map<int, vector<BBOX>>>& rgAllLocPreds, map<int, vector<BBOX>>& rgAllGt, vector<map<int, vector<int>>>& all_match_indices, vector<BBOX>& rgPriorBboxes, vector<int>& rgPriorVariances, SsdMemory<T>* pLocPred, SsdMemory<T>* pLocGt);
+	long encodeLocPrediction(vector<map<int, vector<BBOX>>>& rgAllLocPreds, map<int, vector<BBOX>>& rgAllGt, vector<map<int, vector<int>>>& all_match_indices, vector<BBOX>& rgPriorBboxes, vector<BBOX>& rgPriorVariances, SsdMemory<T>* pLocPred, SsdMemory<T>* pLocGt);
 
 	long encodeConfPrediction(SsdMemory<T>* pConf, vector<map<int, vector<int>>>& all_match_indices, vector<vector<int>>& all_neg_indices, map<int, vector<BBOX>>& rgAllGt, SsdMemory<T>* pConfPred, SsdMemory<T>* pConfGt);
 
@@ -1202,7 +1212,7 @@ public:
 
 	long applyNMS(vector<BBOX>& bboxes, vector<T>& scores, T fThreshold, int nTopK, vector<int>* pindices);
 
-	long mineHardExamples(vector<map<int, vector<BBOX>>>& rgAllLocPreds, map<int, vector<BBOX>>& rgAllGt, vector<BBOX>& rgPriorBboxes, vector<int>& rgPriorVariances, vector<map<int, vector<float>>>& all_match_overlaps, vector<map<int, vector<int>>>& all_match_indices, vector<vector<int>>& all_neg_indices, int* pnNumMatches, int* pnNumNegs);
+	long mineHardExamples(vector<map<int, vector<BBOX>>>& rgAllLocPreds, map<int, vector<BBOX>>& rgAllGt, vector<BBOX>& rgPriorBboxes, vector<BBOX>& rgPriorVariances, vector<map<int, vector<float>>>& all_match_overlaps, vector<map<int, vector<int>>>& all_match_indices, vector<vector<int>>& all_neg_indices, int* pnNumMatches, int* pnNumNegs);
 };
 
 //=============================================================================

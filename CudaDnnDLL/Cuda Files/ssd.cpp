@@ -56,7 +56,7 @@ long ssdHandle<T>::MultiboxLossForward(int nLocDataCount, long hLocData, int nCo
 		return lErr;
 
 	vector<BBOX> rgPriorBbox;
-	vector<int> rgPriorVariances;
+	vector<BBOX> rgPriorVariances;
 	m_pData->getPrior(rgPriorBbox, rgPriorVariances);
 
 	vector<map<int, vector<BBOX>>> rgAllLocPreds;
@@ -91,7 +91,7 @@ long ssdHandle<T>::EncodeLocPrediction(int nLocPredCount, long hLocPred, int nLo
 	m_pData->getLocPrediction(rgAllLocPreds);
 
 	vector<BBOX> rgPriorBbox;
-	vector<int> rgPriorVariances;
+	vector<BBOX> rgPriorVariances;
 	m_pData->getPrior(rgPriorBbox, rgPriorVariances);
 
 	map<int, vector<BBOX>> rgAllGt;
