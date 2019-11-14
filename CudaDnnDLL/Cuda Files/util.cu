@@ -224,6 +224,18 @@ bool GetErrorString(long lErr, char* szErr, long lMaxErr)
 		case ERROR_SSD_NUMLOCCLASSES_INVALID_FOR_SHARED:
 			_snprintf(szErr, lMaxErr, "SSD: The number of loc classes must be 1 when using shared location. (%ld)", lErr);
 			return true;
+
+		case SSD_ERROR_LOCCOUNT_GTCOUNT_INCORRECT:
+			_snprintf(szErr, lMaxErr, "SSD: The loc pred and loc gt must be equal. (%ld)", lErr);
+			return true;
+
+		case SSD_ERROR_LOC_LOSS_MATCH_COUNT_INCORRECT:
+			_snprintf(szErr, lMaxErr, "SSD: The loc loss match count is incorrect. (%ld)", lErr);
+			return true;
+
+		case SSD_ERROR_INVALID_LOC_LOSS_TYPE:
+			_snprintf(szErr, lMaxErr, "SSD: The loc loss type is invalid. (%ld)", lErr);
+			return true;
 	}
 
 	return false;
