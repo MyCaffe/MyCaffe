@@ -45,12 +45,13 @@ enum TEST
 	GET_CONF_SCORES = 23,
 	GET_PRIOR_BBOXES = 24,
 
-	FINDMATCHES = 25,
-	COUNTMATCHES = 26,
-	COMPUTE_CONF_LOSS = 28,
-	COMPUTE_LOC_LOSS = 29,
-	GET_TOPK_SCORES = 30,
-	APPLYNMS = 31,
+	SOFTMAX = 25,
+	COMPUTE_CONF_LOSS = 26,
+	APPLYNMS = 27,
+
+	COMPUTE_LOC_LOSS = 28,
+	FINDMATCHES = 29,
+	COUNTMATCHES = 30,
 	MINE_HARD_EXAMPLES = 32
 };
 
@@ -121,12 +122,6 @@ public:
 	}
 
 	void CHECK_EQ(int t1, int t2)
-	{
-		if (t1 != t2)
-			throw ERROR_PARAM_OUT_OF_RANGE;
-	}
-
-	void CHECK_EQ(unsigned long t1, unsigned long t2)
 	{
 		if (t1 != t2)
 			throw ERROR_PARAM_OUT_OF_RANGE;
@@ -1383,6 +1378,136 @@ public:
 		return 0;
 	}
 
+	long TestSoftmax(int nConfig)
+	{
+		int nNum = 2;
+		int nNumPreds = 2;
+		int nNumClasses = 2;
+		T* cpu_data = m_ssd.m_pConf->cpu_data();
+
+		cpu_data[0] = T(0.1);
+		cpu_data[1] = T(0.9);
+		cpu_data[2] = T(0.9);
+		cpu_data[3] = T(0.1);
+		cpu_data[4] = T(0.3);
+		cpu_data[5] = T(0.7);
+		cpu_data[6] = T(0.7);
+		cpu_data[7] = T(0.3);
+
+		m_ssd.m_pConf->CopyCpuToGpu();
+		m_ssd.softmax(m_ssd.m_pConf, nNum * nNumPreds, nNumClasses, 1, m_ssd.m_pProb);
+
+		m_ssd.m_pProb->CopyGpuToCpu();
+		T* cpu_prob = m_ssd.m_pProb->cpu_data();
+		T fExpected;
+
+		fExpected = exp((T)-0.8) / (exp((T)-0.8) + (T)1);
+		EXPECT_NEAR(cpu_prob[0], fExpected);
+
+		fExpected = (T)1 / (exp((T)-0.8) + (T)1);
+		EXPECT_NEAR(cpu_prob[1], fExpected);
+
+		fExpected = (T)1 / (exp((T)-0.8) + (T)1);
+		EXPECT_NEAR(cpu_prob[2], fExpected);
+
+		fExpected = exp((T)-0.8) / (exp((T)-0.8) + (T)1);
+		EXPECT_NEAR(cpu_prob[3], fExpected);
+
+		fExpected = exp((T)-0.4) / (exp((T)-0.4) + (T)1);
+		EXPECT_NEAR(cpu_prob[4], fExpected);
+
+		fExpected = (T)1 / (exp((T)-0.4) + (T)1);
+		EXPECT_NEAR(cpu_prob[5], fExpected);
+
+		fExpected = (T)1 / (exp((T)-0.4) + (T)1);
+		EXPECT_NEAR(cpu_prob[6], fExpected);
+
+		fExpected = exp((T)-0.4) / (exp((T)-0.4) + (T)1);
+		EXPECT_NEAR(cpu_prob[7], fExpected);
+
+		return 0;
+	}
+
+	long TestApplyNMS(int nConfig)
+	{
+		LONG lErr;
+		vector<BBOX> bboxes;
+		vector<T> scores;
+		T fNmsThreshold = T(0.3);
+		int nTopK = -1;
+		bool bReuseOverlaps = false;
+		map<int, map<int, T>> overlaps;
+		vector<int> indices;
+
+
+		// Fill in bboxes and confidences
+		BBOX bbox1(0, MEM_LOC);
+		m_ssd.setBounds(bbox1, T(0.1), T(0.1), T(0.3), T(0.3));
+		bboxes.push_back(bbox1);
+		scores.push_back(T(0.8));
+
+		BBOX bbox2(1, MEM_LOC);
+		m_ssd.setBounds(bbox2, T(0.2), T(0.1), T(0.4), T(0.3));
+		bboxes.push_back(bbox2);
+		scores.push_back(T(0.7));
+
+		BBOX bbox3(2, MEM_LOC);
+		m_ssd.setBounds(bbox3, T(0.2), T(0.0), T(0.4), T(0.2));
+		bboxes.push_back(bbox3);
+		scores.push_back(T(0.4));
+
+		BBOX bbox4(3, MEM_LOC);
+		m_ssd.setBounds(bbox4, T(0.1), T(0.2), T(0.4), T(0.4));
+		bboxes.push_back(bbox4);
+		scores.push_back(T(0.5));
+
+		if (lErr = m_ssd.applyNMS(bboxes, scores, fNmsThreshold, nTopK, bReuseOverlaps, &overlaps, &indices))
+			return lErr;
+
+		CHECK_EQ(overlaps.size(), 0); // reuse_overlaps is false
+		CHECK_EQ(indices.size(), 3);
+		CHECK_EQ(indices[0], 0);
+		CHECK_EQ(indices[1], 3);
+		CHECK_EQ(indices[2], 2);
+
+		nTopK = 2;
+		if (lErr = m_ssd.applyNMS(bboxes, scores, fNmsThreshold, nTopK, bReuseOverlaps, &overlaps, &indices))
+			return lErr;
+
+		CHECK_EQ(indices.size(), 1);
+		CHECK_EQ(indices[0], 0);
+
+		nTopK = 3;
+		fNmsThreshold = T(0.2);
+		if (lErr = m_ssd.applyNMS(bboxes, scores, fNmsThreshold, nTopK, bReuseOverlaps, &overlaps, &indices))
+			return lErr;
+
+		CHECK_EQ(indices.size(), 1);
+		CHECK_EQ(indices[0], 0);
+
+		bReuseOverlaps = true;
+		if (lErr = m_ssd.applyNMS(bboxes, scores, fNmsThreshold, nTopK, bReuseOverlaps, &overlaps, &indices))
+			return lErr;
+
+		CHECK_EQ(overlaps.size(), 1); 
+		EXPECT_NEAR(overlaps[0][1], T(1.0/3));
+		EXPECT_NEAR(overlaps[0][2], T(0.0));
+		EXPECT_NEAR(overlaps[0][3], T(2.0 / 8));
+
+		map<int, map<int, T>> old_overlaps = overlaps;
+		if (lErr = m_ssd.applyNMS(bboxes, scores, fNmsThreshold, nTopK, bReuseOverlaps, &overlaps, &indices))
+			return lErr;
+
+		CHECK_EQ((int)old_overlaps.size(), (int)overlaps.size());
+
+		for (int i = 1; i <= 3; i++)
+		{
+			EXPECT_NEAR(old_overlaps[0][i], overlaps[0][i]);
+		}
+
+		return 0;
+	}
+
 	long TestFindMatches(int nConfig)
 	{
 		return ERROR_NOT_IMPLEMENTED;
@@ -1396,31 +1521,6 @@ public:
 	long TestComputeLocLoss(int nConfig)
 	{
 		return ERROR_NOT_IMPLEMENTED;
-	}
-
-	long TestGetTopKScores(int nConfig)
-	{
-		return ERROR_NOT_IMPLEMENTED;
-	}
-
-	long TestApplyNMS(int nConfig)
-	{
-		LONG lErr;
-		vector<BBOX> bboxes;
-		vector<T> scores;
-		T fThreshold = T(0);
-		int nTopK = 3;
-		vector<int> indices;
-
-		if (nConfig > 0)
-		{
-			return ERROR_NOT_IMPLEMENTED;
-		}
-
-		if (lErr = m_ssd.applyNMS(bboxes, scores, fThreshold, nTopK, &indices))
-			return lErr;
-
-		return 0;
 	}
 
 	long TestMineHardExamples(int nConfig)
@@ -1708,6 +1808,11 @@ long TestSsd<T>::RunTest(LONG lInput, T* pfInput)
 					throw lErr;
 				break;
 
+			case SOFTMAX:
+				if (lErr = ((TestData<T>*)m_pObj)->TestSoftmax(nConfig))
+					throw lErr;
+				break;
+
 			case COMPUTE_CONF_LOSS:
 				if (lErr = ((TestData<T>*)m_pObj)->TestComputeConfLossMatch(nConfig))
 					throw lErr;
@@ -1715,11 +1820,6 @@ long TestSsd<T>::RunTest(LONG lInput, T* pfInput)
 
 			case COMPUTE_LOC_LOSS:
 				if (lErr = ((TestData<T>*)m_pObj)->TestComputeLocLoss(nConfig))
-					throw lErr;
-				break;
-
-			case GET_TOPK_SCORES:
-				if (lErr = ((TestData<T>*)m_pObj)->TestGetTopKScores(nConfig))
 					throw lErr;
 				break;
 

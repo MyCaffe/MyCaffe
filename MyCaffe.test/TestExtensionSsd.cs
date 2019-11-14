@@ -472,6 +472,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestSoftmax()
+        {
+            SsdExtensionTest test = new SsdExtensionTest();
+
+            try
+            {
+                foreach (ISsdExtensionTest t in test.Tests)
+                {
+                    t.TestSoftmax(0);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestComputeConfLoss()
         {
             SsdExtensionTest test = new SsdExtensionTest();
@@ -508,24 +526,6 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestGetTopKScores()
-        {
-            SsdExtensionTest test = new SsdExtensionTest();
-
-            try
-            {
-                foreach (ISsdExtensionTest t in test.Tests)
-                {
-                    t.TestGetTopKScores(0);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
         public void TestApplyNMS()
         {
             SsdExtensionTest test = new SsdExtensionTest();
@@ -535,24 +535,6 @@ namespace MyCaffe.test
                 foreach (ISsdExtensionTest t in test.Tests)
                 {
                     t.TestApplyNMS(0);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestApplyNMSSimple()
-        {
-            SsdExtensionTest test = new SsdExtensionTest();
-
-            try
-            {
-                foreach (ISsdExtensionTest t in test.Tests)
-                {
-                    t.TestApplyNMS(-1);
                 }
             }
             finally
@@ -605,12 +587,12 @@ namespace MyCaffe.test
         void TestGetLocPredUnShared(int nConfig);
         void TestGetConfScores(int nConfig);
         void TestGetPriorBBoxes(int nConfig);
+        void TestSoftmax(int nConfig);
+        void TestApplyNMS(int nConfig);
+        void TestComputeConfLoss(int nConfig);
         void TestFindMatches(int nConfig);
         void TestCountMatches(int nConfig);
-        void TestComputeConfLoss(int nConfig);
         void TestComputeLocLoss(int nConfig);
-        void TestGetTopKScores(int nConfig);
-        void TestApplyNMS(int nConfig);
         void TestMineHardExamples(int nConfig);
     }
 
@@ -667,12 +649,13 @@ namespace MyCaffe.test
             GET_CONF_SCORES = 23,
             GET_PRIOR_BBOXES = 24,
 
-            FINDMATCHES = 25,
-            COUNTMATCHES = 26,
-            COMPUTE_CONF_LOSS = 28,
-            COMPUTE_LOC_LOSS = 29,
-            GET_TOPK_SCORES = 30,
-            APPLYNMS = 31,
+            SOFTMAX = 25,
+            COMPUTE_CONF_LOSS = 26,
+            APPLYNMS = 27,
+
+            COMPUTE_LOC_LOSS = 28,
+            FINDMATCHES = 29,
+            COUNTMATCHES = 30,
             MINE_HARD_EXAMPLES = 32
         }
 
@@ -1058,6 +1041,20 @@ namespace MyCaffe.test
             m_cuda.FreeExtension(hExtension);
         }
 
+        public void TestSoftmax(int nConfig)
+        {
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            if (!File.Exists(strPath))
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+
+            long hExtension = m_cuda.CreateExtension(strPath);
+
+            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
+            runTest(hExtension, TEST.SOFTMAX, nConfig);
+
+            m_cuda.FreeExtension(hExtension);
+        }
+
         public void TestComputeConfLoss(int nConfig)
         {
             string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
@@ -1082,20 +1079,6 @@ namespace MyCaffe.test
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.COMPUTE_LOC_LOSS, nConfig);
-
-            m_cuda.FreeExtension(hExtension);
-        }
-
-        public void TestGetTopKScores(int nConfig)
-        {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
-
-            m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
-            runTest(hExtension, TEST.GET_TOPK_SCORES, nConfig);
 
             m_cuda.FreeExtension(hExtension);
         }
