@@ -147,7 +147,7 @@ namespace MyCaffe.layers.ssd
 
             if (m_hSsd != 0)
             {
-                m_cuda.FreeSsd(m_hSsd);
+                m_cuda.FreeSSD(m_hSsd);
                 m_hSsd = 0;
             }
 
@@ -315,7 +315,7 @@ namespace MyCaffe.layers.ssd
                     fNmsEta = m_param.multiboxloss_param.nms_param.eta;
                 }
 
-                m_hSsd = m_cuda.CreateSsd(m_nNumClasses,
+                m_hSsd = m_cuda.CreateSSD(m_nNumClasses,
                                           m_bShareLocation,
                                           m_nLocClasses,
                                           m_nBackgroundLabelId,
@@ -356,7 +356,7 @@ namespace MyCaffe.layers.ssd
             m_nNumGt = colBottom[3].height;
 
             if (m_param.multiboxloss_param.use_gpu)
-                m_cuda.SetupSsd(m_hSsd, m_nNum, m_nNumPriors, m_nNumGt);
+                m_cuda.SetupSSD(m_hSsd, m_nNum, m_nNumPriors, m_nNumGt);
 
             m_log.CHECK_EQ(colBottom[0].num, colBottom[1].num, "The bottom[0] and bottom[1] num must be equal.");
             m_log.CHECK_EQ(m_nNumPriors * m_nLocClasses * 4, colBottom[0].channels, "The number of priors must match the number of location predictions.");
@@ -389,7 +389,7 @@ namespace MyCaffe.layers.ssd
             long hGtGpuData = colBottom[3].gpu_data;
             int nNumNegs;
 
-            m_nNumMatches = m_cuda.SsdMultiBoxLossForward(m_hSsd, nLocDataCount, hLocGpuData, nConfDataCount, hConfGpuData, nPriorDataCount, hPriorGpuData, nGtDataCount, hGtGpuData, out nNumNegs);
+            m_nNumMatches = m_cuda.SsdMultiBoxLossForward(m_hSsd, nLocDataCount, hLocGpuData, nConfDataCount, hConfGpuData, nPriorDataCount, hPriorGpuData, nGtDataCount, hGtGpuData, out m_rgAllMatchIndices, out m_rgrgAllNegIndices, out nNumNegs);
 
             // Retrieve all ground truth.
 //            DictionaryMap<List<NormalizedBBox>> rgAllGtBboxes = m_bboxUtil.GetGroundTruth(rgfGtData, m_nNumGt, m_nBackgroundLabelId, m_bUseDifficultGt);
