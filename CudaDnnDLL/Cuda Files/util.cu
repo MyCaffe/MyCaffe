@@ -169,7 +169,7 @@ bool GetErrorString(long lErr, char* szErr, long lMaxErr)
 			_snprintf(szErr, lMaxErr, "SSD: The ground truth label is out of range. (%ld)", lErr);
 			return true;
 
-		case ERROR_SSD_PRIOR_VARIANCE_COUNT:
+		case ERROR_SSD_INVALID_PRIOR_VARIANCE_COUNT:
 			_snprintf(szErr, lMaxErr, "SSD: The prior variances count does not match the prior bbox count. (%ld)", lErr);
 			return true;
 
@@ -201,10 +201,6 @@ bool GetErrorString(long lErr, char* szErr, long lMaxErr)
 			_snprintf(szErr, lMaxErr, "SSD: Could not find an expected label in the loc predictions. (%ld)", lErr);
 			return true;
 
-		case ERROR_SSD_CODE_TYPE_UNKNOWN:
-			_snprintf(szErr, lMaxErr, "SSD: Unknown Code-Type. (%ld)", lErr);
-			return true;
-
 		case ERROR_SSD_SAMPLE_SIZE_TOO_SMALL:
 			_snprintf(szErr, lMaxErr, "SSD: The sample size is too small and must be > 0. (%ld)", lErr);
 			return true;
@@ -213,7 +209,7 @@ bool GetErrorString(long lErr, char* szErr, long lMaxErr)
 			_snprintf(szErr, lMaxErr, "SSD: The number of classes is incorrect (e.g. when using map to agnostic, only 2 classes are valid for backgroundLabel >= 0, otherwise only 1 class is valid). (%ld)", lErr);
 			return true;
 
-		case ERROR_SSD_CONF_LOSS_TYPE_UNKNOWN:
+		case ERROR_SSD_INVALID_CONF_LOSS_TYPE:
 			_snprintf(szErr, lMaxErr, "SSD: The conf loss type is unknown and invalid. (%ld)", lErr);
 			return true;
 
@@ -221,20 +217,24 @@ bool GetErrorString(long lErr, char* szErr, long lMaxErr)
 			_snprintf(szErr, lMaxErr, "SSD: The ground truth was found in the dataset. (%ld)", lErr);
 			return true;
 
-		case ERROR_SSD_NUMLOCCLASSES_INVALID_FOR_SHARED:
+		case ERROR_SSD_INVALID_NUMLOCCLASSES_FOR_SHARED:
 			_snprintf(szErr, lMaxErr, "SSD: The number of loc classes must be 1 when using shared location. (%ld)", lErr);
 			return true;
 
-		case SSD_ERROR_LOCCOUNT_GTCOUNT_INCORRECT:
+		case ERROR_SSD_INVALID_LOCCOUNT_GTCOUNT:
 			_snprintf(szErr, lMaxErr, "SSD: The loc pred and loc gt must be equal. (%ld)", lErr);
 			return true;
 
-		case SSD_ERROR_LOC_LOSS_MATCH_COUNT_INCORRECT:
+		case ERROR_SSD_INVALID_LOC_LOSS_MATCH_COUNT:
 			_snprintf(szErr, lMaxErr, "SSD: The loc loss match count is incorrect. (%ld)", lErr);
 			return true;
 
-		case SSD_ERROR_INVALID_LOC_LOSS_TYPE:
+		case ERROR_SSD_INVALID_LOC_LOSS_TYPE:
 			_snprintf(szErr, lMaxErr, "SSD: The loc loss type is invalid. (%ld)", lErr);
+			return true;
+
+		case ERROR_SSD_MINEHARDEXAMPLES_NO_MATCHES:
+			_snprintf(szErr, lMaxErr, "SSD: No matches were found to mine hard examples. (%ld)", lErr);
 			return true;
 	}
 
