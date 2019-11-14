@@ -1216,7 +1216,14 @@ public:
 
 	long getTopKScoreIndex(vector<T>& scores, vector<int>& indices, int nTopK, vector<tuple<float, int>>* pscore_index);
 
-	long applyNMS(vector<BBOX>& bboxes, vector<T>& scores, T fThreshold, int nTopK, vector<int>* pindices);
+	long applyNMS(vector<BBOX>& bboxes, vector<T>& scores, T fThreshold, int nTopK, vector<int>* pindices)
+	{
+		bool bReuseOverlap = false;
+		map<int, map<int, T>> overlaps;
+		return applyNMS(bboxes, scores, fThreshold, nTopK, bReuseOverlap, &overlaps, pindices);
+	}
+
+	long applyNMS(vector<BBOX>& bboxes, vector<T>& scores, T fThreshold, int nTopK, bool bReuseOverlaps, map<int, map<int, T>>* poverlaps, vector<int>* pindices);
 
 	long mineHardExamples(vector<map<int, vector<BBOX>>>& rgAllLocPreds, map<int, vector<BBOX>>& rgAllGt, vector<BBOX>& rgPriorBboxes, vector<BBOX>& rgPriorVariances, vector<map<int, vector<float>>>& all_match_overlaps, vector<map<int, vector<int>>>& all_match_indices, vector<vector<int>>& all_neg_indices, int* pnNumMatches, int* pnNumNegs);
 };

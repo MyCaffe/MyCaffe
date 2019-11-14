@@ -18,7 +18,7 @@
 //=============================================================================
 
 template <typename T>
-bool sortScorePairDescend(const tuple<T, T>& t1, const tuple<T, T>& t2)
+bool sortScorePairDescend(const tuple<float, T>& t1, const tuple<float, T>& t2)
 {
 	if (std::get<0>(t1) > std::get<0>(t2))
 		return true;
@@ -789,7 +789,7 @@ long SsdData<T>::getTopKScoreIndex(vector<T>& scores, vector<int>& indices, int 
 	// Generate index score pairs.
 	for (int i = 0; i < scores.size(); i++)
 	{
-		pscore_index->push_back(std::make_tuple(scores[i], indices[i]));
+		pscore_index->push_back(std::make_tuple((float)scores[i], indices[i]));
 	}
 
 	// Sort the score pair according to the scores in descending order
@@ -807,11 +807,8 @@ template long SsdData<float>::getTopKScoreIndex(vector<float>& scores, vector<in
 
 
 template <class T>
-long SsdData<T>::applyNMS(vector<BBOX>& bboxes, vector<T>& scores, T fThreshold, int nTopK, vector<int>* pindices)
+long SsdData<T>::applyNMS(vector<BBOX>& bboxes, vector<T>& scores, T fThreshold, int nTopK, bool bReuseOverlaps, map<int, map<int, T>>* poverlaps, vector<int>* pindices)
 {
-	bool bReuseOverlaps = false;
-	map<int, map<int, float>> overlaps;
-
 	if (bboxes.size() != scores.size())
 		return ERROR_PARAM_OUT_OF_RANGE;
 
@@ -867,23 +864,23 @@ long SsdData<T>::applyNMS(vector<BBOX>& bboxes, vector<T>& scores, T fThreshold,
 			float fCurOverlap = T(0.0);
 			if (bReuseOverlaps)
 			{
-				if (overlaps.find(nBestIdx) != overlaps.end() &&
-					overlaps.find(nBestIdx)->second.find(nCurIdx) != overlaps[nBestIdx].end())
+				if (poverlaps->find(nBestIdx) != poverlaps->end() &&
+					poverlaps->find(nBestIdx)->second.find(nCurIdx) != (*poverlaps)[nBestIdx].end())
 				{
 					// Use the computed overlap.
-					fCurOverlap = overlaps[nBestIdx][nCurIdx];
+					fCurOverlap = (*poverlaps)[nBestIdx][nCurIdx];
 				}
-				else if (overlaps.find(nCurIdx) != overlaps.end() &&
-					overlaps.find(nCurIdx)->second.find(nBestIdx) != overlaps[nCurIdx].end())
+				else if (poverlaps->find(nCurIdx) != poverlaps->end() &&
+					poverlaps->find(nCurIdx)->second.find(nBestIdx) != (*poverlaps)[nCurIdx].end())
 				{
 					// Use the computed overlap.
-					fCurOverlap = overlaps[nCurIdx][nBestIdx];
+					fCurOverlap = (*poverlaps)[nCurIdx][nBestIdx];
 				}
 				else
 				{
 					fCurOverlap = jaccardOverlap(best_bbox, cur_bbox);
 					// Store the overlap for future use.
-					overlaps[nBestIdx][nCurIdx] = fCurOverlap;
+					(*poverlaps)[nBestIdx][nCurIdx] = fCurOverlap;
 				}
 			}
 			else
@@ -902,8 +899,8 @@ long SsdData<T>::applyNMS(vector<BBOX>& bboxes, vector<T>& scores, T fThreshold,
 	return 0;
 }
 
-template long SsdData<double>::applyNMS(vector<BBOX>& bboxes, vector<double>& scores, double fThreshold, int nTopK, vector<int>* pindices);
-template long SsdData<float>::applyNMS(vector<BBOX>& bboxes, vector<float>& scores, float fThreshold, int nTopK, vector<int>* pindices);
+template long SsdData<double>::applyNMS(vector<BBOX>& bboxes, vector<double>& scores, double fThreshold, int nTopK, bool bReuseOverlaps, map<int, map<int, double>>* poverlaps, vector<int>* pindices);
+template long SsdData<float>::applyNMS(vector<BBOX>& bboxes, vector<float>& scores, float fThreshold, int nTopK, bool bReuseOverlaps, map<int, map<int, float>>* poverlaps, vector<int>* pindices);
 
 
 template <class T>
@@ -977,12 +974,12 @@ long SsdData<T>::mineHardExamples(vector<map<int, vector<BBOX>>>& rgAllLocPreds,
 			int nNumSel = 0;
 
 			// Get potential indices and loss pairs.
-			vector<tuple<T, int>> loss_indices;
+			vector<tuple<float, int>> loss_indices;
 			for (int m = 0; m < match_indices[nLabel].size(); m++)
 			{
 				if (isEligibleMining(m_miningType, match_indices[nLabel][m], match_overlaps.find(nLabel)->second[m], (float)m_fNegOverlap))
 				{
-					loss_indices.push_back(std::make_tuple(rgLoss[m], m));
+					loss_indices.push_back(std::make_tuple((float)rgLoss[m], m));
 					nNumSel++;
 				}
 			}
