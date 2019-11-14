@@ -90,6 +90,7 @@ class SsdMemory
 	Memory<T>* m_pMem;
 	MemoryCollection* m_pMemCol;
 	int m_nGpuID;
+	bool m_bOwnHandle;
 
 public:
 	int m_nMax;
@@ -124,6 +125,11 @@ public:
 	long CopyGpuToCpu()
 	{
 		return cudaMemcpy(m_host, m_device, m_nMax * sizeof(T), cudaMemcpyDeviceToHost);
+	}
+
+	long CopyCpuToGpu()
+	{
+		return cudaMemcpy(m_device, m_host, m_nMax * sizeof(T), cudaMemcpyHostToDevice);
 	}
 };
 
@@ -1220,28 +1226,28 @@ public:
 //=============================================================================
 
 template <>
-inline long SsdData<double>::load_conf_loss(int nNum, int nNumPriors, SsdMemory<double>* pConfLoss, vector<vector<double>>* pall_conf_loss)
+inline long SsdData<double>::load_conf_loss(int nNum, int nNumPredsPerClass, SsdMemory<double>* pConfLoss, vector<vector<double>>* pall_conf_loss)
 {
 	const double* loss_data = m_pConfLoss->cpu_data();
 	for (int i = 0; i < nNum; i++)
 	{
-		vector<double> conf_loss(loss_data, loss_data + nNumPriors);
+		vector<double> conf_loss(loss_data, loss_data + nNumPredsPerClass);
 		pall_conf_loss->push_back(conf_loss);
-		loss_data += nNumPriors;
+		loss_data += nNumPredsPerClass;
 	}
 
 	return 0;
 }
 
 template <>
-inline long SsdData<float>::load_conf_loss(int nNum, int nNumPriors, SsdMemory<float>* pConfLoss, vector<vector<float>>* pall_conf_loss)
+inline long SsdData<float>::load_conf_loss(int nNum, int nNumPredsPerClass, SsdMemory<float>* pConfLoss, vector<vector<float>>* pall_conf_loss)
 {
 	const float* loss_data = m_pConfLoss->cpu_data();
 	for (int i = 0; i < nNum; i++)
 	{
-		vector<float> conf_loss(loss_data, loss_data + nNumPriors);
+		vector<float> conf_loss(loss_data, loss_data + nNumPredsPerClass);
 		pall_conf_loss->push_back(conf_loss);
-		loss_data += nNumPriors;
+		loss_data += nNumPredsPerClass;
 	}
 
 	return 0;

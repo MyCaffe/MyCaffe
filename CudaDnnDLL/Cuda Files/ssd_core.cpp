@@ -57,6 +57,8 @@ LONG SsdMemory<T>::Initialize(int nCount, long hHandle = 0)
 	LONG lErr;
 	T* pSrc = NULL;
 
+	m_bOwnHandle = true;
+
 	if (m_nMax < nCount)
 	{
 		if (m_host != NULL)
@@ -90,6 +92,9 @@ LONG SsdMemory<T>::Initialize(int nCount, long hHandle = 0)
 			m_pMem->FreeMemory(m_handle);
 			m_handle = 0;
 		}
+
+		m_handle = hHandle;
+		m_bOwnHandle = false;
 	}
 	else
 	{
@@ -138,7 +143,8 @@ void SsdMemory<T>::CleanUp()
 
 	if (m_handle != NULL)
 	{
-		m_pMem->FreeMemory(m_handle);
+		if (m_bOwnHandle)
+			m_pMem->FreeMemory(m_handle);
 		m_handle = 0;
 	}
 
@@ -534,7 +540,7 @@ long SsdData<T>::softmax(SsdMemory<T>* pData, const int nOuterNum, const int nCh
 	if (lErr = m_pMath->channel_sum(nOuterNum * nInnerNum, nOuterNum, nChannels, nInnerNum, pProb->gpu_handle(), m_pScale->gpu_handle()))
 		return lErr;
 
-	// Diide
+	// Divide
 	if (lErr = m_pMath->channel_div(nCount, nOuterNum, nChannels, nInnerNum, m_pScale->gpu_handle(), pProb->gpu_handle()))
 		return lErr;
 
