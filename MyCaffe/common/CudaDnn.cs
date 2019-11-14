@@ -4476,7 +4476,7 @@ namespace MyCaffe.common
         /// <param name="nNmsTopK">Specifies the NMS top-k selection, which is only used when the 'bNmsParam' = true.</param>
         /// <param name="fNmsEta">Specifies the NMS eta, which is only used when the 'bNmsParam' = true.</param>
         /// <returns>A handle to the SSD instance is returned.</returns>
-        public long CreateSsd(int nNumClasses, bool bShareLocation, int nLocClasses, int nBackgroundLabelId, bool bUseDiffcultGt, SSD_MINING_TYPE miningType, SSD_MATCH_TYPE matchType, float fOverlapThreshold, bool bUsePriorForMatching, SSD_CODE_TYPE codeType, bool bEncodeVariantInTgt, bool bBpInside, bool bIgnoreCrossBoundaryBbox, bool bUsePriorForNms, SSD_CONF_LOSS_TYPE confLossType, SSD_LOC_LOSS_TYPE locLossType, float fNegPosRatio, float fNegOverlap, int nSampleSize, bool bMapObjectToAgnostic, bool bNmsParam, float? fNmsThreshold = null, int? nNmsTopK = null, float? fNmsEta = null)
+        public long CreateSSD(int nNumClasses, bool bShareLocation, int nLocClasses, int nBackgroundLabelId, bool bUseDiffcultGt, SSD_MINING_TYPE miningType, SSD_MATCH_TYPE matchType, float fOverlapThreshold, bool bUsePriorForMatching, SSD_CODE_TYPE codeType, bool bEncodeVariantInTgt, bool bBpInside, bool bIgnoreCrossBoundaryBbox, bool bUsePriorForNms, SSD_CONF_LOSS_TYPE confLossType, SSD_LOC_LOSS_TYPE locLossType, float fNegPosRatio, float fNegOverlap, int nSampleSize, bool bMapObjectToAgnostic, bool bNmsParam, float? fNmsThreshold = null, int? nNmsTopK = null, float? fNmsEta = null)
         {
             int nGpuID = GetDeviceID();
 
@@ -4567,7 +4567,7 @@ namespace MyCaffe.common
         /// <param name="nNum">Specifies the number of items.</param>
         /// <param name="nNumPriors">Specifies the number of priors.</param>
         /// <param name="nNumGt">Specifies the number of ground truths.</param>
-        public void SetupSsd(long hSSD, int nNum, int nNumPriors, int nNumGt)
+        public void SetupSSD(long hSSD, int nNum, int nNumPriors, int nNumGt)
         {
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SETUP_SSD, new double[] { hSSD, nNum, nNumPriors, nNumGt });
@@ -4579,7 +4579,7 @@ namespace MyCaffe.common
         /// Free the instance of SSD GPU support.
         /// </summary>
         /// <param name="hSSD">Specifies the handle to the SSD instance.</param>
-        public void FreeSsd(long hSSD)
+        public void FreeSSD(long hSSD)
         {
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_FREE_SSD, new double[] { hSSD });
@@ -4599,22 +4599,133 @@ namespace MyCaffe.common
         /// <param name="hPriorGpuData">Specifies the prior box data in GPU memory.</param>
         /// <param name="nGtDataCount">Specifies the number of ground truth items.</param>
         /// <param name="hGtGpuData">Specifies the ground truth data in GPU memory.</param>
+        /// <param name="rgAllMatchIndices">Returns all match indices found.</param>
+        /// <param name="rgrgAllNegIndices">Returns all neg indices found.</param>
         /// <param name="nNumNegs">Returns the number of negatives.</param>
         /// <returns>The number of matches is returned.</returns>
-        public int SsdMultiBoxLossForward(long hSSD, int nLocDataCount, long hLocGpuData, int nConfDataCount, long hConfGpuData, int nPriorDataCount, long hPriorGpuData, int nGtDataCount, long hGtGpuData, out int nNumNegs)
+        public int SsdMultiBoxLossForward(long hSSD, int nLocDataCount, long hLocGpuData, int nConfDataCount, long hConfGpuData, int nPriorDataCount, long hPriorGpuData, int nGtDataCount, long hGtGpuData, out List<DictionaryMap<List<int>>> rgAllMatchIndices, out List<List<int>> rgrgAllNegIndices, out int nNumNegs)
         {
+            int nIdx = 0;
+            int nMatchCount = 0;
+            rgAllMatchIndices = new List<DictionaryMap<List<int>>>();
+            rgrgAllNegIndices = new List<List<int>>();
+
             if (m_dt == DataType.DOUBLE)
             {
                 double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SSD_FWD_MULTIBOXLOSS, new double[] { hSSD, nLocDataCount, hLocGpuData, nConfDataCount, hConfGpuData, nPriorDataCount, hPriorGpuData, nGtDataCount, hGtGpuData });
-                nNumNegs = (int)rg[1];
-                return (int)rg[0];
+                nMatchCount = (int)rg[nIdx];
+                nIdx++;
+                nNumNegs = (int)rg[nIdx];
+                nIdx++;
+
+                // Get the match indices.
+                int nMapListCount = (int)rg[nIdx];
+                nIdx++;
+                for (int i = 0; i < nMapListCount; i++)
+                {
+                    DictionaryMap<List<int>> map = new DictionaryMap<List<int>>(null);
+
+                    int nMapCount = (int)rg[nIdx];
+                    nIdx++;
+                    for (int j = 0; j < nMapCount; j++)
+                    {
+                        int nLabel = (int)rg[nIdx];
+                        nIdx++;
+                        List<int> rgIdx = new List<int>();
+
+                        int nItemCount = (int)rg[nIdx];
+                        nIdx++;
+                        for (int k = 0; k < nItemCount; k++)
+                        {
+                            int nItemIdx = (int)rg[nIdx];
+                            nIdx++;
+                            rgIdx.Add(nItemIdx);
+                        }
+
+                        map[nLabel] = rgIdx;
+                    }
+
+                    rgAllMatchIndices.Add(map);
+                }
+
+                // Get the neg indices.
+                int nNegListCount = (int)rg[nIdx];
+                nIdx++;
+                for (int i = 0; i < nNegListCount; i++)
+                {
+                    nIdx++;
+                    int nItemCount = (int)rg[nIdx];
+                    List<int> rgItems = new List<int>();
+
+                    for (int j = 0; j < nItemCount; j++)
+                    {
+                        int nItemIdx = (int)rg[nIdx];
+                        nIdx++;
+                        rgItems.Add(nItemIdx);
+                    }
+
+                    rgrgAllNegIndices.Add(rgItems);
+                }
             }
             else
             {
                 float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SSD_FWD_MULTIBOXLOSS, new float[] { hSSD, nLocDataCount, hLocGpuData, nConfDataCount, hConfGpuData, nPriorDataCount, hPriorGpuData, nGtDataCount, hGtGpuData });
-                nNumNegs = (int)rg[1];
-                return (int)rg[0];
+                nMatchCount = (int)rg[nIdx];
+                nIdx++;
+                nNumNegs = (int)rg[nIdx];
+                nIdx++;
+
+                // Get the match indices.
+                int nMapListCount = (int)rg[nIdx];
+                nIdx++;
+                for (int i = 0; i < nMapListCount; i++)
+                {
+                    DictionaryMap<List<int>> map = new DictionaryMap<List<int>>(null);
+
+                    int nMapCount = (int)rg[nIdx];
+                    nIdx++;
+                    for (int j = 0; j < nMapCount; j++)
+                    {
+                        int nLabel = (int)rg[nIdx];
+                        nIdx++;
+                        List<int> rgIdx = new List<int>();
+
+                        int nItemCount = (int)rg[nIdx];
+                        nIdx++;
+                        for (int k = 0; k < nItemCount; k++)
+                        {
+                            int nItemIdx = (int)rg[nIdx];
+                            nIdx++;
+                            rgIdx.Add(nItemIdx);
+                        }
+
+                        map[nLabel] = rgIdx;
+                    }
+
+                    rgAllMatchIndices.Add(map);
+                }
+
+                // Get the neg indices.
+                int nNegListCount = (int)rg[nIdx];
+                nIdx++;
+                for (int i = 0; i < nNegListCount; i++)
+                {
+                    int nItemCount = (int)rg[nIdx];
+                    nIdx++;
+                    List<int> rgItems = new List<int>();
+
+                    for (int j = 0; j < nItemCount; j++)
+                    {
+                        int nItemIdx = (int)rg[nIdx];
+                        nIdx++;
+                        rgItems.Add(nItemIdx);
+                    }
+
+                    rgrgAllNegIndices.Add(rgItems);
+                }
             }
+
+            return nMatchCount;
         }
 
         /// <summary>
