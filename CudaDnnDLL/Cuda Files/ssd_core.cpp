@@ -58,6 +58,7 @@ LONG SsdMemory<T>::Initialize(int nCount, long hHandle = 0)
 	T* pSrc = NULL;
 
 	m_bOwnHandle = true;
+	m_nCount = nCount;
 
 	if (m_nMax < nCount)
 	{
@@ -161,7 +162,7 @@ template void SsdMemory<float>::CleanUp();
 //=============================================================================
 
 template <class T>
-SsdData<T>::SsdData(Memory<T>* pMem, Math<T>* pMath) : m_rgBbox(9, NULL)
+SsdData<T>::SsdData(Memory<T>* pMem, Math<T>* pMath) : m_rgBbox(MEM_COUNT, NULL)
 {
 	m_pMem = pMem;
 	m_pMath = pMath;
@@ -771,13 +772,75 @@ template long SsdData<float>::encodeConfPrediction(SsdMemory<float>* pConf, vect
 
 
 template <class T>
-long SsdData<T>::computeLocLoss(SsdMemory<T>* pLocPred, SsdMemory<T>* pLogGt, vector<map<int, vector<int>>>& all_match_indices, int nNum, int nNumPriors, SsdLocLossType loss_type, vector<vector<T>>* pall_loc_loss)
+long SsdData<T>::computeLocLoss(SsdMemory<T>* pLocPred, SsdMemory<T>* pLocPredDiff, SsdMemory<T>* pLocGt, vector<map<int, vector<int>>>& all_match_indices, int nNum, int nNumPriors, SsdLocLossType loss_type, vector<vector<T>>* pall_loc_loss)
 {
+	LONG lErr;
+	int nLocCount = pLocPred->count();
+	int nGtCount = pLocGt->count();
+
+	if (nLocCount != nGtCount || nLocCount == 0)
+		return SSD_ERROR_LOCCOUNT_GTCOUNT_INCORRECT;
+
+	if (lErr = m_pMath->sub(nLocCount, pLocPred->gpu_handle(), pLocGt->gpu_handle(), pLocPredDiff->gpu_handle()))
+		return lErr;
+
+	if (lErr = pLocPredDiff->CopyGpuToCpu())
+		return lErr;
+
+	T* diff_data = pLocPredDiff->cpu_data();
+
+	int nCount;
+	for (int i = 0; i < nNum; i++)
+	{
+		vector<T> loc_loss(nNumPriors, T(0.0));
+		for (map<int, vector<int>>::const_iterator it = all_match_indices[i].begin(); it != all_match_indices[i].end(); it++)
+		{
+			const vector<int>& match_index = it->second;
+
+			if (match_index.size() != nNumPriors)
+				return SSD_ERROR_LOC_LOSS_MATCH_COUNT_INCORRECT;
+
+			for (int j = 0; j < match_index.size(); j++)
+			{
+				if (match_index[j] <= -1)
+					continue;
+
+				T fLoss = 0;
+				for (int k = 0; k < 4; k++)
+				{
+					T fVal = diff_data[nCount * 4 + k];
+
+					if (m_locLossType == SSD_LOC_LOSS_TYPE_SMOOTH_L1)
+					{
+						T fAbsVal = fabs(fVal);
+						if (fAbsVal < T(1.0))
+							fLoss += T(0.5) * fVal * fVal;
+						else
+							fLoss += fAbsVal - T(0.5);
+					}
+					else if (m_locLossType == SSD_LOC_LOSS_TYPE_L2)
+					{
+						fLoss += T(0.5) * fVal * fVal;
+					}
+					else
+					{
+						return SSD_ERROR_INVALID_LOC_LOSS_TYPE;
+					}
+				}
+
+				loc_loss[j] = fLoss;
+				nCount++;
+			}
+		}
+
+		pall_loc_loss->push_back(loc_loss);
+	}
+
 	return 0;
 }
 
-template long SsdData<double>::computeLocLoss(SsdMemory<double>* pLocPred, SsdMemory<double>* pLogGt, vector<map<int, vector<int>>>& all_match_indices, int nNum, int nNumPriors, SsdLocLossType loss_type, vector<vector<double>>* pall_loc_loss);
-template long SsdData<float>::computeLocLoss(SsdMemory<float>* pLocPred, SsdMemory<float>* pLogGt, vector<map<int, vector<int>>>& all_match_indices, int nNum, int nNumPriors, SsdLocLossType loss_type, vector<vector<float>>* pall_loc_loss);
+template long SsdData<double>::computeLocLoss(SsdMemory<double>* pLocPred, SsdMemory<double>* pLocPredDiff, SsdMemory<double>* pLogGt, vector<map<int, vector<int>>>& all_match_indices, int nNum, int nNumPriors, SsdLocLossType loss_type, vector<vector<double>>* pall_loc_loss);
+template long SsdData<float>::computeLocLoss(SsdMemory<float>* pLocPred, SsdMemory<float>* pLocPredDiff, SsdMemory<float>* pLogGt, vector<map<int, vector<int>>>& all_match_indices, int nNum, int nNumPriors, SsdLocLossType loss_type, vector<vector<float>>* pall_loc_loss);
 
 
 template <class T>
@@ -939,7 +1002,7 @@ long SsdData<T>::mineHardExamples(vector<map<int, vector<BBOX>>>& rgAllLocPreds,
 				return lErr;
 		}
 
-		if (lErr = computeLocLoss(m_rgBbox[MEM_LOCPRED], m_rgBbox[MEM_LOCGT], all_match_indices, nNum, nNumPriors, m_locLossType, &all_loc_loss))
+		if (lErr = computeLocLoss(m_rgBbox[MEM_LOCPRED], m_rgBbox[MEM_LOCPRED_DIFF], m_rgBbox[MEM_LOCGT], all_match_indices, nNum, nNumPriors, m_locLossType, &all_loc_loss))
 			return lErr;
 	}
 

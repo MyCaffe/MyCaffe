@@ -58,8 +58,10 @@ enum MEM
 	MEM_DECODE,
 	MEM_LOCGT,
 	MEM_LOCPRED,
+	MEM_LOCPRED_DIFF,
 	MEM_CONFGT,
-	MEM_CONFPRED
+	MEM_CONFPRED,
+	MEM_COUNT
 };
 
 //=============================================================================
@@ -94,6 +96,7 @@ class SsdMemory
 
 public:
 	int m_nMax;
+	int m_nCount;
 	T* m_host;
 	long m_handle;
 	T* m_device;
@@ -106,6 +109,11 @@ public:
 
 	LONG Initialize(int nCount, long hHandle = 0);
 	void CleanUp();
+
+	int count()
+	{
+		return m_nCount;
+	}
 
 	T* gpu_data()
 	{
@@ -592,6 +600,9 @@ public:
 		if ((m_rgBbox[MEM_LOCPRED] = new SsdBbox<T>(m_pMem, nGpuID, true)) == NULL)
 			return ERROR_MEMORY_OUT;
 
+		if ((m_rgBbox[MEM_LOCPRED_DIFF] = new SsdBbox<T>(m_pMem, nGpuID, true)) == NULL)
+			return ERROR_MEMORY_OUT;
+
 		if ((m_rgBbox[MEM_CONFGT] = new SsdBbox<T>(m_pMem, nGpuID, true)) == NULL)
 			return ERROR_MEMORY_OUT;
 
@@ -655,6 +666,9 @@ public:
 		LONG lErr;
 
 		if (lErr = m_rgBbox[MEM_LOCPRED]->Initialize(nLocPredCount, hLocPred))
+			return lErr;
+
+		if (lErr = m_rgBbox[MEM_LOCPRED_DIFF]->Initialize(nLocPredCount, hLocPred))
 			return lErr;
 
 		if (lErr = m_rgBbox[MEM_LOCGT]->Initialize(nLocGtCount, hLocGt))
@@ -1202,7 +1216,7 @@ public:
 
 	long encodeConfPrediction(SsdMemory<T>* pConf, vector<map<int, vector<int>>>& all_match_indices, vector<vector<int>>& all_neg_indices, map<int, vector<BBOX>>& rgAllGt, SsdMemory<T>* pConfPred, SsdMemory<T>* pConfGt);
 
-	long computeLocLoss(SsdMemory<T>* pLocPred, SsdMemory<T>* pLogGt, vector<map<int, vector<int>>>& all_match_indices, int nNum, int nNumPriors, SsdLocLossType loss_type, vector<vector<T>>* pall_loc_loss);
+	long computeLocLoss(SsdMemory<T>* pLocPred, SsdMemory<T>* pLocPredDiff, SsdMemory<T>* pLogGt, vector<map<int, vector<int>>>& all_match_indices, int nNum, int nNumPriors, SsdLocLossType loss_type, vector<vector<T>>* pall_loc_loss);
 
 	bool isEligibleMining(const SsdMiningType miningType, const int nMatchIdx, const float fMatchOverlap, const float fNegOverlap)
 	{
