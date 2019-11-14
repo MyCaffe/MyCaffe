@@ -329,6 +329,8 @@ class Memory
 		long SsdMultiboxLossForward(long hSsd, int nLocDataCount, long hLocData, int nConfDataCount, long hConfData, int nPriorDataCount, long hPriorData, int nGtDataCount, long hGtData, int* pnNumMatches, int* pnNumNegs);
 		long SsdEncodeLocPrediction(long hSsd, int nLocPredCount, long hLocPred, int nLocGtCount, long hLocGt);
 		long SsdEncodeConfPrediction(long hSsd, int nConfPredCount, long hConfPred, int nConfGtCount, long hConfGt);
+		long SsdGetAllMatchIndices(long hSsd, vector<map<int, vector<int>>>* pall_match_indices);
+		long SsdGetAllNegIndices(LONG hSsd, vector<vector<int>>* pall_neg_indices);
 
 		long CreateExtensionFloat(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
 		long CreateExtensionDouble(HMODULE hParent, LONG lKernelIdx, LPTSTR pszDllPath, long *phHandle);
@@ -1493,6 +1495,25 @@ inline long Memory<T>::SsdEncodeConfPrediction(long hSsd, int nConfPredCount, lo
 	return pSsd->EncodeLocPrediction(nConfPredCount, hConfPred, nConfGtCount, hConfGt);
 }
 
+template <class T>
+inline long Memory<T>::SsdGetAllMatchIndices(long hSsd, vector<map<int, vector<int>>>* pall_match_indices)
+{
+	ssdHandle<T>* pSsd = (ssdHandle<T>*)m_ssd.GetData(hSsd);
+	if (pSsd == NULL)
+		return ERROR_SSD_NOT_INITIALIZED;
+
+	return pSsd->GetAllMatchIndices(pall_match_indices);
+}
+
+template <class T>
+inline long Memory<T>::SsdGetAllNegIndices(LONG hSsd, vector<vector<int>>* pall_neg_indices)
+{
+	ssdHandle<T>* pSsd = (ssdHandle<T>*)m_ssd.GetData(hSsd);
+	if (pSsd == NULL)
+		return ERROR_SSD_NOT_INITIALIZED;
+
+	return pSsd->GetAllNegIndices(pall_neg_indices);
+}
 
 template <class T>
 inline long Memory<T>::CreateNCCL(int nGpuID, int nCount, int nRank, char* szId, Math<T>* pMath, long* phHandle)

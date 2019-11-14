@@ -2980,15 +2980,86 @@ inline long Device<T>::SsdMultiboxLossForward(long lInput, T* pfInput, long* plO
 	if (lErr = m_memory.SsdMultiboxLossForward(hSsd, nLocDataCount, hLocData, nConfDataCount, hConfData, nPriorDataCount, hPriorData, nGtDataCount, hGtData, &nNumMatches, &nNumNegs))
 		return lErr;
 
-	T* pfOutput = NULL;
-
-	if (lErr = m_memory.AllocHost(2, &pfOutput, NULL, false, false))
+	vector<map<int, vector<int>>> all_match_indices;
+	if (lErr = m_memory.SsdGetAllMatchIndices(hSsd, &all_match_indices))
 		return lErr;
 
-	pfOutput[0] = T(nNumMatches);
-	pfOutput[1] = T(nNumNegs);
+	vector<vector<int>> all_neg_indices;
+	if (lErr = m_memory.SsdGetAllNegIndices(hSsd, &all_neg_indices))
+		return lErr;
 
-	*plOutput = 2;
+	//-------------------------------------------
+	//	Get the return values in the following
+	//	ordering:
+	//
+	// [0] num matches.
+	// [1] num negs.
+	// [2] list of maps count
+	// [2] first map - count.
+	// [3] first map, first item, - label
+	// [4] first map, first item, - idx count
+	// [5] first map, first item, - idx 1
+	//     
+	// [n + 0] list of negidx list count.
+	// [n + 1] first negidx set - count
+	// [n + 2] first negidx set - idx 1
+	//                              :
+	vector<int> retval;
+	retval.push_back(nNumMatches);
+	retval.push_back(nNumNegs);
+
+	// Match Indexes
+	retval.push_back((int)all_match_indices.size());
+	for (int i = 0; i < all_match_indices.size(); i++)
+	{
+		int nCountIdx = retval.size();
+		int nMapCount = 0;
+		retval.push_back(0);
+
+		for (map<int, vector<int>>::const_iterator it = all_match_indices[i].begin(); it != all_match_indices[i].end(); it++)
+		{
+			const int nLabel = it->first;
+			const vector<int>& match_index = it->second;
+
+			retval.push_back(nLabel);
+			int nCount = (int)match_index.size();
+			retval.push_back(nCount);
+
+			for (int j = 0; j < nCount; j++)
+			{
+				retval.push_back(match_index[j]);
+			}
+
+			nMapCount++;
+		}
+
+		retval[nCountIdx] = nMapCount;
+	}
+
+	// Neg Indexes
+	retval.push_back((int)all_neg_indices.size());
+	for (int i = 0; i < all_neg_indices.size(); i++)
+	{
+		int nCount = (int)all_neg_indices[i].size();
+		retval.push_back(nCount);
+
+		for (int j = 0; j < nCount; j++)
+		{
+			retval.push_back(all_neg_indices[i][j]);
+		}
+	}
+
+	// Allocate the return mem and copy the values.
+	T* pfOutput = NULL;
+	if (lErr = m_memory.AllocHost(retval.size(), &pfOutput, NULL, false, false))
+		return lErr;
+
+	for (int i = 0; i < retval.size(); i++)
+	{
+		pfOutput[i] = T(retval[i]);
+	}
+
+	*plOutput = retval.size();
 	*ppfOutput = pfOutput;
 
 	return 0;
