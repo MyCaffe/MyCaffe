@@ -21,7 +21,7 @@
 template <typename T>
 __device__ T Max(const T x, const T y)
 {
-	return x < y ? x : y;
+	return x > y ? x : y;
 }
 
 template <typename T>
@@ -71,7 +71,7 @@ __global__ void compute_conf_loss_kernel(const int n, const T* conf_data, const 
 //=============================================================================
 
 template <class T>
-long SsdData<T>::computeConfLoss(int nNum, int nNumPriors, int nNumClasses, vector<map<int, vector<int>>>& all_match_indices, map<int, vector<BBOX>>& rgAllGt, vector<vector<T>>*pall_conf_loss)
+long SsdData<T>::computeConfLoss(int nNum, int nNumPredsPerClass, int nNumClasses, vector<map<int, vector<int>>>& all_match_indices, map<int, vector<BBOX>>& all_gt_bboxes, vector<vector<T>>*pall_conf_loss)
 {
 	LONG lErr;
 
@@ -82,7 +82,7 @@ long SsdData<T>::computeConfLoss(int nNum, int nNumPriors, int nNumClasses, vect
 	{
 		const map<int, vector<int>>& match_indices = all_match_indices[i];
 
-		for (int p = 0; p < nNumPriors; p++)
+		for (int p = 0; p < nNumPredsPerClass; p++)
 		{
 			// Get the label index.
 			int nLabel = m_nBackgroundLabelId;
@@ -91,20 +91,20 @@ long SsdData<T>::computeConfLoss(int nNum, int nNumPriors, int nNumClasses, vect
 			{
 				const vector<int>& match_index = it->second;
 
-				if (match_index.size() != nNumPriors)
+				if (match_index.size() != nNumPredsPerClass)
 					return ERROR_SSD_COMPUTE_CONF_LOSS_MATCH_INDEX_INCORRECT;
 
 				if (match_index[p] > -1)
 				{
-					if (rgAllGt.find(i) == rgAllGt.end())
+					if (all_gt_bboxes.find(i) == all_gt_bboxes.end())
 						return ERROR_SSD_COMPUTE_CONF_LOSS_GT_MISSING_ITEM;
 
-					vector<BBOX> rgGt = rgAllGt.find(i)->second;
-					if (match_index[p] >= (int)rgGt.size())
+					vector<BBOX>& gt_bboxes = all_gt_bboxes.find(i)->second;
+					if (match_index[p] >= (int)gt_bboxes.size())
 						return ERROR_SSD_COMPUTE_CONF_LOSS_MATCH_INDEX_OUT_OF_RANGE;
 
 					int nIdx = match_index[p];
-					nLabel = getLabel(rgGt[nIdx]);
+					nLabel = getLabel(gt_bboxes[nIdx]);
 					if (nLabel < 0 || nLabel > nNumClasses || nLabel == m_nBackgroundLabelId)
 						return ERROR_SSD_COMPUTE_CONF_LOSS_INVALID_LABEL;
 
@@ -113,30 +113,32 @@ long SsdData<T>::computeConfLoss(int nNum, int nNumPriors, int nNumClasses, vect
 				}
 			}
 
-			m_pMatch->m_host[i * nNumPriors + p] = T(nLabel);
+			m_pMatch->m_host[i * nNumPredsPerClass + p] = T(nLabel);
 		}
 	}
+
+	m_pMatch->CopyCpuToGpu();
 
 	// Get the probability data.
 	SsdMemory<T>* pConf = m_pConf;
 	if (m_confLossType == SSD_CONF_LOSS_TYPE_SOFTMAX)
 	{
-		if (lErr = softmax(pConf, nNum * nNumPriors, m_nNumClasses, 1, m_pProb))
+		if (lErr = softmax(pConf, nNum * nNumPredsPerClass, m_nNumClasses, 1, m_pProb))
 			return lErr;
 
 		pConf = m_pProb;
 	}
 
 	// Compute the loss.
-	const int n = nNum * nNumPriors;
-	compute_conf_loss_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, pConf->gpu_data(), nNumPriors, nNumClasses, m_confLossType, m_pMatch->gpu_data(), m_pConfLoss->gpu_data());
+	const int n = nNum * nNumPredsPerClass;
+	compute_conf_loss_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, pConf->gpu_data(), nNumPredsPerClass, nNumClasses, m_confLossType, m_pMatch->gpu_data(), m_pConfLoss->gpu_data());
 	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
 
 	// Save the loss.
 	pall_conf_loss->clear();
 	m_pConfLoss->CopyGpuToCpu();
-	load_conf_loss(nNum, nNumPriors, m_pConfLoss, pall_conf_loss);
+	load_conf_loss(nNum, nNumPredsPerClass, m_pConfLoss, pall_conf_loss);
 
 	return 0;
 }
