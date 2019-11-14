@@ -57,7 +57,6 @@ LONG SsdMemory<T>::Initialize(int nCount, long hHandle = 0)
 	LONG lErr;
 	T* pSrc = NULL;
 
-	m_bOwnHandle = true;
 	m_nCount = nCount;
 
 	if (m_nMax < nCount)
@@ -70,7 +69,9 @@ LONG SsdMemory<T>::Initialize(int nCount, long hHandle = 0)
 
 		if (m_handle != 0)
 		{
-			m_pMem->FreeMemory(m_handle);
+			if (m_bOwnHandle)
+				m_pMem->FreeMemory(m_handle);
+
 			m_handle = 0;
 			m_device = NULL;
 		}
@@ -90,7 +91,9 @@ LONG SsdMemory<T>::Initialize(int nCount, long hHandle = 0)
 
 		if (m_handle != 0)
 		{
-			m_pMem->FreeMemory(m_handle);
+			if (m_bOwnHandle)
+				m_pMem->FreeMemory(m_handle);
+
 			m_handle = 0;
 		}
 
@@ -103,6 +106,8 @@ LONG SsdMemory<T>::Initialize(int nCount, long hHandle = 0)
 		{
 			if (lErr = m_pMem->AllocMemory(m_nGpuID, false, nCount, NULL, 0, &m_handle))
 				return lErr;
+
+			m_bOwnHandle = true;
 		}
 
 		MemoryItem* pItem;
@@ -712,7 +717,7 @@ long SsdData<T>::encodeConfPrediction(SsdMemory<T>* pConf, vector<map<int, vecto
 						break;
 
 					default:
-						return ERROR_SSD_CONF_LOSS_TYPE_UNKNOWN;
+						return ERROR_SSD_INVALID_CONF_LOSS_TYPE;
 					}
 
 					if (bDoNegMining)
@@ -750,7 +755,7 @@ long SsdData<T>::encodeConfPrediction(SsdMemory<T>* pConf, vector<map<int, vecto
 						break;
 
 					default:
-						return ERROR_SSD_CONF_LOSS_TYPE_UNKNOWN;
+						return ERROR_SSD_INVALID_CONF_LOSS_TYPE;
 					}
 
 					nCount++;
@@ -779,7 +784,7 @@ long SsdData<T>::computeLocLoss(SsdMemory<T>* pLocPred, SsdMemory<T>* pLocPredDi
 	int nGtCount = pLocGt->count();
 
 	if (nLocCount != nGtCount || nLocCount == 0)
-		return SSD_ERROR_LOCCOUNT_GTCOUNT_INCORRECT;
+		return ERROR_SSD_INVALID_LOCCOUNT_GTCOUNT;
 
 	if (lErr = m_pMath->sub(nLocCount, pLocPred->gpu_handle(), pLocGt->gpu_handle(), pLocPredDiff->gpu_handle()))
 		return lErr;
@@ -789,7 +794,7 @@ long SsdData<T>::computeLocLoss(SsdMemory<T>* pLocPred, SsdMemory<T>* pLocPredDi
 
 	T* diff_data = pLocPredDiff->cpu_data();
 
-	int nCount;
+	int nCount = 0;
 	for (int i = 0; i < nNum; i++)
 	{
 		vector<T> loc_loss(nNumPriors, T(0.0));
@@ -798,7 +803,7 @@ long SsdData<T>::computeLocLoss(SsdMemory<T>* pLocPred, SsdMemory<T>* pLocPredDi
 			const vector<int>& match_index = it->second;
 
 			if (match_index.size() != nNumPriors)
-				return SSD_ERROR_LOC_LOSS_MATCH_COUNT_INCORRECT;
+				return ERROR_SSD_INVALID_LOC_LOSS_MATCH_COUNT;
 
 			for (int j = 0; j < match_index.size(); j++)
 			{
@@ -824,7 +829,7 @@ long SsdData<T>::computeLocLoss(SsdMemory<T>* pLocPred, SsdMemory<T>* pLocPredDi
 					}
 					else
 					{
-						return SSD_ERROR_INVALID_LOC_LOSS_TYPE;
+						return ERROR_SSD_INVALID_LOC_LOSS_TYPE;
 					}
 				}
 
@@ -976,7 +981,7 @@ long SsdData<T>::mineHardExamples(vector<map<int, vector<BBOX>>>& rgAllLocPreds,
 	int nNumPriors = (int)rgPriorBboxes.size();
 
 	if (nNumPriors != (int)rgPriorVariances.size())
-		return ERROR_SSD_PRIOR_VARIANCE_COUNT;
+		return ERROR_SSD_INVALID_PRIOR_VARIANCE_COUNT;
 
 	if (m_miningType == SSD_MINING_TYPE_NONE)
 		return 0;
@@ -990,17 +995,20 @@ long SsdData<T>::mineHardExamples(vector<map<int, vector<BBOX>>>& rgAllLocPreds,
 	vector<vector<T>> all_loc_loss;
 	if (m_miningType == SSD_MINING_TYPE_HARD_EXAMPLE)
 	{
-		if (!pnNumMatches != 0)
-		{
-			if (lErr = m_rgBbox[MEM_LOCGT]->Initialize(*pnNumMatches * 4))
-				return lErr;
+		if (*pnNumMatches == 0)
+			return ERROR_SSD_MINEHARDEXAMPLES_NO_MATCHES;
 
-			if (lErr = m_rgBbox[MEM_LOCPRED]->Initialize(*pnNumMatches * 4))
-				return lErr;
+		if (lErr = m_rgBbox[MEM_LOCGT]->Initialize(*pnNumMatches * 4))
+			return lErr;
 
-			if (lErr = encodeLocPrediction(rgAllLocPreds, rgAllGt, all_match_indices, rgPriorBboxes, rgPriorVariances, m_rgBbox[MEM_LOCPRED], m_rgBbox[MEM_LOCGT]))
-				return lErr;
-		}
+		if (lErr = m_rgBbox[MEM_LOCPRED]->Initialize(*pnNumMatches * 4))
+			return lErr;
+
+		if (lErr = m_rgBbox[MEM_LOCPRED_DIFF]->Initialize(*pnNumMatches * 4))
+			return lErr;
+
+		if (lErr = encodeLocPrediction(rgAllLocPreds, rgAllGt, all_match_indices, rgPriorBboxes, rgPriorVariances, m_rgBbox[MEM_LOCPRED], m_rgBbox[MEM_LOCGT]))
+			return lErr;
 
 		if (lErr = computeLocLoss(m_rgBbox[MEM_LOCPRED], m_rgBbox[MEM_LOCPRED_DIFF], m_rgBbox[MEM_LOCGT], all_match_indices, nNum, nNumPriors, m_locLossType, &all_loc_loss))
 			return lErr;
@@ -1109,7 +1117,7 @@ long SsdData<T>::mineHardExamples(vector<map<int, vector<BBOX>>>& rgAllLocPreds,
 					return lErr;
 
 				if (nms_indices.size() < nNumSel)
-					OutputDebugString(L"Not enough sample after nms!");
+					OutputDebugString(L"Not enough sample after nms!\r\n");
 
 				// Pick top example indices after nms.
 				nNumSel = (std::min)(static_cast<int>(nms_indices.size()), nNumSel);
