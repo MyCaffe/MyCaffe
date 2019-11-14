@@ -47,7 +47,6 @@ enum TEST
 
 	FINDMATCHES = 25,
 	COUNTMATCHES = 26,
-	SOFTMAX = 27,
 	COMPUTE_CONF_LOSS = 28,
 	COMPUTE_LOC_LOSS = 29,
 	GET_TOPK_SCORES = 30,
@@ -77,6 +76,7 @@ public:
 	TestData() : m_memory(), m_math(), m_ssd(&m_memory, &m_math)
 	{
 		m_fEps = (T)1e-6;
+		m_math.Connect(&m_memory);
 	}
 
 	void free(long& h)
@@ -1241,22 +1241,154 @@ public:
 		return 0;
 	}
 
+	long TestComputeConfLossMatch(int nConfig)
+	{
+		LONG lErr;
+		int nNum = 2;
+		int nNumPredsPerClass = 2;
+		int nNumClasses = 2;	
+		T* conf_data = m_ssd.m_pConf->cpu_data();
+		vector<map<int, vector<int>>> all_match_indices;
+		map<int, vector<BBOX>> all_gt_bboxes;
+
+		for (int i = 0; i < nNum; i++)
+		{
+			int nSign = (i % 2) ? 1 : -1;
+
+			for (int j = 0; j < nNumPredsPerClass; j++)
+			{
+				for (int c = 0; c < nNumClasses; c++)
+				{
+					int nIdx = (i * nNumPredsPerClass + j) * nNumClasses + c;
+					conf_data[nIdx] = T(nSign * nIdx * 0.1);
+				}
+			}
+
+			map<int, vector<int>> match_indices;
+			vector<int> indices(nNumPredsPerClass, -1);
+			match_indices[-1] = indices;
+
+			if (i == 1)
+			{
+				BBOX gt_bbox(0, MEM_GT);
+				m_ssd.setBbox(gt_bbox, 0, 1, 0, 0, 0, 0, false);
+				all_gt_bboxes[i].push_back(gt_bbox);
+				// The first prior in second image is matched to a gt bbox of label 1
+				match_indices[-1][0] = 0;
+			}
+
+			all_match_indices.push_back(match_indices);
+		}
+
+		m_ssd.m_pConf->CopyCpuToGpu();
+
+		vector<vector<T>> all_conf_loss;
+
+		// LOGISTIC, background label = -1
+		m_ssd.m_confLossType = SSD_CONF_LOSS_TYPE_LOGISTIC;
+		m_ssd.m_nBackgroundLabelId = -1;
+		m_ssd.Setup(nNum, nNumPredsPerClass, 2);
+		m_ssd.m_nNumClasses = nNumClasses;
+
+		if (lErr = m_ssd.computeConfLoss(nNum, nNumPredsPerClass, nNumClasses, all_match_indices, all_gt_bboxes, &all_conf_loss))
+			return lErr;
+
+		CHECK_EQ(all_conf_loss.size(), nNum);
+		CHECK_EQ(all_conf_loss[0].size(), nNumPredsPerClass);
+		
+		T fExpected = -(log(exp((T)0.) / ((T)1. + exp((T)0.))) + log(exp((T)0.1) / ((T)1 + exp((T)0.1))));
+		T fActual = all_conf_loss[0][0];
+		EXPECT_NEAR(fActual, fExpected);
+
+		fExpected = -(log(exp((T)0.2) / ((T)1. + exp((T)0.2))) + log(exp((T)0.3) / ((T)1 + exp((T)0.3))));
+		fActual = all_conf_loss[0][1];
+		EXPECT_NEAR(fActual, fExpected);
+			
+		CHECK_EQ(all_conf_loss[1].size(), nNumPredsPerClass);
+
+		fExpected = -(log(exp((T)-0.4) / ((T)1. + exp((T)-0.4))) + log((T)1. / ((T)1 + exp((T)-0.5))));
+		fActual = all_conf_loss[1][0];
+		EXPECT_NEAR(fActual, fExpected);
+
+		fExpected = -(log(exp((T)-0.6) / ((T)1. + exp((T)-0.6))) + log(exp((T)-0.7) / ((T)1 + exp((T)-0.7))));
+		fActual = all_conf_loss[1][1];
+		EXPECT_NEAR(fActual, fExpected);
+
+		// LOGISTIC, background label = 0
+		m_ssd.m_confLossType = SSD_CONF_LOSS_TYPE_LOGISTIC;
+		m_ssd.m_nBackgroundLabelId = 0;
+		m_ssd.Setup(nNum, nNumPredsPerClass, 2);
+		m_ssd.m_nNumClasses = nNumClasses;
+
+		if (lErr = m_ssd.computeConfLoss(nNum, nNumPredsPerClass, nNumClasses, all_match_indices, all_gt_bboxes, &all_conf_loss))
+			return lErr;
+
+		CHECK_EQ(all_conf_loss.size(), nNum);
+		CHECK_EQ(all_conf_loss[0].size(), nNumPredsPerClass);
+
+		fExpected = -(log((T)1. / ((T)1. + exp((T)0.))) + log(exp((T)0.1) / ((T)1 + exp((T)0.1))));
+		fActual = all_conf_loss[0][0];
+		EXPECT_NEAR(fActual, fExpected);
+
+		fExpected = -(log((T)1. / ((T)1. + exp((T)0.2))) + log(exp((T)0.3) / ((T)1 + exp((T)0.3))));
+		fActual = all_conf_loss[0][1];
+		EXPECT_NEAR(fActual, fExpected);
+
+		CHECK_EQ(all_conf_loss[1].size(), nNumPredsPerClass);
+
+		fExpected = -(log(exp((T)-0.4) / ((T)1. + exp((T)-0.4))) + log((T)1. / ((T)1 + exp((T)-0.5))));
+		fActual = all_conf_loss[1][0];
+		EXPECT_NEAR(fActual, fExpected);
+
+		fExpected = -(log((T)1. / ((T)1. + exp((T)-0.6))) + log(exp((T)-0.7) / ((T)1 + exp((T)-0.7))));
+		fActual = all_conf_loss[1][1];
+		EXPECT_NEAR(fActual, fExpected);
+
+		// SOFMTAX, background label = 0
+		m_ssd.m_confLossType = SSD_CONF_LOSS_TYPE_SOFTMAX;
+		m_ssd.m_nBackgroundLabelId = 0;
+		m_ssd.Setup(nNum, nNumPredsPerClass, 2);
+		m_ssd.m_nNumClasses = nNumClasses;
+
+		if (lErr = m_ssd.computeConfLoss(nNum, nNumPredsPerClass, nNumClasses, all_match_indices, all_gt_bboxes, &all_conf_loss))
+			return lErr;
+
+		CHECK_EQ(all_conf_loss.size(), nNum);
+		for (int i = 0; i < nNum; i++)
+		{
+			CHECK_EQ(all_conf_loss[i].size(), nNumPredsPerClass);
+			int nSign = (i % 2) ? 1 : -1;
+
+			for (int j = 0; j < nNumPredsPerClass; j++)
+			{
+				T fActual = all_conf_loss[i][j];
+				T fExpected = 0;
+
+				if (nSign == 1)
+				{
+					if (j == 0)
+						fExpected = -log((T)1. / ((T)1 + exp((T)-0.1)));
+					else
+						fExpected = -log(exp((T)-0.1) / ((T)1 + exp((T)-0.1)));
+				}
+				else
+				{
+					fExpected = -log((T)1. / ((T)1 + exp((T)-0.1)));
+				}
+
+				EXPECT_NEAR(fActual, fExpected);
+			}
+		}
+
+		return 0;
+	}
+
 	long TestFindMatches(int nConfig)
 	{
 		return ERROR_NOT_IMPLEMENTED;
 	}
 
 	long TestCountMatches(int nConfig)
-	{
-		return ERROR_NOT_IMPLEMENTED;
-	}
-
-	long TestSoftMax(int nConfig)
-	{
-		return ERROR_NOT_IMPLEMENTED;
-	}
-
-	long TestComputeConfLoss(int nConfig)
 	{
 		return ERROR_NOT_IMPLEMENTED;
 	}
@@ -1576,13 +1708,8 @@ long TestSsd<T>::RunTest(LONG lInput, T* pfInput)
 					throw lErr;
 				break;
 
-			case SOFTMAX:
-				if (lErr = ((TestData<T>*)m_pObj)->TestSoftMax(nConfig))
-					throw lErr;
-				break;
-
 			case COMPUTE_CONF_LOSS:
-				if (lErr = ((TestData<T>*)m_pObj)->TestComputeConfLoss(nConfig))
+				if (lErr = ((TestData<T>*)m_pObj)->TestComputeConfLossMatch(nConfig))
 					throw lErr;
 				break;
 
