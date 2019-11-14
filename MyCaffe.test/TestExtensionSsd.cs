@@ -436,42 +436,6 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestFindMatches()
-        {
-            SsdExtensionTest test = new SsdExtensionTest();
-
-            try
-            {
-                foreach (ISsdExtensionTest t in test.Tests)
-                {
-                    t.TestFindMatches(0);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
-        public void TestCountMatches()
-        {
-            SsdExtensionTest test = new SsdExtensionTest();
-
-            try
-            {
-                foreach (ISsdExtensionTest t in test.Tests)
-                {
-                    t.TestCountMatches(0);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
         public void TestSoftmax()
         {
             SsdExtensionTest test = new SsdExtensionTest();
@@ -508,24 +472,6 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
-        public void TestComputeLocLoss()
-        {
-            SsdExtensionTest test = new SsdExtensionTest();
-
-            try
-            {
-                foreach (ISsdExtensionTest t in test.Tests)
-                {
-                    t.TestComputeLocLoss(0);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
-
-        [TestMethod]
         public void TestApplyNMS()
         {
             SsdExtensionTest test = new SsdExtensionTest();
@@ -543,23 +489,77 @@ namespace MyCaffe.test
             }
         }
 
-        [TestMethod]
-        public void TestMineHardExamples()
-        {
-            SsdExtensionTest test = new SsdExtensionTest();
+        //[TestMethod]
+        //public void TestComputeLocLoss()
+        //{
+        //    SsdExtensionTest test = new SsdExtensionTest();
 
-            try
-            {
-                foreach (ISsdExtensionTest t in test.Tests)
-                {
-                    t.TestMineHardExamples(0);
-                }
-            }
-            finally
-            {
-                test.Dispose();
-            }
-        }
+        //    try
+        //    {
+        //        foreach (ISsdExtensionTest t in test.Tests)
+        //        {
+        //            t.TestComputeLocLoss(0);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
+
+        //[TestMethod]
+        //public void TestFindMatches()
+        //{
+        //    SsdExtensionTest test = new SsdExtensionTest();
+
+        //    try
+        //    {
+        //        foreach (ISsdExtensionTest t in test.Tests)
+        //        {
+        //            t.TestFindMatches(0);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
+
+        //[TestMethod]
+        //public void TestCountMatches()
+        //{
+        //    SsdExtensionTest test = new SsdExtensionTest();
+
+        //    try
+        //    {
+        //        foreach (ISsdExtensionTest t in test.Tests)
+        //        {
+        //            t.TestCountMatches(0);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
+
+        //[TestMethod]
+        //public void TestMineHardExamples()
+        //{
+        //    SsdExtensionTest test = new SsdExtensionTest();
+
+        //    try
+        //    {
+        //        foreach (ISsdExtensionTest t in test.Tests)
+        //        {
+        //            t.TestMineHardExamples(0);
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        test.Dispose();
+        //    }
+        //}
     }
 
     interface ISsdExtensionTest : ITest
