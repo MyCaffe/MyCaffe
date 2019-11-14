@@ -43,7 +43,7 @@ namespace MyCaffe.test
             {
                 foreach (IMultiBoxLossLayerTest t in test.Tests)
                 {
-                    t.TestLocGradient();
+                    t.TestLocGradient(false);
                 }
             }
             finally
@@ -61,7 +61,43 @@ namespace MyCaffe.test
             {
                 foreach (IMultiBoxLossLayerTest t in test.Tests)
                 {
-                    t.TestConfGradient();
+                    t.TestConfGradient(false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestLocGradientGpu()
+        {
+            MultiBoxLossLayerTest test = new MultiBoxLossLayerTest();
+
+            try
+            {
+                foreach (IMultiBoxLossLayerTest t in test.Tests)
+                {
+                    t.TestLocGradient(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestConfGradientGpu()
+        {
+            MultiBoxLossLayerTest test = new MultiBoxLossLayerTest();
+
+            try
+            {
+                foreach (IMultiBoxLossLayerTest t in test.Tests)
+                {
+                    t.TestConfGradient(true);
                 }
             }
             finally
@@ -75,8 +111,8 @@ namespace MyCaffe.test
     interface IMultiBoxLossLayerTest : ITest
     {
         void TestSetup();
-        void TestLocGradient();
-        void TestConfGradient();
+        void TestLocGradient(bool bGpu);
+        void TestConfGradient(bool bGpu);
     }
 
     class MultiBoxLossLayerTest : TestBase
@@ -376,10 +412,11 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestLocGradient()
+        public void TestLocGradient(bool bGpu)
         {
             TestingProgressSet progress = new TestingProgressSet();
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MULTIBOX_LOSS);
+            p.multiboxloss_param.use_gpu = bGpu;
             p.propagate_down.Add(true);
             p.propagate_down.Add(false);
             p.multiboxloss_param.num_classes = (uint)m_nNumClasses;
@@ -446,10 +483,11 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestConfGradient()
+        public void TestConfGradient(bool bGpu)
         {
             TestingProgressSet progress = new TestingProgressSet();
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.MULTIBOX_LOSS);
+            p.multiboxloss_param.use_gpu = bGpu;
             p.propagate_down.Add(false);
             p.propagate_down.Add(true);
             p.multiboxloss_param.num_classes = (uint)m_nNumClasses;
