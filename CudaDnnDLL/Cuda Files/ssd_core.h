@@ -556,6 +556,16 @@ public:
 	SsdData(Memory<T>* pMem, Math<T>* pMath);
 	~SsdData();
 
+	vector<map<int, vector<int>>>& GetAllMatchIndices()
+	{
+		return m_all_match_indices;
+	}
+
+	vector<vector<int>>& GetAllNegIndices()
+	{
+		return m_all_neg_indices;
+	}
+
 	LONG Initialize(int nGpuID, int nNumClasses, bool bShareLocation, int nLocClasses, int nBackgroundLabelId, bool bUseDifficultGt, SsdMiningType miningType, SsdMatchingType matchingType, T fOverlapThreshold, bool bUsePriorForMatching, SsdCodeType codeType, bool bEncodeVariantInTgt, bool bBpInside, bool bIgnoreCrossBoundaryBbox, bool bUsePriorForNms, SsdConfLossType confLossType, SsdLocLossType locLossType, T fNegPosRatio, T fNegOverlap, int nSampleSize, bool bMapObjectToAgnostic, T fNmsThreshold, int nTopK, T fEta)
 	{
 		m_nNumClasses = nNumClasses;
@@ -757,7 +767,7 @@ public:
 		if (m_bShareLocation)
 		{
 			if (nNumLocClasses != 1)
-				return ERROR_SSD_NUMLOCCLASSES_INVALID_FOR_SHARED;
+				return ERROR_SSD_INVALID_NUMLOCCLASSES_FOR_SHARED;
 		}
 
 		for (int i = 0; i < m_nNum; i++)

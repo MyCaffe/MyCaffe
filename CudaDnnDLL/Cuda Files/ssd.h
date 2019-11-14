@@ -118,6 +118,22 @@ public:
 	long MultiboxLossForward(int nLocDataCount, long hLocData, int nConfDataCount, long hConfData, int nPriorDataCount, long hPriorData, int nGtDataCount, long hGtData, int* pnNumMatches, int* pnNumNegs);
 	long EncodeLocPrediction(int nLocPredCount, long hLocPred, int nLocGtCount, long hLocGt);
 	long EncodeConfPrediction(int nConfPredCount, long hConfPred, int nConfGtCount, long hConfGt);
+
+	long GetAllMatchIndices(vector<map<int, vector<int>>>* pall_match_indices)
+	{
+		if (m_pData == NULL)
+			return ERROR_SSD_NOT_INITIALIZED;
+		*pall_match_indices = m_pData->GetAllMatchIndices();
+		return 0;
+	}
+
+	long GetAllNegIndices(vector<vector<int>>* pall_neg_indices)
+	{
+		if (m_pData == NULL)
+			return ERROR_SSD_NOT_INITIALIZED;
+		*pall_neg_indices = m_pData->GetAllNegIndices();
+		return 0;
+	}
 };
 
 

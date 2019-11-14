@@ -57,10 +57,12 @@ long ssdHandle<T>::MultiboxLossForward(int nLocDataCount, long hLocData, int nCo
 
 	vector<BBOX> rgPriorBbox;
 	vector<BBOX> rgPriorVariances;
-	m_pData->getPrior(rgPriorBbox, rgPriorVariances);
+	if (lErr = m_pData->getPrior(rgPriorBbox, rgPriorVariances))
+		return lErr;
 
 	vector<map<int, vector<BBOX>>> rgAllLocPreds;
-	m_pData->getLocPrediction(rgAllLocPreds);
+	if (lErr = m_pData->getLocPrediction(rgAllLocPreds))
+		return lErr;
 
 
 	//--------------------------------------------------------
