@@ -121,6 +121,12 @@ LONG SsdMemory<T>::Initialize(int nCount, long hHandle = 0)
 	{
 		if (lErr = m_pMem->AllocHost(nCount, &m_host, pSrc, true, false))
 			return lErr;
+
+		if (!m_bOwnHandle)
+		{
+			if (lErr = CopyGpuToCpu())
+				return lErr;
+		}
 	}
 	else if (pSrc != NULL)
 	{
@@ -605,6 +611,9 @@ long SsdData<T>::encodeLocPrediction(vector<map<int, vector<BBOX>>>& rgAllLocPre
 				if (j >= loc_pred.size())
 					return ERROR_PARAM_OUT_OF_RANGE;
 
+				MEM locPredType = std::get<1>(loc_pred[j]);
+				int nOffset = std::get<0>(loc_pred[j]);
+
 				if (m_bBpInside)
 				{
 					T xmin_match = m_rgBbox[MEM_PRIOR]->xmin(j);
@@ -622,19 +631,19 @@ long SsdData<T>::encodeLocPrediction(vector<map<int, vector<BBOX>>>& rgAllLocPre
 
 					// When a dimension of match_bbox is outside of an image region, use
 					// gt_encode to simulate zero gradient.
-					m_rgBbox[MEM_LOCPRED]->setBounds(nCount,
-						(xmin_match < 0 || xmin_match > 1) ? xmin_gtencode : m_rgBbox[MEM_LOC]->xmin(j),
-						(ymin_match < 0 || ymin_match > 1) ? ymin_gtencode : m_rgBbox[MEM_LOC]->ymin(j),
-						(xmax_match < 0 || xmax_match > 1) ? xmax_gtencode : m_rgBbox[MEM_LOC]->xmax(j),
-						(ymax_match < 0 || ymax_match > 1) ? ymax_gtencode : m_rgBbox[MEM_LOC]->ymax(j));
+					T xmin = (xmin_match < 0 || xmin_match > 1) ? xmin_gtencode : m_rgBbox[locPredType]->xmin(nOffset);
+					T ymin = (ymin_match < 0 || ymin_match > 1) ? ymin_gtencode : m_rgBbox[locPredType]->ymin(nOffset);
+					T xmax = (xmax_match < 0 || xmax_match > 1) ? xmax_gtencode : m_rgBbox[locPredType]->xmax(nOffset);
+					T ymax = (ymax_match < 0 || ymax_match > 1) ? ymax_gtencode : m_rgBbox[locPredType]->ymax(nOffset);
+					m_rgBbox[MEM_LOCPRED]->setBounds(nCount, xmin, ymin, xmax, ymax);
 				}
 				else
-				{
-					m_rgBbox[MEM_LOCPRED]->setBounds(nCount,
-						m_rgBbox[MEM_LOC]->xmin(j),
-						m_rgBbox[MEM_LOC]->ymin(j),
-						m_rgBbox[MEM_LOC]->xmax(j),
-						m_rgBbox[MEM_LOC]->ymax(j));
+				{				
+					T xmin = m_rgBbox[locPredType]->xmin(nOffset);
+					T ymin = m_rgBbox[locPredType]->ymin(nOffset);
+					T xmax = m_rgBbox[locPredType]->xmax(nOffset);
+					T ymax = m_rgBbox[locPredType]->ymax(nOffset);
+					m_rgBbox[MEM_LOCPRED]->setBounds(nCount, xmin, ymin, xmax, ymax);
 				}
 
 				if (m_bEncodeVariantInTgt)
@@ -978,6 +987,10 @@ long SsdData<T>::mineHardExamples(vector<map<int, vector<BBOX>>>& rgAllLocPreds,
 	int nNum = (int)rgAllLocPreds.size();
 	*pnNumMatches = countNumMatches(all_match_indices, nNum);
 	*pnNumNegs = 0;
+
+	if (*pnNumMatches == 0)
+		return 0;
+
 	int nNumPriors = (int)rgPriorBboxes.size();
 
 	if (nNumPriors != (int)rgPriorVariances.size())
@@ -995,9 +1008,6 @@ long SsdData<T>::mineHardExamples(vector<map<int, vector<BBOX>>>& rgAllLocPreds,
 	vector<vector<T>> all_loc_loss;
 	if (m_miningType == SSD_MINING_TYPE_HARD_EXAMPLE)
 	{
-		if (*pnNumMatches == 0)
-			return ERROR_SSD_MINEHARDEXAMPLES_NO_MATCHES;
-
 		if (lErr = m_rgBbox[MEM_LOCGT]->Initialize(*pnNumMatches * 4))
 			return lErr;
 
