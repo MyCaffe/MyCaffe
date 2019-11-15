@@ -132,12 +132,12 @@ public:
 
 	long CopyGpuToCpu()
 	{
-		return cudaMemcpy(m_host, m_device, m_nMax * sizeof(T), cudaMemcpyDeviceToHost);
+		return cudaMemcpy(m_host, m_device, m_nCount * sizeof(T), cudaMemcpyDeviceToHost);
 	}
 
 	long CopyCpuToGpu()
 	{
-		return cudaMemcpy(m_device, m_host, m_nMax * sizeof(T), cudaMemcpyHostToDevice);
+		return cudaMemcpy(m_device, m_host, m_nCount * sizeof(T), cudaMemcpyHostToDevice);
 	}
 };
 
@@ -604,19 +604,19 @@ public:
 		if ((m_rgBbox[MEM_DECODE] = new SsdBbox<T>(m_pMem, nGpuID, true)) == NULL)
 			return ERROR_MEMORY_OUT;
 
-		if ((m_rgBbox[MEM_LOCGT] = new SsdBbox<T>(m_pMem, nGpuID, true)) == NULL)
+		if ((m_rgBbox[MEM_LOCGT] = new SsdBbox<T>(m_pMem, nGpuID)) == NULL)
 			return ERROR_MEMORY_OUT;
 
-		if ((m_rgBbox[MEM_LOCPRED] = new SsdBbox<T>(m_pMem, nGpuID, true)) == NULL)
+		if ((m_rgBbox[MEM_LOCPRED] = new SsdBbox<T>(m_pMem, nGpuID)) == NULL)
 			return ERROR_MEMORY_OUT;
 
-		if ((m_rgBbox[MEM_LOCPRED_DIFF] = new SsdBbox<T>(m_pMem, nGpuID, true)) == NULL)
+		if ((m_rgBbox[MEM_LOCPRED_DIFF] = new SsdBbox<T>(m_pMem, nGpuID)) == NULL)
 			return ERROR_MEMORY_OUT;
 
-		if ((m_rgBbox[MEM_CONFGT] = new SsdBbox<T>(m_pMem, nGpuID, true)) == NULL)
+		if ((m_rgBbox[MEM_CONFGT] = new SsdBbox<T>(m_pMem, nGpuID)) == NULL)
 			return ERROR_MEMORY_OUT;
 
-		if ((m_rgBbox[MEM_CONFPRED] = new SsdBbox<T>(m_pMem, nGpuID, true)) == NULL)
+		if ((m_rgBbox[MEM_CONFPRED] = new SsdBbox<T>(m_pMem, nGpuID)) == NULL)
 			return ERROR_MEMORY_OUT;
 
 		if ((m_pConf = new SsdMemory<T>(m_pMem, nGpuID)) == NULL)
