@@ -1976,6 +1976,9 @@ namespace MyCaffe.common
 
             nNumNegs = 0;
 
+            if (nNumMatches == 0)
+                return nNumMatches;
+
             int nNumPriors = rgPriorBboxes.Count;
             m_log.CHECK_EQ(nNumPriors, rgrgPriorVariances.Count, "The number of priors must be the same as the number of prior variances.");
 
@@ -2018,14 +2021,11 @@ namespace MyCaffe.common
                 Blob<T> blobLocPred = new Blob<T>(m_cuda, m_log);
                 Blob<T> blobLocGt = new Blob<T>(m_cuda, m_log);
 
-                if (nNumMatches != 0)
-                {
-                    List<int> rgLocShape = Utility.Create<int>(2, 1);
-                    rgLocShape[1] = nNumMatches * 4;
-                    blobLocPred.Reshape(rgLocShape);
-                    blobLocGt.Reshape(rgLocShape);
-                    EncodeLocPrediction(rgAllLocPreds, rgAllGtBBoxes, rgAllMatchIndices, rgPriorBboxes, rgrgPriorVariances, p, blobLocPred, blobLocGt);
-                }
+                List<int> rgLocShape = Utility.Create<int>(2, 1);
+                rgLocShape[1] = nNumMatches * 4;
+                blobLocPred.Reshape(rgLocShape);
+                blobLocGt.Reshape(rgLocShape);
+                EncodeLocPrediction(rgAllLocPreds, rgAllGtBBoxes, rgAllMatchIndices, rgPriorBboxes, rgrgPriorVariances, p, blobLocPred, blobLocGt);
 
                 rgAllLocLoss = ComputeLocLoss(blobLocPred, blobLocGt, rgAllMatchIndices, nNum, nNumPriors, locLossType);
             }
