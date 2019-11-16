@@ -55,7 +55,9 @@ namespace MyCaffe.basecode
 
             if (nSeed != 0)
             {
-                m_method = METHOD.SYSTEM;
+                if (m_method == METHOD.CRYPTO)
+                    m_method = METHOD.SYSTEM;
+
                 m_rand1 = new Random(nSeed);
             }
         }
