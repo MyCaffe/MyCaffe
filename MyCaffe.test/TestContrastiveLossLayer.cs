@@ -135,7 +135,7 @@ namespace MyCaffe.test
             m_blob_top_loss = new Blob<T>(m_cuda, m_log);
 
             m_cuda.rng_setseed(1701);
-            m_random = new CryptoRandom(false, 1701);
+            m_random = new CryptoRandom(CryptoRandom.METHOD.DEFAULT, 1701);
 
             // fill the values
             FillerParameter fp = new FillerParameter("uniform");

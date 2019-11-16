@@ -269,9 +269,9 @@ namespace MyCaffe.data
         public virtual void InitRand()
         {
             if (m_param.random_seed.HasValue)
-                m_random = new CryptoRandom(false, m_param.random_seed.Value);
+                m_random = new CryptoRandom(CryptoRandom.METHOD.DEFAULT, m_param.random_seed.Value);
             else
-                m_random = new CryptoRandom(false);
+                m_random = new CryptoRandom(CryptoRandom.METHOD.DEFAULT);
         }
 
         /// <summary>

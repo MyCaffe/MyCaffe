@@ -217,10 +217,12 @@ namespace MyCaffe.test
             TestLoadSecondaryDataset(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
         }
 
-        public void TestQueryRandom(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
+        public void TestQueryRandom(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit, IMGDB_LABEL_SELECTION_METHOD? labelSel = null, IMGDB_IMAGE_SELECTION_METHOD? imgSel = null)
         {
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
-            IXImageDatabase db = new MyCaffeImageDatabase();
+            Log log = new Log("Image Database Test");
+            log.EnableTrace = true;
+            IXImageDatabase db = new MyCaffeImageDatabase(log);
 
             foreach (string strDs in rgDs)
             {
@@ -243,14 +245,14 @@ namespace MyCaffe.test
                 DatasetDescriptor ds = db.GetDatasetByName(strDs);
                 Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
 
-                int nCount = 100;
+                int nCount = 100000;
                 double dfTotalMs = 0;
 
                 for (int i = 0; i < nCount; i++)
                 {
                     sw.Reset();
                     sw.Start();
-                    SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0);
+                    SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0, labelSel, imgSel);
                     dfTotalMs += sw.ElapsedMilliseconds;
                     sw.Stop();
 
@@ -263,8 +265,11 @@ namespace MyCaffe.test
                 str = (dfTotalMs / (double)nCount).ToString();
                 Trace.WriteLine("Average Query Time: " + str + " ms.");
 
-                // Verify random selection, so no indexes should be the same.
+                str = db.GetLabelQueryHitPercentsAsTextFromSourceName(ds.TrainingSourceName);
+                Trace.WriteLine("Label Query Hit Percents = " + str);
 
+
+                // Verify random selection, so no indexes should be the same.
                 double dfTotal = 0;
 
                 foreach (KeyValuePair<int, List<SimpleDatum>> kv in rg)
@@ -297,6 +302,18 @@ namespace MyCaffe.test
         public void TestQueryRandomLoadOnDemand()
         {
             TestQueryRandom(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
+        }
+
+        [TestMethod]
+        public void TestQueryRandomLoadAllLabelBalance()
+        {
+            TestQueryRandom(IMAGEDB_LOAD_METHOD.LOAD_ALL, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM);
+        }
+
+        [TestMethod]
+        public void TestQueryRandomLoadOnDemandLabelBalance()
+        {
+            TestQueryRandom(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM);
         }
 
         [TestMethod]

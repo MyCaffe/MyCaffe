@@ -33,7 +33,7 @@ namespace MyCaffe.trainers.dqn.noisy.st
     public class TrainerNoisyDqn<T> : IxTrainerRL, IDisposable
     {
         IxTrainerCallback m_icallback;
-        CryptoRandom m_random = new CryptoRandom(true);
+        CryptoRandom m_random = new CryptoRandom();
         MyCaffeControl<T> m_mycaffe;
         PropertySet m_properties;
 

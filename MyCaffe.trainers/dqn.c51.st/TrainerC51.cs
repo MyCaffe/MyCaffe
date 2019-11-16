@@ -31,7 +31,7 @@ namespace MyCaffe.trainers.dqn.c51.st
     public class TrainerC51<T> : IxTrainerRL, IDisposable
     {
         IxTrainerCallback m_icallback;
-        CryptoRandom m_random = new CryptoRandom(true);
+        CryptoRandom m_random = new CryptoRandom();
         MyCaffeControl<T> m_mycaffe;
         PropertySet m_properties;
 
