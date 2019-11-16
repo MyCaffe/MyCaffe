@@ -41,6 +41,7 @@ namespace MyCaffe.common
         BLOB_TYPE m_type = BLOB_TYPE.DATA;
         object m_tag = null;
         bool m_bFreezeLearning = false;
+        bool m_bCpuDataReadyForPush = false;
 
         /// <summary>
         /// Defines the maximum number of Axes supported by the Blob.
@@ -1530,6 +1531,7 @@ namespace MyCaffe.common
         /// <param name="rg">Specifies the CPU data to set.</param>
         public void SetCPUData(T[] rg)
         {
+            m_bCpuDataReadyForPush = true;
             m_data.set_cpu_data_locally(rg);
         }
 
@@ -1539,10 +1541,14 @@ namespace MyCaffe.common
         /// <param name="hStream">Specifies a handle to the Cuda Stream to use for synchronization.</param>
         public void AsyncGpuPush(long hStream)
         {
+            if (!m_bCpuDataReadyForPush)
+                return;
+
             if (m_data.cpu_data == null)
                 throw new Exception("There is no CPU data to push to the GPU!");
 
             m_data.async_gpu_push(hStream, m_data.cpu_data);
+            m_bCpuDataReadyForPush = false;
         }
 
         /// <summary>
