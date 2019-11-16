@@ -310,6 +310,7 @@ namespace MyCaffe.layers.ssd
             int nNumBboxes = 0;
             Dictionary<int, List<AnnotationGroup>> rgAllAnno = new Dictionary<int, List<AnnotationGroup>>();
             List<int> rgTopShape = null;
+            bool bLabelDirty = false;
 
             for (int i = 0; i < nBatchSize; i++)
             {
@@ -452,6 +453,8 @@ namespace MyCaffe.layers.ssd
                         {
                             rgTopLabel[i] = (T)Convert.ChangeType(datum.Label, typeof(T));
                         }
+
+                        bLabelDirty = true;
                     }
                 }
 
@@ -463,7 +466,7 @@ namespace MyCaffe.layers.ssd
 
             batch.Data.SetCPUData(m_rgTopData);
 
-            if (m_bOutputLabels)
+            if (m_bOutputLabels && bLabelDirty)
                 batch.Label.SetCPUData(rgTopLabel);
 
             // Store 'rich' annotation if needed.
@@ -482,15 +485,7 @@ namespace MyCaffe.layers.ssd
                         // Store all -1 in the label.
                         rgLabelShape[2] = 1;
                         batch.Label.Reshape(rgLabelShape);
-                        T[] rgLabel = new T[batch.Label.count()];
-
-                        T tNegOne = (T)Convert.ChangeType(-1, typeof(T));
-                        for (int i = 0; i < rgLabel.Length; i++)
-                        {
-                            rgLabel[i] = tNegOne;
-                        }
-
-                        batch.Label.SetCPUData(rgLabel);
+                        batch.Label.SetData(-1);
                     }
                     else
                     {
