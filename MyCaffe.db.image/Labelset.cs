@@ -15,7 +15,7 @@ namespace MyCaffe.db.image
     {
         LabelDescriptor m_label;
         SimpleDatum[] m_rgImages;
-        CryptoRandom m_random = new CryptoRandom();
+        CryptoRandom m_random;
         int m_nCurrentIdx = 0;
 
         /// <summary>
@@ -24,6 +24,7 @@ namespace MyCaffe.db.image
         /// <param name="lbl">Specifies the label.</param>
         public LabelSet(LabelDescriptor lbl)
         {
+            m_random = new CryptoRandom(CryptoRandom.METHOD.DEFAULT, Guid.NewGuid().GetHashCode());
             m_label = lbl;
             m_rgImages = new SimpleDatum[lbl.ImageCount];
         }
