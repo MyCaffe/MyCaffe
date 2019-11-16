@@ -21,7 +21,8 @@ namespace MyCaffe.db.image
         SimpleDatum[] m_rgImages;
         List<SimpleDatum> m_rgImagesLimitLoaded = new List<SimpleDatum>();
         SimpleDatum m_imgMean = null;
-        CryptoRandom m_random = new CryptoRandom();
+        CryptoRandom m_randomLabels;
+        CryptoRandom m_random;
         int m_nLastFindIdx = 0;
         int m_nLastIdx = -1;
         int m_nFixedIndex = -1;
@@ -49,6 +50,8 @@ namespace MyCaffe.db.image
         /// <param name="nLoadLimit">Specifies the image load limit.</param>
         public ImageSet(DatasetFactory factory, SourceDescriptor src, IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
+            m_random = new CryptoRandom(CryptoRandom.METHOD.DEFAULT, Guid.NewGuid().GetHashCode());
+            m_randomLabels = new CryptoRandom(CryptoRandom.METHOD.UNIFORM_EXACT, Guid.NewGuid().GetHashCode());
             m_factory = new DatasetFactory(factory);
             m_factory.Open(src.ID);
             m_loadMethod = loadMethod;
@@ -88,6 +91,12 @@ namespace MyCaffe.db.image
             {
                 m_random.Dispose();
                 m_random = null;
+            }
+
+            if (m_randomLabels != null)
+            {
+                m_randomLabels.Dispose();
+                m_randomLabels = null;
             }
 
             if (m_factory != null)
@@ -632,7 +641,7 @@ namespace MyCaffe.db.image
                 if (m_rgLabelSetWithData.Count == 0)
                     return null;
 
-                nIdx = m_random.Next(m_rgLabelSetWithData.Count);
+                nIdx = m_randomLabels.Next(m_rgLabelSetWithData.Count);
                 return m_rgLabelSetWithData[nIdx];
             }
 
