@@ -77,7 +77,7 @@ namespace MyCaffe.layers.ssd
             : base(cuda, log, p, db, evtCancel)
         {
             m_type = LayerParameter.LayerType.ANNOTATED_DATA;
-            m_random = new CryptoRandom(true, p.transform_param.random_seed.GetValueOrDefault(0));
+            m_random = new CryptoRandom(CryptoRandom.METHOD.DEFAULT, p.transform_param.random_seed.GetValueOrDefault(0));
 
             if (db == null)
                 m_log.FAIL("Currently, the AnnotatedDataLayer requires the MyCaffe Image Database!");
