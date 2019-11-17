@@ -21,6 +21,7 @@ namespace MyCaffe.test
         string m_strName = "";
         static bool m_bResetOnCleanUp = false;
         protected bool m_bHalf = false;
+        TestingActiveGpuSet m_activeGpuId = new TestingActiveGpuSet();
 
         public TestBase(string strName, int nDeviceID = DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, object tag = null, bool bHalf = false)
         {
@@ -43,6 +44,8 @@ namespace MyCaffe.test
                     }
                 }
             }
+
+            m_activeGpuId.SetActiveGpu(nDeviceID);
 
             m_strName = strName;
 

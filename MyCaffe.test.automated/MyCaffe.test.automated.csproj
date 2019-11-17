@@ -95,6 +95,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>TestingModel.edmx</DependentUpon>
     </Compile>
+    <Compile Include="TestingActiveGpu.cs" />
     <Compile Include="TestingProgress.cs" />
   </ItemGroup>
   <ItemGroup>

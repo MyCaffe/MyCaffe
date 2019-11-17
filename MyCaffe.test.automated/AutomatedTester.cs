@@ -23,6 +23,7 @@ namespace MyCaffe.test.automated
         EventWaitHandle m_evtGlobalCancel = new EventWaitHandle(false, EventResetMode.AutoReset, "__GRADIENT_CHECKER_CancelEvent__");
         ListViewColumnSorter m_lstSorter = new ListViewColumnSorter();
         TestingProgressGet m_progress = new TestingProgressGet();
+        TestingActiveGpuGet m_activeGpu = new TestingActiveGpuGet();
         FileInfo m_fiPath;
         int m_nGpuId = 0;
         bool m_bSkip = false;
@@ -173,6 +174,12 @@ namespace MyCaffe.test.automated
                     tsItemProgress.Text = dfProgress.Value.ToString("P");
                     pbItemProgress.Value = (int)(dfProgress.Value * 100.0);
                 }
+
+                int? nActiveGpuID = m_activeGpu.GetActiveGpuID();
+                if (nActiveGpuID.HasValue)
+                    lblActiveGPUVal.Text = nActiveGpuID.ToString();
+                else
+                    lblActiveGPUVal.Text = "n\a";
 
                 if (mi.ErrorInfo.Error != null && lvi.SubItems[4].Text.Length == 0)
                 {

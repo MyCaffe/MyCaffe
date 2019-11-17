@@ -65,6 +65,8 @@
             this.pbItemProgress = new System.Windows.Forms.ToolStripProgressBar();
             this.tsItemProgress = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
+            this.lblActiveGPU = new System.Windows.Forms.ToolStripStatusLabel();
+            this.lblActiveGPUVal = new System.Windows.Forms.ToolStripStatusLabel();
             this.contextMenuStrip1.SuspendLayout();
             this.toolStripContainer1.ContentPanel.SuspendLayout();
             this.toolStripContainer1.TopToolStripPanel.SuspendLayout();
@@ -317,7 +319,9 @@
             this.toolStripStatusLabel2,
             this.tsTestingTime,
             this.pbItemProgress,
-            this.tsItemProgress});
+            this.tsItemProgress,
+            this.lblActiveGPU,
+            this.lblActiveGPUVal});
             this.statusStrip1.Location = new System.Drawing.Point(0, 579);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(1053, 25);
@@ -327,7 +331,7 @@
             // toolStripStatusLabel1
             // 
             this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            this.toolStripStatusLabel1.Size = new System.Drawing.Size(65, 20);
+            this.toolStripStatusLabel1.Size = new System.Drawing.Size(63, 20);
             this.toolStripStatusLabel1.Text = "Total Tests:";
             this.toolStripStatusLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
@@ -346,7 +350,7 @@
             // toolStripStatusLabel3
             // 
             this.toolStripStatusLabel3.Name = "toolStripStatusLabel3";
-            this.toolStripStatusLabel3.Size = new System.Drawing.Size(79, 20);
+            this.toolStripStatusLabel3.Size = new System.Drawing.Size(78, 20);
             this.toolStripStatusLabel3.Text = "   Failed Tests:";
             // 
             // tsFailedTests
@@ -383,7 +387,7 @@
             // toolStripStatusLabel2
             // 
             this.toolStripStatusLabel2.Name = "toolStripStatusLabel2";
-            this.toolStripStatusLabel2.Size = new System.Drawing.Size(84, 20);
+            this.toolStripStatusLabel2.Size = new System.Drawing.Size(82, 20);
             this.toolStripStatusLabel2.Text = "  Testing Time:";
             // 
             // tsTestingTime
@@ -423,6 +427,22 @@
             this.timerUI.Enabled = true;
             this.timerUI.Interval = 250;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
+            // 
+            // lblActiveGPU
+            // 
+            this.lblActiveGPU.Name = "lblActiveGPU";
+            this.lblActiveGPU.Size = new System.Drawing.Size(83, 20);
+            this.lblActiveGPU.Text = "Active GPU ID:";
+            // 
+            // lblActiveGPUVal
+            // 
+            this.lblActiveGPUVal.AutoSize = false;
+            this.lblActiveGPUVal.BackColor = System.Drawing.Color.Black;
+            this.lblActiveGPUVal.Font = new System.Drawing.Font("Century Gothic", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblActiveGPUVal.ForeColor = System.Drawing.Color.Lime;
+            this.lblActiveGPUVal.Name = "lblActiveGPUVal";
+            this.lblActiveGPUVal.Size = new System.Drawing.Size(30, 20);
+            this.lblActiveGPUVal.Text = "n/a";
             // 
             // AutomatedTester
             // 
@@ -485,5 +505,7 @@
         private System.Windows.Forms.ToolStripMenuItem skipToolStripMenuItem;
         private System.Windows.Forms.ToolStripProgressBar pbItemProgress;
         private System.Windows.Forms.ToolStripStatusLabel tsItemProgress;
+        private System.Windows.Forms.ToolStripStatusLabel lblActiveGPU;
+        private System.Windows.Forms.ToolStripStatusLabel lblActiveGPUVal;
     }
 }
