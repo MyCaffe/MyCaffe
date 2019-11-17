@@ -64,6 +64,7 @@ namespace MyCaffe.layers.ssd
         private T[] m_rgTopData = null;
         SsdSampler<T> m_sampler = null;
         CryptoRandom m_random = null;
+        T m_tMinusOne;
 
         /// <summary>
         /// The AnnotatedDataLayer constructor.
@@ -78,6 +79,7 @@ namespace MyCaffe.layers.ssd
         {
             m_type = LayerParameter.LayerType.ANNOTATED_DATA;
             m_random = new CryptoRandom(CryptoRandom.METHOD.DEFAULT, p.transform_param.random_seed.GetValueOrDefault(0));
+            m_tMinusOne = (T)Convert.ChangeType(-1, typeof(T));
 
             if (db == null)
                 m_log.FAIL("Currently, the AnnotatedDataLayer requires the MyCaffe Image Database!");
@@ -485,7 +487,13 @@ namespace MyCaffe.layers.ssd
                         // Store all -1 in the label.
                         rgLabelShape[2] = 1;
                         batch.Label.Reshape(rgLabelShape);
-                        batch.Label.SetData(-1);
+
+                        for (int i = 0; i < rgTopLabel.Length; i++)
+                        {
+                            rgTopLabel[i] = m_tMinusOne;
+                        }
+
+                        batch.Label.SetCPUData(rgTopLabel);
                     }
                     else
                     {
