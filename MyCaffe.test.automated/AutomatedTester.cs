@@ -28,6 +28,16 @@ namespace MyCaffe.test.automated
         int m_nGpuId = 0;
         bool m_bSkip = false;
 
+        enum COLIDX
+        {
+            IDX,
+            PRIORITY,
+            STATUS,
+            CLASS,
+            METHOD,
+            ERROR
+        }
+
         enum LOADTYPE
         {
             ALL,
@@ -114,7 +124,7 @@ namespace MyCaffe.test.automated
                         lvi.SubItems.Add(mi.Name);
                         lvi.SubItems.Add(mi.ErrorInfo.FullErrorString);
                         lvi.Tag = new KeyValuePair<TestClass, MethodInfoEx>(tc, mi);
-                        lvi.SubItems[5].Tag = mi.ErrorInfo;
+                        lvi.SubItems[(int)COLIDX.ERROR].Tag = mi.ErrorInfo;
 
                         if (mi.Status != MethodInfoEx.STATUS.Passed && mi.Status != MethodInfoEx.STATUS.Failed)
                         {
@@ -154,7 +164,7 @@ namespace MyCaffe.test.automated
 
                 if (lvi.ImageIndex != (int)mi.Status)
                 {
-                    lvi.SubItems[1].Text = mi.Status.ToString();
+                    lvi.SubItems[(int)COLIDX.STATUS].Text = mi.Status.ToString();
                     lvi.ImageIndex = (int)mi.Status;
 
                     if (mi.Status == MethodInfoEx.STATUS.Passed)
@@ -186,10 +196,10 @@ namespace MyCaffe.test.automated
                 else
                     lblActiveGPUVal.Text = "n\a";
 
-                if (mi.ErrorInfo.Error != null && lvi.SubItems[4].Text.Length == 0)
+                if (mi.ErrorInfo.Error != null && lvi.SubItems[(int)COLIDX.ERROR].Text.Length == 0)
                 {
-                    lvi.SubItems[4].Text = mi.ErrorInfo.ShortErrorString;
-                    lvi.SubItems[4].Tag = mi.ErrorInfo;
+                    lvi.SubItems[(int)COLIDX.ERROR].Text = mi.ErrorInfo.ShortErrorString;
+                    lvi.SubItems[(int)COLIDX.ERROR].Tag = mi.ErrorInfo;
                 }
 
                 miLast = mi;
@@ -262,9 +272,9 @@ namespace MyCaffe.test.automated
 
             if (hti != null)
             {
-                if (hti.Item.SubItems[4].Text.Length > 0)
+                if (hti.Item.SubItems[(int)COLIDX.ERROR].Text.Length > 0)
                 {
-                    ErrorInfo error = hti.Item.SubItems[4].Tag as ErrorInfo;
+                    ErrorInfo error = hti.Item.SubItems[(int)COLIDX.ERROR].Tag as ErrorInfo;
                     FormError dlg = new FormError(error);
 
                     dlg.ShowDialog();
@@ -343,8 +353,8 @@ namespace MyCaffe.test.automated
                 mi.Status = MethodInfoEx.STATUS.NotExecuted;
 
                 lvi.Checked = true;
-                lvi.SubItems[4].Text = "";
-                lvi.SubItems[4].Tag = null;
+                lvi.SubItems[(int)COLIDX.ERROR].Text = "";
+                lvi.SubItems[(int)COLIDX.ERROR].Tag = null;
             }
         }
 
@@ -387,9 +397,9 @@ namespace MyCaffe.test.automated
         {
             foreach (ListViewItem lvi in lstTests.Items)
             {
-                if (lvi.SubItems[1].Text == "NotExecuted")
+                if (lvi.SubItems[(int)COLIDX.STATUS].Text == "NotExecuted")
                 {
-                    string strName = lvi.SubItems[3].Text.ToLower();
+                    string strName = lvi.SubItems[(int)COLIDX.METHOD].Text.ToLower();
 
                     if (strName.Contains("gradient"))
                     {
@@ -414,9 +424,9 @@ namespace MyCaffe.test.automated
         {
             foreach (ListViewItem lvi in lstTests.Items)
             {
-                if (lvi.SubItems[1].Text == "NotExecuted")
+                if (lvi.SubItems[(int)COLIDX.STATUS].Text == "NotExecuted")
                 {
-                    string strName = lvi.SubItems[3].Text.ToLower();
+                    string strName = lvi.SubItems[(int)COLIDX.METHOD].Text.ToLower();
 
                     if (!strName.Contains("gradient"))
                     {
