@@ -110,11 +110,11 @@ namespace MyCaffe.test.automated.Properties {
         ///	[ErrorLocation] [varchar](1024) NULL,
         ///	[TestTiming] [numeric](12, 5) NULL,
         ///	[SessionID] [int] NULL,
+        ///	[Priority] [int] NULL,
         /// CONSTRAINT [PK_Tests] PRIMARY KEY CLUSTERED 
         ///(
         ///	[ID] ASC
-        ///)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
-        ///) ON [PRI [rest of string was truncated]&quot;;.
+        ///)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string CreateTestsTable {
             get {
@@ -134,6 +134,28 @@ namespace MyCaffe.test.automated.Properties {
         internal static string QueryDatabaseExists {
             get {
                 return ResourceManager.GetString("QueryDatabaseExists", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to IF COL_LENGTH(&apos;Tests&apos;, &apos;Priority&apos;) IS NULL
+        ///BEGIN
+        ///    ALTER TABLE [dbo].[Tests] ADD [Priority] INT
+        ///END.
+        /// </summary>
+        internal static string UpdateTestsTable {
+            get {
+                return ResourceManager.GetString("UpdateTestsTable", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to UPDATE [dbo].[Tests]
+        ///   SET [Priority] = 0.
+        /// </summary>
+        internal static string UpdateTestsTableValues {
+            get {
+                return ResourceManager.GetString("UpdateTestsTableValues", resourceCulture);
             }
         }
     }

@@ -21,7 +21,7 @@ namespace MyCaffe.test
         string m_strName = "";
         static bool m_bResetOnCleanUp = false;
         protected bool m_bHalf = false;
-        TestingActiveGpuSet m_activeGpuId = new TestingActiveGpuSet();
+
 
         public TestBase(string strName, int nDeviceID = DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, object tag = null, bool bHalf = false)
         {
@@ -44,8 +44,6 @@ namespace MyCaffe.test
                     }
                 }
             }
-
-            m_activeGpuId.SetActiveGpu(nDeviceID);
 
             m_strName = strName;
 
@@ -111,6 +109,22 @@ namespace MyCaffe.test
 
                 return rgKnownFailures;
             }
+        }
+
+        public int GetPriority(string strClass, string strMethod)
+        {
+            if (strClass == "TestMyCaffeControl" && strMethod.Contains("TestTrainMultiGpu"))
+                return 1;
+
+            // If this fails, a corruption of the GPU is possible.
+            if (strClass == "TestNCCL")
+                return 2;
+
+            // If this fails, all other following tests will fail due to memory usage.
+            if (strClass == "TestCudaDnn" && strMethod.Contains("TestMemoryTest"))
+                return 3;
+
+            return 0;
         }
 
         public void EnableTests(params int[] rgIdx)
@@ -303,6 +317,7 @@ namespace MyCaffe.test
         protected bool m_bEnabled = true;
         protected bool m_bHalf = false;
         protected long m_lSeed = 1701;
+        TestingActiveGpuSet m_activeGpuId = new TestingActiveGpuSet();
 
         public Test(string strName, int nDeviceID = TestBase.DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, bool bHalf = false)
         {
@@ -347,6 +362,7 @@ namespace MyCaffe.test
 
             // NOTE: CudaPath set in TestBase will be used, see CudaPath and SetDefaultCudaPath() above.
             CudaDnn<T> cuda = new CudaDnn<T>(nDeviceID, flags, m_lSeed);
+            m_activeGpuId.SetActiveGpu(nDeviceID);
 
             Trace.WriteLine("TestBase using Cuda Connection: '" + cuda.Path + "'");
 

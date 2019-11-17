@@ -201,6 +201,13 @@ namespace MyCaffe.basecode
         /// Get the known failures of the test module.
         /// </summary>
         List<Tuple<string, string, string>> KnownFailures { get; }
+        /// <summary>
+        /// Get the priority of a class::method pair.
+        /// </summary>
+        /// <param name="strClass">Specifies the class.</param>
+        /// <param name="strMethod">Specifies the method.</param>
+        /// <returns>The priority is returned with 0 being the top priority.</returns>
+        int GetPriority(string strClass, string strMethod);
     }
 
 

@@ -436,6 +436,15 @@ namespace MyCaffe.app
 
                 setStatus("Testing database created.");
             }
+            else
+            {
+                err = dbMgrTest.UpdateDatabase();
+                if (err != null)
+                {
+                    setStatus("ERROR Updating Testing Database! " + err.Message);
+                    return;
+                }
+            }
 
             openFileDialogAutoTests.InitialDirectory = initialDirectory;
             if (openFileDialogAutoTests.ShowDialog() == DialogResult.OK)

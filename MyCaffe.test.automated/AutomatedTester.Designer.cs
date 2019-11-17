@@ -64,9 +64,10 @@
             this.tsTestingTime = new System.Windows.Forms.ToolStripStatusLabel();
             this.pbItemProgress = new System.Windows.Forms.ToolStripProgressBar();
             this.tsItemProgress = new System.Windows.Forms.ToolStripStatusLabel();
-            this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.lblActiveGPU = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblActiveGPUVal = new System.Windows.Forms.ToolStripStatusLabel();
+            this.timerUI = new System.Windows.Forms.Timer(this.components);
+            this.colPriority = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.contextMenuStrip1.SuspendLayout();
             this.toolStripContainer1.ContentPanel.SuspendLayout();
             this.toolStripContainer1.TopToolStripPanel.SuspendLayout();
@@ -80,6 +81,7 @@
             this.lstTests.CheckBoxes = true;
             this.lstTests.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.colIdx,
+            this.colPriority,
             this.colResult,
             this.colTestClass,
             this.colTestMethod,
@@ -422,12 +424,6 @@
             this.tsItemProgress.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.tsItemProgress.Visible = false;
             // 
-            // timerUI
-            // 
-            this.timerUI.Enabled = true;
-            this.timerUI.Interval = 250;
-            this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
-            // 
             // lblActiveGPU
             // 
             this.lblActiveGPU.Name = "lblActiveGPU";
@@ -443,6 +439,16 @@
             this.lblActiveGPUVal.Name = "lblActiveGPUVal";
             this.lblActiveGPUVal.Size = new System.Drawing.Size(30, 20);
             this.lblActiveGPUVal.Text = "n/a";
+            // 
+            // timerUI
+            // 
+            this.timerUI.Enabled = true;
+            this.timerUI.Interval = 250;
+            this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
+            // 
+            // colPriority
+            // 
+            this.colPriority.Text = "Priority";
             // 
             // AutomatedTester
             // 
@@ -507,5 +513,6 @@
         private System.Windows.Forms.ToolStripStatusLabel tsItemProgress;
         private System.Windows.Forms.ToolStripStatusLabel lblActiveGPU;
         private System.Windows.Forms.ToolStripStatusLabel lblActiveGPUVal;
+        private System.Windows.Forms.ColumnHeader colPriority;
     }
 }

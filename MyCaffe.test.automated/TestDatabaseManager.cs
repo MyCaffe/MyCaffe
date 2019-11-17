@@ -82,6 +82,32 @@ namespace MyCaffe.test.automated
             return fullPath;
         }
 
+        public Exception UpdateDatabase()
+        {
+            try
+            {
+                bool bExists;
+                Exception err = DatabaseExists(out bExists);
+
+                if (err != null)
+                    throw err;
+
+                if (!bExists)
+                    return null;
+
+                SqlConnection connection1 = new SqlConnection(GetConnectionString(m_strName));
+                connection1.Open();
+                updateTables(connection1);
+                connection1.Close();
+            }
+            catch (Exception excpt)
+            {
+                return excpt;
+            }
+
+            return null;
+        }
+
         public Exception CreateDatabase(string strPath)
         {
             try
@@ -120,6 +146,18 @@ namespace MyCaffe.test.automated
             }
 
             return null;
+        }
+
+        protected void updateTables(SqlConnection connection)
+        {
+            SqlCommand cmdUpdate;
+
+            cmdUpdate = new SqlCommand(Properties.Resources.UpdateTestsTable, connection);
+            cmdUpdate.ExecuteNonQuery();
+            cmdUpdate.Dispose();
+            cmdUpdate = new SqlCommand(Properties.Resources.UpdateTestsTableValues, connection);
+            cmdUpdate.ExecuteNonQuery();
+            cmdUpdate.Dispose();
         }
 
         protected virtual void createTables(SqlConnection connection, bool bFullCreate)

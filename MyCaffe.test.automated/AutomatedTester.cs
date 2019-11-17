@@ -89,6 +89,10 @@ namespace MyCaffe.test.automated
 
             if (IsHandleCreated)
                 load(LOADTYPE.ALL);
+
+            m_lstSorter.SortColumn = 1;
+            m_lstSorter.Order = SortOrder.Ascending;
+            lstTests.Sort();
         }
 
         private void load(LOADTYPE lt)
@@ -104,12 +108,13 @@ namespace MyCaffe.test.automated
                     if (lt == LOADTYPE.ALL || (lt == LOADTYPE.FAILURE && mi.Status == MethodInfoEx.STATUS.Failed) || (lt == LOADTYPE.SUCCESS && mi.Status == MethodInfoEx.STATUS.Passed) || (lt == LOADTYPE.NOTEXECUTED && (mi.Status == MethodInfoEx.STATUS.NotExecuted || mi.Status == MethodInfoEx.STATUS.Pending)))
                     {
                         ListViewItem lvi = new ListViewItem(nIdx.ToString(), (int)mi.Status);
+                        lvi.SubItems.Add(mi.Priority.ToString());
                         lvi.SubItems.Add(mi.Status.ToString());
                         lvi.SubItems.Add(tc.Name);
                         lvi.SubItems.Add(mi.Name);
                         lvi.SubItems.Add(mi.ErrorInfo.FullErrorString);
                         lvi.Tag = new KeyValuePair<TestClass, MethodInfoEx>(tc, mi);
-                        lvi.SubItems[4].Tag = mi.ErrorInfo;
+                        lvi.SubItems[5].Tag = mi.ErrorInfo;
 
                         if (mi.Status != MethodInfoEx.STATUS.Passed && mi.Status != MethodInfoEx.STATUS.Failed)
                         {
@@ -134,7 +139,7 @@ namespace MyCaffe.test.automated
                         mi.Enabled = false;
                     }
                 }
-            }           
+            }
         }
 
         public void UpdateStatus()
@@ -656,44 +661,52 @@ namespace MyCaffe.test.automated
 
             try
             {
+                List<Tuple<TestClass, MethodInfoEx>> rgTests = new List<Tuple<TestClass, MethodInfoEx>>();
+
                 foreach (TestClass tc in m_rgClasses)
                 {
-                    tcCurrent = tc;
-
                     foreach (MethodInfoEx mi in tc.Methods)
                     {
-                        miCurrent = mi;
+                        rgTests.Add(new Tuple<TestClass, MethodInfoEx>(tc, mi));
+                    }
+                }
 
-                        if (evtCancel.WaitOne(0))
-                            return;
+                rgTests = rgTests.OrderBy(p => p.Item2.Priority).ThenBy(p => p.Item2.Index).ToList();
 
-                        if (mi.Enabled && (!bServerMode || mi.Status == MethodInfoEx.STATUS.NotExecuted))
+                foreach (Tuple<TestClass, MethodInfoEx> test in rgTests)
+                {
+                    tcCurrent = test.Item1;
+                    miCurrent = test.Item2;
+
+                    if (evtCancel.WaitOne(0))
+                        return;
+
+                    if (miCurrent.Enabled && (!bServerMode || miCurrent.Status == MethodInfoEx.STATUS.NotExecuted))
+                    {
+                        m_strCurrentTest = tcCurrent.Name + "::" + miCurrent.Name;
+
+                        if (bSkip)
                         {
-                            m_strCurrentTest = tc.Name + "::" + mi.Name;
+                            miCurrent.ErrorInfo.SetError(new Exception("SKIPPED"));
+                            miCurrent.Status = MethodInfoEx.STATUS.Failed;
+                        }
+                        else
+                        {
+                            eventLogStart.WriteEntry("Starting " + tcCurrent.Name + "::" + miCurrent.Name + " test.");
 
-                            if (bSkip)
-                            {
-                                mi.ErrorInfo.SetError(new Exception("SKIPPED"));
-                                mi.Status = MethodInfoEx.STATUS.Failed;
-                            }
+                            miCurrent.Invoke(tcCurrent.Instance, nGpuId);
+
+                            if (miCurrent.Status == MethodInfoEx.STATUS.Failed)
+                                eventLogResult.WriteEntry("ERROR " + tcCurrent.Name + "::" + miCurrent.Name + " test - " + miCurrent.Status.ToString() + " Error Information: " + miCurrent.ErrorInfo.FullErrorString, EventLogEntryType.Warning);
                             else
-                            {
-                                eventLogStart.WriteEntry("Starting " + tc.Name + "::" + mi.Name + " test.");
-
-                                mi.Invoke(tc.Instance, nGpuId);
-
-                                if (mi.Status == MethodInfoEx.STATUS.Failed)
-                                    eventLogResult.WriteEntry("ERROR " + tc.Name + "::" + mi.Name + " test - " + mi.Status.ToString() + " Error Information: " + mi.ErrorInfo.FullErrorString, EventLogEntryType.Warning);
-                                else
-                                    eventLogResult.WriteEntry("Completed " + tc.Name + "::" + mi.Name + " test - " + mi.Status.ToString(), EventLogEntryType.Information);
-                            }
-
-                            if (mi.Status != MethodInfoEx.STATUS.Aborted)
-                                SaveToDatabase(tc, mi);
+                                eventLogResult.WriteEntry("Completed " + tcCurrent.Name + "::" + miCurrent.Name + " test - " + miCurrent.Status.ToString(), EventLogEntryType.Information);
                         }
 
-                        m_nCurrentTest++;
+                        if (miCurrent.Status != MethodInfoEx.STATUS.Aborted)
+                            SaveToDatabase(tcCurrent, miCurrent);
                     }
+
+                    m_nCurrentTest++;
                 }
             }
             catch (Exception excpt)
@@ -726,12 +739,33 @@ namespace MyCaffe.test.automated
 
             FileInfo fi = new FileInfo(strPath);
             Directory.SetCurrentDirectory(fi.DirectoryName);
+            int nIdx = 0;
 
             try
             {
                 Assembly a = Assembly.LoadFile(m_strPath);
+                MethodInfo miGetPriority = null;
+                TestClass tcBase = null;
 
                 m_strName = a.FullName;
+
+                foreach (Type t in a.GetTypes())
+                {
+                    TestClass tc = new TestClass(t);
+
+                    foreach (MethodInfo mi in t.GetMethods())
+                    {
+                        if (tc.Name == "TestBase" && mi.Name == "GetPriority")
+                        {
+                            tcBase = tc;
+                            miGetPriority = mi;
+                            break;
+                        }
+                    }
+
+                    if (miGetPriority != null)
+                        break;
+                }
 
                 foreach (Type t in a.GetTypes())
                 {
@@ -753,6 +787,10 @@ namespace MyCaffe.test.automated
                                 bLoadedKnownFailures = true;
                             }
                         }
+                        else if (tc.Name == "TestBase" && mi.Name == "GetPriority")
+                        {
+                            // Do nothing for we already got the method above.
+                        }
                         else
                         {
                             IList<CustomAttributeData> rgAttributes = CustomAttributeData.GetCustomAttributes(mi);
@@ -763,7 +801,15 @@ namespace MyCaffe.test.automated
 
                                 if (strAttribute.Contains("TestMethodAttribute"))
                                 {
-                                    tc.AddMethod(mi);
+                                    int nPriority = 0;
+                                    if (miGetPriority != null)
+                                    {
+                                        object obj = miGetPriority.Invoke(tcBase.Instance, new object[] { tc.Name, mi.Name });
+                                        nPriority = (int)obj;
+                                    }
+
+                                    tc.AddMethod(mi, nIdx, nPriority);
+                                    nIdx++;
                                     break;
                                 }
                             }
@@ -779,7 +825,8 @@ namespace MyCaffe.test.automated
                                 mi.DisposeMethod = miDispose;
                             }
 
-                            tc.AddMethod(miDispose);
+                            tc.AddMethod(miDispose, nIdx, 0);
+                            nIdx++;
                         }
 
                         Add(tc);
@@ -886,7 +933,21 @@ namespace MyCaffe.test.automated
                             rgTest[0].ErrorString = getString(err.Message, 1023);
                             rgTest[0].ErrorLocation = getString(err.StackTrace, 1023);
                         }
+                        else if (mi.Status == MethodInfoEx.STATUS.Failed && mi.ErrorInfo != null)
+                        {
+                            string strErr = mi.ErrorInfo.FullErrorString;
+                            if (strErr.Length > 1023)
+                                strErr = strErr.Substring(0, 1023);
 
+                            string strInfo = mi.ErrorInfo.FullErrorStringLocation;
+                            if (strInfo.Length > 1023)
+                                strInfo = strInfo.Substring(0, 1023);
+
+                            rgTest[0].ErrorString = strErr;
+                            rgTest[0].ErrorLocation = strInfo;
+                        }
+
+                        rgTest[0].Priority = mi.Priority;
                         rgTest[0].Success = (mi.Status == MethodInfoEx.STATUS.Passed) ? true : false;
                         decimal dTiming = Math.Min(9999999, (decimal)mi.TestTiming.TotalMilliseconds);
                         rgTest[0].TestTiming = dTiming;
@@ -958,6 +1019,7 @@ namespace MyCaffe.test.automated
                         if (mi.TestTiming.TotalMilliseconds < (double)dTotalTestTiming)
                             dTotalTestTiming = (decimal)mi.TestTiming.TotalMilliseconds;
 
+                        t.Priority = mi.Priority;
                         t.ErrorString = getString(mi.ErrorInfo.FullErrorString, 1023);
                         t.ErrorLocation = getString(mi.ErrorInfo.FullErrorStringLocation, 1023);
                         t.Success = (mi.Status == MethodInfoEx.STATUS.Passed) ? true : false;
@@ -1096,12 +1158,12 @@ namespace MyCaffe.test.automated
             get { return m_rgMethods; }
         }
 
-        public void AddMethod(MethodInfo mi)
+        public void AddMethod(MethodInfo mi, int nIndex, int nPriority)
         {
             if (mi.Name == "Dispose")
                 m_miDispose = mi;
             else
-                m_rgMethods.Add(mi);
+                m_rgMethods.Add(mi, nIndex, nPriority);
         }
 
         public void InvokeMethod(string strName)
@@ -1133,6 +1195,11 @@ namespace MyCaffe.test.automated
             m_type = null;
             m_rgMethods.Dispose();
         }
+
+        public override string ToString()
+        {
+            return Name;
+        }
     }
 
     class MethodCollection : IEnumerable<MethodInfoEx>, IDisposable 
@@ -1148,10 +1215,10 @@ namespace MyCaffe.test.automated
             get { return m_rgMethods.Count; }
         }
 
-        public void Add(MethodInfo mi)
+        public void Add(MethodInfo mi, int nIndex, int nPriority)
         {
             if (Find(mi.Name) == null)
-                m_rgMethods.Add(new MethodInfoEx(mi, MethodInfoEx.STATUS.NotExecuted, null));
+                m_rgMethods.Add(new MethodInfoEx(mi, MethodInfoEx.STATUS.NotExecuted, nIndex, nPriority, null));
         }
 
         public MethodInfoEx Find(string strName)
@@ -1198,6 +1265,8 @@ namespace MyCaffe.test.automated
         double? m_dfProgress = null;
         Task m_taskStatus;
         AutoResetEvent m_evtStatusCancel = new AutoResetEvent(false);
+        int m_nIndex = 0;
+        int m_nPriority = 0;
 
         public enum STATUS
         {
@@ -1209,11 +1278,24 @@ namespace MyCaffe.test.automated
             Running = 5
         }
 
-        public MethodInfoEx(MethodInfo mi, STATUS s, Exception excpt)
+        public MethodInfoEx(MethodInfo mi, STATUS s, int nIndex, int nPriority, Exception excpt)
         {
             m_mi = mi;
             m_status = s;
             m_errorInfo.SetError(excpt);
+            m_nIndex = nIndex;
+            m_nPriority = nPriority;
+        }
+
+        public int Priority
+        {
+            get { return m_nPriority; }
+            set { m_nPriority = value; }
+        }
+
+        public int Index
+        {
+            get { return m_nIndex; }
         }
 
         public MethodInfo DisposeMethod
@@ -1319,6 +1401,11 @@ namespace MyCaffe.test.automated
                 m_evtStatusCancel.Set();
                 Thread.FreeNamedDataSlot("GPUID");
             }
+        }
+
+        public override string ToString()
+        {
+            return Name;
         }
     }
 

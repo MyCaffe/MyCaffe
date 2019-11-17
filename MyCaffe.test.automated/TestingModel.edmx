@@ -4,16 +4,12 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-    <Schema Namespace="TestingModel.Store" Alias="Self" Provider="System.Data.SqlClient" ProviderManifestToken="2008" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
-        <EntityContainer Name="TestingModelStoreContainer">
-          <EntitySet Name="Sessions" EntityType="TestingModel.Store.Sessions" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-          <EntitySet Name="Tests" EntityType="TestingModel.Store.Tests" store:Type="Tables" Schema="dbo" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" />
-        </EntityContainer>
+    <Schema Namespace="TestingModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2008" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
         <EntityType Name="Sessions">
           <Key>
             <PropertyRef Name="ID" />
           </Key>
-          <Property Name="ID" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="TimeStamp" Type="datetime" />
           <Property Name="Session" Type="varchar" MaxLength="256" />
           <Property Name="TotalTestsRun" Type="int" />
@@ -26,7 +22,7 @@
           <Key>
             <PropertyRef Name="ID" />
           </Key>
-          <Property Name="ID" Type="int" Nullable="false" StoreGeneratedPattern="Identity" />
+          <Property Name="ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="TestGroup" Type="varchar" MaxLength="128" />
           <Property Name="TestMethod" Type="varchar" MaxLength="128" />
           <Property Name="Success" Type="bit" />
@@ -34,7 +30,12 @@
           <Property Name="ErrorLocation" Type="varchar" MaxLength="1024" />
           <Property Name="TestTiming" Type="numeric" Precision="12" Scale="5" />
           <Property Name="SessionID" Type="int" />
+          <Property Name="Priority" Type="int" />
         </EntityType>
+        <EntityContainer Name="TestingModelStoreContainer">
+          <EntitySet Name="Sessions" EntityType="Self.Sessions" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="Tests" EntityType="Self.Tests" Schema="dbo" store:Type="Tables" />
+        </EntityContainer>
       </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
@@ -48,7 +49,7 @@
             <PropertyRef Name="ID" />
           </Key>
           <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
-          <Property Name="TimeStamp" Type="DateTime" />
+          <Property Name="TimeStamp" Type="DateTime" Precision="3" />
           <Property Name="Session1" Type="String" MaxLength="256" Unicode="false" FixedLength="false" />
           <Property Name="TotalTestsRun" Type="Int32" />
           <Property Name="TotalTestFailures" Type="Int32" />
@@ -60,14 +61,15 @@
           <Key>
             <PropertyRef Name="ID" />
           </Key>
-          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" />
-          <Property Name="TestGroup" Type="String" MaxLength="128" Unicode="false" FixedLength="false" />
-          <Property Name="TestMethod" Type="String" MaxLength="128" Unicode="false" FixedLength="false" />
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="TestGroup" Type="String" MaxLength="128" FixedLength="false" Unicode="false" />
+          <Property Name="TestMethod" Type="String" MaxLength="128" FixedLength="false" Unicode="false" />
           <Property Name="Success" Type="Boolean" />
-          <Property Name="ErrorString" Type="String" MaxLength="1024" Unicode="false" FixedLength="false" />
-          <Property Name="ErrorLocation" Type="String" MaxLength="1024" Unicode="false" FixedLength="false" />
+          <Property Name="ErrorString" Type="String" MaxLength="1024" FixedLength="false" Unicode="false" />
+          <Property Name="ErrorLocation" Type="String" MaxLength="1024" FixedLength="false" Unicode="false" />
           <Property Name="TestTiming" Type="Decimal" Precision="12" Scale="5" />
           <Property Name="SessionID" Type="Int32" />
+          <Property Name="Priority" Type="Int32" />
         </EntityType>
       </Schema>
     </edmx:ConceptualModels>
@@ -92,14 +94,15 @@
           <EntitySetMapping Name="Tests">
             <EntityTypeMapping TypeName="TestingModel.Test">
               <MappingFragment StoreEntitySet="Tests">
-                <ScalarProperty Name="ID" ColumnName="ID" />
-                <ScalarProperty Name="TestGroup" ColumnName="TestGroup" />
-                <ScalarProperty Name="TestMethod" ColumnName="TestMethod" />
-                <ScalarProperty Name="Success" ColumnName="Success" />
-                <ScalarProperty Name="ErrorString" ColumnName="ErrorString" />
-                <ScalarProperty Name="ErrorLocation" ColumnName="ErrorLocation" />
-                <ScalarProperty Name="TestTiming" ColumnName="TestTiming" />
+                <ScalarProperty Name="Priority" ColumnName="Priority" />
                 <ScalarProperty Name="SessionID" ColumnName="SessionID" />
+                <ScalarProperty Name="TestTiming" ColumnName="TestTiming" />
+                <ScalarProperty Name="ErrorLocation" ColumnName="ErrorLocation" />
+                <ScalarProperty Name="ErrorString" ColumnName="ErrorString" />
+                <ScalarProperty Name="Success" ColumnName="Success" />
+                <ScalarProperty Name="TestMethod" ColumnName="TestMethod" />
+                <ScalarProperty Name="TestGroup" ColumnName="TestGroup" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -119,13 +122,14 @@
         <DesignerProperty Name="ValidateOnBuild" Value="true" />
         <DesignerProperty Name="EnablePluralization" Value="True" />
         <DesignerProperty Name="IncludeForeignKeysInModel" Value="True" />
+        <DesignerProperty Name="UseLegacyProvider" Value="True" />
       </DesignerInfoPropertySet>
     </Options>
     <!-- Diagram content (shape and connector positions) -->
     <Diagrams>
       <Diagram Name="TestingModel">
         <EntityTypeShape EntityType="TestingModel.Session" Width="1.5" PointX="0.75" PointY="0.75" Height="2.3648893229166665" IsExpanded="true" />
-        <EntityTypeShape EntityType="TestingModel.Test" Width="1.5" PointX="2.75" PointY="0.75" Height="2.5571907552083326" IsExpanded="true" />
+        <EntityTypeShape EntityType="TestingModel.Test" Width="1.5" PointX="3.375" PointY="0.75" />
       </Diagram>
     </Diagrams>
   </Designer>

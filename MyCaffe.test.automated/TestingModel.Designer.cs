@@ -568,6 +568,30 @@ namespace MyCaffe.test.automated
         private Nullable<global::System.Int32> _SessionID;
         partial void OnSessionIDChanging(Nullable<global::System.Int32> value);
         partial void OnSessionIDChanged();
+    
+        /// <summary>
+        /// No Metadata Documentation available.
+        /// </summary>
+        [EdmScalarPropertyAttribute(EntityKeyProperty=false, IsNullable=true)]
+        [DataMemberAttribute()]
+        public Nullable<global::System.Int32> Priority
+        {
+            get
+            {
+                return _Priority;
+            }
+            set
+            {
+                OnPriorityChanging(value);
+                ReportPropertyChanging("Priority");
+                _Priority = StructuralObject.SetValidValue(value, "Priority");
+                ReportPropertyChanged("Priority");
+                OnPriorityChanged();
+            }
+        }
+        private Nullable<global::System.Int32> _Priority;
+        partial void OnPriorityChanging(Nullable<global::System.Int32> value);
+        partial void OnPriorityChanged();
 
         #endregion
 

@@ -183,10 +183,11 @@ ALTER DATABASE [%DBNAME%] SET DB_CHAINING OFF</value>
 	[ErrorLocation] [varchar](1024) NULL,
 	[TestTiming] [numeric](12, 5) NULL,
 	[SessionID] [int] NULL,
+	[Priority] [int] NULL,
  CONSTRAINT [PK_Tests] PRIMARY KEY CLUSTERED 
 (
 	[ID] ASC
-)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]</value>
   </data>
   <data name="QueryDatabaseExists" xml:space="preserve">
@@ -197,5 +198,15 @@ OR name = '%DBNAME%')))
 SELECT(1)
 ELSE
 SELECT(0)</value>
+  </data>
+  <data name="UpdateTestsTable" xml:space="preserve">
+    <value>IF COL_LENGTH('Tests', 'Priority') IS NULL
+BEGIN
+    ALTER TABLE [dbo].[Tests] ADD [Priority] INT
+END</value>
+  </data>
+  <data name="UpdateTestsTableValues" xml:space="preserve">
+    <value>UPDATE [dbo].[Tests]
+   SET [Priority] = 0</value>
   </data>
 </root>

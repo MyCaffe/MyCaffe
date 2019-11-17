@@ -63,7 +63,13 @@ namespace MyCaffe.test.automated
                 throw err;
 
             if (bExists)
+            {
+                err = dbMgr.UpdateDatabase();
+                if (err != null)
+                    throw err;
+
                 return false;
+            }
 
             err = dbMgr.CreateDatabase(strDbPath);
             if (err != null)
