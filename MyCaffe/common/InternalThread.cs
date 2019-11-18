@@ -43,19 +43,7 @@ namespace MyCaffe.common
             if (m_evtCancel != null)
                 m_evtCancel.Set();
 
-            if (m_task != null)
-            {
-                m_task.Wait(2000);
-                m_task.Dispose();
-                m_task = null;
-            }
-
-            if (m_thread != null)
-            {
-                m_evtDone.WaitOne(2000);
-                m_thread.Abort();
-                m_thread = null;
-            }
+            StopInternalThread();
 
             if (m_evtCancel != null)
             {
@@ -109,14 +97,16 @@ namespace MyCaffe.common
             if (m_thread != null)
             {
                 m_evtCancel.Set();
-                m_evtDone.WaitOne(1000);
+                if (!m_evtDone.WaitOne(10000))
+                    throw new Exception("Failed to stop the internal thread!");
                 m_thread = null;
             }
 
             if (m_task != null)
             {
                 m_evtCancel.Set();
-                m_evtDone.WaitOne(1000);
+                if (!m_evtDone.WaitOne(10000))
+                    throw new Exception("Failed to stop the internal thread!");
                 m_task = null;
             }
         }
