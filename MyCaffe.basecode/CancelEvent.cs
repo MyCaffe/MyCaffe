@@ -86,15 +86,38 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Add a new cancel override.
+        /// </summary>
+        /// <param name="evtCancel">Specifies the cancel wait handle to add.</param>
+        public void AddCancelOverride(WaitHandle evtCancel)
+        {
+            lock (m_syncObj)
+            {
+                if (!Contains(evtCancel))
+                    m_rgCancel.Add(new Tuple<WaitHandle, bool, string>(evtCancel, false, null));
+            }
+        }
+
+        /// <summary>
         /// Check to see if the cancel event has already been added.
         /// </summary>
         /// <param name="evt">Specifies the cancel event to look for.</param>
         /// <returns>Returns <i>true</i> if the cancel event has already been added, <i>false</i> otherwise.</returns>
         public bool Contains(CancelEvent evt)
         {
+            return Contains(evt.m_hOriginalCancel);
+        }
+
+        /// <summary>
+        /// Check to see if the cancel event has already been added.
+        /// </summary>
+        /// <param name="evt">Specifies the wait handle to look for.</param>
+        /// <returns>Returns <i>true</i> if the cancel event has already been added, <i>false</i> otherwise.</returns>
+        public bool Contains(WaitHandle evt)
+        {
             foreach (Tuple<WaitHandle, bool, string> item in m_rgCancel)
             {
-                if (item.Item1 == evt.m_hOriginalCancel)
+                if (item.Item1 == evt)
                     return true;
             }
 
@@ -175,6 +198,36 @@ namespace MyCaffe.basecode
                     if (m_rgCancel[nIdx].Item2)
                         m_rgCancel[nIdx].Item1.Dispose();
 
+                    m_rgCancel.RemoveAt(nIdx);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Remove a new cancel override.
+        /// </summary>
+        /// <param name="evtCancel">Specifies the wait handle override to remove.</param>
+        /// <returns>If removed, <i>true</i> is returned.</returns>
+        public bool RemoveCancelOverride(WaitHandle evtCancel)
+        {
+            lock (m_syncObj)
+            {
+                int nIdx = -1;
+
+                for (int i = 0; i < m_rgCancel.Count; i++)
+                {
+                    if (m_rgCancel[i].Item1 == evtCancel)
+                    {
+                        nIdx = i;
+                        break;
+                    }
+                }
+
+                if (nIdx >= 0)
+                {
                     m_rgCancel.RemoveAt(nIdx);
                     return true;
                 }
