@@ -39,11 +39,16 @@ namespace MyCaffe.layers
             : base(cuda, log, p, db)
         {
             m_evtCancel = evtCancel;
+
+            m_internalThread = new InternalThread<T>();
+            m_internalThread.DoWork += new EventHandler<ActionStateArgs<T>>(m_internalThread_DoWork);
+
+            if (evtCancel != null)
+                m_evtCancel.AddCancelOverride(m_internalThread.CancelEvent);
+
             m_rgPrefetch = new Batch<T>[p.data_param.prefetch];
             m_rgPrefetchFree = new BlockingQueue<Batch<T>>(m_evtCancel);
             m_rgPrefetchFull = new BlockingQueue<Batch<T>>(m_evtCancel);
-            m_internalThread = new InternalThread<T>();
-            m_internalThread.DoWork += new EventHandler<ActionStateArgs<T>>(m_internalThread_DoWork);
 
             for (int i = 0; i < m_rgPrefetch.Length; i++)
             {
@@ -55,6 +60,7 @@ namespace MyCaffe.layers
         /** @copydoc BaseDataLayer::dispose */
         protected override void dispose()
         {
+            WaitHandle evt = m_internalThread.CancelEvent;
             m_internalThread.StopInternalThread();
 
             if (m_rgPrefetchFull != null)
@@ -68,6 +74,9 @@ namespace MyCaffe.layers
                 m_rgPrefetchFree.Dispose();
                 m_rgPrefetchFree = null;
             }
+
+            if (m_evtCancel != null && evt != null)
+                m_evtCancel.RemoveCancelOverride(evt);
 
             base.dispose();
         }
