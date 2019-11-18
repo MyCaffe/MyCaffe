@@ -150,7 +150,7 @@ namespace MyCaffe.basecode
         }
     }
 
-    class IndexCollection
+    class IndexCollection /** @private */
     {
         Item[] m_rgItems;
 
@@ -201,7 +201,7 @@ namespace MyCaffe.basecode
         }
     }
 
-    class Item
+    class Item /** @private */
     {
         int m_nIdx;
         int m_nCount;

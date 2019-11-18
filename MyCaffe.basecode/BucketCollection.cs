@@ -162,7 +162,6 @@ namespace MyCaffe.basecode
         /// <param name="fMin">Specifies the overall minimum of all Buckets.</param>
         /// <param name="fMax">Specifies the overall maximum of all Buckets.</param>
         /// <param name="nCount">Specifies the number of Buckets to use.</param>
-        /// <param name="bExact">Optionally, specifies a precision to use for min and max values.</param>
         public BucketCollection(double fMin, double fMax, int nCount)
         {
             double fRange = fMax - fMin;
