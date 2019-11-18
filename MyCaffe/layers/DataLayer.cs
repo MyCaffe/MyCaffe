@@ -177,7 +177,13 @@ namespace MyCaffe.layers
 
             // Use data transformer to infer the expected blob shape from the datum.
             List<int> rgTopShape = m_transformer.InferBlobShape(datum);
-           
+
+            // Double the channels when loading image pairs where the first image is loaded followed by the second on the channel.
+            if (m_param.data_param.images_per_blob > 1)
+            {
+                m_log.CHECK_EQ(m_param.data_param.images_per_blob, 2, "Currently images_per_blob only supports 2 image pairing and must be set to 2 for image pairing.");
+                rgTopShape[1] *= m_param.data_param.images_per_blob;
+            }
 
             // Reshape colTop[0] and prefetch data according to the batch size.
             rgTopShape[0] = nBatchSize;
@@ -199,6 +205,9 @@ namespace MyCaffe.layers
                 // labels per image.
                 if (m_param.data_param.label_type == DataParameter.LABEL_TYPE.MULTIPLE)
                 {
+                    if (m_param.data_param.images_per_blob > 1)
+                        m_log.FAIL("Image pairing per blob currently only supports the " + DataParameter.LABEL_TYPE.SINGLE.ToString() + " label type.");
+
                     if (datum.DataCriteria == null || datum.DataCriteria.Length == 0)
                         m_log.FAIL("Could not find the multi-label data.  The data source '" + m_param.data_param.source + "' does not appear to have any Image Criteria data.");
 
@@ -227,6 +236,11 @@ namespace MyCaffe.layers
                         rgLabelShape.Add(nLen);
                         m_log.CHECK_EQ(nItemSize, 1, "Currently only byte sized labels are supported in multi-label scenarios.");
                     }
+                }
+                else if (m_param.data_param.images_per_blob > 1 && m_param.data_param.output_all_labels)
+                {
+                    // 1 label comparison + each label in pair order to which they were added to the blob.
+                    rgLabelShape.Add(m_param.data_param.images_per_blob + 1);
                 }
 
                 colTop[1].Reshape(rgLabelShape);
@@ -319,6 +333,7 @@ namespace MyCaffe.layers
             }
 
             Datum datum;
+            Datum[] rgDatum = null;
             int nDim = 0;
             List<int> rgLabels = new List<int>();
             List<int> rgTargetLabels = null;
@@ -326,6 +341,8 @@ namespace MyCaffe.layers
             // If we are synced with another dataset, wait for it to load the initial data set.
             if (m_param.data_param.synchronize_target)
             {
+                m_log.CHECK_EQ(m_param.data_param.images_per_blob, 1, "DataLayer synchronize targets are not supported when loading more than 1 image per blob.");
+
                 int nWait = m_rgBatchLabels.WaitReady;
                 if (nWait == 0)
                     return;
@@ -345,9 +362,31 @@ namespace MyCaffe.layers
                 }
 
                 if (rgTargetLabels == null)
+                {
                     datum = m_cursor.GetValue(null, bLoadDataCriteria);
+
+                    if (m_param.data_param.images_per_blob > 1)
+                    {
+                        if (rgDatum == null)
+                            rgDatum = new Datum[m_param.data_param.images_per_blob - 1];
+
+                        for (int j = 0; j < m_param.data_param.images_per_blob - 1; j++)
+                        {
+                            Next();
+
+                            while (Skip())
+                            {
+                                Next();
+                            }
+
+                            rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
+                        }
+                    }
+                }
                 else
+                {
                     datum = m_cursor.GetValue(rgTargetLabels[i], bLoadDataCriteria);
+                }
 
                 if (m_param.data_param.display_timing)
                 {
@@ -361,6 +400,10 @@ namespace MyCaffe.layers
                     // on single input batches allows for inputs of varying dimension.
                     // Use data transformer to infer the expected blob shape for datum.
                     List<int> rgTopShape = m_transformer.InferBlobShape(datum);
+
+                    // Double the channels when loading image pairs where the first image is loaded followed by the second on the channel.
+                    if (rgDatum != null)
+                        rgTopShape[1] *= (rgDatum.Length + 1);
 
                     // Reshape batch according to the batch size.
                     rgTopShape[0] = nBatchSize;
@@ -378,14 +421,33 @@ namespace MyCaffe.layers
                 }
 
                 // Apply data transformations (mirrow, scaling, crop, etc)
+                int nDimCount = nDim;
+
+                if (rgDatum != null)
+                    nDimCount /= (rgDatum.Length + 1);
+
                 T[] rgTrans = m_transformer.Transform(datum);
-                Array.Copy(rgTrans, 0, m_rgTopData, nDim * i, nDim);
+                Array.Copy(rgTrans, 0, m_rgTopData, nDim * i, nDimCount);
+
+                // When using load_image_pairs, stack the additional images right after the first.
+                if (rgDatum != null)
+                {
+                    for (int j = 0; j < rgDatum.Length; j++)
+                    {
+                        rgTrans = m_transformer.Transform(rgDatum[j]);
+                        int nOffset = (nDim * i) + (nDimCount * (j + 1));
+                        Array.Copy(rgTrans, 0, m_rgTopData, nOffset, nDimCount);
+                    }
+                }
 
                 // Copy label.
                 if (m_bOutputLabels)
                 {
                     if (m_param.data_param.label_type == DataParameter.LABEL_TYPE.MULTIPLE)
                     {
+                        if (m_param.data_param.images_per_blob > 1)
+                            m_log.FAIL("Loading image pairs (images_per_blob > 1) currently only supports the " + DataParameter.LABEL_TYPE.SINGLE.ToString() + " label type.");
+
                         if (datum.DataCriteria == null || datum.DataCriteria.Length == 0)
                             m_log.FAIL("Could not find the multi-label data.  The data source '" + m_param.data_param.source + "' does not appear to have any Image Criteria data.");
 
@@ -399,7 +461,36 @@ namespace MyCaffe.layers
                     }
                     else
                     {
-                        rgTopLabel[i] = (T)Convert.ChangeType(datum.Label, typeof(T));
+                        // When using image pairs, the label is set to 1 when the labels are the same and 0 when they are different.
+                        if (rgDatum != null)
+                        {
+                            if (rgDatum.Length == 1)
+                            {
+                                int nLabelDim = 1;
+
+                                if (m_param.data_param.output_all_labels)
+                                    nLabelDim += m_param.data_param.images_per_blob;
+
+
+                                rgTopLabel[i * nLabelDim] = (datum.Label == rgDatum[0].Label) ? m_tOne : m_tZero;
+
+                                if (m_param.data_param.output_all_labels)
+                                {
+                                    rgTopLabel[i * nLabelDim + 1] = (T)Convert.ChangeType(datum.Label, typeof(T));
+
+                                    for (int j = 0; j < rgDatum.Length; j++)
+                                    {
+                                        rgTopLabel[i * nLabelDim + 2 + j] = (T)Convert.ChangeType(rgDatum[j].Label, typeof(T));
+                                    }
+                                }
+                            }
+                            else
+                                m_log.FAIL("Currently image pairing only supports up to 2 images per blob.");
+                        }
+                        else
+                        {
+                            rgTopLabel[i] = (T)Convert.ChangeType(datum.Label, typeof(T));
+                        }
                     }
                 }
 

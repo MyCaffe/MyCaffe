@@ -40,6 +40,8 @@ namespace MyCaffe.param
         bool m_bPrimaryData = true;
         string m_strSynchronizeWith = null;
         bool m_bSyncTarget = false;
+        int m_nImagesPerBlob = 1;
+        bool m_bOutputAllLabels = false;
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -181,6 +183,29 @@ namespace MyCaffe.param
             set { m_strSynchronizeWith = value; }
         }
 
+        /// <summary>
+        /// (\b optional, default = 1) Specifies the number of images to load into each blob channel.  For example when set to 2 two 3 channel images are loaded and stacked on the channel dimension,
+        /// thus loading a 6 channel blob (2 images x 3 channels each). 
+        /// </summary>
+        /// <remarks>
+        /// Loading images in pairs (images_per_blob = 2) is used with the siamese network, where the channel of each blob contains the first image followed by the second image.  The total individual
+        /// image channel count equals the blob channel count divided by 2.
+        /// </remarks>
+        public int images_per_blob
+        {
+            get { return m_nImagesPerBlob; }
+            set { m_nImagesPerBlob = value; }
+        }
+
+        /// <summary>
+        /// (\b optional, default = false) When using images_per_blob > 1, 'output_all_labels' specifies to output not only the comparison of the two labels, but also the individual labels of each image as well.
+        /// </summary>
+        public bool output_all_labels
+        {
+            get { return m_bOutputAllLabels; }
+            set { m_bOutputAllLabels = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -208,6 +233,8 @@ namespace MyCaffe.param
             m_bPrimaryData = p.m_bPrimaryData;
             m_strSynchronizeWith = p.m_strSynchronizeWith;
             m_bSyncTarget = p.m_bSyncTarget;
+            m_nImagesPerBlob = p.m_nImagesPerBlob;
+            m_bOutputAllLabels = p.m_bOutputAllLabels;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -249,6 +276,12 @@ namespace MyCaffe.param
 
             if (synchronize_target)
                 rgChildren.Add("synchronize_target", m_bSyncTarget.ToString());
+
+            if (m_nImagesPerBlob > 1)
+            {
+                rgChildren.Add("images_per_blob", m_nImagesPerBlob.ToString());
+                rgChildren.Add("output_all_labels", m_bOutputAllLabels.ToString());
+            }
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -325,6 +358,12 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("synchronize_target")) != null)
                 p.synchronize_target = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("images_per_blob")) != null)
+                p.images_per_blob = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("output_all_labels")) != null)
+                p.output_all_labels = bool.Parse(strVal);
 
             return p;
         }
