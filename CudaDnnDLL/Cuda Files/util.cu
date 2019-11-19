@@ -93,6 +93,10 @@ bool GetErrorString(long lErr, char* szErr, long lMaxErr)
 			_snprintf(szErr, lMaxErr, "MEMORY: Out of memory (%ld)", lErr);
 			return true;
 
+		case ERROR_MEMORY_NOT_FOUND:
+			_snprintf(szErr, lMaxErr, "MEMORY: Memory was not found and therefore could not be freed. (%ld)", lErr);
+			return true;
+
 		case ERROR_MATRIX_DIMENSIONS_DONT_MATCH:
 			_snprintf(szErr, lMaxErr, "MATRIX: matrix dimensions do not match (%ld)", lErr);
 			return true;
