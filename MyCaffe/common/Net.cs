@@ -655,7 +655,9 @@ namespace MyCaffe.common
                     m_rgLayerNamesIndex[layer_name] = layer_id;
                 }
 
-                ShareWeights();
+                if (m_sharedNet == null)
+                    ShareWeights();
+
                 m_bDebugInfo = param.debug_info;
                 m_log.WriteLine("Network initialization done.");
             }
