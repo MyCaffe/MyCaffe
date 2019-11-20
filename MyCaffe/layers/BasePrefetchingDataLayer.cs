@@ -21,10 +21,13 @@ namespace MyCaffe.layers
         /// Specifies the pre-fetch cache.
         /// </summary>
         protected Batch<T>[] m_rgPrefetch;
+        /// <summary>
+        /// Specifies the cancellation event for the internal thread.
+        /// </summary>
+        protected CancelEvent m_evtCancel;
         BlockingQueue<Batch<T>> m_rgPrefetchFree;
         BlockingQueue<Batch<T>> m_rgPrefetchFull;
         Batch<T> m_prefetch_current = null;
-        CancelEvent m_evtCancel;
         InternalThread<T> m_internalThread;
 
         /// <summary>
