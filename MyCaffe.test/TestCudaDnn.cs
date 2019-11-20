@@ -17,21 +17,29 @@ namespace MyCaffe.test
         public void TestDeviceID()
         {
             CudaDnnTest test = new CudaDnnTest();
-            int nDeviceID = TestBase.DEFAULT_DEVICE_ID;
+            int nDeviceID = -1;
+            int nOriginalDeviceID = -1;
+            int nDeviceCount = 0;
 
             try
             {
                 foreach (ITest t in test.Tests)
                 {
-                    t.Cuda.SetDeviceID(1);
-                    nDeviceID = t.Cuda.GetDeviceID();
-                    t.Log.CHECK_EQ(1, nDeviceID, "The deviceID should be equal to 1.");
+                    nDeviceCount = t.Cuda.GetDeviceCount();
+                    nOriginalDeviceID = t.Cuda.GetDeviceID();
+
+                    if (nDeviceCount > 1)
+                    {
+                        t.Cuda.SetDeviceID(1);
+                        nDeviceID = t.Cuda.GetDeviceID();
+                        t.Log.CHECK_EQ(1, nDeviceID, "The deviceID should be equal to 1.");
+                    }
 
                     t.Cuda.SetDeviceID(0);
                     nDeviceID = t.Cuda.GetDeviceID();
                     t.Log.CHECK_EQ(0, nDeviceID, "The deviceID should be equal to 0.");
 
-                    t.Cuda.SetDeviceID(TestBase.DEFAULT_DEVICE_ID);
+                    t.Cuda.SetDeviceID(nOriginalDeviceID);
                 }
             }
             finally
@@ -133,10 +141,10 @@ namespace MyCaffe.test
             }
             finally
             {
-                cuda1.Dispose();
-
                 if (cuda2 != null)
                     cuda2.Dispose();
+
+                cuda1.Dispose();
             }
         }
 
@@ -165,10 +173,10 @@ namespace MyCaffe.test
             }
             finally
             {
-                cuda1.Dispose();
-
                 if (cuda2 != null)
                     cuda2.Dispose();
+
+                cuda1.Dispose();
             }
         }
 
@@ -242,10 +250,10 @@ namespace MyCaffe.test
             }
             finally
             {
-                cuda1.Dispose();
-
                 if (cuda2 != null)
                     cuda2.Dispose();
+
+                cuda1.Dispose();
             }
         }
 
@@ -299,10 +307,10 @@ namespace MyCaffe.test
             }
             finally
             {
-                cuda1.Dispose();
-
                 if (cuda2 != null)
                     cuda2.Dispose();
+
+                cuda1.Dispose();
             }
         }
 
@@ -464,8 +472,8 @@ namespace MyCaffe.test
             }
             finally
             {
-                cuda1.Dispose();
                 cuda2.Dispose();
+                cuda1.Dispose();
             }
         }
 
@@ -2027,10 +2035,12 @@ namespace MyCaffe.test
         Blob<T> m_C = null;
         Blob<T> m_x = null;
         Blob<T> m_y = null;
+        int m_nOriginalDeviceID = 0;
 
         public CudaDnnTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
         {
+            m_nOriginalDeviceID = m_cuda.GetDeviceID();
             m_temp = new Blob<T>(m_cuda, m_log);
             m_A = new Blob<T>(m_cuda, m_log, 1, 1, 2, 3);
             m_B = new Blob<T>(m_cuda, m_log, 1, 1, 3, 4);
@@ -2041,6 +2051,8 @@ namespace MyCaffe.test
 
         protected override void dispose()
         {
+            m_cuda.SetDeviceID(m_nOriginalDeviceID);
+
             if (m_temp != null)
             {
                 m_temp.Dispose();
