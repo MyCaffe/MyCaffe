@@ -19,6 +19,7 @@
 #include "extension.h"
 #include <vector>
 #include <algorithm>
+#include <map>
 #include "..\inc\FunctionIDs.h"
 #include <cuda_fp16.h>
 
@@ -27,7 +28,7 @@
 //=============================================================================
 
 // Uncomment to use cudaMallocHost/cudaFreeHost (when commented out malloc/free are used)
-#define USE_PINNED_HOST_MEM 1
+//#define USE_PINNED_HOST_MEM 1
 
 //-----------------------------------------------------------------------------
 //	 Modes
@@ -130,6 +131,7 @@ class Memory
 		long m_hGlobalActivationTanh;
 		long m_hGlobalActivationElu;
 #endif
+		map<void*, bool> m_memoryMap;
 
 	public:
 		Memory();
@@ -145,7 +147,7 @@ class Memory
 			return &m_streams;
 		}
 
-		long alloc_host(void** ppDst, size_t lSize);
+		long alloc_host(void** ppDst, size_t lSize, bool bPinned = true);
 		long free_host(void* pData);
 		long convertBaseType2Half(size_t lCount, T* pSrc, size_t* plSize, __half** ppDst);
 		long convertHalf2BaseType(size_t lCount, void* pSrc, T* pDst, cudaMemcpyKind kind);
@@ -171,7 +173,7 @@ class Memory
 		bool IsHostBuffer(T* pf);
 
 		long CopyToHost(size_t lCount, T* pDst, void* pSrc, bool bSrcOnDevice, bool bHalf);
-		long AllocHost(size_t lCount, T** ppDst, void* pSrc, bool bSrcOnDevice, bool bHalf);
+		long AllocHost(size_t lCount, T** ppDst, void* pSrc, bool bSrcOnDevice, bool bHalf, bool bPinned = true);
 		long FreeHost(T* pDst);
 
 		long AllocHost(LPTSTR* ppDst, LPTSTR pSrc);
@@ -345,7 +347,7 @@ class Memory
 //=============================================================================
 
 template <class T>
-inline long Memory<T>::alloc_host(void** ppDst, size_t lSize)
+inline long Memory<T>::alloc_host(void** ppDst, size_t lSize, bool bPinned)
 {
 	LONG lErr;
 
@@ -353,9 +355,19 @@ inline long Memory<T>::alloc_host(void** ppDst, size_t lSize)
 	if (lErr = cudaMallocHost(ppDst, (size_t)lSize))
 		return lErr;
 #else
-	*ppDst = malloc((size_t)lSize);
-	if (*ppDst == NULL)
-		return ERROR_MEMORY_OUT;
+	if (bPinned)
+	{
+		if (lErr = cudaMallocHost(ppDst, (size_t)lSize))
+			return lErr;
+	}
+	else
+	{
+		*ppDst = malloc((size_t)lSize);
+		if (*ppDst == NULL)
+			return ERROR_MEMORY_OUT;
+	}
+
+	m_memoryMap[*ppDst] = bPinned;
 #endif
 
 	return 0;
@@ -370,7 +382,16 @@ inline long Memory<T>::free_host(void* p)
 #ifdef USE_PINNED_HOST_MEM
 	return cudaFreeHost(p);
 #else
-	free(p);
+	map<void*, bool>::iterator it = m_memoryMap.find(p);
+	if (it == m_memoryMap.end())
+		return ERROR_MEMORY_NOT_FOUND;
+
+	if (it->second)
+		cudaFreeHost(p);
+	else
+		free(p);
+
+	m_memoryMap.erase(p);
 	return 0;
 #endif
 }

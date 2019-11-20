@@ -11,7 +11,7 @@
 //=============================================================================
 
 template <class T>
-Memory<T>::Memory() : m_memory(), m_memoryPointers(), m_hostbuffers(), m_streams(), m_tensorDesc(), m_filterDesc(), m_convDesc(), m_poolDesc(), m_rnnDesc(), m_rnnDataDesc2(), m_lrnDesc(), m_cudnn(), m_pca(), m_tsnegp(), m_tsneg(), m_memtest(), m_nccl(), m_ssd()
+Memory<T>::Memory() : m_memory(), m_memoryPointers(), m_hostbuffers(), m_streams(), m_tensorDesc(), m_filterDesc(), m_convDesc(), m_poolDesc(), m_rnnDesc(), m_rnnDataDesc2(), m_lrnDesc(), m_cudnn(), m_pca(), m_tsnegp(), m_tsneg(), m_memtest(), m_nccl(), m_ssd(), m_memoryMap()
 {
 	m_memory.SetMemoryPointers(&m_memoryPointers);
 
@@ -213,14 +213,8 @@ long Memory<T>::AllocHost(LPTSTR* ppDst, LPTSTR pSrc)
 	LONG lSize = nLen * sizeof(TCHAR);
 	LONG lErr = 0;
 
-#ifdef USE_PINNED_HOST_MEM
-	if (lErr = cudaMallocHost(&pDst, lSize))
+	if (lErr = alloc_host((void**)&pDst, lSize, false))
 		return lErr;
-#else
-	pDst = (LPTSTR)malloc(lSize);
-	if (pDst == NULL)
-		return ERROR_MEMORY_OUT;
-#endif
 
 	pDst[nLen] = (TCHAR)NULL;
 	_tcsncpy(pDst, pSrc, nLen);
@@ -235,7 +229,7 @@ template long Memory<float>::AllocHost(LPTSTR* ppDst, LPTSTR pSrc);
 
 
 template <class T>
-long Memory<T>::AllocHost(size_t lCount, T** ppDst, void* pSrc, bool bSrcOnDevice, bool bHalf)
+long Memory<T>::AllocHost(size_t lCount, T** ppDst, void* pSrc, bool bSrcOnDevice, bool bHalf, bool bPinned)
 {
 	if (lCount == 0)
 		return ERROR_PARAM_OUT_OF_RANGE;
@@ -247,10 +241,10 @@ long Memory<T>::AllocHost(size_t lCount, T** ppDst, void* pSrc, bool bSrcOnDevic
 	if (lSize > SIZE_MAX)
 		return ERROR_MEMORY_RANGE_EXCEEDED;
 
-	T* pDst = NULL;	
+	T* pDst = NULL;
 	LONG lErr;
-	
-	if (lErr = alloc_host((void**)&pDst, (size_t)lSize))
+
+	if (lErr = alloc_host((void**)&pDst, (size_t)lSize, bPinned))
 		return lErr;
 
 	if (pSrc != NULL)
@@ -283,8 +277,8 @@ long Memory<T>::AllocHost(size_t lCount, T** ppDst, void* pSrc, bool bSrcOnDevic
 	return cudaGetLastError();
 }
 
-template long Memory<double>::AllocHost(size_t lCount, double** ppDst, void* pSrc, bool bSrcOnDevice, bool bHalf);
-template long Memory<float>::AllocHost(size_t lCount, float** ppDst, void* pSrc, bool bSrcOnDevice, bool bHalf);
+template long Memory<double>::AllocHost(size_t lCount, double** ppDst, void* pSrc, bool bSrcOnDevice, bool bHalf, bool bPinned);
+template long Memory<float>::AllocHost(size_t lCount, float** ppDst, void* pSrc, bool bSrcOnDevice, bool bHalf, bool bPinned);
 
 
 template <class T>

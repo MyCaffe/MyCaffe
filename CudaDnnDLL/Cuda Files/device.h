@@ -694,7 +694,7 @@ inline long Device<T>::GetDeviceMemory(long lInput, T* pfInput, long* plOutput, 
 
 	T* pfOutput = NULL;
 
-	if (lErr = m_memory.AllocHost(4, &pfOutput, NULL, false, false))
+	if (lErr = m_memory.AllocHost(4, &pfOutput, NULL, false, false, false))
 		return lErr;
 
 	pfOutput[0] = fTotal;
@@ -718,7 +718,7 @@ inline long Device<T>::GetRequiredCompute(long lInput, T* pfInput, long* plOutpu
 
 	T* pfOutput = NULL;
 
-	if (lErr = m_memory.AllocHost(2, &pfOutput, NULL, false, false))
+	if (lErr = m_memory.AllocHost(2, &pfOutput, NULL, false, false, false))
 		return lErr;
 
 	int nMajor = 3;
@@ -806,7 +806,7 @@ inline long Device<T>::CreateMemoryTest(long lInput, T* pfInput, long* plOutput,
 
 	T* pfOutput = NULL;
 
-	if (lErr = m_memory.AllocHost(5, &pfOutput, NULL, false, false))
+	if (lErr = m_memory.AllocHost(5, &pfOutput, NULL, false, false, false))
 		return lErr;
 
 	pfOutput[0] = (T)hHandle;
@@ -1119,7 +1119,7 @@ inline long Device<T>::GetConvolutionInfo(long lInput, T* pfInput, long* plOutpu
 		return lErr;
 
 	T* pOutput = NULL;
-	if (lErr = m_memory.AllocHost(6, &pOutput, NULL, false, false))
+	if (lErr = m_memory.AllocHost(6, &pOutput, NULL, false, false, false))
 		return lErr;
 
 	pOutput[0] = (T)algoFwd;
@@ -1682,7 +1682,7 @@ inline long Device<T>::GetRnnWorkspaceCount(long lInput, T* pfInput, long* plOut
 	}
 
 	T* pOutput = NULL;
-	if (lErr = m_memory.AllocHost(2, &pOutput, NULL, false, false))
+	if (lErr = m_memory.AllocHost(2, &pOutput, NULL, false, false, false))
 		return lErr;
 
 	pOutput[0] = (T)nWsCount;
@@ -1731,7 +1731,7 @@ inline long Device<T>::GetRnnLinLayerParams(long lInput, T* pfInput, long* plOut
 	}
 
 	T* pOutput = NULL;
-	if (lErr = m_memory.AllocHost(4, &pOutput, NULL, false, false))
+	if (lErr = m_memory.AllocHost(4, &pOutput, NULL, false, false, false))
 		return lErr;
 
 	pOutput[0] = (T)nWtCount;
@@ -2556,7 +2556,7 @@ inline long Device<T>::RunPCA(long lInput, T* pfInput, long* plOutput, T** ppfOu
 
 	T* pfOutput = NULL;
 	
-	if (lErr = m_memory.AllocHost(3, &pfOutput, NULL, false, false))
+	if (lErr = m_memory.AllocHost(3, &pfOutput, NULL, false, false, false))
 		return lErr;
 
 	pfOutput[0] = (bDone) ? T(0) : T(1);
@@ -2632,7 +2632,7 @@ inline long Device<T>::FindTsneGaussianPerplexity(long lInput, T* pfInput, long*
 
 	T* pfOutput = NULL;
 	
-	if (lErr = m_memory.AllocHost(3, &pfOutput, NULL, false, false))
+	if (lErr = m_memory.AllocHost(3, &pfOutput, NULL, false, false, false))
 		return lErr;
 
 	pfOutput[0] = (bDone) ? T(0) : T(1);
@@ -3051,7 +3051,7 @@ inline long Device<T>::SsdMultiboxLossForward(long lInput, T* pfInput, long* plO
 
 	// Allocate the return mem and copy the values.
 	T* pfOutput = NULL;
-	if (lErr = m_memory.AllocHost(retval.size(), &pfOutput, NULL, false, false))
+	if (lErr = m_memory.AllocHost(retval.size(), &pfOutput, NULL, false, false, false))
 		return lErr;
 
 	for (int i = 0; i < retval.size(); i++)

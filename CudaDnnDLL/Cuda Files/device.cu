@@ -11,7 +11,7 @@
 
 
 //=============================================================================
-//	local constants
+//	Local constants
 //=============================================================================
 
 //=============================================================================
@@ -697,7 +697,7 @@ long Device<T>::GetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 	{
 		T* pfOutput = NULL;
 
-		if (lErr = m_memory.AllocHost(lCount, &pfOutput, (T*)pItem->Data(), true, pItem->IsHalf()))
+		if (lErr = m_memory.AllocHost(lCount, &pfOutput, (T*)pItem->Data(), true, pItem->IsHalf(), true))
 			return lErr;
 
 		*ppfOutput = pfOutput;
@@ -1073,7 +1073,7 @@ long Device<T>::GetDropoutInfo(long lInput, T* pfInput, long* plOutput, T** ppfO
 
 	T* pfOutput = NULL;
 
-	if (lErr = m_memory.AllocHost(2, &pfOutput, NULL, false, false))
+	if (lErr = m_memory.AllocHost(2, &pfOutput, NULL, false, false, false))
 		return lErr;
 
 	pfOutput[0] = (T)lStates;
@@ -1115,7 +1115,7 @@ long Device<T>::cuda_get(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 
 	T* pfOutput = NULL;
 	
-	if (lErr = m_memory.AllocHost(nItems, &pfOutput, NULL, false, false))
+	if (lErr = m_memory.AllocHost(nItems, &pfOutput, NULL, false, false, true))
 		return lErr;
 
 	if (lErr = m_math.get(nCount, hHandle, nIdx, pfOutput))
@@ -2032,7 +2032,7 @@ long Device<T>::cuda_minmaxval(long lInput, T* pfInput, long* plOutput, T** ppfO
 
 	T* pfOutput = NULL;
 
-	if (lErr = m_memory.AllocHost(4, &pfOutput, NULL, false, false))
+	if (lErr = m_memory.AllocHost(4, &pfOutput, NULL, false, false, false))
 		return lErr;
 
 	pfOutput[0] = fMin;
@@ -3283,7 +3283,7 @@ long Device<T>::cuda_tsne_compute_knn_bounds(long lInput, T* pfInput, long* plOu
 
 	T* pfOutput = NULL;
 
-	if (lErr = m_memory.AllocHost(4, &pfOutput, NULL, false, false))
+	if (lErr = m_memory.AllocHost(4, &pfOutput, NULL, false, false, false))
 		return lErr;
 
 	pfOutput[0] = fMinX;
@@ -3390,7 +3390,7 @@ long Device<T>::cuda_calc_batch_dist(long lInput, T* pfInput, long* plOutput, T*
 		return ERROR_PARAM_OUT_OF_RANGE;
 
 	T* pfOutput = NULL;
-	if (lErr = m_memory.AllocHost(nDim0, &pfOutput, NULL, false, false))
+	if (lErr = m_memory.AllocHost(nDim0, &pfOutput, NULL, false, false, false))
 		return lErr;
 
 	lErr = m_math.calc_batch_dist(nDistMethod, fThreshold, nItemDim, hSrc, hTargets, hWork, nDim0, nDim1, &pfInput[8], pfOutput);

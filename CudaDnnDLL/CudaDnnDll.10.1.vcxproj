@@ -137,7 +137,8 @@
     </CudaCompile>
     <PostBuildEvent>
       <Command>xcopy /s /y $(TargetPath) $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)
-xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)</Command>
+xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -200,8 +201,8 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
     </CudaCompile>
     <PostBuildEvent>
       <Command>%systemroot%\System32\xcopy /s /y $(TargetPath) $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)
-
 %systemroot%\System32\xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)
+
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
