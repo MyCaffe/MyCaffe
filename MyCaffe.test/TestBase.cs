@@ -321,6 +321,8 @@ namespace MyCaffe.test
 
         public Test(string strName, int nDeviceID = TestBase.DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, bool bHalf = false)
         {
+            GC.Collect();
+
             m_dt = (typeof(T) == typeof(double)) ? DataType.DOUBLE : DataType.FLOAT;
             m_cuda = GetCuda(nDeviceID);
             m_bHalf = bHalf;
