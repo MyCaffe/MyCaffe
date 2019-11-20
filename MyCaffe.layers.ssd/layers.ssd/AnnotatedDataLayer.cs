@@ -302,7 +302,11 @@ namespace MyCaffe.layers.ssd
             T[] rgTopLabel = null;
 
             if (m_bOutputLabels)
-                rgTopLabel = batch.Label.mutable_cpu_data;
+            {
+                int nCount = batch.Label.count();
+                m_log.CHECK_GT(nCount, 0, "The label count cannot be zero!");
+                rgTopLabel = new T[nCount];
+            }
 
             // Reshape according to the first anno_datum of each batch
             // ont single input batches allows for inputs of varying dimension.
@@ -321,6 +325,8 @@ namespace MyCaffe.layers.ssd
 
                 while (Skip())
                 {
+                    if (m_evtCancel.WaitOne(0))
+                        return;
                     Next();
                 }
 
@@ -464,6 +470,9 @@ namespace MyCaffe.layers.ssd
                     m_dfTransTime += m_swTimerTransaction.Elapsed.TotalMilliseconds;
 
                 Next();
+
+                if (m_evtCancel.WaitOne(0))
+                    return;
             }
 
             batch.Data.SetCPUData(m_rgTopData);
@@ -500,7 +509,9 @@ namespace MyCaffe.layers.ssd
                         // Reshape the label and store the annotation.
                         rgLabelShape[2] = nNumBboxes;
                         batch.Label.Reshape(rgLabelShape);
-                        float[] rgTopLabel1 = convertF(batch.Label.mutable_cpu_data);
+                        int nCount = batch.Label.count();
+                        m_log.CHECK_GT(nCount, 0, "The label count cannot be zero!");
+                        float[] rgTopLabel1 = new float[nCount];
 
                         int nIdx = 0;
                         for (int i = 0; i < nBatchSize; i++)

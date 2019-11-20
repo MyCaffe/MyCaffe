@@ -323,7 +323,11 @@ namespace MyCaffe.layers
             T[] rgTopLabel = null;
 
             if (m_bOutputLabels)
-                rgTopLabel = batch.Label.mutable_cpu_data;
+            {
+                int nCount = batch.Label.count();
+                m_log.CHECK_GT(nCount, 0, "The label count cannot be zero!");
+                rgTopLabel = new T[nCount];
+            }
 
             if (m_param.data_param.display_timing)
             {
@@ -358,6 +362,8 @@ namespace MyCaffe.layers
 
                 while (Skip())
                 {
+                    if (m_evtCancel.WaitOne(0))
+                        return;
                     Next();
                 }
 
@@ -376,6 +382,8 @@ namespace MyCaffe.layers
 
                             while (Skip())
                             {
+                                if (m_evtCancel.WaitOne(0))
+                                    return;
                                 Next();
                             }
 
@@ -500,6 +508,9 @@ namespace MyCaffe.layers
                 rgLabels.Add(datum.Label);
 
                 Next();
+
+                if (m_evtCancel.WaitOne(0))
+                    return;
             }
 
             batch.Data.SetCPUData(m_rgTopData);
