@@ -237,10 +237,15 @@ namespace MyCaffe.layers
                         m_log.CHECK_EQ(nItemSize, 1, "Currently only byte sized labels are supported in multi-label scenarios.");
                     }
                 }
-                else if (m_param.data_param.images_per_blob > 1 && m_param.data_param.output_all_labels)
+                else 
                 {
+                    int nChannels = 1;
+
                     // 1 label comparison + each label in pair order to which they were added to the blob.
-                    rgLabelShape.Add(m_param.data_param.images_per_blob + 1);
+                    if (m_param.data_param.images_per_blob > 1 && m_param.data_param.output_all_labels)
+                        nChannels += m_param.data_param.images_per_blob;
+
+                    rgLabelShape.Add(nChannels);
                 }
 
                 colTop[1].Reshape(rgLabelShape);
@@ -269,7 +274,7 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Specifies the maximum number of required top (output) Blobs: data, lable
+        /// Specifies the maximum number of required top (output) Blobs: data, label
         /// </summary>
         public override int MaxTopBlobs
         {
@@ -479,8 +484,10 @@ namespace MyCaffe.layers
                                 if (m_param.data_param.output_all_labels)
                                     nLabelDim += m_param.data_param.images_per_blob;
 
-
-                                rgTopLabel[i * nLabelDim] = (datum.Label == rgDatum[0].Label) ? m_tOne : m_tZero;
+                                if (datum.Label == rgDatum[0].Label)
+                                    rgTopLabel[i * nLabelDim] = m_tOne;
+                                else
+                                    rgTopLabel[i * nLabelDim] = m_tZero;
 
                                 if (m_param.data_param.output_all_labels)
                                 {
