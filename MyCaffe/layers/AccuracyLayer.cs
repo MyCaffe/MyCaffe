@@ -25,6 +25,7 @@ namespace MyCaffe.layers
         int m_nTopK;
         int? m_nIgnoreLabel = null;
         Blob<T> m_blobNumsBuffer;
+        bool m_bDirectLabels = false;
 
         /// <summary>
         /// Constructor.
@@ -84,6 +85,7 @@ namespace MyCaffe.layers
         {
             m_nTopK = (int)m_param.accuracy_param.top_k;
             m_nIgnoreLabel = m_param.accuracy_param.ignore_label;
+            m_bDirectLabels = false;
         }
 
         /// <summary>
@@ -98,8 +100,19 @@ namespace MyCaffe.layers
             m_nLabelAxis = colBottom[0].CanonicalAxisIndex(m_param.accuracy_param.axis);
             m_nOuterNum = colBottom[0].count(0, m_nLabelAxis);
             m_nInnerNum = colBottom[0].count(m_nLabelAxis + 1);
+            int nLabelDim = m_nOuterNum * m_nInnerNum;
 
-            m_log.CHECK_EQ(m_nOuterNum * m_nInnerNum, colBottom[1].count(), "Number of labels must match number of predictions; e.g., if label axis = 1 and prediction shape is (N, C, H, W), label count (number of labels) must be N*H*W, with integer values in {0, 1, ..., C=1}.");
+            if (m_param.accuracy_param.axis == 0 && nLabelDim == 1)
+            {
+                if (!m_bDirectLabels)
+                    m_log.WriteLine("WARNING: Using direct label comparisons where a label is expected in each item (e.g. no Softmax used).");
+                m_bDirectLabels = true;
+            }
+            else
+            {
+                m_log.CHECK_EQ(m_nOuterNum * m_nInnerNum, colBottom[1].count(), "Number of labels must match number of predictions; e.g., if label axis = 1 and prediction shape is (N, C, H, W), label count (number of labels) must be N*H*W, with integer values in {0, 1, ..., C=1}.");
+            }
+
             List<int> rgTopShape = new List<int>(); // Accuracy is a scalar; 0 axes.
             colTop[0].Reshape(rgTopShape);
             colTop[0].type = Blob<T>.BLOB_TYPE.ACCURACY;
@@ -143,7 +156,10 @@ namespace MyCaffe.layers
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             // Currently using cpu version for gpu version fails in the auto tests.
-            forward_cpu(colBottom, colTop);
+            if (m_bDirectLabels)
+                forward_cpu_direct(colBottom, colTop);
+            else
+                forward_cpu(colBottom, colTop);
         }
 
         /// <summary>
@@ -357,6 +373,59 @@ namespace MyCaffe.layers
 
                 colTop[1].mutable_cpu_data = convert(rgTopLabel);
             }
+
+            // Accuracy layer should not be used as a loss function.
+        }
+
+        /// <summary>
+        /// Forward compuation.
+        /// </summary>
+        /// <param name="colBottom">bottom input blob (length 2)
+        ///  -# @f$ (N \times 1 \times 1 \times 1) @f$
+        ///     the predictions @f$ x @f$, a blob with values in
+        ///     @f$ [0, max_label] @f$ indicating the predicted label value.
+        ///  -# @f$ (N \times 1 \times 1 \times 1) @f$
+        ///     the labels l, an integer-valued blob with values
+        ///     @f$ l_n \in [0, 1, 2, ..., K-1] @f$
+        ///     indicating the correct class label among the @f$ K @f$ classes.</param>
+        /// <param name="colTop">top output blob vector (length 1)
+        ///  -# @f$ (1 \times 1 \times 1 \times 1) @f$
+        ///     the computed accuracy: @f$
+        ///       \frac{1}{N} \sum\limits_{n=1}^N \delta\{ \hat{l}_n = l_n \}
+        ///     @f$
+        ///     where @f$ 
+        ///       \delta\{\mathrm{condition}\} = \left\{
+        ///         \begin{array}{lr}
+        ///           1 & \mbox{if condition} \\
+        ///           0 & \mbox{otherwise}
+        ///         \end{array} \right.
+        ///     @f$
+        /// </param>
+        protected void forward_cpu_direct(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            double dfAccuracy = 0;
+            double[] rgBottomData = convertD(colBottom[0].update_cpu_data());
+            double[] rgBottomLabel = convertD(colBottom[1].update_cpu_data());
+            int nNumLabels = colBottom[0].num;
+            int nNumMatches = 0;
+            bool bNanDetected = false;
+
+            for (int i = 0; i < nNumLabels; i++)
+            {
+                double dfDiff = Math.Abs(rgBottomData[i] - rgBottomLabel[i]);
+                if (dfDiff < 0.00001)
+                    nNumMatches++;
+            }
+
+            if (bNanDetected)
+                m_log.WriteLine("WARNING: NAN/INF detected in output!");
+
+            dfAccuracy = (double)nNumMatches / (double)nNumLabels;
+            colTop[0].SetData(dfAccuracy, 0);
+            colTop[0].Tag = m_param.accuracy_param.top_k;
+
+            if (colTop.Count > 1)
+                colTop[1].SetData(0);
 
             // Accuracy layer should not be used as a loss function.
         }
