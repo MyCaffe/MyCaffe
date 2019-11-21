@@ -29,6 +29,7 @@ namespace MyCaffe.layers
         Blob<T> m_blobDistSq; // cached for backward pass.
         Blob<T> m_blobDiffSq; // cached for backward pass.
         Blob<T> m_blobSummerVec; // tmp storage for gpu forward pass.
+        T[] m_rgMatches = null;
 
         /// <summary>
         /// The ContrastiveLossLayer constructor.
@@ -47,13 +48,13 @@ namespace MyCaffe.layers
         {
             m_type = LayerParameter.LayerType.CONTRASTIVE_LOSS;
 
-            m_blobDiff = new Blob<T>(cuda, log);
+            m_blobDiff = new Blob<T>(cuda, log, false);
             m_blobDiff.Name = m_param.name + " diff";
-            m_blobDistSq = new Blob<T>(cuda, log);
+            m_blobDistSq = new Blob<T>(cuda, log, false);
             m_blobDistSq.Name = m_param.name + " distsq";
-            m_blobDiffSq = new Blob<T>(cuda, log);
+            m_blobDiffSq = new Blob<T>(cuda, log, false);
             m_blobDiffSq.Name = m_param.name + " diffsq";
-            m_blobSummerVec = new Blob<T>(cuda, log);
+            m_blobSummerVec = new Blob<T>(cuda, log, false);
             m_blobSummerVec.Name = m_param.name + " sum";
         }
 
@@ -93,6 +94,30 @@ namespace MyCaffe.layers
         public override int ExactNumBottomBlobs
         {
             get { return 3; }
+        }
+
+        /// <summary>
+        /// Returns -1 specifying a variable number of tops.
+        /// </summary>
+        public override int ExactNumTopBlobs
+        {
+            get { return -1; }
+        }
+
+        /// <summary>
+        /// Specifies the minimum number of required top (output) Blobs: loss
+        /// </summary>
+        public override int MinTopBlobs
+        {
+            get { return 1; }
+        }
+
+        /// <summary>
+        /// Specifies the maximum number of required top (output) Blobs: loss, matches
+        /// </summary>
+        public override int MaxTopBlobs
+        {
+            get { return 2; }
         }
 
         /// <summary>
@@ -141,6 +166,14 @@ namespace MyCaffe.layers
             // vector of ones used to sum along channels.
             m_blobSummerVec.Reshape(colBottom[0].channels, 1, 1, 1);
             m_blobSummerVec.SetData(1.0);
+
+            if (colTop.Count > 1 && m_param.contrastive_loss_param.output_matches)
+            {
+                if (m_rgMatches == null || m_rgMatches.Length != colBottom[0].num)
+                    m_rgMatches = new T[colBottom[0].num];
+
+                colTop[1].Reshape(colBottom[0].num, 1, 1, 1);
+            }
         }
 
         /// <summary>
@@ -187,64 +220,101 @@ namespace MyCaffe.layers
                        m_blobSummerVec.gpu_data,
                        0.0,
                        m_blobDistSq.mutable_gpu_data);  // \Sum (a_i - b_i)^2
-
+            
             double dfMargin = m_param.contrastive_loss_param.margin;
             bool bLegacyVersion = m_param.contrastive_loss_param.legacy_version;
             double dfLoss = 0;
 
             if (typeof(T) == typeof(double))
             {
-                double[] rgDistSq = (double[])Convert.ChangeType(m_blobDistSq.update_cpu_data(), typeof(double[]));
-                double[] rgSimPairs = (double[])Convert.ChangeType(colBottom[2].update_cpu_data(), typeof(double[]));
+                double[] rgDistSq = Utility.ConvertVec<T>(m_blobDistSq.update_cpu_data());
+                double[] rgSimPairs = Utility.ConvertVec<T>(colBottom[2].update_cpu_data());
+                int nSimDim = colBottom[2].count(1);
 
                 for (int i = 0; i < colBottom[0].num; i++)
                 {
-                    if (((int)rgSimPairs[i]) != 0)  // similar pairs
+                    int nIdx = i * nSimDim;
+                    double dfDist = (bLegacyVersion) ? dfMargin - rgDistSq[i] : dfMargin - Math.Sqrt(rgDistSq[i]);
+
+                    if (((int)rgSimPairs[nIdx]) != 0)  // similar pairs
                     {
+                        if (m_rgMatches != null)
+                        {
+                            if (dfDist >= 0)
+                                m_rgMatches[i] = m_tOne;
+                            else
+                                m_rgMatches[i] = m_tZero;
+                        }
+
                         dfLoss += rgDistSq[i];
                     }
                     else // dissimilar pairs
                     {
+                        if (m_rgMatches != null)
+                        {
+                            if (dfDist >= 0)
+                                m_rgMatches[i] = m_tZero;
+                            else
+                                m_rgMatches[i] = m_tOne;
+                        }
+
+                        dfDist = Math.Max(dfDist, 0);
+
                         if (bLegacyVersion)
-                        {
-                            dfLoss += Math.Max(dfMargin - rgDistSq[i], 0.0);
-                        }
+                            dfLoss += dfDist;
                         else
-                        {
-                            double dfDist = Math.Max(dfMargin - Math.Sqrt(rgDistSq[i]), 0.0);
                             dfLoss += dfDist * dfDist;
-                        }
                     }
                 }
             }
             else
             {
-                float[] rgDistSq = (float[])Convert.ChangeType(m_blobDistSq.update_cpu_data(), typeof(float[]));
-                float[] rgSimPairs = (float[])Convert.ChangeType(colBottom[2].update_cpu_data(), typeof(float[]));
+                float[] rgDistSq = Utility.ConvertVecF<T>(m_blobDistSq.update_cpu_data());
+                float[] rgSimPairs = Utility.ConvertVecF<T>(colBottom[2].update_cpu_data());
+                int nSimDim = colBottom[2].count(1);
 
                 for (int i = 0; i < colBottom[0].num; i++)
                 {
-                    if (((int)rgSimPairs[i]) != 0)  // similar pairs
+                    int nIdx = i * nSimDim;
+                    double dfDist = (bLegacyVersion) ? dfMargin - rgDistSq[i] : dfMargin - Math.Sqrt(rgDistSq[i]);
+
+                    if (((int)rgSimPairs[nIdx]) != 0)  // similar pairs
                     {
+                        if (m_rgMatches != null)
+                        {
+                            if (dfDist >= 0)
+                                m_rgMatches[i] = m_tOne;
+                            else
+                                m_rgMatches[i] = m_tZero;
+                        }
+
                         dfLoss += rgDistSq[i];
                     }
                     else // dissimilar pairs
                     {
+                        if (m_rgMatches != null)
+                        {
+                            if (dfDist >= 0)
+                                m_rgMatches[i] = m_tZero;
+                            else
+                                m_rgMatches[i] = m_tOne;
+                        }
+
+                        dfDist = Math.Max(dfDist, 0);
+
                         if (bLegacyVersion)
-                        {
-                            dfLoss += Math.Max(dfMargin - rgDistSq[i], 0.0);
-                        }
+                            dfLoss += dfDist;
                         else
-                        {
-                            double dfDist = Math.Max(dfMargin - Math.Sqrt(rgDistSq[i]), 0.0);
                             dfLoss += dfDist * dfDist;
-                        }
                     }
                 }
             }
 
             dfLoss = dfLoss / (double)colBottom[0].num / 2.0;
             colTop[0].SetData(dfLoss, 0);
+
+            if (colTop.Count > 1 && m_rgMatches != null)
+                colTop[1].mutable_cpu_data = m_rgMatches;
         }
 
         /// <summary>

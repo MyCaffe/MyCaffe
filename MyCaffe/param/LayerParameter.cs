@@ -747,6 +747,7 @@ namespace MyCaffe.param
                     expected_bottom.Add("b");
                     expected_bottom.Add("s");
                     expected_top.Add("loss");
+                    expected_top.Add("match");
                     m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
                     m_rgLayerParameters[lt] = new ContrastiveLossParameter();
                     break;
