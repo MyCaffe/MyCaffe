@@ -45,6 +45,7 @@ namespace MyCaffe.layers
         /// </summary>
         protected double m_dfTransTime;
         private T[] m_rgTopData = null;
+        private bool m_bMatchingCycle = true;
 
         private LabelCollection m_rgBatchLabels = null;
 
@@ -168,6 +169,7 @@ namespace MyCaffe.layers
         {
             int nBatchSize = (int)m_param.data_param.batch_size;
             bool bLoadDataCriteria = false;
+            m_bMatchingCycle = true;
 
             if (m_bOutputLabels && m_param.data_param.label_type == DataParameter.LABEL_TYPE.MULTIPLE)
                 bLoadDataCriteria = true;
@@ -392,9 +394,37 @@ namespace MyCaffe.layers
                                 Next();
                             }
 
-                            rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
+                            int? nLabelMatch = null;
+                            if (m_bMatchingCycle)
+                            {
+                                nLabelMatch = datum.Label;
+                                rgDatum[j] = m_cursor.GetValue(nLabelMatch, bLoadDataCriteria);
+                            }
+                            else 
+                            {
+                                rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
+                                int nRetries = 3;
+
+                                if (rgDatum[j] == null || rgDatum[j].Label == datum.Label)
+                                {
+                                    int nIdx1 = 0;
+                                    while (nIdx1 < nRetries)
+                                    {
+                                        Next();
+                                        rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
+                                        nIdx1++;
+
+                                        if (rgDatum[j] != null && rgDatum[j].Label != datum.Label)
+                                            break;
+                                    }
+                                }
+
+                                m_log.CHECK(rgDatum[i] != null, "The secondary pairing data is null after " + nRetries.ToString() + "!");
+                            }
                         }
                     }
+
+                    m_bMatchingCycle = !m_bMatchingCycle;
                 }
                 else
                 {

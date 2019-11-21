@@ -42,6 +42,7 @@ namespace MyCaffe.param
         bool m_bSyncTarget = false;
         int m_nImagesPerBlob = 1;
         bool m_bOutputAllLabels = false;
+        bool m_bBalanceMatches = false;
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -206,6 +207,15 @@ namespace MyCaffe.param
             set { m_bOutputAllLabels = value; }
         }
 
+        /// <summary>
+        /// (\b optional, default = false) When using images_per_blob > 1, 'balance_matches' specifies to query images by alternating similar matches followed by dissimilar matches in the next query.
+        /// </summary>
+        public bool balance_matches
+        {
+            get { return m_bBalanceMatches; }
+            set { m_bBalanceMatches = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -235,6 +245,7 @@ namespace MyCaffe.param
             m_bSyncTarget = p.m_bSyncTarget;
             m_nImagesPerBlob = p.m_nImagesPerBlob;
             m_bOutputAllLabels = p.m_bOutputAllLabels;
+            m_bBalanceMatches = p.m_bBalanceMatches;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -281,6 +292,7 @@ namespace MyCaffe.param
             {
                 rgChildren.Add("images_per_blob", m_nImagesPerBlob.ToString());
                 rgChildren.Add("output_all_labels", m_bOutputAllLabels.ToString());
+                rgChildren.Add("balance_matches", m_bBalanceMatches.ToString());
             }
 
             return new RawProto(strName, "", rgChildren);
@@ -364,6 +376,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("output_all_labels")) != null)
                 p.output_all_labels = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("balance_matches")) != null)
+                p.balance_matches = bool.Parse(strVal);
 
             return p;
         }
