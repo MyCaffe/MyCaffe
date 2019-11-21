@@ -121,10 +121,11 @@ namespace MyCaffe.data
         /// </summary>
         /// <param name="nLabel">Optionally, specifies a label for which the cursor should query from.</param>
         /// <param name="bLoadDataCriteria">Specifies whether or not to load the data criteria.</param>
+        /// <param name="imgSel">Optionally, specifies the image selection method (default = null).</param>
         /// <returns>The Datum retrieved is returned.</returns>
-        public Datum GetValue(int? nLabel = null, bool bLoadDataCriteria = false)
+        public Datum GetValue(int? nLabel = null, bool bLoadDataCriteria = false, IMGDB_IMAGE_SELECTION_METHOD? imgSel = null)
         {
-            SimpleDatum sd = m_db.QueryImage(m_nSrcID, m_nIdx, null, null, nLabel, bLoadDataCriteria, false);
+            SimpleDatum sd = m_db.QueryImage(m_nSrcID, m_nIdx, null, imgSel, nLabel, bLoadDataCriteria, false);
             return new Datum(sd);
         }
     }
