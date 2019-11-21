@@ -32,6 +32,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AutomatedTester));
             this.lstTests = new System.Windows.Forms.ListView();
             this.colIdx = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.colPriority = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colResult = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colTestClass = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.colTestMethod = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -67,7 +68,6 @@
             this.lblActiveGPU = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblActiveGPUVal = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
-            this.colPriority = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.contextMenuStrip1.SuspendLayout();
             this.toolStripContainer1.ContentPanel.SuspendLayout();
             this.toolStripContainer1.TopToolStripPanel.SuspendLayout();
@@ -108,6 +108,10 @@
             // 
             this.colIdx.Text = "Index";
             this.colIdx.Width = 78;
+            // 
+            // colPriority
+            // 
+            this.colPriority.Text = "Priority";
             // 
             // colResult
             // 
@@ -345,7 +349,7 @@
             | System.Windows.Forms.ToolStripStatusLabelBorderSides.Bottom)));
             this.tsTotalTests.BorderStyle = System.Windows.Forms.Border3DStyle.SunkenOuter;
             this.tsTotalTests.Name = "tsTotalTests";
-            this.tsTotalTests.Size = new System.Drawing.Size(70, 20);
+            this.tsTotalTests.Size = new System.Drawing.Size(90, 20);
             this.tsTotalTests.Text = "0";
             this.tsTotalTests.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
@@ -445,10 +449,6 @@
             this.timerUI.Enabled = true;
             this.timerUI.Interval = 250;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
-            // 
-            // colPriority
-            // 
-            this.colPriority.Text = "Priority";
             // 
             // AutomatedTester
             // 
