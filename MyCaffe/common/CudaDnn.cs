@@ -444,6 +444,8 @@ namespace MyCaffe.common
         void SynchronizeDevice();
         string GetDeviceName(int nDeviceID);
         string GetDeviceP2PInfo(int nDeviceID);
+        string GetRequiredCompute(out int nMinMajor, out int nMinMinor);
+
     }
 
     /// <summary>
