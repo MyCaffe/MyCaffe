@@ -46,7 +46,7 @@ namespace MyCaffe.param
         /// repoduce existing models and results.
         /// </summary>
         [Description("Specifies to use the legacy version or not.  When true the legacy version '(margin - d^2)' is used.  Otherwise the default is to use the version '(margin - d)^2' proposed in the Hadsell paper.")]
-        [ReadOnly(true)] // currently legacy version causes bug in auto test on backwards
+        //[ReadOnly(true)] // currently legacy version causes bug in auto test on backwards
         public bool legacy_version
         {
             get { return m_bLegacyVersion; }
