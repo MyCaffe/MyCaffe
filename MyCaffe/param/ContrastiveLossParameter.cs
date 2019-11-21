@@ -18,6 +18,7 @@ namespace MyCaffe.param
     {
         double m_dfMargin = 1.0;
         bool m_bLegacyVersion = false;
+        bool m_bOutputMatches = false;
 
         /** @copydoc LayerParameterBase */
         public ContrastiveLossParameter()
@@ -52,6 +53,16 @@ namespace MyCaffe.param
             set { m_bLegacyVersion = value; }
         }
 
+        /// <summary>
+        /// Optionally, specifies to output match information (default = false).
+        /// </summary>
+        [Description("Optionally, specifies to output match information (default = false).")]
+        public bool output_matches
+        {
+            get { return m_bOutputMatches; }
+            set { m_bOutputMatches = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -70,6 +81,7 @@ namespace MyCaffe.param
             ContrastiveLossParameter p = (ContrastiveLossParameter)src;
             m_dfMargin = p.m_dfMargin;
             m_bLegacyVersion = p.m_bLegacyVersion;
+            m_bOutputMatches = p.m_bOutputMatches;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -91,6 +103,9 @@ namespace MyCaffe.param
             if (legacy_version != false)
                 rgChildren.Add("legacy_version", legacy_version.ToString());
 
+            if (output_matches)
+                rgChildren.Add("output_matches", output_matches.ToString());
+
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -109,6 +124,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("legacy_version")) != null)
                 p.legacy_version = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("output_matches")) != null)
+                p.output_matches = bool.Parse(strVal);
 
             return p;
         }
