@@ -400,8 +400,9 @@ namespace MyCaffe.test.automated
                 if (lvi.SubItems[(int)COLIDX.STATUS].Text == "NotExecuted")
                 {
                     string strName = lvi.SubItems[(int)COLIDX.METHOD].Text.ToLower();
+                    int nPriority = int.Parse(lvi.SubItems[(int)COLIDX.PRIORITY].Text);
 
-                    if (strName.Contains("gradient"))
+                    if (strName.Contains("gradient") && nPriority == 0)
                     {
                         lvi.Selected = true;
                         lvi.Checked = true;
@@ -427,8 +428,9 @@ namespace MyCaffe.test.automated
                 if (lvi.SubItems[(int)COLIDX.STATUS].Text == "NotExecuted")
                 {
                     string strName = lvi.SubItems[(int)COLIDX.METHOD].Text.ToLower();
+                    int nPriority = int.Parse(lvi.SubItems[(int)COLIDX.PRIORITY].Text);
 
-                    if (!strName.Contains("gradient"))
+                    if (!strName.Contains("gradient") && nPriority == 0)
                     {
                         lvi.Selected = true;
                         lvi.Checked = true;
@@ -690,6 +692,9 @@ namespace MyCaffe.test.automated
 
                     if (evtCancel.WaitOne(0))
                         return;
+
+                    if (miCurrent.Priority > 0)
+                        continue;
 
                     if (miCurrent.Enabled && (!bServerMode || miCurrent.Status == MethodInfoEx.STATUS.NotExecuted))
                     {
