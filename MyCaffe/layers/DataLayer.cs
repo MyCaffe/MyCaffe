@@ -419,7 +419,7 @@ namespace MyCaffe.layers
                                     }
                                 }
 
-                                m_log.CHECK(rgDatum[i] != null, "The secondary pairing data is null after " + nRetries.ToString() + "!");
+                                m_log.CHECK(rgDatum[j] != null, "The secondary pairing data is null after " + nRetries.ToString() + "!");
                             }
                         }
                     }
