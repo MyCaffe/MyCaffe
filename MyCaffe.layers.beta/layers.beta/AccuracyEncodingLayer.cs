@@ -178,10 +178,22 @@ namespace MyCaffe.layers.beta
             double[] rgBottomLabel = convertD(colBottom[1].update_cpu_data());
             int nMinCount = m_nCentroidThreshold;
             int nCorrectCount = 0;
+            List<int> rgLabel = new List<int>();
 
+            // Extract the labels.
             for (int i = 0; i < rgBottomLabel.Length; i++)
             {
-                int nLabel = (int)rgBottomLabel[i];
+                if (i % 3 == 0)
+                    continue;
+
+                rgLabel.Add((int)rgBottomLabel[i % 3 + 1]);
+                rgLabel.Add((int)rgBottomLabel[i % 3 + 2]);
+            }
+
+            // Process the labels.
+            for (int i = 0; i < rgLabel.Count; i++)
+            {
+                int nLabel = rgLabel[i];
 
                 if (!m_rgLabelCounts.ContainsKey(nLabel))
                 {
