@@ -246,8 +246,6 @@ namespace MyCaffe.layers
                     // 1 label comparison + each label in pair order to which they were added to the blob.
                     if (m_param.data_param.images_per_blob > 1)
                     {
-                        m_log.CHECK_EQ(m_param.data_param.batch_size % m_param.data_param.images_per_blob, 0, "The batch size must be a factor of the 'images_per_blob' count of " + m_param.data_param.images_per_blob.ToString());
-
                         if (m_param.data_param.output_all_labels)
                             nChannels = m_param.data_param.images_per_blob;
                     }
