@@ -191,7 +191,6 @@ namespace MyCaffe.layers.beta
             int nMaxLabel = rgLabels.Max();
             if (nMaxLabel != m_rgLabelCounts.Count - 1)
             {
-                m_rgLabelCounts = new Dictionary<int, int>(nMaxLabel + 1);
                 m_blobEncodings.Reshape(nMaxLabel + 1, m_nEncodingDim, 1, 1);
                 m_blobData.Reshape(nMaxLabel + 1, m_nEncodingDim, 1, 1);
                 m_blobDistSq.Reshape(nMaxLabel + 1, 1, 1, 1);
@@ -268,7 +267,7 @@ namespace MyCaffe.layers.beta
                 }
             }
 
-            dfAccuracy = (double)nCorrectCount / nComparedCount;
+            dfAccuracy = (nComparedCount == 0) ? 0 : (double)nCorrectCount / nComparedCount;
 
             colTop[0].SetData(dfAccuracy, 0);
             colTop[0].Tag = m_param.accuracy_param.top_k;
