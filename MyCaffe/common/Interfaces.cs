@@ -460,6 +460,13 @@ namespace MyCaffe.common
         /// that matches the transformation used during training.</param>
         void LoadToRun(string strModel, byte[] rgWeights, BlobShape shape, SimpleDatum sdMean = null, TransformationParameter transParam = null, bool bForceBackward = false);
         /// <summary>
+        /// Create a data blob from a SimpleDatum by transforming the data and placing the results in the blob returned.
+        /// </summary>
+        /// <param name="d">Specifies the datum to load into the blob.</param>
+        /// <param name="blob">Optionally, specifies a blob to use instead of creating a new one.</param>
+        /// <returns>The data blob containing the transformed data is returned.</returns>
+        Blob<T> CreateDataBlob(SimpleDatum d, Blob<T> blob = null);
+        /// <summary>
         /// Run on a given bitmap image.
         /// </summary>
         /// <remarks>
