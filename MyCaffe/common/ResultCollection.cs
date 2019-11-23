@@ -52,6 +52,21 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Returns the data encoding values.
+        /// </summary>
+        public List<double> GetEncoding()
+        {
+            List<double> rg = new List<double>();
+
+            foreach (KeyValuePair<int, double> kv in m_rgResultsOriginal)
+            {
+                rg.Add(kv.Value);
+            }
+
+            return rg;
+        }
+
+        /// <summary>
         /// Returns the original results.
         /// </summary>
         public List<KeyValuePair<int, double>> ResultsOriginal
