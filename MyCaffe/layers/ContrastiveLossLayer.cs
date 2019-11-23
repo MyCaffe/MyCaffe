@@ -146,7 +146,8 @@ namespace MyCaffe.layers
             m_log.CHECK_EQ(1, colBottom[0].width, "The bottom[0] should have width = 1.");
             m_log.CHECK_EQ(1, colBottom[1].height, "The bottom[1] should have height = 1.");
             m_log.CHECK_EQ(1, colBottom[1].width, "The bottom[1] should have width = 1.");
-            m_log.CHECK_EQ(1, colBottom[2].channels, "The bottom[2] should have channels = 1.");
+            m_log.CHECK_GE(colBottom[2].channels, 1, "The bottom[2] should have channels >= 1.");
+            m_log.CHECK_LE(colBottom[2].channels, 3, "The bottom[2] should have channels <= 3.");
             m_log.CHECK_EQ(1, colBottom[2].height, "The bottom[2] should have height = 1.");
             m_log.CHECK_EQ(1, colBottom[2].width, "The bottom[2] should have width = 1.");
         }
