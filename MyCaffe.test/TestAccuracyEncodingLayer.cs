@@ -91,7 +91,7 @@ namespace MyCaffe.test
 
             List<int> rgShape = new List<int>() { m_nNum, m_nEncodingDim, 1, 1 };
             m_blob_bottom.Reshape(rgShape);
-            rgShape = new List<int>() { m_nNum, 3, 1, 1 };
+            rgShape = new List<int>() { m_nNum, 2, 1, 1 };
             m_blob_bottom_label.Reshape(rgShape);
 
             FillBottoms();
@@ -129,9 +129,8 @@ namespace MyCaffe.test
             nIdx = 0;
             for (int i = 0; i < m_blob_bottom_label.num; i++)
             {
-                rgLabel[i * 3 + 0] = 0;
-                rgLabel[i * 3 + 1] = rgnLabel[nIdx];
-                rgLabel[i * 3 + 2] = 0;
+                rgLabel[i * 2 + 0] = rgnLabel[nIdx];
+                rgLabel[i * 2 + 1] = 0;
                 nIdx++;
             }
 

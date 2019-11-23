@@ -170,25 +170,15 @@ namespace MyCaffe.layers.beta
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            m_log.CHECK_EQ(colBottom[1].count() % 3, 0, "The bottom[1] count must be a factor of 3 for {sim, lbl1, lbl2}.");
+            m_log.CHECK_EQ(colBottom[1].count() % 2, 0, "The bottom[1] count must be a factor of 2 for {lbl1, lbl2}.");
 
             double dfAccuracy = 0;
             double[] rgBottomLabel = convertD(colBottom[1].update_cpu_data());
             int nMinCount = m_nCentroidThreshold;
             int nCorrectCount = 0;
             int nComparedCount = 0;
-            List<int> rgLabels = new List<int>();
-            int nIdx = 0;
 
-            while (nIdx < rgBottomLabel.Length)
-            {
-                nIdx++;
-                rgLabels.Add((int)rgBottomLabel[nIdx]);
-                nIdx++;
-                nIdx++;
-            }
-
-            int nMaxLabel = rgLabels.Max();
+            int nMaxLabel = rgBottomLabel.Max(p => (int)p);
             if (nMaxLabel != m_rgLabelCounts.Count - 1)
             {
                 m_blobEncodings.Reshape(nMaxLabel + 1, m_nEncodingDim, 1, 1);
@@ -198,7 +188,7 @@ namespace MyCaffe.layers.beta
 
             for (int i = 0; i < colBottom[0].num; i++)
             {
-                int nLabel = rgLabels[i];
+                int nLabel = (int)rgBottomLabel[i * 2]; // Only the first embedding and first label are used (second is ignored).
 
                 if (!m_rgLabelCounts.ContainsKey(nLabel))
                 {
