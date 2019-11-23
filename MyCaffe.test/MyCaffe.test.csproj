@@ -85,6 +85,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Include="SqlServerTypes\Loader.cs" />
+    <Compile Include="TestAccuracyEncodingLayer.cs" />
     <Compile Include="TestAnnotatedDataLayer.cs" />
     <Compile Include="TestCryptoRandom.cs" />
     <Compile Include="TestExtensionSsd.cs" />
