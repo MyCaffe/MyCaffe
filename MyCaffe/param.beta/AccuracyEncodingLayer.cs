@@ -170,13 +170,25 @@ namespace MyCaffe.layers
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            m_log.CHECK_EQ(colBottom[1].count() % 3, 0, "The bottom[1] count must be a factor of 3 for {sim, lbl1, lbl2}.");
+
             double dfAccuracy = 0;
             double[] rgBottomLabel = convertD(colBottom[1].update_cpu_data());
             int nMinCount = m_nCentroidThreshold;
             int nCorrectCount = 0;
             int nComparedCount = 0;
-            int nMaxLabel = rgBottomLabel.Max(p => (int)p);
+            List<int> rgLabels = new List<int>();
+            int nIdx = 0;
 
+            while (nIdx < rgBottomLabel.Length)
+            {
+                nIdx++;
+                rgLabels.Add((int)rgBottomLabel[nIdx]);
+                nIdx++;
+                nIdx++;
+            }
+
+            int nMaxLabel = rgLabels.Max();
             if (nMaxLabel != m_rgLabelCounts.Count-1)
             {
                 m_rgLabelCounts = new Dictionary<int, int>(nMaxLabel + 1);
@@ -185,9 +197,9 @@ namespace MyCaffe.layers
                 m_blobDistSq.Reshape(nMaxLabel + 1, 1, 1, 1);
             }
 
-            for (int i = 0; i < rgBottomLabel.Length; i++)
+            for (int i = 0; i < colBottom[0].num; i++)
             {
-                int nLabel = (int)rgBottomLabel[i];
+                int nLabel = rgLabels[i];
 
                 if (!m_rgLabelCounts.ContainsKey(nLabel))
                 {
@@ -209,9 +221,9 @@ namespace MyCaffe.layers
                 if (nMinCount >= m_nCentroidThreshold)
                 {
                     // Load data with the current data embedding across each label 'slot'.
-                    for (int j = 0; j < m_rgLabelCounts.Count; j++)
+                    for (int k = 0; k < m_rgLabelCounts.Count; k++)
                     {
-                        m_cuda.copy(m_nEncodingDim, colBottom[0].gpu_data, m_blobData.mutable_gpu_data, i * m_nEncodingDim, j * m_nEncodingDim);
+                        m_cuda.copy(m_nEncodingDim, colBottom[0].gpu_data, m_blobData.mutable_gpu_data, i * m_nEncodingDim, k * m_nEncodingDim);
                     }
 
                     int nCount = m_blobData.count();

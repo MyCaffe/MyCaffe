@@ -77,7 +77,7 @@ namespace MyCaffe.test
     {
         CryptoRandom m_random = new CryptoRandom();
         Blob<T> m_blob_bottom_label;
-        int m_nNum = 100;
+        int m_nNum = 3 * 42;
         int m_nEncodingDim = 3;
 
         public AccuracyEncodingLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
@@ -90,7 +90,7 @@ namespace MyCaffe.test
 
             List<int> rgShape = new List<int>() { m_nNum, m_nEncodingDim, 1, 1 };
             m_blob_bottom.Reshape(rgShape);
-            rgShape = new List<int>() { m_nNum, 1, 1, 1 };
+            rgShape = new List<int>() { m_nNum, 3, 1, 1 };
             m_blob_bottom_label.Reshape(rgShape);
 
             FillBottoms();
@@ -104,6 +104,7 @@ namespace MyCaffe.test
             double[] rgLabel = convert(m_blob_bottom_label.mutable_cpu_data);
             int nLabels = 3;
             int nIdx = 0;
+            List<int> rgnLabel = new List<int>();
 
             m_log.CHECK_EQ(nLabels, m_nEncodingDim, "Encoding dim should be set to the number of labels = " + nLabels.ToString());
 
@@ -118,10 +119,19 @@ namespace MyCaffe.test
                     rgData[nIdx * m_nEncodingDim + 0] = ((j == 0) ? 0.8 + 0.2 * dfVal1 : 0.2 * dfVal0);
                     rgData[nIdx * m_nEncodingDim + 1] = ((j == 1) ? 0.8 + 0.2 * dfVal1 : 0.2 * dfVal0);
                     rgData[nIdx * m_nEncodingDim + 2] = ((j == 2) ? 0.8 + 0.2 * dfVal1 : 0.2 * dfVal0);
-                    rgLabel[nIdx] = j;
 
+                    rgnLabel.Add(j);
                     nIdx++;
                 }
+            }
+
+            nIdx = 0;
+            for (int i = 0; i < m_blob_bottom_label.num; i++)
+            {
+                rgLabel[i * 3 + 0] = 0;
+                rgLabel[i * 3 + 1] = rgnLabel[nIdx];
+                rgLabel[i * 3 + 2] = 0;
+                nIdx++;
             }
 
             m_blob_bottom.mutable_cpu_data = convert(rgData);
