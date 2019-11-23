@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="LayerFactory.cs" />
+    <Compile Include="layers.beta\AccuracyEncodingLayer.cs" />
     <Compile Include="layers.beta\GRNLayer.cs" />
     <Compile Include="layers.beta\KnnLayer.cs" />
     <Compile Include="layers.beta\Normalization1Layer.cs" />
