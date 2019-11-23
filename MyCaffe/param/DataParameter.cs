@@ -199,7 +199,7 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// (\b optional, default = false) When using images_per_blob > 1, 'output_all_labels' specifies to output not only the comparison of the two labels, but also the individual labels of each image as well.
+        /// (\b optional, default = false) When using images_per_blob > 1, 'output_all_labels' specifies to output all labels for the stacked images instead of just the comparison.
         /// </summary>
         public bool output_all_labels
         {

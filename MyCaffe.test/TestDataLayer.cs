@@ -1235,9 +1235,10 @@ namespace MyCaffe.test
             m_log.CHECK(p.data_param != null, "The data_param is null!");
             m_log.CHECK(p.transform_param != null, "The transform_para is null!");
 
-            p.data_param.batch_size = 5;
+            p.data_param.batch_size = 6;
             p.data_param.images_per_blob = nImagesPerBlob;
             p.data_param.output_all_labels = (nImagesPerBlob > 1) ? true : false;
+            p.data_param.balance_matches = false;
             p.data_param.source = strSrc;
             p.data_param.enable_random_selection = false;
             p.data_param.enable_pair_selection = false;
@@ -1280,7 +1281,7 @@ namespace MyCaffe.test
                 if (p.data_param.images_per_blob > 1)
                 {
                     if (p.data_param.output_all_labels)
-                        m_log.CHECK_EQ(TopVec[1].channels, 1 + p.data_param.images_per_blob, "The label channels should = " + (1 + p.data_param.images_per_blob).ToString());
+                        m_log.CHECK_EQ(TopVec[1].channels, p.data_param.images_per_blob, "The label channels should = " + p.data_param.images_per_blob.ToString());
                     else
                         m_log.CHECK_EQ(TopVec[1].channels, 1, "The label channels should = 1");
                 }
@@ -1340,7 +1341,7 @@ namespace MyCaffe.test
                 int nLabelDim = 1;
 
                 if (p.data_param.images_per_blob > 1 && p.data_param.output_all_labels)
-                    nLabelDim += p.data_param.images_per_blob;
+                    nLabelDim = p.data_param.images_per_blob;
 
                 for (int j = 0; j < p.data_param.batch_size; j++)
                 {
@@ -1348,12 +1349,11 @@ namespace MyCaffe.test
                     {
                         if (p.data_param.output_all_labels)
                         {
-                            double dfComparison = convert(rgLabel[j * nLabelDim + 0]);
                             List<double> rgLabels = new List<double>();
 
                             for (int k = 0; k < p.data_param.images_per_blob; k++)
                             {
-                                double dfLabel = convert(rgLabel[j * nLabelDim + 1 + k]);
+                                double dfLabel = convert(rgLabel[j * nLabelDim + k]);
                                 rgLabels.Add(dfLabel);
                             }
 
@@ -1361,9 +1361,6 @@ namespace MyCaffe.test
 
                             if (rgLabels.Count == 2)
                             {
-                                double dfExpected = (rgLabels[0] == rgLabels[1]) ? 1 : 0;
-                                m_log.CHECK_EQ(dfComparison, dfExpected, "The label comparisons do not match!");
-
                                 m_log.CHECK_EQ(rgLabels[0], rgrgData[j][0].Label, "The labels do not match!");
                                 m_log.CHECK_EQ(rgLabels[1], rgrgData[j][1].Label, "The labels do not match!");
                             }

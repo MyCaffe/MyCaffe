@@ -244,8 +244,13 @@ namespace MyCaffe.layers
                     int nChannels = 1;
 
                     // 1 label comparison + each label in pair order to which they were added to the blob.
-                    if (m_param.data_param.images_per_blob > 1 && m_param.data_param.output_all_labels)
-                        nChannels += m_param.data_param.images_per_blob;
+                    if (m_param.data_param.images_per_blob > 1)
+                    {
+                        m_log.CHECK_EQ(m_param.data_param.batch_size % m_param.data_param.images_per_blob, 0, "The batch size must be a factor of the 'images_per_blob' count of " + m_param.data_param.images_per_blob.ToString());
+
+                        if (m_param.data_param.output_all_labels)
+                            nChannels = m_param.data_param.images_per_blob;
+                    }
 
                     rgLabelShape.Add(nChannels);
                 }
@@ -394,32 +399,39 @@ namespace MyCaffe.layers
                                 Next();
                             }
 
-                            int? nLabelMatch = null;
-                            if (m_bMatchingCycle)
+                            if (m_param.data_param.balance_matches)
                             {
-                                nLabelMatch = datum.Label;
-                                rgDatum[j] = m_cursor.GetValue(nLabelMatch, bLoadDataCriteria);
+                                int? nLabelMatch = null;
+                                if (m_bMatchingCycle)
+                                {
+                                    nLabelMatch = datum.Label;
+                                    rgDatum[j] = m_cursor.GetValue(nLabelMatch, bLoadDataCriteria);
+                                }
+                                else
+                                {
+                                    rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
+                                    int nRetries = 3;
+
+                                    if (rgDatum[j] == null || rgDatum[j].Label == datum.Label)
+                                    {
+                                        int nIdx1 = 0;
+                                        while (nIdx1 < nRetries)
+                                        {
+                                            Next();
+                                            rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
+                                            nIdx1++;
+
+                                            if (rgDatum[j] != null && rgDatum[j].Label != datum.Label)
+                                                break;
+                                        }
+                                    }
+
+                                    m_log.CHECK(rgDatum[j] != null, "The secondary pairing data is null after " + nRetries.ToString() + "!");
+                                }
                             }
-                            else 
+                            else
                             {
                                 rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
-                                int nRetries = 3;
-
-                                if (rgDatum[j] == null || rgDatum[j].Label == datum.Label)
-                                {
-                                    int nIdx1 = 0;
-                                    while (nIdx1 < nRetries)
-                                    {
-                                        Next();
-                                        rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
-                                        nIdx1++;
-
-                                        if (rgDatum[j] != null && rgDatum[j].Label != datum.Label)
-                                            break;
-                                    }
-                                }
-
-                                m_log.CHECK(rgDatum[j] != null, "The secondary pairing data is null after " + nRetries.ToString() + "!");
                             }
                         }
                     }
@@ -512,21 +524,23 @@ namespace MyCaffe.layers
                                 int nLabelDim = 1;
 
                                 if (m_param.data_param.output_all_labels)
-                                    nLabelDim += m_param.data_param.images_per_blob;
-
-                                if (datum.Label == rgDatum[0].Label)
-                                    rgTopLabel[i * nLabelDim] = m_tOne;
-                                else
-                                    rgTopLabel[i * nLabelDim] = m_tZero;
+                                    nLabelDim = m_param.data_param.images_per_blob;
 
                                 if (m_param.data_param.output_all_labels)
                                 {
-                                    rgTopLabel[i * nLabelDim + 1] = (T)Convert.ChangeType(datum.Label, typeof(T));
+                                    rgTopLabel[i * nLabelDim] = (T)Convert.ChangeType(datum.Label, typeof(T));
 
                                     for (int j = 0; j < rgDatum.Length; j++)
                                     {
-                                        rgTopLabel[i * nLabelDim + 2 + j] = (T)Convert.ChangeType(rgDatum[j].Label, typeof(T));
+                                        rgTopLabel[i * nLabelDim + 1 + j] = (T)Convert.ChangeType(rgDatum[j].Label, typeof(T));
                                     }
+                                }
+                                else
+                                {
+                                    if (datum.Label == rgDatum[0].Label)
+                                        rgTopLabel[i * nLabelDim] = m_tOne;
+                                    else
+                                        rgTopLabel[i * nLabelDim] = m_tZero;
                                 }
                             }
                             else
