@@ -237,7 +237,12 @@ namespace MyCaffe.layers
                     int nIdx = i * nSimDim;
                     double dfDist = (bLegacyVersion) ? dfMargin - rgDistSq[i] : dfMargin - Math.Sqrt(rgDistSq[i]);
 
-                    if (((int)rgSimPairs[nIdx]) != 0)  // similar pairs
+                    // Label data is in on of two forms:
+                    // channel = 1: the direct similarity where 1 = the same, and 0 = different.
+                    // channel > 1: the direct label values of each image packed into the data channels.
+                    bool bSimilar = (nSimDim == 1) ? ((rgSimPairs[i] != 0) ? true : false) : ((rgSimPairs[i * nSimDim] == rgSimPairs[i * nSimDim + 1]) ? true : false);
+
+                    if (bSimilar)  // similar pairs
                     {
                         if (m_rgMatches != null)
                         {
@@ -279,7 +284,12 @@ namespace MyCaffe.layers
                     int nIdx = i * nSimDim;
                     double dfDist = (bLegacyVersion) ? dfMargin - rgDistSq[i] : dfMargin - Math.Sqrt(rgDistSq[i]);
 
-                    if (((int)rgSimPairs[nIdx]) != 0)  // similar pairs
+                    // Label data is in on of two forms:
+                    // channel = 1: the direct similarity where 1 = the same, and 0 = different.
+                    // channel > 1: the direct label values of each image packed into the data channels.
+                    bool bSimilar = (nSimDim == 1) ? ((rgSimPairs[i] != 0) ? true : false) : ((rgSimPairs[i * nSimDim] == rgSimPairs[i * nSimDim + 1]) ? true : false);
+
+                    if (bSimilar)  // similar pairs
                     {
                         if (m_rgMatches != null)
                         {
