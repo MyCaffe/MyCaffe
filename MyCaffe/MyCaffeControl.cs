@@ -1497,7 +1497,7 @@ namespace MyCaffe
         public ResultCollection Run(int nImageIdx)
         {
             SimpleDatum sd = m_imgDb.QueryImage(m_dataSet.TrainingSource.ID, nImageIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
-            return Run(sd, true, true);
+            return Run(sd, true, false);
         }
 
         /// <summary>
@@ -1515,7 +1515,37 @@ namespace MyCaffe
                 rgSd.Add(sd);
             }
 
-            return Run(rgSd, true, true);
+            return Run(rgSd, true, false);
+        }
+
+        /// <summary>
+        /// Create a data blob from a SimpleDatum by transforming the data and placing the results in the blob returned.
+        /// </summary>
+        /// <param name="d">Specifies the datum to load into the blob.</param>
+        /// <param name="blob">Optionally, specifies a blob to use instead of creating a new one.</param>
+        /// <returns>The data blob containing the transformed data is returned.</returns>
+        public Blob<T> CreateDataBlob(SimpleDatum d, Blob<T> blob = null)
+        {
+            if (m_dataTransformer == null)
+            {
+                if (blob != null)
+                    blob.SetData(d, true);
+                else
+                    blob = new Blob<T>(m_cuda, m_log, d, true);
+            }
+            else
+            {
+                if (blob == null)
+                    blob = new Blob<T>(m_cuda, m_log);
+
+                Datum datum = new Datum(d);
+                List<int> rgShape = m_dataTransformer.InferBlobShape(datum);
+                blob.Reshape(rgShape);
+                blob.SetData(m_dataTransformer.Transform(datum));
+                m_dataTransformer.SetRange(blob);
+            }
+
+            return blob;
         }
 
         /// <summary>
@@ -1527,25 +1557,10 @@ namespace MyCaffe
         /// <returns>The results of the run are returned.</returns>
         public ResultCollection Run(SimpleDatum d, bool bSort, bool bUseSolverNet)
         {
-            Blob<T> blob = null;
-
             if (m_net == null)
                 throw new Exception("The Run net has not been created!");
 
-            if (m_dataTransformer == null)
-            {
-                blob = new Blob<T>(m_cuda, m_log, d, true);
-            }
-            else
-            {
-                blob = new Blob<T>(m_cuda, m_log);
-                Datum datum = new Datum(d);
-                List<int> rgShape = m_dataTransformer.InferBlobShape(datum);
-                blob.Reshape(rgShape);
-                blob.SetData(m_dataTransformer.Transform(datum));
-                m_dataTransformer.SetRange(blob);
-            }
-
+            Blob<T> blob = CreateDataBlob(d);
             BlobCollection<T> colBottom = new BlobCollection<T>() { blob };
             double dfLoss = 0;
 
