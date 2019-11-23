@@ -1116,9 +1116,6 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.ACCURACY:
                     return new AccuracyLayer<T>(cuda, log, p);
 
-                case LayerParameter.LayerType.ACCURACY_ENCODING:
-                    return new AccuracyEncodingLayer<T>(cuda, log, p);
-
                 case LayerParameter.LayerType.ARGMAX:
                     return new ArgMaxLayer<T>(cuda, log, p);
 

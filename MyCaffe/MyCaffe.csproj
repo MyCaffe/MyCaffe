@@ -174,7 +174,6 @@
     <Compile Include="MyCaffeControl.Designer.cs">
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="param.beta\AccuracyEncodingLayer.cs" />
     <Compile Include="param.ssd\OptionalParameter.cs" />
     <Compile Include="param.ssd\VideoDataParameter.cs" />
     <Compile Include="param.ssd\LabelMap.cs" />

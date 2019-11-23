@@ -136,7 +136,7 @@ namespace MyCaffe.layers.beta
             int nNum = colBottom[0].num;
             bool bFirstReshape = (nNum != m_nNum) ? true : false;
             m_nNum = nNum;
-            m_nEncodingDim = colBottom[1].channels;
+            m_nEncodingDim = colBottom[0].channels;
 
             m_log.CHECK_EQ(colBottom[1].num, m_nNum, "The number of labels does not match the number of items at bottom[0].");
 
@@ -144,10 +144,6 @@ namespace MyCaffe.layers.beta
             colTop[0].Reshape(rgTopShape);
             colTop[0].type = Blob<T>.BLOB_TYPE.ACCURACY;
 
-            if (colTop.Count > 1)
-                colTop[1].Reshape(m_nNum, 1, 1, 1);
-
-            m_blobDistSq.Reshape(colBottom[0].num, 1, 1, 1);
             // vector of ones used to sum along channels.
             m_blobSummerVec.Reshape(colBottom[0].channels, 1, 1, 1);
             m_blobSummerVec.SetData(1.0);
@@ -174,35 +170,39 @@ namespace MyCaffe.layers.beta
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            m_log.CHECK_EQ(colBottom[1].count() % 3, 0, "The bottom[1] count must be a factor of 3 for {sim, lbl1, lbl2}.");
+
             double dfAccuracy = 0;
             double[] rgBottomLabel = convertD(colBottom[1].update_cpu_data());
             int nMinCount = m_nCentroidThreshold;
             int nCorrectCount = 0;
-            List<int> rgLabel = new List<int>();
+            int nComparedCount = 0;
+            List<int> rgLabels = new List<int>();
+            int nIdx = 0;
 
-            // Extract the labels.
-            for (int i = 0; i < rgBottomLabel.Length; i++)
+            while (nIdx < rgBottomLabel.Length)
             {
-                if (i % 3 == 0)
-                    continue;
-
-                rgLabel.Add((int)rgBottomLabel[i % 3 + 1]);
-                rgLabel.Add((int)rgBottomLabel[i % 3 + 2]);
+                nIdx++;
+                rgLabels.Add((int)rgBottomLabel[nIdx]);
+                nIdx++;
+                nIdx++;
             }
 
-            // Process the labels.
-            for (int i = 0; i < rgLabel.Count; i++)
+            int nMaxLabel = rgLabels.Max();
+            if (nMaxLabel != m_rgLabelCounts.Count - 1)
             {
-                int nLabel = rgLabel[i];
+                m_rgLabelCounts = new Dictionary<int, int>(nMaxLabel + 1);
+                m_blobEncodings.Reshape(nMaxLabel + 1, m_nEncodingDim, 1, 1);
+                m_blobData.Reshape(nMaxLabel + 1, m_nEncodingDim, 1, 1);
+                m_blobDistSq.Reshape(nMaxLabel + 1, 1, 1, 1);
+            }
+
+            for (int i = 0; i < colBottom[0].num; i++)
+            {
+                int nLabel = rgLabels[i];
 
                 if (!m_rgLabelCounts.ContainsKey(nLabel))
                 {
-                    if (nLabel >= m_blobEncodings.num)
-                    {
-                        m_blobEncodings.Reshape(nLabel + 1, m_nEncodingDim, 1, 1);
-                        m_blobData.Reshape(nLabel + 1, m_nEncodingDim, 1, 1);
-                    }
-
                     m_rgLabelCounts.Add(nLabel, 1);
                     m_cuda.copy(m_nEncodingDim, colBottom[0].gpu_data, m_blobEncodings.mutable_gpu_data, i * m_nEncodingDim, nLabel * m_nEncodingDim);
                 }
@@ -217,13 +217,13 @@ namespace MyCaffe.layers.beta
                     m_cuda.add(m_nEncodingDim, colBottom[0].gpu_data, m_blobEncodings.gpu_data, m_blobEncodings.mutable_gpu_data, dfAlpha, dfBeta, i * m_nEncodingDim, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
                 }
 
-                nMinCount = Math.Min(nMinCount, m_rgLabelCounts[nLabel]);
+                nMinCount = m_rgLabelCounts.Min(p => p.Value);
                 if (nMinCount >= m_nCentroidThreshold)
                 {
                     // Load data with the current data embedding across each label 'slot'.
-                    for (int j = 0; j < m_rgLabelCounts.Count; j++)
+                    for (int k = 0; k < m_rgLabelCounts.Count; k++)
                     {
-                        m_cuda.copy(m_nEncodingDim, colBottom[0].gpu_data, m_blobData.mutable_gpu_data, i * m_nEncodingDim, j * m_nEncodingDim);
+                        m_cuda.copy(m_nEncodingDim, colBottom[0].gpu_data, m_blobData.mutable_gpu_data, i * m_nEncodingDim, k * m_nEncodingDim);
                     }
 
                     int nCount = m_blobData.count();
@@ -263,10 +263,12 @@ namespace MyCaffe.layers.beta
 
                     if (nDetectedLabel == nLabel)
                         nCorrectCount++;
+
+                    nComparedCount++;
                 }
             }
 
-            dfAccuracy = (double)nCorrectCount / rgBottomLabel.Length;
+            dfAccuracy = (double)nCorrectCount / nComparedCount;
 
             colTop[0].SetData(dfAccuracy, 0);
             colTop[0].Tag = m_param.accuracy_param.top_k;
