@@ -8,7 +8,7 @@ headless GPU's using <a href="https://devblogs.nvidia.com/parallelforall/fast-mu
 
 Now you can create custom layers for MyCaffe in native C# using the full extent of the <a href="https://msdn.microsoft.com/en-us/library/w0x726c2(v=vs.110).aspx">Windows .NET Framwork</a>!
 
-We have made a large effort to keep the MyCaffe C# code true to the original down to comment with the hope of making it even easier to extend 
+We have made a large effort to keep the MyCaffe C# code true to the original CAFFE[1] down to comment with the hope of making it even easier to extend 
 the general CAFFE architecture for all.  In addition, MyCaffe uses the same Proto Buffer file format for solver and model descriptions and model 
 binary files allowing an easy exchange between the MyCaffe and C++ CAFFE platforms.  
 
@@ -35,6 +35,7 @@ We have several new models supported by MyCaffe with the train_val and solution 
  - Recurrent Learning of Char-RNN as described in [8] and [9].
  - Neural Style Transfer as described in [10] and [11] using the VGG model described in [12]
  - Deep Q-Learning [14][15] with Noisy-Net [16] and Prioritized Replay Buffer [17]
+ - Siamese Network [18]
 
 For more information on the MyCaffe implementation of Policy Gradient Reinforcement Learning, see [MyCaffe: A Complete C# Re-Write of Caffe with Reinforcement Learning](https://arxiv.org/abs/1810.02272) by D. Brown, 2018. 
 
@@ -94,6 +95,8 @@ Source code available on GitHub at <a href="https://github.com/stella-emu/stella
 [16] [Noisy Networks for Exploration](https://arxiv.org/abs/1706.10295) by Meire Fortunato, Mohammad Gheshlaghi Azar, Bilal Piot, Jacob Menick, Ian Osband, Alex Graves, Vlad Mnih, Remi Munos, Demis Hassabis, Olivier Pietquin, Charles Blundell, Shane Legg, 2018, arXiv:1706.10295
 
 [17] [Prioritized Experience Replay](https://arxiv.org/abs/1511.05952) by Tom Schaul, John Quan, Ioannis Antonoglou, David Silver, 2016, arXiv:1511.05952
+
+[18] [Siamese Network Training with Caffe](https://caffe.berkeleyvision.org/gathered/examples/siamese.html) by Yangqing Jia and Evan Shelhamer, BAIR.
 
 For more information on the C++ CAFFE open-source project, please see the following <a href="http://caffe.berkeleyvision.org/">link</a>.
 
