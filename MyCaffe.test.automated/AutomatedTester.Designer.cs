@@ -54,6 +54,8 @@
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.btnGradientTests = new System.Windows.Forms.ToolStripButton();
             this.btnNonGradientTests = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnCurrent = new System.Windows.Forms.ToolStripButton();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.tsTotalTests = new System.Windows.Forms.ToolStripStatusLabel();
@@ -206,10 +208,12 @@
             this.btnAbort,
             this.toolStripSeparator2,
             this.btnGradientTests,
-            this.btnNonGradientTests});
+            this.btnNonGradientTests,
+            this.toolStripSeparator3,
+            this.btnCurrent});
             this.toolStrip1.Location = new System.Drawing.Point(3, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(208, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(268, 25);
             this.toolStrip1.TabIndex = 0;
             // 
             // btnShowAll
@@ -312,6 +316,22 @@
             this.btnNonGradientTests.Size = new System.Drawing.Size(23, 22);
             this.btnNonGradientTests.Text = "Non-gradient tests";
             this.btnNonGradientTests.Click += new System.EventHandler(this.btnNonGradientTests_Click);
+            // 
+            // toolStripSeparator3
+            // 
+            this.toolStripSeparator3.Name = "toolStripSeparator3";
+            this.toolStripSeparator3.Size = new System.Drawing.Size(6, 25);
+            // 
+            // btnCurrent
+            // 
+            this.btnCurrent.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnCurrent.Image = ((System.Drawing.Image)(resources.GetObject("btnCurrent.Image")));
+            this.btnCurrent.ImageScaling = System.Windows.Forms.ToolStripItemImageScaling.None;
+            this.btnCurrent.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnCurrent.Name = "btnCurrent";
+            this.btnCurrent.Size = new System.Drawing.Size(23, 22);
+            this.btnCurrent.Text = "Go to running test.";
+            this.btnCurrent.Click += new System.EventHandler(this.btnCurrent_Click);
             // 
             // statusStrip1
             // 
@@ -514,5 +534,7 @@
         private System.Windows.Forms.ToolStripStatusLabel lblActiveGPU;
         private System.Windows.Forms.ToolStripStatusLabel lblActiveGPUVal;
         private System.Windows.Forms.ColumnHeader colPriority;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
+        private System.Windows.Forms.ToolStripButton btnCurrent;
     }
 }

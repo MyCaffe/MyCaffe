@@ -471,6 +471,18 @@ namespace MyCaffe.test.automated
             m_bSkip = true;
             btnRun_Click(sender, e);
         }
+
+        private void btnCurrent_Click(object sender, EventArgs e)
+        {
+            foreach (ListViewItem lvi in lstTests.Items)
+            {
+                KeyValuePair<TestClass, MethodInfoEx> kvTc = (KeyValuePair<TestClass, MethodInfoEx>)lvi.Tag;
+                MethodInfoEx mi = kvTc.Value;
+
+                if (mi.Status == MethodInfoEx.STATUS.Running)
+                    lvi.EnsureVisible();
+            }
+        }
     }
 
     class TestClassCollection : IEnumerable<TestClass>, IDisposable 
