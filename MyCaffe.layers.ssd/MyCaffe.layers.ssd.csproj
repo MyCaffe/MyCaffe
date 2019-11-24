@@ -86,7 +86,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="mycaffe.layers.ssd.pfx" />
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
