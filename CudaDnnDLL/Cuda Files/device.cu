@@ -1115,7 +1115,7 @@ long Device<T>::cuda_get(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 
 	T* pfOutput = NULL;
 	
-	if (lErr = m_memory.AllocHost(nItems, &pfOutput, NULL, false, false, true))
+	if (lErr = m_memory.AllocHost(nItems, &pfOutput, NULL, false, false, false))
 		return lErr;
 
 	if (lErr = m_math.get(nCount, hHandle, nIdx, pfOutput))
