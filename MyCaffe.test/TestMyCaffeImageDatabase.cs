@@ -243,46 +243,61 @@ namespace MyCaffe.test
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
                 DatasetDescriptor ds = db.GetDatasetByName(strDs);
-                Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
 
-                int nCount = 100000;
-                double dfTotalMs = 0;
-
-                for (int i = 0; i < nCount; i++)
+                for (int iter = 0; iter < 3; iter++)
                 {
-                    sw.Reset();
-                    sw.Start();
-                    SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0, labelSel, imgSel);
-                    dfTotalMs += sw.ElapsedMilliseconds;
-                    sw.Stop();
+                    Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
+                    int nCount = ds.TrainingSource.ImageCount * 2;
+                    double dfTotalMs = 0;
 
-                    if (!rg.Keys.Contains(d.Index))
-                        rg.Add(d.Index, new List<SimpleDatum>() { d });
+                    for (int i = 0; i < nCount; i++)
+                    {
+                        sw.Reset();
+                        sw.Start();
+                        SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0, labelSel, imgSel);
+                        dfTotalMs += sw.ElapsedMilliseconds;
+                        sw.Stop();
+
+                        if (!rg.Keys.Contains(d.Index))
+                            rg.Add(d.Index, new List<SimpleDatum>() { d });
+                        else
+                            rg[d.Index].Add(d);
+                    }
+
+                    str = (dfTotalMs / (double)nCount).ToString();
+                    Trace.WriteLine("Average Query Time: " + str + " ms.");
+
+                    str = db.GetLabelQueryHitPercentsAsTextFromSourceName(ds.TrainingSourceName);
+                    Trace.WriteLine("Label Query Hit Percents = " + str);
+
+
+                    // Verify random selection, so no indexes should be the same.
+                    Dictionary<int, int> rgCounts = new Dictionary<int, int>();
+                    double dfTotal = 0;
+                    foreach (KeyValuePair<int, List<SimpleDatum>> kv in rg)
+                    {
+                        if (!rgCounts.ContainsKey(kv.Value.Count))
+                            rgCounts.Add(kv.Value.Count, 1);
+                        else
+                            rgCounts[kv.Value.Count]++;
+
+                        dfTotal += kv.Value.Count;
+                    }
+
+                    List<int> rgMissedIdx = new List<int>();
+                    for (int i = 0; i < ds.TrainingSource.ImageCount; i++)
+                    {
+                        if (!rg.ContainsKey(i))
+                            rgMissedIdx.Add(i);
+                    }
+
+                    dfTotal /= rg.Count;
+
+                    if (nLoadLimit == 0)
+                        Assert.AreEqual(true, dfTotal <= 2.1);
                     else
-                        rg[d.Index].Add(d);
+                        Assert.AreEqual(true, dfTotal <= 10.6);
                 }
-
-                str = (dfTotalMs / (double)nCount).ToString();
-                Trace.WriteLine("Average Query Time: " + str + " ms.");
-
-                str = db.GetLabelQueryHitPercentsAsTextFromSourceName(ds.TrainingSourceName);
-                Trace.WriteLine("Label Query Hit Percents = " + str);
-
-
-                // Verify random selection, so no indexes should be the same.
-                double dfTotal = 0;
-
-                foreach (KeyValuePair<int, List<SimpleDatum>> kv in rg)
-                {
-                    dfTotal += kv.Value.Count;
-                }
-
-                dfTotal /= rg.Count;
-
-                if (nLoadLimit == 0)
-                    Assert.AreEqual(true, dfTotal <= 1.02);
-                else
-                    Assert.AreEqual(true, dfTotal <= 10.2);
             }
 
             db.CleanUp();
