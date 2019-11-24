@@ -19,9 +19,10 @@ namespace MyCaffe.db.image
         List<LabelSet> m_rgLabelSet = new List<LabelSet>();
         List<LabelSet> m_rgLabelSetWithData = new List<LabelSet>();
         SimpleDatum[] m_rgImages;
+        List<int> m_rgIndexes = new List<int>();
+        List<int> m_rgLabelIndexes = new List<int>();
         List<SimpleDatum> m_rgImagesLimitLoaded = new List<SimpleDatum>();
         SimpleDatum m_imgMean = null;
-        CryptoRandom m_randomLabels;
         CryptoRandom m_random;
         int m_nLastFindIdx = 0;
         int m_nLastIdx = -1;
@@ -50,8 +51,7 @@ namespace MyCaffe.db.image
         /// <param name="nLoadLimit">Specifies the image load limit.</param>
         public ImageSet(DatasetFactory factory, SourceDescriptor src, IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
-            m_random = new CryptoRandom(CryptoRandom.METHOD.DEFAULT, Guid.NewGuid().GetHashCode());
-            m_randomLabels = new CryptoRandom(CryptoRandom.METHOD.UNIFORM_EXACT, Guid.NewGuid().GetHashCode());
+            m_random = new CryptoRandom(CryptoRandom.METHOD.DEFAULT);
             m_factory = new DatasetFactory(factory);
             m_factory.Open(src.ID);
             m_loadMethod = loadMethod;
@@ -91,12 +91,6 @@ namespace MyCaffe.db.image
             {
                 m_random.Dispose();
                 m_random = null;
-            }
-
-            if (m_randomLabels != null)
-            {
-                m_randomLabels.Dispose();
-                m_randomLabels = null;
             }
 
             if (m_factory != null)
@@ -552,7 +546,9 @@ namespace MyCaffe.db.image
                 int nImageIdx = 0;
 
                 if (sd == null)
-                    sd = LabelSet.GetImage(rgImages, rgImages.Length, nIdx, m_random, imageSelectionMethod, ref m_nLastIdx, ref m_nFixedIndex, out nImageIdx);
+                {
+                    sd = LabelSet.GetImage(rgImages, m_rgIndexes, rgImages.Length, nIdx, m_random, imageSelectionMethod, ref m_nLastIdx, ref m_nFixedIndex, out nImageIdx);
+                }
 
 
                 //-----------------------------------------
@@ -641,7 +637,18 @@ namespace MyCaffe.db.image
                 if (m_rgLabelSetWithData.Count == 0)
                     return null;
 
-                nIdx = m_randomLabels.Next(m_rgLabelSetWithData.Count);
+                if (m_rgLabelIndexes.Count == 0)
+                {
+                    for (int i = 0; i < m_rgLabelSetWithData.Count; i++)
+                    {
+                        m_rgLabelIndexes.Add(i);
+                    }
+                }
+
+                nIdx = m_random.Next(m_rgLabelIndexes.Count);
+                nIdx = m_rgLabelIndexes[nIdx];
+                m_rgLabelIndexes.Remove(nIdx);
+
                 return m_rgLabelSetWithData[nIdx];
             }
 

@@ -15,6 +15,7 @@ namespace MyCaffe.db.image
     {
         LabelDescriptor m_label;
         SimpleDatum[] m_rgImages;
+        List<int> m_rgIdx = new List<int>();
         CryptoRandom m_random;
         int m_nCurrentIdx = 0;
 
@@ -110,13 +111,14 @@ namespace MyCaffe.db.image
             int nFixedIdx = -1;
             int nImageIdx = 0;
 
-            return GetImage(m_rgImages, m_nCurrentIdx, nIdx, m_random, selectionMethod, ref nLastIdx, ref nFixedIdx, out nImageIdx);
+            return GetImage(m_rgImages, m_rgIdx, m_nCurrentIdx, nIdx, m_random, selectionMethod, ref nLastIdx, ref nFixedIdx, out nImageIdx);
         }
 
         /// <summary>
         /// Returns an image from a list of images.
         /// </summary>
         /// <param name="rgImages">Specifies the image list to select from.</param>
+        /// <param name="rgIdx">Specifies the list of indexes to choose from.</param>
         /// <param name="nCount">Specifies the maximum count to use.</param>
         /// <param name="nIdx">Specifies the index to use when selecting sequentially or in pair selection.</param>
         /// <param name="random">Specifies the random number generator to use.</param>
@@ -125,17 +127,28 @@ namespace MyCaffe.db.image
         /// <param name="nFixedIndex">Specifies the fixed index to use.</param>
         /// <param name="nImageIdx">Returns the image index used.</param>
         /// <returns></returns>
-        public static SimpleDatum GetImage(SimpleDatum[] rgImages, int nCount, int nIdx, CryptoRandom random, IMGDB_IMAGE_SELECTION_METHOD selectionMethod, ref int nLastIndex, ref int nFixedIndex, out int nImageIdx)
+        public static SimpleDatum GetImage(SimpleDatum[] rgImages, List<int> rgIdx, int nCount, int nIdx, CryptoRandom random, IMGDB_IMAGE_SELECTION_METHOD selectionMethod, ref int nLastIndex, ref int nFixedIndex, out int nImageIdx)
         {
             if ((selectionMethod & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST)
             {
                 IEnumerable<SimpleDatum> iQuery = rgImages.Where(p => p != null && p.Boost > 0);
-                List<SimpleDatum> rgItems = new List<SimpleDatum>(iQuery);
+                List<SimpleDatum> rgItems = new List<SimpleDatum>(iQuery);               
 
                 if (rgItems.Count > 0)
                 {
+                    if (rgIdx.Count == 0)
+                    {
+                        for (int i = 0; i < rgItems.Count; i++)
+                        {
+                            rgIdx.Add(i);
+                        }
+                    }
+
                     if ((selectionMethod & IMGDB_IMAGE_SELECTION_METHOD.RANDOM) == IMGDB_IMAGE_SELECTION_METHOD.RANDOM)
-                        nIdx = random.Next(rgItems.Count);
+                    {
+                        nIdx = rgIdx[random.Next(rgIdx.Count)];
+                        rgIdx.Remove(nIdx);
+                    }
 
                     SimpleDatum sd = rgItems[nIdx];
                     nImageIdx = nIdx;
@@ -144,16 +157,30 @@ namespace MyCaffe.db.image
                 }
             }
 
+            int nMin = ((selectionMethod & IMGDB_IMAGE_SELECTION_METHOD.PAIR) == IMGDB_IMAGE_SELECTION_METHOD.PAIR) ? 2 : 1;
+            if (rgIdx.Count < nMin)
+            {
+                rgIdx.Clear();
+
+                for (int i = 0; i < rgImages.Length; i++)
+                {
+                    rgIdx.Add(i);
+                }
+            }
+
             if ((selectionMethod & IMGDB_IMAGE_SELECTION_METHOD.PAIR) == IMGDB_IMAGE_SELECTION_METHOD.PAIR)
             {
                 nIdx = nLastIndex + 1;
 
-                if (nIdx == nCount)
+                if (nIdx == rgIdx.Count)
                     nIdx = 0;
+
+                rgIdx.Remove(nIdx);
             }
             else if ((selectionMethod & IMGDB_IMAGE_SELECTION_METHOD.RANDOM) == IMGDB_IMAGE_SELECTION_METHOD.RANDOM)
             {
-                nIdx = random.Next(nCount);
+                nIdx = rgIdx[random.Next(rgIdx.Count)];
+                rgIdx.Remove(nIdx);
             }
             else if (selectionMethod == IMGDB_IMAGE_SELECTION_METHOD.FIXEDINDEX)
             {
