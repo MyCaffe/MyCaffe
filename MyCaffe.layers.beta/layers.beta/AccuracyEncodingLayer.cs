@@ -187,8 +187,10 @@ namespace MyCaffe.layers.beta
             if (nMaxLabel != m_rgLabelCounts.Count - 1)
             {
                 m_blobEncodings.Reshape(nMaxLabel + 1, m_nEncodingDim, 1, 1);
+                m_blobEncodings.SetData(0);
                 m_blobData.Reshape(nMaxLabel + 1, m_nEncodingDim, 1, 1);
                 m_blobDistSq.Reshape(nMaxLabel + 1, 1, 1, 1);
+                m_rgLabelCounts.Clear();
             }
 
             for (int i = 0; i < colBottom[0].num; i++)
