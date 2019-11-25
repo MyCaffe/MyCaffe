@@ -140,7 +140,7 @@ namespace MyCaffe.trainers.pg.mt
 
             agent.Dispose();
 
-            return new ResultCollection(rgActions);
+            return new ResultCollection(rgActions, LayerParameter.LayerType.SOFTMAX);
         }
 
         /// <summary>
