@@ -1818,6 +1818,7 @@ namespace MyCaffe
         /// <returns>The weights are returned.</returns>
         public byte[] GetWeights()
         {
+            m_net.ShareTrainedLayersWith(m_solver.net);
             return m_net.SaveWeights(m_persist);
         }
 
