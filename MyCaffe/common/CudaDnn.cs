@@ -6011,8 +6011,8 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="n">Specifies the number of items (not bytes) in the vector A.</param>
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
-        /// <param name="hWork1">Specifies a handle to workspace data in GPU memory.  To get the size of the workspace memoory, call this function with hA = 0.</param>
-        /// <param name="hWork2">Specifies a handle to workspace data in GPU memory.  To get the size of the workspace memoory, call this function with hA = 0.</param>
+        /// <param name="hWork1">Specifies a handle to workspace data in GPU memory.  To get the size of the workspace memory, call this function with hA = 0.</param>
+        /// <param name="hWork2">Specifies a handle to workspace data in GPU memory.  To get the size of the workspace memory, call this function with hA = 0.</param>
         /// <param name="bDetectNans">Optionally, specifies whether or not to detect Nans.</param>
         /// <param name="nAOff">Optionally, specifies an offset (in items, not bytes) into the memory of A.</param>
         /// <returns>A four element tuple is returned where the first item contains the minimum, the second item contains the maximum, the third contains the number
@@ -6078,6 +6078,15 @@ namespace MyCaffe.common
             }
         }
 
+        /// <summary>
+        /// Calculates the width values.
+        /// </summary>
+        /// <param name="n">Specifies the number of items.</param>
+        /// <param name="hMean">Specifies a handle to the mean values in GPU memory.</param>
+        /// <param name="hMin">Specifies a handle to the min values in GPU memory.</param>
+        /// <param name="hMax">Specifies a handle to the max values in GPU memory.</param>
+        /// <param name="dfAlpha">Specifies the alpha value.</param>
+        /// <param name="hWidth">Specifies the GPU memory where the width values are placed.</param>
         public void width(int n, long hMean, long hMin, long hMax, double dfAlpha, long hWidth) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
@@ -6086,6 +6095,16 @@ namespace MyCaffe.common
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_WIDTH, new float[] { n, hMean, hMin, hMax, (float)dfAlpha, hWidth });
         }
 
+        /// <summary>
+        /// Returns true if the point is contained within the bounds.
+        /// </summary>
+        /// <param name="n">Specifies the number of items.</param>
+        /// <param name="hMean">Specifies a handle to the mean values in GPU memory.</param>
+        /// <param name="hWidth">Specifies a handle to the width values in GPU memory.</param>
+        /// <param name="hX">Specifies a handle to the X values in GPU memory.</param>
+        /// <param name="hWork">Specifies a handle to the work data in GPU memory.</param>
+        /// <param name="nXOff">Optionally, specifies an offset into the X vector (default = 0).</param>
+        /// <returns>If the X values are within the bounds, <i>true</i> is returned, otherwise <i>false</i>.</returns>
         public bool contains_point(int n, long hMean, long hWidth, long hX, long hWork, int nXOff = 0) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
