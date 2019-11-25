@@ -16,7 +16,7 @@ namespace MyCaffe.layers.beta
     public class DecodeLayer<T> : Layer<T>
     {
         int m_nCentroidThreshold = 20;
-        double m_dfMinAlpha = 0;
+        double m_dfMinAlpha = 0.0001;
         int m_nNum = 0;
         int m_nEncodingDim = 0;
         Blob<T> m_blobData;

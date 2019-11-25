@@ -14,13 +14,11 @@ namespace MyCaffe.layers.beta
     /// mapped to a label.
     /// This layer is initialized with the MyCaffe.param.AccuracyParameter.
     /// </summary>
-    /// <remarks>
-    /// @see [Convolutional Architecture Exploration for Action Recognition and Image Classification](https://arxiv.org/abs/1512.07502v1) by J. T. Turner, David Aha, Leslie Smith, and Kalyan Moy Gupta, 2015.
-    /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class AccuracyEncodingLayer<T> : Layer<T>
     {
-        int m_nCentroidThreshold = 10;
+        int m_nCentroidThreshold = 20;
+        double m_dfMinAlpha = 0.0001;
         int m_nNum = 0;
         int m_nEncodingDim = 0;
         Blob<T> m_blobEncodings;
@@ -57,7 +55,6 @@ namespace MyCaffe.layers.beta
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
-
             if (m_blobEncodings != null)
             {
                 m_blobEncodings.Dispose();
@@ -92,6 +89,9 @@ namespace MyCaffe.layers.beta
             {
                 BlobCollection<T> col = new BlobCollection<T>();
                 col.Add(m_blobEncodings);
+                col.Add(m_blobDistSq);
+                col.Add(m_blobSummerVec);
+                col.Add(m_blobData);
                 return col;
             }
         }
@@ -105,7 +105,7 @@ namespace MyCaffe.layers.beta
         }
 
         /// <summary>
-        /// Returns the minimum number of top blobs: accuracy
+        /// Returns the number of top blobs: accuracy
         /// </summary>
         public override int ExactNumTopBlobs
         {
@@ -124,6 +124,11 @@ namespace MyCaffe.layers.beta
 
             if (m_param.accuracy_param.ignore_label.HasValue)
                 m_log.WriteLine("WARNING: The Accuracy Encoding Layer does not use the 'ignore_label' parameter.");
+
+            m_nCentroidThreshold = m_param.decode_param.centroid_threshold;
+            m_log.CHECK_GT(m_nCentroidThreshold, 1, "The centroid threshold must be > 1 and is recommended > 10.");
+            m_dfMinAlpha = m_param.decode_param.min_alpha;
+            m_log.CHECK_GE(m_dfMinAlpha, 0, "The minimum alpha must be >= 0.");
         }
 
         /// <summary>
@@ -200,7 +205,10 @@ namespace MyCaffe.layers.beta
                     m_rgLabelCounts[nLabel]++;
 
                     double dfAlpha = (1.0 / (double)m_rgLabelCounts[nLabel]);
-                    double dfBeta = ((double)(m_rgLabelCounts[nLabel] - 1) / m_rgLabelCounts[nLabel]);
+                    if (dfAlpha < m_dfMinAlpha)
+                        dfAlpha = m_dfMinAlpha;
+
+                    double dfBeta = 1.0 - dfAlpha;
 
                     // Add to centroids for each label.
                     m_cuda.add(m_nEncodingDim, colBottom[0].gpu_data, m_blobEncodings.gpu_data, m_blobEncodings.mutable_gpu_data, dfAlpha, dfBeta, i * m_nEncodingDim, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);

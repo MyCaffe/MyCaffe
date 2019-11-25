@@ -19,7 +19,7 @@ namespace MyCaffe.param.beta
     public class DecodeParameter : LayerParameterBase 
     {
         int m_nCentroidTheshold = 20;
-        double m_dfMinAlpha = 0;
+        double m_dfMinAlpha = 0.0001;
 
         /** @copydoc LayerParameterBase */
         public DecodeParameter()
@@ -27,9 +27,9 @@ namespace MyCaffe.param.beta
         }
 
         /// <summary>
-        /// Specifies the minimum number of items to observe per label before using the calculated cenntroid for each label (default = 10).
+        /// Specifies the minimum number of items to observe per label before using the calculated cenntroid for each label (default = 20).
         /// </summary>
-        [Description("Specifies the minimum number of items to observe per label before using the calculated cenntroid for each label (default = 10).")]
+        [Description("Specifies the minimum number of items to observe per label before using the calculated cenntroid for each label (default = 20).")]
         public int centroid_threshold
         {
             get { return m_nCentroidTheshold; }
