@@ -847,15 +847,25 @@ namespace MyCaffe.app
                 ResultCollection res = m_caffeRun.Run(bmp);
                 sw.Stop();
 
-                int nDetectedLabel = (m_netType == NET_TYPE.SIAMESENET) ? (int)res.DetectedLabelOutput : res.DetectedLabel;
+                int nDetectedLabel = res.DetectedLabel;
                 setStatus("====================================");
                 setStatus("Detected Label = " + nDetectedLabel.ToString() + " in " + sw.Elapsed.TotalMilliseconds.ToString("N4") + " ms.");
                 setStatus("--Results--");
 
                 if (m_netType == NET_TYPE.LENET)
                 {
+                    setStatus("Softmax Probabilities: ");
                     foreach (KeyValuePair<int, double> kv in res.ResultsSorted)
                     {
+                        setStatus("Label " + kv.Key.ToString() + " -> " + kv.Value.ToString("N5"));
+                    }
+                }
+                else
+                {
+                    setStatus("Decoded Distances: ");
+                    for (int i=res.ResultsSorted.Count-1; i>=0; i--)
+                    {
+                        KeyValuePair<int, double> kv = res.ResultsSorted[i];
                         setStatus("Label " + kv.Key.ToString() + " -> " + kv.Value.ToString("N5"));
                     }
                 }
