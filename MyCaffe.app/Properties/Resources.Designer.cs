@@ -61,9 +61,9 @@ namespace MyCaffe.app.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to --------------------------------------------------------------------------
-        ///The following describes the licenses and copyrights related to the AleControl
-        ///--------------------------------------------------------------------------
+        ///   Looks up a localized string similar to -------------------------------------------------------------------------
+        /// The following describes the licenses and copyrights related to the AleControl
+        ///  ------------------------------------------------------------------------
         ///
         ///The AleControl is Copyright (C) 2018 SignalPop LLC and licensed under the 
         ///Apache 2.0 License (http://www.apache.org/licenses/) and made available
@@ -144,6 +144,26 @@ namespace MyCaffe.app.Properties {
         internal static byte[] resnet56_cifar_train_val {
             get {
                 object obj = ResourceManager.GetObject("resnet56_cifar_train_val", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] siamese_solver {
+            get {
+                object obj = ResourceManager.GetObject("siamese_solver", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] siamese_train_val {
+            get {
+                object obj = ResourceManager.GetObject("siamese_train_val", resourceCulture);
                 return ((byte[])(obj));
             }
         }

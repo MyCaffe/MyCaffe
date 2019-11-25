@@ -81,6 +81,8 @@
             this.lblGpu = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.m_bwLoadVOCDatabase = new System.ComponentModel.BackgroundWorker();
+            this.usingLeNETToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.usingSiameseNETToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -225,10 +227,12 @@
             // 
             // createMyCaffeToolStripMenuItem
             // 
+            this.createMyCaffeToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.usingLeNETToolStripMenuItem,
+            this.usingSiameseNETToolStripMenuItem});
             this.createMyCaffeToolStripMenuItem.Name = "createMyCaffeToolStripMenuItem";
             this.createMyCaffeToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.createMyCaffeToolStripMenuItem.Text = "Create MyCaffe";
-            this.createMyCaffeToolStripMenuItem.Click += new System.EventHandler(this.createMyCaffeToolStripMenuItem_Click);
             // 
             // deviceInformationToolStripMenuItem
             // 
@@ -490,6 +494,20 @@
             this.m_bwLoadVOCDatabase.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
             this.m_bwLoadVOCDatabase.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
             // 
+            // usingLeNETToolStripMenuItem
+            // 
+            this.usingLeNETToolStripMenuItem.Name = "usingLeNETToolStripMenuItem";
+            this.usingLeNETToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.usingLeNETToolStripMenuItem.Text = "Using LeNET";
+            this.usingLeNETToolStripMenuItem.Click += new System.EventHandler(this.createUsingLeNETToolStripMenuItem_Click);
+            // 
+            // usingSiameseNETToolStripMenuItem
+            // 
+            this.usingSiameseNETToolStripMenuItem.Name = "usingSiameseNETToolStripMenuItem";
+            this.usingSiameseNETToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.usingSiameseNETToolStripMenuItem.Text = "Using SiameseNET";
+            this.usingSiameseNETToolStripMenuItem.Click += new System.EventHandler(this.createUsingSiameseNETToolStripMenuItem_Click);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -567,6 +585,8 @@
         private System.Windows.Forms.ToolStripMenuItem showGymUiToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem loadVOC2007ToolStripMenuItem;
         private System.ComponentModel.BackgroundWorker m_bwLoadVOCDatabase;
+        private System.Windows.Forms.ToolStripMenuItem usingLeNETToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem usingSiameseNETToolStripMenuItem;
     }
 }
 

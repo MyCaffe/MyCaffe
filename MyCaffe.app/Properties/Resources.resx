@@ -142,4 +142,10 @@
   <data name="ALE_license_cain" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\ALE_license_cain.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;Windows-1252</value>
   </data>
+  <data name="siamese_solver" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\siamese_solver.prototxt;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="siamese_train_val" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\siamese_train_val.prototxt;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
 </root>

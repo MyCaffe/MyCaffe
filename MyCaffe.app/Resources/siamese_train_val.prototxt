@@ -1,0 +1,564 @@
+name: "SiameseNet"
+layer 
+{
+   name: "pair_data"
+   type: "Data"
+   top: "pair_data"
+   top: "sim"
+   include 
+   {
+      phase: TRAIN
+   }
+   transform_param 
+   {
+      scale: 0.00390625
+      color_order: RGB
+   }
+   data_param 
+   {
+      source: "MNIST.training"
+      batch_size: 64
+      backend: IMAGEDB
+      enable_random_selection: True
+      images_per_blob: 2
+      output_all_labels: True
+      balance_matches: True
+   }
+}
+layer 
+{
+   name: "pair_data"
+   type: "Data"
+   top: "pair_data"
+   top: "sim"
+   include 
+   {
+      phase: TEST
+   }
+   transform_param 
+   {
+      scale: 0.00390625
+      color_order: RGB
+   }
+   data_param 
+   {
+      source: "MNIST.testing"
+      batch_size: 64
+      backend: IMAGEDB
+      enable_random_selection: True
+      images_per_blob: 2
+      output_all_labels: True
+      balance_matches: True
+   }
+}
+layer 
+{
+   name: "slice_pair"
+   type: "Slice"
+   bottom: "pair_data"
+   top: "data"
+   top: "data_p"
+   exclude 
+   {
+      phase: RUN
+   }
+   slice_param 
+   {
+      axis: 1
+      slice_point: 1
+      slice_dim: 1
+   }
+}
+layer 
+{
+   name: "conv1"
+   type: "Convolution"
+   bottom: "data"
+   top: "conv1"
+   param 
+   {
+      name: "conv1_w"
+      lr_mult: 1
+   }
+   param 
+   {
+      name: "conv1_b"
+      lr_mult: 2
+   }
+   convolution_param 
+   {
+      kernel_size: 5
+      stride: 1
+      num_output: 20
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0
+      }
+   }
+}
+layer 
+{
+   name: "pool1"
+   type: "Pooling"
+   bottom: "conv1"
+   top: "pool1"
+   pooling_param 
+   {
+      kernel_size: 2
+      stride: 2
+      pool: MAX
+   }
+}
+layer 
+{
+   name: "conv2"
+   type: "Convolution"
+   bottom: "pool1"
+   top: "conv2"
+   param 
+   {
+      name: "conv2_w"
+      lr_mult: 1
+   }
+   param 
+   {
+      name: "conv2_b"
+      lr_mult: 2
+   }
+   convolution_param 
+   {
+      kernel_size: 5
+      stride: 1
+      num_output: 50
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0
+      }
+   }
+}
+layer 
+{
+   name: "pool2"
+   type: "Pooling"
+   bottom: "conv2"
+   top: "pool2"
+   pooling_param 
+   {
+      kernel_size: 2
+      stride: 2
+      pool: MAX
+   }
+}
+layer 
+{
+   name: "ip1"
+   type: "InnerProduct"
+   bottom: "pool2"
+   top: "ip1"
+   param 
+   {
+      name: "ip1_w"
+      lr_mult: 1
+   }
+   param 
+   {
+      name: "ip1_b"
+      lr_mult: 2
+   }
+   inner_product_param 
+   {
+      num_output: 500
+      bias_term: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "relu1"
+   type: "ReLU"
+   bottom: "ip1"
+   top: "ip1"
+}
+layer 
+{
+   name: "ip2"
+   type: "InnerProduct"
+   bottom: "ip1"
+   top: "ip2"
+   param 
+   {
+      name: "ip2_w"
+      lr_mult: 1
+   }
+   param 
+   {
+      name: "ip2_b"
+      lr_mult: 2
+   }
+   inner_product_param 
+   {
+      num_output: 10
+      bias_term: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "feat"
+   type: "InnerProduct"
+   bottom: "ip2"
+   top: "feat"
+   param 
+   {
+      name: "feat_w"
+      lr_mult: 1
+   }
+   param 
+   {
+      name: "feat_b"
+      lr_mult: 2
+   }
+   inner_product_param 
+   {
+      num_output: 2
+      bias_term: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "decode1"
+   type: "Decode"
+   bottom: "feat"
+   bottom: "sim"
+   top: "decode1"
+}
+layer 
+{
+   name: "silence2"
+   type: "Silence"
+   bottom: "decode1"
+   exclude 
+   {
+      phase: RUN
+   }
+}
+layer 
+{
+   name: "conv1_p"
+   type: "Convolution"
+   bottom: "data_p"
+   top: "conv1_p"
+   param 
+   {
+      name: "conv1_w"
+      lr_mult: 1
+   }
+   param 
+   {
+      name: "conv1_b"
+      lr_mult: 2
+   }
+   exclude 
+   {
+      phase: RUN
+   }
+   convolution_param 
+   {
+      kernel_size: 5
+      stride: 1
+      num_output: 20
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0
+      }
+   }
+}
+layer 
+{
+   name: "pool1_p"
+   type: "Pooling"
+   bottom: "conv1_p"
+   top: "pool1_p"
+   exclude 
+   {
+      phase: RUN
+   }
+   pooling_param 
+   {
+      kernel_size: 2
+      stride: 2
+      pool: MAX
+   }
+}
+layer 
+{
+   name: "conv2_p"
+   type: "Convolution"
+   bottom: "pool1_p"
+   top: "conv2_p"
+   param 
+   {
+      name: "conv2_w"
+      lr_mult: 1
+   }
+   param 
+   {
+      name: "conv2_b"
+      lr_mult: 2
+   }
+   exclude 
+   {
+      phase: RUN
+   }
+   convolution_param 
+   {
+      kernel_size: 5
+      stride: 1
+      num_output: 50
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0
+      }
+   }
+}
+layer 
+{
+   name: "pool2_p"
+   type: "Pooling"
+   bottom: "conv2_p"
+   top: "pool2_p"
+   exclude 
+   {
+      phase: RUN
+   }
+   pooling_param 
+   {
+      kernel_size: 2
+      stride: 2
+      pool: MAX
+   }
+}
+layer 
+{
+   name: "ip1_p"
+   type: "InnerProduct"
+   bottom: "pool2_p"
+   top: "ip1_p"
+   param 
+   {
+      name: "ip1_w"
+      lr_mult: 1
+   }
+   param 
+   {
+      name: "ip1_b"
+      lr_mult: 2
+   }
+   exclude 
+   {
+      phase: RUN
+   }
+   inner_product_param 
+   {
+      num_output: 500
+      bias_term: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "relu1_p"
+   type: "ReLU"
+   bottom: "ip1_p"
+   top: "ip1_p"
+   exclude 
+   {
+      phase: RUN
+   }
+}
+layer 
+{
+   name: "ip2_p"
+   type: "InnerProduct"
+   bottom: "ip1_p"
+   top: "ip2_p"
+   param 
+   {
+      name: "ip2_w"
+      lr_mult: 1
+   }
+   param 
+   {
+      name: "ip2_b"
+      lr_mult: 2
+   }
+   exclude 
+   {
+      phase: RUN
+   }
+   inner_product_param 
+   {
+      num_output: 10
+      bias_term: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "feat_p"
+   type: "InnerProduct"
+   bottom: "ip2_p"
+   top: "feat_p"
+   param 
+   {
+      name: "feat_w"
+      lr_mult: 1
+   }
+   param 
+   {
+      name: "feat_b"
+      lr_mult: 2
+   }
+   exclude 
+   {
+      phase: RUN
+   }
+   inner_product_param 
+   {
+      num_output: 2
+      bias_term: True
+      weight_filler 
+      {
+         type: "xavier"
+         variance_norm: FAN_IN
+      }
+      bias_filler 
+      {
+         type: "constant"
+         value: 0
+      }
+      axis: 1
+   }
+}
+layer 
+{
+   name: "loss"
+   type: "ContrastiveLoss"
+   bottom: "feat"
+   bottom: "feat_p"
+   bottom: "sim"
+   top: "loss"
+   top: "match"
+   loss_weight: 1
+   loss_weight: 0
+   exclude 
+   {
+      phase: RUN
+   }
+   loss_param 
+   {
+      normalization: VALID
+   }
+   contrastive_loss_param 
+   {
+      margin: 2
+      output_matches: True
+   }
+}
+layer 
+{
+   name: "accuracy1"
+   type: "AccuracyEncoding"
+   bottom: "feat"
+   bottom: "sim"
+   top: "accuracy1"
+   include 
+   {
+      phase: TEST
+   }
+}
+layer 
+{
+   name: "silence1"
+   type: "Silence"
+   bottom: "match"
+   exclude 
+   {
+      phase: RUN
+   }
+}

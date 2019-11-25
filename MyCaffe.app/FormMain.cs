@@ -59,10 +59,17 @@ namespace MyCaffe.app
         int m_nMinComputeMajor = 0;
         int m_nMinComputeMinor = 0;
         string m_strDllPath = null;
+        NET_TYPE m_netType = NET_TYPE.LENET;
 
         delegate void fnVerifyGpu(int nGpuId);
         delegate void fnSetStatus(string strMsg, STATUS status, bool bBreath);
         delegate void fnNsDone();
+
+        enum NET_TYPE
+        {
+            LENET,
+            SIAMESENET
+        }
 
         enum STATUS
         {
@@ -645,6 +652,10 @@ namespace MyCaffe.app
                     if (m_rgTrainedWeights != null)
                     {
                         string strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.lenet_train_test);
+
+                        if (m_netType == NET_TYPE.SIAMESENET)
+                            strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.siamese_train_val);
+
                         m_caffeRun.LoadToRun(strModel, m_rgTrainedWeights, new BlobShape(1, 1, 28, 28), m_sdImageMean);
                         runTestImageToolStripMenuItem.Enabled = true;
                     }
@@ -720,7 +731,7 @@ namespace MyCaffe.app
                 m_bwLoadVOCDatabase.ReportProgress((int)e.Progress.Percentage, e.Progress);
         }
 
-        private void createMyCaffeToolStripMenuItem_Click(object sender, EventArgs e)
+        private void createUsingLeNETToolStripMenuItem_Click(object sender, EventArgs e)
         {
             m_bCaffeCreated = true;
             createMyCaffeToolStripMenuItem.Enabled = false;
@@ -738,9 +749,34 @@ namespace MyCaffe.app
             if (!m_bwProcess.IsBusy)
                 m_bwProcess.RunWorkerAsync();
 
+            m_netType = NET_TYPE.LENET;
             m_Cmd = COMMAND.CREATE;
             m_evtCommandRead.Set();
         }
+
+        private void createUsingSiameseNETToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            m_bCaffeCreated = true;
+            createMyCaffeToolStripMenuItem.Enabled = false;
+            destroyMyCaffeToolStripMenuItem.Enabled = false;
+            trainMNISTToolStripMenuItem.Enabled = false;
+            testMNISTToolStripMenuItem.Enabled = false;
+            loadCIFAR10ToolStripMenuItem.Enabled = false;
+            loadVOC2007ToolStripMenuItem.Enabled = false;
+            deviceInformationToolStripMenuItem.Enabled = false;
+            specialTestsToolStripMenuItem.Enabled = false;
+            abortToolStripMenuItem.Enabled = true;
+            m_evtCancel.Reset();
+            m_evtCaffeCancel.Reset();
+
+            if (!m_bwProcess.IsBusy)
+                m_bwProcess.RunWorkerAsync();
+
+            m_netType = NET_TYPE.SIAMESENET;
+            m_Cmd = COMMAND.CREATE;
+            m_evtCommandRead.Set();
+        }
+
 
         private void destroyMyCaffeToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -811,13 +847,17 @@ namespace MyCaffe.app
                 ResultCollection res = m_caffeRun.Run(bmp);
                 sw.Stop();
 
+                int nDetectedLabel = (m_netType == NET_TYPE.SIAMESENET) ? (int)res.DetectedLabelOutput : res.DetectedLabel;
                 setStatus("====================================");
-                setStatus("Detected Label = " + res.DetectedLabel.ToString() + " in " + sw.Elapsed.TotalMilliseconds.ToString("N4") + " ms.");
+                setStatus("Detected Label = " + nDetectedLabel.ToString() + " in " + sw.Elapsed.TotalMilliseconds.ToString("N4") + " ms.");
                 setStatus("--Results--");
 
-                foreach (KeyValuePair<int, double> kv in res.ResultsSorted)
+                if (m_netType == NET_TYPE.LENET)
                 {
-                    setStatus("Label " + kv.Key.ToString() + " -> " + kv.Value.ToString("N5"));
+                    foreach (KeyValuePair<int, double> kv in res.ResultsSorted)
+                    {
+                        setStatus("Label " + kv.Key.ToString() + " -> " + kv.Value.ToString("N5"));
+                    }
                 }
             }
         }
@@ -882,6 +922,12 @@ namespace MyCaffe.app
 
                                 string strSolver = System.Text.Encoding.UTF8.GetString(Properties.Resources.lenet_solver);
                                 string strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.lenet_train_test);
+
+                                if (m_netType == NET_TYPE.SIAMESENET)
+                                {
+                                    strSolver = System.Text.Encoding.UTF8.GetString(Properties.Resources.siamese_solver);
+                                    strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.siamese_train_val);
+                                }
 
                                 caffe.Load(Phase.TRAIN, strSolver, strModel, null);
                                 bw.ReportProgress(1, new ProgressInfo(1, 1, "MyCaffe Created.", null, true));
