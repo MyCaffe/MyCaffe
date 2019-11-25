@@ -89,6 +89,9 @@ namespace MyCaffe.common
             return 0;
         }
 
+        /// <summary>
+        /// Returns the result type of the result data: PROBABILITIES (Sigmoid), DISTANCES (Decode), or NONE (Unknown).
+        /// </summary>
         public RESULT_TYPE ResultType
         {
             get { return m_resultType; }
