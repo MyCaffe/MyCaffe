@@ -1552,7 +1552,7 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// For an already initialized net, impliciitly compies (i.e., using no
+        /// For an already initialized net, implicitly compies (i.e., using no
         /// additional memory) the pre-trained layers from another Net.
         /// </summary>
         /// <param name="srcNet">Specifies the source Net whos blobs are shared with the calling Net.</param>
