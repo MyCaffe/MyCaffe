@@ -6,6 +6,7 @@ using System.Text;
 using MyCaffe.basecode;
 using MyCaffe.basecode.descriptors;
 using MyCaffe.db.image;
+using MyCaffe.param;
 
 namespace MyCaffe.common
 {
@@ -17,13 +18,35 @@ namespace MyCaffe.common
         Dictionary<int, string> m_rgLabels = new Dictionary<int, string>();
         List<KeyValuePair<int, double>> m_rgResultsOriginal = new List<KeyValuePair<int, double>>();
         List<KeyValuePair<int, double>> m_rgResultsSorted = new List<KeyValuePair<int, double>>();
+        RESULT_TYPE m_resultType = RESULT_TYPE.NONE;
+
+        /// <summary>
+        /// Defines the type of result.
+        /// </summary>
+        public enum RESULT_TYPE
+        {
+            /// <summary>
+            /// Specifies that no result type for the data.
+            /// </summary>
+            NONE,
+            /// <summary>
+            /// Specifies that the results represent probabilities.
+            /// </summary>
+            PROBABILITIES,
+            /// <summary>
+            /// Specifies that the results represent distances.
+            /// </summary>
+            DISTANCES
+        }
 
         /// <summary>
         /// The ResultCollection constructor.
         /// </summary>
         /// <param name="rgResults">Specifies the results listed in pairs of label/result.</param>
-        public ResultCollection(List<KeyValuePair<int, double>> rgResults)
+        /// <param name="outputLayerType">Specifies the output layer type.</param>
+        public ResultCollection(List<KeyValuePair<int, double>> rgResults, LayerParameter.LayerType outputLayerType)
         {
+            m_resultType = getResultType(outputLayerType);
             m_rgResultsOriginal = rgResults;
 
             foreach (KeyValuePair<int, double> kv in rgResults)
@@ -32,6 +55,21 @@ namespace MyCaffe.common
             }
 
             m_rgResultsSorted.Sort(new Comparison<KeyValuePair<int, double>>(sortResults));
+        }
+
+        private RESULT_TYPE getResultType(LayerParameter.LayerType type)
+        {
+            switch (type)
+            {
+                case LayerParameter.LayerType.SOFTMAX:
+                    return RESULT_TYPE.PROBABILITIES;
+
+                case LayerParameter.LayerType.DECODE:
+                    return RESULT_TYPE.DISTANCES;
+
+                default:
+                    return RESULT_TYPE.NONE;
+            }
         }
 
         /// <summary>
@@ -49,6 +87,11 @@ namespace MyCaffe.common
                 return -1;
 
             return 0;
+        }
+
+        public RESULT_TYPE ResultType
+        {
+            get { return m_resultType; }
         }
 
         /// <summary>
@@ -83,19 +126,83 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Returns the detected label.
+        /// Returns the detected label with the maximum signal.
         /// </summary>
-        public int DetectedLabel
+        /// <remarks>
+        /// The maximum signal label is used to detect the output from a SoftMax where each 
+        /// label is given a probability and the label with the highest probability is the
+        /// detected label.
+        /// </remarks>
+        public int DetectedLabelMaxSignal
         {
             get { return m_rgResultsSorted[0].Key; }
         }
 
         /// <summary>
-        /// Returns the detected label output.
+        /// Returns the detected label output with the maximum signal.
+        /// </summary>
+        /// <remarks>
+        /// The maximum signal label is used to detect the output from a SoftMax where each 
+        /// label is given a probability and the label with the highest probability is the
+        /// detected label.
+        /// </remarks>
+        public double DetectedLabelOutputMaxSignal
+        {
+            get { return m_rgResultsSorted[0].Value; }
+        }
+
+        /// <summary>
+        /// Returns the detected label with the minimum signal.
+        /// </summary>
+        /// <remarks>
+        /// The minimum signal label is used to detect the output from a Decode alyer where each 
+        /// label is given the distance from which the data's encoding is from the centroid of the
+        /// label - the encoding with the minimum distance signifies the detected label.
+        /// </remarks>
+        public int DetectedLabelMinSignal
+        {
+            get { return m_rgResultsSorted[m_rgResultsSorted.Count-1].Key; }
+        }
+
+        /// <summary>
+        /// Returns the detected label output of the label with the minimum signal.
+        /// </summary>
+        /// <remarks>
+        /// The minimum signal label is used to detect the output from a Decode alyer where each 
+        /// label is given the distance from which the data's encoding is from the centroid of the
+        /// label - the encoding with the minimum distance signifies the detected label.
+        /// </remarks>
+        public double DetectedLabelOutputMinSignal
+        {
+            get { return m_rgResultsSorted[m_rgResultsSorted.Count-1].Value; }
+        }
+
+        /// <summary>
+        /// Returns the detected label depending on the result type (distance or probability) with a default type of probability (max label signal) used.
+        /// </summary>
+        public int DetectedLabel
+        {
+            get
+            {
+                if (m_resultType == RESULT_TYPE.DISTANCES)
+                    return DetectedLabelMinSignal;
+                else
+                    return DetectedLabelMaxSignal;
+            }
+        }
+
+        /// <summary>
+        /// Returns the detected label output depending on the result type (distance or probability) with a default type of probability (max label signal) used.
         /// </summary>
         public double DetectedLabelOutput
         {
-            get { return m_rgResultsSorted[0].Value; }
+            get
+            {
+                if (m_resultType == RESULT_TYPE.DISTANCES)
+                    return DetectedLabelOutputMinSignal;
+                else
+                    return DetectedLabelOutputMaxSignal;
+            }
         }
 
         /// <summary>
@@ -138,7 +245,7 @@ namespace MyCaffe.common
                 if (m_rgLabels.ContainsKey(nLabel))
                     strName = m_rgLabels[nLabel];
 
-                if (nLabel == DetectedLabel)
+                if (nLabel == DetectedLabelMaxSignal)
                     strOut += "[";
 
                 if (strName != null)
@@ -149,7 +256,7 @@ namespace MyCaffe.common
                 strOut += "->";
                 strOut += dfVal.ToString("N4");
 
-                if (nLabel == DetectedLabel)
+                if (nLabel == DetectedLabelMaxSignal)
                     strOut += "]";
 
                 if (i < m_rgResultsOriginal.Count - 1)

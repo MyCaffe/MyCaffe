@@ -1414,11 +1414,6 @@ namespace MyCaffe
             if (nImageStartIdx < 0)
                 nImageStartIdx = 0;
 
-            bool bUseResultsDirectly = false;
-            Net<T> net = GetInternalNet(Phase.RUN);
-            if (net.layers[net.layers.Count - 1].type == LayerParameter.LayerType.DECODE)
-                bUseResultsDirectly = true;
-
             for (int i = 0; i < nCount; i++)
             {
                 if (m_evtCancel.WaitOne(0))
@@ -1436,7 +1431,7 @@ namespace MyCaffe
                 }
 
                 ResultCollection rgResults = Run(sd);
-                int nDetectedLabel = (bUseResultsDirectly) ? (int)rgResults.DetectedLabelOutput : rgResults.DetectedLabel;
+                int nDetectedLabel = rgResults.DetectedLabel;
                 int nExpectedLabel = sd.Label;
 
                 if (labelMapping != null)
@@ -1571,11 +1566,18 @@ namespace MyCaffe
             double dfLoss = 0;
 
             BlobCollection<T> colResults;
+            LayerParameter.LayerType lastLayerType;
 
             if (bUseSolverNet)
+            {
+                lastLayerType = m_solver.TrainingNet.layers[m_solver.TrainingNet.layers.Count - 1].type;
                 colResults = m_solver.TrainingNet.Forward(colBottom, out dfLoss);
+            }
             else
+            {
+                lastLayerType = m_net.layers[m_net.layers.Count - 1].type;
                 colResults = m_net.Forward(colBottom, out dfLoss);
+            }
 
             List<KeyValuePair<int, double>> rgResults = new List<KeyValuePair<int, double>>();
             T[] rgData = colResults[0].update_cpu_data();
@@ -1588,7 +1590,7 @@ namespace MyCaffe
 
             blob.Dispose();
 
-            ResultCollection result = new ResultCollection(rgResults);
+            ResultCollection result = new ResultCollection(rgResults, lastLayerType);
 
             if (m_imgDb != null)
                 result.SetLabels(m_imgDb.GetLabels(m_dataSet.TrainingSource.ID));
@@ -1631,15 +1633,20 @@ namespace MyCaffe
             double dfLoss = 0;
 
             BlobCollection<T> colResults;
+            LayerParameter.LayerType lastLayerType;
 
             if (bUseSolverNet)
             {
+                lastLayerType = m_solver.TrainingNet.layers[m_net.layers.Count - 1].type;
                 m_solver.TrainingNet.SetEnablePassthrough(true);
                 colResults = m_solver.TrainingNet.Forward(colBottom, out dfLoss);
                 m_solver.TrainingNet.SetEnablePassthrough(false);
             }
             else
+            {
+                lastLayerType = m_net.layers[m_net.layers.Count - 1].type;
                 colResults = m_net.Forward(colBottom, out dfLoss);
+            }
 
             T[] rgDataOutput = colResults[0].update_cpu_data();
             int nOutputCount = rgDataOutput.Length / rgSd.Count;
@@ -1655,7 +1662,7 @@ namespace MyCaffe
                     rgResults.Add(new KeyValuePair<int, double>(j, dfProb));
                 }
 
-                ResultCollection result = new ResultCollection(rgResults);
+                ResultCollection result = new ResultCollection(rgResults, lastLayerType);
                 result.SetLabels(m_imgDb.GetLabels(m_dataSet.TrainingSource.ID));
 
                 rgFinalResults.Add(result);
