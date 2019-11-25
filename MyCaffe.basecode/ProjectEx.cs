@@ -1453,6 +1453,24 @@ namespace MyCaffe.basecode
                         if (psInclude.Find(Phase.TEST, stage) != null)
                             protoTransform = layer.FindChild("transform_param");
                     }
+                    else if (strType == "decode")
+                    {
+                        List<RawProto> rgBtm = new List<RawProto>();
+
+                        foreach (RawProto child in layer.Children)
+                        {
+                            if (child.Name == "bottom")
+                                rgBtm.Add(child);
+                        }
+
+                        if (rgBtm.Count > 0)
+                            rgBtm.RemoveAt(0);
+
+                        foreach (RawProto btm in rgBtm)
+                        {
+                            layer.Children.Remove(btm);
+                        }
+                    }
 
                     if (!bInclude)
                     {
