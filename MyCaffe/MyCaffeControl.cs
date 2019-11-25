@@ -1412,7 +1412,12 @@ namespace MyCaffe
             }
 
             if (nImageStartIdx < 0)
-                nImageStartIdx = 0;            
+                nImageStartIdx = 0;
+
+            bool bUseResultsDirectly = false;
+            Net<T> net = GetInternalNet(Phase.RUN);
+            if (net.layers[net.layers.Count - 1].type == LayerParameter.LayerType.DECODE)
+                bUseResultsDirectly = true;
 
             for (int i = 0; i < nCount; i++)
             {
@@ -1431,6 +1436,7 @@ namespace MyCaffe
                 }
 
                 ResultCollection rgResults = Run(sd);
+                int nDetectedLabel = (bUseResultsDirectly) ? (int)rgResults.DetectedLabelOutput : rgResults.DetectedLabel;
                 int nExpectedLabel = sd.Label;
 
                 if (labelMapping != null)
@@ -1444,7 +1450,7 @@ namespace MyCaffe
                 else
                     rgLabelTotals[nExpectedLabel]++;
 
-                if (nExpectedLabel == rgResults.DetectedLabel)
+                if (nExpectedLabel == nDetectedLabel)
                 {
                     nCorrectCount++;
                     rgCorrectCounts[nExpectedLabel]++;
