@@ -11,7 +11,7 @@ namespace MyCaffe.layers.beta
 {
     /// <summary>
     /// The DecodeLayer decodes the label of a classification for an encoding produced by a Siamese Network or similar type of net that creates 
-    /// an encoding mapped to a label.
+    /// an encoding mapped to a set of distances where the smallest distance indicates the label for which the encoding belongs.
     /// </summary>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class DecodeLayer<T> : Layer<T>
@@ -23,7 +23,7 @@ namespace MyCaffe.layers.beta
         Blob<T> m_blobData;
         Blob<T> m_blobDistSq; 
         Blob<T> m_blobSummerVec;
-        T[] m_rgTopData = null;
+        T[] m_rgTopLabels = null;
         Dictionary<int, int> m_rgLabelCounts = new Dictionary<int, int>();
 
         /// <summary>
@@ -98,11 +98,19 @@ namespace MyCaffe.layers.beta
         }
 
         /// <summary>
-        /// Returns the exact number of top blobs: accuracy
+        /// Returns the min number of top blobs: distances
         /// </summary>
-        public override int ExactNumTopBlobs
+        public override int MinTopBlobs
         {
             get { return 1; }
+        }
+
+        /// <summary>
+        /// Returns the min number of top blobs: distances, labels
+        /// </summary>
+        public override int MaxTopBlobs
+        {
+            get { return 2; }
         }
 
         /// <summary>
@@ -155,10 +163,13 @@ namespace MyCaffe.layers.beta
             m_blobSummerVec.Reshape(colBottom[0].channels, 1, 1, 1);
             m_blobSummerVec.SetData(1.0);
 
-            colTop[0].Reshape(colBottom[0].num, 1, 1, 1);
-            int nCount = colTop[0].count();
-            if (m_rgTopData == null || m_rgTopData.Length != nCount)
-                m_rgTopData = new T[nCount];
+            if (colTop.Count > 1)
+            {
+                colTop[1].Reshape(colBottom[0].num, 1, 1, 1);
+                int nCount = colTop[0].count();
+                if (m_rgTopLabels == null || m_rgTopLabels.Length != nCount)
+                    m_rgTopLabels = new T[nCount];
+            }
         }
 
         /// <summary>
@@ -208,6 +219,8 @@ namespace MyCaffe.layers.beta
                 m_blobDistSq.Reshape(m_colBlobs[0].num, 1, 1, 1);
             }
 
+            colTop[0].Reshape(colBottom[0].num, m_colBlobs[0].num, 1, 1);
+
             for (int i = 0; i < colBottom[0].num; i++)
             {
                 if (rgBottomLabel != null)
@@ -236,7 +249,7 @@ namespace MyCaffe.layers.beta
 
                 if (m_phase != Phase.TRAIN || (m_rgLabelCounts.Count > 0 && m_rgLabelCounts.Min(p => p.Value) >= m_nCentroidThreshold))
                 {
-                    int nLabelCount = m_colBlobs[0].count() / m_nEncodingDim;
+                    int nLabelCount = m_colBlobs[0].num;
                     if (nLabelCount == 0)
                         break;
 
@@ -267,25 +280,32 @@ namespace MyCaffe.layers.beta
                                0.0,
                                m_blobDistSq.mutable_gpu_data);   // \Sum (a_i - b_i)^2
 
+                    // The distances are returned in top[0], where the smallest distance is the detected label.
+                    m_cuda.copy(nLabelCount, m_blobDistSq.gpu_data, colTop[0].mutable_gpu_data, 0, i * nLabelCount);
+
                     // The label with the smallest distance is the detected label.
-                    double[] rgLabelDist = convertD(m_blobDistSq.mutable_cpu_data);
-                    int nDetectedLabel = -1;
-                    double dfMin = double.MaxValue;
-
-                    for (int l = 0; l < rgLabelDist.Length; l++)
+                    if (m_rgTopLabels != null)
                     {
-                        if (rgLabelDist[l] < dfMin)
-                        {
-                            dfMin = rgLabelDist[l];
-                            nDetectedLabel = l;
-                        }
-                    }
+                        double[] rgdfLabelDist = convertD(m_blobDistSq.mutable_cpu_data);
+                        int nDetectedLabel = -1;
+                        double dfMin = double.MaxValue;
 
-                    m_rgTopData[i] = Utility.ConvertVal<T>((double)nDetectedLabel);
+                        for (int l = 0; l < rgdfLabelDist.Length; l++)
+                        {
+                            if (rgdfLabelDist[l] < dfMin)
+                            {
+                                dfMin = rgdfLabelDist[l];
+                                nDetectedLabel = l;
+                            }
+                        }
+
+                        m_rgTopLabels[i] = Utility.ConvertVal<T>((double)nDetectedLabel);
+                    }
                 }
             }
 
-            colTop[0].mutable_cpu_data = m_rgTopData;
+            if (colTop.Count > 1)
+                colTop[1].mutable_cpu_data = m_rgTopLabels;
         }
 
         /// @brief Not implemented -- DecodeLayer cannot be used as a loss.
