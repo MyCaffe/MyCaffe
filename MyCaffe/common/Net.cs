@@ -1591,7 +1591,9 @@ namespace MyCaffe.common
                 for (int j = 0; j < target_blobs.Count; j++)
                 {
                     Blob<T> source_blob = source_layer.blobs[j];
-                    m_log.CHECK(Utility.Compare<int>(target_blobs[j].shape(), source_blob.shape()), "Cannot share param " + j.ToString() + " weights from layer '" + source_layer_name + "'; shape mismatch.  Source param shape is " + source_blob.shape_string + "; target param shape is " + target_blobs[j].shape_string);
+                    if (!target_blobs[j].reshape_when_sharing)
+                        m_log.CHECK(Utility.Compare<int>(target_blobs[j].shape(), source_blob.shape()), "Cannot share param " + j.ToString() + " weights from layer '" + source_layer_name + "'; shape mismatch.  Source param shape is " + source_blob.shape_string + "; target param shape is " + target_blobs[j].shape_string);
+
                     target_blobs[j].ShareData(source_blob);
                 }
             }

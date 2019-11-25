@@ -647,6 +647,7 @@ namespace MyCaffe.common
                 }
 
                 string strShapeB = rgExpectedShapes[nBlobIdx];
+                bool bSizeToFitWts = colBlobs[nBlobIdx].reshape_when_sharing;
                 string strShapeW = "";
                 long lCount = 0;
                 bool bResizeNeeded = false;
@@ -685,9 +686,10 @@ namespace MyCaffe.common
                             {
                                 strShapeW = createShapeString(pbDim.LongValues, out lCount);
 
-                                if (compareShapes(strShapeB, strShapeW))
+                                if (compareShapes(strShapeB, strShapeW) || bSizeToFitWts)
                                 {
                                     rgBlobShape = new List<long>(pbDim.LongValues);
+                                    bResizeNeeded = bSizeToFitWts;
                                     break;
                                 }
 
@@ -729,13 +731,13 @@ namespace MyCaffe.common
 
                                 strShapeW = createShapeString(rgShape.ToArray(), out lCount);
 
-                                if (compareShapes(strShapeB, strShapeW) || bSizeToFit)
+                                if (compareShapes(strShapeB, strShapeW) || (bSizeToFit || bSizeToFitWts))
                                 {
                                     rgBlobShape = rgShape;
                                     break;
                                 }
 
-                                if (bSizeToFit && compareShapes(strShapeB, strShapeW, 2))
+                                if ((bSizeToFit || bSizeToFitWts) && compareShapes(strShapeB, strShapeW, 2))
                                 {
                                     rgBlobShape = rgShape;
                                     bResizeNeeded = true;
@@ -776,36 +778,74 @@ namespace MyCaffe.common
                         lDataCount = pbData.FloatValues.Length;
                     }
 
-                    if (pbData == null || (lDataCount != lCount && !bSizeToFit))
+                    if (pbData == null || (lDataCount != lCount && !bSizeToFit && !bSizeToFitWts))
                         m_log.FAIL("Could not find the weights matching the data size '" + strShapeB + "'!");
 
-                    if (bSizeToFit && !compareShapes(strShapeB, strShapeW, 4))
-                        m_log.FAIL("Could not find the weights matching the first two items of the shape '" + strShapeB + "'!");
 
-                    T[] rgData = copyData(pbData, type, lDataCount, rgBlobShape);
-
-                    if (blob.HalfSize)
+                    if (bSizeToFitWts)
                     {
-                        Blob<T> blobTemp = new Blob<T>(blob.Cuda, blob.Log, false, false);
-                        blobTemp.ReshapeLike(blob);
-                        blobTemp.mutable_cpu_data = rgData;
-                        blob.CopyFrom(blobTemp);
-                        blobTemp.Dispose();
+                        if (bResizeNeeded)
+                        {
+                            List<int> rgNewShape = parseShape(strShapeW);
+
+                            while (rgNewShape.Count < rgBlobShape.Count)
+                            {
+                                rgNewShape.Add(1);
+                            }
+
+                            blob.Reshape(rgNewShape);
+
+                            for (int i = 0; i < rgNewShape.Count; i++)
+                            {
+                                rgBlobShape[i] = rgNewShape[i];
+                            }
+                        }
+
+                        T[] rgData = copyData(pbData, type, lDataCount, rgBlobShape);
+
+                        if (blob.HalfSize)
+                        {
+                            Blob<T> blobTemp = new Blob<T>(blob.Cuda, blob.Log, false, false);
+                            blobTemp.ReshapeLike(blob);
+                            blobTemp.mutable_cpu_data = rgData;
+                            blob.CopyFrom(blobTemp);
+                            blobTemp.Dispose();
+                        }
+                        else
+                        {
+                            blob.mutable_cpu_data = rgData;
+                        }
                     }
                     else
                     {
-                        blob.mutable_cpu_data = rgData;
+                        if (bSizeToFit && !compareShapes(strShapeB, strShapeW, 4))
+                            m_log.FAIL("Could not find the weights matching the first two items of the shape '" + strShapeB + "'!");
+
+                        T[] rgData = copyData(pbData, type, lDataCount, rgBlobShape);
+
+                        if (blob.HalfSize)
+                        {
+                            Blob<T> blobTemp = new Blob<T>(blob.Cuda, blob.Log, false, false);
+                            blobTemp.ReshapeLike(blob);
+                            blobTemp.mutable_cpu_data = rgData;
+                            blob.CopyFrom(blobTemp);
+                            blobTemp.Dispose();
+                        }
+                        else
+                        {
+                            blob.mutable_cpu_data = rgData;
+                        }
+
+                        if (bSizeToFit && bResizeNeeded)
+                        {
+                            List<int> rgNewShape = parseShape(strShapeB);
+                            Blob<T> blobResized = blob.Resize(rgNewShape);
+                            blob.Dispose();
+                            colBlobs[nBlobIdx] = blobResized;
+                        }
                     }
 
                     blob.Tag = colFieldBlobs[nFieldIdx].Tag;
-
-                    if (bSizeToFit && bResizeNeeded)
-                    {
-                        List<int> rgNewShape = parseShape(strShapeB);
-                        Blob<T> blobResized = blob.Resize(rgNewShape);
-                        blob.Dispose();
-                        colBlobs[nBlobIdx] = blobResized;
-                    }
 
                     m_log.WriteLine("(" + m_log.Progress.ToString("P") + ") loaded blob '" + colBlobs[nBlobIdx].Name + "' size = " + strShapeB);
                 }

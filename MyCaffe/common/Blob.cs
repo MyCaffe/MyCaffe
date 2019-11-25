@@ -42,6 +42,7 @@ namespace MyCaffe.common
         object m_tag = null;
         bool m_bFreezeLearning = false;
         bool m_bCpuDataReadyForPush = false;
+        bool m_bReshapeWhenSharing = false;
 
         /// <summary>
         /// Defines the maximum number of Axes supported by the Blob.
@@ -345,23 +346,7 @@ namespace MyCaffe.common
             Reshape(new List<int>() { nNum, nChannels, nHeight, nWidth }, bUseHalfSize);
         }
 
-        /// <summary>
-        /// Change the dimensions of the blob, allocating new memory if necessary.
-        /// </summary>
-        /// <remarks>
-        /// This function can be called both to create an initial allocation
-        /// of memory, and to adjust the dimensions of a top blob during Layer::Reshape
-        /// or Layer::Forward.  When changing the size of blob, memory will only be
-        /// reallocated if sufficient memory does not already exist, and excess memory
-        /// will not be freed until Dispose is called.
-        /// 
-        /// Note that reshaping an input blob and immediately calling Net::Backward is
-        /// an error;  either Net::Forward or Net::Reshape need to be called to 
-        /// propagate the new input shape to higher layers.
-        /// </remarks>
-        /// <param name="rgShape">Specifies the new shape.</param>
-        /// <param name="bUseHalfSize">Optionally, specifies to use half sized memory.</param>
-        public void Reshape(List<int> rgShape, bool? bUseHalfSize = null)
+        private void reshapeShape(List<int> rgShape)
         {
             m_log.CHECK_LE(rgShape.Count, MAX_BLOB_AXES, "The number of axes cannot exceed " + MAX_BLOB_AXES.ToString());
             m_nCount = 1;
@@ -414,6 +399,27 @@ namespace MyCaffe.common
                     m_shape.update_cpu_data();
                 }
             }
+        }
+
+        /// <summary>
+        /// Change the dimensions of the blob, allocating new memory if necessary.
+        /// </summary>
+        /// <remarks>
+        /// This function can be called both to create an initial allocation
+        /// of memory, and to adjust the dimensions of a top blob during Layer::Reshape
+        /// or Layer::Forward.  When changing the size of blob, memory will only be
+        /// reallocated if sufficient memory does not already exist, and excess memory
+        /// will not be freed until Dispose is called.
+        /// 
+        /// Note that reshaping an input blob and immediately calling Net::Backward is
+        /// an error;  either Net::Forward or Net::Reshape need to be called to 
+        /// propagate the new input shape to higher layers.
+        /// </remarks>
+        /// <param name="rgShape">Specifies the new shape.</param>
+        /// <param name="bUseHalfSize">Optionally, specifies to use half sized memory.</param>
+        public void Reshape(List<int> rgShape, bool? bUseHalfSize = null)
+        {
+            reshapeShape(rgShape);
 
             if (m_nCount > m_nCapacity || m_nCount > m_data.Capacity || (m_diff != null && m_nCount > m_diff.Capacity) || (m_data != null && bUseHalfSize.HasValue && m_data.HalfSize != bUseHalfSize.Value))
             {
@@ -1338,13 +1344,28 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// When true, this Blob is reshaped to the source when sharing the source data (default = false).
+        /// </summary>
+        /// <remarks>
+        /// This setting is used by the Net when sharing trained weights.
+        /// </remarks>
+        public bool reshape_when_sharing
+        {
+            get { return m_bReshapeWhenSharing; }
+            set { m_bReshapeWhenSharing = value; }
+        }
+
+        /// <summary>
         /// Set the data to point to the data of the other blob -- useful in Layers which
         /// simply perform a copy in their forward pass.
         /// </summary>
         /// <param name="b"></param>
         public void ShareData(Blob<T> b)
         {
-            m_log.CHECK_EQ(m_nCount, b.count(), "The blob counts are not the same!");
+            if (!m_bReshapeWhenSharing)
+                m_log.CHECK_EQ(m_nCount, b.count(), "The blob counts are not the same!");
+            else 
+                reshapeShape(b.shape());
 
             if (m_bOwnData && m_data != null)
                 m_data.Dispose();
@@ -1360,7 +1381,10 @@ namespace MyCaffe.common
         /// <param name="b"></param>
         public void ShareDiff(Blob<T> b)
         {
-            m_log.CHECK_EQ(m_nCount, b.count(), "The blob counts are not the same!");
+            if (!m_bReshapeWhenSharing)
+                m_log.CHECK_EQ(m_nCount, b.count(), "The blob counts are not the same!");
+            else
+                reshapeShape(b.shape());
 
             if (m_bOwnDiff && m_diff != null)
                 m_diff.Dispose();
@@ -1646,6 +1670,7 @@ namespace MyCaffe.common
 
             b.m_data.Copy(m_data);
             b.Name = Name;
+            b.m_bReshapeWhenSharing = reshape_when_sharing;
 
             return b;
         }
