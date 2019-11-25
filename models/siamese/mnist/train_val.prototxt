@@ -21,7 +21,7 @@ layer
       backend: IMAGEDB
       enable_random_selection: True
       images_per_blob: 2
-      output_all_labels: False
+      output_all_labels: True
       balance_matches: True
    }
 }
@@ -265,6 +265,24 @@ layer
          value: 0
       }
       axis: 1
+   }
+}
+layer 
+{
+   name: "decode1"
+   type: "Decode"
+   bottom: "feat"
+   bottom: "sim"
+   top: "decode1"
+}
+layer 
+{
+   name: "silence2"
+   type: "Silence"
+   bottom: "decode1"
+   exclude 
+   {
+      phase: RUN
    }
 }
 layer 
