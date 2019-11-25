@@ -76,6 +76,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestGetDeviceMemory()
         {
+            GC.Collect();
             Log log = new Log("TestCudnn");
             CudaDnn<double> cuda1 = new CudaDnn<double>(TestBase.DEFAULT_DEVICE_ID, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
 
@@ -119,6 +120,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestKernelMemCpyDouble()
         {
+            GC.Collect();
             CudaDnn<double> cuda1 = new CudaDnn<double>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
             int nDevCount = cuda1.GetDeviceCount();
             CudaDnn<double> cuda2 = null;
@@ -151,6 +153,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestKernelMemCpyFloat()
         {
+            GC.Collect();
             CudaDnn<float> cuda1 = new CudaDnn<float>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
             int nDevCount = cuda1.GetDeviceCount();
             CudaDnn<float> cuda2 = null;
@@ -227,6 +230,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestKernelAddDouble()
         {
+            GC.Collect();
             CudaDnn<double> cuda1 = new CudaDnn<double>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
             int nDevCount = cuda1.GetDeviceCount();
             CudaDnn<double> cuda2 = null;
@@ -284,6 +288,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestKernelAddFloat()
         {
+            GC.Collect();
             CudaDnn<float> cuda1 = new CudaDnn<float>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
             int nDevCount = cuda1.GetDeviceCount();
             CudaDnn<float> cuda2 = null;
@@ -341,6 +346,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestP2PAccess()
         {
+            GC.Collect();
             string strPath = TestBase.CudaPath;
             CudaDnn<double> cuda1 = new CudaDnn<double>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, strPath);
             CudaDnn<double> cuda2 = new CudaDnn<double>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, strPath);

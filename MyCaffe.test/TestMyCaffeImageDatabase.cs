@@ -19,6 +19,7 @@ namespace MyCaffe.test
     {
         public void TestInitialization(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
+            GC.Collect();
             Log log = new Log("Test primary dataset");
             log.EnableTrace = true;
 
@@ -63,6 +64,7 @@ namespace MyCaffe.test
 
         public void TestLoadSecondaryDataset(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
+            GC.Collect();
             Log log = new Log("Test secondary dataset");
             log.EnableTrace = true;
 
@@ -103,6 +105,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestUnloadDataset()
         {
+            GC.Collect();
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase();
             Stopwatch sw = new Stopwatch();
@@ -219,6 +222,7 @@ namespace MyCaffe.test
 
         public void TestQueryRandom(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit, IMGDB_LABEL_SELECTION_METHOD? labelSel = null, IMGDB_IMAGE_SELECTION_METHOD? imgSel = null)
         {
+            GC.Collect();
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             Log log = new Log("Image Database Test");
             log.EnableTrace = true;
@@ -339,6 +343,7 @@ namespace MyCaffe.test
 
         public void TestQueryRandom2(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
+            GC.Collect();
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
 
             foreach (string strDs in rgDs)
@@ -492,6 +497,7 @@ namespace MyCaffe.test
 
         public void TestQuerySequential(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
+            GC.Collect();
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase();
 
@@ -571,6 +577,7 @@ namespace MyCaffe.test
 
         public void TestQuerySequential2(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
+            GC.Collect();
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase();
 
@@ -656,6 +663,7 @@ namespace MyCaffe.test
 
         public void TestQuerySequential3(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
+            GC.Collect();
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase();
 
@@ -731,6 +739,7 @@ namespace MyCaffe.test
 
         public void TestQuerySequential4(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
+            GC.Collect();
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase();
 
@@ -817,6 +826,7 @@ namespace MyCaffe.test
 
         public void TestQueryPair(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
+            GC.Collect();
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase();
 
@@ -889,6 +899,7 @@ namespace MyCaffe.test
 
         public void TestLoadLimitNextSequential(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
+            GC.Collect();
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase();
 
@@ -1009,6 +1020,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestMean()
         {
+            GC.Collect();
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase();
 
@@ -1052,6 +1064,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestGetImagesByDate()
         {
+            GC.Collect();
             Log log = new Log("GetImagesByDate");
             log.EnableTrace = true;
 
@@ -1205,6 +1218,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestSort()
         {
+            GC.Collect();
             Log log = new Log("SortTest");
             log.EnableTrace = true;
 
@@ -1365,6 +1379,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestCreateDatasetOrganizedByTime()
         {
+            GC.Collect();
             Log log = new Log("CreateDatasetOrganizedByTime");
             log.EnableTrace = true;
 
@@ -1479,6 +1494,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestDbFilePath()
         {
+            GC.Collect();
             Database db = new Database();
 
             string strFile = db.GetDatabaseFilePath("DNN");
@@ -1505,6 +1521,7 @@ namespace MyCaffe.test
 
         public void TestPutRawImage(bool bSaveImagesToFile)
         {
+            GC.Collect();
             DatasetFactory factory = new DatasetFactory();
 
             factory.DeleteSources("Test123");

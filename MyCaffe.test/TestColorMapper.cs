@@ -21,6 +21,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestColorMapping()
         {
+            GC.Collect();
             Log log = new Log("Test ColorMapper");
             log.EnableTrace = true;
 

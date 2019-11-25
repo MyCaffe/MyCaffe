@@ -20,6 +20,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestInitializationSimple()
         {
+            GC.Collect();
             Log log = new Log("Test streaming database");
             log.EnableTrace = true;
 
@@ -42,6 +43,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQuerySimple()
         {
+            GC.Collect();
             Log log = new Log("Test streaming database");
             log.EnableTrace = true;
 
@@ -100,6 +102,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQuerySimpleDual()
         {
+            GC.Collect();
             Log log = new Log("Test streaming database");
             log.EnableTrace = true;
 
@@ -165,6 +168,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQuerySimpleDualSameEnd()
         {
+            GC.Collect();
             Log log = new Log("Test streaming database");
             log.EnableTrace = true;
 
@@ -238,6 +242,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQuerySimpleDualDifferentEnd()
         {
+            GC.Collect();
             Log log = new Log("Test streaming database");
             log.EnableTrace = true;
 
@@ -313,6 +318,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQuerySimpleDualSameEndAndReset()
         {
+            GC.Collect();
             Log log = new Log("Test streaming database");
             log.EnableTrace = true;
 
@@ -389,6 +395,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQuerySimpleDualDifferentEndAndReset()
         {
+            GC.Collect();
             Log log = new Log("Test streaming database");
             log.EnableTrace = true;
 
@@ -467,6 +474,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQuerySimpleTrippleStressTiming()
         {
+            GC.Collect();
             Log log = new Log("Test streaming database");
             log.EnableTrace = true;
 
@@ -564,6 +572,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestDataItem()
         {
+            GC.Collect();
             db.stream.DataItem di = new db.stream.DataItem(10);
             Log log = new Log("Test streaming database");
             log.EnableTrace = true;
@@ -600,6 +609,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQueryGeneralText()
         {
+            GC.Collect();
             Log log = new Log("Test streaming database with general Text data");
             log.EnableTrace = true;
 
@@ -651,6 +661,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQueryGeneralWAV()
         {
+            GC.Collect();
             Log log = new Log("Test streaming database with general WAV data");
             log.EnableTrace = true;
 
