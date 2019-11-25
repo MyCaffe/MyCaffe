@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Diagnostics;
 using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param;
@@ -114,19 +115,22 @@ namespace MyCaffe.layers.beta
             m_nEncodingDim = colBottom[0].channels;
 
             m_nCentroidThreshold = m_param.decode_param.centroid_threshold;
-            m_log.CHECK_GT(m_nCentroidThreshold, 1, "The centroid threshold must be > 1 and is recommended > 10.");
+            m_log.CHECK_GE(m_nCentroidThreshold, 10, "The centroid threshold must be >= 10, and the recommended setting is 20.");
             m_dfMinAlpha = m_param.decode_param.min_alpha;
             m_log.CHECK_GE(m_dfMinAlpha, 0, "The minimum alpha must be >= 0.");
 
             if (m_colBlobs.Count == 0)
             {
-                Blob<T> blobCentroids = new Blob<T>(m_cuda, m_log);
+                Blob<T> blobCentroids = new Blob<T>(m_cuda, m_log, false);
                 blobCentroids.Name = m_param.name + " centroids";
                 blobCentroids.reshape_when_sharing = true;
 
                 List<int> rgCentroidShape = new List<int>() { 0 }; // skip size check.
                 if (!shareParameter(blobCentroids, rgCentroidShape))
+                {
                     blobCentroids.Reshape(2, m_nEncodingDim, 1, 1); // set to at least two labels initially (may get expanded in forward).
+                    blobCentroids.SetData(0);
+                }
 
                 m_colBlobs.Add(blobCentroids);
             }
@@ -192,8 +196,10 @@ namespace MyCaffe.layers.beta
                     int nNumLabels = nMaxLabel + 1;
 
                     m_colBlobs[0].Reshape(nNumLabels, m_nEncodingDim, 1, 1);
+                    m_colBlobs[0].SetData(0);
                     m_blobData.Reshape(nNumLabels, m_nEncodingDim, 1, 1);
                     m_blobDistSq.Reshape(nNumLabels, 1, 1, 1);
+                    m_rgLabelCounts.Clear();
                 }
             }
             else
@@ -245,18 +251,18 @@ namespace MyCaffe.layers.beta
                     m_cuda.sub(nCount,
                                m_blobData.gpu_data,              // a
                                m_colBlobs[0].gpu_data,           // b
-                               m_colBlobs[0].mutable_gpu_diff);  // a_i - b_i
+                               m_blobData.mutable_gpu_diff);  // a_i - b_i
 
                     m_cuda.powx(nCount,
-                               m_colBlobs[0].gpu_diff,           // a_i - b_i
+                               m_blobData.gpu_diff,           // a_i - b_i
                                2.0,
-                               m_colBlobs[0].mutable_gpu_diff);  // (a_i - b_i)^2
+                               m_blobData.mutable_gpu_diff);  // (a_i - b_i)^2
 
                     m_cuda.gemv(false,
                                m_blobData.num,                   // label count.
                                m_blobData.channels,              // encoding size.
                                1.0,
-                               m_colBlobs[0].gpu_diff,           // (a_i - b_i)^2
+                               m_blobData.gpu_diff,           // (a_i - b_i)^2
                                m_blobSummerVec.gpu_data,
                                0.0,
                                m_blobDistSq.mutable_gpu_data);   // \Sum (a_i - b_i)^2
