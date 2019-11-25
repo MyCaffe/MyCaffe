@@ -136,6 +136,10 @@ namespace MyCaffe.param
             /// </summary>
             CROP,
             /// <summary>
+            /// Initializes a parameter for the DecodeLayer.
+            /// </summary>
+            DECODE,
+            /// <summary>
             /// Initializes a parameter for the DeconvolutionLayer.
             /// </summary>
             DECONVOLUTION,
@@ -688,11 +692,18 @@ namespace MyCaffe.param
                     break;
 
                 case LayerType.ACCURACY:
+                    expected_bottom.Add("input");
+                    expected_bottom.Add("label");
+                    expected_top.Add("accuracy");
+                    m_rgLayerParameters[LayerType.ACCURACY] = new AccuracyParameter();
+                    break;
+
                 case LayerType.ACCURACY_ENCODING:
                     expected_bottom.Add("input");
                     expected_bottom.Add("label");
                     expected_top.Add("accuracy");
                     m_rgLayerParameters[LayerType.ACCURACY] = new AccuracyParameter();
+                    m_rgLayerParameters[LayerType.DECODE] = new DecodeParameter();
                     break;
 
                 case LayerType.ARGMAX:
@@ -759,9 +770,15 @@ namespace MyCaffe.param
 
                 case LayerType.CONVOLUTION:
                 case LayerType.IM2COL:
-                    expected_bottom.Add("input");
-                    expected_top.Add("output");
+                    expected_bottom.Add("enc");
+                    expected_top.Add("label");
                     m_rgLayerParameters[LayerType.CONVOLUTION] = new ConvolutionParameter();
+                    break;
+
+                case LayerType.DECODE:
+                    expected_bottom.Add("enc");
+                    expected_top.Add("label");
+                    m_rgLayerParameters[lt] = new DecodeParameter();
                     break;
 
                 case LayerType.DECONVOLUTION:
@@ -1490,6 +1507,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initializing with LayerType.DECODE or LayerType.ACCURACY_ENCODING;
+        /// </summary>
+        public DecodeParameter decode_param
+        {
+            get { return (DecodeParameter)m_rgLayerParameters[LayerType.DECODE]; }
+            set { m_rgLayerParameters[LayerType.DECODE] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.ANNOTATED_DATA
         /// </summary>
         public AnnotatedDataParameter annotated_data_param
@@ -2155,6 +2181,9 @@ namespace MyCaffe.param
 
                 case LayerType.CROP:
                     return "Crop";
+
+                case LayerType.DECODE:
+                    return "Decode";
 
                 case LayerType.DATA:
                     return "Data";
@@ -2884,6 +2913,9 @@ namespace MyCaffe.param
 
                 case "crop":
                     return LayerType.CROP;
+
+                case "decode":
+                    return LayerType.DECODE;
 
                 case "data":
                     return LayerType.DATA;
