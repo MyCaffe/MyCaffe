@@ -31,7 +31,9 @@ namespace MyCaffe.layers
         Blob<T> m_blobDistSq; // cached for backward pass.
         Blob<T> m_blobDiffSq; // cached for backward pass.
         Blob<T> m_blobSummerVec; // tmp storage for gpu forward pass.
+        Blob<T> m_blobSimilar; // tmp storage for backward pass.
         T[] m_rgMatches = null;
+        T[] m_rgSimilar = null;
 
         /// <summary>
         /// The ContrastiveLossLayer constructor.
@@ -58,6 +60,8 @@ namespace MyCaffe.layers
             m_blobDiffSq.Name = m_param.name + " diffsq";
             m_blobSummerVec = new Blob<T>(cuda, log, false);
             m_blobSummerVec.Name = m_param.name + " sum";
+            m_blobSimilar = new Blob<T>(cuda, log, false);
+            m_blobSimilar.Name = m_param.name + " similar";
         }
 
         /** @copydoc Layer::dispose */
@@ -87,6 +91,12 @@ namespace MyCaffe.layers
             {
                 m_blobSummerVec.Dispose();
                 m_blobSummerVec = null;
+            }
+
+            if (m_blobSimilar != null)
+            {
+                m_blobSimilar.Dispose();
+                m_blobSimilar = null;
             }
         }
 
@@ -176,6 +186,13 @@ namespace MyCaffe.layers
                     m_rgMatches = new T[colBottom[0].num];
 
                 colTop[1].Reshape(colBottom[0].num, 1, 1, 1);
+            }
+
+            if (m_phase == Phase.NONE || m_phase == Phase.TRAIN)
+            {
+                m_blobSimilar.Reshape(colBottom[0].num, 1, 1, 1);
+                if (m_rgSimilar == null || m_rgSimilar.Length != colBottom[0].num)
+                    m_rgSimilar = new T[colBottom[0].num];
             }
         }
 
@@ -273,6 +290,9 @@ namespace MyCaffe.layers
                         else
                             dfLoss += dfDist * dfDist;
                     }
+
+                    if (m_rgSimilar != null)
+                        m_rgSimilar[i] = (bSimilar) ? m_tOne : m_tZero;
                 }
             }
             else
@@ -320,8 +340,14 @@ namespace MyCaffe.layers
                         else
                             dfLoss += dfDist * dfDist;
                     }
+
+                    if (m_rgSimilar != null)
+                        m_rgSimilar[i] = (bSimilar) ? m_tOne : m_tZero;
                 }
             }
+
+            if (m_rgSimilar != null)
+                m_blobSimilar.mutable_cpu_data = m_rgSimilar;
 
             dfLoss = dfLoss / (double)colBottom[0].num / 2.0;
             colTop[0].SetData(dfLoss, 0);
@@ -366,6 +392,8 @@ namespace MyCaffe.layers
 
             double dfTopDiff = convertD(colTop[0].GetDiff(0)) / colBottom[0].num;
 
+            m_log.CHECK_GT(m_blobSimilar.gpu_data, 0, "The similar data is not initialized - you must first run the forward pass under the Phase = TRAIN.");
+
             for (int i = 0; i < 2; i++)
             {
                 if (rgbPropagateDown[i])
@@ -382,7 +410,7 @@ namespace MyCaffe.layers
                                    dfMargin,
                                    bLegacyVersion,
                                    dfAlpha,
-                                   colBottom[2].gpu_data,   // pair similarity 0 or 1
+                                   m_blobSimilar.gpu_data,  // pair similarity 0 or 1
                                    m_blobDiff.gpu_data,     // the cached eltwise difference between a and b
                                    m_blobDistSq.gpu_data,   // the cached square distance between a and b
                                    colBottom[i].mutable_gpu_diff);
