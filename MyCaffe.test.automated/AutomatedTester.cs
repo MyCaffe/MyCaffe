@@ -686,12 +686,15 @@ namespace MyCaffe.test.automated
             try
             {
                 List<Tuple<TestClass, MethodInfoEx>> rgTests = new List<Tuple<TestClass, MethodInfoEx>>();
+                int nEnabledCount = 0;
 
                 foreach (TestClass tc in m_rgClasses)
                 {
                     foreach (MethodInfoEx mi in tc.Methods)
                     {
                         rgTests.Add(new Tuple<TestClass, MethodInfoEx>(tc, mi));
+                        if (mi.Enabled)
+                            nEnabledCount++;
                     }
                 }
 
@@ -705,7 +708,7 @@ namespace MyCaffe.test.automated
                     if (evtCancel.WaitOne(0))
                         return;
 
-                    if (miCurrent.Priority > 0)
+                    if (miCurrent.Priority > 0 && nEnabledCount > 1)
                         continue;
 
                     if (miCurrent.Enabled && (!bServerMode || miCurrent.Status == MethodInfoEx.STATUS.NotExecuted))
