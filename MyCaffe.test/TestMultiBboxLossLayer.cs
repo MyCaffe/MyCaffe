@@ -183,6 +183,7 @@ namespace MyCaffe.test
             dispose(ref m_blobBottomConf);
             dispose(ref m_blobBottomPrior);
             dispose(ref m_blobBottomGt);
+            dispose(ref m_blobTopLoss);
 
             base.dispose();
         }
@@ -362,6 +363,7 @@ namespace MyCaffe.test
             permuteLayer.Dispose();
             flattenLayer.Dispose();
             convLayerConf.Dispose();
+            priorBoxLayer.Dispose();
             blobFakeInput.Dispose();
             blobFakeBlob.Dispose();
             blobFakeOutputLoc.Dispose();
@@ -403,9 +405,14 @@ namespace MyCaffe.test
 
                             MultiBoxLossLayer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null) as MultiBoxLossLayer<T>;
 
-                            layer.Setup(BottomVec, TopVec);
-
-                            layer.Dispose();
+                            try
+                            {
+                                layer.Setup(BottomVec, TopVec);
+                            }
+                            finally
+                            {
+                                layer.Dispose();
+                            }
                         }
                     }
                 }
@@ -468,9 +475,14 @@ namespace MyCaffe.test
                                         MultiBoxLossLayer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null) as MultiBoxLossLayer<T>;
                                         GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
 
-                                        checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
-
-                                        layer.Dispose();
+                                        try
+                                        {
+                                            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
+                                        }
+                                        finally
+                                        {
+                                            layer.Dispose();
+                                        }
 
                                         nTestIdx++;
                                         progress.SetProgress((double)nTestIdx / (double)nTestTotal);
@@ -540,9 +552,14 @@ namespace MyCaffe.test
                                         MultiBoxLossLayer<T> layer = Layer<T>.Create(m_cuda, m_log, p, null) as MultiBoxLossLayer<T>;
                                         GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
 
-                                        checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 1);
-
-                                        layer.Dispose();
+                                        try
+                                        {
+                                            checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 1);
+                                        }
+                                        finally
+                                        {
+                                            layer.Dispose();
+                                        }
 
                                         nTestIdx++;
                                         progress.SetProgress((double)nTestIdx / (double)nTestTotal);
