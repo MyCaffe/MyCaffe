@@ -185,45 +185,93 @@ namespace MyCaffe.test
 
         private void copyMemTest(CudaDnn<double> cuda1, CudaDnn<double> cuda2, int nDevice1, int nDevice2)
         {
-            long hHost = cuda1.AllocHostBuffer(4);
-            cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
-            long hMem1 = cuda1.AllocMemory(new List<double>() { 1, 2, 3, 4 });
-            cuda2.SetDeviceID(nDevice2, DEVINIT.NONE);
-            long hMem2 = cuda2.AllocMemory(new List<double>() { 10, 20, 30, 40 });
+            long hHost = 0;
+            long hMem1 = 0;
+            long hMem2 = 0;
 
-            cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
-            cuda1.KernelCopy(4, hMem2, 0, cuda2.KernelHandle, hMem1, 0, hHost);
-
-            double[] rgData1 = cuda1.GetMemory(hMem1);
-            double[] rgData2 = cuda2.GetMemory(hMem2);
-
-            Assert.AreEqual(rgData1.Length, rgData2.Length);
-
-            for (int i = 0; i < rgData1.Length; i++)
+            try
             {
-                Assert.AreEqual(rgData1[i], rgData2[i]);
+                hHost = cuda1.AllocHostBuffer(4);
+                cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
+                hMem1 = cuda1.AllocMemory(new List<double>() { 1, 2, 3, 4 });
+                cuda2.SetDeviceID(nDevice2, DEVINIT.NONE);
+                hMem2 = cuda2.AllocMemory(new List<double>() { 10, 20, 30, 40 });
+
+                cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
+                cuda1.KernelCopy(4, hMem2, 0, cuda2.KernelHandle, hMem1, 0, hHost);
+
+                double[] rgData1 = cuda1.GetMemory(hMem1);
+                double[] rgData2 = cuda2.GetMemory(hMem2);
+
+                Assert.AreEqual(rgData1.Length, rgData2.Length);
+
+                for (int i = 0; i < rgData1.Length; i++)
+                {
+                    Assert.AreEqual(rgData1[i], rgData2[i]);
+                }
+            }
+            finally
+            {
+                if (hHost != 0)
+                    cuda1.FreeHostBuffer(hHost);
+
+                if (hMem2 != 0)
+                {
+                    cuda2.SetDeviceID(nDevice2, DEVINIT.NONE);
+                    cuda2.FreeMemory(hMem2);
+                }
+
+                if (hMem1 != 0)
+                {
+                    cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
+                    cuda1.FreeMemory(hMem1);
+                }
             }
         }
 
         private void copyMemTest(CudaDnn<float> cuda1, CudaDnn<float> cuda2, int nDevice1, int nDevice2)
         {
-            long hHost = cuda1.AllocHostBuffer(4);
-            cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
-            long hMem1 = cuda1.AllocMemory(new List<float>() { 1, 2, 3, 4 });
-            cuda2.SetDeviceID(nDevice2, DEVINIT.NONE);
-            long hMem2 = cuda2.AllocMemory(new List<float>() { 10, 20, 30, 40 });
+            long hHost = 0;
+            long hMem1 = 0;
+            long hMem2 = 0;
 
-            cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
-            cuda1.KernelCopy(4, hMem2, 0, cuda2.KernelHandle, hMem1, 0, hHost);
-
-            float[] rgData1 = cuda1.GetMemory(hMem1);
-            float[] rgData2 = cuda2.GetMemory(hMem2);
-
-            Assert.AreEqual(rgData1.Length, rgData2.Length);
-
-            for (int i = 0; i < rgData1.Length; i++)
+            try
             {
-                Assert.AreEqual(rgData1[i], rgData2[i]);
+                hHost = cuda1.AllocHostBuffer(4);
+                cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
+                hMem1 = cuda1.AllocMemory(new List<float>() { 1, 2, 3, 4 });
+                cuda2.SetDeviceID(nDevice2, DEVINIT.NONE);
+                hMem2 = cuda2.AllocMemory(new List<float>() { 10, 20, 30, 40 });
+
+                cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
+                cuda1.KernelCopy(4, hMem2, 0, cuda2.KernelHandle, hMem1, 0, hHost);
+
+                float[] rgData1 = cuda1.GetMemory(hMem1);
+                float[] rgData2 = cuda2.GetMemory(hMem2);
+
+                Assert.AreEqual(rgData1.Length, rgData2.Length);
+
+                for (int i = 0; i < rgData1.Length; i++)
+                {
+                    Assert.AreEqual(rgData1[i], rgData2[i]);
+                }
+            }
+            finally
+            {
+                if (hHost != 0)
+                    cuda1.FreeHostBuffer(hHost);
+
+                if (hMem2 != 0)
+                {
+                    cuda2.SetDeviceID(nDevice2, DEVINIT.NONE);
+                    cuda2.FreeMemory(hMem2);
+                }
+
+                if (hMem1 != 0)
+                {
+                    cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
+                    cuda1.FreeMemory(hMem1);
+                }
             }
         }
 
@@ -263,25 +311,52 @@ namespace MyCaffe.test
 
         private void addMemTest(CudaDnn<double> cuda1, CudaDnn<double> cuda2, int nDevice1, int nDevice2)
         {
-            cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
-            long hMem1 = cuda1.AllocMemory(new List<double>() { 1, 2, 3, 4 });
-            cuda2.SetDeviceID(nDevice2, DEVINIT.NONE);
-            long hMem2 = cuda2.AllocMemory(new List<double>() { 10, 20, 30, 40 });
-            long hMem3 = cuda2.AllocMemory(new List<double>() { 0, 0, 0, 0 });
+            long hMem1 = 0;
+            long hMem2 = 0;
+            long hMem3 = 0;
 
-            cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
-            cuda1.KernelAdd(4, hMem1, cuda2.KernelHandle, hMem2, hMem3);
-
-            double[] rgData1 = cuda1.GetMemory(hMem1);
-            double[] rgData2 = cuda2.GetMemory(hMem2);
-            double[] rgData3 = cuda2.GetMemory(hMem3);
-
-            Assert.AreEqual(rgData1.Length, rgData2.Length);
-            Assert.AreEqual(rgData1.Length, rgData3.Length);
-
-            for (int i = 0; i < rgData1.Length; i++)
+            try
             {
-                Assert.AreEqual(rgData3[i], rgData1[i] + rgData2[i]);
+                cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
+                hMem1 = cuda1.AllocMemory(new List<double>() { 1, 2, 3, 4 });
+                cuda2.SetDeviceID(nDevice2, DEVINIT.NONE);
+                hMem2 = cuda2.AllocMemory(new List<double>() { 10, 20, 30, 40 });
+                hMem3 = cuda2.AllocMemory(new List<double>() { 0, 0, 0, 0 });
+
+                cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
+                cuda1.KernelAdd(4, hMem1, cuda2.KernelHandle, hMem2, hMem3);
+
+                double[] rgData1 = cuda1.GetMemory(hMem1);
+                double[] rgData2 = cuda2.GetMemory(hMem2);
+                double[] rgData3 = cuda2.GetMemory(hMem3);
+
+                Assert.AreEqual(rgData1.Length, rgData2.Length);
+                Assert.AreEqual(rgData1.Length, rgData3.Length);
+
+                for (int i = 0; i < rgData1.Length; i++)
+                {
+                    Assert.AreEqual(rgData3[i], rgData1[i] + rgData2[i]);
+                }
+            }
+            finally
+            {
+                if (hMem2 != 0)
+                {
+                    cuda2.SetDeviceID(nDevice2, DEVINIT.NONE);
+                    cuda2.FreeMemory(hMem2);
+                }
+
+                if (hMem3 != 0)
+                {
+                    cuda2.SetDeviceID(nDevice2, DEVINIT.NONE);
+                    cuda2.FreeMemory(hMem3);
+                }
+
+                if (hMem1 != 0)
+                {
+                    cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
+                    cuda1.FreeMemory(hMem1);
+                }
             }
         }
 
@@ -321,25 +396,52 @@ namespace MyCaffe.test
 
         private void addMemTest(CudaDnn<float> cuda1, CudaDnn<float> cuda2, int nDevice1, int nDevice2)
         {
-            cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
-            long hMem1 = cuda1.AllocMemory(new List<double>() { 1, 2, 3, 4 });
-            cuda2.SetDeviceID(nDevice2, DEVINIT.NONE);
-            long hMem2 = cuda2.AllocMemory(new List<double>() { 10, 20, 30, 40 });
-            long hMem3 = cuda2.AllocMemory(new List<double>() { 0, 0, 0, 0 });
+            long hMem1 = 0;
+            long hMem2 = 0;
+            long hMem3 = 0;
 
-            cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
-            cuda1.KernelAdd(4, hMem1, cuda2.KernelHandle, hMem2, hMem3);
-
-            float[] rgData1 = cuda1.GetMemory(hMem1);
-            float[] rgData2 = cuda2.GetMemory(hMem2);
-            float[] rgData3 = cuda2.GetMemory(hMem3);
-
-            Assert.AreEqual(rgData1.Length, rgData2.Length);
-            Assert.AreEqual(rgData1.Length, rgData3.Length);
-
-            for (int i = 0; i < rgData1.Length; i++)
+            try
             {
-                Assert.AreEqual(rgData3[i], rgData1[i] + rgData2[i]);
+                cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
+                hMem1 = cuda1.AllocMemory(new List<double>() { 1, 2, 3, 4 });
+                cuda2.SetDeviceID(nDevice2, DEVINIT.NONE);
+                hMem2 = cuda2.AllocMemory(new List<double>() { 10, 20, 30, 40 });
+                hMem3 = cuda2.AllocMemory(new List<double>() { 0, 0, 0, 0 });
+
+                cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
+                cuda1.KernelAdd(4, hMem1, cuda2.KernelHandle, hMem2, hMem3);
+
+                float[] rgData1 = cuda1.GetMemory(hMem1);
+                float[] rgData2 = cuda2.GetMemory(hMem2);
+                float[] rgData3 = cuda2.GetMemory(hMem3);
+
+                Assert.AreEqual(rgData1.Length, rgData2.Length);
+                Assert.AreEqual(rgData1.Length, rgData3.Length);
+
+                for (int i = 0; i < rgData1.Length; i++)
+                {
+                    Assert.AreEqual(rgData3[i], rgData1[i] + rgData2[i]);
+                }
+            }
+            finally
+            {
+                if (hMem2 != 0)
+                {
+                    cuda2.SetDeviceID(nDevice2, DEVINIT.NONE);
+                    cuda2.FreeMemory(hMem2);
+                }
+
+                if (hMem3 != 0)
+                {
+                    cuda2.SetDeviceID(nDevice2, DEVINIT.NONE);
+                    cuda2.FreeMemory(hMem3);
+                }
+
+                if (hMem1 != 0)
+                {
+                    cuda1.SetDeviceID(nDevice1, DEVINIT.NONE);
+                    cuda1.FreeMemory(hMem1);
+                }
             }
         }
 
@@ -411,28 +513,63 @@ namespace MyCaffe.test
 
                 for (int i = 1; i < rgDevices.Count; i++)
                 {
+                    long hMem1 = 0;
+                    long hMem2 = 0;
+                    long hHost = 0;
+                    double[] rgData1 = null;
+                    double[] rgData2 = null;
+
                     Trace.WriteLine("testing " + rgDevices[i - 1].ToString() + " -> " + rgDevices[i].ToString());
 
-                    cuda1.SetDeviceID(rgDevices[i - 1]);
-                    long hMem1 = cuda1.AllocMemory(new List<double>() { 1, 2, 3, 4 });
-                    long hHost = cuda1.AllocHostBuffer(4);
+                    try
+                    {
+                        cuda1.SetDeviceID(rgDevices[i - 1]);
+                        hMem1 = cuda1.AllocMemory(new List<double>() { 1, 2, 3, 4 });
+                        hHost = cuda1.AllocHostBuffer(4);
 
-                    cuda2.SetDeviceID(rgDevices[i]);
-                    long hMem2 = cuda2.AllocMemory(new List<double>() { 10, 20, 30, 40 });
+                        cuda2.SetDeviceID(rgDevices[i]);
+                        hMem2 = cuda2.AllocMemory(new List<double>() { 10, 20, 30, 40 });
 
-                    cuda1.SetDeviceID();
-                    cuda1.KernelCopy(4, hMem1, 0, cuda2.KernelHandle, hMem2, 0, hHost);
+                        cuda1.SetDeviceID();
+                        cuda1.KernelCopy(4, hMem1, 0, cuda2.KernelHandle, hMem2, 0, hHost);
 
-                    double[] rgData1 = cuda1.GetMemory(hMem1);
-                    cuda1.FreeMemory(hMem1);
-                    hMem1 = 0;
-                    cuda2.FreeHostBuffer(hHost);
-                    hHost = 0;
+                        rgData1 = cuda1.GetMemory(hMem1);
+                        cuda1.FreeMemory(hMem1);
+                        hMem1 = 0;
+                        cuda2.FreeHostBuffer(hHost);
+                        hHost = 0;
 
-                    cuda2.SetDeviceID();
-                    double[] rgData2 = cuda2.GetMemory(hMem2);
-                    cuda2.FreeMemory(hMem2);
-                    hMem2 = 0;
+                        cuda2.SetDeviceID();
+                        rgData2 = cuda2.GetMemory(hMem2);
+                        cuda2.FreeMemory(hMem2);
+                        hMem2 = 0;
+                    }
+                    catch (Exception excpt)
+                    {
+                        throw excpt;
+                    }
+                    finally
+                    {
+                        if (hMem1 != 0)
+                        {
+                            cuda1.SetDeviceID(rgDevices[i - 1]);
+                            cuda1.FreeMemory(hMem1);
+                            hMem1 = 0;
+                        }
+
+                        if (hMem2 != 0)
+                        {
+                            cuda2.SetDeviceID(rgDevices[i]);
+                            cuda2.FreeMemory(hMem2);
+                            hMem2 = 0;
+                        }
+
+                        if (hHost != 0)
+                        {
+                            cuda1.FreeHostBuffer(hHost);
+                            hHost = 0;
+                        }
+                    }
 
                     Assert.AreEqual(rgData1.Length, rgData2.Length);
 
@@ -445,26 +582,55 @@ namespace MyCaffe.test
 
                     Trace.WriteLine("testing " + rgDevices[i - 1].ToString() + " <- " + rgDevices[i].ToString());
 
-                    cuda1.SetDeviceID(rgDevices[i]);
-                    hMem1 = cuda1.AllocMemory(new List<double>() { 1, 2, 3, 4 });
-                    hHost = cuda1.AllocHostBuffer(4);
+                    try
+                    {
+                        cuda1.SetDeviceID(rgDevices[i]);
+                        hMem1 = cuda1.AllocMemory(new List<double>() { 1, 2, 3, 4 });
+                        hHost = cuda1.AllocHostBuffer(4);
 
-                    cuda2.SetDeviceID(rgDevices[i - 1]);
-                    hMem2 = cuda2.AllocMemory(new List<double>() { 10, 20, 30, 40 });
+                        cuda2.SetDeviceID(rgDevices[i - 1]);
+                        hMem2 = cuda2.AllocMemory(new List<double>() { 10, 20, 30, 40 });
 
-                    cuda1.SetDeviceID();
-                    cuda1.KernelCopy(4, hMem1, 0, cuda2.KernelHandle, hMem2, 0, hHost);
+                        cuda1.SetDeviceID();
+                        cuda1.KernelCopy(4, hMem1, 0, cuda2.KernelHandle, hMem2, 0, hHost);
 
-                    rgData1 = cuda1.GetMemory(hMem1);
-                    cuda1.FreeMemory(hMem1);
-                    hMem1 = 0;
-                    cuda1.FreeHostBuffer(hHost);
-                    hHost = 0;
+                        rgData1 = cuda1.GetMemory(hMem1);
+                        cuda1.FreeMemory(hMem1);
+                        hMem1 = 0;
+                        cuda1.FreeHostBuffer(hHost);
+                        hHost = 0;
 
-                    cuda2.SetDeviceID();
-                    rgData2 = cuda2.GetMemory(hMem2);
-                    cuda2.FreeMemory(hMem2);
-                    hMem2 = 0;
+                        cuda2.SetDeviceID();
+                        rgData2 = cuda2.GetMemory(hMem2);
+                        cuda2.FreeMemory(hMem2);
+                        hMem2 = 0;
+                    }
+                    catch (Exception excpt)
+                    {
+                        throw excpt;
+                    }
+                    finally
+                    {
+                        if (hMem1 != 0)
+                        {
+                            cuda1.SetDeviceID(rgDevices[i - 1]);
+                            cuda1.FreeMemory(hMem1);
+                            hMem1 = 0;
+                        }
+
+                        if (hMem2 != 0)
+                        {
+                            cuda2.SetDeviceID(rgDevices[i]);
+                            cuda2.FreeMemory(hMem2);
+                            hMem2 = 0;
+                        }
+
+                        if (hHost != 0)
+                        {
+                            cuda1.FreeHostBuffer(hHost);
+                            hHost = 0;
+                        }
+                    }
 
                     Assert.AreEqual(rgData1.Length, rgData2.Length);
 
@@ -493,9 +659,16 @@ namespace MyCaffe.test
                 foreach (ITest t in test.Tests)
                 {
                     long hMem = t.Cuda.AllocHostBuffer(1000);
-                    double[] rgdfData = t.Cuda.GetHostMemoryDouble(hMem);
-                    float[] rgfData = t.Cuda.GetHostMemoryFloat(hMem);
-                    t.Cuda.FreeHostBuffer(hMem);
+
+                    try
+                    {
+                        double[] rgdfData = t.Cuda.GetHostMemoryDouble(hMem);
+                        float[] rgfData = t.Cuda.GetHostMemoryFloat(hMem);
+                    }
+                    finally
+                    {
+                        t.Cuda.FreeHostBuffer(hMem);
+                    }
                 }
             }
             finally
@@ -517,46 +690,60 @@ namespace MyCaffe.test
             {
                 foreach (ITest t in test.Tests)
                 {
-                    hMemD = t.Cuda.AllocMemory(rgdf);
-                    t.Log.CHECK_NE(0, hMemD, "The hMemD handle should not be null!");
-
-                    double[] rgdf1 = t.Cuda.GetMemoryDouble(hMemD);
-                    t.Log.CHECK_EQ(rgdf1.Length, rgdf.Count, "The data arrays should have the same number of items!");
-
-                    for (int i = 0; i < rgdf1.Length; i++)
+                    try
                     {
-                        t.Log.CHECK_EQ(rgdf1[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        hMemD = t.Cuda.AllocMemory(rgdf);
+                        t.Log.CHECK_NE(0, hMemD, "The hMemD handle should not be null!");
+
+                        double[] rgdf1 = t.Cuda.GetMemoryDouble(hMemD);
+                        t.Log.CHECK_EQ(rgdf1.Length, rgdf.Count, "The data arrays should have the same number of items!");
+
+                        for (int i = 0; i < rgdf1.Length; i++)
+                        {
+                            t.Log.CHECK_EQ(rgdf1[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        }
+
+                        float[] rgf1 = t.Cuda.GetMemoryFloat(hMemD);
+                        t.Log.CHECK_EQ(rgf1.Length, rgdf.Count, "The data arrays should have the same number of items!");
+
+                        for (int i = 0; i < rgf1.Length; i++)
+                        {
+                            t.Log.CHECK_EQ(rgf1[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        }
+
+                        hMemF = t.Cuda.AllocMemory(rgf);
+                        t.Log.CHECK_NE(0, hMemF, "The hMemF handle should not be null!");
+
+                        double[] rgdf2 = t.Cuda.GetMemoryDouble(hMemF);
+                        t.Log.CHECK_EQ(rgdf2.Length, rgf.Count, "The data arrays should have the same number of items!");
+
+                        for (int i = 0; i < rgdf2.Length; i++)
+                        {
+                            t.Log.CHECK_EQ(rgdf2[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        }
+
+                        float[] rgf2 = t.Cuda.GetMemoryFloat(hMemD);
+                        t.Log.CHECK_EQ(rgf2.Length, rgdf.Count, "The data arrays should have the same number of items!");
+
+                        for (int i = 0; i < rgf2.Length; i++)
+                        {
+                            t.Log.CHECK_EQ(rgf2[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        }
                     }
-
-                    float[] rgf1 = t.Cuda.GetMemoryFloat(hMemD);
-                    t.Log.CHECK_EQ(rgf1.Length, rgdf.Count, "The data arrays should have the same number of items!");
-
-                    for (int i = 0; i < rgf1.Length; i++)
+                    finally
                     {
-                        t.Log.CHECK_EQ(rgf1[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        if (hMemD != 0)
+                        {
+                            t.Cuda.FreeMemory(hMemD);
+                            hMemD = 0;
+                        }
+
+                        if (hMemF != 0)
+                        {
+                            t.Cuda.FreeMemory(hMemF);
+                            hMemF = 0;
+                        }
                     }
-
-                    hMemF = t.Cuda.AllocMemory(rgf);
-                    t.Log.CHECK_NE(0, hMemF, "The hMemF handle should not be null!");
-
-                    double[] rgdf2 = t.Cuda.GetMemoryDouble(hMemF);
-                    t.Log.CHECK_EQ(rgdf2.Length, rgf.Count, "The data arrays should have the same number of items!");
-
-                    for (int i = 0; i < rgdf2.Length; i++)
-                    {
-                        t.Log.CHECK_EQ(rgdf2[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
-                    }
-
-                    float[] rgf2 = t.Cuda.GetMemoryFloat(hMemD);
-                    t.Log.CHECK_EQ(rgf2.Length, rgdf.Count, "The data arrays should have the same number of items!");
-
-                    for (int i = 0; i < rgf2.Length; i++)
-                    {
-                        t.Log.CHECK_EQ(rgf2[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
-                    }
-
-                    t.Cuda.FreeMemory(hMemD);
-                    t.Cuda.FreeMemory(hMemF);
                 }
             }
             finally
@@ -578,50 +765,64 @@ namespace MyCaffe.test
             {
                 foreach (ITest t in test.Tests)
                 {
-                    hMemD = t.Cuda.AllocMemory(4);
-                    t.Log.CHECK_NE(0, hMemD, "The hMemD handle should not be null!");
-
-                    t.Cuda.SetMemory(hMemD, rgdf);
-
-                    double[] rgdf1 = t.Cuda.GetMemoryDouble(hMemD);
-                    t.Log.CHECK_EQ(rgdf1.Length, rgdf.Count, "The data arrays should have the same number of items!");
-
-                    for (int i = 0; i < rgdf1.Length; i++)
+                    try
                     {
-                        t.Log.CHECK_EQ(rgdf1[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        hMemD = t.Cuda.AllocMemory(4);
+                        t.Log.CHECK_NE(0, hMemD, "The hMemD handle should not be null!");
+
+                        t.Cuda.SetMemory(hMemD, rgdf);
+
+                        double[] rgdf1 = t.Cuda.GetMemoryDouble(hMemD);
+                        t.Log.CHECK_EQ(rgdf1.Length, rgdf.Count, "The data arrays should have the same number of items!");
+
+                        for (int i = 0; i < rgdf1.Length; i++)
+                        {
+                            t.Log.CHECK_EQ(rgdf1[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        }
+
+                        float[] rgf1 = t.Cuda.GetMemoryFloat(hMemD);
+                        t.Log.CHECK_EQ(rgf1.Length, rgdf.Count, "The data arrays should have the same number of items!");
+
+                        for (int i = 0; i < rgf1.Length; i++)
+                        {
+                            t.Log.CHECK_EQ(rgf1[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        }
+
+                        hMemF = t.Cuda.AllocMemory(4);
+                        t.Log.CHECK_NE(0, hMemF, "The hMemF handle should not be null!");
+
+                        t.Cuda.SetMemory(hMemF, rgdf);
+
+                        double[] rgdf2 = t.Cuda.GetMemoryDouble(hMemF);
+                        t.Log.CHECK_EQ(rgdf2.Length, rgf.Count, "The data arrays should have the same number of items!");
+
+                        for (int i = 0; i < rgdf2.Length; i++)
+                        {
+                            t.Log.CHECK_EQ(rgdf2[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        }
+
+                        float[] rgf2 = t.Cuda.GetMemoryFloat(hMemD);
+                        t.Log.CHECK_EQ(rgf2.Length, rgdf.Count, "The data arrays should have the same number of items!");
+
+                        for (int i = 0; i < rgf2.Length; i++)
+                        {
+                            t.Log.CHECK_EQ(rgf2[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        }
                     }
-
-                    float[] rgf1 = t.Cuda.GetMemoryFloat(hMemD);
-                    t.Log.CHECK_EQ(rgf1.Length, rgdf.Count, "The data arrays should have the same number of items!");
-
-                    for (int i = 0; i < rgf1.Length; i++)
+                    finally
                     {
-                        t.Log.CHECK_EQ(rgf1[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        if (hMemD != 0)
+                        {
+                            t.Cuda.FreeMemory(hMemD);
+                            hMemD = 0;
+                        }
+
+                        if (hMemF != 0)
+                        {
+                            t.Cuda.FreeMemory(hMemF);
+                            hMemF = 0;
+                        }
                     }
-
-                    hMemF = t.Cuda.AllocMemory(4);
-                    t.Log.CHECK_NE(0, hMemF, "The hMemF handle should not be null!");
-
-                    t.Cuda.SetMemory(hMemF, rgdf);
-
-                    double[] rgdf2 = t.Cuda.GetMemoryDouble(hMemF);
-                    t.Log.CHECK_EQ(rgdf2.Length, rgf.Count, "The data arrays should have the same number of items!");
-
-                    for (int i = 0; i < rgdf2.Length; i++)
-                    {
-                        t.Log.CHECK_EQ(rgdf2[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
-                    }
-
-                    float[] rgf2 = t.Cuda.GetMemoryFloat(hMemD);
-                    t.Log.CHECK_EQ(rgf2.Length, rgdf.Count, "The data arrays should have the same number of items!");
-
-                    for (int i = 0; i < rgf2.Length; i++)
-                    {
-                        t.Log.CHECK_EQ(rgf2[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
-                    }
-
-                    t.Cuda.FreeMemory(hMemD);
-                    t.Cuda.FreeMemory(hMemF);
                 }
             }
             finally
@@ -643,50 +844,64 @@ namespace MyCaffe.test
             {
                 foreach (ITest t in test.Tests)
                 {
-                    hMemD = t.Cuda.AllocMemory(4);
-                    t.Log.CHECK_NE(0, hMemD, "The hMemD handle should not be null!");
-
-                    t.Cuda.SetMemory(hMemD, rgf);
-
-                    double[] rgdf1 = t.Cuda.GetMemoryDouble(hMemD);
-                    t.Log.CHECK_EQ(rgdf1.Length, rgdf.Count, "The data arrays should have the same number of items!");
-
-                    for (int i = 0; i < rgdf1.Length; i++)
+                    try
                     {
-                        t.Log.CHECK_EQ(rgdf1[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        hMemD = t.Cuda.AllocMemory(4);
+                        t.Log.CHECK_NE(0, hMemD, "The hMemD handle should not be null!");
+
+                        t.Cuda.SetMemory(hMemD, rgf);
+
+                        double[] rgdf1 = t.Cuda.GetMemoryDouble(hMemD);
+                        t.Log.CHECK_EQ(rgdf1.Length, rgdf.Count, "The data arrays should have the same number of items!");
+
+                        for (int i = 0; i < rgdf1.Length; i++)
+                        {
+                            t.Log.CHECK_EQ(rgdf1[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        }
+
+                        float[] rgf1 = t.Cuda.GetMemoryFloat(hMemD);
+                        t.Log.CHECK_EQ(rgf1.Length, rgdf.Count, "The data arrays should have the same number of items!");
+
+                        for (int i = 0; i < rgf1.Length; i++)
+                        {
+                            t.Log.CHECK_EQ(rgf1[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        }
+
+                        hMemF = t.Cuda.AllocMemory(4);
+                        t.Log.CHECK_NE(0, hMemF, "The hMemF handle should not be null!");
+
+                        t.Cuda.SetMemory(hMemF, rgf);
+
+                        double[] rgdf2 = t.Cuda.GetMemoryDouble(hMemF);
+                        t.Log.CHECK_EQ(rgdf2.Length, rgf.Count, "The data arrays should have the same number of items!");
+
+                        for (int i = 0; i < rgdf2.Length; i++)
+                        {
+                            t.Log.CHECK_EQ(rgdf2[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        }
+
+                        float[] rgf2 = t.Cuda.GetMemoryFloat(hMemD);
+                        t.Log.CHECK_EQ(rgf2.Length, rgdf.Count, "The data arrays should have the same number of items!");
+
+                        for (int i = 0; i < rgf2.Length; i++)
+                        {
+                            t.Log.CHECK_EQ(rgf2[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        }
                     }
-
-                    float[] rgf1 = t.Cuda.GetMemoryFloat(hMemD);
-                    t.Log.CHECK_EQ(rgf1.Length, rgdf.Count, "The data arrays should have the same number of items!");
-
-                    for (int i = 0; i < rgf1.Length; i++)
+                    finally
                     {
-                        t.Log.CHECK_EQ(rgf1[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
+                        if (hMemD != 0)
+                        {
+                            t.Cuda.FreeMemory(hMemD);
+                            hMemD = 0;
+                        }
+
+                        if (hMemF != 0)
+                        {
+                            t.Cuda.FreeMemory(hMemF);
+                            hMemF = 0;
+                        }
                     }
-
-                    hMemF = t.Cuda.AllocMemory(4);
-                    t.Log.CHECK_NE(0, hMemF, "The hMemF handle should not be null!");
-
-                    t.Cuda.SetMemory(hMemF, rgf);
-
-                    double[] rgdf2 = t.Cuda.GetMemoryDouble(hMemF);
-                    t.Log.CHECK_EQ(rgdf2.Length, rgf.Count, "The data arrays should have the same number of items!");
-
-                    for (int i = 0; i < rgdf2.Length; i++)
-                    {
-                        t.Log.CHECK_EQ(rgdf2[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
-                    }
-
-                    float[] rgf2 = t.Cuda.GetMemoryFloat(hMemD);
-                    t.Log.CHECK_EQ(rgf2.Length, rgdf.Count, "The data arrays should have the same number of items!");
-
-                    for (int i = 0; i < rgf2.Length; i++)
-                    {
-                        t.Log.CHECK_EQ(rgf2[i], rgdf[i], "The data items at " + i.ToString() + " are not equal!");
-                    }
-
-                    t.Cuda.FreeMemory(hMemD);
-                    t.Cuda.FreeMemory(hMemF);
                 }
             }
             finally
@@ -706,32 +921,40 @@ namespace MyCaffe.test
             {
                 foreach (ITest t in test.Tests)
                 {
-                    if (t.DataType == DataType.DOUBLE)
-                        continue;
-
-                    for (float f = 0; f < 1.0f; f += 0.01f)
+                    try
                     {
-                        rgf.Add((float)Math.Sin((double)f));
+                        if (t.DataType == DataType.DOUBLE)
+                            continue;
+
+                        for (float f = 0; f < 1.0f; f += 0.01f)
+                        {
+                            rgf.Add((float)Math.Sin((double)f));
+                        }
+
+                        hMemF = t.Cuda.AllocMemory(rgf.Count, true);
+                        t.Log.CHECK_NE(hMemF, 0, "The memory should not be null!");
+                        t.Cuda.SetMemory(hMemF, rgf);
+
+                        float[] rgf1 = t.Cuda.GetMemoryFloat(hMemF);
+
+                        t.Log.CHECK_GE(rgf1.Length, rgf.Count, "The data returned is not the same count as the data set.");
+
+                        for (int i = 0; i < rgf.Count; i++)
+                        {
+                            float f1 = rgf1[i];
+                            float f = rgf[i];
+
+                            t.Log.EXPECT_NEAR_FLOAT(f1, f, 0.001, "The values should be the same!");
+                        }
                     }
-
-                    hMemF = t.Cuda.AllocMemory(rgf.Count, true);
-                    t.Log.CHECK_NE(hMemF, 0, "The memory should not be null!");
-                    t.Cuda.SetMemory(hMemF, rgf);
-
-                    float[] rgf1 = t.Cuda.GetMemoryFloat(hMemF);
-
-                    t.Log.CHECK_GE(rgf1.Length, rgf.Count, "The data returned is not the same count as the data set.");
-
-                    for (int i = 0; i < rgf.Count; i++)
+                    finally
                     {
-                        float f1 = rgf1[i];
-                        float f = rgf[i];
-
-                        t.Log.EXPECT_NEAR_FLOAT(f1, f, 0.001, "The values should be the same!");
+                        if (hMemF != 0)
+                        {
+                            t.Cuda.FreeMemory(hMemF);
+                            hMemF = 0;
+                        }
                     }
-
-                    t.Cuda.FreeMemory(hMemF);
-                    hMemF = 0;
                 }
             }
             finally
@@ -751,36 +974,44 @@ namespace MyCaffe.test
             {
                 foreach (ITest t in test.Tests)
                 {
-                    if (t.DataType == DataType.DOUBLE)
-                        continue;
-
-                    for (float f = 0; f < 1.0f; f += 0.01f)
+                    try
                     {
-                        rgf.Add((float)Math.Sin((double)f));
+                        if (t.DataType == DataType.DOUBLE)
+                            continue;
+
+                        for (float f = 0; f < 1.0f; f += 0.01f)
+                        {
+                            rgf.Add((float)Math.Sin((double)f));
+                        }
+
+                        hMemF = t.Cuda.AllocMemory(rgf.Count, true);
+                        t.Log.CHECK_NE(hMemF, 0, "The memory should not be null!");
+
+                        for (int i = 0; i < rgf.Count; i++)
+                        {
+                            t.Cuda.SetMemoryAt(hMemF, new float[] { rgf[i] }, i);
+                        }
+
+                        float[] rgf1 = t.Cuda.GetMemoryFloat(hMemF);
+
+                        t.Log.CHECK_GE(rgf1.Length, rgf.Count, "The data returned is not the same count as the data set.");
+
+                        for (int i = 0; i < rgf.Count; i++)
+                        {
+                            float f1 = rgf1[i];
+                            float f = rgf[i];
+
+                            t.Log.EXPECT_NEAR_FLOAT(f1, f, 0.001, "The values should be the same!");
+                        }
                     }
-
-                    hMemF = t.Cuda.AllocMemory(rgf.Count, true);
-                    t.Log.CHECK_NE(hMemF, 0, "The memory should not be null!");
-
-                    for (int i = 0; i < rgf.Count; i++)
+                    finally
                     {
-                        t.Cuda.SetMemoryAt(hMemF, new float[] { rgf[i] }, i);
+                        if (hMemF != 0)
+                        {
+                            t.Cuda.FreeMemory(hMemF);
+                            hMemF = 0;
+                        }
                     }
-
-                    float[] rgf1 = t.Cuda.GetMemoryFloat(hMemF);
-
-                    t.Log.CHECK_GE(rgf1.Length, rgf.Count, "The data returned is not the same count as the data set.");
-
-                    for (int i = 0; i < rgf.Count; i++)
-                    {
-                        float f1 = rgf1[i];
-                        float f = rgf[i];
-
-                        t.Log.EXPECT_NEAR_FLOAT(f1, f, 0.001, "The values should be the same!");
-                    }
-
-                    t.Cuda.FreeMemory(hMemF);
-                    hMemF = 0;
                 }
             }
             finally
@@ -801,20 +1032,31 @@ namespace MyCaffe.test
             {
                 foreach (ITest t in test.Tests)
                 {
-                    if (t.DataType == DataType.DOUBLE)
-                        continue;
+                    try
+                    {
+                        if (t.DataType == DataType.DOUBLE)
+                            continue;
 
-                    long lCount = 20948400;
-                    hMemF1 = t.Cuda.AllocMemory(lCount, true);
-                    hMemF2 = t.Cuda.AllocMemory(lCount, true);
+                        long lCount = 20948400;
+                        hMemF1 = t.Cuda.AllocMemory(lCount, true);
+                        hMemF2 = t.Cuda.AllocMemory(lCount, true);
 
-                    t.Cuda.axpy((int)lCount, -1.0, hMemF1, hMemF2);
+                        t.Cuda.axpy((int)lCount, -1.0, hMemF1, hMemF2);
+                    }
+                    finally
+                    {
+                        if (hMemF1 != 0)
+                        {
+                            t.Cuda.FreeMemory(hMemF1);
+                            hMemF1 = 0;
+                        }
 
-                    t.Cuda.FreeMemory(hMemF1);
-                    hMemF1 = 0;
-
-                    t.Cuda.FreeMemory(hMemF2);
-                    hMemF2 = 0;
+                        if (hMemF2 != 0)
+                        {
+                            t.Cuda.FreeMemory(hMemF2);
+                            hMemF2 = 0;
+                        }
+                    }
                 }
             }
             finally
@@ -888,13 +1130,22 @@ namespace MyCaffe.test
                     finally
                     {
                         if (h1 > 0)
+                        {
                             t.Cuda.FreeMemory(h1);
+                            h1 = 0;
+                        }
 
                         if (h2 > 0)
+                        {
                             t.Cuda.FreeMemory(h2);
+                            h2 = 0;
+                        }
 
                         if (h3 > 0)
+                        {
                             t.Cuda.FreeMemory(h3);
+                            h3 = 0;
+                        }
                     }
                 }
             }
@@ -962,10 +1213,16 @@ namespace MyCaffe.test
                     finally
                     {
                         if (h1 > 0)
+                        {
                             t.Cuda.FreeMemory(h1);
+                            h1 = 0;
+                        }
 
                         if (h2 > 0)
+                        {
                             t.Cuda.FreeMemory(h2);
+                            h2 = 0;
+                        }
                     }
                 }
             }
@@ -1032,10 +1289,16 @@ namespace MyCaffe.test
                     finally
                     {
                         if (h1 > 0)
+                        {
                             t.Cuda.FreeMemory(h1);
+                            h1 = 0;
+                        }
 
                         if (h2 > 0)
+                        {
                             t.Cuda.FreeMemory(h2);
+                            h2 = 0;
+                        }
                     }
                 }
             }
@@ -1117,13 +1380,22 @@ namespace MyCaffe.test
                     finally
                     {
                         if (hX > 0)
+                        {
                             t.Cuda.FreeMemory(hX);
+                            hX = 0;
+                        }
 
                         if (hY > 0)
+                        {
                             t.Cuda.FreeMemory(hY);
+                            hY = 0;
+                        }
 
                         if (hA > 0)
+                        {
                             t.Cuda.FreeMemory(hA);
+                            hA = 0;
+                        }
                     }
                 }
             }
@@ -1147,54 +1419,68 @@ namespace MyCaffe.test
             {
                 foreach (ITest t in test.Tests)
                 {
-                    hSrc = t.Cuda.AllocMemory(4);
-                    t.Log.CHECK_NE(0, hSrc, "The source should have a valid handle.");
-                    t.Cuda.SetMemory(hSrc, rgdf.ToArray());
-
-                    double[] rgdf1 = t.Cuda.get_double(nCount, hSrc, -1);
-                    t.Log.CHECK_EQ(rgdf1.Length, rgdf.Count, "The arrays should have the same count.");
-
-                    for (int i = 0; i < nCount; i++)
+                    try
                     {
-                        t.Log.CHECK_EQ(rgdf[i], rgdf1[i], "The values at " + i.ToString() + " are not equal!");
+                        hSrc = t.Cuda.AllocMemory(4);
+                        t.Log.CHECK_NE(0, hSrc, "The source should have a valid handle.");
+                        t.Cuda.SetMemory(hSrc, rgdf.ToArray());
+
+                        double[] rgdf1 = t.Cuda.get_double(nCount, hSrc, -1);
+                        t.Log.CHECK_EQ(rgdf1.Length, rgdf.Count, "The arrays should have the same count.");
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            t.Log.CHECK_EQ(rgdf[i], rgdf1[i], "The values at " + i.ToString() + " are not equal!");
+                        }
+
+                        float[] rgf1 = t.Cuda.get_float(nCount, hSrc, -1);
+                        t.Log.CHECK_EQ(rgf1.Length, rgdf.Count, "The arrays should have the same count.");
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            t.Log.CHECK_EQ(rgf[i], rgf1[i], "The values at " + i.ToString() + " are not equal!");
+                        }
+
+
+                        hDst = t.Cuda.AllocMemory(4);
+                        t.Log.CHECK_NE(0, hDst, "The source should have a valid handle.");
+                        t.Cuda.set(nCount, hDst, 0);
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            double[] rgD = t.Cuda.get_double(nCount, hDst, i);
+                            t.Log.CHECK_EQ(1, rgD.Length, "The return array should only have 1 element.");
+                            t.Log.CHECK_EQ(0, rgD[0], "The item returned should be zero.");
+
+                            float[] rgF = t.Cuda.get_float(nCount, hDst, i);
+                            t.Log.CHECK_EQ(1, rgF.Length, "The return array should only have 1 element.");
+                            t.Log.CHECK_EQ(0, rgF[0], "The item returned should be zero.");
+
+                            t.Cuda.set(nCount, hDst, (i + 1) * 2.5, i);
+                            rgD = t.Cuda.get_double(nCount, hDst, i);
+                            t.Log.CHECK_EQ(1, rgD.Length, "The return array should only have 1 element.");
+                            t.Log.CHECK_EQ((i + 1) * 2.5, rgD[0], "The item returned should be " + ((i + 1) * 2.5).ToString());
+
+                            t.Cuda.set(nCount, hDst, (i + 1) * 2.7, i);
+                            rgF = t.Cuda.get_float(nCount, hDst, i);
+                            t.Log.CHECK_EQ(1, rgF.Length, "The return array should only have 1 element.");
+                            t.Log.CHECK_EQ((i + 1) * 2.7f, rgF[0], "The item returned should be " + ((i + 1) * 2.7).ToString());
+                        }
                     }
-
-                    float[] rgf1 = t.Cuda.get_float(nCount, hSrc, -1);
-                    t.Log.CHECK_EQ(rgf1.Length, rgdf.Count, "The arrays should have the same count.");
-
-                    for (int i = 0; i < nCount; i++)
+                    finally
                     {
-                        t.Log.CHECK_EQ(rgf[i], rgf1[i], "The values at " + i.ToString() + " are not equal!");
+                        if (hSrc != 0)
+                        {
+                            t.Cuda.FreeMemory(hSrc);
+                            hSrc = 0;
+                        }
+
+                        if (hDst != 0)
+                        {
+                            t.Cuda.FreeMemory(hDst);
+                            hDst = 0;
+                        }
                     }
-
-
-                    hDst = t.Cuda.AllocMemory(4);
-                    t.Log.CHECK_NE(0, hDst, "The source should have a valid handle.");
-                    t.Cuda.set(nCount, hDst, 0);
-
-                    for (int i = 0; i < nCount; i++)
-                    {
-                        double[] rgD = t.Cuda.get_double(nCount, hDst, i);
-                        t.Log.CHECK_EQ(1, rgD.Length, "The return array should only have 1 element.");
-                        t.Log.CHECK_EQ(0, rgD[0], "The item returned should be zero.");
-
-                        float[] rgF = t.Cuda.get_float(nCount, hDst, i);
-                        t.Log.CHECK_EQ(1, rgF.Length, "The return array should only have 1 element.");
-                        t.Log.CHECK_EQ(0, rgF[0], "The item returned should be zero.");
-
-                        t.Cuda.set(nCount, hDst, (i + 1) * 2.5, i);
-                        rgD = t.Cuda.get_double(nCount, hDst, i);
-                        t.Log.CHECK_EQ(1, rgD.Length, "The return array should only have 1 element.");
-                        t.Log.CHECK_EQ((i + 1) * 2.5, rgD[0], "The item returned should be " + ((i + 1) * 2.5).ToString());
-
-                        t.Cuda.set(nCount, hDst, (i + 1) * 2.7, i);
-                        rgF = t.Cuda.get_float(nCount, hDst, i);
-                        t.Log.CHECK_EQ(1, rgF.Length, "The return array should only have 1 element.");
-                        t.Log.CHECK_EQ((i + 1) * 2.7f, rgF[0], "The item returned should be " + ((i + 1) * 2.7).ToString());
-                    }
-
-                    t.Cuda.FreeMemory(hSrc);
-                    t.Cuda.FreeMemory(hDst);
                 }
             }
             finally
@@ -1217,45 +1503,62 @@ namespace MyCaffe.test
             {
                 foreach (ITest t in test.Tests)
                 {
-                    hSrc = t.Cuda.AllocMemory(nCount);
-                    t.Log.CHECK_NE(0, hSrc, "The source should have a valid handle.");
-                    t.Cuda.SetMemory(hSrc, rgdf.ToArray());
-
-                    double[] rgdf1 = t.Cuda.get_double(nCount, hSrc, -1);
-                    t.Log.CHECK_EQ(rgdf1.Length, rgdf.Count, "The arrays should have the same count.");
-
-                    for (int i = 0; i < nCount; i++)
+                    try
                     {
-                        t.Log.CHECK_EQ(rgdf[i], rgdf1[i], "The values at " + i.ToString() + " are not equal!");
+                        hSrc = t.Cuda.AllocMemory(nCount);
+                        t.Log.CHECK_NE(0, hSrc, "The source should have a valid handle.");
+                        t.Cuda.SetMemory(hSrc, rgdf.ToArray());
+
+                        double[] rgdf1 = t.Cuda.get_double(nCount, hSrc, -1);
+                        t.Log.CHECK_EQ(rgdf1.Length, rgdf.Count, "The arrays should have the same count.");
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            t.Log.CHECK_EQ(rgdf[i], rgdf1[i], "The values at " + i.ToString() + " are not equal!");
+                        }
+
+                        float[] rgf1 = t.Cuda.get_float(nCount, hSrc, -1);
+                        t.Log.CHECK_EQ(rgf1.Length, rgdf.Count, "The arrays should have the same count.");
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            t.Log.CHECK_EQ(rgf[i], rgf1[i], "The values at " + i.ToString() + " are not equal!");
+                        }
+
+                        hDst = t.Cuda.AllocMemory(nCount);
+                        t.Cuda.set(nCount, hDst, 0);
+
+                        t.Cuda.copy(nCount, hSrc, hDst);
+
+                        double[] rgdf2 = t.Cuda.get_double(nCount, hDst, -1);
+                        t.Log.CHECK_EQ(rgdf2.Length, rgdf.Count, "The arrays should have the same count.");
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            t.Log.CHECK_EQ(rgdf[i], rgdf2[i], "The values at " + i.ToString() + " are not equal!");
+                        }
+
+                        float[] rgf2 = t.Cuda.get_float(nCount, hDst, -1);
+                        t.Log.CHECK_EQ(rgf2.Length, rgdf.Count, "The arrays should have the same count.");
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            t.Log.CHECK_EQ(rgf[i], rgf2[i], "The values at " + i.ToString() + " are not equal!");
+                        }
                     }
-
-                    float[] rgf1 = t.Cuda.get_float(nCount, hSrc, -1);
-                    t.Log.CHECK_EQ(rgf1.Length, rgdf.Count, "The arrays should have the same count.");
-
-                    for (int i = 0; i < nCount; i++)
+                    finally
                     {
-                        t.Log.CHECK_EQ(rgf[i], rgf1[i], "The values at " + i.ToString() + " are not equal!");
-                    }
+                        if (hSrc != 0)
+                        {
+                            t.Cuda.FreeMemory(hSrc);
+                            hSrc = 0;
+                        }
 
-                    hDst = t.Cuda.AllocMemory(nCount);
-                    t.Cuda.set(nCount, hDst, 0);
-
-                    t.Cuda.copy(nCount, hSrc, hDst);
-
-                    double[] rgdf2 = t.Cuda.get_double(nCount, hDst, -1);
-                    t.Log.CHECK_EQ(rgdf2.Length, rgdf.Count, "The arrays should have the same count.");
-
-                    for (int i = 0; i < nCount; i++)
-                    {
-                        t.Log.CHECK_EQ(rgdf[i], rgdf2[i], "The values at " + i.ToString() + " are not equal!");
-                    }
-
-                    float[] rgf2 = t.Cuda.get_float(nCount, hDst, -1);
-                    t.Log.CHECK_EQ(rgf2.Length, rgdf.Count, "The arrays should have the same count.");
-
-                    for (int i = 0; i < nCount; i++)
-                    {
-                        t.Log.CHECK_EQ(rgf[i], rgf2[i], "The values at " + i.ToString() + " are not equal!");
+                        if (hDst != 0)
+                        {
+                            t.Cuda.FreeMemory(hDst);
+                            hDst = 0;
+                        }
                     }
                 }
             }
@@ -1279,55 +1582,72 @@ namespace MyCaffe.test
             {
                 foreach (ITest t in test.Tests)
                 {
-                    hSrc = t.Cuda.AllocMemory(nCount);
-                    t.Log.CHECK_NE(0, hSrc, "The source should have a valid handle.");
-                    t.Cuda.SetMemory(hSrc, rgdf.ToArray());
-
-                    double[] rgdf1 = t.Cuda.get_double(nCount, hSrc, -1);
-                    t.Log.CHECK_EQ(rgdf1.Length, rgdf.Count, "The arrays should have the same count.");
-
-                    for (int i = 0; i < nCount; i++)
+                    try
                     {
-                        t.Log.CHECK_EQ(rgdf[i], rgdf1[i], "The values at " + i.ToString() + " are not equal!");
+                        hSrc = t.Cuda.AllocMemory(nCount);
+                        t.Log.CHECK_NE(0, hSrc, "The source should have a valid handle.");
+                        t.Cuda.SetMemory(hSrc, rgdf.ToArray());
+
+                        double[] rgdf1 = t.Cuda.get_double(nCount, hSrc, -1);
+                        t.Log.CHECK_EQ(rgdf1.Length, rgdf.Count, "The arrays should have the same count.");
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            t.Log.CHECK_EQ(rgdf[i], rgdf1[i], "The values at " + i.ToString() + " are not equal!");
+                        }
+
+                        float[] rgf1 = t.Cuda.get_float(nCount, hSrc, -1);
+                        t.Log.CHECK_EQ(rgf1.Length, rgdf.Count, "The arrays should have the same count.");
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            t.Log.CHECK_EQ(rgf[i], rgf1[i], "The values at " + i.ToString() + " are not equal!");
+                        }
+
+                        hDst = t.Cuda.AllocMemory(nCount);
+                        t.Cuda.set(nCount, hDst, 0);
+
+                        t.Cuda.copy(nCount - 2, hSrc, hDst);
+
+                        double[] rgdf2 = t.Cuda.get_double(nCount, hDst, -1);
+                        t.Log.CHECK_EQ(rgdf2.Length, rgdf.Count, "The arrays should have the same count.");
+
+                        for (int i = 0; i < nCount - 2; i++)
+                        {
+                            t.Log.CHECK_EQ(rgdf[i], rgdf2[i], "The values at " + i.ToString() + " are not equal!");
+                        }
+
+                        for (int i = nCount - 2; i < nCount; i++)
+                        {
+                            t.Log.CHECK_EQ(0, rgdf2[i], "The values at " + i.ToString() + " should be zero!");
+                        }
+
+                        float[] rgf2 = t.Cuda.get_float(nCount, hDst, -1);
+                        t.Log.CHECK_EQ(rgf2.Length, rgdf.Count, "The arrays should have the same count.");
+
+                        for (int i = 0; i < nCount - 2; i++)
+                        {
+                            t.Log.CHECK_EQ(rgf[i], rgf2[i], "The values at " + i.ToString() + " are not equal!");
+                        }
+
+                        for (int i = nCount - 2; i < nCount; i++)
+                        {
+                            t.Log.CHECK_EQ(0, rgf2[i], "The values at " + i.ToString() + " should be zero!");
+                        }
                     }
-
-                    float[] rgf1 = t.Cuda.get_float(nCount, hSrc, -1);
-                    t.Log.CHECK_EQ(rgf1.Length, rgdf.Count, "The arrays should have the same count.");
-
-                    for (int i = 0; i < nCount; i++)
+                    finally
                     {
-                        t.Log.CHECK_EQ(rgf[i], rgf1[i], "The values at " + i.ToString() + " are not equal!");
-                    }
+                        if (hSrc != 0)
+                        {
+                            t.Cuda.FreeMemory(hSrc);
+                            hSrc = 0;
+                        }
 
-                    hDst = t.Cuda.AllocMemory(nCount);
-                    t.Cuda.set(nCount, hDst, 0);
-
-                    t.Cuda.copy(nCount - 2, hSrc, hDst);
-
-                    double[] rgdf2 = t.Cuda.get_double(nCount, hDst, -1);
-                    t.Log.CHECK_EQ(rgdf2.Length, rgdf.Count, "The arrays should have the same count.");
-
-                    for (int i = 0; i < nCount - 2; i++)
-                    {
-                        t.Log.CHECK_EQ(rgdf[i], rgdf2[i], "The values at " + i.ToString() + " are not equal!");
-                    }
-
-                    for (int i = nCount - 2; i < nCount; i++)
-                    {
-                        t.Log.CHECK_EQ(0, rgdf2[i], "The values at " + i.ToString() + " should be zero!");
-                    }
-
-                    float[] rgf2 = t.Cuda.get_float(nCount, hDst, -1);
-                    t.Log.CHECK_EQ(rgf2.Length, rgdf.Count, "The arrays should have the same count.");
-
-                    for (int i = 0; i < nCount - 2; i++)
-                    {
-                        t.Log.CHECK_EQ(rgf[i], rgf2[i], "The values at " + i.ToString() + " are not equal!");
-                    }
-
-                    for (int i = nCount - 2; i < nCount; i++)
-                    {
-                        t.Log.CHECK_EQ(0, rgf2[i], "The values at " + i.ToString() + " should be zero!");
+                        if (hDst != 0)
+                        {
+                            t.Cuda.FreeMemory(hDst);
+                            hDst = 0;
+                        }
                     }
                 }
             }
@@ -1351,54 +1671,71 @@ namespace MyCaffe.test
             {
                 foreach (ITest t in test.Tests)
                 {
-                    hSrc = t.Cuda.AllocMemory(nCount);
-                    t.Log.CHECK_NE(0, hSrc, "The source should have a valid handle.");
-                    t.Cuda.SetMemory(hSrc, rgdf.ToArray());
-
-                    double[] rgdf1 = t.Cuda.get_double(nCount, hSrc, -1);
-                    t.Log.CHECK_EQ(rgdf1.Length, rgdf.Count, "The arrays should have the same count.");
-
-                    for (int i = 0; i < nCount; i++)
+                    try
                     {
-                        t.Log.CHECK_EQ(rgdf[i], rgdf1[i], "The values at " + i.ToString() + " are not equal!");
+                        hSrc = t.Cuda.AllocMemory(nCount);
+                        t.Log.CHECK_NE(0, hSrc, "The source should have a valid handle.");
+                        t.Cuda.SetMemory(hSrc, rgdf.ToArray());
+
+                        double[] rgdf1 = t.Cuda.get_double(nCount, hSrc, -1);
+                        t.Log.CHECK_EQ(rgdf1.Length, rgdf.Count, "The arrays should have the same count.");
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            t.Log.CHECK_EQ(rgdf[i], rgdf1[i], "The values at " + i.ToString() + " are not equal!");
+                        }
+
+                        float[] rgf1 = t.Cuda.get_float(nCount, hSrc, -1);
+                        t.Log.CHECK_EQ(rgf1.Length, rgdf.Count, "The arrays should have the same count.");
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            t.Log.CHECK_EQ(rgf[i], rgf1[i], "The values at " + i.ToString() + " are not equal!");
+                        }
+
+                        hDst = t.Cuda.AllocMemory(nCount);
+                        t.Cuda.set(nCount, hDst, 9);
+                        t.Cuda.copy(nCount - 2, hSrc, hDst);
+
+                        double[] rgdf2 = t.Cuda.get_double(nCount, hDst, -1);
+                        t.Log.CHECK_EQ(rgdf2.Length, rgdf.Count, "The arrays should have the same count.");
+
+                        for (int i = 0; i < nCount - 2; i++)
+                        {
+                            t.Log.CHECK_EQ(rgdf[i], rgdf2[i], "The values at " + i.ToString() + " are not equal!");
+                        }
+
+                        for (int i = nCount - 2; i < nCount; i++)
+                        {
+                            t.Log.CHECK_EQ(9, rgdf2[i], "The values at " + i.ToString() + " should be 9!");
+                        }
+
+                        float[] rgf2 = t.Cuda.get_float(nCount, hDst, -1);
+                        t.Log.CHECK_EQ(rgf2.Length, rgdf.Count, "The arrays should have the same count.");
+
+                        for (int i = 0; i < nCount - 2; i++)
+                        {
+                            t.Log.CHECK_EQ(rgf[i], rgf2[i], "The values at " + i.ToString() + " are not equal!");
+                        }
+
+                        for (int i = nCount - 2; i < nCount; i++)
+                        {
+                            t.Log.CHECK_EQ(9, rgf2[i], "The values at " + i.ToString() + " should be 9!");
+                        }
                     }
-
-                    float[] rgf1 = t.Cuda.get_float(nCount, hSrc, -1);
-                    t.Log.CHECK_EQ(rgf1.Length, rgdf.Count, "The arrays should have the same count.");
-
-                    for (int i = 0; i < nCount; i++)
+                    finally
                     {
-                        t.Log.CHECK_EQ(rgf[i], rgf1[i], "The values at " + i.ToString() + " are not equal!");
-                    }
+                        if (hSrc != 0)
+                        {
+                            t.Cuda.FreeMemory(hSrc);
+                            hSrc = 0;
+                        }
 
-                    hDst = t.Cuda.AllocMemory(nCount);
-                    t.Cuda.set(nCount, hDst, 9);
-                    t.Cuda.copy(nCount - 2, hSrc, hDst);
-
-                    double[] rgdf2 = t.Cuda.get_double(nCount, hDst, -1);
-                    t.Log.CHECK_EQ(rgdf2.Length, rgdf.Count, "The arrays should have the same count.");
-
-                    for (int i = 0; i < nCount - 2; i++)
-                    {
-                        t.Log.CHECK_EQ(rgdf[i], rgdf2[i], "The values at " + i.ToString() + " are not equal!");
-                    }
-
-                    for (int i = nCount - 2; i < nCount; i++)
-                    {
-                        t.Log.CHECK_EQ(9, rgdf2[i], "The values at " + i.ToString() + " should be 9!");
-                    }
-
-                    float[] rgf2 = t.Cuda.get_float(nCount, hDst, -1);
-                    t.Log.CHECK_EQ(rgf2.Length, rgdf.Count, "The arrays should have the same count.");
-
-                    for (int i = 0; i < nCount - 2; i++)
-                    {
-                        t.Log.CHECK_EQ(rgf[i], rgf2[i], "The values at " + i.ToString() + " are not equal!");
-                    }
-
-                    for (int i = nCount - 2; i < nCount; i++)
-                    {
-                        t.Log.CHECK_EQ(9, rgf2[i], "The values at " + i.ToString() + " should be 9!");
+                        if (hDst != 0)
+                        {
+                            t.Cuda.FreeMemory(hDst);
+                            hDst = 0;
+                        }
                     }
                 }
             }
@@ -1463,10 +1800,15 @@ namespace MyCaffe.test
                     hTensor = t.Cuda.CreateTensorDesc();
                     t.Log.CHECK_NE(0, hTensor, "The tensor handle is null!");
 
-                    t.Cuda.SetTensorDesc(hTensor, 10, 20, 30, 40);
-                    t.Cuda.SetTensorDesc(hTensor, 20, 30, 40, 50, 2, 3, 4, 5);
-
-                    t.Cuda.FreeTensorDesc(hTensor);
+                    try
+                    {
+                        t.Cuda.SetTensorDesc(hTensor, 10, 20, 30, 40);
+                        t.Cuda.SetTensorDesc(hTensor, 20, 30, 40, 50, 2, 3, 4, 5);
+                    }
+                    finally
+                    {
+                        t.Cuda.FreeTensorDesc(hTensor);
+                    }
                 }
             }
             finally
@@ -1488,8 +1830,14 @@ namespace MyCaffe.test
                     hFilter = t.Cuda.CreateFilterDesc();
                     t.Log.CHECK_NE(0, hFilter, "The filter handle is null!");
 
-                    t.Cuda.SetFilterDesc(hFilter, 10, 20, 30, 40);
-                    t.Cuda.FreeFilterDesc(hFilter);
+                    try
+                    {
+                        t.Cuda.SetFilterDesc(hFilter, 10, 20, 30, 40);
+                    }
+                    finally
+                    {
+                        t.Cuda.FreeFilterDesc(hFilter);
+                    }
                 }
             }
             finally
@@ -1511,8 +1859,14 @@ namespace MyCaffe.test
                     hConv = t.Cuda.CreateConvolutionDesc();
                     t.Log.CHECK_NE(0, hConv, "The convolution handle is null!");
 
-                    t.Cuda.SetConvolutionDesc(hConv, 10, 10, 2, 3);
-                    t.Cuda.FreeConvolutionDesc(hConv);
+                    try
+                    {
+                        t.Cuda.SetConvolutionDesc(hConv, 10, 10, 2, 3);
+                    }
+                    finally
+                    {
+                        t.Cuda.FreeConvolutionDesc(hConv);
+                    }
                 }
             }
             finally
@@ -1534,10 +1888,15 @@ namespace MyCaffe.test
                     hPool = t.Cuda.CreatePoolingDesc();
                     t.Log.CHECK_NE(0, hPool, "The pooling handle is null!");
 
-                    t.Cuda.SetPoolingDesc(hPool, PoolingMethod.AVE, 10, 20, 2, 3, 4, 5);
-                    t.Cuda.SetPoolingDesc(hPool, PoolingMethod.MAX, 10, 20, 2, 3, 4, 5);
-
-                    t.Cuda.FreePoolingDesc(hPool);
+                    try
+                    {
+                        t.Cuda.SetPoolingDesc(hPool, PoolingMethod.AVE, 10, 20, 2, 3, 4, 5);
+                        t.Cuda.SetPoolingDesc(hPool, PoolingMethod.MAX, 10, 20, 2, 3, 4, 5);
+                    }
+                    finally
+                    {
+                        t.Cuda.FreePoolingDesc(hPool);
+                    }
                 }
             }
             finally
@@ -1559,9 +1918,14 @@ namespace MyCaffe.test
                     hLRN = t.Cuda.CreateLRNDesc();
                     t.Log.CHECK_NE(0, hLRN, "The LRN handle is null!");
 
-                    t.Cuda.SetLRNDesc(hLRN, 2, 1.2, 2.1, 0.2);
-
-                    t.Cuda.FreeLRNDesc(hLRN);
+                    try
+                    {
+                        t.Cuda.SetLRNDesc(hLRN, 2, 1.2, 2.1, 0.2);
+                    }
+                    finally
+                    {
+                        t.Cuda.FreeLRNDesc(hLRN);
+                    }
                 }
             }
             finally
@@ -1587,8 +1951,14 @@ namespace MyCaffe.test
                     int nBatchLen = 5;
                     int nVectorLen = 2;
 
-                    t.Cuda.SetRnnDataDesc(hDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nMaxSeqLen, nBatchLen, nVectorLen);
-                    t.Cuda.FreeRnnDataDesc(hDesc);
+                    try
+                    {
+                        t.Cuda.SetRnnDataDesc(hDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nMaxSeqLen, nBatchLen, nVectorLen);
+                    }
+                    finally
+                    {
+                        t.Cuda.FreeRnnDataDesc(hDesc);
+                    }
                 }
             }
             finally
@@ -1614,10 +1984,15 @@ namespace MyCaffe.test
                     int nHiddenSize = 10;
                     int nNumLayers = 1;
 
-                    t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM);
-
-                    t.Cuda.FreeRnnDesc(hDesc);
-                    t.Cuda.FreeCuDNN(hCudnn);
+                    try
+                    {
+                        t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM);
+                    }
+                    finally
+                    {
+                        t.Cuda.FreeRnnDesc(hDesc);
+                        t.Cuda.FreeCuDNN(hCudnn);
+                    }
                 }
             }
             finally
@@ -1647,14 +2022,19 @@ namespace MyCaffe.test
                     int nBatchSize = 5;
                     int nNumLayers = 1;
 
-                    t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM);
-                    t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
+                    try
+                    {
+                        t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM);
+                        t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
 
-                    int nCount = t.Cuda.GetRnnParamCount(hCudnn, hDesc, hDataDesc);
-
-                    t.Cuda.FreeRnnDesc(hDesc);
-                    t.Cuda.FreeRnnDataDesc(hDataDesc);
-                    t.Cuda.FreeCuDNN(hCudnn);
+                        int nCount = t.Cuda.GetRnnParamCount(hCudnn, hDesc, hDataDesc);
+                    }
+                    finally
+                    {
+                        t.Cuda.FreeRnnDesc(hDesc);
+                        t.Cuda.FreeRnnDataDesc(hDataDesc);
+                        t.Cuda.FreeCuDNN(hCudnn);
+                    }
                 }
             }
             finally
@@ -1684,15 +2064,20 @@ namespace MyCaffe.test
                     int nBatchSize = 5;
                     int nNumLayers = 1;
 
-                    t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM);
-                    t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
+                    try
+                    {
+                        t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM);
+                        t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
 
-                    int nReservedCount;
-                    int nWorkspaceCount = t.Cuda.GetRnnWorkspaceCount(hCudnn, hDesc, hDataDesc, out nReservedCount);
-
-                    t.Cuda.FreeRnnDesc(hDesc);
-                    t.Cuda.FreeRnnDataDesc(hDataDesc);
-                    t.Cuda.FreeCuDNN(hCudnn);
+                        int nReservedCount;
+                        int nWorkspaceCount = t.Cuda.GetRnnWorkspaceCount(hCudnn, hDesc, hDataDesc, out nReservedCount);
+                    }
+                    finally
+                    {
+                        t.Cuda.FreeRnnDesc(hDesc);
+                        t.Cuda.FreeRnnDataDesc(hDataDesc);
+                        t.Cuda.FreeCuDNN(hCudnn);
+                    }
                 }
             }
             finally
@@ -1723,33 +2108,33 @@ namespace MyCaffe.test
                     int nHiddenSize = 3;
                     int nBatchSize = 5;
                     int nNumLayers = 1;
-
-                    t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM);
-                    t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
-
-                    int nAllWtCount = t.Cuda.GetRnnParamCount(hCudnn, hDesc, hDataDesc);
-                    hWtDesc = t.Cuda.CreateFilterDesc();
-                    hWtData = t.Cuda.AllocMemory(nAllWtCount);
-
-                    int[] rgDimWt = new int[3];
-                    rgDimWt[0] = nAllWtCount;
-                    rgDimWt[1] = 1;
-                    rgDimWt[2] = 1;
-
-                    t.Cuda.SetFilterNdDesc(hWtDesc, rgDimWt);
-                    Exception err = null;
+                    long hWt = 0;
+                    long hBias = 0;
 
                     try
                     {
+                        t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM);
+                        t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
+
+                        int nAllWtCount = t.Cuda.GetRnnParamCount(hCudnn, hDesc, hDataDesc);
+                        hWtDesc = t.Cuda.CreateFilterDesc();
+                        hWtData = t.Cuda.AllocMemory(nAllWtCount);
+
+                        int[] rgDimWt = new int[3];
+                        rgDimWt[0] = nAllWtCount;
+                        rgDimWt[1] = 1;
+                        rgDimWt[2] = 1;
+
+                        t.Cuda.SetFilterNdDesc(hWtDesc, rgDimWt);
+                        Exception err = null;
+
                         int nLinLayers = 8; // LSTM
                         for (int i = 0; i < nNumLayers; i++)
                         {
                             for (int j = 0; j < nLinLayers; j++)
                             {
                                 int nWtCount;
-                                long hWt;
                                 int nBiasCount;
-                                long hBias;
 
                                 t.Cuda.GetRnnLinLayerParams(hCudnn, hDesc, i, hDataDesc, hWtDesc, hWtData, j, out nWtCount, out hWt, out nBiasCount, out hBias);
 
@@ -1759,23 +2144,27 @@ namespace MyCaffe.test
                                 Assert.AreNotEqual(hBias, 0, "The bias handle should not be zero!");
 
                                 t.Cuda.FreeMemoryPointer(hWt);
+                                hWt = 0;
+
                                 t.Cuda.FreeMemoryPointer(hBias);
+                                hBias = 0;
                             }
                         }
                     }
-                    catch (Exception excpt)
+                    finally
                     {
-                        err = excpt;
+                        if (hWt != 0)
+                            t.Cuda.FreeMemoryPointer(hWt);
+
+                        if (hBias != 0)
+                            t.Cuda.FreeMemoryPointer(hBias);
+
+                        t.Cuda.FreeMemory(hWtData);
+                        t.Cuda.FreeFilterDesc(hWtDesc);
+                        t.Cuda.FreeRnnDesc(hDesc);
+                        t.Cuda.FreeRnnDataDesc(hDataDesc);
+                        t.Cuda.FreeCuDNN(hCudnn);
                     }
-
-                    t.Cuda.FreeMemory(hWtData);
-                    t.Cuda.FreeFilterDesc(hWtDesc);
-                    t.Cuda.FreeRnnDesc(hDesc);
-                    t.Cuda.FreeRnnDataDesc(hDataDesc);
-                    t.Cuda.FreeCuDNN(hCudnn);
-
-                    if (err != null)
-                        throw err;
                 }
             }
             finally
@@ -2348,9 +2737,47 @@ namespace MyCaffe.test
             ulong ulBlockSize;
             long hMemTest = m_cuda.CreateMemoryTest(out ulTotalBlocks, out dfTotalMemAllocated, out ulMemStartAddr, out ulBlockSize);
 
-            for (ulong ulIdx = 0; ulIdx < ulTotalBlocks; ulIdx++)
+            try
             {
-                T[] rg = m_cuda.RunMemoryTest(hMemTest, MEMTEST_TYPE.MOV_INV_8, ulIdx, 1, true, true, true, true);
+                for (ulong ulIdx = 0; ulIdx < ulTotalBlocks; ulIdx++)
+                {
+                    T[] rg = m_cuda.RunMemoryTest(hMemTest, MEMTEST_TYPE.MOV_INV_8, ulIdx, 1, true, true, true, true);
+                    double[] rgData = convert(rg);
+
+                    ulong ulStartAddr = (ulong)rgData[0];
+                    ulong ulAddrCount = (ulong)rgData[1];
+                    int nErrCount = (int)rgData[2];
+
+                    Trace.WriteLine("Start address = 0x" + ulStartAddr.ToString("X"));
+                    Trace.WriteLine("address count = " + ulAddrCount.ToString("N0"));
+                    Trace.WriteLine("error count = " + nErrCount.ToString("N0"));
+
+                    for (int i = 0; i < nErrCount; i++)
+                    {
+                        Trace.WriteLine("error address " + i.ToString() + " = " + rgData[3 + i].ToString("X"));
+                    }
+
+                    double dfPct = (double)ulIdx / (double)ulTotalBlocks;
+                    Trace.WriteLine("Percentage Complete: " + dfPct.ToString("P"));
+                }
+            }
+            finally
+            {
+                m_cuda.FreeMemoryTest(hMemTest);
+            }
+        }
+
+        public void TestMemoryTestAll()
+        {
+            ulong ulTotalBlocks;
+            double dfTotalMemAllocated;
+            ulong ulMemStartAddr;
+            ulong ulBlockSize;
+            long hMemTest = m_cuda.CreateMemoryTest(out ulTotalBlocks, out dfTotalMemAllocated, out ulMemStartAddr, out ulBlockSize);
+
+            try
+            {
+                T[] rg = m_cuda.RunMemoryTest(hMemTest, MEMTEST_TYPE.MOV_INV_8, 0, ulTotalBlocks, true, true, true, true);
                 double[] rgData = convert(rg);
 
                 ulong ulStartAddr = (ulong)rgData[0];
@@ -2365,87 +2792,67 @@ namespace MyCaffe.test
                 {
                     Trace.WriteLine("error address " + i.ToString() + " = " + rgData[3 + i].ToString("X"));
                 }
-
-                double dfPct = (double)ulIdx / (double)ulTotalBlocks;
-                Trace.WriteLine("Percentage Complete: " + dfPct.ToString("P"));
             }
-
-            m_cuda.FreeMemoryTest(hMemTest);
-        }
-
-        public void TestMemoryTestAll()
-        {
-            ulong ulTotalBlocks;
-            double dfTotalMemAllocated;
-            ulong ulMemStartAddr;
-            ulong ulBlockSize;
-            long hMemTest = m_cuda.CreateMemoryTest(out ulTotalBlocks, out dfTotalMemAllocated, out ulMemStartAddr, out ulBlockSize);
-
-            T[] rg = m_cuda.RunMemoryTest(hMemTest, MEMTEST_TYPE.MOV_INV_8, 0, ulTotalBlocks, true, true, true, true);
-            double[] rgData = convert(rg);
-
-            ulong ulStartAddr = (ulong)rgData[0];
-            ulong ulAddrCount = (ulong)rgData[1];
-            int nErrCount = (int)rgData[2];
-
-            Trace.WriteLine("Start address = 0x" + ulStartAddr.ToString("X"));
-            Trace.WriteLine("address count = " + ulAddrCount.ToString("N0"));
-            Trace.WriteLine("error count = " + nErrCount.ToString("N0"));
-
-            for (int i = 0; i < nErrCount; i++)
+            finally
             {
-                Trace.WriteLine("error address " + i.ToString() + " = " + rgData[3 + i].ToString("X"));
+                m_cuda.FreeMemoryTest(hMemTest);
             }
-
-            m_cuda.FreeMemoryTest(hMemTest);
         }
 
         public void TestMemoryPointers()
         {
             long hMem = m_cuda.AllocMemory(1000);
-            List<long> rghMem = new List<long>();
 
-            m_cuda.set(1000, hMem, 0);
-            long lOffset = 0;
-
-            for (int i = 0; i < 10; i++)
+            try
             {
-                long hMem1 = m_cuda.CreateMemoryPointer(hMem, lOffset, 100);
-                m_cuda.set(100, hMem1, i + 1);
-                rghMem.Add(hMem1);
-                lOffset += 100;
-            }
+                List<long> rghMem = new List<long>();
 
-            for (int i = 0; i < 10; i++)
-            {
-                long hMem1 = rghMem[i];
-                double[] rgData = convert(m_cuda.GetMemory(hMem1));
+                m_cuda.set(1000, hMem, 0);
+                long lOffset = 0;
 
-                Assert.AreEqual(rgData.Length, 100);
-
-                for (int j = 0; j < rgData.Length; j++)
+                for (int i = 0; i < 10; i++)
                 {
-                    Assert.AreEqual(rgData[j], i + 1);
+                    long hMem1 = m_cuda.CreateMemoryPointer(hMem, lOffset, 100);
+                    m_cuda.set(100, hMem1, i + 1);
+                    rghMem.Add(hMem1);
+                    lOffset += 100;
+                }
+
+                for (int i = 0; i < 10; i++)
+                {
+                    long hMem1 = rghMem[i];
+                    double[] rgData = convert(m_cuda.GetMemory(hMem1));
+
+                    Assert.AreEqual(rgData.Length, 100);
+
+                    for (int j = 0; j < rgData.Length; j++)
+                    {
+                        Assert.AreEqual(rgData[j], i + 1);
+                    }
+                }
+
+                for (int i = 0; i < 10; i++)
+                {
+                    long hMem1 = rghMem[i];
+                    m_cuda.FreeMemoryPointer(hMem1);
+                }
+
+                double[] rgData1 = convert(m_cuda.GetMemory(hMem));
+                Assert.AreEqual(rgData1.Length, 1000);
+
+                for (int i = 0; i < 10; i++)
+                {
+                    lOffset = i * 100;
+
+                    for (int j = 0; j < 100; j++)
+                    {
+                        Assert.AreEqual(rgData1[lOffset + j], i + 1);
+                    }
                 }
             }
-
-            for (int i = 0; i < 10; i++)
+            finally
             {
-                long hMem1 = rghMem[i];
-                m_cuda.FreeMemoryPointer(hMem1);
-            }
-
-            double[] rgData1 = convert(m_cuda.GetMemory(hMem));
-            Assert.AreEqual(rgData1.Length, 1000);
-
-            for (int i = 0; i < 10; i++)
-            {
-                lOffset = i * 100;
-
-                for (int j = 0; j < 100; j++)
-                {
-                    Assert.AreEqual(rgData1[lOffset + j], i + 1);
-                }
+                m_cuda.FreeMemory(hMem);
             }
         }
 
