@@ -15,6 +15,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Drawing.Imaging;
 using MyCaffe.extras;
+using System.Threading;
+using System.Net;
 
 namespace MyCaffe.test
 {
@@ -125,6 +127,10 @@ namespace MyCaffe.test
         CancelEvent m_evtCancel = new CancelEvent();
         MyCaffeControl<T> m_caffe = null;
         string m_strResultDir = null;
+        bool m_bProcessing = false;
+        Stopwatch m_swDownload = new Stopwatch();
+        AutoResetEvent m_evtDownloadDone = new AutoResetEvent(false);
+        TestingProgressSet m_testingProgress = new TestingProgressSet();
 
         public NeuralStyleTransferTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
@@ -138,6 +144,7 @@ namespace MyCaffe.test
 
         protected override void dispose()
         {
+            m_testingProgress.Dispose();
             m_caffe.Dispose();
             base.dispose();
         }
@@ -161,7 +168,7 @@ namespace MyCaffe.test
             {
                 case "vgg19":
                     strModelFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\vgg19\\neuralstyle\\deploy.prototxt");
-                    strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\vgg19\\neuralstyle\\weights.caffemodel");
+                    strWtsFile = getTestPath("\\MyCaffe\\test_data\\models\\vgg\\vgg19\\neuralstyle\\", true) + "weights.caffemodel";
                     break;
 
                 case "googlenet":
@@ -205,6 +212,77 @@ namespace MyCaffe.test
             return strFile + ".png";
         }
 
+        private Exception downloadFile(string strUrl, string strFile)
+        {
+            try
+            {
+                WebClient webClient = new WebClient();
+
+                m_swDownload.Start();
+
+                webClient.DownloadProgressChanged += WebClient_DownloadProgressChanged;
+                webClient.DownloadFileCompleted += WebClient_DownloadFileCompleted;
+                webClient.DownloadFileAsync(new Uri(strUrl), strFile);
+
+                List<WaitHandle> rgWait = new List<WaitHandle>();
+                rgWait.AddRange(m_evtCancel.Handles);
+                rgWait.Add(m_evtDownloadDone);
+
+                int nWait = WaitHandle.WaitAny(rgWait.ToArray());
+
+                if (nWait < rgWait.Count - 1)
+                {
+                    webClient.CancelAsync();
+
+                    if (File.Exists(strFile))
+                        File.Delete(strFile);
+
+                    return new Exception("Download Aborted!");
+                }
+            }
+            catch (Exception excpt)
+            {
+                return excpt;
+            }
+
+            return null;
+        }
+
+        private void WebClient_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
+        {
+            m_evtDownloadDone.Set();
+        }
+
+        private void WebClient_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        {
+            if (m_bProcessing)
+                return;
+
+            try
+            {
+                m_bProcessing = true;
+
+                if (m_swDownload.Elapsed.TotalMilliseconds > 1000)
+                {
+                    double dfPct = (double)e.BytesReceived / (double)e.TotalBytesToReceive;
+                    m_testingProgress.SetProgress(dfPct);
+                    string strMsg = "(" + dfPct.ToString("P") + ") Downloading weight file...";
+                    m_log.WriteLine(strMsg);
+
+                    m_swDownload.Restart();
+                }
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                m_bProcessing = false;
+            }
+        }
+
+
         /// <summary>
         /// The NeuralStyleTransfer test is based on the the open-source Neural Style Transfer algorithm
         /// from https://github.com/ftokarev/caffe-neural-style/blob/master/neural-style.py, but has been
@@ -233,6 +311,32 @@ namespace MyCaffe.test
             string strDataDir = getTestPath("\\MyCaffe\\test_data\\data\\images\\", true);
             byte[] rgWeights = null;
             string strModelDesc = "";
+            bool bLogTrace = m_log.EnableTrace;
+            bool bDownloadNeeded = false;
+
+            if (strModelName == "vgg19")
+            {
+                // If the weight file exists but has a size of zero (from an aborted download)
+                // delete the file and re-download it.
+                if (File.Exists(strWeightFile))
+                {
+                    FileInfo fi = new FileInfo(strWeightFile);
+                    if (fi.Length < 574671192L)
+                        File.Delete(strWeightFile);
+                }
+
+                if (!File.Exists(strWeightFile))
+                    bDownloadNeeded = true;
+            }
+
+            if (bDownloadNeeded)
+            {
+                string strWeightsUrl = "http://www.robots.ox.ac.uk/~vgg/software/very_deep/caffe/VGG_ILSVRC_19_layers.caffemodel";
+                m_log.EnableTrace = true;
+                m_log.WriteLine("Downloading weight file for test from '" + strWeightsUrl + "'...");
+                downloadFile(strWeightsUrl, strWeightFile);
+                m_log.EnableTrace = bLogTrace;
+            }
 
             if (string.IsNullOrEmpty(strStyleImg))
                 strStyleImg = getFileName(strDataDir + "style\\starry_night");
@@ -258,6 +362,8 @@ namespace MyCaffe.test
             {
                 strModelDesc = sr.ReadToEnd();
             }
+
+            m_testingProgress.SetProgress(0);
 
             NeuralStyleTransfer<T> ns = new NeuralStyleTransfer<T>(m_cuda, m_log, m_evtCancel, strModelName, strModelDesc, rgWeights, false, solverType, dfLearningRate);
 
