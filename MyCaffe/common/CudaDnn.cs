@@ -4625,9 +4625,9 @@ namespace MyCaffe.common
                 nIdx++;
 
                 // Get the match indices.
-                int nMapListCount = (int)rg[nIdx];
+                int nNumAllMatchIndices = (int)rg[nIdx];
                 nIdx++;
-                for (int i = 0; i < nMapListCount; i++)
+                for (int i = 0; i < nNumAllMatchIndices; i++)
                 {
                     DictionaryMap<List<int>> map = new DictionaryMap<List<int>>(null);
 
@@ -4659,8 +4659,8 @@ namespace MyCaffe.common
                 nIdx++;
                 for (int i = 0; i < nNegListCount; i++)
                 {
-                    nIdx++;
                     int nItemCount = (int)rg[nIdx];
+                    nIdx++;
                     List<int> rgItems = new List<int>();
 
                     for (int j = 0; j < nItemCount; j++)
