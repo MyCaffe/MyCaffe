@@ -1,0 +1,123 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CudaCompile Include="Cuda Files\device.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\extension.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\main.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\math.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\memory.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\memorycol.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\memtest.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\nccl.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\pca.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\rnnData.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\ssd_core.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\tsne_g.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\tsne_gp.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="Cuda Files\util.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CudaDnnDLL.cpp" />
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="Cuda Files\ssd_core.cpp">
+      <Filter>Cuda Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Cuda Files\ssd.cpp">
+      <Filter>Cuda Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="inc\FunctionIDs.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="Cuda Files\device.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\extension.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\handlecol.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\main.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\math.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\memory.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\memorycol.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\memtest.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\nccl.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\pca.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\rnnData.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\ssd.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\ssd_core.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\tsne_g.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\tsne_gp.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\util.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.10.2.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="CudaDnnDLL.10.2.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Cuda Files">
+      <UniqueIdentifier>{ffa5f418-dbd1-4824-8419-d7a2d4478b03}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

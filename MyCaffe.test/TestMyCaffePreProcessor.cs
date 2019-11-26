@@ -89,9 +89,13 @@ namespace MyCaffe.test
 
         public void TestCudaPreProcDLL()
         {
-            string strPath = AssemblyDirectory + "\\CudaPreProcDll.10.1.dll";
+            string strPath = AssemblyDirectory + "\\CudaPreProcDll.10.2.dll";
             if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\CudaPreProcDll.10.0.dll";
+            {
+                strPath = AssemblyDirectory + "\\CudaPreProcDll.10.1.dll";
+                if (!File.Exists(strPath))
+                    strPath = AssemblyDirectory + "\\CudaPreProcDll.10.0.dll";
+            }
 
             SettingsCaffe settings = new SettingsCaffe();
             CancelEvent evtCancel = new CancelEvent();

@@ -87,9 +87,13 @@ namespace MyCaffe.test
 
         public void TestRun()
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.2.dll";
             if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+            {
+                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+                if (!File.Exists(strPath))
+                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+            }
 
             long hExtension = m_cuda.CreateExtension(strPath);
 

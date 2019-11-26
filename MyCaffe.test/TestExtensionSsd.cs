@@ -690,13 +690,25 @@ namespace MyCaffe.test
             m_log.CHECK_EQ(lErr, 0, "The SSD test " + tst.ToString() + " failed with error " + lErr.ToString());
         }
 
+        private string DllPath
+        {
+            get
+            {
+                string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.2.dll";
+                if (!File.Exists(strPath))
+                {
+                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+                    if (!File.Exists(strPath))
+                        strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+                }
+
+                return strPath;
+            }
+        }
+
         public void TestCreate(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.CREATE, nConfig);
@@ -706,11 +718,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_Size(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_SIZE, nConfig);
@@ -720,11 +728,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_Bounds(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_BOUNDS, nConfig);
@@ -734,11 +738,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_DivBounds(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_DIVBOUNDS, nConfig);
@@ -748,11 +748,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_Clip(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_CLIP, nConfig);
@@ -762,11 +758,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_Decode1_Corner(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_DECODE1_CORNER, nConfig);
@@ -776,11 +768,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_Decode1_CenterSize(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_DECODE1_CENTER_SIZE, nConfig);
@@ -790,11 +778,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_DecodeN_Corner(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_DECODEN_CORNER, nConfig);
@@ -804,11 +788,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_DecodeN_CenterSize(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_DECODEN_CENTER_SIZE, nConfig);
@@ -818,11 +798,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_Encode_Corner(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_ENCODE_CORNER, nConfig);
@@ -832,11 +808,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_Encode_CenterSize(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_ENCODE_CENTER_SIZE, nConfig);
@@ -847,11 +819,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_Intersect(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_INTERSECT, nConfig);
@@ -861,11 +829,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_JaccardOverlap(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_JACCARDOVERLAP, nConfig);
@@ -875,11 +839,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_Match_OneBipartite(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_MATCH_ONEBIPARTITE, nConfig);
@@ -889,11 +849,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_Match_AllBipartite(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_MATCH_ALLBIPARTITE, nConfig);
@@ -903,11 +859,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_Match_OnePerPrediction(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_MATCH_ONEPERPREDICTION, nConfig);
@@ -917,11 +869,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_Match_AllPerPrediction(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_MATCH_ALLPERPREDICTION, nConfig);
@@ -931,11 +879,7 @@ namespace MyCaffe.test
 
         public void TestBBOX_Match_AllPerPredictionEx(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.BBOX_MATCH_ALLPERPREDICTIONEX, nConfig);
@@ -945,11 +889,7 @@ namespace MyCaffe.test
 
         public void TestGetGt(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.GET_GT, nConfig);
@@ -959,11 +899,7 @@ namespace MyCaffe.test
 
         public void TestGetLocPredShared(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.GET_LOCPRED_SHARED, nConfig);
@@ -973,11 +909,7 @@ namespace MyCaffe.test
 
         public void TestGetLocPredUnShared(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.GET_LOCPRED_UNSHARED, nConfig);
@@ -987,11 +919,7 @@ namespace MyCaffe.test
 
         public void TestGetConfScores(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.GET_CONF_SCORES, nConfig);
@@ -1001,11 +929,7 @@ namespace MyCaffe.test
 
         public void TestGetPriorBBoxes(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.GET_PRIOR_BBOXES, nConfig);
@@ -1015,11 +939,7 @@ namespace MyCaffe.test
 
         public void TestFindMatches(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.FINDMATCHES, nConfig);
@@ -1029,11 +949,7 @@ namespace MyCaffe.test
 
         public void TestCountMatches(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.COUNTMATCHES, nConfig);
@@ -1043,11 +959,7 @@ namespace MyCaffe.test
 
         public void TestSoftmax(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.SOFTMAX, nConfig);
@@ -1057,11 +969,7 @@ namespace MyCaffe.test
 
         public void TestComputeConfLoss(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.COMPUTE_CONF_LOSS, nConfig);
@@ -1071,11 +979,7 @@ namespace MyCaffe.test
 
         public void TestComputeLocLoss(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.COMPUTE_LOC_LOSS, nConfig);
@@ -1085,11 +989,7 @@ namespace MyCaffe.test
 
         public void TestApplyNMS(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.APPLYNMS, nConfig);
@@ -1099,11 +999,7 @@ namespace MyCaffe.test
 
         public void TestMineHardExamples(int nConfig)
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-            if (!File.Exists(strPath))
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
             runTest(hExtension, TEST.MINE_HARD_EXAMPLES, nConfig);
