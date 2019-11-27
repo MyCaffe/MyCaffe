@@ -192,7 +192,7 @@ long Memory<T>::GetDeviceMemory(int nDeviceID, T* pfTotal, T* pfFree, T* pfUsed,
 			return lErr;
 	}
 
-	return 0;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::GetDeviceMemory(int nDeviceID, double* pdfTotal, double* pdfFree, double* pdfUsed, bool* pbEstimate);
@@ -413,7 +413,7 @@ long Memory<T>::CreateStream(long* phHandle, bool bNonBlocking)
 	}
 
 	*phHandle = hHandle;
-	return 0;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::CreateStream(long* phHandle, bool bNonBlocking);
@@ -463,7 +463,7 @@ long Memory<T>::CreateCuDNN(long hStream, long* phHandle)
 	}
 
 	*phHandle = hHandle;
-	return 0;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::CreateCuDNN(long hStream, long* phHandle);
@@ -490,7 +490,7 @@ long Memory<T>::CreateTensorDesc(long* phHandle)
 	}
 
 	*phHandle = hHandle;
-	return 0;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::CreateTensorDesc(long* phHandle);
@@ -532,7 +532,7 @@ long Memory<T>::AddTensor(long hHandle, T fAlpha, long hSrcDesc, long hSrc, int 
 	if (lErr = cudnnAddTensor(cudnn, CUDNN_ADD_SAME_C, &fAlpha, srcdesc, src, &fBeta, dstdesc, dst))
 		return lErr | ERROR_CUDNN_OFFSET;
 #endif
-	return CUDNN_STATUS_SUCCESS;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::AddTensor(long hHandle, double dfAlpha, long hSrcDesc, long hSrc, int nSrcOffset, double dfBeta, long hDstDesc, long hDst, int nDstOffset);
@@ -559,7 +559,7 @@ long Memory<T>::CreateFilterDesc(long* phHandle)
 	}
 
 	*phHandle = hHandle;
-	return 0;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::CreateFilterDesc(long* phHandle);
@@ -586,7 +586,7 @@ long Memory<T>::CreateConvolutionDesc(long* phHandle)
 	}
 
 	*phHandle = hHandle;
-	return 0;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::CreateConvolutionDesc(long* phHandle);
@@ -683,7 +683,7 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 	*palgoBwdData = (long)algoBwdData;
 	*plWsSizeBwdData = szBwdData;
 
-	return cudaSuccess;
+	return cudaStreamSynchronize(0);
 }
 
 template long Memory<double>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, size_t lWsLimitInBytes, long* palgoFwd, size_t* plWsSizeFwd, long* palgoBwdFilter, size_t* plWsSizeBwdFilter, long* palgoBwdData, size_t* plWsSizeBwdData, int nPreferredFwdAlgo);
