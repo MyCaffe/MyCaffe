@@ -112,6 +112,45 @@ namespace MyCaffe.layers.ssd
         }
 
         /// <summary>
+        /// Release any resources used.
+        /// </summary>
+        protected override void dispose()
+        {
+            dispose(ref m_blobLocPred);
+            dispose(ref m_blobLocGt);
+            dispose(ref m_blobLocLoss);
+            dispose(ref m_blobConfPred);
+            dispose(ref m_blobConfGt);
+            dispose(ref m_blobConfLoss);
+
+            if (m_hSsd != 0)
+            {
+                m_cuda.FreeSSD(m_hSsd);
+                m_hSsd = 0;
+            }
+
+            if (m_locLossLayer != null)
+            {
+                m_locLossLayer.Dispose();
+                m_locLossLayer = null;
+            }
+
+            if (m_confLossLayer != null)
+            {
+                m_confLossLayer.Dispose();
+                m_confLossLayer = null;
+            }
+
+            if (m_bboxUtil != null)
+            {
+                m_bboxUtil.Dispose();
+                m_bboxUtil = null;
+            }
+
+            base.dispose();
+        }
+
+        /// <summary>
         /// Returns the internal blobs of this layer.
         /// </summary>
         public override BlobCollection<T> internal_blobs
@@ -131,27 +170,6 @@ namespace MyCaffe.layers.ssd
                     return col;
                 }
             }
-        }
-
-        /// <summary>
-        /// Release any resources used.
-        /// </summary>
-        protected override void dispose()
-        {
-            dispose(ref m_blobLocPred);
-            dispose(ref m_blobLocGt);
-            dispose(ref m_blobLocLoss);
-            dispose(ref m_blobConfPred);
-            dispose(ref m_blobConfGt);
-            dispose(ref m_blobConfLoss);
-
-            if (m_hSsd != 0)
-            {
-                m_cuda.FreeSSD(m_hSsd);
-                m_hSsd = 0;
-            }
-
-            base.dispose();
         }
 
         /// <summary>
