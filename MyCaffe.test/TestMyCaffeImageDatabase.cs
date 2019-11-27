@@ -19,16 +19,70 @@ namespace MyCaffe.test
     {
         public void TestInitialization(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
-            GC.Collect();
+            PreTest.Init();
+
             Log log = new Log("Test primary dataset");
             log.EnableTrace = true;
 
+            string str;
+            Stopwatch sw = new Stopwatch();
+
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase(log);
+            try
+            {
+
+                foreach (string strDs in rgDs)
+                {
+                    SettingsCaffe settings = new SettingsCaffe();
+                    settings.ImageDbLoadMethod = loadMethod;
+                    settings.ImageDbLoadLimit = nLoadLimit;
+
+                    sw.Start();
+                    db.InitializeWithDsName(settings, strDs);
+                    str = sw.ElapsedMilliseconds.ToString();
+                    Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
+
+                    sw.Reset();
+                    sw.Stop();
+                }
+
+                sw.Stop();
+                sw.Reset();
+                sw.Start();
+                db.CleanUp();
+                str = sw.ElapsedMilliseconds.ToString();
+                Trace.WriteLine("Cleanup Time: " + str + " ms.");
+
+                sw.Stop();
+                sw.Reset();
+                sw.Start();
+            }
+            finally
+            {
+                IDisposable idisp = db as IDisposable;
+                if (idisp != null)
+                    idisp.Dispose();
+            }
+
+            str = sw.ElapsedMilliseconds.ToString();
+            Trace.WriteLine("Dispose Time: " + str + " ms.");
+        }
+
+        public void TestLoadSecondaryDataset(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
+        {
+            PreTest.Init();
+
+            Log log = new Log("Test secondary dataset");
+            log.EnableTrace = true;
+
+            IXImageDatabase db = new MyCaffeImageDatabase(log);
             Stopwatch sw = new Stopwatch();
+            string strDs = "MNIST";
+            string strDs2 = "CIFAR-10";
             string str;
 
-            foreach (string strDs in rgDs)
+            try
             {
                 SettingsCaffe settings = new SettingsCaffe();
                 settings.ImageDbLoadMethod = loadMethod;
@@ -39,64 +93,24 @@ namespace MyCaffe.test
                 str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                sw.Reset();
-                sw.Stop();
+                sw.Restart();
+                db.LoadDatasetByName(strDs2);
+                str = sw.ElapsedMilliseconds.ToString();
+                Trace.WriteLine(strDs2 + " Initialization Time: " + str + " ms.");
+
+                sw.Restart();
+                db.CleanUp();
+                str = sw.ElapsedMilliseconds.ToString();
+                Trace.WriteLine("Cleanup Time: " + str + " ms.");
+
+                sw.Restart();
             }
-
-            sw.Stop();
-            sw.Reset();
-            sw.Start();
-            db.CleanUp();
-            str = sw.ElapsedMilliseconds.ToString();
-            Trace.WriteLine("Cleanup Time: " + str + " ms.");
-
-            sw.Stop();
-            sw.Reset();
-            sw.Start();
-
-            IDisposable idisp = db as IDisposable;
-            if (idisp != null)
-                idisp.Dispose();
-
-            str = sw.ElapsedMilliseconds.ToString();
-            Trace.WriteLine("Dispose Time: " + str + " ms.");
-        }
-
-        public void TestLoadSecondaryDataset(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
-        {
-            GC.Collect();
-            Log log = new Log("Test secondary dataset");
-            log.EnableTrace = true;
-
-            IXImageDatabase db = new MyCaffeImageDatabase(log);
-            Stopwatch sw = new Stopwatch();
-            string strDs = "MNIST";
-            string strDs2 = "CIFAR-10";
-            string str;
-
-            SettingsCaffe settings = new SettingsCaffe();
-            settings.ImageDbLoadMethod = loadMethod;
-            settings.ImageDbLoadLimit = nLoadLimit;
-            
-            sw.Start();
-            db.InitializeWithDsName(settings, strDs);
-            str = sw.ElapsedMilliseconds.ToString();
-            Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
-
-            sw.Restart();
-            db.LoadDatasetByName(strDs2);
-            str = sw.ElapsedMilliseconds.ToString();
-            Trace.WriteLine(strDs2 + " Initialization Time: " + str + " ms.");
-
-            sw.Restart();
-            db.CleanUp();
-            str = sw.ElapsedMilliseconds.ToString();
-            Trace.WriteLine("Cleanup Time: " + str + " ms.");
-
-            sw.Restart();
-            IDisposable idisp = db as IDisposable;
-            if (idisp != null)
-                idisp.Dispose();
+            finally
+            {
+                IDisposable idisp = db as IDisposable;
+                if (idisp != null)
+                    idisp.Dispose();
+            }
 
             str = sw.ElapsedMilliseconds.ToString();
             Trace.WriteLine("Dispose Time: " + str + " ms.");
@@ -105,85 +119,91 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestUnloadDataset()
         {
-            GC.Collect();
+            PreTest.Init();
+
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase();
             Stopwatch sw = new Stopwatch();
             string str;
 
-            foreach (string strDs in rgDs)
+            try
             {
-                SettingsCaffe settings = new SettingsCaffe();
-                settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
-                settings.ImageDbLoadLimit = 0;
+                foreach (string strDs in rgDs)
+                {
+                    SettingsCaffe settings = new SettingsCaffe();
+                    settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+                    settings.ImageDbLoadLimit = 0;
+
+                    sw.Start();
+                    db.InitializeWithDsName(settings, strDs);
+                    str = sw.ElapsedMilliseconds.ToString();
+                    Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
+
+                    sw.Reset();
+                    sw.Stop();
+                }
+
+                sw.Stop();
+                sw.Reset();
+
+                double dfTraining;
+                double dfTesting;
+                double dfPctLoaded;
+
+                dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[0], out dfTraining, out dfTesting);
+                Assert.AreEqual(1, dfPctLoaded);
+                Assert.AreEqual(1, dfTraining);
+                Assert.AreEqual(1, dfTesting);
+
+                db.UnloadDatasetByName(rgDs[0]);
+                Thread.Sleep(5000);
+
+                dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[0], out dfTraining, out dfTesting);
+                Assert.AreEqual(0, dfPctLoaded);
+                Assert.AreEqual(0, dfTraining);
+                Assert.AreEqual(0, dfTesting);
+
+                dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[1], out dfTraining, out dfTesting);
+                Assert.AreEqual(1, dfPctLoaded);
+                Assert.AreEqual(1, dfTraining);
+                Assert.AreEqual(1, dfTesting);
+
+                db.UnloadDatasetByName(rgDs[1]);
+                Thread.Sleep(5000);
+
+                dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[1], out dfTraining, out dfTesting);
+                Assert.AreEqual(0, dfPctLoaded);
+                Assert.AreEqual(0, dfTraining);
+                Assert.AreEqual(0, dfTesting);
+
+                dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[2], out dfTraining, out dfTesting);
+                Assert.AreEqual(0, dfPctLoaded);
+                Assert.AreEqual(0, dfTraining);
+                Assert.AreEqual(0, dfTesting);
+
+                db.UnloadDatasetByName(rgDs[2]);
+                Thread.Sleep(5000);
+
+                dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[2], out dfTraining, out dfTesting);
+                Assert.AreEqual(0, dfPctLoaded);
+                Assert.AreEqual(0, dfTraining);
+                Assert.AreEqual(0, dfTesting);
 
                 sw.Start();
-                db.InitializeWithDsName(settings, strDs);
+                db.CleanUp();
                 str = sw.ElapsedMilliseconds.ToString();
-                Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
+                Trace.WriteLine("Cleanup Time: " + str + " ms.");
 
-                sw.Reset();
                 sw.Stop();
+                sw.Reset();
+                sw.Start();
             }
-
-            sw.Stop();
-            sw.Reset();
-
-            double dfTraining;
-            double dfTesting;
-            double dfPctLoaded;
-            
-            dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[0], out dfTraining, out dfTesting);
-            Assert.AreEqual(1, dfPctLoaded);
-            Assert.AreEqual(1, dfTraining);
-            Assert.AreEqual(1, dfTesting);
-
-            db.UnloadDatasetByName(rgDs[0]);
-            Thread.Sleep(5000);
-
-            dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[0], out dfTraining, out dfTesting);
-            Assert.AreEqual(0, dfPctLoaded);
-            Assert.AreEqual(0, dfTraining);
-            Assert.AreEqual(0, dfTesting);
-
-            dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[1], out dfTraining, out dfTesting);
-            Assert.AreEqual(1, dfPctLoaded);
-            Assert.AreEqual(1, dfTraining);
-            Assert.AreEqual(1, dfTesting);
-
-            db.UnloadDatasetByName(rgDs[1]);
-            Thread.Sleep(5000);
-
-            dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[1], out dfTraining, out dfTesting);
-            Assert.AreEqual(0, dfPctLoaded);
-            Assert.AreEqual(0, dfTraining);
-            Assert.AreEqual(0, dfTesting);
-
-            dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[2], out dfTraining, out dfTesting);
-            Assert.AreEqual(0, dfPctLoaded);
-            Assert.AreEqual(0, dfTraining);
-            Assert.AreEqual(0, dfTesting);
-
-            db.UnloadDatasetByName(rgDs[2]);
-            Thread.Sleep(5000);
-
-            dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[2], out dfTraining, out dfTesting);
-            Assert.AreEqual(0, dfPctLoaded);
-            Assert.AreEqual(0, dfTraining);
-            Assert.AreEqual(0, dfTesting);
-
-            sw.Start();
-            db.CleanUp();
-            str = sw.ElapsedMilliseconds.ToString();
-            Trace.WriteLine("Cleanup Time: " + str + " ms.");
-
-            sw.Stop();
-            sw.Reset();
-            sw.Start();
-
-            IDisposable idisp = db as IDisposable;
-            if (idisp != null)
-                idisp.Dispose();
+            finally
+            {
+                IDisposable idisp = db as IDisposable;
+                if (idisp != null)
+                    idisp.Dispose();
+            }
 
             str = sw.ElapsedMilliseconds.ToString();
             Trace.WriteLine("Dispose Time: " + str + " ms.");
@@ -222,93 +242,99 @@ namespace MyCaffe.test
 
         public void TestQueryRandom(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit, IMGDB_LABEL_SELECTION_METHOD? labelSel = null, IMGDB_IMAGE_SELECTION_METHOD? imgSel = null)
         {
-            GC.Collect();
+            PreTest.Init();
+
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             Log log = new Log("Image Database Test");
             log.EnableTrace = true;
             IXImageDatabase db = new MyCaffeImageDatabase(log);
 
-            foreach (string strDs in rgDs)
+            try
             {
-                DatasetFactory df = new DatasetFactory();
-                int nDs = df.GetDatasetID(strDs);
-                if (nDs == 0)
-                    throw new Exception("The dataset '" + strDs + "' does not exist - you need to load it.");
-
-                SettingsCaffe settings = new SettingsCaffe();
-                settings.ImageDbLoadMethod = loadMethod;
-                settings.ImageDbLoadLimit = nLoadLimit;
-
-                Stopwatch sw = new Stopwatch();
-
-                sw.Start();
-                db.InitializeWithDsName(settings, strDs);
-                string str = sw.ElapsedMilliseconds.ToString();
-                Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
-
-                DatasetDescriptor ds = db.GetDatasetByName(strDs);
-
-                for (int iter = 0; iter < 3; iter++)
+                foreach (string strDs in rgDs)
                 {
-                    Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
-                    int nCount = ds.TrainingSource.ImageCount * 2;
-                    double dfTotalMs = 0;
+                    DatasetFactory df = new DatasetFactory();
+                    int nDs = df.GetDatasetID(strDs);
+                    if (nDs == 0)
+                        throw new Exception("The dataset '" + strDs + "' does not exist - you need to load it.");
 
-                    for (int i = 0; i < nCount; i++)
+                    SettingsCaffe settings = new SettingsCaffe();
+                    settings.ImageDbLoadMethod = loadMethod;
+                    settings.ImageDbLoadLimit = nLoadLimit;
+
+                    Stopwatch sw = new Stopwatch();
+
+                    sw.Start();
+                    db.InitializeWithDsName(settings, strDs);
+                    string str = sw.ElapsedMilliseconds.ToString();
+                    Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
+
+                    DatasetDescriptor ds = db.GetDatasetByName(strDs);
+
+                    for (int iter = 0; iter < 3; iter++)
                     {
-                        sw.Reset();
-                        sw.Start();
-                        SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0, labelSel, imgSel);
-                        dfTotalMs += sw.ElapsedMilliseconds;
-                        sw.Stop();
+                        Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
+                        int nCount = ds.TrainingSource.ImageCount * 2;
+                        double dfTotalMs = 0;
 
-                        if (!rg.Keys.Contains(d.Index))
-                            rg.Add(d.Index, new List<SimpleDatum>() { d });
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            sw.Reset();
+                            sw.Start();
+                            SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0, labelSel, imgSel);
+                            dfTotalMs += sw.ElapsedMilliseconds;
+                            sw.Stop();
+
+                            if (!rg.Keys.Contains(d.Index))
+                                rg.Add(d.Index, new List<SimpleDatum>() { d });
+                            else
+                                rg[d.Index].Add(d);
+                        }
+
+                        str = (dfTotalMs / (double)nCount).ToString();
+                        Trace.WriteLine("Average Query Time: " + str + " ms.");
+
+                        str = db.GetLabelQueryHitPercentsAsTextFromSourceName(ds.TrainingSourceName);
+                        Trace.WriteLine("Label Query Hit Percents = " + str);
+
+
+                        // Verify random selection, so no indexes should be the same.
+                        Dictionary<int, int> rgCounts = new Dictionary<int, int>();
+                        double dfTotal = 0;
+                        foreach (KeyValuePair<int, List<SimpleDatum>> kv in rg)
+                        {
+                            if (!rgCounts.ContainsKey(kv.Value.Count))
+                                rgCounts.Add(kv.Value.Count, 1);
+                            else
+                                rgCounts[kv.Value.Count]++;
+
+                            dfTotal += kv.Value.Count;
+                        }
+
+                        List<int> rgMissedIdx = new List<int>();
+                        for (int i = 0; i < ds.TrainingSource.ImageCount; i++)
+                        {
+                            if (!rg.ContainsKey(i))
+                                rgMissedIdx.Add(i);
+                        }
+
+                        dfTotal /= rg.Count;
+
+                        if (nLoadLimit == 0)
+                            Assert.AreEqual(true, dfTotal <= 2.1);
                         else
-                            rg[d.Index].Add(d);
+                            Assert.AreEqual(true, dfTotal <= 10.6);
                     }
-
-                    str = (dfTotalMs / (double)nCount).ToString();
-                    Trace.WriteLine("Average Query Time: " + str + " ms.");
-
-                    str = db.GetLabelQueryHitPercentsAsTextFromSourceName(ds.TrainingSourceName);
-                    Trace.WriteLine("Label Query Hit Percents = " + str);
-
-
-                    // Verify random selection, so no indexes should be the same.
-                    Dictionary<int, int> rgCounts = new Dictionary<int, int>();
-                    double dfTotal = 0;
-                    foreach (KeyValuePair<int, List<SimpleDatum>> kv in rg)
-                    {
-                        if (!rgCounts.ContainsKey(kv.Value.Count))
-                            rgCounts.Add(kv.Value.Count, 1);
-                        else
-                            rgCounts[kv.Value.Count]++;
-
-                        dfTotal += kv.Value.Count;
-                    }
-
-                    List<int> rgMissedIdx = new List<int>();
-                    for (int i = 0; i < ds.TrainingSource.ImageCount; i++)
-                    {
-                        if (!rg.ContainsKey(i))
-                            rgMissedIdx.Add(i);
-                    }
-
-                    dfTotal /= rg.Count;
-
-                    if (nLoadLimit == 0)
-                        Assert.AreEqual(true, dfTotal <= 2.1);
-                    else
-                        Assert.AreEqual(true, dfTotal <= 10.6);
                 }
+
+                db.CleanUp();
             }
-
-            db.CleanUp();
-
-            IDisposable idisp = db as IDisposable;
-            if (idisp != null)
-                idisp.Dispose();
+            finally
+            {
+                IDisposable idisp = db as IDisposable;
+                if (idisp != null)
+                    idisp.Dispose();
+            }
         }
 
         [TestMethod]
@@ -343,137 +369,143 @@ namespace MyCaffe.test
 
         public void TestQueryRandom2(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
-            GC.Collect();
+            PreTest.Init();
+
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
 
             foreach (string strDs in rgDs)
             {
                 IXImageDatabase db = new MyCaffeImageDatabase();
 
-                SettingsCaffe settings = new SettingsCaffe();
-                settings.ImageDbLoadMethod = loadMethod;
-                settings.ImageDbLoadLimit = nLoadLimit;
-
-                Stopwatch sw = new Stopwatch();
-
-                sw.Start();
-                db.InitializeWithDsName(settings, strDs);
-                db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                string str = sw.ElapsedMilliseconds.ToString();
-                Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
-
-                DatasetDescriptor ds = db.GetDatasetByName(strDs);
-                Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
-                Dictionary<int, int> rgCounts = new Dictionary<int, int>();
-
-                int nCount = 10000;
-                double dfTotalMs = 0;
-                int nCount1 = 0;
-                double dfTotalMs1 = 0;
-
-                Stopwatch swTimer = new Stopwatch();
-                swTimer.Start();
-
-
-                // Randomly query each image and count up the number if times a given label is hit.
-                for (int i = 0; i < nCount; i++)
+                try
                 {
-                    sw.Reset();
+                    SettingsCaffe settings = new SettingsCaffe();
+                    settings.ImageDbLoadMethod = loadMethod;
+                    settings.ImageDbLoadLimit = nLoadLimit;
+
+                    Stopwatch sw = new Stopwatch();
+
                     sw.Start();
-                    SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
-                    sw.Stop();
-                    dfTotalMs += sw.ElapsedMilliseconds;
-                    dfTotalMs1 += sw.ElapsedMilliseconds;
-                    nCount1++;
+                    db.InitializeWithDsName(settings, strDs);
+                    db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    string str = sw.ElapsedMilliseconds.ToString();
+                    Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                    if (!rg.Keys.Contains(d.Index))
-                        rg.Add(d.Index, new List<SimpleDatum>() { d });
-                    else
-                        rg[d.Index].Add(d);
+                    DatasetDescriptor ds = db.GetDatasetByName(strDs);
+                    Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
+                    Dictionary<int, int> rgCounts = new Dictionary<int, int>();
 
-                    if (!rgCounts.Keys.Contains(d.Label))
-                        rgCounts.Add(d.Label, 1);
-                    else
-                        rgCounts[d.Label]++;
+                    int nCount = 10000;
+                    double dfTotalMs = 0;
+                    int nCount1 = 0;
+                    double dfTotalMs1 = 0;
 
-                    if (swTimer.Elapsed.TotalMilliseconds > 2000)
+                    Stopwatch swTimer = new Stopwatch();
+                    swTimer.Start();
+
+
+                    // Randomly query each image and count up the number if times a given label is hit.
+                    for (int i = 0; i < nCount; i++)
                     {
-                        double dfPct = (double)i / (double)nCount;
-                        Trace.WriteLine("(" + dfPct.ToString("P") + ") ave time = " + (dfTotalMs1 / nCount1).ToString("N3") + " ms.");
-                        dfTotalMs1 = 0;
-                        nCount1 = 0;
-                        swTimer.Restart();
+                        sw.Reset();
+                        sw.Start();
+                        SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+                        sw.Stop();
+                        dfTotalMs += sw.ElapsedMilliseconds;
+                        dfTotalMs1 += sw.ElapsedMilliseconds;
+                        nCount1++;
+
+                        if (!rg.Keys.Contains(d.Index))
+                            rg.Add(d.Index, new List<SimpleDatum>() { d });
+                        else
+                            rg[d.Index].Add(d);
+
+                        if (!rgCounts.Keys.Contains(d.Label))
+                            rgCounts.Add(d.Label, 1);
+                        else
+                            rgCounts[d.Label]++;
+
+                        if (swTimer.Elapsed.TotalMilliseconds > 2000)
+                        {
+                            double dfPct = (double)i / (double)nCount;
+                            Trace.WriteLine("(" + dfPct.ToString("P") + ") ave time = " + (dfTotalMs1 / nCount1).ToString("N3") + " ms.");
+                            dfTotalMs1 = 0;
+                            nCount1 = 0;
+                            swTimer.Restart();
+                        }
                     }
+
+                    // Total the label counts and calculate the average and stddev.
+                    List<KeyValuePair<int, int>> rgCountsNoLabelBalancing = rgCounts.OrderBy(p => p.Key).ToList();
+                    Trace.WriteLine("NO LABEL BALANCING COUNTS");
+
+                    CalculationArray ca = new CalculationArray();
+                    foreach (KeyValuePair<int, int> kv in rgCountsNoLabelBalancing)
+                    {
+                        ca.Add(kv.Value);
+                        Trace.WriteLine(kv.Key + " -> " + kv.Value.ToString("N0"));
+                    }
+
+                    double dfAve = ca.Average;
+                    double dfStdDev1 = ca.CalculateStandardDeviation(dfAve);
+
+                    Trace.WriteLine("Average = " + dfAve.ToString());
+                    Trace.WriteLine("StdDev = " + dfStdDev1.ToString());
+
+                    // Load the labels by first selecting the label randomly and then the image randomly from the label set.
+                    rg = new Dictionary<int, List<SimpleDatum>>();
+                    rgCounts = new Dictionary<int, int>();
+
+                    for (int i = 0; i < nCount; i++)
+                    {
+                        sw.Reset();
+                        sw.Start();
+                        SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
+                        dfTotalMs += sw.ElapsedMilliseconds;
+                        sw.Stop();
+
+                        if (!rg.Keys.Contains(d.Index))
+                            rg.Add(d.Index, new List<SimpleDatum>() { d });
+                        else
+                            rg[d.Index].Add(d);
+
+                        if (!rgCounts.Keys.Contains(d.Label))
+                            rgCounts.Add(d.Label, 1);
+                        else
+                            rgCounts[d.Label]++;
+                    }
+
+                    // Total the balanced label counts and calculate the average and stddev.
+                    List<KeyValuePair<int, int>> rgCountsLabelBalancing = rgCounts.OrderBy(p => p.Key).ToList();
+                    Trace.WriteLine("LABEL BALANCING COUNTS");
+
+                    ca = new CalculationArray();
+
+                    foreach (KeyValuePair<int, int> kv in rgCountsLabelBalancing)
+                    {
+                        ca.Add(kv.Value);
+                        Trace.WriteLine(kv.Key + " -> " + kv.Value.ToString("N0"));
+                    }
+
+                    dfAve = ca.Average;
+                    double dfStdDev2 = ca.CalculateStandardDeviation(dfAve);
+
+                    Trace.WriteLine("Average = " + dfAve.ToString());
+                    Trace.WriteLine("StdDev = " + dfStdDev2.ToString());
+
+                    Assert.AreEqual(true, dfStdDev2 < dfStdDev1 * 1.5);
+
+                    str = (dfTotalMs / (double)(nCount * 2)).ToString();
+                    Trace.WriteLine("Average Query Time: " + str + " ms.");
+
+                    db.CleanUp();
                 }
-
-                // Total the label counts and calculate the average and stddev.
-                List<KeyValuePair<int, int>> rgCountsNoLabelBalancing = rgCounts.OrderBy(p => p.Key).ToList();
-                Trace.WriteLine("NO LABEL BALANCING COUNTS");
-
-                CalculationArray ca = new CalculationArray();
-                foreach (KeyValuePair<int, int> kv in rgCountsNoLabelBalancing)
+                finally
                 {
-                    ca.Add(kv.Value);
-                    Trace.WriteLine(kv.Key + " -> " + kv.Value.ToString("N0"));
+                    IDisposable idisp = db as IDisposable;
+                    if (idisp != null)
+                        idisp.Dispose();
                 }
-
-                double dfAve = ca.Average;
-                double dfStdDev1 = ca.CalculateStandardDeviation(dfAve);
-
-                Trace.WriteLine("Average = " + dfAve.ToString());
-                Trace.WriteLine("StdDev = " + dfStdDev1.ToString());
-
-                // Load the labels by first selecting the label randomly and then the image randomly from the label set.
-                rg = new Dictionary<int, List<SimpleDatum>>();
-                rgCounts = new Dictionary<int, int>();
-
-                for (int i = 0; i < nCount; i++)
-                {
-                    sw.Reset();
-                    sw.Start();
-                    SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
-                    dfTotalMs += sw.ElapsedMilliseconds;
-                    sw.Stop();
-
-                    if (!rg.Keys.Contains(d.Index))
-                        rg.Add(d.Index, new List<SimpleDatum>() { d });
-                    else
-                        rg[d.Index].Add(d);
-
-                    if (!rgCounts.Keys.Contains(d.Label))
-                        rgCounts.Add(d.Label, 1);
-                    else
-                        rgCounts[d.Label]++;
-                }
-
-                // Total the balanced label counts and calculate the average and stddev.
-                List<KeyValuePair<int, int>> rgCountsLabelBalancing = rgCounts.OrderBy(p => p.Key).ToList();
-                Trace.WriteLine("LABEL BALANCING COUNTS");
-
-                ca = new CalculationArray();
-
-                foreach (KeyValuePair<int, int> kv in rgCountsLabelBalancing)
-                {
-                    ca.Add(kv.Value);
-                    Trace.WriteLine(kv.Key + " -> " + kv.Value.ToString("N0"));
-                }
-
-                dfAve = ca.Average;
-                double dfStdDev2 = ca.CalculateStandardDeviation(dfAve);
-
-                Trace.WriteLine("Average = " + dfAve.ToString());
-                Trace.WriteLine("StdDev = " + dfStdDev2.ToString());
-
-                Assert.AreEqual(true, dfStdDev2 < dfStdDev1 * 1.5);
-
-                str = (dfTotalMs / (double)(nCount * 2)).ToString();
-                Trace.WriteLine("Average Query Time: " + str + " ms.");
-
-                db.CleanUp();
-
-                IDisposable idisp = db as IDisposable;
-                if (idisp != null)
-                    idisp.Dispose();
             }
         }
 
@@ -497,64 +529,70 @@ namespace MyCaffe.test
 
         public void TestQuerySequential(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
-            GC.Collect();
+            PreTest.Init();
+
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase();
 
-            foreach (string strDs in rgDs)
+            try
             {
-                DatasetFactory df = new DatasetFactory();
-                int nDs = df.GetDatasetID(strDs);
-                if (nDs == 0)
-                    throw new Exception("The dataset '" + strDs + "' does not exist - you need to load it.");
-
-                SettingsCaffe settings = new SettingsCaffe();
-                settings.ImageDbLoadMethod = loadMethod;
-                settings.ImageDbLoadLimit = nLoadLimit;
-
-                Stopwatch sw = new Stopwatch();
-
-                sw.Start();
-                db.InitializeWithDsName(settings, strDs);
-                string str = sw.ElapsedMilliseconds.ToString();
-                Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
-
-                DatasetDescriptor ds = db.GetDatasetByName(strDs);
-                Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
-
-                int nCount = 100;
-                double dfTotalMs = 0;
-
-                for (int i = 0; i < nCount; i++)
+                foreach (string strDs in rgDs)
                 {
-                    sw.Reset();
+                    DatasetFactory df = new DatasetFactory();
+                    int nDs = df.GetDatasetID(strDs);
+                    if (nDs == 0)
+                        throw new Exception("The dataset '" + strDs + "' does not exist - you need to load it.");
+
+                    SettingsCaffe settings = new SettingsCaffe();
+                    settings.ImageDbLoadMethod = loadMethod;
+                    settings.ImageDbLoadLimit = nLoadLimit;
+
+                    Stopwatch sw = new Stopwatch();
+
                     sw.Start();
-                    SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                    dfTotalMs += sw.ElapsedMilliseconds;
-                    sw.Stop();
+                    db.InitializeWithDsName(settings, strDs);
+                    string str = sw.ElapsedMilliseconds.ToString();
+                    Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                    if (!rg.Keys.Contains(d.Index))
-                        rg.Add(d.Index, new List<SimpleDatum>() { d });
-                    else
-                        rg[d.Index].Add(d);
+                    DatasetDescriptor ds = db.GetDatasetByName(strDs);
+                    Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
+
+                    int nCount = 100;
+                    double dfTotalMs = 0;
+
+                    for (int i = 0; i < nCount; i++)
+                    {
+                        sw.Reset();
+                        sw.Start();
+                        SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                        dfTotalMs += sw.ElapsedMilliseconds;
+                        sw.Stop();
+
+                        if (!rg.Keys.Contains(d.Index))
+                            rg.Add(d.Index, new List<SimpleDatum>() { d });
+                        else
+                            rg[d.Index].Add(d);
+                    }
+
+                    str = (dfTotalMs / (double)nCount).ToString();
+                    Trace.WriteLine("Average Query Time: " + str + " ms.");
+
+                    // Verify sequential selection, so all indexes should be the same.
+
+                    foreach (KeyValuePair<int, List<SimpleDatum>> kv in rg)
+                    {
+                        Assert.AreEqual(kv.Value.Count, nCount);
+                    }
                 }
 
-                str = (dfTotalMs / (double)nCount).ToString();
-                Trace.WriteLine("Average Query Time: " + str + " ms.");
-
-                // Verify sequential selection, so all indexes should be the same.
-
-                foreach (KeyValuePair<int, List<SimpleDatum>> kv in rg)
-                {
-                    Assert.AreEqual(kv.Value.Count, nCount);
-                }
+                db.CleanUp();
             }
-
-            db.CleanUp();
-
-            IDisposable idisp = db as IDisposable;
-            if (idisp != null)
-                idisp.Dispose();
+            finally
+            {
+                IDisposable idisp = db as IDisposable;
+                if (idisp != null)
+                    idisp.Dispose();
+            }
         }
 
         [TestMethod]
@@ -577,70 +615,76 @@ namespace MyCaffe.test
 
         public void TestQuerySequential2(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
-            GC.Collect();
+            PreTest.Init();
+
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase();
 
-            foreach (string strDs in rgDs)
+            try
             {
-                SettingsCaffe settings = new SettingsCaffe();
-                settings.ImageDbLoadMethod = loadMethod;
-                settings.ImageDbLoadLimit = nLoadLimit;
-
-                Stopwatch sw = new Stopwatch();
-
-                sw.Start();
-                db.InitializeWithDsName(settings, strDs);
-                string str = sw.ElapsedMilliseconds.ToString();
-                Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
-
-                DatasetDescriptor ds = db.GetDatasetByName(strDs);
-                Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
-
-                int nCount = 100;
-                double dfTotalMs = 0;
-                List<int> rgIdx = new List<int>();
-
-                for (int i = 0; i < nCount; i++)
+                foreach (string strDs in rgDs)
                 {
-                    sw.Reset();
+                    SettingsCaffe settings = new SettingsCaffe();
+                    settings.ImageDbLoadMethod = loadMethod;
+                    settings.ImageDbLoadLimit = nLoadLimit;
+
+                    Stopwatch sw = new Stopwatch();
+
                     sw.Start();
-                    SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                    dfTotalMs += sw.ElapsedMilliseconds;
-                    sw.Stop();
+                    db.InitializeWithDsName(settings, strDs);
+                    string str = sw.ElapsedMilliseconds.ToString();
+                    Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                    if (!rg.Keys.Contains(d.Index))
-                        rg.Add(d.Index, new List<SimpleDatum>() { d });
-                    else
-                        rg[d.Index].Add(d);
+                    DatasetDescriptor ds = db.GetDatasetByName(strDs);
+                    Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
 
-                    rgIdx.Add(d.Index);
+                    int nCount = 100;
+                    double dfTotalMs = 0;
+                    List<int> rgIdx = new List<int>();
+
+                    for (int i = 0; i < nCount; i++)
+                    {
+                        sw.Reset();
+                        sw.Start();
+                        SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                        dfTotalMs += sw.ElapsedMilliseconds;
+                        sw.Stop();
+
+                        if (!rg.Keys.Contains(d.Index))
+                            rg.Add(d.Index, new List<SimpleDatum>() { d });
+                        else
+                            rg[d.Index].Add(d);
+
+                        rgIdx.Add(d.Index);
+                    }
+
+                    str = (dfTotalMs / (double)nCount).ToString();
+                    Trace.WriteLine("Average Query Time: " + str + " ms.");
+
+                    // Verify sequential selection.
+
+                    rgIdx.Sort();
+
+                    int nIdx = 0;
+
+                    foreach (KeyValuePair<int, List<SimpleDatum>> kv in rg)
+                    {
+                        int nIdx1 = rgIdx[nIdx];
+
+                        Assert.AreEqual(kv.Value.Count, (nLoadLimit == 0) ? 1 : nLoadLimit);
+                        Assert.AreEqual(rg[nIdx1][0].Index, (nLoadLimit == 0) ? nIdx1 : nIdx1 % nLoadLimit);
+                        nIdx++;
+                    }
                 }
 
-                str = (dfTotalMs / (double)nCount).ToString();
-                Trace.WriteLine("Average Query Time: " + str + " ms.");
-
-                // Verify sequential selection.
-
-                rgIdx.Sort();
-
-                int nIdx = 0;
-
-                foreach (KeyValuePair<int, List<SimpleDatum>> kv in rg)
-                {
-                    int nIdx1 = rgIdx[nIdx];
-
-                    Assert.AreEqual(kv.Value.Count, (nLoadLimit == 0) ? 1 : nLoadLimit);
-                    Assert.AreEqual(rg[nIdx1][0].Index, (nLoadLimit == 0) ? nIdx1 : nIdx1 % nLoadLimit);
-                    nIdx++;
-                }
+                db.CleanUp();
             }
-
-            db.CleanUp();
-
-            IDisposable idisp = db as IDisposable;
-            if (idisp != null)
-                idisp.Dispose();
+            finally
+            {
+                IDisposable idisp = db as IDisposable;
+                if (idisp != null)
+                    idisp.Dispose();
+            }
         }
 
         [TestMethod]
@@ -663,60 +707,66 @@ namespace MyCaffe.test
 
         public void TestQuerySequential3(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
-            GC.Collect();
+            PreTest.Init();
+
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase();
 
-            foreach (string strDs in rgDs)
+            try
             {
-                SettingsCaffe settings = new SettingsCaffe();
-                settings.ImageDbLoadMethod = loadMethod;
-                settings.ImageDbLoadLimit = nLoadLimit;
-
-                Stopwatch sw = new Stopwatch();
-
-                sw.Start();
-                db.InitializeWithDsName(settings, strDs);
-                db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                string str = sw.ElapsedMilliseconds.ToString();
-                Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
-
-                DatasetDescriptor ds = db.GetDatasetByName(strDs);
-                Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
-
-                int nCount = 100;
-                double dfTotalMs = 0;
-
-                for (int i = 0; i < nCount; i++)
+                foreach (string strDs in rgDs)
                 {
-                    sw.Reset();
+                    SettingsCaffe settings = new SettingsCaffe();
+                    settings.ImageDbLoadMethod = loadMethod;
+                    settings.ImageDbLoadLimit = nLoadLimit;
+
+                    Stopwatch sw = new Stopwatch();
+
                     sw.Start();
-                    SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0);
-                    dfTotalMs += sw.ElapsedMilliseconds;
-                    sw.Stop();
+                    db.InitializeWithDsName(settings, strDs);
+                    db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    string str = sw.ElapsedMilliseconds.ToString();
+                    Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                    if (!rg.Keys.Contains(d.Index))
-                        rg.Add(d.Index, new List<SimpleDatum>() { d });
-                    else
-                        rg[d.Index].Add(d);
+                    DatasetDescriptor ds = db.GetDatasetByName(strDs);
+                    Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
+
+                    int nCount = 100;
+                    double dfTotalMs = 0;
+
+                    for (int i = 0; i < nCount; i++)
+                    {
+                        sw.Reset();
+                        sw.Start();
+                        SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, 0);
+                        dfTotalMs += sw.ElapsedMilliseconds;
+                        sw.Stop();
+
+                        if (!rg.Keys.Contains(d.Index))
+                            rg.Add(d.Index, new List<SimpleDatum>() { d });
+                        else
+                            rg[d.Index].Add(d);
+                    }
+
+                    str = (dfTotalMs / (double)nCount).ToString();
+                    Trace.WriteLine("Average Query Time: " + str + " ms.");
+
+                    // Verify sequential selection, so all indexes should be the same.
+
+                    foreach (KeyValuePair<int, List<SimpleDatum>> kv in rg)
+                    {
+                        Assert.AreEqual(kv.Value.Count, nCount);
+                    }
                 }
 
-                str = (dfTotalMs / (double)nCount).ToString();
-                Trace.WriteLine("Average Query Time: " + str + " ms.");
-
-                // Verify sequential selection, so all indexes should be the same.
-
-                foreach (KeyValuePair<int, List<SimpleDatum>> kv in rg)
-                {
-                    Assert.AreEqual(kv.Value.Count, nCount);
-                }
+                db.CleanUp();
             }
-
-            db.CleanUp();
-
-            IDisposable idisp = db as IDisposable;
-            if (idisp != null)
-                idisp.Dispose();
+            finally
+            {
+                IDisposable idisp = db as IDisposable;
+                if (idisp != null)
+                    idisp.Dispose();
+            }
         }
 
         [TestMethod]
@@ -739,71 +789,77 @@ namespace MyCaffe.test
 
         public void TestQuerySequential4(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
-            GC.Collect();
+            PreTest.Init();
+
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase();
 
-            foreach (string strDs in rgDs)
+            try
             {
-                SettingsCaffe settings = new SettingsCaffe();
-                settings.ImageDbLoadMethod = loadMethod;
-                settings.ImageDbLoadLimit = nLoadLimit;
-
-                Stopwatch sw = new Stopwatch();
-
-                sw.Start();
-                db.InitializeWithDsName(settings, strDs);
-                db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                string str = sw.ElapsedMilliseconds.ToString();
-                Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
-
-                DatasetDescriptor ds = db.GetDatasetByName(strDs);
-                Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
-
-                int nCount = 100;
-                double dfTotalMs = 0;
-                List<int> rgIdx = new List<int>();
-
-                for (int i = 0; i < nCount; i++)
+                foreach (string strDs in rgDs)
                 {
-                    sw.Reset();
+                    SettingsCaffe settings = new SettingsCaffe();
+                    settings.ImageDbLoadMethod = loadMethod;
+                    settings.ImageDbLoadLimit = nLoadLimit;
+
+                    Stopwatch sw = new Stopwatch();
+
                     sw.Start();
-                    SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, i);
-                    dfTotalMs += sw.ElapsedMilliseconds;
-                    sw.Stop();
+                    db.InitializeWithDsName(settings, strDs);
+                    db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    string str = sw.ElapsedMilliseconds.ToString();
+                    Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                    if (!rg.Keys.Contains(d.Index))
-                        rg.Add(d.Index, new List<SimpleDatum>() { d });
-                    else
-                        rg[d.Index].Add(d);
+                    DatasetDescriptor ds = db.GetDatasetByName(strDs);
+                    Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
 
-                    rgIdx.Add(d.Index);
+                    int nCount = 100;
+                    double dfTotalMs = 0;
+                    List<int> rgIdx = new List<int>();
+
+                    for (int i = 0; i < nCount; i++)
+                    {
+                        sw.Reset();
+                        sw.Start();
+                        SimpleDatum d = db.QueryImage(ds.TrainingSource.ID, i);
+                        dfTotalMs += sw.ElapsedMilliseconds;
+                        sw.Stop();
+
+                        if (!rg.Keys.Contains(d.Index))
+                            rg.Add(d.Index, new List<SimpleDatum>() { d });
+                        else
+                            rg[d.Index].Add(d);
+
+                        rgIdx.Add(d.Index);
+                    }
+
+                    str = (dfTotalMs / (double)nCount).ToString();
+                    Trace.WriteLine("Average Query Time: " + str + " ms.");
+
+                    // Verify sequential selection.
+
+                    int nIdx = 0;
+
+                    rgIdx.Sort();
+
+                    foreach (KeyValuePair<int, List<SimpleDatum>> kv in rg)
+                    {
+                        int nIdx1 = rgIdx[nIdx];
+
+                        Assert.AreEqual(kv.Value.Count, (nLoadLimit == 0) ? 1 : nLoadLimit);
+                        Assert.AreEqual(rg[nIdx1][0].Index, (nLoadLimit == 0) ? nIdx1 : nIdx1 % nLoadLimit);
+                        nIdx++;
+                    }
                 }
 
-                str = (dfTotalMs / (double)nCount).ToString();
-                Trace.WriteLine("Average Query Time: " + str + " ms.");
-
-                // Verify sequential selection.
-
-                int nIdx = 0;
-
-                rgIdx.Sort();
-
-                foreach (KeyValuePair<int, List<SimpleDatum>> kv in rg)
-                {
-                    int nIdx1 = rgIdx[nIdx];
-
-                    Assert.AreEqual(kv.Value.Count, (nLoadLimit == 0) ? 1 : nLoadLimit);
-                    Assert.AreEqual(rg[nIdx1][0].Index, (nLoadLimit == 0) ? nIdx1 : nIdx1 % nLoadLimit);
-                    nIdx++;
-                }
+                db.CleanUp();
             }
-
-            db.CleanUp();
-
-            IDisposable idisp = db as IDisposable;
-            if (idisp != null)
-                idisp.Dispose();
+            finally
+            {
+                IDisposable idisp = db as IDisposable;
+                if (idisp != null)
+                    idisp.Dispose();
+            }
         }
 
         [TestMethod]
@@ -826,63 +882,69 @@ namespace MyCaffe.test
 
         public void TestQueryPair(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
-            GC.Collect();
+            PreTest.Init();
+
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase();
 
-            foreach (string strDs in rgDs)
+            try
             {
-                SettingsCaffe settings = new SettingsCaffe();
-                settings.ImageDbLoadMethod = loadMethod;
-                settings.ImageDbLoadLimit = nLoadLimit;
-
-                Stopwatch sw = new Stopwatch();
-
-                sw.Start();
-                db.InitializeWithDsName(settings, strDs);
-                db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                string str = sw.ElapsedMilliseconds.ToString();
-                Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
-
-                DatasetDescriptor ds = db.GetDatasetByName(strDs);
-                Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
-
-                int nCount = 100;
-                double dfTotalMs = 0;
-
-                for (int i = 0; i < nCount; i++)
+                foreach (string strDs in rgDs)
                 {
-                    sw.Reset();
+                    SettingsCaffe settings = new SettingsCaffe();
+                    settings.ImageDbLoadMethod = loadMethod;
+                    settings.ImageDbLoadLimit = nLoadLimit;
+
+                    Stopwatch sw = new Stopwatch();
+
                     sw.Start();
-                    SimpleDatum d1 = db.QueryImage(ds.TrainingSource.ID, i);
-                    SimpleDatum d2 = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.PAIR);
-                    dfTotalMs += sw.ElapsedMilliseconds;
-                    sw.Stop();
+                    db.InitializeWithDsName(settings, strDs);
+                    db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    string str = sw.ElapsedMilliseconds.ToString();
+                    Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
-                    if (!rg.Keys.Contains(d1.Index))
-                        rg.Add(d1.Index, new List<SimpleDatum>() { d1 });
-                    else
-                        rg[d1.Index].Add(d1);
+                    DatasetDescriptor ds = db.GetDatasetByName(strDs);
+                    Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
 
+                    int nCount = 100;
+                    double dfTotalMs = 0;
+
+                    for (int i = 0; i < nCount; i++)
+                    {
+                        sw.Reset();
+                        sw.Start();
+                        SimpleDatum d1 = db.QueryImage(ds.TrainingSource.ID, i);
+                        SimpleDatum d2 = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.PAIR);
+                        dfTotalMs += sw.ElapsedMilliseconds;
+                        sw.Stop();
+
+                        if (!rg.Keys.Contains(d1.Index))
+                            rg.Add(d1.Index, new List<SimpleDatum>() { d1 });
+                        else
+                            rg[d1.Index].Add(d1);
+
+                        if (nLoadLimit > 0)
+                            Assert.AreEqual(true, d1.Index == d2.Index - 1 || d1.Index == nLoadLimit - 1 && d2.Index == 0);
+                        else
+                            Assert.AreEqual(d1.Index, d2.Index - 1);
+                    }
+
+                    str = (dfTotalMs / (double)nCount).ToString();
+                    Trace.WriteLine("Average Query Time: " + str + " ms.");
+
+                    // Verify that all labels are hit.
                     if (nLoadLimit > 0)
-                        Assert.AreEqual(true, d1.Index == d2.Index - 1 || d1.Index == nLoadLimit - 1 && d2.Index == 0);
-                    else
-                        Assert.AreEqual(d1.Index, d2.Index - 1);
+                        Assert.AreEqual(rg.Count, nLoadLimit);
                 }
 
-                str = (dfTotalMs / (double)nCount).ToString();
-                Trace.WriteLine("Average Query Time: " + str + " ms.");
-
-                // Verify that all labels are hit.
-                if (nLoadLimit > 0)
-                    Assert.AreEqual(rg.Count, nLoadLimit);
+                db.CleanUp();
             }
-
-            db.CleanUp();
-
-            IDisposable idisp = db as IDisposable;
-            if (idisp != null)
-                idisp.Dispose();
+            finally
+            {
+                IDisposable idisp = db as IDisposable;
+                if (idisp != null)
+                    idisp.Dispose();
+            }
         }
 
         [TestMethod]
@@ -899,116 +961,122 @@ namespace MyCaffe.test
 
         public void TestLoadLimitNextSequential(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
-            GC.Collect();
+            PreTest.Init();
+
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase();
 
-            foreach (string strDs in rgDs)
+            try
             {
-                DatasetFactory df = new DatasetFactory();
-                int nDs = df.GetDatasetID(strDs);
-                if (nDs == 0)
-                    throw new Exception("The dataset '" + strDs + "' does not exist - you need to load it.");
-
-                SettingsCaffe settings = new SettingsCaffe();
-                settings.ImageDbLoadMethod = loadMethod;
-                settings.ImageDbLoadLimit = nLoadLimit;
-
-                Stopwatch sw = new Stopwatch();
-
-                sw.Start();
-                db.InitializeWithDsName(settings, strDs);
-                db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                string str = sw.ElapsedMilliseconds.ToString();
-                Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
-
-                DatasetDescriptor ds = db.GetDatasetByName(strDs);
-                Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
-                Dictionary<int, List<SimpleDatum>> rgFirst = new Dictionary<int, List<SimpleDatum>>();
-
-                int nTotal = ds.TrainingSource.ImageCount;
-                int nCount = 0;
-                double dfTotalMs = 0;
-
-                while (nCount < nTotal)
+                foreach (string strDs in rgDs)
                 {
+                    DatasetFactory df = new DatasetFactory();
+                    int nDs = df.GetDatasetID(strDs);
+                    if (nDs == 0)
+                        throw new Exception("The dataset '" + strDs + "' does not exist - you need to load it.");
+
+                    SettingsCaffe settings = new SettingsCaffe();
+                    settings.ImageDbLoadMethod = loadMethod;
+                    settings.ImageDbLoadLimit = nLoadLimit;
+
+                    Stopwatch sw = new Stopwatch();
+
+                    sw.Start();
+                    db.InitializeWithDsName(settings, strDs);
+                    db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    string str = sw.ElapsedMilliseconds.ToString();
+                    Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
+
+                    DatasetDescriptor ds = db.GetDatasetByName(strDs);
+                    Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
+                    Dictionary<int, List<SimpleDatum>> rgFirst = new Dictionary<int, List<SimpleDatum>>();
+
+                    int nTotal = ds.TrainingSource.ImageCount;
+                    int nCount = 0;
+                    double dfTotalMs = 0;
+
+                    while (nCount < nTotal)
+                    {
+                        for (int i = 0; i < nLoadLimit; i++)
+                        {
+                            sw.Reset();
+                            sw.Start();
+                            SimpleDatum d1 = db.QueryImage(ds.TrainingSource.ID, i);
+                            dfTotalMs += sw.ElapsedMilliseconds;
+                            sw.Stop();
+
+                            if (!rg.Keys.Contains(d1.Index))
+                                rg.Add(d1.Index, new List<SimpleDatum>() { d1 });
+                            else
+                                rg[d1.Index].Add(d1);
+
+                            if (nCount == 0)
+                            {
+                                if (!rgFirst.Keys.Contains(d1.Index))
+                                    rgFirst.Add(d1.Index, new List<SimpleDatum>() { d1 });
+                                else
+                                    rgFirst[d1.Index].Add(d1);
+                            }
+                        }
+
+                        db.LoadNextSet(null);
+                        nCount += nLoadLimit;
+                    }
+
+                    str = (dfTotalMs / (double)nCount).ToString();
+                    Trace.WriteLine("Average Query Time: " + str + " ms.");
+
+                    // Verify that all items have been queried
+                    Assert.AreEqual(nTotal, rg.Count);
+
+                    Dictionary<int, List<SimpleDatum>> rgWrapAround = new Dictionary<int, List<SimpleDatum>>();
+
                     for (int i = 0; i < nLoadLimit; i++)
                     {
-                        sw.Reset();
-                        sw.Start();
                         SimpleDatum d1 = db.QueryImage(ds.TrainingSource.ID, i);
-                        dfTotalMs += sw.ElapsedMilliseconds;
-                        sw.Stop();
 
-                        if (!rg.Keys.Contains(d1.Index))
-                            rg.Add(d1.Index, new List<SimpleDatum>() { d1 });
+                        if (!rgWrapAround.Keys.Contains(d1.Index))
+                            rgWrapAround.Add(d1.Index, new List<SimpleDatum>() { d1 });
                         else
-                            rg[d1.Index].Add(d1);
+                            rgWrapAround[d1.Index].Add(d1);
+                    }
 
-                        if (nCount == 0)
+                    // Verify that the reads wrap around to the start.
+                    Assert.AreEqual(rgWrapAround.Count, rgFirst.Count);
+
+                    List<KeyValuePair<int, List<SimpleDatum>>> rg1 = new List<KeyValuePair<int, List<SimpleDatum>>>();
+                    List<KeyValuePair<int, List<SimpleDatum>>> rg2 = new List<KeyValuePair<int, List<SimpleDatum>>>();
+
+                    foreach (KeyValuePair<int, List<SimpleDatum>> kv in rgWrapAround)
+                    {
+                        rg1.Add(kv);
+                    }
+
+                    foreach (KeyValuePair<int, List<SimpleDatum>> kv in rgFirst)
+                    {
+                        rg2.Add(kv);
+                    }
+
+                    for (int i = 0; i < rg1.Count; i++)
+                    {
+                        Assert.AreEqual(rg1[i].Key, rg2[i].Key);
+                        Assert.AreEqual(rg1[i].Value.Count, rg2[i].Value.Count);
+
+                        for (int j = 0; j < rg1[i].Value.Count; j++)
                         {
-                            if (!rgFirst.Keys.Contains(d1.Index))
-                                rgFirst.Add(d1.Index, new List<SimpleDatum>() { d1 });
-                            else
-                                rgFirst[d1.Index].Add(d1);
+                            Assert.AreEqual(rg1[i].Value[j].Label, rg2[i].Value[j].Label);
                         }
                     }
-
-                    db.LoadNextSet(null);
-                    nCount += nLoadLimit;
                 }
 
-                str = (dfTotalMs / (double)nCount).ToString();
-                Trace.WriteLine("Average Query Time: " + str + " ms.");
-
-                // Verify that all items have been queried
-                Assert.AreEqual(nTotal, rg.Count);
-
-                Dictionary<int, List<SimpleDatum>> rgWrapAround = new Dictionary<int, List<SimpleDatum>>();
-
-                for (int i = 0; i < nLoadLimit; i++)
-                {
-                    SimpleDatum d1 = db.QueryImage(ds.TrainingSource.ID, i);
-
-                    if (!rgWrapAround.Keys.Contains(d1.Index))
-                        rgWrapAround.Add(d1.Index, new List<SimpleDatum>() { d1 });
-                    else
-                        rgWrapAround[d1.Index].Add(d1);
-                }
-
-                // Verify that the reads wrap around to the start.
-                Assert.AreEqual(rgWrapAround.Count, rgFirst.Count);
-
-                List<KeyValuePair<int, List<SimpleDatum>>> rg1 = new List<KeyValuePair<int, List<SimpleDatum>>>();
-                List<KeyValuePair<int, List<SimpleDatum>>> rg2 = new List<KeyValuePair<int, List<SimpleDatum>>>();
-
-                foreach (KeyValuePair<int, List<SimpleDatum>> kv in rgWrapAround)
-                {
-                    rg1.Add(kv);
-                }
-
-                foreach (KeyValuePair<int, List<SimpleDatum>> kv in rgFirst)
-                {
-                    rg2.Add(kv);
-                }
-
-                for (int i = 0; i < rg1.Count; i++)
-                {
-                    Assert.AreEqual(rg1[i].Key, rg2[i].Key);
-                    Assert.AreEqual(rg1[i].Value.Count, rg2[i].Value.Count);
-
-                    for (int j = 0; j < rg1[i].Value.Count; j++)
-                    {
-                        Assert.AreEqual(rg1[i].Value[j].Label, rg2[i].Value[j].Label);
-                    }
-                }
+                db.CleanUp();
             }
-
-            db.CleanUp();
-
-            IDisposable idisp = db as IDisposable;
-            if (idisp != null)
-                idisp.Dispose();
+            finally
+            {
+                IDisposable idisp = db as IDisposable;
+                if (idisp != null)
+                    idisp.Dispose();
+            }
         }
 
         [TestMethod]
@@ -1020,483 +1088,523 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestMean()
         {
-            GC.Collect();
+            PreTest.Init();
+
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             IXImageDatabase db = new MyCaffeImageDatabase();
 
-            foreach (string strDs in rgDs)
+            try
             {
-                SettingsCaffe settings = new SettingsCaffe();
-                Stopwatch sw = new Stopwatch();
-
-                sw.Start();
-                db.InitializeWithDsName(settings, strDs);
-                string str = sw.ElapsedMilliseconds.ToString();
-                Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
-
-                DatasetDescriptor ds = db.GetDatasetByName(strDs);
-
-                SimpleDatum d1 = db.QueryImageMean(ds.TrainingSource.ID);
-                SimpleDatum d2 = db.QueryImageMeanFromDataset(ds.ID);
-                SimpleDatum d3 = db.GetImageMean(ds.TrainingSource.ID);
-
-                byte[] rgB1 = d1.ByteData;
-                byte[] rgB2 = d2.ByteData;
-                byte[] rgB3 = d3.ByteData;
-
-                Assert.AreEqual(rgB1.Length, rgB2.Length);
-                Assert.AreEqual(rgB2.Length, rgB3.Length);
-
-                for (int i = 0; i < rgB1.Length; i++)
+                foreach (string strDs in rgDs)
                 {
-                    Assert.AreEqual(rgB1[i], rgB2[i]);
-                    Assert.AreEqual(rgB2[i], rgB3[i]);
+                    SettingsCaffe settings = new SettingsCaffe();
+                    Stopwatch sw = new Stopwatch();
+
+                    sw.Start();
+                    db.InitializeWithDsName(settings, strDs);
+                    string str = sw.ElapsedMilliseconds.ToString();
+                    Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
+
+                    DatasetDescriptor ds = db.GetDatasetByName(strDs);
+
+                    SimpleDatum d1 = db.QueryImageMean(ds.TrainingSource.ID);
+                    SimpleDatum d2 = db.QueryImageMeanFromDataset(ds.ID);
+                    SimpleDatum d3 = db.GetImageMean(ds.TrainingSource.ID);
+
+                    byte[] rgB1 = d1.ByteData;
+                    byte[] rgB2 = d2.ByteData;
+                    byte[] rgB3 = d3.ByteData;
+
+                    Assert.AreEqual(rgB1.Length, rgB2.Length);
+                    Assert.AreEqual(rgB2.Length, rgB3.Length);
+
+                    for (int i = 0; i < rgB1.Length; i++)
+                    {
+                        Assert.AreEqual(rgB1[i], rgB2[i]);
+                        Assert.AreEqual(rgB2[i], rgB3[i]);
+                    }
                 }
+
+                db.CleanUp();
             }
-
-            db.CleanUp();
-
-            IDisposable idisp = db as IDisposable;
-            if (idisp != null)
-                idisp.Dispose();
+            finally
+            {
+                IDisposable idisp = db as IDisposable;
+                if (idisp != null)
+                    idisp.Dispose();
+            }
         }
 
         [TestMethod]
         public void TestGetImagesByDate()
         {
-            GC.Collect();
+            PreTest.Init();
+
             Log log = new Log("GetImagesByDate");
             log.EnableTrace = true;
 
             IXImageDatabase db = new MyCaffeImageDatabase(log);
-            SettingsCaffe settings = new SettingsCaffe();
-            Stopwatch sw = new Stopwatch();
 
-            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
-
-            db.InitializeWithDsName(settings, "MNIST");
-            DatasetDescriptor ds = db.GetDatasetByName("MNIST");
-
-            //---------------------------------------------
-            // First add a DateTime to each image, which
-            // with MNIST makes no sense, but is used 
-            // just for testing the sorting.
-            //
-            // At the same time verify that the images
-            // are initially ordered by index.
-            //---------------------------------------------
-
-            Trace.WriteLine("Initializing the dataset with date/time values...");
-            sw.Start();
-
-            List<SimpleDatum> rgSd = new List<SimpleDatum>();
-            DateTime dt = new DateTime(2000, 1, 1);
-            string strDesc = "0";
-
-            for (int i = 0; i < ds.TrainingSource.ImageCount; i++)
+            try
             {
-                if (i % 1000 == 0)
-                    strDesc = i.ToString();
+                SettingsCaffe settings = new SettingsCaffe();
+                Stopwatch sw = new Stopwatch();
 
-                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                sd.TimeStamp = dt;
-                sd.Description = strDesc;
-                dt += TimeSpan.FromMinutes(1);
+                settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
 
-                if (sw.Elapsed.TotalMilliseconds > 1000)
+                db.InitializeWithDsName(settings, "MNIST");
+                DatasetDescriptor ds = db.GetDatasetByName("MNIST");
+
+                //---------------------------------------------
+                // First add a DateTime to each image, which
+                // with MNIST makes no sense, but is used 
+                // just for testing the sorting.
+                //
+                // At the same time verify that the images
+                // are initially ordered by index.
+                //---------------------------------------------
+
+                Trace.WriteLine("Initializing the dataset with date/time values...");
+                sw.Start();
+
+                List<SimpleDatum> rgSd = new List<SimpleDatum>();
+                DateTime dt = new DateTime(2000, 1, 1);
+                string strDesc = "0";
+
+                for (int i = 0; i < ds.TrainingSource.ImageCount; i++)
                 {
-                    double dfPct = (double)i / (double)ds.TrainingSource.ImageCount;
-                    Trace.WriteLine("Initializing the dataset at " + dfPct.ToString("P"));
-                    sw.Restart();
+                    if (i % 1000 == 0)
+                        strDesc = i.ToString();
+
+                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    sd.TimeStamp = dt;
+                    sd.Description = strDesc;
+                    dt += TimeSpan.FromMinutes(1);
+
+                    if (sw.Elapsed.TotalMilliseconds > 1000)
+                    {
+                        double dfPct = (double)i / (double)ds.TrainingSource.ImageCount;
+                        Trace.WriteLine("Initializing the dataset at " + dfPct.ToString("P"));
+                        sw.Restart();
+                    }
+
+                    rgSd.Add(sd);
                 }
 
-                rgSd.Add(sd);
-            }
+                //---------------------------------------------
+                //  Sort by Desc and Time and verify.
+                //---------------------------------------------
+                rgSd = rgSd.OrderBy(p => p.Description).ThenBy(p => p.TimeStamp).ToList();
+                db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYDESC | IMGDB_SORT.BYTIME);
 
-            //---------------------------------------------
-            //  Sort by Desc and Time and verify.
-            //---------------------------------------------
-            rgSd = rgSd.OrderBy(p => p.Description).ThenBy(p => p.TimeStamp).ToList();
-            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYDESC | IMGDB_SORT.BYTIME);
-
-            for (int i = 0; i < rgSd.Count; i++)
-            {
-                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                if (sd.ImageID != rgSd[i].ImageID)
-                    throw new Exception("The image ordering is not as expected!");
-            }
-
-            //---------------------------------------------
-            //  Get images at random starting times and
-            //  verify that they are in sequence.
-            //---------------------------------------------
-
-            // One minute alloted to each image above.
-            Random rand = new Random();
-
-            //---------------------------------------------
-            //  Verify using Filter Value
-            //---------------------------------------------
-            for (int i = 0; i < 60; i++)
-            {
-                dt = new DateTime(2000, 1, 1);
-
-                int nFilterVal = i * 1000;
-                string strFilterVal = nFilterVal.ToString();
-                int nCount = db.ImageCount(ds.TrainingSource.ID, false, strFilterVal);
-                int nSequenceCount = 10 + rand.Next(50);
-                int nRandomStart = rand.Next(nCount - nSequenceCount);
-                DateTime dtStart = dt + TimeSpan.FromMinutes(nRandomStart + i * 1000);
-                List<SimpleDatum> rgSd1 = db.GetImagesByDate(ds.TrainingSource.ID, dtStart, nSequenceCount, strFilterVal);
-
-                // Verify the count.
-                if (rgSd1.Count != nSequenceCount)
-                    throw new Exception("Wrong number of images returned!");
-
-                DateTime dt1 = dtStart;
-
-                // Verify that we are in sequence and all have the expected filter value
-                for (int j = 0; j < rgSd1.Count; j++)
+                for (int i = 0; i < rgSd.Count; i++)
                 {
-                    if (rgSd1[j].TimeStamp != dt1)
-                        throw new Exception("Wrong time for item " + j.ToString());
+                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    if (sd.ImageID != rgSd[i].ImageID)
+                        throw new Exception("The image ordering is not as expected!");
+                }
 
-                    if (rgSd1[j].Description != strFilterVal)
-                        throw new Exception("Wrong filter value!");
+                //---------------------------------------------
+                //  Get images at random starting times and
+                //  verify that they are in sequence.
+                //---------------------------------------------
 
-                    dt1 += TimeSpan.FromMinutes(1);
+                // One minute alloted to each image above.
+                Random rand = new Random();
+
+                //---------------------------------------------
+                //  Verify using Filter Value
+                //---------------------------------------------
+                for (int i = 0; i < 60; i++)
+                {
+                    dt = new DateTime(2000, 1, 1);
+
+                    int nFilterVal = i * 1000;
+                    string strFilterVal = nFilterVal.ToString();
+                    int nCount = db.ImageCount(ds.TrainingSource.ID, false, strFilterVal);
+                    int nSequenceCount = 10 + rand.Next(50);
+                    int nRandomStart = rand.Next(nCount - nSequenceCount);
+                    DateTime dtStart = dt + TimeSpan.FromMinutes(nRandomStart + i * 1000);
+                    List<SimpleDatum> rgSd1 = db.GetImagesByDate(ds.TrainingSource.ID, dtStart, nSequenceCount, strFilterVal);
+
+                    // Verify the count.
+                    if (rgSd1.Count != nSequenceCount)
+                        throw new Exception("Wrong number of images returned!");
+
+                    DateTime dt1 = dtStart;
+
+                    // Verify that we are in sequence and all have the expected filter value
+                    for (int j = 0; j < rgSd1.Count; j++)
+                    {
+                        if (rgSd1[j].TimeStamp != dt1)
+                            throw new Exception("Wrong time for item " + j.ToString());
+
+                        if (rgSd1[j].Description != strFilterVal)
+                            throw new Exception("Wrong filter value!");
+
+                        dt1 += TimeSpan.FromMinutes(1);
+                    }
+                }
+
+                //---------------------------------------------
+                //  Sort by Time only and verify.
+                //---------------------------------------------
+                rgSd = rgSd.OrderBy(p => p.TimeStamp).ToList();
+                db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYTIME);
+
+                for (int i = 0; i < rgSd.Count; i++)
+                {
+                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    if (sd.ImageID != rgSd[i].ImageID)
+                        throw new Exception("The image ordering is not as expected!");
+                }
+
+                //---------------------------------------------
+                //  Get images at random starting times and
+                //  verify that they are in sequence.
+                //---------------------------------------------
+                //---------------------------------------------
+                //  Verify using Filter Value
+                //---------------------------------------------
+                for (int i = 0; i < 60; i++)
+                {
+                    dt = new DateTime(2000, 1, 1);
+
+                    int nCount = ds.TrainingSource.ImageCount;
+                    int nSequenceCount = 10 + rand.Next(50);
+                    int nRandomStart = rand.Next(nCount - nSequenceCount);
+                    DateTime dtStart = dt + TimeSpan.FromMinutes(nRandomStart);
+                    List<SimpleDatum> rgSd1 = db.GetImagesByDate(ds.TrainingSource.ID, dtStart, nSequenceCount);
+
+                    // Verify the count.
+                    if (rgSd1.Count != nSequenceCount)
+                        throw new Exception("Wrong number of images returned!");
+
+                    DateTime dt1 = dtStart;
+
+                    // Verify that we are in sequence and all have the expected filter value
+                    for (int j = 0; j < rgSd1.Count; j++)
+                    {
+                        if (rgSd1[j].TimeStamp != dt1)
+                            throw new Exception("Wrong time for item " + j.ToString());
+
+                        dt1 += TimeSpan.FromMinutes(1);
+                    }
                 }
             }
-
-            //---------------------------------------------
-            //  Sort by Time only and verify.
-            //---------------------------------------------
-            rgSd = rgSd.OrderBy(p => p.TimeStamp).ToList();
-            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYTIME);
-
-            for (int i = 0; i < rgSd.Count; i++)
+            finally
             {
-                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                if (sd.ImageID != rgSd[i].ImageID)
-                    throw new Exception("The image ordering is not as expected!");
-            }
-
-            //---------------------------------------------
-            //  Get images at random starting times and
-            //  verify that they are in sequence.
-            //---------------------------------------------
-            //---------------------------------------------
-            //  Verify using Filter Value
-            //---------------------------------------------
-            for (int i = 0; i < 60; i++)
-            {
-                dt = new DateTime(2000, 1, 1);
-
-                int nCount = ds.TrainingSource.ImageCount;
-                int nSequenceCount = 10 + rand.Next(50);
-                int nRandomStart = rand.Next(nCount - nSequenceCount);
-                DateTime dtStart = dt + TimeSpan.FromMinutes(nRandomStart);
-                List<SimpleDatum> rgSd1 = db.GetImagesByDate(ds.TrainingSource.ID, dtStart, nSequenceCount);
-
-                // Verify the count.
-                if (rgSd1.Count != nSequenceCount)
-                    throw new Exception("Wrong number of images returned!");
-
-                DateTime dt1 = dtStart;
-
-                // Verify that we are in sequence and all have the expected filter value
-                for (int j = 0; j < rgSd1.Count; j++)
-                {
-                    if (rgSd1[j].TimeStamp != dt1)
-                        throw new Exception("Wrong time for item " + j.ToString());
-
-                    dt1 += TimeSpan.FromMinutes(1);
-                }
+                IDisposable idisp = db as IDisposable;
+                if (idisp != null)
+                    idisp.Dispose();
             }
         }
 
         [TestMethod]
         public void TestSort()
         {
-            GC.Collect();
+            PreTest.Init();
+
             Log log = new Log("SortTest");
             log.EnableTrace = true;
 
             IXImageDatabase db = new MyCaffeImageDatabase(log);
-            SettingsCaffe settings = new SettingsCaffe();
-            Stopwatch sw = new Stopwatch();
 
-            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
-
-            db.InitializeWithDsName(settings, "MNIST");
-            DatasetDescriptor ds = db.GetDatasetByName("MNIST");
-
-            //---------------------------------------------
-            // First add a DateTime to each image, which
-            // with MNIST makes no sense, but is used 
-            // just for testing the sorting.
-            //
-            // At the same time verify that the images
-            // are initially ordered by index.
-            //---------------------------------------------
-
-            Trace.WriteLine("Initializing the dataset with date/time values...");
-            sw.Start();
-
-            List<SimpleDatum> rgSd = new List<SimpleDatum>();
-            DateTime dt = new DateTime(2000, 1, 1);
-            string strDesc = "0";
-
-            for (int i = 0; i < ds.TrainingSource.ImageCount; i++)
+            try
             {
-                if (i % 1000 == 0)
-                    strDesc = i.ToString();
+                SettingsCaffe settings = new SettingsCaffe();
+                Stopwatch sw = new Stopwatch();
 
-                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                sd.TimeStamp = dt;
-                sd.Description = strDesc;
-                dt += TimeSpan.FromMinutes(1);
+                settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
 
-                if (sw.Elapsed.TotalMilliseconds > 1000)
+                db.InitializeWithDsName(settings, "MNIST");
+                DatasetDescriptor ds = db.GetDatasetByName("MNIST");
+
+                //---------------------------------------------
+                // First add a DateTime to each image, which
+                // with MNIST makes no sense, but is used 
+                // just for testing the sorting.
+                //
+                // At the same time verify that the images
+                // are initially ordered by index.
+                //---------------------------------------------
+
+                Trace.WriteLine("Initializing the dataset with date/time values...");
+                sw.Start();
+
+                List<SimpleDatum> rgSd = new List<SimpleDatum>();
+                DateTime dt = new DateTime(2000, 1, 1);
+                string strDesc = "0";
+
+                for (int i = 0; i < ds.TrainingSource.ImageCount; i++)
                 {
-                    double dfPct = (double)i / (double)ds.TrainingSource.ImageCount;
-                    Trace.WriteLine("Initializing the dataset at " + dfPct.ToString("P"));
-                    sw.Restart();
+                    if (i % 1000 == 0)
+                        strDesc = i.ToString();
+
+                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    sd.TimeStamp = dt;
+                    sd.Description = strDesc;
+                    dt += TimeSpan.FromMinutes(1);
+
+                    if (sw.Elapsed.TotalMilliseconds > 1000)
+                    {
+                        double dfPct = (double)i / (double)ds.TrainingSource.ImageCount;
+                        Trace.WriteLine("Initializing the dataset at " + dfPct.ToString("P"));
+                        sw.Restart();
+                    }
+
+                    rgSd.Add(sd);
                 }
 
-                rgSd.Add(sd);
+                rgSd = rgSd.OrderBy(p => p.Index).ToList();
+
+                for (int i = 0; i < rgSd.Count; i++)
+                {
+                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    if (sd.ImageID != rgSd[i].ImageID)
+                        throw new Exception("The image ordering is not as expected!");
+                }
+
+                //---------------------------------------------
+                //  Sort by ID and verify.
+                //---------------------------------------------
+
+                rgSd = rgSd.OrderByDescending(p => p.ImageID).ToList();
+                db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID_DESC);
+
+                for (int i = 0; i < rgSd.Count; i++)
+                {
+                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    if (sd.ImageID != rgSd[i].ImageID)
+                        throw new Exception("The image ordering is not as expected!");
+                }
+
+                rgSd = rgSd.OrderBy(p => p.ImageID).ToList();
+                db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID);
+
+                for (int i = 0; i < rgSd.Count; i++)
+                {
+                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    if (sd.ImageID != rgSd[i].ImageID)
+                        throw new Exception("The image ordering is not as expected!");
+                }
+
+
+                //---------------------------------------------
+                //  Sort by Desc and verify.
+                //---------------------------------------------
+
+                rgSd = rgSd.OrderByDescending(p => p.ImageID).ToList();
+                db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID_DESC);
+
+                for (int i = 0; i < rgSd.Count; i++)
+                {
+                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    if (sd.ImageID != rgSd[i].ImageID)
+                        throw new Exception("The image ordering is not as expected!");
+                }
+
+                rgSd = rgSd.OrderBy(p => p.Description).ToList();
+                db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYDESC);
+
+                for (int i = 0; i < rgSd.Count; i++)
+                {
+                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    if (sd.ImageID != rgSd[i].ImageID)
+                        throw new Exception("The image ordering is not as expected!");
+                }
+
+
+                //---------------------------------------------
+                //  Sort by Time and verify.
+                //---------------------------------------------
+
+                rgSd = rgSd.OrderByDescending(p => p.ImageID).ToList();
+                db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID_DESC);
+
+                for (int i = 0; i < rgSd.Count; i++)
+                {
+                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    if (sd.ImageID != rgSd[i].ImageID)
+                        throw new Exception("The image ordering is not as expected!");
+                }
+
+                rgSd = rgSd.OrderBy(p => p.TimeStamp).ToList();
+                db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYTIME);
+
+                for (int i = 0; i < rgSd.Count; i++)
+                {
+                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    if (sd.ImageID != rgSd[i].ImageID)
+                        throw new Exception("The image ordering is not as expected!");
+                }
+
+
+                //---------------------------------------------
+                //  Sort by Desc and Time and verify.
+                //---------------------------------------------
+
+                rgSd = rgSd.OrderByDescending(p => p.ImageID).ToList();
+                db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID_DESC);
+
+                for (int i = 0; i < rgSd.Count; i++)
+                {
+                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    if (sd.ImageID != rgSd[i].ImageID)
+                        throw new Exception("The image ordering is not as expected!");
+                }
+
+                rgSd = rgSd.OrderBy(p => p.Description).ThenBy(p => p.TimeStamp).ToList();
+                db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYDESC | IMGDB_SORT.BYTIME);
+
+                for (int i = 0; i < rgSd.Count; i++)
+                {
+                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    if (sd.ImageID != rgSd[i].ImageID)
+                        throw new Exception("The image ordering is not as expected!");
+                }
             }
-
-            rgSd = rgSd.OrderBy(p => p.Index).ToList();
-
-            for (int i = 0; i < rgSd.Count; i++)
+            finally
             {
-                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                if (sd.ImageID != rgSd[i].ImageID)
-                    throw new Exception("The image ordering is not as expected!");
-            }
-
-            //---------------------------------------------
-            //  Sort by ID and verify.
-            //---------------------------------------------
-
-            rgSd = rgSd.OrderByDescending(p => p.ImageID).ToList();
-            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID_DESC);
-
-            for (int i = 0; i < rgSd.Count; i++)
-            {
-                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                if (sd.ImageID != rgSd[i].ImageID)
-                    throw new Exception("The image ordering is not as expected!");
-            }
-
-            rgSd = rgSd.OrderBy(p => p.ImageID).ToList();
-            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID);
-
-            for (int i = 0; i < rgSd.Count; i++)
-            {
-                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                if (sd.ImageID != rgSd[i].ImageID)
-                    throw new Exception("The image ordering is not as expected!");
-            }
-
-
-            //---------------------------------------------
-            //  Sort by Desc and verify.
-            //---------------------------------------------
-
-            rgSd = rgSd.OrderByDescending(p => p.ImageID).ToList();
-            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID_DESC);
-
-            for (int i = 0; i < rgSd.Count; i++)
-            {
-                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                if (sd.ImageID != rgSd[i].ImageID)
-                    throw new Exception("The image ordering is not as expected!");
-            }
-
-            rgSd = rgSd.OrderBy(p => p.Description).ToList();
-            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYDESC);
-
-            for (int i = 0; i < rgSd.Count; i++)
-            {
-                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                if (sd.ImageID != rgSd[i].ImageID)
-                    throw new Exception("The image ordering is not as expected!");
-            }
-
-
-            //---------------------------------------------
-            //  Sort by Time and verify.
-            //---------------------------------------------
-
-            rgSd = rgSd.OrderByDescending(p => p.ImageID).ToList();
-            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID_DESC);
-
-            for (int i = 0; i < rgSd.Count; i++)
-            {
-                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                if (sd.ImageID != rgSd[i].ImageID)
-                    throw new Exception("The image ordering is not as expected!");
-            }
-
-            rgSd = rgSd.OrderBy(p => p.TimeStamp).ToList();
-            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYTIME);
-
-            for (int i = 0; i < rgSd.Count; i++)
-            {
-                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                if (sd.ImageID != rgSd[i].ImageID)
-                    throw new Exception("The image ordering is not as expected!");
-            }
-
-
-            //---------------------------------------------
-            //  Sort by Desc and Time and verify.
-            //---------------------------------------------
-
-            rgSd = rgSd.OrderByDescending(p => p.ImageID).ToList();
-            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID_DESC);
-
-            for (int i = 0; i < rgSd.Count; i++)
-            {
-                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                if (sd.ImageID != rgSd[i].ImageID)
-                    throw new Exception("The image ordering is not as expected!");
-            }
-
-            rgSd = rgSd.OrderBy(p => p.Description).ThenBy(p => p.TimeStamp).ToList();
-            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYDESC | IMGDB_SORT.BYTIME);
-
-            for (int i = 0; i < rgSd.Count; i++)
-            {
-                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                if (sd.ImageID != rgSd[i].ImageID)
-                    throw new Exception("The image ordering is not as expected!");
+                IDisposable idisp = db as IDisposable;
+                if (idisp != null)
+                    idisp.Dispose();
             }
         }
 
         [TestMethod]
         public void TestCreateDatasetOrganizedByTime()
         {
-            GC.Collect();
+            PreTest.Init();
+
             Log log = new Log("CreateDatasetOrganizedByTime");
             log.EnableTrace = true;
 
             IXImageDatabase db = new MyCaffeImageDatabase(log);
-            SettingsCaffe settings = new SettingsCaffe();
-            Stopwatch sw = new Stopwatch();
 
-            settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
-
-            db.InitializeWithDsName(settings, "MNIST");
-            DatasetDescriptor ds = db.GetDatasetByName("MNIST");
-
-            //---------------------------------------------
-            // First add a DateTime to each image, which
-            // with MNIST makes no sense, but is used 
-            // just for testing the sorting.
-            //
-            // At the same time verify that the images
-            // are initially ordered by index.
-            //---------------------------------------------
-
-            Trace.WriteLine("Initializing the dataset with date/time values...");
-            sw.Start();
-
-            List<SimpleDatum> rgSd = new List<SimpleDatum>();
-            DateTime dt = new DateTime(2000, 1, 1);
-            string strDesc = "0";
-
-            for (int i = 0; i < ds.TrainingSource.ImageCount; i++)
+            try
             {
-                if (i % 1000 == 0)
-                    strDesc = i.ToString();
+                SettingsCaffe settings = new SettingsCaffe();
+                Stopwatch sw = new Stopwatch();
 
-                SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                sd.TimeStamp = dt;
-                sd.Description = strDesc;
-                dt += TimeSpan.FromMinutes(1);
-                rgSd.Add(sd);
+                settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
 
-                if (i < ds.TestingSource.ImageCount)
+                db.InitializeWithDsName(settings, "MNIST");
+                DatasetDescriptor ds = db.GetDatasetByName("MNIST");
+
+                //---------------------------------------------
+                // First add a DateTime to each image, which
+                // with MNIST makes no sense, but is used 
+                // just for testing the sorting.
+                //
+                // At the same time verify that the images
+                // are initially ordered by index.
+                //---------------------------------------------
+
+                Trace.WriteLine("Initializing the dataset with date/time values...");
+                sw.Start();
+
+                List<SimpleDatum> rgSd = new List<SimpleDatum>();
+                DateTime dt = new DateTime(2000, 1, 1);
+                string strDesc = "0";
+
+                for (int i = 0; i < ds.TrainingSource.ImageCount; i++)
                 {
-                    sd = db.QueryImage(ds.TestingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    if (i % 1000 == 0)
+                        strDesc = i.ToString();
+
+                    SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
                     sd.TimeStamp = dt;
                     sd.Description = strDesc;
                     dt += TimeSpan.FromMinutes(1);
                     rgSd.Add(sd);
+
+                    if (i < ds.TestingSource.ImageCount)
+                    {
+                        sd = db.QueryImage(ds.TestingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                        sd.TimeStamp = dt;
+                        sd.Description = strDesc;
+                        dt += TimeSpan.FromMinutes(1);
+                        rgSd.Add(sd);
+                    }
+
+                    if (sw.Elapsed.TotalMilliseconds > 1000)
+                    {
+                        double dfPct = (double)i / (double)ds.TrainingSource.ImageCount;
+                        Trace.WriteLine("Initializing the dataset at " + dfPct.ToString("P"));
+                        sw.Restart();
+                    }
                 }
 
-                if (sw.Elapsed.TotalMilliseconds > 1000)
+
+                // Order the items in reverse so that we can test 
+                // that the created dataset was actually created
+                // chronologically.
+                db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID_DESC);
+                db.Sort(ds.TestingSource.ID, IMGDB_SORT.BYID_DESC);
+
+                // Create the new dataset.
+                int nNewDsId = db.CreateDatasetOranizedByTime(ds.ID);
+
+                if (nNewDsId >= 0)
+                    throw new Exception("The new dataset ID should be < 0.");
+
+                DatasetDescriptor dsNew = db.GetDatasetById(nNewDsId);
+                if (dsNew.ID != nNewDsId)
+                    throw new Exception("Invalid dataset ID!");
+
+                if (dsNew.TrainingSource.ID >= 0)
+                    throw new Exception("The training source ID for the dynamic dataset should be < 0.");
+
+                if (dsNew.TestingSource.ID >= 0)
+                    throw new Exception("The testing source ID for the dynamic dataset should be < 0.");
+
+                rgSd = rgSd.OrderBy(p => p.Description).ThenBy(p => p.TimeStamp).ToList();
+
+                List<SimpleDatum> rgSd1 = new List<SimpleDatum>();
+
+                for (int i = 0; i < dsNew.TrainingSource.ImageCount; i++)
                 {
-                    double dfPct = (double)i / (double)ds.TrainingSource.ImageCount;
-                    Trace.WriteLine("Initializing the dataset at " + dfPct.ToString("P"));
-                    sw.Restart();
+                    SimpleDatum sd = db.QueryImage(dsNew.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    rgSd1.Add(sd);
                 }
+
+                for (int i = 0; i < dsNew.TestingSource.ImageCount; i++)
+                {
+                    SimpleDatum sd = db.QueryImage(dsNew.TestingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+                    rgSd1.Add(sd);
+                }
+
+                // The two lists should be in chronological order.
+                if (rgSd1.Count != rgSd.Count)
+                    throw new Exception("The list counts are incorrect!");
+
+                for (int i = 0; i < rgSd.Count; i++)
+                {
+                    if (rgSd1[i].TimeStamp != rgSd[i].TimeStamp)
+                        throw new Exception("The time at " + i.ToString() + " is not as expected!");
+
+                    if (rgSd1[i].Description != rgSd[i].Description)
+                        throw new Exception("The description at " + i.ToString() + " is not as expected!");
+                }
+
+                db.DeleteCreatedDataset(nNewDsId);
             }
-
-
-            // Order the items in reverse so that we can test 
-            // that the created dataset was actually created
-            // chronologically.
-            db.Sort(ds.TrainingSource.ID, IMGDB_SORT.BYID_DESC);
-            db.Sort(ds.TestingSource.ID, IMGDB_SORT.BYID_DESC);
-
-            // Create the new dataset.
-            int nNewDsId = db.CreateDatasetOranizedByTime(ds.ID);
-
-            if (nNewDsId >= 0)
-                throw new Exception("The new dataset ID should be < 0.");
-
-            DatasetDescriptor dsNew = db.GetDatasetById(nNewDsId);
-            if (dsNew.ID != nNewDsId)
-                throw new Exception("Invalid dataset ID!");
-
-            if (dsNew.TrainingSource.ID >= 0)
-                throw new Exception("The training source ID for the dynamic dataset should be < 0.");
-
-            if (dsNew.TestingSource.ID >= 0)
-                throw new Exception("The testing source ID for the dynamic dataset should be < 0.");
-
-            rgSd = rgSd.OrderBy(p => p.Description).ThenBy(p => p.TimeStamp).ToList();
-
-            List<SimpleDatum> rgSd1 = new List<SimpleDatum>();
-
-            for (int i = 0; i < dsNew.TrainingSource.ImageCount; i++)
+            finally
             {
-                SimpleDatum sd = db.QueryImage(dsNew.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                rgSd1.Add(sd);
+                IDisposable idisp = db as IDisposable;
+                if (idisp != null)
+                    idisp.Dispose();
             }
-
-            for (int i = 0; i < dsNew.TestingSource.ImageCount; i++)
-            {
-                SimpleDatum sd = db.QueryImage(dsNew.TestingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
-                rgSd1.Add(sd);
-            }
-
-            // The two lists should be in chronological order.
-            if (rgSd1.Count != rgSd.Count)
-                throw new Exception("The list counts are incorrect!");
-
-            for (int i = 0; i < rgSd.Count; i++)
-            {
-                if (rgSd1[i].TimeStamp != rgSd[i].TimeStamp)
-                    throw new Exception("The time at " + i.ToString() + " is not as expected!");
-
-                if (rgSd1[i].Description != rgSd[i].Description)
-                    throw new Exception("The description at " + i.ToString() + " is not as expected!");
-            }
-
-            db.DeleteCreatedDataset(nNewDsId);
         }
 
         [TestMethod]
         public void TestDbFilePath()
         {
-            GC.Collect();
-            Database db = new Database();
+            PreTest.Init();
 
+            Database db = new Database();
+            
             string strFile = db.GetDatabaseFilePath("DNN");
             string strFileImg = db.GetDatabaseImagePath("DNN");
 
@@ -1521,7 +1629,8 @@ namespace MyCaffe.test
 
         public void TestPutRawImage(bool bSaveImagesToFile)
         {
-            GC.Collect();
+            PreTest.Init();
+
             DatasetFactory factory = new DatasetFactory();
 
             factory.DeleteSources("Test123");

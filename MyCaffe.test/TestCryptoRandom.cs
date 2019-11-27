@@ -21,7 +21,8 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestRandom10()
         {
-            GC.Collect();
+            PreTest.Init();
+
             Log log = new Log("Test CryptoRandom - 10 items.");
             log.EnableTrace = true;
 
@@ -34,7 +35,8 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestRandom2()
         {
-            GC.Collect();
+            PreTest.Init();
+
             Log log = new Log("Test CryptoRandom - 2 items");
             log.EnableTrace = true;
 
@@ -46,7 +48,8 @@ namespace MyCaffe.test
 
         private void testRandom(Log log, CryptoRandom.METHOD method, int nBuckets)
         {
-            GC.Collect();
+            PreTest.Init();
+
             BucketCollection col = new BucketCollection(0, 1, nBuckets);
             CryptoRandom rand = new CryptoRandom(method, Guid.NewGuid().GetHashCode());
             int nTotal = 1000000;
@@ -80,7 +83,8 @@ namespace MyCaffe.test
 
         private void testRandomIdx(Log log, CryptoRandom.METHOD method, int nBuckets)
         {
-            GC.Collect();
+            PreTest.Init();
+
             BucketCollection col = new BucketCollection(0.0, 1.0, nBuckets);
             CryptoRandom rand = new CryptoRandom(method, Guid.NewGuid().GetHashCode());
             int nTotal = 100000;

@@ -76,7 +76,8 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestGetDeviceMemory()
         {
-            GC.Collect();
+            PreTest.Init();
+
             Log log = new Log("TestCudnn");
             CudaDnn<double> cuda1 = new CudaDnn<double>(TestBase.DEFAULT_DEVICE_ID, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
 
@@ -120,7 +121,8 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestKernelMemCpyDouble()
         {
-            GC.Collect();
+            PreTest.Init();
+
             CudaDnn<double> cuda1 = new CudaDnn<double>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
             int nDevCount = cuda1.GetDeviceCount();
             CudaDnn<double> cuda2 = null;
@@ -153,7 +155,8 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestKernelMemCpyFloat()
         {
-            GC.Collect();
+            PreTest.Init();
+
             CudaDnn<float> cuda1 = new CudaDnn<float>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
             int nDevCount = cuda1.GetDeviceCount();
             CudaDnn<float> cuda2 = null;
@@ -278,7 +281,8 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestKernelAddDouble()
         {
-            GC.Collect();
+            PreTest.Init();
+
             CudaDnn<double> cuda1 = new CudaDnn<double>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
             int nDevCount = cuda1.GetDeviceCount();
             CudaDnn<double> cuda2 = null;
@@ -363,7 +367,8 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestKernelAddFloat()
         {
-            GC.Collect();
+            PreTest.Init();
+
             CudaDnn<float> cuda1 = new CudaDnn<float>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, TestBase.CudaPath);
             int nDevCount = cuda1.GetDeviceCount();
             CudaDnn<float> cuda2 = null;
@@ -448,7 +453,8 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestP2PAccess()
         {
-            GC.Collect();
+            PreTest.Init();
+
             string strPath = TestBase.CudaPath;
             CudaDnn<double> cuda1 = new CudaDnn<double>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, strPath);
             CudaDnn<double> cuda2 = new CudaDnn<double>(0, DEVINIT.CUBLAS | DEVINIT.CURAND, null, strPath);
