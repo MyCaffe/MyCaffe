@@ -119,7 +119,7 @@ class Memory
 		HandleCollection<MIN_HANDLES> m_tsneg;
 		HandleCollection<MIN_HANDLES> m_memtest;
 		HandleCollection<MIN_HANDLES> m_nccl;
-		HandleCollection<MID_HANDLES> m_ssd;
+		HandleCollection<MIN_HANDLES> m_ssd;
 		HandleCollection<MIN_HANDLES> m_extensions;
 		T m_tOne;
 		T m_tZero;
@@ -132,6 +132,28 @@ class Memory
 		long m_hGlobalActivationElu;
 #endif
 		map<void*, bool> m_memoryMap;
+		map<cudnnHandle_t, int> m_cudnnRef;
+		map<cudnnHandle_t, int> m_cudnnH2Dev;
+		map<int, cudnnHandle_t> m_cudnnDev2H;
+
+		void free_cudnn(cudnnHandle_t h)
+		{
+			if (m_cudnnRef.find(h) == m_cudnnRef.end())
+			{
+				cudnnDestroy(h);
+				return;
+			}
+
+			m_cudnnRef[h]--;
+			if (m_cudnnRef[h] <= 0)
+			{
+				int nDeviceID = m_cudnnH2Dev[h];
+				m_cudnnRef.erase(h);
+				m_cudnnH2Dev.erase(h);
+				m_cudnnDev2H.erase(nDeviceID);
+				cudnnDestroy(h);
+			}
+		}
 
 	public:
 		Memory();
@@ -797,7 +819,7 @@ inline long Memory<T>::FreeCuDNN(long hHandle)
 	cudnnHandle_t h = (cudnnHandle_t)m_cudnn.Free(hHandle);
 
 	if (h != NULL)
-		cudnnDestroy(h);
+		free_cudnn(h);
 
 	return 0;
 }

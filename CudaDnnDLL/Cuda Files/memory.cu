@@ -446,19 +446,43 @@ long Memory<T>::CreateCuDNN(long hStream, long* phHandle)
 	if (phHandle == NULL)
 		return ERROR_PARAM_NULL;
 
-	if (lErr = cudnnCreate(&cudnn))
-		return lErr | ERROR_CUDNN_OFFSET;
+	int nDeviceID;
+	if (lErr = cudaGetDevice(&nDeviceID))
+		return lErr;
 
-	if (hStream > 0)
+	if (hStream == 0)
 	{
-		if (lErr = cudnnSetStream(cudnn, GetStream(hStream)))
+		if (m_cudnnDev2H.find(nDeviceID) != m_cudnnDev2H.end())
+		{
+			cudnn = m_cudnnDev2H[nDeviceID];
+			m_cudnnRef[cudnn]++;
+		}
+		else
+		{
+			if (lErr = cudnnCreate(&cudnn))
+				return lErr | ERROR_CUDNN_OFFSET;
+
+			m_cudnnRef[cudnn]++;
+			m_cudnnDev2H[nDeviceID] = cudnn;
+			m_cudnnH2Dev[cudnn] = nDeviceID;
+		}
+	}
+	else
+	{
+		if (lErr = cudnnCreate(&cudnn))
 			return lErr | ERROR_CUDNN_OFFSET;
+
+		if (lErr = cudnnSetStream(cudnn, GetStream(hStream)))
+		{
+			cudnnDestroy(cudnn);
+			return lErr | ERROR_CUDNN_OFFSET;
+		}
 	}
 
 	long hHandle = m_cudnn.Allocate(cudnn);
 	if (hHandle < 0)
 	{
-		cudnnDestroy(cudnn);
+		free_cudnn(cudnn);
 		return ERROR_MEMORY_OUT;
 	}
 
