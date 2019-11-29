@@ -113,9 +113,6 @@ namespace MyCaffe.test
 
         public int GetPriority(string strClass, string strMethod)
         {
-            if (strClass == "TestDataLayer" && strMethod.Contains("Forward"))
-                return 1;
-
             if (strClass == "TestMultiBoxLossLayer" && strMethod.Contains("TestConfGradient"))
                 return 1;
 
