@@ -35,7 +35,7 @@ We have several new models supported by MyCaffe with the train_val and solution 
  - Recurrent Learning of Char-RNN as described in [8] and [9].
  - Neural Style Transfer as described in [10] and [11] using the VGG model described in [12]
  - Deep Q-Learning [14][15] with Noisy-Net [16] and Prioritized Replay Buffer [17]
- - Siamese Network [18]
+ - Siamese Network [18][19]
 
 For more information on the MyCaffe implementation of Policy Gradient Reinforcement Learning, see [MyCaffe: A Complete C# Re-Write of Caffe with Reinforcement Learning](https://arxiv.org/abs/1810.02272) by D. Brown, 2018. 
 
@@ -97,6 +97,8 @@ Source code available on GitHub at <a href="https://github.com/stella-emu/stella
 [17] [Prioritized Experience Replay](https://arxiv.org/abs/1511.05952) by Tom Schaul, John Quan, Ioannis Antonoglou, David Silver, 2016, arXiv:1511.05952
 
 [18] [Siamese Network Training with Caffe](https://caffe.berkeleyvision.org/gathered/examples/siamese.html) by Yangqing Jia and Evan Shelhamer, BAIR.
+
+[19] [Siamese Neural Network for One-shot Image Recognition](https://www.cs.cmu.edu/~rsalakhu/papers/oneshot1.pdf) by G. Koch, R. Zemel and R. Salakhutdinov, ICML 2015 Deep Learning Workshop, 2015.
 
 For more information on the C++ CAFFE open-source project, please see the following <a href="http://caffe.berkeleyvision.org/">link</a>.
 
