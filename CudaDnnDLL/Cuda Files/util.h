@@ -159,8 +159,8 @@ const int ERROR_CUBLAS_OFFSET					= 0x8000;
 //	Helper Functions
 //-----------------------------------------------------------------------------
 
-bool GetCudaErrorString(long lErr, char* szErr, long lErrMax);
-bool GetErrorString(long lErr, char* szErr, long lErrMax);
+bool GetCudaErrorString(long lKernel, long lErr, char* szErr, long lErrMax);
+bool GetErrorString(long lKernel, long lErr, char* szErr, long lErrMax);
 
 inline int CAFFE_GET_BLOCKS(const int n)
 {
