@@ -46,7 +46,7 @@ LONG copyMemKernelToKernel(Kernel<float>* pKernel, LONG lInput, float* pInput);
 LONG addKernelToKernel(Kernel<double>* pKernel, LONG lInput, double* pInput);
 LONG copyMemKernelToKernel(Kernel<double>* pKernel, LONG lInput, double* pInput);
 
-void getError(long lErr, LPTSTR szErr, LONG lszErrMax);
+void getError(long lKernel, long lErr, LPTSTR szErr, LONG lszErrMax);
 
 
 //=============================================================================
@@ -155,7 +155,7 @@ extern "C" LONG WINAPI DLL_InvokeFloat(LONG lKernelIdx,
 
 			if (lErr = getKernelFloatIndex(&lKernelIdx))
 			{
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 
@@ -164,7 +164,7 @@ extern "C" LONG WINAPI DLL_InvokeFloat(LONG lKernelIdx,
 			if (lErr = pKernel->Initialize(pInput, lInput))
 			{
 				delete pKernel;
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 
@@ -188,13 +188,13 @@ extern "C" LONG WINAPI DLL_InvokeFloat(LONG lKernelIdx,
 			if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
 			{
 				lErr = ERROR_PARAM_NULL;
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 
 			if (lErr = pKernel->FreeHost(pInput))
 			{
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 			break;
@@ -203,13 +203,13 @@ extern "C" LONG WINAPI DLL_InvokeFloat(LONG lKernelIdx,
 			if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
 			{
 				lErr = ERROR_PARAM_NULL;
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 
 			if (lErr = copyMemKernelToKernel(pKernel, lInput, pInput))
 			{
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 			break;
@@ -218,13 +218,13 @@ extern "C" LONG WINAPI DLL_InvokeFloat(LONG lKernelIdx,
 			if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
 			{
 				lErr = ERROR_PARAM_NULL;
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 
 			if (lErr = addKernelToKernel(pKernel, lInput, pInput))
 			{
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 			break;
@@ -234,14 +234,14 @@ extern "C" LONG WINAPI DLL_InvokeFloat(LONG lKernelIdx,
 				if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
 				{
 					lErr = ERROR_PARAM_NULL;
-					getError(lErr, szErr, lszErrMax);
+					getError(lKernelIdx, lErr, szErr, lszErrMax);
 					return lErr;
 				}
 
 				if (lInput != 2)
 				{
 					return ERROR_PARAM_OUT_OF_RANGE;
-					getError(lErr, szErr, lszErrMax);
+					getError(lKernelIdx, lErr, szErr, lszErrMax);
 					return lErr;
 				}
 
@@ -251,7 +251,7 @@ extern "C" LONG WINAPI DLL_InvokeFloat(LONG lKernelIdx,
 				if (hKernelSrc == 0 || hNcclSrc == 0)
 				{
 					return ERROR_PARAM_OUT_OF_RANGE;
-					getError(lErr, szErr, lszErrMax);
+					getError(lKernelIdx, lErr, szErr, lszErrMax);
 					return lErr;
 				}
 
@@ -259,7 +259,7 @@ extern "C" LONG WINAPI DLL_InvokeFloat(LONG lKernelIdx,
 				if ((pKernelSrc = g_rgdwFloatKernelTable[hKernelSrc]) == NULL)
 				{
 					lErr = ERROR_PARAM_NULL;
-					getError(lErr, szErr, lszErrMax);
+					getError(lKernelIdx, lErr, szErr, lszErrMax);
 					return lErr;
 				}
 
@@ -267,13 +267,13 @@ extern "C" LONG WINAPI DLL_InvokeFloat(LONG lKernelIdx,
 				if ((pNccl = pKernelSrc->GetNCCL(hNcclSrc)) == NULL)
 				{
 					lErr = ERROR_PARAM_NULL;
-					getError(lErr, szErr, lszErrMax);
+					getError(lKernelIdx, lErr, szErr, lszErrMax);
 					return lErr;
 				}
 
 				if (lErr = pKernel->SetNCCL(pNccl, ppOutput, plOutput))
 				{
-					getError(lErr, szErr, lszErrMax);
+					getError(lKernelIdx, lErr, szErr, lszErrMax);
 					return lErr;
 				}
 			}
@@ -283,7 +283,7 @@ extern "C" LONG WINAPI DLL_InvokeFloat(LONG lKernelIdx,
 			if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
 			{
 				lErr = ERROR_PARAM_NULL;
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 
@@ -295,13 +295,13 @@ extern "C" LONG WINAPI DLL_InvokeFloat(LONG lKernelIdx,
 			if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
 			{
 				lErr = ERROR_PARAM_NULL;
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 
 			if (lErr = pKernel->Run(lFunctionIdx, pInput, lInput, ppOutput, plOutput))
 			{
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 			break;
@@ -334,7 +334,7 @@ extern "C" LONG WINAPI DLL_InvokeDouble(LONG lKernelIdx,
 
 			if (lErr = getKernelDoubleIndex(&lKernelIdx))
 			{
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 
@@ -343,7 +343,7 @@ extern "C" LONG WINAPI DLL_InvokeDouble(LONG lKernelIdx,
 			if (lErr = pKernel->Initialize(pInput, lInput))
 			{
 				delete pKernel;
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 
@@ -367,13 +367,13 @@ extern "C" LONG WINAPI DLL_InvokeDouble(LONG lKernelIdx,
 			if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
 			{
 				lErr = ERROR_PARAM_NULL;
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 
 			if (lErr = pKernel->FreeHost(pInput))
 			{
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 			break;
@@ -382,13 +382,13 @@ extern "C" LONG WINAPI DLL_InvokeDouble(LONG lKernelIdx,
 			if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
 			{
 				lErr = ERROR_PARAM_NULL;
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 
 			if (lErr = copyMemKernelToKernel(pKernel, lInput, pInput))
 			{
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 			break;
@@ -397,13 +397,13 @@ extern "C" LONG WINAPI DLL_InvokeDouble(LONG lKernelIdx,
 			if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
 			{
 				lErr = ERROR_PARAM_NULL;
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 
 			if (lErr = addKernelToKernel(pKernel, lInput, pInput))
 			{
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 			break;
@@ -413,14 +413,14 @@ extern "C" LONG WINAPI DLL_InvokeDouble(LONG lKernelIdx,
 				if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
 				{
 					lErr = ERROR_PARAM_NULL;
-					getError(lErr, szErr, lszErrMax);
+					getError(lKernelIdx, lErr, szErr, lszErrMax);
 					return lErr;
 				}
 
 				if (lInput != 2)
 				{
 					return ERROR_PARAM_OUT_OF_RANGE;
-					getError(lErr, szErr, lszErrMax);
+					getError(lKernelIdx, lErr, szErr, lszErrMax);
 					return lErr;
 				}
 
@@ -430,7 +430,7 @@ extern "C" LONG WINAPI DLL_InvokeDouble(LONG lKernelIdx,
 				if (hKernelSrc == 0 || hNcclSrc == 0)
 				{
 					return ERROR_PARAM_OUT_OF_RANGE;
-					getError(lErr, szErr, lszErrMax);
+					getError(lKernelIdx, lErr, szErr, lszErrMax);
 					return lErr;
 				}
 
@@ -438,7 +438,7 @@ extern "C" LONG WINAPI DLL_InvokeDouble(LONG lKernelIdx,
 				if ((pKernelSrc = g_rgdwDoubleKernelTable[hKernelSrc]) == NULL)
 				{
 					lErr = ERROR_PARAM_NULL;
-					getError(lErr, szErr, lszErrMax);
+					getError(lKernelIdx, lErr, szErr, lszErrMax);
 					return lErr;
 				}
 
@@ -446,13 +446,13 @@ extern "C" LONG WINAPI DLL_InvokeDouble(LONG lKernelIdx,
 				if ((pNccl = pKernelSrc->GetNCCL(hNcclSrc)) == NULL)
 				{
 					lErr = ERROR_PARAM_NULL;
-					getError(lErr, szErr, lszErrMax);
+					getError(lKernelIdx, lErr, szErr, lszErrMax);
 					return lErr;
 				}
 
 				if (lErr = pKernel->SetNCCL(pNccl, ppOutput, plOutput))
 				{
-					getError(lErr, szErr, lszErrMax);
+					getError(lKernelIdx, lErr, szErr, lszErrMax);
 					return lErr;
 				}
 			}
@@ -462,7 +462,7 @@ extern "C" LONG WINAPI DLL_InvokeDouble(LONG lKernelIdx,
 			if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
 			{
 				lErr = ERROR_PARAM_NULL;
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 
@@ -474,13 +474,13 @@ extern "C" LONG WINAPI DLL_InvokeDouble(LONG lKernelIdx,
 			if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
 			{
 				lErr = ERROR_PARAM_NULL;
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 
 			if (lErr = pKernel->Run(lFunctionIdx, pInput, lInput, ppOutput, plOutput))
 			{
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 			break;
@@ -527,7 +527,7 @@ extern "C" LONG WINAPI DLL_QueryString(LONG lKernelIdx,
 
 		if (lErr)
 		{
-			getError(lErr, szErr, lszErrMax);
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
 			return lErr;
 		}
 
@@ -556,7 +556,7 @@ extern "C" LONG WINAPI DLL_QueryString(LONG lKernelIdx,
 
 		if (lErr)
 		{
-			getError(lErr, szErr, lszErrMax);
+			getError(lKernelIdx, lErr, szErr, lszErrMax);
 			return lErr;
 		}
 
@@ -564,7 +564,7 @@ extern "C" LONG WINAPI DLL_QueryString(LONG lKernelIdx,
 	}
 
 	lErr = ERROR_PARAM_OUT_OF_RANGE;
-	getError(lErr, szErr, lszErrMax);
+	getError(lKernelIdx, lErr, szErr, lszErrMax);
 
 	return lErr;
 }
@@ -594,13 +594,13 @@ extern "C" LONG WINAPI DLL_InvokeFloatEx(LONG lKernelIdx,
 			if ((pKernel = g_rgdwFloatKernelTable[lKernelIdx]) == NULL)
 			{
 				lErr = ERROR_PARAM_NULL;
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 
 			if (lErr = pKernel->CreateExtensionFloat(g_hModule, lKernelIdx, pszInput, ppOutput, plOutput))
 			{
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 			break;
@@ -637,13 +637,13 @@ extern "C" LONG WINAPI DLL_InvokeDoubleEx(LONG lKernelIdx,
 			if ((pKernel = g_rgdwDoubleKernelTable[lKernelIdx]) == NULL)
 			{
 				lErr = ERROR_PARAM_NULL;
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 
 			if (lErr = pKernel->CreateExtensionDouble(g_hModule, lKernelIdx, pszInput, ppOutput, plOutput))
 			{
-				getError(lErr, szErr, lszErrMax);
+				getError(lKernelIdx, lErr, szErr, lszErrMax);
 				return lErr;
 			}
 			break;
@@ -1169,15 +1169,15 @@ void setCurrentDirectory()
 	SetCurrentDirectory(szName);
 }
 
-void getError(long lErr, LPTSTR szErr, LONG lszErrMax)
+void getError(long lKernel, long lErr, LPTSTR szErr, LONG lszErrMax)
 {
 	USES_CONVERSION;
 	char szErr1[MAX_ERROR + 1];
 
-	if (!GetCudaErrorString(lErr, szErr1, MAX_ERROR) &&
-		!GetErrorString(lErr, szErr1, MAX_ERROR))
+	if (!GetCudaErrorString(lKernel, lErr, szErr1, MAX_ERROR) &&
+		!GetErrorString(lKernel, lErr, szErr1, MAX_ERROR))
 	{
-		snprintf(szErr1, MAX_ERROR, "Unknown error #%ld", lErr);
+		snprintf(szErr1, MAX_ERROR, "Unknown error #%ld, Kernel = %ld", lErr, lKernel);
 	}
 	
 	szErr1[MAX_ERROR] = (TCHAR)NULL;
