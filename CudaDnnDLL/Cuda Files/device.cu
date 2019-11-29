@@ -11,8 +11,27 @@
 
 
 //=============================================================================
-//	Local constants
+//	Local Classes
 //=============================================================================
+
+class Lock
+{
+	CRITICAL_SECTION* m_plock;
+
+public:
+	Lock(CRITICAL_SECTION* plock)
+	{
+		m_plock = plock;
+		EnterCriticalSection(m_plock);
+	}
+
+	~Lock()
+	{
+		LeaveCriticalSection(m_plock);	
+		m_plock = NULL;
+	}
+};
+
 
 //=============================================================================
 //	Class Methods
@@ -739,7 +758,36 @@ long Device<T>::SetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput
 	else
 		return ERROR_PARAM_OUT_OF_RANGE;
 
-	if (lErr = m_memory.SetMemory(hHandle, pData, lCount, hStream))
+	// Lock in critical section from this point to end of function.
+	Lock lock(&m_MemHostLock);
+
+	if (m_hSetMemHost == 0)
+	{
+		if (lErr = m_memory.AllocHostBuffer(INITIAL_SET_MEM_BUFFER, &m_hSetMemHost))
+			return lErr;
+	}
+
+	HostBuffer<T>* pHost = m_memory.GetHostBuffer(m_hSetMemHost);
+	if (pHost == NULL)
+		return ERROR_MEMORY_NOT_FOUND;
+
+	if (pHost->Count() < lCount)
+	{
+		size_t lNewSize = ((lCount / INITIAL_SET_MEM_BUFFER) + 2) * INITIAL_SET_MEM_BUFFER;
+		m_memory.FreeHostBuffer(m_hSetMemHost);
+		m_hSetMemHost = 0;
+
+		if (lErr = m_memory.AllocHostBuffer(lNewSize, &m_hSetMemHost))
+			return lErr;
+
+		if ((pHost = m_memory.GetHostBuffer(m_hSetMemHost)) == NULL)
+			return ERROR_MEMORY_NOT_FOUND;
+	}
+
+	if (lErr = m_memory.CopyToHost(lCount, pHost->Data(), pData, false, false))
+		return lErr;
+
+	if (lErr = m_memory.SetMemory(hHandle, pHost->Data(), lCount, hStream))
 		return lErr;
 
 	return 0;

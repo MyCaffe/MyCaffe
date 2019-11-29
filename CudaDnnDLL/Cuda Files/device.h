@@ -29,6 +29,8 @@ const int DEVPROP_MULTIGPUBOARDGROUPID	= 3;
 const int MAX_ARG = 4096 * 10;
 const int MAX_DIM = 4096 * 10;
 
+const long INITIAL_SET_MEM_BUFFER = 4096;
+
 
 //-----------------------------------------------------------------------------
 //	Device Class
@@ -48,6 +50,8 @@ class Device
 		HANDLE m_hEventSrc;
 		int m_nMajor = 0;
 		int m_nMinor = 0;
+		long m_hSetMemHost = 0;
+		CRITICAL_SECTION m_MemHostLock;
 
 		long verifyInput(long lInput, T* pfInput, long lMin, long lMax, bool bExact = false);
 		long verifyOutput(long* plOutput, T** ppfOutput);
@@ -519,17 +523,29 @@ inline long Device<T>::setOutput(T fVal, long* plOutput, T** ppfOutput)
 template <class T>
 inline Device<T>::Device() : m_memory(), m_math()
 {
+	m_hSetMemHost = 0;
 	m_math.Connect(&m_memory);
 	m_cublas = NULL;
 	m_curand = NULL;
 	m_lSeed = 0;
 	m_nDevice = 0;
 	m_hEventSrc = RegisterEventSource(NULL, L"MyCaffe");
+
+	if (!InitializeCriticalSectionAndSpinCount(&m_MemHostLock, 0x00000400))
+		return;
 }
 
 template <class T>
 inline Device<T>::~Device()
 {
+	if (m_hSetMemHost != 0)
+	{
+		EnterCriticalSection(&m_MemHostLock);
+		m_memory.FreeHostBuffer(m_hSetMemHost);
+		m_hSetMemHost = 0;
+		LeaveCriticalSection(&m_MemHostLock);
+	}
+
 	if (m_curand != NULL)
 	{
 		curandDestroyGenerator(m_curand);
@@ -547,6 +563,8 @@ inline Device<T>::~Device()
 		cublasDestroy(m_cublas);
 		m_cublas = NULL;
 	}
+
+	DeleteCriticalSection(&m_MemHostLock);
 }
 
 template <class T>
