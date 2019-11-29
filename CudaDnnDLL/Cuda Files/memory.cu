@@ -334,7 +334,7 @@ long Memory<T>::AllocHostBuffer(size_t lCount, long* phHandle)
 		return ERROR_MEMORY_OUT;
 	}
 
-	m_rgActiveHostBuffers.push_back(pHostBuf);
+	m_rgActiveHostBuffers[pMem] = pHostBuf;
 
 	*phHandle = hHandle;
 
@@ -353,9 +353,10 @@ long Memory<T>::FreeHostBuffer(long hHandle)
 	if (pHostBuf != NULL)
 	{
 		if (pHostBuf->Data() != NULL)
+		{
+			m_rgActiveHostBuffers.erase(pHostBuf->Data());
 			FreeHost(pHostBuf->Data());
-
-		std::remove(m_rgActiveHostBuffers.begin(), m_rgActiveHostBuffers.end(), pHostBuf);
+		}
 
 		delete pHostBuf;
 	}
@@ -370,13 +371,8 @@ template long Memory<float>::FreeHostBuffer(long hHandle);
 template <class T>
 bool Memory<T>::IsHostBuffer(T* pf)
 {
-	int nCount = (int)m_rgActiveHostBuffers.size();
-
-	for (int i=0; i<nCount; i++)
-	{
-		if (m_rgActiveHostBuffers[i]->Data() == pf)
-			return true;
-	}
+	if (m_rgActiveHostBuffers.find(pf) != m_rgActiveHostBuffers.end())
+		return true;
 
 	return false;
 }

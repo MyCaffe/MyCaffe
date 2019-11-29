@@ -100,7 +100,7 @@ template <class T>
 class Memory
 {
 	protected:
-		std::vector<HostBuffer<T>*> m_rgActiveHostBuffers;
+		map<T*, HostBuffer<T>*> m_rgActiveHostBuffers;
 		MemoryCollection m_memory;
 		MemoryCollection m_memoryPointers;
 		HandleCollection<MAX_HANDLES_MEM> m_hostbuffers;
