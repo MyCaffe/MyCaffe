@@ -1968,6 +1968,61 @@ namespace MyCaffe
             return GetLicenseTextEx(strOtherLicenses);
         }
 
+        /// <summary>
+        /// VerifyCompute compares the current compute of the current device (or device specified) against the required compute of the current CudaDnnDLL.dll used.
+        /// </summary>
+        /// <param name="strExtra">Optionally, specifies extra information for the exception if one is thrown.</param>
+        /// <param name="nDeviceID">Optionally, specifies a specific device ID to check, otherwise uses the current device used (default = -1, which uses the current device).</param>
+        /// <param name="bThrowException">Optionally, specifies whether or not to throw an exception on a compute mis-match (default = true).</param>
+        /// <returns>If the device's compute is >= to the required compute fo the CudaDnnDll.dll used, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        public bool VerifyCompute(string strExtra = null, int nDeviceID = -1, bool bThrowException = true)
+        {
+            if (m_cuda == null)
+                throw new Exception("You must initialize the MyCaffeControl with an instance of CudaDnn<T>, or Load a new project.");
+
+            int nMinMajor;
+            int nMinMinor;
+            string strDll = m_cuda.GetRequiredCompute(out nMinMajor, out nMinMinor);
+
+            if (nDeviceID == -1)
+                nDeviceID = m_cuda.GetDeviceID();
+
+            string strDevName = m_cuda.GetDeviceName(nDeviceID);
+            string strCompute = parse(strDevName, "compute ", ")");
+            string[] rgstr = strCompute.Split('.');
+            string strMajor = rgstr[0];
+            string strMinor = rgstr[1];
+            if (strMajor == null || strMinor == null)
+                throw new Exception("Could not find the current device's major and minor version information!");
+
+            int nMajor = int.Parse(strMajor);
+            int nMinor = int.Parse(strMinor);
+
+            if (nMajor < nMinMajor || (nMajor == nMinMajor && nMinor < nMinMinor))
+            {
+                string strErr = "The device " + nDeviceID.ToString() + " - '" + strDevName + " does not meet the minimum compute of '" + nMinMajor.ToString() + "." + nMinMinor.ToString() + "' required by the CudaDnnDll used ('" + strDll + "')!";
+                if (!string.IsNullOrEmpty(strExtra))
+                    strErr += strExtra;
+                throw new Exception(strErr);
+            }
+
+            return true;
+        }
+
+        private string parse(string str, string strT1, string strT2)
+        {
+            int nPos = str.IndexOf(strT1);
+            if (nPos < 0)
+                return null;
+
+            str = str.Substring(nPos + strT1.Length);
+            nPos = str.IndexOf(strT2);
+            if (nPos < 0)
+                return null;
+
+            return str.Substring(0, nPos).Trim();
+        }
+
         private static string replaceMacro(string str, string strMacro, string strReplacement)
         {
             int nPos = str.IndexOf(strMacro);

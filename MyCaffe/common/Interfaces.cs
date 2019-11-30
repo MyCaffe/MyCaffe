@@ -296,6 +296,14 @@ namespace MyCaffe.common
         /// <param name="rgstrLayers">Specifies the layers to reinitialize, when <i>null</i> or empty, all layers are re-initialized</param>
         /// <returns>If a layer is specified and found, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
         bool ReInitializeParameters(params string[] rgstrLayers);
+        /// <summary>
+        /// VerifyCompute compares the current compute of the current device (or device specified) against the required compute of the current CudaDnnDLL.dll used.
+        /// </summary>
+        /// <param name="strExtra">Optionally, specifies extra information for the exception if one is thrown.</param>
+        /// <param name="nDeviceID">Optionally, specifies a specific device ID to check, otherwise uses the current device used (default = -1, which uses the current device).</param>
+        /// <param name="bThrowException">Optionally, specifies whether or not to throw an exception on a compute mis-match (default = true).</param>
+        /// <returns>If the device's compute is >= to the required compute fo the CudaDnnDll.dll used, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        bool VerifyCompute(string strExtra = null, int nDeviceID = -1, bool bThrowException = true);
     }
 
     /// <summary>
