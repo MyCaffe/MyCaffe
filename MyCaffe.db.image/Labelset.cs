@@ -136,6 +136,9 @@ namespace MyCaffe.db.image
 
                 if (rgItems.Count > 0)
                 {
+                    if (rgIdx.Count > rgItems.Count)
+                        rgIdx.Clear();
+
                     if (rgIdx.Count == 0)
                     {
                         for (int i = 0; i < rgItems.Count; i++)
