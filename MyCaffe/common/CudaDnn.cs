@@ -572,7 +572,7 @@ namespace MyCaffe.common
         void add(int n, long hA, long hB, long hY);
         void add(int n, long hA, long hB, long hY, double dfAlpha);
         void add(int n, long hA, long hB, long hY, float fAlpha);
-        void sub(int n, long hA, long hB, long hY, int nAOff = 0, int nBOff = 0, int nYOff = 0);
+        void sub(int n, long hA, long hB, long hY, int nAOff = 0, int nBOff = 0, int nYOff = 0, int nB = 0);
         void mul(int n, long hA, long hB, long hY, int nAOff = 0, int nBOff = 0, int nYOff = 0);
         void mul_scalar(int n, double fAlpha, long hY);
         void mul_scalar(int n, float fAlpha, long hY);
@@ -5615,13 +5615,17 @@ namespace MyCaffe.common
         /// <param name="nAOff">Optionally, specifies an offset (in items, not bytes) into the memory of A.</param>
         /// <param name="nBOff">Optionally, specifies an offset (in items, not bytes) into the memory of B.</param>
         /// <param name="nYOff">Optionally, specifies an offset (in items, not bytes) into the memory of Y.</param>
-        public void sub(int n, long hA, long hB, long hY, int nAOff = 0, int nBOff = 0, int nYOff = 0)
+        /// <param name="nB">Optionally, specifies a number of 'B' items to subtract (default = 0 which causes ALL items in B to be subtracted).
+        /// When 'nB' > 0, it must be a factor of 'n' and causes that number of B items to be subtracted as a block from A.
+        /// </param>
+        public void sub(int n, long hA, long hB, long hY, int nAOff = 0, int nBOff = 0, int nYOff = 0, int nB = 0)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SUB, new double[] { n, hA, hB, hY, nAOff, nBOff, nYOff });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SUB, new double[] { n, hA, hB, hY, nAOff, nBOff, nYOff, nB });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SUB, new float[] { n, hA, hB, hY, nAOff, nBOff, nYOff });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SUB, new float[] { n, hA, hB, hY, nAOff, nBOff, nYOff, nB });
         }
+
 
         /// <summary>
         /// Multiplies each element of A with each element of B and places the result in Y.
