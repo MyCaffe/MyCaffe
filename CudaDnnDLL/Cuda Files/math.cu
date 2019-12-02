@@ -2648,8 +2648,28 @@ __global__ void sub_kernel_half(const int n, __half* a, __half* b, __half* y)
 #endif
 }
 
+template <typename T>
+__global__ void sub_kernel(const int n, T* a, T* b, T* y, const int nB)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		y[i] = a[i] - b[i % nB];
+	}
+}
+
+template <typename T>
+__global__ void sub_kernel_half(const int n, __half* a, __half* b, __half* y, const int nB)
+{
+#if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	{
+		y[i] = a[i] - b[i % nB];
+	}
+#endif
+}
+
 template <>
-long Math<double>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, int nYOff)
+long Math<double>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, int nYOff, int nB)
 {
 	LONG lErr;
 	MemoryItem* pA;
@@ -2683,7 +2703,10 @@ long Math<double>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, i
 		if (nYOff > 0)
 			y += nYOff;
 
-		sub_kernel_half<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>> (n, a, b, y);
+		if (nB == 0)
+			sub_kernel_half<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>> (n, a, b, y);
+		else
+			sub_kernel_half<double> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, a, b, y, nB);
 #endif
 	}
 	else
@@ -2704,14 +2727,17 @@ long Math<double>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, i
 		if (nYOff > 0)
 			y += nYOff;
 
-		sub_kernel<double> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, a, b, y);
+		if (nB == 0)
+			sub_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+		else
+			sub_kernel<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y, nB);
 	}
 
 	return cudaStreamSynchronize(0);
 }
 
 template <>
-long Math<float>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, int nYOff)
+long Math<float>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, int nYOff, int nB)
 {
 	LONG lErr;
 	MemoryItem* pA;
@@ -2745,7 +2771,10 @@ long Math<float>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, in
 		if (nYOff > 0)
 			y += nYOff;
 
-		sub_kernel_half<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+		if (nB == 0)
+			sub_kernel_half<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+		else
+			sub_kernel_half<double><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y, nB);
 #endif
 	}
 	else
@@ -2766,7 +2795,10 @@ long Math<float>::sub(int n, long hA, long hB, long hY, int nAOff, int nBOff, in
 		if (nYOff > 0)
 			y += nYOff;
 
-		sub_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+		if (nB == 0)
+			sub_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y);
+		else
+			sub_kernel<float><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, a, b, y, nB);
 	}
 
 	return cudaStreamSynchronize(0);

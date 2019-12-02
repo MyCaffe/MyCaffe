@@ -117,7 +117,7 @@ class Math
 		long mulbsx(int n, long hA, int nAOff, long hX, int nXOff, int nChannels, int nSpatialDim, bool bTranspose, long hB, int nBOff);
 		long divbsx(int n, long hA, int nAOff, long hX, int nXOff, int nChannels, int nSpatialDim, bool bTranspose, long hB, int nBOff);
 
-		long sub(int n, long hA, long hB, long hY, int nAOff = 0, int nBOff = 0, int nYOff = 0);
+		long sub(int n, long hA, long hB, long hY, int nAOff = 0, int nBOff = 0, int nYOff = 0, int nB = 0);
 		long sub_and_dot(int n, int nN, int nLen, long hA, long hB, long hY, int nAOff = 0, int nBOff = 0, int nYOff = 0);
 		long mul_scalar(int n, T fAlpha, long hY, int nYOff = 0);
 		long mul(int n, long hA, long hB, long hY, int nAOff = 0, int nBOff = 0, int nYOff = 0);

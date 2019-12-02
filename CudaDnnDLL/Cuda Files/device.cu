@@ -1606,7 +1606,7 @@ long Device<T>::cuda_sub(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 4, 7))
+	if (lErr = verifyInput(lInput, pfInput, 4, 8))
 		return lErr;
 
 	int n = (int)pfInput[0];
@@ -1616,6 +1616,7 @@ long Device<T>::cuda_sub(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 	int nAOff = 0;
 	int nBOff = 0;
 	int nYOff = 0;
+	int nB = 0;
 
 	if (lInput > 4)
 		nAOff = (int)pfInput[4];
@@ -1626,7 +1627,18 @@ long Device<T>::cuda_sub(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 	if (lInput > 6)
 		nYOff = (int)pfInput[6];
 
-	return m_math.sub(n, hA, hB, hY, nAOff, nBOff, nYOff);
+	if (lInput > 7)
+	{
+		nB = (int)pfInput[7];
+
+		if (nB > 0)
+		{
+			if (n % nB != 0)
+				return ERROR_PARAM_OUT_OF_RANGE;
+		}
+	}
+
+	return m_math.sub(n, hA, hB, hY, nAOff, nBOff, nYOff, nB);
 }
 
 template long Device<double>::cuda_sub(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
