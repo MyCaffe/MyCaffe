@@ -1412,6 +1412,78 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestMath_sub()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Math sub");
+            List<double> rgdf = new List<double>();
+            long hSrc = 0;
+            long hDst = 0;
+
+            try
+            {
+                for (int i = 0; i < 20; i++)
+                {
+                    rgdf.Add(i * 0.1);
+                }
+
+                int nCount = rgdf.Count();
+
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        hSrc = t.Cuda.AllocMemory(rgdf);
+                        hDst = t.Cuda.AllocMemory(rgdf.Count);
+
+                        for (int j = 0; j < 4; j++)
+                        {
+                            t.Cuda.sub(nCount, hSrc, hSrc, hDst, 0, j * 5, 0, 5);
+
+                            List<double> rgDst = new List<double>();
+                            for (int i = 0; i < nCount; i++)
+                            {
+                                int nIdx = j * 5 + i % 5;
+                                rgDst.Add(rgdf[i] - rgdf[nIdx]);
+                            }
+
+                            double[] rgdf2 = t.Cuda.GetMemoryDouble(hDst);
+
+                            for (int i = 0; i < nCount; i++)
+                            {
+                                log.EXPECT_EQUAL<float>(rgdf2[i], rgDst[i]);
+                            }
+                        }
+
+                        t.Cuda.sub(nCount, hSrc, hSrc, hDst);
+                        double dfAsum = t.Cuda.asum_double(nCount, hDst);
+
+                        log.EXPECT_EQUAL<float>(dfAsum, 0.0);
+                    }
+                    finally
+                    {
+                        if (hSrc != 0)
+                        {
+                            t.Cuda.FreeMemory(hSrc);
+                            hSrc = 0;
+                        }
+
+                        if (hDst != 0)
+                        {
+                            t.Cuda.FreeMemory(hDst);
+                            hDst = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
         public void TestMath_setget()
         {
             CudaDnnTest test = new CudaDnnTest();
