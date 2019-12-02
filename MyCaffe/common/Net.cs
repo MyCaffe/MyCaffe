@@ -1389,13 +1389,14 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="colBottom"></param>
         /// <param name="dfLoss"></param>
+        /// <param name="bReshape">Optionally, specifies to reshape the input to the size of the colBottom blobs supplied.</param>
         /// <returns></returns>
-        public BlobCollection<T> Forward(BlobCollection<T> colBottom, out double dfLoss)
+        public BlobCollection<T> Forward(BlobCollection<T> colBottom, out double dfLoss, bool bReshape = false)
         {
             // Copy bottom to internal bottom
             for (int i = 0; i < colBottom.Count; i++)
             {
-                m_colNetInputBlobs[i].CopyFrom(colBottom[i], false, false);
+                m_colNetInputBlobs[i].CopyFrom(colBottom[i], false, bReshape);
             }
 
             return Forward(out dfLoss);
