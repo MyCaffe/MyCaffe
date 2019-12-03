@@ -197,7 +197,6 @@ namespace MyCaffe.db.image
             return new Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD>(labelSelectionMethod, imageSelectionMethod);
         }
 
-
         /// <summary>
         /// Returns the label and image selection method used.
         /// </summary>
@@ -786,6 +785,21 @@ namespace MyCaffe.db.image
             imgSet.SetQueryLabelCount(sd.Label);
 
             return sd;
+        }
+
+        /// <summary>
+        /// Reset the query for the given data set ID.
+        /// </summary>
+        /// <param name="nDsID">Specifies the data set ID whos query indexes are to be reset.</param>
+        public void ResetQuery(int nDsID)
+        {
+            DatasetDescriptor ds = GetDatasetById(nDsID);
+
+            ImageSet imgSetTrain = m_colDatasets[m_nStrIDHashCode].FindImageset(ds.TrainingSource.ID);
+            imgSetTrain.Reset();
+
+            ImageSet imgSetTest = m_colDatasets[m_nStrIDHashCode].FindImageset(ds.TestingSource.ID);
+            imgSetTest.Reset();
         }
 
         /// <summary>

@@ -278,11 +278,12 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
-        /// Resets the limited loaded images.
+        /// Resets the indexes and limited loaded images (if used).
         /// </summary>
         public void Reset()
         {
             m_rgImagesLimitLoaded = new List<SimpleDatum>();
+            m_rgIndexes = new List<int>();
         }
 
         /// <summary>

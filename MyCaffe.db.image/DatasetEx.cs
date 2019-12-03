@@ -46,6 +46,15 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Reset the image indexes for both the training and testing image sets.
+        /// </summary>
+        public void Reset()
+        {
+            m_TestingImages.Reset();
+            m_TrainingImages.Reset();
+        }
+
+        /// <summary>
         /// Adds a user of the dataset.
         /// </summary>
         /// <param name="user">Specifies the unique ID of the dataset user.</param>

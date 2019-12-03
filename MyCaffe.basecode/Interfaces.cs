@@ -474,6 +474,13 @@ namespace MyCaffe.basecode
         SimpleDatum QueryImage(int nSrcId, int nIdx, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false);
 
         /// <summary>
+        /// Reset the query for the given data set ID.
+        /// </summary>
+        /// <param name="nDsID">Specifies the data set ID whos query indexes are to be reset.</param>
+        [OperationContract(IsOneWay = false)]
+        void ResetQuery(int nDsID);
+
+        /// <summary>
         /// Get the image with a given Raw Image ID.
         /// </summary>
         /// <param name="nImageID">Specifies the Raw Image ID of the image to get.</param>
