@@ -218,6 +218,7 @@ namespace MyCaffe.common
         string m_strActiveLabelCounts = "";
         string m_strLabelQueryHitPercents = "";
         string m_strLabelQueryEpochs = "";
+        string m_strBoostQueryHitPercents = "";
         double m_dfLearningRate = 0;
         DebugInformation<T> m_dbgInfo = null;
 
@@ -233,10 +234,11 @@ namespace MyCaffe.common
         /// <param name="strActiveLabelCounts">Specifies the current active label counts observed.</param>
         /// <param name="strLabelQueryHitPercents">Specifies the current label query hit percentages observed.</param>
         /// <param name="strLabelQueryEpochs">Specifies the current label epoch count per label observed.</param>
+        /// <param name="strBoostQueryHitPercents">Specifies the current boost query hit percentages observed.</param>
         /// <param name="dfLearningRate">Specifies the current learning rate.</param>
         /// <param name="dfMsTiming">Specifies the timing of the training cycle.</param>
         /// <param name="dbgInfo">Optionally, specifies the DebugInformation of the training cycle.  This value is set when Solver::EnableBlobDebugging == <i>true</i>.</param>
-        public TrainingIterationArgs(int nIteration, double dfAccuracy, double dfLoss, double dfSmoothedLoss, double dfBestSmoothedLoss, bool bWeightsUpdated, string strActiveLabelCounts, string strLabelQueryHitPercents, string strLabelQueryEpochs, double dfLearningRate, double dfMsTiming, DebugInformation<T> dbgInfo = null)
+        public TrainingIterationArgs(int nIteration, double dfAccuracy, double dfLoss, double dfSmoothedLoss, double dfBestSmoothedLoss, bool bWeightsUpdated, string strActiveLabelCounts, string strLabelQueryHitPercents, string strLabelQueryEpochs, string strBoostQueryHitPercents, double dfLearningRate, double dfMsTiming, DebugInformation<T> dbgInfo = null)
             : base(nIteration, dfAccuracy, dfMsTiming)
         {
             m_dfLoss = dfLoss;
@@ -246,6 +248,7 @@ namespace MyCaffe.common
             m_strActiveLabelCounts = strActiveLabelCounts;
             m_strLabelQueryHitPercents = strLabelQueryHitPercents;
             m_strLabelQueryEpochs = strLabelQueryEpochs;
+            m_strBoostQueryHitPercents = strBoostQueryHitPercents;
             m_dfLearningRate = dfLearningRate;
             m_dbgInfo = dbgInfo;
         }
@@ -304,6 +307,14 @@ namespace MyCaffe.common
         public string LabelQueryEpochs
         {
             get { return m_strLabelQueryEpochs; }
+        }
+
+        /// <summary>
+        /// Returns the current boost query hit percentages observed at this point in training.
+        /// </summary>
+        public string BoostQueryHitPercents
+        {
+            get { return m_strBoostQueryHitPercents; }
         }
 
         /// <summary>

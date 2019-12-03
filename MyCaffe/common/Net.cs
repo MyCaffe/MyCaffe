@@ -922,6 +922,29 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Return the boost query hit percentages for the active datasource.
+        /// </summary>
+        public string BoostQueryHitPercents
+        {
+            get
+            {
+                string strSrc = null;
+
+                foreach (Layer<T> layer in m_rgLayers)
+                {
+                    if (layer.type == LayerParameter.LayerType.DATA ||
+                        layer.type == LayerParameter.LayerType.TRIPLET_DATA)
+                        strSrc = layer.layer_param.data_param.source;
+                }
+
+                if (string.IsNullOrEmpty(strSrc))
+                    return "n/a";
+
+                return m_db.GetBoostQueryHitPercentsAsTextFromSourceName(strSrc);
+            }
+        }
+
+        /// <summary>
         /// Enables/disables passthrough on each layer of the net.
         /// </summary>
         /// <remarks>

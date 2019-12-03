@@ -11,12 +11,23 @@ namespace MyCaffe.db.image
     {
         List<LabelDescriptor> m_rgLabels;
         List<ulong> m_rgCounts;
+        List<ulong> m_rgBoosts;
         object m_objSync = new object();
+        object m_objSyncBoost = new object();
 
         public LabelStats(int nCount)
         {
             m_rgLabels = new List<LabelDescriptor>(nCount);
             m_rgCounts = new List<ulong>(nCount);
+            m_rgBoosts = new List<ulong>();
+        }
+
+        public void Reset()
+        {
+            lock (m_objSyncBoost)
+            {
+                m_rgBoosts = new List<ulong>();
+            }
         }
 
         private int find(int nLabel)
@@ -40,11 +51,24 @@ namespace MyCaffe.db.image
             }
         }
 
-        public void Update(int nLabel)
+        public void UpdateLabel(int nLabel)
         {
             int nIdx = find(nLabel);
             if (nIdx >= 0)
                 m_rgCounts[nIdx]++;
+        }
+
+        public void UpdateBoost(int nBoost)
+        {
+            lock (m_objSyncBoost)
+            {
+                while (m_rgBoosts.Count <= nBoost)
+                {
+                    m_rgBoosts.Add(0);
+                }
+
+                m_rgBoosts[nBoost]++;
+            }
         }
 
         public Dictionary<int, ulong> GetCounts()
@@ -60,6 +84,36 @@ namespace MyCaffe.db.image
 
                 return rg;
             }
+        }
+
+        public string GetQueryBoostHitPercentsAsText(int nMax = 10)
+        {
+            string strOut = "{";
+            double dfTotal = 0;
+
+            lock (m_objSyncBoost)
+            {
+                for (int i = 0; i < m_rgBoosts.Count; i++)
+                {
+                    dfTotal += m_rgBoosts[i];
+                }
+
+                for (int i = 0; i < m_rgBoosts.Count && i < nMax; i++)
+                {
+                    double dfPct = m_rgBoosts[i] / dfTotal;
+                    strOut += dfPct.ToString("P");
+                    strOut += ",";
+                }
+            }
+
+            if (m_rgBoosts.Count > nMax)
+                strOut += "...";
+            else
+                strOut = strOut.TrimEnd(',');
+
+            strOut += "}";
+
+            return strOut;
         }
 
         public string GetQueryLabelHitPercentsAsText(int nMax = 10)

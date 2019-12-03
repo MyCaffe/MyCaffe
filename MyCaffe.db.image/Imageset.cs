@@ -125,10 +125,26 @@ namespace MyCaffe.db.image
         /// Increase the query label count for a specific label.
         /// </summary>
         /// <param name="nLabel">Specifies the label who's query count is to be increased.</param>
-        public void SetQueryLabelCount(int nLabel)
+        /// <param name="nBoosted">Specifies the boost of the image, or 0 if not boosted.</param>
+        public void SetQueryLabelCount(int nLabel, int nBoost)
         {
             if (m_rgLabelStats != null)
-                m_rgLabelStats.Update(nLabel);
+            {
+                m_rgLabelStats.UpdateLabel(nLabel);
+                m_rgLabelStats.UpdateBoost(nBoost);
+            }
+        }
+      
+        /// <summary>
+        /// Get the queried boost hit percents as a string.
+        /// </summary>
+        /// <returns>The queried boost hit percent is returned as a string where each % represents the percentage of the queried made for boosted images.</returns>
+        public string GetQueryBoostHitPrecentsAsText()
+        {
+            if (m_rgLabelStats == null)
+                return "n/a";
+
+            return m_rgLabelStats.GetQueryBoostHitPercentsAsText();
         }
 
         /// <summary>
@@ -284,6 +300,7 @@ namespace MyCaffe.db.image
         {
             m_rgImagesLimitLoaded = new List<SimpleDatum>();
             m_rgIndexes = new List<int>();
+            m_rgLabelStats.Reset();
         }
 
         /// <summary>

@@ -248,7 +248,7 @@ namespace MyCaffe.solvers
                 }
 
                 double dfTime = (nTimingCount > 0) ? (dfTotalTime / nTimingCount) : 0;
-                OnTrainingIteration(this, new TrainingIterationArgs<T>(m_nIter, m_dfLastAccuracy, dfLoss, m_dfSmoothedLoss, m_dfBestError, m_bWeightsUpdated, m_net.ActiveLabelCounts, m_net.LabelQueryHitPercents, m_net.LabelQueryEpochs, dfLastLearningRate, dfTime, dbgInfo));
+                OnTrainingIteration(this, new TrainingIterationArgs<T>(m_nIter, m_dfLastAccuracy, dfLoss, m_dfSmoothedLoss, m_dfBestError, m_bWeightsUpdated, m_net.ActiveLabelCounts, m_net.LabelQueryHitPercents, m_net.LabelQueryEpochs, m_net.BoostQueryHitPercents, dfLastLearningRate, dfTime, dbgInfo));
                 dfTotalTime = 0;
                 nTimingCount = 0;
 

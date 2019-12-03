@@ -782,7 +782,7 @@ namespace MyCaffe.db.image
                 }
             }
 
-            imgSet.SetQueryLabelCount(sd.Label);
+            imgSet.SetQueryLabelCount(sd.Label, sd.Boost);
 
             return sd;
         }
@@ -1236,6 +1236,16 @@ namespace MyCaffe.db.image
         public string GetLabelQueryEpocsAsTextFromSourceName(string strSource)
         {
             return m_colDatasets[m_nStrIDHashCode].FindImageset(strSource).GetQueryLabelEpocsAsText();
+        }
+
+        /// <summary>
+        /// Returns the percentage of boosted images queried as text.
+        /// </summary>
+        /// <param name="strSource">Specifies the source to query.</param>
+        /// <returns>The query boost percentage hit is returned as text.</returns>
+        public string GetBoostQueryHitPercentsAsTextFromSourceName(string strSource)
+        {
+            return m_colDatasets[m_nStrIDHashCode].FindImageset(strSource).GetQueryBoostHitPrecentsAsText();
         }
 
         /// <summary>

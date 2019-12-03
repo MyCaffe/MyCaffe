@@ -729,6 +729,14 @@ namespace MyCaffe.basecode
         string GetLabelCountsAsTextFromSourceName(string strSource);
 
         /// <summary>
+        /// Returns a string with the query hit percent for each boost (e.g. the percentage that each boost value has been queried).
+        /// </summary>
+        /// <param name="strSource">Specifies the data source who's hit percentages are to be retrieved.</param>
+        /// <returns>A string representing the query hit percentages is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        string GetBoostQueryHitPercentsAsTextFromSourceName(string strSource);
+
+        /// <summary>
         /// Returns a string with the query hit percent for each label (e.g. the percentage that each label has been queried).
         /// </summary>
         /// <param name="strSource">Specifies the data source who's hit percentages are to be retrieved.</param>
