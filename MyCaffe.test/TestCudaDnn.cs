@@ -1824,6 +1824,272 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestMath_copy_sim()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Copy");
+            long hSrc1 = 0;
+            long hSrc2 = 0;
+            long hDst = 0;
+            long hSim = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        int nNum = 4;
+                        int nDim = 3;
+                        int nCount = nNum * nDim;
+
+                        List<double> rgdfSrc1 = new List<double>() { 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1 };
+                        List<double> rgdfSrc2 = new List<double>() { 0.0, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -1.0, -1.1 };
+                        List<double> rgdfSim = new List<double>() { 1, 0, 1, 0 };
+
+                        hSrc1 = t.Cuda.AllocMemory(rgdfSrc1);
+                        hSrc2 = t.Cuda.AllocMemory(rgdfSrc2);
+                        hSim = t.Cuda.AllocMemory(rgdfSim);
+                        hDst = t.Cuda.AllocMemory(nCount);
+
+                        t.Cuda.copy(nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSim);
+                        double[] rgDst = t.Cuda.GetMemoryDouble(hDst);
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            int nIdx = i / nDim;
+                            bool bSimilar = (rgdfSim[nIdx] == 0) ? false : true;
+
+                            if (bSimilar)
+                                log.EXPECT_EQUAL<float>(rgDst[i], rgdfSrc1[i], "The values of src1 and dst are not the same at index = " + i.ToString());
+                            else
+                                log.EXPECT_EQUAL<float>(rgDst[i], rgdfSrc2[i], "The values of src2 and dst are not the same at index = " + i.ToString());
+                        }
+
+                        t.Cuda.FreeMemory(hSim);
+                        rgdfSim = new List<double>() { 0, 1, 0, 1 };
+                        hSim = t.Cuda.AllocMemory(rgdfSim);
+
+                        t.Cuda.copy(nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSim);
+                        rgDst = t.Cuda.GetMemoryDouble(hDst);
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            int nIdx = i / nDim;
+                            bool bSimilar = (rgdfSim[nIdx] == 0) ? false : true;
+
+                            if (bSimilar)
+                                log.EXPECT_EQUAL<float>(rgDst[i], rgdfSrc1[i], "The values of src1 and dst are not the same at index = " + i.ToString());
+                            else
+                                log.EXPECT_EQUAL<float>(rgDst[i], rgdfSrc2[i], "The values of src2 and dst are not the same at index = " + i.ToString());
+                        }
+
+                        t.Cuda.FreeMemory(hSim);
+                        rgdfSim = new List<double>() { 1, 1, 1, 1 };
+                        hSim = t.Cuda.AllocMemory(rgdfSim);
+
+                        t.Cuda.copy(nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSim);
+                        rgDst = t.Cuda.GetMemoryDouble(hDst);
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            log.EXPECT_EQUAL<float>(rgDst[i], rgdfSrc1[i], "The values of src1 and dst are not the same at index = " + i.ToString());
+                        }
+
+                        t.Cuda.FreeMemory(hSim);
+                        rgdfSim = new List<double>() { 0, 0, 0, 0 };
+                        hSim = t.Cuda.AllocMemory(rgdfSim);
+
+                        t.Cuda.copy(nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSim);
+                        rgDst = t.Cuda.GetMemoryDouble(hDst);
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            log.EXPECT_EQUAL<float>(rgDst[i], rgdfSrc2[i], "The values of src1 and dst are not the same at index = " + i.ToString());
+                        }
+                    }
+                    finally
+                    {
+                        if (hSrc1 != 0)
+                        {
+                            t.Cuda.FreeMemory(hSrc1);
+                            hSrc1 = 0;
+                        }
+
+                        if (hSrc2 != 0)
+                        {
+                            t.Cuda.FreeMemory(hSrc2);
+                            hSrc2 = 0;
+                        }
+
+                        if (hDst != 0)
+                        {
+                            t.Cuda.FreeMemory(hDst);
+                            hDst = 0;
+                        }
+
+                        if (hSim != 0)
+                        {
+                            t.Cuda.FreeMemory(hSim);
+                            hSim = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMath_channel_compare()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Channel Compare");
+            long hSrc = 0;
+            long hDst = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        int nNum = 4;
+                        int nDim = 2;
+                        int nCount = nNum * nDim;
+
+                        List<double> rgdfSrc = new List<double>() { 0, 0, 1, 0, 2, 3, 3, 3 };
+
+                        hSrc = t.Cuda.AllocMemory(rgdfSrc);
+                        hDst = t.Cuda.AllocMemory(nNum);
+
+                        t.Cuda.channel_compare(nCount, nNum, nDim, 1, hSrc, hDst);
+                        double[] rgDst = t.Cuda.GetMemoryDouble(hDst);
+
+                        log.CHECK_EQ(rgDst.Length, nNum, "The destination length is wrong.");
+
+                        for (int i = 0; i < nNum; i++)
+                        {
+                            int nIdx = i * nDim;
+                            double df1 = rgdfSrc[nIdx + 0];
+                            double df2 = rgdfSrc[nIdx + 1];
+                            int nCompare = (df1 == df2) ? 1 : 0;
+
+                            log.CHECK_EQ(nCompare, rgDst[i], "The values do not match!");
+                        }
+                    }
+                    finally
+                    {
+                        if (hSrc != 0)
+                        {
+                            t.Cuda.FreeMemory(hSrc);
+                            hSrc = 0;
+                        }
+
+                        if (hDst != 0)
+                        {
+                            t.Cuda.FreeMemory(hDst);
+                            hDst = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMath_channel_fill()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Channel Fill");
+            long hSrc = 0;
+            long hLabels = 0;
+            long hDst = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        int nNum = 4;
+                        int nDim = 3;
+                        int nCount = nNum * nDim;
+
+                        // Source contains 3 element encodings, one per label 0, 1, and 2 listed in order of the labels.
+                        List<double> rgdfSrc = new List<double>() { 0.1, 0.11, 0.12, 0.2, 0.21, 0.22, 0.3, 0.31, 0.32 };
+                        // Label contains labels where one or more label are grouped by channel, but only the first label per channel is used.
+                        List<double> rgdfLabel = new List<double>() { 1, 5, 2, 5, 0, 5, 1, 5 };
+                        // Destination is expected to have label encodings corresponding to the labels of Label placed in the same order as Label.
+                        List<double> rgdfDst = new List<double>() { 0.2, 0.21, 0.22, 0.3, 0.31, 0.32, 0.1, 0.11, 0.12, 0.2, 0.21, 0.22 };
+
+                        hSrc = t.Cuda.AllocMemory(rgdfSrc);
+                        hLabels = t.Cuda.AllocMemory(rgdfLabel);
+                        hDst = t.Cuda.AllocMemory(nCount);
+
+                        t.Cuda.channel_fill(nCount, nNum, nDim, 1, hSrc, 2, hLabels, hDst);
+                        double[] rgDst = t.Cuda.GetMemoryDouble(hDst);
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            double df1 = rgdfDst[i];
+                            double df2 = rgDst[i];
+
+                            log.EXPECT_EQUAL<float>(df1, df2, "The values do not match!");
+                        }
+
+                        rgdfLabel = new List<double>() { 1, 2, 0, 1 };
+
+                        hSrc = t.Cuda.AllocMemory(rgdfSrc);
+                        hLabels = t.Cuda.AllocMemory(rgdfLabel);
+                        hDst = t.Cuda.AllocMemory(nCount);
+
+                        t.Cuda.channel_fill(nCount, nNum, nDim, 1, hSrc, 1, hLabels, hDst);
+                        rgDst = t.Cuda.GetMemoryDouble(hDst);
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            double df1 = rgdfDst[i];
+                            double df2 = rgDst[i];
+
+                            log.EXPECT_EQUAL<float>(df1, df2, "The values do not match!");
+                        }
+
+                    }
+                    finally
+                    {
+                        if (hSrc != 0)
+                        {
+                            t.Cuda.FreeMemory(hSrc);
+                            hSrc = 0;
+                        }
+
+                        if (hDst != 0)
+                        {
+                            t.Cuda.FreeMemory(hDst);
+                            hDst = 0;
+                        }
+
+                        if (hLabels != 0)
+                        {
+                            t.Cuda.FreeMemory(hLabels);
+                            hLabels = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestStream()
         {
             CudaDnnTest test = new CudaDnnTest();
