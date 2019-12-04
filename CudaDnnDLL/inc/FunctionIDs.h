@@ -174,6 +174,7 @@ const int CUDNN_FN_RNN_BWD_WTS = 148;
 const int CUDA_FN_SET = 200;
 const int CUDA_FN_GET = 201;
 const int CUDA_FN_COPY = 202;
+const int CUDA_FN_COPY_SIM = 203;
 
 const int CUDA_FN_GEMM2 = 219;
 const int CUDA_FN_GEMM = 220;
@@ -232,6 +233,8 @@ const int CUDA_FN_CHANNEL_SUM = 292;
 const int CUDA_FN_CHANNEL_DIV = 293;
 const int CUDA_FN_CHANNEL_DOT = 294;
 const int CUDA_FN_CHANNEL_MUL = 295;
+const int CUDA_FN_CHANNEL_COMPARE = 296;
+const int CUDA_FN_CHANNEL_FILL = 297;
 
 const int CUDA_RNG_SETSEED = 349;
 const int CUDA_RNG_UNIFORM = 350;

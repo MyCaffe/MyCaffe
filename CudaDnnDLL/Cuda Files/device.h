@@ -276,6 +276,7 @@ class Device
 		long cuda_set(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_get(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_copy(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_copy_sim(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long cuda_gemm(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_gemm2(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -326,6 +327,8 @@ class Device
 		long cuda_channel_div(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_mul(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_dot(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_channel_compare(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_channel_fill(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long cuda_im2col(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_im2col_nd(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -4303,6 +4306,25 @@ inline long Device<T>::cuda_copy(long lInput, T* pfInput, long* plOutput, T** pp
 		nDstHalfSizeOverride = (int)pfInput[7];
 
 	return m_math.copy(nCount, hSrc, hDst, nSrcOffset, nDstOffset, hAsyncStream, nSrcHalfSizeOverride, nDstHalfSizeOverride);
+}
+
+template <class T>
+inline long Device<T>::cuda_copy_sim(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+		return lErr;
+
+	int nCount = (int)pfInput[0];
+	int nNum = (int)pfInput[1];
+	int nDim = (int)pfInput[2];
+	long hSrc1 = (long)pfInput[3];
+	long hSrc2 = (long)pfInput[4];
+	long hDst = (long)pfInput[5];
+	long hSim = (long)pfInput[6];
+
+	return m_math.copy_sim(nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSim);
 }
 
 #endif // __DEVICE_CU__

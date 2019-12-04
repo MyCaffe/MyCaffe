@@ -407,6 +407,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_COPY:
 			return m_device.cuda_copy(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_COPY_SIM:
+			return m_device.cuda_copy_sim(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_GEMM:
 			return m_device.cuda_gemm(lCount, pfInput, plCount, ppfOutput);
 
@@ -550,6 +553,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 
 		case CUDA_FN_CHANNEL_DOT:
 			return m_device.cuda_channel_dot(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_CHANNEL_COMPARE:
+			return m_device.cuda_channel_compare(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_CHANNEL_FILL:
+			return m_device.cuda_channel_fill(lCount, pfInput, plCount, ppfOutput);
 
 		case CUDA_FN_IM2COL:
 			return m_device.cuda_im2col(lCount, pfInput, plCount, ppfOutput);
@@ -1269,6 +1278,9 @@ char* GetApiName(long lfnIdx)
 	case CUDA_FN_COPY:
 		return "CUDA_FN_COPY";
 
+	case CUDA_FN_COPY_SIM:
+		return "CUDA_FN_COPY_SIM";
+
 	case CUDA_FN_GEMM:
 		return "CUDA_FN_GEMM";
 
@@ -1409,6 +1421,12 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_CHANNEL_DOT:
 		return "CUDA_FN_CHANNEL_DOT";
+
+	case CUDA_FN_CHANNEL_COMPARE:
+		return "CUDA_FN_CHANNEL_COMPARE";
+
+	case CUDA_FN_CHANNEL_FILL:
+		return "CUDA_FN_CHANNEL_FILL";
 
 	case CUDA_FN_IM2COL:
 		return "CUDA_FN_IM2COL";

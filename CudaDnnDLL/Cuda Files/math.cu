@@ -496,6 +496,58 @@ long Math<T>::copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOff
 template long Math<double>::copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOffset, long hAsyncStream, int nSrcHalfSizeOverride, int nDstHalfSizeOverride);
 template long Math<float>::copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOffset, long hAsyncStream, int nSrcHalfSizeOverride, int nDstHalfSizeOverride);
 
+
+template <typename T>
+__global__ void copy_sim_kernel(const int nCount, const int nNum, const int nDim, const T* x1, const T* x2, T* y, const T* s)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nCount; i += blockDim.x * gridDim.x)
+	{
+		int n = i / nDim;
+		y[i] = (s[n] == 1) ? x1[i] : x2[i];
+	}
+}
+
+template <class T>
+long Math<T>::copy_sim(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSim)
+{
+	LONG lErr;
+	MemoryItem* pSrc1;
+	MemoryItem* pSrc2;
+	MemoryItem* pDst;
+	MemoryItem* pSim;
+
+	if (lErr = m_pMemCol->GetData(hSrc1, &pSrc1))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hSrc2, &pSrc2))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hDst, &pDst))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hSim, &pSim))
+		return lErr;
+
+	if (nCount < 0 || nNum < 0 || nDim < 0 || nNum * nDim != nCount)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
+	T* src1 = (T*)pSrc1->Data();
+	T* src2 = (T*)pSrc2->Data();
+	T* dst = (T*)pDst->Data();
+	T* sim = (T*)pSim->Data();
+
+	copy_sim_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nNum, nDim, src1, src2, dst, sim);
+
+	if (lErr = cudaStreamSynchronize(0))
+		return lErr;
+
+	return cudaSuccess;
+}
+
+template long Math<double>::copy_sim(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSim);
+template long Math<float>::copy_sim(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSim);
+
+
 template<>
 long Math<double>::nrm2(int n, long hA, int nAOff, double* pdfResult)
 {
@@ -4096,6 +4148,91 @@ long Math<T>::channel_dot(int n, int nOutNum, int nChannels, int nInNum, long hX
 
 template long Math<double>::channel_dot(int n, int nOutNum, int nChannels, int nInNum, long hX, long hA, long hY);
 template long Math<float>::channel_dot(int n, int nOutNum, int nChannels, int nInNum, long hX, long hA, long hY);
+
+
+template <typename T>
+__global__ void channel_compare_kernel(const int num, const int channels, const int spatial_dim, const T* x, T* y)
+{
+	const int nDim = channels * spatial_dim;
+
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num; i += blockDim.x * gridDim.x)
+	{
+		int n = i * nDim;
+		int nSim = 1;
+
+		for (int j = 1; j < nDim; j++)
+		{
+			if (x[n] != x[n + j])
+				nSim = 0;
+		}
+
+		y[i] = nSim;
+	}
+}
+
+template <typename T>
+long Math<T>::channel_compare(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	channel_compare_kernel<T><<<CAFFE_GET_BLOCKS(nOutNum), CAFFE_CUDA_NUM_THREADS>>>(nOutNum, nChannels, nInNum, (T*)pX->Data(), (T*)pY->Data());
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::channel_compare(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+template long Math<float>::channel_compare(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
+
+
+template <typename T>
+__global__ void channel_fill_kernel(const int nCount, const int num, const int channels, const int spatial_dim, const T* x, const int nLabelDim, const T* labels, T* y)
+{
+	const int nDataDim = channels * spatial_dim;
+
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nCount; i += blockDim.x * gridDim.x)
+	{
+		int n = i / nDataDim;
+		int nLabelIdx = n * nLabelDim;
+		int nLabel = (int)labels[nLabelIdx];
+		int s = i % nDataDim;
+		int nIdx = nLabel * nDataDim + s;
+
+		y[i] = x[nIdx];
+	}
+}
+
+template <typename T>
+long Math<T>::channel_fill(int n, int nOutNum, int nChannels, int nInNum, long hX, int nLabelDim, long hLabels, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pL;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hLabels, &pL))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	channel_fill_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, nOutNum, nChannels, nInNum, (T*)pX->Data(), nLabelDim, (T*)pL->Data(), (T*)pY->Data());
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::channel_fill(int n, int nOutNum, int nChannels, int nInNum, long hX, int nLabelDim, long hLabels, long hY);
+template long Math<float>::channel_fill(int n, int nOutNum, int nChannels, int nInNum, long hX, int nLabelDim, long hLabels, long hY);
 
 
 template<typename T>
