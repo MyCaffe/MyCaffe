@@ -11,14 +11,20 @@ namespace MyCaffe.param
     /// Specifies the parameters for the ContrastiveLossLayer.
     /// </summary>
     /// <remarks>
+    /// @see [Object cosegmentation using deep Siamese network](https://arxiv.org/pdf/1803.02555.pdf) by Prerana Mukherjee, Brejesh Lall and Snehith Lattupally, 2018.
+    /// @see [Learning Deep Representations of Medical Images using Siamese CNNs with Application to Content-Based Image Retrieval](https://arxiv.org/abs/1711.08490) by Yu-An Chung and Wei-Hung Weng, 2017.
     /// @see [Fully-Convolutional Siamese Networks for Object Tracking](https://arxiv.org/abs/1606.09549) by Luca Bertinetto, Jack Valmadre, João F. Henriques, Andrea Vedaldi, and Philip H. S. Torr, 2016.
+    /// @see [Learning visual similarity for product design with convolutional neural networks](https://www.cs.cornell.edu/~kb/publications/SIG15ProductNet.pdf) by Sean Bell and Kavita Bala, Cornell University, 2015. 
     /// @see [Dimensionality Reduction by Learning an Invariant Mapping](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf) by Raia Hadsel, Sumit Chopra, and Yann LeCun, 2006.
+    /// Centroids:
+    /// @see [A New Loss Function for CNN Classifier Based on Pre-defined Evenly-Distributed Class Centroids](https://arxiv.org/abs/1904.06008) by Qiuyu Zhu, Pengju Zhang, and Xin Ye, arXiv:1904.06008, 2019.
     /// </remarks>
     public class ContrastiveLossParameter : LayerParameterBase
     {
         double m_dfMargin = 1.0;
         bool m_bLegacyVersion = false;
         bool m_bOutputMatches = false;
+        int m_nCentroidLearningIteration = -1;
 
         /** @copydoc LayerParameterBase */
         public ContrastiveLossParameter()
@@ -63,6 +69,16 @@ namespace MyCaffe.param
             set { m_bOutputMatches = value; }
         }
 
+        /// <summary>
+        /// Optionally, specifies to use centroid learning after a given iteration, which should be > than the centroid threshold specified by the DecodeParameter (default = -1, meaning no centroid learning occurs).
+        /// </summary>
+        [Description("Optionally, specifies to use centroid learning after a given iteration, which should be > than the centroid threshold specified by the DecodeParameter (default = -1, meaning no centroid learning occurs).")]
+        public int centroid_learning_iteration
+        {
+            get { return m_nCentroidLearningIteration; }
+            set { m_nCentroidLearningIteration = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -82,6 +98,7 @@ namespace MyCaffe.param
             m_dfMargin = p.m_dfMargin;
             m_bLegacyVersion = p.m_bLegacyVersion;
             m_bOutputMatches = p.m_bOutputMatches;
+            m_nCentroidLearningIteration = p.m_nCentroidLearningIteration;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -106,6 +123,9 @@ namespace MyCaffe.param
             if (output_matches)
                 rgChildren.Add("output_matches", output_matches.ToString());
 
+            if (centroid_learning_iteration >= 0)
+                rgChildren.Add("centroid_learning_iteration", centroid_learning_iteration.ToString());
+
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -127,6 +147,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("output_matches")) != null)
                 p.output_matches = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("centroid_learning_iteration")) != null)
+                p.centroid_learning_iteration = int.Parse(strVal);
 
             return p;
         }

@@ -24,6 +24,8 @@ namespace MyCaffe.layers
     /// @see [Fully-Convolutional Siamese Networks for Object Tracking](https://arxiv.org/abs/1606.09549) by Luca Bertinetto, Jack Valmadre, João F. Henriques, Andrea Vedaldi, and Philip H. S. Torr, 2016.
     /// @see [Learning visual similarity for product design with convolutional neural networks](https://www.cs.cornell.edu/~kb/publications/SIG15ProductNet.pdf) by Sean Bell and Kavita Bala, Cornell University, 2015. 
     /// @see [Dimensionality Reduction by Learning an Invariant Mapping](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf) by Raia Hadsel, Sumit Chopra, and Yann LeCun, 2006.
+    /// Centroids:
+    /// @see [A New Loss Function for CNN Classifier Based on Pre-defined Evenly-Distributed Class Centroids](https://arxiv.org/abs/1904.06008) by Qiuyu Zhu, Pengju Zhang, and Xin Ye, arXiv:1904.06008, 2019.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class ContrastiveLossLayer<T> : LossLayer<T>
@@ -33,8 +35,9 @@ namespace MyCaffe.layers
         Blob<T> m_blobDiffSq; // cached for backward pass.
         Blob<T> m_blobSummerVec; // tmp storage for gpu forward pass.
         Blob<T> m_blobSimilar; // tmp storage for backward pass.
+        Blob<T> m_blobTarget; // target of similar (or centroid), or dissimilar image.
         T[] m_rgMatches = null;
-        T[] m_rgSimilar = null;
+        int m_nIteration = 0;
 
         /// <summary>
         /// The ContrastiveLossLayer constructor.
@@ -63,6 +66,8 @@ namespace MyCaffe.layers
             m_blobSummerVec.Name = m_param.name + " sum";
             m_blobSimilar = new Blob<T>(cuda, log, false);
             m_blobSimilar.Name = m_param.name + " similar";
+            m_blobTarget = new Blob<T>(cuda, log, false);
+            m_blobTarget.Name = m_param.name + " target";
         }
 
         /** @copydoc Layer::dispose */
@@ -99,14 +104,40 @@ namespace MyCaffe.layers
                 m_blobSimilar.Dispose();
                 m_blobSimilar = null;
             }
+
+            if (m_blobTarget != null)
+            {
+                m_blobTarget.Dispose();
+                m_blobTarget = null;
+            }
         }
 
         /// <summary>
-        /// Returns the exact number of required bottom (input) Blobs: featA, featB, binSim
+        /// Returns -1 specifying a variable number of bottoms
         /// </summary>
         public override int ExactNumBottomBlobs
         {
+            get { return -1; }
+        }
+
+        /// <summary>
+        /// Returns the minumum number of bottom blobs: featA, featB, label
+        /// </summary>
+        public override int MinBottomBlobs
+        {
             get { return 3; }
+        }
+
+        /// <summary>
+        /// Returns the minumum number of bottom blobs: featA, featB, label, centroids
+        /// </summary>
+        /// <remarks>
+        /// The centroids are calculated for each class by the DecodeLayer and are only
+        /// used when 'enable_centroid_learning' = True.
+        /// </remarks>
+        public override int MaxBottomBlobs
+        {
+            get { return 4; }
         }
 
         /// <summary>
@@ -154,6 +185,8 @@ namespace MyCaffe.layers
         {
             base.LayerSetUp(colBottom, colTop);
 
+            m_nIteration = 0;
+
             m_log.CHECK_EQ(colBottom[0].channels, colBottom[1].channels, "the bottom[0] and bottom[1] should have equal channel values.");
             m_log.CHECK_EQ(1, colBottom[0].height, "The bottom[0] should have height = 1.");
             m_log.CHECK_EQ(1, colBottom[0].width, "The bottom[0] should have width = 1.");
@@ -180,6 +213,7 @@ namespace MyCaffe.layers
             // vector of ones used to sum along channels.
             m_blobSummerVec.Reshape(colBottom[0].channels, 1, 1, 1);
             m_blobSummerVec.SetData(1.0);
+            m_blobTarget.ReshapeLike(colBottom[1]);
 
             if (colTop.Count > 1 && m_param.contrastive_loss_param.output_matches)
             {
@@ -189,12 +223,7 @@ namespace MyCaffe.layers
                 colTop[1].Reshape(colBottom[0].num, 1, 1, 1);
             }
 
-            if (m_phase == Phase.NONE || m_phase == Phase.TRAIN)
-            {
-                m_blobSimilar.Reshape(colBottom[0].num, 1, 1, 1);
-                if (m_rgSimilar == null || m_rgSimilar.Length != colBottom[0].num)
-                    m_rgSimilar = new T[colBottom[0].num];
-            }
+            m_blobSimilar.Reshape(colBottom[0].num, 1, 1, 1);
         }
 
         /// <summary>
@@ -223,9 +252,41 @@ namespace MyCaffe.layers
         {
             int nCount = colBottom[0].count();
 
+            // Label data is in on of two forms:
+            if (colBottom[2].channels > 1)
+            {
+                // channel > 1: the direct label values of each image packed into the data channels.
+                m_cuda.channel_compare(colBottom[2].count(), colBottom[2].num, colBottom[2].channels, 1, colBottom[2].gpu_data, m_blobSimilar.mutable_gpu_data);
+            }
+            else
+            {
+                // channel = 1: the direct similarity where 1 = the same, and 0 = different.
+                m_cuda.copy(colBottom[2].count(), colBottom[2].gpu_data, m_blobSimilar.mutable_gpu_data);
+            }
+
+            if (m_param.contrastive_loss_param.centroid_learning_iteration >= 0 && m_nIteration > m_param.contrastive_loss_param.centroid_learning_iteration)
+            {
+                m_log.CHECK_EQ(colBottom.Count, 4, "When using centroid learning, a fourth bottom is required that contains the class centroids (calculated by the DecodeLayer).");
+                m_log.CHECK_EQ(colBottom[3].channels, colBottom[0].channels, "Each centroid should have the same size as each encoding.");
+                m_log.CHECK_EQ(colBottom[3].height, 1, "The centroids should have a height = 1.");
+                m_log.CHECK_EQ(colBottom[3].width, 1, "The centroids should have a width = 1.");
+                m_log.CHECK_EQ(colBottom[2].channels, 2, "The colBottom[2] must contain labels, not a similarity value - make sure the data layer has 'output_all_labels' = True.");
+
+                // Load the target with the centroids to match the labels received in colBottom(2) - only use the first label of the two.
+                m_cuda.channel_fill(m_blobTarget.count(), m_blobTarget.num, m_blobTarget.count(1), 1, colBottom[3].gpu_data, colBottom[2].count(1), colBottom[2].gpu_data, m_blobTarget.mutable_gpu_data);
+
+                // If using centroid learning; for similar paris, copy the centroids from colBottom[3], otherwise copy the colBottom[1] dissimilar encodings.
+                m_cuda.copy(m_blobTarget.count(), m_blobTarget.num, m_blobTarget.count(1), m_blobTarget.gpu_data, colBottom[1].gpu_data, m_blobTarget.mutable_gpu_data, m_blobSimilar.gpu_data);
+            }
+            else
+            {
+                // If not using centroid learning, just use the bottom[1] as is.
+                m_cuda.copy(m_blobTarget.count(), colBottom[1].gpu_data, m_blobTarget.mutable_gpu_data);
+            }
+
             m_cuda.sub(nCount,
                        colBottom[0].gpu_data,           // a
-                       colBottom[1].gpu_data,           // b
+                       m_blobTarget.gpu_data,           // b
                        m_blobDiff.mutable_gpu_data);    // a_i - b_i
 
             m_cuda.powx(nCount,
@@ -246,115 +307,53 @@ namespace MyCaffe.layers
             bool bLegacyVersion = m_param.contrastive_loss_param.legacy_version;
             double dfLoss = 0;
 
-            if (typeof(T) == typeof(double))
+            float[] rgDistSq = Utility.ConvertVecF<T>(m_blobDistSq.update_cpu_data());
+            float[] rgSimPairs = Utility.ConvertVecF<T>(m_blobSimilar.update_cpu_data());
+
+            for (int i = 0; i < colBottom[0].num; i++)
             {
-                double[] rgDistSq = Utility.ConvertVec<T>(m_blobDistSq.update_cpu_data());
-                double[] rgSimPairs = Utility.ConvertVec<T>(colBottom[2].update_cpu_data());
-                int nSimDim = colBottom[2].count(1);
+                double dfDist = (bLegacyVersion) ? dfMargin - rgDistSq[i] : dfMargin - Math.Sqrt(rgDistSq[i]);
+                bool bSimilar = (rgSimPairs[i] == 0) ? false : true;
 
-                for (int i = 0; i < colBottom[0].num; i++)
+                if (bSimilar)  // similar pairs
                 {
-                    int nIdx = i * nSimDim;
-                    double dfDist = (bLegacyVersion) ? dfMargin - rgDistSq[i] : dfMargin - Math.Sqrt(rgDistSq[i]);
-
-                    // Label data is in on of two forms:
-                    // channel = 1: the direct similarity where 1 = the same, and 0 = different.
-                    // channel > 1: the direct label values of each image packed into the data channels.
-                    bool bSimilar = (nSimDim == 1) ? ((rgSimPairs[i] != 0) ? true : false) : ((rgSimPairs[i * nSimDim] == rgSimPairs[i * nSimDim + 1]) ? true : false);
-
-                    if (bSimilar)  // similar pairs
+                    if (m_rgMatches != null)
                     {
-                        if (m_rgMatches != null)
-                        {
-                            if (dfDist >= 0)
-                                m_rgMatches[i] = m_tOne;
-                            else
-                                m_rgMatches[i] = m_tZero;
-                        }
-
-                        dfLoss += rgDistSq[i];
-                    }
-                    else // dissimilar pairs
-                    {
-                        if (m_rgMatches != null)
-                        {
-                            if (dfDist >= 0)
-                                m_rgMatches[i] = m_tZero;
-                            else
-                                m_rgMatches[i] = m_tOne;
-                        }
-
-                        dfDist = Math.Max(dfDist, 0);
-
-                        if (bLegacyVersion)
-                            dfLoss += dfDist;
+                        if (dfDist >= 0)
+                            m_rgMatches[i] = m_tOne;
                         else
-                            dfLoss += dfDist * dfDist;
+                            m_rgMatches[i] = m_tZero;
                     }
 
-                    if (m_rgSimilar != null)
-                        m_rgSimilar[i] = (bSimilar) ? m_tOne : m_tZero;
+                    dfLoss += rgDistSq[i];
+                }
+                else // dissimilar pairs
+                {
+                    if (m_rgMatches != null)
+                    {
+                        if (dfDist >= 0)
+                            m_rgMatches[i] = m_tZero;
+                        else
+                            m_rgMatches[i] = m_tOne;
+                    }
+
+                    dfDist = Math.Max(dfDist, 0);
+
+                    if (bLegacyVersion)
+                        dfLoss += dfDist;
+                    else
+                        dfLoss += dfDist * dfDist;
                 }
             }
-            else
-            {
-                float[] rgDistSq = Utility.ConvertVecF<T>(m_blobDistSq.update_cpu_data());
-                float[] rgSimPairs = Utility.ConvertVecF<T>(colBottom[2].update_cpu_data());
-                int nSimDim = colBottom[2].count(1);
-
-                for (int i = 0; i < colBottom[0].num; i++)
-                {
-                    int nIdx = i * nSimDim;
-                    double dfDist = (bLegacyVersion) ? dfMargin - rgDistSq[i] : dfMargin - Math.Sqrt(rgDistSq[i]);
-
-                    // Label data is in on of two forms:
-                    // channel = 1: the direct similarity where 1 = the same, and 0 = different.
-                    // channel > 1: the direct label values of each image packed into the data channels.
-                    bool bSimilar = (nSimDim == 1) ? ((rgSimPairs[i] != 0) ? true : false) : ((rgSimPairs[i * nSimDim] == rgSimPairs[i * nSimDim + 1]) ? true : false);
-
-                    if (bSimilar)  // similar pairs
-                    {
-                        if (m_rgMatches != null)
-                        {
-                            if (dfDist >= 0)
-                                m_rgMatches[i] = m_tOne;
-                            else
-                                m_rgMatches[i] = m_tZero;
-                        }
-
-                        dfLoss += rgDistSq[i];
-                    }
-                    else // dissimilar pairs
-                    {
-                        if (m_rgMatches != null)
-                        {
-                            if (dfDist >= 0)
-                                m_rgMatches[i] = m_tZero;
-                            else
-                                m_rgMatches[i] = m_tOne;
-                        }
-
-                        dfDist = Math.Max(dfDist, 0);
-
-                        if (bLegacyVersion)
-                            dfLoss += dfDist;
-                        else
-                            dfLoss += dfDist * dfDist;
-                    }
-
-                    if (m_rgSimilar != null)
-                        m_rgSimilar[i] = (bSimilar) ? m_tOne : m_tZero;
-                }
-            }
-
-            if (m_rgSimilar != null)
-                m_blobSimilar.mutable_cpu_data = m_rgSimilar;
 
             dfLoss = dfLoss / (double)colBottom[0].num / 2.0;
             colTop[0].SetData(dfLoss, 0);
 
             if (colTop.Count > 1 && m_rgMatches != null)
                 colTop[1].mutable_cpu_data = m_rgMatches;
+
+            if (m_phase == Phase.TRAIN)
+                m_nIteration++;
         }
 
         /// <summary>
