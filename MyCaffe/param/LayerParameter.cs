@@ -759,9 +759,9 @@ namespace MyCaffe.param
                     break;
 
                 case LayerType.CONTRASTIVE_LOSS:
-                    expected_bottom.Add("a");
-                    expected_bottom.Add("b");
-                    expected_bottom.Add("s");
+                    expected_bottom.Add("f1");
+                    expected_bottom.Add("f2");
+                    expected_bottom.Add("lbl");
                     expected_top.Add("loss");
                     expected_top.Add("match");
                     m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
@@ -777,7 +777,7 @@ namespace MyCaffe.param
 
                 case LayerType.DECODE:
                     expected_bottom.Add("enc");
-                    expected_top.Add("label");
+                    expected_top.Add("dist1");
                     m_rgLayerParameters[lt] = new DecodeParameter();
                     break;
 
