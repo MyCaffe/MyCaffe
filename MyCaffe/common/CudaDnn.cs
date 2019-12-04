@@ -548,6 +548,9 @@ namespace MyCaffe.common
         double[] get_double(int nCount, long hHandle, int nIdx = -1);
         float[] get_float(int nCount, long hHandle, int nIdx = -1);
         void copy(int nCount, long hSrc, long hDst, int nSrcOffset = 0, int nDstOffset = 0, long hAsyncStream = -1, bool? bSrcHalfOverride = null, bool? bDstHalfOverride = null);
+        void copy(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSimilar);
+        void channel_compare(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
+        void channel_fill(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, int nLabelDim, long hLabels, long hY);
 
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, double fAlpha, long hA, long hB, double fBeta, long hC);
         void gemm(bool bTransA, bool bTransB, int m, int n, int k, float fAlpha, long hA, long hB, float fBeta, long hC);
@@ -819,6 +822,7 @@ namespace MyCaffe.common
             CUDA_SET = 200,
             CUDA_GET = 201,
             CUDA_COPY = 202,
+            CUDA_COPY_SIM = 203,
 
             CUDA_GEMM2 = 219,
             CUDA_GEMM = 220,
@@ -877,6 +881,8 @@ namespace MyCaffe.common
             CUDA_CHANNEL_DIV = 293,
             CUDA_CHANNEL_DOT = 294,
             CUDA_CHANNEL_MUL = 295,
+            CUDA_CHANNEL_COMPARE = 296,
+            CUDA_CHANNEL_FILL = 297,
 
             CUDA_RNG_SETSEED = 349,
             CUDA_RNG_UNIFORM = 350,
@@ -4912,6 +4918,24 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Copy similar items of length 'nDim' from hSrc1 (where hSimilar(i) = 1) and dissimilar items of length 'nDim' from hSrc2 (where hSimilar(i) = 0).
+        /// </summary>
+        /// <param name="nCount">Specifies the total data length of hSrc1, hSrc2 and hDst.</param>
+        /// <param name="nNum">Specifis the number of outer items in hSrc1, hSrc2, hDst, and the number of elements in hSimilar.</param>
+        /// <param name="nDim">Specifies the inner dimension of hSrc1, hSrc2 and hDst.</param>
+        /// <param name="hSrc1">Specifies a handle to the GPU memory of source 1.</param>
+        /// <param name="hSrc2">Specifies a handle to the GPU memory of source 2.</param>
+        /// <param name="hDst">Specifies a handle to the GPU memory of the destination.</param>
+        /// <param name="hSimilar">Specifies a handle to the GPU memory of the similar data.</param>
+        public void copy(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSimilar)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SIM, new double[] { nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSimilar });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SIM, new float[] { nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSimilar });
+        }
+
+        /// <summary>
         /// Perform a matrix-matrix multiplication operation: C = alpha transB (B) transA (A) + beta C 
         /// </summary>
         /// <remarks>
@@ -6274,6 +6298,51 @@ namespace MyCaffe.common
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_MAX, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
         }
+
+        /// <summary>
+        /// Compares the values of the channels from X and places the result in Y where 1 is set if the values are equal otherwise 0 is set.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of elements in X.</param>
+        /// <param name="nOuterNum">Specifies the number of images within X.</param>
+        /// <param name="nChannels">Specifies the number of channels per image of X.</param>
+        /// <param name="nInnerNum">Specifies the dimension of each image in X.</param>
+        /// <param name="hX">Specifies a handle to the vector X in GPU memory.</param>
+        /// <param name="hY">Specifies a handle to the vector Y in GPU memory of length nOuterNum.</param>
+        public void channel_compare(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_COMPARE, new double[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_COMPARE, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, hY });
+        }
+
+        /// <summary>
+        /// Fills each channel with the channel item of Y with the data of X matching the label index specified by hLabels.
+        /// </summary>
+        /// <param name="nCount">Specifies the number of items in Y.</param>
+        /// <param name="nOuterNum">Specifies the num of Y and Labels.</param>
+        /// <param name="nChannels">Specifies the channel size of Y and X.</param>
+        /// <param name="nInnerNum">Specifies the spatial dimension of X and Y, but is normally 1.</param>
+        /// <param name="hX">Specifies the GPU memory containing the encodings (usually centroids) of each label 0, ... max label.</param>
+        /// <param name="nLabelDim">Specifies the dimension of the label channels.  A value > 1 indicates that more than one label are stored per channel in which case only the first label is used.</param>
+        /// <param name="hLabels">Specifies the label ordering that determines how Y is filled using data from X.</param>
+        /// <param name="hY">Specifies the GPU memory of the output data.</param>
+        /// <remarks>
+        /// This function is used to fill a blob with data matching a set of labels.  For example in a 3 item encoding based system with
+        /// 4 labels:
+        /// X = 4 channels of 3 items each (e.g. an encoding for each label).
+        /// The values of hLabels show the ordering for which to fill hY with the labeled encodings.  So if hLabels = 0, 2, 1, 3, 1, then
+        /// Y = size { 5, 3, 1, 1 }, 5 items each with encoding sizes of 3 items which are then filled with the encoding at position 0,
+        /// (for label 0), followed by the encoding for label 2, then 1, 3 and ending with the encoding for 1 as specified by the labels.
+        /// </remarks>
+        public void channel_fill(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, int nLabelDim, long hLabels, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_FILL, new double[] { nCount, nOuterNum, nChannels, nInnerNum, hX, nLabelDim, hLabels, hY });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CHANNEL_FILL, new float[] { nCount, nOuterNum, nChannels, nInnerNum, hX, nLabelDim, hLabels, hY });
+        }
+
 
         /// <summary>
         /// Subtracts the values of the channels from X and places the result in Y.
