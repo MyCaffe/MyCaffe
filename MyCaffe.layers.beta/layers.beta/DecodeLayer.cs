@@ -13,6 +13,10 @@ namespace MyCaffe.layers.beta
     /// The DecodeLayer decodes the label of a classification for an encoding produced by a Siamese Network or similar type of net that creates 
     /// an encoding mapped to a set of distances where the smallest distance indicates the label for which the encoding belongs.
     /// </summary>
+    /// <remarks>
+    /// Centroids:
+    /// @see [A New Loss Function for CNN Classifier Based on Pre-defined Evenly-Distributed Class Centroids](https://arxiv.org/abs/1904.06008) by Qiuyu Zhu, Pengju Zhang, and Xin Ye, arXiv:1904.06008, 2019.
+    /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class DecodeLayer<T> : Layer<T>
     {
@@ -23,7 +27,6 @@ namespace MyCaffe.layers.beta
         Blob<T> m_blobData;
         Blob<T> m_blobDistSq; 
         Blob<T> m_blobSummerVec;
-        T[] m_rgTopLabels = null;
         Dictionary<int, int> m_rgLabelCounts = new Dictionary<int, int>();
 
         /// <summary>
@@ -106,7 +109,7 @@ namespace MyCaffe.layers.beta
         }
 
         /// <summary>
-        /// Returns the min number of top blobs: distances, labels
+        /// Returns the min number of top blobs: distances, centroids
         /// </summary>
         public override int MaxTopBlobs
         {
@@ -162,14 +165,6 @@ namespace MyCaffe.layers.beta
             // vector of ones used to sum along channels.
             m_blobSummerVec.Reshape(colBottom[0].channels, 1, 1, 1);
             m_blobSummerVec.SetData(1.0);
-
-            if (colTop.Count > 1)
-            {
-                colTop[1].Reshape(colBottom[0].num, 1, 1, 1);
-                int nCount = colTop[0].count();
-                if (m_rgTopLabels == null || m_rgTopLabels.Length != nCount)
-                    m_rgTopLabels = new T[nCount];
-            }
         }
 
         /// <summary>
@@ -282,37 +277,20 @@ namespace MyCaffe.layers.beta
 
                     // The distances are returned in top[0], where the smallest distance is the detected label.
                     m_cuda.copy(nLabelCount, m_blobDistSq.gpu_data, colTop[0].mutable_gpu_data, 0, i * nLabelCount);
-
-                    // The label with the smallest distance is the detected label.
-                    if (m_rgTopLabels != null)
-                    {
-                        double[] rgdfLabelDist = convertD(m_blobDistSq.mutable_cpu_data);
-                        int nDetectedLabel = -1;
-                        double dfMin = double.MaxValue;
-
-                        for (int l = 0; l < rgdfLabelDist.Length; l++)
-                        {
-                            if (rgdfLabelDist[l] < dfMin)
-                            {
-                                dfMin = rgdfLabelDist[l];
-                                nDetectedLabel = l;
-                            }
-                        }
-
-                        m_rgTopLabels[i] = Utility.ConvertVal<T>((double)nDetectedLabel);
-                    }
                 }
             }
 
             if (colTop.Count > 1)
-                colTop[1].mutable_cpu_data = m_rgTopLabels;
+            {
+                colTop[1].ReshapeLike(m_colBlobs[0]);
+                m_cuda.copy(m_colBlobs[0].count(), m_colBlobs[0].gpu_data, colTop[1].mutable_gpu_data);
+            }
         }
 
         /// @brief Not implemented -- DecodeLayer cannot be used as a loss.
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            if (rgbPropagateDown[0])
-                throw new NotImplementedException();
+            // do nothing.
         }
     }
 }
