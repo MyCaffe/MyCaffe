@@ -15,13 +15,13 @@ namespace MyCaffe.db.image
     /// </summary>
     public class DatasetEx : IDisposable
     {
+        CryptoRandom m_random = null;
         object m_syncObj = new object();
         DatasetFactory m_factory = null;
         DatasetDescriptor m_ds = null;
         ImageSet m_TestingImages = null;
         ImageSet m_TrainingImages = null;
         bool m_bUseTrainingImagesForTesting = false;
-        CryptoRandom m_random = new CryptoRandom();
         int m_nLastTestingImageIdx = 0;
         int m_nLastTrainingImageIdx = 0;
         List<Guid> m_rgUsers = new List<Guid>();
@@ -37,8 +37,11 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="user">Specifies the unique ID of the dataset user.</param>
         /// <param name="factory">Specifies the DatasetFactory used to manage the database datasets.</param>
-        public DatasetEx(Guid user, DatasetFactory factory)
+        /// <param name="random">Specifies the random number generator.</param>
+        public DatasetEx(Guid user, DatasetFactory factory, CryptoRandom random)
         {
+            m_random = random;
+
             if (user != Guid.Empty)
                 m_rgUsers.Add(user);
 
@@ -131,7 +134,7 @@ namespace MyCaffe.db.image
         /// <returns>The new DatasetEx is returned.</returns>
         public DatasetEx Clone(bool bReOrganizeByTime = false)
         {
-            DatasetEx ds = new DatasetEx(Guid.Empty, m_factory);
+            DatasetEx ds = new DatasetEx(Guid.Empty, m_factory, m_random);
 
             foreach (Guid g in m_rgUsers)
             {
@@ -253,7 +256,7 @@ namespace MyCaffe.db.image
                     }
                 }
 
-                ImageSet imgset = new ImageSet(m_factory, src, loadMethod, nImageDbLoadLimit);
+                ImageSet imgset = new ImageSet(m_factory, src, loadMethod, nImageDbLoadLimit, m_random);
 
                 if (log != null && nCount > 0)
                     log.WriteLine("Loading '" + src.Name + "' - " + nCount.ToString("N0") + " images.");

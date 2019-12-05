@@ -13,19 +13,20 @@ namespace MyCaffe.db.image
     /// </summary>
     public class LabelSet : IDisposable
     {
+        CryptoRandom m_random = null;
         LabelDescriptor m_label;
         SimpleDatum[] m_rgImages;
         List<int> m_rgIdx = new List<int>();
-        CryptoRandom m_random;
         int m_nCurrentIdx = 0;
 
         /// <summary>
         /// The LabelSet constructor.
         /// </summary>
         /// <param name="lbl">Specifies the label.</param>
-        public LabelSet(LabelDescriptor lbl)
+        /// <param name="random">Specifies the random number generator.</param>
+        public LabelSet(LabelDescriptor lbl, CryptoRandom random)
         {
-            m_random = new CryptoRandom(CryptoRandom.METHOD.DEFAULT, Guid.NewGuid().GetHashCode());
+            m_random = random;
             m_label = lbl;
             m_rgImages = new SimpleDatum[lbl.ImageCount];
         }

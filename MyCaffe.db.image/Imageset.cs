@@ -15,6 +15,7 @@ namespace MyCaffe.db.image
     /// </summary>
     public class ImageSet : IDisposable
     {
+        CryptoRandom m_random = null;
         SourceDescriptor m_src;
         List<LabelSet> m_rgLabelSet = new List<LabelSet>();
         List<LabelSet> m_rgLabelSetWithData = new List<LabelSet>();
@@ -23,7 +24,6 @@ namespace MyCaffe.db.image
         List<int> m_rgLabelIndexes = new List<int>();
         List<SimpleDatum> m_rgImagesLimitLoaded = new List<SimpleDatum>();
         SimpleDatum m_imgMean = null;
-        CryptoRandom m_random;
         int m_nLastFindIdx = 0;
         int m_nLastIdx = -1;
         int m_nFixedIndex = -1;
@@ -49,9 +49,10 @@ namespace MyCaffe.db.image
         /// <param name="src">Specifies the data source.</param>
         /// <param name="loadMethod">Specifies the method to use when loading the images.</param>
         /// <param name="nLoadLimit">Specifies the image load limit.</param>
-        public ImageSet(DatasetFactory factory, SourceDescriptor src, IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
+        /// <param name="random">Specifies the random number generator.</param>
+        public ImageSet(DatasetFactory factory, SourceDescriptor src, IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit, CryptoRandom random)
         {
-            m_random = new CryptoRandom(CryptoRandom.METHOD.DEFAULT);
+            m_random = random;
             m_factory = new DatasetFactory(factory);
             m_factory.Open(src.ID);
             m_loadMethod = loadMethod;
@@ -66,7 +67,7 @@ namespace MyCaffe.db.image
             {
                 if (label.ImageCount > 0)
                 {
-                    m_rgLabelSet.Add(new LabelSet(label));
+                    m_rgLabelSet.Add(new LabelSet(label, m_random));
                 }
 
                 m_rgLabelStats.Add(label);
@@ -231,7 +232,7 @@ namespace MyCaffe.db.image
 
             foreach (LabelSet ls in m_rgLabelSet)
             {
-                imgSet.m_rgLabelSet.Add(new db.image.LabelSet(ls.Label));
+                imgSet.m_rgLabelSet.Add(new db.image.LabelSet(ls.Label, m_random));
             }
 
             List<SimpleDatum> rgSd = new List<basecode.SimpleDatum>();
@@ -334,7 +335,7 @@ namespace MyCaffe.db.image
 
             if (!bAdded)
             {
-                LabelSet ls = new LabelSet(new LabelDescriptor(d.Label, d.Label, "label #" + d.Label.ToString(), 0));
+                LabelSet ls = new LabelSet(new LabelDescriptor(d.Label, d.Label, "label #" + d.Label.ToString(), 0), m_random);
                 ls.Add(d);
                 m_rgLabelSet.Add(ls);
             }

@@ -25,6 +25,7 @@ namespace MyCaffe.db.image
     /// </remarks>
     public partial class MyCaffeImageDatabase : Component, IXImageDatabase
     {
+        CryptoRandom m_random = null;
         DatasetFactory m_factory;
         string m_strID = "";
         int m_nStrIDHashCode = 0;
@@ -37,7 +38,6 @@ namespace MyCaffe.db.image
         static Dictionary<int, LabelMappingCollection> m_rgLabelMappings = new Dictionary<int, LabelMappingCollection>();
         Dictionary<int, SimpleDatum> m_rgMeanCache = new Dictionary<int, SimpleDatum>();
         double m_dfSuperBoostProbability = 0;
-        CryptoRandom m_random = new CryptoRandom();
         IMGDB_IMAGE_SELECTION_METHOD m_imageSelectionMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM;
         IMGDB_LABEL_SELECTION_METHOD m_labelSelectionMethod = IMGDB_LABEL_SELECTION_METHOD.RANDOM;
         Log m_log;
@@ -59,13 +59,14 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="log">The Log for output.</param>
         /// <param name="strId">Specifies an identifier for this in memory database instance (default = "default").</param>
-        public MyCaffeImageDatabase(Log log = null, string strId = "default")
+        /// <param name="nSeed">Optionally, specifies a seed for the random number generator (default = null).</param>
+        public MyCaffeImageDatabase(Log log = null, string strId = "default", int nSeed = 0)
         {
             m_factory = new DatasetFactory();
             m_userGuid = Guid.NewGuid();
             m_log = log;
             InitializeComponent();
-            init(strId);
+            init(strId, nSeed);
         }
 
         /// <summary>
@@ -80,10 +81,11 @@ namespace MyCaffe.db.image
             init();
         }
 
-        private void init(string strId = "")
+        private void init(string strId = "", int nSeed = 0)
         {
             int nProcessID = Process.GetCurrentProcess().Id;
 
+            m_random = new CryptoRandom(CryptoRandom.METHOD.DEFAULT, nSeed);
             m_strID = strId;
             m_nStrIDHashCode = strId.GetHashCode();
             m_evtInitializing = new EventWaitHandle(false, EventResetMode.ManualReset, "__CAFFE_IMAGEDATABASE__INITIALIZING__" + nProcessID.ToString());
@@ -419,7 +421,7 @@ namespace MyCaffe.db.image
                         return false;
                     }
 
-                    DatasetEx ds0 = new DatasetEx(m_userGuid, m_factory);
+                    DatasetEx ds0 = new DatasetEx(m_userGuid, m_factory, m_random);
 
                     if (OnCalculateImageMean != null)
                         ds0.OnCalculateImageMean += OnCalculateImageMean;
@@ -1295,7 +1297,7 @@ namespace MyCaffe.db.image
                 throw new Exception("The image database was not initialized properly.");
 
             DatasetExCollection col = m_colDatasets[m_nStrIDHashCode];
-            DatasetEx ds0 = new DatasetEx(m_userGuid, m_factory);
+            DatasetEx ds0 = new DatasetEx(m_userGuid, m_factory, m_random);
 
             if (OnCalculateImageMean != null)
                 ds0.OnCalculateImageMean += OnCalculateImageMean;
