@@ -1295,6 +1295,15 @@ namespace MyCaffe.db.image
         #region Loading Descriptors
 
         /// <summary>
+        /// Returns a list of the image indexes of all boosted images in the Data Source.
+        /// </summary>
+        /// <returns></returns>
+        public List<DbItem> LoadBoostedImageIndexes()
+        {
+            return m_db.GetAllBoostedRawImageIndexes();
+        }
+
+        /// <summary>
         /// Load the image descriptors for a set of given source ID's.
         /// </summary>
         /// <param name="evtCancel">Optionally specifies to cancel the load, when <i>null</i> this parameter is ignored.</param>
