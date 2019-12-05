@@ -124,7 +124,7 @@ namespace MyCaffe.test.automated
                         lvi.SubItems.Add(mi.Name);
                         lvi.SubItems.Add(mi.ErrorInfo.FullErrorString);
                         lvi.Tag = new KeyValuePair<TestClass, MethodInfoEx>(tc, mi);
-                        lvi.SubItems[(int)COLIDX.ERROR].Tag = mi.ErrorInfo;
+                        lvi.SubItems[(int)COLIDX.ERROR].Tag = mi.ErrorInfo;                        
 
                         if (mi.Status != MethodInfoEx.STATUS.Passed && mi.Status != MethodInfoEx.STATUS.Failed)
                         {
@@ -147,6 +147,23 @@ namespace MyCaffe.test.automated
                     else
                     {
                         mi.Enabled = false;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(Properties.Settings.Default.LastTestRunClass) &&
+                !string.IsNullOrEmpty(Properties.Settings.Default.LastTestRunMethod))
+            {
+                foreach (ListViewItem lvi in lstTests.Items)
+                {
+                    string strClass = lvi.SubItems[(int)COLIDX.CLASS].Text;
+                    string strMethod = lvi.SubItems[(int)COLIDX.METHOD].Text;
+
+                    if (strClass == Properties.Settings.Default.LastTestRunClass && strMethod == Properties.Settings.Default.LastTestRunMethod)
+                    {
+                        lvi.EnsureVisible();
+                        lvi.Selected = true;
+                        return;
                     }
                 }
             }
@@ -294,6 +311,14 @@ namespace MyCaffe.test.automated
             foreach (string str in rgstr)
             {
                 Trace.WriteLine("   " + str);
+            }
+
+            if (lstTests.SelectedItems.Count > 0)
+            {
+                ListViewItem lvi = lstTests.SelectedItems[0];
+                Properties.Settings.Default.LastTestRunClass = lvi.SubItems[(int)COLIDX.CLASS].Text;
+                Properties.Settings.Default.LastTestRunMethod = lvi.SubItems[(int)COLIDX.METHOD].Text;
+                Properties.Settings.Default.Save();
             }
 
             m_rgTestClasses.Run(m_evtCancel, m_bSkip, false, m_nGpuId);

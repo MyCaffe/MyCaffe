@@ -88,6 +88,11 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
     <Compile Include="TestDatabaseManager.cs" />
     <Compile Include="TestEntitiesConnection.cs" />
     <Compile Include="TestingModel.Designer.cs">
@@ -99,13 +104,19 @@
     <Compile Include="TestingProgress.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.Config" />
+    <None Include="App.Config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="mycaffe.test.automated.sn.pfx" />
     <None Include="Properties\DataSources\TestingEntities.datasource" />
     <EntityDeploy Include="TestingModel.edmx">
       <Generator>EntityModelCodeGenerator</Generator>
       <LastGenOutput>TestingModel.Designer.cs</LastGenOutput>
     </EntityDeploy>
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="AutomatedTester.resx">
