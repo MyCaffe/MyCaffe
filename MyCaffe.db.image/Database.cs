@@ -938,6 +938,18 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Returns the list of the image indexes of all boosted images.
+        /// </summary>
+        /// <returns>The image indexes are returned in a list.</returns>
+        public List<DbItem> GetAllBoostedRawImageIndexes()
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                return entities.RawImages.Where(p => p.SourceID == m_src.ID && p.ActiveBoost > 0).Select(p => new DbItem { index = p.Idx, label = p.ActiveLabel }).ToList();
+            }
+        }
+
+        /// <summary>
         /// Returns the list of raw images that have a source ID from a selected list.
         /// </summary>
         /// <param name="rgSrcId">Specifies the list of source ID.</param>
@@ -4445,5 +4457,31 @@ namespace MyCaffe.db.image
             get { return m_nImageID; }
             set { m_nImageID = value; }
         }
+    }
+
+    /// <summary>
+    /// Specifies a database item used when querying boosted items.
+    /// </summary>
+    public class DbItem
+    {
+        /// <summary>
+        /// Specifies the image index.
+        /// </summary>
+        public int Index
+        {
+            get { return index.GetValueOrDefault(); }
+        }
+
+        public int? index { get;  set; } /** @private */
+
+        /// <summary>
+        /// Specifies the image label.
+        /// </summary>
+        public int Label
+        {
+            get { return label.GetValueOrDefault(); }
+        }
+
+        public int? label { get;  set; } /** @private */
     }
 }
