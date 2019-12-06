@@ -88,12 +88,6 @@ namespace MyCaffe.db.image
         /// <param name="bDisposing">Set to <i>true</i> when called by Dispose()</param>
         protected virtual void Dispose(bool bDisposing)
         {
-            if (m_random != null)
-            {
-                m_random.Dispose();
-                m_random = null;
-            }
-
             if (m_factory != null)
             {
                 m_factory.Close();
@@ -126,7 +120,7 @@ namespace MyCaffe.db.image
         /// Increase the query label count for a specific label.
         /// </summary>
         /// <param name="nLabel">Specifies the label who's query count is to be increased.</param>
-        /// <param name="nBoosted">Specifies the boost of the image, or 0 if not boosted.</param>
+        /// <param name="nBoost">Specifies the boost of the image, or 0 if not boosted.</param>
         public void SetQueryLabelCount(int nLabel, int nBoost)
         {
             if (m_rgLabelStats != null)
