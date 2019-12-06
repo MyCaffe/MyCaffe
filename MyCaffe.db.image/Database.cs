@@ -938,14 +938,20 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
-        /// Returns the list of the image indexes of all boosted images.
+        /// Returns the list of the image indexes of all images.
         /// </summary>
+        /// <param name="bBoostedOnly">Specifies to only retrieve boosted images.</param>
         /// <returns>The image indexes are returned in a list.</returns>
-        public List<DbItem> GetAllBoostedRawImageIndexes()
+        public List<DbItem> GetAllRawImageIndexes(bool bBoostedOnly)
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                return entities.RawImages.Where(p => p.SourceID == m_src.ID && p.ActiveBoost > 0).Select(p => new DbItem { index = p.Idx, label = p.ActiveLabel }).ToList();
+                IQueryable<RawImage> iQuery = entities.RawImages.Where(p => p.SourceID == m_src.ID && p.Active == true);
+
+                if (bBoostedOnly)
+                    iQuery = iQuery.Where(p => p.ActiveBoost > 0);
+
+                return iQuery.Select(p => new DbItem { id = p.ID, index = p.Idx, label = p.ActiveLabel, boost = p.ActiveBoost, time = p.TimeStamp, desc = p.Description }).ToList();
             }
         }
 
@@ -4465,6 +4471,42 @@ namespace MyCaffe.db.image
     public class DbItem
     {
         /// <summary>
+        /// The constructor.
+        /// </summary>
+        public DbItem()
+        {
+        }
+
+        /// <summary>
+        /// Create a copy of the DbItem.
+        /// </summary>
+        /// <returns>The copy is returned.</returns>
+        public DbItem Clone()
+        {
+            DbItem item = new DbItem();
+            item.id = id;
+            item.index = index;
+            item.label = label;
+            item.boost = boost;
+            item.time = time;
+            item.desc = desc;
+            return item;
+        }
+
+        /// <summary>
+        /// Specifies the image ID.
+        /// </summary>
+        public int ID
+        {
+            get { return id; }
+        }
+
+        /// <summary>
+        /// Specifies the image ID used within the lambda statement.
+        /// </summary>
+        public int id { get; set; } 
+
+        /// <summary>
         /// Specifies the image index.
         /// </summary>
         public int Index
@@ -4472,7 +4514,10 @@ namespace MyCaffe.db.image
             get { return index.GetValueOrDefault(); }
         }
 
-        public int? index { get;  set; } /** @private */
+        /// <summary>
+        /// Specifies the image index used within the lambda statement.
+        /// </summary>
+        public int? index { get;  set; } 
 
         /// <summary>
         /// Specifies the image label.
@@ -4482,6 +4527,48 @@ namespace MyCaffe.db.image
             get { return label.GetValueOrDefault(); }
         }
 
-        public int? label { get;  set; } /** @private */
+        /// <summary>
+        /// Specifies the image label used within the lambda statement.
+        /// </summary>
+        public int? label { get;  set; } 
+
+        /// <summary>
+        /// Specifies the image boost.
+        /// </summary>
+        public int Boost
+        {
+            get { return boost.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image boost used within the lambda statement.
+        /// </summary>
+        public int? boost { get; set; } 
+
+        /// <summary>
+        /// Specifies the image time.
+        /// </summary>
+        public DateTime Time
+        {
+            get { return time.GetValueOrDefault(); }
+        }
+
+        /// <summary>
+        /// Specifies the image time within the lambda statement.
+        /// </summary>
+        public DateTime? time { get; set; } 
+
+        /// <summary>
+        /// Specifies the image description.
+        /// </summary>
+        public string Desc
+        {
+            get { return desc; }
+        }
+
+        /// <summary>
+        /// Specifies the image description used within the lambda statement.
+        /// </summary>
+        public string desc { get; set; } 
     }
 }
