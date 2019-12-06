@@ -43,20 +43,14 @@ namespace MyCaffe.test
                     str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
+                    db.CleanUp();
                     sw.Reset();
                     sw.Stop();
                 }
 
-                sw.Stop();
-                sw.Reset();
-                sw.Start();
-                db.CleanUp();
                 str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine("Cleanup Time: " + str + " ms.");
-
-                sw.Stop();
-                sw.Reset();
-                sw.Start();
+                sw.Restart();
             }
             finally
             {
@@ -1595,6 +1589,340 @@ namespace MyCaffe.test
                 IDisposable idisp = db as IDisposable;
                 if (idisp != null)
                     idisp.Dispose();
+            }
+        }
+
+        private bool testQuery(int nTestIdx, Log log, DatasetDescriptor ds, LabelDescriptor lblDesc, IMAGEDB_LOAD_METHOD loadMethod, IMGDB_LABEL_SELECTION_METHOD lblSel, IMGDB_IMAGE_SELECTION_METHOD imgSel, List<int> rgBoostIdx, ref int nIdx, ref int nTotal)
+        {
+            TestingProgressSet progress = null;
+            IXImageDatabase db = null;
+            int nSrcId = ds.TrainingSource.ID;
+            int nImageCount = ds.TrainingSource.ImageCount;
+
+            try
+            {
+                if (nTestIdx == 2)
+                    imgSel = (imgSel | IMGDB_IMAGE_SELECTION_METHOD.BOOST);
+
+                int? nLabel = null;
+                if (lblDesc != null)
+                    nLabel = lblDesc.ActiveLabel;
+
+                if (nTestIdx == 0)
+                {
+                    if (lblDesc == null)
+                    {
+                        nTotal += ds.TrainingSource.ImageCount;
+                        nTotal += rgBoostIdx.Count;
+                    }
+                    else
+                    {
+                        nTotal += lblDesc.ImageCount;
+                        nTotal += rgBoostIdx.Where(p => p == nLabel.Value).Count();
+                    }
+                }
+                else
+                {
+                    Stopwatch sw = new Stopwatch();
+                    sw.Start();
+
+                    progress = new TestingProgressSet();
+
+                    SettingsCaffe settings = new SettingsCaffe();
+                    settings.ImageDbLoadMethod = loadMethod;
+                    settings.ImageDbLoadLimit = 0;
+
+                    db = new MyCaffeImageDatabase(log, "default", 1701);
+                    db.InitializeWithDsName(settings, ds.Name);
+
+                    log.WriteLine("Running Test: load " + loadMethod.ToString() + ", label selection " + lblSel.ToString() + ", image selection " + imgSel.ToString());
+
+                    Dictionary<int, int> rgLabelCounts = new Dictionary<int, int>();
+                    Dictionary<int, int> rgIndexCounts = new Dictionary<int, int>();
+                    List<int> rgImagesNotQueried = new List<int>();
+
+                    for (int i = 0; i < nImageCount; i++)
+                    {
+                        rgImagesNotQueried.Add(i);
+                    }
+
+                    for (int i = 0; i < nImageCount; i++)
+                    {
+                        SimpleDatum sd = db.QueryImage(nSrcId, i, lblSel, imgSel, nLabel);
+                        if (!rgLabelCounts.ContainsKey(sd.Label))
+                            rgLabelCounts.Add(sd.Label, 1);
+                        else
+                            rgLabelCounts[sd.Label]++;
+
+                        if (!rgIndexCounts.ContainsKey(sd.Index))
+                            rgIndexCounts.Add(sd.Index, 1);
+                        else
+                            rgIndexCounts[sd.Index]++;
+
+                        rgImagesNotQueried.Remove(sd.Index);
+
+                        nIdx++;
+
+                        if (sw.Elapsed.TotalMilliseconds > 1000)
+                        {
+                            progress.SetProgress((double)nIdx / nTotal);
+                            sw.Restart();
+                        }
+                    }
+
+                    int nMinRemaining = (int)(nImageCount * 0.005);
+                    log.CHECK_LT(rgImagesNotQueried.Count, nMinRemaining, "All images should have been queried!");
+
+                    int nTotal1 = rgLabelCounts.Sum(p => p.Value);
+                    Dictionary<int, double> rgProbabilities = new Dictionary<int, double>();
+
+                    foreach (KeyValuePair<int, int> kv in rgLabelCounts)
+                    {
+                        double dfProb = (double)kv.Value / nTotal1;
+                        rgProbabilities.Add(kv.Key, dfProb);
+                    }
+
+                    if ((lblSel & IMGDB_LABEL_SELECTION_METHOD.RANDOM) == IMGDB_LABEL_SELECTION_METHOD.RANDOM)
+                    {
+                        double dfSum = rgProbabilities.Sum(p => p.Value);
+                        double dfAve = dfSum / rgProbabilities.Count;
+
+                        foreach (KeyValuePair<int, double> kv in rgProbabilities)
+                        {
+                            double dfDiff = kv.Value - dfAve;
+
+                            log.EXPECT_NEAR_FLOAT(kv.Value, dfAve, 0.001, "The probabilities are not correct!");
+                        }
+                    }
+
+                    db.CleanUp();
+                }
+
+                return true;
+            }
+            finally
+            {
+                if (db != null)
+                {
+                    IDisposable idisp = db as IDisposable;
+                    if (idisp != null)
+                        idisp.Dispose();
+                }
+
+                if (progress != null)
+                    progress.Dispose();
+            }
+        }
+
+        private string CreateDataset(DatasetFactory factory, int nCountTrain, int nCountTest, bool bUseMnistLabels)
+        {
+            string strName = "test_qry";
+            List<RawImage> rgMnistImagesTrain = null;
+            List<RawImage> rgMnistImagesTest = null;
+            int nMnistIdx = 0;
+
+            if (bUseMnistLabels)
+            {
+                DatasetDescriptor ds1 = factory.LoadDataset(strName);
+                if (ds1 != null && ds1.TrainingSource != null && ds1.TestingSource != null)
+                {
+                    if (ds1.TrainingSource.ImageCount == 60000 && ds1.TestingSource.ImageCount == 10000)
+                        return strName;
+                }
+
+                DatasetDescriptor dsMnist = factory.LoadDataset("MNIST");
+                nCountTrain = dsMnist.TrainingSource.ImageCount;
+                factory.Open(dsMnist.TrainingSource.ID);
+                rgMnistImagesTrain = factory.GetRawImagesAt(0, nCountTrain);
+                factory.Close();
+
+                nCountTest = dsMnist.TestingSource.ImageCount;
+                factory.Open(dsMnist.TestingSource.ID);
+                rgMnistImagesTest = factory.GetRawImagesAt(0, nCountTest);
+                factory.Close();
+            }
+
+            int nSrcTst = factory.AddSource(strName + ".testing", 1, 2, 2, false);
+            int nSrcTrn = factory.AddSource(strName + ".training", 1, 2, 2, false);
+            int nDs = factory.AddDataset(0, strName, nSrcTst, nSrcTrn);
+
+            byte[] rgData = new byte[4];
+
+            factory.Open(nSrcTrn, 1000);
+            factory.DeleteSourceData();
+
+            List<int> rgLabels = new List<int>();
+            if (!bUseMnistLabels)
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    rgLabels.Add(i);
+                }
+            }
+
+            CryptoRandom random = new CryptoRandom(CryptoRandom.METHOD.SYSTEM, 1701);
+
+            for (int i = 0; i < nCountTrain; i++)
+            {
+                int nLabel = -1;
+
+                if (bUseMnistLabels)
+                {
+                    nLabel = rgMnistImagesTrain[nMnistIdx].ActiveLabel.Value;
+                    nMnistIdx++;
+
+                    if (!rgLabels.Contains(nLabel))
+                        rgLabels.Add(nLabel);
+                }
+                else
+                {
+                    int nIdx = random.Next(rgLabels.Count);
+                    nLabel = rgLabels[nIdx];
+                }
+
+                SimpleDatum sd = new SimpleDatum(false, 1, 2, 2, nLabel, DateTime.MinValue, 0, false, i);
+                sd.SetData(rgData.ToList(), nLabel);
+                factory.PutRawImageCache(i, sd);
+            }
+
+            factory.ClearImageCashe(true);
+
+            rgLabels = rgLabels.OrderBy(p => p).ToList();
+            for (int i = 0; i < rgLabels.Count; i++)
+            {
+                factory.AddLabel(rgLabels[i], rgLabels[i].ToString());
+            }
+
+            factory.Close();
+
+            nMnistIdx = 0;
+
+            factory.Open(nSrcTst, 1000);
+            factory.DeleteSourceData();
+
+            for (int i = 0; i < nCountTest; i++)
+            {
+                int nLabel = -1;
+
+                if (bUseMnistLabels)
+                {
+                    nLabel = rgMnistImagesTest[nMnistIdx].ActiveLabel.Value;
+                    nMnistIdx++;
+                }
+                else
+                {
+                    int nIdx = random.Next(rgLabels.Count);
+                    nLabel = rgLabels[nIdx];
+                }
+
+                SimpleDatum sd = new SimpleDatum(false, 1, 2, 2, nLabel, DateTime.MinValue, 0, false, i);
+                sd.SetData(rgData.ToList(), nLabel);
+                factory.PutRawImageCache(i, sd);
+            }
+
+            factory.ClearImageCashe(true);
+
+            rgLabels = rgLabels.OrderBy(p => p).ToList();
+            for (int i = 0; i < rgLabels.Count; i++)
+            {
+                factory.AddLabel(rgLabels[i], rgLabels[i].ToString());
+            }
+
+            factory.Close();
+
+            factory.UpdateDatasetCounts(nDs);
+
+            return strName;
+        }
+
+        [TestMethod]
+        public void TestQueries()
+        {
+            PreTest.Init();
+
+            TestingProgressSet progress = new TestingProgressSet();
+            Log log = new Log("Test Image Database");
+            Database db1 = new Database();
+            int nSrcId = -1;
+
+            log.EnableTrace = true;
+
+            try
+            {
+                DatasetFactory factory = new DatasetFactory();
+
+                string strDs = CreateDataset(factory, 10000, 1000, true);
+
+                SettingsCaffe settings = new SettingsCaffe();
+                DatasetDescriptor ds = factory.LoadDataset(strDs);
+                List<int> rgBoostIdx = new List<int>();
+                nSrcId = ds.TrainingSource.ID;
+
+                db1.Open(nSrcId);
+
+                for (int i=0; i<10; i++)
+                {                    
+                    RawImage img = db1.GetRawImageAt(i * 3);
+                    db1.UpdateBoost(img.ID, 1);
+                    rgBoostIdx.Add(img.ID);
+                }
+
+                db1.Close();
+
+                List<LabelDescriptor> rgLabels = new List<LabelDescriptor>();
+                rgLabels.Add(null);
+                rgLabels.AddRange(ds.TrainingSource.Labels);
+
+                int nImageCount = ds.TrainingSource.ImageCount;
+                int nIdx = 0;
+                int nTotal = nImageCount * 4;
+
+                // i = 0, tally up total.
+                // i = 1, run non-boost queries.
+                // i = 2, run boost queries.
+                for (int i = 0; i < 3; i++)
+                {
+                    foreach (LabelDescriptor lblDesc in rgLabels)
+                    {
+                        //---------------------------------------------------
+                        //  LOAD_ON_DEMAND tests
+                        //---------------------------------------------------
+
+                        if (!testQuery(i, log, ds, lblDesc, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, rgBoostIdx, ref nIdx, ref nTotal))
+                            return;
+
+                        if (!testQuery(i, log, ds, lblDesc, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, rgBoostIdx, ref nIdx, ref nTotal))
+                            return;
+
+                        if (!testQuery(i, log, ds, lblDesc, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.NONE, rgBoostIdx, ref nIdx, ref nTotal))
+                            return;
+
+                        if (!testQuery(i, log, ds, lblDesc, IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, rgBoostIdx, ref nIdx, ref nTotal))
+                            return;
+
+
+                        //---------------------------------------------------
+                        //  LOAD_ALL tests
+                        //---------------------------------------------------
+
+                        if (!testQuery(i, log, ds, lblDesc, IMAGEDB_LOAD_METHOD.LOAD_ALL, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, rgBoostIdx, ref nIdx, ref nTotal))
+                            return;
+
+                        if (!testQuery(i, log, ds, lblDesc, IMAGEDB_LOAD_METHOD.LOAD_ALL, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, rgBoostIdx, ref nIdx, ref nTotal))
+                            return;
+
+                        if (!testQuery(i, log, ds, lblDesc, IMAGEDB_LOAD_METHOD.LOAD_ALL, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.NONE, rgBoostIdx, ref nIdx, ref nTotal))
+                            return;
+
+                        if (!testQuery(i, log, ds, lblDesc, IMAGEDB_LOAD_METHOD.LOAD_ALL, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, rgBoostIdx, ref nIdx, ref nTotal))
+                            return;
+                    }
+                }
+            }
+            finally
+            {
+                if (nSrcId > 0)
+                    db1.ResetAllBoosts(nSrcId);
             }
         }
 
