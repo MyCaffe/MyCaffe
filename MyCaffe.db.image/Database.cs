@@ -951,6 +951,8 @@ namespace MyCaffe.db.image
                 if (bBoostedOnly)
                     iQuery = iQuery.Where(p => p.ActiveBoost > 0);
 
+                iQuery = iQuery.OrderBy(p => p.Idx);
+
                 return iQuery.Select(p => new DbItem { id = p.ID, index = p.Idx, label = p.ActiveLabel, boost = p.ActiveBoost, time = p.TimeStamp, desc = p.Description }).ToList();
             }
         }
@@ -4569,6 +4571,15 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Specifies the image description used within the lambda statement.
         /// </summary>
-        public string desc { get; set; } 
+        public string desc { get; set; }
+
+        /// <summary>
+        /// Returns the string representation of the DbItem.
+        /// </summary>
+        /// <returns>The string representation is returned.</returns>
+        public override string ToString()
+        {
+            return "ID=" + ID.ToString() + "; Idx=" + Index.ToString() + "; Time=" + Time.ToString() + "; Desc=" + Desc + "; Boost=" + Boost.ToString();
+        }
     }
 }
