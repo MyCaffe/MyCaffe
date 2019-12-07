@@ -1388,7 +1388,15 @@ namespace MyCaffe.basecode
         /// <returns>The string representation is returned.</returns>
         public override string ToString()
         {
-            return "Idx = " + m_nIndex.ToString("N0");
+            string strOut = "Idx = " + m_nIndex.ToString("N0");
+
+            if (m_dt != DateTime.MinValue)
+                strOut += "; Time=" + m_dt.ToString();
+
+            if (!string.IsNullOrEmpty(m_strDesc))
+                strOut += "; Desc=" + m_strDesc;
+
+            return strOut;
         }
 
         /// <summary>
