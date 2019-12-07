@@ -1170,6 +1170,8 @@ namespace MyCaffe.test
                     if (i % 1000 == 0)
                         strDesc = i.ToString();
 
+                    strDesc = strDesc.PadLeft(5, '0');
+
                     SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
                     sd.TimeStamp = dt;
                     sd.Description = strDesc;
@@ -1204,7 +1206,7 @@ namespace MyCaffe.test
                 //---------------------------------------------
 
                 // One minute alloted to each image above.
-                Random rand = new Random();
+                Random rand = new Random(1701);
 
                 //---------------------------------------------
                 //  Verify using Filter Value
@@ -1214,7 +1216,7 @@ namespace MyCaffe.test
                     dt = new DateTime(2000, 1, 1);
 
                     int nFilterVal = i * 1000;
-                    string strFilterVal = nFilterVal.ToString();
+                    string strFilterVal = nFilterVal.ToString().PadLeft(5, '0');
                     int nCount = db.ImageCount(ds.TrainingSource.ID, false, strFilterVal);
                     int nSequenceCount = 10 + rand.Next(50);
                     int nRandomStart = rand.Next(nCount - nSequenceCount);
@@ -1334,6 +1336,8 @@ namespace MyCaffe.test
                 {
                     if (i % 1000 == 0)
                         strDesc = i.ToString();
+
+                    strDesc = strDesc.PadLeft(5, '0');
 
                     SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
                     sd.TimeStamp = dt;
@@ -1506,6 +1510,8 @@ namespace MyCaffe.test
                 {
                     if (i % 1000 == 0)
                         strDesc = i.ToString();
+
+                    strDesc = strDesc.PadLeft(5, '0');
 
                     SimpleDatum sd = db.QueryImage(ds.TrainingSource.ID, i, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
                     sd.TimeStamp = dt;
