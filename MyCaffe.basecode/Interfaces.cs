@@ -880,6 +880,592 @@ namespace MyCaffe.basecode
         double GetDatasetLoadedPercentById(int nDatasetID, out double dfTraining, out double dfTesting);
     }
 
+    /// <summary>
+    /// The IXImageDatabase interface defines the eneral interface to the in-memory image database.
+    /// </summary>
+    [ServiceContract(CallbackContract = typeof(IXImageDatabaseEvent), SessionMode = SessionMode.Required)]
+    public interface IXImageDatabase2
+    {
+        #region Initialization and Cleanup
+
+        /// <summary>
+        /// Set the database instance to use.
+        /// </summary>
+        /// <param name="strInstance">Specifies the instance name to use in '.\\name' format.</param>
+        [OperationContract(IsOneWay = false)]
+        void SetInstance(string strInstance);
+
+        /// <summary>
+        /// Initializes the image database.
+        /// </summary>
+        /// <param name="s">Specifies the caffe settings.</param>
+        /// <param name="strDs">Specifies the data set to load.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
+        /// <returns>Upon loading the dataset a handle to the default QueryState is returned (which is ordered by Index), or 0 on cancel.</returns>
+        [OperationContract(IsOneWay = false)]
+        long InitializeWithDsName(SettingsCaffe s, string strDs, string strEvtCancel = null);
+
+        /// <summary>
+        /// Initializes the image database.
+        /// </summary>
+        /// <param name="s">Specifies the caffe settings.</param>
+        /// <param name="ds">Specifies the data set to load.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
+        /// <returns>Upon loading the dataset a handle to the default QueryState is returned (which is ordered by Index), or 0 on cancel.</returns>
+        [OperationContract(IsOneWay = false)]
+        long InitializeWithDs(SettingsCaffe s, DatasetDescriptor ds, string strEvtCancel = null);
+
+        /// <summary>
+        /// Initializes the image database.
+        /// </summary>
+        /// <param name="s">Specifies the caffe settings.</param>
+        /// <param name="nDataSetID">Specifies the database ID of the data set to load.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
+        /// <param name="nPadW">Specifies the padding to add to each image width (default = 0).</param>
+        /// <param name="nPadH">Specifies the padding to add to each image height (default = 0).</param>
+        /// <returns>Upon loading the dataset a handle to the default QueryState is returned (which is ordered by Index), or 0 on cancel.</returns>
+        [OperationContract(IsOneWay = false)]
+        long InitializeWithDsId(SettingsCaffe s, int nDataSetID, string strEvtCancel = null, int nPadW = 0, int nPadH = 0);
+
+        /// <summary>
+        /// Releases the image database, and if this is the last instance using the in-memory database, frees all memory used.
+        /// </summary>
+        /// <param name="nDsId">Optionally, specifies the dataset previously used.</param>
+        [OperationContract(IsOneWay = false)]
+        void CleanUp(int nDsId = 0);
+
+        /// <summary>
+        /// Reload the indexing for a data set.
+        /// </summary>
+        /// <param name="nDsId">Specifies the dataset ID.</param>
+        /// <returns>If the data source(s) have their indexing reloaded, <i>true</i> is returned, otherwise <i>false</i>.</returns>
+        [OperationContract(IsOneWay = false)]
+        bool ReloadIndexing(int nDsId);
+
+        /// <summary>
+        /// Reload the indexing for a data set.
+        /// </summary>
+        /// <param name="strDs">Specifies the dataset name.</param>
+        /// <returns>If the data source(s) have their indexing reloaded, <i>true</i> is returned, otherwise <i>false</i>.</returns>
+        [OperationContract(IsOneWay = false)]
+        bool ReloadIndexing(string strDs);
+
+        /// <summary>
+        /// Wait for the dataset loading to complete.
+        /// </summary>
+        /// <param name="nDsId">Specifies the dataset ID.</param>
+        /// <param name="bTraining">Specifies to wait for the training data source to load.</param>
+        /// <param name="bTesting">Specifies to wait for the testing data source to load.</param>
+        /// <param name="nWait">Specifies the amount of time to wait in ms. (default = int.MaxValue).</param>
+        /// <returns>If the data source(s) complete loading, <i>true</i> is returned, otherwise <i>false</i>.</returns>
+        bool WaitForDatasetToLoad(int nDsId, bool bTraining, bool bTesting, int nWait = int.MaxValue);
+
+        /// <summary>
+        /// Wait for the dataset loading to complete.
+        /// </summary>
+        /// <param name="strDs">Specifies the dataset name.</param>
+        /// <param name="bTraining">Specifies to wait for the training data source to load.</param>
+        /// <param name="bTesting">Specifies to wait for the testing data source to load.</param>
+        /// <param name="nWait">Specifies the amount of time to wait in ms. (default = int.MaxValue).</param>
+        /// <returns>If the data source(s) complete loading, <i>true</i> is returned, otherwise <i>false</i>.</returns>
+        bool WaitForDatasetToLoad(string strDs, bool bTraining, bool bTesting, int nWait = int.MaxValue);
+
+        #endregion // Initialization and Cleanup
+
+        #region Query States
+
+        /// <summary>
+        /// Create a new query state, optionally with a certain ordering.
+        /// </summary>
+        /// <param name="nDsId">Specifies the dataset on which the query states are to be created.</param>
+        /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch (default = true).</param>
+        /// <param name="bUseUniqueImageIndexes">Optionally, specifies to use unique image indexes which is slightly slower, but ensures each image is hit per epoch (default = true).</param>
+        /// <param name="sort">Optionally, specifies an index ordering (default = NONE).</param>
+        /// <returns>A handle to the new query state is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        long CreateQueryState(int nDsId, bool bUseUniqueLabelIndexes = true, bool bUseUniqueImageIndexes = true, IMGDB_SORT sort = IMGDB_SORT.NONE);
+
+        /// <summary>
+        /// Create a new query state, optionally with a certain ordering.
+        /// </summary>
+        /// <param name="strDs">Specifies the dataset on which the query states are to be created.</param>
+        /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch (default = true).</param>
+        /// <param name="bUseUniqueImageIndexes">Optionally, specifies to use unique image indexes which is slightly slower, but ensures each image is hit per epoch (default = true).</param>
+        /// <param name="sort">Optionally, specifies an index ordering (default = NONE).</param>
+        /// <returns>A handle to the new query state is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        long CreateQueryState(string strDs, bool bUseUniqueLabelIndexes = true, bool bUseUniqueImageIndexes = true, IMGDB_SORT sort = IMGDB_SORT.NONE);
+
+        /// <summary>
+        /// Frees a query state from a given dataset.
+        /// </summary>
+        /// <param name="nDsId">Specifies the dataset on which to free the query state.</param>
+        /// <param name="lHandle">Specifies the handle to the query state to free.</param>
+        /// <returns>If found and freed, <i>true</i> is returned, otherwise <i>false</i>.</returns>
+        [OperationContract(IsOneWay = false)]
+        bool FreeQueryState(int nDsId, long lHandle);
+
+        /// <summary>
+        /// Frees a query state from a given dataset.
+        /// </summary>
+        /// <param name="strDs">Specifies the dataset name on which to free the query state.</param>
+        /// <param name="lHandle">Specifies the handle to the query state to free.</param>
+        /// <returns>If found and freed, <i>true</i> is returned, otherwise <i>false</i>.</returns>
+        [OperationContract(IsOneWay = false)]
+        bool FreeQueryState(string strDs, long lHandle);
+
+        /// <summary>
+        /// Returns a string with the query hit percent for each label (e.g. the percentage that each label has been queried).
+        /// </summary>
+        /// <param name="lQueryState">Specifies the handle to the query state.</param>
+        /// <param name="strSource">Specifies the data source who's hit percentages are to be retrieved.</param>
+        /// <returns>A string representing the query hit percentages is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        string GetLabelQueryHitPercentsAsTextFromSourceName(long lQueryState, string strSource);
+
+        /// <summary>
+        /// Returns a string with the query epoch counts for each label (e.g. the number of times all images with the label have been queried).
+        /// </summary>
+        /// <param name="lQueryState">Specifies the handle to the query state.</param>
+        /// <param name="strSource">Specifies the data source who's query epochs are to be retrieved.</param>
+        /// <returns>A string representing the query epoch counts is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        string GetLabelQueryEpocsAsTextFromSourceName(long lQueryState, string strSource);
+
+        /// <summary>
+        /// Returns a string with the query hit percent for each boost (e.g. the percentage that each boost value has been queried).
+        /// </summary>
+        /// <param name="lQueryState">Specifies the handle to the query state.</param>
+        /// <param name="strSource">Specifies the data source who's hit percentages are to be retrieved.</param>
+        /// <returns>A string representing the query hit percentages is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        string GetBoostQueryHitPercentsAsTextFromSourceName(long lQueryState, string strSource);
+
+        #endregion // Query States
+
+        #region Properties
+
+        /// <summary>
+        /// Returns whether or not the image data criteria is loaded with each image.
+        /// </summary>
+        [OperationContract(IsOneWay = false)]
+        bool GetLoadImageDataCriteria();
+
+        /// <summary>
+        /// Returns whether or not the image debug data is loaded with each image.
+        /// </summary>
+        [OperationContract(IsOneWay = false)]
+        bool GetLoadImageDebugData();
+
+        /// <summary>
+        /// Returns the number of images in a given data source.
+        /// </summary>
+        /// <param name="lQueryState">Specifies a handle to the query state to use.</param>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="bBoostValIsExact">Optionally, specifies whether or the boost value (if specified) is to be used literally (exact = true), or as a minimum boost value.</param>
+        /// <returns>The number of images is returned.</returns>
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
+        [OperationContract(IsOneWay = false)]
+        int GetImageCount(long lQueryState, int nSrcId, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false);
+
+        /// <summary>
+        /// <summary>
+        /// Returns the label and image selection method used.
+        /// </summary>
+        /// <returns>A tuple containing the Label and Image selection method.</returns>
+        [OperationContract(IsOneWay = false)]
+        Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> GetSelectionMethod();
+
+        /// <summary>
+        /// Sets the label and image selection methods.
+        /// </summary>
+        /// <param name="lbl">Specifies the label selection method or <i>null</i> to ignore.</param>
+        /// <param name="img">Specifies the image selection method or <i>null</i> to ignore.</param>
+        [OperationContract(IsOneWay = false)]
+        void SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD? lbl, IMGDB_IMAGE_SELECTION_METHOD? img);
+
+        /// <summary>
+        /// Returns the percentage that a dataset is loaded into memory.
+        /// </summary>
+        /// <param name="strDataset">Specifies the name of the dataset.</param>
+        /// <param name="dfTraining">Specifies the percent of training images that are loaded.</param>
+        /// <param name="dfTesting">Specifies the percent of testing images that are loaded.</param>
+        /// <returns>The current image load percent for the dataset is returned..</returns>
+        [OperationContract(IsOneWay = false)]
+        double GetDatasetLoadedPercentByName(string strDataset, out double dfTraining, out double dfTesting);
+
+        /// <summary>
+        /// Returns the percentage that a dataset is loaded into memory.
+        /// </summary>
+        /// <param name="nDatasetID">Specifies the ID of the dataset.</param>
+        /// <param name="dfTraining">Specifies the percent of training images that are loaded.</param>
+        /// <param name="dfTesting">Specifies the percent of testing images that are loaded.</param>
+        /// <returns>The current image load percent for the dataset is returned..</returns>
+        [OperationContract(IsOneWay = false)]
+        double GetDatasetLoadedPercentById(int nDatasetID, out double dfTraining, out double dfTesting);
+
+        #endregion // Properties
+
+        #region Image Acquisition
+
+        /// <summary>
+        /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
+        /// </summary>
+        /// <param name="lQueryState">Specifies a handle to the query state to use.</param>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <param name="nStartIdx">Specifies a starting index from which the query is to start within the set of images.</param>
+        /// <param name="nQueryCount">Optionally, specifies a number of images to retrieve within the set (default = int.MaxValue).</param>
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="bBoostValIsExact">Optionally, specifies whether or the boost value (if specified) is to be used literally (exact = true), or as a minimum boost value.</param>
+        /// <returns>The list of images is returned.</returns>
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
+        [OperationContract(IsOneWay = false)]
+        List<SimpleDatum> GetImagesFromIndex(long lQueryState, int nSrcId, int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false);
+
+        /// <summary>
+        /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
+        /// </summary>
+        /// <param name="lQueryState">Specifies a handle to the query state to use.</param>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <param name="dtStart">Specifies a starting time from which the query is to start within the set of images.</param>
+        /// <param name="nQueryCount">Optionally, specifies a number of images to retrieve within the set (default = int.MaxValue).</param>
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="bBoostValIsExact">Optionally, specifies whether or the boost value (if specified) is to be used literally (exact = true), or as a minimum boost value.</param>
+        /// <returns>The list of images is returned.</returns>
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
+        [OperationContract(IsOneWay = false)]
+        List<SimpleDatum> GetImagesFromTime(long lQueryState, int nSrcId, DateTime dtStart, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false);
+
+
+        /// <summary>
+        /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <param name="bSuperboostOnly">Specifies whether or not to return images with super-boost.</param>
+        /// <param name="strFilterVal">specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="rgIdx">Specifies a set of indexes to search for where the images returned must have an index greater than or equal to the individual index.</param>
+        /// <returns>The list of images is returned.</returns>
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
+        [OperationContract(IsOneWay = false)]
+        List<SimpleDatum> GetImagesEx(int nSrcId, bool bSuperboostOnly, string strFilterVal, int? nBoostVal, int[] rgIdx);
+
+        /// <summary>
+        /// Query an image in a given data source.
+        /// </summary>
+        /// <param name="lQueryState">Specifies a handle to the query state to use.</param>
+        /// <param name="nSrcId">Specifies the databse ID of the data source.</param>
+        /// <param name="nIdx">Specifies the image index to query.  Note, the index is only used in non-random image queries.</param>
+        /// <param name="labelSelectionOverride">Optionally, specifies the label selection method override.  The default = null, which directs the method to use the label selection method specified during Initialization.</param>
+        /// <param name="imageSelectionOverride">Optionally, specifies the image selection method override.  The default = null, which directs the method to use the image selection method specified during Initialization.</param>
+        /// <param name="nLabel">Optionally, specifies a label set to use for the image selection.  When specified only images of this label are returned using the image selection method.</param>
+        /// <param name="bLoadDataCriteria">Specifies to load the data criteria data (default = false).</param>
+        /// <param name="bLoadDebugData">Specifies to load the debug data (default = false).</param>
+        /// <returns>The image SimpleDatum is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        SimpleDatum QueryImage(long lQueryState, int nSrcId, int nIdx, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false);
+
+        /// <summary>
+        /// Get the image with a given Raw Image ID.
+        /// </summary>
+        /// <param name="nImageID">Specifies the Raw Image ID of the image to get.</param>
+        /// <param name="rgSrcId">Specifies a list of Source ID's to search for the image.</param>
+        /// <returns>The SimpleDatum of the image is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        SimpleDatum GetImage(int nImageID, params int[] rgSrcId);
+
+        /// <summary>
+        /// Searches for the image index of an image within a data source matching a DateTime/description pattern.
+        /// </summary>
+        /// <remarks>
+        /// Optionally, images may have a time-stamp and/or description associated with each image.  In such cases
+        /// searching by the time-stamp + description can be useful in some instances.
+        /// </remarks>
+        /// <param name="nSrcId">Specifies the data source ID of the data source to be searched.</param>
+        /// <param name="dt">Specifies the time-stamp to search for.</param>
+        /// <param name="strDescription">Specifies the description to search for.</param>
+        /// <returns>If found the zero-based index of the image is returned, otherwise -1 is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        int FindImageIndex(int nSrcId, DateTime dt, string strDescription);
+
+        #endregion // Image Acquisition
+
+        #region Image Mean
+
+        /// <summary>
+        /// Queries the image mean for a data source from the database on disk.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        /// <returns>The image mean is returned as a SimpleDatum.</returns>
+        [OperationContract(IsOneWay = false)]
+        [FaultContract(typeof(ImageDatabaseErrorData))]
+        SimpleDatum QueryImageMean(int nSrcId);
+
+        /// <summary>
+        /// Queries the image mean for a data source from the database on disk.
+        /// </summary>
+        /// <remarks>
+        /// If the image mean does not exist in the database, one is created, saved
+        /// and then returned.
+        /// </remarks>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        /// <returns>The image mean is returned as a SimpleDatum.</returns>
+        [OperationContract(IsOneWay = false)]
+        [FaultContract(typeof(ImageDatabaseErrorData))]
+        SimpleDatum QueryImageMeanFromDb(int nSrcId);
+
+        /// <summary>
+        /// Returns the image mean for a data source.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        /// <returns>The image mean is returned as a SimpleDatum.</returns>
+        [OperationContract(IsOneWay = false)]
+        [FaultContract(typeof(ImageDatabaseErrorData))]
+        SimpleDatum GetImageMean(int nSrcId);
+
+        /// <summary>
+        /// Returns the image mean for the Training data source of a given data set.
+        /// </summary>
+        /// <param name="nDatasetId">Specifies the data set to use.</param>
+        /// <returns>The image mean is returned as a SimpleDatum.</returns>
+        [OperationContract(IsOneWay = false)]
+        SimpleDatum QueryImageMeanFromDataset(int nDatasetId);
+
+        #endregion // Image Mean
+
+        #region Datasets
+
+        /// <summary>
+        /// Returns the DatasetDescriptor for a given data set ID.
+        /// </summary>
+        /// <param name="nDsId">Specifies the data set ID.</param>
+        /// <returns>The dataset Descriptor is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        DatasetDescriptor GetDatasetById(int nDsId);
+
+        /// <summary>
+        /// Returns the DatasetDescriptor for a given data set name.
+        /// </summary>
+        /// <param name="strDs">Specifies the data set name.</param>
+        /// <returns>The dataset Descriptor is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        DatasetDescriptor GetDatasetByName(string strDs);
+
+        /// <summary>
+        /// Returns a data set name given its ID.
+        /// </summary>
+        /// <param name="nDsId">Specifies the data set ID.</param>
+        /// <returns>The data set name is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        string GetDatasetName(int nDsId);
+
+        /// <summary>
+        /// Returns a data set ID given its name.
+        /// </summary>
+        /// <param name="strDs">Specifies the data set name.</param>
+        /// <returns>The data set ID is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        int GetDatasetID(string strDs);
+
+        /// <summary>
+        /// Load another, 'secondary' dataset.
+        /// </summary>
+        /// <remarks>
+        /// The primary dataset should be loaded using one of the 'Initialize' methods.  This method is provided to allow for loading
+        /// multiple datasets.
+        /// </remarks>
+        /// <param name="nDsId">Specifies the ID of the data set.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
+        /// <returns>When loaded, the handle to the default query state is returned, otherwise 0 is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        long LoadDatasetByID(int nDsId, string strEvtCancel = null);
+
+        /// <summary>
+        /// Load another, 'secondary' dataset.
+        /// </summary>
+        /// <remarks>
+        /// The primary dataset should be loaded using one of the 'Initialize' methods.  This method is provided to allow for loading
+        /// multiple datasets.
+        /// </remarks>
+        /// <param name="strDs">Specifies the name of the data set.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
+        /// <returns>When loaded, the handle to the default query state is returned, otherwise 0 is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        long LoadDatasetByName(string strDs, string strEvtCancel = null);
+
+        /// <summary>
+        /// Reload a data set.
+        /// </summary>
+        /// <param name="nDsId">Specifies the ID of the data set.</param>
+        /// <returns>If the data set is found, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        bool ReloadDataset(int nDsId);
+
+        /// <summary>
+        /// Reloads the images of a data source.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        /// <returns>If the data source is found, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        bool ReloadImageSet(int nSrcId);
+
+        /// <summary>
+        /// The UnloadDataset function unloads a given dataset from memory.
+        /// </summary>
+        /// <param name="strDataset">Specifies the name of the dataset to unload.</param>
+        /// <returns>If the dataset is found and removed, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        bool UnloadDatasetByName(string strDataset);
+
+        /// <summary>
+        /// The UnloadDataset function unloads a given dataset from memory.
+        /// </summary>
+        /// <param name="nDatasetID">Specifies the ID of the dataset to unload.</param>
+        /// <remarks>Specifiying a dataset ID of -1 directs the UnloadDatasetById to unload ALL datasets loaded.</remarks>
+        /// <returns>If the dataset is found and removed, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        bool UnloadDatasetById(int nDatasetID);
+
+        #endregion // Datasets
+
+        #region Sources
+
+        /// <summary>
+        /// Returns the SourceDescriptor for a given data source ID.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <returns>The SourceDescriptor is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        SourceDescriptor GetSourceById(int nSrcId);
+
+        /// <summary>
+        /// Returns the SourceDescriptor for a given data source name.
+        /// </summary>
+        /// <param name="strSrc">Specifies the data source name.</param>
+        /// <returns>The SourceDescriptor is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        SourceDescriptor GetSourceByName(string strSrc);
+
+        /// <summary>
+        /// Returns a data source name given its ID.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <returns>The data source name is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        string GetSourceName(int nSrcId);
+
+        /// <summary>
+        /// Returns a data source ID given its name.
+        /// </summary>
+        /// <param name="strSrc">Specifies the data source name.</param>
+        /// <returns>The data source ID is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        int GetSourceID(string strSrc);
+
+        #endregion // Sources
+
+        #region Labels
+
+        /// <summary>
+        /// Returns a list of LabelDescriptor%s associated with the labels within a data source.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <returns>The list of LabelDescriptor%s is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        List<LabelDescriptor> GetLabels(int nSrcId);
+
+        /// <summary>
+        /// Returns the text name of a given label within a data source. 
+        /// </summary>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <param name="nLabel">Specifies the label.</param>
+        /// <returns>The laben name is returned as a string.</returns>
+        [OperationContract(IsOneWay = false)]
+        string GetLabelName(int nSrcId, int nLabel);
+
+        /// <summary>
+        /// Sets the label mapping to the database for a given data source.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        /// <param name="map">Specifies the label mapping to set.</param>
+        [OperationContract(IsOneWay = false)]
+        void SetLabelMapping(int nSrcId, LabelMapping map);
+
+        /// <summary>
+        /// Updates the label mapping in the database for a given data source.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        /// <param name="nNewLabel">Specifies a new label.</param>
+        /// <param name="rgOriginalLabels">Specifies the original lables that are mapped to the new label.</param>
+        [OperationContract(IsOneWay = false)]
+        void UpdateLabelMapping(int nSrcId, int nNewLabel, List<int> rgOriginalLabels);
+
+        /// <summary>
+        /// Resets all labels within a data source, used by a project, to their original labels.
+        /// </summary>
+        /// <param name="nProjectId">Specifies the ID of the project.</param>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        [OperationContract(IsOneWay = false)]
+        void ResetLabels(int nProjectId, int nSrcId);
+
+        /// <summary>
+        /// Updates the number of images of each label within a data source.
+        /// </summary>
+        /// <param name="nProjectId">Specifies a project ID.</param>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        [OperationContract(IsOneWay = false)]
+        void UpdateLabelCounts(int nProjectId, int nSrcId);
+
+        /// <summary>
+        /// Returns a label lookup of counts for a given data source.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        /// <returns>A dictionary containing label,count pairs is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        [FaultContract(typeof(ImageDatabaseErrorData))]
+        Dictionary<int, int> LoadLabelCounts(int nSrcId);
+
+        /// <summary>
+        /// Returns a string with all label counts for a data source.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        /// <returns>A string containing all label counts is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        string GetLabelCountsAsTextFromSourceId(int nSrcId);
+
+        /// <summary>
+        /// Returns a string with all label counts for a data source.
+        /// </summary>
+        /// <param name="strSource">Specifies the name of the data source.</param>
+        /// <returns>A string containing all label counts is returned.</returns>
+        [OperationContract(IsOneWay = false)]
+        string GetLabelCountsAsTextFromSourceName(string strSource);
+
+        #endregion // Labels
+
+        #region Boosts
+
+        /// <summary>
+        /// Reset all in-memory image boosts.
+        /// </summary>
+        /// <remarks>
+        /// This does not impact the boost setting within the physical database.
+        /// </remarks>
+        /// <param name="nSrcId">Specifies the source ID of the data set to reset.</param>
+        [OperationContract(IsOneWay = false)]
+        void ResetAllBoosts(int nSrcId);
+
+        #endregion // Boosts
+    }
+
     [DataContract]
     public class ImageDatabaseErrorData /** @private */
     {

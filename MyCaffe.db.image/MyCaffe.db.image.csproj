@@ -76,6 +76,8 @@
     <Compile Include="DatasetCreator.cs">
       <DependentUpon>DNNModel.tt</DependentUpon>
     </Compile>
+    <Compile Include="DatasetEx2.cs" />
+    <Compile Include="DatasetExCollection2.cs" />
     <Compile Include="DatasetFactory.cs" />
     <Compile Include="DatasetGroup.cs">
       <DependentUpon>DNNModel.tt</DependentUpon>
@@ -100,9 +102,11 @@
       <DependentUpon>DNNModel.edmx</DependentUpon>
     </Compile>
     <Compile Include="EntitiesConnection.cs" />
+    <Compile Include="ImageSetBase.cs" />
     <Compile Include="Imageset.cs" />
     <Compile Include="DatasetEx.cs" />
     <Compile Include="DatasetExCollection.cs" />
+    <Compile Include="ImageSet2.cs" />
     <Compile Include="Label.cs">
       <DependentUpon>DNNModel.tt</DependentUpon>
     </Compile>
@@ -112,8 +116,16 @@
     <Compile Include="Labelset.cs" />
     <Compile Include="Interfaces.cs" />
     <Compile Include="LabelStats.cs" />
+    <Compile Include="MasterIndexes.cs" />
+    <Compile Include="MasterList.cs" />
     <Compile Include="ModelGroup.cs">
       <DependentUpon>DNNModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="MyCaffeImageDatabase2.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="MyCaffeImageDatabase2.Designer.cs">
+      <DependentUpon>MyCaffeImageDatabase2.cs</DependentUpon>
     </Compile>
     <Compile Include="MyCaffeImageDatabase.cs">
       <SubType>Component</SubType>
@@ -127,6 +139,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="QueryState.cs" />
     <Compile Include="RawImage.cs">
       <DependentUpon>DNNModel.tt</DependentUpon>
     </Compile>
