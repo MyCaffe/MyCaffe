@@ -88,10 +88,12 @@
     <Compile Include="SqlServerTypes\Loader.cs" />
     <Compile Include="TestAccuracyEncodingLayer.cs" />
     <Compile Include="TestAnnotatedDataLayer.cs" />
+    <Compile Include="TestDatasetFactory.cs" />
     <Compile Include="TestCryptoRandom.cs" />
     <Compile Include="TestExtensionSsd.cs" />
     <Compile Include="TestingActiveGpu.cs" />
     <Compile Include="TestModelBuilder.cs" />
+    <Compile Include="TestMyCaffeImageDatabase2.cs" />
     <Compile Include="TestVideoDataLayer.cs" />
     <Compile Include="TestDetectionOutputLayer.cs" />
     <Compile Include="TestPriorBoxLayer.cs" />
