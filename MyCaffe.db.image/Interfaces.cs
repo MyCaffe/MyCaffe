@@ -10,4 +10,5 @@ using MyCaffe.basecode.descriptors;
 
 namespace MyCaffe.db.image
 {
+    // NOTE: IXImageDatabase interfaces have been moved to MyCaffe.basecode Interfaces.cs.
 }

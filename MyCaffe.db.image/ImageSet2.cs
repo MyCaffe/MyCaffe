@@ -155,8 +155,8 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Create a new QueryState and optionally sort the results.
         /// </summary>
-        /// <param name="bUseUniqueIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch (default = true).</param>
-        /// <param name="bUseUniqueIndexes">Optionally, specifies to use unique image indexes which is slightly slower, but ensures each image is hit per epoch (default = true).</param>
+        /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch equally (default = true).</param>
+        /// <param name="bUseUniqueImageIndexes">Optionally, specifies to use unique image indexes which is slightly slower, but ensures each image is hit per epoch (default = true).</param>
         /// <param name="sort">Optionally, specifies a sorting method for the query set.</param>
         /// <returns>The new QueryState is returned.</returns>
         public QueryState CreateQueryState(bool bUseUniqueLabelIndexes = true, bool bUseUniqueImageIndexes = true, IMGDB_SORT sort = IMGDB_SORT.NONE)

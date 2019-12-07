@@ -417,7 +417,7 @@ namespace MyCaffe.db.image
         /// Create a query state for a data set, optionally using a specific sorting method.
         /// </summary>
         /// <param name="nDsId">Specifies the ID of the data set.</param>
-        /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch (default = true).</param>
+        /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch equally (default = true).</param>
         /// <param name="bUseUniqueImageIndexes">Optionally, specifies to use unique image indexes which is slightly slower, but ensures each image is hit per epoch (default = true).</param>
         /// <param name="sort">Specifies the sorting method.</param>
         /// <returns>The new query state handle is returned.</returns>
@@ -434,7 +434,7 @@ namespace MyCaffe.db.image
         /// Create a query state for a data set, optionally using a specific sorting method.
         /// </summary>
         /// <param name="strDs">Specifies the name of the data set.</param>
-        /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch (default = true).</param>
+        /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch equally (default = true).</param>
         /// <param name="bUseUniqueImageIndexes">Optionally, specifies to use unique image indexes which is slightly slower, but ensures each image is hit per epoch (default = true).</param>
         /// <param name="sort">Specifies the sorting method.</param>
         /// <returns>The new query state handle is returned.</returns>

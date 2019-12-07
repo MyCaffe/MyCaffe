@@ -26,7 +26,7 @@ namespace MyCaffe.db.image
         /// The constructor.
         /// </summary>
         /// <param name="master">Specifies the MasterIndexes to copy.</param>
-        /// <param name="bUseUniqueLableIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch (default = true).</param>
+        /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch equally (default = true).</param>
         /// <param name="bUseUniqueImageIndexes">Optionally, specifies to use unique image indexes which is slightly slower, but ensures each image is hit per epoch (default = true).</param>
         /// <param name="sort">Optionally, specifies the ordering to use on the indexes.</param>
         public QueryState(MasterIndexes master, bool bUseUniqueLabelIndexes = true, bool bUseUniqueImageIndexes = true, IMGDB_SORT sort = IMGDB_SORT.NONE) : base(master, sort)
@@ -127,7 +127,6 @@ namespace MyCaffe.db.image
         /// <param name="nLabel">Optionally, specifies a label (default = null).</param>
         /// <param name="bBoosted">Optionally, specifies to query boosted images (default = false).</param>
         /// <param name="nDirectIdx">Optionally, specifies to query the image at this index (only applies when type = DIRECT).</param>
-        /// <param name="bUniqueIdx">Optionally, specifies to ensure unique indexes (slightly slower, but ensures that all indexes are hit within an epoch).</param>
         /// <returns>The next image index is returned.</returns>
         public override int? GetNextImage(Index.SELECTION_TYPE type, int? nLabel = null, bool bBoosted = false, int nDirectIdx = -1)
         {

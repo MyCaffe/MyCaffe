@@ -881,7 +881,7 @@ namespace MyCaffe.basecode
     }
 
     /// <summary>
-    /// The IXImageDatabase interface defines the eneral interface to the in-memory image database.
+    /// The IXImageDatabase2 interface defines the general interface to the in-memory image database (v2).
     /// </summary>
     [ServiceContract(CallbackContract = typeof(IXImageDatabaseEvent), SessionMode = SessionMode.Required)]
     public interface IXImageDatabase2
@@ -978,7 +978,7 @@ namespace MyCaffe.basecode
         /// Create a new query state, optionally with a certain ordering.
         /// </summary>
         /// <param name="nDsId">Specifies the dataset on which the query states are to be created.</param>
-        /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch (default = true).</param>
+        /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch equally (default = true).</param>
         /// <param name="bUseUniqueImageIndexes">Optionally, specifies to use unique image indexes which is slightly slower, but ensures each image is hit per epoch (default = true).</param>
         /// <param name="sort">Optionally, specifies an index ordering (default = NONE).</param>
         /// <returns>A handle to the new query state is returned.</returns>
@@ -989,7 +989,7 @@ namespace MyCaffe.basecode
         /// Create a new query state, optionally with a certain ordering.
         /// </summary>
         /// <param name="strDs">Specifies the dataset on which the query states are to be created.</param>
-        /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch (default = true).</param>
+        /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch equally (default = true).</param>
         /// <param name="bUseUniqueImageIndexes">Optionally, specifies to use unique image indexes which is slightly slower, but ensures each image is hit per epoch (default = true).</param>
         /// <param name="sort">Optionally, specifies an index ordering (default = NONE).</param>
         /// <returns>A handle to the new query state is returned.</returns>
