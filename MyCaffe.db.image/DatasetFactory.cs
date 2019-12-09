@@ -44,9 +44,17 @@ namespace MyCaffe.db.image
         /// <summary>
         /// The DatasetFactory constructor.
         /// </summary>
-        /// <param name="bLoadDataCriteria">Optionally, specifies to load the data criteria when loading images (default = false).</param>
-        /// <param name="bLoadDebugData">Optionally, specifies to load the debug data when loading images (default = false).</param>
-        public DatasetFactory(bool bLoadDataCriteria = false, bool bLoadDebugData = false)
+        public DatasetFactory()
+        {
+            m_db = new Database();
+        }
+
+        /// <summary>
+        /// The DatasetFactory constructor.
+        /// </summary>
+        /// <param name="bLoadDataCriteria">Optionally, specifies to load the data criteria when loading images.</param>
+        /// <param name="bLoadDebugData">Optionally, specifies to load the debug data when loading images.</param>
+        public DatasetFactory(bool bLoadDataCriteria, bool bLoadDebugData)
         {
             m_bLoadDataCriteria = bLoadDataCriteria;
             m_bLoadDebugData = bLoadDebugData;
