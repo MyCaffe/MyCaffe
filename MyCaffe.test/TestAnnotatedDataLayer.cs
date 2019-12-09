@@ -212,7 +212,7 @@ namespace MyCaffe.test
     class AnnotatedDataLayerTest : TestBase
     {
         SettingsCaffe m_settings;
-        MyCaffeImageDatabase m_db;
+        IXImageDatabaseBase m_db;
         CancelEvent m_evtCancel = new CancelEvent();
 
         public AnnotatedDataLayerTest(string strDs = null, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
@@ -225,10 +225,10 @@ namespace MyCaffe.test
             m_settings.EnableRandomInputSelection = false;
             m_settings.ImageDbLoadDataCriteria = true;  // Required, for Annotation Data is stored in the Data Criteria.
 
-            m_db = new MyCaffeImageDatabase();
+            m_db = createImageDb(null);
 
             if (strDs != null && strDs.Length > 0)
-                m_db.InitializeWithDsName(m_settings, strDs);
+                m_db.InitializeWithDsName1(m_settings, strDs);
         }
 
         protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
@@ -251,14 +251,14 @@ namespace MyCaffe.test
         {
             if (m_db != null)
             {
-                m_db.Dispose();
+                ((IDisposable)m_db).Dispose();
                 m_db = null;
             }
 
             base.dispose();
         }
 
-        public MyCaffeImageDatabase db
+        public IXImageDatabaseBase db
         {
             get { return m_db; }
         }
@@ -332,11 +332,15 @@ namespace MyCaffe.test
             db.DeleteDataset(m_strDs, false, m_log, m_parent.CancelEvent);
         }
 
-        private void initDb()
+        private void initDb(string strDs)
         {
-            ((MyCaffeImageDatabase)m_parent.db).OutputLog = m_log;
-            m_parent.db.UnloadDatasetByName(m_strDs);
-            m_parent.db.InitializeWithDsName(m_parent.Settings, m_strDs);
+            if (m_parent.db.GetVersion() == IMGDB_VERSION.V1)
+                ((MyCaffeImageDatabase)m_parent.db).OutputLog = m_log;
+            else
+                ((MyCaffeImageDatabase2)m_parent.db).OutputLog = m_log;
+
+            m_parent.db.UnloadDatasetByName(strDs);
+            m_parent.db.InitializeWithDsName1(m_parent.Settings, strDs);
         }
 
         private void cleanupDb()
@@ -417,6 +421,8 @@ namespace MyCaffe.test
                 factory.Open(rgSrcId[k]);
                 factory.DeleteSourceData();
 
+                List<int> rgLabels = new List<int>();
+
                 int nCount = factory.GetImageCount();
                 for (int i = nCount; i < nCount + m_nNum; i++)
                 {
@@ -429,6 +435,9 @@ namespace MyCaffe.test
                     }
 
                     SimpleDatum sd = new SimpleDatum(false, m_nChannels, m_nWidth, m_nHeight, i, DateTime.Today, rgData, null, 0, false, i);
+
+                    if (!rgLabels.Contains(i))
+                        rgLabels.Add(i);
 
                     // Fill the annotation.
                     if (bUseRichAnnotation)
@@ -454,10 +463,16 @@ namespace MyCaffe.test
                             }
                         }
                     }
-                    
+
                     factory.PutRawImage(i, sd);
                 }
 
+                for (int i = 0; i < rgLabels.Count; i++)
+                {
+                    factory.AddLabel(rgLabels[i], rgLabels[i].ToString());
+                }
+
+                factory.UpdateLabelCounts();
                 factory.Close();
             }
 
@@ -515,7 +530,7 @@ namespace MyCaffe.test
 
         public void TestRead()
         {
-            initDb();
+            initDb(m_strDs);
 
             try
             {
@@ -651,6 +666,7 @@ namespace MyCaffe.test
 
             factory.Open(srcTest.ID);
             factory.DeleteSourceData();
+            List<int> rgLabels = new List<int>();
 
             for (int i = 0; i < m_nNum; i++)
             {
@@ -695,9 +711,18 @@ namespace MyCaffe.test
                     datum.SetLabel(i);
                 }
 
+                if (!rgLabels.Contains(datum.Label))
+                    rgLabels.Add(datum.Label);
+
                 factory.PutRawImage(i, datum);
             }
 
+            for (int i = 0; i < rgLabels.Count; i++)
+            {
+                factory.AddLabel(rgLabels[i], rgLabels[i].ToString());
+            }
+
+            factory.UpdateLabelCounts();
             factory.Close();
 
             DatasetDescriptor ds = new DatasetDescriptor(0, m_strDs, null, null, srcTrain, srcTest, null, null);
@@ -706,7 +731,7 @@ namespace MyCaffe.test
             factory.UpdateDatasetCounts(ds.ID);
             m_nDsID = ds.ID;
 
-            initDb();
+            initDb(m_strDs);
 
             try
             {
@@ -848,7 +873,7 @@ namespace MyCaffe.test
 
         public void TestReadCrop(Phase phase, bool bUseRichAnnotation)
         {
-            initDb();
+            initDb(m_strDs);
 
             try
             {
@@ -941,7 +966,7 @@ namespace MyCaffe.test
 
         public void TestReadCropTrainSequenceSeeded(bool bUseRichAnnotation)
         {
-            initDb();
+            initDb(m_strDs);
 
             try
             {
@@ -1046,7 +1071,7 @@ namespace MyCaffe.test
 
         public void TestReadCropTrainSequenceUnseeded(bool bUseRichAnnotation)
         {
-            initDb();
+            initDb(m_strDs);
 
             try
             {

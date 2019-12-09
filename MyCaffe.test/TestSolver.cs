@@ -61,18 +61,23 @@ namespace MyCaffe.test
     class SolverTest<T> : TestEx<T>, ISolverTest
     {
         Solver<T> m_solver;
-        MyCaffeImageDatabase m_db;
+        IXImageDatabaseBase m_db;
         IXPersist<T> m_persist;
 
         public SolverTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 2, 3, 4, 5 }, nDeviceID)
         {
             m_engine = engine;
-
-            m_db = new MyCaffeImageDatabase();
-            m_db.InitializeWithDsName(new SettingsCaffe(), "MNIST");
             m_persist = new PersistCaffe<T>(m_log, false);
         }
+
+        public override void initialize()
+        {
+            base.initialize();
+            m_db = createImageDb(m_log);
+            m_db.InitializeWithDsName1(new SettingsCaffe(), "MNIST");
+        }
+
 
         protected override void dispose()
         {

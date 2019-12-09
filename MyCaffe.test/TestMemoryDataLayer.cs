@@ -161,7 +161,7 @@ namespace MyCaffe.test
 
     class MemoryDataLayerTest<T> : TestEx<T>, IMemoryDataLayerTest
     {
-        IXImageDatabase m_db;
+        IXImageDatabaseBase m_db;
         int m_nSrcId;
         Blob<T> m_data;
         Blob<T> m_labels;
@@ -280,12 +280,12 @@ namespace MyCaffe.test
 
         public void TestForwardAddVecSingle()
         {
-            m_db = new MyCaffeImageDatabase(m_log);
+            m_db = createImageDb(m_log);
             SettingsCaffe settings = new SettingsCaffe();
             Stopwatch sw = new Stopwatch();
 
             settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
-            m_db.InitializeWithDsName(settings, "MNIST");
+            m_db.InitializeWithDsName1(settings, "MNIST");
             DatasetDescriptor ds = m_db.GetDatasetByName("MNIST");
             m_nSrcId = ds.TrainingSource.ID;
 
@@ -365,12 +365,12 @@ namespace MyCaffe.test
 
         public void TestForwardAddVecMultiple()
         {
-            m_db = new MyCaffeImageDatabase(m_log);
+            m_db = createImageDb(m_log);
             SettingsCaffe settings = new SettingsCaffe();
             Stopwatch sw = new Stopwatch();
 
             settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
-            m_db.InitializeWithDsName(settings, "MNIST");
+            m_db.InitializeWithDsName1(settings, "MNIST");
             DatasetDescriptor ds = m_db.GetDatasetByName("MNIST");
             m_nSrcId = ds.TrainingSource.ID;
 
@@ -464,12 +464,12 @@ namespace MyCaffe.test
 
         public void TestForwardAddVecMultiple2()
         {
-            m_db = new MyCaffeImageDatabase(m_log);
+            m_db = createImageDb(m_log);
             SettingsCaffe settings = new SettingsCaffe();
             Stopwatch sw = new Stopwatch();
 
             settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
-            m_db.InitializeWithDsName(settings, "MNIST");
+            m_db.InitializeWithDsName1(settings, "MNIST");
             DatasetDescriptor ds = m_db.GetDatasetByName("MNIST");
             m_nSrcId = ds.TrainingSource.ID;
 
@@ -563,12 +563,12 @@ namespace MyCaffe.test
 
         public void TestForwardAddVecMultiple3()
         {
-            m_db = new MyCaffeImageDatabase(m_log);
+            m_db = createImageDb(m_log);
             SettingsCaffe settings = new SettingsCaffe();
             Stopwatch sw = new Stopwatch();
 
             settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
-            m_db.InitializeWithDsName(settings, "MNIST");
+            m_db.InitializeWithDsName1(settings, "MNIST");
             DatasetDescriptor ds = m_db.GetDatasetByName("MNIST");
             m_nSrcId = ds.TrainingSource.ID;
 

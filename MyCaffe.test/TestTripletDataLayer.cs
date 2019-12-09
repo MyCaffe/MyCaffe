@@ -89,7 +89,7 @@ namespace MyCaffe.test
         Blob<T> m_blobTopLabels;
         CancelEvent m_evtCancel;
         DatasetDescriptor m_ds;
-        MyCaffeImageDatabase m_db;
+        IXImageDatabaseBase m_db;
 
         public TripletDataLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
@@ -99,18 +99,23 @@ namespace MyCaffe.test
             m_blobTopPositives = new Blob<T>(m_cuda, m_log);
             m_blobTopNegatives = new Blob<T>(m_cuda, m_log);
             m_blobTopLabels = new Blob<T>(m_cuda, m_log);
-            m_db = new MyCaffeImageDatabase();
             m_evtCancel = new CancelEvent();
-           
+
+            BottomVec.Clear();
+            TopVec.Add(m_blobTopLabels);
+        }
+
+        public override void initialize()
+        {
+            base.initialize();
+
+            m_db = createImageDb(m_log);
             DatasetFactory factory = new DatasetFactory();
             m_ds = factory.LoadDataset("MNIST");
 
             SettingsCaffe s = new SettingsCaffe();
             s.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
-            m_db.InitializeWithDs(s, m_ds);
-
-            BottomVec.Clear();
-            TopVec.Add(m_blobTopLabels);
+            m_db.InitializeWithDs1(s, m_ds);
         }
 
         protected override void dispose()
@@ -120,7 +125,7 @@ namespace MyCaffe.test
             m_blobTopNegatives.Dispose();
             m_blobTopLabels.Dispose();
             m_evtCancel.Dispose();
-            m_db.Dispose();
+            ((IDisposable)m_db).Dispose();
             base.dispose();
         }
 

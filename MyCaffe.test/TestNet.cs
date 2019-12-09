@@ -916,17 +916,21 @@ namespace MyCaffe.test
     class NetTest<T> : TestEx<T>, INetTest
     {
         Net<T> m_net;
-        MyCaffeImageDatabase m_db;
+        IXImageDatabaseBase m_db;
         CancelEvent m_evtCancel;
 
         public NetTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, new List<int>() { 2, 3, 4, 5 }, nDeviceID)
         {
             m_engine = engine;
-
             m_evtCancel = new CancelEvent();
-            m_db = new MyCaffeImageDatabase();
-            m_db.InitializeWithDsName(new SettingsCaffe(), "MNIST");
+        }
+
+        public override void initialize()
+        {
+            base.initialize();
+            m_db = createImageDb(m_log);
+            m_db.InitializeWithDsName1(new SettingsCaffe(), "MNIST");
         }
 
         protected override void dispose()
@@ -3784,13 +3788,13 @@ namespace MyCaffe.test
 
             m_log.EnableTrace = true;
 
-            MyCaffeImageDatabase db = new MyCaffeImageDatabase(m_log);
+            IXImageDatabaseBase db = createImageDb(m_log);
             SettingsCaffe s = new SettingsCaffe();
             s.ImageDbLoadLimit = 0;
             s.ImageDbLoadMethod = loadMethod;
 
-            db.InitializeWithDsName(s, "MNIST");
-            db.LoadDatasetByName("CIFAR-10");
+            db.InitializeWithDsName1(s, "MNIST");
+            db.LoadDatasetByName1("CIFAR-10");
 
             m_log.EnableTrace = true;
             m_net = new Net<T>(m_cuda, m_log, param, m_evtCancel, db, Phase.TRAIN);
@@ -3827,7 +3831,7 @@ namespace MyCaffe.test
 
             m_net.Dispose();
             m_net = null;
-            db.Dispose();
+            ((IDisposable)db).Dispose();
         }
     }
 }

@@ -1800,7 +1800,7 @@ namespace MyCaffe.test
         protected AutoResetEvent m_evtForceSnapshot = new AutoResetEvent(false);
         protected AutoResetEvent m_evtForceTest = new AutoResetEvent(false);
         protected SGDSolver<T> m_solver = null;
-        protected MyCaffeImageDatabase m_db = null;
+        protected IXImageDatabaseBase m_db = null;
         protected PersistCaffe<T> m_persist;
         SnapshotArgs m_snapshotArgs = null;
         string m_strSnapshotPrefix = "";
@@ -1843,9 +1843,6 @@ namespace MyCaffe.test
             m_nHeight = src.ImageHeight;
             m_nWidth = src.ImageWidth;
 
-            m_db = new MyCaffeImageDatabase();
-            m_db.InitializeWithDsName(new SettingsCaffe(), m_strDs);
-
             m_persist = new PersistCaffe<T>(m_log, false);
 
             m_blobData = new Blob<T>(m_cuda, m_log);
@@ -1853,6 +1850,14 @@ namespace MyCaffe.test
 
 //            createTestDataSolverSuperSimple(m_blobData, m_blobTargets);
             createTestDataSolverDataHdf5(m_blobData, m_blobTargets);
+        }
+
+        public override void initialize()
+        {
+            base.initialize();
+
+            m_db = createImageDb(m_log);
+            m_db.InitializeWithDsName1(new SettingsCaffe(), m_strDs);
         }
 
         protected override void dispose()
@@ -2846,7 +2851,7 @@ namespace MyCaffe.test
             prj.ModelDescription = getAlexNetModel(strDataset + ".training", strDataset + ".testing");
             prj.SolverDescription = getSolverProto(type);
 
-            m_db.InitializeWithDsName(new SettingsCaffe(), strDataset);
+            m_db.InitializeWithDsName1(new SettingsCaffe(), strDataset);
 
             m_solver = Solver<T>.Create(m_cuda, m_log, prj, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, m_db, m_persist);
             m_solver.TrainingIterationOverride = 10;

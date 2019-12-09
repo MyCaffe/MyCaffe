@@ -112,7 +112,7 @@ namespace MyCaffe.test
         Blob<T> m_blobTopPositives;
         Blob<T> m_blobTopNegatives;
         DatasetDescriptor m_ds;
-        MyCaffeImageDatabase m_db;
+        IXImageDatabaseBase m_db;
 
         public TripletSelectLayerTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
@@ -128,14 +128,20 @@ namespace MyCaffe.test
             m_blobTopAnchors = new Blob<T>(m_cuda, m_log);
             m_blobTopPositives = new Blob<T>(m_cuda, m_log);
             m_blobTopNegatives = new Blob<T>(m_cuda, m_log);
-            m_db = new MyCaffeImageDatabase();
+        }
+
+        public override void initialize()
+        {
+            base.initialize();
+
+            m_db = createImageDb(m_log);
 
             DatasetFactory factory = new DatasetFactory();
             m_ds = factory.LoadDataset("MNIST");
 
             SettingsCaffe s = new SettingsCaffe();
             s.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
-            m_db.InitializeWithDs(s, m_ds);
+            m_db.InitializeWithDs1(s, m_ds);
 
             int nBatchSize = 2;
             Fill(nBatchSize);
@@ -153,7 +159,7 @@ namespace MyCaffe.test
             m_blobTopAnchors.Dispose();
             m_blobTopPositives.Dispose();
             m_blobTopNegatives.Dispose();
-            m_db.Dispose();
+            ((IDisposable)m_db).Dispose();
             base.dispose();
         }
 

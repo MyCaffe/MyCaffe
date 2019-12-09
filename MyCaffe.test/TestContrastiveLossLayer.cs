@@ -483,9 +483,10 @@ namespace MyCaffe.test
             factory.DeleteSourceData(src.ID);
 
             factory.Open(src);
-            int nImageCount = factory.GetImageCount();
 
-            for (int i = nImageCount; i < nNum; i++)
+            List<int> rgLabels = new List<int>();
+
+            for (int i = 0; i < nNum; i++)
             {
                 int nLabel = 0;
                 byte[] rgData = new byte[nChannels * nHeight * nWidth];
@@ -525,9 +526,18 @@ namespace MyCaffe.test
 
                 Datum d = new Datum(false, nChannels, nWidth, nHeight, nLabel, DateTime.Today, rgData.ToList(), null, 0, false, i);
 
+                if (!rgLabels.Contains(nLabel))
+                    rgLabels.Add(nLabel);
+
                 factory.PutRawImage(i, d);
             }
 
+            for (int i = 0; i < rgLabels.Count; i++)
+            {
+                factory.AddLabel(rgLabels[i], rgLabels[i].ToString());
+            }
+
+            factory.UpdateLabelCounts();
             factory.Close();
 
             return src;
@@ -732,7 +742,7 @@ namespace MyCaffe.test
         {
             TestingProgressSet progress = new TestingProgressSet();
             Solver<T> solver = null;
-            IXImageDatabase db = null;
+            IXImageDatabaseBase db = null;
             CancelEvent evtCancel = new CancelEvent();
             DatasetFactory factory = new DatasetFactory();
             m_random = new CryptoRandom(CryptoRandom.METHOD.DEFAULT, 1701);
@@ -755,8 +765,14 @@ namespace MyCaffe.test
                 factory.UpdateDatasetCounts(ds.ID);
                 ds = factory.LoadDataset(ds.ID);
 
-                db = new MyCaffeImageDatabase();
-                db.InitializeWithDsName(new SettingsCaffe(), ds.Name);
+                db = createImageDb(m_log);
+                db.InitializeWithDsName1(new SettingsCaffe(), ds.Name);
+
+                if (db is IXImageDatabase2)
+                {
+                    long lQueryState = ((IXImageDatabase2)db).CreateQueryState(ds.ID, false, false);
+                    ((IXImageDatabase2)db).SetDefaultQueryState(ds.ID, lQueryState);
+                }
 
                 ProjectEx prj = new ProjectEx("test");
                 prj.SolverDescription = strSolver;
