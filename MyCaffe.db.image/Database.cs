@@ -41,6 +41,7 @@ namespace MyCaffe.db.image
         /// Specifies the last index added to the data source.
         /// </summary>
         protected int m_nLastIndex = -1;
+        object m_objSync = new object();
 
         /// <summary>
         /// The Database constructor.
@@ -1050,9 +1051,14 @@ namespace MyCaffe.db.image
                 nSrcId = m_src.ID;
 
             string strCmd = "SELECT TOP 1 * FROM [DNN].[dbo].[RawImages] WHERE (SourceID = " + nSrcId.ToString() + ") AND (Idx = " + nIdx.ToString() + ") AND (Active = 1)";
-            List<RawImage> rgImg = m_entities.Database.SqlQuery<RawImage>(strCmd).ToList();
+            List<RawImage> rgImg = null;
 
-            if (rgImg.Count == 0)
+            lock (m_objSync)
+            {
+                rgImg = m_entities.Database.SqlQuery<RawImage>(strCmd).ToList();
+            }
+
+            if (rgImg == null || rgImg.Count == 0)
                 return null;
 
             return rgImg[0];
