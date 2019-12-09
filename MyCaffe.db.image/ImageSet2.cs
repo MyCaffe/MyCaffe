@@ -72,8 +72,6 @@ namespace MyCaffe.db.image
         /// <param name="bDisposing">Set to <i>true</i> when called by Dispose()</param>
         protected override void Dispose(bool bDisposing)
         {
-            base.Dispose(bDisposing);
-
             m_evtCancel.Set();
 
             if (m_masterIdx != null)
@@ -87,14 +85,17 @@ namespace MyCaffe.db.image
                 m_masterList.Dispose();
                 m_masterList = null;
             }
+
+            base.Dispose(bDisposing);
         }
 
         /// <summary>
         /// Initialize the ImageSet by creating the master list of images, starting its background image loading thread, and then creating the master index that maps the organization of the dataset.
         /// </summary>
-        /// <param name="bUseUniqueIndexes">Optionally, specifies to use unique indexes which is slightly slower, but ensures each image is hit per epoch (default = true).</param>
+        /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch equally (default = true).</param>
+        /// <param name="bUseUniqueImageIndexes">Optionally, specifies to use unique image indexes which is slightly slower, but ensures each image is hit per epoch (default = true).</param>
         /// <returns>Once initialized, the default query state for the image set is returned.  This method may be called multiple times and each time returns a new QueryState.</returns>
-        public QueryState Initialize(bool bUseUniqueIndexes = true)
+        public QueryState Initialize(bool bUseUniqueLabelIndexes = true, bool bUseUniqueImageIndexes = true)
         {
             if (m_masterList == null)
             {
@@ -108,7 +109,7 @@ namespace MyCaffe.db.image
             if (m_masterIdx == null)
                 m_masterIdx = new MasterIndexes(m_random, m_src);
 
-            QueryState state = new QueryState(m_masterIdx, bUseUniqueIndexes);
+            QueryState state = new QueryState(m_masterIdx, bUseUniqueLabelIndexes, bUseUniqueImageIndexes);
 
             if (m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ALL)
                 m_masterList.WaitForLoadingToComplete(m_rgAbort);
@@ -317,6 +318,9 @@ namespace MyCaffe.db.image
         /// <returns>The SimpleDatum containing the image is returned.</returns>
         public SimpleDatum GetImage(QueryState state, IMGDB_LABEL_SELECTION_METHOD labelSelectionMethod, IMGDB_IMAGE_SELECTION_METHOD imageSelectionMethod, Log log, int? nLabel = null, int nDirectIdx = -1, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
         {
+            if ((imageSelectionMethod & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST)
+                labelSelectionMethod |= IMGDB_LABEL_SELECTION_METHOD.BOOST;
+
             if (!nLabel.HasValue && (labelSelectionMethod & IMGDB_LABEL_SELECTION_METHOD.RANDOM) == IMGDB_LABEL_SELECTION_METHOD.RANDOM)
                 nLabel = state.GetNextLabel(labelSelectionMethod);
 
