@@ -232,6 +232,7 @@ namespace MyCaffe.test
                 // First query should restart loading the dataset.
                 DatasetDescriptor ds = db.GetDatasetByName(rgDs[0]);
                 SimpleDatum sd = db.QueryImage(rgQueryState[rgDs[0]], ds.TrainingSource.ID, 0);
+                Thread.Sleep(1000);
                 dfPctLoaded = db.GetDatasetLoadedPercentByName(rgDs[0], out dfTraining, out dfTesting);
                 Assert.AreNotEqual(0, dfPctLoaded);
                 Assert.AreNotEqual(0, dfTraining);
@@ -312,8 +313,7 @@ namespace MyCaffe.test
 
                             for (int i = 0; i < nCount; i++)
                             {
-                                sw.Reset();
-                                sw.Start();
+                                sw.Restart();
                                 SimpleDatum d = db.QueryImage(lQueryState, ds.TrainingSource.ID, 0, labelSel, imgSel);
                                 dfTotalMs += sw.ElapsedMilliseconds;
                                 sw.Stop();
@@ -1638,7 +1638,8 @@ namespace MyCaffe.test
             TestingProgressSet progress = null;
             IXImageDatabase2 db = null;
             int nSrcId = ds.TrainingSource.ID;
-            int nImageCount = ds.TrainingSource.ImageCount;
+            int nImageCount = 0;
+            bool bBoosted = false;
 
             try
             {
@@ -1682,10 +1683,34 @@ namespace MyCaffe.test
                     Dictionary<int, int> rgIndexCounts = new Dictionary<int, int>();
                     List<int> rgImagesNotQueried = new List<int>();
 
-                    for (int i = 0; i < nImageCount; i++)
+                    Database db1 = new Database();
+                    db1.Open(nSrcId);
+                    List<DbItem> rgItems = db1.GetAllRawImageIndexes(false);
+                    db1.Close();
+
+                    if (lblDesc != null)
                     {
-                        rgImagesNotQueried.Add(i);
+                        if ((imgSel & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST)
+                        {
+                            bBoosted = true;
+                            rgItems = rgItems.Where(p => p.Label == lblDesc.ActiveLabel && p.Boost > 0).ToList();
+                        }
+                        else
+                        {
+                            rgItems = rgItems.Where(p => p.Label == lblDesc.ActiveLabel).ToList();
+                        }
                     }
+                    else
+                    {
+                        if ((imgSel & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST)
+                        {
+                            bBoosted = true;
+                            rgItems = rgItems.Where(p => p.Boost > 0).ToList();
+                        }
+                    }
+
+                    rgImagesNotQueried = rgItems.Select(p => p.Index).ToList();
+                    nImageCount = rgImagesNotQueried.Count;
 
                     for (int i = 0; i < nImageCount; i++)
                     {
@@ -1711,28 +1736,38 @@ namespace MyCaffe.test
                         }
                     }
 
-                    int nMinRemaining = (int)(nImageCount * 0.005);
-                    log.CHECK_LT(rgImagesNotQueried.Count, nMinRemaining, "All images should have been queried!");
-
-                    int nTotal1 = rgLabelCounts.Sum(p => p.Value);
-                    Dictionary<int, double> rgProbabilities = new Dictionary<int, double>();
-
-                    foreach (KeyValuePair<int, int> kv in rgLabelCounts)
+                    if (!bBoosted)
                     {
-                        double dfProb = (double)kv.Value / nTotal1;
-                        rgProbabilities.Add(kv.Key, dfProb);
-                    }
+                        int nMinRemaining = (int)(nImageCount * 0.005);
+                        if (lblSel == IMGDB_LABEL_SELECTION_METHOD.RANDOM)
+                            nMinRemaining = (int)(nImageCount * 0.03);
 
-                    if ((lblSel & IMGDB_LABEL_SELECTION_METHOD.RANDOM) == IMGDB_LABEL_SELECTION_METHOD.RANDOM)
-                    {
-                        double dfSum = rgProbabilities.Sum(p => p.Value);
-                        double dfAve = dfSum / rgProbabilities.Count;
+                        log.CHECK_LE(rgImagesNotQueried.Count, nMinRemaining, "All images should have been queried!");
 
-                        foreach (KeyValuePair<int, double> kv in rgProbabilities)
+                        int nTotal1 = rgLabelCounts.Sum(p => p.Value);
+                        Dictionary<int, double> rgProbabilities = new Dictionary<int, double>();
+
+                        foreach (KeyValuePair<int, int> kv in rgLabelCounts)
                         {
-                            double dfDiff = kv.Value - dfAve;
+                            double dfProb = (double)kv.Value / nTotal1;
+                            rgProbabilities.Add(kv.Key, dfProb);
+                        }
 
-                            log.EXPECT_NEAR_FLOAT(kv.Value, dfAve, 0.001, "The probabilities are not correct!");
+                        if ((lblSel & IMGDB_LABEL_SELECTION_METHOD.RANDOM) == IMGDB_LABEL_SELECTION_METHOD.RANDOM)
+                        {
+                            double dfSum = rgProbabilities.Sum(p => p.Value);
+                            double dfAve = dfSum / rgProbabilities.Count;
+
+                            double dfThreshold = 0.001;
+                            if ((lblSel & IMGDB_LABEL_SELECTION_METHOD.RANDOM) != IMGDB_LABEL_SELECTION_METHOD.RANDOM ||
+                                (imgSel & IMGDB_IMAGE_SELECTION_METHOD.RANDOM) != IMGDB_IMAGE_SELECTION_METHOD.RANDOM)
+                                dfThreshold = 0.12;
+
+                            foreach (KeyValuePair<int, double> kv in rgProbabilities)
+                            {
+                                double dfDiff = Math.Abs(kv.Value - dfAve);
+                                log.EXPECT_NEAR_FLOAT(kv.Value, dfAve, dfThreshold, "The probabilities are not correct!");
+                            }
                         }
                     }
 
