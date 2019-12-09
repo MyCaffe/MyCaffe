@@ -394,5 +394,17 @@ namespace MyCaffe.app.Properties {
                 this["ExpandFiles"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int ImgDbVer {
+            get {
+                return ((int)(this["ImgDbVer"]));
+            }
+            set {
+                this["ImgDbVer"] = value;
+            }
+        }
     }
 }
