@@ -334,9 +334,8 @@ template long memtestHandle<float>::Run(MEMTEST_TYPE testType, size_t szStartOff
 template <class T>
 long memtestHandle<T>::alloc_mem(void** pp, size_t sz)
 {
-	LONG lErr;
-
 #ifdef USE_PINNED_HOST_MEM
+	LONG lErr;
 	if (lErr = cudaMallocHost(pp, sz))
 		return lErr;
 #else
