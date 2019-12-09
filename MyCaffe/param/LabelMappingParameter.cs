@@ -54,9 +54,9 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Specifies the labels for which the label boost is to be set.  When set, all labels specified are given a boost such that images are selected with equal probability between all labels specified.
+        /// DEPRECIATED: Specifies the labels for which the label boost is to be set.  When set, all labels specified are given a boost such that images are selected with equal probability between all labels specified.
         /// </summary>
-        [Description("Specifies the labels for which the label boost is to be set.  When set, all labels specified are given a boost such that images are selected with equal probability between all labels specified.")]
+        [Description("DEPRECIATED: Specifies the labels for which the label boost is to be set.  When set, all labels specified are given a boost such that images are selected with equal probability between all labels specified.")]
         public string label_boosts
         {
             get { return m_strLabelBoosts; }
