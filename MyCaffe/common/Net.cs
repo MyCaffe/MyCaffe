@@ -94,7 +94,7 @@ namespace MyCaffe.common
         bool m_bDebugInfo = false;
 
         // The image database passed through to the data layer(s).
-        IXImageDatabase m_db = null;
+        IXImageDatabaseBase m_db = null;
 
         // Cancel event used to cancel training and testing.
         CancelEvent m_evtCancel;
@@ -149,7 +149,7 @@ namespace MyCaffe.common
         /// <param name="sharedNet">Specifies another Net that shares the GPU memory created by this Net.</param>
         /// <param name="getws">Optionally, specifies the handler for getting the workspace.</param>
         /// <param name="setws">Optionally, specifies the handler for setting the workspace.</param>
-        public Net(CudaDnn<T> cuda, Log log, NetParameter p, CancelEvent evtCancel, IXImageDatabase imgDb, Phase phaseOverride = Phase.NONE, AutoResetEvent evtTrainingCompleted = null, Net<T> sharedNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
+        public Net(CudaDnn<T> cuda, Log log, NetParameter p, CancelEvent evtCancel, IXImageDatabaseBase imgDb, Phase phaseOverride = Phase.NONE, AutoResetEvent evtTrainingCompleted = null, Net<T> sharedNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
         {
             m_sharedNet = sharedNet;
             m_db = imgDb;

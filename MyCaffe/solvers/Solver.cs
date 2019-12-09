@@ -89,7 +89,7 @@ namespace MyCaffe.solvers
         double m_dfLastError = double.MaxValue;
         double m_dfBestAccuracy = 0;
         double m_dfBestError = double.MaxValue;
-        IXImageDatabase m_db = null;
+        IXImageDatabaseBase m_db = null;
         int m_nTrainingIterationOverride = -1;
         int m_nTestingIterationOverride = -1;
         object m_tag = null;
@@ -164,7 +164,7 @@ namespace MyCaffe.solvers
         /// <param name="shareNet">Optionally, specifies the net to share when creating the training network (default = null, meaning no share net is used).</param>
         /// <param name="getws">Optionally, specifies the handler for getting the workspace.</param>
         /// <param name="setws">Optionally, specifies the handler for setting the workspace.</param>
-        public Solver(CudaDnn<T> cuda, Log log, SolverParameter p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
+        public Solver(CudaDnn<T> cuda, Log log, SolverParameter p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabaseBase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
         {
             m_cuda = cuda;
             m_log = log;
@@ -283,7 +283,7 @@ namespace MyCaffe.solvers
         /// <summary>
         /// Returns the CaffeImageDatabase used.
         /// </summary>
-        public IXImageDatabase Database
+        public IXImageDatabaseBase Database
         {
             get { return m_db; }
         }
@@ -1769,7 +1769,7 @@ namespace MyCaffe.solvers
         /// <param name="getws">Optionally, specifies the handler for getting the workspace.</param>
         /// <param name="setws">Optionally, specifies the handler for setting the workspace.</param>
         /// <returns>A new Solver instance is returned.</returns>
-        public static SGDSolver<T> Create(CudaDnn<T> cuda, Log log, ProjectEx p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
+        public static SGDSolver<T> Create(CudaDnn<T> cuda, Log log, ProjectEx p, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabaseBase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
         {
             SolverParameter solverParam = null;
 
@@ -1810,7 +1810,7 @@ namespace MyCaffe.solvers
         /// <param name="getws">Optionally, specifies the handler for getting the workspace.</param>
         /// <param name="setws">Optionally, specifies the handler for setting the workspace.</param>
         /// <returns></returns>
-        public static SGDSolver<T> Create(CudaDnn<T> cuda, Log log, SolverParameter solverParam, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
+        public static SGDSolver<T> Create(CudaDnn<T> cuda, Log log, SolverParameter solverParam, CancelEvent evtCancel, AutoResetEvent evtForceSnapshot, AutoResetEvent evtForceTest, IXImageDatabaseBase imgDb, IXPersist<T> persist, int nSolverCount = 1, int nSolverRank = 0, Net<T> shareNet = null, onGetWorkspace getws = null, onSetWorkspace setws = null)
         {
             SGDSolver<T> solver = null;
 

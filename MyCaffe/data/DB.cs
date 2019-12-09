@@ -13,7 +13,7 @@ namespace MyCaffe.data
     /// </summary>
     public class DB
     {
-        IXImageDatabase m_db = null;
+        IXImageDatabaseBase m_db = null;
         int m_nSrcID = 0;
         string m_strSrc = null;
 
@@ -21,7 +21,7 @@ namespace MyCaffe.data
         /// The DB Constructor.
         /// </summary>
         /// <param name="imgDb">The underlying database - the CaffeImageDatabase.</param>
-        public DB(IXImageDatabase imgDb)
+        public DB(IXImageDatabaseBase imgDb)
         {
             m_db = imgDb;
         }
@@ -59,7 +59,7 @@ namespace MyCaffe.data
     /// </summary>
     public class Cursor 
     {
-        IXImageDatabase m_db;
+        IXImageDatabaseBase m_db;
         int m_nSrcID = 0;
         int m_nCount = 0;
         int m_nIdx = 0;
@@ -69,7 +69,7 @@ namespace MyCaffe.data
         /// </summary>
         /// <param name="db">Specifies the underlying database.</param>
         /// <param name="strSrc">Specifies the name of the data source to use.</param>
-        public Cursor(IXImageDatabase db, string strSrc)
+        public Cursor(IXImageDatabaseBase db, string strSrc)
         {
             m_db = db;
             SourceDescriptor src = m_db.GetSourceByName(strSrc);

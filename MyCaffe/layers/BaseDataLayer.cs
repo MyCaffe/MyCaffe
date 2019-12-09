@@ -28,7 +28,7 @@ namespace MyCaffe.layers
         /// <summary>
         /// Specifies the CaffeImageDatabase.
         /// </summary>
-        protected IXImageDatabase m_imgdb;
+        protected IXImageDatabaseBase m_imgdb;
         /// <summary>
         /// Specifies the SourceDescriptor of the data source.
         /// </summary>
@@ -45,7 +45,7 @@ namespace MyCaffe.layers
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="p">Specifies the LayerParameter</param>
         /// <param name="db">Specifies the external database to use.</param>
-        public BaseDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabase db)
+        public BaseDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabaseBase db)
             : base(cuda, log, p)
         {
             if (db != null)

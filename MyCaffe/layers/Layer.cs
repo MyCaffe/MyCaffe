@@ -1106,7 +1106,7 @@ namespace MyCaffe.layers
         /// <param name="imgDb">Optionally, specifies the CaffeImageDatabase used by data Layers.</param>
         /// <param name="trxinput">Optionally, specifies the transfer input object used by some of the data Layers.</param>
         /// <returns></returns>
-        public static Layer<T> Create(CudaDnn<T> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabase imgDb = null, TransferInput trxinput = null)
+        public static Layer<T> Create(CudaDnn<T> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabaseBase imgDb = null, TransferInput trxinput = null)
         {
             switch (p.type)
             {
@@ -1311,7 +1311,7 @@ namespace MyCaffe.layers
             throw new NotImplementedException("The layer type: " + p.type.ToString() + " is not implemented yet.");
         }
 
-        private static Layer<T> createDynamicLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabase imgDb, CancelEvent evtCancel)
+        private static Layer<T> createDynamicLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabaseBase imgDb, CancelEvent evtCancel)
         {
             string strDir = System.IO.Path.GetDirectoryName(new System.Uri(System.Reflection.Assembly.GetExecutingAssembly().CodeBase).LocalPath);
             string[] rgstrFiles = Directory.GetFiles(strDir);

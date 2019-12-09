@@ -19,7 +19,7 @@ namespace MyCaffe.layers
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class LabelMappingLayer<T> : NeuronLayer<T>
     {
-        IXImageDatabase m_db;
+        IXImageDatabaseBase m_db;
         string m_strSource = null;
         int m_nSourceId = 0;
         int m_nProjectID = 0;
@@ -42,7 +42,7 @@ namespace MyCaffe.layers
         ///   - label_boosts (/b optional, default = ""). A string that defines which labels to boost, giving them a higher probability of being selected.
         /// </param>
         /// <param name="db">Specifies the CaffeImageDatabase.</param>
-        public LabelMappingLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabase db)
+        public LabelMappingLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabaseBase db)
             : base(cuda, log, p)
         {
             m_db = db;
@@ -186,7 +186,6 @@ namespace MyCaffe.layers
                     if (m_param.labelmapping_param.update_database)
                     {
                         string strLabelCounts = m_db.GetLabelCountsAsTextFromSourceId(nSrcId);
-                        string strLabelBoosts = m_db.GetLabelBoostsAsTextFromProject(m_nProjectID, nSrcId);
 
                         if (m_param.labelmapping_param.reset_database_labels)
                         {
@@ -219,50 +218,67 @@ namespace MyCaffe.layers
 
                         if (m_param.labelmapping_param.label_boosts != null && m_param.labelmapping_param.label_boosts.Length > 0)
                         {
-                            Dictionary<int, int> rgCounts = m_db.LoadLabelCounts(nSrcId);
-                            string[] rgstrBoosts = m_param.labelmapping_param.label_boosts.Split(',');
-                            Dictionary<int, int> rgBoostedLabelCounts = new Dictionary<int, int>();
-                            double dfTotal = 0;
+                            IXImageDatabase1 db = m_db as IXImageDatabase1;
+                            bool bReloadImageSet = false;
 
-                            foreach (string strLabel in rgstrBoosts)
+                            if (db != null)
                             {
-                                int nLabel = int.Parse(strLabel);
+#warning ImageDatabase version 1 Only
+                                string strLabelBoosts = db.GetLabelBoostsAsTextFromProject(m_nProjectID, nSrcId);
+                                Dictionary<int, int> rgCounts = db.LoadLabelCounts(nSrcId);
+                                string[] rgstrBoosts = m_param.labelmapping_param.label_boosts.Split(',');
+                                Dictionary<int, int> rgBoostedLabelCounts = new Dictionary<int, int>();
+                                double dfTotal = 0;
 
-                                if (rgCounts.ContainsKey(nLabel))
+                                foreach (string strLabel in rgstrBoosts)
                                 {
-                                    int nCount = rgCounts[nLabel];
-                                    rgBoostedLabelCounts.Add(nLabel, nCount);
-                                    dfTotal += nCount;
+                                    int nLabel = int.Parse(strLabel);
+
+                                    if (rgCounts.ContainsKey(nLabel))
+                                    {
+                                        int nCount = rgCounts[nLabel];
+                                        rgBoostedLabelCounts.Add(nLabel, nCount);
+                                        dfTotal += nCount;
+                                    }
+                                    else
+                                    {
+                                        rgBoostedLabelCounts.Add(nLabel, 0);
+                                    }
                                 }
-                                else
+
+                                db.DeleteLabelBoosts(m_nProjectID, nSrcId);
+
+                                foreach (KeyValuePair<int, int> kv in rgCounts)
                                 {
-                                    rgBoostedLabelCounts.Add(nLabel, 0);
+                                    double dfBoost = 0;
+
+                                    if (rgBoostedLabelCounts.ContainsKey(kv.Key))
+                                    {
+                                        int nCount = rgBoostedLabelCounts.Count;
+                                        dfBoost = (nCount == 0) ? 0 : (1.0 / (double)nCount);
+                                    }
+
+                                    db.AddLabelBoost(m_nProjectID, nSrcId, kv.Key, dfBoost);
                                 }
+
+                                string strNewLabelBoosts = db.GetLabelBoostsAsTextFromProject(m_nProjectID, nSrcId);
+                                if (strNewLabelBoosts != strLabelBoosts)
+                                    bReloadImageSet = true;
                             }
 
-                            m_db.DeleteLabelBoosts(m_nProjectID, nSrcId);
-
-                            foreach (KeyValuePair<int, int> kv in rgCounts)
+                            if (db != null)
                             {
-                                double dfBoost = 0;
+                                string strNewLabelCounts = db.GetLabelCountsAsTextFromSourceId(nSrcId);
 
-                                if (rgBoostedLabelCounts.ContainsKey(kv.Key))
-                                {
-                                    int nCount = rgBoostedLabelCounts.Count;
-                                    dfBoost = (nCount == 0) ? 0 : (1.0 / (double)nCount);
-                                }
-
-                                m_db.AddLabelBoost(m_nProjectID, nSrcId, kv.Key, dfBoost);
+                                if (strNewLabelCounts != strLabelCounts || bReloadImageSet)
+                                    db.ReloadImageSet(nSrcId);
                             }
+
+                            m_log.WriteLine("WARNING: Label boosts are depreciated and soon to be removed.");
                         }
-
-                        if (m_db != null)
+                        else
                         {
-                            string strNewLabelCounts = m_db.GetLabelCountsAsTextFromSourceId(nSrcId);
-                            string strNewLabelBoosts = m_db.GetLabelBoostsAsTextFromProject(m_nProjectID, nSrcId);
-
-                            if (strNewLabelCounts != strLabelCounts || strNewLabelBoosts != strLabelBoosts)
-                                m_db.ReloadImageSet(nSrcId);
+                            m_log.WriteLine("WARNING: ImageDatabase Version 2 currently does not support label mapping.");
                         }
                     }
                 }

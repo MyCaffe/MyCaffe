@@ -39,7 +39,7 @@ namespace MyCaffe
         /// <summary>
         /// The image database.
         /// </summary>
-        protected IXImageDatabase m_imgDb = null;
+        protected IXImageDatabaseBase m_imgDb = null;
         /// <summary>
         /// Whether or not the control owns the image database.
         /// </summary>
@@ -516,7 +516,7 @@ namespace MyCaffe
         /// <summary>
         /// Returns the CaffeImageDatabase used.
         /// </summary>
-        public IXImageDatabase ImageDatabase
+        public IXImageDatabaseBase ImageDatabase
         {
             get { return m_imgDb; }
         }
@@ -773,7 +773,7 @@ namespace MyCaffe
         /// <param name="strStage">Optionally, specifies a stage under which to load the model.</param>
         /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
+        public bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
         {
             m_strStage = strStage;
             m_imgDb = imgdb;
@@ -781,17 +781,24 @@ namespace MyCaffe
 
             if (m_imgDb == null && bUseImageDb)
             {
-                m_imgDb = new MyCaffeImageDatabase(m_log);
+                if (m_settings.ImageDbVersion == IMGDB_VERSION.V2)
+                    m_imgDb = new MyCaffeImageDatabase2(m_log);
+                else
+                    m_imgDb = new MyCaffeImageDatabase(m_log);
+
                 m_bImgDbOwner = true;
 
                 m_log.WriteLine("Loading primary images...");
 
-                m_imgDb.InitializeWithDs(m_settings, p.Dataset, m_evtCancel.Name);
+                if (m_imgDb is IXImageDatabase1)
+                    ((IXImageDatabase1)m_imgDb).InitializeWithDs1(m_settings, p.Dataset, m_evtCancel.Name);
+                else
+                    ((IXImageDatabase2)m_imgDb).InitializeWithDs(m_settings, p.Dataset, m_evtCancel.Name);
 
                 if (m_evtCancel.WaitOne(0))
                     return false;
 
-                m_imgDb.UpdateLabelBoosts(p.ID, p.Dataset.TrainingSource.ID);
+//              m_imgDb.UpdateLabelBoosts(p.ID, p.Dataset.TrainingSource.ID);
 
                 Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> selMethod = MyCaffeImageDatabase.GetSelectionMethod(p);
                 IMGDB_LABEL_SELECTION_METHOD lblSel = selMethod.Item1;
@@ -813,7 +820,12 @@ namespace MyCaffe
                     DatasetDescriptor dsTarget = factory.LoadDataset(p.TargetDatasetID);
 
                     m_log.WriteLine("Loading target dataset '" + dsTarget.Name + "' images using " + m_settings.ImageDbLoadMethod.ToString() + " loading method.");
-                    m_imgDb.LoadDatasetByID(dsTarget.ID);
+
+                    if (m_imgDb is IXImageDatabase1)
+                        ((IXImageDatabase1)m_imgDb).LoadDatasetByID1(dsTarget.ID);
+                    else
+                        ((IXImageDatabase2)m_imgDb).LoadDatasetByID(dsTarget.ID);
+
                     m_imgDb.QueryImageMean(dsTarget.TrainingSource.ID);
                     m_log.WriteLine("Target dataset images loaded.");
                 }
@@ -858,11 +870,15 @@ namespace MyCaffe
                 m_log.WriteLine("Solver created.");
             }
 
-            if (phase == Phase.TRAIN && m_imgDb != null)
-                m_imgDb.UpdateLabelBoosts(p.ID, m_dataSet.TrainingSource.ID);
+            if (m_imgDb is IXImageDatabase1)
+            {
+#warning ImageDatabase V1 only
+                if (phase == Phase.TRAIN && m_imgDb != null)
+                    ((IXImageDatabase1)m_imgDb).UpdateLabelBoosts(p.ID, m_dataSet.TrainingSource.ID);
 
-            if (phase == Phase.TEST && m_imgDb != null)
-                m_imgDb.UpdateLabelBoosts(p.ID, m_dataSet.TestingSource.ID);
+                if (phase == Phase.TEST && m_imgDb != null)
+                    ((IXImageDatabase1)m_imgDb).UpdateLabelBoosts(p.ID, m_dataSet.TestingSource.ID);
+            }
 
             if (phase == Phase.RUN && !bCreateRunNet)
                 throw new Exception("You cannot opt out of creating the Run net when using the RUN phase.");
@@ -926,7 +942,7 @@ namespace MyCaffe
         /// <param name="strStage">Optionally, specifies a stage under which to load the model.</param>
         /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
+        public bool Load(Phase phase, string strSolver, string strModel, byte[] rgWeights, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
         {
             m_strStage = strStage;
             m_imgDb = imgdb;
@@ -949,7 +965,10 @@ namespace MyCaffe
 
                 m_log.WriteLine("Loading primary images...");
 
-                m_imgDb.InitializeWithDs(m_settings, m_dataSet, m_evtCancel.Name);
+                if (m_imgDb is IXImageDatabase1)
+                    ((IXImageDatabase1)m_imgDb).InitializeWithDs1(m_settings, m_dataSet, m_evtCancel.Name);
+                else
+                    ((IXImageDatabase2)m_imgDb).InitializeWithDs(m_settings, m_dataSet, m_evtCancel.Name);
 
                 if (m_evtCancel.WaitOne(0))
                     return false;
@@ -972,7 +991,12 @@ namespace MyCaffe
                 if (dsTarget != null)
                 {
                     m_log.WriteLine("Loading target dataset '" + dsTarget.Name + "' images using " + m_settings.ImageDbLoadMethod.ToString() + " loading method.");
-                    m_imgDb.LoadDatasetByID(dsTarget.ID);
+
+                    if (m_imgDb is IXImageDatabase1)
+                        ((IXImageDatabase1)m_imgDb).LoadDatasetByID1(dsTarget.ID);
+                    else
+                        ((IXImageDatabase2)m_imgDb).LoadDatasetByID(dsTarget.ID);
+
                     m_imgDb.QueryImageMean(dsTarget.TrainingSource.ID);
                     m_log.WriteLine("Target dataset images loaded.");
                 }

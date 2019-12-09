@@ -26,7 +26,7 @@ namespace MyCaffe
         /// <param name="evtCancel">Specifies the cancellation event.</param>
         /// <param name="imgDb">Specifies an interface to the image database, who's use is optional.</param>
         /// <returns>If supported, the layer is returned, otherwise <i>null</i> is returned.</returns>
-        Layer<double> CreateDouble(CudaDnn<double> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabase imgDb);
+        Layer<double> CreateDouble(CudaDnn<double> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabaseBase imgDb);
 
         /// <summary>
         /// Create the layers when using the <i>float</i> base type.
@@ -37,6 +37,6 @@ namespace MyCaffe
         /// <param name="evtCancel">Specifies the cancellation event.</param>
         /// <param name="imgDb">Specifies an interface to the image database, who's use is optional.</param>
         /// <returns>If supported, the layer is returned, otherwise <i>null</i> is returned.</returns>
-        Layer<float> CreateSingle(CudaDnn<float> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabase imgDb);
+        Layer<float> CreateSingle(CudaDnn<float> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabaseBase imgDb);
     }
 }
