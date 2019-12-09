@@ -36,7 +36,7 @@ namespace MyCaffe.db.image
         CryptoRandom m_random;
         DatasetFactory m_factory = new DatasetFactory();
         List<DbItem> m_rgImageIdx = null;
-        IMGDB_SORT m_sort = IMGDB_SORT.NONE;
+        IMGDB_SORT m_sort = IMGDB_SORT.BYIDX;
 
         /// <summary>
         /// The constructor.
@@ -55,13 +55,14 @@ namespace MyCaffe.db.image
 
         private void load(List<DbItem> rgItems)
         {
-            m_index = new Index(m_random, rgItems);
-            m_boosted = new Index(m_random, rgItems.Where(p => p.Boost > 0).ToList(), -1, true);
+            m_index = new Index("ALL", m_random, rgItems);
+            List<DbItem> rgBoosted = rgItems.Where(p => p.Boost > 0).ToList();
+            m_boosted = new Index("BOOSTED", m_random, rgBoosted, -1, true);
 
             List<LabelDescriptor> rgLabels = m_src.Labels.OrderBy(p => p.ActiveLabel).ToList();
 
-            m_rgLabels = new LabelIndex(m_random, m_src, false, rgItems);
-            m_rgLabelsBoosted = new LabelIndex(m_random, m_src, true, rgItems);
+            m_rgLabels = new LabelIndex("LABELED", m_random, m_src, false, rgItems);
+            m_rgLabelsBoosted = new LabelIndex("LABELED BOOSTED", m_random, m_src, true, rgBoosted);
         }
 
         /// <summary>
@@ -285,70 +286,78 @@ namespace MyCaffe.db.image
 
     public class LabelIndex /** @private */
     {
+        string m_strName;
         CryptoRandom m_random;
         SourceDescriptor m_src;
-        Dictionary<int, int> m_rgLabelMap;
-        Index[] m_rgLabels;
+        Dictionary<int, int> m_rgLabelMap = new Dictionary<int, int>();
+        Index[] m_rgLabels = null;
         bool m_bBoosted = false;
         List<int> m_rgIdx = new List<int>();
         int m_nIdx = 0;
 
-        public LabelIndex(CryptoRandom random, SourceDescriptor src, bool bBoosted, List<DbItem> rgItems)
+        public LabelIndex(string strName, CryptoRandom random, SourceDescriptor src, bool bBoosted, List<DbItem> rgItems)
         {
+            m_strName = strName;
             m_random = random;
             m_src = src;
             m_bBoosted = bBoosted;
 
-            List<LabelDescriptor> rgLabels = src.Labels.Where(p => p.ImageCount > 0).OrderBy(p => p.ActiveLabel).ToList();
-            if (rgLabels.Count == 0)
-                throw new Exception("There are no lables with and ImageCount > 0!");
-
-            m_rgLabels = new Index[rgLabels.Count];
             m_rgIdx = new List<int>();
             m_rgLabelMap = new Dictionary<int, int>();
 
-            for (int i = 0; i < rgLabels.Count; i++)
+            List<LabelDescriptor> rgLabels = src.Labels.Where(p => p.ImageCount > 0).OrderBy(p => p.ActiveLabel).ToList();
+            if (rgLabels.Count > 0)
             {
-                int nLabel = rgLabels[i].ActiveLabel;
-                List<DbItem> rgLabelList = rgItems.Where(p => p.Label == nLabel).ToList();
+                m_rgLabels = new Index[rgLabels.Count];
 
-                if (i < rgLabels.Count - 1)
-                    rgItems = rgItems.Where(p => p.Label != nLabel).ToList();
+                for (int i = 0; i < rgLabels.Count; i++)
+                {
+                    int nLabel = rgLabels[i].ActiveLabel;
+                    List<DbItem> rgLabelList = rgItems.Where(p => p.Label == nLabel).ToList();
 
-                m_rgLabels[i] = new Index(random, rgLabelList, nLabel, false);
-                m_rgIdx.Add(i);
-                m_rgLabelMap[nLabel] = i;
+                    if (i < rgLabels.Count - 1)
+                        rgItems = rgItems.Where(p => p.Label != nLabel).ToList();
+
+                    m_rgLabels[i] = new Index(strName + " label " + nLabel.ToString(), random, rgLabelList, nLabel, false);
+                    if (rgLabelList.Count > 0)
+                        m_rgIdx.Add(i);
+
+                    m_rgLabelMap[nLabel] = i;
+                }
             }
         }
 
         public LabelIndex(LabelIndex idx)
         {
+            m_strName = idx.m_strName + " copy";
             m_random = idx.m_random;
             m_src = idx.m_src;
             m_bBoosted = idx.m_bBoosted;
 
-            if (idx.m_rgLabels.Length == 0)
-                throw new Exception("There are no labels in the data parameter!");
-
-            m_rgLabels = new Index[idx.m_rgLabels.Length];
             m_rgIdx = new List<int>();
 
-            bool bFillLabelMap = false;
-            if (m_rgLabelMap == null)
+            if (idx.m_rgLabels != null && idx.m_rgLabels.Length > 0)
             {
-                m_rgLabelMap = new Dictionary<int, int>();
-                bFillLabelMap = true;
-            }
+                m_rgLabels = new Index[idx.m_rgLabels.Length];
 
-            for (int i=0; i<idx.m_rgLabels.Length; i++)
-            {
-                m_rgLabels[i] = idx.m_rgLabels[i].Clone();
-                m_rgIdx.Add(i);
-
-                if (bFillLabelMap)
+                bool bFillLabelMap = false;
+                if (m_rgLabelMap == null || m_rgLabelMap.Count == 0)
                 {
-                    int nLabel = m_rgLabels[i].Label;
-                    m_rgLabelMap[nLabel] = i;
+                    m_rgLabelMap = new Dictionary<int, int>();
+                    bFillLabelMap = true;
+                }
+
+                for (int i = 0; i < idx.m_rgLabels.Length; i++)
+                {
+                    m_rgLabels[i] = idx.m_rgLabels[i].Clone();
+                    if (m_rgLabels[i].Count > 0)
+                        m_rgIdx.Add(i);
+
+                    if (bFillLabelMap)
+                    {
+                        int nLabel = m_rgLabels[i].Label;
+                        m_rgLabelMap[nLabel] = i;
+                    }
                 }
             }
         }
@@ -360,7 +369,8 @@ namespace MyCaffe.db.image
 
             for (int i = 0; i < m_rgLabels.Length; i++)
             {
-                m_rgIdx.Add(i);
+                if (m_rgLabels[i].Count > 0)
+                   m_rgIdx.Add(i);
             }
         }
 
@@ -372,7 +382,7 @@ namespace MyCaffe.db.image
 
         public int Count
         {
-            get { return m_rgLabels.Length; }
+            get { return (m_rgLabels == null) ? 0 : m_rgLabels.Length; }
         }
 
         public bool Boosted
@@ -434,10 +444,16 @@ namespace MyCaffe.db.image
 
             return m_rgLabels[nIdx.Value];
         }
+
+        public override string ToString()
+        {
+            return m_strName;
+        }
     }
 
     public class Index /** @private */
     {
+        string m_strName;
         CryptoRandom m_random;
         int m_nLabel = -1;
         bool m_bBoosted = false;
@@ -452,8 +468,9 @@ namespace MyCaffe.db.image
             RANDOM
         }
 
-        public Index(CryptoRandom random, List<DbItem> rgItems, int nLabel = -1, bool bBoosted = false, double dfProbability = 0)
+        public Index(string strName, CryptoRandom random, List<DbItem> rgItems, int nLabel = -1, bool bBoosted = false, double dfProbability = 0)
         {
+            m_strName = strName;
             m_random = random;
             m_rgItems = rgItems;
             m_nLabel = nLabel;
@@ -524,7 +541,7 @@ namespace MyCaffe.db.image
                     break;
             }
 
-            return new Index(m_random, rgItems, m_nLabel, m_bBoosted, m_dfProbability);
+            return new Index(m_strName + " copy", m_random, rgItems, m_nLabel, m_bBoosted, m_dfProbability);
         }
 
         public List<DbItem> FindImageIndexes(int nStartIdx, int nQueryCount = int.MaxValue, string strFilter = null, int? nBoostVal = null, bool bBoostValIsExact = false)
@@ -613,7 +630,7 @@ namespace MyCaffe.db.image
 
         public override string ToString()
         {
-            return "Idx = " + m_nIdx.ToString() + "; Label = " + m_nLabel.ToString() + "; Boosted = " + m_bBoosted.ToString() + " => (" + m_rgItems.Count.ToString() + ") p = " + m_dfProbability.ToString("P");
+            return m_strName + ": Idx = " + m_nIdx.ToString() + "; Label = " + m_nLabel.ToString() + "; Boosted = " + m_bBoosted.ToString() + " => (" + m_rgItems.Count.ToString() + ") p = " + m_dfProbability.ToString("P");
         }
     }
 }
