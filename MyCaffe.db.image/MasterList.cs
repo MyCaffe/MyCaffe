@@ -26,6 +26,7 @@ namespace MyCaffe.db.image
         Thread m_dataLoadThread;
         SimpleDatum m_imgMean = null;
         Log m_log = null;
+        int m_nLoadedCount = 0;
         object m_syncObj = new object();
 
 
@@ -53,6 +54,7 @@ namespace MyCaffe.db.image
 
             m_imgMean = m_factory.LoadImageMean(m_src.ID);
             m_rgImages = new SimpleDatum[m_src.ImageCount];
+            m_nLoadedCount = 0;
         }
 
         /// <summary>
@@ -63,6 +65,17 @@ namespace MyCaffe.db.image
             m_evtCancel.Set();
             if (m_evtRunning.WaitOne(0))
                 m_evtDone.WaitOne();
+        }
+
+        /// <summary>
+        /// Returns <i>true</i> when the master list is fully loaded, <i>false</i> otherwise.
+        /// </summary>
+        public bool IsFull
+        {
+            get
+            {
+                return (m_nLoadedCount == GetTotalCount()) ? true : false;
+            }
         }
 
         /// <summary>
@@ -81,6 +94,7 @@ namespace MyCaffe.db.image
                 m_loadSequence = new LoadSequence(m_src.ImageCount);
 
                 m_dataLoadThread = new Thread(new ThreadStart(dataLoadThread));
+                m_dataLoadThread.Priority = ThreadPriority.AboveNormal;
                 m_dataLoadThread.Start();
                 m_evtRunning.WaitOne(1000);
 
@@ -99,6 +113,7 @@ namespace MyCaffe.db.image
                 m_evtCancel.Set();
                 m_evtDone.WaitOne();
                 m_rgImages = new SimpleDatum[m_src.ImageCount];
+                m_nLoadedCount = 0;
                 GC.Collect();
 
                 m_loadSequence = new LoadSequence(m_src.ImageCount);
@@ -135,10 +150,7 @@ namespace MyCaffe.db.image
         /// <returns></returns>
         public int GetLoadedCount()
         {
-            lock (m_syncObj)
-            {
-                return (m_loadSequence == null) ? 0 : m_rgImages.Length - m_loadSequence.Count;
-            }
+            return m_nLoadedCount;
         }
 
         /// <summary>
@@ -198,7 +210,7 @@ namespace MyCaffe.db.image
         /// <returns>The new set of DBItems is returned for the images.</returns>
         public List<DbItem> ResetLabels()
         {
-            if (!m_loadSequence.IsEmpty)
+            if (!IsFull)
                 throw new Exception("Relabeling only supported on fully loaded data sets.");
 
             foreach (SimpleDatum sd in m_rgImages)
@@ -216,13 +228,11 @@ namespace MyCaffe.db.image
         /// <returns>The new set of DBItems is returned for the images.</returns>
         public List<DbItem> Relabel(LabelMappingCollection col)
         {
-            if (!m_loadSequence.IsEmpty)
+            if (!IsFull)
                 throw new Exception("Relabeling only supported on fully loaded data sets.");
 
             foreach (SimpleDatum sd in m_rgImages)
             {
-
-
                 sd.SetLabel(col.MapLabel(sd.OriginalLabel));
             }
 
@@ -235,7 +245,7 @@ namespace MyCaffe.db.image
         /// <returns>The new set of DBItems is returned for the images.</returns>
         public List<DbItem> ResetAllBoosts()
         {
-            if (!m_loadSequence.IsEmpty)
+            if (!IsFull)
                 throw new Exception("Relabeling only supported on fully loaded data sets.");
 
             foreach (SimpleDatum sd in m_rgImages)
@@ -336,27 +346,14 @@ namespace MyCaffe.db.image
         /// <returns>If found, the image is returned.</returns>
         public SimpleDatum GetImage(int nIdx, bool bLoadDataCriteria, bool bLoadDebugData)
         {
-            SimpleDatum sd = null;
-
-            lock (m_syncObj)
-            {
-                sd = m_rgImages[nIdx];
-            }
+            SimpleDatum sd = m_rgImages[nIdx];
 
             if (sd == null)
             {
                 if (!m_evtRunning.WaitOne(0))
                     Load();
 
-                m_loadSequence.PreEmpt(nIdx, bLoadDataCriteria, bLoadDebugData);
-                if (!m_loadSequence.WaitForLoad(nIdx))
-                    throw new Exception("Failed to load image at index = " + nIdx.ToString());
-
-                lock (m_syncObj)
-                {
-                    sd = m_rgImages[nIdx];
-                }
-
+                sd = directLoadImage(nIdx);
                 if (sd == null)
                     throw new Exception("The image is still null yet should have loaded!");
             }
@@ -493,6 +490,16 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Directly load an image, preempting the backgroud load - used by LOAD_ON_DEMAND for images not already loaded.
+        /// </summary>
+        /// <param name="nIdx">Specifies the image index.</param>
+        /// <returns>The image at the image index is returned.</returns>
+        private SimpleDatum directLoadImage(int nIdx)
+        {
+            return m_factory.LoadImageAt(nIdx);
+        }
+
+        /// <summary>
         /// The dataLoadThread is responsible for loading the data source images in the background.
         /// </summary>
         private void dataLoadThread()
@@ -512,43 +519,24 @@ namespace MyCaffe.db.image
                 factory.Open(m_src);
                 while (nNextIdx.HasValue || rgIdxBatch.Count > 0)
                 {
-                    int? nSingleItem = null;
-
-                    if (rgIdxBatch.Count == 0)
-                    {
+                    if (nNextIdx.HasValue)
                         rgIdxBatch.Add(nNextIdx.Value);
-                    }
-                    else if (nNextIdx.HasValue)
-                    {
-                        if (nNextIdx.Value == rgIdxBatch[rgIdxBatch.Count - 1] + 1)
-                            rgIdxBatch.Add(nNextIdx.Value);
-                        else
-                            nSingleItem = nNextIdx.Value;
-                    }
 
-                    if (nSingleItem.HasValue || rgIdxBatch.Count >= nBatchSize || !nNextIdx.HasValue)
+                    if (rgIdxBatch.Count >= nBatchSize || !nNextIdx.HasValue)
                     {
-                        if (nSingleItem.HasValue)
-                        {
-                            SimpleDatum sd = factory.LoadImageAt(nSingleItem.Value);
-                            m_rgImages[sd.Index] = sd;
-                            m_loadSequence.SetLoaded(sd.Index);
-                        }
-
                         List<RawImage> rgImg = factory.GetRawImagesAt(rgIdxBatch[0], rgIdxBatch.Count);
                         for (int j = 0; j < rgImg.Count; j++)
                         {
                             SimpleDatum sd = factory.LoadDatum(rgImg[j]);
-                            m_rgImages[sd.Index] = sd;
 
-                            if (rgImg.Count == 1)
-                                m_loadSequence.SetLoaded(sd.Index);
+                            m_rgImages[sd.Index] = sd;
+                            m_nLoadedCount++;
 
                             if (sw.Elapsed.TotalMilliseconds > 1000)
                             {
                                 if (m_log != null)
                                 {
-                                    double dfPct = (m_rgImages.Length - ((m_loadSequence.Count + rgImg.Count) - j)) / (double)m_rgImages.Length;
+                                    double dfPct = m_nLoadedCount / (double)m_rgImages.Length;
                                     m_log.Progress = dfPct;
                                     m_log.WriteLine("Loading '" + m_src.Name + "' at " + dfPct.ToString("P") + "...");
                                 }
