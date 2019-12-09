@@ -47,6 +47,8 @@
             this.abortAutotestsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.createMyCaffeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.usingLeNETToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.usingSiameseNETToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.deviceInformationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.destroyMyCaffeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.trainMNISTToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -69,6 +71,9 @@
             this.onlineHelpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.gpuToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.imageDBToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.v1ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.v2ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openFileDialogAutoTests = new System.Windows.Forms.OpenFileDialog();
             this.m_bwLoadMnistDatabase = new System.ComponentModel.BackgroundWorker();
             this.m_bwProcess = new System.ComponentModel.BackgroundWorker();
@@ -79,10 +84,9 @@
             this.colStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.lblGpu = new System.Windows.Forms.ToolStripStatusLabel();
+            this.lblImgDb = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.m_bwLoadVOCDatabase = new System.ComponentModel.BackgroundWorker();
-            this.usingLeNETToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.usingSiameseNETToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -94,7 +98,8 @@
             this.databaseToolStripMenuItem,
             this.testToolStripMenuItem,
             this.helpToolStripMenuItem,
-            this.gpuToolStripMenuItem});
+            this.gpuToolStripMenuItem,
+            this.imageDBToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Size = new System.Drawing.Size(957, 24);
@@ -233,6 +238,20 @@
             this.createMyCaffeToolStripMenuItem.Name = "createMyCaffeToolStripMenuItem";
             this.createMyCaffeToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
             this.createMyCaffeToolStripMenuItem.Text = "Create MyCaffe";
+            // 
+            // usingLeNETToolStripMenuItem
+            // 
+            this.usingLeNETToolStripMenuItem.Name = "usingLeNETToolStripMenuItem";
+            this.usingLeNETToolStripMenuItem.Size = new System.Drawing.Size(171, 22);
+            this.usingLeNETToolStripMenuItem.Text = "Using LeNET";
+            this.usingLeNETToolStripMenuItem.Click += new System.EventHandler(this.createUsingLeNETToolStripMenuItem_Click);
+            // 
+            // usingSiameseNETToolStripMenuItem
+            // 
+            this.usingSiameseNETToolStripMenuItem.Name = "usingSiameseNETToolStripMenuItem";
+            this.usingSiameseNETToolStripMenuItem.Size = new System.Drawing.Size(171, 22);
+            this.usingSiameseNETToolStripMenuItem.Text = "Using SiameseNET";
+            this.usingSiameseNETToolStripMenuItem.Click += new System.EventHandler(this.createUsingSiameseNETToolStripMenuItem_Click);
             // 
             // deviceInformationToolStripMenuItem
             // 
@@ -403,6 +422,29 @@
             this.gpuToolStripMenuItem.Size = new System.Drawing.Size(42, 20);
             this.gpuToolStripMenuItem.Text = "GPU";
             // 
+            // imageDBToolStripMenuItem
+            // 
+            this.imageDBToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.v1ToolStripMenuItem,
+            this.v2ToolStripMenuItem});
+            this.imageDBToolStripMenuItem.Name = "imageDBToolStripMenuItem";
+            this.imageDBToolStripMenuItem.Size = new System.Drawing.Size(70, 20);
+            this.imageDBToolStripMenuItem.Text = "Image DB";
+            // 
+            // v1ToolStripMenuItem
+            // 
+            this.v1ToolStripMenuItem.Name = "v1ToolStripMenuItem";
+            this.v1ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.v1ToolStripMenuItem.Text = "V1";
+            this.v1ToolStripMenuItem.Click += new System.EventHandler(this.menuImgDb_Click);
+            // 
+            // v2ToolStripMenuItem
+            // 
+            this.v2ToolStripMenuItem.Name = "v2ToolStripMenuItem";
+            this.v2ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.v2ToolStripMenuItem.Text = "V2";
+            this.v2ToolStripMenuItem.Click += new System.EventHandler(this.menuImgDb_Click);
+            // 
             // openFileDialogAutoTests
             // 
             this.openFileDialogAutoTests.DefaultExt = "dll";
@@ -468,7 +510,8 @@
             // statusStrip1
             // 
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.lblGpu});
+            this.lblGpu,
+            this.lblImgDb});
             this.statusStrip1.Location = new System.Drawing.Point(0, 430);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(957, 22);
@@ -479,6 +522,11 @@
             // 
             this.lblGpu.Name = "lblGpu";
             this.lblGpu.Size = new System.Drawing.Size(0, 17);
+            // 
+            // lblImgDb
+            // 
+            this.lblImgDb.Name = "lblImgDb";
+            this.lblImgDb.Size = new System.Drawing.Size(0, 17);
             // 
             // timerUI
             // 
@@ -493,20 +541,6 @@
             this.m_bwLoadVOCDatabase.DoWork += new System.ComponentModel.DoWorkEventHandler(this.m_bwLoadVOCDatabase_DoWork);
             this.m_bwLoadVOCDatabase.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
             this.m_bwLoadVOCDatabase.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
-            // 
-            // usingLeNETToolStripMenuItem
-            // 
-            this.usingLeNETToolStripMenuItem.Name = "usingLeNETToolStripMenuItem";
-            this.usingLeNETToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.usingLeNETToolStripMenuItem.Text = "Using LeNET";
-            this.usingLeNETToolStripMenuItem.Click += new System.EventHandler(this.createUsingLeNETToolStripMenuItem_Click);
-            // 
-            // usingSiameseNETToolStripMenuItem
-            // 
-            this.usingSiameseNETToolStripMenuItem.Name = "usingSiameseNETToolStripMenuItem";
-            this.usingSiameseNETToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.usingSiameseNETToolStripMenuItem.Text = "Using SiameseNET";
-            this.usingSiameseNETToolStripMenuItem.Click += new System.EventHandler(this.createUsingSiameseNETToolStripMenuItem_Click);
             // 
             // FormMain
             // 
@@ -576,6 +610,7 @@
         private System.Windows.Forms.ColumnHeader colStatus;
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel lblGpu;
+        private System.Windows.Forms.ToolStripStatusLabel lblImgDb;
         private System.Windows.Forms.Timer timerUI;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
         private System.Windows.Forms.ToolStripMenuItem startCartPoleTrainerToolStripMenuItem;
@@ -587,6 +622,9 @@
         private System.ComponentModel.BackgroundWorker m_bwLoadVOCDatabase;
         private System.Windows.Forms.ToolStripMenuItem usingLeNETToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem usingSiameseNETToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem imageDBToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem v1ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem v2ToolStripMenuItem;
     }
 }
 

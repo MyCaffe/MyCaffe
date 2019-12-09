@@ -115,6 +115,16 @@ namespace MyCaffe.app
         {
             try
             {
+                int nSelectedImgDbVer = Properties.Settings.Default.ImgDbVer;
+                List<ToolStripMenuItem> rgItems = new List<ToolStripMenuItem>();
+                foreach (ToolStripMenuItem item in imageDBToolStripMenuItem.DropDownItems)
+                {
+                    item.Checked = false;
+                    rgItems.Add(item);
+                }
+
+                rgItems[nSelectedImgDbVer].Checked = true;
+
                 List<string> rgSqlInst = DatabaseInstanceQuery.GetInstances();
 
                 m_bwProcess.RunWorkerAsync();
@@ -307,6 +317,32 @@ namespace MyCaffe.app
             return nGpuId;
         }
 
+        private void menuImgDb_Click(object sender, EventArgs e)
+        {
+            ToolStripMenuItem menu = sender as ToolStripMenuItem;
+
+            foreach (ToolStripMenuItem item in imageDBToolStripMenuItem.DropDownItems)
+            {
+                item.Checked = false;
+            }
+
+            menu.Checked = true;
+        }
+
+        private IMGDB_VERSION getImageDbVersion()
+        {
+            int nChecked = 0;
+            foreach (ToolStripMenuItem menu in imageDBToolStripMenuItem.DropDownItems)
+            {
+                if (menu.Checked)
+                    break;
+
+                nChecked++;
+            }
+
+            return (IMGDB_VERSION)nChecked;
+        }
+
         private void getMajorMinor(string strName, out int nMajor, out int nMinor)
         {
             nMajor = 0;
@@ -456,7 +492,7 @@ namespace MyCaffe.app
             openFileDialogAutoTests.InitialDirectory = initialDirectory;
             if (openFileDialogAutoTests.ShowDialog() == DialogResult.OK)
             {
-                FormAutomatedTests dlg = new FormAutomatedTests(openFileDialogAutoTests.FileName, getGpu());
+                FormAutomatedTests dlg = new FormAutomatedTests(openFileDialogAutoTests.FileName, getGpu(), getImageDbVersion());
 
                 setStatus("Running automatic tests.");
                 dlg.ShowDialog();
@@ -777,7 +813,6 @@ namespace MyCaffe.app
             m_evtCommandRead.Set();
         }
 
-
         private void destroyMyCaffeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             createMyCaffeToolStripMenuItem.Enabled = false;
@@ -927,6 +962,7 @@ namespace MyCaffe.app
                                 settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
                                 settings.EnableRandomInputSelection = true;
                                 settings.GpuIds = getGpu().ToString();
+                                settings.ImageDbVersion = getImageDbVersion();
 
                                 caffe = new MyCaffeControl<float>(settings, log, m_evtCaffeCancel);
 
@@ -1016,6 +1052,7 @@ namespace MyCaffe.app
             }
 
             Properties.Settings.Default.GPU = getGpu();
+            Properties.Settings.Default.ImgDbVer = (int)getImageDbVersion();
             Properties.Settings.Default.Save();
 
             m_evtCancelTraining.Set();
@@ -1033,7 +1070,7 @@ namespace MyCaffe.app
                 startAutotestsToolStripMenuItem.Enabled = false;
                 abortAutotestsToolStripMenuItem.Enabled = true;
                 m_autoTest.Initialize("c:\\temp", EntitiesConnection.GlobalDatabaseServerName);
-                m_autoTest.Run(openFileDialogAutoTests.FileName, false, getGpu());
+                m_autoTest.Run(openFileDialogAutoTests.FileName, false, getGpu(), getImageDbVersion());
             }
         }
 
@@ -1049,7 +1086,7 @@ namespace MyCaffe.app
                 startAutotestsToolStripMenuItem.Enabled = false;
                 abortAutotestsToolStripMenuItem.Enabled = true;
                 m_autoTest.Initialize("c:\\temp", EntitiesConnection.GlobalDatabaseServerName);
-                m_autoTest.Run(openFileDialogAutoTests.FileName, true, getGpu());
+                m_autoTest.Run(openFileDialogAutoTests.FileName, true, getGpu(), getImageDbVersion());
             }
         }
 
@@ -1195,6 +1232,7 @@ namespace MyCaffe.app
             settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
             settings.EnableRandomInputSelection = true;
             settings.GpuIds = getGpu().ToString();
+            settings.ImageDbVersion = getImageDbVersion();
 
             log.WriteLine("Running AlexNet-Cifar test on GPU " + settings.GpuIds + "...");
 
@@ -1217,6 +1255,7 @@ namespace MyCaffe.app
             settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
             settings.EnableRandomInputSelection = true;
             settings.GpuIds = nGpuId.ToString();
+            settings.ImageDbVersion = getImageDbVersion();
 
             log.WriteLine("Running ResNet56-Cifar test on GPU " + settings.GpuIds + "...");
 
@@ -1365,6 +1404,7 @@ namespace MyCaffe.app
         private void timerUI_Tick(object sender, EventArgs e)
         {
             lblGpu.Text = "Using GPU " + getGpuName();
+            lblImgDb.Text = "Using MyCaffe Image Database version " + getImageDbVersion().ToString();
         }
 
         private void startCartPoleTrainerToolStripMenuItem_Click(object sender, EventArgs e)
