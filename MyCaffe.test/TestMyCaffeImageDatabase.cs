@@ -28,7 +28,7 @@ namespace MyCaffe.test
             Stopwatch sw = new Stopwatch();
 
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
-            IXImageDatabase db = new MyCaffeImageDatabase(log);
+            IXImageDatabase1 db = new MyCaffeImageDatabase(log);
             try
             {
 
@@ -39,7 +39,7 @@ namespace MyCaffe.test
                     settings.ImageDbLoadLimit = nLoadLimit;
 
                     sw.Start();
-                    db.InitializeWithDsName(settings, strDs);
+                    db.InitializeWithDsName1(settings, strDs);
                     str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -70,7 +70,7 @@ namespace MyCaffe.test
             Log log = new Log("Test secondary dataset");
             log.EnableTrace = true;
 
-            IXImageDatabase db = new MyCaffeImageDatabase(log);
+            IXImageDatabase1 db = new MyCaffeImageDatabase(log);
             Stopwatch sw = new Stopwatch();
             string strDs = "MNIST";
             string strDs2 = "CIFAR-10";
@@ -83,12 +83,12 @@ namespace MyCaffe.test
                 settings.ImageDbLoadLimit = nLoadLimit;
 
                 sw.Start();
-                db.InitializeWithDsName(settings, strDs);
+                db.InitializeWithDsName1(settings, strDs);
                 str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
                 sw.Restart();
-                db.LoadDatasetByName(strDs2);
+                db.LoadDatasetByName1(strDs2);
                 str = sw.ElapsedMilliseconds.ToString();
                 Trace.WriteLine(strDs2 + " Initialization Time: " + str + " ms.");
 
@@ -116,7 +116,7 @@ namespace MyCaffe.test
             PreTest.Init();
 
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
-            IXImageDatabase db = new MyCaffeImageDatabase();
+            IXImageDatabase1 db = new MyCaffeImageDatabase();
             Stopwatch sw = new Stopwatch();
             string str;
 
@@ -129,7 +129,7 @@ namespace MyCaffe.test
                     settings.ImageDbLoadLimit = 0;
 
                     sw.Start();
-                    db.InitializeWithDsName(settings, strDs);
+                    db.InitializeWithDsName1(settings, strDs);
                     str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -241,7 +241,7 @@ namespace MyCaffe.test
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
             Log log = new Log("Image Database Test");
             log.EnableTrace = true;
-            IXImageDatabase db = new MyCaffeImageDatabase(log);
+            IXImageDatabase1 db = new MyCaffeImageDatabase(log);
 
             try
             {
@@ -259,7 +259,7 @@ namespace MyCaffe.test
                     Stopwatch sw = new Stopwatch();
 
                     sw.Start();
-                    db.InitializeWithDsName(settings, strDs);
+                    db.InitializeWithDsName1(settings, strDs);
                     string str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -369,7 +369,7 @@ namespace MyCaffe.test
 
             foreach (string strDs in rgDs)
             {
-                IXImageDatabase db = new MyCaffeImageDatabase();
+                IXImageDatabase1 db = new MyCaffeImageDatabase();
 
                 try
                 {
@@ -380,7 +380,7 @@ namespace MyCaffe.test
                     Stopwatch sw = new Stopwatch();
 
                     sw.Start();
-                    db.InitializeWithDsName(settings, strDs);
+                    db.InitializeWithDsName1(settings, strDs);
                     db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
                     string str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
@@ -526,7 +526,7 @@ namespace MyCaffe.test
             PreTest.Init();
 
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
-            IXImageDatabase db = new MyCaffeImageDatabase();
+            IXImageDatabase1 db = new MyCaffeImageDatabase();
 
             try
             {
@@ -544,7 +544,7 @@ namespace MyCaffe.test
                     Stopwatch sw = new Stopwatch();
 
                     sw.Start();
-                    db.InitializeWithDsName(settings, strDs);
+                    db.InitializeWithDsName1(settings, strDs);
                     string str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -612,7 +612,7 @@ namespace MyCaffe.test
             PreTest.Init();
 
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
-            IXImageDatabase db = new MyCaffeImageDatabase();
+            IXImageDatabase1 db = new MyCaffeImageDatabase();
 
             try
             {
@@ -625,7 +625,7 @@ namespace MyCaffe.test
                     Stopwatch sw = new Stopwatch();
 
                     sw.Start();
-                    db.InitializeWithDsName(settings, strDs);
+                    db.InitializeWithDsName1(settings, strDs);
                     string str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -704,7 +704,7 @@ namespace MyCaffe.test
             PreTest.Init();
 
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
-            IXImageDatabase db = new MyCaffeImageDatabase();
+            IXImageDatabase1 db = new MyCaffeImageDatabase();
 
             try
             {
@@ -717,7 +717,7 @@ namespace MyCaffe.test
                     Stopwatch sw = new Stopwatch();
 
                     sw.Start();
-                    db.InitializeWithDsName(settings, strDs);
+                    db.InitializeWithDsName1(settings, strDs);
                     db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
                     string str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
@@ -786,7 +786,7 @@ namespace MyCaffe.test
             PreTest.Init();
 
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
-            IXImageDatabase db = new MyCaffeImageDatabase();
+            IXImageDatabase1 db = new MyCaffeImageDatabase();
 
             try
             {
@@ -799,7 +799,7 @@ namespace MyCaffe.test
                     Stopwatch sw = new Stopwatch();
 
                     sw.Start();
-                    db.InitializeWithDsName(settings, strDs);
+                    db.InitializeWithDsName1(settings, strDs);
                     db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
                     string str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
@@ -879,7 +879,7 @@ namespace MyCaffe.test
             PreTest.Init();
 
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
-            IXImageDatabase db = new MyCaffeImageDatabase();
+            IXImageDatabase1 db = new MyCaffeImageDatabase();
 
             try
             {
@@ -892,7 +892,7 @@ namespace MyCaffe.test
                     Stopwatch sw = new Stopwatch();
 
                     sw.Start();
-                    db.InitializeWithDsName(settings, strDs);
+                    db.InitializeWithDsName1(settings, strDs);
                     db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
                     string str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
@@ -958,7 +958,7 @@ namespace MyCaffe.test
             PreTest.Init();
 
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
-            IXImageDatabase db = new MyCaffeImageDatabase();
+            IXImageDatabase1 db = new MyCaffeImageDatabase();
 
             try
             {
@@ -976,7 +976,7 @@ namespace MyCaffe.test
                     Stopwatch sw = new Stopwatch();
 
                     sw.Start();
-                    db.InitializeWithDsName(settings, strDs);
+                    db.InitializeWithDsName1(settings, strDs);
                     db.SetSelectionMethod(IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
                     string str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
@@ -1085,7 +1085,7 @@ namespace MyCaffe.test
             PreTest.Init();
 
             List<string> rgDs = new List<string>() { "MNIST", "CIFAR-10", "MNIST" };
-            IXImageDatabase db = new MyCaffeImageDatabase();
+            IXImageDatabase1 db = new MyCaffeImageDatabase();
 
             try
             {
@@ -1095,7 +1095,7 @@ namespace MyCaffe.test
                     Stopwatch sw = new Stopwatch();
 
                     sw.Start();
-                    db.InitializeWithDsName(settings, strDs);
+                    db.InitializeWithDsName1(settings, strDs);
                     string str = sw.ElapsedMilliseconds.ToString();
                     Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
 
@@ -1137,7 +1137,7 @@ namespace MyCaffe.test
             Log log = new Log("GetImagesByDate");
             log.EnableTrace = true;
 
-            IXImageDatabase db = new MyCaffeImageDatabase(log);
+            IXImageDatabase1 db = new MyCaffeImageDatabase(log);
 
             try
             {
@@ -1146,7 +1146,7 @@ namespace MyCaffe.test
 
                 settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
 
-                db.InitializeWithDsName(settings, "MNIST");
+                db.InitializeWithDsName1(settings, "MNIST");
                 DatasetDescriptor ds = db.GetDatasetByName("MNIST");
 
                 //---------------------------------------------
@@ -1217,11 +1217,11 @@ namespace MyCaffe.test
 
                     int nFilterVal = i * 1000;
                     string strFilterVal = nFilterVal.ToString().PadLeft(5, '0');
-                    int nCount = db.ImageCount(ds.TrainingSource.ID, false, strFilterVal);
+                    int nCount = db.GetImageCount(ds.TrainingSource.ID, strFilterVal);
                     int nSequenceCount = 10 + rand.Next(50);
                     int nRandomStart = rand.Next(nCount - nSequenceCount);
                     DateTime dtStart = dt + TimeSpan.FromMinutes(nRandomStart + i * 1000);
-                    List<SimpleDatum> rgSd1 = db.GetImagesByDate(ds.TrainingSource.ID, dtStart, nSequenceCount, strFilterVal);
+                    List<SimpleDatum> rgSd1 = db.GetImagesFromTime(ds.TrainingSource.ID, dtStart, nSequenceCount, strFilterVal);
 
                     // Verify the count.
                     if (rgSd1.Count != nSequenceCount)
@@ -1270,7 +1270,7 @@ namespace MyCaffe.test
                     int nSequenceCount = 10 + rand.Next(50);
                     int nRandomStart = rand.Next(nCount - nSequenceCount);
                     DateTime dtStart = dt + TimeSpan.FromMinutes(nRandomStart);
-                    List<SimpleDatum> rgSd1 = db.GetImagesByDate(ds.TrainingSource.ID, dtStart, nSequenceCount);
+                    List<SimpleDatum> rgSd1 = db.GetImagesFromTime(ds.TrainingSource.ID, dtStart, nSequenceCount);
 
                     // Verify the count.
                     if (rgSd1.Count != nSequenceCount)
@@ -1304,7 +1304,7 @@ namespace MyCaffe.test
             Log log = new Log("SortTest");
             log.EnableTrace = true;
 
-            IXImageDatabase db = new MyCaffeImageDatabase(log);
+            IXImageDatabase1 db = new MyCaffeImageDatabase(log);
 
             try
             {
@@ -1313,7 +1313,7 @@ namespace MyCaffe.test
 
                 settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
 
-                db.InitializeWithDsName(settings, "MNIST");
+                db.InitializeWithDsName1(settings, "MNIST");
                 DatasetDescriptor ds = db.GetDatasetByName("MNIST");
 
                 //---------------------------------------------
@@ -1478,7 +1478,7 @@ namespace MyCaffe.test
             Log log = new Log("CreateDatasetOrganizedByTime");
             log.EnableTrace = true;
 
-            IXImageDatabase db = new MyCaffeImageDatabase(log);
+            IXImageDatabase1 db = new MyCaffeImageDatabase(log);
 
             try
             {
@@ -1487,7 +1487,7 @@ namespace MyCaffe.test
 
                 settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
 
-                db.InitializeWithDsName(settings, "MNIST");
+                db.InitializeWithDsName1(settings, "MNIST");
                 DatasetDescriptor ds = db.GetDatasetByName("MNIST");
 
                 //---------------------------------------------
@@ -1601,9 +1601,9 @@ namespace MyCaffe.test
         private bool testQuery(int nTestIdx, Log log, DatasetDescriptor ds, LabelDescriptor lblDesc, IMAGEDB_LOAD_METHOD loadMethod, IMGDB_LABEL_SELECTION_METHOD lblSel, IMGDB_IMAGE_SELECTION_METHOD imgSel, List<int> rgBoostIdx, ref int nIdx, ref int nTotal)
         {
             TestingProgressSet progress = null;
-            IXImageDatabase db = null;
+            IXImageDatabase1 db = null;
             int nSrcId = ds.TrainingSource.ID;
-            int nImageCount = ds.TrainingSource.ImageCount;
+            int nImageCount = 0;
 
             try
             {
@@ -1639,7 +1639,7 @@ namespace MyCaffe.test
                     settings.ImageDbLoadLimit = 0;
 
                     db = new MyCaffeImageDatabase(log, "default", 1701);
-                    db.InitializeWithDsName(settings, ds.Name);
+                    db.InitializeWithDsName1(settings, ds.Name);
 
                     log.WriteLine("Running Test: load " + loadMethod.ToString() + ", label selection " + lblSel.ToString() + ", image selection " + imgSel.ToString());
 
@@ -1647,10 +1647,26 @@ namespace MyCaffe.test
                     Dictionary<int, int> rgIndexCounts = new Dictionary<int, int>();
                     List<int> rgImagesNotQueried = new List<int>();
 
-                    for (int i = 0; i < nImageCount; i++)
+                    Database db1 = new Database();
+                    db1.Open(nSrcId);
+                    List<DbItem> rgItems = db1.GetAllRawImageIndexes(false);
+                    db1.Close();
+
+                    if (lblDesc != null)
                     {
-                        rgImagesNotQueried.Add(i);
+                        if ((imgSel & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST)
+                            rgItems = rgItems.Where(p => p.Label == lblDesc.ActiveLabel && p.Boost > 0).ToList();
+                        else
+                            rgItems = rgItems.Where(p => p.Label == lblDesc.ActiveLabel).ToList();
                     }
+                    else
+                    {
+                        if ((imgSel & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST)
+                            rgItems = rgItems.Where(p => p.Boost > 0).ToList();
+                    }
+
+                    rgImagesNotQueried = rgItems.Select(p => p.Index).ToList();
+                    nImageCount = rgImagesNotQueried.Count;
 
                     for (int i = 0; i < nImageCount; i++)
                     {
@@ -1693,11 +1709,15 @@ namespace MyCaffe.test
                         double dfSum = rgProbabilities.Sum(p => p.Value);
                         double dfAve = dfSum / rgProbabilities.Count;
 
+                        double dfThreshold = 0.001;
+                        if ((lblSel & IMGDB_LABEL_SELECTION_METHOD.RANDOM) != IMGDB_LABEL_SELECTION_METHOD.RANDOM ||
+                            (imgSel & IMGDB_IMAGE_SELECTION_METHOD.RANDOM) != IMGDB_IMAGE_SELECTION_METHOD.RANDOM)
+                            dfThreshold = 0.12;
+
                         foreach (KeyValuePair<int, double> kv in rgProbabilities)
                         {
-                            double dfDiff = kv.Value - dfAve;
-
-                            log.EXPECT_NEAR_FLOAT(kv.Value, dfAve, 0.001, "The probabilities are not correct!");
+                            double dfDiff = Math.Abs(kv.Value - dfAve);
+                            log.EXPECT_NEAR_FLOAT(kv.Value, dfAve, dfThreshold, "The probabilities are not correct!");
                         }
                     }
 
