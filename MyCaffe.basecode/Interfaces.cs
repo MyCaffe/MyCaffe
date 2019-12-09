@@ -344,15 +344,18 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Specifies to use the original image database.
         /// </summary>
+        [EnumMember]
         V1,
         /// <summary>
         /// Specifies to use the new image database v2.
         /// </summary>
+        [EnumMember]
         V2,
         /// <summary>
-        /// Specifies the default version (currently V1)
+        /// Specifies the default version (currently V2)
         /// </summary>
-        DEFAULT = V1
+        [EnumMember]
+        DEFAULT = V2
     }
 
     [ServiceContract]
@@ -454,6 +457,7 @@ namespace MyCaffe.basecode
         /// Returns the version of the MyCaffe Image Database being used.
         /// </summary>
         /// <returns>Returns the version.</returns>
+        [OperationContract(IsOneWay = false)]
         IMGDB_VERSION GetVersion();
 
         /// <summary>
