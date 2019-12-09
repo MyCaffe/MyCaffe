@@ -28,8 +28,8 @@ namespace MyCaffe.db.image
         /// <param name="master">Specifies the MasterIndexes to copy.</param>
         /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch equally (default = true).</param>
         /// <param name="bUseUniqueImageIndexes">Optionally, specifies to use unique image indexes which is slightly slower, but ensures each image is hit per epoch (default = true).</param>
-        /// <param name="sort">Optionally, specifies the ordering to use on the indexes.</param>
-        public QueryState(MasterIndexes master, bool bUseUniqueLabelIndexes = true, bool bUseUniqueImageIndexes = true, IMGDB_SORT sort = IMGDB_SORT.NONE) : base(master, sort)
+        /// <param name="sort">Optionally, specifies the ordering to use on the indexes (default = BYIDX).</param>
+        public QueryState(MasterIndexes master, bool bUseUniqueLabelIndexes = true, bool bUseUniqueImageIndexes = true, IMGDB_SORT sort = IMGDB_SORT.BYIDX) : base(master, sort)
         {
             m_master = master;
             m_stat = new LabelStats(master.LabelCount);
@@ -99,7 +99,7 @@ namespace MyCaffe.db.image
         /// <returns></returns>
         public int? GetNextImage(IMGDB_IMAGE_SELECTION_METHOD imgSel, int? nLabel, int nDirectIdx)
         {
-            if (imgSel == IMGDB_IMAGE_SELECTION_METHOD.NONE && nDirectIdx >= 0)
+            if (!nLabel.HasValue && imgSel == IMGDB_IMAGE_SELECTION_METHOD.NONE && nDirectIdx >= 0)
                 return GetNextImage(Index.SELECTION_TYPE.DIRECT, null, false, nDirectIdx);
 
             Index.SELECTION_TYPE selType = Index.SELECTION_TYPE.RANDOM;
