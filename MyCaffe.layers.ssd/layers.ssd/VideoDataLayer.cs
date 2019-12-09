@@ -70,7 +70,7 @@ namespace MyCaffe.layers.ssd
         /// <param name="p">provides LayerParameter annotated_data_param.</param>
         /// <param name="db">Specifies the external database to use.</param>
         /// <param name="evtCancel">Specifies the CancelEvent used to cancel any pre-fetching operations.</param>
-        public VideoDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabase db, CancelEvent evtCancel) 
+        public VideoDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabaseBase db, CancelEvent evtCancel) 
             : base(cuda, log, p, db, evtCancel)
         {
             m_type = LayerParameter.LayerType.VIDEO_DATA;

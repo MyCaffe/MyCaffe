@@ -43,7 +43,7 @@ namespace MyCaffe.layers.alpha
         /// <param name="db">Specifies the image database.</param>
         /// <param name="evtCancel">Specifies the cancel event to cancel data loading operations.</param>
         /// </param>
-        public TripletDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabase db, CancelEvent evtCancel)
+        public TripletDataLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabaseBase db, CancelEvent evtCancel)
             : base(cuda, log, p, db, evtCancel)
         {
             log.CHECK(p.type == LayerParameter.LayerType.TRIPLET_DATA, "The layer type should be TRIPLET_DATA.");
