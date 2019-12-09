@@ -67,6 +67,9 @@ namespace MyCaffe.db.image
             m_log = log;
             InitializeComponent();
             init(strId, nSeed);
+
+            if (log != null)
+                log.WriteLine("INFO: Using MyCaffe Image Database VERSION 2.");
         }
 
         /// <summary>
@@ -79,6 +82,15 @@ namespace MyCaffe.db.image
 
             InitializeComponent();
             init();
+        }
+
+        /// <summary>
+        /// Returns the version of the MyCaffe Image Database being used.
+        /// </summary>
+        /// <returns>Returns the version.</returns>
+        public IMGDB_VERSION GetVersion()
+        {
+            return IMGDB_VERSION.V2;
         }
 
         #region Initialization and Cleanup
@@ -171,7 +183,7 @@ namespace MyCaffe.db.image
                             if (ds != null)
                             {
                                 ds.AddUser(m_userGuid);
-                                return ds.CreateQueryState();
+                                return ds.DefaultQueryState;
                             }
                         }
                     }
@@ -248,6 +260,56 @@ namespace MyCaffe.db.image
             }
         }
 
+        /// <summary>
+        /// Initializes the image database.
+        /// </summary>
+        /// <param name="s">Specifies the caffe settings.</param>
+        /// <param name="strDs">Specifies the data set to load.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
+        /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
+        public bool InitializeWithDsName1(SettingsCaffe s, string strDs, string strEvtCancel = null)
+        {
+            long lHandle = InitializeWithDsName(s, strDs, strEvtCancel);
+            if (lHandle == 0)
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Initializes the image database.
+        /// </summary>
+        /// <param name="s">Specifies the caffe settings.</param>
+        /// <param name="ds">Specifies the data set to load.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
+        /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
+        public bool InitializeWithDs1(SettingsCaffe s, DatasetDescriptor ds, string strEvtCancel = null)
+        {
+            long lHandle = InitializeWithDs(s, ds, strEvtCancel);
+            if (lHandle == 0)
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Initializes the image database.
+        /// </summary>
+        /// <param name="s">Specifies the caffe settings.</param>
+        /// <param name="nDataSetID">Specifies the database ID of the data set to load.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
+        /// <param name="nPadW">Specifies the padding to add to each image width (default = 0).</param>
+        /// <param name="nPadH">Specifies the padding to add to each image height (default = 0).</param>
+        /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
+        public bool InitializeWithDsId1(SettingsCaffe s, int nDataSetID, string strEvtCancel = null, int nPadW = 0, int nPadH = 0)
+        {
+            long lHandle = InitializeWithDsId(s, nDataSetID, strEvtCancel, nPadW, nPadH);
+            if (lHandle == 0)
+                return false;
+
+            return true;
+        }
+
         private void init(string strId = "", int nSeed = 0)
         {
             int nProcessID = Process.GetCurrentProcess().Id;
@@ -264,7 +326,8 @@ namespace MyCaffe.db.image
         /// Releases the image database, and if this is the last instance using the in-memory database, frees all memory used.
         /// </summary>
         /// <param name="nDsId">Optionally, specifies the dataset previously loaded.</param>
-        public void CleanUp(int nDsId = 0)
+        /// <param name="bForce">Optionally, force the cleanup even if other users are using the database.</param>
+        public void CleanUp(int nDsId = 0, bool bForce = false)
         {
             lock (m_syncObject)
             {
@@ -280,7 +343,7 @@ namespace MyCaffe.db.image
                 {
                     DatasetExCollection2 colDs = col.Value;
 
-                    if (colDs.RemoveUser(m_userGuid))
+                    if (colDs.RemoveUser(m_userGuid) || bForce)
                     {
                         rgRemove.Add(col.Key);
                         colDs.Dispose();
@@ -302,6 +365,8 @@ namespace MyCaffe.db.image
 
         private void dispose()
         {
+            CleanUp(0, true);
+
             if (m_evtInitialized != null)
             {
                 m_evtInitialized.Dispose();
@@ -448,6 +513,36 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Set the default query state to the query state specified for the dataset specified.
+        /// </summary>
+        /// <param name="nDsId">Specifies the dataset ID.</param>
+        /// <param name="lQueryState">Specifies the query state to set.</param>
+        /// <returns>Returns <i>true</i> on success, <i>false</i> on failure.</returns>
+        public bool SetDefaultQueryState(int nDsId, long lQueryState)
+        {
+            int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
+            if (nWait == 0)
+                return false;
+
+            return m_colDatasets[m_nStrIDHashCode].SetDefaultQueryState(nDsId, lQueryState);
+        }
+
+        /// <summary>
+        /// Set the default query state to the query state specified for the dataset specified.
+        /// </summary>
+        /// <param name="strDs">Specifies the dataset name.</param>
+        /// <param name="lQueryState">Specifies the query state to set.</param>
+        /// <returns>Returns <i>true</i> on success, <i>false</i> on failure.</returns>
+        public bool SetDefaultQueryState(string strDs, long lQueryState)
+        {
+            int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
+            if (nWait == 0)
+                return false;
+
+            return m_colDatasets[m_nStrIDHashCode].SetDefaultQueryState(strDs, lQueryState);
+        }
+
+        /// <summary>
         /// Frees a query state from a given dataset.
         /// </summary>
         /// <param name="nDsId">Specifies the dataset on which to free the query state.</param>
@@ -476,7 +571,7 @@ namespace MyCaffe.db.image
         /// <param name="strSource">Specifies the source to query.</param>
         /// <returns>The query boost percentage hit is returned as text.</returns>
         public string GetBoostQueryHitPercentsAsTextFromSourceName(long lQueryState, string strSource)
-        {
+        {           
             return m_colDatasets[m_nStrIDHashCode].FindQueryState(lQueryState, strSource).GetQueryBoostHitPercentsAsText();
         }
 
@@ -502,9 +597,48 @@ namespace MyCaffe.db.image
             return m_colDatasets[m_nStrIDHashCode].FindQueryState(lQueryState, strSource).GetQueryLabelEpochsAsText();
         }
 
+        /// <summary>
+        /// Returns a string with the query hit percent for each boost (e.g. the percentage that each boost value has been queried).
+        /// </summary>
+        /// <param name="strSource">Specifies the data source who's hit percentages are to be retrieved.</param>
+        /// <returns>A string representing the query hit percentages is returned.</returns>
+        public string GetBoostQueryHitPercentsAsTextFromSourceName(string strSource)
+        {
+            return GetBoostQueryHitPercentsAsTextFromSourceName(0, strSource);
+        }
+
+        /// <summary>
+        /// Returns a string with the query hit percent for each label (e.g. the percentage that each label has been queried).
+        /// </summary>
+        /// <param name="strSource">Specifies the data source who's hit percentages are to be retrieved.</param>
+        /// <returns>A string representing the query hit percentages is returned.</returns>
+        public string GetLabelQueryHitPercentsAsTextFromSourceName(string strSource)
+        {
+            return GetLabelQueryHitPercentsAsTextFromSourceName(0, strSource);
+        }
+
+        /// <summary>
+        /// Returns a string with the query epoch counts for each label (e.g. the number of times all images with the label have been queried).
+        /// </summary>
+        /// <param name="strSource">Specifies the data source who's query epochs are to be retrieved.</param>
+        /// <returns>A string representing the query epoch counts is returned.</returns>
+        public string GetLabelQueryEpocsAsTextFromSourceName(string strSource)
+        {
+            return GetLabelQueryEpocsAsTextFromSourceName(0, strSource);
+        }
+
         #endregion // Query States
 
         #region Properties
+
+        /// <summary>
+        /// Get/set the output log.
+        /// </summary>
+        public Log OutputLog
+        {
+            get { return m_log; }
+            set { m_log = value; }
+        }
 
         /// <summary>
         /// Returns whether or not the image data criteria is loaded with each image.
@@ -540,6 +674,21 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Returns the number of images in a given data source, optionally only counting the boosted images.
         /// </summary>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="bBoostValIsExact">Optionally, specifies whether or the boost value (if specified) is to be used literally (exact = true), or as a minimum boost value.</param>
+        /// <returns>The number of images is returned.</returns>
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
+        public int GetImageCount(int nSrcId, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
+        {
+            return GetImageCount(0, nSrcId, strFilterVal, nBoostVal, bBoostValIsExact);
+        }
+
+        /// <summary>
+        /// Returns the number of images in a given data source, optionally only counting the boosted images.
+        /// </summary>
         /// <param name="lQueryState">Specifies a handle to the query state to use.</param>
         /// <param name="nSrcId">Specifies the data source ID.</param>
         /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
@@ -551,7 +700,6 @@ namespace MyCaffe.db.image
         public int GetImageCount(long lQueryState, int nSrcId, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
-
             if (nWait == 0)
                 return 0;
 
@@ -559,15 +707,6 @@ namespace MyCaffe.db.image
             ImageSet2 imgSet = m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId);
 
             return imgSet.GetCount(qstate, strFilterVal, nBoostVal, bBoostValIsExact);
-        }
-
-        /// <summary>
-        /// Get/set the output log.
-        /// </summary>
-        public Log OutputLog
-        {
-            get { return m_log; }
-            set { m_log = value; }
         }
 
         /// <summary>
@@ -723,6 +862,40 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
         /// </summary>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <param name="nStartIdx">Specifies a starting index from which the query is to start within the set of images.</param>
+        /// <param name="nQueryCount">Optionally, specifies a number of images to retrieve within the set (default = int.MaxValue).</param>
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="bBoostValIsExact">Optionally, specifies whether or the boost value (if specified) is to be used literally (exact = true), or as a minimum boost value.</param>
+        /// <returns>The list of images is returned.</returns>
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
+        public List<SimpleDatum> GetImagesFromIndex(int nSrcId, int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
+        {
+            return GetImagesFromIndex(0, nSrcId, nStartIdx, nQueryCount, strFilterVal, nBoostVal, bBoostValIsExact);
+        }
+
+        /// <summary>
+        /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <param name="dtStart">Specifies a starting time from which the query is to start within the set of images.</param>
+        /// <param name="nQueryCount">Optionally, specifies a number of images to retrieve within the set (default = int.MaxValue).</param>
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="bBoostValIsExact">Optionally, specifies whether or the boost value (if specified) is to be used literally (exact = true), or as a minimum boost value.</param>
+        /// <returns>The list of images is returned.</returns>
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
+        public List<SimpleDatum> GetImagesFromTime(int nSrcId, DateTime dtStart, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
+        {
+            return GetImagesFromTime(0, nSrcId, dtStart, nQueryCount, strFilterVal, nBoostVal, bBoostValIsExact);
+        }
+
+        /// <summary>
+        /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
+        /// </summary>
         /// <param name="lQueryState">Specifies a handle to the query state to use.</param>
         /// <param name="nSrcId">Specifies the data source ID.</param>
         /// <param name="nStartIdx">Specifies a starting index from which the query is to start within the set of images.</param>
@@ -736,7 +909,6 @@ namespace MyCaffe.db.image
         public List<SimpleDatum> GetImagesFromIndex(long lQueryState, int nSrcId, int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
-
             if (nWait == 0)
                 return null;
 
@@ -762,7 +934,6 @@ namespace MyCaffe.db.image
         public List<SimpleDatum> GetImagesFromTime(long lQueryState, int nSrcId, DateTime dtStart, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
-
             if (nWait == 0)
                 return null;
 
@@ -776,21 +947,20 @@ namespace MyCaffe.db.image
         /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
-        /// <param name="bSuperboostOnly">Specifies whether or not to return images with super-boost.</param>
-        /// <param name="strFilterVal">specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
-        /// <param name="nBoostVal">specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
-        /// <param name="rgIdx">Specifies a set of indexes of the images to retrieve.</param>
+        /// <param name="rgIdx">Specifies an array of indexes to query.</param>
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="bBoostValIsExact">Optionally, specifies whether or the boost value (if specified) is to be used literally (exact = true), or as a minimum boost value - currently, not used in Version 2.</param>
         /// <returns>The list of images is returned.</returns>
         /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
-        public List<SimpleDatum> GetImagesEx(int nSrcId, bool bSuperboostOnly, string strFilterVal, int? nBoostVal, int[] rgIdx)
+        public List<SimpleDatum> GetImages(int nSrcId, int[] rgIdx, string strFilterVal, int? nBoostVal, bool bBoostValIsExact = false)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
-
             if (nWait == 0)
                 return null;
 
-            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImages(bSuperboostOnly, strFilterVal, nBoostVal, rgIdx);
+            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImages(nBoostVal.HasValue, strFilterVal, nBoostVal, rgIdx);
         }
 
         /// <summary>
@@ -808,7 +978,6 @@ namespace MyCaffe.db.image
         public SimpleDatum QueryImage(long lQueryState, int nSrcId, int nIdx, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
-
             if (nWait == 0)
                 return null;
 
@@ -827,6 +996,22 @@ namespace MyCaffe.db.image
             ImageSet2 imgSet = m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId);
 
             return imgSet.GetImage(qstate, labelSelectionMethod, imageSelectionMethod, m_log, nLabel, nIdx, bLoadDataCriteria, bLoadDataCriteria);
+        }
+
+        /// <summary>
+        /// Query an image in a given data source.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the databse ID of the data source.</param>
+        /// <param name="nIdx">Specifies the image index to query.  Note, the index is only used in non-random image queries.</param>
+        /// <param name="labelSelectionOverride">Optionally, specifies the label selection method override.  The default = null, which directs the method to use the label selection method specified during Initialization.</param>
+        /// <param name="imageSelectionOverride">Optionally, specifies the image selection method override.  The default = null, which directs the method to use the image selection method specified during Initialization.</param>
+        /// <param name="nLabel">Optionally, specifies a label set to use for the image selection.  When specified only images of this label are returned using the image selection method.</param>
+        /// <param name="bLoadDataCriteria">Specifies to load the data criteria data (default = false).</param>
+        /// <param name="bLoadDebugData">Specifies to load the debug data (default = false).</param>
+        /// <returns>The image SimpleDatum is returned.</returns>
+        public SimpleDatum QueryImage(int nSrcId, int nIdx, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, int? nLabel = null, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
+        {
+            return QueryImage(0, nSrcId, nIdx, labelSelectionOverride, imageSelectionOverride, nLabel, bLoadDataCriteria, bLoadDebugData);
         }
 
         /// <summary>
@@ -1075,6 +1260,44 @@ namespace MyCaffe.db.image
             col.Add(ds0);
 
             return lQueryState;
+        }
+
+        /// <summary>
+        /// Load another, 'secondary' dataset.
+        /// </summary>
+        /// <remarks>
+        /// The primary dataset should be loaded using one of the 'Initialize' methods.  This method is provided to allow for loading
+        /// multiple datasets.
+        /// </remarks>
+        /// <param name="nDsId">Specifies the ID of the data set.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
+        /// <returns>When loaded, the handle to the default query state is returned, otherwise 0 is returned.</returns>
+        public bool LoadDatasetByID1(int nDsId, string strEvtCancel = null)
+        {
+            long lHandle = LoadDatasetByID(nDsId, strEvtCancel);
+            if (lHandle == 0)
+                return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Load another, 'secondary' dataset.
+        /// </summary>
+        /// <remarks>
+        /// The primary dataset should be loaded using one of the 'Initialize' methods.  This method is provided to allow for loading
+        /// multiple datasets.
+        /// </remarks>
+        /// <param name="strDs">Specifies the name of the data set.</param>
+        /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
+        /// <returns>When loaded, the handle to the default query state is returned, otherwise 0 is returned.</returns>
+        public bool LoadDatasetByName1(string strDs, string strEvtCancel = null)
+        {
+            long lHandle = LoadDatasetByName(strDs, strEvtCancel);
+            if (lHandle == 0)
+                return false;
+
+            return true;
         }
 
         /// <summary>
