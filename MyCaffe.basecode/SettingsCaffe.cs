@@ -12,6 +12,7 @@ namespace MyCaffe.basecode
     [Serializable]
     public class SettingsCaffe : ISerializable
     {
+        IMGDB_VERSION m_imgDbVersion = IMGDB_VERSION.DEFAULT;
         bool m_bEnableLabelBalancing = false;
         bool m_bEnableLabelBoosting = false;
         bool m_bEnableRandomInputSelection = true;
@@ -42,6 +43,7 @@ namespace MyCaffe.basecode
         /// </summary>
         public SettingsCaffe(SettingsCaffe s)
         {
+            m_imgDbVersion = s.m_imgDbVersion;
             m_bEnableLabelBalancing = s.m_bEnableLabelBalancing;
             m_bEnableLabelBoosting = s.m_bEnableLabelBoosting;
             m_bEnableRandomInputSelection = s.m_bEnableRandomInputSelection;
@@ -68,6 +70,7 @@ namespace MyCaffe.basecode
         /// <param name="context">Specifies the serialization context.</param>
         public SettingsCaffe(SerializationInfo info, StreamingContext context)
         {
+            m_imgDbVersion = (IMGDB_VERSION)getInt(info, "ImageDbVersion", (int)m_imgDbVersion);
             m_bEnableLabelBalancing = getBool(info, "bEnableLabelBalancing", m_bEnableLabelBalancing);
             m_bEnableLabelBoosting = getBool(info, "bEnableLabelBoosting", m_bEnableLabelBoosting);
             m_bEnableRandomInputSelection = getBool(info, "bEnableRandomInputSelection", m_bEnableRandomInputSelection);
@@ -142,6 +145,7 @@ namespace MyCaffe.basecode
         /// <param name="context">Specifies the serialization context.</param>
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            info.AddValue("ImageDbVersion", (int)m_imgDbVersion);
             info.AddValue("bEnableLabelBalancing", m_bEnableLabelBalancing);
             info.AddValue("bEnableLabelBoosting", m_bEnableLabelBoosting);
             info.AddValue("bEnableRandomInputSelection", m_bEnableRandomInputSelection);
@@ -169,6 +173,7 @@ namespace MyCaffe.basecode
         {
             SettingsCaffe s = new SettingsCaffe();
 
+            s.m_imgDbVersion = m_imgDbVersion;
             s.m_bEnableLabelBalancing = m_bEnableLabelBalancing;
             s.m_bEnableLabelBoosting = m_bEnableLabelBoosting;
             s.m_bEnableRandomInputSelection = m_bEnableRandomInputSelection;
@@ -188,6 +193,15 @@ namespace MyCaffe.basecode
             s.m_bSkipMeanCheck = m_bSkipMeanCheck;
 
             return s;
+        }
+
+        /// <summary>
+        /// Get/set the version of the MyCaffeImageDatabase to use.
+        /// </summary>
+        public IMGDB_VERSION ImageDbVersion
+        {
+            get { return m_imgDbVersion; }
+            set { m_imgDbVersion = value; }
         }
 
         /// <summary>
