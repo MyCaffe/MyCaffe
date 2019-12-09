@@ -10,6 +10,7 @@ using System.Reflection;
 using System.IO;
 using System.Diagnostics;
 using System.Threading;
+using MyCaffe.db.image;
 
 namespace MyCaffe.test
 {
@@ -21,6 +22,7 @@ namespace MyCaffe.test
         string m_strName = "";
         static bool m_bResetOnCleanUp = false;
         protected bool m_bHalf = false;
+        IMGDB_VERSION m_imgDbVer = IMGDB_VERSION.DEFAULT;
 
 
         public TestBase(string strName, int nDeviceID = DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, object tag = null, bool bHalf = false)
@@ -45,26 +47,63 @@ namespace MyCaffe.test
                 }
             }
 
+            // If an auto test has set the IMGDB_VER, use it instead of the default.
+            LocalDataStoreSlot ldsv = Thread.GetNamedDataSlot("IMGDBVER");
+            if (ldsv != null)
+            {
+                object obj = Thread.GetData(ldsv);
+                if (obj != null)
+                {
+                    string strImgDbVer = obj.ToString();
+                    if (!string.IsNullOrEmpty(strImgDbVer))
+                    {
+                        int nVal;
+
+                        if (int.TryParse(strImgDbVer, out nVal) && (nVal == 0 || nVal == 1))
+                            m_imgDbVer = (IMGDB_VERSION)nVal;
+                    }
+                }
+            }
+
             m_strName = strName;
 
             if (create_count == 1)
             {
-                m_rgTests.Add(create(DataType.FLOAT, strName, nDeviceID, engine));
-                m_rgTests.Add(create(DataType.DOUBLE, strName, nDeviceID, engine));
+                ITest iTestF = create(DataType.FLOAT, strName, nDeviceID, engine);
+                if (iTestF != null)
+                {
+                    iTestF.SetParent(this);
+                    iTestF.initialize();
+                    m_rgTests.Add(iTestF);
+                }
+
+                ITest iTestD = create(DataType.DOUBLE, strName, nDeviceID, engine);
+                if (iTestD != null)
+                {
+                    iTestD.SetParent(this);
+                    iTestD.initialize();
+                    m_rgTests.Add(iTestD);
+                }
             }
             else
             {
                 for (int i = 0; i < create_count; i++)
                 {
                     ITest iTestF = create(i, DataType.FLOAT, strName, nDeviceID, engine);
-
                     if (iTestF != null)
+                    {
+                        iTestF.SetParent(this);
+                        iTestF.initialize();
                         m_rgTests.Add(iTestF);
+                    }
 
                     ITest iTestD = create(i, DataType.DOUBLE, strName, nDeviceID, engine);
-
                     if (iTestD != null)
+                    {
+                        iTestD.SetParent(this);
+                        iTestD.initialize();
                         m_rgTests.Add(iTestD);
+                    }
                 }
             }
         }
@@ -72,6 +111,14 @@ namespace MyCaffe.test
         public TestBase()
         {
             m_strName = "";
+        }
+
+        public IXImageDatabaseBase createImageDb(Log log)
+        {
+            if (m_imgDbVer == IMGDB_VERSION.V1)
+                return new MyCaffeImageDatabase(log);
+            else
+                return new MyCaffeImageDatabase2(log);
         }
 
         public List<Tuple<string, string, string>> KnownFailures
@@ -143,15 +190,23 @@ namespace MyCaffe.test
 
         protected virtual ITest create(int nIdx, DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
         {
-            return create(dt, strName, nDeviceID, engine);
+            ITest iTest = create(dt, strName, nDeviceID, engine);
+            iTest.SetParent(this);
+            return iTest;
         }
 
         protected virtual ITest create(DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
         {
+            ITest iTest;
+
             if (dt == DataType.DOUBLE)
-                return new Test<double>(strName, nDeviceID, engine, m_bHalf);
+                iTest = new Test<double>(strName, nDeviceID, engine, m_bHalf);
             else
-                return new Test<float>(strName, nDeviceID, engine, m_bHalf);
+                iTest = new Test<float>(strName, nDeviceID, engine, m_bHalf);
+
+            iTest.SetParent(this);
+
+            return iTest;
         }
 
         protected virtual int create_count
@@ -309,6 +364,8 @@ namespace MyCaffe.test
         DataType DataType { get; }
         EngineParameter.Engine engine { get; }
         bool Enabled { get; set; }
+        void SetParent(TestBase parent);
+        void initialize();
     }
 
     public class Test<T> : ITest, IDisposable 
@@ -321,6 +378,7 @@ namespace MyCaffe.test
         protected bool m_bHalf = false;
         protected long m_lSeed = 1701;
         TestingActiveGpuSet m_activeGpuId = new TestingActiveGpuSet();
+        TestBase m_parent = null;
 
         public Test(string strName, int nDeviceID = TestBase.DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, bool bHalf = false)
         {
@@ -339,10 +397,24 @@ namespace MyCaffe.test
             m_engine = engine;
         }
 
+        public void SetParent(TestBase parent)
+        {
+            m_parent = parent;
+        }
+
+        public virtual void initialize()
+        {
+        }
+
         protected virtual void dispose()
         {
             m_cuda.Dispose();
             m_cuda = null;
+        }
+
+        protected IXImageDatabaseBase createImageDb(Log log)
+        {
+            return m_parent.createImageDb(log);
         }
 
         protected string getTestPath(string strItem, bool bPathOnly = false, bool bCreateIfMissing = false, bool bUserData = false)
