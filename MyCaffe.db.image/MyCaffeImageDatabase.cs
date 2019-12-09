@@ -23,7 +23,7 @@ namespace MyCaffe.db.image
     /// that point back into the list of images.  This organization allows for quick image selection by image or by label
     /// set and then by image from within the label set.
     /// </remarks>
-    public partial class MyCaffeImageDatabase : Component, IXImageDatabase
+    public partial class MyCaffeImageDatabase : Component, IXImageDatabase1
     {
         CryptoRandom m_random = null;
         DatasetFactory m_factory;
@@ -67,6 +67,9 @@ namespace MyCaffe.db.image
             m_log = log;
             InitializeComponent();
             init(strId, nSeed);
+
+            if (log != null)
+                log.WriteLine("INFO: Using MyCaffe Image Database VERSION 1.");
         }
 
         /// <summary>
@@ -79,6 +82,15 @@ namespace MyCaffe.db.image
 
             InitializeComponent();
             init();
+        }
+
+        /// <summary>
+        /// Returns the version of the MyCaffe Image Database being used.
+        /// </summary>
+        /// <returns>Returns the version.</returns>
+        public IMGDB_VERSION GetVersion()
+        {
+            return IMGDB_VERSION.V1;
         }
 
         private void init(string strId = "", int nSeed = 0)
@@ -95,6 +107,8 @@ namespace MyCaffe.db.image
 
         private void dispose()
         {
+            CleanUp();
+
             if (m_evtInitialized != null)
             {
                 m_evtInitialized.Dispose();
@@ -307,9 +321,9 @@ namespace MyCaffe.db.image
         /// <param name="strDs">Specifies the data set to load.</param>
         /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
-        public bool InitializeWithDsName(SettingsCaffe s, string strDs, string strEvtCancel = null)
+        public bool InitializeWithDsName1(SettingsCaffe s, string strDs, string strEvtCancel = null)
         {
-            return InitializeWithDs(s, new DatasetDescriptor(strDs), strEvtCancel);
+            return InitializeWithDs1(s, new DatasetDescriptor(strDs), strEvtCancel);
         }
 
         /// <summary>
@@ -319,7 +333,7 @@ namespace MyCaffe.db.image
         /// <param name="ds">Specifies the data set to load.</param>
         /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
-        public bool InitializeWithDs(SettingsCaffe s, DatasetDescriptor ds, string strEvtCancel = null)
+        public bool InitializeWithDs1(SettingsCaffe s, DatasetDescriptor ds, string strEvtCancel = null)
         {
             string strDsName = ds.Name;
 
@@ -332,7 +346,7 @@ namespace MyCaffe.db.image
 
             int nDsId = m_factory.GetDatasetID(strDsName);
 
-            return InitializeWithDsId(s, nDsId, strEvtCancel);
+            return InitializeWithDsId1(s, nDsId, strEvtCancel);
         }
 
         /// <summary>
@@ -344,7 +358,7 @@ namespace MyCaffe.db.image
         /// <param name="nPadW">Specifies the padding to add to each image width (default = 0).</param>
         /// <param name="nPadH">Specifies the padding to add to each image height (default = 0).</param>
         /// <returns>Returns <i>true</i> on success, <i>false</i> otherwise.</returns>
-        public bool InitializeWithDsId(SettingsCaffe s, int nDataSetID, string strEvtCancel = null, int nPadW = 0, int nPadH = 0)
+        public bool InitializeWithDsId1(SettingsCaffe s, int nDataSetID, string strEvtCancel = null, int nPadW = 0, int nPadH = 0)
         {
             Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> selMethod = GetSelectionMethod(s);
 
@@ -459,7 +473,8 @@ namespace MyCaffe.db.image
         /// Releases the image database, and if this is the last instance using the in-memory database, frees all memory used.
         /// </summary>
         /// <param name="nDsId">Optionally, specifies the dataset previously loaded.</param>
-        public void CleanUp(int nDsId = 0)
+        /// <param name="bForce">Optionally, force the cleanup even if other users are using the database.</param>
+        public void CleanUp(int nDsId = 0, bool bForce = false)
         {
             lock (m_syncObject)
             {
@@ -475,7 +490,7 @@ namespace MyCaffe.db.image
                 {
                     DatasetExCollection colDs = col.Value;
 
-                    if (colDs.RemoveUser(m_userGuid))
+                    if (colDs.RemoveUser(m_userGuid) || bForce)
                     {
                         rgRemove.Add(col.Key);
                         colDs.Dispose();
@@ -570,85 +585,85 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
-        /// Returns the number of images in a given data source, optionally only counting the boosted images.
+        /// Returns the number of images in a given data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
-        /// <param name="bSuperBoostOnly">Specifies whether or not to only count the super boosted images.</param>
         /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="bBoostValIsExact">Optionally, specifies whether or the boost value (if specified) is to be used literally (exact = true), or as a minimum boost value (Not used for version 1).</param>
         /// <returns>The number of images is returned.</returns>
         /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
-        public int ImageCount(int nSrcId, bool bSuperBoostOnly, string strFilterVal = null, int? nBoostVal = null)
+        public int GetImageCount(int nSrcId, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
 
             if (nWait == 0)
                 return 0;
 
-            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetCount(bSuperBoostOnly, strFilterVal, nBoostVal);
+            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetCount(nBoostVal.HasValue, strFilterVal, nBoostVal);
         }
 
         /// <summary>
         /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
-        /// <param name="bSuperboostOnly">Specifies whether or not to return images with super-boost.</param>
+        /// <param name="nStartIdx">Specifies a starting index from which the query is to start within the set of images.</param>
+        /// <param name="nQueryCount">Optionally, specifies a number of images to retrieve within the set (default = int.MaxValue).</param>
         /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
-        /// <param name="nStartIdx">Optionally, specifies a starting index from which the query is to start within the set of images (default = 0).</param>
-        /// <param name="nQueryCount">Optionally, specifies a number of images to retrieve within the set (default = int.MaxValue).</param>
+        /// <param name="bBoostValIsExact">Not used in version 1, all boost values are treated as inexact (bBoostValIsExact = false).</param>
         /// <returns>The list of images is returned.</returns>
-        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', and
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
-        public List<SimpleDatum> GetImages(int nSrcId, bool bSuperboostOnly, string strFilterVal = null, int? nBoostVal = null, int nStartIdx = 0, int nQueryCount = int.MaxValue)
+        public List<SimpleDatum> GetImagesFromIndex(int nSrcId, int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
-
             if (nWait == 0)
                 return null;
 
-            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImages(bSuperboostOnly, strFilterVal, nBoostVal, nStartIdx, nQueryCount);
+            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImages(nBoostVal.HasValue, strFilterVal, nBoostVal, nStartIdx, nQueryCount);
         }
 
         /// <summary>
         /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
-        /// <param name="bSuperboostOnly">Specifies whether or not to return images with super-boost.</param>
-        /// <param name="strFilterVal">specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
-        /// <param name="nBoostVal">specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
-        /// <param name="rgIdx">Specifies a set of indexes of the images to retrieve.</param>
+        /// <param name="dtStart">Specifies a starting time from which the query is to start within the set of images.</param>
+        /// <param name="nQueryCount">Optionally, specifies a number of images to retrieve within the set (default = int.MaxValue).</param>
+        /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="nBoostVal">Not used in version 1.</param>
+        /// <param name="bBoostValIsExact">Not used in version 1.</param>
         /// <returns>The list of images is returned.</returns>
         /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
-        public List<SimpleDatum> GetImagesEx(int nSrcId, bool bSuperboostOnly, string strFilterVal, int? nBoostVal, int[] rgIdx)
+        public List<SimpleDatum> GetImagesFromTime(int nSrcId, DateTime dtStart, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
-
             if (nWait == 0)
                 return null;
 
-            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImages(bSuperboostOnly, strFilterVal, nBoostVal, rgIdx);
+            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImages(dtStart, nQueryCount, strFilterVal);
         }
 
         /// <summary>
-        /// Get a set of images, listed in chronological order starting at the next date greater than or equal to 'dt'.
+        /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
         /// </summary>
-        /// <param name="nSrcId">Specifies the databse ID of the data source.</param>
-        /// <param name="dt">Specifies the start date of the images sought.</param>
-        /// <param name="nImageCount">Specifies the number of images to retrieve.</param>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <param name="rgIdx">Specifies an array of indexes to query.</param>
         /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
-        /// <returns>The list of SimpleDatum is returned.</returns>
-        /// <remarks> IMPORTANT: You must call Sort(ByDesc|ByDate) before using this function to ensure all loaded images are ordered by their descriptions then by their time.</remarks>
-        public List<SimpleDatum> GetImagesByDate(int nSrcId, DateTime dt, int nImageCount, string strFilterVal = null)
+        /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
+        /// <param name="bBoostValIsExact">Optionally, specifies whether or the boost value (if specified) is to be used literally (exact = true), or as a minimum boost value - not used in Version 1.</param>
+        /// <returns>The list of images is returned.</returns>
+        /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
+        /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
+        public List<SimpleDatum> GetImages(int nSrcId, int[] rgIdx, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
-
             if (nWait == 0)
                 return null;
 
-            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImages(dt, nImageCount, strFilterVal);
+            return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImages(nBoostVal.HasValue, strFilterVal, nBoostVal, rgIdx);
         }
 
         /// <summary>
@@ -1260,10 +1275,10 @@ namespace MyCaffe.db.image
         /// <param name="strDs">Specifies the name of the data set.</param>
         /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
         /// <returns>When the dataset is loaded <i>true</i> is returned, otherwise if the dataset is already loaded <i>false</i> is returned.</returns>
-        public bool LoadDatasetByName(string strDs, string strEvtCancel = null)
+        public bool LoadDatasetByName1(string strDs, string strEvtCancel = null)
         {
             int nDsId = m_factory.GetDatasetID(strDs);
-            return LoadDatasetByID(nDsId, strEvtCancel);
+            return LoadDatasetByID1(nDsId, strEvtCancel);
         }
 
 
@@ -1277,7 +1292,7 @@ namespace MyCaffe.db.image
         /// <param name="nDsId">Specifies the ID of the data set.</param>
         /// <param name="strEvtCancel">Specifies the name of the CancelEvent used to cancel load operations.</param>
         /// <returns>When the dataset is loaded <i>true</i> is returned, otherwise if the dataset is already loaded <i>false</i> is returned.</returns>
-        public bool LoadDatasetByID(int nDsId, string strEvtCancel = null)
+        public bool LoadDatasetByID1(int nDsId, string strEvtCancel = null)
         {
             if (!m_evtInitialized.WaitOne(0))
                 throw new Exception("The image database must be initialized first before a secondary dataset can be loaded.");
