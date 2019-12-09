@@ -379,6 +379,46 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Set the default query state to the query state specified for the dataset specified.
+        /// </summary>
+        /// <param name="nDsId">Specifies the dataset ID.</param>
+        /// <param name="lQueryState">Specifies the query state to set.</param>
+        /// <returns>Returns <i>true</i> on success, <i>false</i> on failure.</returns>
+        public bool SetDefaultQueryState(int nDsId, long lQueryState)
+        {
+            lock (m_syncObj)
+            {
+                foreach (DatasetEx2 ds in m_rgDatasets)
+                {
+                    if (ds.DatasetID == nDsId)
+                        return ds.SetDefaultQueryState(lQueryState);
+                }
+
+                throw new Exception("Failed to create a new query state for dataset ID = '" + nDsId.ToString() + "'.");
+            }
+        }
+
+        /// <summary>
+        /// Set the default query state to the query state specified for the dataset specified.
+        /// </summary>
+        /// <param name="strDs">Specifies the dataset name.</param>
+        /// <param name="lQueryState">Specifies the query state to set.</param>
+        /// <returns>Returns <i>true</i> on success, <i>false</i> on failure.</returns>
+        public bool SetDefaultQueryState(string strDs, long lQueryState)
+        {
+            lock (m_syncObj)
+            {
+                foreach (DatasetEx2 ds in m_rgDatasets)
+                {
+                    if (ds.DatasetName == strDs)
+                        return ds.SetDefaultQueryState(lQueryState);
+                }
+
+                throw new Exception("Failed to create a new query state for dataset = '" + strDs + "'.");
+            }
+        }
+
+        /// <summary>
         /// Frees a query state from a given dataset.
         /// </summary>
         /// <param name="nDsId">Specifies the dataset on which to free the query state.</param>

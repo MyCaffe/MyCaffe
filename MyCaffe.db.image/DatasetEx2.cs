@@ -25,6 +25,7 @@ namespace MyCaffe.db.image
         List<Guid> m_rgUsers = new List<Guid>();
         int m_nOriginalDsId = 0;
         QueryStateCollection m_queryStates = new QueryStateCollection();
+        long m_lDefaultQueryState = 0;
 
 
         /// <summary>
@@ -117,7 +118,8 @@ namespace MyCaffe.db.image
                 if (EventWaitHandle.WaitAny(rgAbort, 0) != EventWaitHandle.WaitTimeout)
                     return 0;
 
-                return m_queryStates.CreateNewState(qsTraining, qsTesting);
+                m_lDefaultQueryState = m_queryStates.CreateNewState(qsTraining, qsTesting);
+                return m_lDefaultQueryState;
             }
         }
 
@@ -143,6 +145,14 @@ namespace MyCaffe.db.image
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Returns the default query state created when first initializing the dataset.
+        /// </summary>
+        public long DefaultQueryState
+        {
+            get { return m_lDefaultQueryState; }
         }
 
         /// <summary>
@@ -195,12 +205,27 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Set the default query state to a new query state.
+        /// </summary>
+        /// <param name="lQueryState">Specifies the query state to set.</param>
+        /// <returns>Returns <i>true</i> on success, <i>false</i> on failure.</returns>
+        public bool SetDefaultQueryState(long lQueryState)
+        {
+            m_lDefaultQueryState = lQueryState;
+            return true;
+        }
+
+        /// <summary>
         /// Free an existing query state.
         /// </summary>
         /// <param name="lHandle">Specifies the handle to the query state to be freed.</param>
         /// <returns>If found and freed, <i>true</i> is returned, otherwise <i>false</i>.</returns>
         public bool FreeQueryState(long lHandle)
         {
+            // Cannot free the default query state.
+            if (lHandle == m_lDefaultQueryState)
+                return false;
+
             return m_queryStates.FreeQueryState(lHandle);
         }
 
@@ -212,6 +237,9 @@ namespace MyCaffe.db.image
         /// <returns>The QueryState is returned.</returns>
         public QueryState FindQueryState(long lQueryState, ImageSet2.TYPE type)
         {
+            if (lQueryState == 0)
+                lQueryState = m_lDefaultQueryState;
+
             if (type == ImageSet2.TYPE.TEST)
                 return m_queryStates.GetTestingState(lQueryState);
             else
