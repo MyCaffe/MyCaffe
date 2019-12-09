@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyCaffe.basecode;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -13,11 +14,13 @@ namespace MyCaffe.test.automated
     {
         string m_strPath;
         int m_nGpuID = 0;
+        IMGDB_VERSION m_imgDbVer = IMGDB_VERSION.DEFAULT;
 
-        public FormAutomatedTests(string strPath, int nGpuID)
+        public FormAutomatedTests(string strPath, int nGpuID, IMGDB_VERSION imgDbVer)
         {
             m_strPath = strPath;
             m_nGpuID = nGpuID;
+            m_imgDbVer = imgDbVer;
             InitializeComponent();
         }
 
@@ -25,6 +28,7 @@ namespace MyCaffe.test.automated
         {
             automatedTester1.TestAssemblyPath = m_strPath;
             automatedTester1.GpuId = m_nGpuID;
+            automatedTester1.ImageDbVersion = m_imgDbVer;
             automatedTester1.LoadFromDatabase();
             Text = "Automated Tests [" + automatedTester1.TestName + "]";
         }

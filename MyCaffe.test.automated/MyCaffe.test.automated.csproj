@@ -140,6 +140,10 @@
     <Content Include="MainIcon.ico" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\MyCaffe.basecode\MyCaffe.basecode.csproj">
+      <Project>{D168418C-CDCC-4F5B-BF55-292A38CC2429}</Project>
+      <Name>MyCaffe.basecode</Name>
+    </ProjectReference>
     <ProjectReference Include="..\MyCaffe.db.image\MyCaffe.db.image.csproj">
       <Project>{642BA581-59CB-445E-8D7D-81E67B748D77}</Project>
       <Name>MyCaffe.db.image</Name>

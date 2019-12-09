@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MyCaffe.basecode;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -83,12 +84,12 @@ namespace MyCaffe.test.automated
             get { return m_bw.IsBusy; }
         }
 
-        public void Run(string strTestDllFile, bool bResetAllTests, int nGpuId = 0)
+        public void Run(string strTestDllFile, bool bResetAllTests, int nGpuId = 0, IMGDB_VERSION imgDbVer = IMGDB_VERSION.DEFAULT)
         {
             m_evtCancel.Reset();
             m_evtGlobalCancel.Reset();
             m_fiPath = new FileInfo(strTestDllFile);
-            m_bw.RunWorkerAsync(new AutoTestParams(strTestDllFile, bResetAllTests, nGpuId));
+            m_bw.RunWorkerAsync(new AutoTestParams(strTestDllFile, bResetAllTests, nGpuId, imgDbVer));
         }
 
         public void Abort()
@@ -125,7 +126,7 @@ namespace MyCaffe.test.automated
             else
                 colTests.LoadFromDatabase();
 
-            colTests.Run(m_evtCancel, false, true, param.GpuId);
+            colTests.Run(m_evtCancel, false, true, param.GpuId, param.ImageDbVersion);
 
             TestingProgressGet progress = new TestingProgressGet();
 
@@ -162,17 +163,24 @@ namespace MyCaffe.test.automated
         string m_strTestDllFile;
         bool m_bResetAllTests = false;
         int m_nGpuId = 0;
+        IMGDB_VERSION m_imgDbVer = IMGDB_VERSION.DEFAULT;
 
-        public AutoTestParams(string strTestDllFile, bool bResetAllTests, int nGpuId = 0)
+        public AutoTestParams(string strTestDllFile, bool bResetAllTests, int nGpuId = 0, IMGDB_VERSION imgDbVer = IMGDB_VERSION.DEFAULT)
         {
             m_strTestDllFile = strTestDllFile;
             m_bResetAllTests = bResetAllTests;
             m_nGpuId = nGpuId;
+            m_imgDbVer = imgDbVer;
         }
 
         public int GpuId
         {
             get { return m_nGpuId; }
+        }
+
+        public IMGDB_VERSION ImageDbVersion
+        {
+            get { return m_imgDbVer; }
         }
 
         public string TestDllFile
