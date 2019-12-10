@@ -328,9 +328,13 @@ namespace MyCaffe.db.image
             int? nIdx = state.GetNextImage(imageSelectionMethod, nLabel, nDirectIdx);
 
             if (!nIdx.HasValue)
-                throw new Exception("Failed to find the image index!");
+            {
+                string strBoosted = ((imageSelectionMethod & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST) ? "Boosted" : "";
+                string strLabel = (nLabel.HasValue) ? " for label '" + nLabel.Value.ToString() + "'." : ".";
+                throw new Exception("Failed to find the image index! The data source '" + m_src.Name + "' has no " + strBoosted + " images" + strLabel);
+            }
 
-            SimpleDatum sd = m_masterList.GetImage(nIdx.Value, bLoadDataCriteria, bLoadDebugData);
+            SimpleDatum sd = m_masterList.GetImage(nIdx.Value, bLoadDataCriteria, bLoadDebugData, m_loadMethod);
 
             state.UpdateStats(sd);
 
