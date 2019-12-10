@@ -25,7 +25,7 @@ namespace MyCaffe.test
             Log log = new Log("Test Dataset Factory");
             log.EnableTrace = true;
 
-            string strDs = "OPTIONS.SPY.3sec.10psig";
+            string strDs = "MNIST";
             DatasetFactory factory = new DatasetFactory();
             Stopwatch sw = new Stopwatch();
 
