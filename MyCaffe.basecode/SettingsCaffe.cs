@@ -215,7 +215,7 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Get/set label boosting.  When using Label boosting, images are selected from boosted labels with 
+        /// DEPRECIATED: Get/set label boosting.  When using Label boosting, images are selected from boosted labels with 
         /// a higher probability that images from other label sets.
         /// </summary>
         public bool EnableLabelBoosting
