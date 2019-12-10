@@ -121,7 +121,11 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Load the images from an external source such as a Windows Service - this option provides the best balance of speed and short load times for once loaded all applications share the in-memory data.
         /// </summary>
-        LOAD_EXTERNAL
+        LOAD_EXTERNAL,
+        /// <summary>
+        /// Load the image as they are queried AND start the background loading at the same time.
+        /// </summary>
+        LOAD_ON_DEMAND_BACKGROUND
     }
 
     /// <summary>
