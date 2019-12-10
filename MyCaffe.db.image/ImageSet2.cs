@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 namespace MyCaffe.db.image
 {
     /// <summary>
+    /// [V2 Image Database]
     /// The ImageSet2 manages the data source data including the master list of images, and the master indexes that describe the data source layout (e.g. labels, boosts, etc).
     /// </summary>
     public class ImageSet2 : ImageSetBase, IDisposable
@@ -44,7 +45,7 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
-        /// The constructor.
+        /// The ImageSet2 constructor.
         /// </summary>
         /// <param name="type">Specifies the type of data source managed.</param>
         /// <param name="log">Specifies the output log.</param>

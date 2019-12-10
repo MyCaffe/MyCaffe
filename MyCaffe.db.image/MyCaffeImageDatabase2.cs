@@ -15,10 +15,11 @@ using MyCaffe.basecode.descriptors;
 namespace MyCaffe.db.image
 {
     /// <summary>
-    /// The MyCaffeImageDatabase provides an enhanced in-memory image database used for quick image retrieval.
+    /// [V2 Image Database]
+    /// The MyCaffeImageDatabase2 provides an enhanced in-memory image database used for quick image retrieval.
     /// </summary>
     /// <remarks>
-    /// The MyCaffeImageDatbase manages a set of data sets, where each data sets comprise a pair of data sources: one source 
+    /// The MyCaffeImageDatbase2 manages a set of data sets, where each data sets comprise a pair of data sources: one source 
     /// for training and another source for testing.  Each data source contains a list of images and a list of label sets
     /// that point back into the list of images.  This organization allows for quick image selection by image or by label
     /// set and then by image from within the label set.
@@ -55,7 +56,7 @@ namespace MyCaffe.db.image
         public event EventHandler<CalculateImageMeanArgs> OnCalculateImageMean;
 
         /// <summary>
-        /// The MyCaffeImageDatabase constructor.
+        /// The MyCaffeImageDatabase2 constructor.
         /// </summary>
         /// <param name="log">The Log for output.</param>
         /// <param name="strId">Specifies an identifier for this in memory database instance (default = "default").</param>

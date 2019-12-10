@@ -7,7 +7,8 @@ using MyCaffe.basecode;
 namespace MyCaffe.db.image
 {
     /// <summary>
-    /// The DatasetExCollection contains a list of DatasetEx objects.
+    /// [V2 Image Database]
+    /// The DatasetExCollection2 contains a list of DatasetEx2 objects.
     /// </summary>
     public class DatasetExCollection2 : IEnumerable<DatasetEx2>, IDisposable
     {
@@ -17,7 +18,7 @@ namespace MyCaffe.db.image
         object m_syncObj = new object();
 
         /// <summary>
-        /// The DatasetExCollection constructor.
+        /// The DatasetExCollection2 constructor.
         /// </summary>
         public DatasetExCollection2()
         {

@@ -10,8 +10,9 @@ using MyCaffe.basecode.descriptors;
 namespace MyCaffe.db.image
 {
     /// <summary>
-    /// The DatasetEx class provides the in-memory dataset functionality that is used by the image database to manage data sets.  
-    /// Both the Testing and Training ImageSet objects are managed by the DatasetEx, which in turn coordinates the loading and usage of each.
+    /// [V2 Image Database]
+    /// The DatasetEx2 class provides the in-memory dataset functionality that is used by the image database to manage data sets.  
+    /// Both the Testing and Training ImageSet2 objects are managed by the DatasetEx2, which in turn coordinates the loading and usage of each.
     /// </summary>
     public class DatasetEx2 : IDisposable
     {
