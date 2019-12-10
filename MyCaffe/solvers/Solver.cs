@@ -101,6 +101,7 @@ namespace MyCaffe.solvers
         int m_nTrainingTimeLimitInMinutes = 0;
         long m_hWorkspaceData = 0;  // shared among the layers and nets, only grows in size.
         ulong m_lWorkspaceSize = 0;
+        bool m_bFirstNanError = true;
 
         /// <summary>
         /// The OnStart event fires at the start of each training iteration.
@@ -860,7 +861,13 @@ namespace MyCaffe.solvers
                         }
 
                         if (double.IsNaN(dfLocalLoss) || double.IsInfinity(dfLocalLoss))
-                            m_log.WriteError(new Exception("The local loss at iteration " + m_nIter.ToString() + " is invalid (NAN or INFINITY)!"));
+                        {
+                            if (m_bFirstNanError)
+                            {
+                                m_log.WriteError(new Exception("The local loss at iteration " + m_nIter.ToString() + " is invalid (NAN or INFINITY)!"));
+                                m_bFirstNanError = false;
+                            }
+                        }
 
                         dfLossTotal += dfLocalLoss;
                         swTiming.Stop();
@@ -882,6 +889,7 @@ namespace MyCaffe.solvers
                     if (!bDisplay && sw.ElapsedMilliseconds > 2000 && !bDisableOutput)
                     {
                         bDisplay = true;
+                        m_bFirstNanError = true;
                         sw.Restart();
                     }
 
