@@ -608,7 +608,7 @@ namespace MyCaffe.db.image
                 if (bRemove)
                     m_rgItems.RemoveAt(nIdx);
 
-                m_nIdx = nFinalIdx + 1;
+                m_nIdx = nIdx + 1;
                 if (m_nIdx == m_rgItems.Count)
                     m_nIdx = 0;
 
@@ -630,7 +630,7 @@ namespace MyCaffe.db.image
 
         public override string ToString()
         {
-            return m_strName + ": Idx = " + m_nIdx.ToString() + "; Label = " + m_nLabel.ToString() + "; Boosted = " + m_bBoosted.ToString() + " => (" + m_rgItems.Count.ToString() + ") p = " + m_dfProbability.ToString("P");
+            return m_strName + ": Count = " + m_rgItems.Count().ToString() + " CurIdx = " + m_nIdx.ToString() + "; Label = " + m_nLabel.ToString() + "; Boosted = " + m_bBoosted.ToString() + " => (" + m_rgItems.Count.ToString() + ") p = " + m_dfProbability.ToString("P");
         }
     }
 }
