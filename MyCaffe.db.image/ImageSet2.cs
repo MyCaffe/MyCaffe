@@ -319,7 +319,8 @@ namespace MyCaffe.db.image
         /// <returns>The SimpleDatum containing the image is returned.</returns>
         public SimpleDatum GetImage(QueryState state, IMGDB_LABEL_SELECTION_METHOD labelSelectionMethod, IMGDB_IMAGE_SELECTION_METHOD imageSelectionMethod, Log log, int? nLabel = null, int nDirectIdx = -1, bool bLoadDataCriteria = false, bool bLoadDebugData = false)
         {
-            if ((imageSelectionMethod & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST)
+            if ((imageSelectionMethod & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST &&
+                (labelSelectionMethod & IMGDB_LABEL_SELECTION_METHOD.RANDOM) == IMGDB_LABEL_SELECTION_METHOD.RANDOM)
                 labelSelectionMethod |= IMGDB_LABEL_SELECTION_METHOD.BOOST;
 
             if (!nLabel.HasValue && (labelSelectionMethod & IMGDB_LABEL_SELECTION_METHOD.RANDOM) == IMGDB_LABEL_SELECTION_METHOD.RANDOM)
