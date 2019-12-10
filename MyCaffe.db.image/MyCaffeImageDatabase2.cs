@@ -163,7 +163,7 @@ namespace MyCaffe.db.image
             m_bSkipMeanCheck = s.SkipMeanCheck;
 
             if (m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_EXTERNAL)
-                m_loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
+                m_loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND;
 
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtInitialized, m_evtInitializing, m_evtAbortInitialization }, 0);
 

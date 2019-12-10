@@ -344,18 +344,21 @@ namespace MyCaffe.db.image
         /// <param name="bLoadDataCriteria">Specifies whether or not to load the data criteria along with the image.</param>
         /// <param name="bLoadDebugData">Specifies whether or not to load the debug data with the image.</param>
         /// <returns>If found, the image is returned.</returns>
-        public SimpleDatum GetImage(int nIdx, bool bLoadDataCriteria, bool bLoadDebugData)
+        public SimpleDatum GetImage(int nIdx, bool bLoadDataCriteria, bool bLoadDebugData, IMAGEDB_LOAD_METHOD loadMethod)
         {
             SimpleDatum sd = m_rgImages[nIdx];
 
             if (sd == null)
             {
-                if (!m_evtRunning.WaitOne(0))
+                if (!m_evtRunning.WaitOne(0) && (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND))
                     Load();
 
                 sd = directLoadImage(nIdx);
                 if (sd == null)
                     throw new Exception("The image is still null yet should have loaded!");
+
+                if (loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND)
+                    m_rgImages[nIdx] = sd;
             }
 
             // Double check that the conditional data has loaded (if needed).
