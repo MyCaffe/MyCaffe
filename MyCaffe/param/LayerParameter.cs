@@ -88,7 +88,11 @@ namespace MyCaffe.param
             /// </summary>
             ACCURACY,
             /// <summary>
-            /// Initializes a parameter for the AccuracyLayer.
+            /// Initializes a parameter for the AccuracyDecodeLayer.
+            /// </summary>
+            ACCURACY_DECODE,
+            /// <summary>
+            /// Initializes a parameter for the AccuracyEncodingLayer.
             /// </summary>
             ACCURACY_ENCODING,
             /// <summary>
@@ -694,6 +698,12 @@ namespace MyCaffe.param
                 case LayerType.ACCURACY:
                     expected_bottom.Add("input");
                     expected_bottom.Add("label");
+                    expected_top.Add("accuracy");
+                    m_rgLayerParameters[LayerType.ACCURACY] = new AccuracyParameter();
+                    break;
+
+                case LayerType.ACCURACY_DECODE:
+                    expected_bottom.Add("decode");
                     expected_top.Add("accuracy");
                     m_rgLayerParameters[LayerType.ACCURACY] = new AccuracyParameter();
                     break;
@@ -2143,6 +2153,9 @@ namespace MyCaffe.param
                 case LayerType.ACCURACY:
                     return "Accuracy";
 
+                case LayerType.ACCURACY_DECODE:
+                    return "AccuracyDecode";
+
                 case LayerType.ACCURACY_ENCODING:
                     return "AccuracyEncoding";
 
@@ -2872,6 +2885,10 @@ namespace MyCaffe.param
 
                 case "accuracy":
                     return LayerType.ACCURACY;
+
+                case "accuracydecode":
+                case "accuracy_decode":
+                    return LayerType.ACCURACY_DECODE;
 
                 case "accuracyencoding":
                 case "accuracy_encoding":

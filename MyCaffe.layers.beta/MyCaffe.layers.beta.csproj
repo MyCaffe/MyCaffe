@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="LayerFactory.cs" />
+    <Compile Include="layers.beta\AccuracyDecodeLayer.cs" />
     <Compile Include="layers.beta\DecodeLayer.cs" />
     <Compile Include="layers.beta\AccuracyEncodingLayer.cs" />
     <Compile Include="layers.beta\GRNLayer.cs" />

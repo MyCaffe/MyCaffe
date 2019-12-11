@@ -31,6 +31,9 @@ namespace MyCaffe.layers.beta
         {
             switch (p.type)
             {
+                case LayerParameter.LayerType.ACCURACY_DECODE:
+                    return new AccuracyDecodeLayer<double>(cuda, log, p);
+
                 case LayerParameter.LayerType.ACCURACY_ENCODING:
                     return new AccuracyEncodingLayer<double>(cuda, log, p);
 
@@ -70,6 +73,9 @@ namespace MyCaffe.layers.beta
         {
             switch (p.type)
             {
+                case LayerParameter.LayerType.ACCURACY_DECODE:
+                    return new AccuracyDecodeLayer<float>(cuda, log, p);
+
                 case LayerParameter.LayerType.ACCURACY_ENCODING:
                     return new AccuracyEncodingLayer<float>(cuda, log, p);
 
