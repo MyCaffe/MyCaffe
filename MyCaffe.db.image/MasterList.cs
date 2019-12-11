@@ -343,6 +343,7 @@ namespace MyCaffe.db.image
         /// <param name="nIdx">Specifies the image index.</param>
         /// <param name="bLoadDataCriteria">Specifies whether or not to load the data criteria along with the image.</param>
         /// <param name="bLoadDebugData">Specifies whether or not to load the debug data with the image.</param>
+        /// <param name="loadMethod">Specifies the image loading method used.</param>
         /// <returns>If found, the image is returned.</returns>
         public SimpleDatum GetImage(int nIdx, bool bLoadDataCriteria, bool bLoadDebugData, IMAGEDB_LOAD_METHOD loadMethod)
         {
