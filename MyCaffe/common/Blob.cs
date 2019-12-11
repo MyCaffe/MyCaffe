@@ -346,6 +346,22 @@ namespace MyCaffe.common
             Reshape(new List<int>() { nNum, nChannels, nHeight, nWidth }, bUseHalfSize);
         }
 
+        private string toString(List<int> rgShape)
+        {
+            string str = "{";
+
+            for (int i = 0; i < rgShape.Count; i++)
+            {
+                str += rgShape[i].ToString();
+                str += ", ";
+            }
+
+            str = str.TrimEnd(' ', ',');
+            str += "}";
+
+            return str;
+        }
+
         private void reshapeShape(List<int> rgShape)
         {
             m_log.CHECK_LE(rgShape.Count, MAX_BLOB_AXES, "The number of axes cannot exceed " + MAX_BLOB_AXES.ToString());
@@ -376,10 +392,24 @@ namespace MyCaffe.common
 
                 for (int i = 0; i < rgShape.Count; i++)
                 {
-                    m_log.CHECK_GE(rgShape[i], 0, "The shape value at " + i.ToString() + " must be <= 0.");
+//                    m_log.CHECK_GE(rgShape[i], 0, "The shape value at " + i.ToString() + " must be >= 0.");
+
+                    if (rgShape[i] < 0)
+                    {
+                        string strBlobName = (!string.IsNullOrEmpty(m_strName)) ? "Blob '" + m_strName + "': " : "";
+                        m_log.FAIL(strBlobName + "The shape value at " + i.ToString() + " of shape " + toString(rgShape) + " must be >= 0.");
+                    }
 
                     if (m_nCount != 0)
-                        m_log.CHECK_LE(rgShape[i], int.MaxValue / m_nCount, "The blob size exceeds int.MaxValue!");
+                    {
+//                        m_log.CHECK_LE(rgShape[i], int.MaxValue / m_nCount, "The blob size exceeds int.MaxValue!");
+
+                        if (rgShape[i] > int.MaxValue / m_nCount)
+                        {
+                            string strBlobName = (!string.IsNullOrEmpty(m_strName)) ? "Blob '" + m_strName + "': " : "";
+                            m_log.FAIL(strBlobName + "The blob size at item " + i.ToString() + " of shape " + toString(rgShape) + " exceeds the maximum of " + (int.MaxValue / m_nCount).ToString() + "!");
+                        }
+                    }
 
                     m_nCount *= rgShape[i];
                     m_rgShape.Add(rgShape[i]);
