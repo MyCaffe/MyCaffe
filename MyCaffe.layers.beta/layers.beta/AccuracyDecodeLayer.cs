@@ -85,7 +85,7 @@ namespace MyCaffe.layers.beta
         /// </summary>
         /// <param name="colBottom">bottom input blob (length 2)
         ///  -# @f$ (N \times C \times 1 \times 1) @f$
-        ///     the label predictions @f$ x @f$, a blob with values in
+        ///     the distance predictions @f$ x @f$, a blob with the minimum index a value in
         ///     @f$ l_n \in [0, 1, 2, ..., K-1] @f$
         ///     indicating the predicted class label among the @f$ K @f$ classes.
         ///  -# @f$ (N \times 1 \times 1 \times 1) @f$
