@@ -1405,6 +1405,10 @@ namespace MyCaffe
             if (imgSelMethod == IMGDB_IMAGE_SELECTION_METHOD.NONE)
                 lblSelMethod = IMGDB_LABEL_SELECTION_METHOD.NONE;
 
+            Tuple<IMGDB_LABEL_SELECTION_METHOD, IMGDB_IMAGE_SELECTION_METHOD> sel = m_imgDb.GetSelectionMethod();
+            if ((sel.Item2 & IMGDB_IMAGE_SELECTION_METHOD.BOOST) == IMGDB_IMAGE_SELECTION_METHOD.BOOST)
+                imgSelMethod |= IMGDB_IMAGE_SELECTION_METHOD.BOOST;
+
             int nSrcId = (bOnTrainingSet) ? m_dataSet.TrainingSource.ID : m_dataSet.TestingSource.ID;
             string strSrc = (bOnTrainingSet) ? m_dataSet.TrainingSourceName : m_dataSet.TestingSourceName;
             string strSet = (bOnTrainingSet) ? "training" : "test";
