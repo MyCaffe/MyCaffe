@@ -43,6 +43,7 @@ namespace MyCaffe.param
         int m_nImagesPerBlob = 1;
         bool m_bOutputAllLabels = false;
         bool m_bBalanceMatches = false;
+        bool m_bOutputImageInfo = false;
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -216,6 +217,15 @@ namespace MyCaffe.param
             set { m_bBalanceMatches = value; }
         }
 
+        /// <summary>
+        /// (\b optional, default = false) When <i>true</i> image information such as index and label are output. IMPORTANT: enabling this setting can dramatically slow down training and is only used for debugging.
+        /// </summary>
+        public bool output_image_information
+        {
+            get { return m_bOutputImageInfo; }
+            set { m_bOutputImageInfo = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -246,6 +256,7 @@ namespace MyCaffe.param
             m_nImagesPerBlob = p.m_nImagesPerBlob;
             m_bOutputAllLabels = p.m_bOutputAllLabels;
             m_bBalanceMatches = p.m_bBalanceMatches;
+            m_bOutputImageInfo = p.m_bOutputImageInfo;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -294,6 +305,9 @@ namespace MyCaffe.param
                 rgChildren.Add("output_all_labels", m_bOutputAllLabels.ToString());
                 rgChildren.Add("balance_matches", m_bBalanceMatches.ToString());
             }
+
+            if (output_image_information)
+                rgChildren.Add("output_image_information", m_bOutputImageInfo.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -379,6 +393,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("balance_matches")) != null)
                 p.balance_matches = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("output_image_information")) != null)
+                p.output_image_information = bool.Parse(strVal); 
 
             return p;
         }

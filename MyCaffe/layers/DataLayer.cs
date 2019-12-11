@@ -93,7 +93,7 @@ namespace MyCaffe.layers
 
             m_db = new data.DB(db);
             m_db.Open(p.data_param.source);
-            m_cursor = m_db.NewCursor();
+            m_cursor = m_db.NewCursor((m_param.data_param.output_image_information) ? log : null);
 
             if (p.data_param.display_timing)
             {

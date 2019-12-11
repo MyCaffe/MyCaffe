@@ -47,10 +47,11 @@ namespace MyCaffe.data
         /// <summary>
         /// Creates and returns a new Cursor used to traverse through a data source within the database.
         /// </summary>
+        /// <param name="log">Optionally, specifies the output log for diagnostic information (default = null).</param>
         /// <returns></returns>
-        public Cursor NewCursor()
+        public Cursor NewCursor(Log log = null)
         {
-            return new Cursor(m_db, m_strSrc);
+            return new Cursor(m_db, m_strSrc, log);
         }
     }
 
@@ -59,6 +60,8 @@ namespace MyCaffe.data
     /// </summary>
     public class Cursor 
     {
+        Log m_log = null;
+        string m_strSrc;
         IXImageDatabaseBase m_db;
         int m_nSrcID = 0;
         int m_nCount = 0;
@@ -69,10 +72,13 @@ namespace MyCaffe.data
         /// </summary>
         /// <param name="db">Specifies the underlying database.</param>
         /// <param name="strSrc">Specifies the name of the data source to use.</param>
-        public Cursor(IXImageDatabaseBase db, string strSrc)
+        /// <param name="log">Optionally, specifies an output log used for diagnostic information if specified (default = null).</param>
+        public Cursor(IXImageDatabaseBase db, string strSrc, Log log = null)
         {
+            m_log = log;
             m_db = db;
             SourceDescriptor src = m_db.GetSourceByName(strSrc);
+            m_strSrc = src.Name;
             m_nSrcID = src.ID;
             m_nCount = src.ImageCount;
         }
@@ -126,6 +132,10 @@ namespace MyCaffe.data
         public Datum GetValue(int? nLabel = null, bool bLoadDataCriteria = false, IMGDB_IMAGE_SELECTION_METHOD? imgSel = null)
         {
             SimpleDatum sd = m_db.QueryImage(m_nSrcID, m_nIdx, null, imgSel, nLabel, bLoadDataCriteria, false);
+
+            if (m_log != null)
+                m_log.WriteLine(m_strSrc + ": Idx = " + sd.Index.ToString() + " Label = " + sd.Label.ToString());
+
             return new Datum(sd);
         }
     }
