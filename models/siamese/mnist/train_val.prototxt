@@ -280,9 +280,9 @@ layer
    name: "silence2"
    type: "Silence"
    bottom: "decode1"
-   exclude 
+   include 
    {
-      phase: RUN
+      phase: TRAIN
    }
 }
 layer 
@@ -543,8 +543,8 @@ layer
 layer 
 {
    name: "accuracy1"
-   type: "AccuracyEncoding"
-   bottom: "feat"
+   type: "AccuracyDecode"
+   bottom: "decode1"
    bottom: "sim"
    top: "accuracy1"
    include 
