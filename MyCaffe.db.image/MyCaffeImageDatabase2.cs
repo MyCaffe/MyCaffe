@@ -366,7 +366,7 @@ namespace MyCaffe.db.image
 
         private void dispose()
         {
-            CleanUp(0, true);
+            CleanUp(0, false);
 
             if (m_evtInitialized != null)
             {
