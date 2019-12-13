@@ -44,6 +44,7 @@ namespace MyCaffe.param
         bool m_bOutputAllLabels = false;
         bool m_bBalanceMatches = false;
         bool m_bOutputImageInfo = false;
+        int m_nForcedPrimaryLabel = -1;
         bool m_bUseNoiseForNonMatch = false;
         DataNoiseParameter m_dataNoiseParam = new DataNoiseParameter();
 
@@ -229,6 +230,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// (\b optional, default = -1) When >= 0, this label is used as the primary image label when 'images_per_blob' > 1.
+        /// </summary>
+        public int forced_primary_label
+        {
+            get { return m_nForcedPrimaryLabel; }
+            set { m_nForcedPrimaryLabel = value; }
+        }
+
+        /// <summary>
         /// (\b optional, default = false) When <i>true</i> an image consisting of noise initialized with noise filler.
         /// </summary>
         public bool use_noise_for_nonmatch
@@ -279,7 +289,8 @@ namespace MyCaffe.param
             m_bBalanceMatches = p.m_bBalanceMatches;
             m_bOutputImageInfo = p.m_bOutputImageInfo;
             m_bUseNoiseForNonMatch = p.m_bUseNoiseForNonMatch;
-            m_dataNoiseParam.Copy(p.m_dataNoiseParam);            
+            m_dataNoiseParam.Copy(p.m_dataNoiseParam);
+            m_nForcedPrimaryLabel = p.m_nForcedPrimaryLabel;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -337,6 +348,9 @@ namespace MyCaffe.param
                 rgChildren.Add("use_noise_for_nonmatch", m_bUseNoiseForNonMatch.ToString());
                 rgChildren.Add(m_dataNoiseParam.ToProto("data_noise_param"));
             }
+
+            if (m_nForcedPrimaryLabel >= 0)
+                rgChildren.Add("forced_primary_label", m_nForcedPrimaryLabel.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -432,6 +446,9 @@ namespace MyCaffe.param
             RawProto rpDataNoise = rp.FindChild("data_noise_param");
             if (rpDataNoise != null)
                 p.data_noise_param = DataNoiseParameter.FromProto(rpDataNoise);
+
+            if ((strVal = rp.FindValue("forced_primary_label")) != null)
+                p.forced_primary_label = int.Parse(strVal);
 
             return p;
         }

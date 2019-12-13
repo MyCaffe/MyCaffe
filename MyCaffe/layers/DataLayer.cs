@@ -615,7 +615,11 @@ namespace MyCaffe.layers
 
                                 if (m_param.data_param.output_all_labels)
                                 {
-                                    rgTopLabel[i * nLabelDim] = (T)Convert.ChangeType(datum.Label, typeof(T));
+                                    int nLabel = datum.Label;
+                                    if (m_param.data_param.forced_primary_label >= 0)
+                                        nLabel = m_param.data_param.forced_primary_label;
+
+                                    rgTopLabel[i * nLabelDim] = (T)Convert.ChangeType(nLabel, typeof(T));
 
                                     for (int j = 0; j < rgDatum.Length; j++)
                                     {
