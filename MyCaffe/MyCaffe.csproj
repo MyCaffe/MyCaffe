@@ -195,6 +195,7 @@
     <Compile Include="param.ssd\EmitConstraint.cs" />
     <Compile Include="param.ssd\Sampler.cs" />
     <Compile Include="param.ssd\SamplerConstraint.cs" />
+    <Compile Include="param\DataNoiseParameter.cs" />
     <Compile Include="param\DataNormalizerParameter.cs" />
     <Compile Include="param.ssd\PermuteParameter.cs" />
     <Compile Include="param.ssd\Normalization2Parameter.cs" />

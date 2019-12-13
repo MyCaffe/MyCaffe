@@ -9,6 +9,9 @@ using MyCaffe.db.image;
 using MyCaffe.param;
 using MyCaffe.common;
 using MyCaffe.data;
+using MyCaffe.fillers;
+using System.IO;
+using System.Drawing;
 
 namespace MyCaffe.layers
 {
@@ -46,7 +49,7 @@ namespace MyCaffe.layers
         protected double m_dfTransTime;
         private T[] m_rgTopData = null;
         private bool m_bMatchingCycle = true;
-
+        private Datum m_datumNoise = null;
         private LabelCollection m_rgBatchLabels = null;
 
         /// <summary>
@@ -180,6 +183,10 @@ namespace MyCaffe.layers
             // Use data transformer to infer the expected blob shape from the datum.
             List<int> rgTopShape = m_transformer.InferBlobShape(datum);
 
+            // When using noise as the secondary image, fill it with noise.
+            if (m_param.data_param.use_noise_for_nonmatch)
+                m_datumNoise = createNoisyData(rgTopShape, datum);
+
             // Double the channels when loading image pairs where the first image is loaded followed by the second on the channel.
             if (m_param.data_param.images_per_blob > 1)
             {
@@ -259,6 +266,78 @@ namespace MyCaffe.layers
                 {
                     m_rgPrefetch[i].Label.Reshape(rgLabelShape);
                 }
+            }
+        }
+
+        private Datum createNoisyData(List<int> rgTopShape, Datum datum)
+        {
+            Blob<T> blobNoise = new Blob<T>(m_cuda, m_log, rgTopShape);
+
+            try
+            {
+                Filler<T> filler = Filler<T>.Create(m_cuda, m_log, m_param.data_param.data_noise_param.noise_filler);
+                filler.Fill(blobNoise);
+
+                if (m_param.data_param.data_noise_param.use_noisy_mean)
+                {
+                    SimpleDatum sdMean = m_transformer.ImageMean;
+                    if (sdMean == null)
+                    {
+                        if (m_imgdb == null)
+                            m_log.FAIL("No 'mean' image is loaded, yet the MyCaffe Image Database = null, and it is required to get the mean image.");
+
+                        sdMean = m_imgdb.GetImageMean(m_src.ID);
+                    }
+
+                    if (sdMean == null)
+                        m_log.FAIL("The data source '" + m_src.Name + "' does not have a mean image!");
+
+                    if (sdMean.IsRealData)
+                    {
+                        blobNoise.mutable_cpu_diff = convert(sdMean.RealData);
+                    }
+                    else
+                    {
+                        double dfMin = blobNoise.min_data;
+                        double dfMax = blobNoise.max_data;
+
+                        if (dfMin < -1.0 || dfMax > 1.0)
+                            m_log.WriteLine("WARNING! The noise filler is producing numbers outside of the range [-1,1] which may cause a saturated final noise data image.");
+
+                        blobNoise.mutable_cpu_diff = convert(sdMean.ByteData.Select(p => (float)p).ToArray());
+                    }
+
+                    m_cuda.mul(blobNoise.count(), blobNoise.gpu_diff, blobNoise.gpu_data, blobNoise.mutable_gpu_data);
+                }
+
+                double[] rgf1 = convertD(blobNoise.update_cpu_data());
+
+                List<double> rgdf = null;
+                List<byte> rgb = null;
+
+                if (datum.IsRealData)
+                    rgdf = rgf1.ToList();
+                else
+                    rgb = rgf1.Select(p => Math.Min((byte)p, (byte)255)).ToList();
+
+                Datum datumNoise = new Datum(datum.IsRealData, datum.channels, datum.width, datum.height, m_param.data_param.data_noise_param.noise_data_label, DateTime.MinValue, rgb, rgdf, 1, false, -1);
+
+                if (!string.IsNullOrEmpty(m_param.data_param.data_noise_param.noisy_save_path))
+                {
+                    if (!Directory.Exists(m_param.data_param.data_noise_param.noisy_save_path))
+                        m_log.FAIL("The noisy save path '" + m_param.data_param.data_noise_param.noisy_save_path + "' does not exist!");
+
+                    string strPath = m_param.data_param.data_noise_param.noisy_save_path.TrimEnd('\\');
+                    Bitmap bmp = ImageData.GetImage(datumNoise);
+                    bmp.Save(m_param.data_param.data_noise_param.noisy_save_path + "\\noisy_data.png");
+                    bmp.Dispose();
+                }
+
+                return datumNoise;
+            }
+            finally
+            {
+                blobNoise.Dispose();
             }
         }
 
@@ -405,31 +484,41 @@ namespace MyCaffe.layers
                                     nLabelMatch = datum.Label;
                                     rgDatum[j] = m_cursor.GetValue(nLabelMatch, bLoadDataCriteria);
                                 }
-                                else
+                                else 
                                 {
-                                    rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
-                                    int nRetries = 3;
-
-                                    if (rgDatum[j] == null || rgDatum[j].Label == datum.Label)
+                                    if (m_param.data_param.use_noise_for_nonmatch)
                                     {
-                                        int nIdx1 = 0;
-                                        while (nIdx1 < nRetries)
-                                        {
-                                            Next();
-                                            rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
-                                            nIdx1++;
-
-                                            if (rgDatum[j] != null && rgDatum[j].Label != datum.Label)
-                                                break;
-                                        }
+                                        rgDatum[j] = m_datumNoise;
                                     }
+                                    else
+                                    {
+                                        rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
+                                        int nRetries = 3;
 
-                                    m_log.CHECK(rgDatum[j] != null, "The secondary pairing data is null after " + nRetries.ToString() + "!");
+                                        if (rgDatum[j] == null || rgDatum[j].Label == datum.Label)
+                                        {
+                                            int nIdx1 = 0;
+                                            while (nIdx1 < nRetries)
+                                            {
+                                                Next();
+                                                rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
+                                                nIdx1++;
+
+                                                if (rgDatum[j] != null && rgDatum[j].Label != datum.Label)
+                                                    break;
+                                            }
+                                        }
+
+                                        m_log.CHECK(rgDatum[j] != null, "The secondary pairing data is null after " + nRetries.ToString() + "!");
+                                    }
                                 }
                             }
                             else
                             {
-                                rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
+                                if (m_param.data_param.use_noise_for_nonmatch)
+                                    rgDatum[j] = m_datumNoise;
+                                else
+                                    rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
                             }
                         }
                     }

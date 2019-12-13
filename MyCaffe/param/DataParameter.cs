@@ -44,6 +44,8 @@ namespace MyCaffe.param
         bool m_bOutputAllLabels = false;
         bool m_bBalanceMatches = false;
         bool m_bOutputImageInfo = false;
+        bool m_bUseNoiseForNonMatch = false;
+        DataNoiseParameter m_dataNoiseParam = new DataNoiseParameter();
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -226,6 +228,25 @@ namespace MyCaffe.param
             set { m_bOutputImageInfo = value; }
         }
 
+        /// <summary>
+        /// (\b optional, default = false) When <i>true</i> an image consisting of noise initialized with noise filler.
+        /// </summary>
+        public bool use_noise_for_nonmatch
+        {
+            get { return m_bUseNoiseForNonMatch; }
+            set { m_bUseNoiseForNonMatch = value; }
+        }
+
+        /// <summary>
+        /// Specifies the DataNoiseParameter used when 'use_noise_for_nonmatch' = True.
+        /// </summary>
+        public DataNoiseParameter data_noise_param
+        {
+            get { return m_dataNoiseParam; }
+            set { m_dataNoiseParam = value; }
+        }
+
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -257,6 +278,8 @@ namespace MyCaffe.param
             m_bOutputAllLabels = p.m_bOutputAllLabels;
             m_bBalanceMatches = p.m_bBalanceMatches;
             m_bOutputImageInfo = p.m_bOutputImageInfo;
+            m_bUseNoiseForNonMatch = p.m_bUseNoiseForNonMatch;
+            m_dataNoiseParam.Copy(p.m_dataNoiseParam);            
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -308,6 +331,12 @@ namespace MyCaffe.param
 
             if (output_image_information)
                 rgChildren.Add("output_image_information", m_bOutputImageInfo.ToString());
+
+            if (use_noise_for_nonmatch)
+            {
+                rgChildren.Add("use_noise_for_nonmatch", m_bUseNoiseForNonMatch.ToString());
+                rgChildren.Add(m_dataNoiseParam.ToProto("data_noise_param"));
+            }
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -395,7 +424,14 @@ namespace MyCaffe.param
                 p.balance_matches = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("output_image_information")) != null)
-                p.output_image_information = bool.Parse(strVal); 
+                p.output_image_information = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("use_noise_for_nonmatch")) != null)
+                p.use_noise_for_nonmatch = bool.Parse(strVal);
+
+            RawProto rpDataNoise = rp.FindChild("data_noise_param");
+            if (rpDataNoise != null)
+                p.data_noise_param = DataNoiseParameter.FromProto(rpDataNoise);
 
             return p;
         }
