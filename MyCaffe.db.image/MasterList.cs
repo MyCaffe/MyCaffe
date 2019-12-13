@@ -27,6 +27,7 @@ namespace MyCaffe.db.image
         SimpleDatum m_imgMean = null;
         Log m_log = null;
         int m_nLoadedCount = 0;
+        bool m_bSilent = false;
         object m_syncObj = new object();
 
 
@@ -81,14 +82,16 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Start loading the dataset.
         /// </summary>
+        /// <param name="bSilent">Specifies whether or not to output the loading status.</param>
         /// <returns>If the dataset is already loading <i>false</i> is returned.</returns>
-        public bool Load()
+        public bool Load(bool bSilent = false)
         {
             lock (m_syncObj)
             {
                 if (m_evtRunning.WaitOne(0))
                     return false;
 
+                m_bSilent = bSilent;
                 m_evtCancel.Reset();
                 m_evtDone.Reset();
                 m_loadSequence = new LoadSequence(m_src.ImageCount);
@@ -352,7 +355,7 @@ namespace MyCaffe.db.image
             if (sd == null)
             {
                 if (!m_evtRunning.WaitOne(0) && (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND))
-                    Load();
+                    Load((loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false);
 
                 sd = directLoadImage(nIdx);
                 if (sd == null)
@@ -538,7 +541,7 @@ namespace MyCaffe.db.image
 
                             if (sw.Elapsed.TotalMilliseconds > 1000)
                             {
-                                if (m_log != null)
+                                if (m_log != null && !m_bSilent)
                                 {
                                     double dfPct = m_nLoadedCount / (double)m_rgImages.Length;
                                     m_log.Progress = dfPct;
