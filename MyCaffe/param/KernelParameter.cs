@@ -216,7 +216,6 @@ namespace MyCaffe.param
         {
             RawProto rpBase = base.ToProto("engine");
             RawProtoCollection rgChildren = new RawProtoCollection();
-            KernelParameter p = new KernelParameter();
 
             rgChildren.Add(rpBase.Children);
             rgChildren.Add<uint>("kernel_size", m_rgKernelSize);

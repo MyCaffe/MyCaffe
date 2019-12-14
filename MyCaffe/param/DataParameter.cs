@@ -45,8 +45,10 @@ namespace MyCaffe.param
         bool m_bBalanceMatches = false;
         bool m_bOutputImageInfo = false;
         int m_nForcedPrimaryLabel = -1;
-        bool m_bUseNoiseForNonMatch = false;
+        bool m_bEnableNoiseForNonMatch = false;
         DataNoiseParameter m_dataNoiseParam = new DataNoiseParameter();
+        bool m_bEnableDebugOutput = false;
+        DataDebugParameter m_dataDebugParam = new DataDebugParameter();
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -241,19 +243,37 @@ namespace MyCaffe.param
         /// <summary>
         /// (\b optional, default = false) When <i>true</i> an image consisting of noise initialized with noise filler.
         /// </summary>
-        public bool use_noise_for_nonmatch
+        public bool enable_noise_for_nonmatch
         {
-            get { return m_bUseNoiseForNonMatch; }
-            set { m_bUseNoiseForNonMatch = value; }
+            get { return m_bEnableNoiseForNonMatch; }
+            set { m_bEnableNoiseForNonMatch = value; }
         }
 
         /// <summary>
-        /// Specifies the DataNoiseParameter used when 'use_noise_for_nonmatch' = True.
+        /// Specifies the DataNoiseParameter used when 'enable_noise_for_nonmatch' = True.
         /// </summary>
         public DataNoiseParameter data_noise_param
         {
             get { return m_dataNoiseParam; }
             set { m_dataNoiseParam = value; }
+        }
+
+        /// <summary>
+        /// (\b optional, default = false) When <i>true</i> the data sent out through the top are saved as images into the debug directory specified by the data_debug_param.
+        /// </summary>
+        public bool enable_debug_output
+        {
+            get { return m_bEnableDebugOutput; }
+            set { m_bEnableDebugOutput = value; }
+        }
+
+        /// <summary>
+        /// Specifies the DataDebugParameter used when 'enable_debug_output' = True.
+        /// </summary>
+        public DataDebugParameter data_debug_param
+        {
+            get { return m_dataDebugParam; }
+            set { m_dataDebugParam = value; }
         }
 
 
@@ -288,8 +308,10 @@ namespace MyCaffe.param
             m_bOutputAllLabels = p.m_bOutputAllLabels;
             m_bBalanceMatches = p.m_bBalanceMatches;
             m_bOutputImageInfo = p.m_bOutputImageInfo;
-            m_bUseNoiseForNonMatch = p.m_bUseNoiseForNonMatch;
+            m_bEnableNoiseForNonMatch = p.m_bEnableNoiseForNonMatch;
             m_dataNoiseParam.Copy(p.m_dataNoiseParam);
+            m_bEnableDebugOutput = p.m_bEnableDebugOutput;
+            m_dataDebugParam.Copy(p.m_dataDebugParam);
             m_nForcedPrimaryLabel = p.m_nForcedPrimaryLabel;
         }
 
@@ -343,10 +365,16 @@ namespace MyCaffe.param
             if (output_image_information)
                 rgChildren.Add("output_image_information", m_bOutputImageInfo.ToString());
 
-            if (use_noise_for_nonmatch)
+            if (enable_noise_for_nonmatch)
             {
-                rgChildren.Add("use_noise_for_nonmatch", m_bUseNoiseForNonMatch.ToString());
+                rgChildren.Add("enable_noise_for_nonmatch", m_bEnableNoiseForNonMatch.ToString());
                 rgChildren.Add(m_dataNoiseParam.ToProto("data_noise_param"));
+            }
+
+            if (enable_debug_output)
+            {
+                rgChildren.Add("enable_debug_output", m_bEnableDebugOutput.ToString());
+                rgChildren.Add(m_dataDebugParam.ToProto("data_debug_param"));
             }
 
             if (m_nForcedPrimaryLabel >= 0)
@@ -440,12 +468,19 @@ namespace MyCaffe.param
             if ((strVal = rp.FindValue("output_image_information")) != null)
                 p.output_image_information = bool.Parse(strVal);
 
-            if ((strVal = rp.FindValue("use_noise_for_nonmatch")) != null)
-                p.use_noise_for_nonmatch = bool.Parse(strVal);
+            if ((strVal = rp.FindValue("enable_noise_for_nonmatch")) != null)
+                p.enable_noise_for_nonmatch = bool.Parse(strVal);
 
             RawProto rpDataNoise = rp.FindChild("data_noise_param");
             if (rpDataNoise != null)
                 p.data_noise_param = DataNoiseParameter.FromProto(rpDataNoise);
+
+            if ((strVal = rp.FindValue("enable_debug_output")) != null)
+                p.enable_debug_output = bool.Parse(strVal);
+
+            RawProto rpDataDebug = rp.FindChild("data_debug_param");
+            if (rpDataDebug != null)
+                p.data_debug_param = DataDebugParameter.FromProto(rpDataDebug);
 
             if ((strVal = rp.FindValue("forced_primary_label")) != null)
                 p.forced_primary_label = int.Parse(strVal);

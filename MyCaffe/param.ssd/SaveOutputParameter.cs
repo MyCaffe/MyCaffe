@@ -153,20 +153,25 @@ namespace MyCaffe.param.ssd
         /// Copy the source object.
         /// </summary>
         /// <param name="src">Specifies the source data.</param>
-        public void Copy(SaveOutputParameter src)
+        public override void Copy(OptionalParameter src)
         {
-            SaveOutputParameter p = (SaveOutputParameter)src;
+            base.Copy(src);
 
-            m_strOutputDirectory = p.m_strOutputDirectory;
-            m_strOutputNamePrefix = p.m_strOutputNamePrefix;
-            m_outputFormat = p.m_outputFormat;
-            m_strLabelMapFile = p.m_strLabelMapFile;
-            m_strNameSizeFile = p.m_strNameSizeFile;
-            m_nNumTestImage = p.m_nNumTestImage;
+            if (src is SaveOutputParameter)
+            {
+                SaveOutputParameter p = (SaveOutputParameter)src;
 
-            m_resizeParam = null;
-            if (p.resize_param != null)
-                m_resizeParam = p.resize_param.Clone();
+                m_strOutputDirectory = p.m_strOutputDirectory;
+                m_strOutputNamePrefix = p.m_strOutputNamePrefix;
+                m_outputFormat = p.m_outputFormat;
+                m_strLabelMapFile = p.m_strLabelMapFile;
+                m_strNameSizeFile = p.m_strNameSizeFile;
+                m_nNumTestImage = p.m_nNumTestImage;
+
+                m_resizeParam = null;
+                if (p.resize_param != null)
+                    m_resizeParam = p.resize_param.Clone();
+            }
         }
 
         /// <summary>
@@ -185,11 +190,12 @@ namespace MyCaffe.param.ssd
         /// </summary>
         /// <param name="strName">Specifies the name of the proto.</param>
         /// <returns>The new proto is returned.</returns>
-        public RawProto ToProto(string strName)
+        public override RawProto ToProto(string strName)
         {
+            RawProto rpBase = base.ToProto("option");
             RawProtoCollection rgChildren = new RawProtoCollection();
 
-            rgChildren.Add(new RawProto("active", Active.ToString()));
+            rgChildren.Add(rpBase);
             rgChildren.Add(new RawProto("output_directory", m_strOutputDirectory));
             rgChildren.Add(new RawProto("output_name_prefix", m_strOutputNamePrefix));
             rgChildren.Add(new RawProto("output_format", m_outputFormat.ToString()));
@@ -210,13 +216,14 @@ namespace MyCaffe.param.ssd
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static SaveOutputParameter FromProto(RawProto rp)
+        public static new SaveOutputParameter FromProto(RawProto rp)
         {
             SaveOutputParameter p = new SaveOutputParameter(true);
             string strVal;
 
-            if ((strVal = rp.FindValue("active")) != null)
-                p.Active = bool.Parse(strVal);
+            RawProto rpOption = rp.FindChild("option");
+            if (rpOption != null)
+                ((OptionalParameter)p).Copy(OptionalParameter.FromProto(rpOption));
 
             if ((strVal = rp.FindValue("output_directory")) != null)
                 p.output_directory = strVal;

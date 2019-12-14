@@ -126,20 +126,26 @@ namespace MyCaffe.param.ssd
         /// Copy the object.
         /// </summary>
         /// <param name="src">The copy is placed in this parameter.</param>
-        public void Copy(DistortionParameter src)
+        public override void Copy(OptionalParameter src)
         {
-            m_fBrightnessProb = src.brightness_prob;
-            m_fBrightnessDelta = src.brightness_delta;
+            base.Copy(src);
 
-            m_fContrastProb = src.contrast_prob;
-            m_fContrastLower = src.contrast_lower;
-            m_fContrastUpper = src.contrast_upper;
+            if (src is DistortionParameter)
+            {
+                DistortionParameter p = (DistortionParameter)src;
+                m_fBrightnessProb = p.brightness_prob;
+                m_fBrightnessDelta = p.brightness_delta;
 
-            m_fSaturationProb = src.saturation_prob;
-            m_fSaturationLower = src.saturation_lower;
-            m_fSaturationUpper = src.saturation_upper;
+                m_fContrastProb = p.contrast_prob;
+                m_fContrastLower = p.contrast_lower;
+                m_fContrastUpper = p.contrast_upper;
 
-            m_fRandomOrderProb = src.random_order_prob;
+                m_fSaturationProb = p.saturation_prob;
+                m_fSaturationLower = p.saturation_lower;
+                m_fSaturationUpper = p.saturation_upper;
+
+                m_fRandomOrderProb = p.random_order_prob;
+            }
         }
 
         /// <summary>
@@ -158,10 +164,12 @@ namespace MyCaffe.param.ssd
         /// </summary>
         /// <param name="strName">Specifies the name of the proto.</param>
         /// <returns>The new proto is returned.</returns>
-        public RawProto ToProto(string strName)
+        public override RawProto ToProto(string strName)
         {
+            RawProto rpBase = base.ToProto("option");
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add(rpBase);
             rgChildren.Add(new RawProto("active", Active.ToString()));
             rgChildren.Add(new RawProto("brightness_prob", brightness_prob.ToString()));
             rgChildren.Add(new RawProto("brightness_delta", brightness_delta.ToString()));
@@ -181,10 +189,14 @@ namespace MyCaffe.param.ssd
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static DistortionParameter FromProto(RawProto rp)
+        public static new DistortionParameter FromProto(RawProto rp)
         {
             DistortionParameter p = new DistortionParameter(true);
             string strVal;
+
+            RawProto rpOption = rp.FindChild("option");
+            if (rpOption != null)
+                ((OptionalParameter)p).Copy(OptionalParameter.FromProto(rpOption));
 
             if ((strVal = rp.FindValue("active")) != null)
                 p.Active = bool.Parse(strVal);

@@ -206,27 +206,33 @@ namespace MyCaffe.param.ssd
         /// Copy the source object.
         /// </summary>
         /// <param name="src">Specifies the source data.</param>
-        public void Copy(ResizeParameter src)
+        public override void Copy(OptionalParameter src)
         {
-            m_fProb = src.prob;
-            m_mode = src.resize_mode;
-            m_pad = src.pad_mode;
+            base.Copy(src);
 
-            m_rgInterp = new List<InterpMode>();
-            foreach (InterpMode interp in src.m_rgInterp)
+            if (src is ResizeParameter)
             {
-                m_rgInterp.Add(interp);
-            }
+                ResizeParameter p = (ResizeParameter)src;
+                m_fProb = p.prob;
+                m_mode = p.resize_mode;
+                m_pad = p.pad_mode;
 
-            m_nHeight = src.height;
-            m_nWidth = src.width;
-            m_nHeightScale = src.height_scale;
-            m_nWidthScale = src.width_scale;
+                m_rgInterp = new List<InterpMode>();
+                foreach (InterpMode interp in p.m_rgInterp)
+                {
+                    m_rgInterp.Add(interp);
+                }
 
-            m_rgfPadValue = new List<float>();
-            foreach (float fPad in src.pad_value)
-            {
-                m_rgfPadValue.Add(fPad);
+                m_nHeight = p.height;
+                m_nWidth = p.width;
+                m_nHeightScale = p.height_scale;
+                m_nWidthScale = p.width_scale;
+
+                m_rgfPadValue = new List<float>();
+                foreach (float fPad in p.pad_value)
+                {
+                    m_rgfPadValue.Add(fPad);
+                }
             }
         }
 
@@ -246,10 +252,12 @@ namespace MyCaffe.param.ssd
         /// </summary>
         /// <param name="strName">Specifies the name of the proto.</param>
         /// <returns>The new proto is returned.</returns>
-        public RawProto ToProto(string strName)
+        public override RawProto ToProto(string strName)
         {
+            RawProto rpBase = base.ToProto("option");
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add(rpBase);
             rgChildren.Add(new RawProto("active", Active.ToString()));
             rgChildren.Add(new RawProto("prob", prob.ToString()));
             rgChildren.Add(new RawProto("resize_mode", m_mode.ToString()));
@@ -277,10 +285,14 @@ namespace MyCaffe.param.ssd
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static ResizeParameter FromProto(RawProto rp)
+        public static new ResizeParameter FromProto(RawProto rp)
         {
             ResizeParameter p = new ResizeParameter(true);
             string strVal;
+
+            RawProto rpOption = rp.FindChild("option");
+            if (rpOption != null)
+                ((OptionalParameter)p).Copy(OptionalParameter.FromProto(rpOption));
 
             if ((strVal = rp.FindValue("active")) != null)
                 p.Active = bool.Parse(strVal);

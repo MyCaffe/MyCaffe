@@ -68,10 +68,16 @@ namespace MyCaffe.param.ssd
         /// Copy the source object.
         /// </summary>
         /// <param name="src">Specifies the source data.</param>
-        public void Copy(EmitConstraint src)
+        public override void Copy(OptionalParameter src)
         {
-            m_emitType = src.emit_type;
-            m_fEmitOverlap = src.emit_overlap;
+            base.Copy(src);
+
+            if (src is EmitConstraint)
+            {
+                EmitConstraint p = (EmitConstraint)src;
+                m_emitType = p.emit_type;
+                m_fEmitOverlap = p.emit_overlap;
+            }
         }
 
         /// <summary>
@@ -90,11 +96,12 @@ namespace MyCaffe.param.ssd
         /// </summary>
         /// <param name="strName">Specifies the name of the proto.</param>
         /// <returns>The new proto is returned.</returns>
-        public RawProto ToProto(string strName)
+        public override RawProto ToProto(string strName)
         {
+            RawProto rpBase = base.ToProto("option");
             RawProtoCollection rgChildren = new RawProtoCollection();
 
-            rgChildren.Add(new RawProto("active", Active.ToString()));
+            rgChildren.Add(rpBase);
             rgChildren.Add(new RawProto("emit_type", m_emitType.ToString()));
             rgChildren.Add(new RawProto("emit_overlap", m_fEmitOverlap.ToString()));
 
@@ -106,13 +113,14 @@ namespace MyCaffe.param.ssd
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static EmitConstraint FromProto(RawProto rp)
+        public static new EmitConstraint FromProto(RawProto rp)
         {
             EmitConstraint p = new EmitConstraint(true);
             string strVal;
 
-            if ((strVal = rp.FindValue("active")) != null)
-                p.Active = bool.Parse(strVal);
+            RawProto rpOption = rp.FindChild("option");
+            if (rpOption != null)
+                ((OptionalParameter)p).Copy(OptionalParameter.FromProto(rpOption));
 
             if ((strVal = rp.FindValue("emit_type")) != null)
             {

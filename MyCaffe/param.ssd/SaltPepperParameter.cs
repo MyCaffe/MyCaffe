@@ -53,14 +53,20 @@ namespace MyCaffe.param.ssd
         /// Copy the object.
         /// </summary>
         /// <param name="src">The copy is placed in this parameter.</param>
-        public void Copy(SaltPepperParameter src)
+        public override void Copy(OptionalParameter src)
         {
-            m_fFraction = src.fraction;
-            m_rgValue = new List<float>();
+            base.Copy(src);
 
-            foreach (float fVal in src.value)
+            if (src is SaltPepperParameter)
             {
-                m_rgValue.Add(fVal);
+                SaltPepperParameter p = (SaltPepperParameter)src;
+                m_fFraction = p.fraction;
+                m_rgValue = new List<float>();
+
+                foreach (float fVal in p.value)
+                {
+                    m_rgValue.Add(fVal);
+                }
             }
         }
 
@@ -80,10 +86,12 @@ namespace MyCaffe.param.ssd
         /// </summary>
         /// <param name="strName">Specifies the name of the proto.</param>
         /// <returns>The new proto is returned.</returns>
-        public RawProto ToProto(string strName)
+        public override RawProto ToProto(string strName)
         {
+            RawProto rpBase = base.ToProto("option");
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add(rpBase);
             rgChildren.Add(new RawProto("active", Active.ToString()));
             rgChildren.Add(new RawProto("fraction", m_fFraction.ToString()));
 
@@ -100,13 +108,14 @@ namespace MyCaffe.param.ssd
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static SaltPepperParameter FromProto(RawProto rp)
+        public static new SaltPepperParameter FromProto(RawProto rp)
         {
             SaltPepperParameter p = new SaltPepperParameter(true);
             string strVal;
 
-            if ((strVal = rp.FindValue("active")) != null)
-                p.Active = bool.Parse(strVal);
+            RawProto rpOption = rp.FindChild("option");
+            if (rpOption != null)
+                ((OptionalParameter)p).Copy(OptionalParameter.FromProto(rpOption));
 
             if ((strVal = rp.FindValue("fraction")) != null)
                 p.fraction = float.Parse(strVal);

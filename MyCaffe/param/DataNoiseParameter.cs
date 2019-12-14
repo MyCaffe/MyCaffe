@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace MyCaffe.param
 {
     /// <summary>
-    /// The DataNoiseParameter is used by the DataParameter when the 'use_data_for_nonmatch' = True, which is used when 'images_per_blob' > 1.
+    /// The DataNoiseParameter is used by the DataParameter when the 'enable_noise_for_nonmatch' = True, which is used when 'images_per_blob' > 1.
     /// </summary>
     [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]

@@ -53,10 +53,16 @@ namespace MyCaffe.param.ssd
         /// Copy the object.
         /// </summary>
         /// <param name="src">The copy is placed in this parameter.</param>
-        public void Copy(ExpansionParameter src)
+        public override void Copy(OptionalParameter src)
         {
-            m_fProb = src.prob;
-            m_fMaxExpandRatio = src.max_expand_ratio;
+            base.Copy(src);
+
+            if (src is ExpansionParameter)
+            {
+                ExpansionParameter p = (ExpansionParameter)src;
+                m_fProb = p.prob;
+                m_fMaxExpandRatio = p.max_expand_ratio;
+            }
         }
 
         /// <summary>
@@ -75,10 +81,12 @@ namespace MyCaffe.param.ssd
         /// </summary>
         /// <param name="strName">Specifies the name of the proto.</param>
         /// <returns>The new proto is returned.</returns>
-        public RawProto ToProto(string strName)
+        public override RawProto ToProto(string strName)
         {
+            RawProto rpBase = base.ToProto("option");
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add(rpBase);
             rgChildren.Add(new RawProto("active", Active.ToString()));
             rgChildren.Add(new RawProto("prob", prob.ToString()));
             rgChildren.Add(new RawProto("max_expand_ratio", max_expand_ratio.ToString()));
@@ -91,13 +99,14 @@ namespace MyCaffe.param.ssd
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static ExpansionParameter FromProto(RawProto rp)
+        public static new ExpansionParameter FromProto(RawProto rp)
         {
             ExpansionParameter p = new ExpansionParameter(true);
             string strVal;
 
-            if ((strVal = rp.FindValue("active")) != null)
-                p.Active = bool.Parse(strVal);
+            RawProto rpOption = rp.FindChild("option");
+            if (rpOption != null)
+                ((OptionalParameter)p).Copy(OptionalParameter.FromProto(rpOption));
 
             if ((strVal = rp.FindValue("prob")) != null)
                 p.prob = float.Parse(strVal);

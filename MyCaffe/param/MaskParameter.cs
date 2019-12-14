@@ -87,12 +87,18 @@ namespace MyCaffe.param
         /// Copy the source object.
         /// </summary>
         /// <param name="src">Specifies the source data.</param>
-        public void Copy(MaskParameter src)
+        public override void Copy(OptionalParameter src)
         {
-            m_nMaskLeft = src.m_nMaskLeft;
-            m_nMaskRight = src.m_nMaskRight;
-            m_nMaskTop = src.m_nMaskTop;
-            m_nMaskBottom = src.m_nMaskBottom;
+            base.Copy(src);
+
+            if (src is MaskParameter)
+            {
+                MaskParameter p = (MaskParameter)src;
+                m_nMaskLeft = p.m_nMaskLeft;
+                m_nMaskRight = p.m_nMaskRight;
+                m_nMaskTop = p.m_nMaskTop;
+                m_nMaskBottom = p.m_nMaskBottom;
+            }
         }
 
         /// <summary>
@@ -111,10 +117,12 @@ namespace MyCaffe.param
         /// </summary>
         /// <param name="strName">Specifies the name of the proto.</param>
         /// <returns>The new proto is returned.</returns>
-        public RawProto ToProto(string strName)
+        public override RawProto ToProto(string strName)
         {
+            RawProto rpBase = base.ToProto("option");
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add(rpBase);
             rgChildren.Add(new RawProto("boundary_left", boundary_left.ToString()));
             rgChildren.Add(new RawProto("boundary_right", boundary_right.ToString()));
             rgChildren.Add(new RawProto("boundary_top", boundary_top.ToString()));
@@ -128,13 +136,14 @@ namespace MyCaffe.param
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static MaskParameter FromProto(RawProto rp)
+        public static new MaskParameter FromProto(RawProto rp)
         {
             MaskParameter p = new MaskParameter(true);
             string strVal;
 
-            if ((strVal = rp.FindValue("active")) != null)
-                p.Active = bool.Parse(strVal);
+            RawProto rpOption = rp.FindChild("option");
+            if (rpOption != null)
+                ((OptionalParameter)p).Copy(OptionalParameter.FromProto(rpOption));
 
             if ((strVal = rp.FindValue("boundary_left")) != null)
                 p.boundary_left = int.Parse(strVal);

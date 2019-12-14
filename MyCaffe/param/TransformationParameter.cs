@@ -275,12 +275,14 @@ namespace MyCaffe.param
             m_strMeanFile = p.m_strMeanFile;
             m_colorOrder = p.m_colorOrder;
 
-            m_resize = (p.resize_param != null) ? p.resize_param.Clone() : null;
-            m_noise = (p.noise_param != null) ? p.noise_param.Clone() : null;
-            m_distortion = (p.distortion_param != null) ? p.distortion_param.Clone() : null;
-            m_expansion = (p.expansion_param != null) ? p.expansion_param.Clone() : null;
-            m_emitConstraint = (p.emit_constraint != null) ? p.emit_constraint.Clone() : null;
-            m_mask = (p.mask_param != null) ? p.mask_param.Clone() : null;
+            m_resize = (p.resize_param == null) ? null : p.resize_param.Clone();
+            m_noise = (p.noise_param == null) ? null : p.noise_param.Clone();
+            m_distortion = (p.distortion_param == null) ? null : p.distortion_param.Clone();
+            m_expansion = (p.expansion_param == null) ? null : p.expansion_param.Clone();
+            m_emitConstraint = (p.emit_constraint == null) ? null : p.emit_constraint.Clone();
+
+            if (p.mask_param != null)
+                m_mask = p.mask_param.Clone();
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -394,22 +396,38 @@ namespace MyCaffe.param
             }
 
             RawProto rpResize = rp.FindChild("resize_param");
-            p.resize_param = (rpResize != null) ? ResizeParameter.FromProto(rpResize) : null;
+            if (rpResize != null)
+                p.resize_param = ResizeParameter.FromProto(rpResize);
+            else
+                p.resize_param = null;
 
             RawProto rpNoise = rp.FindChild("noise_param");
-            p.noise_param = (rpNoise != null) ? NoiseParameter.FromProto(rpNoise) : null;
+            if (rpNoise != null)
+                p.noise_param = NoiseParameter.FromProto(rpNoise);
+            else
+                p.noise_param = null;
 
             RawProto rpDistort = rp.FindChild("distortion_param");
-            p.distortion_param = (rpDistort != null) ? DistortionParameter.FromProto(rpDistort) : null;
+            if (rpDistort != null)
+                p.distortion_param = DistortionParameter.FromProto(rpDistort);
+            else
+                p.distortion_param = null;
 
             RawProto rpExpand = rp.FindChild("expansion_param");
-            p.expansion_param = (rpExpand != null) ? ExpansionParameter.FromProto(rpExpand) : null;
+            if (rpExpand != null)
+                p.expansion_param = ExpansionParameter.FromProto(rpExpand);
+            else
+                p.expansion_param = null;
 
             RawProto rpEmitCon = rp.FindChild("emit_constraint");
-            p.emit_constraint = (rpEmitCon != null) ? EmitConstraint.FromProto(rpEmitCon) : null;
+            if (rpEmitCon != null)
+                p.emit_constraint = EmitConstraint.FromProto(rpEmitCon);
+            else
+                p.emit_constraint = null;
 
             RawProto rpMask = rp.FindChild("mask_param");
-            p.mask_param = (rpMask != null) ? MaskParameter.FromProto(rpMask) : null;
+            if (rpMask != null)
+                p.mask_param = MaskParameter.FromProto(rpMask);
 
             return p;
         }

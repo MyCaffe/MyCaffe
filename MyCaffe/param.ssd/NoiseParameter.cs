@@ -163,9 +163,15 @@ namespace MyCaffe.param.ssd
         /// Copy the object.
         /// </summary>
         /// <param name="src">The copy is placed in this parameter.</param>
-        public void Copy(NoiseParameter src)
+        public override void Copy(OptionalParameter src)
         {
-            m_fProb = src.prob;
+            base.Copy(src);
+
+            if (src is NoiseParameter)
+            {
+                NoiseParameter p = (NoiseParameter)src;
+                m_fProb = p.prob;
+            }
         }
 
         /// <summary>
@@ -184,11 +190,12 @@ namespace MyCaffe.param.ssd
         /// </summary>
         /// <param name="strName">Specifies the name of the proto.</param>
         /// <returns>The new proto is returned.</returns>
-        public RawProto ToProto(string strName)
+        public override RawProto ToProto(string strName)
         {
+            RawProto rpBase = base.ToProto("option");
             RawProtoCollection rgChildren = new RawProtoCollection();
 
-            rgChildren.Add(new RawProto("active", Active.ToString()));
+            rgChildren.Add(rpBase);
             rgChildren.Add(new RawProto("prob", prob.ToString()));
             rgChildren.Add(new RawProto("hist_eq", hist_eq.ToString()));
             rgChildren.Add(new RawProto("inverse", inverse.ToString()));
@@ -211,13 +218,14 @@ namespace MyCaffe.param.ssd
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static NoiseParameter FromProto(RawProto rp)
+        public static new NoiseParameter FromProto(RawProto rp)
         {
             NoiseParameter p = new NoiseParameter(true);
             string strVal;
 
-            if ((strVal = rp.FindValue("active")) != null)
-                p.Active = bool.Parse(strVal);
+            RawProto rpOption = rp.FindChild("option");
+            if (rpOption != null)
+                ((OptionalParameter)p).Copy(OptionalParameter.FromProto(rpOption));
 
             if ((strVal = rp.FindValue("prob")) != null)
                 p.prob = float.Parse(strVal);
