@@ -53,6 +53,8 @@ namespace MyCaffe.layers
         private LabelCollection m_rgBatchLabels = null;
         private Blob<T> m_blobMask1 = null;
         private Blob<T> m_blobMask = null;
+        private Blob<T> m_blobDebug1 = null;
+        private int m_nIteration = 0;
 
         /// <summary>
         /// This event fires (only when set) each time a batch is loaded form this dataset.
@@ -108,9 +110,12 @@ namespace MyCaffe.layers
 
             if (m_param.transform_param.mask_param != null && m_param.transform_param.mask_param.Active)
             {
-                m_blobMask = new Blob<T>(cuda, log);
-                m_blobMask1 = new Blob<T>(cuda, log);
+                m_blobMask = new Blob<T>(cuda, log, false);
+                m_blobMask1 = new Blob<T>(cuda, log, false);
             }
+
+            if (m_param.data_param.enable_debug_output)
+                m_blobDebug1 = new Blob<T>(cuda, log, false);
         }
 
         /** @copydoc Layer::dispose */
@@ -134,6 +139,12 @@ namespace MyCaffe.layers
             {
                 m_blobMask1.Dispose();
                 m_blobMask1 = null;
+            }
+
+            if (m_blobDebug1 != null)
+            {
+                m_blobDebug1.Dispose();
+                m_blobDebug1 = null;
             }
         }
 
@@ -204,7 +215,7 @@ namespace MyCaffe.layers
             List<int> rgTopShape = m_transformer.InferBlobShape(datum);
 
             // When using noise as the secondary image, fill it with noise.
-            if (m_param.data_param.use_noise_for_nonmatch)
+            if (m_param.data_param.enable_noise_for_nonmatch)
                 m_datumNoise = createNoisyData(rgTopShape, datum);
                 
             // Double the channels when loading image pairs where the first image is loaded followed by the second on the channel.
@@ -228,6 +239,10 @@ namespace MyCaffe.layers
             // Fill out the masks, if used.
             if (m_param.transform_param.mask_param != null && m_param.transform_param.mask_param.Active)
                 createMasks(Utility.Clone<int>(rgTopShape));
+
+            // Reshape debug data, if used.
+            if (m_param.data_param.enable_debug_output)
+                createDebug(Utility.Clone<int>(rgTopShape));
 
             // Label
             if (m_bOutputLabels)
@@ -291,12 +306,16 @@ namespace MyCaffe.layers
                     m_rgPrefetch[i].Label.Reshape(rgLabelShape);
                 }
             }
+
+            m_nIteration = 0;
         }
 
         private void createMasks(List<int> rgTopShape)
         {
+            int nImgPerBlob = m_param.data_param.images_per_blob;
             m_blobMask.Reshape(rgTopShape);
             rgTopShape[0] = 1;
+            rgTopShape[1] /= nImgPerBlob;
             m_blobMask1.Reshape(rgTopShape);
             m_blobMask1.SetData(1);
             float[] rgData = convertF(m_blobMask1.update_cpu_data());
@@ -307,9 +326,20 @@ namespace MyCaffe.layers
             int nOffset = 0;
             for (int n = 0; n < m_blobMask.num; n++)
             {
-                m_cuda.copy(nDim, m_blobMask1.gpu_data, m_blobMask.mutable_gpu_data, 0, nOffset);
-                nOffset += nDim;
+                for (int j = 0; j < nImgPerBlob; j++)
+                {
+                    m_cuda.copy(nDim, m_blobMask1.gpu_data, m_blobMask.mutable_gpu_data, 0, nOffset);
+                    nOffset += nDim;
+                }
             }
+        }
+
+        private void createDebug(List<int> rgTopShape)
+        {
+            int nImgPerBlob = m_param.data_param.images_per_blob;
+            rgTopShape[0] = 1;
+            rgTopShape[1] /= nImgPerBlob;
+            m_blobDebug1.Reshape(rgTopShape);
         }
 
         private Datum createNoisyData(List<int> rgTopShape, Datum datum)
@@ -451,6 +481,57 @@ namespace MyCaffe.layers
                 m_log.CHECK_EQ(m_blobMask.count(), nCount, "The mask must be the same size as the top!");
                 m_cuda.mul(nCount, m_blobMask.gpu_data, blobTop.gpu_data, blobTop.mutable_gpu_data);
             }
+
+            if (m_param.data_param.enable_debug_output)
+            {
+                if (m_nIteration < m_param.data_param.data_debug_param.iterations)
+                {
+                    int nImgPerBlob = m_param.data_param.images_per_blob;
+                    int nChannels = blobTop.channels / nImgPerBlob;
+
+                    if (blobTop.num_axes != 4 || (nChannels != 1 && nChannels != 3))
+                    { 
+                        m_log.WriteLine("WARNING! debug output only supported on 4 axis images which channel = 1 or 3.");
+                        return;
+                    }
+
+                    string strPath = m_param.data_param.data_debug_param.debug_save_path;
+                    if (!Directory.Exists(strPath))
+                        Directory.CreateDirectory(strPath);
+
+                    strPath = strPath.TrimEnd('\\');
+                    int nDim = nChannels * blobTop.height * blobTop.width;
+                    int nCount = m_blobDebug1.count();
+                    int nOffset = 0;
+
+                    m_log.CHECK_EQ(nDim, nCount, "The debug data is not sized properly.");
+
+                    for (int n = 0; n < blobTop.num; n++)
+                    {
+                        for (int j = 0; j < nImgPerBlob; j++)
+                        {
+                            m_cuda.copy(nCount, blobTop.gpu_data, m_blobDebug1.mutable_gpu_data, nOffset, 0);
+                            nOffset += nCount;
+
+                            if (m_param.transform_param.scale != 1)
+                            {
+                                double dfUnScale = 1.0 / m_param.transform_param.scale;
+                                m_blobDebug1.scale_data(dfUnScale);
+                            }
+
+                            float[] rgData = convertF(m_blobDebug1.mutable_cpu_data);
+
+                            string strFile = strPath + "\\dbgimg_iter_" + m_nIteration.ToString() + "_num_" + n.ToString() + "_img_" + j.ToString() + ".png";
+                            SimpleDatum sd = new SimpleDatum(nChannels, blobTop.width, blobTop.height, rgData, 0, nDim, false);
+                            Bitmap bmp = ImageData.GetImage(sd);
+                            bmp.Save(strFile);
+                            bmp.Dispose();
+                        }
+                    }
+                }
+            }
+
+            m_nIteration++;
         }
 
         /// <summary>
@@ -543,7 +624,7 @@ namespace MyCaffe.layers
                                 }
                                 else 
                                 {
-                                    if (m_param.data_param.use_noise_for_nonmatch)
+                                    if (m_param.data_param.enable_noise_for_nonmatch)
                                     {
                                         rgDatum[j] = m_datumNoise;
                                     }
@@ -572,7 +653,7 @@ namespace MyCaffe.layers
                             }
                             else
                             {
-                                if (m_param.data_param.use_noise_for_nonmatch)
+                                if (m_param.data_param.enable_noise_for_nonmatch)
                                     rgDatum[j] = m_datumNoise;
                                 else
                                     rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
