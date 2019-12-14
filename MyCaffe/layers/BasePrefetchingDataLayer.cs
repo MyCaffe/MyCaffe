@@ -63,6 +63,10 @@ namespace MyCaffe.layers
         /** @copydoc BaseDataLayer::dispose */
         protected override void dispose()
         {
+            m_internalThread.CancelEvent.Set();
+            m_rgPrefetchFree.Abort();
+            m_rgPrefetchFull.Abort();
+
             WaitHandle evt = m_internalThread.CancelEvent;
             m_internalThread.StopInternalThread();
 
@@ -172,6 +176,15 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Provides a final processing step that may be utilized by derivative classes.
+        /// </summary>
+        /// <param name="blobTop">Specifies the top blob just about to be set out the forward operation as the Top[0] blob.</param>
+        protected virtual void final_process(Blob<T> blobTop)
+        {
+            return;
+        }
+
+        /// <summary>
         /// The forward override implements the functionality to load pre-fetch data and feed it into the 
         /// top (output) Blobs.
         /// </summary>
@@ -189,6 +202,7 @@ namespace MyCaffe.layers
 
                 // Copy the data.
                 m_cuda.copy(m_prefetch_current.Data.count(), m_prefetch_current.Data.gpu_data, colTop[0].mutable_gpu_data);
+                final_process(colTop[0]);
 
                 //-----------------------------------------
                 // If the blob has a fixed range set, set 
