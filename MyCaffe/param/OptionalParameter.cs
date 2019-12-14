@@ -5,10 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MyCaffe.param.ssd
+namespace MyCaffe.param
 {
     /// <summary>
-    /// The OptionalParameter is the base class for SSD sub-parameters that are optional such as the DistorationParameter, ExpansionParameter, NoiseParameter, and ResizeParameter.
+    /// The OptionalParameter is the base class for parameters that are optional such as the MaskParameter, DistorationParameter, ExpansionParameter, NoiseParameter, and ResizeParameter.
     /// </summary>
     [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]
