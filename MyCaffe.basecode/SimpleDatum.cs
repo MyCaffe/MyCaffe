@@ -264,7 +264,8 @@ namespace MyCaffe.basecode
         /// <param name="rgf">Specifies the data to copy.</param>
         /// <param name="nOffset">Specifies the offset into the data where the copying should start.</param>
         /// <param name="nCount">Specifies the number of data items to copy.</param>
-        public SimpleDatum(int nChannels, int nWidth, int nHeight, float[] rgf, int nOffset, int nCount)
+        /// <param name="bDataIsReal">Optionally, specifies whether or not the data is real.</param>
+        public SimpleDatum(int nChannels, int nWidth, int nHeight, float[] rgf, int nOffset, int nCount, bool bDataIsReal = true)
         {
             m_nChannels = nChannels;
             m_nWidth = nWidth;
@@ -274,7 +275,6 @@ namespace MyCaffe.basecode
             m_dt = DateTime.MinValue;
             m_bAutoLabeled = false;
             m_nVirtualID = 0;
-            m_bIsRealData = true;
             m_nImageID = 0;
             m_nImageID = 0;
             m_nSourceID = 0;
@@ -285,11 +285,25 @@ namespace MyCaffe.basecode
             if (nLen != nCount)
                 throw new Exception("The channel x width x height should equal the count!");
 
-            m_rgRealData = new double[nCount];
-
-            for (int i = 0; i < nCount; i++)
+            if (bDataIsReal)
             {
-                m_rgRealData[i] = rgf[nOffset + i];
+                m_bIsRealData = true;
+                m_rgRealData = new double[nCount];
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    m_rgRealData[i] = rgf[nOffset + i];
+                }
+            }
+            else
+            {
+                m_bIsRealData = false;
+                m_rgByteData = new byte[nCount];
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    m_rgByteData[i] = Math.Min((byte)rgf[nOffset + i], (byte)255);
+                }
             }
         }
 
