@@ -11,6 +11,7 @@ using MyCaffe.layers;
 using System.Threading;
 using System.Diagnostics;
 using MyCaffe.basecode.descriptors;
+using System.Drawing;
 
 namespace MyCaffe.test
 {
@@ -99,6 +100,24 @@ namespace MyCaffe.test
                 foreach (IDataLayerTest t in test.Tests)
                 {
                     t.TestForwardPairs(test.SourceName, 1);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardMask()
+        {
+            DataLayerTest test = new DataLayerTest("CIFAR-10");
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    t.TestForwardMask(test.SourceName, 2);
                 }
             }
             finally
@@ -417,6 +436,7 @@ namespace MyCaffe.test
         SettingsCaffe m_settings;
         IXImageDatabaseBase m_db;
         CancelEvent m_evtCancel = new CancelEvent();
+        string m_strSrc = "MNIST.training";
 
         public DataLayerTest(string strDs = null)
             : base("Data Layer Test")
@@ -431,7 +451,10 @@ namespace MyCaffe.test
             {
                 m_db = createImageDb(null);
                 m_db.InitializeWithDsName1(m_settings, strDs);
-            }
+
+                DatasetDescriptor ds = m_db.GetDatasetByName(strDs);
+                m_strSrc = ds.TrainingSourceName;
+            }            
         }
 
         protected override ITest create(DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
@@ -463,7 +486,7 @@ namespace MyCaffe.test
 
         public string SourceName
         {
-            get { return "MNIST.training"; }
+            get { return m_strSrc; }
         }
 
         public IXImageDatabaseBase db
@@ -490,6 +513,7 @@ namespace MyCaffe.test
         void TestForward(string strSrc);
         void TestForward2(string strSrc);
         void TestForwardPairs(string strSrc, int nImagesPerBlob);
+        void TestForwardMask(string strSrc, int nImagesPerBlob);
         string Fill(bool unique_pixels);
         string Fill2(int num_inputs);
         void TestRead(IMAGEDB_LOAD_METHOD loadMethod);
@@ -1225,6 +1249,159 @@ namespace MyCaffe.test
 
             progress.SetProgress(0);
             progress.Dispose();
+        }
+
+        public void TestForwardMask(string strSrc, int nImagesPerBlob = 1)
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.DATA);
+
+            int nSrcID = m_parent.db.GetSourceID(strSrc);
+            SourceDescriptor src = m_parent.db.GetSourceById(nSrcID);
+
+            p.data_param.batch_size = 6;
+            p.data_param.images_per_blob = nImagesPerBlob;
+            p.data_param.output_all_labels = (nImagesPerBlob > 1) ? true : false;
+            p.data_param.use_noise_for_nonmatch = (nImagesPerBlob > 1) ? true : false;
+            p.data_param.data_noise_param.use_noisy_mean = true;
+            p.data_param.balance_matches = false;
+            p.data_param.source = strSrc;
+            p.data_param.enable_random_selection = false;
+            p.data_param.enable_pair_selection = false;
+
+            int nL = (int)(src.ImageWidth * 0.5);
+            int nR = src.ImageWidth;
+            int nT = (int)(src.ImageHeight * 0.25);
+            int nB = (int)(src.ImageHeight * 0.75);
+
+            p.transform_param.mask_param.Active = false;
+            p.transform_param.mask_param.boundary_left = nL;
+            p.transform_param.mask_param.boundary_right = nR;
+            p.transform_param.mask_param.boundary_top = nT;
+            p.transform_param.mask_param.boundary_bottom = nB;
+
+            double dfAveBlack = 0;
+            DataLayer<T> layer = new DataLayer<T>(m_cuda, m_log, p, m_parent.db, m_parent.CancelEvent);
+
+            try
+            {
+                layer.LayerSetUp(BottomVec, TopVec);
+                layer.Reshape(BottomVec, TopVec);
+
+                int nTotalCount = 0;
+                double dfTotalBlack = 0;
+
+                for (int i = 0; i < 10; i++)
+                {
+                    layer.Forward(BottomVec, TopVec);
+
+                    int nDim = src.ImageChannels * src.ImageHeight * src.ImageWidth;
+                    float[] rgData1 = new float[nDim];
+                    float[] rgData = convertF(TopVec[0].mutable_cpu_data);
+
+                    for (int n = 0; n < 6; n++)
+                    {
+                        for (int j = 0; j < nImagesPerBlob; j++)
+                        {
+                            Array.Copy(rgData, n * nImagesPerBlob * nDim + j * nDim, rgData1, 0, nDim);
+                            byte[] rgb = rgData1.Select(pv => Math.Min((byte)pv, (byte)255)).ToArray();
+
+                            SimpleDatum sd = new SimpleDatum(false, src.ImageChannels, src.ImageWidth, src.ImageHeight, -1, DateTime.MinValue, rgb, null, 0, false, 0);
+                            Bitmap bmp = ImageData.GetImage(sd);
+                            //bmp.Save("c:\\temp\\img_" + n.ToString() + "_" + j.ToString() + ".png");
+                            LockBitmap bmp1 = new LockBitmap(bmp);
+                            bmp1.LockBits();
+
+                            int nNonBlackCount = 0;
+                            int nNonBlackTotal = 0;
+
+                            for (int y = 0; y < bmp.Height; y++)
+                            {
+                                for (int x = 0; x < bmp.Width; x++)
+                                {
+                                    Color clr = bmp1.GetPixel(x, y);
+
+                                    if (clr != Color.Black)
+                                        nNonBlackCount++;
+
+                                    nNonBlackTotal++;
+                                }
+                            }
+
+                            double dfNonBlackPct = (nNonBlackTotal == 0) ? 0 : (double)nNonBlackCount / (double)nNonBlackTotal;
+                            dfTotalBlack += dfNonBlackPct;
+                            nTotalCount++;
+
+                            m_log.CHECK_GE(dfNonBlackPct, 0.75, "The non black percent should be >= 75%!");
+
+                            bmp1.UnlockBits();
+                            bmp.Dispose();
+                        }
+                    }
+                }
+
+                // Verify that when enabled, the images are masked out.
+                layer.Dispose();
+                p.transform_param.mask_param.Active = true;
+                layer = new DataLayer<T>(m_cuda, m_log, p, m_parent.db, m_parent.CancelEvent);
+
+                layer.LayerSetUp(BottomVec, TopVec);
+                layer.Reshape(BottomVec, TopVec);
+
+                for (int i = 0; i < 10; i++)
+                {
+                    layer.Forward(BottomVec, TopVec);
+
+                    int nDim = src.ImageChannels * src.ImageHeight * src.ImageWidth;
+                    float[] rgData1 = new float[nDim];
+                    float[] rgData = convertF(TopVec[0].mutable_cpu_data);
+
+                    for (int n = 0; n < 6; n++)
+                    {
+                        for (int j = 0; j < nImagesPerBlob; j++)
+                        {
+                            Array.Copy(rgData, n * nImagesPerBlob * nDim + j * nDim, rgData1, 0, nDim);
+                            byte[] rgb = rgData1.Select(pv => Math.Min((byte)pv, (byte)255)).ToArray();
+
+                            SimpleDatum sd = new SimpleDatum(false, src.ImageChannels, src.ImageWidth, src.ImageHeight, -1, DateTime.MinValue, rgb, null, 0, false, 0);
+                            Bitmap bmp = ImageData.GetImage(sd);
+                            //bmp.Save("c:\\temp\\img_masked_" + n.ToString() + "_" + j.ToString() + ".png");
+                            LockBitmap bmp1 = new LockBitmap(bmp);
+                            bmp1.LockBits();
+
+                            int nNonBlackCount = 0;
+                            int nNonBlackTotal = 0;
+
+                            for (int y = 0; y < bmp.Height; y++)
+                            {
+                                for (int x = 0; x < bmp.Width; x++)
+                                {
+                                    Color clr = bmp1.GetPixel(x, y);
+
+                                    if (y >= nT && y <= nB && x >= nL && x <= nR)
+                                        m_log.CHECK(clr.R == 0 && clr.G == 0 && clr.G == 0, "The pixel " + x.ToString() + "," + y.ToString() + " is within the mask and should be black!");
+                                    else
+                                    {
+                                        if (clr != Color.Black)
+                                            nNonBlackCount++;
+
+                                        nNonBlackTotal++;
+                                    }
+                                }
+                            }
+
+                            double dfNonBlackPct = (nNonBlackTotal == 0) ? 0 : (double)nNonBlackCount / (double)nNonBlackTotal;
+                            m_log.CHECK_GE(dfNonBlackPct, dfAveBlack * 0.8, "The non black percent should be >= 80% of the average of " + dfAveBlack.ToString("P") + "!");
+
+                            bmp1.UnlockBits();
+                            bmp.Dispose();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                layer.Dispose();
+            }
         }
 
         public void TestForwardPairs(string strSrc, int nImagesPerBlob = 1)
