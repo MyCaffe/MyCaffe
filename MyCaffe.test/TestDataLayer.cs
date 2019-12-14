@@ -1261,7 +1261,7 @@ namespace MyCaffe.test
             p.data_param.batch_size = 6;
             p.data_param.images_per_blob = nImagesPerBlob;
             p.data_param.output_all_labels = (nImagesPerBlob > 1) ? true : false;
-            p.data_param.use_noise_for_nonmatch = (nImagesPerBlob > 1) ? true : false;
+            p.data_param.enable_noise_for_nonmatch = (nImagesPerBlob > 1) ? true : false;
             p.data_param.data_noise_param.use_noisy_mean = true;
             p.data_param.balance_matches = false;
             p.data_param.source = strSrc;
