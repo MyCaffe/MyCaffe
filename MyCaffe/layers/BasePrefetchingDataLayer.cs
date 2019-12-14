@@ -64,8 +64,6 @@ namespace MyCaffe.layers
         protected override void dispose()
         {
             m_internalThread.CancelEvent.Set();
-            m_rgPrefetchFree.Abort();
-            m_rgPrefetchFull.Abort();
 
             WaitHandle evt = m_internalThread.CancelEvent;
             m_internalThread.StopInternalThread();
