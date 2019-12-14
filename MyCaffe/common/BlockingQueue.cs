@@ -30,6 +30,14 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Cancel the blocking queue operations.
+        /// </summary>
+        public void Abort()
+        {
+            m_evtAbort.Set();
+        }
+
+        /// <summary>
         /// Return the number of items in the queue.
         /// </summary>
         public int Count
