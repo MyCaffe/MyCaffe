@@ -175,7 +175,7 @@
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
     <Compile Include="param.beta\DecodeParameter.cs" />
-    <Compile Include="param.ssd\OptionalParameter.cs" />
+    <Compile Include="param\OptionalParameter.cs" />
     <Compile Include="param.ssd\VideoDataParameter.cs" />
     <Compile Include="param.ssd\LabelMap.cs" />
     <Compile Include="param.ssd\SaveOutputParameter.cs" />
@@ -225,6 +225,7 @@
     </Compile>
     <Compile Include="param\ClipParameter.cs" />
     <Compile Include="param.beta\UnPoolingParameter.cs" />
+    <Compile Include="param\MaskParameter.cs" />
     <Compile Include="param\SwishParameter.cs" />
     <Compile Include="param.alpha\TripletLossParameter.cs" />
     <Compile Include="param.alpha\TripletLossSimpleParameter.cs" />
