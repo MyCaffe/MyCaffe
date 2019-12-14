@@ -51,6 +51,8 @@ namespace MyCaffe.layers
         private bool m_bMatchingCycle = true;
         private Datum m_datumNoise = null;
         private LabelCollection m_rgBatchLabels = null;
+        private Blob<T> m_blobMask1 = null;
+        private Blob<T> m_blobMask = null;
 
         /// <summary>
         /// This event fires (only when set) each time a batch is loaded form this dataset.
@@ -103,6 +105,12 @@ namespace MyCaffe.layers
                 m_swTimerBatch = new Stopwatch();
                 m_swTimerTransaction = new Stopwatch();
             }
+
+            if (m_param.transform_param.mask_param != null && m_param.transform_param.mask_param.Active)
+            {
+                m_blobMask = new Blob<T>(cuda, log);
+                m_blobMask1 = new Blob<T>(cuda, log);
+            }
         }
 
         /** @copydoc Layer::dispose */
@@ -114,6 +122,18 @@ namespace MyCaffe.layers
             {
                 m_rgBatchLabels.Dispose();
                 m_rgBatchLabels = null;
+            }
+
+            if (m_blobMask != null)
+            {
+                m_blobMask.Dispose();
+                m_blobMask = null;
+            }
+
+            if (m_blobMask1 != null)
+            {
+                m_blobMask1.Dispose();
+                m_blobMask1 = null;
             }
         }
 
@@ -186,7 +206,7 @@ namespace MyCaffe.layers
             // When using noise as the secondary image, fill it with noise.
             if (m_param.data_param.use_noise_for_nonmatch)
                 m_datumNoise = createNoisyData(rgTopShape, datum);
-
+                
             // Double the channels when loading image pairs where the first image is loaded followed by the second on the channel.
             if (m_param.data_param.images_per_blob > 1)
             {
@@ -204,6 +224,10 @@ namespace MyCaffe.layers
             }
 
             m_log.WriteLine("output data size: " + colTop[0].ToSizeString());
+
+            // Fill out the masks, if used.
+            if (m_param.transform_param.mask_param != null && m_param.transform_param.mask_param.Active)
+                createMasks(Utility.Clone<int>(rgTopShape));
 
             // Label
             if (m_bOutputLabels)
@@ -266,6 +290,25 @@ namespace MyCaffe.layers
                 {
                     m_rgPrefetch[i].Label.Reshape(rgLabelShape);
                 }
+            }
+        }
+
+        private void createMasks(List<int> rgTopShape)
+        {
+            m_blobMask.Reshape(rgTopShape);
+            rgTopShape[0] = 1;
+            m_blobMask1.Reshape(rgTopShape);
+            m_blobMask1.SetData(1);
+            float[] rgData = convertF(m_blobMask1.update_cpu_data());
+            m_transformer.MaskData(rgTopShape, rgData);
+            m_blobMask1.mutable_cpu_data = convert(rgData);
+
+            int nDim = m_blobMask1.count();
+            int nOffset = 0;
+            for (int n = 0; n < m_blobMask.num; n++)
+            {
+                m_cuda.copy(nDim, m_blobMask1.gpu_data, m_blobMask.mutable_gpu_data, 0, nOffset);
+                nOffset += nDim;
             }
         }
 
@@ -394,6 +437,20 @@ namespace MyCaffe.layers
             bool bKeep = (m_nOffset % nSize) == nRank || m_param.phase == Phase.TEST;
 
             return !bKeep;
+        }
+
+        /// <summary>
+        /// Provides a final processing step that takes place at the end of the base class forward = this is where we apply the mask if one exists and is enabled.
+        /// </summary>
+        /// <param name="blobTop">Specifies the top blob just about to be set out the forward operation as the Top[0] blob.</param>
+        protected override void final_process(Blob<T> blobTop)
+        {
+            if (m_param.transform_param.mask_param != null && m_param.transform_param.mask_param.Active)
+            {
+                int nCount = blobTop.count();
+                m_log.CHECK_EQ(m_blobMask.count(), nCount, "The mask must be the same size as the top!");
+                m_cuda.mul(nCount, m_blobMask.gpu_data, blobTop.gpu_data, blobTop.mutable_gpu_data);
+            }
         }
 
         /// <summary>

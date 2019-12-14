@@ -33,6 +33,7 @@ namespace MyCaffe.param
         DistortionParameter m_distortion = new DistortionParameter(false);
         ExpansionParameter m_expansion = new ExpansionParameter(false);
         EmitConstraint m_emitConstraint = new EmitConstraint(false);
+        MaskParameter m_mask = new MaskParameter(false);
 
         /// <summary>
         /// Defines the color ordering used to tranform the input data.
@@ -183,9 +184,9 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Optionally specifies the resize policy, otherwise this is <i>null</i>.
+        /// Optionally, specifies the resize policy, otherwise this is <i>null</i>.
         /// </summary>
-        [Category("Image"), Description("When specifies, used as the resize policy for altering image data.")]
+        [Category("Image"), Description("When active, used as the resize policy for altering image data.")]
         public ResizeParameter resize_param
         {
             get { return m_resize; }
@@ -193,9 +194,9 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Optionally specifies the noise policy, otherwise this is <i>null</i>.
+        /// Optionally, specifies the noise policy, otherwise this is <i>null</i>.
         /// </summary>
-        [Category("Image"), Description("When specifies, used as the noise policy for altering image data.")]
+        [Category("Image"), Description("When active, used as the noise policy for altering image data.")]
         public NoiseParameter noise_param
         {
             get { return m_noise; }
@@ -203,9 +204,9 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Optionally specifies the distortion policy, otherwise this is <i>null</i>.
+        /// Optionally, specifies the distortion policy, otherwise this is <i>null</i>.
         /// </summary>
-        [Category("Image"), Description("When specifies, used as the distortion policy for altering image data.")]
+        [Category("Image"), Description("When active, used as the distortion policy for altering image data.")]
         public DistortionParameter distortion_param
         {
             get { return m_distortion; }
@@ -213,9 +214,9 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Optionally specifies the expansion policy, otherwise this is <i>null</i>.
+        /// Optionally, specifies the expansion policy, otherwise this is <i>null</i>.
         /// </summary>
-        [Category("Image"), Description("When specifies, used as the expansion policy for altering image data.")]
+        [Category("Image"), Description("When active, used as the expansion policy for altering image data.")]
         public ExpansionParameter expansion_param
         {
             get { return m_expansion; }
@@ -223,13 +224,26 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Optionally specifies the emit constraint on emitting annotation after transformation, otherwise this is <i>null</i>.
+        /// Optionally, specifies the emit constraint on emitting annotation after transformation, otherwise this is <i>null</i>.
         /// </summary>
-        [Category("Image"), Description("When specifies, used as the emit constratin for emitting annotation after transformation.")]
+        [Category("Image"), Description("When active, used as the emit constratin for emitting annotation after transformation.")]
         public EmitConstraint emit_constraint
         {
             get { return m_emitConstraint; }
             set { m_emitConstraint = value; }
+        }
+
+        /// <summary>
+        /// Optionally, specifies the image mask which defines the boundary area that is set to black on the image thus masking that area out.
+        /// </summary>
+        /// <remarks>
+        /// The mask is applied last, after all other alterations are made.
+        /// </remarks>
+        [Category("Image"), Description("When active, used to mask portions of the image (set to Black) as defined by the boundary of the mask.  The mask is applied after all other alterations.")]
+        public MaskParameter mask_param
+        {
+            get { return m_mask; }
+            set { m_mask = value; }
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -266,6 +280,7 @@ namespace MyCaffe.param
             m_distortion = (p.distortion_param != null) ? p.distortion_param.Clone() : null;
             m_expansion = (p.expansion_param != null) ? p.expansion_param.Clone() : null;
             m_emitConstraint = (p.emit_constraint != null) ? p.emit_constraint.Clone() : null;
+            m_mask = (p.mask_param != null) ? p.mask_param.Clone() : null;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -323,6 +338,9 @@ namespace MyCaffe.param
 
             if (m_emitConstraint != null)
                 rgChildren.Add(m_emitConstraint.ToProto("emit_constraint"));
+
+            if (m_mask != null)
+                rgChildren.Add(m_mask.ToProto("mask_param"));
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -389,6 +407,9 @@ namespace MyCaffe.param
 
             RawProto rpEmitCon = rp.FindChild("emit_constraint");
             p.emit_constraint = (rpEmitCon != null) ? EmitConstraint.FromProto(rpEmitCon) : null;
+
+            RawProto rpMask = rp.FindChild("mask_param");
+            p.mask_param = (rpMask != null) ? MaskParameter.FromProto(rpMask) : null;
 
             return p;
         }

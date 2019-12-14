@@ -130,6 +130,12 @@ namespace MyCaffe.data
             {
                 m_log.CHECK_GT(m_param.expansion_param.max_expand_ratio, 1.0, "The expansion ratio must be > 1.0.");
             }
+
+            if (m_param.mask_param != null && m_param.mask_param.Active)
+            {
+                m_log.CHECK_GT(m_param.mask_param.boundary_right, m_param.mask_param.boundary_left, "The mask right must be > than the left.");
+                m_log.CHECK_GT(m_param.mask_param.boundary_bottom, m_param.mask_param.boundary_top, "The mask bottom must be > than the top.");
+            }
         }
 
         /// <summary>
@@ -926,6 +932,77 @@ namespace MyCaffe.data
                 return d;
 
             return m_imgTransforms.ApplyDistort(d, m_param.distortion_param);
+        }
+
+        /// <summary>
+        /// Maks out portions of the SimpleDatum.
+        /// </summary>
+        /// <param name="d">Specifies the SimpleDatum to mask.</param>
+        /// <returns>The masked SimpleDatum is returned.</returns>
+        public SimpleDatum MaskImage(SimpleDatum d)
+        {
+            int nL = m_param.mask_param.boundary_left;
+            int nR = m_param.mask_param.boundary_right;
+            int nT = m_param.mask_param.boundary_top;
+            int nB = m_param.mask_param.boundary_bottom;
+            int nDim = d.Height * d.Width;
+
+            for (int c = 0; c < d.Channels; c++)
+            {
+                for (int y = 0; y < d.Height; y++)
+                {
+                    for (int x = 0; x < d.Width; x++)
+                    {
+                        int nIdx = c * nDim + y * d.Width + x;
+
+                        if (y >= nT && y <= nB && x >= nL && x <= nR)
+                        {
+                            if (d.IsRealData)
+                                d.RealData[nIdx] = 0;
+                            else
+                                d.ByteData[nIdx] = 0;
+                        }
+                    }
+                }
+            }
+
+            return d;
+        }
+
+        /// <summary>
+        /// Mask out the data based on the shape of the specified SimpleDatum.
+        /// </summary>
+        /// <param name="rgShape">Specifies the shape of the data.</param>
+        /// <param name="rgData">Specifies the data.</param>
+        /// <returns>The newly masked data is returned.</returns>
+        public float[] MaskData(List<int> rgShape, float[] rgData)
+        {
+            int nL = m_param.mask_param.boundary_left;
+            int nR = m_param.mask_param.boundary_right;
+            int nT = m_param.mask_param.boundary_top;
+            int nB = m_param.mask_param.boundary_bottom;
+            int nC = rgShape[1];
+            int nH = rgShape[2];
+            int nW = rgShape[3];
+            int nDim = nH * nW;
+
+            for (int c = 0; c < nC; c++)
+            {
+                for (int y = 0; y < nH; y++)
+                {
+                    for (int x = 0; x < nW; x++)
+                    {
+                        int nIdx = c * nDim + y * nW + x;
+
+                        if (y >= nT && y <= nB && x >= nL && x <= nR)
+                        {
+                            rgData[nIdx] = 0f;
+                        }
+                    }
+                }
+            }
+
+            return rgData;
         }
 
         /// <summary>
