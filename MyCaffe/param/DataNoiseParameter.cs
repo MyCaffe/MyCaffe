@@ -30,6 +30,7 @@ namespace MyCaffe.param
         /// <summary>
         /// (\b optional, default = true) When <i>true</i> the noise is applied to the mean and used as the noisy data.  NOTE: When using this setting, the filler should be configured to produce values in the range [0,1].
         /// </summary>
+        [Description("Specifies to multipy the noisy data by the mean to produce the final noisy data (default = true).  NOTE: When using this setting, the filler should be configured to produce values in the range [0,1].")]
         public bool use_noisy_mean
         {
             get { return m_bUseNoisyMean; }
@@ -39,6 +40,7 @@ namespace MyCaffe.param
         /// <summary>
         /// (\b optional, default = -1) Specifies the label used with each noise filled data used when 'use_noise_for_nonmatch' = <i>true</i>.
         /// </summary>
+        [Description("Specifies the label used with each noise filled data used when 'use_noise_for_match' = True (default = -1).")]
         public int noise_data_label
         {
             get { return m_nNoiseDataLabel; }
@@ -48,6 +50,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the noise filler used when 'use_noise_for_nonmatch' = <i>true</i>.  By default the 'noise_filter' is set to CONSTANT(1) which, when used with the 'use_noisy_mean' = True, uses the mean image as the data noise.
         /// </summary>
+        [Description("Specifies the noise filler used when 'use_noise_for_nonmatch' = True.  By default the 'noise_filler' is set to CONSTANT(1) which, when used with the 'use_noisy_mean' = True, uses the mean image as the data noise.")]
         public FillerParameter noise_filler
         {
             get { return m_noiseFiller; }
@@ -57,6 +60,7 @@ namespace MyCaffe.param
         /// <summary>
         /// (/b optional, default = null) Specifies the path where the noisy data image is saved, otherwise is ignored when null.  This setting is only used for debugging.
         /// </summary>
+        [Description("Optionally, specifies the path where the noisy data image is saved for debugging (default = null, which ignores this setting).")]
         public string noisy_save_path
         {
             get { return m_strNoisyDataSavePath; }

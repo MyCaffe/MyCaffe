@@ -69,7 +69,7 @@ namespace MyCaffe.param
         /// Some models, such as LSTM, use input data as part of the label.  The label_data_channel specifies which channel within
         /// the data is used as the label.  When not specified, the label must have the same number of channels as the data.
         /// </remarks>
-        [Description("pecifies to data channel used for the label (if any).")]
+        [Description("Specifies to data channel used for the label (if any).")]
         public int? label_data_channel
         {
             get { return m_nLabelDataChannel; }

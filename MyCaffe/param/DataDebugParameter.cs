@@ -28,6 +28,7 @@ namespace MyCaffe.param
         /// <summary>
         /// (/b optional, default = 1) Specifies the number of iterations to output debug information.
         /// </summary>
+        [Description("Optionally, specifies the number of iterations for which to output debug information (default = 1)")]
         public int iterations
         {
             get { return m_nIterations; }
@@ -35,8 +36,9 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// (/b optional, default = null) Specifies the path where the debug data image is saved, otherwise is ignored when null.  This setting is only used for debugging.
+        /// (/b optional, default = null) Specifies the path where the debug data images are saved, otherwise is ignored when null.  This setting is only used for debugging.
         /// </summary>
+        [Description("Specifies the path where the debug data images are saved (default = null, which ignores this setting).")]
         public string debug_save_path
         {
             get { return m_strDebugDataSavePath; }

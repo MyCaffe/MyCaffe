@@ -32,6 +32,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Get/set the mask boundary left.
         /// </summary>
+        [Description("Defines the left side of the masked boundary where 'x' positions >= this value are masked.")]
         public int boundary_left
         {
             get { return m_nMaskLeft; }
@@ -41,6 +42,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Get/set the mask boundary left.
         /// </summary>
+        [Description("Defines the right side of the masked boundary where 'x' positions <= this value are masked.")]
         public int boundary_right
         {
             get { return m_nMaskRight; }
@@ -50,6 +52,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Get/set the mask boundary top.
         /// </summary>
+        [Description("Defines the top side of the masked boundary where 'y' positions >= this value are masked.")]
         public int boundary_top
         {
             get { return m_nMaskTop; }
@@ -59,6 +62,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Get/set the mask boundary bottom.
         /// </summary>
+        [Description("Defines the bottom side of the masked boundary where 'y' positions <= this value are masked.")]
         public int boundary_bottom
         {
             get { return m_nMaskBottom; }
