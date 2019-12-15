@@ -29,6 +29,7 @@ namespace MyCaffe.param
         /// <summary>
         /// When active, the parameter is used, otherwise it is ignored.
         /// </summary>
+        [Description("Specifies whether or not this parameter is enabled (and used).  This parameter is not used when this setting is False.")]
         public bool Active
         {
             get { return m_bActive; }
