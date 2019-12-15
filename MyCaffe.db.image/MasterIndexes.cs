@@ -216,7 +216,7 @@ namespace MyCaffe.db.image
             if (rgIdx.Count == 0)
                 return null;
 
-            return rgIdx.GetNext(type, null, false);
+            return rgIdx.GetNextLabel(type, null, false);
         }
 
         /// <summary>
@@ -289,7 +289,8 @@ namespace MyCaffe.db.image
         string m_strName;
         CryptoRandom m_random;
         SourceDescriptor m_src;
-        Dictionary<int, int> m_rgLabelMap = new Dictionary<int, int>();
+        Dictionary<int, int> m_rgLabelToIdxMap = new Dictionary<int, int>();
+        Dictionary<int, int> m_rgIdxToLabelMap = new Dictionary<int, int>();
         Index[] m_rgLabels = null;
         bool m_bBoosted = false;
         List<int> m_rgIdx = new List<int>();
@@ -303,7 +304,8 @@ namespace MyCaffe.db.image
             m_bBoosted = bBoosted;
 
             m_rgIdx = new List<int>();
-            m_rgLabelMap = new Dictionary<int, int>();
+            m_rgLabelToIdxMap = new Dictionary<int, int>();
+            m_rgIdxToLabelMap = new Dictionary<int, int>();
 
             List<LabelDescriptor> rgLabels = src.Labels.Where(p => p.ImageCount > 0).OrderBy(p => p.ActiveLabel).ToList();
             if (rgLabels.Count > 0)
@@ -322,7 +324,8 @@ namespace MyCaffe.db.image
                     if (rgLabelList.Count > 0)
                         m_rgIdx.Add(i);
 
-                    m_rgLabelMap[nLabel] = i;
+                    m_rgLabelToIdxMap[nLabel] = i;
+                    m_rgIdxToLabelMap[i] = nLabel;
                 }
             }
         }
@@ -341,9 +344,10 @@ namespace MyCaffe.db.image
                 m_rgLabels = new Index[idx.m_rgLabels.Length];
 
                 bool bFillLabelMap = false;
-                if (m_rgLabelMap == null || m_rgLabelMap.Count == 0)
+                if (m_rgLabelToIdxMap == null || m_rgLabelToIdxMap.Count == 0 || m_rgIdxToLabelMap == null || m_rgIdxToLabelMap.Count == 0)
                 {
-                    m_rgLabelMap = new Dictionary<int, int>();
+                    m_rgLabelToIdxMap = new Dictionary<int, int>();
+                    m_rgIdxToLabelMap = new Dictionary<int, int>();
                     bFillLabelMap = true;
                 }
 
@@ -356,7 +360,8 @@ namespace MyCaffe.db.image
                     if (bFillLabelMap)
                     {
                         int nLabel = m_rgLabels[i].Label;
-                        m_rgLabelMap[nLabel] = i;
+                        m_rgLabelToIdxMap[nLabel] = i;
+                        m_rgIdxToLabelMap[i] = nLabel;
                     }
                 }
             }
@@ -376,7 +381,7 @@ namespace MyCaffe.db.image
 
         public void SetIndex(int nLabel, Index idx)
         {
-            int nIdx = m_rgLabelMap[nLabel];
+            int nIdx = m_rgLabelToIdxMap[nLabel];
             m_rgLabels[nIdx] = idx;
         }
 
@@ -400,14 +405,14 @@ namespace MyCaffe.db.image
             return new LabelIndex(this);
         }
 
-        public int? GetNext(Index.SELECTION_TYPE type, int? nLabel, bool bRemove = false)
+        public int? GetNextLabel(Index.SELECTION_TYPE type, int? nLabel, bool bRemove = false)
         {
             if (m_rgIdx.Count == 0)
                 return null;
 
             if (nLabel.HasValue)
             {
-                return m_rgLabelMap[nLabel.Value];
+                return nLabel.Value;
             }
             else if (type == Index.SELECTION_TYPE.SEQUENTIAL)
             {
@@ -417,7 +422,7 @@ namespace MyCaffe.db.image
                 if (m_nIdx >= m_rgIdx.Count)
                     m_nIdx = 0;
 
-                return nIdx;
+                return m_rgIdxToLabelMap[nIdx];
             }
             else
             {
@@ -432,17 +437,19 @@ namespace MyCaffe.db.image
                 if (bRemove)
                     m_rgIdx.Remove(nIdx);
 
-                return nIdx;
+                return m_rgIdxToLabelMap[nIdx];
             }
         }
 
         public Index GetNextIndex(Index.SELECTION_TYPE type, int? nLabel, bool bRemove = false)
         {
-            int? nIdx = GetNext(type, nLabel, bRemove);
-            if (!nIdx.HasValue)
+            nLabel = GetNextLabel(type, nLabel, bRemove);
+            if (!nLabel.HasValue)
                 return null;
 
-            return m_rgLabels[nIdx.Value];
+            int nIdx = m_rgLabelToIdxMap[nLabel.Value];
+
+            return m_rgLabels[nIdx];
         }
 
         public override string ToString()

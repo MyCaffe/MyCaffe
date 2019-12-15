@@ -83,7 +83,7 @@ namespace MyCaffe.db.image
             if (rgIdx.Count == 0)
                 return null;
 
-            int? nIdx = rgIdx.GetNext(type, null, m_bUseUniqueLabelIndexes);
+            int? nIdx = rgIdx.GetNextLabel(type, null, m_bUseUniqueLabelIndexes);
             if (rgIdx.IsEmpty)
                 rgIdx.ReLoad();
 
