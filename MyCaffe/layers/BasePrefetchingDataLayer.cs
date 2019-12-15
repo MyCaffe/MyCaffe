@@ -63,8 +63,6 @@ namespace MyCaffe.layers
         /** @copydoc BaseDataLayer::dispose */
         protected override void dispose()
         {
-            m_internalThread.CancelEvent.Set();
-
             WaitHandle evt = m_internalThread.CancelEvent;
             m_internalThread.StopInternalThread();
 
