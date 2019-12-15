@@ -42,7 +42,7 @@ namespace MyCaffe.param
         bool m_bSyncTarget = false;
         int m_nImagesPerBlob = 1;
         bool m_bOutputAllLabels = false;
-        bool m_bBalanceMatches = false;
+        bool m_bBalanceMatches = true;
         bool m_bOutputImageInfo = false;
         int m_nForcedPrimaryLabel = -1;
         bool m_bEnableNoiseForNonMatch = false;
@@ -198,6 +198,7 @@ namespace MyCaffe.param
         /// Loading images in pairs (images_per_blob = 2) is used with the siamese network, where the channel of each blob contains the first image followed by the second image.  The total individual
         /// image channel count equals the blob channel count divided by 2.
         /// </remarks>
+        [Category("Multi-Image"), Description("Optionally, specifies the number of images to load into each blob channel, where each image is stacked on the channel dimension so a 3 channel item then becomes a 6 channel item when two images are stacked (default = 1).")]
         public int images_per_blob
         {
             get { return m_nImagesPerBlob; }
@@ -207,6 +208,7 @@ namespace MyCaffe.param
         /// <summary>
         /// (\b optional, default = false) When using images_per_blob > 1, 'output_all_labels' specifies to output all labels for the stacked images instead of just the comparison.
         /// </summary>
+        [Category("Multi-Image"), Description("Optionally, specifies to output all labels for the stacked images instead of just the comparison.  This setting only applies when 'images_per_blob' > 1 (default = false).")]
         public bool output_all_labels
         {
             get { return m_bOutputAllLabels; }
@@ -214,8 +216,9 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// (\b optional, default = false) When using images_per_blob > 1, 'balance_matches' specifies to query images by alternating similar matches followed by dissimilar matches in the next query.
+        /// (\b optional, default = true) When using images_per_blob > 1, 'balance_matches' specifies to query images by alternating similar matches followed by dissimilar matches in the next query.
         /// </summary>
+        [Category("Multi-Image"), Description("Optionally, specifies to balance the matches by alternating between matching classes and non matching classes.  This setting only applies when 'images_per_blob' > 1 (default = true).")]
         public bool balance_matches
         {
             get { return m_bBalanceMatches; }
@@ -225,6 +228,7 @@ namespace MyCaffe.param
         /// <summary>
         /// (\b optional, default = false) When <i>true</i> image information such as index and label are output. IMPORTANT: enabling this setting can dramatically slow down training and is only used for debugging.
         /// </summary>
+        [Category("Debugging"), Description("Optionally, specifies to output image information such as index and label which is only intended for debugging as it dramatically slows down processing. (default = false).")]
         public bool output_image_information
         {
             get { return m_bOutputImageInfo; }
@@ -234,6 +238,7 @@ namespace MyCaffe.param
         /// <summary>
         /// (\b optional, default = -1) When >= 0, this label is used as the primary image label when 'images_per_blob' > 1.
         /// </summary>
+        [Category("Multi-Image"), Description("Optionally, specifies to force the label of the primary image to this value.  This setting only applies when 'images_per_blob' > 1 (default = -1 which causes this setting to be ignored).")]
         public int forced_primary_label
         {
             get { return m_nForcedPrimaryLabel; }
@@ -243,6 +248,7 @@ namespace MyCaffe.param
         /// <summary>
         /// (\b optional, default = false) When <i>true</i> an image consisting of noise initialized with noise filler.
         /// </summary>
+        [Category("Multi-Image"), Description("Optionally, specifies to use a noise generated image for the non matching image instead of an image from a different class.  This setting only applies when 'images_per_blob' > 1 (default = false).")]
         public bool enable_noise_for_nonmatch
         {
             get { return m_bEnableNoiseForNonMatch; }
@@ -252,6 +258,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the DataNoiseParameter used when 'enable_noise_for_nonmatch' = True.
         /// </summary>
+        [Category("Multi-Image"), Description("Optionally, specifies the DataNoiseParameter that defines the noise used when 'enable_noise_for_nonmatch' = True.  This setting only applies when 'images_per_blob' > 1.")]
         public DataNoiseParameter data_noise_param
         {
             get { return m_dataNoiseParam; }
@@ -261,6 +268,7 @@ namespace MyCaffe.param
         /// <summary>
         /// (\b optional, default = false) When <i>true</i> the data sent out through the top are saved as images into the debug directory specified by the data_debug_param.
         /// </summary>
+        [Category("Debugging"), Description("Optionally, specifies to output debug information about the data sent out through the top. (default = false).")]
         public bool enable_debug_output
         {
             get { return m_bEnableDebugOutput; }
@@ -270,6 +278,7 @@ namespace MyCaffe.param
         /// <summary>
         /// Specifies the DataDebugParameter used when 'enable_debug_output' = True.
         /// </summary>
+        [Category("Debugging"), Description("Optionally, specifies the parameters used when 'enable_debug_output' = True.")]
         public DataDebugParameter data_debug_param
         {
             get { return m_dataDebugParam; }
