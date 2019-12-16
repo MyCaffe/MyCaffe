@@ -2199,6 +2199,22 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Update the boost of all images between a date range.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the data source ID.</param>
+        /// <param name="dtStart">Specifies the start of the date range.</param>
+        /// <param name="dtEnd">Specifies the end of the date range.</param>
+        /// <param name="nBoost">Specifies the new boost value.</param>
+        public void UpdateBoosts(int nSrcId, DateTime dtStart, DateTime dtEnd, int nBoost)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                string strCmd = "UPDATE RawImages SET ActiveBoost = " + nBoost.ToString() + " WHERE (SourceID = " + nSrcId.ToString() + " AND TimeStamp >= " + dtStart.ToString() + " AND TimeStamp <= " + dtEnd.ToString() + ")";
+                entities.Database.ExecuteSqlCommand(strCmd);
+            }
+        }
+
+        /// <summary>
         /// Reindex the RawImages of a data source.
         /// </summary>
         /// <param name="log">Specifies the Log to use for status output.</param>
