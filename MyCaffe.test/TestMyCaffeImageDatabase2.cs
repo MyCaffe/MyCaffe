@@ -1793,9 +1793,9 @@ namespace MyCaffe.test
             }
             finally
             {
-                db.CleanUp(0, true);
                 if (db != null)
                 {
+                    db.CleanUp(0, true);
                     IDisposable idisp = db as IDisposable;
                     if (idisp != null)
                         idisp.Dispose();
