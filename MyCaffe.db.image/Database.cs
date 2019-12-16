@@ -2209,7 +2209,7 @@ namespace MyCaffe.db.image
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                string strCmd = "UPDATE RawImages SET ActiveBoost = " + nBoost.ToString() + " WHERE (SourceID = " + nSrcId.ToString() + " AND TimeStamp >= " + dtStart.ToString() + " AND TimeStamp <= " + dtEnd.ToString() + ")";
+                string strCmd = "UPDATE RawImages SET ActiveBoost = " + nBoost.ToString() + " WHERE (SourceID = " + nSrcId.ToString() + " AND TimeStamp >= '" + dtStart.ToString() + "' AND TimeStamp <= '" + dtEnd.ToString() + "')";
                 entities.Database.ExecuteSqlCommand(strCmd);
             }
         }
