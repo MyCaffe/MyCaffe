@@ -2171,14 +2171,22 @@ namespace MyCaffe.db.image
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <param name="nMinBoost">Optionally, specifies a minimum boost where all ActiveBoost values of this value or higher are reset (default = 0 which resets all boosts to their original setting).</param>
         /// <param name="bExactVal">Optionally, specifies that the min boost value is an exact value instead of a minimum value.</param>
-        public void ResetAllBoosts(int nSrcId = 0, int nMinBoost = 0, bool bExactVal = false)
+        /// <param name="nDesiredBoostVal">Optionally, specifies the desired boost value (default = -1, which resets to the OriginalBoost value).</param>
+        public void ResetAllBoosts(int nSrcId = 0, int nMinBoost = 0, bool bExactVal = false, int nDesiredBoostVal = -1)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                string strCmd = "UPDATE RawImages SET ActiveBoost = OriginalBoost WHERE(SourceID = " + nSrcId.ToString();
+                string strCmd = "UPDATE RawImages SET ActiveBoost = ";
+
+                if (nDesiredBoostVal >= 0)
+                    strCmd += nDesiredBoostVal.ToString();
+                else
+                    strCmd += "OriginalBoost";
+
+                strCmd += " WHERE(SourceID = " + nSrcId.ToString();
 
                 if (nMinBoost >= 1)
                 {
@@ -2199,7 +2207,7 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nImageID">Specifies the ID of the RawImage.</param>
         /// <param name="nBoost">Specifies the new boost value.</param>
-        public void UpdateBoost(int nImageID, int nBoost)
+        public void UpdateBoost(long nImageID, int nBoost)
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
