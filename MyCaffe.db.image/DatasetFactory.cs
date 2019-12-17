@@ -341,10 +341,12 @@ namespace MyCaffe.db.image
         /// <param name="bLoadDebug">Optionally, specifies to load the debug data which can take longer (default = <i>false</i>).</param>
         /// <param name="log">Optionally, specifies the output log (default = <i>null</i>).</param>
         /// <param name="evtCancel">Optionally, specifies the cancel event to abort loading (default = <i>null</i>).</param>
+        /// <param name="nBoostVal">Optionally, specifies a boost value to query (default = 0, which ignores this filter).</param>
+        /// <param name="bExactBoostVal">Optionally, specifies whether or not the boost value is an exact value or to be treated as a value greater than or equal to (default = false).</param>
         /// <returns>The list of RawImage's is returned.</returns>
-        public List<RawImage> QueryRawImages(int nSrcId, bool? bActive = null, bool bLoadCriteria = false, bool bLoadDebug = false, Log log = null, CancelEvent evtCancel = null)
+        public List<RawImage> QueryRawImages(int nSrcId, bool? bActive = null, bool bLoadCriteria = false, bool bLoadDebug = false, Log log = null, CancelEvent evtCancel = null, int nBoostVal = 0, bool bExactBoostVal = false)
         {
-            List<RawImage> rgImg = m_db.QueryRawImages(nSrcId, bActive);
+            List<RawImage> rgImg = m_db.QueryRawImages(nSrcId, bActive, nBoostVal, bExactBoostVal);
 
             if (!bLoadCriteria && !bLoadDebug)
                 return rgImg;

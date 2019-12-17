@@ -999,8 +999,10 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nSrcId">Specifies the source ID.</param>
         /// <param name="bActive">Optionally, specifies to query active (or non active) images (default = <i>null</i>, which queries all images).</param>
+        /// <param name="nBoostVal">Optionally, specifies a boost value to query (default = 0, which ignores this filter).</param>
+        /// <param name="bExactBoostVal">Optionally, specifies whether or not the boost value is an exact value or to be treated as a value greater than or equal to (default = false).</param>
         /// <returns>The list of RawImage's is returned.</returns>
-        public List<RawImage> QueryRawImages(int nSrcId, bool? bActive = null)
+        public List<RawImage> QueryRawImages(int nSrcId, bool? bActive = null, int nBoostVal = 0, bool bExactBoostVal = false)
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
@@ -1010,6 +1012,14 @@ namespace MyCaffe.db.image
                 {
                     bool bVal = bActive.Value;
                     iQuery = iQuery.Where(p => p.Active == bVal);
+                }
+
+                if (nBoostVal > 0)
+                {
+                    if (bExactBoostVal)
+                        iQuery = iQuery.Where(p => p.ActiveBoost == nBoostVal);
+                    else
+                        iQuery = iQuery.Where(p => p.ActiveBoost >= nBoostVal);
                 }
 
                 return iQuery.ToList();
