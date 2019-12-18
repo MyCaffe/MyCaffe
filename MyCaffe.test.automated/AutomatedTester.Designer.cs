@@ -70,6 +70,8 @@
             this.lblActiveGPU = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblActiveGPUVal = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
+            this.lblActiveKernel = new System.Windows.Forms.ToolStripStatusLabel();
+            this.lblKernelHandleVal = new System.Windows.Forms.ToolStripStatusLabel();
             this.contextMenuStrip1.SuspendLayout();
             this.toolStripContainer1.ContentPanel.SuspendLayout();
             this.toolStripContainer1.TopToolStripPanel.SuspendLayout();
@@ -97,7 +99,7 @@
             this.lstTests.LargeImageList = this.imageListUI;
             this.lstTests.Location = new System.Drawing.Point(0, 0);
             this.lstTests.Name = "lstTests";
-            this.lstTests.Size = new System.Drawing.Size(1053, 579);
+            this.lstTests.Size = new System.Drawing.Size(1252, 579);
             this.lstTests.SmallImageList = this.imageListUI;
             this.lstTests.TabIndex = 0;
             this.lstTests.UseCompatibleStateImageBehavior = false;
@@ -183,11 +185,11 @@
             // toolStripContainer1.ContentPanel
             // 
             this.toolStripContainer1.ContentPanel.Controls.Add(this.lstTests);
-            this.toolStripContainer1.ContentPanel.Size = new System.Drawing.Size(1053, 579);
+            this.toolStripContainer1.ContentPanel.Size = new System.Drawing.Size(1252, 579);
             this.toolStripContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.toolStripContainer1.Location = new System.Drawing.Point(0, 0);
             this.toolStripContainer1.Name = "toolStripContainer1";
-            this.toolStripContainer1.Size = new System.Drawing.Size(1053, 604);
+            this.toolStripContainer1.Size = new System.Drawing.Size(1252, 604);
             this.toolStripContainer1.TabIndex = 1;
             this.toolStripContainer1.Text = "toolStripContainer1";
             // 
@@ -213,7 +215,7 @@
             this.btnCurrent});
             this.toolStrip1.Location = new System.Drawing.Point(3, 0);
             this.toolStrip1.Name = "toolStrip1";
-            this.toolStrip1.Size = new System.Drawing.Size(268, 25);
+            this.toolStrip1.Size = new System.Drawing.Size(237, 25);
             this.toolStrip1.TabIndex = 0;
             // 
             // btnShowAll
@@ -347,10 +349,12 @@
             this.pbItemProgress,
             this.tsItemProgress,
             this.lblActiveGPU,
-            this.lblActiveGPUVal});
+            this.lblActiveGPUVal,
+            this.lblActiveKernel,
+            this.lblKernelHandleVal});
             this.statusStrip1.Location = new System.Drawing.Point(0, 579);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(1053, 25);
+            this.statusStrip1.Size = new System.Drawing.Size(1252, 25);
             this.statusStrip1.TabIndex = 2;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -453,6 +457,7 @@
             this.lblActiveGPU.Name = "lblActiveGPU";
             this.lblActiveGPU.Size = new System.Drawing.Size(83, 20);
             this.lblActiveGPU.Text = "Active GPU ID:";
+            this.lblActiveGPU.ToolTipText = "Active GPU ID";
             // 
             // lblActiveGPUVal
             // 
@@ -470,6 +475,23 @@
             this.timerUI.Interval = 250;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
+            // lblActiveKernel
+            // 
+            this.lblActiveKernel.Name = "lblActiveKernel";
+            this.lblActiveKernel.Size = new System.Drawing.Size(79, 20);
+            this.lblActiveKernel.Text = "Active Kernel:";
+            this.lblActiveKernel.ToolTipText = "Active kernel handle";
+            // 
+            // lblKernelHandleVal
+            // 
+            this.lblKernelHandleVal.AutoSize = false;
+            this.lblKernelHandleVal.BackColor = System.Drawing.Color.Black;
+            this.lblKernelHandleVal.Font = new System.Drawing.Font("Century Gothic", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblKernelHandleVal.ForeColor = System.Drawing.Color.Lime;
+            this.lblKernelHandleVal.Name = "lblKernelHandleVal";
+            this.lblKernelHandleVal.Size = new System.Drawing.Size(38, 20);
+            this.lblKernelHandleVal.Text = "n/a";
+            // 
             // AutomatedTester
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -477,7 +499,7 @@
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.toolStripContainer1);
             this.Name = "AutomatedTester";
-            this.Size = new System.Drawing.Size(1053, 604);
+            this.Size = new System.Drawing.Size(1252, 604);
             this.Load += new System.EventHandler(this.AutomatedTester_Load);
             this.contextMenuStrip1.ResumeLayout(false);
             this.toolStripContainer1.ContentPanel.ResumeLayout(false);
@@ -536,5 +558,7 @@
         private System.Windows.Forms.ColumnHeader colPriority;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
         private System.Windows.Forms.ToolStripButton btnCurrent;
+        private System.Windows.Forms.ToolStripStatusLabel lblActiveKernel;
+        private System.Windows.Forms.ToolStripStatusLabel lblKernelHandleVal;
     }
 }

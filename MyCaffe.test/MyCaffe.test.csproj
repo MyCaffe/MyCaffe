@@ -91,6 +91,7 @@
     <Compile Include="TestDatasetFactory.cs" />
     <Compile Include="TestCryptoRandom.cs" />
     <Compile Include="TestExtensionSsd.cs" />
+    <Compile Include="TestingKernelHandle.cs" />
     <Compile Include="TestingActiveGpu.cs" />
     <Compile Include="TestModelBuilder.cs" />
     <Compile Include="TestMyCaffeImageDatabase2.cs" />

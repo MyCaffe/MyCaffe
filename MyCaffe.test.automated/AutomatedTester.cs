@@ -25,6 +25,7 @@ namespace MyCaffe.test.automated
         ListViewColumnSorter m_lstSorter = new ListViewColumnSorter();
         TestingProgressGet m_progress = new TestingProgressGet();
         TestingActiveGpuGet m_activeGpu = new TestingActiveGpuGet();
+        TestingActiveKernelHandleGet m_activeKernelHandle = new TestingActiveKernelHandleGet();
         FileInfo m_fiPath;
         int m_nGpuId = 0;
         IMGDB_VERSION m_imgDbVer = IMGDB_VERSION.DEFAULT;
@@ -214,6 +215,12 @@ namespace MyCaffe.test.automated
                     lblActiveGPUVal.Text = nActiveGpuID.ToString();
                 else
                     lblActiveGPUVal.Text = "n\a";
+
+                long? lActiveKernel = m_activeKernelHandle.GetActiveKernelHandle();
+                if (lActiveKernel.HasValue)
+                    lblKernelHandleVal.Text = lActiveKernel.ToString();
+                else
+                    lblKernelHandleVal.Text = "n\a";
 
                 if (mi.ErrorInfo.Error != null && lvi.SubItems[(int)COLIDX.ERROR].Text.Length == 0)
                 {

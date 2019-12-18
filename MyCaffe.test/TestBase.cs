@@ -378,6 +378,7 @@ namespace MyCaffe.test
         protected bool m_bHalf = false;
         protected long m_lSeed = 1701;
         TestingActiveGpuSet m_activeGpuId = new TestingActiveGpuSet();
+        TestingActiveKernelHandleSet m_activeKernel = new TestingActiveKernelHandleSet();
         TestBase m_parent = null;
 
         public Test(string strName, int nDeviceID = TestBase.DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, bool bHalf = false)
@@ -440,9 +441,10 @@ namespace MyCaffe.test
             // NOTE: CudaPath set in TestBase will be used, see CudaPath and SetDefaultCudaPath() above.
             CudaDnn<T> cuda = new CudaDnn<T>(nDeviceID, flags, m_lSeed);
             m_activeGpuId.SetActiveGpu(nDeviceID);
+            m_activeKernel.SetActiveKernelHandle(cuda.KernelHandle);
 
             Trace.WriteLine("TestBase using Cuda Connection: '" + cuda.Path + "'");
-
+          
             return cuda;
         }
 

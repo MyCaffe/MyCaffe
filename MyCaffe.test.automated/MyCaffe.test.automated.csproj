@@ -95,6 +95,7 @@
     </Compile>
     <Compile Include="TestDatabaseManager.cs" />
     <Compile Include="TestEntitiesConnection.cs" />
+    <Compile Include="TestingActiveKernel.cs" />
     <Compile Include="TestingModel.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
