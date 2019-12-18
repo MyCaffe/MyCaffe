@@ -9,21 +9,21 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.test.automated
 {
-    public class TestingActiveGpuGet
+    public class TestingActiveKernelHandleGet
     {
         EventWaitHandle m_evtEnabled = null;
 
-        public TestingActiveGpuGet()
+        public TestingActiveKernelHandleGet()
         {
-            EventWaitHandle.TryOpenExisting("__TestingActiveGpuEnabled__", out m_evtEnabled);
+            EventWaitHandle.TryOpenExisting("__TestingActiveKernelHandleEnabled__", out m_evtEnabled);
         }
 
         public void Initialize()
         {
-            m_evtEnabled = new EventWaitHandle(false, EventResetMode.ManualReset, "__TestingActiveGpuEnabled__");
+            m_evtEnabled = new EventWaitHandle(false, EventResetMode.ManualReset, "__TestingActiveKernelHandleEnabled__");
         }
 
-        public int? GetActiveGpuID()
+        public long? GetActiveKernelHandle()
         {
             if (m_evtEnabled != null && !m_evtEnabled.WaitOne(0))
                 return null;
@@ -33,16 +33,16 @@ namespace MyCaffe.test.automated
 
             try
             {
-                mmf = MemoryMappedFile.CreateOrOpen("__TestActiveGpu__", 4);
-                mmvStrm = mmf.CreateViewStream(0, 4);
-                byte[] rgBuffer = new byte[4];
+                mmf = MemoryMappedFile.CreateOrOpen("__TestActiveKernelHandle__", 4);
+                mmvStrm = mmf.CreateViewStream(0, 8);
+                byte[] rgBuffer = new byte[8];
 
-                mmvStrm.Read(rgBuffer, 0, 4);
+                mmvStrm.Read(rgBuffer, 0, 8);
 
                 using (MemoryStream ms = new MemoryStream(rgBuffer))
                 using (BinaryReader br = new BinaryReader(ms))
                 {
-                    return br.ReadInt32();
+                    return br.ReadInt64();
                 }
             }
             catch (Exception)
