@@ -833,6 +833,9 @@ namespace MyCaffe.common
             dst.mutable_cpu_data = rgDst;
         }
 
+
+#pragma warning disable 1591
+
         public void KeepBestResultsByChannel(int nNumberToKeep) /** @private */
         {
             m_log.CHECK_EQ(num_axes, 4, "Currently KeepBestResutls only works on 4-axis blobs.");
@@ -961,6 +964,9 @@ namespace MyCaffe.common
 
             mutable_cpu_data = rgData;
         }
+
+#pragma warning restore 1591
+
 
         private int sort(KeyValuePair<int, float> a, KeyValuePair<int, float> b)
         {
@@ -2149,6 +2155,8 @@ namespace MyCaffe.common
             m_cuda.add_scalar(count(), dfVal, mutable_gpu_data);
         }
 
+#pragma warning disable 1591
+
         public void rollaxis() /** @private */
         {
             long hDataT = m_cuda.AllocMemory(mutable_cpu_data);
@@ -2203,6 +2211,8 @@ namespace MyCaffe.common
                 img.Dispose();
             }
         }
+
+#pragma warning restore 1591
 
         /// <summary>
         /// The Resize method resizes the 3rd and 4th axes of the blob.
