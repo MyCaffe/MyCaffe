@@ -103,7 +103,7 @@ namespace MyCaffe.db.image
                 m_masterList = new MasterList(m_log, m_src, m_factory, m_rgAbort);
                 m_masterList.OnCalculateImageMean += m_masterList_OnCalculateImageMean;
 
-                if (m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ALL || m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_EXTERNAL)
+                if (m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ALL || m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_EXTERNAL || m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND)
                     m_masterList.Load();
             }
 
