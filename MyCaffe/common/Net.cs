@@ -126,6 +126,7 @@ namespace MyCaffe.common
         /// Specifies the OnSetWorkspace event that fires when the setWorkspace() function is called by a layer to get a shareable workspace to conserve GPU memory.
         /// </summary>
         public event EventHandler<WorkspaceArgs> OnSetWorkspace;
+        /// <summary>
         /// Specifies the OnGetIteration event that fires when a layer needs to get the current iteration from the solver.
         /// </summary>
         public event EventHandler<GetIterationArgs> OnGetIteration;
