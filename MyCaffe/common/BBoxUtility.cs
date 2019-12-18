@@ -61,6 +61,7 @@ namespace MyCaffe.common
         /// 11point: The 11-point interpolated average precision, used in VOC2007.
         /// MaxIntegral: maximally interpolated AP. Used in VOC2012/ILSVRC.
         /// Integral: the natrual integral of the precision-recall curve.
+        /// </param>
         /// <param name="rgPrec">Returns the computed precisions.</param>
         /// <param name="rgRec">Returns the computed recalls.</param>
         /// <returns>The Average Precision value is returned.</returns>
