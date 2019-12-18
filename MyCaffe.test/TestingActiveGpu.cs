@@ -18,7 +18,7 @@ namespace MyCaffe.test
         public TestingActiveGpuSet()
         {
             m_mmf = MemoryMappedFile.CreateOrOpen("__TestActiveGpu__", 4);
-            m_mmvStrm = m_mmf.CreateViewStream(0, 8);
+            m_mmvStrm = m_mmf.CreateViewStream(0, 4);
 
             if (EventWaitHandle.TryOpenExisting("__TestingActiveGpuEnabled__", out m_evtEnabled))
                 m_evtEnabled.Set();
