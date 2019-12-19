@@ -48,7 +48,13 @@ namespace MyCaffe.common
     /// </summary>
     public enum DataType
     {
+        /// <summary>
+        /// Specifies the double type.
+        /// </summary>
         DOUBLE,
+        /// <summary>
+        /// Specifies the single type.
+        /// </summary>
         FLOAT
     }
 
@@ -87,8 +93,17 @@ namespace MyCaffe.common
     /// </remarks>
     public enum BATCHNORM_MODE
     {
+        /// <summary>
+        /// Specifies to use the per-activation batch normalization mode.
+        /// </summary>
         PER_ACTIVATION = 0,
+        /// <summary>
+        /// Specifies to use the spatial batch normalization mode.
+        /// </summary>
         SPATIAL = 1,
+        /// <summary>
+        /// Specifies to use the spatial persistent batch normalization mode.
+        /// </summary>
         SPATIAL_PERSISTENT = 2
     }
 
@@ -100,14 +115,41 @@ namespace MyCaffe.common
     /// </remarks>
     public enum CONV_FWD_ALGO
     {
+        /// <summary>
+        /// Specifies to not use a forward algorithm.
+        /// </summary>
         NONE = -1,
+        /// <summary>
+        /// Specifies to use the implicit gemm algorithm.
+        /// </summary>
         IMPLICIT_GEMM = 0,
+        /// <summary>
+        /// Specifies to use the implicit pre-computation gemm algorithm.
+        /// </summary>
         IMPLICIT_PRECOMP_GEMM = 1,
+        /// <summary>
+        /// Specifies to use the gemm algorithm.
+        /// </summary>
         ALGO_GEMM = 2,
+        /// <summary>
+        /// Specifies to use the direct algorithm.
+        /// </summary>
         ALGO_DIRECT = 3,
+        /// <summary>
+        /// Specifies to use the fft algorithm.
+        /// </summary>
         ALGO_FFT = 4,
+        /// <summary>
+        /// Specifies to use the fft tiling algorithm.
+        /// </summary>
         ALGO_FFT_TILING = 5,
+        /// <summary>
+        /// Specifies to use the winograd algorithm.
+        /// </summary>
         ALGO_WINOGRAD = 6,
+        /// <summary>
+        /// Specifies to use the non-fused winograd algorithm.
+        /// </summary>
         ALGO_WINOGRAD_NONFUSED = 7
     }
 
@@ -120,13 +162,19 @@ namespace MyCaffe.common
     public enum CONV_BWD_FILTER_ALGO
     {
         /// <summary>
-        /// Note: non-deterministic.
+        /// Specifies to use algorithm 0 - which is non-deterministic.
         /// </summary>
         ALGO_0 = 0,     
+        /// <summary>
+        /// Specifies to use algorithm 1.
+        /// </summary>
         ALGO_1 = 1,
+        /// <summary>
+        /// Specifies to use the fft algorithm.
+        /// </summary>
         ALGO_FFT = 2,
         /// <summary>
-        /// Note: non-deterministic, algo0 with workspace.
+        /// Specifies to use algorithm 0 with a workspace - which is non-deterministic.
         /// </summary>
         ALGO_3 = 3      
     }
@@ -140,10 +188,16 @@ namespace MyCaffe.common
     public enum CONV_BWD_DATA_ALGO
     {
         /// <summary>
-        /// Non-deterministic.
+        /// Specifies to use algorithm 0 - which is non-deterministic.
         /// </summary>
         ALGO_0 = 0,     
+        /// <summary>
+        /// Specifies to use algorithm 1.
+        /// </summary>
         ALGO_1 = 1,
+        /// <summary>
+        /// Specifies to use the fft algorithm.
+        /// </summary>
         ALGO_FFT = 2
     }
 
@@ -227,65 +281,6 @@ namespace MyCaffe.common
     }
 
     /// <summary>
-    /// Specifies the orientation of a matrix.
-    /// </summary>
-    /// <remarks>
-    /// @see CudaDnn::matrix_add_vector
-    /// </remarks>
-    public enum ORIENTATION /** @private */
-    {
-        /// <summary>
-        /// Specifies to add the vector to each column.
-        /// </summary>
-        COL = 0,
-        /// <summary>
-        /// Specifies to add the vector to each row.
-        /// </summary>
-        ROW = 1
-    }
-
-    /// <summary>
-    /// Specifies the type of operation to perform along with a matrix transposition.
-    /// </summary>
-    /// <remarks>
-    /// @see CudaDnn::matrix_transpose_operation
-    /// </remarks>
-    public enum TRANSPOSE_OPERATION /** @private */
-    {
-        /// <summary>
-        /// Add the matrix values after transposing.
-        /// </summary>
-        ADD = 0,
-        /// <summary>
-        /// Multiply the matrix values after transposing.
-        /// </summary>
-        MUL = 1,
-        /// <summary>
-        /// Divide the matrix values after transposing.
-        /// </summary>
-        DIV = 2
-    }
-
-    /// <summary>
-    /// Specifies different aggregation operations.
-    /// </summary>
-    public enum AGGREGATIONS /** @private */
-    {
-        /// <summary>
-        /// Sum the values.
-        /// </summary>
-        SUM = 0,
-        /// <summary>
-        /// Return the maximum value.
-        /// </summary>
-        MAX = 1,
-        /// <summary>
-        /// Return the minimum value.
-        /// </summary>
-        MIN = 2
-    }
-
-    /// <summary>
     /// Specifies the memory test to perform.
     /// </summary>
     /// <remarks>
@@ -293,6 +288,9 @@ namespace MyCaffe.common
     /// </remarks>
     public enum MEMTEST_TYPE
     {
+        /// <summary>
+        /// Specifies the mov-inv-8 test.
+        /// </summary>
         MOV_INV_8 = 1
     }
 
@@ -427,6 +425,67 @@ namespace MyCaffe.common
         /// </summary>
         SMOOTH_L1
     }
+
+    /// <summary>
+    /// Specifies the orientation of a matrix.
+    /// </summary>
+    /// <remarks>
+    /// @see CudaDnn::matrix_add_vector
+    /// </remarks>
+    public enum ORIENTATION 
+    {
+        /// <summary>
+        /// Specifies to add the vector to each column.
+        /// </summary>
+        COL = 0,
+        /// <summary>
+        /// Specifies to add the vector to each row.
+        /// </summary>
+        ROW = 1
+    }
+
+    /// <summary>
+    /// Specifies the type of operation to perform along with a matrix transposition.
+    /// </summary>
+    /// <remarks>
+    /// @see CudaDnn::matrix_transpose_operation
+    /// </remarks>
+    public enum TRANSPOSE_OPERATION 
+    {
+        /// <summary>
+        /// Add the matrix values after transposing.
+        /// </summary>
+        ADD = 0,
+        /// <summary>
+        /// Multiply the matrix values after transposing.
+        /// </summary>
+        MUL = 1,
+        /// <summary>
+        /// Divide the matrix values after transposing.
+        /// </summary>
+        DIV = 2
+    }
+
+    /// <summary>
+    /// Specifies different aggregation operations.
+    /// </summary>
+    public enum AGGREGATIONS 
+    {
+        /// <summary>
+        /// Sum the values.
+        /// </summary>
+        SUM = 0,
+        /// <summary>
+        /// Return the maximum value.
+        /// </summary>
+        MAX = 1,
+        /// <summary>
+        /// Return the minimum value.
+        /// </summary>
+        MIN = 2
+    }
+
+#pragma warning disable 1591
 
     /// <summary>
     /// Specifies the general cuda device interface.
@@ -626,6 +685,9 @@ namespace MyCaffe.common
     {
     }
 
+#pragma warning restore 1591 
+
+
     /// <summary>
     /// The CudaDnn object is the main interface to the Low-Level Cuda C++ DLL.
     /// </summary>
@@ -673,6 +735,8 @@ namespace MyCaffe.common
             /// </summary>
             DEVICE_INFO = 1002
         }
+
+#pragma warning disable 1591
 
         /// <summary>
         /// Specifies the function indexes supported by the Low-Level Cuda Dnn DLL.
@@ -1032,6 +1096,9 @@ namespace MyCaffe.common
             CUDA_SSD_ENCODE_LOCPRED = 958,
             CUDA_SSD_ENCODE_CONFPRED = 959
         }
+
+#pragma warning restore 1591
+
 
         /// <summary>
         /// The CudaDnn constructor.
@@ -3746,7 +3813,7 @@ namespace MyCaffe.common
         /// </summary>
         /// <remarks>
         /// See [Rectifier Nonlinearities Improve Neural Network Acoustic Models](https://www.semanticscholar.org/paper/Rectifier-Nonlinearities-Improve-Neural-Network-Maas-Hannun/367f2c63a6f6a10b3b64b8729d601e69337ee3cc) by 
-        /// Maas, A. L., Hannun, A. Y., & Ng, A. Y. (2013),  In ICML Workshop on Deep Learning
+        /// Maas, A. L., Hannun, A. Y., and Ng, A. Y. (2013),  In ICML Workshop on Deep Learning
         /// for Audio, Speech, and Language Processing.
         /// </remarks>
         /// <param name="hCuDnn">Specifies a handle to the instance of cuDnn.</param>
@@ -4322,7 +4389,7 @@ namespace MyCaffe.common
         /// </remarks>
         /// <param name="nM">Specifies the data width (number of rows).</param>
         /// <param name="nN">Specifies the data height (number of columns).</param>
-        /// <param name="nK">Specifies the number of components (K <= N).</param>
+        /// <param name="nK">Specifies the number of components (K &lt;= N).</param>
         /// <param name="nCount">Returns the total number of items in the allocated data (nM * nN).</param>
         /// <returns></returns>
         public long AllocPCAData(int nM, int nN, int nK, out int nCount)
@@ -4339,7 +4406,7 @@ namespace MyCaffe.common
         /// </remarks>
         /// <param name="nM">Specifies the data width (number of rows).</param>
         /// <param name="nN">Specifies the data height (number of columns).</param>
-        /// <param name="nK">Specifies the number of components (K <= N).</param>
+        /// <param name="nK">Specifies the number of components (K &lt;= N).</param>
         /// <param name="nCount">Returns the total number of items in the allocated data (nM * nN).</param>
         /// <returns></returns>
         public long AllocPCAScores(int nM, int nN, int nK, out int nCount)
@@ -4356,7 +4423,7 @@ namespace MyCaffe.common
         /// </remarks>
         /// <param name="nM">Specifies the data width (number of rows).</param>
         /// <param name="nN">Specifies the data height (number of columns).</param>
-        /// <param name="nK">Specifies the number of components (K <= N).</param>
+        /// <param name="nK">Specifies the number of components (K &lt;= N).</param>
         /// <param name="nCount">Returns the total number of items in the allocated data (nM * nN).</param>
         /// <returns></returns>
         public long AllocPCALoads(int nM, int nN, int nK, out int nCount)
@@ -4373,7 +4440,7 @@ namespace MyCaffe.common
         /// </remarks>
         /// <param name="nM">Specifies the data width (number of rows).</param>
         /// <param name="nN">Specifies the data height (number of columns).</param>
-        /// <param name="nK">Specifies the number of components (K <= N).</param>
+        /// <param name="nK">Specifies the number of components (K &lt;= N).</param>
         /// <param name="nCount">Returns the total number of items in the allocated data (nM * nN).</param>
         /// <returns></returns>
         public long AllocPCAEigenvalues(int nM, int nN, int nK, out int nCount)
