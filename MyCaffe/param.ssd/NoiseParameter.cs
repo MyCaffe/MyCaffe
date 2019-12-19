@@ -45,6 +45,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set probability of using this resize policy.
         /// </summary>
+        [Description("Get/set probability of using this resize policy.")]
         public float prob
         {
             get { return m_fProb; }
@@ -54,6 +55,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set histogram equalized.
         /// </summary>
+        [Description("Get/set histogram equalized.")]
         public bool hist_eq
         {
             get { return m_bHistEq; }
@@ -63,6 +65,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set color inversion.
         /// </summary>
+        [Description("Get/set color inversion.")]
         public bool inverse
         {
             get { return m_bInverse; }
@@ -72,6 +75,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set grayscale.
         /// </summary>
+        [Description("Get/set grayscale.")]
         public bool decolorize
         {
             get { return m_bDecolorize; }
@@ -81,6 +85,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set gaussian blur.
         /// </summary>
+        [Description("Get/set gaussian blur.")]
         public bool gauss_blur
         {
             get { return m_bGaussBlur; }
@@ -90,6 +95,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set jpeg quality.
         /// </summary>
+        [Description("Get/set jpeg quality.")]
         public float jpeg
         {
             get { return m_fJpeg; }
@@ -99,6 +105,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set posterization.
         /// </summary>
+        [Description("Get/set posterization.")]
         public bool posterize
         {
             get { return m_bPosterize; }
@@ -108,6 +115,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set erosion.
         /// </summary>
+        [Description("Get/set erosion.")]
         public bool erode
         {
             get { return m_bErode; }
@@ -117,6 +125,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set salt-n-pepper noise.
         /// </summary>
+        [Description("Get/set salt-n-pepper noise.")]
         public bool saltpepper
         {
             get { return m_bSaltPepper; }
@@ -126,6 +135,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the salt-n-pepper parameter.
         /// </summary>
+        [Description("Get/set the salt-n-pepper parameter.")]
         public SaltPepperParameter saltpepper_param
         {
             get { return m_saltPepper; }
@@ -135,6 +145,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the local histogram equalization.
         /// </summary>
+        [Description("Get/set the local histogram equalization.")]
         public bool clahe
         {
             get { return m_bClahe; }
@@ -144,6 +155,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set color space conversion to hsv.
         /// </summary>
+        [Description("Get/set color space conversion to hsv.")]
         public bool convert_to_hsv
         {
             get { return m_bConvertToHsv; }
@@ -153,6 +165,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set color space convertion to lab.
         /// </summary>
+        [Description("Get/set color space convertion to lab.")]
         public bool convert_to_lab
         {
             get { return m_bConvertToLab; }

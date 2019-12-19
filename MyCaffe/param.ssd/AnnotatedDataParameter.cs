@@ -42,6 +42,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the annotation type.
         /// </summary>
+        [Description("Get/set the annotation type.")]
         public SimpleDatum.ANNOTATION_TYPE anno_type
         {
             get { return m_type; }
@@ -51,6 +52,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the batch sampler.
         /// </summary>
+        [Description("Get/set the batch sampler.")]
         public List<BatchSampler> batch_sampler
         {
             get { return m_rgBatchSampler; }
@@ -60,6 +62,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the label map file.
         /// </summary>
+        [Description("Get/set the label map file.")]
         public string label_map_file
         {
             get { return m_strLabelFile; }

@@ -34,6 +34,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set probability of using this expansion policy.
         /// </summary>
+        [Description("Get/set probability of using this expansion policy.")]
         public float prob
         {
             get { return m_fProb; }
@@ -43,6 +44,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the ratio to expand the image.
         /// </summary>
+        [Description("Get/set the ratio to expand the image.")]
         public float max_expand_ratio
         {
             get { return m_fMaxExpandRatio; }

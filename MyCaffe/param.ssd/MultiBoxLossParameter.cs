@@ -205,6 +205,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the localization loss type (default = SMOOTH_L1).
         /// </summary>
+        [Description("Get/set the localization loss type (default = SMOOTH_L1).")]
         public LocLossType loc_loss_type
         {
             get { return m_locLossType; }
@@ -214,6 +215,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the confidence loss type (default = SOFTMAX).
         /// </summary>
+        [Description("Get/set the confidence loss type (default = SOFTMAX).")]
         public ConfLossType conf_loss_type
         {
             get { return m_confLossType; }
@@ -223,6 +225,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the weight for the localization loss (default = 1.0).
         /// </summary>
+        [Description("Get/set the weight for the localization loss (default = 1.0).")]
         public float loc_weight
         {
             get { return m_fLocWeight; }
@@ -232,6 +235,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the number of classes to be predicted - required!
         /// </summary>
+        [Description("Get/set the number of classes to be predicted - required")]
         public uint num_classes
         {
             get { return m_nNumClasses; }
@@ -241,6 +245,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/sets whether or not the bounding box is shared among different classes (default = true).
         /// </summary>
+        [Description("Get/sets whether or not the bounding box is shared among different classes (default = true).")]
         public bool share_location
         {
             get { return m_bShareLocation; }
@@ -250,6 +255,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the matching method used during training (default = PER_PREDICTION).
         /// </summary>
+        [Description("Get/set the matching method used during training (default = PER_PREDICTION).")]
         public MatchType match_type
         {
             get { return m_matchType; }
@@ -259,6 +265,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the overlap threshold (default = 0.5).
         /// </summary>
+        [Description("Get/set the overlap threshold (default = 0.5).")]
         public float overlap_threshold
         {
             get { return m_fOverlapThreshold; }
@@ -268,6 +275,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the background label id.
         /// </summary>
+        [Description("Get/set the background label id.")]
         public uint background_label_id
         {
             get { return m_nBackgroundLabelId; }
@@ -277,6 +285,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set whether or not to consider the difficult ground truth (defalt = true).
         /// </summary>
+        [Description("Get/set whether or not to consider the difficult ground truth (defalt = true).")]
         public bool use_difficult_gt
         {
             get { return m_bUseDifficultGt; }
@@ -289,6 +298,7 @@ namespace MyCaffe.param.ssd
         /// <remarks>
         /// DEPRECIATED: using 'mining_type' instead.
         /// </remarks>
+        [Description("DEPRECIATED: Get/set whether or not to perform negative mining (default = false).")]
         public bool? do_neg_mining
         {
             get { return m_bDoNegMining; }
@@ -298,6 +308,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the negative/positive ratio (default = 3.0).
         /// </summary>
+        [Description("Get/set the negative/positive ratio (default = 3.0).")]
         public float neg_pos_ratio
         {
             get { return m_fNegPosRatio; }
@@ -307,6 +318,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the negative overlap upperbound for the unmatched predictions (default = 0.5).
         /// </summary>
+        [Description("Get/set the negative overlap upperbound for the unmatched predictions (default = 0.5).")]
         public float neg_overlap
         {
             get { return m_fNegOverlap; }
@@ -316,6 +328,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the coding method for the bounding box.
         /// </summary>
+        [Description("Get/set the coding method for the bounding box.")]
         public PriorBoxParameter.CodeType code_type
         {
             get { return m_codeType; }
@@ -325,6 +338,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set whether or not to encode the variance of the prior box in the loc loss target instead of in the bbox (default = false).
         /// </summary>
+        [Description("Get/set whether or not to encode the variance of the prior box in the loc loss target instead of in the bbox (default = false).")]
         public bool encode_variance_in_target
         {
             get { return m_bEncodeVarianceInTarget; }
@@ -334,6 +348,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set whether or not to map all object classes to an agnostic class (default = false).  This is useful when learning objectness detector.
         /// </summary>
+        [Description("Get/set whether or not to map all object classes to an agnostic class (default = false).  This is useful when learning objectness detector.")]
         public bool map_object_to_agnostic
         {
             get { return m_bMapObjectToAgnostic; }
@@ -344,6 +359,7 @@ namespace MyCaffe.param.ssd
         /// Get/set whether or not to ignore cross boundary bbox during matching (default = false).  The cross boundary bbox is a bbox who is outside
         /// of the image region.
         /// </summary>
+        [Description("Get/set whether or not to ignore cross boundary bbox during matching (default = false).  The cross boundary bbox is a bbox who is outside of the image region.")]
         public bool ignore_cross_boundary_bbox
         {
             get { return m_bIgnoreCrossBoundaryBbox; }
@@ -353,6 +369,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set whether or not to only backpropagate on corners which are inside of the image region when encode type is CORNER or CORNER_SIZE (default = false).
         /// </summary>
+        [Description("Get/set whether or not to only backpropagate on corners which are inside of the image region when encode type is CORNER or CORNER_SIZE (default = false).")]
         public bool bp_inside
         {
             get { return m_bBpInside; }
@@ -362,6 +379,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the mining type used during training (default = MAX_NEGATIVE).
         /// </summary>
+        [Description("Get/set the mining type used during training (default = MAX_NEGATIVE).")]
         public MiningType mining_type
         {
             get { return m_miningType; }
@@ -371,6 +389,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the parameters used for the non maximum suppression during hard example training.
         /// </summary>
+        [Description("Get/set the parameters used for the non maximum suppression during hard example training.")]
         public NonMaximumSuppressionParameter nms_param
         {
             get { return m_nmsParam; }
@@ -380,6 +399,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the number of samples (default = 64).
         /// </summary>
+        [Description("Get/set the number of samples (default = 64).")]
         public int sample_size
         {
             get { return m_nSampleSize; }
@@ -389,6 +409,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set whether or not to use the prior bbox for nms.
         /// </summary>
+        [Description("Get/set whether or not to use the prior bbox for nms.")]
         public bool use_prior_for_nms
         {
             get { return m_bUsePriorForNms; }
@@ -398,6 +419,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set whether or not to use prior for matching.
         /// </summary>
+        [Description("Get/set whether or not to use prior for matching.")]
         public bool use_prior_for_matching
         {
             get { return m_bUsePriorForMatching; }
@@ -407,6 +429,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Use the GPU version of the algorithm.
         /// </summary>
+        [Description("Use the GPU version of the algorithm.")]
         public bool use_gpu
         {
             get { return m_bUseGpu; }

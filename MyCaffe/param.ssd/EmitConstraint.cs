@@ -49,6 +49,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the emit type.
         /// </summary>
+        [Description("Get/set the emit type.")]
         public EmitType emit_type
         {
             get { return m_emitType; }
@@ -58,6 +59,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the emit overlap used with MIN_OVERLAP.
         /// </summary>
+        [Description("Get/set the emit overlap used with MIN_OVERLAP.")]
         public float emit_overlap
         {
             get { return m_fEmitOverlap; }

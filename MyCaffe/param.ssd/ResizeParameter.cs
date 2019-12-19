@@ -106,6 +106,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set probability of using this resize policy.
         /// </summary>
+        [Description("Get/set probability of using this resize policy.")]
         public float prob
         {
             get { return m_fProb; }
@@ -115,6 +116,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the resizing mode.
         /// </summary>
+        [Description("Get/set the resizing mode.")]
         public ResizeMode resize_mode
         {
             get { return m_mode; }
@@ -124,6 +126,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the resizing height.
         /// </summary>
+        [Description("Get/set the resizing height.")]
         public uint height
         {
             get { return m_nHeight; }
@@ -133,6 +136,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the resizing width.
         /// </summary>
+        [Description("Get/set the resizing width.")]
         public uint width
         {
             get { return m_nWidth; }
@@ -142,6 +146,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the resizing height scale used with FIT_SMALL_SIZE mode.
         /// </summary>
+        [Description("Get/set the resizing height scale used with FIT_SMALL_SIZE mode.")]
         public uint height_scale
         {
             get { return m_nHeightScale; }
@@ -151,6 +156,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the resizing width scale used with FIT_SMALL_SIZE_mode.
         /// </summary>
+        [Description("Get/set the resizing width scale used with FIT_SMALL_SIZE_mode.")]
         public uint width_scale
         {
             get { return m_nWidthScale; }
@@ -160,6 +166,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the pad mode for FIT_LARGE_SIZE_AND_PAD mode.
         /// </summary>
+        [Description("Get/set the pad mode for FIT_LARGE_SIZE_AND_PAD mode.")]
         public PadMode pad_mode
         {
             get { return m_pad; }
@@ -169,6 +176,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the pad value which is repeated once for all channels, or provided one pad value per channel.
         /// </summary>
+        [Description("Get/set the pad value which is repeated once for all channels, or provided one pad value per channel.")]
         public List<float> pad_value
         {
             get { return m_rgfPadValue; }
@@ -178,6 +186,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the interp mode which is repeated once for all channels, or provided once per channel.
         /// </summary>
+        [Description("Get/set the interp mode which is repeated once for all channels, or provided once per channel.")]
         public List<InterpMode> interp_mode
         {
             get { return m_rgInterp; }

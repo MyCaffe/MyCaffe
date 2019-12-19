@@ -34,6 +34,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the percentage of pixels.
         /// </summary>
+        [Description("Get/set the percentage of pixels.")]
         public float fraction
         {
             get { return m_fFraction; }
@@ -43,6 +44,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the values.
         /// </summary>
+        [Description("Get/set the values.")]
         public List<float> value
         {
             get { return m_rgValue; }

@@ -44,6 +44,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set probability of adjusting the brightness.
         /// </summary>
+        [Description("Get/set probability of adjusting the brightness.")]
         public float brightness_prob
         {
             get { return m_fBrightnessProb; }
@@ -53,6 +54,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set amount to add to the pixel values within [-delta,delta]
         /// </summary>
+        [Description("Get/set amount to add to the pixel values within [-delta,delta]")]
         public float brightness_delta
         {
             get { return m_fBrightnessDelta; }
@@ -62,6 +64,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set probability of adjusting the contrast.
         /// </summary>
+        [Description("Get/set probability of adjusting the contrast.")]
         public float contrast_prob
         {
             get { return m_fContrastProb; }
@@ -71,6 +74,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set lower bound for random contrast factor.
         /// </summary>
+        [Description("Get/set lower bound for random contrast factor.")]
         public float contrast_lower
         {
             get { return m_fContrastLower; }
@@ -80,6 +84,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set upper bound for random contrast factor.
         /// </summary>
+        [Description("Get/set upper bound for random contrast factor.")]
         public float contrast_upper
         {
             get { return m_fContrastUpper; }
@@ -89,6 +94,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set probability of adjusting the saturation.
         /// </summary>
+        [Description("Get/set probability of adjusting the saturation.")]
         public float saturation_prob
         {
             get { return m_fSaturationProb; }
@@ -98,6 +104,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set lower bound for random saturation factor.
         /// </summary>
+        [Description("Get/set lower bound for random saturation factor.")]
         public float saturation_lower
         {
             get { return m_fSaturationLower; }
@@ -107,6 +114,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set upper bound for random saturation factor.
         /// </summary>
+        [Description("Get/set upper bound for random saturation factor.")]
         public float saturation_upper
         {
             get { return m_fSaturationUpper; }
@@ -116,6 +124,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the probability of randomly ordering the image channels.
         /// </summary>
+        [Description("Get/set the probability of randomly ordering the image channels.")]
         public float random_order_prob
         {
             get { return m_fRandomOrderProb; }

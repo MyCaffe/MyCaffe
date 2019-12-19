@@ -35,6 +35,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the threshold to be used in nms.
         /// </summary>
+        [Description("Get/set the threshold to be used in nms.")]
         public float nms_threshold
         {
             get { return m_fNmsThreshold; }
@@ -44,6 +45,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the maximum number of results kept.
         /// </summary>
+        [Description("Get/set the maximum number of results kept.")]
         public int? top_k
         {
             get { return m_nTopK; }
@@ -53,6 +55,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Get/set the parameter for adaptive nms.
         /// </summary>
+        [Description("Get/set the parameter for adaptive nms.")]
         public float eta
         {
             get { return m_fEta; }

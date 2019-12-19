@@ -84,6 +84,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Specifies the minimum box size (in pixels) and is required!
         /// </summary>
+        [Description("Specifies the minimum box size (in pixels) and is required!")]
         public List<float> min_size
         {
             get { return m_rgMinSize; }
@@ -93,6 +94,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Specifies the maximum box size (in pixels) and is required!
         /// </summary>
+        [Description("Specifies the maximum box size (in pixels) and is required!")]
         public List<float> max_size
         {
             get { return m_rgMaxSize; }
@@ -103,6 +105,7 @@ namespace MyCaffe.param.ssd
         /// Specifies various aspect ratios.  Duplicate ratios are ignored.
         /// If none are provided, a default ratio of 1 is used.
         /// </summary>
+        [Description("Specifies various aspect ratios.  Duplicate ratios are ignored. If none are provided, a default ratio of 1 is used.")]
         public List<float> aspect_ratio
         {
             get { return m_rgAspectRatio; }
@@ -114,6 +117,7 @@ namespace MyCaffe.param.ssd
         /// For example, if there is an aspect ratio 'r'
         /// we will generate aspect ratio '1.0/r' as well.
         /// </summary>
+        [Description("Specifies whether or not to flip each aspect ratio. For example, if there is an aspect ratio 'r' we will generate aspect ratio '1.0/r' as well.")]
         public bool flip
         {
             get { return m_bFlip; }
@@ -123,6 +127,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Specifies whether or not to clip the prior so that it is within [0,1].
         /// </summary>
+        [Description("Specifies whether or not to clip the prior so that it is within [0,1].")]
         public bool clip
         {
             get { return m_bClip; }
@@ -132,6 +137,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Specifies the variance for adjusting the prior boxes.
         /// </summary>
+        [Description("Specifies the variance for adjusting the prior boxes.")]
         public List<float> variance
         {
             get { return m_rgVariance; }
@@ -147,6 +153,7 @@ namespace MyCaffe.param.ssd
         /// Either the img_h and img_w are used or the img_size,
         /// but not both.
         /// </summary>
+        [Description("Specifies the image size.  By default we calculate the img_height, img_width, step_x and step_y based on bottom[0] (feat) and bottom[1] (img).  Unless these values are explicitly provided here. Either the img_h and img_w are used or the img_size, but not both.")]
         public uint? img_size
         {
             get { return m_nImgSize; }
@@ -162,6 +169,7 @@ namespace MyCaffe.param.ssd
         /// Either the img_h and img_w are used or the img_size,
         /// but not both.
         /// </summary>
+        [Description("Specifies the image height.  By default we calculate the img_height, img_width, step_x and step_y based on bottom[0] (feat) and bottom[1] (img).  Unless these values are explicitly provided here. Either the img_h and img_w are used or the img_size, but not both.")]
         public uint? img_h
         {
             get { return m_nImgH; }
@@ -177,6 +185,7 @@ namespace MyCaffe.param.ssd
         /// Either the img_h and img_w are used or the img_size,
         /// but not both.
         /// </summary>
+        [Description("Specifies the image width.  By default we calculatethe img_height, img_width, step_x and step_y based on bottom[0] (feat) and bottom[1] (img).  Unless these values are explicitly provided here. Either the img_h and img_w are used or the img_size, but not both.")]
         public uint? img_w
         {
             get { return m_nImgW; }
@@ -186,6 +195,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Specifies the excplicit step size to use.
         /// </summary>
+        [Description("Specifies the excplicit step size to use.")]
         public float? step
         {
             get { return m_fStep; }
@@ -198,6 +208,7 @@ namespace MyCaffe.param.ssd
         /// Either the step_h and step_w are used or the step,
         /// but not both.
         /// </summary>
+        [Description("Specifies the explicit step size to use along height. Either the step_h and step_w are used or the step, but not both.")]
         public float? step_h
         {
             get { return m_fStepH; }
@@ -210,6 +221,7 @@ namespace MyCaffe.param.ssd
         /// Either the step_h and step_w are used or the step,
         /// but not both.
         /// </summary>
+        [Description("Specifies the explicit step size to use along width. Either the step_h and step_w are used or the step, but not both.")]
         public float? step_w
         {
             get { return m_fStepW; }
@@ -219,6 +231,7 @@ namespace MyCaffe.param.ssd
         /// <summary>
         /// Specifies the offset to the top left corner of each cell.
         /// </summary>
+        [Description("Specifies the offset to the top left corner of each cell.")]
         public float offset
         {
             get { return m_fOffset; }
