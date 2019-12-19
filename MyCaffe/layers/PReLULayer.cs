@@ -179,12 +179,12 @@ namespace MyCaffe.layers
         /// Forward operation
         /// </summary>
         /// <param name="colBottom">
-        /// bottom input Blob<T> vector (length 1)
+        /// bottom input Blob vector (length 1)
         ///     -# @f$ (N \times C \times ...) @f$
         ///     the inputs @f$ x @f$
         /// </param>
         /// <param name="colTop">
-        /// top output Blob<T> vector (length 1)
+        /// top output Blob vector (length 1)
         ///     -# @f$ (N \times C \times ...) @f$
         ///     the computed outputs for each channel @f$ i @f$
         ///     @f$ y_i = max(0, x_i) + a_i min(0, x_i) @f$
@@ -209,7 +209,7 @@ namespace MyCaffe.layers
         /// Computes the error gradient w.r.t. the PReLU inputs.
         /// </summary>
         /// <param name="colTop">
-        /// top output Blob<T> vector (length 1), providing the error gradient with
+        /// top output Blob vector (length 1), providing the error gradient with
         /// respect to the outputs.
         ///     -# @f$ (N \times C \times ...) @f$
         ///     containing error gradients @f$ \frac{\partial E}{\partial y} @f$
@@ -219,7 +219,7 @@ namespace MyCaffe.layers
         /// see Layer::backward.
         /// </param>
         /// <param name="colBottom">
-        /// bottom input Blob<T> vector (length 1)
+        /// bottom input Blob vector (length 1)
         ///     -# @f$ (N \times C \times ...) @f$
         ///     the inputs @f$ x @f$; For each channel @f$ i @f$ backward fills their
         ///     diff with gradients @f$
