@@ -63,11 +63,17 @@ namespace MyCaffe.param.ssd
         /// Copy the object.
         /// </summary>
         /// <param name="src">The copy is placed in this parameter.</param>
-        public void Copy(NonMaximumSuppressionParameter src)
+        public override void Copy(OptionalParameter src)
         {
-            m_fNmsThreshold = src.nms_threshold;
-            m_nTopK = src.top_k;
-            m_fEta = src.eta;
+            base.Copy(src);
+
+            if (src is NonMaximumSuppressionParameter)
+            {
+                NonMaximumSuppressionParameter p = (NonMaximumSuppressionParameter)src;
+                m_fNmsThreshold = p.nms_threshold;
+                m_nTopK = p.top_k;
+                m_fEta = p.eta;
+            }
         }
 
         /// <summary>
@@ -86,11 +92,12 @@ namespace MyCaffe.param.ssd
         /// </summary>
         /// <param name="strName">Specifies the name of the proto.</param>
         /// <returns>The new proto is returned.</returns>
-        public RawProto ToProto(string strName)
+        public override RawProto ToProto(string strName)
         {
+            RawProto rpBase = base.ToProto("option");
             RawProtoCollection rgChildren = new RawProtoCollection();
 
-            rgChildren.Add(new RawProto("active", Active.ToString()));
+            rgChildren.Add(rpBase);
             rgChildren.Add(new RawProto("nms_threshold", nms_threshold.ToString()));
 
             if (top_k.HasValue)
@@ -106,13 +113,14 @@ namespace MyCaffe.param.ssd
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static NonMaximumSuppressionParameter FromProto(RawProto rp)
+        public static new NonMaximumSuppressionParameter FromProto(RawProto rp)
         {
             NonMaximumSuppressionParameter p = new NonMaximumSuppressionParameter(true);
             string strVal;
 
-            if ((strVal = rp.FindValue("active")) != null)
-                p.Active = bool.Parse(strVal);
+            RawProto rpOption = rp.FindChild("option");
+            if (rpOption != null)
+                ((OptionalParameter)p).Copy(OptionalParameter.FromProto(rpOption));
 
             if ((strVal = rp.FindValue("nms_threshold")) != null)
                 p.nms_threshold = float.Parse(strVal);
