@@ -152,12 +152,12 @@ namespace MyCaffe.layers
         /// Forward operation
         /// </summary>
         /// <param name="colBottom">
-        /// bottom input Blob<T> vector (length 1)
+        /// bottom input Blob vector (length 1)
         ///     -# @f$ (N \times C \times ...) @f$
         ///     the inputs @f$ x @f$
         /// </param>
         /// <param name="colTop">
-        /// top output Blob<T> vector (length 1)
+        /// top output Blob vector (length 1)
         ///     -# (Shape depends on <i>axis</i> parameter setting)
         ///     the computed outputs.
         /// </param>
@@ -207,7 +207,7 @@ namespace MyCaffe.layers
         /// Computes the error gradient w.r.t. the Reduction inputs.
         /// </summary>
         /// <param name="colTop">
-        /// top output Blob<T> vector (length 1), providing the error gradient with
+        /// top output Blob vector (length 1), providing the error gradient with
         /// respect to the outputs.
         ///     -# (Shape depends on <i>axis</i> parameter setting) 
         /// </param>
@@ -215,7 +215,7 @@ namespace MyCaffe.layers
         /// see Layer::backward.
         /// </param>
         /// <param name="colBottom">
-        /// bottom input Blob<T> vector (length 1)
+        /// bottom input Blob vector (length 1)
         ///     -# @f$ (N \times C \times ...) @f$
         ///     the inputs. 
         /// </param>
