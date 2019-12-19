@@ -150,6 +150,7 @@ namespace MyCaffe.db.stream
             return rg.ToArray();
         }
 
+        /// <summary>
         /// The Query information returns information about the data queried such as header information.
         /// </summary>
         /// <returns>The information about the data is returned.</returns>

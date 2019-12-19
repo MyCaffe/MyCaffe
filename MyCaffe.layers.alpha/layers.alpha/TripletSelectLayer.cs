@@ -211,6 +211,7 @@ namespace MyCaffe.layers.alpha
         ///     the positive diffs.
         ///  -# @f$ (N/3 \times C \times H \times W) @f$ 
         ///     the negative diffs.
+        /// </param>
         /// <param name="rgbPropagateDown">propagate down see Layer::Backward</param>
         /// <param name="colBottom">bottom input Blob vector (Length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$ 

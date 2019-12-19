@@ -99,7 +99,6 @@ namespace MyCaffe.trainers.rnn.simple
         }
 
         /// <summary>
-        /// <summary>
         /// Run a single cycle on the environment after the delay.
         /// </summary>
         /// <param name="nN">specifies the number of samples to run.</param>
@@ -115,7 +114,6 @@ namespace MyCaffe.trainers.rnn.simple
             return rgResults;
         }
 
-        /// <summary>
         /// <summary>
         /// Run a single cycle on the environment after the delay.
         /// </summary>
@@ -247,6 +245,7 @@ namespace MyCaffe.trainers.rnn.simple
         /// The Run method provides the main 'actor' that runs data through the trained network.
         /// </summary>
         /// <param name="nN">specifies the number of samples to run.</param>
+        /// <param name="type">Returns the data type contained in the byte stream.</param>
         /// <returns>The results of the run are returned in the native format used by the CustomQuery.</returns>
         public byte[] Run(int nN, out string type)
         {

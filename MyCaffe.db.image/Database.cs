@@ -1240,6 +1240,7 @@ namespace MyCaffe.db.image
         /// contain a path, just returns the original bytes.
         /// </summary>
         /// <param name="rgData">Specifies the original bytes.</param>
+        /// <param name="nSecondarySrcId">Optionally, specifies a secondary data Source ID (default = null).</param>
         /// <returns>The actual data bytes (whether direct or loaded from file) are returned.</returns>
         protected byte[] getRawImage(byte[] rgData, int? nSecondarySrcId = null)
         {
@@ -2906,6 +2907,8 @@ namespace MyCaffe.db.image
         //---------------------------------------------------------------------
         #region Sources
 
+#pragma warning disable 1591
+
         public List<int> GetAllDataSourcesIDs() /** @private */
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
@@ -2913,6 +2916,8 @@ namespace MyCaffe.db.image
                 return entities.Sources.Select(p => p.ID).ToList();
             }
         }
+
+#pragma warning restore 1591
 
         /// <summary>
         /// Deletes the data source data for the open data source.

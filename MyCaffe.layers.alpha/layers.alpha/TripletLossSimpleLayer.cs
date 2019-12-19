@@ -14,7 +14,7 @@ namespace MyCaffe.layers.alpha
     /// TripletLoss Layer
     /// original C++ code added by Binbin Xu
     /// declanxu@gmail.com or declanxu@126.com
-    /// Zhejiang University, State Key Lab of CAD&CG
+    /// Zhejiang University, State Key Lab of CAD&amp;CG
     /// 
     /// This layer is initialized with the MyCaffe.param.TripletLossSimpleParameter.
     /// </summary>

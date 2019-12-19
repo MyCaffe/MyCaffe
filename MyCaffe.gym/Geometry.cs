@@ -118,6 +118,7 @@ namespace MyCaffe.gym
             return rg[0];
         }
 
+        /// <summary>
         /// Returns the left top.
         /// </summary>
         /// <param name="rg">Optionally, specifies the override points.</param>
@@ -130,6 +131,7 @@ namespace MyCaffe.gym
             return rg[1];
         }
 
+        /// <summary>
         /// Returns the right top.
         /// </summary>
         /// <param name="rg">Optionally, specifies the override points.</param>

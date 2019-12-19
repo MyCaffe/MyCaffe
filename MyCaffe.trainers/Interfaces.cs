@@ -113,6 +113,8 @@ namespace MyCaffe.trainers
         ///     'GlobalIteration'
         /// </remarks>
         double GetProperty(string strName);
+        /// <summary>
+        /// Returns general information about the custom trainer.
         /// </summary>
         string Information { get; }
         /// <summary>

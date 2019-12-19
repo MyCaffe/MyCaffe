@@ -29,7 +29,7 @@ namespace MyCaffe.layers.nt
     /// input: -0.75 or less set bucket #0 = 1
     /// input:  0.75 or greater set bucket #7 = 1
     /// 
-    /// Except for end buckets, inputs are placed in bucket where:  bucket min <= input < bucket max.
+    /// Except for end buckets, inputs are placed in bucket where:  bucket min &lt;= input &lt; bucket max.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class OneHotLayer<T> : Layer<T>

@@ -575,6 +575,8 @@ namespace MyCaffe.db.image
         }
     }
 
+#pragma warning disable 1591
+
     public class LoadSequence /** @private */
     {
         List<int> m_rgLoadSequence = new List<int>();
@@ -659,4 +661,6 @@ namespace MyCaffe.db.image
             }
         }
     }
+
+#pragma warning restore 1591
 }

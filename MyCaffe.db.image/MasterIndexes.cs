@@ -284,6 +284,8 @@ namespace MyCaffe.db.image
         }
     }
 
+#pragma warning disable 1591
+
     public class LabelIndex /** @private */
     {
         string m_strName;
@@ -640,4 +642,6 @@ namespace MyCaffe.db.image
             return m_strName + ": Count = " + m_rgItems.Count().ToString() + " CurIdx = " + m_nIdx.ToString() + "; Label = " + m_nLabel.ToString() + "; Boosted = " + m_bBoosted.ToString() + " => (" + m_rgItems.Count.ToString() + ") p = " + m_dfProbability.ToString("P");
         }
     }
+
+#pragma warning restore 1591
 }

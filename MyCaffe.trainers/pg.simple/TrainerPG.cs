@@ -93,7 +93,6 @@ namespace MyCaffe.trainers.pg.simple
         }
 
         /// <summary>
-        /// <summary>
         /// Run a single cycle on the environment after the delay.
         /// </summary>
         /// <param name="nDelay">Specifies a delay to wait before running.</param>

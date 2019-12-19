@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.db.image
 {
+#pragma warning disable 1591
+
     public class LabelStats /** @private */
     {
         List<LabelDescriptor> m_rgLabels;
@@ -171,4 +173,6 @@ namespace MyCaffe.db.image
             return strOut;
         }
     }
+
+#pragma warning restore 1591
 }

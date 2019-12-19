@@ -215,12 +215,14 @@ namespace MyCaffe.layers.ssd
         /// Generates prior boxes for a layer with specified parameters.
         /// </summary>
         /// <param name="colBottom">bottom input Blob vector (Length - at least 2)
-        ///  -# @f$ (N \times C \times H_i \times W_i) @f$ the input layer @f$ x_i @f$.</param>
-        ///  -# @f$ (N \times C \times H_0 \times W_0) @f$ the data layer @f$ x_0 @f$.</param>
+        ///  -# @f$ (N \times C \times H_i \times W_i) @f$ the input layer @f$ x_i @f$.
+        ///  -# @f$ (N \times C \times H_0 \times W_0) @f$ the data layer @f$ x_0 @f$.
+        /// </param>
         /// <param name="colTop">top otuput Blob vector (Length 1)
         ///  -# @f$ (N \times 2 \times K*4) @f$ where @f$ K @f$ are the prior numbers.  
         ///  By default, a box of aspect ratio 1 and min_size and a box of aspect ratio 1
-        ///  and sqrt(min_size * max_size) is created.</param>
+        ///  and sqrt(min_size * max_size) is created.
+        /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             int nLayerW = colBottom[0].width;

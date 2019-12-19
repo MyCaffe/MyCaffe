@@ -564,6 +564,11 @@ namespace MyCaffe.trainers
             Thread.Sleep(e.Wait);
         }
 
+        /// <summary>
+        /// Return a property value from the trainer.
+        /// </summary>
+        /// <param name="strProp">Specifies the name of property to retrieve.</param>
+        /// <returns>The property value is returned.</returns>
         public double GetProperty(string strProp)
         {
             switch (strProp)

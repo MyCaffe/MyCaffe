@@ -374,6 +374,7 @@ namespace MyCaffe.db.image
             return m_masterList.GetImages(state, nStartIdx, nQueryCount, strFilterVal, nBoostVal, bBoostValIsExact);
         }
 
+        /// <summary>
         /// Returns the array of images in the image set, possibly filtered with the filtering parameters.
         /// </summary>
         /// <param name="state">Specifies the query state to use.</param>

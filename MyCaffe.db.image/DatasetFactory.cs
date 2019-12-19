@@ -1066,6 +1066,8 @@ namespace MyCaffe.db.image
             return m_db.GetLastTimeStamp(out nIndex, nSrcId, strDesc);
         }
 
+#pragma warning disable 1591
+
         public List<int> GetAllDataSourceIDs() /** @private */
         {
             return m_db.GetAllDataSourcesIDs();
@@ -1085,6 +1087,8 @@ namespace MyCaffe.db.image
         {
             m_db.UpdateSaveImagesToFile(bSaveToFile, nSrcId);
         }
+
+#pragma warning restore 1591
 
         /// <summary>
         /// Get/set the original source ID (if any).  This field is used when copying a source and using the virutal image reference,

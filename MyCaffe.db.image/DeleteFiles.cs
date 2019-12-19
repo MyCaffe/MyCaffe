@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.db.image
 {
+#pragma warning disable 1591
+
     public class DeleteFiles /** @private */
     {
         Log m_log;
@@ -81,4 +83,6 @@ namespace MyCaffe.db.image
             return true;
         }
     }
+
+#pragma warning restore 1591
 }

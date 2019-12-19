@@ -93,7 +93,6 @@ namespace MyCaffe.trainers.pg.st
         }
 
         /// <summary>
-        /// <summary>
         /// Run a single cycle on the environment after the delay.
         /// </summary>
         /// <param name="nDelay">Specifies a delay to wait before running.</param>
@@ -214,8 +213,7 @@ namespace MyCaffe.trainers.pg.st
         /// <summary>
         /// Run a set of iterations and return the resuts.
         /// </summary>
-        /// <param name="nN">Specifies the number of samples to run.</param>
-        /// <param name="strRunProperties">Optionally specifies properties to use when running.</param>
+        /// <param name="nIterations">Specifies the number of iterations to run.</param>
         /// <param name="type">Returns the data type contained in the byte stream.</param>
         /// <returns>The results of the run containing the action are returned as a byte stream.</returns>
         public byte[] Run(int nIterations, out string type)

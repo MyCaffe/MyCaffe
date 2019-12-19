@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 
 namespace MyCaffe.db.stream
 {
+#pragma warning disable 1591
+
     [ServiceContract]
     public interface IXStreamDatabaseEvent /** @private */
     {
@@ -20,6 +22,8 @@ namespace MyCaffe.db.stream
         void OnError(StreamDatabaseErrorData err);
     }
 
+#pragma warning restore 1591
+
     /// <summary>
     /// Defines the query type to use.
     /// </summary>
@@ -27,7 +31,13 @@ namespace MyCaffe.db.stream
     [DataContract]
     public enum QUERY_TYPE
     {
+        /// <summary>
+        /// Specifies to use a general query.
+        /// </summary>
         GENERAL,
+        /// <summary>
+        /// Specifies to use a synchronized query.
+        /// </summary>
         SYNCHRONIZED
     }
 
@@ -88,12 +98,15 @@ namespace MyCaffe.db.stream
         [OperationContract(IsOneWay = false)]
         int[] QuerySize();
 
+        /// <summary>
         /// The Query information returns information about the data queried such as header information.
         /// </summary>
         /// <returns>The information about the data is returned.</returns>
         [OperationContract(IsOneWay = false)]
         Dictionary<string, float> QueryInfo();
     }
+
+#pragma warning disable 1591
 
     /// <summary>
     /// The IXQuery interface is implemented by each MgrQuery within the MyCaffeStreamDatabase.
@@ -108,6 +121,8 @@ namespace MyCaffe.db.stream
         byte[] ConvertOutput(float[] rg, out string type);
         Dictionary<string, float> QueryInfo();
     }
+
+#pragma warning restore 1591
 
     /// <summary>
     /// Defines the custom query type to use.
@@ -240,6 +255,8 @@ namespace MyCaffe.db.stream
         }
     }
 
+#pragma warning disable 1591
+
     [DataContract]
     public class StreamDatabaseErrorData /** @private */
     {
@@ -250,4 +267,6 @@ namespace MyCaffe.db.stream
         [DataMember]
         public string ErrorDetails { get; set; }
     }
+
+#pragma warning restore 1591
 }

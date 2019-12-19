@@ -54,6 +54,7 @@ namespace MyCaffe.preprocessor
         /// <param name="imycaffe">Specifies the instance of MyCaffe to use.</param>
         /// <param name="idb">Specifies the instance of the streaming database to use.</param>
         /// <param name="strPreProcessorDLLPath">Specifies the path to the preprocessing DLL to use.</param>
+        /// <param name="properties">Specifies the property set to initialize with.  The property set contains the 'Fields' and 'Depth' values where each must be &gt; 0.</param>
         public void Initialize(IXMyCaffe<T> imycaffe, IXStreamDatabase idb, string strPreProcessorDLLPath, PropertySet properties)
         {
             m_mgrPreprocessor = new MgrPreprocessor<T>(imycaffe, idb);
