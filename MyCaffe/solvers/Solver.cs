@@ -1856,6 +1856,8 @@ namespace MyCaffe.solvers
         }
     }
 
+#pragma warning disable 1591 
+
     public class OutputCollection /** @private */
     {
         OutputDataCollection m_rgError = new OutputDataCollection();
@@ -1969,4 +1971,6 @@ namespace MyCaffe.solvers
             m_dfValue = (m_dfValue * (1.0 - dfRatio)) + (dfRatio * dfVal);
         }
     }
+
+#pragma warning restore 1591
 }
