@@ -134,7 +134,7 @@ namespace MyCaffe.layers
         ///  -# @f$ (KN \times C \times H \times W) @f$ if axis == 0 or
         ///  -# @f$ (N \times KC \times H \times W) @f$ if axis == 1;
         ///     the concatentation output @f$
-        ///       y = [\begin{array}{cccc} x_1 & x_2 & ... & x_k \end{array}]
+        ///       y = [\begin{array}{cccc} x_1 \: x_2 \: ... \: x_k \end{array}]
         ///     @f$
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
@@ -172,9 +172,9 @@ namespace MyCaffe.layers
         ///     @f$ \frac{\partial E}{\partial y} @f$ is deconcatenated back to the
         ///     inputs @f$ 
         ///     \left[ \begin{array}{cccc}
-        ///      \frac{\partial E}{\partial x_1} &
-        ///      \frac{\partial E}{\partial x_2} &
-        ///      ... &
+        ///      \frac{\partial E}{\partial x_1} \:
+        ///      \frac{\partial E}{\partial x_2} \:
+        ///      ... \:
         ///      \frac{\partial E}{\partial x_K}
         ///      \end{array} \right] = 
         ///      \frac{\partial E}{\partial y}

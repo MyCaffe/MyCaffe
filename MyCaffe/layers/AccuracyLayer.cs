@@ -148,8 +148,8 @@ namespace MyCaffe.layers
         ///     where @f$ 
         ///       \delta\{\mathrm{condition}\} = \left\{
         ///         \begin{array}{lr}
-        ///           1 & \mbox{if condition} \\
-        ///           0 & \mbox{otherwise}
+        ///           1 \: \mbox{if condition} \\
+        ///           0 \: \mbox{otherwise}
         ///         \end{array} \right.
         ///     @f$
         /// </param>
@@ -184,8 +184,8 @@ namespace MyCaffe.layers
         ///     where @f$ 
         ///       \delta\{\mathrm{condition}\} = \left\{
         ///         \begin{array}{lr}
-        ///           1 & \mbox{if condition} \\
-        ///           0 & \mbox{otherwise}
+        ///           1 \: \mbox{if condition} \\
+        ///           0 \: \mbox{otherwise}
         ///         \end{array} \right.
         ///     @f$
         /// </param>
@@ -282,8 +282,8 @@ namespace MyCaffe.layers
         ///     where @f$ 
         ///       \delta\{\mathrm{condition}\} = \left\{
         ///         \begin{array}{lr}
-        ///           1 & \mbox{if condition} \\
-        ///           0 & \mbox{otherwise}
+        ///           1 \: \mbox{if condition} \\
+        ///           0 \: \mbox{otherwise}
         ///         \end{array} \right.
         ///     @f$
         /// </param>
@@ -396,8 +396,8 @@ namespace MyCaffe.layers
         ///     where @f$ 
         ///       \delta\{\mathrm{condition}\} = \left\{
         ///         \begin{array}{lr}
-        ///           1 & \mbox{if condition} \\
-        ///           0 & \mbox{otherwise}
+        ///           1 \: \mbox{if condition} \\
+        ///           0 \: \mbox{otherwise}
         ///         \end{array} \right.
         ///     @f$
         /// </param>

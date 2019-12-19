@@ -225,16 +225,16 @@ namespace MyCaffe.layers
         ///     diff with gradients @f$
         ///         \frac{\partial E}{\partial x_i} = \left\{
         ///         \begin{array}{lr}
-        ///             a_i \frac{\partial E}{\partial y_i} & \mathrm{if} \; x_i \le 0 \\
-        ///             \frac{\partial E}{\partial y_i} & \mathrm{if} \; x_i > 0
+        ///             a_i \frac{\partial E}{\partial y_i} \: \mathrm{if} \; x_i \le 0 \\
+        ///             \frac{\partial E}{\partial y_i} \: \mathrm{if} \; x_i > 0
         ///         \end{array} \right.
         ///     @f$
         ///     If param_propagate_down[0] == true, it fills the diff with gradients
         ///     @f$
         ///         \frac{\partial E}{\partial a_i} = \left\{
         ///         \begin{array}{lr}
-        ///             \sum_{x_i} x_i \frac{\partial E}{\partial y_i} & \mathrm{if} \; x_i \le 0 \\
-        ///             0 & \mathrm{if} \; x_i > 0
+        ///             \sum_{x_i} x_i \frac{\partial E}{\partial y_i} \: \mathrm{if} \; x_i \le 0 \\
+        ///             0 \: \mathrm{if} \; x_i > 0
         ///         \end{array} \right.
         ///     @f$.
         /// </param>

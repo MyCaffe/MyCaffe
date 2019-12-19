@@ -45,8 +45,8 @@ namespace MyCaffe.layers
         ///     the computed outputs @f$
         ///     y = \left\{
         ///       \begin{array}{ll}
-        ///         x + \log(1 + \exp(-x)) & \mbox{if } x > 0 \\
-        ///             \log(1 + \exp(x)) & \mbox{otherwise}
+        ///         x + \log(1 + \exp(-x)) \: \mbox{if } x > 0 \\
+        ///             \log(1 + \exp(x)) \: \mbox{otherwise}
         ///       \end{array} \right.
         ///     @f$
         /// </param>

@@ -59,8 +59,8 @@ namespace MyCaffe.layers
         ///     the computed outputs @f$
         ///       y = \left\{
         ///       \begin{array}{lr}
-        ///         0 & \mathrm{if} \; x \le t \\
-        ///         1 & \mathrm{if} \; x > t
+        ///         0 \: \mathrm{if} \; x \le t \\
+        ///         1 \: \mathrm{if} \; x > t
         ///       \end{array} \right.
         ///     @f$
         /// </param>

@@ -71,8 +71,8 @@ namespace MyCaffe.layers
         ///     is also available), and @f$
         ///     \delta\{\mathrm{condition}\} = \left\{
         ///       \begin{array}{lr}
-        ///         1 & \mbox{if condition} \\
-        ///        -1 & \mbox{otherwise}
+        ///         1 \: \mbox{if condition} \\
+        ///        -1 \: \mbox{otherwise}
         ///       \end{array} \right. 
         ///     @f$
         /// </param>

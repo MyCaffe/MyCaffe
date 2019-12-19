@@ -224,8 +224,8 @@ namespace MyCaffe.layers
         ///     At training time, we have @f$ 
         ///     y_{\mbox{train}} = \left\{
         ///       \begin{array}{ll}
-        ///         \frac{x}{1 - p} & \mbox{if } u > p \\
-        ///         0 & \mbox{otherwise}
+        ///         \frac{x}{1 - p} \: \mbox{if } u > p \\
+        ///         0 \: \mbox{otherwise}
         ///       \end{array} \right.
         ///     @f$, where @f$ u \sim U(0, 1)@f$ is generated independently for each
         ///     input at each iteration.  At test time, we simply have
