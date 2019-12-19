@@ -18,7 +18,7 @@ using MyCaffe.data;
 using MyCaffe.layers;
 
 /// <summary>
-/// The MyCaffe namespace contains the main body of MyCaffe code that closesly tracks the C++ %Caffe open-source project.  
+/// The MyCaffe namespace contains the main body of MyCaffe code that closesly tracks the C++ Caffe open-source project.  
 /// </summary>
 namespace MyCaffe
 {
