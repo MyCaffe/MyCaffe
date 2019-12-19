@@ -11,10 +11,10 @@ namespace MyCaffe.layers
     /// <summary>
     /// The ELULayer computes exponential linear unit non-linearity @f$
     ///     y = \left\{
-    ///     \begin{array}{lr}
-    ///         x                  & \mathrm{if} \; x > 0 \\
-    ///         \alpha (\exp(x)-1) & \mathrm{if} \; x \le 0
-    ///     \end{array} \right
+    ///       \begin{array}{lr}
+    ///         x \: \mbox{if} \; x > 0 \\
+    ///        \alpha (\exp(x)-1) \: \mbox{if} \; x \le 0
+    ///       \end{array} \right. 
     ///     @f$.
     /// This layer is initialized with the MyCaffe.param.EluParameter.
     /// </summary>
@@ -158,7 +158,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <remarks>
         /// Computes if @f$ x > 0   => y = x @f$
-        ///          if @f$ x <= 0  => y = \alpha (\exp(x)-1) @f$
+        ///          if @f$ x \leq 0  => y = \alpha (\exp(x)-1) @f$
         /// </remarks>
         /// <param name="colBottom">bottom input blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$
@@ -168,9 +168,9 @@ namespace MyCaffe.layers
         ///     the computed outputs @f$ 
         ///         y = \left\{ 
         ///         \begin{array}{lr}
-        ///             x                  & \mathrm{if} \; x > 0 \\
-        ///             \alpha (\exp(x)-1) & \mathrm{if} \; x \le 0
-        ///         \end{array} \right
+        ///           x \: \mbox{if} \; x > 0 \\
+        ///           \alpha (\exp(x)-1) \: \mbox{if} \; x \le 0
+        ///         \end{array} \right. 
         ///     @f$.
         /// </param>
         protected void forward_cuda(BlobCollection<T> colBottom, BlobCollection<T> colTop)
@@ -198,9 +198,9 @@ namespace MyCaffe.layers
         ///     gradients @f$
         ///         \frac{\partial E}{\partial x} = \left\{
         ///         \begin{array}{lr}
-        ///            1            & \mathrm{if} \; x > 0 \\
-        ///            y + \alpha   & \mathrm{if} \; x \le 0
-        ///         \end{array} \right.
+        ///           1 \: \mbox{if} \; x > 0 \\
+        ///           y + \alpha \: \mbox{if} \; x \le 0
+        ///         \end{array} \right. 
         ///     @f$ if propagate_down[0] == true.</param>
         protected void backward_cuda(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
@@ -222,7 +222,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <remarks>
         /// Computes if @f$ x > 0   => y = x @f$
-        ///          if @f$ x <= 0  => y = \alpha (\exp(x)-1) @f$
+        ///          if @f$ x \leq 0  => y = \alpha (\exp(x)-1) @f$
         /// </remarks>
         /// <param name="colBottom">bottom input blob vector (length 1)
         ///  -# @f$ (N \times C \times H \times W) @f$
@@ -232,9 +232,9 @@ namespace MyCaffe.layers
         ///     the computed outputs @f$ 
         ///         y = \left\{ 
         ///         \begin{array}{lr}
-        ///             x                  & \mathrm{if} \; x > 0 \\
-        ///             \alpha (\exp(x)-1) & \mathrm{if} \; x \le 0
-        ///         \end{array} \right
+        ///           x \: \mbox{if} \; x > 0 \\
+        ///           \alpha (\exp(x)-1) \: \mbox{if} \; x \le 0
+        ///         \end{array} \right. 
         ///     @f$.
         /// </param>
         protected void forward_cudnn(BlobCollection<T> colBottom, BlobCollection<T> colTop)
@@ -260,9 +260,9 @@ namespace MyCaffe.layers
         ///     gradients @f$
         ///         \frac{\partial E}{\partial x} = \left\{
         ///         \begin{array}{lr}
-        ///            1            & \mathrm{if} \; x > 0 \\
-        ///            y + \alpha   & \mathrm{if} \; x \le 0
-        ///         \end{array} \right.
+        ///           1 \: \mbox{if} \; x > 0 \\
+        ///           y + \alpha \: \mbox{if} \; x \le 0
+        ///         \end{array} \right. 
         ///     @f$ if propagate_down[0] == true.</param>
         protected void backward_cudnn(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
