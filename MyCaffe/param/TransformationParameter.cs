@@ -186,6 +186,9 @@ namespace MyCaffe.param
         /// <summary>
         /// Optionally, specifies the resize policy, otherwise this is <i>null</i>.
         /// </summary>
+        /// <remarks>
+        /// Currently, this parameter is only used by the AnnotatedDataLayer.
+        /// </remarks>
         [Category("Image"), Description("When active, used as the resize policy for altering image data.")]
         public ResizeParameter resize_param
         {
@@ -196,6 +199,9 @@ namespace MyCaffe.param
         /// <summary>
         /// Optionally, specifies the noise policy, otherwise this is <i>null</i>.
         /// </summary>
+        /// <remarks>
+        /// Currently, this parameter is only used by the DataLayer.
+        /// </remarks>
         [Category("Image"), Description("When active, used as the noise policy for altering image data.")]
         public NoiseParameter noise_param
         {
@@ -206,6 +212,9 @@ namespace MyCaffe.param
         /// <summary>
         /// Optionally, specifies the distortion policy, otherwise this is <i>null</i>.
         /// </summary>
+        /// <remarks>
+        /// Currently, this parameter is only used by the AnnotatedDataLayer.
+        /// </remarks>
         [Category("Image"), Description("When active, used as the distortion policy for altering image data.")]
         public DistortionParameter distortion_param
         {
@@ -216,6 +225,9 @@ namespace MyCaffe.param
         /// <summary>
         /// Optionally, specifies the expansion policy, otherwise this is <i>null</i>.
         /// </summary>
+        /// <remarks>
+        /// Currently, this parameter is only used by the AnnotatedDataLayer.
+        /// </remarks>
         [Category("Image"), Description("When active, used as the expansion policy for altering image data.")]
         public ExpansionParameter expansion_param
         {
@@ -226,6 +238,9 @@ namespace MyCaffe.param
         /// <summary>
         /// Optionally, specifies the emit constraint on emitting annotation after transformation, otherwise this is <i>null</i>.
         /// </summary>
+        /// <remarks>
+        /// Currently, this parameter is only used by the AnnotatedDataLayer.
+        /// </remarks>
         [Category("Image"), Description("When active, used as the emit constratin for emitting annotation after transformation.")]
         public EmitConstraint emit_constraint
         {
@@ -238,6 +253,8 @@ namespace MyCaffe.param
         /// </summary>
         /// <remarks>
         /// The mask is applied last, after all other alterations are made.
+        /// 
+        /// Currently, this parameter is only used by the DataLayer.
         /// </remarks>
         [Category("Image"), Description("When active, used to mask portions of the image (set to Black) as defined by the boundary of the mask.  The mask is applied after all other alterations.")]
         public MaskParameter mask_param
