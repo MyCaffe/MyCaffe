@@ -89,7 +89,7 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Returns the maximum number of required bottom (output) Blobs: input 1 & 2.
+        /// Returns the maximum number of required bottom (output) Blobs: input 1 and 2.
         /// </summary>
         public override int MaxBottomBlobs
         {
