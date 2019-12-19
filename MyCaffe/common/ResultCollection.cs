@@ -77,7 +77,7 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="a">Specifies item A.</param>
         /// <param name="b">Specifies item B.</param>
-        /// <returns>Returns 1 when A &lt B, -1 when B &lt A, and 0 when they are equal.</returns>
+        /// <returns>Returns 1 when A &lt; B, -1 when B &lt; A, and 0 when they are equal.</returns>
         protected int sortResults(KeyValuePair<int, double> a, KeyValuePair<int, double> b)
         {
             if (a.Value < b.Value)
