@@ -115,7 +115,7 @@ namespace MyCaffe.param.ssd
         /// <returns>A new instance of the parameter is returned.</returns>
         public static new EmitConstraint FromProto(RawProto rp)
         {
-            EmitConstraint p = new EmitConstraint(true);
+            EmitConstraint p = new EmitConstraint(false);
             string strVal;
 
             RawProto rpOption = rp.FindChild("option");

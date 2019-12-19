@@ -287,7 +287,7 @@ namespace MyCaffe.param.ssd
         /// <returns>A new instance of the parameter is returned.</returns>
         public static new ResizeParameter FromProto(RawProto rp)
         {
-            ResizeParameter p = new ResizeParameter(true);
+            ResizeParameter p = new ResizeParameter(false);
             string strVal;
 
             RawProto rpOption = rp.FindChild("option");

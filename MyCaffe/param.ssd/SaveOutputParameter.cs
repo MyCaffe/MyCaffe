@@ -218,7 +218,7 @@ namespace MyCaffe.param.ssd
         /// <returns>A new instance of the parameter is returned.</returns>
         public static new SaveOutputParameter FromProto(RawProto rp)
         {
-            SaveOutputParameter p = new SaveOutputParameter(true);
+            SaveOutputParameter p = new SaveOutputParameter(false);
             string strVal;
 
             RawProto rpOption = rp.FindChild("option");

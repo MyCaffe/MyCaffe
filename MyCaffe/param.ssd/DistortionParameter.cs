@@ -191,7 +191,7 @@ namespace MyCaffe.param.ssd
         /// <returns>A new instance of the parameter is returned.</returns>
         public static new DistortionParameter FromProto(RawProto rp)
         {
-            DistortionParameter p = new DistortionParameter(true);
+            DistortionParameter p = new DistortionParameter(false);
             string strVal;
 
             RawProto rpOption = rp.FindChild("option");

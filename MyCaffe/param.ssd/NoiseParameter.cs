@@ -220,7 +220,7 @@ namespace MyCaffe.param.ssd
         /// <returns>A new instance of the parameter is returned.</returns>
         public static new NoiseParameter FromProto(RawProto rp)
         {
-            NoiseParameter p = new NoiseParameter(true);
+            NoiseParameter p = new NoiseParameter(false);
             string strVal;
 
             RawProto rpOption = rp.FindChild("option");

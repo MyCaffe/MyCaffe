@@ -101,7 +101,7 @@ namespace MyCaffe.param.ssd
         /// <returns>A new instance of the parameter is returned.</returns>
         public static new ExpansionParameter FromProto(RawProto rp)
         {
-            ExpansionParameter p = new ExpansionParameter(true);
+            ExpansionParameter p = new ExpansionParameter(false);
             string strVal;
 
             RawProto rpOption = rp.FindChild("option");

@@ -110,7 +110,7 @@ namespace MyCaffe.param.ssd
         /// <returns>A new instance of the parameter is returned.</returns>
         public static new SaltPepperParameter FromProto(RawProto rp)
         {
-            SaltPepperParameter p = new SaltPepperParameter(true);
+            SaltPepperParameter p = new SaltPepperParameter(false);
             string strVal;
 
             RawProto rpOption = rp.FindChild("option");

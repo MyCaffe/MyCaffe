@@ -115,7 +115,7 @@ namespace MyCaffe.param.ssd
         /// <returns>A new instance of the parameter is returned.</returns>
         public static new NonMaximumSuppressionParameter FromProto(RawProto rp)
         {
-            NonMaximumSuppressionParameter p = new NonMaximumSuppressionParameter(true);
+            NonMaximumSuppressionParameter p = new NonMaximumSuppressionParameter(false);
             string strVal;
 
             RawProto rpOption = rp.FindChild("option");
