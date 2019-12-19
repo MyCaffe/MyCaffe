@@ -10,7 +10,7 @@ namespace MyCaffe.layers
 {
     /// <summary>
     /// The DataNormalizerLayer normalizes the input data (and optionally label) based on the normalization operations specified in the layer parameter.
-    /// </remarks>
+    /// </summary>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class DataNormalizerLayer<T> : Layer<T>
     {
