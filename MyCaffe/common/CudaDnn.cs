@@ -1220,7 +1220,7 @@ namespace MyCaffe.common
         /// <summary>
         /// Disposes this instance freeing up all of its host and GPU memory.
         /// </summary>
-        /// <param name="bDisposing">When true, specifies that the call is from a <see cref="Dispose">Dispose</see> call.</param>
+        /// <param name="bDisposing">When true, specifies that the call is from a Dispose call.</param>
         protected virtual void Dispose(bool bDisposing)
         {
             if (m_bOwner && m_hKernel != 0)
@@ -1441,6 +1441,8 @@ namespace MyCaffe.common
             get { return s_strCudaPath; }
         }
 
+#pragma warning disable 1591
+
         public void CombineData(int nCount, long hOriginal, long hUpdated, double dfUpdatedPct, long hServer, double dfServerPct, long hNewData) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
@@ -1448,6 +1450,8 @@ namespace MyCaffe.common
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COMBINE_DATA, new float[] { nCount, hOriginal, hUpdated, (float)dfUpdatedPct, hServer, (float)dfServerPct, hNewData });
         }
+
+#pragma warning restore 1591
 
 
         //---------------------------------------------------------------------
@@ -5754,7 +5758,7 @@ namespace MyCaffe.common
         /// <param name="nAOff">Optionally, specifies an offset (in items, not bytes) into the memory of A.</param>
         /// <param name="nBOff">Optionally, specifies an offset (in items, not bytes) into the memory of B.</param>
         /// <param name="nYOff">Optionally, specifies an offset (in items, not bytes) into the memory of Y.</param>
-        public void sub_and_dot(int n, int nN, int nInnerNum, long hA, long hB, long hY, int nAOff, int nBOff, int nYOff) /** @private */
+        public void sub_and_dot(int n, int nN, int nInnerNum, long hA, long hB, long hY, int nAOff, int nBOff, int nYOff)
         {
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SUB_AND_DOT, new double[] { n, nN, nInnerNum, hA, hB, hY, nAOff, nBOff, nYOff });
@@ -5770,7 +5774,6 @@ namespace MyCaffe.common
         /// </remarks>
         /// <param name="n">Specifies the number of items (not bytes) in the vectors Y.</param>
         /// <param name="fAlpha">Specifies the scalar in type <code>double</code></param>
-        /// <param name="hY"></param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
         public void mul_scalar(int n, double fAlpha, long hY)
         {
@@ -5785,7 +5788,6 @@ namespace MyCaffe.common
         /// </remarks>
         /// <param name="n">Specifies the number of items (not bytes) in the vectors Y.</param>
         /// <param name="fAlpha">Specifies the scalar in type <code>float</code></param>
-        /// <param name="hY"></param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
         public void mul_scalar(int n, float fAlpha, long hY)
         {
@@ -5800,7 +5802,6 @@ namespace MyCaffe.common
         /// </remarks>
         /// <param name="n">Specifies the number of items (not bytes) in the vectors Y.</param>
         /// <param name="fAlpha">Specifies the scalar in type 'T'.</param>
-        /// <param name="hY"></param>
         /// <param name="hY">Specifies a handle to the vector Y in GPU memory.</param>
         public void mul_scalar(int n, T fAlpha, long hY)
         {
@@ -5982,6 +5983,8 @@ namespace MyCaffe.common
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SIGN, new float[] { n, hX, hY, nXOff, nYOff });
         }
 
+#pragma warning disable 1591
+
         public void student(int n, long hX, long hY) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
@@ -6005,6 +6008,16 @@ namespace MyCaffe.common
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_LOGISTIC2, new float[] { n, hX, hY });
         }
+
+        public void reciprocol(int n, long hX, long hY) /** @private */
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_RECIPROCOL, new double[] { n, hX, hY });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_RECIPROCOL, new float[] { n, hX, hY });
+        }
+
+#pragma warning restore 1591
 
         /// <summary>
         /// Computes the square root of each element of X and places the result in Y.
@@ -6032,14 +6045,6 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SQRT_SCALE, new double[] { nCount, hX, hY });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SQRT_SCALE, new float[] { nCount, hX, hY });
-        }
-
-        public void reciprocol(int n, long hX, long hY) /** @private */
-        {
-            if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_RECIPROCOL, new double[] { n, hX, hY });
-            else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_RECIPROCOL, new float[] { n, hX, hY });
         }
 
         /// <summary>
@@ -6186,7 +6191,7 @@ namespace MyCaffe.common
         /// <param name="hMax">Specifies a handle to the max values in GPU memory.</param>
         /// <param name="dfAlpha">Specifies the alpha value.</param>
         /// <param name="hWidth">Specifies the GPU memory where the width values are placed.</param>
-        public void width(int n, long hMean, long hMin, long hMax, double dfAlpha, long hWidth) /** @private */
+        public void width(int n, long hMean, long hMin, long hMax, double dfAlpha, long hWidth) 
         {
             if (m_dt == DataType.DOUBLE)
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_WIDTH, new double[] { n, hMean, hMin, hMax, dfAlpha, hWidth });
@@ -6204,7 +6209,7 @@ namespace MyCaffe.common
         /// <param name="hWork">Specifies a handle to the work data in GPU memory.</param>
         /// <param name="nXOff">Optionally, specifies an offset into the X vector (default = 0).</param>
         /// <returns>If the X values are within the bounds, <i>true</i> is returned, otherwise <i>false</i>.</returns>
-        public bool contains_point(int n, long hMean, long hWidth, long hX, long hWork, int nXOff = 0) /** @private */
+        public bool contains_point(int n, long hMean, long hWidth, long hX, long hWork, int nXOff = 0) 
         {
             if (m_dt == DataType.DOUBLE)
             {
@@ -6687,6 +6692,8 @@ namespace MyCaffe.common
             SetMemory(hY, rg);
         }
 
+#pragma warning disable 1591
+
         public void fill_random(T fNonZeroProb, T[] rg) /** @private */
         {
             double dfNonZeroProb = Utility.ConvertVal<T>(fNonZeroProb);
@@ -6697,6 +6704,8 @@ namespace MyCaffe.common
                 rg[i] = (dfRand <= dfNonZeroProb) ? m_tOne : m_tZero;
             }
         }
+
+#pragma warning restore 1591
 
 
         /// <summary>
@@ -8038,6 +8047,8 @@ namespace MyCaffe.common
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CROSS_ENTROPY_IGNORE, new float[] { nCount, nIgnoreLabel, hTarget, hBottomDiff });
         }
 
+#pragma warning disable 1591
+
         public void matrix_set_diagonal(int nCount, int nRows, double dfVal, long hData) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
@@ -8166,9 +8177,13 @@ namespace MyCaffe.common
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MTX_CORRELATIONS, new float[] { nWidth, nHeight, hA, hOnes, hMean, hStdev, hWork, hY });
         }
 
+#pragma warning restore 1591
+
         #endregion
 
         #region T-SNE Methods
+
+#pragma warning disable 1591
 
         public void tsne_update(int n, double dfMomentum, double dfLearningRate, long hdY, long huY, long hGains, long hY, double fGainFactor1 = 0.2, double fGainFactor2 = 0.8) /** @private */
         {
@@ -8302,7 +8317,6 @@ namespace MyCaffe.common
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_FREE_GAUSSIAN_PERPLEXITY, new float[] { hTsnePerplexity });
         }
 
-
         public long CreateTsne(int n, int d, long hY, long hValP, long hRowP, long hColP, long hdC, double fTheta) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
@@ -8325,7 +8339,6 @@ namespace MyCaffe.common
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_COMPUTE_GRADIENT1, new float[] { hTsne, (bValPUpdated) ? 1 : 0 });
         }
 
-
         public double EvaluateTsneError(long hTsne) /** @private */
         {
             if (m_dt == DataType.DOUBLE)
@@ -8347,6 +8360,8 @@ namespace MyCaffe.common
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_TSNE_FREE, new float[] { hTsne });
         }
+
+#pragma warning restore 1591
 
         #endregion
 

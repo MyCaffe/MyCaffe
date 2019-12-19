@@ -1869,6 +1869,8 @@ namespace MyCaffe.common
         }
     }
 
+#pragma warning disable 1591
+
     public class FieldDescriptor /** @private */
     {
         List<FieldDescriptor> m_rgChildren = new List<FieldDescriptor>();
@@ -2180,4 +2182,6 @@ namespace MyCaffe.common
             return rgF;
         }
     }
+
+#pragma warning restore 1591
 }

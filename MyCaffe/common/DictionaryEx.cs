@@ -5,6 +5,8 @@ using System.Text;
 
 namespace MyCaffe.common
 {
+#pragma warning disable 1591
+
     public class DictionaryEx<TKey, TValue> : Dictionary<TKey, TValue> /** @private */
     {
         TValue m_tDefault;
@@ -33,4 +35,6 @@ namespace MyCaffe.common
             }
         }
     }
+
+#pragma warning restore 1591
 }

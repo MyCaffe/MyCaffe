@@ -131,11 +131,15 @@ namespace MyCaffe.common
         /// </summary>
         public event EventHandler<GetIterationArgs> OnGetIteration;
 
+#pragma warning disable 1591
+
         public enum BEST_RESULT_TYPE /** @private */
         {
             BY_CHANNEL,
             BY_WEIGHT
         }
+
+#pragma warning restore 1591
 
         /// <summary>
         /// The Net constructor.
@@ -837,6 +841,8 @@ namespace MyCaffe.common
             }
         }
 
+#pragma warning disable 1591
+
         public void EnableBestResultMask(string strTargetNode, int nBestResultCount = 5, BEST_RESULT_TYPE resultType = BEST_RESULT_TYPE.BY_CHANNEL) /** @private */
         {
             m_strBestResultTargetNodeToMask = strTargetNode;
@@ -849,6 +855,8 @@ namespace MyCaffe.common
             m_strBestResultTargetNodeToMask = null;
             m_nBestResultCount = 50;
         }
+
+#pragma warning restore 1591
 
         /// <summary>
         /// Returns the active label counts observed during training.
