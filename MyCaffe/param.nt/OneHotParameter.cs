@@ -28,7 +28,7 @@ namespace MyCaffe.param.nt
     /// input: -0.75 or less set bucket #0 = 1
     /// input:  0.75 or greater set bucket #7 = 1
     /// 
-    /// Except for end buckets, inputs are placed in bucket where:  bucket min <= input < bucket max.
+    /// Except for end buckets, inputs are placed in bucket where:  bucket min &lt;= input &lt; bucket max.
     /// </remarks>
     public class OneHotParameter : LayerParameterBase
     {
