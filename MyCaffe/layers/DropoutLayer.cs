@@ -227,7 +227,7 @@ namespace MyCaffe.layers
         ///         \frac{x}{1 - p} & \mbox{if } u > p \\
         ///         0 & \mbox{otherwise}
         ///       \end{array} \right.
-        ///     @f$, where @f$ u \sim U(0,1) @f$ is generated independently for each
+        ///     @f$, where @f$ u \sim U(0, 1)@f$ is generated independently for each
         ///     input at each iteration.  At test time, we simply have
         ///     @f$ y_{\mbox{test}} = \mathbb{E}[y_{\mbox{train}}] = x @f$.
         ///     
