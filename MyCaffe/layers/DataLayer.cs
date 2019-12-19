@@ -911,6 +911,7 @@ namespace MyCaffe.layers
         }
     }
 
+
     /// <summary>
     /// Specifies the arguments sent to the OnBatchLoad event used when synchronizing between Data Layers.
     /// </summary>
