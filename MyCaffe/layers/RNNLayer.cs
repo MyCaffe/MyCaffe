@@ -49,8 +49,8 @@ namespace MyCaffe.layers
         ///   - debug_info (/b optional, default = false). Whether or not to output extra debug information.
         ///   
         ///   - expose_hidden (/b optional, default = false).  Whether t add as additional bottom (inputs) the initial hidden state
-        ///     Blob&s, and add a additional top (output) the final timestep hidden state Blob&s.  The RNN architecture adds
-        ///     1 additional Blob&s.
+        ///     Blobs, and add a additional top (output) the final timestep hidden state Blobs.  The RNN architecture adds
+        ///     1 additional Blobs.
         /// </param>
         /// <param name="evtCancel">Specifies the CancelEvent used to cancel training operations.</param>
         public RNNLayer(CudaDnn<T> cuda, Log log, LayerParameter p, CancelEvent evtCancel) 
@@ -60,8 +60,7 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Fills the <i>rgNames</i> array with the names of the 0th timestep recurrent input
-        /// Blob&s. 
+        /// Fills the <i>rgNames</i> array with the names of the 0th timestep recurrent input Blobs.
         /// </summary>
         /// <param name="rgNames">Specifies the list of names to fill.</param>
         protected override void RecurrentInputBlobNames(List<string> rgNames)
@@ -71,8 +70,7 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Fills the <i>rgNames</i> array with names of the Tth timestep recurrent output
-        /// Blob&s.
+        /// Fills the <i>rgNames</i> array with names of the Tth timestep recurrent output Blobs.
         /// </summary>
         /// <param name="rgNames">Specifies the list of names to fill.</param>
         protected override void RecurrentOutputBlobNames(List<string> rgNames)
@@ -82,8 +80,7 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
-        /// Fill the <i>rgShapes</i> array with the shapes of the recurrent input
-        /// Blob&s.
+        /// Fill the <i>rgShapes</i> array with the shapes of the recurrent input Blobs.
         /// </summary>
         /// <param name="rgShapes">Specifies the array of BlobShape to fill.</param>
         protected override void RecurrentInputShapes(List<BlobShape> rgShapes)
@@ -99,7 +96,7 @@ namespace MyCaffe.layers
 
         /// <summary>
         /// Fills the <i>rgNames</i> array with  the names of the output
-        /// Blob&s, concatenated across all timesteps.
+        /// Blobs, concatenated across all timesteps.
         /// </summary>
         /// <param name="rgNames">Specifies the array of names to fill.</param>
         protected override void OutputBlobNames(List<string> rgNames)
