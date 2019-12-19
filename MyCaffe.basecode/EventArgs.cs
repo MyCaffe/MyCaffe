@@ -117,11 +117,15 @@ namespace MyCaffe.basecode
             get { return m_bOverrideEnabled; }
         }
 
+#pragma warning disable 1591
+
         public object Tag /** @private */
         {
             get { return m_tag; }
             set { m_tag = value; }
         }
+
+#pragma warning restore 1591
     }
 
     /// <summary>

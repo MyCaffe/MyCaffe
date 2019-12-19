@@ -362,6 +362,8 @@ namespace MyCaffe.basecode
         DEFAULT = V2
     }
 
+#pragma warning disable 1591
+
     [ServiceContract]
     public interface IXImageDatabaseEvent /** @private */
     {
@@ -371,6 +373,8 @@ namespace MyCaffe.basecode
         [OperationContract(IsOneWay = false)]
         void OnError(ImageDatabaseErrorData err);
     }
+
+#pragma warning restore 1591
 
     /// <summary>
     /// The IXImageDatabaseBase interface defines the eneral interface to the in-memory image database.
@@ -476,7 +480,6 @@ namespace MyCaffe.basecode
         [OperationContract(IsOneWay = false)]
         bool GetLoadImageDebugData();
 
-        /// <summary>
         /// <summary>
         /// Returns the label and image selection method used.
         /// </summary>
@@ -1229,6 +1232,8 @@ namespace MyCaffe.basecode
         #endregion // Boosts
     }
 
+#pragma warning disable 1591
+
     [DataContract]
     public class ImageDatabaseErrorData /** @private */
     {
@@ -1239,4 +1244,6 @@ namespace MyCaffe.basecode
         [DataMember]
         public string ErrorDetails { get; set; }
     }
+
+#pragma warning restore 1591
 }

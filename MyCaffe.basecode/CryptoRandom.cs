@@ -62,6 +62,7 @@ namespace MyCaffe.basecode
             }
         }
 
+#pragma warning disable 1591
 
         public override void GetBytes(byte[] data) /** @private */
         {
@@ -72,6 +73,8 @@ namespace MyCaffe.basecode
         {
             m_rand.GetNonZeroBytes(data);
         }
+
+#pragma warning restore 1591
 
         /// <summary>
         /// Returns a random double within the range @f$ [0, 1] @f$.

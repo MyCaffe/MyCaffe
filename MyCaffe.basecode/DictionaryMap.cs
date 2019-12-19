@@ -5,6 +5,8 @@ using System.Text;
 
 namespace MyCaffe.basecode
 {
+#pragma warning disable 1591
+
     public class DictionaryMap<T> /** @private */
     {
         Dictionary<int, T> m_rgMap = new Dictionary<int, T>();
@@ -59,4 +61,5 @@ namespace MyCaffe.basecode
             get { return m_rgMap; }
         }
     }
+#pragma warning restore 1591
 }
