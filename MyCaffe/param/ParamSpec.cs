@@ -119,11 +119,15 @@ namespace MyCaffe.param
             return p;
         }
 
+#pragma warning disable 1591
+
         [Browsable(false)]
         public string Name /** @private */
         {
             get { return m_strName; }
         }
+
+#pragma warning restore 1591
 
         /// <summary>
         /// Specifies the name of this parameter.

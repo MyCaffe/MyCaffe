@@ -24,7 +24,7 @@ namespace MyCaffe.solvers
         /// History maintains the historical momentum data.
         /// </summary>
         protected BlobCollection<T> m_colHistory = new BlobCollection<T>();
-        
+
         /// <summary>
         /// Update maintains update related data and is not needed in snapshots.
         /// </summary>

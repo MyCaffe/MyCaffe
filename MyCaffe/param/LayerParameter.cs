@@ -451,7 +451,9 @@ namespace MyCaffe.param
             /// Initializes a parameter for the VideoDataLayer.
             /// </summary>
             VIDEO_DATA,
+#pragma warning disable 1591
             _MAX
+#pragma warning restore 1591
         }
 
         // Layer type-specific parameters

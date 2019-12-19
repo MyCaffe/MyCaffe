@@ -129,6 +129,8 @@ namespace MyCaffe.param
             set { m_strType = value; }
         }
 
+#pragma warning disable 1591
+
         [DisplayName("type")]
         [Description("Specifies the type of filler type to use.")]
         public FillerType FillerTypeMethod /** @private */
@@ -165,6 +167,8 @@ namespace MyCaffe.param
 
             set { m_strType = FillerParameter.GetFillerName(value); }
         }
+
+#pragma warning restore 1591
 
         /// <summary>
         /// Queries the filler text name corresponding to the FillerType.

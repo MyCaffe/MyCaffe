@@ -157,7 +157,9 @@ namespace MyCaffe.param
             /// @see [minFunc](https://www.cs.ubc.ca/~schmidtm/Software/minFunc.html) by Marc Schmidt, 2005
             /// </remarks>
             LBFGS = 6,
+#pragma warning disable 1591
             _MAX = 7
+#pragma warning restore 1591
         }
 
         /// <summary>

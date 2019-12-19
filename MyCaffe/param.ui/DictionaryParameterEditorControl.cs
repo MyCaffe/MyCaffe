@@ -11,6 +11,8 @@ using System.Windows.Forms.Design;
 
 namespace MyCaffe.param.ui
 {
+#pragma warning disable 1591
+
     public partial class DictionaryParameterEditorControl : UserControl /** @private */
     {
         IWindowsFormsEditorService m_svc;
@@ -58,4 +60,6 @@ namespace MyCaffe.param.ui
             }
         }
     }
+
+#pragma warning restore 1591
 }
