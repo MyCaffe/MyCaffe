@@ -2470,7 +2470,6 @@ namespace MyCaffe.test
                         rgDimWt[2] = 1;
 
                         t.Cuda.SetFilterNdDesc(hWtDesc, rgDimWt);
-                        Exception err = null;
 
                         int nLinLayers = 8; // LSTM
                         for (int i = 0; i < nNumLayers; i++)
