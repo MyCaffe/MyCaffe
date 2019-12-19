@@ -3080,7 +3080,7 @@ inline long Device<T>::SsdMultiboxLossForward(long lInput, T* pfInput, long* plO
 		pfOutput[i] = T(retval[i]);
 	}
 
-	*plOutput = retval.size();
+	*plOutput = (long)retval.size();
 	*ppfOutput = pfOutput;
 
 	return 0;

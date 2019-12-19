@@ -945,13 +945,13 @@ long SsdData<T>::applyNMS(vector<BBOX>& bboxes, vector<T>& scores, T fThreshold,
 					poverlaps->find(nBestIdx)->second.find(nCurIdx) != (*poverlaps)[nBestIdx].end())
 				{
 					// Use the computed overlap.
-					fCurOverlap = (*poverlaps)[nBestIdx][nCurIdx];
+					fCurOverlap = (float)(*poverlaps)[nBestIdx][nCurIdx];
 				}
 				else if (poverlaps->find(nCurIdx) != poverlaps->end() &&
 					poverlaps->find(nCurIdx)->second.find(nBestIdx) != (*poverlaps)[nCurIdx].end())
 				{
 					// Use the computed overlap.
-					fCurOverlap = (*poverlaps)[nCurIdx][nBestIdx];
+					fCurOverlap = (float)(*poverlaps)[nCurIdx][nBestIdx];
 				}
 				else
 				{
