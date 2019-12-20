@@ -97,8 +97,11 @@ inline long HandleCollection<N>::Allocate(void* pData)
 
 	while (m_nLastIdx < nFirstIdx)
 	{
-		if (m_rgHandles[m_nLastIdx] == 0)
+		if (m_rgHandles[m_nLastIdx] == NULL)
+		{
+			m_rgHandles[m_nLastIdx] = pData;
 			hHandle = m_nLastIdx;
+		}
 
 		m_nLastIdx++;
 
@@ -116,7 +119,7 @@ inline void* HandleCollection<N>::free(void* plHandles[], long lCount, long hHan
 		return NULL;
 
 	void* pData = plHandles[hHandle];
-	plHandles[hHandle] = 0;
+	plHandles[hHandle] = NULL;
 
 	return pData;
 }
