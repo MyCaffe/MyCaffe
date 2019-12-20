@@ -357,6 +357,8 @@ namespace MyCaffe.layers.ssd
                                           fNmsThreshold,
                                           nNmsTopK,
                                           fNmsEta);
+                if (m_hSsd == 0)
+                    throw new Exception("Could not create the SSD!");
             }
         }
 
