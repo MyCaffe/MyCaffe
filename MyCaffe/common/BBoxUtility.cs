@@ -989,7 +989,8 @@ namespace MyCaffe.common
 
                 for (int j = 0; j < nNumGt; j++)
                 {
-                    float fOverlap = JaccardOverlap(rgPredBboxes[i], rgGtBboxes[rgGtIndices[j]]);
+                    int nGtIdx = rgGtIndices[j];
+                    float fOverlap = JaccardOverlap(rgPredBboxes[i], rgGtBboxes[nGtIdx]);
                     if (fOverlap > 1e-6f)
                     {
                         rgMatchOverlaps[i] = Math.Max(rgMatchOverlaps[i], fOverlap);
