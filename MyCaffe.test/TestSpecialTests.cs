@@ -59,6 +59,9 @@ namespace MyCaffe.test
 
     class SpecialTests<T> : TestEx<T>, ISpecialTests
     {
+        TestingProgressSet m_progress = new TestingProgressSet();
+        int m_nMaxIteration = 100;
+
         public SpecialTests(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
         {
@@ -86,7 +89,7 @@ namespace MyCaffe.test
             RawProto proto = RawProtoFile.LoadFromFile(strSolverFile);
 
             RawProto iter = proto.FindChild("max_iter");
-            iter.Value = "100";
+            iter.Value = m_nMaxIteration.ToString();
 
             p.SolverDescription = proto.ToString();
 
@@ -114,6 +117,7 @@ namespace MyCaffe.test
             try
             {
                 ctrl.Load(Phase.TRAIN, p);
+                ctrl.OnTrainingIteration += ctrl_OnTrainingIteration;
                 ctrl.Train();
             }
             catch (Exception excpt)
@@ -124,6 +128,12 @@ namespace MyCaffe.test
             {
                 ctrl.Dispose();
             }
+        }
+
+        private void ctrl_OnTrainingIteration(object sender, TrainingIterationArgs<T> e)
+        {
+            double dfPct = (double)e.Iteration / m_nMaxIteration;
+            m_progress.SetProgress(dfPct);
         }
     }
 }
