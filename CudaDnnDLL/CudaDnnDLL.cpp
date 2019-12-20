@@ -1211,9 +1211,9 @@ LONG getKernelDoubleIndex(LONG* plIdx)
 			return ERROR_MEMORY_OUT;
 	}
 
-	LeaveCriticalSection(&g_DoubleKernelTableLock);
-
 	*plIdx = (LONG)g_dwLastKernelDoubleIndex;
+
+	LeaveCriticalSection(&g_DoubleKernelTableLock);
 
 	return 0;
 }
@@ -1240,9 +1240,9 @@ LONG getKernelFloatIndex(LONG* plIdx)
 			return ERROR_MEMORY_OUT;
 	}
 
-	LeaveCriticalSection(&g_FloatKernelTableLock);
-
 	*plIdx = (LONG)g_dwLastKernelFloatIndex;
+
+	LeaveCriticalSection(&g_FloatKernelTableLock);
 
 	return 0;
 }
