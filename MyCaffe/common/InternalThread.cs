@@ -102,7 +102,7 @@ namespace MyCaffe.common
 
                 if (m_evtRunning.WaitOne(0))
                 {
-                    if (!m_evtDone.WaitOne(3000000))
+                    if (!m_evtDone.WaitOne(10000))
                         throw new Exception("Failed to stop the internal thread!");
                 }
 
@@ -115,7 +115,7 @@ namespace MyCaffe.common
 
                 if (m_evtRunning.WaitOne(0))
                 {
-                    if (!m_evtDone.WaitOne(3000000))
+                    if (!m_evtDone.WaitOne(10000))
                         throw new Exception("Failed to stop the internal thread!");
                 }
 
@@ -136,10 +136,6 @@ namespace MyCaffe.common
             {
                 if (DoWork != null)
                     DoWork(this, state);
-            }
-            catch (Exception excpt)
-            {
-                throw excpt;
             }
             finally
             {
