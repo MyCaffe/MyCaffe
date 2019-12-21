@@ -50,7 +50,7 @@ namespace MyCaffe.db.image
             m_factory.Open(src);
             m_rgImageIdx = m_factory.LoadImageIndexes(false);
 
-            load(m_rgImageIdx);
+            load(m_rgImageIdx.Where(p => p != null).ToList());
         }
 
         private void load(List<DbItem> rgItems)
@@ -612,6 +612,9 @@ namespace MyCaffe.db.image
             else
             {
                 int nIdx = m_random.Next(m_rgItems.Count);
+                if (m_rgItems[nIdx] == null)
+                    nIdx = m_random.Next(m_rgItems.Count);
+
                 int nFinalIdx = m_rgItems[nIdx].Index;
 
                 if (bRemove)
