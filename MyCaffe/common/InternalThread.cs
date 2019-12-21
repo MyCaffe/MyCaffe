@@ -16,8 +16,9 @@ namespace MyCaffe.common
     {
         Task m_task = null;
         Thread m_thread = null;
-        ManualResetEvent m_evtCancel = new ManualResetEvent(false);
+        CancelEvent m_evtCancel = new CancelEvent();
         AutoResetEvent m_evtDone = new AutoResetEvent(false);
+        ManualResetEvent m_evtRunning = new ManualResetEvent(false);
         bool m_bUseThread = true;
 
         /// <summary>
@@ -70,6 +71,7 @@ namespace MyCaffe.common
         public void StartInternalThread(CudaDnn<T> cuda, Log log, int nDeviceID = 0, object arg = null)
         {
             m_evtCancel.Reset();
+            m_evtDone.Reset();
 
             if (m_bUseThread)
             {
@@ -97,16 +99,26 @@ namespace MyCaffe.common
             if (m_thread != null)
             {
                 m_evtCancel.Set();
-                if (!m_evtDone.WaitOne(10000))
-                    throw new Exception("Failed to stop the internal thread!");
+
+                if (m_evtRunning.WaitOne(0))
+                {
+                    if (!m_evtDone.WaitOne(3000000))
+                        throw new Exception("Failed to stop the internal thread!");
+                }
+
                 m_thread = null;
             }
 
             if (m_task != null)
             {
                 m_evtCancel.Set();
-                if (!m_evtDone.WaitOne(10000))
-                    throw new Exception("Failed to stop the internal thread!");
+
+                if (m_evtRunning.WaitOne(0))
+                {
+                    if (!m_evtDone.WaitOne(3000000))
+                        throw new Exception("Failed to stop the internal thread!");
+                }
+
                 m_task = null;
             }
         }
@@ -117,9 +129,8 @@ namespace MyCaffe.common
         /// <param name="obj"></param>
         protected void InternalThreadEntry(object obj)
         {
+            m_evtRunning.Set();
             ActionStateArgs<T> state = obj as ActionStateArgs<T>;
-
-            m_evtCancel.Reset();
 
             try
             {
@@ -133,6 +144,7 @@ namespace MyCaffe.common
             finally
             {
                 m_evtDone.Set();
+                m_evtRunning.Reset();
             }
         }
 
@@ -153,7 +165,7 @@ namespace MyCaffe.common
         /// <summary>
         /// Returns the CancelEvent that terminates the thread when Set.
         /// </summary>
-        public ManualResetEvent CancelEvent
+        public CancelEvent CancelEvent
         {
             get { return m_evtCancel; }
         }
@@ -181,7 +193,7 @@ namespace MyCaffe.common
     {
         CudaDnn<T> m_cuda = null;
         Log m_log = null;
-        ManualResetEvent m_evtCancel;
+        CancelEvent m_evtCancel;
         int m_nDeviceID = 0;
         object m_arg = null;
 
@@ -193,7 +205,7 @@ namespace MyCaffe.common
         /// <param name="evtCancel">Specifies the CancelEvent that when Set signals to DoWork that it should terminate.</param>
         /// <param name="nDeviceID">Optionally, specifies the DeviceID.</param>
         /// <param name="arg">Optionally, specifies an argument defined by the caller.</param>
-        public ActionStateArgs(CudaDnn<T> cuda, Log log, ManualResetEvent evtCancel, int nDeviceID = 0, object arg = null)
+        public ActionStateArgs(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, int nDeviceID = 0, object arg = null)
             : base()
         {
             m_log = log;
@@ -223,7 +235,7 @@ namespace MyCaffe.common
         /// <summary>
         /// Returns the CancelEvent used to cancel the thread.
         /// </summary>
-        public ManualResetEvent CancelEvent
+        public CancelEvent CancelEvent
         {
             get { return m_evtCancel; }
         }

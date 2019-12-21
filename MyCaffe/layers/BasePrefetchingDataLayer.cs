@@ -46,8 +46,8 @@ namespace MyCaffe.layers
             m_internalThread = new InternalThread<T>();
             m_internalThread.DoWork += new EventHandler<ActionStateArgs<T>>(m_internalThread_DoWork);
 
-            if (evtCancel != null)
-                m_evtCancel.AddCancelOverride(m_internalThread.CancelEvent);
+            if (m_evtCancel != null)
+                m_internalThread.CancelEvent.AddCancelOverride(m_evtCancel);
 
             m_rgPrefetch = new Batch<T>[p.data_param.prefetch];
             m_rgPrefetchFree = new BlockingQueue<Batch<T>>(m_evtCancel);
@@ -63,7 +63,8 @@ namespace MyCaffe.layers
         /** @copydoc BaseDataLayer::dispose */
         protected override void dispose()
         {
-            WaitHandle evt = m_internalThread.CancelEvent;
+            m_rgPrefetchFree.Abort();
+            m_rgPrefetchFull.Abort();
             m_internalThread.StopInternalThread();
 
             if (m_rgPrefetchFull != null)
@@ -78,8 +79,8 @@ namespace MyCaffe.layers
                 m_rgPrefetchFree = null;
             }
 
-            if (m_evtCancel != null && evt != null)
-                m_evtCancel.RemoveCancelOverride(evt);
+            if (m_evtCancel != null)
+                m_internalThread.CancelEvent.RemoveCancelOverride(m_evtCancel);
 
             base.dispose();
         }
@@ -150,7 +151,7 @@ namespace MyCaffe.layers
                     load_batch(batch);
 
                     if (m_internalThread.CancellationPending)
-                        return;
+                        break;
 
                     batch.Data.AsyncGpuPush(hStream);
                     if (hStream != 0)
@@ -164,6 +165,10 @@ namespace MyCaffe.layers
                     }
 
                     m_rgPrefetchFull.Push(batch);
+                }
+                else
+                {
+                    break;
                 }
             }
 

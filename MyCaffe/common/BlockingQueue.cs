@@ -15,7 +15,7 @@ namespace MyCaffe.common
     {
         CancelEvent m_evtCancel;
         ManualResetEvent m_evtReady = new ManualResetEvent(false);
-        AutoResetEvent m_evtAbort = new AutoResetEvent(false);
+        ManualResetEvent m_evtAbort = new ManualResetEvent(false);
         object m_syncObj = new object();
         List<T> m_rgData = new List<T>();
         int m_nDataCount = 0;
@@ -60,15 +60,11 @@ namespace MyCaffe.common
 
                 WaitHandle[] rghCancel = m_evtCancel.Handles;
 
-                if (m_evtAbort == null)
-                    return false;
-
-                AutoResetEvent evtAbort = m_evtAbort;
-
-                if (m_evtReady == null)
+                if (m_evtReady == null || m_evtAbort == null)
                     return false;
 
                 ManualResetEvent evtReady = m_evtReady;
+                ManualResetEvent evtAbort = m_evtAbort;
 
                 List<WaitHandle> rgWait = new List<WaitHandle>();
                 rgWait.AddRange(rghCancel);
@@ -76,8 +72,11 @@ namespace MyCaffe.common
                 rgWait.Add(evtReady);
 
                 int nWait = WaitHandle.WaitAny(rgWait.ToArray());
-                if (nWait < rgWait.Count-1)
+                if (nWait < rgWait.Count - 1)
+                {
+                    evtAbort.Reset();
                     return false;
+                }
 
                 evtReady.Reset();
             }
@@ -130,19 +129,12 @@ namespace MyCaffe.common
         {
             while (Count == 0)
             {
-                if (m_evtCancel == null)
-                    return false;
-
                 WaitHandle[] rghCancel = m_evtCancel.Handles;
 
-                if (m_evtAbort == null)
+                if (m_evtCancel == null || m_evtAbort == null)
                     return false;
 
-                AutoResetEvent evtAbort = m_evtAbort;
-
-                if (m_evtReady == null)
-                    return false;
-
+                ManualResetEvent evtAbort = m_evtAbort;
                 ManualResetEvent evtReady = m_evtReady;
 
                 List<WaitHandle> rgWait = new List<WaitHandle>();
@@ -152,7 +144,10 @@ namespace MyCaffe.common
 
                 int nWait = WaitHandle.WaitAny(rgWait.ToArray());
                 if (nWait < rgWait.Count - 1)
+                {
+                    evtAbort.Reset();
                     return false;
+                }
 
                 evtReady.Reset();
             }
