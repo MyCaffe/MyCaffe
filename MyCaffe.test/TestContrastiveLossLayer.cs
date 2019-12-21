@@ -780,25 +780,35 @@ namespace MyCaffe.test
                 prj.SetDataset(ds);
 
                 MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(new SettingsCaffe(), m_log, evtCancel);
-                mycaffe.Load(Phase.TRAIN, prj, null, null, false, db);
-
-                double dfAccuracyPreTrain = calculateAccuracy(mycaffe, ds);
-                m_log.WriteLine("Pre-train accuracy = " + dfAccuracyPreTrain.ToString("P"), true);
-                int nTrainSteps = 0;
+                double dfAccuracyPreTrain = 0;
                 double dfAccuracyPostTrain = 0;
+                int nTrainSteps = 0;
 
-                for (int i = 0; i < 1000; i++)
+                try
                 {
-                    nTrainSteps++;
-                    mycaffe.Train(1);
-                    dfAccuracyPostTrain = calculateAccuracy(mycaffe, ds);
+                    mycaffe.Load(Phase.TRAIN, prj, null, null, false, db);
 
-                    m_log.WriteLine(i.ToString() + ". Post-train accuracy = " + dfAccuracyPostTrain.ToString("P"), true);
+                    dfAccuracyPreTrain = calculateAccuracy(mycaffe, ds);
+                    m_log.WriteLine("Pre-train accuracy = " + dfAccuracyPreTrain.ToString("P"), true);
 
-                    if (dfAccuracyPostTrain == 1)
-                        break;
+                    for (int i = 0; i < 1000; i++)
+                    {
+                        nTrainSteps++;
+                        mycaffe.Train(1);
+                        dfAccuracyPostTrain = calculateAccuracy(mycaffe, ds);
 
-                    progress.SetProgress((double)i / 1000);
+                        m_log.WriteLine(i.ToString() + ". Post-train accuracy = " + dfAccuracyPostTrain.ToString("P"), true);
+
+                        if (dfAccuracyPostTrain == 1)
+                            break;
+
+                        progress.SetProgress((double)i / 1000);
+                    }
+                }
+                finally
+                {
+                    mycaffe.Dispose();
+                    mycaffe = null;
                 }
 
                 m_log.CHECK_GT(dfAccuracyPostTrain, dfAccuracyPreTrain, "The accuracy post train should be greater than the pre-train accurach!");
