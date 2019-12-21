@@ -29,6 +29,7 @@ namespace MyCaffe.layers
         BlockingQueue<Batch<T>> m_rgPrefetchFull;
         Batch<T> m_prefetch_current = null;
         InternalThread<T> m_internalThread;
+        Exception m_err = null;
 
         /// <summary>
         /// The BaseDataLayer constructor.
@@ -132,6 +133,7 @@ namespace MyCaffe.layers
         /// </summary>
         protected void statupPrefetch()
         {
+            m_err = null;
             m_internalThread.StartInternalThread(m_cuda, m_log, m_cuda.GetDeviceID());
             m_log.WriteLine("Prefetch initialized for '" + m_param.name + "'.");
         }
@@ -142,38 +144,49 @@ namespace MyCaffe.layers
             Log log = m_log;
             long hStream = 0; // cuda.CreateStream(false);
 
-            while (!m_internalThread.CancellationPending)
+            try
             {
-                Batch<T> batch = new Batch<T>(cuda, log);
-
-                if (m_rgPrefetchFree.Pop(ref batch))
+                while (!m_internalThread.CancellationPending)
                 {
-                    load_batch(batch);
+                    Batch<T> batch = new Batch<T>(cuda, log);
 
-                    if (m_internalThread.CancellationPending)
-                        break;
-
-                    batch.Data.AsyncGpuPush(hStream);
-                    if (hStream != 0)
-                        m_cuda.SynchronizeStream(hStream);
-
-                    if (m_bOutputLabels)
+                    if (m_rgPrefetchFree.Pop(ref batch))
                     {
-                        batch.Label.AsyncGpuPush(hStream);
+                        load_batch(batch);
+
+                        if (m_internalThread.CancellationPending)
+                            break;
+
+                        batch.Data.AsyncGpuPush(hStream);
                         if (hStream != 0)
                             m_cuda.SynchronizeStream(hStream);
-                    }
 
-                    m_rgPrefetchFull.Push(batch);
-                }
-                else
-                {
-                    break;
+                        if (m_bOutputLabels)
+                        {
+                            batch.Label.AsyncGpuPush(hStream);
+                            if (hStream != 0)
+                                m_cuda.SynchronizeStream(hStream);
+                        }
+
+                        m_rgPrefetchFull.Push(batch);
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
-
-            if (hStream != 0)
-                m_cuda.FreeStream(hStream);
+            catch (Exception excpt)
+            {
+                m_err = excpt;
+                m_rgPrefetchFull.Abort();                
+                throw excpt;
+            }
+            finally
+            {
+                if (hStream != 0)
+                    cuda.FreeStream(hStream);
+            }
         }
 
         /// <summary>
@@ -219,6 +232,10 @@ namespace MyCaffe.layers
                     // Copy the labels.
                     m_cuda.copy(m_prefetch_current.Label.count(), m_prefetch_current.Label.gpu_data, colTop[1].mutable_gpu_data);
                 }
+            }
+            else if (m_err != null)
+            {
+                throw m_err;
             }
         }
 
