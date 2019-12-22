@@ -1027,7 +1027,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestTransformParameter1()
         {
-            string str = "transform_param { scale: 0.5 mirror: True crop_size: 3 use_imagedb_mean: True force_color: True color_order: RGB }";
+            string str = "transform_param { scale: 0.5 mirror: True crop_size: 3 use_imagedb_mean: True force_color: True color_order: RGB mask_param { option { active: False } boundary_left: 0 boundary_right: 0 boundary_top: 0 boundary_bottom: 0 } }";
             RawProto proto = RawProto.Parse(str).FindChild("transform_param");
             TransformationParameter p = TransformationParameter.FromProto(proto);
 
@@ -1049,7 +1049,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestTransformParameter2()
         {
-            string str = "transform_param { scale: 3.5 mirror: True crop_size: 3 mean_value: 2 mean_value: 3 mean_value: 4 force_gray: True color_order: RGB }";
+            string str = "transform_param { scale: 3.5 mirror: True crop_size: 3 mean_value: 2 mean_value: 3 mean_value: 4 force_gray: True color_order: RGB mask_param { option { active: False } boundary_left: 0 boundary_right: 0 boundary_top: 0 boundary_bottom: 0 } }";
             RawProto proto = RawProto.Parse(str).FindChild("transform_param");
             TransformationParameter p = TransformationParameter.FromProto(proto);
 
