@@ -167,7 +167,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
-        public abstract void DataLayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop);
+        protected abstract void DataLayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop);
 
         /// <summary>
         /// Data layers have no bottoms, so reshaping is trivial.

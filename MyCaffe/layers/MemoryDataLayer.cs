@@ -84,7 +84,7 @@ namespace MyCaffe.layers
         /// </summary>
         /// <param name="colBottom">Not used.</param>
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
-        public override void DataLayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        protected override void DataLayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             m_nBatchSize = (int)m_param.memory_data_param.batch_size;
             m_nChannels = (int)m_param.memory_data_param.channels;

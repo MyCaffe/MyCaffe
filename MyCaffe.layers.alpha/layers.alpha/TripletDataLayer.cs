@@ -61,7 +61,7 @@ namespace MyCaffe.layers.alpha
         /// </summary>
         /// <param name="colBottom">Specifies the collection of bottom (input) Blobs.</param>
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
-        public override void DataLayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        protected override void DataLayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             base.DataLayerSetUp(colBottom, colTop);
         }

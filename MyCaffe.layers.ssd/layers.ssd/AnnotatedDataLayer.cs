@@ -154,7 +154,7 @@ namespace MyCaffe.layers.ssd
         /// </summary>
         /// <param name="colBottom">Not used.</param>
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
-        public override void DataLayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        protected override void DataLayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             int nBatchSize = (int)m_param.data_param.batch_size;
 
