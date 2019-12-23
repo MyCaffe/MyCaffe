@@ -539,6 +539,7 @@ namespace MyCaffe.test
                 p.data_param.batch_size = (uint)m_nNum;
                 p.data_param.source = m_strSrc1;
                 p.data_param.backend = m_backend;
+                p.data_param.enable_random_selection = false;
 
                 double dfScale = 3;
                 p.transform_param.scale = dfScale;
@@ -590,9 +591,10 @@ namespace MyCaffe.test
                         {
                             if (m_annoType == SimpleDatum.ANNOTATION_TYPE.BBOX)
                             {
+                                int nBboxNum = BBoxNum(m_nNum);
                                 m_log.CHECK_EQ(m_blobTopLabel.num, 1, "The top label num is incorrect.");
                                 m_log.CHECK_EQ(m_blobTopLabel.channels, 1, "The top channels are incorrect.");
-                                m_log.CHECK_EQ(m_blobTopLabel.height, BBoxNum(m_nNum), "The top height is incorrect.");
+                                m_log.CHECK_EQ(m_blobTopLabel.height, nBboxNum, "The top height is incorrect.");
                                 m_log.CHECK_EQ(m_blobTopLabel.width, 8, "The top width is incorrect.");
 
                                 for (int g = 0; g < i; g++)
@@ -741,6 +743,7 @@ namespace MyCaffe.test
                 p.data_param.batch_size = 1;
                 p.data_param.source = srcTest.Name;
                 p.data_param.backend = DataParameter.DB.IMAGEDB;
+                p.data_param.enable_random_selection = false;
 
                 Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent, m_parent.db);
                 layer.Setup(BottomVec, TopVec);
@@ -883,6 +886,7 @@ namespace MyCaffe.test
                 p.data_param.batch_size = (uint)m_nNum;
                 p.data_param.source = (phase == Phase.TRAIN) ? m_strSrc1 : m_strSrc2;
                 p.data_param.backend = DataParameter.DB.IMAGEDB;
+                p.data_param.enable_random_selection = false;
 
                 p.transform_param.scale = dfScale;
                 p.transform_param.crop_size = 1;
@@ -975,6 +979,7 @@ namespace MyCaffe.test
                 p.data_param.batch_size = (uint)m_nNum;
                 p.data_param.source = m_strSrc1;
                 p.data_param.backend = DataParameter.DB.IMAGEDB;
+                p.data_param.enable_random_selection = false;
 
                 p.transform_param.crop_size = 1;
                 p.transform_param.mirror = true;
@@ -1080,6 +1085,7 @@ namespace MyCaffe.test
                 p.data_param.batch_size = (uint)m_nNum;
                 p.data_param.source = m_strSrc1;
                 p.data_param.backend = DataParameter.DB.IMAGEDB;
+                p.data_param.enable_random_selection = false;
 
                 p.transform_param.crop_size = 1;
                 p.transform_param.mirror = true;
