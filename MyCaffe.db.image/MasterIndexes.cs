@@ -613,7 +613,10 @@ namespace MyCaffe.db.image
             {
                 int nIdx = m_random.Next(m_rgItems.Count);
                 if (m_rgItems[nIdx] == null)
+                {
+                    m_rgItems.RemoveAt(nIdx);
                     nIdx = m_random.Next(m_rgItems.Count);
+                }
 
                 int nFinalIdx = m_rgItems[nIdx].Index;
 
