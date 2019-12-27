@@ -70,7 +70,7 @@ namespace MyCaffe.param
         /// <returns>The mapped label is returned.</returns>
         public int MapLabel(int nLabel)
         {
-            return m_rgMapping.MapLabel(nLabel);
+            return m_rgMapping.MapLabelWithoutBoost(nLabel);
         }
 
         /** @copydoc LayerParameterBase::Load */
