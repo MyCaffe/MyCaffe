@@ -236,7 +236,7 @@ namespace MyCaffe.db.image
 
             foreach (SimpleDatum sd in m_rgImages)
             {
-                sd.SetLabel(col.MapLabel(sd.OriginalLabel));
+                sd.SetLabel(col.MapLabelWithoutBoost(sd.OriginalLabel));
             }
 
             return ReloadIndexing();
