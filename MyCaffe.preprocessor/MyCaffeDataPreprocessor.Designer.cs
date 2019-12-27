@@ -1,5 +1,9 @@
 ﻿namespace MyCaffe.preprocessor
 {
+    /// <summary>
+    /// The MyCaffeDataPreprocessor handles adding data from a streaming database to the GPU and then 
+    /// pre-processing the data once on the GPU making it ready for use with the Data Gym.
+    /// </summary>
     partial class MyCaffeDataPreprocessor<T>
     {
         /// <summary>
