@@ -209,7 +209,7 @@ namespace MyCaffe.layers
                 bLoadDataCriteria = true;
 
             // Read a data point, and use it to initialize the top blob.
-            Datum datum = m_cursor.GetValue(null, bLoadDataCriteria);
+            Datum datum = m_cursor.GetValue(null, bLoadDataCriteria, IMGDB_IMAGE_SELECTION_METHOD.NONE);
 
             // Use data transformer to infer the expected blob shape from the datum.
             List<int> rgTopShape = m_transformer.InferBlobShape(datum);
@@ -723,10 +723,29 @@ namespace MyCaffe.layers
                 // Copy label.
                 if (m_bOutputLabels)
                 {
+                    // Map the labels
+                    if (m_param.data_param.enable_label_mapping)
+                    {                        
+                        int nNewLabel = m_param.data_param.data_label_mapping_param.MapLabel(datum.Label);
+                        datum.SetLabel(nNewLabel);
+
+                        if (rgDatum != null)
+                        {
+                            for (int j = 0; j < rgDatum.Length; j++)
+                            {
+                                nNewLabel = m_param.data_param.data_label_mapping_param.MapLabel(rgDatum[j].Label);
+                                rgDatum[j].SetLabel(nNewLabel);
+                            }
+                        }
+                    }
+
                     if (m_param.data_param.label_type == DataParameter.LABEL_TYPE.MULTIPLE)
                     {
                         if (m_param.data_param.images_per_blob > 1)
                             m_log.FAIL("Loading image pairs (images_per_blob > 1) currently only supports the " + DataParameter.LABEL_TYPE.SINGLE.ToString() + " label type.");
+
+                        if (m_param.data_param.enable_label_mapping)
+                            m_log.FAIL("Label mapping is not supported on labels of type 'MULTIPLE'.");
 
                         if (datum.DataCriteria == null || datum.DataCriteria.Length == 0)
                             m_log.FAIL("Could not find the multi-label data.  The data source '" + m_param.data_param.source + "' does not appear to have any Image Criteria data.");
