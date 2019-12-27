@@ -429,6 +429,27 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestDataLabelMapping()
+        {
+            DataLayerTest test = new DataLayerTest();
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    bool unique_pixels = true;
+
+                    t.Fill(unique_pixels, 5);
+                    t.TestDataLabelMapping(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     class DataLayerTest : TestBase
@@ -514,7 +535,7 @@ namespace MyCaffe.test
         void TestForward2(string strSrc);
         void TestForwardPairs(string strSrc, int nImagesPerBlob);
         void TestForwardMask(string strSrc, int nImagesPerBlob);
-        string Fill(bool unique_pixels);
+        string Fill(bool unique_pixels, int nMaxLabel = -1);
         string Fill2(int num_inputs);
         void TestRead(IMAGEDB_LOAD_METHOD loadMethod);
         void TestSkip(IMAGEDB_LOAD_METHOD loadMethod);
@@ -522,6 +543,7 @@ namespace MyCaffe.test
         void TestReadCrop(Phase phase, IMAGEDB_LOAD_METHOD loadMethod);
         void TestReadCropSequenceSeeded(IMAGEDB_LOAD_METHOD loadMethod);
         void TestReadCropSequenceUnSeeded(IMAGEDB_LOAD_METHOD loadMethod);
+        void TestDataLabelMapping(IMAGEDB_LOAD_METHOD loadMethod);
     }
 
     class DataLayerTest<T> : TestEx<T>, IDataLayerTest
@@ -603,7 +625,7 @@ namespace MyCaffe.test
             m_parent.CancelEvent.Reset();
         }
 
-        public string Fill(bool unique_pixels)
+        public string Fill(bool unique_pixels, int nMaxLabel = -1)
         {
             DatasetFactory factory = new DatasetFactory();
 
@@ -633,7 +655,12 @@ namespace MyCaffe.test
                         rgData.Add((byte)datum);
                     }
 
-                    SimpleDatum sd = new SimpleDatum(false, 2, 4, 3, i, DateTime.Today, rgData, null, 0, false, i);
+                    int nLabel = i;
+
+                    if (nMaxLabel > 0)
+                        nLabel = nLabel % nMaxLabel;
+
+                    SimpleDatum sd = new SimpleDatum(false, 2, 4, 3, nLabel, DateTime.Today, rgData, null, 0, false, i);
                     factory.PutRawImage(i, sd);
                 }
 
@@ -949,9 +976,9 @@ namespace MyCaffe.test
             p.transform_param.mirror = true;
             p.transform_param.random_seed = 1701;
 
-            MyCaffeImageDatabase2 db = new MyCaffeImageDatabase2();
             m_parent.Settings.ImageDbLoadMethod = loadMethod;
-            db.InitializeWithDsId(m_parent.Settings, m_nDsID);
+            IXImageDatabaseBase db = createImageDb(m_log);
+            db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
             // Get crop sequence with seed 1701.
@@ -988,7 +1015,7 @@ namespace MyCaffe.test
 
 
             db = new MyCaffeImageDatabase2();
-            db.InitializeWithDsId(m_parent.Settings, m_nDsID);
+            db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
 
             // Get crop sequence after reseeding caffe (done within the data transformer)
             p.transform_param.random_seed = 1701;
@@ -1036,9 +1063,9 @@ namespace MyCaffe.test
             p.transform_param.crop_size = 1;
             p.transform_param.mirror = true;
 
-            MyCaffeImageDatabase2 db = new MyCaffeImageDatabase2();
             m_parent.Settings.ImageDbLoadMethod = loadMethod;
-            db.InitializeWithDsId(m_parent.Settings, m_nDsID);
+            IXImageDatabaseBase db = createImageDb(m_log);
+            db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
             // Get crop sequence without setting a seed.
@@ -1565,6 +1592,94 @@ namespace MyCaffe.test
 
             progress.SetProgress(0);
             progress.Dispose();
+        }
+
+        public void TestDataLabelMapping(IMAGEDB_LOAD_METHOD loadMethod)
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.DATA);
+            p.phase = Phase.TRAIN;
+            p.data_param.batch_size = 5;
+            p.data_param.source = m_strSrc1;
+            p.data_param.enable_random_selection = true;
+            p.data_param.backend = DataParameter.DB.IMAGEDB;
+
+            m_parent.Settings.ImageDbLoadMethod = loadMethod;
+
+
+            // Verify no label mapping by default
+            IXImageDatabaseBase db = createImageDb(m_log, 1701);
+            db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
+            CancelEvent evtCancel = new CancelEvent();
+            DatasetDescriptor ds = db.GetDatasetById(m_nDsID);
+            List<int> rgOriginalLabels = new List<int>();
+            Dictionary<int, int> rgLabelCounts = new Dictionary<int, int>();
+
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, evtCancel, db);
+            layer.Setup(BottomVec, TopVec);
+
+            for (int i = 0; i < 5; i++)
+            {
+                layer.Forward(BottomVec, TopVec);
+
+                Blob<T> blobLabel = TopVec[1];
+                float[] rgLabel = convertF(blobLabel.mutable_cpu_data);
+
+                m_log.CHECK_EQ(rgLabel.Length, p.data_param.batch_size, "The label count should equal the batch size!");
+
+                for (int j = 0; j < rgLabel.Length; j++)
+                {
+                    int nLabel = (int)rgLabel[j];
+                    rgOriginalLabels.Add(nLabel);
+
+                    if (!rgLabelCounts.ContainsKey(nLabel))
+                        rgLabelCounts.Add(nLabel, 1);
+                    else
+                        rgLabelCounts[nLabel]++;
+                }
+            }
+
+            layer.Dispose();
+            ((IDisposable)db).Dispose();
+
+            m_log.CHECK_EQ(rgLabelCounts.Count, 5, "There should be 6 labels!");
+
+
+            // Map even labels to 0 and odd labels to 1.
+            int nIdx = 0;
+            db = createImageDb(m_log, 1701);
+            db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
+
+            p.data_param.enable_label_mapping = true;
+            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(0, 0, null, null));
+            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(1, 1, null, null));
+            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(2, 0, null, null));
+            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(3, 1, null, null));
+            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(4, 0, null, null));
+
+            layer = Layer<T>.Create(m_cuda, m_log, p, evtCancel, db);
+            layer.Setup(BottomVec, TopVec);
+
+            for (int i = 0; i < 5; i++)
+            {
+                layer.Forward(BottomVec, TopVec);
+
+                Blob<T> blobLabel = TopVec[1];
+                float[] rgLabel = convertF(blobLabel.mutable_cpu_data);
+
+                m_log.CHECK_EQ(rgLabel.Length, p.data_param.batch_size, "The label count should equal the batch size!");
+
+                for (int j = 0; j < rgLabel.Length; j++)
+                {
+                    int nLabel = (int)rgLabel[j];
+                    int nExpectedLabel = rgOriginalLabels[nIdx] % 2;
+
+                    m_log.CHECK_EQ(nLabel, nExpectedLabel, "The labels do not match!");
+                    nIdx++;
+                }
+            }
+
+            layer.Dispose();
+            ((IDisposable)db).Dispose();
         }
     }
 }
