@@ -33,7 +33,7 @@ namespace MyCaffe.param
         uint m_nBatchSize;
         DB m_backend = DB.IMAGEDB;
         uint m_nPrefetch = 4;
-        bool? m_bEnableRandomSelection = true;
+        bool? m_bEnableRandomSelection = null;
         bool? m_bEnablePairSelection = null;
         bool m_bDisplayTiming = false;
         LABEL_TYPE m_labelType = LABEL_TYPE.SINGLE;
