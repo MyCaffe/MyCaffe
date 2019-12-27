@@ -55,6 +55,7 @@ namespace MyCaffe.layers
         private Blob<T> m_blobMask = null;
         private Blob<T> m_blobDebug1 = null;
         private int m_nIteration = 0;
+        private int m_nBatchCount = 0;
 
         /// <summary>
         /// This event fires (only when set) each time a batch is loaded form this dataset.
@@ -308,6 +309,7 @@ namespace MyCaffe.layers
             }
 
             m_nIteration = 0;
+            m_nBatchCount = 0;
         }
 
         private void createMasks(List<int> rgTopShape)
@@ -489,9 +491,9 @@ namespace MyCaffe.layers
                     int nImgPerBlob = m_param.data_param.images_per_blob;
                     int nChannels = blobTop.channels / nImgPerBlob;
 
-                    if (blobTop.num_axes != 4 || (nChannels != 1 && nChannels != 3))
+                    if (blobTop.num_axes < 4)
                     { 
-                        m_log.WriteLine("WARNING! debug output only supported on 4 axis images which channel = 1 or 3.");
+                        m_log.WriteLine("WARNING! debug output only supported blobs with 4 or more axes.");
                         return;
                     }
 
@@ -521,11 +523,15 @@ namespace MyCaffe.layers
 
                             float[] rgData = convertF(m_blobDebug1.mutable_cpu_data);
 
-                            string strFile = strPath + "\\dbgimg_iter_" + m_nIteration.ToString() + "_num_" + n.ToString() + "_img_" + j.ToString() + ".png";
+                            string strFile = strPath + "\\dbgimg_iter_" + m_nIteration.ToString() + "_num_" + n.ToString() + "_img_" + j.ToString();
                             SimpleDatum sd = new SimpleDatum(nChannels, blobTop.width, blobTop.height, rgData, 0, nDim, false);
-                            Bitmap bmp = ImageData.GetImage(sd);
-                            bmp.Save(strFile);
-                            bmp.Dispose();
+
+                            if (nChannels == 1 || nChannels == 3)
+                            {
+                                Bitmap bmp = ImageData.GetImage(sd);
+                                bmp.Save(strFile + ".png");
+                                bmp.Dispose();
+                            }
                         }
                     }
                 }
@@ -668,6 +674,20 @@ namespace MyCaffe.layers
                     datum = m_cursor.GetValue(rgTargetLabels[i], bLoadDataCriteria);
                 }
 
+                // When debug output is enabled, output information each image loaded.
+                if (m_param.data_param.enable_debug_output)
+                {
+                    saveImageInfo(m_param.data_param.data_debug_param, datum, i, 0);
+
+                    if (rgDatum != null)
+                    {
+                        for (int n = 0; n < rgDatum.Length; n++)
+                        {
+                            saveImageInfo(m_param.data_param.data_debug_param, rgDatum[n], i, n + 1);
+                        }
+                    }
+                }
+
                 if (m_param.data_param.display_timing)
                 {
                     m_dfReadTime += m_swTimerTransaction.Elapsed.TotalMilliseconds;
@@ -726,14 +746,14 @@ namespace MyCaffe.layers
                     // Map the labels
                     if (m_param.data_param.enable_label_mapping)
                     {                        
-                        int nNewLabel = m_param.data_param.data_label_mapping_param.MapLabel(datum.Label);
+                        int nNewLabel = m_param.data_param.data_label_mapping_param.MapLabel(datum.Label, datum.Boost);
                         datum.SetLabel(nNewLabel);
 
                         if (rgDatum != null)
                         {
                             for (int j = 0; j < rgDatum.Length; j++)
                             {
-                                nNewLabel = m_param.data_param.data_label_mapping_param.MapLabel(rgDatum[j].Label);
+                                nNewLabel = m_param.data_param.data_label_mapping_param.MapLabel(rgDatum[j].Label, rgDatum[j].Boost);
                                 rgDatum[j].SetLabel(nNewLabel);
                             }
                         }
@@ -812,6 +832,7 @@ namespace MyCaffe.layers
                     return;
             }
 
+            m_nBatchCount++;
             batch.Data.SetCPUData(m_rgTopData);
 
             if (m_bOutputLabels)
@@ -834,6 +855,12 @@ namespace MyCaffe.layers
 
             if (OnBatchLoad != null)
                 OnBatchLoad(this, new LastBatchLoadedArgs(rgLabels));
+        }
+
+        private void saveImageInfo(DataDebugParameter p, Datum d, int nNum, int nImg)
+        {
+            string strFile = p.debug_save_path.TrimEnd('\\') + "\\dbgimg_iter_" + m_nBatchCount.ToString() + "_num_" + nNum.ToString() + "_img_" + nImg.ToString();
+            d.SaveInfo(strFile + ".txt");
         }
     }
 

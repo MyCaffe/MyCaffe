@@ -1404,11 +1404,14 @@ namespace MyCaffe.basecode
         {
             string strOut = "Idx = " + m_nIndex.ToString("N0");
 
+            strOut += "; Label = " + m_nLabel.ToString();
+            strOut += "; Boost = " + m_nBoost.ToString();
+
             if (m_dt != DateTime.MinValue)
-                strOut += "; Time=" + m_dt.ToString();
+                strOut += "; Time = " + m_dt.ToString();
 
             if (!string.IsNullOrEmpty(m_strDesc))
-                strOut += "; Desc=" + m_strDesc;
+                strOut += "; Desc = " + m_strDesc;
 
             return strOut;
         }
@@ -1616,6 +1619,112 @@ namespace MyCaffe.basecode
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Save the SimpleDatum information to a text file.
+        /// </summary>
+        /// <remarks>
+        /// This function is typically used for debugging.
+        /// </remarks>
+        /// <param name="strFile">Specifies the name of the target file.</param>
+        public void SaveInfo(string strFile)
+        {
+            using (StreamWriter sw = new StreamWriter(strFile + ".txt"))
+            {
+                sw.WriteLine("Index = " + Index.ToString());
+                sw.WriteLine("ImageID = " + ImageID.ToString());
+                sw.WriteLine("VirtualID = " + VirtualID.ToString());
+                sw.WriteLine("Label = " + Label.ToString());
+                sw.WriteLine("AutoLabeled = " + AutoLabeled.ToString());
+                sw.WriteLine("Boost = " + Boost.ToString());
+                sw.WriteLine("SourceID = " + SourceID.ToString());
+                sw.WriteLine("OriginalSourceID = " + OriginalSourceID.ToString());
+                sw.WriteLine("Description = " + Description);
+                sw.WriteLine("Time = " + TimeStamp.ToString());
+                sw.WriteLine("Size = {1," + Channels.ToString() + "," + Height.ToString() + "," + Width.ToString() + "}");
+            }
+        }
+
+        /// <summary>
+        /// Load a SimpleData from text file information previously saved with SaveInfo.
+        /// </summary>
+        /// <remarks>
+        /// Note, the SimpleDatum only contains the information but no data for this is used for debugging.
+        /// </remarks>
+        /// <param name="strFile">Specifies the file to load the SimpleDatum from.</param>
+        /// <returns>The SimpleDatum is returned.</returns>
+        public static SimpleDatum LoadInfo(string strFile)
+        {
+            using (StreamReader sr = new StreamReader(strFile))
+            {
+                string strVal = parseValue(sr.ReadLine(), '=');
+                int nIndex = int.Parse(strVal);
+
+                strVal = parseValue(sr.ReadLine(), '=');
+                int nImageID = int.Parse(strVal);
+
+                strVal = parseValue(sr.ReadLine(), '=');
+                int nVirtualID = int.Parse(strVal);
+
+                strVal = parseValue(sr.ReadLine(), '=');
+                int nLabel = int.Parse(strVal);
+
+                strVal = parseValue(sr.ReadLine(), '=');
+                bool bAutoLabeled = bool.Parse(strVal);
+
+                strVal = parseValue(sr.ReadLine(), '=');
+                int nBoost = int.Parse(strVal);
+
+                strVal = parseValue(sr.ReadLine(), '=');
+                int nSrcId = int.Parse(strVal);
+
+                strVal = parseValue(sr.ReadLine(), '=');
+                int nOriginalSrcId = int.Parse(strVal);
+
+                strVal = parseValue(sr.ReadLine(), '=');
+                string strDesc = strVal;
+
+                strVal = parseValue(sr.ReadLine(), '=');
+                DateTime dt = DateTime.Parse(strVal);
+
+                strVal = parseValue(sr.ReadLine(), '=');
+                strVal = strVal.Trim('{', '}');
+                string[] rgstr = strVal.Split(',');
+
+                int nChannels = int.Parse(rgstr[1]);
+                int nHeight = int.Parse(rgstr[2]);
+                int nWidth = int.Parse(rgstr[3]);
+
+                return new SimpleDatum(false, nChannels, nWidth, nHeight, nLabel, dt, nBoost, bAutoLabeled, nIndex, nVirtualID, nImageID, nSrcId, nOriginalSrcId);
+            }
+        }
+
+        private static string parseValue(string str, char chDelim)
+        {
+            int nPos = str.LastIndexOf(chDelim);
+            if (nPos < 0)
+                return str;
+
+            return str.Substring(nPos + 1).Trim();
+        }
+
+        /// <summary>
+        /// Load all SimpleDatums from a directory of files previously stored with SaveInfo.
+        /// </summary>
+        /// <param name="strPath">Specifies the path to the files to load.</param>
+        /// <returns>The list of SimpleDatum are returned.</returns>
+        public static List<SimpleDatum> LoadFromPath(string strPath)
+        {
+            string[] rgstrFiles = Directory.GetFiles(strPath, "*.txt");
+            List<SimpleDatum> rgData = new List<SimpleDatum>();
+
+            foreach (string strFile in rgstrFiles)
+            {
+                rgData.Add(SimpleDatum.LoadInfo(strFile));
+            }
+
+            return rgData;
         }
     }
 }
