@@ -58,8 +58,8 @@ namespace MyCaffe.basecode
         {
             foreach (LabelMapping m in m_rgMappings)
             {
-                if (m.OriginalLabel == map.OriginalLabel)
-                    throw new Exception("You already have a mapping for the original label '" + map.OriginalLabel.ToString() + "'.");
+                if (m.OriginalLabel == map.OriginalLabel && m.ConditionBoostEquals == map.ConditionBoostEquals)
+                    throw new Exception("You already have a mapping for the original label '" + map.OriginalLabel.ToString() + "' with the conditional boost = '" + map.ConditionBoostEquals.ToString() + "'.");
             }
 
             m_rgMappings.Add(map);
@@ -93,15 +93,32 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns the mapped label associated with a given label and boost (if a boost condition is used).
+        /// </summary>
+        /// <param name="nLabel">Specifies the label to map.</param>
+        /// <param name="nBoost">Specifies the boost condition that must be met if specified.</param>
+        /// <returns>The mapped label is returned.</returns>
+        public int MapLabel(int nLabel, int nBoost)
+        {
+            foreach (LabelMapping m in m_rgMappings)
+            {
+                if (m.OriginalLabel == nLabel && (!m.ConditionBoostEquals.HasValue || m.ConditionBoostEquals == nBoost))
+                    return m.NewLabel;
+            }
+
+            return nLabel;
+        }
+
+        /// <summary>
         /// Returns the mapped label associated with a given label.
         /// </summary>
         /// <param name="nLabel">Specifies the label to map.</param>
         /// <returns>The mapped label is returned.</returns>
-        public int MapLabel(int nLabel)
+        public int MapLabelWithoutBoost(int nLabel)
         {
             foreach (LabelMapping m in m_rgMappings)
             {
-                if (m.OriginalLabel == nLabel)
+                if (m.OriginalLabel == nLabel )
                     return m.NewLabel;
             }
 

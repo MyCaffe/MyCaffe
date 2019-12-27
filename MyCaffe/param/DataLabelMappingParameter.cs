@@ -38,10 +38,11 @@ namespace MyCaffe.param
         /// Queries the mapped label for a given label.
         /// </summary>
         /// <param name="nLabel">Specifies the label to query the mapped label from.</param>
+        /// <param name="nBoost">Specifies the boost condition that must be met if specified.</param>
         /// <returns>The mapped label is returned.</returns>
-        public int MapLabel(int nLabel)
+        public int MapLabel(int nLabel, int nBoost)
         {
-            return m_rgMapping.MapLabel(nLabel);
+            return m_rgMapping.MapLabel(nLabel, nBoost);
         }
 
         /// <summary>
