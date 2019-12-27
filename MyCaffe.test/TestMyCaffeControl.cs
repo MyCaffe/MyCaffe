@@ -513,7 +513,7 @@ namespace MyCaffe.test
             string strDs = createSimpleDataset();
             ProjectEx project = getSimpleProject(strDs);
 
-            ctrl.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+            ctrl.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
             ctrl.Train();
             ctrl.TestMany(1000, false);
 
