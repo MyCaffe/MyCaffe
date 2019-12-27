@@ -113,12 +113,12 @@ namespace MyCaffe.test
             m_strName = "";
         }
 
-        public IXImageDatabaseBase createImageDb(Log log)
+        public IXImageDatabaseBase createImageDb(Log log, int nSeed = 0)
         {
             if (m_imgDbVer == IMGDB_VERSION.V1)
-                return new MyCaffeImageDatabase(log);
+                return new MyCaffeImageDatabase(log, "default", nSeed);
             else
-                return new MyCaffeImageDatabase2(log);
+                return new MyCaffeImageDatabase2(log, "default", nSeed);
         }
 
         public List<Tuple<string, string, string>> KnownFailures
@@ -413,9 +413,9 @@ namespace MyCaffe.test
             m_cuda = null;
         }
 
-        protected IXImageDatabaseBase createImageDb(Log log)
+        protected IXImageDatabaseBase createImageDb(Log log, int nSeed = 0)
         {
-            return m_parent.createImageDb(log);
+            return m_parent.createImageDb(log, nSeed);
         }
 
         protected string getTestPath(string strItem, bool bPathOnly = false, bool bCreateIfMissing = false, bool bUserData = false)
