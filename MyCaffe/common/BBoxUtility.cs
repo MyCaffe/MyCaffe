@@ -218,17 +218,8 @@ namespace MyCaffe.common
 
             rgItems = rgItems.OrderByDescending(p => p.Item1).ToList();
 
-            if (nTopK > -1)
-            {
-                List<Tuple<float, int>> rgItems1 = new List<Tuple<float, int>>();
-
-                for (int i = 0; i < nTopK; i++)
-                {
-                    rgItems1.Add(rgItems[i]);
-                }
-
-                rgItems = rgItems1;
-            }
+            if (nTopK > -1 && nTopK < rgItems.Count)
+                rgItems = rgItems.Take(nTopK).ToList();
 
             return rgItems;
         }
@@ -2192,8 +2183,10 @@ namespace MyCaffe.common
         /// <param name="blobLocGt">Specifies the encoded location ground truth.</param>
         public void EncodeLocPrediction(List<LabelBBox> rgAllLocPreds, DictionaryMap<List<NormalizedBBox>> rgAllGtBboxes, List<DictionaryMap<List<int>>> rgAllMatchIndices, List<NormalizedBBox> rgPriorBboxes, List<List<float>> rgrgPriorVariances, MultiBoxLossParameter p, Blob<T> blobLocPred, Blob<T> blobLocGt)
         {
-            float[] rgLocPredData = Utility.ConvertVecF<T>(blobLocPred.mutable_cpu_data);
-            float[] rgLocGtData = Utility.ConvertVecF<T>(blobLocGt.mutable_cpu_data);
+            int nLocPredData = blobLocPred.count();
+            float[] rgLocPredData = new float[nLocPredData];
+            int nLocGtData = blobLocGt.count();
+            float[] rgLocGtData = new float[nLocGtData];
 
             int nNum = rgAllLocPreds.Count;
             // Get parameters.
@@ -2292,8 +2285,10 @@ namespace MyCaffe.common
         /// <param name="blobConfGt">Specifies the confidence ground truth.</param>
         public void EncodeConfPrediction(float[] rgfConfData, int nNum, int nNumPriors, MultiBoxLossParameter p, List<DictionaryMap<List<int>>> rgAllMatchIndices, List<List<int>> rgAllNegIndices, DictionaryMap<List<NormalizedBBox>> rgAllGtBBoxes, Blob<T> blobConfPred, Blob<T> blobConfGt)
         {
-            float[] rgConfPredData = Utility.ConvertVecF<T>(blobConfPred.mutable_cpu_data);
-            float[] rgConfGtData = Utility.ConvertVecF<T>(blobConfGt.mutable_cpu_data);
+            int nConfPredData = blobConfPred.count();
+            float[] rgConfPredData = new float[nConfPredData];
+            int nConfGtData = blobConfGt.count();
+            float[] rgConfGtData = new float[nConfGtData];
             int nConfDataOffset = 0;
             int nConfGtDataOffset = 0;
 
