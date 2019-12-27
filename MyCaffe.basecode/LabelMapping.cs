@@ -336,6 +336,7 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Get/set the original label.
         /// </summary>
+        [Description("Specifies the original label.")]
         public int OriginalLabel
         {
             get { return m_nOrignalLabel; }
@@ -345,6 +346,7 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Get/set the new label.
         /// </summary>
+        [Description("Specifies the new label replacement.")]
         public int NewLabel
         {
             get { return m_nNewLabelConditionTrue; }
@@ -354,6 +356,7 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Get/set the label to use if the boost condition fails.
         /// </summary>
+        [Description("Specifies the label to use if the boost condition fails.")]
         public int? NewLabelConditionFalse
         {
             get { return m_nNewLabelConditionFalse; }
@@ -361,8 +364,9 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Get/set the label to use if the boost condition succeedds.
+        /// Get/set the boost condition to test which if met, the new label is set, otherwise it is not.
         /// </summary>
+        [Description("Specifies the boost condition to test.")]
         public int? ConditionBoostEquals
         {
             get { return m_nConditionBoostEquals; }
