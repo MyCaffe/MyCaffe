@@ -27,11 +27,11 @@ namespace MyCaffe.layers.ssd
         /// <summary>
         /// Specifies the database.
         /// </summary>
-        protected DB m_db;
+        protected DB<T> m_db;
         /// <summary>
         /// Specifies the database used to traverse through the database.
         /// </summary>
-        protected Cursor m_cursor;
+        protected Cursor<T> m_cursor;
         UInt64 m_nOffset = 0;
         /// <summary>
         /// Specifies the annotation type used if any.
@@ -108,9 +108,8 @@ namespace MyCaffe.layers.ssd
 
             db.SetSelectionMethod(null, imgSel);
 
-            m_db = new data.DB(db);
+            m_db = new data.DB<T>(db);
             m_db.Open(p.data_param.source);
-            m_cursor = m_db.NewCursor();
 
             if (p.data_param.display_timing)
             {
@@ -157,6 +156,8 @@ namespace MyCaffe.layers.ssd
         protected override void DataLayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             int nBatchSize = (int)m_param.data_param.batch_size;
+
+            m_cursor = m_db.NewCursor(m_transformer);
 
             foreach (BatchSampler sampler in m_param.annotated_data_param.batch_sampler)
             {
