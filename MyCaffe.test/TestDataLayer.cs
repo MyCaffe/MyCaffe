@@ -472,6 +472,27 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestDataLabelMappingWithBoostAndFalseCondition()
+        {
+            DataLayerTest test = new DataLayerTest();
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    bool unique_pixels = true;
+
+                    t.Fill3(unique_pixels);
+                    t.TestDataLabelMappingWithBoostAndFalseCondition(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     class DataLayerTest : TestBase
@@ -568,6 +589,7 @@ namespace MyCaffe.test
         void TestReadCropSequenceUnSeeded(IMAGEDB_LOAD_METHOD loadMethod);
         void TestDataLabelMapping(IMAGEDB_LOAD_METHOD loadMethod);
         void TestDataLabelMappingWithBoost(IMAGEDB_LOAD_METHOD loadMethod);
+        void TestDataLabelMappingWithBoostAndFalseCondition(IMAGEDB_LOAD_METHOD loadMethod);
     }
 
     class DataLayerTest<T> : TestEx<T>, IDataLayerTest
@@ -1837,6 +1859,107 @@ namespace MyCaffe.test
             p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(2, 2, 2, null));
             p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(3, 1, 1, null));
             p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(4, 2, 2, null));
+
+            layer = Layer<T>.Create(m_cuda, m_log, p, evtCancel, db);
+            layer.Setup(BottomVec, TopVec);
+
+            for (int i = 0; i < 5; i++)
+            {
+                layer.Forward(BottomVec, TopVec);
+
+                Blob<T> blobLabel = TopVec[1];
+                float[] rgLabel = convertF(blobLabel.mutable_cpu_data);
+
+                m_log.CHECK_EQ(rgLabel.Length, p.data_param.batch_size, "The label count should equal the batch size!");
+
+                for (int j = 0; j < rgLabel.Length; j++)
+                {
+                    int nLabel = (int)rgLabel[j];
+                    int nExpectedLabel = rgOriginalLabels[nIdx];
+                    SimpleDatum sd = rgExpectedData[nIdx];
+
+                    // Verify sequencing.
+                    m_log.CHECK_EQ(nExpectedLabel, sd.Label, "The labels do not match!");
+
+                    nExpectedLabel = sd.Boost;
+
+                    m_log.CHECK_EQ(nLabel, nExpectedLabel, "The labels do not match!");
+                    nIdx++;
+                }
+            }
+
+            layer.Dispose();
+            ((IDisposable)db).Dispose();
+        }
+
+        public void TestDataLabelMappingWithBoostAndFalseCondition(IMAGEDB_LOAD_METHOD loadMethod)
+        {
+            LayerParameter p = new LayerParameter(LayerParameter.LayerType.DATA);
+            p.phase = Phase.TRAIN;
+            p.data_param.batch_size = 5;
+            p.data_param.source = m_strSrc1;
+            p.data_param.enable_random_selection = true;
+            p.data_param.backend = DataParameter.DB.IMAGEDB;
+
+            p.data_param.enable_debug_output = true;
+            p.data_param.data_debug_param.debug_save_path = getTestPath("\\MyCaffe\\test_data\\test", true, true);
+            p.data_param.data_debug_param.iterations = int.MaxValue;
+
+            m_parent.Settings.ImageDbLoadMethod = loadMethod;
+            deleteFiles(p.data_param.data_debug_param.debug_save_path);
+
+            // Verify no label mapping by default
+            IXImageDatabaseBase db = createImageDb(m_log, 1701);
+            db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
+            CancelEvent evtCancel = new CancelEvent();
+            DatasetDescriptor ds = db.GetDatasetById(m_nDsID);
+            List<int> rgOriginalLabels = new List<int>();
+            Dictionary<int, int> rgLabelCounts = new Dictionary<int, int>();
+
+            Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, evtCancel, db);
+            layer.Setup(BottomVec, TopVec);
+
+            for (int i = 0; i < 5; i++)
+            {
+                layer.Forward(BottomVec, TopVec);
+
+                Blob<T> blobLabel = TopVec[1];
+                float[] rgLabel = convertF(blobLabel.mutable_cpu_data);
+
+                m_log.CHECK_EQ(rgLabel.Length, p.data_param.batch_size, "The label count should equal the batch size!");
+
+                for (int j = 0; j < rgLabel.Length; j++)
+                {
+                    int nLabel = (int)rgLabel[j];
+                    rgOriginalLabels.Add(nLabel);
+
+                    if (!rgLabelCounts.ContainsKey(nLabel))
+                        rgLabelCounts.Add(nLabel, 1);
+                    else
+                        rgLabelCounts[nLabel]++;
+                }
+            }
+
+            layer.Dispose();
+            ((IDisposable)db).Dispose();
+
+            m_log.CHECK_EQ(rgLabelCounts.Count, 6, "There should be 6 labels!");
+            List<SimpleDatum> rgExpectedData = SimpleDatum.LoadFromPath(p.data_param.data_debug_param.debug_save_path);
+
+
+            // Map even labels to 0 and odd labels to 1.
+            int nIdx = 0;
+            db = createImageDb(m_log, 1701);
+            db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
+
+            // Set labels to their boost value and 0 for all others.
+            p.data_param.enable_debug_output = false;
+            p.data_param.enable_label_mapping = true;
+            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(5, 0, 0, null));
+            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(1, 1, 1, 0)); // Map label 1 -> 1 if boost == 1, 0 otherwise.
+            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(2, 2, 2, 0)); // Map label 2 -> 2 if boost == 2, 0 otherwise.
+            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(3, 1, 1, 0)); // Map label 3 -> 1 if boost == 1, 0 otherwise.
+            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(4, 2, 2, 0)); // Map label 4 -> 2 if boost == 2, 0 otherwise.
 
             layer = Layer<T>.Create(m_cuda, m_log, p, evtCancel, db);
             layer.Setup(BottomVec, TopVec);
