@@ -1451,6 +1451,7 @@ namespace MyCaffe
                 }
 
                 SimpleDatum sd = m_imgDb.QueryImage(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+                m_dataTransformer.TransformLabel(sd);
 
                 if (sd.ByteData == null && sd.RealData == null)
                 {
@@ -1463,7 +1464,12 @@ namespace MyCaffe
                 int nExpectedLabel = sd.Label;
 
                 if (labelMapping != null)
+                {
+                    if (m_dataTransformer.param.label_mapping.Active)
+                        m_log.FAIL("You can use either the LabelMappingLayer or the DataTransformer label_mapping, but not both!");
+
                     nExpectedLabel = labelMapping.MapLabel(nExpectedLabel);
+                }
 
                 if (!rgCorrectCounts.ContainsKey(nExpectedLabel))
                     rgCorrectCounts.Add(nExpectedLabel, 0);
@@ -1526,6 +1532,7 @@ namespace MyCaffe
         public ResultCollection Run(int nImageIdx)
         {
             SimpleDatum sd = m_imgDb.QueryImage(m_dataSet.TrainingSource.ID, nImageIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+            m_dataTransformer.TransformLabel(sd);
             return Run(sd, true, false);
         }
 
@@ -1541,6 +1548,7 @@ namespace MyCaffe
             foreach (int nImageIdx in rgImageIdx)
             {
                 SimpleDatum sd = m_imgDb.QueryImage(m_dataSet.TrainingSource.ID, nImageIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+                m_dataTransformer.TransformLabel(sd);
                 rgSd.Add(sd);
             }
 
@@ -1740,15 +1748,16 @@ namespace MyCaffe
         public Bitmap GetTestImage(Phase phase, out int nLabel, out string strLabel)
         {
             int nSrcId = (phase == Phase.TRAIN) ? m_dataSet.TrainingSource.ID : m_dataSet.TestingSource.ID;
-            SimpleDatum d = m_imgDb.QueryImage(nSrcId, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+            SimpleDatum sd = m_imgDb.QueryImage(nSrcId, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+            m_dataTransformer.TransformLabel(sd);
 
-            nLabel = d.Label;
+            nLabel = sd.Label;
             strLabel = m_imgDb.GetLabelName(nSrcId, nLabel);
 
             if (strLabel == null || strLabel.Length == 0)
                 strLabel = nLabel.ToString();
 
-            return new Bitmap(ImageData.GetImage(new Datum(d), null));
+            return new Bitmap(ImageData.GetImage(new Datum(sd), null));
         }
 
         /// <summary>
@@ -1760,9 +1769,10 @@ namespace MyCaffe
         public Bitmap GetTestImage(Phase phase, int nLabel)
         {
             int nSrcId = (phase == Phase.TRAIN) ? m_dataSet.TrainingSource.ID : m_dataSet.TestingSource.ID;
-            SimpleDatum d = m_imgDb.QueryImage(nSrcId, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, nLabel, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+            SimpleDatum sd = m_imgDb.QueryImage(nSrcId, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM, IMGDB_IMAGE_SELECTION_METHOD.RANDOM, nLabel, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+            m_dataTransformer.TransformLabel(sd);
 
-            return new Bitmap(ImageData.GetImage(new Datum(d), null));
+            return new Bitmap(ImageData.GetImage(new Datum(sd), null));
         }
 
         /// <summary>
@@ -1777,18 +1787,19 @@ namespace MyCaffe
         /// <returns>The image queried is returned.</returns>
         public Bitmap GetTargetImage(int nSrcId, int nIdx, out int nLabel, out string strLabel, out byte[] rgCriteria, out SimpleDatum.DATA_FORMAT fmtCriteria)
         {
-            SimpleDatum d = m_imgDb.QueryImage(nSrcId, nIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+            SimpleDatum sd = m_imgDb.QueryImage(nSrcId, nIdx, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.NONE, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
+            m_dataTransformer.TransformLabel(sd);
 
-            nLabel = d.Label;
+            nLabel = sd.Label;
             strLabel = m_imgDb.GetLabelName(nSrcId, nLabel);
 
             if (strLabel == null || strLabel.Length == 0)
                 strLabel = nLabel.ToString();
 
-            rgCriteria = d.DataCriteria;
-            fmtCriteria = d.DataCriteriaFormat;
+            rgCriteria = sd.DataCriteria;
+            fmtCriteria = sd.DataCriteriaFormat;
 
-            return new Bitmap(ImageData.GetImage(new Datum(d), null));
+            return new Bitmap(ImageData.GetImage(new Datum(sd), null));
         }
 
 
