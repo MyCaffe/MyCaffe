@@ -10,7 +10,7 @@ using MyCaffe.basecode;
 namespace MyCaffe.param
 {
     /// <summary>
-    /// Specifies the parameters for the MaskParameter used to mask portions of the transformed data when enabled.
+    /// Specifies the parameters for the MaskParameter used to mask portions of the transformed data when active.
     /// </summary>
     [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]
