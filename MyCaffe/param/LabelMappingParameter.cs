@@ -9,7 +9,7 @@ using MyCaffe.basecode;
 namespace MyCaffe.param
 {
     /// <summary>
-    /// Specifies the parameters for the LabelMappingLayer.
+    /// /b DEPRECIATED (use DataLayer DataLabelMappingParameter instead) Specifies the parameters for the LabelMappingLayer.
     /// </summary>
     public class LabelMappingParameter : LayerParameterBase 
     {

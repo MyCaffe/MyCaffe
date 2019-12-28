@@ -10,7 +10,7 @@ using MyCaffe.param;
 namespace MyCaffe.layers
 {
     /// <summary>
-    /// The LabelMappingLayer converts original labels to new labels specified by the label mapping.
+    /// /b DEPRECIATED (use DataLayer DataLabelMappingParameter instead) The LabelMappingLayer converts original labels to new labels specified by the label mapping.
     /// This layer is initialized with the MyCaffe.param.LabelMappingParameter.
     /// </summary>
     /// <remarks>
