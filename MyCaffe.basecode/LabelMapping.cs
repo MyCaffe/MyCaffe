@@ -97,13 +97,32 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="nLabel">Specifies the label to map.</param>
         /// <param name="nBoost">Specifies the boost condition that must be met if specified.</param>
+        /// <remarks>
+        /// If a label mapping is found for the 'nLabel' parameter, the following logic follows:
+        ///    If no boost condition exists, the new 'mapped' label is returned,
+        ///    Otherwise, if the boost condition is met, the new 'mapped' label is returned,
+        ///    Otherwise, if the NewLabelConditionFalse exists, the NewLabelConditionFalse is returned,
+        ///    Otherwise the label is returned.
+        /// </remarks>
         /// <returns>The mapped label is returned.</returns>
         public int MapLabel(int nLabel, int nBoost)
         {
             foreach (LabelMapping m in m_rgMappings)
             {
-                if (m.OriginalLabel == nLabel && (!m.ConditionBoostEquals.HasValue || m.ConditionBoostEquals == nBoost))
-                    return m.NewLabel;
+                if (m.OriginalLabel == nLabel)
+                {
+                    if (!m.ConditionBoostEquals.HasValue)
+                    {
+                        return m.NewLabel;
+                    }
+                    else
+                    {
+                        if (m.ConditionBoostEquals == nBoost)
+                            return m.NewLabel;
+                        else if (m.NewLabelConditionFalse.HasValue)
+                            return m.NewLabelConditionFalse.Value;
+                    }
+                }
             }
 
             return nLabel;
