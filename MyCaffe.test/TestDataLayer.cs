@@ -1753,12 +1753,12 @@ namespace MyCaffe.test
             db = createImageDb(m_log, 1701);
             db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
 
-            p.data_param.enable_label_mapping = true;
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(0, 0, null, null));
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(1, 1, null, null));
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(2, 0, null, null));
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(3, 1, null, null));
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(4, 0, null, null));
+            p.transform_param.label_mapping.Active = true;
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(0, 0, null, null));
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(1, 1, null, null));
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(2, 0, null, null));
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(3, 1, null, null));
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(4, 0, null, null));
 
             layer = Layer<T>.Create(m_cuda, m_log, p, evtCancel, db);
             layer.Setup(BottomVec, TopVec);
@@ -1848,17 +1848,17 @@ namespace MyCaffe.test
 
             // Set labels to their boost value and 0 for all others.
             p.data_param.enable_debug_output = false;
-            p.data_param.enable_label_mapping = true;
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(0, 0, 0, null));
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(1, 0, 0, null));
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(2, 0, 0, null));
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(3, 0, 0, null));
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(4, 0, 0, null));
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(5, 0, 0, null));
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(1, 1, 1, null));
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(2, 2, 2, null));
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(3, 1, 1, null));
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(4, 2, 2, null));
+            p.transform_param.label_mapping.Active = true;
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(0, 0, 0, null));
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(1, 0, 0, null));
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(2, 0, 0, null));
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(3, 0, 0, null));
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(4, 0, 0, null));
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(5, 0, 0, null));
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(1, 1, 1, null));
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(2, 2, 2, null));
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(3, 1, 1, null));
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(4, 2, 2, null));
 
             layer = Layer<T>.Create(m_cuda, m_log, p, evtCancel, db);
             layer.Setup(BottomVec, TopVec);
@@ -1954,12 +1954,12 @@ namespace MyCaffe.test
 
             // Set labels to their boost value and 0 for all others.
             p.data_param.enable_debug_output = false;
-            p.data_param.enable_label_mapping = true;
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(5, 0, 0, null));
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(1, 1, 1, 0)); // Map label 1 -> 1 if boost == 1, 0 otherwise.
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(2, 2, 2, 0)); // Map label 2 -> 2 if boost == 2, 0 otherwise.
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(3, 1, 1, 0)); // Map label 3 -> 1 if boost == 1, 0 otherwise.
-            p.data_param.data_label_mapping_param.mapping.Add(new LabelMapping(4, 2, 2, 0)); // Map label 4 -> 2 if boost == 2, 0 otherwise.
+            p.transform_param.label_mapping.Active = true;
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(5, 0, 0, null));
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(1, 1, 1, 0)); // Map label 1 -> 1 if boost == 1, 0 otherwise.
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(2, 2, 2, 0)); // Map label 2 -> 2 if boost == 2, 0 otherwise.
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(3, 1, 1, 0)); // Map label 3 -> 1 if boost == 1, 0 otherwise.
+            p.transform_param.label_mapping.mapping.Add(new LabelMapping(4, 2, 2, 0)); // Map label 4 -> 2 if boost == 2, 0 otherwise.
 
             layer = Layer<T>.Create(m_cuda, m_log, p, evtCancel, db);
             layer.Setup(BottomVec, TopVec);
