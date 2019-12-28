@@ -25,11 +25,11 @@ namespace MyCaffe.layers
         /// <summary>
         /// Specifies the database.
         /// </summary>
-        protected DB m_db;
+        protected DB<T> m_db;
         /// <summary>
         /// Specifies the database used to traverse through the database.
         /// </summary>
-        protected Cursor m_cursor;
+        protected Cursor<T> m_cursor;
         UInt64 m_nOffset = 0;
         /// <summary>
         /// Specifies a first timer used to calcualte the batch time.
@@ -99,9 +99,8 @@ namespace MyCaffe.layers
 
             db.SetSelectionMethod(null, imgSel);
 
-            m_db = new data.DB(db);
+            m_db = new data.DB<T>(db);
             m_db.Open(p.data_param.source);
-            m_cursor = m_db.NewCursor((m_param.data_param.output_image_information) ? log : null);
 
             if (p.data_param.display_timing)
             {
@@ -205,6 +204,8 @@ namespace MyCaffe.layers
             int nBatchSize = (int)m_param.data_param.batch_size;
             bool bLoadDataCriteria = false;
             m_bMatchingCycle = true;
+
+            m_cursor = m_db.NewCursor(m_transformer, (m_param.data_param.output_image_information) ? m_log : null);
 
             if (m_bOutputLabels && m_param.data_param.label_type == DataParameter.LABEL_TYPE.MULTIPLE)
                 bLoadDataCriteria = true;
@@ -622,39 +623,16 @@ namespace MyCaffe.layers
 
                             if (m_param.data_param.balance_matches)
                             {
-                                int? nLabelMatch = null;
                                 if (m_bMatchingCycle)
                                 {
-                                    nLabelMatch = datum.Label;
-                                    rgDatum[j] = m_cursor.GetValue(nLabelMatch, bLoadDataCriteria);
+                                    rgDatum[j] = getNextPair(true, datum, bLoadDataCriteria);
                                 }
-                                else 
+                                else
                                 {
                                     if (m_param.data_param.enable_noise_for_nonmatch)
-                                    {
                                         rgDatum[j] = m_datumNoise;
-                                    }
                                     else
-                                    {
-                                        rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
-                                        int nRetries = 3;
-
-                                        if (rgDatum[j] == null || rgDatum[j].Label == datum.Label)
-                                        {
-                                            int nIdx1 = 0;
-                                            while (nIdx1 < nRetries)
-                                            {
-                                                Next();
-                                                rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
-                                                nIdx1++;
-
-                                                if (rgDatum[j] != null && rgDatum[j].Label != datum.Label)
-                                                    break;
-                                            }
-                                        }
-
-                                        m_log.CHECK(rgDatum[j] != null, "The secondary pairing data is null after " + nRetries.ToString() + "!");
-                                    }
+                                        rgDatum[j] = getNextPair(false, datum, bLoadDataCriteria);
                                 }
                             }
                             else
@@ -743,28 +721,12 @@ namespace MyCaffe.layers
                 // Copy label.
                 if (m_bOutputLabels)
                 {
-                    // Map the labels
-                    if (m_param.data_param.enable_label_mapping)
-                    {                        
-                        int nNewLabel = m_param.data_param.data_label_mapping_param.MapLabel(datum.Label, datum.Boost);
-                        datum.SetLabel(nNewLabel);
-
-                        if (rgDatum != null)
-                        {
-                            for (int j = 0; j < rgDatum.Length; j++)
-                            {
-                                nNewLabel = m_param.data_param.data_label_mapping_param.MapLabel(rgDatum[j].Label, rgDatum[j].Boost);
-                                rgDatum[j].SetLabel(nNewLabel);
-                            }
-                        }
-                    }
-
                     if (m_param.data_param.label_type == DataParameter.LABEL_TYPE.MULTIPLE)
                     {
                         if (m_param.data_param.images_per_blob > 1)
                             m_log.FAIL("Loading image pairs (images_per_blob > 1) currently only supports the " + DataParameter.LABEL_TYPE.SINGLE.ToString() + " label type.");
 
-                        if (m_param.data_param.enable_label_mapping)
+                        if (m_param.transform_param.label_mapping.Active)
                             m_log.FAIL("Label mapping is not supported on labels of type 'MULTIPLE'.");
 
                         if (datum.DataCriteria == null || datum.DataCriteria.Length == 0)
@@ -855,6 +817,48 @@ namespace MyCaffe.layers
 
             if (OnBatchLoad != null)
                 OnBatchLoad(this, new LastBatchLoadedArgs(rgLabels));
+        }
+
+        private Datum getNextPair(bool bMatching, Datum d, bool bLoadDataCriteria)
+        {
+            int nRetries = 10;
+            int nIdx = 0;
+            Datum dNew = null;
+            string strType = null;
+
+            if (bMatching)
+            {
+                dNew = m_cursor.GetValue(d.Label, bLoadDataCriteria);
+
+                while (dNew.Label != d.Label && nIdx < nRetries)
+                {
+                    Next();
+                    dNew = m_cursor.GetValue(d.Label, bLoadDataCriteria);
+                    nIdx++;
+                }
+
+                if (dNew.Label != d.Label)
+                    strType = "match";
+            }
+            else
+            {
+                dNew = m_cursor.GetValue(null, bLoadDataCriteria);
+
+                while (dNew.Label == d.Label && nIdx < nRetries)
+                {
+                    Next();
+                    dNew = m_cursor.GetValue(null, bLoadDataCriteria);
+                    nIdx++;
+                }
+
+                if (dNew.Label == d.Label)
+                    strType = "non-match";
+            }
+
+            if (strType != null)
+                m_log.WriteLine("WARNING: The secondary pairing " + strType + " could not be found after " + nRetries.ToString() + "!");
+
+            return dNew;
         }
 
         private void saveImageInfo(DataDebugParameter p, Datum d, int nNum, int nImg)

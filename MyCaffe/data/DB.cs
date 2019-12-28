@@ -11,7 +11,7 @@ namespace MyCaffe.data
     /// <summary>
     /// A generic database class used to connect to the underlying database and create a Cursor that traverses through it.
     /// </summary>
-    public class DB
+    public class DB<T>
     {
         IXImageDatabaseBase m_db = null;
         int m_nSrcID = 0;
@@ -47,22 +47,24 @@ namespace MyCaffe.data
         /// <summary>
         /// Creates and returns a new Cursor used to traverse through a data source within the database.
         /// </summary>
+        /// <param name="transformer">Specifies the data transformer used to transform the labels (when label mapping is active).</param>
         /// <param name="log">Optionally, specifies the output log for diagnostic information (default = null).</param>
         /// <returns></returns>
-        public Cursor NewCursor(Log log = null)
+        public Cursor<T> NewCursor(DataTransformer<T> transformer, Log log = null)
         {
-            return new Cursor(m_db, m_strSrc, log);
+            return new Cursor<T>(m_db, transformer, m_strSrc, log);
         }
     }
 
     /// <summary>
     /// The Cursor is used to traverse through a given data source within the database.
     /// </summary>
-    public class Cursor 
+    public class Cursor<T> 
     {
         Log m_log = null;
         string m_strSrc;
         IXImageDatabaseBase m_db;
+        DataTransformer<T> m_transformer;
         int m_nSrcID = 0;
         int m_nCount = 0;
         int m_nIdx = 0;
@@ -71,12 +73,14 @@ namespace MyCaffe.data
         /// The Cursor constructor.
         /// </summary>
         /// <param name="db">Specifies the underlying database.</param>
+        /// <param name="transformer">Specifies the data transformer used to transform the lables (when active).</param>
         /// <param name="strSrc">Specifies the name of the data source to use.</param>
         /// <param name="log">Optionally, specifies an output log used for diagnostic information if specified (default = null).</param>
-        public Cursor(IXImageDatabaseBase db, string strSrc, Log log = null)
+        public Cursor(IXImageDatabaseBase db, DataTransformer<T> transformer, string strSrc, Log log = null)
         {
             m_log = log;
             m_db = db;
+            m_transformer = transformer;
             SourceDescriptor src = m_db.GetSourceByName(strSrc);
             m_strSrc = src.Name;
             m_nSrcID = src.ID;
@@ -135,6 +139,8 @@ namespace MyCaffe.data
 
             if (m_log != null)
                 m_log.WriteLine(m_strSrc + ": Idx = " + sd.Index.ToString() + " Label = " + sd.Label.ToString());
+
+            m_transformer.TransformLabel(sd);
 
             return new Datum(sd);
         }
