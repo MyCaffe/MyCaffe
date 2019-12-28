@@ -958,6 +958,9 @@ namespace MyCaffe.data
         /// <returns>The masked SimpleDatum is returned.</returns>
         public SimpleDatum MaskImage(SimpleDatum d)
         {
+            if (m_param.mask_param == null || !m_param.mask_param.Active)
+                return d;
+
             int nL = m_param.mask_param.boundary_left;
             int nR = m_param.mask_param.boundary_right;
             int nT = m_param.mask_param.boundary_top;
@@ -994,6 +997,9 @@ namespace MyCaffe.data
         /// <returns>The newly masked data is returned.</returns>
         public float[] MaskData(List<int> rgShape, float[] rgData)
         {
+            if (m_param.mask_param == null || !m_param.mask_param.Active)
+                return rgData;
+
             int nL = m_param.mask_param.boundary_left;
             int nR = m_param.mask_param.boundary_right;
             int nT = m_param.mask_param.boundary_top;
