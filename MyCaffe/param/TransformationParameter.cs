@@ -34,6 +34,7 @@ namespace MyCaffe.param
         ExpansionParameter m_expansion = new ExpansionParameter(false);
         EmitConstraint m_emitConstraint = new EmitConstraint(false);
         MaskParameter m_mask = new MaskParameter(false);
+        DataLabelMappingParameter m_labelMapping = new DataLabelMappingParameter(false);
 
         /// <summary>
         /// Defines the color ordering used to tranform the input data.
@@ -263,6 +264,18 @@ namespace MyCaffe.param
             set { m_mask = value; }
         }
 
+        /// <summary>
+        /// Optionally, specifies the label mapping which defines how to map lables when calling the DataTransformer.TransformLabel method.
+        /// </summary>
+        /// <remarks>
+        /// Currently, this parameter is only used by the DataLayer.
+        /// </remarks>
+        public DataLabelMappingParameter label_mapping
+        {
+            get { return m_labelMapping; }
+            set { m_labelMapping = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -300,6 +313,9 @@ namespace MyCaffe.param
 
             if (p.mask_param != null)
                 m_mask = p.mask_param.Clone();
+
+            if (p.label_mapping != null)
+                m_labelMapping = p.label_mapping.Clone();
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -360,6 +376,9 @@ namespace MyCaffe.param
 
             if (m_mask != null)
                 rgChildren.Add(m_mask.ToProto("mask_param"));
+
+            if (m_labelMapping != null)
+                rgChildren.Add(m_labelMapping.ToProto("label_mapping"));
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -445,6 +464,10 @@ namespace MyCaffe.param
             RawProto rpMask = rp.FindChild("mask_param");
             if (rpMask != null)
                 p.mask_param = MaskParameter.FromProto(rpMask);
+
+            RawProto rpLabelMapping = rp.FindChild("label_mapping");
+            if (rpLabelMapping != null)
+                p.label_mapping = DataLabelMappingParameter.FromProto(rpLabelMapping);
 
             return p;
         }

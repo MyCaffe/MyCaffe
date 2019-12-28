@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,18 +10,19 @@ using System.Threading.Tasks;
 namespace MyCaffe.param
 {
     /// <summary>
-    /// The DataLabelMappingParameter is used by the DataParameter when the 'enable_labelmapping' = True.
+    /// Specifies the parameters for the DataLabelMappingParameter used to map labels by the DataTransformer.TransformLabel when active.
     /// </summary>
     [Serializable]
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class DataLabelMappingParameter
+    public class DataLabelMappingParameter : OptionalParameter
     {
         LabelMappingCollection m_rgMapping = new LabelMappingCollection();
 
         /// <summary>
         /// The constructor.
         /// </summary>
-        public DataLabelMappingParameter()
+        /// <param name="bActive">Specifies whether or not the parameter is active or not.</param>
+        public DataLabelMappingParameter(bool bActive) : base(bActive)
         {
         }
 
@@ -46,26 +48,60 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Copies the specified source data noise parameter to this one.
+        /// Load the and return a new DataLabelMappingParameter. 
         /// </summary>
-        /// <param name="src">Specifies the source data noise parameter.</param>
-        public void Copy(DataLabelMappingParameter src)
+        /// <param name="br"></param>
+        /// <param name="bNewInstance"></param>
+        /// <returns>The new object is returned.</returns>
+        public DataLabelMappingParameter Load(BinaryReader br, bool bNewInstance = true)
         {
-            if (src == null)
-                return;
+            RawProto proto = RawProto.Parse(br.ReadString());
+            DataLabelMappingParameter p = FromProto(proto);
 
-            m_rgMapping = src.m_rgMapping.Clone();
+            if (!bNewInstance)
+                Copy(p);
+
+            return p;
         }
+
+        /// <summary>
+        /// Copies the specified source data label mapping parameter to this one.
+        /// </summary>
+        /// <param name="src">Specifies the source data label mapping parameter.</param>
+        public override void Copy(OptionalParameter src)
+        {
+            base.Copy(src);
+
+            if (src is DataLabelMappingParameter)
+            {
+                DataLabelMappingParameter p = (DataLabelMappingParameter)src;
+                m_rgMapping = p.m_rgMapping.Clone();
+            }
+        }
+
+        /// <summary>
+        /// Return a copy of this object.
+        /// </summary>
+        /// <returns>A new copy of the object is returned.</returns>
+        public DataLabelMappingParameter Clone()
+        {
+            DataLabelMappingParameter p = new DataLabelMappingParameter(Active);
+            p.Copy(this);
+            return p;
+        }
+
 
         /// <summary>
         /// Convert the DataLabelMappingParameter into a RawProto.
         /// </summary>
         /// <param name="strName">Specifies the RawProto name.</param>
         /// <returns>The RawProto containing the settings is returned.</returns>
-        public RawProto ToProto(string strName)
+        public override RawProto ToProto(string strName)
         {
+            RawProto rpBase = base.ToProto("option");
             RawProtoCollection rgChildren = new RawProtoCollection();
 
+            rgChildren.Add(rpBase);
             rgChildren.Add<string>("mapping", m_rgMapping.ToStringList());
 
             return new RawProto(strName, "", rgChildren);
@@ -76,12 +112,14 @@ namespace MyCaffe.param
         /// Parses the parameter from a RawProto.
         /// </summary>
         /// <param name="rp">Specifies the RawProto to parse.</param>
-        /// <param name="p">Optionally, specifies an instance to load.  If <i>null</i>, a new instance is created and loaded.</param>
         /// <returns>A new instance of the parameter is returned.</returns>
-        public static DataLabelMappingParameter FromProto(RawProto rp, DataLabelMappingParameter p = null)
+        public static new DataLabelMappingParameter FromProto(RawProto rp)
         {
-            if (p == null)
-                p = new DataLabelMappingParameter();
+            DataLabelMappingParameter p = new DataLabelMappingParameter(true);
+
+            RawProto rpOption = rp.FindChild("option");
+            if (rpOption != null)
+                ((OptionalParameter)p).Copy(OptionalParameter.FromProto(rpOption));
 
             p.m_rgMapping = LabelMappingCollection.Parse(rp.FindArray<string>("mapping"));
 

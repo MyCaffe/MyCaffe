@@ -299,6 +299,23 @@ namespace MyCaffe.data
         }
 
         /// <summary>
+        /// When active (label_mapping.Active = true), transforms the label if mapped using the label and boost.  Otherwise
+        /// if not active or not mapped, no label changes are made.
+        /// </summary>
+        /// <param name="sd">Specifies the SimpleDatum whos label is to be transformed.</param>
+        /// <returns>The new label is returned - this value is also set as the new label for the SimpleDatum.</returns>
+        public int TransformLabel(SimpleDatum sd)
+        {
+            if (m_param.label_mapping == null || !m_param.label_mapping.Active)
+                return sd.Label;
+
+            int nNewLabel = m_param.label_mapping.MapLabel(sd.Label, sd.Boost);
+            sd.SetLabel(nNewLabel);
+
+            return nNewLabel;
+        }
+
+        /// <summary>
         /// Transforms a list of Datum and places the transformed data into a Blob.
         /// </summary>
         /// <param name="rgDatum">Specifies a List of Datum to be transformed.</param>

@@ -49,8 +49,6 @@ namespace MyCaffe.param
         DataNoiseParameter m_dataNoiseParam = new DataNoiseParameter();
         bool m_bEnableDebugOutput = false;
         DataDebugParameter m_dataDebugParam = new DataDebugParameter();
-        bool m_bEnableLabelMapping = false;
-        DataLabelMappingParameter m_dataLabelMappingParam = new DataLabelMappingParameter();
 
         /// <summary>
         /// This event is, optionally, called to verify the batch size of the DataParameter.
@@ -287,32 +285,6 @@ namespace MyCaffe.param
             set { m_dataDebugParam = value; }
         }
 
-        /// <summary>
-        /// (\b optional, default = false) When <i>true</i> the data labels are mapped according to the DataLabelMappingParam.
-        /// </summary>
-        /// <remarks>
-        /// This parameter is not used by the AnnotatedDataLayer.
-        /// </remarks>
-        [Category("Labels"), Description("Optionally, specifies to map the labels according to the DataLabelMappingParam. (default = false).")]
-        public bool enable_label_mapping
-        {
-            get { return m_bEnableLabelMapping; }
-            set { m_bEnableLabelMapping = value; }
-        }
-
-        /// <summary>
-        /// Specifies the DataLabelMappingParameter used when 'enable_label_mapping' = True.
-        /// </summary>
-        /// <remarks>
-        /// This parameter is not used by the AnnotatedDataLayer.
-        /// </remarks>
-        [Category("Labels"), Description("Optionally, specifies the parameters used when 'enable_label_mapping' = True.")]
-        public DataLabelMappingParameter data_label_mapping_param
-        {
-            get { return m_dataLabelMappingParam; }
-            set { m_dataLabelMappingParam = value; }
-        }
-
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -348,8 +320,6 @@ namespace MyCaffe.param
             m_dataNoiseParam.Copy(p.m_dataNoiseParam);
             m_bEnableDebugOutput = p.m_bEnableDebugOutput;
             m_dataDebugParam.Copy(p.m_dataDebugParam);
-            m_bEnableLabelMapping = p.m_bEnableLabelMapping;
-            m_dataLabelMappingParam.Copy(p.m_dataLabelMappingParam);
             m_nForcedPrimaryLabel = p.m_nForcedPrimaryLabel;
         }
 
@@ -413,12 +383,6 @@ namespace MyCaffe.param
             {
                 rgChildren.Add("enable_debug_output", m_bEnableDebugOutput.ToString());
                 rgChildren.Add(m_dataDebugParam.ToProto("data_debug_param"));
-            }
-
-            if (enable_label_mapping)
-            {
-                rgChildren.Add("enable_label_mapping", m_bEnableLabelMapping.ToString());
-                rgChildren.Add(m_dataLabelMappingParam.ToProto("data_label_mapping_param"));
             }
 
             if (m_nForcedPrimaryLabel >= 0)
@@ -525,13 +489,6 @@ namespace MyCaffe.param
             RawProto rpDataDebug = rp.FindChild("data_debug_param");
             if (rpDataDebug != null)
                 p.data_debug_param = DataDebugParameter.FromProto(rpDataDebug);
-
-            if ((strVal = rp.FindValue("enable_label_mapping")) != null)
-                p.enable_label_mapping = bool.Parse(strVal);
-
-            RawProto rpDataLabelMapping = rp.FindChild("data_label_mapping_param");
-            if (rpDataLabelMapping != null)
-                p.data_label_mapping_param = DataLabelMappingParameter.FromProto(rpDataLabelMapping);
 
             if ((strVal = rp.FindValue("forced_primary_label")) != null)
                 p.forced_primary_label = int.Parse(strVal);
