@@ -1576,6 +1576,8 @@ namespace MyCaffe
                     blob = new Blob<T>(m_cuda, m_log);
 
                 Datum datum = new Datum(d);
+
+                m_dataTransformer.MaskImage(datum);
                 List<int> rgShape = m_dataTransformer.InferBlobShape(datum);
                 blob.Reshape(rgShape);
                 blob.SetData(m_dataTransformer.Transform(datum));
@@ -1659,6 +1661,7 @@ namespace MyCaffe
             foreach (SimpleDatum sd in rgSd)
             {
                 Datum d = new Datum(sd);
+                m_dataTransformer.MaskImage(d);
                 rgDataInput.AddRange(m_dataTransformer.Transform(d));
             }
 
