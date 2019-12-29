@@ -661,14 +661,18 @@ namespace MyCaffe.test
 
             DataLayer<T> layer = new DataLayer<T>(m_cuda, m_log, p, m_parent.db, m_parent.CancelEvent);
 
-            layer.LayerSetUp(BottomVec, TopVec);
-            layer.Reshape(BottomVec, TopVec);
+            try
+            {
+                layer.LayerSetUp(BottomVec, TopVec);
+                layer.Reshape(BottomVec, TopVec);
 
-            Thread.Sleep(2000);
-
-            layer.Dispose();
-
-            m_parent.CancelEvent.Reset();
+                Thread.Sleep(2000);
+            }
+            finally
+            {
+                layer.Dispose();
+                m_parent.CancelEvent.Reset();
+            }
         }
 
         public string Fill(bool unique_pixels, int nMaxLabel = -1)
@@ -840,49 +844,55 @@ namespace MyCaffe.test
 
             p.transform_param.scale = dfScale;
 
-            MyCaffeImageDatabase2 db = new MyCaffeImageDatabase2();
+            IXImageDatabaseBase db = createImageDb(m_log);
 
             m_parent.Settings.ImageDbLoadMethod = loadMethod;
-            db.InitializeWithDsId(m_parent.Settings, m_nDsID);
+            db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
             DataLayer<T> layer = new DataLayer<T>(m_cuda, m_log, p, db, evtCancel);
 
-            layer.Setup(BottomVec, TopVec);
-
-            m_log.CHECK_EQ(Top.num, 5, "The top should have num = 5");
-            m_log.CHECK_EQ(Top.channels, 2, "The top should have channels = 2");
-            m_log.CHECK_EQ(Top.height, 3, "The top should have height = 3");
-            m_log.CHECK_EQ(Top.width, 4, "The top should have width = 4");
-            m_log.CHECK_EQ(TopLabel.num, 5, "The top label should have num = 5");
-            m_log.CHECK_EQ(TopLabel.channels, 1, "The top label should have channels = 1");
-            m_log.CHECK_EQ(TopLabel.height, 1, "The top label should have height = 1");
-            m_log.CHECK_EQ(TopLabel.width, 1, "The top label should have width = 1");
-
-            for (int iter = 0; iter < 100; iter++)
+            try
             {
-                layer.Forward(BottomVec, TopVec);
+                layer.Setup(BottomVec, TopVec);
 
-                for (int i = 0; i < 5; i++)
-                {
-                    double dfTopLabel = convert(TopLabel.GetData(i));
-                    m_log.CHECK_EQ(i, dfTopLabel, "The top label value at " + i.ToString() + " is not correct.");
-                }
+                m_log.CHECK_EQ(Top.num, 5, "The top should have num = 5");
+                m_log.CHECK_EQ(Top.channels, 2, "The top should have channels = 2");
+                m_log.CHECK_EQ(Top.height, 3, "The top should have height = 3");
+                m_log.CHECK_EQ(Top.width, 4, "The top should have width = 4");
+                m_log.CHECK_EQ(TopLabel.num, 5, "The top label should have num = 5");
+                m_log.CHECK_EQ(TopLabel.channels, 1, "The top label should have channels = 1");
+                m_log.CHECK_EQ(TopLabel.height, 1, "The top label should have height = 1");
+                m_log.CHECK_EQ(TopLabel.width, 1, "The top label should have width = 1");
 
-                for (int i = 0; i < 5; i++)
+                for (int iter = 0; iter < 100; iter++)
                 {
-                    for (int j = 0; j < 24; j++)
+                    layer.Forward(BottomVec, TopVec);
+
+                    for (int i = 0; i < 5; i++)
                     {
-                        double dfValue = dfScale * i;
-                        double dfTop = convert(Top.GetData(i * 24 + j));
+                        double dfTopLabel = convert(TopLabel.GetData(i));
+                        m_log.CHECK_EQ(i, dfTopLabel, "The top label value at " + i.ToString() + " is not correct.");
+                    }
 
-                        m_log.CHECK_EQ(dfValue, dfTop, "debug : iter " + iter.ToString() + " i " + i.ToString() + " j " + j.ToString());
+                    for (int i = 0; i < 5; i++)
+                    {
+                        for (int j = 0; j < 24; j++)
+                        {
+                            double dfValue = dfScale * i;
+                            double dfTop = convert(Top.GetData(i * 24 + j));
+
+                            m_log.CHECK_EQ(dfValue, dfTop, "debug : iter " + iter.ToString() + " i " + i.ToString() + " j " + j.ToString());
+                        }
                     }
                 }
             }
-
-            layer.Dispose();
-            m_parent.CancelEvent.Reset();
+            finally
+            {
+                layer.Dispose();
+                m_parent.CancelEvent.Reset();
+                ((IDisposable)db).Dispose();
+            }
         }
 
         public void TestSkip(IMAGEDB_LOAD_METHOD loadMethod)
@@ -895,39 +905,52 @@ namespace MyCaffe.test
             p.data_param.enable_random_selection = false;
             p.data_param.backend = DataParameter.DB.IMAGEDB;
 
-            MyCaffeImageDatabase2 db = new MyCaffeImageDatabase2();
+            IXImageDatabaseBase db = createImageDb(m_log);
             m_parent.Settings.ImageDbLoadMethod = loadMethod;
-            db.InitializeWithDsId(m_parent.Settings, m_nDsID);
+            db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
-            int nSolverCount = 8;
-            p.solver_count = nSolverCount;
-
-            for (int dev = 0; dev < nSolverCount; dev++)
+            try
             {
-                int nSolverRank = dev;
-                p.solver_rank = nSolverRank;
+                int nSolverCount = 8;
+                p.solver_count = nSolverCount;
 
-                DataLayer<T> layer = new DataLayer<T>(m_cuda, m_log, p, db, evtCancel);
-                layer.Setup(BottomVec, TopVec);
-
-                int nLabel = dev;
-
-                for (int iter = 0; iter < 10; iter++)
+                for (int dev = 0; dev < nSolverCount; dev++)
                 {
-                    layer.Forward(BottomVec, TopVec);
+                    int nSolverRank = dev;
+                    p.solver_rank = nSolverRank;
 
-                    double[] rgTopLabel = convert(TopLabel.update_cpu_data());
+                    DataLayer<T> layer = new DataLayer<T>(m_cuda, m_log, p, db, evtCancel);
 
-                    for (int i=0; i<nBatchSize; i++)
+                    try
                     {
-                        m_log.CHECK_EQ(nLabel % nBatchSize, (int)rgTopLabel[i], "The label is not as expected at " + i.ToString());
-                        nLabel += nSolverCount;
+                        layer.Setup(BottomVec, TopVec);
+
+                        int nLabel = dev;
+
+                        for (int iter = 0; iter < 10; iter++)
+                        {
+                            layer.Forward(BottomVec, TopVec);
+
+                            double[] rgTopLabel = convert(TopLabel.update_cpu_data());
+
+                            for (int i = 0; i < nBatchSize; i++)
+                            {
+                                m_log.CHECK_EQ(nLabel % nBatchSize, (int)rgTopLabel[i], "The label is not as expected at " + i.ToString());
+                                nLabel += nSolverCount;
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        layer.Dispose();
+                        m_parent.CancelEvent.Reset();
                     }
                 }
-
-                layer.Dispose();
-                m_parent.CancelEvent.Reset();
+            }
+            finally
+            {
+                ((IDisposable)db).Dispose();
             }
         }
 
@@ -946,49 +969,55 @@ namespace MyCaffe.test
             p.data_param.enable_random_selection = false;
             p.data_param.backend = DataParameter.DB.IMAGEDB;
 
-            MyCaffeImageDatabase2 db = new MyCaffeImageDatabase2();
+            IXImageDatabaseBase db = createImageDb(m_log);
             m_parent.Settings.ImageDbLoadMethod = loadMethod;
-            db.InitializeWithDsId(m_parent.Settings, m_nDsID);
+            db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
             DataLayer<T> layer = new DataLayer<T>(m_cuda, m_log, p, db, evtCancel);
 
-            layer.Setup(BottomVec, TopVec);
-
-            m_log.CHECK_EQ(Top.num, 1, "The top should have num = 1");
-            m_log.CHECK_EQ(Top.channels, 2, "The top should have channels = 2");
-            m_log.CHECK_EQ(TopLabel.num, 1, "The top label should have num = 1");
-            m_log.CHECK_EQ(TopLabel.channels, 1, "The top label should have channels = 1");
-            m_log.CHECK_EQ(TopLabel.height, 1, "The top label should have height = 1");
-            m_log.CHECK_EQ(TopLabel.width, 1, "The top label should have width = 1");
-
-            for (int iter = 0; iter < num_inputs; iter++)
+            try
             {
-                layer.Forward(BottomVec, TopVec);
+                layer.Setup(BottomVec, TopVec);
 
-                m_log.CHECK_EQ(Top.height, iter % 2 + 1, "The top height is not as expected.");
-                m_log.CHECK_EQ(Top.width, iter % 4 + 1, "The top width is not as expected.");
-                m_log.CHECK_EQ(iter, convert(TopLabel.GetData(0)), "The top label is not as expected.");
+                m_log.CHECK_EQ(Top.num, 1, "The top should have num = 1");
+                m_log.CHECK_EQ(Top.channels, 2, "The top should have channels = 2");
+                m_log.CHECK_EQ(TopLabel.num, 1, "The top label should have num = 1");
+                m_log.CHECK_EQ(TopLabel.channels, 1, "The top label should have channels = 1");
+                m_log.CHECK_EQ(TopLabel.height, 1, "The top label should have height = 1");
+                m_log.CHECK_EQ(TopLabel.width, 1, "The top label should have width = 1");
 
-                int nChannels = Top.channels;
-                int nHeight = Top.height;
-                int nWidth = Top.width;
-
-                for (int c = 0; c < nChannels; c++)
+                for (int iter = 0; iter < num_inputs; iter++)
                 {
-                    for (int h = 0; h < nHeight; h++)
+                    layer.Forward(BottomVec, TopVec);
+
+                    m_log.CHECK_EQ(Top.height, iter % 2 + 1, "The top height is not as expected.");
+                    m_log.CHECK_EQ(Top.width, iter % 4 + 1, "The top width is not as expected.");
+                    m_log.CHECK_EQ(iter, convert(TopLabel.GetData(0)), "The top label is not as expected.");
+
+                    int nChannels = Top.channels;
+                    int nHeight = Top.height;
+                    int nWidth = Top.width;
+
+                    for (int c = 0; c < nChannels; c++)
                     {
-                        for (int w = 0; w < nWidth; w++)
+                        for (int h = 0; h < nHeight; h++)
                         {
-                            int nIdx = (c * nHeight + h) * nWidth + w;
-                            m_log.CHECK_EQ(nIdx, (int)convert(Top.GetData(nIdx)), "dbug: iter " + iter.ToString() + " c " + c.ToString() + " h " + h.ToString() + " w " + w.ToString());
+                            for (int w = 0; w < nWidth; w++)
+                            {
+                                int nIdx = (c * nHeight + h) * nWidth + w;
+                                m_log.CHECK_EQ(nIdx, (int)convert(Top.GetData(nIdx)), "dbug: iter " + iter.ToString() + " c " + c.ToString() + " h " + h.ToString() + " w " + w.ToString());
+                            }
                         }
                     }
                 }
             }
-
-            layer.Dispose();
-            m_parent.CancelEvent.Reset();
+            finally
+            {
+                layer.Dispose();
+                m_parent.CancelEvent.Reset();
+                ((IDisposable)db).Dispose();
+            }
         }
 
         public void TestReadCrop(Phase phase, IMAGEDB_LOAD_METHOD loadMethod)
@@ -1007,60 +1036,66 @@ namespace MyCaffe.test
             p.transform_param.crop_size = 1;
             p.transform_param.random_seed = 1701;
 
-            MyCaffeImageDatabase2 db = new MyCaffeImageDatabase2();
+            IXImageDatabaseBase db = createImageDb(m_log);
             m_parent.Settings.ImageDbLoadMethod = loadMethod;
-            db.InitializeWithDsId(m_parent.Settings, m_nDsID);
+            db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
             DataLayer<T> layer = new DataLayer<T>(m_cuda, m_log, p, db, evtCancel);
 
-            layer.Setup(BottomVec, TopVec);
-
-            m_log.CHECK_EQ(Top.num, 5, "The top should have num = 5");
-            m_log.CHECK_EQ(Top.channels, 2, "The top should have channels = 2");
-            m_log.CHECK_EQ(Top.height, 1, "The top should have channels = 1");
-            m_log.CHECK_EQ(Top.width, 1, "The top should have channels = 1");
-            m_log.CHECK_EQ(TopLabel.num, 5, "The top label should have num = 5");
-            m_log.CHECK_EQ(TopLabel.channels, 1, "The top label should have channels = 1");
-            m_log.CHECK_EQ(TopLabel.height, 1, "The top label should have channels = 1");
-            m_log.CHECK_EQ(TopLabel.width, 1, "The top label should have channels = 1");
-
-            for (int iter = 0; iter < 2; iter++)
+            try
             {
-                layer.Forward(BottomVec, TopVec);
+                layer.Setup(BottomVec, TopVec);
 
-                for (int i = 0; i < 5; i++)
+                m_log.CHECK_EQ(Top.num, 5, "The top should have num = 5");
+                m_log.CHECK_EQ(Top.channels, 2, "The top should have channels = 2");
+                m_log.CHECK_EQ(Top.height, 1, "The top should have channels = 1");
+                m_log.CHECK_EQ(Top.width, 1, "The top should have channels = 1");
+                m_log.CHECK_EQ(TopLabel.num, 5, "The top label should have num = 5");
+                m_log.CHECK_EQ(TopLabel.channels, 1, "The top label should have channels = 1");
+                m_log.CHECK_EQ(TopLabel.height, 1, "The top label should have channels = 1");
+                m_log.CHECK_EQ(TopLabel.width, 1, "The top label should have channels = 1");
+
+                for (int iter = 0; iter < 2; iter++)
                 {
-                    m_log.CHECK_EQ(i, convert(TopLabel.GetData(i)), "The top label value at " + i.ToString() + " is not correct.");
-                }
+                    layer.Forward(BottomVec, TopVec);
 
-                int num_with_center_value = 0;
-
-                for (int i = 0; i < 5; i++)
-                {
-                    for (int j = 0; j < 2; j++)
+                    for (int i = 0; i < 5; i++)
                     {
-                        double dfCenterValue = dfScale * (j != 0 ? 17 : 5);
-                        double dfTop = convert(Top.GetData(i * 2 + j));
-
-                        if (dfCenterValue == dfTop)
-                            num_with_center_value++;
-
-                        // At TEST time, check that we always get center value.
-                        if (phase == Phase.TEST)
-                            m_log.CHECK_EQ(dfCenterValue, dfTop, "The center value '" + dfCenterValue.ToString() + "' should equal the top value '" + dfTop.ToString() + "', debug : iter " + iter.ToString() + " i " + i.ToString() + " j " + j.ToString());
+                        m_log.CHECK_EQ(i, convert(TopLabel.GetData(i)), "The top label value at " + i.ToString() + " is not correct.");
                     }
+
+                    int num_with_center_value = 0;
+
+                    for (int i = 0; i < 5; i++)
+                    {
+                        for (int j = 0; j < 2; j++)
+                        {
+                            double dfCenterValue = dfScale * (j != 0 ? 17 : 5);
+                            double dfTop = convert(Top.GetData(i * 2 + j));
+
+                            if (dfCenterValue == dfTop)
+                                num_with_center_value++;
+
+                            // At TEST time, check that we always get center value.
+                            if (phase == Phase.TEST)
+                                m_log.CHECK_EQ(dfCenterValue, dfTop, "The center value '" + dfCenterValue.ToString() + "' should equal the top value '" + dfTop.ToString() + "', debug : iter " + iter.ToString() + " i " + i.ToString() + " j " + j.ToString());
+                        }
+                    }
+
+                    // At TRAIN time, check that we did not get the center crop all 10 times.
+                    // (This check fails with probability 1-1/12^10 in a correct
+                    // implementation, so we set the random_seed param value).
+                    if (phase == Phase.TRAIN)
+                        m_log.CHECK_LT(num_with_center_value, 10, "The num_with_center_value should be less than 10");
                 }
-
-                // At TRAIN time, check that we did not get the center crop all 10 times.
-                // (This check fails with probability 1-1/12^10 in a correct
-                // implementation, so we set the random_seed param value).
-                if (phase == Phase.TRAIN)
-                    m_log.CHECK_LT(num_with_center_value, 10, "The num_with_center_value should be less than 10");
             }
-
-            layer.Dispose();
-            m_parent.CancelEvent.Reset();
+            finally
+            {
+                layer.Dispose();
+                m_parent.CancelEvent.Reset();
+                ((IDisposable)db).Dispose();
+            }
         }
 
         public void TestReadCropSequenceSeeded(IMAGEDB_LOAD_METHOD loadMethod)
@@ -1089,66 +1124,79 @@ namespace MyCaffe.test
             List<List<double>> crop_sequence = new List<List<double>>();
             {
                 DataLayer<T> layer1 = new DataLayer<T>(m_cuda, m_log, p, db, evtCancel);
-                layer1.Setup(BottomVec, TopVec);
 
-                for (int iter = 0; iter < 2; iter++)
+                try
                 {
-                    layer1.Forward(BottomVec, TopVec);
+                    layer1.Setup(BottomVec, TopVec);
 
-                    for (int i = 0; i < 5; i++)
+                    for (int iter = 0; iter < 2; iter++)
                     {
-                        m_log.CHECK_EQ(i, convert(TopLabel.GetData(i)), "The top label value at " + i.ToString() + " is not correct.");
-                    }
+                        layer1.Forward(BottomVec, TopVec);
 
-                    List<double> iter_crop_sequence = new List<double>();
-
-                    for (int i = 0; i < 5; i++)
-                    {
-                        for (int j = 0; j < 2; j++)
+                        for (int i = 0; i < 5; i++)
                         {
-                            double dfTop = convert(Top.GetData(i * 2 + j));
-                            iter_crop_sequence.Add(dfTop);
+                            m_log.CHECK_EQ(i, convert(TopLabel.GetData(i)), "The top label value at " + i.ToString() + " is not correct.");
                         }
+
+                        List<double> iter_crop_sequence = new List<double>();
+
+                        for (int i = 0; i < 5; i++)
+                        {
+                            for (int j = 0; j < 2; j++)
+                            {
+                                double dfTop = convert(Top.GetData(i * 2 + j));
+                                iter_crop_sequence.Add(dfTop);
+                            }
+                        }
+
+                        crop_sequence.Add(iter_crop_sequence);
                     }
-
-                    crop_sequence.Add(iter_crop_sequence);
                 }
-
-                layer1.Dispose();
+                finally
+                {
+                    layer1.Dispose();
+                    ((IDisposable)db).Dispose();
+                }
             } // destroy 1st data layer and unlock the db.
 
 
-            db = new MyCaffeImageDatabase2();
+            db = createImageDb(m_log);
             db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
 
             // Get crop sequence after reseeding caffe (done within the data transformer)
             p.transform_param.random_seed = 1701;
             DataLayer<T> layer2 = new DataLayer<T>(m_cuda, m_log, p, db, evtCancel);
 
-            layer2.Setup(BottomVec, TopVec);
-
-            for (int iter = 0; iter < 2; iter++)
+            try
             {
-                layer2.Forward(BottomVec, TopVec);
+                layer2.Setup(BottomVec, TopVec);
 
-                for (int i = 0; i < 5; i++)
+                for (int iter = 0; iter < 2; iter++)
                 {
-                    m_log.CHECK_EQ(i, convert(TopLabel.GetData(i)), "The top label value at " + i.ToString() + " is not correct.");
-                }
+                    layer2.Forward(BottomVec, TopVec);
 
-                for (int i = 0; i < 5; i++)
-                {
-                    for (int j = 0; j < 2; j++)
+                    for (int i = 0; i < 5; i++)
                     {
-                        double dfValue = crop_sequence[iter][i * 2 + j];
-                        double dfTop = convert(Top.GetData(i * 2 + j));
-                        m_log.CHECK_EQ(dfValue, dfTop, "debug: iter " + iter.ToString() + " i " + i.ToString() + " j " + j.ToString());
+                        m_log.CHECK_EQ(i, convert(TopLabel.GetData(i)), "The top label value at " + i.ToString() + " is not correct.");
+                    }
+
+                    for (int i = 0; i < 5; i++)
+                    {
+                        for (int j = 0; j < 2; j++)
+                        {
+                            double dfValue = crop_sequence[iter][i * 2 + j];
+                            double dfTop = convert(Top.GetData(i * 2 + j));
+                            m_log.CHECK_EQ(dfValue, dfTop, "debug: iter " + iter.ToString() + " i " + i.ToString() + " j " + j.ToString());
+                        }
                     }
                 }
             }
-
-            layer2.Dispose();
-            m_parent.CancelEvent.Reset();
+            finally
+            {
+                layer2.Dispose();
+                m_parent.CancelEvent.Reset();
+                ((IDisposable)db).Dispose();
+            }
         }
 
         public void TestReadCropSequenceUnSeeded(IMAGEDB_LOAD_METHOD loadMethod)
@@ -1172,73 +1220,91 @@ namespace MyCaffe.test
             db.InitializeWithDsId1(m_parent.Settings, m_nDsID);
             CancelEvent evtCancel = new CancelEvent();
 
-            // Get crop sequence without setting a seed.
-            List<List<double>> crop_sequence = new List<List<double>>();
+            try
             {
-                DataLayer<T> layer1 = new DataLayer<T>(m_cuda, m_log, p, db, evtCancel);
-                layer1.Setup(BottomVec, TopVec);
-
-                for (int iter = 0; iter < 2; iter++)
+                // Get crop sequence without setting a seed.
+                List<List<double>> crop_sequence = new List<List<double>>();
                 {
-                    layer1.Forward(BottomVec, TopVec);
+                    DataLayer<T> layer1 = new DataLayer<T>(m_cuda, m_log, p, db, evtCancel);
 
-                    for (int i = 0; i < 5; i++)
+                    try
                     {
-                        m_log.CHECK_EQ(i, convert(TopLabel.GetData(i)), "The top label value at " + i.ToString() + " is not correct.");
-                    }
+                        layer1.Setup(BottomVec, TopVec);
 
-                    List<double> iter_crop_sequence = new List<double>();
-
-                    for (int i = 0; i < 5; i++)
-                    {
-                        for (int j = 0; j < 2; j++)
+                        for (int iter = 0; iter < 2; iter++)
                         {
-                            double dfTop = convert(Top.GetData(i * 2 + j));
-                            iter_crop_sequence.Add(dfTop);
+                            layer1.Forward(BottomVec, TopVec);
+
+                            for (int i = 0; i < 5; i++)
+                            {
+                                m_log.CHECK_EQ(i, convert(TopLabel.GetData(i)), "The top label value at " + i.ToString() + " is not correct.");
+                            }
+
+                            List<double> iter_crop_sequence = new List<double>();
+
+                            for (int i = 0; i < 5; i++)
+                            {
+                                for (int j = 0; j < 2; j++)
+                                {
+                                    double dfTop = convert(Top.GetData(i * 2 + j));
+                                    iter_crop_sequence.Add(dfTop);
+                                }
+                            }
+
+                            crop_sequence.Add(iter_crop_sequence);
                         }
                     }
-
-                    crop_sequence.Add(iter_crop_sequence);
-                }
-
-                layer1.Dispose();
-            } // destroy 1st data layer and unlock the db.
-
-
-            // Get crop sequence without reseeding.  Check that the
-            // sequence differs from the original.
-            DataLayer<T> layer2 = new DataLayer<T>(m_cuda, m_log, p, db, evtCancel);
-
-            layer2.Setup(BottomVec, TopVec);
-
-            for (int iter = 0; iter < 2; iter++)
-            {
-                layer2.Forward(BottomVec, TopVec);
-
-                for (int i = 0; i < 5; i++)
-                {
-                    m_log.CHECK_EQ(i, convert(TopLabel.GetData(i)), "The top label value at " + i.ToString() + " is not correct.");
-                }
-
-                int num_sequence_matches = 0;
-
-                for (int i = 0; i < 5; i++)
-                {
-                    for (int j = 0; j < 2; j++)
+                    finally
                     {
-                        double dfValue = crop_sequence[iter][i * 2 + j];
-                        double dfTop = convert(Top.GetData(i * 2 + j));
+                        layer1.Dispose();
+                    }
+                } // destroy 1st data layer and unlock the db.
 
-                        if (dfValue == dfTop)
-                            num_sequence_matches++;
+
+                // Get crop sequence without reseeding.  Check that the
+                // sequence differs from the original.
+                DataLayer<T> layer2 = new DataLayer<T>(m_cuda, m_log, p, db, evtCancel);
+
+                try
+                {
+                    layer2.Setup(BottomVec, TopVec);
+
+                    for (int iter = 0; iter < 2; iter++)
+                    {
+                        layer2.Forward(BottomVec, TopVec);
+
+                        for (int i = 0; i < 5; i++)
+                        {
+                            m_log.CHECK_EQ(i, convert(TopLabel.GetData(i)), "The top label value at " + i.ToString() + " is not correct.");
+                        }
+
+                        int num_sequence_matches = 0;
+
+                        for (int i = 0; i < 5; i++)
+                        {
+                            for (int j = 0; j < 2; j++)
+                            {
+                                double dfValue = crop_sequence[iter][i * 2 + j];
+                                double dfTop = convert(Top.GetData(i * 2 + j));
+
+                                if (dfValue == dfTop)
+                                    num_sequence_matches++;
+                            }
+                        }
+
+                        m_log.CHECK_LT(num_sequence_matches, 10, "The number of sequence matches doesn't differ when it should.");
                     }
                 }
-
-                m_log.CHECK_LT(num_sequence_matches, 10, "The number of sequence matches doesn't differ when it should.");
+                finally
+                {
+                    layer2.Dispose();
+                    m_parent.CancelEvent.Reset();
+                }
             }
-
-            layer2.Dispose();
-            m_parent.CancelEvent.Reset();
+            finally
+            {
+                ((IDisposable)db).Dispose();
+            }
         }
 
         public void TestForward(string strSrc)
