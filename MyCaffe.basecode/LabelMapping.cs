@@ -402,6 +402,76 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Parse a string into a new LabelMapping.
+        /// </summary>
+        /// <remarks>
+        /// The expected format for the label mapping is:
+        ///   originalLabel->newLabel[?newLabelFalse,boostCondition]
+        ///   
+        /// Where the newLabelFalse and boostCondition are optional.  
+        /// The basic logic of the label map is as follows:
+        /// 
+        /// If no boost condition exists, map the original label to the
+        /// new label.
+        /// 
+        /// If a boost condition exists and is met, map the original label
+        /// to the new label.
+        /// 
+        /// If a boost condition exists and is not met and the newLabelFalse
+        /// exists, map the original label to the newLabelFalse.
+        /// </remarks>
+        /// <param name="str">Specifies the string to parse.</param>
+        /// <returns>The new LabelMapping is returned.</returns>
+        public static LabelMapping Parse(string str)
+        {
+            string strTarget = "->";
+            int nPos = str.IndexOf(strTarget);
+            if (nPos < 0)
+                throw new Exception("Invalid label mapping format, missing '" + strTarget + "'!");
+
+            string strLabelOriginal = str.Substring(0, nPos);
+            str = str.Substring(nPos + strTarget.Length);
+
+            string strCondition = null;
+            string strNewLabelFalse = null;
+            string strNewLabel = str;
+            nPos = str.IndexOf('?');
+            if (nPos > 0)
+            {
+                strNewLabel = str.Substring(0, nPos);
+                str = str.Substring(nPos + 1);
+
+                nPos = str.IndexOf(',');
+                if (nPos > 0)
+                {
+                    strNewLabelFalse = str.Substring(0, nPos);
+                    str = str.Substring(nPos + 1);
+                }
+
+                strTarget = "boost=";
+                nPos = str.IndexOf(strTarget);
+                if (nPos < 0)
+                    throw new Exception("Invalid label mapping format, missing '" + strTarget + "'!");
+
+                str = str.Substring(nPos + strTarget.Length);
+                strCondition = str;
+            }
+
+            int nOriginalLabel = int.Parse(strLabelOriginal);
+            int nNewLabel = int.Parse(strNewLabel);
+            int? nNewLabelFalse = null;
+            int? nCondition = null;
+
+            if (strNewLabelFalse != null)
+                nNewLabelFalse = int.Parse(strNewLabelFalse);
+
+            if (strCondition != null)
+                nCondition = int.Parse(strCondition);
+
+            return new LabelMapping(nOriginalLabel, nNewLabel, nCondition, nNewLabelFalse);
+        }
+
+        /// <summary>
         /// Return a string representation of the label mapping.
         /// </summary>
         /// <returns>The string representatio is returned.</returns>
