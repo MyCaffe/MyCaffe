@@ -828,12 +828,17 @@ namespace MyCaffe.layers
 
             if (bMatching)
             {
-                dNew = m_cursor.GetValue(d.Label, bLoadDataCriteria);
+                int? nLabel = null;
+
+                if (d.Label == d.OriginalLabel)
+                    nLabel = d.Label;
+
+                dNew = m_cursor.GetValue(nLabel, bLoadDataCriteria);
 
                 while (dNew.Label != d.Label && nIdx < nRetries)
                 {
                     Next();
-                    dNew = m_cursor.GetValue(d.Label, bLoadDataCriteria);
+                    dNew = m_cursor.GetValue(nLabel, bLoadDataCriteria);
                     nIdx++;
                 }
 
