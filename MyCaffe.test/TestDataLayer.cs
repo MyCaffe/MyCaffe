@@ -1903,7 +1903,7 @@ namespace MyCaffe.test
             layer.Dispose();
             ((IDisposable)db).Dispose();
 
-            m_log.CHECK_EQ(rgLabelCounts.Count, 6, "There should be 6 labels!");
+            m_log.CHECK_EQ(rgLabelCounts.Count, 6, "Only " + rgLabelCounts.Count.ToString() + " labels found - There should be 6 labels!");
             List<SimpleDatum> rgExpectedData = SimpleDatum.LoadFromPath(p.data_param.data_debug_param.debug_save_path);
 
 
@@ -2009,7 +2009,7 @@ namespace MyCaffe.test
             layer.Dispose();
             ((IDisposable)db).Dispose();
 
-            m_log.CHECK_EQ(rgLabelCounts.Count, 6, "There should be 6 labels!");
+            m_log.CHECK_EQ(rgLabelCounts.Count, 6, "Only " + rgLabelCounts.Count.ToString() + " labels found - There should be 6 labels!");
             List<SimpleDatum> rgExpectedData = SimpleDatum.LoadFromPath(p.data_param.data_debug_param.debug_save_path);
 
 
