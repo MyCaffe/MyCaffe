@@ -2536,6 +2536,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_simple_param, "triplet_loss_simple_param"));
 
             // Beta layers.
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(decode_param, "decode_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(knn_param, "knn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization1_param, "normalization_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
@@ -2805,6 +2806,9 @@ namespace MyCaffe.param
                 p.triplet_loss_simple_param = TripletLossSimpleParameter.FromProto(rpp);
 
             // Beta layers.
+            if ((rpp = rp.FindChild("decode_param")) != null)
+                p.decode_param = DecodeParameter.FromProto(rpp);
+
             if ((rpp = rp.FindChild("knn_param")) != null)
                 p.knn_param = KnnParameter.FromProto(rpp);
 
