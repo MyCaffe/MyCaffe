@@ -4313,7 +4313,7 @@ inline long Device<T>::cuda_copy_sim(long lInput, T* pfInput, long* plOutput, T*
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+	if (lErr = verifyInput(lInput, pfInput, 7, 8))
 		return lErr;
 
 	int nCount = (int)pfInput[0];
@@ -4323,8 +4323,12 @@ inline long Device<T>::cuda_copy_sim(long lInput, T* pfInput, long* plOutput, T*
 	long hSrc2 = (long)pfInput[4];
 	long hDst = (long)pfInput[5];
 	long hSim = (long)pfInput[6];
+	bool bInvert = false;
 
-	return m_math.copy_sim(nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSim);
+	if (lInput > 7)
+		bInvert = (pfInput[7] == 0) ? false : true;
+
+	return m_math.copy_sim(nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSim, bInvert);
 }
 
 #endif // __DEVICE_CU__

@@ -91,7 +91,7 @@ class Math
 		long set(int nCount, long hDst, T fVal, int nIdx, int nXOff = 0);
 		long get(int nCount, long hSrc, int nIdx, T* pfOutput);
 		long copy(int nCount, long hSrc, long hDst, int nSrcOffset, int nDstOffset, long hAsyncStream, int nSrcHalfSizeOverride = -1, int nDstHalfSizeOverride = -1);
-		long copy_sim(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSim);
+		long copy_sim(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSim, bool bInvert);
 
 		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, __half* a, __half* b, T fBeta, __half* c);
 		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, T* a, T* b, T fBeta, T* c);

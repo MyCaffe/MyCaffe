@@ -507,8 +507,18 @@ __global__ void copy_sim_kernel(const int nCount, const int nNum, const int nDim
 	}
 }
 
+template <typename T>
+__global__ void copy_sim_kernel_invert(const int nCount, const int nNum, const int nDim, const T* x1, const T* x2, T* y, const T* s)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nCount; i += blockDim.x * gridDim.x)
+	{
+		int n = i / nDim;
+		y[i] = (s[n] == 0) ? x1[i] : x2[i];
+	}
+}
+
 template <class T>
-long Math<T>::copy_sim(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSim)
+long Math<T>::copy_sim(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSim, bool bInvert)
 {
 	LONG lErr;
 	MemoryItem* pSrc1;
@@ -536,7 +546,10 @@ long Math<T>::copy_sim(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, l
 	T* dst = (T*)pDst->Data();
 	T* sim = (T*)pSim->Data();
 
-	copy_sim_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nNum, nDim, src1, src2, dst, sim);
+	if (bInvert)
+		copy_sim_kernel_invert<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nNum, nDim, src1, src2, dst, sim);
+	else
+		copy_sim_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, nNum, nDim, src1, src2, dst, sim);
 
 	if (lErr = cudaStreamSynchronize(0))
 		return lErr;
@@ -544,8 +557,8 @@ long Math<T>::copy_sim(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, l
 	return cudaSuccess;
 }
 
-template long Math<double>::copy_sim(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSim);
-template long Math<float>::copy_sim(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSim);
+template long Math<double>::copy_sim(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSim, bool bInvert);
+template long Math<float>::copy_sim(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSim, bool bInvert);
 
 
 template<>

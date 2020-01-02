@@ -607,7 +607,7 @@ namespace MyCaffe.common
         double[] get_double(int nCount, long hHandle, int nIdx = -1);
         float[] get_float(int nCount, long hHandle, int nIdx = -1);
         void copy(int nCount, long hSrc, long hDst, int nSrcOffset = 0, int nDstOffset = 0, long hAsyncStream = -1, bool? bSrcHalfOverride = null, bool? bDstHalfOverride = null);
-        void copy(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSimilar);
+        void copy(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSimilar, bool bInvert = false);
         void channel_compare(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_fill(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, int nLabelDim, long hLabels, long hY);
 
@@ -4998,12 +4998,13 @@ namespace MyCaffe.common
         /// <param name="hSrc2">Specifies a handle to the GPU memory of source 2.</param>
         /// <param name="hDst">Specifies a handle to the GPU memory of the destination.</param>
         /// <param name="hSimilar">Specifies a handle to the GPU memory of the similar data.</param>
-        public void copy(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSimilar)
+        /// <param name="bInvert">Optionally, specifies whether or not to invert the similar values (e.g. copy when similar = 0 instead of similar = 1)</param>
+        public void copy(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSimilar, bool bInvert = false)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SIM, new double[] { nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSimilar });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SIM, new double[] { nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSimilar, (bInvert) ? 1 : 0 });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SIM, new float[] { nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSimilar });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SIM, new float[] { nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSimilar, (bInvert) ? 1 : 0 });
         }
 
         /// <summary>
