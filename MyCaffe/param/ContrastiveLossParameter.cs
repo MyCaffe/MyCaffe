@@ -27,6 +27,25 @@ namespace MyCaffe.param
         bool m_bLegacyVersion = false;
         bool m_bOutputMatches = false;
         CENTROID_LEARNING m_centroidLearning = CENTROID_LEARNING.NONE;
+        DISTANCE_CALCULATION m_distanceCalc = DISTANCE_CALCULATION.EUCLIDEAN;
+
+        /// <summary>
+        /// Defines the distance calculation to use.
+        /// </summary>
+        /// <remarks>
+        /// @see [Various types of Distance Metrics in Machine Learning](https://medium.com/analytics-vidhya/various-types-of-distance-metrics-machine-learning-cc9d4698c2da) by Sourodip Kundu, Medium, 2019.
+        /// </remarks>
+        public enum DISTANCE_CALCULATION
+        {
+            /// <summary>
+            /// Specifies to use the Euclidean Distance (default).
+            /// </summary>
+            EUCLIDEAN,
+            /// <summary>
+            /// Specifies to use the Manhattan Distance.
+            /// </summary>
+            MANHATTAN
+        }
 
         /// <summary>
         /// Defines the type of centroid learning to use.
@@ -104,6 +123,16 @@ namespace MyCaffe.param
             set { m_centroidLearning = value; }
         }
 
+        /// <summary>
+        /// Optionally, specifies the distance calculation to use when calculating the distance between encoding pairs (default = EUCLIDEAN).
+        /// </summary>
+        [Description("Optionally, specifies the distance calculation to use when calculating the distance between encoding pairs (default = EUCLIDEAN).")]
+        public DISTANCE_CALCULATION distance_calculation
+        {
+            get { return m_distanceCalc; }
+            set { m_distanceCalc = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -124,6 +153,7 @@ namespace MyCaffe.param
             m_bLegacyVersion = p.m_bLegacyVersion;
             m_bOutputMatches = p.m_bOutputMatches;
             m_centroidLearning = p.m_centroidLearning;
+            m_distanceCalc = p.m_distanceCalc;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -150,6 +180,8 @@ namespace MyCaffe.param
 
             if (centroid_learning != CENTROID_LEARNING.NONE)
                 rgChildren.Add("centroid_learning", centroid_learning.ToString());
+
+            rgChildren.Add("distance_calculation", distance_calculation.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -181,6 +213,12 @@ namespace MyCaffe.param
                     p.centroid_learning = CENTROID_LEARNING.MATCHING;
                 else if (strVal == CENTROID_LEARNING.NONMATCHING.ToString())
                     p.centroid_learning = CENTROID_LEARNING.NONMATCHING;
+            }
+
+            if ((strVal = rp.FindValue("distance_calculation")) != null)
+            {
+                if (strVal == DISTANCE_CALCULATION.MANHATTAN.ToString())
+                    p.distance_calculation = DISTANCE_CALCULATION.MANHATTAN;
             }
 
             return p;

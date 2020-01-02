@@ -314,35 +314,67 @@ namespace MyCaffe.layers
                 m_cuda.copy(m_blobPrimary.count(), colBottom[0].gpu_data, m_blobPrimary.mutable_gpu_data);
             }
 
-            m_cuda.sub(nCount,
-                       m_blobPrimary.gpu_data,          // a
-                       colBottom[1].gpu_data,           // b
-                       m_blobDiff.mutable_gpu_data);    // a_i - b_i
-
-            m_cuda.powx(nCount,
-                       m_blobDiff.mutable_gpu_data,     // a_i - b_i
-                       2.0,
-                       m_blobDiffSq.mutable_gpu_data);  // (a_i - b_i)^2
-
-            m_cuda.gemv(false,
-                       colBottom[0].num,
-                       colBottom[0].channels,
-                       1.0,
-                       m_blobDiffSq.gpu_data,           // (a_i - b_i)^2
-                       m_blobSummerVec.gpu_data,
-                       0.0,
-                       m_blobDistSq.mutable_gpu_data);  // \Sum (a_i - b_i)^2
-            
-            double dfMargin = m_param.contrastive_loss_param.margin;
             bool bLegacyVersion = m_param.contrastive_loss_param.legacy_version;
+            double dfMargin = m_param.contrastive_loss_param.margin;
+            float[] rgSimPairs = Utility.ConvertVecF<T>(m_blobSimilar.update_cpu_data());
+            float[] rgDist = null;
             double dfLoss = 0;
 
-            float[] rgDistSq = Utility.ConvertVecF<T>(m_blobDistSq.update_cpu_data());
-            float[] rgSimPairs = Utility.ConvertVecF<T>(m_blobSimilar.update_cpu_data());
+            if (m_param.contrastive_loss_param.distance_calculation == ContrastiveLossParameter.DISTANCE_CALCULATION.MANHATTAN)
+            {
+                // Manhattan Distance uses legacy calculation.
+                bLegacyVersion = true;
+
+                Blob<T> blobAbsDiff = m_blobDiffSq;
+                Blob<T> blobDist = m_blobDistSq;
+
+                m_cuda.sub(nCount,
+                           m_blobPrimary.gpu_data,          // a
+                           colBottom[1].gpu_data,           // b
+                           m_blobDiff.mutable_gpu_data);    // a_i - b_i
+
+                m_cuda.abs(nCount,
+                           m_blobDiff.gpu_data,             //  a_i - b_i
+                           blobAbsDiff.mutable_gpu_data);   // |a_i - b_i|
+
+                m_cuda.gemv(false,
+                           m_blobPrimary.num,
+                           m_blobPrimary.channels,
+                           1.0,
+                           blobAbsDiff.gpu_data,           // |a_i - b_i|
+                           m_blobSummerVec.gpu_data,
+                           0.0,
+                           blobDist.mutable_gpu_data);     // \Sum |a_i - b_i|
+
+                rgDist = Utility.ConvertVecF<T>(blobDist.update_cpu_data());
+            }
+            else // default = EUCLIDEAN
+            {
+                m_cuda.sub(nCount,
+                           m_blobPrimary.gpu_data,          // a
+                           colBottom[1].gpu_data,           // b
+                           m_blobDiff.mutable_gpu_data);    // a_i - b_i
+
+                m_cuda.powx(nCount,
+                           m_blobDiff.mutable_gpu_data,     // a_i - b_i
+                           2.0,
+                           m_blobDiffSq.mutable_gpu_data);  // (a_i - b_i)^2
+
+                m_cuda.gemv(false,
+                           m_blobPrimary.num,
+                           m_blobPrimary.channels,
+                           1.0,
+                           m_blobDiffSq.gpu_data,           // (a_i - b_i)^2
+                           m_blobSummerVec.gpu_data,
+                           0.0,
+                           m_blobDistSq.mutable_gpu_data);  // \Sum (a_i - b_i)^2
+
+                rgDist = Utility.ConvertVecF<T>(m_blobDistSq.update_cpu_data());
+            }
 
             for (int i = 0; i < colBottom[0].num; i++)
             {
-                double dfDist = (bLegacyVersion) ? dfMargin - rgDistSq[i] : dfMargin - Math.Sqrt(rgDistSq[i]);
+                double dfDist = (bLegacyVersion) ? dfMargin - rgDist[i] : dfMargin - Math.Sqrt(rgDist[i]);
                 bool bSimilar = (rgSimPairs[i] == 0) ? false : true;
 
                 if (bSimilar)  // similar pairs
@@ -355,7 +387,7 @@ namespace MyCaffe.layers
                             m_rgMatches[i] = m_tZero;
                     }
 
-                    dfLoss += rgDistSq[i];
+                    dfLoss += rgDist[i];
                 }
                 else // dissimilar pairs
                 {
