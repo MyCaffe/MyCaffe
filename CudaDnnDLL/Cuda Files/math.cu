@@ -561,6 +561,50 @@ template long Math<double>::copy_sim(int nCount, int nNum, int nDim, long hSrc1,
 template long Math<float>::copy_sim(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSim, bool bInvert);
 
 
+template <typename T>
+__global__ void copy_fill_kernel(const int nCount, const int nNum, const int nDim, const T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nCount; i += blockDim.x * gridDim.x)
+	{
+		int n = i / nDim;
+		int j = i % nDim;
+
+		if (n < nNum)
+			y[i] = x[j];
+	}
+}
+
+template <class T>
+long Math<T>::copy_fill(int n, int nDim, long hSrc, int nSrcOff, int nCount, long hDst)
+{
+	LONG lErr;
+	MemoryItem* pSrc;
+	MemoryItem* pDst;
+
+	if (lErr = m_pMemCol->GetData(hSrc, &pSrc))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hDst, &pDst))
+		return lErr;
+
+	if (n * nDim > nCount)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
+	T* src = (T*)pSrc->Data();
+	T* dst = (T*)pDst->Data();
+
+	if (nSrcOff > 0)
+		src += nSrcOff;
+
+	copy_fill_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, n, nDim, src, dst);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::copy_fill(int n, int nDim, long hSrc, int nSrcOff, int nCount, long hDst);
+template long Math<float>::copy_fill(int n, int nDim, long hSrc, int nSrcOff, int nCount, long hDst);
+
+
 template<>
 long Math<double>::nrm2(int n, long hA, int nAOff, double* pdfResult)
 {

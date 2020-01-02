@@ -175,6 +175,7 @@ const int CUDA_FN_SET = 200;
 const int CUDA_FN_GET = 201;
 const int CUDA_FN_COPY = 202;
 const int CUDA_FN_COPY_SIM = 203;
+const int CUDA_FN_COPY_FILL = 204;
 
 const int CUDA_FN_GEMM2 = 219;
 const int CUDA_FN_GEMM = 220;

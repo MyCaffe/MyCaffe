@@ -608,6 +608,8 @@ namespace MyCaffe.common
         float[] get_float(int nCount, long hHandle, int nIdx = -1);
         void copy(int nCount, long hSrc, long hDst, int nSrcOffset = 0, int nDstOffset = 0, long hAsyncStream = -1, bool? bSrcHalfOverride = null, bool? bDstHalfOverride = null);
         void copy(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSimilar, bool bInvert = false);
+        void fill(int n, int nDim, long hSrc, int nSrcOff, int nCount, long hDst);
+
         void channel_compare(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_fill(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, int nLabelDim, long hLabels, long hY);
 
@@ -887,6 +889,7 @@ namespace MyCaffe.common
             CUDA_GET = 201,
             CUDA_COPY = 202,
             CUDA_COPY_SIM = 203,
+            CUDA_COPY_FILL = 204,
 
             CUDA_GEMM2 = 219,
             CUDA_GEMM = 220,
@@ -5005,6 +5008,23 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SIM, new double[] { nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSimilar, (bInvert) ? 1 : 0 });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SIM, new float[] { nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSimilar, (bInvert) ? 1 : 0 });
+        }
+
+        /// <summary>
+        /// Fill data from the source data 'n' times in the destination.
+        /// </summary>
+        /// <param name="n">Specifies the number of times to copy the source data.</param>
+        /// <param name="nDim">Specifies the number of source items to copy.</param>
+        /// <param name="hSrc">Specifies a handle to the GPU memory of the source data.</param>
+        /// <param name="nSrcOff">Specifies an offset into the GPU memory where the source data copy starts.</param>
+        /// <param name="nCount">Specifies the total number of items in the destination.  This value must be >= n * nDim.</param>
+        /// <param name="hDst">Specifies the handle to the GPU memory where the data is to be copied.</param>
+        public void fill(int n, int nDim, long hSrc, int nSrcOff, int nCount, long hDst)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_FILL, new double[] { n, nDim, hSrc, nSrcOff, nCount, hDst });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_FILL, new float[] { n, nDim, hSrc, nSrcOff, nCount, hDst });
         }
 
         /// <summary>

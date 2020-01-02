@@ -277,6 +277,7 @@ class Device
 		long cuda_get(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_copy(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_copy_sim(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_copy_fill(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long cuda_gemm(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_gemm2(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -4329,6 +4330,25 @@ inline long Device<T>::cuda_copy_sim(long lInput, T* pfInput, long* plOutput, T*
 		bInvert = (pfInput[7] == 0) ? false : true;
 
 	return m_math.copy_sim(nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSim, bInvert);
+}
+
+
+template <class T>
+inline long Device<T>::cuda_copy_fill(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	int nDim = (int)pfInput[1];
+	long hSrc = (long)pfInput[2];
+	int nSrcOff = (int)pfInput[3];
+	int nCount = (int)pfInput[4];
+	long hDst = (long)pfInput[5];
+
+	return m_math.copy_fill(n, nDim, hSrc, nSrcOff, nCount, hDst);
 }
 
 #endif // __DEVICE_CU__
