@@ -24,7 +24,7 @@ namespace MyCaffe.gym
     /// <remarks>
     /// This gym is a rewrite of the original atari gym provided by OpenAi under the MIT license and located
     /// on GitHub at: https://github.com/openai/gym/blob/master/gym/envs/atari/atari_env.py
-    /// Licence: https://github.com/openai/gym/blob/master/LICENSE.md
+    /// License: https://github.com/openai/gym/blob/master/LICENSE.md
     /// 
     /// The original Atari-2600 Emulator from Stella (https://github.com/stella-emu/stella) is 
     /// distributed under the GPL license (https://github.com/stella-emu/stella/blob/master/License.txt)

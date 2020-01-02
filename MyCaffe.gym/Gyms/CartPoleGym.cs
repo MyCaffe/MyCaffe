@@ -18,7 +18,7 @@ namespace MyCaffe.gym
     /// <remarks>
     /// This gym is a rewrite of the original gym provided by OpenAi under the MIT license and located
     /// on GitHub at: https://github.com/openai/gym/blob/master/gym/envs/classic_control/cartpole.py
-    /// Licence: https://github.com/openai/gym/blob/master/LICENSE.md
+    /// License: https://github.com/openai/gym/blob/master/LICENSE.md
     /// 
     /// OpenAi notes that their implementation is a 'classic cart-pole system implemented by Rich Sutton et al.'
     /// copied from http://incompleteideas.net/sutton/book/code/pole.c with permalink: https://perma.cc/C9ZM-652R
