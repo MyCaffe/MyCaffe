@@ -43,6 +43,7 @@ namespace MyCaffe.common
         bool m_bFreezeLearning = false;
         bool m_bCpuDataReadyForPush = false;
         bool m_bReshapeWhenSharing = false;
+        bool m_bSnapshotRequested = false;
 
         /// <summary>
         /// Defines the maximum number of Axes supported by the Blob.
@@ -1457,6 +1458,18 @@ namespace MyCaffe.common
             m_nCapacity = b.m_nCapacity;
             m_rgShape = b.m_rgShape;
             m_nIdx = b.m_nIdx;
+        }
+
+        /// <summary>
+        /// Get/set the snapshot request.
+        /// </summary>
+        /// <remarks>
+        /// This setting is used by learnable parameters that have requested a snapshot.
+        /// </remarks>
+        public bool snapshot_requested
+        {
+            get { return m_bSnapshotRequested; }
+            set { m_bSnapshotRequested = value; }
         }
 
         /// <summary>

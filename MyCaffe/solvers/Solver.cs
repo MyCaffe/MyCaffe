@@ -730,6 +730,8 @@ namespace MyCaffe.solvers
             // overriden by setting snapshot_after_train = false.
             if (step == TRAIN_STEP.NONE && (m_param.snapshot_after_train && (m_param.snapshot == 0 || (m_nIter % m_param.snapshot) != 0)))
                 Snapshot(false, true);
+            else if (m_net.learnable_parameters.SnapshotRequested(true))
+                Snapshot(true, false);
 
             if (m_evtCancel.WaitOne(0))
             {

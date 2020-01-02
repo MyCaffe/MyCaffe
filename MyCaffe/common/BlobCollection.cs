@@ -427,6 +427,28 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Returns whether or not any blobs have a snapshot request set to true.
+        /// </summary>
+        /// <returns>If any blob in the colleciton has their snapshot request set to true, then <i>true</i> is returned.</returns>
+        public bool SnapshotRequested(bool bReset)
+        {
+            bool bRequested = false;
+
+            foreach (Blob<T> blob in m_rgBlobs)
+            {
+                if (blob.snapshot_requested)
+                {
+                    bRequested = true;
+
+                    if (bReset)
+                        blob.snapshot_requested = false;
+                }
+            }
+
+            return bRequested;
+        }
+
+        /// <summary>
         /// Release all resource used by the collection and its Blobs.
         /// </summary>
         public void Dispose()
