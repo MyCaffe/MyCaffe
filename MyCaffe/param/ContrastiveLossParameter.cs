@@ -25,7 +25,7 @@ namespace MyCaffe.param
         double m_dfMargin = 1.0;
         bool m_bLegacyVersion = false;
         bool m_bOutputMatches = false;
-        int m_nCentroidLearningIteration = -1;
+        bool m_bEnableCentroidLearning = false;
 
         /** @copydoc LayerParameterBase */
         public ContrastiveLossParameter()
@@ -71,13 +71,13 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Optionally, specifies to use centroid learning after a given iteration, which should be > than the centroid threshold specified by the DecodeParameter (default = -1, meaning no centroid learning occurs).
+        /// Optionally, specifies to use centroid learning as soon as the centroids (from the DecodeLayer) are ready - e.g. they have an asum > 0 (default = false, meaning no centroid learning occurs).
         /// </summary>
-        [Description("Optionally, specifies to use centroid learning after a given iteration, which should be > than the centroid threshold specified by the DecodeParameter (default = -1, meaning no centroid learning occurs).")]
-        public int centroid_learning_iteration
+        [Description("Optionally, specifies to use centroid learning as soon as the centroids (from the DecodeLayer) are ready - e.g. they have an asum > 0 (default = false, meaning no centroid learning occurs).")]
+        public bool enable_centroid_learning
         {
-            get { return m_nCentroidLearningIteration; }
-            set { m_nCentroidLearningIteration = value; }
+            get { return m_bEnableCentroidLearning; }
+            set { m_bEnableCentroidLearning = value; }
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -99,7 +99,7 @@ namespace MyCaffe.param
             m_dfMargin = p.m_dfMargin;
             m_bLegacyVersion = p.m_bLegacyVersion;
             m_bOutputMatches = p.m_bOutputMatches;
-            m_nCentroidLearningIteration = p.m_nCentroidLearningIteration;
+            m_bEnableCentroidLearning = p.m_bEnableCentroidLearning;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -124,8 +124,8 @@ namespace MyCaffe.param
             if (output_matches)
                 rgChildren.Add("output_matches", output_matches.ToString());
 
-            if (centroid_learning_iteration >= 0)
-                rgChildren.Add("centroid_learning_iteration", centroid_learning_iteration.ToString());
+            if (enable_centroid_learning)
+                rgChildren.Add("enable_centroid_learning", enable_centroid_learning.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -149,8 +149,8 @@ namespace MyCaffe.param
             if ((strVal = rp.FindValue("output_matches")) != null)
                 p.output_matches = bool.Parse(strVal);
 
-            if ((strVal = rp.FindValue("centroid_learning_iteration")) != null)
-                p.centroid_learning_iteration = int.Parse(strVal);
+            if ((strVal = rp.FindValue("enable_centroid_learning")) != null)
+                p.enable_centroid_learning = bool.Parse(strVal);
 
             return p;
         }

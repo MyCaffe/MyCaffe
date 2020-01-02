@@ -20,8 +20,8 @@ namespace MyCaffe.layers.beta
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class DecodeLayer<T> : Layer<T>
     {
-        int m_nCentroidThreshold = 20;
-        double m_dfMinAlpha = 0.0001;
+        int m_nCentroidThresholdStart = 300;
+        int m_nCentroidThresholdEnd = 500;
         int m_nNum = 0;
         int m_nEncodingDim = 0;
         Blob<T> m_blobData;
@@ -125,10 +125,10 @@ namespace MyCaffe.layers.beta
         {
             m_nEncodingDim = colBottom[0].channels;
 
-            m_nCentroidThreshold = m_param.decode_param.centroid_threshold;
-            m_log.CHECK_GE(m_nCentroidThreshold, 10, "The centroid threshold must be >= 10, and the recommended setting is 20.");
-            m_dfMinAlpha = m_param.decode_param.min_alpha;
-            m_log.CHECK_GE(m_dfMinAlpha, 0, "The minimum alpha must be >= 0.");
+            m_nCentroidThresholdStart = m_param.decode_param.centroid_threshold_start;
+            m_nCentroidThresholdEnd = m_param.decode_param.centroid_threshold_end;
+            m_log.CHECK_GE(m_nCentroidThresholdStart, 10, "The centroid threshold start must be >= 10, and the recommended setting is 300.");
+            m_log.CHECK_GT(m_nCentroidThresholdEnd, m_nCentroidThresholdStart, "The centroid threshold end must be > than the centroid threshold start.");
 
             if (m_colBlobs.Count == 0)
             {
@@ -144,6 +144,19 @@ namespace MyCaffe.layers.beta
                 }
 
                 m_colBlobs.Add(blobCentroids);
+
+                Blob<T> blobStatus = new Blob<T>(m_cuda, m_log, false);
+                blobStatus.Name = m_param.name + " status";
+                blobStatus.reshape_when_sharing = true;
+
+                List<int> rgStatusShape = new List<int>() { 0 }; // skip size check.
+                if (!shareParameter(blobStatus, rgStatusShape))
+                {
+                    blobStatus.Reshape(1, 1, 1, 1); // This will be resized to the label count
+                    blobStatus.SetData(0);
+                }
+
+                m_colBlobs.Add(blobStatus);
             }
         }
 
@@ -188,7 +201,11 @@ namespace MyCaffe.layers.beta
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            int nMinCount = m_nCentroidThreshold;
+            int nActiveLabels = m_param.decode_param.active_label_count;
+            int nItemNum = (colBottom[0].num == 1) ? 1 : colBottom[0].num / 2;
+            int nCentroidStart = m_nCentroidThresholdStart * nItemNum;
+            int nCentroidEnd = m_nCentroidThresholdEnd * nItemNum;
+            double dfAlpha = 1.0 / (double)(nCentroidEnd - nCentroidStart);
             double[] rgBottomLabel = null;
 
             if (m_param.phase == Phase.TRAIN)
@@ -197,12 +214,15 @@ namespace MyCaffe.layers.beta
                 rgBottomLabel = convertD(colBottom[1].update_cpu_data());
 
                 int nMaxLabel = rgBottomLabel.Max(p => (int)p);
-                if (nMaxLabel != m_rgLabelCounts.Count - 1)
+                int nMaxKey = (m_rgLabelCounts.Count == 0) ? 0 : m_rgLabelCounts.Max(p => p.Key);
+                if (nMaxLabel > nMaxKey)
                 {
                     int nNumLabels = nMaxLabel + 1;
 
                     m_colBlobs[0].Reshape(nNumLabels, m_nEncodingDim, 1, 1);
                     m_colBlobs[0].SetData(0);
+                    m_colBlobs[1].Reshape(nNumLabels, 1, 1, 1);
+                    m_colBlobs[1].SetData(0);
                     m_blobData.Reshape(nNumLabels, m_nEncodingDim, 1, 1);
                     m_blobDistSq.Reshape(nNumLabels, 1, 1, 1);
                     m_rgLabelCounts.Clear();
@@ -214,35 +234,60 @@ namespace MyCaffe.layers.beta
                 m_blobDistSq.Reshape(m_colBlobs[0].num, 1, 1, 1);
             }
 
+            if (nActiveLabels <= 0)
+                nActiveLabels = m_colBlobs[0].num;
+
             colTop[0].Reshape(colBottom[0].num, m_colBlobs[0].num, 1, 1);
 
             for (int i = 0; i < colBottom[0].num; i++)
             {
+                // When training, we calculate the centroids during observations between nCentroidStart and nCentroidEnd.
                 if (rgBottomLabel != null)
                 {
                     int nLabel = (int)rgBottomLabel[i * 2]; // Only the first embedding and first label are used (second is ignored).
 
-                    if (!m_rgLabelCounts.ContainsKey(nLabel))
+                    T fReady = m_colBlobs[1].GetData(nLabel);
+                    double dfReady = convertD(fReady);
+
+                    if (dfReady == 0)
                     {
-                        m_rgLabelCounts.Add(nLabel, 1);
-                        m_cuda.copy(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].mutable_gpu_data, i * m_nEncodingDim, nLabel * m_nEncodingDim);
-                    }
-                    else
-                    {
-                        m_rgLabelCounts[nLabel]++;
+                        if (!m_rgLabelCounts.ContainsKey(nLabel))
+                            m_rgLabelCounts.Add(nLabel, 1);
+                        else
+                            m_rgLabelCounts[nLabel]++;
 
-                        double dfAlpha = (1.0 / (double)m_rgLabelCounts[nLabel]);
-                        if (dfAlpha < m_dfMinAlpha)
-                            dfAlpha = m_dfMinAlpha;
+                        // Create the centroid when counts fall between Centroid Start and Centroid End by
+                        // averaging all items within these counts together to create the centroid.
+                        if (m_rgLabelCounts[nLabel] < nCentroidStart)
+                        {
+                            // do nothing.
+                        }
+                        else if (m_rgLabelCounts[nLabel] == nCentroidStart)
+                        {
+                            // Add initial centroid portion for the label.
+                            m_cuda.copy(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].mutable_gpu_data, i * m_nEncodingDim, nLabel * m_nEncodingDim);
+                            m_cuda.scale(m_nEncodingDim, convert(dfAlpha), m_colBlobs[0].gpu_data, m_colBlobs[0].mutable_gpu_data, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
+                        }
+                        else if (m_rgLabelCounts[nLabel] > nCentroidStart && m_rgLabelCounts[nLabel] < nCentroidEnd)
+                        {
+                            // Add portion of current item to centroids for the label.
+                            m_cuda.add(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].gpu_data, m_colBlobs[0].mutable_gpu_data, dfAlpha, 1, i * m_nEncodingDim, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
+                        }
+                        else
+                        {
+                            m_colBlobs[1].SetData(1.0, nLabel);
 
-                        double dfBeta = 1.0 - dfAlpha;
-
-                        // Add to centroids for each label.
-                        m_cuda.add(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].gpu_data, m_colBlobs[0].mutable_gpu_data, dfAlpha, dfBeta, i * m_nEncodingDim, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
+                            int nCompleted = (int)convertD(m_colBlobs[1].asum_data());
+                            if (nCompleted == nActiveLabels)
+                                m_colBlobs[1].snapshot_requested = true;
+                        }
                     }
                 }
 
-                if (m_phase != Phase.TRAIN || (m_rgLabelCounts.Count > 0 && m_rgLabelCounts.Min(p => p.Value) >= m_nCentroidThreshold))
+                // Wait until we have at least Centroid Threshold number of items for each label before calcuating the distances.
+                // NOTE: During the TEST and RUN phases, this should have 
+                int nCompletedCentroids = (int)convertD(m_colBlobs[1].asum_data());
+                if (nCompletedCentroids == nActiveLabels)
                 {
                     int nLabelCount = m_colBlobs[0].num;
                     if (nLabelCount == 0)
@@ -259,18 +304,18 @@ namespace MyCaffe.layers.beta
                     m_cuda.sub(nCount,
                                m_blobData.gpu_data,              // a
                                m_colBlobs[0].gpu_data,           // b
-                               m_blobData.mutable_gpu_diff);  // a_i - b_i
+                               m_blobData.mutable_gpu_diff);     // a_i - b_i
 
                     m_cuda.powx(nCount,
-                               m_blobData.gpu_diff,           // a_i - b_i
+                               m_blobData.gpu_diff,              // a_i - b_i
                                2.0,
-                               m_blobData.mutable_gpu_diff);  // (a_i - b_i)^2
+                               m_blobData.mutable_gpu_diff);     // (a_i - b_i)^2
 
                     m_cuda.gemv(false,
                                m_blobData.num,                   // label count.
                                m_blobData.channels,              // encoding size.
                                1.0,
-                               m_blobData.gpu_diff,           // (a_i - b_i)^2
+                               m_blobData.gpu_diff,              // (a_i - b_i)^2
                                m_blobSummerVec.gpu_data,
                                0.0,
                                m_blobDistSq.mutable_gpu_data);   // \Sum (a_i - b_i)^2
@@ -283,7 +328,19 @@ namespace MyCaffe.layers.beta
             if (colTop.Count > 1)
             {
                 colTop[1].ReshapeLike(m_colBlobs[0]);
-                m_cuda.copy(m_colBlobs[0].count(), m_colBlobs[0].gpu_data, colTop[1].mutable_gpu_data);
+
+                int nCompletedCentroids = (int)convertD(m_colBlobs[1].asum_data());
+                if (nCompletedCentroids == nActiveLabels)
+                {
+                    m_cuda.copy(m_colBlobs[0].count(), m_colBlobs[0].gpu_data, colTop[1].mutable_gpu_data);
+                }
+                else
+                {
+                    if (m_phase != Phase.TRAIN)
+                        m_log.WriteLine("WARNING: The centroids for the decode layer are not completed!  You must train the model first to calculate the centroids.");
+
+                    colTop[1].SetData(0);
+                }
             }
         }
 

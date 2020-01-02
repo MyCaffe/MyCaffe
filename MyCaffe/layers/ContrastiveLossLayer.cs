@@ -36,9 +36,10 @@ namespace MyCaffe.layers
         Blob<T> m_blobDiffSq; // cached for backward pass.
         Blob<T> m_blobSummerVec; // tmp storage for gpu forward pass.
         Blob<T> m_blobSimilar; // tmp storage for backward pass.
-        Blob<T> m_blobTarget; // target of similar (or centroid), or dissimilar image.
+        Blob<T> m_blobPrimary; // target of similar, or dissimilar image.
         T[] m_rgMatches = null;
         int m_nIteration = 0;
+        bool m_bCentroidLearningNotificationSent = false;
 
         /// <summary>
         /// The ContrastiveLossLayer constructor.
@@ -67,8 +68,8 @@ namespace MyCaffe.layers
             m_blobSummerVec.Name = m_param.name + " sum";
             m_blobSimilar = new Blob<T>(cuda, log, false);
             m_blobSimilar.Name = m_param.name + " similar";
-            m_blobTarget = new Blob<T>(cuda, log, false);
-            m_blobTarget.Name = m_param.name + " target";
+            m_blobPrimary = new Blob<T>(cuda, log, false);
+            m_blobPrimary.Name = m_param.name + " primary";
         }
 
         /** @copydoc Layer::dispose */
@@ -106,10 +107,10 @@ namespace MyCaffe.layers
                 m_blobSimilar = null;
             }
 
-            if (m_blobTarget != null)
+            if (m_blobPrimary != null)
             {
-                m_blobTarget.Dispose();
-                m_blobTarget = null;
+                m_blobPrimary.Dispose();
+                m_blobPrimary = null;
             }
         }
 
@@ -197,6 +198,7 @@ namespace MyCaffe.layers
             m_log.CHECK_LE(colBottom[2].channels, 3, "The bottom[2] should have channels <= 3.");
             m_log.CHECK_EQ(1, colBottom[2].height, "The bottom[2] should have height = 1.");
             m_log.CHECK_EQ(1, colBottom[2].width, "The bottom[2] should have width = 1.");
+            m_bCentroidLearningNotificationSent = false;
         }
 
         /// <summary>
@@ -214,7 +216,7 @@ namespace MyCaffe.layers
             // vector of ones used to sum along channels.
             m_blobSummerVec.Reshape(colBottom[0].channels, 1, 1, 1);
             m_blobSummerVec.SetData(1.0);
-            m_blobTarget.ReshapeLike(colBottom[1]);
+            m_blobPrimary.ReshapeLike(colBottom[0]);
 
             if (colTop.Count > 1 && m_param.contrastive_loss_param.output_matches)
             {
@@ -265,7 +267,18 @@ namespace MyCaffe.layers
                 m_cuda.copy(colBottom[2].count(), colBottom[2].gpu_data, m_blobSimilar.mutable_gpu_data);
             }
 
-            if (m_param.contrastive_loss_param.centroid_learning_iteration >= 0 && m_nIteration > m_param.contrastive_loss_param.centroid_learning_iteration)
+            // When using centroid learning, the centroids from the DecodeLayer are only filled after they are fully
+            // calculated - prior to full calculations, the centriods are set to 0.
+            bool bUseCentroidLearning = false;
+            if (m_param.contrastive_loss_param.enable_centroid_learning && colBottom.Count > 3)
+            {
+                T fAsum = colBottom[3].asum_data();
+                double dfAsum = convertD(fAsum);
+                if (dfAsum > 0)
+                    bUseCentroidLearning = true;
+            }
+
+            if (bUseCentroidLearning)
             {
                 m_log.CHECK_EQ(colBottom.Count, 4, "When using centroid learning, a fourth bottom is required that contains the class centroids (calculated by the DecodeLayer).");
                 m_log.CHECK_EQ(colBottom[3].channels, colBottom[0].channels, "Each centroid should have the same size as each encoding.");
@@ -274,20 +287,25 @@ namespace MyCaffe.layers
                 m_log.CHECK_EQ(colBottom[2].channels, 2, "The colBottom[2] must contain labels, not a similarity value - make sure the data layer has 'output_all_labels' = True.");
 
                 // Load the target with the centroids to match the labels received in colBottom(2) - only use the first label of the two.
-                m_cuda.channel_fill(m_blobTarget.count(), m_blobTarget.num, m_blobTarget.count(1), 1, colBottom[3].gpu_data, colBottom[2].count(1), colBottom[2].gpu_data, m_blobTarget.mutable_gpu_data);
+                int nEncodingDim = m_blobPrimary.count(1);
+                int nLabelDim = colBottom[2].count(1);
+                m_cuda.channel_fill(m_blobPrimary.count(), m_blobPrimary.num, nEncodingDim, 1, colBottom[3].gpu_data, nLabelDim, colBottom[2].gpu_data, m_blobPrimary.mutable_gpu_data);
 
-                // If using centroid learning; for similar paris, copy the centroids from colBottom[3], otherwise copy the colBottom[1] dissimilar encodings.
-                m_cuda.copy(m_blobTarget.count(), m_blobTarget.num, m_blobTarget.count(1), m_blobTarget.gpu_data, colBottom[1].gpu_data, m_blobTarget.mutable_gpu_data, m_blobSimilar.gpu_data);
+                if (!m_bCentroidLearningNotificationSent)
+                {
+                    m_log.WriteLine("INFO: Centroid learning ON.");
+                    m_bCentroidLearningNotificationSent = true;
+                }
             }
             else
             {
                 // If not using centroid learning, just use the bottom[1] as is.
-                m_cuda.copy(m_blobTarget.count(), colBottom[1].gpu_data, m_blobTarget.mutable_gpu_data);
+                m_cuda.copy(m_blobPrimary.count(), colBottom[0].gpu_data, m_blobPrimary.mutable_gpu_data);
             }
 
             m_cuda.sub(nCount,
-                       colBottom[0].gpu_data,           // a
-                       m_blobTarget.gpu_data,           // b
+                       m_blobPrimary.gpu_data,          // a
+                       colBottom[1].gpu_data,           // b
                        m_blobDiff.mutable_gpu_data);    // a_i - b_i
 
             m_cuda.powx(nCount,

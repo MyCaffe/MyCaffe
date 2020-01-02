@@ -20,9 +20,10 @@ namespace MyCaffe.param.beta
     /// </summary>
     public class DecodeParameter : LayerParameterBase 
     {
-        int m_nCentroidTheshold = 20;
-        double m_dfMinAlpha = 0.0001;
+        int m_nCentroidThresholdStart = 300;
+        int m_nCentroidThresholdEnd = 500;
         bool m_bOutputCentroids = false;
+        int m_nActiveLabelCount = 0;
 
         /** @copydoc LayerParameterBase */
         public DecodeParameter()
@@ -30,23 +31,23 @@ namespace MyCaffe.param.beta
         }
 
         /// <summary>
-        /// Specifies the minimum number of items to observe per label before using the calculated cenntroid for each label (default = 20).
+        /// Specifies the starting iteration where observed items are used to calculate the centroid for each label, before this value, the centroids should not be used for their calculation is not complete (default = 300).
         /// </summary>
-        [Description("Specifies the minimum number of items to observe per label before using the calculated cenntroid for each label (default = 20).")]
-        public int centroid_threshold
+        [Description("Specifies the starting iteration where observed items are used to calculate the centroid for each label, before this value, the centroids are set to 0 and should not be used (default = 300).")]
+        public int centroid_threshold_start
         {
-            get { return m_nCentroidTheshold; }
-            set { m_nCentroidTheshold = value; }
+            get { return m_nCentroidThresholdStart; }
+            set { m_nCentroidThresholdStart = value; }
         }
 
         /// <summary>
-        /// Specifies the minimum alpha value used when averaging the items per label to create the centroid (default = 0.0001).  Ultimately this value dictates how many observations factor into the final centroid after a long training session.
+        /// Specifies the ending iteration where observed items are used to calculate the centroid for each label, after this value, the previously calculated centroids returned (default = 500).
         /// </summary>
-        [Description("Specifies the minimum alpha value used when averaging the items per label to create the centroid (default = 0.0001).  Ultimately this value dictates how many observations factor into the final centroid after a long training session.")]
-        public double min_alpha
+        [Description("Specifies the ending iteration where observed items are used to calculate the centroid for each label, after this value, the previously calculated centroids returned (default = 500).")]
+        public int centroid_threshold_end
         {
-            get { return m_dfMinAlpha; }
-            set { m_dfMinAlpha = value; }
+            get { return m_nCentroidThresholdEnd; }
+            set { m_nCentroidThresholdEnd = value; }
         }
 
         /// <summary>
@@ -57,6 +58,16 @@ namespace MyCaffe.param.beta
         {
             get { return m_bOutputCentroids; }
             set { m_bOutputCentroids = value; }
+        }
+
+        /// <summary>
+        /// Optionally, specifies a number of active labels that are less than the actual label count - this is used when only a subset of the labels within the label range are actually used (default = 0, which then expects all labels).
+        /// </summary>
+        [Description("Optionally, specifies a number of active labels that are less than the actual label count - this is used when only a subset of the labels within the label range are actually used (default = 0, which then expects all labels).")]
+        public int active_label_count
+        {
+            get { return m_nActiveLabelCount; }
+            set { m_nActiveLabelCount = value; }
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -75,9 +86,10 @@ namespace MyCaffe.param.beta
         public override void Copy(LayerParameterBase src)
         {
             DecodeParameter p = (DecodeParameter)src;
-            m_nCentroidTheshold = p.m_nCentroidTheshold;
-            m_dfMinAlpha = p.m_dfMinAlpha;
+            m_nCentroidThresholdStart = p.m_nCentroidThresholdStart;
+            m_nCentroidThresholdEnd = p.m_nCentroidThresholdEnd;
             m_bOutputCentroids = p.m_bOutputCentroids;
+            m_nActiveLabelCount = p.m_nActiveLabelCount;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -93,9 +105,12 @@ namespace MyCaffe.param.beta
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
-            rgChildren.Add("centroid_threshold", centroid_threshold.ToString());
-            rgChildren.Add("min_alpha", min_alpha.ToString());
+            rgChildren.Add("centroid_threshold_start", centroid_threshold_start.ToString());
+            rgChildren.Add("centroid_threshold_end", centroid_threshold_end.ToString());
             rgChildren.Add("output_centroids", output_centroids.ToString());
+
+            if (active_label_count > 0)
+                rgChildren.Add("active_label_count", active_label_count.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -110,14 +125,17 @@ namespace MyCaffe.param.beta
             string strVal;
             DecodeParameter p = new DecodeParameter();
 
-            if ((strVal = rp.FindValue("centroid_threshold")) != null)
-                p.centroid_threshold = int.Parse(strVal);
+            if ((strVal = rp.FindValue("centroid_threshold_start")) != null)
+                p.centroid_threshold_start = int.Parse(strVal);
 
-            if ((strVal = rp.FindValue("min_alpha")) != null)
-                p.min_alpha = int.Parse(strVal);
+            if ((strVal = rp.FindValue("centroid_threshold_end")) != null)
+                p.centroid_threshold_end = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("output_centroids")) != null)
                 p.output_centroids = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("active_label_count")) != null)
+                p.active_label_count = int.Parse(strVal);
 
             return p;
         }
