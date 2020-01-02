@@ -861,7 +861,7 @@ namespace MyCaffe.layers
             }
 
             if (strType != null)
-                m_log.WriteLine("WARNING: The secondary pairing " + strType + " could not be found after " + nRetries.ToString() + "!");
+                m_log.WriteLine("WARNING: The secondary pairing " + strType + " could not be found after " + nRetries.ToString() + " retries!");
 
             return dNew;
         }
