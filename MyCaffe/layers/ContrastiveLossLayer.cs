@@ -26,6 +26,7 @@ namespace MyCaffe.layers
     /// @see [Dimensionality Reduction by Learning an Invariant Mapping](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf) by Raia Hadsel, Sumit Chopra, and Yann LeCun, 2006.
     /// @see [Similarity Learning with (or without) Convolutional Neural Network](http://slazebni.cs.illinois.edu/spring17/lec09_similarity.pdf) by Moitreya Chatterjee and Yunan Luo, 2017. 
     /// Centroids:
+    /// @see [Retrieving Similar E-Commerce Images Using Deep Learning](https://arxiv.org/abs/1901.03546) by Rishab Sharma and Anirudha Vishvakarma, arXiv:1901.03546, 2019.
     /// @see [A New Loss Function for CNN Classifier Based on Pre-defined Evenly-Distributed Class Centroids](https://arxiv.org/abs/1904.06008) by Qiuyu Zhu, Pengju Zhang, and Xin Ye, arXiv:1904.06008, 2019.
     /// </remarks>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
@@ -39,7 +40,7 @@ namespace MyCaffe.layers
         Blob<T> m_blobPrimary; // target of similar, or dissimilar image.
         T[] m_rgMatches = null;
         int m_nIteration = 0;
-        bool m_bCentroidLearningNotificationSent = false;
+        int m_nCentroidNotification = 10;
 
         /// <summary>
         /// The ContrastiveLossLayer constructor.
@@ -198,7 +199,7 @@ namespace MyCaffe.layers
             m_log.CHECK_LE(colBottom[2].channels, 3, "The bottom[2] should have channels <= 3.");
             m_log.CHECK_EQ(1, colBottom[2].height, "The bottom[2] should have height = 1.");
             m_log.CHECK_EQ(1, colBottom[2].width, "The bottom[2] should have width = 1.");
-            m_bCentroidLearningNotificationSent = false;
+            m_nCentroidNotification = 10;
         }
 
         /// <summary>
@@ -270,7 +271,7 @@ namespace MyCaffe.layers
             // When using centroid learning, the centroids from the DecodeLayer are only filled after they are fully
             // calculated - prior to full calculations, the centriods are set to 0.
             bool bUseCentroidLearning = false;
-            if (m_param.contrastive_loss_param.enable_centroid_learning && colBottom.Count > 3)
+            if (m_param.contrastive_loss_param.centroid_learning != ContrastiveLossParameter.CENTROID_LEARNING.NONE && colBottom.Count > 3)
             {
                 T fAsum = colBottom[3].asum_data();
                 double dfAsum = convertD(fAsum);
@@ -289,12 +290,22 @@ namespace MyCaffe.layers
                 // Load the target with the centroids to match the labels received in colBottom(2) - only use the first label of the two.
                 int nEncodingDim = m_blobPrimary.count(1);
                 int nLabelDim = colBottom[2].count(1);
+
+                // Use centroids for both matching and non-matching.
                 m_cuda.channel_fill(m_blobPrimary.count(), m_blobPrimary.num, nEncodingDim, 1, colBottom[3].gpu_data, nLabelDim, colBottom[2].gpu_data, m_blobPrimary.mutable_gpu_data);
 
-                if (!m_bCentroidLearningNotificationSent)
+                // If using centroid learning; for similar pairs, copy the centroids from colBottom[3], otherwise copy the colBottom[0] dissimilar encodings.
+                if (m_param.contrastive_loss_param.centroid_learning == ContrastiveLossParameter.CENTROID_LEARNING.MATCHING)
+                    m_cuda.copy(m_blobPrimary.count(), m_blobPrimary.num, m_blobPrimary.count(1), m_blobPrimary.gpu_data, colBottom[0].gpu_data, m_blobPrimary.mutable_gpu_data, m_blobSimilar.gpu_data);
+
+                // If using centroid learning; for non-similar pairs, copy the centroids from colBottom[3], otherwise copy the colBottom[0] dissimilar encodings.
+                else if (m_param.contrastive_loss_param.centroid_learning == ContrastiveLossParameter.CENTROID_LEARNING.NONMATCHING)
+                    m_cuda.copy(m_blobPrimary.count(), m_blobPrimary.num, m_blobPrimary.count(1), m_blobPrimary.gpu_data, colBottom[0].gpu_data, m_blobPrimary.mutable_gpu_data, m_blobSimilar.gpu_data, true);
+
+                if (m_nCentroidNotification > 0)
                 {
                     m_log.WriteLine("INFO: Centroid learning ON.");
-                    m_bCentroidLearningNotificationSent = true;
+                    m_nCentroidNotification--;
                 }
             }
             else

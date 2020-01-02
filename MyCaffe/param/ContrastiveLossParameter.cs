@@ -18,6 +18,7 @@ namespace MyCaffe.param
     /// @see [Dimensionality Reduction by Learning an Invariant Mapping](http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf) by Raia Hadsel, Sumit Chopra, and Yann LeCun, 2006.
     /// @see [Similarity Learning with (or without) Convolutional Neural Network](http://slazebni.cs.illinois.edu/spring17/lec09_similarity.pdf) by Moitreya Chatterjee and Yunan Luo, 2017. 
     /// Centroids:
+    /// @see [Retrieving Similar E-Commerce Images Using Deep Learning](https://arxiv.org/abs/1901.03546) by Rishab Sharma and Anirudha Vishvakarma, arXiv:1901.03546, 2019.
     /// @see [A New Loss Function for CNN Classifier Based on Pre-defined Evenly-Distributed Class Centroids](https://arxiv.org/abs/1904.06008) by Qiuyu Zhu, Pengju Zhang, and Xin Ye, arXiv:1904.06008, 2019.
     /// </remarks>
     public class ContrastiveLossParameter : LayerParameterBase
@@ -25,7 +26,30 @@ namespace MyCaffe.param
         double m_dfMargin = 1.0;
         bool m_bLegacyVersion = false;
         bool m_bOutputMatches = false;
-        bool m_bEnableCentroidLearning = false;
+        CENTROID_LEARNING m_centroidLearning = CENTROID_LEARNING.NONE;
+
+        /// <summary>
+        /// Defines the type of centroid learning to use.
+        /// </summary>
+        public enum CENTROID_LEARNING
+        {
+            /// <summary>
+            /// Specifies to not use centroid learning (default).
+            /// </summary>
+            NONE,
+            /// <summary>
+            /// Specifies to only use centroid learning on matching pairs.
+            /// </summary>
+            MATCHING,
+            /// <summary>
+            /// Specifies to only use centroid learning on non-matching pairs.
+            /// </summary>
+            NONMATCHING,
+            /// <summary>
+            /// Specifies to use centroid learning on both matching and non-matching pairs.
+            /// </summary>
+            ALL
+        }
 
         /** @copydoc LayerParameterBase */
         public ContrastiveLossParameter()
@@ -74,10 +98,10 @@ namespace MyCaffe.param
         /// Optionally, specifies to use centroid learning as soon as the centroids (from the DecodeLayer) are ready - e.g. they have an asum > 0 (default = false, meaning no centroid learning occurs).
         /// </summary>
         [Description("Optionally, specifies to use centroid learning as soon as the centroids (from the DecodeLayer) are ready - e.g. they have an asum > 0 (default = false, meaning no centroid learning occurs).")]
-        public bool enable_centroid_learning
+        public CENTROID_LEARNING centroid_learning
         {
-            get { return m_bEnableCentroidLearning; }
-            set { m_bEnableCentroidLearning = value; }
+            get { return m_centroidLearning; }
+            set { m_centroidLearning = value; }
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -99,7 +123,7 @@ namespace MyCaffe.param
             m_dfMargin = p.m_dfMargin;
             m_bLegacyVersion = p.m_bLegacyVersion;
             m_bOutputMatches = p.m_bOutputMatches;
-            m_bEnableCentroidLearning = p.m_bEnableCentroidLearning;
+            m_centroidLearning = p.m_centroidLearning;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -124,8 +148,8 @@ namespace MyCaffe.param
             if (output_matches)
                 rgChildren.Add("output_matches", output_matches.ToString());
 
-            if (enable_centroid_learning)
-                rgChildren.Add("enable_centroid_learning", enable_centroid_learning.ToString());
+            if (centroid_learning != CENTROID_LEARNING.NONE)
+                rgChildren.Add("centroid_learning", centroid_learning.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -149,8 +173,15 @@ namespace MyCaffe.param
             if ((strVal = rp.FindValue("output_matches")) != null)
                 p.output_matches = bool.Parse(strVal);
 
-            if ((strVal = rp.FindValue("enable_centroid_learning")) != null)
-                p.enable_centroid_learning = bool.Parse(strVal);
+            if ((strVal = rp.FindValue("centroid_learning")) != null)
+            {
+                if (strVal == CENTROID_LEARNING.ALL.ToString())
+                    p.centroid_learning = CENTROID_LEARNING.ALL;
+                else if (strVal == CENTROID_LEARNING.MATCHING.ToString())
+                    p.centroid_learning = CENTROID_LEARNING.MATCHING;
+                else if (strVal == CENTROID_LEARNING.NONMATCHING.ToString())
+                    p.centroid_learning = CENTROID_LEARNING.NONMATCHING;
+            }
 
             return p;
         }
