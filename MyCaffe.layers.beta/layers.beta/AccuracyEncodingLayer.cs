@@ -125,8 +125,8 @@ namespace MyCaffe.layers.beta
             if (m_param.accuracy_param.ignore_label.HasValue)
                 m_log.WriteLine("WARNING: The Accuracy Encoding Layer does not use the 'ignore_label' parameter.");
 
-            m_nCentroidThresholdStart = m_param.decode_param.centroid_threshold_start;
-            m_nCentroidThresholdEnd = m_param.decode_param.centroid_threshold_end;
+            m_nCentroidThresholdStart = m_param.decode_param.target_iteration_start;
+            m_nCentroidThresholdEnd = m_param.decode_param.target_iteration_end;
             m_log.CHECK_GT(m_nCentroidThresholdStart, 1, "The centroid threshold start must be > 1 and is recommended > 300.");
             m_log.CHECK_GT(m_nCentroidThresholdEnd, m_nCentroidThresholdStart, "The centroid threshold end must be > than the centroid end.");
         }
