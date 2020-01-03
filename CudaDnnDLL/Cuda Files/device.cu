@@ -2020,10 +2020,22 @@ long Device<T>::cuda_maxval(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 	if (lInput > 2)
 		nAOff = (int)pfInput[2];
 
-	if (lErr = m_math.maxval(n, hA, &fOutput, nAOff))
+	long lPos = 0;
+	if (lErr = m_math.maxval(n, hA, &fOutput, nAOff, &lPos))
 		return lErr;
 
-	return setOutput(fOutput, plOutput, ppfOutput);
+	T* pfOutput = NULL;
+
+	if (lErr = m_memory.AllocHost(2, &pfOutput, NULL, false, false, false))
+		return lErr;
+
+	pfOutput[0] = fOutput;
+	pfOutput[1] = lPos;
+
+	*ppfOutput = pfOutput;
+	*plOutput = 2;
+
+	return 0;
 }
 
 template long Device<double>::cuda_maxval(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
@@ -2046,10 +2058,22 @@ long Device<T>::cuda_minval(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 	if (lInput > 2)
 		nAOff = (int)pfInput[2];
 
-	if (lErr = m_math.minval(n, hA, &fOutput, nAOff))
+	long lPos = 0;
+	if (lErr = m_math.minval(n, hA, &fOutput, nAOff, &lPos))
 		return lErr;
 
-	return setOutput(fOutput, plOutput, ppfOutput);
+	T* pfOutput = NULL;
+
+	if (lErr = m_memory.AllocHost(2, &pfOutput, NULL, false, false, false))
+		return lErr;
+
+	pfOutput[0] = fOutput;
+	pfOutput[1] = lPos;
+
+	*ppfOutput = pfOutput;
+	*plOutput = 2;
+
+	return 0;
 }
 
 template long Device<double>::cuda_minval(long lInput, double* pfInput, long* plOutput, double** ppfOutput);

@@ -2262,7 +2262,7 @@ long Math<float>::compare_signs(int n, long hA, long hB, long hY)
 
 
 template <class T>
-long Math<T>::maxval(int n, long hA, T* pOut, int nAOff)
+long Math<T>::maxval(int n, long hA, T* pOut, int nAOff, long* plPos)
 {
 	LONG lErr;
 	MemoryItem* pA;
@@ -2276,17 +2276,21 @@ long Math<T>::maxval(int n, long hA, T* pOut, int nAOff)
 		a += nAOff;
 
 	thrust::device_ptr<T> d_ptr = thrust::device_pointer_cast(a);
-	*pOut = *(thrust::max_element(d_ptr, d_ptr + n));
+	thrust::device_ptr<T> max_ptr = thrust::max_element(d_ptr, d_ptr + n);
+	*pOut = max_ptr[0];
+
+	if (plPos != NULL)
+		*plPos = (&max_ptr[0] - &d_ptr[0]);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::maxval(int n, long hA, double* pOut, int nAOff);
-template long Math<float>::maxval(int n, long hA, float* pOut, int nAOff);
+template long Math<double>::maxval(int n, long hA, double* pOut, int nAOff, long* plPos);
+template long Math<float>::maxval(int n, long hA, float* pOut, int nAOff, long* plPos);
 
 
 template <class T>
-long Math<T>::minval(int n, long hA, T* pOut, int nAOff)
+long Math<T>::minval(int n, long hA, T* pOut, int nAOff, long* plPos)
 {
 	LONG lErr;
 	MemoryItem* pA;
@@ -2300,13 +2304,17 @@ long Math<T>::minval(int n, long hA, T* pOut, int nAOff)
 		a += nAOff;
 
 	thrust::device_ptr<T> d_ptr = thrust::device_pointer_cast(a);
-	*pOut = *(thrust::min_element(d_ptr, d_ptr + n));
+	thrust::device_ptr<T> min_ptr = thrust::min_element(d_ptr, d_ptr + n);
+	*pOut = min_ptr[0];
+
+	if (plPos != NULL)
+		*plPos = (&min_ptr[0] - &d_ptr[0]);
 
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::minval(int n, long hA, double* pOut, int nAOff);
-template long Math<float>::minval(int n, long hA, float* pOut, int nAOff);
+template long Math<double>::minval(int n, long hA, double* pOut, int nAOff, long* plPos);
+template long Math<float>::minval(int n, long hA, float* pOut, int nAOff, long* plPos);
 
 
 template <class T>

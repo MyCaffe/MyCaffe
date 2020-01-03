@@ -647,8 +647,8 @@ namespace MyCaffe.common
         void powx(int n, long hA, double fAlpha, long hY, int nAOff = 0, int nYOff = 0);
         void powx(int n, long hA, float fAlpha, long hY, int nAOff = 0, int nYOff = 0);
         void sign(int n, long hX, long hY, int nXOff = 0, int nYOff = 0);
-        double min(int n, long hA, int nAOff = 0);
-        double max(int n, long hA, int nAOff = 0);
+        double min(int n, long hA, out long lPos, int nAOff = 0);
+        double max(int n, long hA, out long lPos, int nAOff = 0);
         double sumsq(int n, long hW, long hA, int nAOff = 0);
         double sumsqdiff(int n, long hW, long hA, long hB, int nAOff = 0, int nBOff = 0);
         void sqrt(int n, long hA, long hY);
@@ -6091,18 +6091,21 @@ namespace MyCaffe.common
         /// </remarks>
         /// <param name="n">Specifies the number of items (not bytes) in the vectors A.</param>
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
-        /// <param name="nAOff">Specifies an offset (in items, not bytes) into the memory of A.</param>
+        /// <param name="lPos">Returns the position of the maximum value.</param>
+        /// <param name="nAOff">Optionally, specifies an offset (in items, not bytes) into the memory of A (default = 0).</param>
         /// <returns>The maximum value is returned as type <code>double</code></returns>
-        public double max(int n, long hA, int nAOff = 0)
+        public double max(int n, long hA, out long lPos, int nAOff = 0)
         {
             if (m_dt == DataType.DOUBLE)
             {
                 double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MAXVAL, new double[] { n, hA, nAOff });
+                lPos = (long)rg[1];
                 return rg[0];
             }
             else
             {
                 float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MAXVAL, new float[] { n, hA, nAOff });
+                lPos = (long)rg[1];
                 return rg[0];
             }
         }
@@ -6115,18 +6118,21 @@ namespace MyCaffe.common
         /// </remarks>
         /// <param name="n">Specifies the number of items (not bytes) in the vectors A.</param>
         /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
-        /// <param name="nAOff">Specifies an offset (in items, not bytes) into the memory of A.</param>
+        /// <param name="lPos">Returns the position of the minimum value.</param>
+        /// <param name="nAOff">Optionally, specifies an offset (in items, not bytes) into the memory of A (default = 0).</param>
         /// <returns>The minimum value is returned as type <code>double</code></returns>
-        public double min(int n, long hA, int nAOff = 0)
+        public double min(int n, long hA, out long lPos, int nAOff = 0)
         {
             if (m_dt == DataType.DOUBLE)
             {
                 double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MINVAL, new double[] { n, hA, nAOff });
+                lPos = (long)rg[1];
                 return rg[0];
             }
             else
             {
                 float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MINVAL, new float[] { n, hA, nAOff });
+                lPos = (long)rg[1];
                 return rg[0];
             }
         }

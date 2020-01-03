@@ -1934,11 +1934,23 @@ namespace MyCaffe.common
         {
             get
             {
-                if (count() == 0 || gpu_data == 0)
-                    return 0;
-
-                return m_cuda.min(count(), gpu_data);
+                long lPos;
+                return GetMinData(out lPos);
             }
+        }
+
+        /// <summary>
+        /// Returns the minimum data and the position where the minimum is located in the data.
+        /// </summary>
+        /// <param name="lPos">Returns the location of the minimum.</param>
+        /// <returns>Returns the minimum value.</returns>
+        public double GetMinData(out long lPos)
+        {
+            lPos = -1;
+            if (count() == 0 || gpu_data == 0)
+                return 0;
+
+            return m_cuda.min(count(), gpu_data, out lPos);
         }
 
         /// <summary>
@@ -1948,11 +1960,23 @@ namespace MyCaffe.common
         {
             get
             {
-                if (count() == 0 || gpu_data == 0)
-                    return 0;
-
-                return m_cuda.max(count(), gpu_data);
+                long lPos;
+                return GetMaxData(out lPos);
             }
+        }
+
+        /// <summary>
+        /// Returns the maximum data and the position where the maximum is located in the data.
+        /// </summary>
+        /// <param name="lPos">Returns the location of the maximum.</param>
+        /// <returns>Returns the maximum value.</returns>
+        public double GetMaxData(out long lPos)
+        {
+            lPos = -1;
+            if (count() == 0 || gpu_data == 0)
+                return 0;
+
+            return m_cuda.max(count(), gpu_data, out lPos);
         }
 
         /// <summary>
@@ -1962,11 +1986,23 @@ namespace MyCaffe.common
         {
             get
             {
-                if (count() == 0 || gpu_diff == 0)
-                    return 0;
-
-                return m_cuda.min(count(), gpu_diff);
+                long lPos;
+                return GetMinDiff(out lPos);
             }
+        }
+
+        /// <summary>
+        /// Returns the minimum diff and the position where the minimum is located in the diff.
+        /// </summary>
+        /// <param name="lPos">Returns the location of the minimum.</param>
+        /// <returns>Returns the minimum value.</returns>
+        public double GetMinDiff(out long lPos)
+        {
+            lPos = -1;
+            if (count() == 0 || gpu_diff == 0)
+                return 0;
+
+            return m_cuda.min(count(), gpu_diff, out lPos);
         }
 
         /// <summary>
@@ -1976,11 +2012,23 @@ namespace MyCaffe.common
         {
             get
             {
-                if (count() == 0 || gpu_diff == 0)
-                    return 0;
-
-                return m_cuda.max(count(), gpu_diff);
+                long lPos;
+                return GetMaxDiff(out lPos);
             }
+        }
+
+        /// <summary>
+        /// Returns the maximum diff and the position where the maximum is located in the diff.
+        /// </summary>
+        /// <param name="lPos">Returns the location of the maximum.</param>
+        /// <returns>Returns the maximum value.</returns>
+        public double GetMaxDiff(out long lPos)
+        {
+            lPos = -1;
+            if (count() == 0 || gpu_diff == 0)
+                return 0;
+
+            return m_cuda.max(count(), gpu_diff, out lPos);
         }
 
         private int get_index_up_to(List<int> rgShape, int nMax = 12800)

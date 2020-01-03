@@ -136,8 +136,8 @@ class Math
 		long logistic1(int n, long hX, long hY);
 		long logistic2(int n, long hX, long hY);
 		long compare_signs(int n, long hA, long hB, long hY);
-		long maxval(int n, long hA, T* pOut, int nAOff = 0);
-		long minval(int n, long hA, T* pOut, int nAOff = 0);
+		long maxval(int n, long hA, T* pOut, int nAOff = 0, long* plPos = NULL);
+		long minval(int n, long hA, T* pOut, int nAOff = 0, long* plPos = NULL);
 		long minmaxval(int n, long hA, long hWork1, long hWork2, T* pMin, T* pMax, int nAOff = 0);
 		long naninfval(int n, long hA, long hWork1, long hWork2, T* pNan, T* pInf, int nAOff = 0);
 		long sumsq(int n, long hW, long hA, int nAOff, T* pOut);
