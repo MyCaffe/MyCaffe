@@ -494,6 +494,24 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestMinVal()
+        {
+            PCATest test = new PCATest();
+
+            try
+            {
+                foreach (IPCATest t in test.Tests)
+                {
+                    t.TestMinVal();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     interface IPCATest : ITest
@@ -508,6 +526,7 @@ namespace MyCaffe.test
         void TestSimplePCA_randomdata();
         void TestSimplePCA();
         void TestMaxVal();
+        void TestMinVal();
     }
 
     class PCATest : TestBase
@@ -1069,8 +1088,9 @@ namespace MyCaffe.test
 
             for (int d = 0; d < nD; d++)
             {
-                double dfMin = m_cuda.min(nN, hDataT, d * nN);
-                double dfMax = m_cuda.max(nN, hDataT, d * nN);
+                long lPos;
+                double dfMin = m_cuda.min(nN, hDataT, out lPos, d * nN);
+                double dfMax = m_cuda.max(nN, hDataT, out lPos, d * nN);
 
                 rgMin.Add(dfMin);
                 rgMax.Add(dfMax);
@@ -1371,7 +1391,8 @@ namespace MyCaffe.test
 
             m_cuda.rng_gaussian(n, 0, 1, hData);
 
-            double dfVal = m_cuda.max(n, hData);
+            long lPos;
+            double dfVal = m_cuda.max(n, hData, out lPos);
             double[] rgData = m_cuda.GetMemoryDouble(hData);
 
             double dfMax = -double.MaxValue;
@@ -1387,6 +1408,34 @@ namespace MyCaffe.test
             }
 
             Assert.AreEqual(dfMax, dfVal);
+            Assert.AreEqual(lPos, nMaxIdx);
+        }
+
+        public void TestMinVal()
+        {
+            int n = 1000000;
+            long hData = m_cuda.AllocMemory(n);
+
+            m_cuda.rng_gaussian(n, 0, 1, hData);
+
+            long lPos;
+            double dfVal = m_cuda.min(n, hData, out lPos);
+            double[] rgData = m_cuda.GetMemoryDouble(hData);
+
+            double dfMin = double.MaxValue;
+            int nMinIdx = 0;
+
+            for (int i = 0; i < rgData.Length; i++)
+            {
+                if (dfMin > rgData[i])
+                {
+                    nMinIdx = i;
+                    dfMin = rgData[i];
+                }
+            }
+
+            Assert.AreEqual(dfMin, dfVal);
+            Assert.AreEqual(lPos, nMinIdx);
         }
     }
 }
