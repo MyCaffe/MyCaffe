@@ -54,6 +54,7 @@
 #include <cfloat>
 #include <thrust/device_vector.h>
 #include <thrust/extrema.h>
+#include <thrust/sort.h>
 #include "tsne_g.h"
 #include <vector>
 #include <utility>
@@ -604,6 +605,26 @@ long Math<T>::copy_fill(int n, int nDim, long hSrc, int nSrcOff, int nCount, lon
 template long Math<double>::copy_fill(int n, int nDim, long hSrc, int nSrcOff, int nCount, long hDst);
 template long Math<float>::copy_fill(int n, int nDim, long hSrc, int nSrcOff, int nCount, long hDst);
 
+
+template <class T>
+long Math<T>::sort(int nCount, long hY)
+{
+	LONG lErr;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* y = (T*)pY->Data();
+
+	thrust::device_ptr<T> d_ptr = thrust::device_pointer_cast(y);
+	thrust::sort(d_ptr, d_ptr + nCount);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::sort(int nCount, long hY);
+template long Math<float>::sort(int nCount, long hY);
 
 template<>
 long Math<double>::nrm2(int n, long hA, int nAOff, double* pdfResult)

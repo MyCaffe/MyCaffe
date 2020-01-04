@@ -609,6 +609,7 @@ namespace MyCaffe.common
         void copy(int nCount, long hSrc, long hDst, int nSrcOffset = 0, int nDstOffset = 0, long hAsyncStream = -1, bool? bSrcHalfOverride = null, bool? bDstHalfOverride = null);
         void copy(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSimilar, bool bInvert = false);
         void fill(int n, int nDim, long hSrc, int nSrcOff, int nCount, long hDst);
+        void sort(int nCount, long hY);
 
         void channel_compare(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, long hY);
         void channel_fill(int nCount, int nOuterNum, int nChannels, int nInnerNum, long hX, int nLabelDim, long hLabels, long hY);
@@ -890,6 +891,7 @@ namespace MyCaffe.common
             CUDA_COPY = 202,
             CUDA_COPY_SIM = 203,
             CUDA_COPY_FILL = 204,
+            CUDA_SORT = 205,
 
             CUDA_GEMM2 = 219,
             CUDA_GEMM = 220,
@@ -5025,6 +5027,19 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_FILL, new double[] { n, nDim, hSrc, nSrcOff, nCount, hDst });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_FILL, new float[] { n, nDim, hSrc, nSrcOff, nCount, hDst });
+        }
+
+        /// <summary>
+        /// Sort the data in the GPU memory specified.
+        /// </summary>
+        /// <param name="nCount">Specifies the total number of items in the memory.</param>
+        /// <param name="hY">Specifies the handle to the GPU memory of data to sort.</param>
+        public void sort(int nCount, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SORT, new double[] { nCount, hY });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SORT, new float[] { nCount, hY });
         }
 
         /// <summary>

@@ -176,6 +176,7 @@ const int CUDA_FN_GET = 201;
 const int CUDA_FN_COPY = 202;
 const int CUDA_FN_COPY_SIM = 203;
 const int CUDA_FN_COPY_FILL = 204;
+const int CUDA_FN_SORT = 205;
 
 const int CUDA_FN_GEMM2 = 219;
 const int CUDA_FN_GEMM = 220;
@@ -216,6 +217,7 @@ const int CUDA_FN_MINMAXVAL = 254;
 const int CUDA_FN_SUM = 255;
 const int CUDA_FN_SQRT_SCALE = 256;
 const int CUDA_FN_GER = 257;
+const int CUDA_FN_MINMAXAVE = 258;
 
 const int CUDA_FN_MULBSX = 270;
 const int CUDA_FN_DIVBSX = 271;
