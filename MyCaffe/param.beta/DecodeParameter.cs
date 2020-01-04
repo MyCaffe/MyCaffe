@@ -24,11 +24,11 @@ namespace MyCaffe.param.beta
     /// </summary>
     public class DecodeParameter : LayerParameterBase 
     {
-        int m_nTargetIterationStart = 300;
-        int m_nTargetIterationEnd = 500;
+        int m_nCentroidOutputIteration = 300;
         bool m_bOutputCentroids = false;
         int m_nActiveLabelCount = 0;
         TARGET m_target = TARGET.CENTROID;
+        int m_nCacheSize = 100;
         int m_nK = 5;
 
         /// <summary>
@@ -52,23 +52,13 @@ namespace MyCaffe.param.beta
         }
 
         /// <summary>
-        /// Specifies the starting iteration where observed items are used to calculate the centroid for each label, before this value, the targets should not be used for their calculation is not complete (default = 300).
+        /// Specifies the iteration where calculated centroids are output for each label, before this value, the centroids should not be used for their calculation is not complete (default = 300).
         /// </summary>
-        [Description("Specifies the starting iteration where observed items are used to calculate the target for each label, before this value, the targets are set to 0 and should not be used (default = 300).")]
-        public int target_iteration_start
+        [Description("Specifies the iteration where calculated centroids are output for each label, before this value, the centroids should not be used for their calculation is not complete (default = 300).")]
+        public int centroid_output_iteration
         {
-            get { return m_nTargetIterationStart; }
-            set { m_nTargetIterationStart = value; }
-        }
-
-        /// <summary>
-        /// Specifies the ending iteration where observed items are used to calculate the centroid for each label, after this value, the previously calculated targets are returned (default = 500).
-        /// </summary>
-        [Description("Specifies the ending iteration where observed items are used to calculate the target for each label, after this value, the previously calculated targets are returned (default = 500).")]
-        public int target_iteration_end
-        {
-            get { return m_nTargetIterationEnd; }
-            set { m_nTargetIterationEnd = value; }
+            get { return m_nCentroidOutputIteration; }
+            set { m_nCentroidOutputIteration = value; }
         }
 
         /// <summary>
@@ -102,6 +92,16 @@ namespace MyCaffe.param.beta
         }
 
         /// <summary>
+        /// Specifies the size of the cache (in number of batches) used when calculating the CENTROID and KNN values (default = 300).
+        /// </summary>
+        [Description("Specifies the size of the cache (in number of batches) used when calculating the CENTROID and KNN values (default = 300).")]
+        public int cache_size
+        {
+            get { return m_nCacheSize; }
+            set { m_nCacheSize = value; }
+        }
+
+        /// <summary>
         /// Optionally, specifies the K value to use with the KNN target (default = 5).
         /// </summary>
         [Description("Optionally, specifies the K value to use with the KNN target (default = 5).")]
@@ -127,8 +127,8 @@ namespace MyCaffe.param.beta
         public override void Copy(LayerParameterBase src)
         {
             DecodeParameter p = (DecodeParameter)src;
-            m_nTargetIterationStart = p.m_nTargetIterationStart;
-            m_nTargetIterationEnd = p.m_nTargetIterationEnd;
+            m_nCentroidOutputIteration = p.m_nCentroidOutputIteration;
+            m_nCacheSize = p.m_nCacheSize;
             m_bOutputCentroids = p.m_bOutputCentroids;
             m_nActiveLabelCount = p.m_nActiveLabelCount;
             m_target = p.m_target;
@@ -148,8 +148,8 @@ namespace MyCaffe.param.beta
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
 
-            rgChildren.Add("target_iteration_start", target_iteration_start.ToString());
-            rgChildren.Add("target_iteration_end", target_iteration_end.ToString());
+            rgChildren.Add("centroid_output_iteration", centroid_output_iteration.ToString());
+            rgChildren.Add("cache_size", cache_size.ToString());
             rgChildren.Add("output_centroids", output_centroids.ToString());
             rgChildren.Add("target", target.ToString());
 
@@ -172,11 +172,11 @@ namespace MyCaffe.param.beta
             string strVal;
             DecodeParameter p = new DecodeParameter();
 
-            if ((strVal = rp.FindValue("target_iteration_start")) != null)
-                p.target_iteration_start = int.Parse(strVal);
+            if ((strVal = rp.FindValue("centroid_output_iteration")) != null)
+                p.centroid_output_iteration = int.Parse(strVal);
 
-            if ((strVal = rp.FindValue("target_iteration_end")) != null)
-                p.target_iteration_end = int.Parse(strVal);
+            if ((strVal = rp.FindValue("cache_size")) != null)
+                p.cache_size = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("output_centroids")) != null)
                 p.output_centroids = bool.Parse(strVal);
