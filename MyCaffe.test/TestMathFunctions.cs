@@ -176,6 +176,42 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestSort()
+        {
+            MathFunctionsTest test = new MathFunctionsTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IMathFunctionsTest t in test.Tests)
+                {
+                    t.TestSort();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSort2()
+        {
+            MathFunctionsTest test = new MathFunctionsTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IMathFunctionsTest t in test.Tests)
+                {
+                    t.TestSort2();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -190,6 +226,8 @@ namespace MyCaffe.test
         void TestNanInf();
         void TestMinMaxOneElm();
         void TestNanInfOneElm();
+        void TestSort();
+        void TestSort2();
     }
 
     class MathFunctionsTest : TestBase
@@ -550,6 +588,91 @@ namespace MyCaffe.test
 
             data.Dispose();
             work.Dispose();
+        }
+
+        public void TestSort()
+        {
+            double dfFree;
+            double dfUsed;
+            bool bCudaCall;
+            m_cuda.GetDeviceMemory(out dfFree, out dfUsed, out bCudaCall);
+            int nSize = (dfFree < 3.0) ? 124 : 512;
+
+            Blob<T> data = new Blob<T>(m_cuda, m_log);
+            Blob<T> work = new Blob<T>(m_cuda, m_log);
+
+            data.Reshape(nSize, 3, 224, 224);
+            Tuple<double, double, double, double> workSize = m_cuda.minmax(data.count(), 0, 0, 0);
+            work.Reshape((int)workSize.Item1, 1, 1, 1);
+
+            int nCount = data.count();
+            T[] rgData = new T[nCount];
+            double dfMin = double.MaxValue;
+            double dfMax = -double.MaxValue;
+            int nCycle = 0;
+
+            for (int i = 0; i < rgData.Length; i++)
+            {
+                double dfVal = Math.Sin(i) * Math.Cos(i);
+                rgData[i] = (T)Convert.ChangeType(dfVal, typeof(T));
+
+                dfMax = Math.Max(dfMax, dfVal);
+                dfMin = Math.Min(dfMin, dfVal);
+
+                if ((i % (int)workSize.Item1) == 0)
+                {
+                    nCycle++;
+                    dfVal = dfMax * (nCycle + 1);
+                    dfMax = dfVal;
+                    rgData[i] = (T)Convert.ChangeType(dfVal, typeof(T));
+                }
+
+                if (((i + 1) % (int)workSize.Item1) == 0)
+                {
+                    nCycle++;
+                    dfVal = dfMin - (dfMax * (nCycle + 1));
+                    dfMin = dfVal;
+                    rgData[i] = (T)Convert.ChangeType(dfVal, typeof(T));
+                }
+            }
+
+            data.mutable_cpu_data = rgData;
+
+            Tuple<double, double, double, double> minmax = m_cuda.minmax(nCount, data.gpu_data, work.mutable_gpu_data, work.mutable_gpu_diff);
+
+            m_log.EXPECT_EQUAL<float>(minmax.Item1, dfMin);
+            m_log.EXPECT_EQUAL<float>(minmax.Item2, dfMax);
+            m_log.CHECK_EQ(minmax.Item3, 0, "The max value should be zero.");
+            m_log.CHECK_EQ(minmax.Item4, 0, "The inf value should be zero.");
+
+
+            m_cuda.sort(nCount, data.mutable_gpu_data);
+
+            double[] rgData1 = m_cuda.GetMemoryDouble(data.gpu_data);
+            m_log.EXPECT_EQUAL<float>(dfMin, rgData1[0]);
+            m_log.EXPECT_EQUAL<float>(dfMax, rgData1[rgData1.Length - 1]);
+
+            data.Dispose();
+            work.Dispose();
+        }
+
+        public void TestSort2()
+        {
+            Blob<T> blob = new Blob<T>(m_cuda, m_log);
+
+            blob.Reshape(6400, 1, 1, 1);
+            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, new FillerParameter());
+            filler.Fill(blob);
+
+            double dfMin = blob.min_data;
+            double dfMax = blob.max_data;
+
+            m_cuda.sort(blob.count(), blob.mutable_gpu_data);
+
+            double[] rgData = m_cuda.GetMemoryDouble(blob.gpu_data);
+
+            m_log.EXPECT_EQUAL<float>(dfMin, rgData[0]);
+            m_log.EXPECT_EQUAL<float>(dfMax, rgData[rgData.Length - 1]);
         }
     }
 }
