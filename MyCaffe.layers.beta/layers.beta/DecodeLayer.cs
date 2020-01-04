@@ -295,7 +295,7 @@ namespace MyCaffe.layers.beta
                 {
                     int nLabel = (int)rgBottomLabel[i * 2]; // Only the first embedding and first label are used (second is ignored).
                     int nReady = (int)convertD(m_colBlobs[1].GetData(nLabel));
-                    int nLabelItemCount = (nReady == 0) ? (int)convertD(m_colBlobs[2].GetData(nLabel)) : nItemCount;
+                    int nLabelItemCount = (int)convertD(m_colBlobs[2].GetData(nLabel));
 
                     // Create the centroid when counts fall between Centroid Start and Centroid End by
                     // averaging all items within these counts together to create the centroid.
@@ -324,11 +324,12 @@ namespace MyCaffe.layers.beta
                     if (m_param.decode_param.target == param.beta.DecodeParameter.TARGET.KNN)
                     {
                         // Items added as a rolling list and are ordered by label, then by encoding as each encoding is received.  
-                        m_cuda.copy(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[3].mutable_gpu_data, i * m_nEncodingDim, (nItemCount * nLabel * m_nEncodingDim) + ((nLabelItemCount % nItemCount) * m_nEncodingDim));
+                        int nSrcOff = i * m_nEncodingDim;
+                        int nDstOff = (nLabel * nItemCount * m_nEncodingDim) + ((nLabelItemCount % nItemCount) * m_nEncodingDim);
+                        m_cuda.copy(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[3].mutable_gpu_data, nSrcOff, nDstOff);
                     }
 
-                    if (nLabelItemCount < nItemCount)
-                        m_colBlobs[2].SetData(nLabelItemCount + 1, nLabel);
+                    m_colBlobs[2].SetData(nLabelItemCount + 1, nLabel);
                 }
 
                 // Request a snapshot when completed to make sure to save latest cache and centroids.
