@@ -17,8 +17,7 @@ namespace MyCaffe.layers.beta
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class AccuracyEncodingLayer<T> : Layer<T>
     {
-        int m_nCentroidThresholdStart = 300;
-        int m_nCentroidThresholdEnd = 500;
+        int m_nCacheSize = 100;
         int m_nNum = 0;
         int m_nEncodingDim = 0;
         Blob<T> m_blobEncodings;
@@ -125,10 +124,8 @@ namespace MyCaffe.layers.beta
             if (m_param.accuracy_param.ignore_label.HasValue)
                 m_log.WriteLine("WARNING: The Accuracy Encoding Layer does not use the 'ignore_label' parameter.");
 
-            m_nCentroidThresholdStart = m_param.decode_param.target_iteration_start;
-            m_nCentroidThresholdEnd = m_param.decode_param.target_iteration_end;
-            m_log.CHECK_GT(m_nCentroidThresholdStart, 1, "The centroid threshold start must be > 1 and is recommended > 300.");
-            m_log.CHECK_GT(m_nCentroidThresholdEnd, m_nCentroidThresholdStart, "The centroid threshold end must be > than the centroid end.");
+            m_nCacheSize = m_param.decode_param.cache_size;
+            m_log.CHECK_GT(m_nCacheSize, 0, "The cache size must be > 0.");
         }
 
         /// <summary>
@@ -176,14 +173,12 @@ namespace MyCaffe.layers.beta
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             m_log.CHECK_EQ(colBottom[1].count() % 2, 0, "The bottom[1] count must be a factor of 2 for {lbl1, lbl2}.");
-            int nItemNum = (colBottom[0].num == 1) ? 1 : colBottom[0].num / 2;
-            int nCentroidStart = m_nCentroidThresholdStart * nItemNum;
-            int nCentroidEnd = m_nCentroidThresholdEnd * nItemNum;
-            double dfAlpha = 1.0 / (double)(nCentroidEnd - nCentroidStart);
+            int nItemNum = colBottom[0].num;
+            int nItemCount = nItemNum * m_param.decode_param.cache_size;
+            double dfAlpha = 1.0 / (double)nItemCount;
 
             double dfAccuracy = 0;
             double[] rgBottomLabel = convertD(colBottom[1].update_cpu_data());
-            int nMinCount = m_nCentroidThresholdEnd;
             int nCorrectCount = 0;
             int nComparedCount = 0;
 
@@ -203,82 +198,78 @@ namespace MyCaffe.layers.beta
             for (int i = 0; i < colBottom[0].num; i++)
             {
                 int nLabel = (int)rgBottomLabel[i * 2]; // Only the first embedding and first label are used (second is ignored).
+                int nLabelItemCount = 0;
 
-                if (!m_rgLabelCounts.ContainsKey(nLabel))
+                if (m_rgLabelCounts.ContainsKey(nLabel))
+                    nLabelItemCount = m_rgLabelCounts[nLabel];
+
+                // Create the centroid when counts fall between Centroid Start and Centroid End by
+                // averaging all items within these counts together to create the centroid.
+                if (nLabelItemCount == 0)
                 {
-                    m_rgLabelCounts.Add(nLabel, 1);
+                    // Add initial centroid portion for the label.
+                    m_cuda.copy(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].mutable_gpu_data, i * m_nEncodingDim, nLabel * m_nEncodingDim);
+                    m_cuda.scale(m_nEncodingDim, convert(dfAlpha), m_colBlobs[0].gpu_data, m_colBlobs[0].mutable_gpu_data, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
+                }
+                else if (nLabelItemCount < nItemCount)
+                {
+                    dfAlpha = 1.0 / (nLabelItemCount + 1);
+                    // Add portion of current item to centroids for the label.
+                    m_cuda.add(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].gpu_data, m_colBlobs[0].mutable_gpu_data, dfAlpha, 1.0 - dfAlpha, i * m_nEncodingDim, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
                 }
                 else
                 {
+                    // Add portion of current item to centroids for the label.
+                    m_cuda.add(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].gpu_data, m_colBlobs[0].mutable_gpu_data, dfAlpha, 1.0 - dfAlpha, i * m_nEncodingDim, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
+                }
+
+                if (!m_rgLabelCounts.ContainsKey(nLabel))
+                    m_rgLabelCounts.Add(nLabel, 1);
+                else
                     m_rgLabelCounts[nLabel]++;
 
-                    // Create the centroid when counts fall between Centroid Start and Centroid End by
-                    // averaging all items within these counts together to create the centroid.
-                    if (m_phase == Phase.TRAIN && m_rgLabelCounts[nLabel] >= nCentroidStart && m_rgLabelCounts[nLabel] < nCentroidEnd)
-                    {
-                        if (m_rgLabelCounts[nLabel] == nCentroidStart)
-                        {
-                            // Add initial centroid portion for the label.
-                            m_cuda.copy(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].mutable_gpu_data, i * m_nEncodingDim, nLabel * m_nEncodingDim);
-                            m_cuda.scale(m_nEncodingDim, convert(dfAlpha), m_colBlobs[0].gpu_data, m_colBlobs[0].mutable_gpu_data, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
-                        }
-                        else
-                        {
-                            // Add portion of current item to centroids for the label.
-                            m_cuda.add(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].gpu_data, m_colBlobs[0].mutable_gpu_data, dfAlpha, 1, i * m_nEncodingDim, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
-                        }
-                    }
-                }
+                // Load data with the current data embedding across each label 'slot' in blobData.
+                int nCount = m_blobData.count();
+                int nItems = m_blobData.num;
+                m_cuda.fill(nItems, m_nEncodingDim, colBottom[0].gpu_data, i * m_nEncodingDim, nCount, m_blobData.mutable_gpu_data);
 
-                nMinCount = m_rgLabelCounts.Min(p => p.Value);
-                if (nMinCount >= m_nCentroidThresholdEnd)
+                m_cuda.sub(nCount,
+                           m_blobData.gpu_data,              // a
+                           m_colBlobs[0].gpu_data,           // b (centroid)
+                           m_blobData.mutable_gpu_diff);     // a_i - b_i
+
+                m_cuda.powx(nCount,
+                           m_blobData.gpu_diff,              // a_i - b_i
+                           2.0,
+                           m_blobData.mutable_gpu_diff);     // (a_i - b_i)^2
+
+                m_cuda.gemv(false,
+                           m_blobData.num,                   // label count.
+                           m_blobData.channels,              // encoding size.
+                           1.0,
+                           m_blobData.gpu_diff,              // (a_i - b_i)^2
+                           m_blobSummerVec.gpu_data,
+                           0.0,
+                           m_blobDistSq.mutable_gpu_data);   // \Sum (a_i - b_i)^2
+
+                // The label with the smallest distance is the detected label.
+                double[] rgLabelDist = convertD(m_blobDistSq.mutable_cpu_data);
+                int nDetectedLabel = -1;
+                double dfMin = double.MaxValue;
+
+                for (int l = 0; l < rgLabelDist.Length; l++)
                 {
-                    // Load data with the current data embedding across each label 'slot'.
-                    for (int k = 0; k < m_rgLabelCounts.Count; k++)
+                    if (rgLabelDist[l] < dfMin)
                     {
-                        m_cuda.copy(m_nEncodingDim, colBottom[0].gpu_data, m_blobData.mutable_gpu_data, i * m_nEncodingDim, k * m_nEncodingDim);
+                        dfMin = rgLabelDist[l];
+                        nDetectedLabel = l;
                     }
-
-                    int nCount = m_blobData.count();
-
-                    m_cuda.sub(nCount,
-                               m_blobData.gpu_data,                // a
-                               m_blobEncodings.gpu_data,           // b
-                               m_blobEncodings.mutable_gpu_diff);  // a_i - b_i
-
-                    m_cuda.powx(nCount,
-                               m_blobEncodings.gpu_diff,           // a_i - b_i
-                               2.0,
-                               m_blobEncodings.mutable_gpu_diff);  // (a_i - b_i)^2
-
-                    m_cuda.gemv(false,
-                               m_blobData.num,                     // label count.
-                               m_blobData.channels,                // encoding size.
-                               1.0,
-                               m_blobEncodings.gpu_diff,           // (a_i - b_i)^2
-                               m_blobSummerVec.gpu_data,
-                               0.0,
-                               m_blobDistSq.mutable_gpu_data);  // \Sum (a_i - b_i)^2
-
-                    // The label with the smallest distance is the detected label.
-                    double[] rgLabelDist = convertD(m_blobDistSq.mutable_cpu_data);
-                    int nDetectedLabel = -1;
-                    double dfMin = double.MaxValue;
-
-                    for (int l = 0; l < rgLabelDist.Length; l++)
-                    {
-                        if (rgLabelDist[l] < dfMin)
-                        {
-                            dfMin = rgLabelDist[l];
-                            nDetectedLabel = l;
-                        }
-                    }
-
-                    if (nDetectedLabel == nLabel)
-                        nCorrectCount++;
-
-                    nComparedCount++;
                 }
+
+                if (nDetectedLabel == nLabel)
+                    nCorrectCount++;
+
+                nComparedCount++;
             }
 
             dfAccuracy = (nComparedCount == 0) ? 0 : (double)nCorrectCount / nComparedCount;
