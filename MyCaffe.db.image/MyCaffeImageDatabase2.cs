@@ -990,7 +990,8 @@ namespace MyCaffe.db.image
 
             if (imageSelectionOverride.HasValue)
                 imageSelectionMethod = imageSelectionOverride.Value;
-            else if (SelectFromBoostOnly)
+
+            if (SelectFromBoostOnly)
                 imageSelectionMethod |= IMGDB_IMAGE_SELECTION_METHOD.BOOST;
 
             QueryState qstate = m_colDatasets[m_nStrIDHashCode].FindQueryState(lQueryState, nSrcId);
