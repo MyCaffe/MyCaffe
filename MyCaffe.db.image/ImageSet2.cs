@@ -93,10 +93,11 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Initialize the ImageSet by creating the master list of images, starting its background image loading thread, and then creating the master index that maps the organization of the dataset.
         /// </summary>
+        /// <param name="bSilentLoad">Specifies to load the data silently without status output.</param>
         /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch equally (default = true).</param>
         /// <param name="bUseUniqueImageIndexes">Optionally, specifies to use unique image indexes which is slightly slower, but ensures each image is hit per epoch (default = true).</param>
         /// <returns>Once initialized, the default query state for the image set is returned.  This method may be called multiple times and each time returns a new QueryState.</returns>
-        public QueryState Initialize(bool bUseUniqueLabelIndexes = true, bool bUseUniqueImageIndexes = true)
+        public QueryState Initialize(bool bSilentLoad, bool bUseUniqueLabelIndexes = true, bool bUseUniqueImageIndexes = true)
         {
             if (m_masterList == null)
             {
@@ -104,7 +105,7 @@ namespace MyCaffe.db.image
                 m_masterList.OnCalculateImageMean += m_masterList_OnCalculateImageMean;
 
                 if (m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ALL || m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_EXTERNAL || m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND)
-                    m_masterList.Load();
+                    m_masterList.Load(bSilentLoad);
             }
 
             if (m_masterIdx == null)

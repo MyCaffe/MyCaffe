@@ -101,8 +101,10 @@ namespace MyCaffe.db.image
                     bSkipMeanCheck = true;
                 }
 
+                bool bSilentLoad = (loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false;
+
                 m_TrainingImages = new ImageSet2(ImageSet2.TYPE.TRAIN, log, m_factory, m_ds.TrainingSource, loadMethod, m_random, rgAbort);
-                QueryState qsTraining = m_TrainingImages.Initialize();
+                QueryState qsTraining = m_TrainingImages.Initialize(bSilentLoad);
 
                 if (!bSkipMeanCheck)
                     m_TrainingImages.GetImageMean(log, rgAbort);
@@ -111,7 +113,7 @@ namespace MyCaffe.db.image
                     return 0;
 
                 m_TestingImages = new ImageSet2(ImageSet2.TYPE.TEST, log, m_factory, m_ds.TestingSource, loadMethod, m_random, rgAbort);
-                QueryState qsTesting = m_TestingImages.Initialize();
+                QueryState qsTesting = m_TestingImages.Initialize(bSilentLoad);
 
                 if (!bSkipMeanCheck)
                     m_TestingImages.GetImageMean(log, rgAbort);
