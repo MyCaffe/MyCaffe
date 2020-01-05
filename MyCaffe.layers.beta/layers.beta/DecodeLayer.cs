@@ -23,6 +23,7 @@ namespace MyCaffe.layers.beta
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class DecodeLayer<T> : Layer<T>
     {
+        List<int> m_rgIgnoreLabels = new List<int>();
         int m_nCentroidOutputIteration = 300;
         int m_nCacheSize = 100;
         int m_nNum = 0;
@@ -127,6 +128,7 @@ namespace MyCaffe.layers.beta
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            m_rgIgnoreLabels = m_param.decode_param.ignore_labels;
             m_nEncodingDim = colBottom[0].channels;
             m_nCentroidOutputIteration = m_param.decode_param.centroid_output_iteration;
             m_nCacheSize = m_param.decode_param.cache_size;
@@ -235,7 +237,6 @@ namespace MyCaffe.layers.beta
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            int nActiveLabels = m_param.decode_param.active_label_count;
             int nItemNum = colBottom[0].num;
             int nItemCount = nItemNum * m_nCacheSize;
             double dfAlpha = 1.0 / (double)nItemCount;
@@ -251,22 +252,38 @@ namespace MyCaffe.layers.beta
                 {
                     int nNumLabels = nMaxLabel + 1;
 
-                    m_colBlobs[0].Reshape(nNumLabels, m_nEncodingDim, 1, 1);
-                    m_colBlobs[0].SetData(0);
-                    m_colBlobs[1].Reshape(nNumLabels, 1, 1, 1); // status
-                    m_colBlobs[1].SetData(0);
-                    m_colBlobs[2].Reshape(nNumLabels, 1, 1, 1); // label counts
-                    m_colBlobs[2].SetData(0);
+                    if (m_colBlobs[0].count() != nNumLabels * m_nEncodingDim)
+                    {
+                        m_colBlobs[0].Reshape(nNumLabels, m_nEncodingDim, 1, 1);
+                        m_colBlobs[0].SetData(0);
+                    }
+
+                    if (m_colBlobs[1].count() != nNumLabels)
+                    {
+                        m_colBlobs[1].Reshape(nNumLabels, 1, 1, 1); // status
+                        m_colBlobs[1].SetData(0);
+                    }
+
+                    if (m_colBlobs[2].count() != nNumLabels)
+                    {
+                        m_colBlobs[2].Reshape(nNumLabels, 1, 1, 1); // label counts
+                        m_colBlobs[2].SetData(0);
+                    }
 
                     if (m_param.decode_param.target == param.beta.DecodeParameter.TARGET.KNN)
                     {
-                        m_colBlobs[3].Reshape(nNumLabels, nItemCount, m_nEncodingDim, 1);
-                        m_colBlobs[3].SetData(0);
+                        if (m_colBlobs[3].count() != nNumLabels * nItemCount * m_nEncodingDim)
+                        {
+                            m_colBlobs[3].Reshape(nNumLabels, nItemCount, m_nEncodingDim, 1);
+                            m_colBlobs[3].SetData(0);
+                        }
                     }
 
                     m_nLabelCount = nMaxLabel;
                 }
             }
+
+            int nActiveLabels = m_colBlobs[1].num - m_rgIgnoreLabels.Count;
 
             if (m_param.decode_param.target == param.beta.DecodeParameter.TARGET.KNN)
             {
@@ -426,6 +443,12 @@ namespace MyCaffe.layers.beta
                                m_blobSummerVec.gpu_data,
                                0.0,
                                m_blobDistSq.mutable_gpu_data);   // \Sum (a_i - b_i)^2
+                }
+
+                // Set all ignore labels to the float maximum value.
+                foreach (int nIgnoreLabel in m_rgIgnoreLabels)
+                {
+                    m_blobDistSq.SetData(float.MaxValue, nIgnoreLabel);
                 }
 
                 // The distances are returned in top[0], where the smallest distance is the detected label.

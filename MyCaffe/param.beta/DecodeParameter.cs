@@ -26,7 +26,7 @@ namespace MyCaffe.param.beta
     {
         int m_nCentroidOutputIteration = 300;
         bool m_bOutputCentroids = false;
-        int m_nActiveLabelCount = 0;
+        List<int> m_rgIgnoreLabels = new List<int>();
         TARGET m_target = TARGET.CENTROID;
         int m_nCacheSize = 100;
         int m_nK = 5;
@@ -72,13 +72,13 @@ namespace MyCaffe.param.beta
         }
 
         /// <summary>
-        /// Optionally, specifies a number of active labels that are less than the actual label count - this is used when only a subset of the labels within the label range are actually used (default = 0, which then expects all labels).
+        /// Optionally, specifies one or more labels to ignore. (default = none, which then expects all labels).
         /// </summary>
-        [Description("Optionally, specifies a number of active labels that are less than the actual label count - this is used when only a subset of the labels within the label range are actually used (default = 0, which then expects all labels).")]
-        public int active_label_count
+        [Description("Optionally, specifies one or more labels to ignore. (default = none, which then expects all labels).")]
+        public List<int> ignore_labels
         {
-            get { return m_nActiveLabelCount; }
-            set { m_nActiveLabelCount = value; }
+            get { return m_rgIgnoreLabels; }
+            set { m_rgIgnoreLabels = value; }
         }
 
         /// <summary>
@@ -130,7 +130,10 @@ namespace MyCaffe.param.beta
             m_nCentroidOutputIteration = p.m_nCentroidOutputIteration;
             m_nCacheSize = p.m_nCacheSize;
             m_bOutputCentroids = p.m_bOutputCentroids;
-            m_nActiveLabelCount = p.m_nActiveLabelCount;
+
+            if (p.m_rgIgnoreLabels != null)
+                m_rgIgnoreLabels = Utility.Clone<int>(p.m_rgIgnoreLabels);
+
             m_target = p.m_target;
             m_nK = p.m_nK;
         }
@@ -153,8 +156,10 @@ namespace MyCaffe.param.beta
             rgChildren.Add("output_centroids", output_centroids.ToString());
             rgChildren.Add("target", target.ToString());
 
-            if (active_label_count > 0)
-                rgChildren.Add("active_label_count", active_label_count.ToString());
+            foreach (int nLabel in ignore_labels)
+            {
+                rgChildren.Add("ignore_label", nLabel.ToString());
+            }
 
             if (target == TARGET.KNN)
                 rgChildren.Add("k", k.ToString());
@@ -181,8 +186,14 @@ namespace MyCaffe.param.beta
             if ((strVal = rp.FindValue("output_centroids")) != null)
                 p.output_centroids = bool.Parse(strVal);
 
-            if ((strVal = rp.FindValue("active_label_count")) != null)
-                p.active_label_count = int.Parse(strVal);
+            p.ignore_labels = new List<int>();
+            RawProtoCollection rpIgnore = rp.FindChildren("ignore_label");
+            foreach (RawProto rplabel in rpIgnore)
+            {
+                int nLabel = int.Parse(rplabel.Value);
+                if (!p.ignore_labels.Contains(nLabel))
+                    p.ignore_labels.Add(nLabel);
+            }
 
             if ((strVal = rp.FindValue("target")) != null)
             {
