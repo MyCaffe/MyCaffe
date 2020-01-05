@@ -333,7 +333,7 @@ namespace MyCaffe.layers.beta
                         // Add portion of current item to centroids for the label.
                         m_cuda.add(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].gpu_data, m_colBlobs[0].mutable_gpu_data, dfAlpha, 1.0 - dfAlpha, i * m_nEncodingDim, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
 
-                        if (nReady == 0)
+                        if (nReady == 0 && !m_rgIgnoreLabels.Contains(nLabel))
                             m_colBlobs[1].SetData(1.0, nLabel);
                     }
 
