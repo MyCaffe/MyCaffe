@@ -1399,6 +1399,8 @@ namespace MyCaffe
         {
             m_lastPhaseRun = Phase.RUN;
 
+            m_log.CHECK_GT(nCount, 0, "You must select at least 1 image to train on!");
+
             Stopwatch sw = new Stopwatch();
             IMGDB_LABEL_SELECTION_METHOD? lblSelMethod = null;
 
