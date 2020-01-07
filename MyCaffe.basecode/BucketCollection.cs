@@ -18,6 +18,7 @@ namespace MyCaffe.basecode
         double m_fMax;
         double m_fSum;
         int m_nCount;
+        object m_tag = null;
 
         /// <summary>
         /// The constructor.
@@ -105,6 +106,15 @@ namespace MyCaffe.basecode
         public double MidPoint
         {
             get { return m_fMin + (m_fMax - m_fMin) / 2.0; }
+        }
+
+        /// <summary>
+        /// Get/set a user specified tag.
+        /// </summary>
+        public object Tag
+        {
+            get { return m_tag; }
+            set { m_tag = value; }
         }
 
         /// <summary>
