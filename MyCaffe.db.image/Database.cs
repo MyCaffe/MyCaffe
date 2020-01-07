@@ -1377,10 +1377,12 @@ namespace MyCaffe.db.image
         /// Returns the ID's of all RawImages within a data source.
         /// </summary>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-        /// <param name="nMax">Specifies the maximum number of ID's to query, the default is int max.</param>
-        /// <param name="nLabel">Specifies a label from which images are to be queried, default is to ignore (-1).</param>
+        /// <param name="nMax">Optionally, specifies the maximum number of ID's to query (default = int.MaxValue).</param>
+        /// <param name="nLabel">Optionally, specifies a label from which images are to be queried (default = -1, which ignores this parameter).</param>
+        /// <param name="nBoost">Optionally, specifies a boost from which images are to be queried (default = -1, which ignores this parameter).</param>
+        /// <param name="bBoostIsExact">Optionally, specifies whether the boost value is exact (<i>true</i>) or the minimum boost where all values equal are greater are retrieved (<i>false</i>).  Default = false.</param>
         /// <returns>The List of RawImage ID's is returned.</returns>
-        public List<int> QueryAllRawImageIDs(int nSrcId = 0, int nMax = int.MaxValue, int nLabel = -1)
+        public List<int> QueryAllRawImageIDs(int nSrcId = 0, int nMax = int.MaxValue, int nLabel = -1, int nBoost = -1, bool bBoostIsExact = false)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
@@ -1392,6 +1394,12 @@ namespace MyCaffe.db.image
 
                 if (nLabel != -1)
                     strCmd += " AND (ActiveLabel = " + nLabel.ToString() + ")";
+
+                if (nBoost != -1)
+                {
+                    string strCompare = (bBoostIsExact) ? "=" : ">=";
+                    strCmd += " AND (ActiveBoost " + strCompare + " " + nBoost.ToString() + ")";
+                }
 
                 return entities.Database.SqlQuery<int>(strCmd).ToList();
             }

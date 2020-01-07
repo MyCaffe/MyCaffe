@@ -448,12 +448,14 @@ namespace MyCaffe.db.image
         /// Returns all raw image IDs for a given data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the data source ID.</param>
-        /// <param name="nMax">Specifies the maximum number of ID's to query, the default is int max.</param>
-        /// <param name="nLabel">Specifies a label from which images are to be queried, default is to ignore (-1).</param>
+        /// <param name="nMax">Optionally, specifies the maximum number of ID's to query (default = int.MaxValue).</param>
+        /// <param name="nLabel">Optionally, specifies a label from which images are to be queried (default = -1, which ignores this parameter).</param>
+        /// <param name="nBoost">Optionally, specifies a boost from which images are to be queried (default = -1, which ignores this parameter).</param>
+        /// <param name="bBoostIsExact">Optionally, specifies whether the boost value is exact (<i>true</i>) or the minimum boost where all values equal are greater are retrieved (<i>false</i>).  Default = false.</param>
         /// <returns>The list of raw image ID's is returned.</returns>
-        public List<int> QueryRawImageIDs(int nSrcId = 0, int nMax = int.MaxValue, int nLabel = -1)
+        public List<int> QueryRawImageIDs(int nSrcId = 0, int nMax = int.MaxValue, int nLabel = -1, int nBoost = -1, bool bBoostIsExact = false)
         {
-            return m_db.QueryAllRawImageIDs(nSrcId, nMax, nLabel);
+            return m_db.QueryAllRawImageIDs(nSrcId, nMax, nLabel, nBoost, bBoostIsExact);
         }
 
         /// <summary>
@@ -476,6 +478,16 @@ namespace MyCaffe.db.image
         public int GetRawImageID(DateTime dt, int nSrcId = 0)
         {
             return m_db.GetRawImageID(dt, nSrcId);
+        }
+
+        /// <summary>
+        /// Returns the raw image with a specified image ID.
+        /// </summary>
+        /// <param name="nImageID">Specifies the image ID of the image to retrieve.</param>
+        /// <returns>The raw image is returned.</returns>
+        public RawImage GetRawImageFromID(int nImageID)
+        {
+            return m_db.GetRawImage(nImageID);
         }
 
         /// <summary>
