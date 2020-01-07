@@ -1568,6 +1568,20 @@ namespace MyCaffe.basecode
                         }
                     }
                 }
+
+                RawProto exclude = layer.FindChild("exclude");
+                if (exclude != null)
+                {
+                    RawProto phase = exclude.FindChild("phase");
+                    if (phase != null)
+                    {
+                        if (phase.Value == "RUN")
+                        {
+                            if (!rgRemove.Contains(layer))
+                                rgRemove.Add(layer);
+                        }
+                    }
+                }
             }
 
             foreach (RawProto protoSoftMaxLoss in rgProtoSoftMaxLoss)
