@@ -126,6 +126,22 @@ namespace MyCaffe.layers.beta
 
             m_nCacheSize = m_param.decode_param.cache_size;
             m_log.CHECK_GT(m_nCacheSize, 0, "The cache size must be > 0.");
+
+            if (m_colBlobs.Count == 0)
+            {
+                Blob<T> blobCentroids = new Blob<T>(m_cuda, m_log, false);
+                blobCentroids.Name = m_param.name + " centroids";
+                blobCentroids.reshape_when_sharing = true;
+
+                List<int> rgCentroidShape = new List<int>() { 0 }; // skip size check.
+                if (!shareParameter(blobCentroids, rgCentroidShape))
+                {
+                    blobCentroids.Reshape(2, m_nEncodingDim, 1, 1); // set to at least two labels initially (may get expanded in forward).
+                    blobCentroids.SetData(0);
+                }
+
+                m_colBlobs.Add(blobCentroids);
+            }
         }
 
         /// <summary>
@@ -223,6 +239,8 @@ namespace MyCaffe.layers.beta
                     m_cuda.add(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].gpu_data, m_colBlobs[0].mutable_gpu_data, dfAlpha, 1.0 - dfAlpha, i * m_nEncodingDim, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
                 }
 
+                m_colBlobs[0].snapshot_requested = true;
+
                 if (!m_rgLabelCounts.ContainsKey(nLabel))
                     m_rgLabelCounts.Add(nLabel, 1);
                 else
@@ -281,8 +299,7 @@ namespace MyCaffe.layers.beta
         /// @brief Not implemented -- EncodingAccuracyLayer cannot be used as a loss.
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
-            if (rgbPropagateDown[0])
-                throw new NotImplementedException();
+            // do nothing.
         }
     }
 }
