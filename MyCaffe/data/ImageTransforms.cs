@@ -302,11 +302,7 @@ namespace MyCaffe.data
             }
 
             SimpleDatum sd1 = ImageData.GetImageData(bmp, sd.Channels, sd.IsRealData, sd.Label);
-
-            if (sd1.IsRealData)
-                sd.SetData(sd1.RealData.ToList(), sd.Label);
-            else
-                sd.SetData(sd1.ByteData.ToList(), sd.Label);
+            sd.SetData(sd1);
 
             bmp.Dispose();
 
