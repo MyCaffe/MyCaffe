@@ -370,7 +370,7 @@ namespace MyCaffe.layers
 
                     if (sdMean.IsRealData)
                     {
-                        blobNoise.mutable_cpu_diff = convert(sdMean.RealData);
+                        blobNoise.mutable_cpu_diff = sdMean.GetData<T>();
                     }
                     else
                     {
@@ -380,7 +380,7 @@ namespace MyCaffe.layers
                         if (dfMin < -1.0 || dfMax > 1.0)
                             m_log.WriteLine("WARNING! The noise filler is producing numbers outside of the range [-1,1] which may cause a saturated final noise data image.");
 
-                        blobNoise.mutable_cpu_diff = convert(sdMean.ByteData.Select(p => (float)p).ToArray());
+                        blobNoise.mutable_cpu_diff = sdMean.GetData<T>();
                     }
 
                     m_cuda.mul(blobNoise.count(), blobNoise.gpu_diff, blobNoise.gpu_data, blobNoise.mutable_gpu_data);
