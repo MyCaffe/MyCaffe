@@ -217,7 +217,6 @@ namespace MyCaffe.basecode
             }
         }
 
-
         /// <summary>
         /// The SimpleDatum constructor.
         /// </summary>
@@ -702,6 +701,32 @@ namespace MyCaffe.basecode
             m_rgByteData = d.m_rgByteData;
             m_bIsRealData = d.m_bIsRealData;
             m_rgRealData = d.m_rgRealData;
+        }
+
+        /// <summary>
+        /// Set the data of the current SimpleDatum by copying the data of another.
+        /// </summary>
+        /// <param name="d">Specifies the SimpleDatum to copy.</param>
+        public void SetData(SimpleDatum d)
+        {
+            if (d.IsRealData)
+                SetData(d.RealData.ToList(), d.Label);
+            else
+                SetData(d.ByteData.ToList(), d.Label);
+        }
+
+        /// <summary>
+        /// Returns <i>true</i> if the ByteData or RealData are not null, <i>false</i> otherwise.
+        /// </summary>
+        public bool IsDataValid
+        {
+            get
+            {
+                if (ByteData == null && RealData == null)
+                    return false;
+
+                return true;
+            }
         }
 
         /// <summary>
