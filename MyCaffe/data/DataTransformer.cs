@@ -25,11 +25,12 @@ namespace MyCaffe.data
         List<double> m_rgMeanValues = new List<double>();
         TransformationParameter m_param;
         SimpleDatum m_imgMean = null;
-        double[] m_rgMeanData = null;
+        float[] m_rgfMeanData = null;
+        double[] m_rgdfMeanData = null;
         Phase m_phase;
         CryptoRandom m_random;
-        T[] m_rgTransformedData = null;
         float[] m_rgfTransformedData = null;
+        double[] m_rgdfTransformedData = null;
         double m_dfLastMin = 0;
         double m_dfLastMax = 0;
         BlobProto m_protoMean = null;
@@ -81,9 +82,6 @@ namespace MyCaffe.data
             if (imgMean != null)
                 nDataSize = imgMean.Channels * imgMean.Height * imgMean.Width;
 
-            if (nDataSize > 0 || (m_rgfTransformedData != null &&  nDataSize != m_rgfTransformedData.Length))
-                m_rgTransformedData = new T[nDataSize];
-
             if (p.mean_file != null)
                 m_protoMean = loadProtoMean(p.mean_file);
 
@@ -94,18 +92,34 @@ namespace MyCaffe.data
                     m_imgMean = imgMean;
 
                     if (m_imgMean != null)
-                        m_rgMeanData = m_imgMean.GetData<double>();
+                    {
+                        if (typeof(T) == typeof(double))
+                            m_rgdfMeanData = m_imgMean.GetData<double>();
+                        else
+                            m_rgfMeanData = m_imgMean.GetData<float>();
+                    }
                 }
                 else
                 {
                     if (m_protoMean.data.Count > 0)
                     {
-                        m_rgMeanData = new double[m_protoMean.data.Count];
-                        Array.Copy(m_protoMean.data.ToArray(), m_rgMeanData, m_rgMeanData.Length);
+                        if (typeof(T) == typeof(double))
+                        {
+                            m_rgdfMeanData = new double[m_protoMean.data.Count];
+                            Array.Copy(m_protoMean.data.ToArray(), m_rgdfMeanData, m_rgdfMeanData.Length);
+                        }
+                        else
+                        {
+                            m_rgfMeanData = new float[m_protoMean.data.Count];
+                            Array.Copy(m_protoMean.data.ToArray(), m_rgfMeanData, m_rgfMeanData.Length);
+                        }
                     }
                     else
                     {
-                        m_rgMeanData = m_protoMean.double_data.ToArray();
+                        if (typeof(T) == typeof(double))
+                            m_rgdfMeanData = m_protoMean.double_data.ToArray();
+                        else
+                            m_rgfMeanData = m_protoMean.double_data.Select(p1 => (float)p1).ToArray();
                     }
                 }
             }
@@ -155,7 +169,10 @@ namespace MyCaffe.data
             set
             {
                 m_imgMean = value;
-                m_rgMeanData = m_imgMean.GetData<double>();
+                if (typeof(T) == typeof(double))
+                    m_rgdfMeanData = m_imgMean.GetData<double>();
+                else
+                    m_rgfMeanData = m_imgMean.GetData<float>();
             }
         }
 
@@ -392,7 +409,7 @@ namespace MyCaffe.data
                 if (rgDatum[i] != null)
                 {
                     if (bJustFill)
-                        blobUni.mutable_cpu_data = Utility.ConvertVec<T>(rgDatum[i].RealData);
+                        blobUni.mutable_cpu_data = rgDatum[i].GetData<T>();
                     else
                         Transform(rgDatum[i], blobUni);
                 }
@@ -469,6 +486,14 @@ namespace MyCaffe.data
         /// <returns>Transformed data.</returns>
         public T[] Transform(SimpleDatum d, out bool bMirror, NormalizedBBox crop_bbox = null)
         {
+            if (typeof(T) == typeof(double))
+                return (T[])Convert.ChangeType(transformD(d, out bMirror, crop_bbox), typeof(T[]));
+            else
+                return (T[])Convert.ChangeType(transformF(d, out bMirror, crop_bbox), typeof(T[]));
+        }
+
+        private float[] transformF(SimpleDatum d, out bool bMirror, NormalizedBBox crop_bbox = null)
+        {
             m_dfLastMax = -double.MaxValue;
             m_dfLastMin = double.MaxValue;
 
@@ -486,8 +511,155 @@ namespace MyCaffe.data
             int nW = ((nCropSize != 0 && nCropSize < nDatumWidth) ? nCropSize : nDatumWidth);
             int nItemCount = nH * nW * nDatumChannels;
 
-            if (m_rgTransformedData.Length != nItemCount)
-                m_rgTransformedData = new T[nItemCount];
+            if (m_rgfTransformedData == null || m_rgfTransformedData.Length != nItemCount)
+                m_rgfTransformedData = new float[nItemCount];
+
+            float fScale = (float)m_param.scale;
+            bool bDoMirror = m_param.mirror && (Rand(2) == 1) ? true : false;
+            bool bUseMeanImage = m_param.use_imagedb_mean;
+            List<float> rgMeanValues = null;
+            float[] rgMean = null;
+            bool bUseReal = d.IsRealData;
+
+            bMirror = bDoMirror;
+
+            m_log.CHECK_GT(nDatumChannels, 0, "The datum must have at least 1 channel.");
+            m_log.CHECK_GE(nDatumHeight, nCropSize, "The datum height must be at least as great as the crop size " + nCropSize.ToString());
+            m_log.CHECK_GE(nDatumWidth, nCropSize, "The datum width must be at least as great as the crop size " + nCropSize.ToString());
+
+            if (bUseMeanImage)
+            {
+                if (m_rgfMeanData == null)
+                    m_log.FAIL("You must specify an imgMean parameter when using IMAGE mean subtraction.");
+
+                rgMean = m_rgfMeanData;
+
+                int nExpected = nDatumChannels * nDatumHeight * nDatumWidth;
+                m_log.CHECK_EQ(rgMean.Length, nExpected, "The size of the 'mean' image is incorrect!  Expected '" + nExpected.ToString() + "' elements, yet loaded '" + rgMean.Length + "' elements.");
+            }
+
+            if (m_rgMeanValues.Count > 0)
+            {
+                m_log.CHECK(m_rgMeanValues.Count == 1 || m_rgMeanValues.Count == nDatumChannels, "Specify either 1 mean value or as many as channels: " + nDatumChannels.ToString());
+                rgMeanValues = new List<float>();
+
+                for (int c = 0; c < nDatumChannels; c++)
+                {
+                    // Replicate the mean value for simplicity.
+                    if (c == 0 || m_rgMeanValues.Count == 1)
+                        rgMeanValues.Add((float)m_rgMeanValues[0]);
+                    else if (c > 0)
+                        rgMeanValues.Add((float)m_rgMeanValues[c]);
+                }
+            }
+
+            int nHeight = nDatumHeight;
+            int nWidth = nDatumWidth;
+
+            int h_off = 0;
+            int w_off = 0;
+
+            if (nCropSize > 0)
+            {
+                nHeight = nCropSize;
+                nWidth = nCropSize;
+
+                // We only do random crop when we do training
+                if (m_phase == Phase.TRAIN)
+                {
+                    h_off = Rand(nDatumHeight - nCropSize + 1);
+                    w_off = Rand(nDatumWidth - nCropSize + 1);
+                }
+                else
+                {
+                    h_off = (nDatumHeight - nCropSize) / 2;
+                    w_off = (nDatumWidth - nCropSize) / 2;
+                }
+            }
+
+            // Return the normalized crop bbox if specified
+            if (crop_bbox != null)
+                crop_bbox.Set((float)w_off / nDatumWidth, (float)h_off / nDatumHeight, (float)(w_off + nWidth) / nDatumWidth, (float)(h_off + nHeight) / nDatumHeight);
+
+            float[] rgfData = d.GetData<float>();
+            float fDataElement;
+            float fTransformedElement;
+            int nTopIdx;
+            int nDataIdx;
+            int nLen = nDatumChannels * nHeight * nWidth;
+            int[] rgChannelSwap = null;
+
+            if (m_rgfTransformedData == null || m_rgfTransformedData.Length < nLen)
+                m_rgfTransformedData = new float[nLen];
+
+            if (nDatumChannels == 3 && param.color_order == TransformationParameter.COLOR_ORDER.BGR)
+                rgChannelSwap = new int[] { 2, 1, 0 };
+
+            for (int c1 = 0; c1 < nDatumChannels; c1++)
+            {
+                int c = (rgChannelSwap == null) ? c1 : rgChannelSwap[c1];
+
+                for (int h = 0; h < nHeight; h++)
+                {
+                    for (int w = 0; w < nWidth; w++)
+                    {
+                        nDataIdx = (c * nDatumHeight + h_off + h) * nDatumWidth + w_off + w;
+
+                        if (bDoMirror)
+                            nTopIdx = (c * nHeight + h) * nWidth + (nWidth - 1 - w);
+                        else
+                            nTopIdx = (c * nHeight + h) * nWidth + w;
+
+                        fDataElement = rgfData[nDataIdx];
+
+                        if (bUseMeanImage)
+                        {
+                            fTransformedElement = (fDataElement - rgMean[nDataIdx]) * fScale;
+                        }
+                        else if (rgMeanValues != null && rgMeanValues.Count > 0)
+                        {
+                            fTransformedElement = (fDataElement - rgMeanValues[c]) * fScale;
+                        }
+                        else
+                        {
+                            fTransformedElement = fDataElement * fScale;
+                        }
+
+                        if (m_dfLastMax < fTransformedElement)
+                            m_dfLastMax = fTransformedElement;
+
+                        if (m_dfLastMin > fTransformedElement)
+                            m_dfLastMin = fTransformedElement;
+
+                        m_rgfTransformedData[nTopIdx] = fTransformedElement;
+                    }
+                }
+            }
+
+            return m_rgfTransformedData;
+        }
+
+        private double[] transformD(SimpleDatum d, out bool bMirror, NormalizedBBox crop_bbox = null)
+        {
+            m_dfLastMax = -double.MaxValue;
+            m_dfLastMin = double.MaxValue;
+
+            if (m_param.resize_param != null && m_param.resize_param.Active)
+                d = m_imgTransforms.ApplyResize(d, m_param.resize_param);
+
+            if (m_param.noise_param != null && m_param.noise_param.Active)
+                d = m_imgTransforms.ApplyNoise(d, m_param.noise_param);
+
+            int nDatumChannels = d.Channels;
+            int nDatumHeight = d.Height;
+            int nDatumWidth = d.Width;
+            int nCropSize = (int)m_param.crop_size;
+            int nH = ((nCropSize != 0 && nCropSize < nDatumHeight) ? nCropSize : nDatumHeight);
+            int nW = ((nCropSize != 0 && nCropSize < nDatumWidth) ? nCropSize : nDatumWidth);
+            int nItemCount = nH * nW * nDatumChannels;
+
+            if (m_rgdfTransformedData == null || m_rgdfTransformedData.Length != nItemCount)
+                m_rgdfTransformedData = new double[nItemCount];
 
             double dfScale = m_param.scale;
             bool bDoMirror = m_param.mirror && (Rand(2) == 1) ? true : false;
@@ -504,10 +676,10 @@ namespace MyCaffe.data
 
             if (bUseMeanImage)
             {
-                if (m_rgMeanData == null)
+                if (m_rgdfMeanData == null)
                     m_log.FAIL("You must specify an imgMean parameter when using IMAGE mean subtraction.");
 
-                rgMean = m_rgMeanData;
+                rgMean = m_rgdfMeanData;
 
                 int nExpected = nDatumChannels * nDatumHeight * nDatumWidth;
                 m_log.CHECK_EQ(rgMean.Length, nExpected, "The size of the 'mean' image is incorrect!  Expected '" + nExpected.ToString() + "' elements, yet loaded '" + rgMean.Length + "' elements.");
@@ -521,7 +693,7 @@ namespace MyCaffe.data
                 for (int c = 0; c < nDatumChannels; c++)
                 {
                     // Replicate the mean value for simplicity.
-                    if (c == 0 || m_rgMeanValues.Count == 1)    
+                    if (c == 0 || m_rgMeanValues.Count == 1)
                         rgMeanValues.Add(m_rgMeanValues[0]);
                     else if (c > 0)
                         rgMeanValues.Add(m_rgMeanValues[c]);
@@ -556,13 +728,12 @@ namespace MyCaffe.data
             if (crop_bbox != null)
                 crop_bbox.Set((float)w_off / nDatumWidth, (float)h_off / nDatumHeight, (float)(w_off + nWidth) / nDatumWidth, (float)(h_off + nHeight) / nDatumHeight);
 
+            double[] rgdfData = d.GetData<double>();
             double dfDataElement;
             double dfTransformedElement;
             int nTopIdx;
             int nDataIdx;
             int nLen = nDatumChannels * nHeight * nWidth;
-            double[] rgRealData = d.RealData;
-            byte[] rgByteData = d.ByteData;
             int[] rgChannelSwap = null;
 
             if (m_rgfTransformedData == null || m_rgfTransformedData.Length < nLen)
@@ -586,10 +757,7 @@ namespace MyCaffe.data
                         else
                             nTopIdx = (c * nHeight + h) * nWidth + w;
 
-                        if (bUseReal)
-                            dfDataElement = (double)rgRealData[nDataIdx];
-                        else
-                            dfDataElement = (double)rgByteData[nDataIdx];
+                        dfDataElement = rgdfData[nDataIdx];
 
                         if (bUseMeanImage)
                         {
@@ -610,18 +778,12 @@ namespace MyCaffe.data
                         if (m_dfLastMin > dfTransformedElement)
                             m_dfLastMin = dfTransformedElement;
 
-                        m_rgfTransformedData[nTopIdx] = (float)dfTransformedElement;
+                        m_rgdfTransformedData[nTopIdx] = dfTransformedElement;
                     }
                 }
             }
 
-            Array.Copy(m_rgfTransformedData, m_rgTransformedData, nLen);
-
-            if (m_rgTransformedData.Length == nItemCount)
-                return m_rgTransformedData;
-
-            List<T> rg = new List<T>(m_rgTransformedData);
-            return rg.GetRange(0, nItemCount).ToArray();
+            return m_rgdfTransformedData;
         }
 
         /// <summary>
@@ -1036,6 +1198,91 @@ namespace MyCaffe.data
         /// <returns>The de-processed output Datum is returned.</returns>
         public Datum UnTransform(Blob<T> blob, bool bIncludeMean = true)
         {
+            if (typeof(T) == typeof(double))
+                return unTransformD(blob, bIncludeMean);
+            else
+                return unTransformF(blob, bIncludeMean);
+        }
+
+        private Datum unTransformF(Blob<T> blob, bool bIncludeMean = true)
+        {
+            float[] rgData = Utility.ConvertVecF<T>(blob.update_cpu_data());
+            byte[] rgOutput = new byte[rgData.Length];
+            int nC = blob.channels;
+            int nH = blob.height;
+            int nW = blob.width;
+            int[] rgChannelSwap = null;
+            bool bUseMeanImage = m_param.use_imagedb_mean;
+            List<float> rgMeanValues = null;
+            float[] rgMean = null;
+            float dfScale = (float)m_param.scale;
+
+            if (bUseMeanImage)
+            {
+                if (m_rgfMeanData == null)
+                    m_log.FAIL("You must specify an imgMean parameter when using IMAGE mean subtraction.");
+
+                rgMean = m_rgfMeanData;
+
+                int nExpected = nC * nH * nW;
+                m_log.CHECK_EQ(rgMean.Length, nExpected, "The size of the 'mean' image is incorrect!  Expected '" + nExpected.ToString() + "' elements, yet loaded '" + rgMean.Length + "' elements.");
+            }
+
+            if (m_rgMeanValues.Count > 0)
+            {
+                m_log.CHECK(m_rgMeanValues.Count == 1 || m_rgMeanValues.Count == nC, "Specify either 1 mean value or as many as channels: " + nC.ToString());
+                rgMeanValues = new List<float>();
+
+                for (int c = 0; c < nC; c++)
+                {
+                    // Replicate the mean value for simplicity.
+                    if (c == 0 || m_rgMeanValues.Count == 1)
+                        rgMeanValues.Add((float)m_rgMeanValues[0]);
+                    else if (c > 0)
+                        rgMeanValues.Add((float)m_rgMeanValues[c]);
+                }
+
+                rgMean = rgMeanValues.ToArray();
+            }
+
+            if (m_param.color_order == TransformationParameter.COLOR_ORDER.BGR)
+                rgChannelSwap = new int[] { 2, 1, 0 };
+
+            for (int c1 = 0; c1 < nC; c1++)
+            {
+                int c = (rgChannelSwap == null) ? c1 : rgChannelSwap[c1];
+
+                for (int h = 0; h < nH; h++)
+                {
+                    for (int w = 0; w < nW; w++)
+                    {
+                        int nDataIdx = (c * nH + h) * nW + w;
+                        float fVal = (rgData[nDataIdx] / dfScale);
+
+                        if (bIncludeMean)
+                        {
+                            if (bUseMeanImage)
+                                fVal += rgMean[nDataIdx];
+                            else if (rgMean != null && rgMean.Length == nC)
+                                fVal += rgMean[c];
+                        }
+
+                        if (fVal < 0)
+                            fVal = 0;
+                        if (fVal > 255)
+                            fVal = 255;
+
+                        int nOutIdx = (c1 * nH + h) * nW + w;
+                        rgOutput[nOutIdx] = (byte)fVal;
+                    }
+                }
+            }
+
+            return new Datum(false, nC, nW, nH, -1, DateTime.MinValue, rgOutput.ToList(), null, 0, false, -1);
+        }
+
+        private Datum unTransformD(Blob<T> blob, bool bIncludeMean = true)
+        {
             double[] rgData = Utility.ConvertVec<T>(blob.update_cpu_data());
             byte[] rgOutput = new byte[rgData.Length];
             int nC = blob.channels;
@@ -1049,10 +1296,10 @@ namespace MyCaffe.data
 
             if (bUseMeanImage)
             {
-                if (m_rgMeanData == null)
+                if (m_rgdfMeanData == null)
                     m_log.FAIL("You must specify an imgMean parameter when using IMAGE mean subtraction.");
 
-                rgMean = m_rgMeanData;
+                rgMean = m_rgdfMeanData;
 
                 int nExpected = nC * nH * nW;
                 m_log.CHECK_EQ(rgMean.Length, nExpected, "The size of the 'mean' image is incorrect!  Expected '" + nExpected.ToString() + "' elements, yet loaded '" + rgMean.Length + "' elements.");
