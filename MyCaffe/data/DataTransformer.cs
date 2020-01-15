@@ -507,12 +507,8 @@ namespace MyCaffe.data
             int nDatumHeight = d.Height;
             int nDatumWidth = d.Width;
             int nCropSize = (int)m_param.crop_size;
-            int nH = ((nCropSize != 0 && nCropSize < nDatumHeight) ? nCropSize : nDatumHeight);
-            int nW = ((nCropSize != 0 && nCropSize < nDatumWidth) ? nCropSize : nDatumWidth);
-            int nItemCount = nH * nW * nDatumChannels;
-
-            if (m_rgfTransformedData == null || m_rgfTransformedData.Length != nItemCount)
-                m_rgfTransformedData = new float[nItemCount];
+            int nHeight = ((nCropSize != 0 && nCropSize < nDatumHeight) ? nCropSize : nDatumHeight);
+            int nWidth = ((nCropSize != 0 && nCropSize < nDatumWidth) ? nCropSize : nDatumWidth);
 
             float fScale = (float)m_param.scale;
             bool bDoMirror = m_param.mirror && (Rand(2) == 1) ? true : false;
@@ -553,27 +549,21 @@ namespace MyCaffe.data
                 }
             }
 
-            int nHeight = nDatumHeight;
-            int nWidth = nDatumWidth;
-
             int h_off = 0;
             int w_off = 0;
 
             if (nCropSize > 0)
             {
-                nHeight = nCropSize;
-                nWidth = nCropSize;
-
                 // We only do random crop when we do training
                 if (m_phase == Phase.TRAIN)
                 {
-                    h_off = Rand(nDatumHeight - nCropSize + 1);
-                    w_off = Rand(nDatumWidth - nCropSize + 1);
+                    h_off = Rand(nDatumHeight - nHeight + 1);
+                    w_off = Rand(nDatumWidth - nWidth + 1);
                 }
                 else
                 {
-                    h_off = (nDatumHeight - nCropSize) / 2;
-                    w_off = (nDatumWidth - nCropSize) / 2;
+                    h_off = (nDatumHeight - nHeight) / 2;
+                    w_off = (nDatumWidth - nWidth) / 2;
                 }
             }
 
@@ -586,11 +576,11 @@ namespace MyCaffe.data
             float fTransformedElement;
             int nTopIdx;
             int nDataIdx;
-            int nLen = nDatumChannels * nHeight * nWidth;
+            int nItemCount = nDatumChannels * nHeight * nWidth;
             int[] rgChannelSwap = null;
 
-            if (m_rgfTransformedData == null || m_rgfTransformedData.Length < nLen)
-                m_rgfTransformedData = new float[nLen];
+            if (m_rgfTransformedData == null || m_rgfTransformedData.Length < nItemCount)
+                m_rgfTransformedData = new float[nItemCount];
 
             if (nDatumChannels == 3 && param.color_order == TransformationParameter.COLOR_ORDER.BGR)
                 rgChannelSwap = new int[] { 2, 1, 0 };
@@ -654,12 +644,8 @@ namespace MyCaffe.data
             int nDatumHeight = d.Height;
             int nDatumWidth = d.Width;
             int nCropSize = (int)m_param.crop_size;
-            int nH = ((nCropSize != 0 && nCropSize < nDatumHeight) ? nCropSize : nDatumHeight);
-            int nW = ((nCropSize != 0 && nCropSize < nDatumWidth) ? nCropSize : nDatumWidth);
-            int nItemCount = nH * nW * nDatumChannels;
-
-            if (m_rgdfTransformedData == null || m_rgdfTransformedData.Length != nItemCount)
-                m_rgdfTransformedData = new double[nItemCount];
+            int nHeight = ((nCropSize != 0 && nCropSize < nDatumHeight) ? nCropSize : nDatumHeight);
+            int nWidth = ((nCropSize != 0 && nCropSize < nDatumWidth) ? nCropSize : nDatumWidth);
 
             double dfScale = m_param.scale;
             bool bDoMirror = m_param.mirror && (Rand(2) == 1) ? true : false;
@@ -700,27 +686,21 @@ namespace MyCaffe.data
                 }
             }
 
-            int nHeight = nDatumHeight;
-            int nWidth = nDatumWidth;
-
             int h_off = 0;
             int w_off = 0;
 
             if (nCropSize > 0)
             {
-                nHeight = nCropSize;
-                nWidth = nCropSize;
-
                 // We only do random crop when we do training
                 if (m_phase == Phase.TRAIN)
                 {
-                    h_off = Rand(nDatumHeight - nCropSize + 1);
-                    w_off = Rand(nDatumWidth - nCropSize + 1);
+                    h_off = Rand(nDatumHeight - nHeight + 1);
+                    w_off = Rand(nDatumWidth - nWidth + 1);
                 }
                 else
                 {
-                    h_off = (nDatumHeight - nCropSize) / 2;
-                    w_off = (nDatumWidth - nCropSize) / 2;
+                    h_off = (nDatumHeight - nHeight) / 2;
+                    w_off = (nDatumWidth - nWidth) / 2;
                 }
             }
 
@@ -733,11 +713,11 @@ namespace MyCaffe.data
             double dfTransformedElement;
             int nTopIdx;
             int nDataIdx;
-            int nLen = nDatumChannels * nHeight * nWidth;
+            int nItemCount = nDatumChannels * nHeight * nWidth;
             int[] rgChannelSwap = null;
 
-            if (m_rgfTransformedData == null || m_rgfTransformedData.Length < nLen)
-                m_rgfTransformedData = new float[nLen];
+            if (m_rgdfTransformedData == null || m_rgdfTransformedData.Length < nItemCount)
+                m_rgdfTransformedData = new double[nItemCount];
 
             if (nDatumChannels == 3 && param.color_order == TransformationParameter.COLOR_ORDER.BGR)
                 rgChannelSwap = new int[] { 2, 1, 0 };
