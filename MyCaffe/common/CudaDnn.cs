@@ -7823,7 +7823,7 @@ namespace MyCaffe.common
         /// <param name="nCount">Specifies the number of items.</param>
         /// <param name="hNetParamsDiff">Specifies a handle to the net params diff in GPU memory.</param>
         /// <param name="hHistoryData">Specifies a handle to the history data in GPU memory.</param>
-        /// <param name="fDelta"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="fDelta">Specifies the numerical stability factor.</param>
         /// <param name="fLocalRate">Specifies the local learning rate.</param>
         public void adagrad_update(int nCount, long hNetParamsDiff, long hHistoryData, T fDelta, T fLocalRate)
         {
@@ -7844,7 +7844,7 @@ namespace MyCaffe.common
         /// <param name="hHistoryData1">Specifies a handle to history data in GPU memory.</param>
         /// <param name="hHistoryData2">Specifies a handle to history data in GPU memory.</param>
         /// <param name="fMomentum">Specifies the momentum to use.</param>
-        /// <param name="fDelta"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="fDelta">Specifies the numerical stability factor.</param>
         /// <param name="fLocalRate">Specifies the local learning rate.</param>
         public void adadelta_update(int nCount, long hNetParamsDiff, long hHistoryData1, long hHistoryData2, T fMomentum, T fDelta, T fLocalRate)
         {
@@ -7886,8 +7886,8 @@ namespace MyCaffe.common
         /// <param name="nCount">Specifies the number of items.</param>
         /// <param name="hNetParamsDiff">Specifies a handle to the net params diff in GPU memory.</param>
         /// <param name="hHistoryData">Specifies a handle to the history data in GPU memory.</param>
-        /// <param name="fRmsDecay"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="fDelta"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="fRmsDecay">Specifies the decay value used by the Solver.  MeanSquare(t) = 'rms_decay' * MeanSquare(t-1) + (1 - 'rms_decay') * SquareGradient(t).</param>
+        /// <param name="fDelta">Specifies the numerical stability factor.</param>
         /// <param name="fLocalRate">Specifies the local learning rate.</param>
         public void rmsprop_update(int nCount, long hNetParamsDiff, long hHistoryData, T fRmsDecay, T fDelta, T fLocalRate)
         {
@@ -7903,26 +7903,26 @@ namespace MyCaffe.common
         /// <remarks>
         /// See [LSTM with Working Memory](https://arxiv.org/abs/1605.01988) by Pulver, et al., 2016
         /// </remarks>
-        /// <param name="t"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nN"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nH"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hWeight_h"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hWeight_i"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hClipData"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nClipOffset"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="t">Specifies the step within the sequence.</param>
+        /// <param name="nN">Specifies the batch size.</param>
+        /// <param name="nH">Specifies the number of hidden units.</param>
+        /// <param name="hWeight_h">Specifies a handle to the GPU memory holding the 'h' weights.</param>
+        /// <param name="hWeight_i">Specifies a handle to the GPU memory holding the 'i' weights.</param>
+        /// <param name="hClipData">Specifies a handle to the GPU memory holding the clip data.</param>
+        /// <param name="nClipOffset">Specifies the clip offset for this step within the sequence.</param>
         /// <param name="hTopData">Specifies a handle to the top data in GPU memory.</param>
         /// <param name="nTopOffset">Specifies an offset into the top data memory.</param>
-        /// <param name="hCellData"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nCellOffset"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hPreGateData"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nPreGateOffset"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hGateData"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nGateOffset"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hHT1Data"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nHT1Offset"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hCT1Data"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nCT1Offset"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hHtoGateData"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="hCellData">Specifies a handle to the GPU memory holding the 'c_t' data.</param>
+        /// <param name="nCellOffset">Specifies the c_t offset for this step within the sequence.</param>
+        /// <param name="hPreGateData">Specifies a handle to the GPU memory holding the pre-gate data.</param>
+        /// <param name="nPreGateOffset">Specifies the pre-gate offset for this step within the sequence.</param>
+        /// <param name="hGateData">Specifies a handle to the GPU memory holding the gate data.</param>
+        /// <param name="nGateOffset">Specifies the gate data offset for this step within the sequence.</param>
+        /// <param name="hHT1Data">Specifies a handle to the GPU memory holding the HT1 data.</param>
+        /// <param name="nHT1Offset">Specifies the HT1 offset for this step within the sequence.</param>
+        /// <param name="hCT1Data">Specifies a handle to the GPU memory holding the CT1 data.</param>
+        /// <param name="nCT1Offset">Specifies the CT1 offset for this step within the sequence.</param>
+        /// <param name="hHtoGateData">Specifies a handle to the GPU memory holding the H to Gate data.</param>
         public void lstm_fwd(int t, int nN, int nH, long hWeight_h, long hWeight_i, long hClipData, int nClipOffset, long hTopData, int nTopOffset, long hCellData, int nCellOffset, long hPreGateData, int nPreGateOffset, long hGateData, int nGateOffset, long hHT1Data, int nHT1Offset, long hCT1Data, int nCT1Offset, long hHtoGateData)
         {
             if (m_dt == DataType.DOUBLE)
@@ -7937,30 +7937,30 @@ namespace MyCaffe.common
         /// <remarks>
         /// See [LSTM with Working Memory](https://arxiv.org/abs/1605.01988) by Pulver, et al., 2016
         /// </remarks>
-        /// <param name="t"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nN"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nH"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="t">Specifies the step within the sequence.</param>
+        /// <param name="nN">Specifies the batch size.</param>
+        /// <param name="nH">Specifies the number of hidden units.</param>
         /// <param name="dfClippingThreshold"></param>
-        /// <param name="hWeight_h"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hClipData"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nClipOffset"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="hWeight_h">Specifies a handle to the GPU memory holding the 'h' weights.</param>
+        /// <param name="hClipData">Specifies a handle to the GPU memory holding the clip data.</param>
+        /// <param name="nClipOffset">Specifies the clip offset for this step within the sequence.</param>
         /// <param name="hTopDiff">Specifies a handle to the top diff in GPU memory.</param>
         /// <param name="nTopOffset">Specifies an offset into the top diff memory.</param>
-        /// <param name="hCellData"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hCellDiff"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nCellOffset"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hPreGateDiff"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nPreGateOffset"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hGateData"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hGateDiff"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nGateOffset"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hCT1Data"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nCT1Offset"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hDHT1Diff"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nDHT1Offset"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hDCT1Diff"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="nDCT1Offset"><b><i>NEEDS REVIEW</i></b></param>
-        /// <param name="hHtoHData"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="hCellData">Specifies a handle to the GPU memory holding the 'c_t' data.</param>
+        /// <param name="hCellDiff">Specifies a handle to the GPU memory holding the 'c_t' gradients.</param>
+        /// <param name="nCellOffset">Specifies the c_t offset for this step within the sequence.</param>
+        /// <param name="hPreGateDiff">Specifies a handle to the GPU memory holding the pre-gate gradients.</param>
+        /// <param name="nPreGateOffset">Specifies the pre-gate offset for this step within the sequence.</param>
+        /// <param name="hGateData">Specifies a handle to the GPU memory holding the gate data.</param>
+        /// <param name="hGateDiff">Specifies a handle to the GPU memory holding the gate gradients.</param>
+        /// <param name="nGateOffset">Specifies the gate data offset for this step within the sequence.</param>
+        /// <param name="hCT1Data">Specifies a handle to the GPU memory holding the CT1 data.</param>
+        /// <param name="nCT1Offset">Specifies the CT1 offset for this step within the sequence.</param>
+        /// <param name="hDHT1Diff">Specifies a handle to the GPU DHT1 gradients.</param>
+        /// <param name="nDHT1Offset">Specifies the DHT1 offset for this step within the sequence.</param>
+        /// <param name="hDCT1Diff">Specifies a handle to the DCT1 gradients.</param>
+        /// <param name="nDCT1Offset">Specifies the DCT1 offset for this step within the sequence.</param>
+        /// <param name="hHtoHData">Specifies a handle to the GPU memory holding the H to H data.</param>
         public void lstm_bwd(int t, int nN, int nH, double dfClippingThreshold, long hWeight_h, long hClipData, int nClipOffset, long hTopDiff, int nTopOffset, long hCellData, long hCellDiff, int nCellOffset, long hPreGateDiff, int nPreGateOffset, long hGateData, long hGateDiff, int nGateOffset, long hCT1Data, int nCT1Offset, long hDHT1Diff, int nDHT1Offset, long hDCT1Diff, int nDCT1Offset, long hHtoHData)
         {
             if (m_dt == DataType.DOUBLE)
@@ -8023,7 +8023,7 @@ namespace MyCaffe.common
         /// Performs a coefficient sum foward pass in Cuda.
         /// </summary>
         /// <param name="nCount">Specifies the number of items.</param>
-        /// <param name="nDim"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="nDim"><b><i>Specifies the dimension of the data where the data is sized 'num' x 'dim'.</i></b></param>
         /// <param name="nNumOffset">Specifies the offset applied to the coefficent indexing.</param>
         /// <param name="dfCoeff">Specifies a primary coefficient value applied to each input before summing.</param>
         /// <param name="hCoeffData">Optionally specifies a handle to coefficient data that is applied to the primary coefficient.</param>
@@ -8042,7 +8042,7 @@ namespace MyCaffe.common
         /// Performs a coefficient sum backward pass in Cuda.
         /// </summary>
         /// <param name="nCount">Specifies the number of items.</param>
-        /// <param name="nDim"><b><i>NEEDS REVIEW</i></b></param>
+        /// <param name="nDim"><b><i>Specifies the dimension of the data where the data is sized 'num' x 'dim'.</i></b></param>
         /// <param name="nNumOffset">Specifies the offset applied to the coefficent indexing.</param>
         /// <param name="dfCoeff">Specifies a primary coefficient value applied to each input before summing.</param>
         /// <param name="hCoeffData">Optionally specifies a handle to coefficient data that is applied to the primary coefficient.</param>
