@@ -329,7 +329,7 @@ namespace MyCaffe.gym
                 g.DrawImage(bmpSrc, rc1, rc, GraphicsUnit.Pixel);
             }
 
-            return ImageData.GetImageData(bmp, 3, false, -1);
+            return ImageData.GetImageDataD(bmp, 3, false, -1);
         }
 
         /// <summary>
