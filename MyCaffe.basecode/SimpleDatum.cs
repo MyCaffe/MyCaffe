@@ -1397,7 +1397,7 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Return the real data as a <i>double</i> array after padding the data.
+        /// Return the real data as a <i>double</i> or <i>float</i> array (depending on the original encoding data type) after padding the data.
         /// </summary>
         /// <param name="rgData">Specifies the data.</param>
         /// <param name="nImagePadX">Specifies the amount to pad the data width.</param>
@@ -1405,49 +1405,20 @@ namespace MyCaffe.basecode
         /// <param name="nHeight">Specifies the height of the original data.</param>
         /// <param name="nWidth">Specifies the width of the original data.</param>
         /// <param name="nChannels">Specifies the number of channels in the original data.</param>
-        /// <returns>The data is returned as a <i>double</i> array.</returns>
-        public static double[] GetRealDataD(byte[] rgData, int nImagePadX, int nImagePadY, int nHeight, int nWidth, int nChannels)
+        /// <returns>The data is returned as a <i>double</i> or <i>float</i> array depending on the original encoding type.</returns>
+        public static Tuple<double[], float[]> GetRealData(byte[] rgData, int nImagePadX, int nImagePadY, int nHeight, int nWidth, int nChannels)
         {
-            List<double> rgReal = new List<double>();
-            int nIdx = 0;
+            Tuple<double[], float[]> rgRealData = GetRealData(rgData);
 
-            while (nIdx < rgData.Length)
-            {
-                rgReal.Add(BitConverter.ToDouble(rgData, nIdx));
-                nIdx += 8;
-            }
+            double[] rgRealDataD = rgRealData.Item1;
+            float[] rgRealDataF = rgRealData.Item2;
 
-            if (nImagePadX == 0 && nImagePadY == 0)
-                return rgReal.ToArray();
+            if (rgRealDataD != null)
+                rgRealDataD = PadData<double>(rgRealDataD.ToList(), nImagePadX, nImagePadY, nHeight, nWidth, nChannels);
+            else
+                rgRealDataF = PadData<float>(rgRealDataF.ToList(), nImagePadX, nImagePadY, nHeight, nWidth, nChannels);
 
-            return PadData<double>(rgReal, nImagePadX, nImagePadY, nHeight, nWidth, nChannels);
-        }
-
-        /// <summary>
-        /// Return the real data as a <i>float</i> array after padding the data.
-        /// </summary>
-        /// <param name="rgData">Specifies the data.</param>
-        /// <param name="nImagePadX">Specifies the amount to pad the data width.</param>
-        /// <param name="nImagePadY">Specifies the amount to pad the data height.</param>
-        /// <param name="nHeight">Specifies the height of the original data.</param>
-        /// <param name="nWidth">Specifies the width of the original data.</param>
-        /// <param name="nChannels">Specifies the number of channels in the original data.</param>
-        /// <returns>The data is returned as a <i>double</i> array.</returns>
-        public static float[] GetRealDataF(byte[] rgData, int nImagePadX, int nImagePadY, int nHeight, int nWidth, int nChannels)
-        {
-            List<float> rgReal = new List<float>();
-            int nIdx = 0;
-
-            while (nIdx < rgData.Length)
-            {
-                rgReal.Add(BitConverter.ToSingle(rgData, nIdx));
-                nIdx += 8;
-            }
-
-            if (nImagePadX == 0 && nImagePadY == 0)
-                return rgReal.ToArray();
-
-            return PadData<float>(rgReal, nImagePadX, nImagePadY, nHeight, nWidth, nChannels);
+            return new Tuple<double[], float[]>(rgRealDataD, rgRealDataF);
         }
 
         /// <summary>
@@ -1529,6 +1500,12 @@ namespace MyCaffe.basecode
         {
             List<byte> rgByte = new List<byte>();
 
+            int nCount = rgData.Count;
+            int nSize = sizeof(double);
+
+            rgByte.AddRange(BitConverter.GetBytes(nCount));
+            rgByte.AddRange(BitConverter.GetBytes(nSize));
+
             foreach (double df in rgData)
             {
                 rgByte.AddRange(BitConverter.GetBytes(df));
@@ -1549,6 +1526,12 @@ namespace MyCaffe.basecode
         {
             List<byte> rgByte = new List<byte>();
 
+            int nCount = rgData.Count;
+            int nSize = sizeof(float);
+
+            rgByte.AddRange(BitConverter.GetBytes(nCount));
+            rgByte.AddRange(BitConverter.GetBytes(nSize));
+
             foreach (float df in rgData)
             {
                 rgByte.AddRange(BitConverter.GetBytes(df));
@@ -1558,14 +1541,38 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Decodes an array of <i>byte</i> values into a array of either <i>double</i> or <i>float</i> values depending on how the original encoding was made.
+        /// </summary>
+        /// <param name="rgData">Specifies the array of <i>byte</i> values containing the encoded <i>double</i> or <i>float</i> values.</param>
+        /// <returns>The array of decoded <i>double</i> or <i>float</i> values is returned in a Tuple where only one item is set depending on the encoding data type used.</returns>
+        public static Tuple<double[], float[]> GetRealData(byte[] rgData)
+        {
+            double[] rgDataD = null;
+            float[] rgDataF = null;
+            int nIdx = 0;
+
+            int nCount = BitConverter.ToInt32(rgData, nIdx);
+            nIdx += 4;
+            int nSize = BitConverter.ToInt32(rgData, nIdx);
+            nIdx += 4;
+
+            if (nSize == sizeof(double))
+                rgDataD = getRealDataD(rgData, nIdx);
+            else
+                rgDataF = getRealDataF(rgData, nIdx);
+
+            return new Tuple<double[], float[]>(rgDataD, rgDataF);
+        }
+
+        /// <summary>
         /// Decodes an array of <i>byte</i> values into a array of <i>double</i> values.
         /// </summary>
         /// <param name="rgData">Specifies the array of <i>byte</i> values containing the encoded <i>double</i> values.</param>
+        /// <param name="nIdx">Specifies the offset where reading is to start.</param>
         /// <returns>The array of decoded <i>double</i> values is returned.</returns>
-        public static double[] GetRealDataD(byte[] rgData)
+        protected static double[] getRealDataD(byte[] rgData, int nIdx)
         {
             List<double> rgData0 = new List<double>();
-            int nIdx = 0;
 
             while (nIdx < rgData.Length)
             {
@@ -1580,11 +1587,11 @@ namespace MyCaffe.basecode
         /// Decodes an array of <i>byte</i> values into a array of <i>float</i> values.
         /// </summary>
         /// <param name="rgData">Specifies the array of <i>byte</i> values containing the encoded <i>float</i> values.</param>
+        /// <param name="nIdx">Specifies the offset where reading is to start.</param>
         /// <returns>The array of decoded <i>float</i> values is returned.</returns>
-        public static float[] GetRealDataF(byte[] rgData)
+        protected static float[] getRealDataF(byte[] rgData, int nIdx)
         {
             List<float> rgData0 = new List<float>();
-            int nIdx = 0;
 
             while (nIdx < rgData.Length)
             {

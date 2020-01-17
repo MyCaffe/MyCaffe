@@ -1409,9 +1409,8 @@ namespace MyCaffe.db.image
         /// <param name="img">Specifies the RawImage.</param>
         /// <param name="nPadW">Optionally, specifies a pad to apply to the width (default = 0).</param>
         /// <param name="nPadH">Optionally, specifies a pad to apply to the height (default = 0).</param>
-        /// <param name="bUseFloatForEncoded">Optionally, specifies to use float for the encoded data type (default = true).</param>
         /// <returns>A new SimpleDatum is returned containing the image.</returns>
-        public SimpleDatum LoadDatum(RawImage img, int nPadW = 0, int nPadH = 0, bool bUseFloatForEncoded = true)
+        public SimpleDatum LoadDatum(RawImage img, int nPadW = 0, int nPadH = 0)
         {
             if (img == null)
                 return null;
@@ -1438,9 +1437,12 @@ namespace MyCaffe.db.image
 
             if (img.Encoded.GetValueOrDefault())
             {
-                if (bUseFloatForEncoded)
+                Tuple<double[], float[]> rgRealData = SimpleDatum.GetRealData(rgData, nPadW, nPadH, nHeight, nWidth, nChannels);
+                double[] rgDataFloat = rgRealData.Item1;
+                float[] rgDataDouble = rgRealData.Item2;
+
+                if (rgDataFloat != null)
                 {
-                    List<float> rgDataFloat = new List<float>(SimpleDatum.GetRealDataF(rgData, nPadW, nPadH, nHeight, nWidth, nChannels));
                     sd = new SimpleDatum(img.Encoded.GetValueOrDefault(),
                                            nChannels,
                                            nWidth + nPadW,
@@ -1458,7 +1460,6 @@ namespace MyCaffe.db.image
                 }
                 else
                 {
-                    List<double> rgDataDouble = new List<double>(SimpleDatum.GetRealDataD(rgData, nPadW, nPadH, nHeight, nWidth, nChannels));
                     sd = new SimpleDatum(img.Encoded.GetValueOrDefault(),
                                            nChannels,
                                            nWidth + nPadW,
@@ -1513,9 +1514,8 @@ namespace MyCaffe.db.image
         /// <param name="img">Specifies the RawImageMean.</param>
         /// <param name="nPadW">Optionally, specifies a pad to apply to the width (default = 0).</param>
         /// <param name="nPadH">Optionally, specifies a pad to apply to the height (default = 0).</param>
-        /// <param name="bUseFloatForEncoded">Optionally, specifies to use float for the encoded data type (default = true).</param>
         /// <returns>A new SimpleDatum is returned containing the image mean.</returns>
-        public SimpleDatum LoadDatum(RawImageMean img, int nPadW = 0, int nPadH = 0, bool bUseFloatForEncoded = true)
+        public SimpleDatum LoadDatum(RawImageMean img, int nPadW = 0, int nPadH = 0)
         {
             if (img == null)
                 return null;
@@ -1527,9 +1527,12 @@ namespace MyCaffe.db.image
 
             if (img.Encoded.GetValueOrDefault())
             {
-                if (bUseFloatForEncoded)
+                Tuple<double[], float[]> rgRealData = SimpleDatum.GetRealData(img.Data, nPadW, nPadH, nHeight, nWidth, nChannels);
+                double[] rgDataFloat = rgRealData.Item1;
+                float[] rgDataDouble = rgRealData.Item2;
+
+                if (rgDataFloat != null)
                 {
-                    List<float> rgDataFloat = new List<float>(SimpleDatum.GetRealDataF(img.Data, nPadW, nPadH, nHeight, nWidth, nChannels));
                     sd = new SimpleDatum(img.Encoded.GetValueOrDefault(),
                                                   nChannels,
                                                   nWidth + nPadW,
@@ -1546,7 +1549,6 @@ namespace MyCaffe.db.image
                 }
                 else
                 {
-                    List<double> rgDataDouble = new List<double>(SimpleDatum.GetRealDataD(img.Data, nPadW, nPadH, nHeight, nWidth, nChannels));
                     sd = new SimpleDatum(img.Encoded.GetValueOrDefault(),
                                                   nChannels,
                                                   nWidth + nPadW,
