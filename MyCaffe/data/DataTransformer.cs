@@ -571,7 +571,7 @@ namespace MyCaffe.data
             if (crop_bbox != null)
                 crop_bbox.Set((float)w_off / nDatumWidth, (float)h_off / nDatumHeight, (float)(w_off + nWidth) / nDatumWidth, (float)(h_off + nHeight) / nDatumHeight);
 
-            float[] rgfData = d.RealDataF;
+            float[] rgfData = (d.RealDataF != null) ? d.RealDataF : d.GetData<float>();
             byte[] rgbData = d.ByteData;
             float fDataElement;
             float fTransformedElement;
@@ -709,7 +709,7 @@ namespace MyCaffe.data
             if (crop_bbox != null)
                 crop_bbox.Set((float)w_off / nDatumWidth, (float)h_off / nDatumHeight, (float)(w_off + nWidth) / nDatumWidth, (float)(h_off + nHeight) / nDatumHeight);
 
-            double[] rgdfData = d.RealDataD;
+            double[] rgdfData = (d.RealDataD != null) ? d.RealDataD : d.GetData<double>();
             byte[] rgbData = d.ByteData;
             double dfDataElement;
             double dfTransformedElement;
