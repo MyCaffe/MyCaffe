@@ -46,6 +46,8 @@ namespace MyCaffe.layers
 
             m_internalThread = new InternalThread<T>();
             m_internalThread.DoWork += new EventHandler<ActionStateArgs<T>>(m_internalThread_DoWork);
+            m_internalThread.OnPreStop += internalThread_OnPreStop;
+            m_internalThread.OnPreStart += internalThread_OnPreStart;
 
             if (m_evtCancel != null)
                 m_internalThread.CancelEvent.AddCancelOverride(m_evtCancel);
@@ -61,11 +63,26 @@ namespace MyCaffe.layers
             }
         }
 
-        /** @copydoc BaseDataLayer::dispose */
-        protected override void dispose()
+        private void internalThread_OnPreStart(object sender, EventArgs e)
+        {
+            m_rgPrefetchFree.Reset();
+            m_rgPrefetchFull.Reset();
+        }
+
+        private void internalThread_OnPreStop(object sender, EventArgs e)
         {
             m_rgPrefetchFree.Abort();
             m_rgPrefetchFull.Abort();
+            preStop();
+        }
+
+        protected virtual void preStop()
+        {
+        }
+
+        /** @copydoc BaseDataLayer::dispose */
+        protected override void dispose()
+        {
             m_internalThread.StopInternalThread();
 
             if (m_rgPrefetchFull != null)
@@ -154,9 +171,6 @@ namespace MyCaffe.layers
                     {
                         load_batch(batch);
 
-                        if (m_internalThread.CancellationPending)
-                            break;
-
                         batch.Data.AsyncGpuPush(hStream);
                         if (hStream != 0)
                             m_cuda.SynchronizeStream(hStream);
@@ -179,7 +193,8 @@ namespace MyCaffe.layers
             catch (Exception excpt)
             {
                 m_err = excpt;
-                m_rgPrefetchFull.Abort();                
+                m_rgPrefetchFull.Abort();
+                m_rgPrefetchFree.Abort();
                 throw excpt;
             }
             finally
