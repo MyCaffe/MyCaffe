@@ -108,13 +108,17 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="nMinVal">Specifies the range minimum.</param>
         /// <param name="nMaxVal">Specifies the range maximum.</param>
+        /// <param name="bMaxInclusive">Optionally, specifies whether or not the Maximum is to be included in the selection.</param>
         /// <returns>The random <i>int</i> is returned.</returns>
-        public int Next(int nMinVal, int nMaxVal)
+        public int Next(int nMinVal, int nMaxVal, bool bMaxInclusive = true)
         {
-            int nVal = (int)Math.Floor((NextDouble() * ((double)nMaxVal - nMinVal)) + nMinVal);
+            int nVal = (int)Math.Round((NextDouble() * ((double)nMaxVal - nMinVal)) + nMinVal);
 
-            if (nVal == nMaxVal)
-                nVal--;
+            if (!bMaxInclusive)
+            {
+                if (nVal == nMaxVal)
+                    nVal--;
+            }
 
             return nVal;
         }
@@ -143,13 +147,13 @@ namespace MyCaffe.basecode
                     throw new Exception("CryptoRandom: The maximum count has changed!");
 
                 IndexCollection rgMin = m_rgIdx.GetMinumums();
-                int nIdx = Next(0, rgMin.Count);
+                int nIdx = Next(0, rgMin.Count-1);
 
                 nIdx = rgMin.Index(nIdx);
                 return nIdx;
             }
 
-            return Next(0, nMaxVal);
+            return Next(0, nMaxVal - 1);
         }
     }
 
