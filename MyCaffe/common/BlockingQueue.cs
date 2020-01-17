@@ -30,6 +30,14 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Reset the abort event.
+        /// </summary>
+        public void Reset()
+        {
+            m_evtAbort.Reset();
+        }
+
+        /// <summary>
         /// Cancel the blocking queue operations.
         /// </summary>
         public void Abort()
@@ -144,10 +152,7 @@ namespace MyCaffe.common
 
                 int nWait = WaitHandle.WaitAny(rgWait.ToArray());
                 if (nWait < rgWait.Count - 1)
-                {
-                    evtAbort.Reset();
                     return false;
-                }
 
                 evtReady.Reset();
             }
