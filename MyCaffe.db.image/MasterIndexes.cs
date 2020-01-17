@@ -297,6 +297,7 @@ namespace MyCaffe.db.image
         bool m_bBoosted = false;
         List<int> m_rgIdx = new List<int>();
         int m_nIdx = 0;
+        object m_objSync = new object();
 
         public LabelIndex(string strName, CryptoRandom random, SourceDescriptor src, bool bBoosted, List<DbItem> rgItems)
         {
@@ -324,7 +325,7 @@ namespace MyCaffe.db.image
 
                     m_rgLabels[i] = new Index(strName + " label " + nLabel.ToString(), random, rgLabelList, nLabel, false);
                     if (rgLabelList.Count > 0)
-                        m_rgIdx.Add(i);
+                            m_rgIdx.Add(i);
 
                     m_rgLabelToIdxMap[nLabel] = i;
                     m_rgIdxToLabelMap[i] = nLabel;
@@ -374,10 +375,13 @@ namespace MyCaffe.db.image
             if (m_rgIdx.Count == m_rgLabels.Length)
                 return;
 
-            for (int i = 0; i < m_rgLabels.Length; i++)
+            lock (m_objSync)
             {
-                if (m_rgLabels[i].Count > 0)
-                   m_rgIdx.Add(i);
+                for (int i = 0; i < m_rgLabels.Length; i++)
+                {
+                    if (m_rgLabels[i].Count > 0)
+                        m_rgIdx.Add(i);
+                }
             }
         }
 
@@ -428,18 +432,22 @@ namespace MyCaffe.db.image
             }
             else
             {
-                int nIdx = m_rgIdx[0];
-
-                if (m_rgIdx.Count > 1)
+                lock (m_objSync)
                 {
-                    nIdx = m_random.Next(m_rgIdx.Count);
-                    nIdx = m_rgIdx[nIdx];
+                    int nIdxLoc = 0;
+                    int nIdx = m_rgIdx[nIdxLoc];
+
+                    if (m_rgIdx.Count > 1)
+                    {
+                        nIdxLoc = m_random.Next(m_rgIdx.Count);
+                        nIdx = m_rgIdx[nIdxLoc];
+                    }
+
+                    if (bRemove)
+                        m_rgIdx.RemoveAt(nIdxLoc);
+
+                    return m_rgIdxToLabelMap[nIdx];
                 }
-
-                if (bRemove)
-                    m_rgIdx.Remove(nIdx);
-
-                return m_rgIdxToLabelMap[nIdx];
             }
         }
 
