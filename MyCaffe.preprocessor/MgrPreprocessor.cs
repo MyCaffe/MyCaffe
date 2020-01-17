@@ -110,12 +110,11 @@ namespace MyCaffe.preprocessor
 
             if (typeof(T) == typeof(float))
             {
-                float[] rgParam = sd.RealData.Select(p => (float)p).ToArray();
-                m_extension.Run(Extension<T>.FUNCTION.ADDDATA, rgParam);
+                m_extension.Run(Extension<T>.FUNCTION.ADDDATA, sd.RealDataF);
             }
             else
             {
-                m_extension.Run(Extension<T>.FUNCTION.ADDDATA, sd.RealData);
+                m_extension.Run(Extension<T>.FUNCTION.ADDDATA, sd.RealDataD);
             }
 
             return new Tuple<Blob<T>, SimpleDatum>(m_blobOutput, null);
