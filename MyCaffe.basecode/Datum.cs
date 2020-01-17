@@ -30,12 +30,47 @@ namespace MyCaffe.basecode
         /// <param name="nLabel">Specifies the known label of the data.</param>
         /// <param name="dtTime">Specifies a time-stamp associated with the data.</param>
         /// <param name="rgData">Specifies the data as a list of <i>bytes</i> (expects <i>bIsReal</i> = <i>false</i>).</param>
+        /// <param name="nBoost">Specifies the boost to use with the data (a value of 0 indicates no boost).</param>
+        /// <param name="bAutoLabeled">Specifies whether or not the label was auto-generated.</param>
+        /// <param name="nIdx">Specifies the index of the data.</param>
+        public Datum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, List<byte> rgData, int nBoost, bool bAutoLabeled, int nIdx)
+            : base(bIsReal, nChannels, nWidth, nHeight, nLabel, dtTime, rgData, nBoost, bAutoLabeled, nIdx)
+        {
+        }
+
+        /// <summary>
+        /// The Datum constructor.
+        /// </summary>
+        /// <param name="bIsReal">Specifies whether or not the data values are <i>double</i> or <i>byte</i>.</param>
+        /// <param name="nChannels">Specifies the number of channels in the data (e.g. 3 for color, 1 for black and white images)</param>
+        /// <param name="nWidth">Specifies the width of the data (e.g. the number of pixels wide).</param>
+        /// <param name="nHeight">Specifies the height of the data (e.g. the number of pixels high).</param>
+        /// <param name="nLabel">Specifies the known label of the data.</param>
+        /// <param name="dtTime">Specifies a time-stamp associated with the data.</param>
         /// <param name="rgfData">Specifies the data as a list of <i>double</i> (expects <i>bIsReal</i> = <i>true</i>).</param>
         /// <param name="nBoost">Specifies the boost to use with the data (a value of 0 indicates no boost).</param>
         /// <param name="bAutoLabeled">Specifies whether or not the label was auto-generated.</param>
         /// <param name="nIdx">Specifies the index of the data.</param>
-        public Datum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, List<byte> rgData, List<double> rgfData, int nBoost, bool bAutoLabeled, int nIdx)
-            : base(bIsReal, nChannels, nWidth, nHeight, nLabel, dtTime, rgData, rgfData, nBoost, bAutoLabeled, nIdx)
+        public Datum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, List<double> rgfData, int nBoost, bool bAutoLabeled, int nIdx)
+            : base(bIsReal, nChannels, nWidth, nHeight, nLabel, dtTime, rgfData, nBoost, bAutoLabeled, nIdx)
+        {
+        }
+
+        /// <summary>
+        /// The Datum constructor.
+        /// </summary>
+        /// <param name="bIsReal">Specifies whether or not the data values are <i>double</i> or <i>byte</i>.</param>
+        /// <param name="nChannels">Specifies the number of channels in the data (e.g. 3 for color, 1 for black and white images)</param>
+        /// <param name="nWidth">Specifies the width of the data (e.g. the number of pixels wide).</param>
+        /// <param name="nHeight">Specifies the height of the data (e.g. the number of pixels high).</param>
+        /// <param name="nLabel">Specifies the known label of the data.</param>
+        /// <param name="dtTime">Specifies a time-stamp associated with the data.</param>
+        /// <param name="rgfData">Specifies the data as a list of <i>float</i> (expects <i>bIsReal</i> = <i>true</i>).</param>
+        /// <param name="nBoost">Specifies the boost to use with the data (a value of 0 indicates no boost).</param>
+        /// <param name="bAutoLabeled">Specifies whether or not the label was auto-generated.</param>
+        /// <param name="nIdx">Specifies the index of the data.</param>
+        public Datum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, List<float> rgfData, int nBoost, bool bAutoLabeled, int nIdx)
+            : base(bIsReal, nChannels, nWidth, nHeight, nLabel, dtTime, rgfData, nBoost, bAutoLabeled, nIdx)
         {
         }
 
@@ -92,11 +127,19 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Returns the data as an array of <i>doubles</i>.  The datum must be initialized with <i>bIsReal</i> = <i>true</i>.
+        /// Returns the data as an array of <i>float</i>.  The datum must be initialized with <i>bIsReal</i> = <i>true</i> with <i>float</i> data.
         /// </summary>
-        public double[] float_data
+        public float[] float_data
         {
-            get { return RealData; }
+            get { return RealDataF; }
+        }
+
+        /// <summary>
+        /// Returns the data as an array of <i>double</i>.  The datum must be initialized with <i>bIsReal</i> = <i>true</i> with <i>double</i> data.
+        /// </summary>
+        public double[] double_data
+        {
+            get { return RealDataD; }
         }
 
         /// <summary>

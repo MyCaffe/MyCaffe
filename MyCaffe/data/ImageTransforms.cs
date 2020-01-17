@@ -210,34 +210,73 @@ namespace MyCaffe.data
             {
                 if (sd.IsRealData)
                 {
-                    int nOffset = 0;
-                    int nCount = sd.ItemCount / sd.Channels;
-                    List<double[]> rgrgData = new List<double[]>();
-                    List<int> rgIdx = new List<int>();
-
-                    for (int i = 0; i < sd.Channels; i++)
+                    if (sd.RealDataD != null)
                     {
-                        double[] rgData = new double[nCount];
-                        Array.Copy(sd.RealData, nOffset, rgData, 0, nCount);
-                        rgrgData.Add(rgData);
-                        rgIdx.Add(i);
-                        nOffset += nCount;
+                        int nOffset = 0;
+                        int nCount = sd.ItemCount / sd.Channels;
+                        List<double[]> rgrgData = new List<double[]>();
+                        List<int> rgIdx = new List<int>();
+
+                        for (int i = 0; i < sd.Channels; i++)
+                        {
+                            double[] rgData = new double[nCount];
+                            Array.Copy(sd.RealDataD, nOffset, rgData, 0, nCount);
+                            rgrgData.Add(rgData);
+                            rgIdx.Add(i);
+                            nOffset += nCount;
+                        }
+
+                        List<int> rgOrder = new List<int>();
+                        while (rgOrder.Count < sd.Channels)
+                        {
+                            int nIdx = m_random.Next(sd.Channels);
+                            if (!rgOrder.Contains(nIdx))
+                                rgOrder.Add(nIdx);
+                        }
+
+                        nOffset = 0;
+                        for (int i = 0; i < sd.Channels; i++)
+                        {
+                            int nIdx = rgOrder[i];
+                            Array.Copy(rgrgData[nIdx], 0, sd.RealDataD, nOffset, nCount);
+                            nOffset += nCount;
+                        }
                     }
-
-                    List<int> rgOrder = new List<int>();
-                    while (rgOrder.Count < sd.Channels)
+                    else if (sd.RealDataF != null)
                     {
-                        int nIdx = m_random.Next(sd.Channels);
-                        if (!rgOrder.Contains(nIdx))
-                            rgOrder.Add(nIdx);
+                        int nOffset = 0;
+                        int nCount = sd.ItemCount / sd.Channels;
+                        List<float[]> rgrgData = new List<float[]>();
+                        List<int> rgIdx = new List<int>();
+
+                        for (int i = 0; i < sd.Channels; i++)
+                        {
+                            float[] rgData = new float[nCount];
+                            Array.Copy(sd.RealDataF, nOffset, rgData, 0, nCount);
+                            rgrgData.Add(rgData);
+                            rgIdx.Add(i);
+                            nOffset += nCount;
+                        }
+
+                        List<int> rgOrder = new List<int>();
+                        while (rgOrder.Count < sd.Channels)
+                        {
+                            int nIdx = m_random.Next(sd.Channels);
+                            if (!rgOrder.Contains(nIdx))
+                                rgOrder.Add(nIdx);
+                        }
+
+                        nOffset = 0;
+                        for (int i = 0; i < sd.Channels; i++)
+                        {
+                            int nIdx = rgOrder[i];
+                            Array.Copy(rgrgData[nIdx], 0, sd.RealDataF, nOffset, nCount);
+                            nOffset += nCount;
+                        }
                     }
-
-                    nOffset = 0;
-                    for (int i = 0; i < sd.Channels; i++)
+                    else
                     {
-                        int nIdx = rgOrder[i];
-                        Array.Copy(rgrgData[nIdx], 0, sd.RealData, nOffset, nCount);
-                        nOffset += nCount;
+                        throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
                     }
                 }
                 else
@@ -301,7 +340,7 @@ namespace MyCaffe.data
                 bmp = randomContrast(bmp, p.contrast_prob, p.contrast_lower, p.contrast_upper);
             }
 
-            SimpleDatum sd1 = ImageData.GetImageData(bmp, sd.Channels, sd.IsRealData, sd.Label);
+            SimpleDatum sd1 = ImageData.GetImageData(bmp, sd);
             sd.SetData(sd1);
 
             bmp.Dispose();
@@ -336,7 +375,7 @@ namespace MyCaffe.data
 
             Bitmap bmp = ImageData.GetImage(sd);
             Bitmap bmpNew = ImageTools.ResizeImage(bmp, (int)p.width, (int)p.height);
-            SimpleDatum sdResize = ImageData.GetImageData(bmpNew, sd.Channels, false, sd.Label);
+            SimpleDatum sdResize = ImageData.GetImageData(bmpNew, sd, false);
             SimpleDatum sdNew = new SimpleDatum(sd);
 
             sdNew.CopyData(sdResize);

@@ -1682,8 +1682,16 @@ namespace MyCaffe.common
         /// <returns>A Datum is returned.</returns>
         public Datum ToDatum()
         {
-            double[] rgData = m_cuda.GetMemoryDouble(gpu_data, count());
-            return new Datum(true, channels, width, height, -1, DateTime.MinValue, null, new List<double>(rgData), 0, false, -1);
+            if (typeof(T) == typeof(double))
+            {
+                double[] rgData = m_cuda.GetMemoryDouble(gpu_data, count());
+                return new Datum(true, channels, width, height, -1, DateTime.MinValue, new List<double>(rgData), 0, false, -1);
+            }
+            else
+            {
+                float[] rgData = m_cuda.GetMemoryFloat(gpu_data, count());
+                return new Datum(true, channels, width, height, -1, DateTime.MinValue, new List<float>(rgData), 0, false, -1);
+            }
         }
 
         /// <summary>

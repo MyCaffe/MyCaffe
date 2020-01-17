@@ -921,22 +921,48 @@ namespace MyCaffe.data
 
             if (d.IsRealData)
             {
-                double[] rgData = new double[nCropDatumSize];
-
-                for (int h = h_off; h < h_off + height; h++)
+                if (d.RealDataD != null)
                 {
-                    for (int w = w_off; w < w_off + width; w++)
+                    double[] rgData = new double[nCropDatumSize];
+
+                    for (int h = h_off; h < h_off + height; h++)
                     {
-                        for (int c = 0; c < nDatumChannels; c++)
+                        for (int w = w_off; w < w_off + width; w++)
                         {
-                            int nDatumIdx = (c * nDatumHeight + h) * nDatumWidth + w;
-                            int nCropDatumIdx = (c * height + h - h_off) * width + w - w_off;
-                            rgData[nCropDatumIdx] = d.RealData[nDatumIdx];
+                            for (int c = 0; c < nDatumChannels; c++)
+                            {
+                                int nDatumIdx = (c * nDatumHeight + h) * nDatumWidth + w;
+                                int nCropDatumIdx = (c * height + h - h_off) * width + w - w_off;
+                                rgData[nCropDatumIdx] = d.RealDataD[nDatumIdx];
+                            }
                         }
                     }
-                }
 
-                crop_datum.SetData(rgData.ToList(), d.Label);
+                    crop_datum.SetData(rgData.ToList(), d.Label);
+                }
+                else if (d.RealDataF != null)
+                {
+                    float[] rgData = new float[nCropDatumSize];
+
+                    for (int h = h_off; h < h_off + height; h++)
+                    {
+                        for (int w = w_off; w < w_off + width; w++)
+                        {
+                            for (int c = 0; c < nDatumChannels; c++)
+                            {
+                                int nDatumIdx = (c * nDatumHeight + h) * nDatumWidth + w;
+                                int nCropDatumIdx = (c * height + h - h_off) * width + w - w_off;
+                                rgData[nCropDatumIdx] = d.RealDataF[nDatumIdx];
+                            }
+                        }
+                    }
+
+                    crop_datum.SetData(rgData.ToList(), d.Label);
+                }
+                else
+                {
+                    throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
+                }
             }
             else
             {
@@ -994,22 +1020,48 @@ namespace MyCaffe.data
 
             if (d.IsRealData)
             {
-                double[] rgData = new double[nExpandDatumSize];
-
-                for (int h = (int)h_off; h < (int)h_off + nDatumHeight; h++)
+                if (d.RealDataD != null)
                 {
-                    for (int w = (int)w_off; w < (int)w_off + nDatumWidth; w++)
+                    double[] rgData = new double[nExpandDatumSize];
+
+                    for (int h = (int)h_off; h < (int)h_off + nDatumHeight; h++)
                     {
-                        for (int c = 0; c < nDatumChannels; c++)
+                        for (int w = (int)w_off; w < (int)w_off + nDatumWidth; w++)
                         {
-                            int nDatumIdx = (int)((c * nDatumHeight + h - h_off) * nDatumWidth + w - w_off);
-                            int nExpandIdx = (c * height + h) * width + w;
-                            rgData[nExpandIdx] = d.RealData[nDatumIdx];
+                            for (int c = 0; c < nDatumChannels; c++)
+                            {
+                                int nDatumIdx = (int)((c * nDatumHeight + h - h_off) * nDatumWidth + w - w_off);
+                                int nExpandIdx = (c * height + h) * width + w;
+                                rgData[nExpandIdx] = d.RealDataD[nDatumIdx];
+                            }
                         }
                     }
-                }
 
-                expand_datum.SetData(rgData.ToList(), d.Label);
+                    expand_datum.SetData(rgData.ToList(), d.Label);
+                }
+                else if (d.RealDataF != null)
+                {
+                    float[] rgData = new float[nExpandDatumSize];
+
+                    for (int h = (int)h_off; h < (int)h_off + nDatumHeight; h++)
+                    {
+                        for (int w = (int)w_off; w < (int)w_off + nDatumWidth; w++)
+                        {
+                            for (int c = 0; c < nDatumChannels; c++)
+                            {
+                                int nDatumIdx = (int)((c * nDatumHeight + h - h_off) * nDatumWidth + w - w_off);
+                                int nExpandIdx = (c * height + h) * width + w;
+                                rgData[nExpandIdx] = d.RealDataF[nDatumIdx];
+                            }
+                        }
+                    }
+
+                    expand_datum.SetData(rgData.ToList(), d.Label);
+                }
+                else
+                {
+                    throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
+                }
             }
             else
             {
@@ -1120,9 +1172,16 @@ namespace MyCaffe.data
                         if (y >= nT && y <= nB && x >= nL && x <= nR)
                         {
                             if (d.IsRealData)
-                                d.RealData[nIdx] = 0;
+                            {
+                                if (d.RealDataD != null)
+                                    d.RealDataD[nIdx] = 0;
+                                else if (d.RealDataF != null)
+                                    d.RealDataF[nIdx] = 0;
+                            }
                             else
+                            {
                                 d.ByteData[nIdx] = 0;
+                            }
                         }
                     }
                 }
@@ -1258,7 +1317,7 @@ namespace MyCaffe.data
                 }
             }
 
-            return new Datum(false, nC, nW, nH, -1, DateTime.MinValue, rgOutput.ToList(), null, 0, false, -1);
+            return new Datum(false, nC, nW, nH, -1, DateTime.MinValue, rgOutput.ToList(), 0, false, -1);
         }
 
         private Datum unTransformD(Blob<T> blob, bool bIncludeMean = true)
@@ -1335,7 +1394,7 @@ namespace MyCaffe.data
                 }
             }
 
-            return new Datum(false, nC, nW, nH, -1, DateTime.MinValue, rgOutput.ToList(), null, 0, false, -1);
+            return new Datum(false, nC, nW, nH, -1, DateTime.MinValue, rgOutput.ToList(), 0, false, -1);
         }
     }
 }

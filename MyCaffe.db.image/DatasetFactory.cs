@@ -1409,8 +1409,9 @@ namespace MyCaffe.db.image
         /// <param name="img">Specifies the RawImage.</param>
         /// <param name="nPadW">Optionally, specifies a pad to apply to the width (default = 0).</param>
         /// <param name="nPadH">Optionally, specifies a pad to apply to the height (default = 0).</param>
+        /// <param name="bUseFloatForEncoded">Optionally, specifies to use float for the encoded data type (default = true).</param>
         /// <returns>A new SimpleDatum is returned containing the image.</returns>
-        public SimpleDatum LoadDatum(RawImage img, int nPadW = 0, int nPadH = 0)
+        public SimpleDatum LoadDatum(RawImage img, int nPadW = 0, int nPadH = 0, bool bUseFloatForEncoded = true)
         {
             if (img == null)
                 return null;
@@ -1430,25 +1431,60 @@ namespace MyCaffe.db.image
                 rgDataCriteria = img.DataCriteria;
             }
 
-            List<byte> rgDataBytes = null;
-            List<double> rgDataDouble = null;
             int nHeight = img.Height.GetValueOrDefault();
             int nWidth = img.Width.GetValueOrDefault();
             int nChannels = img.Channels.GetValueOrDefault();
+            SimpleDatum sd = null;
 
             if (img.Encoded.GetValueOrDefault())
-                rgDataDouble = new List<double>(SimpleDatum.GetRealData(rgData, nPadW, nPadH, nHeight, nWidth, nChannels));
+            {
+                if (bUseFloatForEncoded)
+                {
+                    List<float> rgDataFloat = new List<float>(SimpleDatum.GetRealDataF(rgData, nPadW, nPadH, nHeight, nWidth, nChannels));
+                    sd = new SimpleDatum(img.Encoded.GetValueOrDefault(),
+                                           nChannels,
+                                           nWidth + nPadW,
+                                           nHeight + nPadH,
+                                           img.ActiveLabel.GetValueOrDefault(),
+                                           img.TimeStamp.GetValueOrDefault(),
+                                           rgDataFloat,
+                                           img.ActiveBoost.GetValueOrDefault(),
+                                           img.AutoLabel.GetValueOrDefault(),
+                                           img.Idx.GetValueOrDefault(),
+                                           img.VirtualID.GetValueOrDefault(),
+                                           img.ID,
+                                           img.SourceID.GetValueOrDefault(),
+                                           img.OriginalSourceID.GetValueOrDefault());
+                }
+                else
+                {
+                    List<double> rgDataDouble = new List<double>(SimpleDatum.GetRealDataD(rgData, nPadW, nPadH, nHeight, nWidth, nChannels));
+                    sd = new SimpleDatum(img.Encoded.GetValueOrDefault(),
+                                           nChannels,
+                                           nWidth + nPadW,
+                                           nHeight + nPadH,
+                                           img.ActiveLabel.GetValueOrDefault(),
+                                           img.TimeStamp.GetValueOrDefault(),
+                                           rgDataDouble,
+                                           img.ActiveBoost.GetValueOrDefault(),
+                                           img.AutoLabel.GetValueOrDefault(),
+                                           img.Idx.GetValueOrDefault(),
+                                           img.VirtualID.GetValueOrDefault(),
+                                           img.ID,
+                                           img.SourceID.GetValueOrDefault(),
+                                           img.OriginalSourceID.GetValueOrDefault());
+                }
+            }
             else
-                rgDataBytes = new List<byte>(SimpleDatum.GetByteData(rgData, nPadW, nPadH, nHeight, nWidth, nChannels));
-
-            SimpleDatum sd = new SimpleDatum(img.Encoded.GetValueOrDefault(),
+            {
+                List<byte> rgDataBytes = new List<byte>(SimpleDatum.GetByteData(rgData, nPadW, nPadH, nHeight, nWidth, nChannels));
+                sd = new SimpleDatum(img.Encoded.GetValueOrDefault(),
                                    nChannels,
                                    nWidth + nPadW,
                                    nHeight + nPadH,
                                    img.ActiveLabel.GetValueOrDefault(),
                                    img.TimeStamp.GetValueOrDefault(),
-                                   rgDataBytes,
-                                   rgDataDouble,
+                                   rgDataBytes,                                   
                                    img.ActiveBoost.GetValueOrDefault(),
                                    img.AutoLabel.GetValueOrDefault(),
                                    img.Idx.GetValueOrDefault(),
@@ -1456,6 +1492,7 @@ namespace MyCaffe.db.image
                                    img.ID,
                                    img.SourceID.GetValueOrDefault(),
                                    img.OriginalSourceID.GetValueOrDefault());
+            }
 
             sd.OriginalLabel = img.OriginalLabel.GetValueOrDefault();
             sd.Description = img.Description;
@@ -1476,37 +1513,72 @@ namespace MyCaffe.db.image
         /// <param name="img">Specifies the RawImageMean.</param>
         /// <param name="nPadW">Optionally, specifies a pad to apply to the width (default = 0).</param>
         /// <param name="nPadH">Optionally, specifies a pad to apply to the height (default = 0).</param>
+        /// <param name="bUseFloatForEncoded">Optionally, specifies to use float for the encoded data type (default = true).</param>
         /// <returns>A new SimpleDatum is returned containing the image mean.</returns>
-        public SimpleDatum LoadDatum(RawImageMean img, int nPadW = 0, int nPadH = 0)
+        public SimpleDatum LoadDatum(RawImageMean img, int nPadW = 0, int nPadH = 0, bool bUseFloatForEncoded = true)
         {
             if (img == null)
                 return null;
 
-            List<byte> rgDataBytes = null;
-            List<double> rgDataDouble = null;
             int nHeight = img.Height.GetValueOrDefault();
             int nWidth = img.Width.GetValueOrDefault();
             int nChannels = img.Channels.GetValueOrDefault();
+            SimpleDatum sd;
 
             if (img.Encoded.GetValueOrDefault())
-                rgDataDouble = new List<double>(SimpleDatum.GetRealData(img.Data, nPadW, nPadH, nHeight, nWidth, nChannels));
+            {
+                if (bUseFloatForEncoded)
+                {
+                    List<float> rgDataFloat = new List<float>(SimpleDatum.GetRealDataF(img.Data, nPadW, nPadH, nHeight, nWidth, nChannels));
+                    sd = new SimpleDatum(img.Encoded.GetValueOrDefault(),
+                                                  nChannels,
+                                                  nWidth + nPadW,
+                                                  nHeight + nPadH,
+                                                  0,
+                                                  DateTime.MinValue,
+                                                  rgDataFloat,
+                                                  0,
+                                                  false,
+                                                  0,
+                                                  0,
+                                                  img.ID,
+                                                  img.SourceID.GetValueOrDefault());
+                }
+                else
+                {
+                    List<double> rgDataDouble = new List<double>(SimpleDatum.GetRealDataD(img.Data, nPadW, nPadH, nHeight, nWidth, nChannels));
+                    sd = new SimpleDatum(img.Encoded.GetValueOrDefault(),
+                                                  nChannels,
+                                                  nWidth + nPadW,
+                                                  nHeight + nPadH,
+                                                  0,
+                                                  DateTime.MinValue,
+                                                  rgDataDouble,
+                                                  0,
+                                                  false,
+                                                  0,
+                                                  0,
+                                                  img.ID,
+                                                  img.SourceID.GetValueOrDefault());
+                }
+            }
             else
-                rgDataBytes = new List<byte>(SimpleDatum.GetByteData(img.Data, nPadW, nPadH, nHeight, nWidth, nChannels));
-
-            SimpleDatum sd = new SimpleDatum(img.Encoded.GetValueOrDefault(),
-                                          nChannels,
-                                          nWidth + nPadW,
-                                          nHeight + nPadH,
-                                          0,
-                                          DateTime.MinValue,
-                                          rgDataBytes,
-                                          rgDataDouble,
-                                          0,
-                                          false,
-                                          0,
-                                          0,
-                                          img.ID,
-                                          img.SourceID.GetValueOrDefault());
+            {
+                List<byte> rgDataBytes = new List<byte>(SimpleDatum.GetByteData(img.Data, nPadW, nPadH, nHeight, nWidth, nChannels));
+                sd = new SimpleDatum(img.Encoded.GetValueOrDefault(),
+                                              nChannels,
+                                              nWidth + nPadW,
+                                              nHeight + nPadH,
+                                              0,
+                                              DateTime.MinValue,
+                                              rgDataBytes,
+                                              0,
+                                              false,
+                                              0,
+                                              0,
+                                              img.ID,
+                                              img.SourceID.GetValueOrDefault());
+            }
 
             return sd;
         }

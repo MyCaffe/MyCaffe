@@ -15,11 +15,29 @@ namespace MyCaffe.basecode
         /// The GetImageData function converts a Bitmap into a Datum.
         /// </summary>
         /// <param name="bmp">Specifies the Bitmap containing the image.</param>
+        /// <param name="sd">Specifies the SimpleDatum that defines the channels, 'IsDataReal' and label settings.</param>
+        /// <param name="bIsDataRealOverride">Optionally, specifies an override for the 'IsDataReal' setting.</param>
+        /// <returns>The Datum representing the image is returned.</returns>
+        public static Datum GetImageData(Bitmap bmp, SimpleDatum sd, bool? bIsDataRealOverride = null)
+        {
+            if (!bIsDataRealOverride.HasValue)
+                bIsDataRealOverride = sd.IsRealData;
+
+            if (sd.RealDataD != null || sd.ByteData != null)
+                return GetImageDataD(bmp, sd.Channels, bIsDataRealOverride.Value, sd.Label);
+            else
+                return GetImageDataF(bmp, sd.Channels, bIsDataRealOverride.Value, sd.Label);
+        }
+
+        /// <summary>
+        /// The GetImageDataD function converts a Bitmap into a Datum using the <i>double</i> type for real data.
+        /// </summary>
+        /// <param name="bmp">Specifies the Bitmap containing the image.</param>
         /// <param name="nChannels">Specifies the number of channels contained in the Bitmap (e.g. 3 = color, 1 = black and white).</param>
         /// <param name="bDataIsReal">Specifies whether or not to add each color to the List of <i>double</i> or to the list of <i>byte</i>.  Using the <i>byte</i> array is more common for it already separates a 3 color Bitmap into 3 channels of data.</param>
         /// <param name="nLabel">Specifies the known label.</param>
         /// <returns>The Datum representing the image is returned.</returns>
-        public static Datum GetImageData(Bitmap bmp, int nChannels, bool bDataIsReal, int nLabel)
+        public static Datum GetImageDataD(Bitmap bmp, int nChannels, bool bDataIsReal, int nLabel)
         {
             if (nChannels != 1 && nChannels != 3)
                 throw new Exception("Images only support either 1 or 3 channels.");
@@ -88,9 +106,91 @@ namespace MyCaffe.basecode
             }
 
             if (bDataIsReal)
-                return new Datum(true, nChannels, bmp.Width, bmp.Height, nLabel, DateTime.MinValue, null, new List<double>(rgRealData), 0, false, -1);
+                return new Datum(true, nChannels, bmp.Width, bmp.Height, nLabel, DateTime.MinValue, new List<double>(rgRealData), 0, false, -1);
             else
-                return new Datum(false, nChannels, bmp.Width, bmp.Height, nLabel, DateTime.MinValue, new List<byte>(rgByteData), null, 0, false, -1);
+                return new Datum(false, nChannels, bmp.Width, bmp.Height, nLabel, DateTime.MinValue, new List<byte>(rgByteData), 0, false, -1);
+        }
+
+        /// <summary>
+        /// The GetImageDataF function converts a Bitmap into a Datum using the <i>float</i> type for real data.
+        /// </summary>
+        /// <param name="bmp">Specifies the Bitmap containing the image.</param>
+        /// <param name="nChannels">Specifies the number of channels contained in the Bitmap (e.g. 3 = color, 1 = black and white).</param>
+        /// <param name="bDataIsReal">Specifies whether or not to add each color to the List of <i>double</i> or to the list of <i>byte</i>.  Using the <i>byte</i> array is more common for it already separates a 3 color Bitmap into 3 channels of data.</param>
+        /// <param name="nLabel">Specifies the known label.</param>
+        /// <returns>The Datum representing the image is returned.</returns>
+        public static Datum GetImageDataF(Bitmap bmp, int nChannels, bool bDataIsReal, int nLabel)
+        {
+            if (nChannels != 1 && nChannels != 3)
+                throw new Exception("Images only support either 1 or 3 channels.");
+
+            List<byte>[] rgrgByteData = new List<byte>[nChannels];
+            List<float>[] rgrgRealData = new List<float>[nChannels];
+
+            for (int i = 0; i < nChannels; i++)
+            {
+                rgrgByteData[i] = new List<byte>();
+                rgrgRealData[i] = new List<float>();
+            }
+
+            LockBitmap bmp1 = new LockBitmap(bmp);
+
+            try
+            {
+                bmp1.LockBits();
+                for (int y = 0; y < bmp1.Height; y++)
+                {
+                    for (int x = 0; x < bmp1.Width; x++)
+                    {
+                        Color clr = bmp1.GetPixel(x, y);
+
+                        if (nChannels == 1)
+                        {
+                            if (bDataIsReal)
+                                rgrgRealData[0].Add(clr.ToArgb());
+                            else
+                                rgrgByteData[0].Add((byte)((clr.R * 0.3) + (clr.G * 0.59) + (clr.B * 0.11)));
+                        }
+                        else
+                        {
+                            if (bDataIsReal)
+                            {
+                                rgrgRealData[0].Add(clr.R);
+                                rgrgRealData[1].Add(clr.G);
+                                rgrgRealData[2].Add(clr.B);
+                            }
+                            else
+                            {
+                                rgrgByteData[0].Add(clr.R);
+                                rgrgByteData[1].Add(clr.G);
+                                rgrgByteData[2].Add(clr.B);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                bmp1.UnlockBits();
+            }
+
+            List<byte> rgByteData = new List<byte>();
+            List<float> rgRealData = new List<float>();
+
+            for (int i = 0; i < nChannels; i++)
+            {
+                rgByteData.AddRange(rgrgByteData[i]);
+                rgRealData.AddRange(rgrgRealData[i]);
+            }
+
+            if (bDataIsReal)
+                return new Datum(true, nChannels, bmp.Width, bmp.Height, nLabel, DateTime.MinValue, new List<float>(rgRealData), 0, false, -1);
+            else
+                return new Datum(false, nChannels, bmp.Width, bmp.Height, nLabel, DateTime.MinValue, new List<byte>(rgByteData), 0, false, -1);
         }
 
         /// <summary>
@@ -114,14 +214,20 @@ namespace MyCaffe.basecode
 
             if (bDataIsReal)
             {
-                List<double> rgRealData = new List<double>();
-
-                for (int i = nStartIdx; i < nStartIdx + nCount; i++)
+                if (typeof(T) == typeof(double))
                 {
-                    rgRealData.Add((double)Convert.ChangeType(rgData[i], typeof(double)));
+                    double[] rgRealData = (double[])Convert.ChangeType(rgData, typeof(double[]));
+                    return new Datum(true, nChannels, nWidth, nHeight, 0, DateTime.MinValue, new List<double>(rgRealData), 0, false, -1);
                 }
-
-                return new Datum(true, nChannels, nWidth, nHeight, 0, DateTime.MinValue, null, new List<double>(rgRealData), 0, false, -1);
+                else if (typeof(T) == typeof(float))
+                {
+                    float[] rgRealData = (float[])Convert.ChangeType(rgData, typeof(float[]));
+                    return new Datum(true, nChannels, nWidth, nHeight, 0, DateTime.MinValue, new List<float>(rgRealData), 0, false, -1);
+                }
+                else
+                {
+                    throw new Exception("Unsupported type '" + typeof(T).ToString() + " - only 'double' and 'float' are supported.");
+                }
             }
             else
             {
@@ -138,7 +244,7 @@ namespace MyCaffe.basecode
                     rgByteData.Add((byte)fVal);
                 }
 
-                return new Datum(false, nChannels, nWidth, nHeight, 0, DateTime.MinValue, new List<byte>(rgByteData), null, 0, false, -1);
+                return new Datum(false, nChannels, nWidth, nHeight, 0, DateTime.MinValue, new List<byte>(rgByteData), 0, false, -1);
             }
         }
 
@@ -159,7 +265,7 @@ namespace MyCaffe.basecode
             List<double>[] rgrgRealData = new List<double>[d.Channels];
             int nOffset = 0;
             int nCount = d.Height * d.Width;
-            bool bDataIsReal = (d.RealData != null && d.RealData.Length > 0) ? true : false;
+            bool bDataIsReal = d.HasRealData;
             double dfMin = 1;
             double dfMax = 0;
 
@@ -177,7 +283,7 @@ namespace MyCaffe.basecode
                 {
                     for (int j = 0; j < nCount; j++)
                     {
-                        double dfVal = d.RealData[nOffset + j];
+                        double dfVal = d.GetDataAtD(nOffset + j);
                         dfMin = Math.Min(dfMin, dfVal);
                         dfMax = Math.Max(dfMax, dfVal);
                         rgRealData.Add(dfVal);

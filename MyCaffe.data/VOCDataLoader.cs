@@ -221,7 +221,7 @@ namespace MyCaffe.data
                 bmp = bmpNew;
             }
 
-            SimpleDatum datum = ImageData.GetImageData(bmp, 3, false, 0);
+            SimpleDatum datum = ImageData.GetImageDataD(bmp, 3, false, 0);
             loadAnnotationFile(log, strAnnotationFile, datum, type, rgNameToLabel);
 
             return datum;

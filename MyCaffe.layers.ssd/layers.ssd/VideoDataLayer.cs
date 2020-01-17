@@ -311,7 +311,7 @@ namespace MyCaffe.layers.ssd
 
                     if (i == 0)
                     {
-                        datum = ImageData.GetImageData(bmp, batch.Data.channels, false, 0);
+                        datum = ImageData.GetImageDataD(bmp, batch.Data.channels, false, 0);
 
                         // Reshape according to the first datum of each batch
                         // on single input batches allows for inputs of varying dimension.
@@ -336,7 +336,7 @@ namespace MyCaffe.layers.ssd
                     nSkipFrames = m_nSkipFrames;
 
                     if (datum == null)
-                        datum = ImageData.GetImageData(bmp, batch.Data.channels, false, 0);
+                        datum = ImageData.GetImageDataD(bmp, batch.Data.channels, false, 0);
 
                     // Apply transformations (mirror, crop...) to the image.
                     T[] rgTrans = m_transformer.Transform(datum);

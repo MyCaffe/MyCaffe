@@ -158,7 +158,7 @@ namespace MyCaffe.data
                 byte[] rgLabel;
                 byte[] rgPixels;
 
-                Datum datum = new Datum(false, nChannels, (int)cols, (int)rows, -1, DateTime.MinValue, null, null, 0, false, -1);
+                Datum datum = new Datum(false, nChannels, (int)cols, (int)rows, -1, DateTime.MinValue, new List<byte>(), 0, false, -1);
 
                 reportProgress(0, (int)num_items, "  loading a total of " + num_items.ToString() + " items.");
                 reportProgress(0, (int)num_items, "   (with rows: " + rows.ToString() + ", cols: " + cols.ToString() + ")");

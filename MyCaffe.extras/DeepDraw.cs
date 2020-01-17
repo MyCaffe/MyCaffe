@@ -228,7 +228,7 @@ namespace MyCaffe.extras
             if (strOutputDir != null)
                 bmpInput.Save(strOutputDir + "\\input_image.png");
 
-            Datum d = ImageData.GetImageData(bmpInput, 3, false, -1);
+            Datum d = ImageData.GetImageDataD(bmpInput, 3, false, -1);
             m_blobBase.mutable_cpu_data = m_transformer.Transform(d);
 
             m_blobDetail.SetData(0.0);

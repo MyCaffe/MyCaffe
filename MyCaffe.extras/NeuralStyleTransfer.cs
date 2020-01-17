@@ -490,7 +490,7 @@ namespace MyCaffe.extras
 
             Blob<T> data = net.blob_by_name(m_strDataBlobName);
             data.Reshape(rgDataShape, data.HalfSize);
-            data.mutable_cpu_data = m_transformer.Transform(ImageData.GetImageData(bmp, 3, false, -1));
+            data.mutable_cpu_data = m_transformer.Transform(ImageData.GetImageDataD(bmp, 3, false, -1));
         }
 
         private void prepare_input_param(Net<T> net, Bitmap bmp)
@@ -500,7 +500,7 @@ namespace MyCaffe.extras
 
             Blob<T> data = net.param_by_name("input1");
             data.Reshape(rgDataShape, data.HalfSize);
-            data.mutable_cpu_data = m_transformer.Transform(ImageData.GetImageData(bmp, 3, false, -1));
+            data.mutable_cpu_data = m_transformer.Transform(ImageData.GetImageDataD(bmp, 3, false, -1));
         }
 
         private Bitmap save(Net<T> net)

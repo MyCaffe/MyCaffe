@@ -1729,7 +1729,11 @@ namespace MyCaffe
                 throw new Exception("The Run net has not been created!");
 
             int nChannels = m_inputShape.dim[1];
-            return Run(ImageData.GetImageData(img, nChannels, false, -1), bSort, false);
+
+            if (typeof(T) == typeof(double))
+                return Run(ImageData.GetImageDataD(img, nChannels, false, -1), bSort, false);
+            else
+                return Run(ImageData.GetImageDataF(img, nChannels, false, -1), bSort, false);
         }
 
         /// <summary>

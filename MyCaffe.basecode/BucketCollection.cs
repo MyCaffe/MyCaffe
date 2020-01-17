@@ -374,7 +374,7 @@ namespace MyCaffe.basecode
                 {
                     for (int j = 0; j < nCount; j++)
                     {
-                        double dfVal = sd.RealData[nOffset + j];
+                        double dfVal = sd.GetDataAtD(nOffset + j);
                         dfMin = Math.Min(dfMin.Value, dfVal);
                         dfMax = Math.Max(dfMax.Value, dfVal);
                         nIdx++;
@@ -402,7 +402,7 @@ namespace MyCaffe.basecode
             {
                 for (int j = 0; j < nCount; j++)
                 {
-                    double dfVal = sd.RealData[nOffset + j];
+                    double dfVal = sd.GetDataAtD(nOffset + j);
                     col.Add(dfVal);
                     nIdx++;
 

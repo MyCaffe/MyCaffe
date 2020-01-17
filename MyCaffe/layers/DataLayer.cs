@@ -386,17 +386,37 @@ namespace MyCaffe.layers
                     m_cuda.mul(blobNoise.count(), blobNoise.gpu_diff, blobNoise.gpu_data, blobNoise.mutable_gpu_data);
                 }
 
-                double[] rgf1 = convertD(blobNoise.update_cpu_data());
+                Datum datumNoise;
+                if (typeof(T) == typeof(double))
+                {
+                    double[] rgdf = convertD(blobNoise.update_cpu_data());
 
-                List<double> rgdf = null;
-                List<byte> rgb = null;
-
-                if (datum.IsRealData)
-                    rgdf = rgf1.ToList();
+                    if (datum.IsRealData)
+                    {
+                        List<double> rgdf1 = new List<double>(rgdf);
+                        datumNoise = new Datum(datum.IsRealData, datum.channels, datum.width, datum.height, m_param.data_param.data_noise_param.noise_data_label, DateTime.MinValue, rgdf1, 1, false, -1);
+                    }
+                    else
+                    {
+                        List<byte> rgb = rgdf.Select(p => Math.Min((byte)p, (byte)255)).ToList();
+                        datumNoise = new Datum(datum.IsRealData, datum.channels, datum.width, datum.height, m_param.data_param.data_noise_param.noise_data_label, DateTime.MinValue, rgb, 1, false, -1);
+                    }
+                }
                 else
-                    rgb = rgf1.Select(p => Math.Min((byte)p, (byte)255)).ToList();
+                {
+                    float[] rgf = convertF(blobNoise.update_cpu_data());
 
-                Datum datumNoise = new Datum(datum.IsRealData, datum.channels, datum.width, datum.height, m_param.data_param.data_noise_param.noise_data_label, DateTime.MinValue, rgb, rgdf, 1, false, -1);
+                    if (datum.IsRealData)
+                    {
+                        List<float> rgf1 = new List<float>(rgf);
+                        datumNoise = new Datum(datum.IsRealData, datum.channels, datum.width, datum.height, m_param.data_param.data_noise_param.noise_data_label, DateTime.MinValue, rgf1, 1, false, -1);
+                    }
+                    else
+                    {
+                        List<byte> rgb = rgf.Select(p => Math.Min((byte)p, (byte)255)).ToList();
+                        datumNoise = new Datum(datum.IsRealData, datum.channels, datum.width, datum.height, m_param.data_param.data_noise_param.noise_data_label, DateTime.MinValue, rgb, 1, false, -1);
+                    }
+                }
 
                 if (!string.IsNullOrEmpty(m_param.data_param.data_noise_param.noisy_save_path))
                 {

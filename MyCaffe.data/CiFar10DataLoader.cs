@@ -167,7 +167,7 @@ namespace MyCaffe.data
                         byte[] rgImgBytes = br.ReadBytes(3072);
                         Bitmap img = createImage(rgImgBytes);
 
-                        Datum d = ImageData.GetImageData(img, 3, false, nLabel);
+                        Datum d = ImageData.GetImageDataD(img, 3, false, nLabel);
 
                         m_factory.PutRawImageCache(nIdx, d);
                         m_rgImg.Add(new SimpleDatum(d));

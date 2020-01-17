@@ -316,7 +316,13 @@ namespace MyCaffe.gym.python
                 }
             }
 
-            SimpleDatum sdResult = new SimpleDatum(bIsReal, nChannels, sd.Width, sd.Height, sd.Label, sd.TimeStamp, rgByteData, rgRealData, sd.Boost, sd.AutoLabeled, sd.Index);
+            SimpleDatum sdResult;
+            
+            if (rgRealData != null)
+                sdResult = new SimpleDatum(bIsReal, nChannels, sd.Width, sd.Height, sd.Label, sd.TimeStamp, rgRealData, sd.Boost, sd.AutoLabeled, sd.Index);
+            else
+                sdResult = new SimpleDatum(bIsReal, nChannels, sd.Width, sd.Height, sd.Label, sd.TimeStamp, rgByteData, sd.Boost, sd.AutoLabeled, sd.Index);
+
             sdResult.Tag = sd.Tag;
 
             return sdResult;
@@ -378,7 +384,7 @@ namespace MyCaffe.gym.python
             Tuple<Bitmap, SimpleDatum> data = m_igym.Render(bIsOpen, 512, 512, true);
             int nDataLen = 0;
             SimpleDatum sd = state.Item1.GetData(false, out nDataLen);
-            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, sd.RealData, state.Item2, state.Item3);
+            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, sd.GetData<double>(), state.Item2, state.Item3);
 
             if (bIsOpen)
             {
@@ -421,7 +427,7 @@ namespace MyCaffe.gym.python
             Tuple<Bitmap, SimpleDatum> data = m_igym.Render(bIsOpen, 512, 512, true);
             int nDataLen = 0;
             SimpleDatum sd = state.Item1.GetData(false, out nDataLen);
-            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, sd.RealData, state.Item2, state.Item3);
+            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, sd.GetData<double>(), state.Item2, state.Item3);
 
             if (bIsOpen)
             {
