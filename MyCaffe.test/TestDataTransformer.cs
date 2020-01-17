@@ -475,7 +475,7 @@ namespace MyCaffe.test
                 rgData.Add((byte)(bUniquePixels ? i : nLabel));
             }
 
-            Datum d = new Datum(false, nChannels, nWidth, nHeight, nLabel, DateTime.Today, rgData, null, 0, false, 0);
+            Datum d = new Datum(false, nChannels, nWidth, nHeight, nLabel, DateTime.Today, rgData, 0, false, 0);
 
             // Fill annotation.
             if (bUseRichAnnotation)

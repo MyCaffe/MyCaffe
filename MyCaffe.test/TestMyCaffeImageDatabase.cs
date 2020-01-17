@@ -2009,7 +2009,7 @@ namespace MyCaffe.test
             for (int i = 0; i < 20; i++)
             {
                 rgBytes[i] = (byte)i;
-                SimpleDatum sd = new SimpleDatum(false, 1, 10, 10, i, DateTime.MinValue, rgBytes.ToList(), null, 0, false, i);
+                SimpleDatum sd = new SimpleDatum(false, 1, 10, 10, i, DateTime.MinValue, rgBytes.ToList(), 0, false, i);
 
                 factory.PutRawImageCache(i, sd);
             }

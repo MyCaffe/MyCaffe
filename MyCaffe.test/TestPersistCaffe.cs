@@ -186,7 +186,7 @@ namespace MyCaffe.test
             factory.AddDataset(ds);
 
             Bitmap bmp = new Bitmap(500, 500);
-            SimpleDatum sd = ImageData.GetImageData(bmp, 3, false, 0);
+            SimpleDatum sd = ImageData.GetImageDataD(bmp, 3, false, 0);
             int nLen = 500 * 500;
             int nItemCount = 1;
             int nWid = 500;

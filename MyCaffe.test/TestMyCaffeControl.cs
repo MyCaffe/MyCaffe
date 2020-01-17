@@ -564,10 +564,10 @@ namespace MyCaffe.test
 
             if (ds.TestingSource.ImageCount == 0 || ds.TrainingSource.ImageCount == 0)
             {
-                SimpleDatum sd1 = new SimpleDatum(false, 1, 2, 2, 0, DateTime.MinValue, new List<byte>() { 10, 10, 10, 10 }, null, 0, false, 0);
-                SimpleDatum sd2 = new SimpleDatum(false, 1, 2, 2, 1, DateTime.MinValue, new List<byte>() { 10, 250, 10, 250 }, null, 0, false, 1);
-                SimpleDatum sd3 = new SimpleDatum(false, 1, 2, 2, 2, DateTime.MinValue, new List<byte>() { 250, 10, 250, 10 }, null, 0, false, 2);
-                SimpleDatum sd4 = new SimpleDatum(false, 1, 2, 2, 3, DateTime.MinValue, new List<byte>() { 250, 250, 250, 250 }, null, 0, false, 3);
+                SimpleDatum sd1 = new SimpleDatum(false, 1, 2, 2, 0, DateTime.MinValue, new List<byte>() { 10, 10, 10, 10 }, 0, false, 0);
+                SimpleDatum sd2 = new SimpleDatum(false, 1, 2, 2, 1, DateTime.MinValue, new List<byte>() { 10, 250, 10, 250 }, 0, false, 1);
+                SimpleDatum sd3 = new SimpleDatum(false, 1, 2, 2, 2, DateTime.MinValue, new List<byte>() { 250, 10, 250, 10 }, 0, false, 2);
+                SimpleDatum sd4 = new SimpleDatum(false, 1, 2, 2, 3, DateTime.MinValue, new List<byte>() { 250, 250, 250, 250 }, 0, false, 3);
 
                 if (ds.TrainingSource.ImageCount == 0)
                 {

@@ -710,7 +710,7 @@ namespace MyCaffe.test
                     if (nMaxLabel > 0)
                         nLabel = nLabel % nMaxLabel;
 
-                    SimpleDatum sd = new SimpleDatum(false, 2, 4, 3, nLabel, DateTime.Today, rgData, null, 0, false, i);
+                    SimpleDatum sd = new SimpleDatum(false, 2, 4, 3, nLabel, DateTime.Today, rgData, 0, false, i);
                     factory.PutRawImage(i, sd);
                 }
 
@@ -757,7 +757,7 @@ namespace MyCaffe.test
                         rgData.Add((byte)j);
                     }
 
-                    SimpleDatum sd = new SimpleDatum(false, nChannels, nWidth, nHeight, i, DateTime.Today, rgData, null, 0, false, i);
+                    SimpleDatum sd = new SimpleDatum(false, nChannels, nWidth, nHeight, i, DateTime.Today, rgData, 0, false, i);
                     factory.PutRawImage(i, sd);
                 }
 
@@ -805,7 +805,7 @@ namespace MyCaffe.test
                     }
 
                     int nLabel = i;
-                    SimpleDatum sd = new SimpleDatum(false, 2, 4, 3, nLabel, DateTime.Today, rgData, null, 0, false, nIdx);
+                    SimpleDatum sd = new SimpleDatum(false, 2, 4, 3, nLabel, DateTime.Today, rgData, 0, false, nIdx);
 
                     if (k > 1 && k < 7)
                     {
@@ -1502,7 +1502,7 @@ namespace MyCaffe.test
                             Array.Copy(rgData, n * nImagesPerBlob * nDim + j * nDim, rgData1, 0, nDim);
                             byte[] rgb = rgData1.Select(pv => Math.Min((byte)pv, (byte)255)).ToArray();
 
-                            SimpleDatum sd = new SimpleDatum(false, src.ImageChannels, src.ImageWidth, src.ImageHeight, -1, DateTime.MinValue, rgb, null, 0, false, 0);
+                            SimpleDatum sd = new SimpleDatum(false, src.ImageChannels, src.ImageWidth, src.ImageHeight, -1, DateTime.MinValue, rgb, 0, false, 0);
                             Bitmap bmp = ImageData.GetImage(sd);
                             //bmp.Save("c:\\temp\\img_" + n.ToString() + "_" + j.ToString() + ".png");
                             LockBitmap bmp1 = new LockBitmap(bmp);
@@ -1559,7 +1559,7 @@ namespace MyCaffe.test
                             Array.Copy(rgData, n * nImagesPerBlob * nDim + j * nDim, rgData1, 0, nDim);
                             byte[] rgb = rgData1.Select(pv => Math.Min((byte)pv, (byte)255)).ToArray();
 
-                            SimpleDatum sd = new SimpleDatum(false, src.ImageChannels, src.ImageWidth, src.ImageHeight, -1, DateTime.MinValue, rgb, null, 0, false, 0);
+                            SimpleDatum sd = new SimpleDatum(false, src.ImageChannels, src.ImageWidth, src.ImageHeight, -1, DateTime.MinValue, rgb, 0, false, 0);
                             Bitmap bmp = ImageData.GetImage(sd);
                             //bmp.Save("c:\\temp\\img_masked_" + n.ToString() + "_" + j.ToString() + ".png");
                             LockBitmap bmp1 = new LockBitmap(bmp);

@@ -434,7 +434,7 @@ namespace MyCaffe.test
                         rgData.Add((byte)datum);
                     }
 
-                    SimpleDatum sd = new SimpleDatum(false, m_nChannels, m_nWidth, m_nHeight, i, DateTime.Today, rgData, null, 0, false, i);
+                    SimpleDatum sd = new SimpleDatum(false, m_nChannels, m_nWidth, m_nHeight, i, DateTime.Today, rgData, 0, false, i);
 
                     if (!rgLabels.Contains(i))
                         rgLabels.Add(i);

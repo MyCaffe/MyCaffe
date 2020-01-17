@@ -90,11 +90,11 @@ namespace MyCaffe.test
 
                     for (int j = 0; j < nW; j++)
                     {
-                        DateTime dt1 = Utility.ConvertTimeFromMinutes(sd.RealData[j]);
+                        DateTime dt1 = Utility.ConvertTimeFromMinutes(sd.GetDataAtD(j));
                         log.CHECK(dt1 == dt, "The time sync is incorrect.");
                         dt += TimeSpan.FromMinutes(1);
 
-                        double df = sd.RealData[nW + j];
+                        double df = sd.GetDataAtD(nW + j);
                         int nVal = (int)df;
                         log.CHECK_EQ(nVal, nDataIdx, "The data value is incorrect.");
                         nDataIdx++;
@@ -157,15 +157,15 @@ namespace MyCaffe.test
 
                     for (int j = 0; j < nW; j++)
                     {
-                        DateTime dt1 = Utility.ConvertTimeFromMinutes(sd.RealData[j]);
+                        DateTime dt1 = Utility.ConvertTimeFromMinutes(sd.GetDataAtD(j));
                         log.CHECK(dt1 == dt, "The time sync is incorrect.");
                         dt += TimeSpan.FromMinutes(1);
 
-                        double df1 = sd.RealData[(nW * 1) + j];
+                        double df1 = sd.GetDataAtD((nW * 1) + j);
                         int nVal1 = (int)df1;
                         log.CHECK_EQ(nVal1, nDataIdx, "The data value is incorrect.");
 
-                        double df2 = sd.RealData[(nW * 2) + j];
+                        double df2 = sd.GetDataAtD((nW * 2) + j);
                         int nVal2 = (int)df2;
                         log.CHECK_EQ(nVal2, nDataIdx, "The data value is incorrect.");
 
@@ -232,15 +232,15 @@ namespace MyCaffe.test
 
                         for (int j = 0; j < nW; j++)
                         {
-                            DateTime dt1 = Utility.ConvertTimeFromMinutes(sd.RealData[j]);
+                            DateTime dt1 = Utility.ConvertTimeFromMinutes(sd.GetDataAtD(j));
                             log.CHECK(dt1 == dt, "The time sync is incorrect.");
                             dt += TimeSpan.FromMinutes(1);
 
-                            double df1 = sd.RealData[(nW * 1) + j];
+                            double df1 = sd.GetDataAtD((nW * 1) + j);
                             int nVal1 = (int)df1;
                             log.CHECK_EQ(nVal1, nDataIdx, "The data value is incorrect.");
 
-                            double df2 = sd.RealData[(nW * 2) + j];
+                            double df2 = sd.GetDataAtD((nW * 2) + j);
                             int nVal2 = (int)df2;
                             log.CHECK_EQ(nVal2, nDataIdx, "The data value is incorrect.");
 
@@ -314,15 +314,15 @@ namespace MyCaffe.test
 
                         for (int j = 0; j < nW; j++)
                         {
-                            DateTime dt1 = Utility.ConvertTimeFromMinutes(sd.RealData[j]);
+                            DateTime dt1 = Utility.ConvertTimeFromMinutes(sd.GetDataAtD(j));
                             log.CHECK(dt1 == dt, "The time sync is incorrect.");
                             dt += TimeSpan.FromMinutes(1);
 
-                            double df1 = sd.RealData[(nW * 1) + j];
+                            double df1 = sd.GetDataAtD((nW * 1) + j);
                             int nVal1 = (int)df1;
                             log.CHECK_EQ(nVal1, nDataIdx, "The data value is incorrect.");
 
-                            double df2 = sd.RealData[(nW * 2) + j];
+                            double df2 = sd.GetDataAtD((nW * 2) + j);
                             int nVal2 = (int)df2;
                             log.CHECK_EQ(nVal2, nDataIdx, "The data value is incorrect.");
 
@@ -394,15 +394,15 @@ namespace MyCaffe.test
 
                         for (int j = 0; j < nW; j++)
                         {
-                            DateTime dt1 = Utility.ConvertTimeFromMinutes(sd.RealData[j]);
+                            DateTime dt1 = Utility.ConvertTimeFromMinutes(sd.GetDataAtD(j));
                             log.CHECK(dt1 == dt, "The time sync is incorrect.");
                             dt += TimeSpan.FromMinutes(1);
 
-                            double df1 = sd.RealData[(nW * 1) + j];
+                            double df1 = sd.GetDataAtD((nW * 1) + j);
                             int nVal1 = (int)df1;
                             log.CHECK_EQ(nVal1, nDataIdx, "The data value is incorrect.");
 
-                            double df2 = sd.RealData[(nW * 2) + j];
+                            double df2 = sd.GetDataAtD((nW * 2) + j);
                             int nVal2 = (int)df2;
                             log.CHECK_EQ(nVal2, nDataIdx, "The data value is incorrect.");
 
@@ -479,15 +479,15 @@ namespace MyCaffe.test
 
                         for (int j = 0; j < nW; j++)
                         {
-                            DateTime dt1 = Utility.ConvertTimeFromMinutes(sd.RealData[j]);
+                            DateTime dt1 = Utility.ConvertTimeFromMinutes(sd.GetDataAtD(j));
                             log.CHECK(dt1 == dt, "The time sync is incorrect.");
                             dt += TimeSpan.FromMinutes(1);
 
-                            double df1 = sd.RealData[(nW * 1) + j];
+                            double df1 = sd.GetDataAtD((nW * 1) + j);
                             int nVal1 = (int)df1;
                             log.CHECK_EQ(nVal1, nDataIdx, "The data value is incorrect.");
 
-                            double df2 = sd.RealData[(nW * 2) + j];
+                            double df2 = sd.GetDataAtD((nW * 2) + j);
                             int nVal2 = (int)df2;
                             log.CHECK_EQ(nVal2, nDataIdx, "The data value is incorrect.");
 
@@ -579,27 +579,27 @@ namespace MyCaffe.test
 
                     for (int j = 0; j < nW; j++)
                     {
-                        DateTime dt1 = Utility.ConvertTimeFromMinutes(sd.RealData[j]);
+                        DateTime dt1 = Utility.ConvertTimeFromMinutes(sd.GetDataAtD(j));
                         log.CHECK(dt1 == dt, "The time sync is incorrect.");
                         dt += TimeSpan.FromMinutes(1);
 
-                        double df1 = sd.RealData[(nW * 1) + j];
+                        double df1 = sd.GetDataAtD((nW * 1) + j);
                         int nVal1 = (int)df1;
                         log.CHECK_EQ(nVal1, nDataIdx, "The data value is incorrect.");
 
-                        double df2 = sd.RealData[(nW * 2) + j];
+                        double df2 = sd.GetDataAtD((nW * 2) + j);
                         int nVal2 = (int)df2;
                         log.CHECK_EQ(nVal2, nDataIdx, "The data value is incorrect.");
 
-                        double df3 = sd.RealData[(nW * 3) + j];
+                        double df3 = sd.GetDataAtD((nW * 3) + j);
                         int nVal3 = (int)df3;
                         log.CHECK_EQ(nVal3, nDataIdx, "The data value is incorrect.");
 
-                        double df4 = sd.RealData[(nW * 4) + j];
+                        double df4 = sd.GetDataAtD((nW * 4) + j);
                         int nVal4 = (int)df4;
                         log.CHECK_EQ(nVal4, nDataIdx, "The data value is incorrect.");
 
-                        double df5 = sd.RealData[(nW * 5) + j];
+                        double df5 = sd.GetDataAtD((nW * 5) + j);
                         int nVal5 = (int)df5;
                         log.CHECK_EQ(nVal5, nDataIdx, "The data value is incorrect.");
 
@@ -855,7 +855,12 @@ namespace MyCaffe.test
             throw new NotImplementedException();
         }
 
-        public List<double[]> QueryReal()
+        public List<double[]> QueryRealD()
+        {
+            throw new NotImplementedException();
+        }
+
+        public List<float[]> QueryRealF()
         {
             throw new NotImplementedException();
         }
@@ -953,7 +958,12 @@ namespace MyCaffe.test
             throw new NotImplementedException();
         }
 
-        public List<double[]> QueryReal()
+        public List<double[]> QueryRealD()
+        {
+            throw new NotImplementedException();
+        }
+
+        public List<float[]> QueryRealF()
         {
             throw new NotImplementedException();
         }
@@ -1053,7 +1063,12 @@ namespace MyCaffe.test
             throw new NotImplementedException();
         }
 
-        public List<double[]> QueryReal()
+        public List<double[]> QueryRealD()
+        {
+            throw new NotImplementedException();
+        }
+
+        public List<float[]> QueryRealF()
         {
             throw new NotImplementedException();
         }

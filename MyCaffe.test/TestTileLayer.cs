@@ -154,7 +154,7 @@ namespace MyCaffe.test
     class TileLayerTest : TestBase
     {
         public TileLayerTest(EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT)
-            : base("Slice Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
+            : base("Tile Layer Test", TestBase.DEFAULT_DEVICE_ID, engine)
         {
         }
 

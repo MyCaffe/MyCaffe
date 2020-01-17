@@ -524,7 +524,7 @@ namespace MyCaffe.test
                     rgData[12] = getVal(1, bUseRandomData);
                 }
 
-                Datum d = new Datum(false, nChannels, nWidth, nHeight, nLabel, DateTime.Today, rgData.ToList(), null, 0, false, i);
+                Datum d = new Datum(false, nChannels, nWidth, nHeight, nLabel, DateTime.Today, rgData.ToList(), 0, false, i);
 
                 if (!rgLabels.Contains(nLabel))
                     rgLabels.Add(nLabel);

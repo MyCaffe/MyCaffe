@@ -2024,7 +2024,7 @@ namespace MyCaffe.test
                 int nLabel = random.Next() % nNum;
                 int nIdx = i * nChannels * nHeight * nWidth;
 
-                Datum d = new Datum(true, nChannels, nWidth, nHeight, nLabel, DateTime.Today, null, rgData.ToList<double>(), 0, false, i);
+                Datum d = new Datum(true, nChannels, nWidth, nHeight, nLabel, DateTime.Today, rgData.ToList<double>(), 0, false, i);
                 factory.PutRawImage(i, d);
             }
 

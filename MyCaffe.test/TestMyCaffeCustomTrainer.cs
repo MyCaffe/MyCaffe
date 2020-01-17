@@ -1628,11 +1628,11 @@ namespace MyCaffe.test
             Tuple<Bitmap, SimpleDatum> data = m_igym.Render(bIsOpen, 512, 512, true);
             int nDataLen = 0;
             SimpleDatum stateData = state.Item1.GetData(m_bNormalizeInput, out nDataLen);
-            Observation obs = new Observation(null, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, stateData.RealData, state.Item2, state.Item3);
+            Observation obs = new Observation(null, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, stateData.GetData<double>(), state.Item2, state.Item3);
 
             e.State = new StateBase(m_igym.GetActionSpace().Count());
             e.State.Reward = obs.Reward;
-            e.State.Data = new SimpleDatum(true, nDataLen, 1, 1, -1, DateTime.Now, null, stateData.RealData.ToList(), 0, false, 0);
+            e.State.Data = new SimpleDatum(true, nDataLen, 1, 1, -1, DateTime.Now, stateData.GetData<double>(), 0, false, 0);
             e.State.Done = obs.Done;
             e.State.IsValid = true;
 
@@ -1750,7 +1750,7 @@ namespace MyCaffe.test
             Tuple<Bitmap, SimpleDatum> data = m_igym.Render(bIsOpen, 512, 512, true);
             int nDataLen = 0;
             SimpleDatum stateData = state.Item1.GetData(false, out nDataLen);
-            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, stateData.RealData, state.Item2, state.Item3);
+            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, stateData.GetData<double>(), state.Item2, state.Item3);
 
             e.State = new StateBase(m_igym.GetActionSpace().Count());
             e.State.Reward = obs.Reward;
@@ -2036,11 +2036,11 @@ namespace MyCaffe.test
             Tuple<Bitmap, SimpleDatum> data = m_igym.Render(bIsOpen, 512, 512, true);
             int nDataLen = 0;
             SimpleDatum stateData = state.Item1.GetData(m_bNormalizeInput, out nDataLen);
-            Observation obs = new Observation(null, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, stateData.RealData, state.Item2, state.Item3);
+            Observation obs = new Observation(null, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, stateData.GetData<double>(), state.Item2, state.Item3);
 
             e.State = new StateBase(m_igym.GetActionSpace().Count());
             e.State.Reward = obs.Reward;
-            e.State.Data = new SimpleDatum(true, nDataLen, 1, 1, -1, DateTime.Now, null, stateData.RealData.ToList(), 0, false, 0);
+            e.State.Data = new SimpleDatum(true, nDataLen, 1, 1, -1, DateTime.Now, stateData.GetData<double>(), 0, false, 0);
             e.State.Done = obs.Done;
             e.State.IsValid = true;
 
@@ -2163,7 +2163,7 @@ namespace MyCaffe.test
             Tuple<Bitmap, SimpleDatum> data = m_igym.Render(bIsOpen, 512, 512, true);
             int nDataLen = 0;
             SimpleDatum stateData = state.Item1.GetData(false, out nDataLen);
-            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, stateData.RealData, state.Item2, state.Item3);
+            Observation obs = new Observation(data.Item1, ImageData.GetImage(data.Item2), m_igym.RequiresDisplayImage, stateData.GetData<double>(), state.Item2, state.Item3);
 
             e.State = new StateBase(m_igym.GetActionSpace().Count());
             e.State.Reward = obs.Reward;
