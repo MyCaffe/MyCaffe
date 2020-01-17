@@ -277,6 +277,9 @@ namespace MyCaffe.test
             log.EnableTrace = true;
             log.OnProgress += Log_OnProgress;
             IXImageDatabase2 db = new MyCaffeImageDatabase2(log);
+            Stopwatch swNotify = new Stopwatch();
+
+            swNotify.Start();
 
             try
             {
@@ -325,6 +328,13 @@ namespace MyCaffe.test
                                     rg.Add(d.Index, new List<SimpleDatum>() { d });
                                 else
                                     rg[d.Index].Add(d);
+
+                                if (swNotify.Elapsed.TotalMilliseconds > 1000)
+                                {
+                                    double dfPct = (double)i / nCount;
+                                    log.WriteLine("Loading files at " + dfPct.ToString("P") + ", loading " + i.ToString("N0") + " of " + nCount.ToString("N0") + "...");
+                                    swNotify.Restart();
+                                }
                             }
 
                             string strUnique = (k == 0) ? "UNIQUE INDEXES: " : "NON-UNIQUE indexes: ";
@@ -363,7 +373,7 @@ namespace MyCaffe.test
                                 if (k == 0)
                                     log.EXPECT_EQUAL<float>(dfTotal, 2.0, "Unique indexes (complete epoch hits) should be 'almost' guaranteed.");
                                 else
-                                    log.CHECK_LE(dfTotal, 2.35, "Non-unqiue indexes (complete epoch hits are not guaranteed but are faster) should be less than or equal to 2.35.");
+                                    log.CHECK_LE(dfTotal, 2.5, "Non-unqiue indexes (complete epoch hits are not guaranteed but are faster) should be less than or equal to 2.5.");
                             }
                             else
                             {
