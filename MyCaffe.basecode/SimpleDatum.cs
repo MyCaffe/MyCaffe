@@ -984,15 +984,23 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Returns <i>true</i> if the ByteData or RealDataD or RealDataF are not null, <i>false</i> otherwise.
         /// </summary>
-        public bool IsDataValid
+        /// <param name="bByType">Specifies to only test if real (RealDataD and RealDataF) or if not real (ByteData).  When false, all data types are tested.</param>
+        public bool GetDataValid(bool bByType = true)
         {
-            get
+            if (bByType)
             {
-                if (ByteData == null && RealDataD == null && RealDataF == null)
+                if (m_bIsRealData && m_rgRealDataD == null && m_rgRealDataF == null)
+                    return false;
+                else if (!m_bIsRealData && m_rgByteData == null)
                     return false;
 
                 return true;
             }
+
+            if (m_rgRealDataD == null && m_rgRealDataF == null && m_rgByteData == null)
+                return false;
+
+            return true;
         }
 
         /// <summary>
