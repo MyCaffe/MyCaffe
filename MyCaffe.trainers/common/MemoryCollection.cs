@@ -262,7 +262,7 @@ namespace MyCaffe.trainers.common
                     rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
                     rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
                     rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
-                    SimpleDatum sdCurrent = new SimpleDatum(true, 4, 1, 1, -1, DateTime.MinValue, null, rgdfData, 0, false, -1);
+                    SimpleDatum sdCurrent = new SimpleDatum(true, 4, 1, 1, -1, DateTime.MinValue, rgdfData, 0, false, -1);
 
                     int nAction = int.Parse(rgstr[nIdx]); nIdx++;
                     double dfReward = double.Parse(rgstr[nIdx]); nIdx++;
@@ -273,7 +273,7 @@ namespace MyCaffe.trainers.common
                     rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
                     rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
                     rgdfData.Add(double.Parse(rgstr[nIdx])); nIdx++;
-                    SimpleDatum sdNext = new SimpleDatum(true, 4, 1, 1, -1, DateTime.MinValue, null, rgdfData, 0, false, -1);
+                    SimpleDatum sdNext = new SimpleDatum(true, 4, 1, 1, -1, DateTime.MinValue, rgdfData, 0, false, -1);
 
                     rg.Add(new MemoryItem(null, sdCurrent, nAction, null, sdNext, dfReward, bTerminated, 0, 0));
                     strLine = sr.ReadLine();

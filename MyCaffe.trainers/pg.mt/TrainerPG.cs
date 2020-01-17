@@ -700,7 +700,7 @@ namespace MyCaffe.trainers.pg.mt
                 int nData1Idx = s.Data.ItemCount - (nItemLen * (nLookahead + 1));
 
                 rgResults.Add(s.Data.TimeStamp.ToFileTime());
-                rgResults.Add((float)s.Data.RealData[nData1Idx]);
+                rgResults.Add((float)s.Data.GetDataAtF(nData1Idx));
                 rgResults.Add(nAction);
 
                 // Take the next step using the action
@@ -1483,11 +1483,11 @@ namespace MyCaffe.trainers.pg.mt
 
                 for (int j = 0; j < nSeqLen; j++)
                 {
-                    dfClip = (T)Convert.ChangeType(clip.RealData[j], typeof(T));
+                    dfClip = clip.GetDataAt<T>(j);
 
                     for (int k = 0; k < nDataSize; k++)
                     {
-                        rgDataItem[k] = (T)Convert.ChangeType(data.RealData[j * nDataSize + k], typeof(T));
+                        rgDataItem[k] = data.GetDataAt<T>(j * nDataSize + k);
                     }
 
                     // LSTM: Create input data, the data must be in the order

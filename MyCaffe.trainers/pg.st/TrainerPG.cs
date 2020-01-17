@@ -236,7 +236,7 @@ namespace MyCaffe.trainers.pg.st
                 int action = m_brain.act(x, s.Clip, out rgfAprob);
 
                 rgResults.Add(s.Data.TimeStamp.ToFileTime());
-                rgResults.Add((float)s.Data.RealData[0]);
+                rgResults.Add((float)s.Data.GetDataAtF(0));
                 rgResults.Add(action);
 
                 // Take the next step using the action
@@ -809,11 +809,11 @@ namespace MyCaffe.trainers.pg.st
 
                 for (int j = 0; j < nSeqLen; j++)
                 {
-                    dfClip = (T)Convert.ChangeType(clip.RealData[j], typeof(T));
+                    dfClip = clip.GetDataAt<T>(j);
 
                     for (int k = 0; k < nDataSize; k++)
                     {
-                        rgDataItem[k] = (T)Convert.ChangeType(data.RealData[j * nDataSize + k], typeof(T));
+                        rgDataItem[k] = data.GetDataAt<T>(j * nDataSize + k);
                     }
 
                     // LSTM: Create input data, the data must be in the order

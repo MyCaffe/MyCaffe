@@ -274,7 +274,7 @@ namespace MyCaffe.trainers.dqn.noisy.simple
                 int action = m_brain.act(x, s.Clip, s.ActionCount);
 
                 rgResults.Add(s.Data.TimeStamp.ToFileTime());
-                rgResults.Add((float)s.Data.RealData[0]);
+                rgResults.Add(s.Data.GetDataAtF(0));
                 rgResults.Add(action);
 
                 nIteration++;

@@ -542,8 +542,8 @@ namespace MyCaffe.trainers.rnn.simple
                 m_rgdfTestData = new double[nTestLen];
                 m_rgdfTrainData = new double[nTrainLen];
 
-                Array.Copy(s.Data.RealData, 0, m_rgdfTrainData, 0, nTrainLen);
-                Array.Copy(s.Data.RealData, nTrainLen, m_rgdfTestData, 0, nTestLen);
+                Array.Copy(s.Data.GetData<double>(), 0, m_rgdfTrainData, 0, nTrainLen);
+                Array.Copy(s.Data.GetData<double>(), nTrainLen, m_rgdfTestData, 0, nTestLen);
             }
             else
             {
@@ -661,9 +661,9 @@ namespace MyCaffe.trainers.rnn.simple
                             m_mycaffe.Log.FAIL("Data Time Out - Failed to collect all data to build the RNN batch!");
                     }
 
-                    double[] rgData = rgDataArgs[0].State.Data.RealData;
-                    double[] rgLabel = rgDataArgs[0].State.Label.RealData;
-                    double[] rgClip = rgDataArgs[0].State.Clip.RealData;
+                    double[] rgData = rgDataArgs[0].State.Data.GetData<double>();
+                    double[] rgLabel = rgDataArgs[0].State.Label.GetData<double>();
+                    double[] rgClip = rgDataArgs[0].State.Clip.GetData<double>();
 
                     int nDataLen = rgData.Length;
                     int nLabelLen = rgLabel.Length;
@@ -690,9 +690,9 @@ namespace MyCaffe.trainers.rnn.simple
                                 else
                                     nIdx = i * m_nBatchSize + j;
 
-                                Array.Copy(rgDataArgs[i].State.Data.RealData, 0, rgData, nIdx * nDataItem, nDataItem);
-                                rgLabel[nIdx] = rgDataArgs[i].State.Label.RealData[j];
-                                rgClip[nIdx] = rgDataArgs[i].State.Clip.RealData[j];
+                                Array.Copy(rgDataArgs[i].State.Data.GetData<double>(), 0, rgData, nIdx * nDataItem, nDataItem);
+                                rgLabel[nIdx] = rgDataArgs[i].State.Label.GetDataAtD(j);
+                                rgClip[nIdx] = rgDataArgs[i].State.Clip.GetDataAtD(j);
                             }
                         }
                     }
@@ -855,13 +855,13 @@ namespace MyCaffe.trainers.rnn.simple
 
                         int nExpectedCount = m_blobData.count();
                         m_mycaffe.Log.CHECK_EQ(nExpectedCount, e.State.Data.ItemCount, strSolverErr + "The size of the data received ('" + e.State.Data.ItemCount.ToString() + "') does mot match the expected data count of '" + nExpectedCount.ToString() + "'!");
-                        m_blobData.mutable_cpu_data = Utility.ConvertVec<T>(e.State.Data.RealData);
+                        m_blobData.mutable_cpu_data = e.State.Data.GetData<T>();
 
                         if (m_blobLabel != null)
                         {
                             nExpectedCount = m_blobLabel.count();
                             m_mycaffe.Log.CHECK_EQ(nExpectedCount, e.State.Label.ItemCount, strSolverErr + "The size of the label received ('" + e.State.Label.ItemCount.ToString() + "') does not match the expected label count of '" + nExpectedCount.ToString() + "'!");
-                            m_blobLabel.mutable_cpu_data = Utility.ConvertVec<T>(e.State.Label.RealData);
+                            m_blobLabel.mutable_cpu_data = e.State.Label.GetData<T>();
                         }
 
                         double dfLoss;
@@ -876,7 +876,8 @@ namespace MyCaffe.trainers.rnn.simple
                         for (int j = nLookahead; j > 0; j--)
                         {
                             float fPrediction = getLastPrediction(rgResults, m_rgVocabulary, j);
-                            float fActual = (float)e.State.Label.RealData[e.State.Label.RealData.Length - j];
+                            int nIdx = e.State.Label.ItemCount - j;
+                            float fActual = (float)e.State.Label.GetDataAtF(nIdx);
 
                             int nIdx0 = ((nLookahead - j) * nN * 2);
                             int nIdx1 = nIdx0 + nN;
