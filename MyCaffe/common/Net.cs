@@ -181,14 +181,15 @@ namespace MyCaffe.common
         {
             foreach (Layer<T> layer in m_rgConnectedLayers)
             {
-                ((DataLayer<T>)layer).Disconnect();
+                if (layer is DataLayer<T>)
+                    ((DataLayer<T>)layer).Disconnect();
             }
 
             m_rgConnectedLayers.Clear();
 
-            foreach (Layer<T> l in m_rgLayers)
+            foreach (Layer<T> layer in m_rgLayers)
             {
-                l.Dispose();
+                layer.Dispose();
             }
 
             m_rgLayers.Clear();
