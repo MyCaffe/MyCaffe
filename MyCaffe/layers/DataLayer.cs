@@ -118,6 +118,17 @@ namespace MyCaffe.layers
                 m_blobDebug1 = new Blob<T>(cuda, log, false);
         }
 
+        /// <summary>
+        /// The preStop override is called just before stopping the internal thread managed by the base class.
+        /// </summary>
+        protected override void preStop()
+        {
+            base.preStop();
+
+            if (m_rgBatchLabels != null)
+                m_rgBatchLabels.Cancel();
+        }
+
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
