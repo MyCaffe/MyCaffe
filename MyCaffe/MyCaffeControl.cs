@@ -1455,7 +1455,7 @@ namespace MyCaffe
                 SimpleDatum sd = m_imgDb.QueryImage(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
                 m_dataTransformer.TransformLabel(sd);
 
-                if (!sd.IsDataValid)
+                if (!sd.GetDataValid(false))
                 {
                     Trace.WriteLine("You should not be here.");
                     throw new Exception("NO DATA!");
