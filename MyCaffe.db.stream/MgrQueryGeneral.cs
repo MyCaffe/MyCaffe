@@ -63,8 +63,8 @@ namespace MyCaffe.db.stream
             if (iqry == null)
                 throw new Exception("Could not find the custom query '" + strCustomQuery + "'!");
 
-            if (iqry.QueryType != CUSTOM_QUERY_TYPE.BYTE && iqry.QueryType != CUSTOM_QUERY_TYPE.REAL)
-                throw new Exception("The custom query '" + iqry.Name + "' must support the 'CUSTOM_QUERY_TYPE.BYTE' or 'CUSTOM_QUERY_TYPE.REAL' query type!");
+            if (iqry.QueryType != CUSTOM_QUERY_TYPE.BYTE && iqry.QueryType != CUSTOM_QUERY_TYPE.REAL_FLOAT && iqry.QueryType != CUSTOM_QUERY_TYPE.REAL_DOUBLE)
+                throw new Exception("The custom query '" + iqry.Name + "' must support the 'CUSTOM_QUERY_TYPE.BYTE' or 'CUSTOM_QUERY_TYPE.REAL_FLOAT' or 'CUSTOM_QUERY_TYPE.REAL_DOUBLE' query type!");
 
             string strParam = ParamPacker.UnPack(strCustomQueryParam);
             m_iquery = iqry.Clone(strParam);
@@ -124,9 +124,9 @@ namespace MyCaffe.db.stream
         /// <returns>A simple datum containing the data is returned.</returns>
         public SimpleDatum Query(int nWait)
         {
-            if (m_iquery.QueryType == CUSTOM_QUERY_TYPE.REAL)
+            if (m_iquery.QueryType == CUSTOM_QUERY_TYPE.REAL_DOUBLE)
             {
-                List<double[]> rgData = m_iquery.QueryReal();
+                List<double[]> rgData = m_iquery.QueryRealD();
 
                 if (rgData == null || rgData.Count == 0 || rgData[0].Length == 0)
                     return null;
@@ -140,7 +140,25 @@ namespace MyCaffe.db.stream
                     nOffset += rgData[i].Length;
                 }
 
-                return new SimpleDatum(true, rgData.Count, 1, rgData[0].Length, -1, DateTime.MinValue, null,  rgFullData.ToList(), 0, false, -1);
+                return new SimpleDatum(true, rgData.Count, 1, rgData[0].Length, -1, DateTime.MinValue,  rgFullData.ToList(), 0, false, -1);
+            }
+            else if (m_iquery.QueryType == CUSTOM_QUERY_TYPE.REAL_FLOAT)
+            {
+                List<float[]> rgData = m_iquery.QueryRealF();
+
+                if (rgData == null || rgData.Count == 0 || rgData[0].Length == 0)
+                    return null;
+
+                float[] rgFullData = new float[rgData[0].Length * rgData.Count];
+                int nOffset = 0;
+
+                for (int i = 0; i < rgData.Count; i++)
+                {
+                    Array.Copy(rgData[i], 0, rgFullData, nOffset, rgData[i].Length);
+                    nOffset += rgData[i].Length;
+                }
+
+                return new SimpleDatum(true, rgData.Count, 1, rgData[0].Length, -1, DateTime.MinValue, rgFullData.ToList(), 0, false, -1);
             }
             else
             {
@@ -149,7 +167,7 @@ namespace MyCaffe.db.stream
                 if (rgData == null || rgData.Length == 0)
                     return null;
 
-                return new SimpleDatum(false, 1, 1, rgData.Length, -1, DateTime.MinValue, rgData.ToList(), null, 0, false, -1);
+                return new SimpleDatum(false, 1, 1, rgData.Length, -1, DateTime.MinValue, rgData.ToList(), 0, false, -1);
             }
         }
 

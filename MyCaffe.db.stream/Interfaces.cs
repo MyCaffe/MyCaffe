@@ -134,9 +134,13 @@ namespace MyCaffe.db.stream
         /// </summary>
         BYTE,
         /// <summary>
-        /// Each custom query supporting the REAL query, must implement the QueryReal function.
+        /// Each custom query supporting the REAL query, where the base type is <i>float</i>, must implement the QueryReal function.
         /// </summary>
-        REAL,
+        REAL_FLOAT,
+        /// <summary>
+        /// Each custom query supporting the REAL query, where the base type is <i>double</i>, must implement the QueryReal function.
+        /// </summary>
+        REAL_DOUBLE,
         /// <summary>
         /// Each custom query supporting the TIME query, must implement the QueryByTime funtion.
         /// </summary>
@@ -199,10 +203,15 @@ namespace MyCaffe.db.stream
         /// <returns></returns>
         byte[] QueryBytes();
         /// <summary>
+        /// Query the data as a set one or more double arrays.
+        /// </summary>
+        /// <returns></returns>
+        List<double[]> QueryRealD();
+        /// <summary>
         /// Query the data as a set one or more float arrays.
         /// </summary>
         /// <returns></returns>
-        List<double[]> QueryReal();
+        List<float[]> QueryRealF();
         /// <summary>
         /// The Query information returns information about the data queried such as header information.
         /// </summary>

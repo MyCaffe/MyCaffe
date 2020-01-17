@@ -33,11 +33,11 @@ namespace MyCaffe.db.stream
         }
 
         /// <summary>
-        /// Returns the QUERY_TYPE of REAL.
+        /// Returns the QUERY_TYPE of REAL_FLOAT.
         /// </summary>
         public CUSTOM_QUERY_TYPE QueryType
         {
-            get { return CUSTOM_QUERY_TYPE.REAL; }
+            get { return CUSTOM_QUERY_TYPE.REAL_DOUBLE; }
         }
 
         /// <summary>
@@ -121,10 +121,10 @@ namespace MyCaffe.db.stream
         }
 
         /// <summary>
-        /// The QueryReal method returns all samples of the next file in the directory.
+        /// The QueryRealD method returns all samples of the next file in the directory.
         /// </summary>
         /// <returns>All samples along with the format are returned where the format is placed in the last array.</returns>
-        public List<double[]> QueryReal()
+        public List<double[]> QueryRealD()
         {
             if (m_nFileIdx == m_rgstrFiles.Length)
                 return null;
@@ -145,6 +145,15 @@ namespace MyCaffe.db.stream
 
                 return wav.Samples;
             }
+        }
+
+        /// <summary>
+        /// The QueryRealF method returns all samples of the next file in the directory.
+        /// </summary>
+        /// <returns>All samples along with the format are returned where the format is placed in the last array.</returns>
+        public List<float[]> QueryRealF()
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>

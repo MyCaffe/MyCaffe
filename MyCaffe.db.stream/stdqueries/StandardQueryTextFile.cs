@@ -127,10 +127,19 @@ namespace MyCaffe.db.stream
         }
 
         /// <summary>
-        /// The QueryReal method is not implemented for this custom query.
+        /// The QueryRealD method is not implemented for this custom query.
         /// </summary>
         /// <returns>not used.</returns>
-        public List<double[]> QueryReal()
+        public List<double[]> QueryRealD()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// The QueryRealF method is not implemented for this custom query.
+        /// </summary>
+        /// <returns>not used.</returns>
+        public List<float[]> QueryRealF()
         {
             throw new NotImplementedException();
         }
