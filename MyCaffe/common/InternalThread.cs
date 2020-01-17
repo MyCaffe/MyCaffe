@@ -19,17 +19,26 @@ namespace MyCaffe.common
         CancelEvent m_evtCancel = new CancelEvent();
         AutoResetEvent m_evtDone = new AutoResetEvent(false);
         ManualResetEvent m_evtRunning = new ManualResetEvent(false);
+        ManualResetEvent m_evtAbort = new ManualResetEvent(false);
         bool m_bUseThread = true;
 
         /// <summary>
         /// The DoWork event is the working thread function.
         /// </summary>
         public event EventHandler<ActionStateArgs<T>> DoWork;
+        /// <summary>
+        /// The OnPreStop event fires just after signalling the thread to stop.
+        /// </summary>
+        public event EventHandler OnPreStop;
+        /// <summary>
+        /// The OnPreStart event fires just before starting the thread.
+        /// </summary>
+        public event EventHandler OnPreStart;
 
         /// <summary>
         /// The InternalThread constructor.
         /// </summary>
-        /// <param name="bUseThreadVsTask">Optionally, specifies to use a Thread vs a Task (default = false).</param>
+        /// <param name="bUseThreadVsTask">Optionally, specifies to use a Thread vs a Task (default = false, e.g. use Task).</param>
         public InternalThread(bool bUseThreadVsTask = false)
         {
             m_bUseThread = bUseThreadVsTask;
@@ -70,8 +79,11 @@ namespace MyCaffe.common
         /// <param name="arg">Optionally, specifies an argument defined by the caller.</param>
         public void StartInternalThread(CudaDnn<T> cuda, Log log, int nDeviceID = 0, object arg = null)
         {
+            m_evtAbort.Reset();
             m_evtCancel.Reset();
-            m_evtDone.Reset();
+
+            if (OnPreStart != null)
+                OnPreStart(this, new EventArgs());
 
             if (m_bUseThread)
             {
@@ -91,34 +103,32 @@ namespace MyCaffe.common
             }
         }
 
+        private void waitForTerminate()
+        {
+            m_evtAbort.Set();
+            if (!m_evtDone.WaitOne(10000))
+                throw new Exception("The Internal Thread (thread) failed to stop!");
+        }
+
         /// <summary>
         /// Stops the internal thread.
         /// </summary>
         public void StopInternalThread()
         {
+            if (OnPreStop != null)
+                OnPreStop(this, new EventArgs());
+
             if (m_thread != null)
             {
                 m_evtCancel.Set();
-
-                if (m_evtRunning.WaitOne(0))
-                {
-                    if (!m_evtDone.WaitOne(10000))
-                        throw new Exception("Failed to stop the internal thread!");
-                }
-
+                waitForTerminate();
                 m_thread = null;
             }
 
             if (m_task != null)
             {
                 m_evtCancel.Set();
-
-                if (m_evtRunning.WaitOne(0))
-                {
-                    if (!m_evtDone.WaitOne(10000))
-                        throw new Exception("Failed to stop the internal thread!");
-                }
-
+                waitForTerminate();
                 m_task = null;
             }
         }
@@ -139,8 +149,8 @@ namespace MyCaffe.common
             }
             finally
             {
-                m_evtDone.Set();
                 m_evtRunning.Reset();
+                m_evtDone.Set();
             }
         }
 
@@ -151,6 +161,9 @@ namespace MyCaffe.common
         {
             get
             {
+                if (m_evtAbort.WaitOne(0))
+                    return true;
+
                 if (m_evtCancel == null)
                     return true;
 
