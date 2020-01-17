@@ -494,6 +494,9 @@ namespace MyCaffe.data
 
         private float[] transformF(SimpleDatum d, out bool bMirror, NormalizedBBox crop_bbox = null)
         {
+            if (!d.GetDataValid(true))
+                throw new Exception("There is no " + ((d.IsRealData) ? "REAL" : "BYTE") + " data in the SimpleDatum!");
+
             m_dfLastMax = -double.MaxValue;
             m_dfLastMin = double.MaxValue;
 
@@ -571,7 +574,8 @@ namespace MyCaffe.data
             if (crop_bbox != null)
                 crop_bbox.Set((float)w_off / nDatumWidth, (float)h_off / nDatumHeight, (float)(w_off + nWidth) / nDatumWidth, (float)(h_off + nHeight) / nDatumHeight);
 
-            float[] rgfData = (d.RealDataF != null) ? d.RealDataF : d.GetData<float>();
+            double[] rgdfData = d.RealDataD;
+            float[] rgfData = d.RealDataF;
             byte[] rgbData = d.ByteData;
             float fDataElement;
             float fTransformedElement;
@@ -601,7 +605,7 @@ namespace MyCaffe.data
                         else
                             nTopIdx = (c * nHeight + h) * nWidth + w;
 
-                        fDataElement = (d.IsRealData) ? rgfData[nDataIdx] : rgbData[nDataIdx];
+                        fDataElement = (d.IsRealData) ? ((rgfData != null) ? rgfData[nDataIdx] : (float)rgdfData[nDataIdx]) : rgbData[nDataIdx];
 
                         if (bUseMeanImage)
                         {
@@ -632,6 +636,9 @@ namespace MyCaffe.data
 
         private double[] transformD(SimpleDatum d, out bool bMirror, NormalizedBBox crop_bbox = null)
         {
+            if (!d.GetDataValid(true))
+                throw new Exception("There is no " + ((d.IsRealData) ? "REAL" : "BYTE") + " data in the SimpleDatum!");
+
             m_dfLastMax = -double.MaxValue;
             m_dfLastMin = double.MaxValue;
 
@@ -709,7 +716,8 @@ namespace MyCaffe.data
             if (crop_bbox != null)
                 crop_bbox.Set((float)w_off / nDatumWidth, (float)h_off / nDatumHeight, (float)(w_off + nWidth) / nDatumWidth, (float)(h_off + nHeight) / nDatumHeight);
 
-            double[] rgdfData = (d.RealDataD != null) ? d.RealDataD : d.GetData<double>();
+            double[] rgdfData = d.RealDataD;
+            float[] rgfData = d.RealDataF;
             byte[] rgbData = d.ByteData;
             double dfDataElement;
             double dfTransformedElement;
@@ -739,7 +747,7 @@ namespace MyCaffe.data
                         else
                             nTopIdx = (c * nHeight + h) * nWidth + w;
 
-                        dfDataElement = (d.IsRealData) ? rgdfData[nDataIdx] : rgbData[nDataIdx];
+                        dfDataElement = (d.IsRealData) ? ((rgdfData != null) ? rgdfData[nDataIdx] : rgfData[nDataIdx]) : rgbData[nDataIdx];
 
                         if (bUseMeanImage)
                         {
