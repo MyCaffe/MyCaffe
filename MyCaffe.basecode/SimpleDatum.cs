@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 
@@ -21,8 +22,9 @@ namespace MyCaffe.basecode
         int m_nHeight = 0;
         int m_nWidth = 0;
         int m_nChannels = 0;
-        byte[] m_rgByteData;
-        double[] m_rgRealData;
+        byte[] m_rgByteData = null;
+        float[] m_rgRealDataF = null;
+        double[] m_rgRealDataD = null;
         bool m_bIsRealData = false;
         DateTime m_dt = DateTime.MinValue;
         int m_nOriginalBoost = 0;
@@ -123,7 +125,6 @@ namespace MyCaffe.basecode
         /// <param name="nLabel">Specifies the known label of the data.</param>
         /// <param name="dtTime">Specifies a time-stamp associated with the data.</param>
         /// <param name="rgData">Specifies the data as a list of <i>bytes</i> (expects <i>bIsReal</i> = <i>false</i>).</param>
-        /// <param name="rgfData">Specifies the data as a list of <i>double</i> (expects <i>bIsReal</i> = <i>true</i>).</param>
         /// <param name="nBoost">Specifies the boost to use with the data (a value of 0 indicates no boost).</param>
         /// <param name="bAutoLabeled">Specifies whether or not the label was auto-generated.</param>
         /// <param name="nIdx">Specifies the index of the data.</param>
@@ -131,7 +132,7 @@ namespace MyCaffe.basecode
         /// <param name="nImageID">Specifies the image ID within the database.</param>
         /// <param name="nSourceID">Specifies the data source ID of the data source that owns this image.</param>
         /// <param name="nOriginalSourceID">Optionally, specifies the ogiginal source ID which is set when using a virtual ID - the original source ID is the ID of the source associated with the image with the ID of the virtual ID.</param>
-        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, List<byte> rgData, List<double> rgfData, int nBoost, bool bAutoLabeled, int nIdx, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0, int nOriginalSourceID = 0)
+        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, List<byte> rgData, int nBoost, bool bAutoLabeled, int nIdx, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0, int nOriginalSourceID = 0)
         {
             m_nChannels = nChannels;
             m_nWidth = nWidth;
@@ -149,20 +150,92 @@ namespace MyCaffe.basecode
             m_nSourceID = nSourceID;
             m_nOriginalSourceID = nOriginalSourceID;
 
-            if (rgData != null)
-            {
-                if (bIsReal)
-                    throw new ArgumentException("The data sent is not real, but the bIsReal is set to true!");
+            if (bIsReal)
+                throw new ArgumentException("The data sent is not real, but the bIsReal is set to true!");
 
-                m_rgByteData = rgData.ToArray();
-            }
-            else if (rgfData != null)
-            {
-                if (!bIsReal)
-                    throw new ArgumentException("The data sent is real, but the bIsReal is set to false!");
+            m_rgByteData = rgData.ToArray();
+        }
 
-                m_rgRealData = rgfData.ToArray();
-            }
+        /// <summary>
+        /// The SimpleDatum constructor.
+        /// </summary>
+        /// <param name="bIsReal">Specifies whether or not the data values are <i>double</i> or <i>byte</i>.</param>
+        /// <param name="nChannels">Specifies the number of channels in the data (e.g. 3 for color, 1 for black and white images)</param>
+        /// <param name="nWidth">Specifies the width of the data (e.g. the number of pixels wide).</param>
+        /// <param name="nHeight">Specifies the height of the data (e.g. the number of pixels high).</param>
+        /// <param name="nLabel">Specifies the known label of the data.</param>
+        /// <param name="dtTime">Specifies a time-stamp associated with the data.</param>
+        /// <param name="rgfData">Specifies the data as a list of <i>double</i> (expects <i>bIsReal</i> = <i>true</i>).</param>
+        /// <param name="nBoost">Specifies the boost to use with the data (a value of 0 indicates no boost).</param>
+        /// <param name="bAutoLabeled">Specifies whether or not the label was auto-generated.</param>
+        /// <param name="nIdx">Specifies the index of the data.</param>
+        /// <param name="nVirtualID">Specifies a virtual index for the data (default = 0).  When specified, the SimpleDatum is used to reference another.</param>
+        /// <param name="nImageID">Specifies the image ID within the database.</param>
+        /// <param name="nSourceID">Specifies the data source ID of the data source that owns this image.</param>
+        /// <param name="nOriginalSourceID">Optionally, specifies the ogiginal source ID which is set when using a virtual ID - the original source ID is the ID of the source associated with the image with the ID of the virtual ID.</param>
+        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, List<double> rgfData, int nBoost, bool bAutoLabeled, int nIdx, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0, int nOriginalSourceID = 0)
+        {
+            m_nChannels = nChannels;
+            m_nWidth = nWidth;
+            m_nHeight = nHeight;
+            m_nOriginalLabel = nLabel;
+            m_nLabel = nLabel;
+            m_dt = dtTime;
+            m_nOriginalBoost = nBoost;
+            m_nBoost = nBoost;
+            m_bAutoLabeled = bAutoLabeled;
+            m_nVirtualID = nVirtualID;
+            m_bIsRealData = bIsReal;
+            m_nIndex = nIdx;
+            m_nImageID = nImageID;
+            m_nSourceID = nSourceID;
+            m_nOriginalSourceID = nOriginalSourceID;
+
+            if (!bIsReal)
+                throw new ArgumentException("The data sent is real, but the bIsReal is set to false!");
+
+            m_rgRealDataD = rgfData.ToArray();
+        }
+
+        /// <summary>
+        /// The SimpleDatum constructor.
+        /// </summary>
+        /// <param name="bIsReal">Specifies whether or not the data values are <i>double</i> or <i>byte</i>.</param>
+        /// <param name="nChannels">Specifies the number of channels in the data (e.g. 3 for color, 1 for black and white images)</param>
+        /// <param name="nWidth">Specifies the width of the data (e.g. the number of pixels wide).</param>
+        /// <param name="nHeight">Specifies the height of the data (e.g. the number of pixels high).</param>
+        /// <param name="nLabel">Specifies the known label of the data.</param>
+        /// <param name="dtTime">Specifies a time-stamp associated with the data.</param>
+        /// <param name="rgfData">Specifies the data as a list of <i>float</i> (expects <i>bIsReal</i> = <i>true</i>).</param>
+        /// <param name="nBoost">Specifies the boost to use with the data (a value of 0 indicates no boost).</param>
+        /// <param name="bAutoLabeled">Specifies whether or not the label was auto-generated.</param>
+        /// <param name="nIdx">Specifies the index of the data.</param>
+        /// <param name="nVirtualID">Specifies a virtual index for the data (default = 0).  When specified, the SimpleDatum is used to reference another.</param>
+        /// <param name="nImageID">Specifies the image ID within the database.</param>
+        /// <param name="nSourceID">Specifies the data source ID of the data source that owns this image.</param>
+        /// <param name="nOriginalSourceID">Optionally, specifies the ogiginal source ID which is set when using a virtual ID - the original source ID is the ID of the source associated with the image with the ID of the virtual ID.</param>
+        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, List<float> rgfData, int nBoost, bool bAutoLabeled, int nIdx, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0, int nOriginalSourceID = 0)
+        {
+            m_nChannels = nChannels;
+            m_nWidth = nWidth;
+            m_nHeight = nHeight;
+            m_nOriginalLabel = nLabel;
+            m_nLabel = nLabel;
+            m_dt = dtTime;
+            m_nOriginalBoost = nBoost;
+            m_nBoost = nBoost;
+            m_bAutoLabeled = bAutoLabeled;
+            m_nVirtualID = nVirtualID;
+            m_bIsRealData = bIsReal;
+            m_nIndex = nIdx;
+            m_nImageID = nImageID;
+            m_nSourceID = nSourceID;
+            m_nOriginalSourceID = nOriginalSourceID;
+
+            if (!bIsReal)
+                throw new ArgumentException("The data sent is real, but the bIsReal is set to false!");
+
+            m_rgRealDataF = rgfData.ToArray();
         }
 
         /// <summary>
@@ -175,7 +248,6 @@ namespace MyCaffe.basecode
         /// <param name="nLabel">Specifies the known label of the data.</param>
         /// <param name="dtTime">Specifies a time-stamp associated with the data.</param>
         /// <param name="rgData">Specifies the data as a list of <i>bytes</i> (expects <i>bIsReal</i> = <i>false</i>).</param>
-        /// <param name="rgfData">Specifies the data as a list of <i>double</i> (expects <i>bIsReal</i> = <i>true</i>).</param>
         /// <param name="nBoost">Specifies the boost to use with the data (a value of 0 indicates no boost).</param>
         /// <param name="bAutoLabeled">Specifies whether or not the label was auto-generated.</param>
         /// <param name="nIdx">Specifies the index of the data.</param>
@@ -183,7 +255,7 @@ namespace MyCaffe.basecode
         /// <param name="nImageID">Specifies the image ID within the database.</param>
         /// <param name="nSourceID">Specifies the data source ID of the data source that owns this image.</param>
         /// <param name="nOriginalSourceID">Optionally, specifies the ogiginal source ID which is set when using a virtual ID - the original source ID is the ID of the source associated with the image with the ID of the virtual ID.</param>
-        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, byte[] rgData, double[] rgfData, int nBoost, bool bAutoLabeled, int nIdx, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0, int nOriginalSourceID = 0)
+        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, byte[] rgData, int nBoost, bool bAutoLabeled, int nIdx, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0, int nOriginalSourceID = 0)
         {
             m_nChannels = nChannels;
             m_nWidth = nWidth;
@@ -201,20 +273,92 @@ namespace MyCaffe.basecode
             m_nSourceID = nSourceID;
             m_nOriginalSourceID = nOriginalSourceID;
 
-            if (rgData != null)
-            {
-                if (bIsReal)
-                    throw new ArgumentException("The data sent is not real, but the bIsReal is set to true!");
+            if (bIsReal)
+                throw new ArgumentException("The data sent is not real, but the bIsReal is set to true!");
 
-                m_rgByteData = rgData;
-            }
-            else if (rgfData != null)
-            {
-                if (!bIsReal)
-                    throw new ArgumentException("The data sent is real, but the bIsReal is set to false!");
+            m_rgByteData = rgData;
+        }
 
-                m_rgRealData = rgfData;
-            }
+        /// <summary>
+        /// The SimpleDatum constructor.
+        /// </summary>
+        /// <param name="bIsReal">Specifies whether or not the data values are <i>double</i> or <i>byte</i>.</param>
+        /// <param name="nChannels">Specifies the number of channels in the data (e.g. 3 for color, 1 for black and white images)</param>
+        /// <param name="nWidth">Specifies the width of the data (e.g. the number of pixels wide).</param>
+        /// <param name="nHeight">Specifies the height of the data (e.g. the number of pixels high).</param>
+        /// <param name="nLabel">Specifies the known label of the data.</param>
+        /// <param name="dtTime">Specifies a time-stamp associated with the data.</param>
+        /// <param name="rgdfData">Specifies the data as a list of <i>double</i> (expects <i>bIsReal</i> = <i>true</i>).</param>
+        /// <param name="nBoost">Specifies the boost to use with the data (a value of 0 indicates no boost).</param>
+        /// <param name="bAutoLabeled">Specifies whether or not the label was auto-generated.</param>
+        /// <param name="nIdx">Specifies the index of the data.</param>
+        /// <param name="nVirtualID">Specifies a virtual index for the data (default = 0).  When specified, the SimpleDatum is used to reference another.</param>
+        /// <param name="nImageID">Specifies the image ID within the database.</param>
+        /// <param name="nSourceID">Specifies the data source ID of the data source that owns this image.</param>
+        /// <param name="nOriginalSourceID">Optionally, specifies the ogiginal source ID which is set when using a virtual ID - the original source ID is the ID of the source associated with the image with the ID of the virtual ID.</param>
+        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, double[] rgdfData, int nBoost, bool bAutoLabeled, int nIdx, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0, int nOriginalSourceID = 0)
+        {
+            m_nChannels = nChannels;
+            m_nWidth = nWidth;
+            m_nHeight = nHeight;
+            m_nOriginalLabel = nLabel;
+            m_nLabel = nLabel;
+            m_dt = dtTime;
+            m_nOriginalBoost = nBoost;
+            m_nBoost = nBoost;
+            m_bAutoLabeled = bAutoLabeled;
+            m_nVirtualID = nVirtualID;
+            m_bIsRealData = bIsReal;
+            m_nIndex = nIdx;
+            m_nImageID = nImageID;
+            m_nSourceID = nSourceID;
+            m_nOriginalSourceID = nOriginalSourceID;
+
+            if (!bIsReal)
+                throw new ArgumentException("The data sent is real, but the bIsReal is set to false!");
+
+            m_rgRealDataD = rgdfData;
+        }
+
+        /// <summary>
+        /// The SimpleDatum constructor.
+        /// </summary>
+        /// <param name="bIsReal">Specifies whether or not the data values are <i>double</i> or <i>byte</i>.</param>
+        /// <param name="nChannels">Specifies the number of channels in the data (e.g. 3 for color, 1 for black and white images)</param>
+        /// <param name="nWidth">Specifies the width of the data (e.g. the number of pixels wide).</param>
+        /// <param name="nHeight">Specifies the height of the data (e.g. the number of pixels high).</param>
+        /// <param name="nLabel">Specifies the known label of the data.</param>
+        /// <param name="dtTime">Specifies a time-stamp associated with the data.</param>
+        /// <param name="rgfData">Specifies the data as a list of <i>float</i> (expects <i>bIsReal</i> = <i>true</i>).</param>
+        /// <param name="nBoost">Specifies the boost to use with the data (a value of 0 indicates no boost).</param>
+        /// <param name="bAutoLabeled">Specifies whether or not the label was auto-generated.</param>
+        /// <param name="nIdx">Specifies the index of the data.</param>
+        /// <param name="nVirtualID">Specifies a virtual index for the data (default = 0).  When specified, the SimpleDatum is used to reference another.</param>
+        /// <param name="nImageID">Specifies the image ID within the database.</param>
+        /// <param name="nSourceID">Specifies the data source ID of the data source that owns this image.</param>
+        /// <param name="nOriginalSourceID">Optionally, specifies the ogiginal source ID which is set when using a virtual ID - the original source ID is the ID of the source associated with the image with the ID of the virtual ID.</param>
+        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel, DateTime dtTime, float[] rgfData, int nBoost, bool bAutoLabeled, int nIdx, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0, int nOriginalSourceID = 0)
+        {
+            m_nChannels = nChannels;
+            m_nWidth = nWidth;
+            m_nHeight = nHeight;
+            m_nOriginalLabel = nLabel;
+            m_nLabel = nLabel;
+            m_dt = dtTime;
+            m_nOriginalBoost = nBoost;
+            m_nBoost = nBoost;
+            m_bAutoLabeled = bAutoLabeled;
+            m_nVirtualID = nVirtualID;
+            m_bIsRealData = bIsReal;
+            m_nIndex = nIdx;
+            m_nImageID = nImageID;
+            m_nSourceID = nSourceID;
+            m_nOriginalSourceID = nOriginalSourceID;
+
+            if (!bIsReal)
+                throw new ArgumentException("The data sent is real, but the bIsReal is set to false!");
+
+            m_rgRealDataF = rgfData;
         }
 
         /// <summary>
@@ -251,7 +395,8 @@ namespace MyCaffe.basecode
             m_nSourceID = nSourceID;
             m_nOriginalSourceID = nOriginalSourceID;
             m_rgByteData = null;
-            m_rgRealData = null;
+            m_rgRealDataD = null;
+            m_rgRealDataF = null;
         }
 
         /// <summary>
@@ -287,12 +432,8 @@ namespace MyCaffe.basecode
             if (bDataIsReal)
             {
                 m_bIsRealData = true;
-                m_rgRealData = new double[nCount];
-
-                for (int i = 0; i < nCount; i++)
-                {
-                    m_rgRealData[i] = rgf[nOffset + i];
-                }
+                m_rgRealDataF = new float[nCount];
+                Array.Copy(rgf, nOffset, m_rgRealDataF, 0, nCount);
             }
             else
             {
@@ -301,9 +442,32 @@ namespace MyCaffe.basecode
 
                 for (int i = 0; i < nCount; i++)
                 {
-                    m_rgByteData[i] = Math.Min((byte)rgf[nOffset + i], (byte)255);
+                    m_rgByteData[i] = Math.Min(Math.Max((byte)rgf[nOffset + i], (byte)0), (byte)255);
                 }
             }
+        }
+
+        /// <summary>
+        /// The SimpleDatum constructor.
+        /// </summary>
+        /// <param name="nChannels">Specifies the number of channels in the data (e.g. 3 for color, 1 for black and white images)</param>
+        /// <param name="nWidth">Specifies the width of the data (e.g. the number of pixels wide).</param>
+        /// <param name="nHeight">Specifies the height of the data (e.g. the number of pixels high).</param>
+        public SimpleDatum(int nChannels, int nWidth, int nHeight)
+        {
+            m_nChannels = nChannels;
+            m_nWidth = nWidth;
+            m_nHeight = nHeight;
+            m_nOriginalLabel = 0;
+            m_nOriginalBoost = 0;
+            m_dt = DateTime.MinValue;
+            m_bAutoLabeled = false;
+            m_nVirtualID = 0;
+            m_nImageID = 0;
+            m_nImageID = 0;
+            m_nSourceID = 0;
+            m_nOriginalSourceID = 0;
+            m_rgByteData = null;
         }
 
         /// <summary>
@@ -335,7 +499,7 @@ namespace MyCaffe.basecode
             m_nLabel = -1;
             m_bIsRealData = true;
 
-            m_rgRealData = data.Values;
+            m_rgRealDataD = data.Values;
         }
 
         /// <summary>
@@ -397,23 +561,50 @@ namespace MyCaffe.basecode
                 {
                     if (rg[0].IsRealData)
                     {
-                        double[] rgData = new double[m_nChannels * Height * Width];
-
-                        for (int h = 0; h < Height; h++)
+                        if (rg[0].RealDataD != null)
                         {
-                            for (int w = 0; w < Width; w++)
-                            {
-                                int nIdxSrc = (h * Width) + w;
-                                int nIdxDst = nIdxSrc * m_nChannels;
+                            double[] rgData = new double[m_nChannels * Height * Width];
 
-                                for (int c = 0; c < m_nChannels; c++)
+                            for (int h = 0; h < Height; h++)
+                            {
+                                for (int w = 0; w < Width; w++)
                                 {
-                                    rgData[nIdxDst + c] = rg[c].RealData[nIdxSrc];
+                                    int nIdxSrc = (h * Width) + w;
+                                    int nIdxDst = nIdxSrc * m_nChannels;
+
+                                    for (int c = 0; c < m_nChannels; c++)
+                                    {
+                                        rgData[nIdxDst + c] = rg[c].RealDataD[nIdxSrc];
+                                    }
                                 }
                             }
-                        }
 
-                        m_rgRealData = rgData;
+                            m_rgRealDataD = rgData;
+                        }
+                        else if (rg[0].RealDataF != null)
+                        {
+                            float[] rgData = new float[m_nChannels * Height * Width];
+
+                            for (int h = 0; h < Height; h++)
+                            {
+                                for (int w = 0; w < Width; w++)
+                                {
+                                    int nIdxSrc = (h * Width) + w;
+                                    int nIdxDst = nIdxSrc * m_nChannels;
+
+                                    for (int c = 0; c < m_nChannels; c++)
+                                    {
+                                        rgData[nIdxDst + c] = rg[c].RealDataF[nIdxSrc];
+                                    }
+                                }
+                            }
+
+                            m_rgRealDataF = rgData;
+                        }
+                        else
+                        {
+                            throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
+                        }
                         m_rgByteData = null;
                     }
                     else
@@ -435,7 +626,8 @@ namespace MyCaffe.basecode
                         }
 
                         m_rgByteData = rgData;
-                        m_rgRealData = null;
+                        m_rgRealDataF = null;
+                        m_rgRealDataD = null;
                     }
                 }
             }
@@ -447,19 +639,38 @@ namespace MyCaffe.basecode
 
                 if (bReal)
                 {
-                    m_rgRealData = new double[m_nChannels * Height * Width];
-                    m_rgByteData = null;
-
-                    for (int i = 0; i < rg.Count; i++)
+                    if (rg[0].RealDataD != null)
                     {
-                        Array.Copy(rg[i].RealData, 0, m_rgRealData, nDstIdx, nItemCount);
-                        nDstIdx += nItemCount;
+                        m_rgRealDataD = new double[m_nChannels * Height * Width];
+                        m_rgByteData = null;
+
+                        for (int i = 0; i < rg.Count; i++)
+                        {
+                            Array.Copy(rg[i].RealDataD, 0, m_rgRealDataD, nDstIdx, nItemCount);
+                            nDstIdx += nItemCount;
+                        }
+                    }
+                    else if (rg[0].RealDataF != null)
+                    {
+                        m_rgRealDataF = new float[m_nChannels * Height * Width];
+                        m_rgByteData = null;
+
+                        for (int i = 0; i < rg.Count; i++)
+                        {
+                            Array.Copy(rg[i].RealDataF, 0, m_rgRealDataF, nDstIdx, nItemCount);
+                            nDstIdx += nItemCount;
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
                     }
                 }
                 else
                 {
                     m_rgByteData = new byte[m_nChannels * Height * Width];
-                    m_rgRealData = null;
+                    m_rgRealDataD = null;
+                    m_rgRealDataF = null;
 
                     for (int i = 0; i < rg.Count; i++)
                     {
@@ -488,8 +699,12 @@ namespace MyCaffe.basecode
             {
                 if (m_bIsRealData)
                 {
-                    if (m_rgRealData != null)
-                        return m_rgRealData.Min(p => p);
+                    if (m_rgRealDataD != null)
+                        return m_rgRealDataD.Min(p => p);
+                    else if (m_rgRealDataF != null)
+                        return m_rgRealDataF.Min(p => p);
+                    else
+                        throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
                 }
                 else
                 {
@@ -510,8 +725,12 @@ namespace MyCaffe.basecode
             {
                 if (m_bIsRealData)
                 {
-                    if (m_rgRealData != null)
-                        return m_rgRealData.Max(p => p);
+                    if (m_rgRealDataD != null)
+                        return m_rgRealDataD.Max(p => p);
+                    else if (m_rgRealDataF != null)
+                        return m_rgRealDataF.Max(p => p);
+                    else
+                        throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
                 }
                 else
                 {
@@ -538,11 +757,17 @@ namespace MyCaffe.basecode
                 Array.Copy(m_rgByteData, rgData, nDataLen);
                 m_rgByteData = rgData;
             }
-            if (m_rgRealData != null && m_rgRealData.Length > nDataLen)
+            if (m_rgRealDataD != null && m_rgRealDataD.Length > nDataLen)
             {
                 double[] rgData = new double[nDataLen];
-                Array.Copy(m_rgRealData, rgData, nDataLen);
-                m_rgRealData = rgData;
+                Array.Copy(m_rgRealDataD, rgData, nDataLen);
+                m_rgRealDataD = rgData;
+            }
+            if (m_rgRealDataF != null && m_rgRealDataF.Length > nDataLen)
+            {
+                float[] rgData = new float[nDataLen];
+                Array.Copy(m_rgRealDataF, rgData, nDataLen);
+                m_rgRealDataF = rgData;
             }
 
             m_nChannels = nNewChannel.GetValueOrDefault(m_nChannels);
@@ -560,17 +785,32 @@ namespace MyCaffe.basecode
 
             if (m_bIsRealData)
             {
-                for (int i = 0; i < m_rgRealData.Length; i++)
+                if (m_rgRealDataD != null)
                 {
-                    if (m_rgRealData[i] != 0)
-                        rgIdx.Add(i);
+                    for (int i = 0; i < m_rgRealDataD.Length; i++)
+                    {
+                        if (m_rgRealDataD[i] != 0)
+                            rgIdx.Add(i);
+                    }
+                }
+                else if (m_rgRealDataF != null)
+                {
+                    for (int i = 0; i < m_rgRealDataF.Length; i++)
+                    {
+                        if (m_rgRealDataF[i] != 0)
+                            rgIdx.Add(i);
+                    }
+                }
+                else
+                {
+                    throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
                 }
             }
             else
             {
                 for (int i = 0; i < m_rgByteData.Length; i++)
                 {
-                    if (m_rgRealData[i] != 0)
+                    if (m_rgByteData[i] != 0)
                         rgIdx.Add(i);
                 }
             }
@@ -586,8 +826,11 @@ namespace MyCaffe.basecode
             if (m_rgByteData != null)
                 Array.Clear(m_rgByteData, 0, m_rgByteData.Length);
 
-            if (m_rgRealData != null)
-                Array.Clear(m_rgRealData, 0, m_rgRealData.Length);
+            if (m_rgRealDataD != null)
+                Array.Clear(m_rgRealDataD, 0, m_rgRealDataD.Length);
+
+            if (m_rgRealDataF != null)
+                Array.Clear(m_rgRealDataF, 0, m_rgRealDataF.Length);
         }
 
         /// <summary>
@@ -615,15 +858,28 @@ namespace MyCaffe.basecode
                 }
             }
 
-            if (m_rgRealData != null)
+            if (m_rgRealDataD != null)
             {
-                if (sd.m_rgRealData == null)
+                if (sd.m_rgRealDataD == null)
                     throw new Exception("Both simple datums must have the same type of data!");
 
-                for (int i = 0; i < m_rgRealData.Length; i++)
+                for (int i = 0; i < m_rgRealDataD.Length; i++)
                 {
-                    m_rgRealData[i] -= sd.m_rgRealData[i];
-                    if (m_rgRealData[i] != 0)
+                    m_rgRealDataD[i] -= sd.m_rgRealDataD[i];
+                    if (m_rgRealDataD[i] != 0)
+                        bDifferent = true;
+                }
+            }
+
+            if (m_rgRealDataF != null)
+            {
+                if (sd.m_rgRealDataF == null)
+                    throw new Exception("Both simple datums must have the same type of data!");
+
+                for (int i = 0; i < m_rgRealDataF.Length; i++)
+                {
+                    m_rgRealDataF[i] -= sd.m_rgRealDataF[i];
+                    if (m_rgRealDataF[i] != 0)
                         bDifferent = true;
                 }
             }
@@ -649,12 +905,14 @@ namespace MyCaffe.basecode
 
             if (bCopyData)
             {
-                m_rgRealData = Utility.Clone<double>(d.m_rgRealData);
+                m_rgRealDataD = Utility.Clone<double>(d.m_rgRealDataD);
+                m_rgRealDataF = Utility.Clone<float>(d.m_rgRealDataF);
                 m_rgByteData = Utility.Clone<byte>(d.m_rgByteData);
             }
             else
             {
-                m_rgRealData = d.m_rgRealData;
+                m_rgRealDataD = d.m_rgRealDataD;
+                m_rgRealDataF = d.m_rgRealDataF;
                 m_rgByteData = d.m_rgByteData;
             }
 
@@ -700,7 +958,8 @@ namespace MyCaffe.basecode
             m_nChannels = d.m_nChannels;
             m_rgByteData = d.m_rgByteData;
             m_bIsRealData = d.m_bIsRealData;
-            m_rgRealData = d.m_rgRealData;
+            m_rgRealDataD = d.m_rgRealDataD;
+            m_rgRealDataF = d.m_rgRealDataF;
         }
 
         /// <summary>
@@ -710,19 +969,26 @@ namespace MyCaffe.basecode
         public void SetData(SimpleDatum d)
         {
             if (d.IsRealData)
-                SetData(d.RealData.ToList(), d.Label);
+            {
+                if (d.RealDataD != null)
+                    SetData(d.RealDataD.ToList(), d.Label);
+                else if (d.RealDataF != null)
+                    SetData(d.RealDataF.ToList(), d.Label);
+                else
+                    throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
+            }
             else
                 SetData(d.ByteData.ToList(), d.Label);
         }
 
         /// <summary>
-        /// Returns <i>true</i> if the ByteData or RealData are not null, <i>false</i> otherwise.
+        /// Returns <i>true</i> if the ByteData or RealDataD or RealDataF are not null, <i>false</i> otherwise.
         /// </summary>
         public bool IsDataValid
         {
             get
             {
-                if (ByteData == null && RealData == null)
+                if (ByteData == null && RealDataD == null && RealDataF == null)
                     return false;
 
                 return true;
@@ -730,12 +996,12 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Clips the SimpleDatum to the last <i>nLastColumns</i> and returns the data.
+        /// DEPRECIATED: Clips the SimpleDatum to the last <i>nLastColumns</i> and returns the data.
         /// </summary>
         /// <typeparam name="T">Specifies base the type of data returned, either <i>double</i> or <i>float</i>.</typeparam>
         /// <param name="nLastColumns">Specifies the number of last columns of data to keep.</param>
         /// <returns>The last columns of data are returned.</returns>
-        public List<T> ClipToLastColumns<T>(int nLastColumns = 10)
+        public List<T> ClipToLastColumnsX<T>(int nLastColumns = 10)
         {
             int nC = m_nChannels;
             int nW = m_nWidth;
@@ -762,11 +1028,11 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
-        /// Masks out all data except for the last columns of data.
+        /// DEPRECIATED: Masks out all data except for the last columns of data.
         /// </summary>
         /// <param name="nLastColumsToRetain">Specifies the number of last columns to retain.</param>
         /// <param name="nMaskingValue">Specifies the value to use for the masked columns.</param>
-        public void MaskOutAllButLastColumns(int nLastColumsToRetain, int nMaskingValue)
+        public void MaskOutAllButLastColumnsX(int nLastColumsToRetain, int nMaskingValue)
         {
             if (nLastColumsToRetain <= 0 || nLastColumsToRetain >= m_nWidth)
                 return;
@@ -803,7 +1069,8 @@ namespace MyCaffe.basecode
             m_nVirtualID = 0;
             m_bIsRealData = false;
             m_rgByteData = rgByteData.ToArray();
-            m_rgRealData = null;
+            m_rgRealDataD = null;
+            m_rgRealDataF = null;
             m_nLabel = nLabel;
         }
 
@@ -821,12 +1088,50 @@ namespace MyCaffe.basecode
             m_nVirtualID = 0;
             m_bIsRealData = true;
             m_rgByteData = null;
-            m_rgRealData = rgRealData.ToArray();
+            m_rgRealDataF = null;
+            m_rgRealDataD = rgRealData.ToArray();
             m_nLabel = nLabel;
         }
 
         /// <summary>
-        /// Set the data to the array specified.
+        /// Sets the <i>float</i> data of the SimpleDatum and its Label.
+        /// </summary>
+        /// <param name="rgRealData">Specifies the <i>float</i> data.</param>
+        /// <param name="nLabel">Specifies the label.</param>
+        /// <param name="bAllowVirtualOverride">Optionally, allow virtual ID override.  When <i>true</i> the data can be set on a virtual SimpleDatum, otherwise it cannot.</param>
+        public void SetData(List<float> rgRealData, int nLabel, bool bAllowVirtualOverride = false)
+        {
+            if (!bAllowVirtualOverride && m_nVirtualID != 0)
+                throw new Exception("Cannot set the data of a virtual item!");
+
+            m_nVirtualID = 0;
+            m_bIsRealData = true;
+            m_rgByteData = null;
+            m_rgRealDataD = null;
+            m_rgRealDataF = rgRealData.ToArray();
+            m_nLabel = nLabel;
+        }
+
+        /// <summary>
+        /// Set the data to the <i>byte</i> array specified.
+        /// </summary>
+        /// <param name="rgb">Specifies the data to set.</param>
+        /// <param name="nLabel">Specifies the label to set.</param>
+        /// <remarks>
+        /// The data of the array is cast to either (double) for real data, or (byte) for the byte data.
+        /// </remarks>
+        public void SetData(byte[] rgb, int nLabel)
+        {
+            m_nLabel = nLabel;
+            m_rgByteData = new byte[rgb.Length];
+            Array.Copy(rgb, m_rgByteData, rgb.Length);
+            m_bIsRealData = false;
+            m_rgRealDataD = null;
+            m_rgRealDataF = null;
+        }
+
+        /// <summary>
+        /// Set the data to the <i>double</i> array specified.
         /// </summary>
         /// <param name="rgdf">Specifies the data to set.</param>
         /// <param name="nLabel">Specifies the label to set.</param>
@@ -835,25 +1140,30 @@ namespace MyCaffe.basecode
         /// </remarks>
         public void SetData(double[] rgdf, int nLabel)
         {
-            if (rgdf.Length != ItemCount)
-                throw new Exception("The array does not match the ItemCount!");
-
             m_nLabel = nLabel;
+            m_rgRealDataF = null;
+            m_rgRealDataD = new double[rgdf.Length];
+            Array.Copy(rgdf, m_rgRealDataD, rgdf.Length);
+            m_rgByteData = null;
+            m_bIsRealData = true;
+        }
 
-            if (m_bIsRealData)
-            {
-                m_rgRealData = new double[rgdf.Length];
-                Array.Copy(rgdf, m_rgRealData, rgdf.Length);
-            }
-            else
-            {
-                m_rgByteData = new byte[rgdf.Length];
-
-                for (int i = 0; i < rgdf.Length; i++)
-                {
-                    m_rgByteData[i] = (byte)(int)rgdf[i];
-                }
-            }
+        /// <summary>
+        /// Set the data to the <i>float</i> array specified.
+        /// </summary>
+        /// <param name="rgf">Specifies the data to set.</param>
+        /// <param name="nLabel">Specifies the label to set.</param>
+        /// <remarks>
+        /// The data of the array is cast to either (double) for real data, or (byte) for the byte data.
+        /// </remarks>
+        public void SetData(float[] rgf, int nLabel)
+        {
+            m_nLabel = nLabel;
+            m_rgRealDataD = null;
+            m_rgRealDataF = new float[rgf.Length];
+            Array.Copy(rgf, m_rgRealDataF, rgf.Length);
+            m_rgByteData = null;
+            m_bIsRealData = true;
         }
 
         /// <summary>
@@ -881,9 +1191,126 @@ namespace MyCaffe.basecode
             get
             {
                 if (IsRealData)
-                    return m_rgRealData.Length;
+                {
+                    if (m_rgRealDataD != null)
+                        return m_rgRealDataD.Length;
+                    else if (m_rgRealDataF != null)
+                        return m_rgRealDataF.Length;
+                    else
+                        throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
+                }
                 else
                     return m_rgByteData.Length;
+            }
+        }
+
+        /// <summary>
+        /// Returns <i>true</i> if either the RealDataD or RealDataF are non <i>null</i> and have length > 0.
+        /// </summary>
+        public bool HasRealData
+        {
+            get
+            {
+                if (m_rgRealDataD != null && m_rgRealDataD.Length > 0)
+                    return true;
+
+                if (m_rgRealDataF != null && m_rgRealDataF.Length > 0)
+                    return true;
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Returns the item at a specified index in the type specified.
+        /// </summary>
+        /// <typeparam name="T">Specifies the output type.</typeparam>
+        /// <param name="nIdx">Specifies the index of the data to retrieve.</param>
+        /// <returns>The converted value is returned.</returns>
+        public T GetDataAt<T>(int nIdx)
+        {
+            if (IsRealData)
+            {
+                if (m_rgRealDataD != null)
+                    return (T)Convert.ChangeType(m_rgRealDataD[nIdx], typeof(T));
+                else if (m_rgRealDataF != null)
+                    return (T)Convert.ChangeType(m_rgRealDataF[nIdx], typeof(T));
+                else
+                    throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
+            }
+            else
+            {
+                return (T)Convert.ChangeType(m_rgByteData[nIdx], typeof(T));
+            }
+        }
+
+        /// <summary>
+        /// Returns the item at a specified index in the <i>double</i> type.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index of the data to retrieve.</param>
+        /// <returns>The value is returned as a <i>double</i>.</returns>
+        public double GetDataAtD(int nIdx)
+        {
+            if (IsRealData)
+            {
+                if (m_rgRealDataD != null)
+                    return m_rgRealDataD[nIdx];
+                else if (m_rgRealDataF != null)
+                    return m_rgRealDataF[nIdx];
+                else
+                    throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
+            }
+            else
+            {
+                return m_rgByteData[nIdx];
+            }
+        }
+
+        /// <summary>
+        /// Returns the item at a specified index in the <i>float</i> type.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index of the data to retrieve.</param>
+        /// <returns>The value is returned as a <i>float</i>.</returns>
+        public float GetDataAtF(int nIdx)
+        {
+            if (IsRealData)
+            {
+                if (m_rgRealDataD != null)
+                    return (float)m_rgRealDataD[nIdx];
+                else if (m_rgRealDataF != null)
+                    return m_rgRealDataF[nIdx];
+                else
+                    throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
+            }
+            else
+            {
+                return m_rgByteData[nIdx];
+            }
+        }
+
+        /// <summary>
+        /// Returns the item at a specified index in the <i>byte</i> type.
+        /// </summary>
+        /// <param name="nIdx">Specifies the index of the data to retrieve.</param>
+        /// <returns>The value is returned as a <i>byte</i>.</returns>
+        public byte GetDataAtByte(int nIdx)
+        {
+            if (IsRealData)
+            {
+                double dfVal = 0;
+
+                if (m_rgRealDataD != null)
+                    dfVal = m_rgRealDataD[nIdx];
+                else if (m_rgRealDataF != null)
+                    dfVal = m_rgRealDataF[nIdx];
+                else
+                    throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
+
+                return (byte)Math.Min(Math.Max(0, dfVal), 255);
+            }
+            else
+            {
+                return m_rgByteData[nIdx];
             }
         }
 
@@ -898,19 +1325,48 @@ namespace MyCaffe.basecode
         {
             if (IsRealData)
             {
-                if (typeof(T) == typeof(double))
-                    return (T[])Convert.ChangeType(m_rgRealData.ToArray(), typeof(T[]));
-
-                T[] rg = new T[m_rgRealData.Length];
-                for (int i = 0; i<rg.Length; i++)
+                if (m_rgRealDataD != null)
                 {
-                    rg[i] = (T)Convert.ChangeType(m_rgRealData[i], typeof(T));
-                }
+                    if (m_rgRealDataD.Length == 0)
+                        return null;
 
-                return rg;
+                    if (typeof(T) == typeof(double))
+                        return (T[])Convert.ChangeType(m_rgRealDataD.ToArray(), typeof(T[]));
+
+                    T[] rg = new T[m_rgRealDataD.Length];
+                    for (int i = 0; i < rg.Length; i++)
+                    {
+                        rg[i] = (T)Convert.ChangeType(m_rgRealDataD[i], typeof(T));
+                    }
+
+                    return rg;
+                }
+                else if (m_rgRealDataF != null)
+                {
+                    if (m_rgRealDataF.Length == 0)
+                        return null;
+
+                    if (typeof(T) == typeof(float))
+                        return (T[])Convert.ChangeType(m_rgRealDataF.ToArray(), typeof(T[]));
+
+                    T[] rg = new T[m_rgRealDataF.Length];
+                    for (int i = 0; i < rg.Length; i++)
+                    {
+                        rg[i] = (T)Convert.ChangeType(m_rgRealDataF[i], typeof(T));
+                    }
+
+                    return rg;
+                }
+                else
+                {
+                    return null;
+                }
             }
             else
             {
+                if (m_rgByteData == null || m_rgByteData.Length == 0)
+                    return null;
+
                 T[] rg = new T[m_rgByteData.Length];
 
                 for (int i = 0; i < rg.Length; i++)
@@ -950,7 +1406,7 @@ namespace MyCaffe.basecode
         /// <param name="nWidth">Specifies the width of the original data.</param>
         /// <param name="nChannels">Specifies the number of channels in the original data.</param>
         /// <returns>The data is returned as a <i>double</i> array.</returns>
-        public static double[] GetRealData(byte[] rgData, int nImagePadX, int nImagePadY, int nHeight, int nWidth, int nChannels)
+        public static double[] GetRealDataD(byte[] rgData, int nImagePadX, int nImagePadY, int nHeight, int nWidth, int nChannels)
         {
             List<double> rgReal = new List<double>();
             int nIdx = 0;
@@ -965,6 +1421,33 @@ namespace MyCaffe.basecode
                 return rgReal.ToArray();
 
             return PadData<double>(rgReal, nImagePadX, nImagePadY, nHeight, nWidth, nChannels);
+        }
+
+        /// <summary>
+        /// Return the real data as a <i>float</i> array after padding the data.
+        /// </summary>
+        /// <param name="rgData">Specifies the data.</param>
+        /// <param name="nImagePadX">Specifies the amount to pad the data width.</param>
+        /// <param name="nImagePadY">Specifies the amount to pad the data height.</param>
+        /// <param name="nHeight">Specifies the height of the original data.</param>
+        /// <param name="nWidth">Specifies the width of the original data.</param>
+        /// <param name="nChannels">Specifies the number of channels in the original data.</param>
+        /// <returns>The data is returned as a <i>double</i> array.</returns>
+        public static float[] GetRealDataF(byte[] rgData, int nImagePadX, int nImagePadY, int nHeight, int nWidth, int nChannels)
+        {
+            List<float> rgReal = new List<float>();
+            int nIdx = 0;
+
+            while (nIdx < rgData.Length)
+            {
+                rgReal.Add(BitConverter.ToSingle(rgData, nIdx));
+                nIdx += 8;
+            }
+
+            if (nImagePadX == 0 && nImagePadY == 0)
+                return rgReal.ToArray();
+
+            return PadData<float>(rgReal, nImagePadX, nImagePadY, nHeight, nWidth, nChannels);
         }
 
         /// <summary>
@@ -1025,7 +1508,13 @@ namespace MyCaffe.basecode
             }
 
             bEncoded = true;
-            return GetByteData(new List<double>(RealData));
+
+            if (m_rgRealDataD != null)
+                return GetByteData(new List<double>(m_rgRealDataD));
+            else if (m_rgRealDataF != null)
+                return GetByteData(new List<float>(m_rgRealDataF));
+            else
+                throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
         }
 
         /// <summary>
@@ -1049,11 +1538,31 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Encodes a list of <i>float</i> values to an encoded <i>byte</i> array.
+        /// </summary>
+        /// <remarks>
+        /// Each double in the stored data is converted using a BitConverter.
+        /// </remarks>
+        /// <param name="rgData">Specifies the data as list of <i>float</i> values.</param>
+        /// <returns>The encoded doubles are returned as an array of <i>byte</i> values.</returns>
+        public static byte[] GetByteData(List<float> rgData)
+        {
+            List<byte> rgByte = new List<byte>();
+
+            foreach (float df in rgData)
+            {
+                rgByte.AddRange(BitConverter.GetBytes(df));
+            }
+
+            return rgByte.ToArray();
+        }
+
+        /// <summary>
         /// Decodes an array of <i>byte</i> values into a array of <i>double</i> values.
         /// </summary>
         /// <param name="rgData">Specifies the array of <i>byte</i> values containing the encoded <i>double</i> values.</param>
         /// <returns>The array of decoded <i>double</i> values is returned.</returns>
-        public static double[] GetRealData(byte[] rgData)
+        public static double[] GetRealDataD(byte[] rgData)
         {
             List<double> rgData0 = new List<double>();
             int nIdx = 0;
@@ -1061,6 +1570,25 @@ namespace MyCaffe.basecode
             while (nIdx < rgData.Length)
             {
                 rgData0.Add(BitConverter.ToDouble(rgData, nIdx));
+                nIdx += 8;
+            }
+
+            return rgData0.ToArray();
+        }
+
+        /// <summary>
+        /// Decodes an array of <i>byte</i> values into a array of <i>float</i> values.
+        /// </summary>
+        /// <param name="rgData">Specifies the array of <i>byte</i> values containing the encoded <i>float</i> values.</param>
+        /// <returns>The array of decoded <i>float</i> values is returned.</returns>
+        public static float[] GetRealDataF(byte[] rgData)
+        {
+            List<float> rgData0 = new List<float>();
+            int nIdx = 0;
+
+            while (nIdx < rgData.Length)
+            {
+                rgData0.Add(BitConverter.ToSingle(rgData, nIdx));
                 nIdx += 8;
             }
 
@@ -1079,50 +1607,53 @@ namespace MyCaffe.basecode
                 m_nWidth != d.Width)
                 throw new Exception("Datum dimmensions do not match!");
 
-            int nCount0 = (m_rgByteData != null) ? m_rgByteData.Length : m_rgRealData.Length;
-            int nCount1 = (d.m_rgByteData != null) ? d.m_rgByteData.Length : d.m_rgRealData.Length;
-
-            if (nCount0 != nCount1)
+            if (ItemCount != d.ItemCount)
                 throw new Exception("Datum counts do not match!");
 
             SimpleDatum d1 = new SimpleDatum(d, false);
 
-            d1.m_rgRealData = null;
+            d1.m_rgRealDataD = null;
+            d1.m_rgRealDataF = null;
             d1.m_rgByteData = null;
 
-            List<double> rgData = new List<double>();
+            if (m_bIsRealData)
+            {
+                if (m_rgRealDataD != null)
+                {
+                    d1.m_rgRealDataD = new double[m_rgRealDataD.Length];
 
-            if (IsRealData && d.IsRealData)
-            {
-                for (int i = 0; i < d.RealData.Length; i++)
-                {
-                    rgData.Add((double)m_rgRealData[i] + (double)d.RealData[i]);
+                    for (int i = 0; i < m_rgRealDataD.Length; i++)
+                    {
+                        d1.m_rgRealDataD[i] = m_rgRealDataD[i] + d.GetDataAtD(i);
+                    }
                 }
-            }
-            else if (IsRealData)
-            {
-                for (int i = 0; i < m_rgRealData.Length; i++)
+                else if (m_rgRealDataF != null)
                 {
-                    rgData.Add((double)m_rgRealData[i] + (double)d.ByteData[i]);
+                    d1.m_rgRealDataF = new float[m_rgRealDataF.Length];
+
+                    for (int i = 0; i < m_rgRealDataF.Length; i++)
+                    {
+                        d1.m_rgRealDataF[i] = m_rgRealDataF[i] + d.GetDataAtF(i);
+                    }
                 }
-            }
-            else if (d.IsRealData)
-            {
-                for (int i = 0; i < d.RealData.Length; i++)
+                else
                 {
-                    rgData.Add((double)m_rgByteData[i] + (double)d.RealData[i]);
+                    throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
                 }
+
+                d1.m_bIsRealData = true;
             }
             else
             {
-                for (int i = 0; i < d.ByteData.Length; i++)
+                d1.m_rgByteData = new byte[m_rgByteData.Length];
+                d1.m_bIsRealData = false;
+
+                for (int i = 0; i < m_rgByteData.Length; i++)
                 {
-                    rgData.Add((double)m_rgByteData[i] + (double)d.ByteData[i]);
+                    int nVal = m_rgByteData[i] + d.GetDataAtByte(i);
+                    d1.m_rgByteData[i] = (byte)Math.Min(Math.Max(0, nVal), 255);
                 }
             }
-
-            d1.m_rgRealData = rgData.ToArray();
-            d1.m_bIsRealData = true;
 
             return d1;
         }
@@ -1140,51 +1671,76 @@ namespace MyCaffe.basecode
 
             SimpleDatum d1 = new SimpleDatum(this, false);
 
-            d1.m_rgRealData = null;
+            d1.m_rgRealDataD = null;
+            d1.m_rgRealDataF = null;
             d1.m_rgByteData = null;
 
-            double[] rgRealData = null;
-            byte[] rgByteData = null;
+            int nCount = ItemCount;
 
             if (m_bIsRealData && !bConvertToByte)
             {
-                rgRealData = new double[m_rgRealData.Length];
-
-                for (int i = 0; i < m_rgRealData.Length; i++)
+                if (m_rgRealDataD != null)
                 {
-                    double dfDivVal = m_rgRealData[i] / dfVal;
-                    rgRealData[i] = dfDivVal;
-                }
+                    d1.m_rgRealDataD = new double[nCount];
+                    d1.m_bIsRealData = true;
 
-                d1.m_bIsRealData = true;
+                    for (int i = 0; i < nCount; i++)
+                    {
+                        d1.m_rgRealDataD[i] = m_rgRealDataD[i] / dfVal;
+                    }
+                }
+                else if (m_rgRealDataF != null)
+                {
+                    d1.m_rgRealDataF = new float[nCount];
+                    d1.m_bIsRealData = true;
+
+                    for (int i = 0; i < nCount; i++)
+                    {
+                        d1.m_rgRealDataF[i] = (float)(m_rgRealDataF[i] / dfVal);
+                    }
+                }
+                else
+                {
+                    throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
+                }
             }
             else if (m_bIsRealData && bConvertToByte)
             {
-                rgByteData = new byte[m_rgRealData.Length];
-
-                for (int i = 0; i < m_rgRealData.Length; i++)
-                {
-                    double dfDivVal = m_rgRealData[i] / dfVal;
-                    rgByteData[i] = (byte)dfDivVal;
-                }
-
+                d1.m_rgByteData = new byte[nCount];
                 d1.m_bIsRealData = false;
+
+                if (m_rgRealDataD != null)
+                {
+                    for (int i = 0; i < nCount; i++)
+                    {
+                        double dfVal1 = m_rgRealDataD[i] / dfVal;
+                        m_rgByteData[i] = (byte)Math.Min(Math.Max(dfVal1, 0), 255);
+                    }
+                }
+                else if (m_rgRealDataF != null)
+                {
+                    for (int i = 0; i < nCount; i++)
+                    {
+                        double dfVal1 = m_rgRealDataF[i] / dfVal;
+                        m_rgByteData[i] = (byte)Math.Min(Math.Max(dfVal1, 0), 255);
+                    }
+                }
+                else
+                {
+                    throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
+                }
             }
             else
             {
-                rgByteData = new byte[m_rgByteData.Length];
-
-                for (int i = 0; i < m_rgByteData.Length; i++)
-                {
-                    double dfDivVal = (double)m_rgByteData[i] / dfVal;
-                    rgByteData[i] = (byte)dfDivVal;
-                }
-
+                d1.m_rgByteData = new byte[nCount];
                 d1.m_bIsRealData = false;
-            }
 
-            d1.m_rgRealData = rgRealData;
-            d1.m_rgByteData = rgByteData;
+                for (int i = 0; i < nCount; i++)
+                {
+                    double dfVal1 = (double)m_rgByteData[i] / dfVal;
+                    m_rgByteData[i] = (byte)Math.Min(Math.Max(dfVal1, 0), 255);
+                }
+            }
 
             return d1;
         }
@@ -1317,9 +1873,17 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Return the <i>double</i> data.  This field is valid when <i>IsRealData</i> = <i>true</i>.
         /// </summary>
-        public double[] RealData
+        public double[] RealDataD
         {
-            get { return m_rgRealData; }
+            get { return m_rgRealDataD; }
+        }
+
+        /// <summary>
+        /// Return the <i>float</i> data.  This field is valid when <i>IsRealData</i> = <i>true</i>.
+        /// </summary>
+        public float[] RealDataF
+        {
+            get { return m_rgRealDataF; }
         }
 
         /// <summary>
@@ -1413,7 +1977,7 @@ namespace MyCaffe.basecode
         {
             Image bmp = ImageData.GetImage(new Datum(this));
             Bitmap bmpNew = ImageTools.ResizeImage(bmp, nH, nW);
-            Datum d = ImageData.GetImageData(bmpNew, Channels, IsRealData, Label);
+            Datum d = ImageData.GetImageData(bmpNew, this);
 
             bmp.Dispose();
             bmpNew.Dispose();
@@ -1452,9 +2016,23 @@ namespace MyCaffe.basecode
 
             if (m_bIsRealData)
             {
-                for (int i=0; i<m_rgRealData.Length && i < nMaxItems; i++)
+                if (m_rgRealDataD != null)
                 {
-                    str += m_rgRealData[i].ToString() + ",";
+                    for (int i = 0; i < m_rgRealDataD.Length && i < nMaxItems; i++)
+                    {
+                        str += m_rgRealDataD[i].ToString() + ",";
+                    }
+                }
+                else if (m_rgRealDataF != null)
+                {
+                    for (int i = 0; i < m_rgRealDataF.Length && i < nMaxItems; i++)
+                    {
+                        str += m_rgRealDataF[i].ToString() + ",";
+                    }
+                }
+                else
+                {
+                    str = "No Real Data Found!";
                 }
             }
             else
@@ -1480,6 +2058,7 @@ namespace MyCaffe.basecode
         {
             if (m_rgByteData == null)
                 throw new Exception("Bytemaps are only supported with byte based data.");
+
             return new Bytemap(m_nChannels, m_nHeight, m_nWidth, m_rgByteData);
         }
 
@@ -1495,10 +2074,33 @@ namespace MyCaffe.basecode
             if (rgdfMean == null)
                 rgdfMean = new double[sd.ItemCount];
 
-            for (int i = 0; i < sd.ItemCount; i++)
+            if (sd.IsRealData)
             {
-                double dfVal = (sd.ByteData != null) ? (double)sd.ByteData[i] : sd.RealData[i];
-                rgdfMean[i] += dfVal / nTotal;
+                if (sd.RealDataD != null)
+                {
+                    for (int i = 0; i < sd.ItemCount; i++)
+                    {
+                        rgdfMean[i] += sd.RealDataD[i] / nTotal;
+                    }
+                }
+                else if (sd.RealDataF != null)
+                {
+                    for (int i = 0; i < sd.ItemCount; i++)
+                    {
+                        rgdfMean[i] += sd.RealDataF[i] / nTotal;
+                    }
+                }
+                else
+                {
+                    throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
+                }
+            }
+            else
+            {
+                for (int i = 0; i < sd.ItemCount; i++)
+                {
+                    rgdfMean[i] += sd.ByteData[i] / nTotal;
+                }
             }
 
             return true;
@@ -1520,8 +2122,12 @@ namespace MyCaffe.basecode
 
             if (rgImg[0].ByteData != null)
                 rgSums = new float[rgImg[0].ByteData.Length];
+            else if (rgImg[0].RealDataD != null)
+                rgSums = new float[rgImg[0].RealDataD.Length];
+            else if (rgImg[0].RealDataF != null)
+                rgSums = new float[rgImg[0].RealDataF.Length];
             else
-                rgSums = new float[rgImg[0].RealData.Length];
+                throw new Exception("No data in rgImg[0]!");
 
             Stopwatch sw = new Stopwatch();
 
@@ -1538,12 +2144,23 @@ namespace MyCaffe.basecode
                             rgSums[n] += rgImg[i].ByteData[n];
                         }
                     }
-                    else
+                    else if (rgImg[i].RealDataD != null)
                     {
                         for (int n = 0; n < rgSums.Length; n++)
                         {
-                            rgSums[n] += (float)rgImg[i].RealData[n];
+                            rgSums[n] += (float)rgImg[i].RealDataD[n];
                         }
+                    }
+                    else if (rgImg[i].RealDataF != null)
+                    {
+                        for (int n = 0; n < rgSums.Length; n++)
+                        {
+                            rgSums[n] += (float)rgImg[i].RealDataF[n];
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("No data in rgImg[" + i.ToString() + "]!");
                     }
 
                     if (sw.Elapsed.TotalMilliseconds > 2000)
@@ -1560,27 +2177,49 @@ namespace MyCaffe.basecode
                     }
                 }
 
-                byte[] rgbData = new byte[rgSums.Length];
-                double[] rgdfData = new double[rgSums.Length];
-
-                for (int n = 0; n < rgSums.Length; n++)
-                {
-                    float fMean = rgSums[n] / (float)rgImg.Length;
-                    byte bMean = (byte)fMean;
-                    double dfMean = fMean;
-
-                    rgbData[n] = bMean;
-                    rgdfData[n] = dfMean;
-                }
-
-                SimpleDatum d = new SimpleDatum(rgImg[0], false);
-
                 if (rgImg[0].ByteData != null)
-                    d.SetData(new List<byte>(rgbData), -1, true);
-                else
-                    d.SetData(new List<double>(rgdfData), -1, true);
+                {
+                    byte[] rgbMean = new byte[rgSums.Length];
 
-                return d;
+                    for (int n = 0; n < rgSums.Length; n++)
+                    {
+                        rgbMean[n] = (byte)(rgSums[n] / (float)rgImg.Length);
+                    }
+
+                    SimpleDatum d = new SimpleDatum(rgImg[0], false);
+                    d.SetData(new List<byte>(rgbMean), -1, true);
+                    return d;
+                }
+                else if (rgImg[0].RealDataD != null)
+                {
+                    double[] rgdfMean = new double[rgSums.Length];
+
+                    for (int n = 0; n < rgSums.Length; n++)
+                    {
+                        rgdfMean[n] = (double)rgSums[n] / rgImg.Length;
+                    }
+
+                    SimpleDatum d = new SimpleDatum(rgImg[0], false);
+                    d.SetData(new List<double>(rgdfMean), -1, true);
+                    return d;
+                }
+                else if (rgImg[0].RealDataF != null)
+                {
+                    float[] rgfMean = new float[rgSums.Length];
+
+                    for (int n = 0; n < rgSums.Length; n++)
+                    {
+                        rgfMean[n] = (float)rgSums[n] / rgImg.Length;
+                    }
+
+                    SimpleDatum d = new SimpleDatum(rgImg[0], false);
+                    d.SetData(new List<float>(rgfMean), -1, true);
+                    return d;
+                }
+                else
+                {
+                    throw new Exception("SimpleDatum: Both the RealDataD and RealDataF are null!");
+                }
             }
             finally
             {
