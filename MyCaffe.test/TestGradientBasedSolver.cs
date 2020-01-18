@@ -1804,8 +1804,6 @@ namespace MyCaffe.test
         protected PersistCaffe<T> m_persist;
         SnapshotArgs m_snapshotArgs = null;
         string m_strSnapshotPrefix = "";
-        // Dimensinos are determined by generate_sample_data.py
-        // TODO: this is brittle and the hdf5 file should be checked instead.
         int m_nNum;
         int m_nChannels;    
         int m_nHeight;     
@@ -1819,11 +1817,17 @@ namespace MyCaffe.test
         public GradientBasedSolverTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName)
         {
-            m_strDs = "SOLVERTEST";
+            m_strDs = "SOLVERTEST" + ((typeof(T) == typeof(double)) ? "_d" : "_f");
             m_strSourceTrain = m_strDs + ".training";
             m_strSourceTest = m_strDs + ".testing";
 
             DatasetFactory factory = new DatasetFactory();
+
+            //int nSrcId = factory.GetSourceID(m_strSourceTrain);
+            //factory.DeleteSourceData(nSrcId);
+            //nSrcId = factory.GetSourceID(m_strSourceTest);
+            //factory.DeleteSourceData(nSrcId);
+
             SourceDescriptor srcTrain = createTestData(m_strSourceTrain);
             SourceDescriptor srcTest = createTestData(m_strSourceTest);
             DatasetDescriptor ds = new DatasetDescriptor(0, m_strDs, null, null, srcTrain, srcTest, null, null);
