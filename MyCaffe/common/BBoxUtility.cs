@@ -3,6 +3,7 @@ using MyCaffe.param;
 using MyCaffe.param.ssd;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -2032,6 +2033,9 @@ namespace MyCaffe.common
                 }
             }
 
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+
             for (int i = 0; i < nNum; i++)
             {
                 DictionaryMap<List<int>> rgMatchIndices = rgAllMatchIndices[i];
@@ -2165,6 +2169,13 @@ namespace MyCaffe.common
                 }
 
                 rgAllNegIndices.Add(rgNegIndices);
+
+                if (sw.Elapsed.TotalMilliseconds > 1000)
+                {
+                    double dfPct = (double)(i+1) / nNum;
+                    m_log.WriteLine("Mining at " + dfPct.ToString("P") + ", " + (i+1).ToString("N0") + " of " + nNum.ToString("N0") + "...");
+                    sw.Restart();
+                }            
             }
 
             return nNumMatches;
