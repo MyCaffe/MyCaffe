@@ -1564,6 +1564,13 @@ namespace MyCaffe.basecode
             int nSize = BitConverter.ToInt32(rgData, nIdx);
             nIdx += 4;
 
+            // If the size is invalid, revert back to the legacy double only data.
+            if (nSize != sizeof(float) && nSize != sizeof(double))
+            {
+                nIdx = 0;
+                nSize = sizeof(double);
+            }
+
             if (nSize == sizeof(double))
                 rgDataD = getRealDataD(rgData, nIdx);
             else
