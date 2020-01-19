@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using MyCaffe.basecode;
+using MyCaffe.basecode.descriptors;
 
 namespace MyCaffe.gym.python
 {
@@ -373,7 +374,7 @@ namespace MyCaffe.gym.python
         /// Resets the gym to its initial state.
         /// </summary>
         /// <returns>A tuple containing a double[] with the data, a double with the reward and a bool with the terminal state is returned.</returns>
-        public Tuple<List<double>, double, bool> Reset()
+        public CurrentState Reset()
         {
             if (m_igym == null)
                 throw new Exception("You must call 'Initialize' first!");
@@ -402,7 +403,7 @@ namespace MyCaffe.gym.python
 
             m_state = new Tuple<SimpleDatum, double, bool>(sd, state.Item2, state.Item3);
 
-            return new Tuple<List<double>, double, bool>(m_state.Item1.GetData<double>().ToList(), m_state.Item2, m_state.Item3);
+            return new CurrentState(m_state.Item1.GetData<double>(), m_state.Item2, m_state.Item3);
         }
 
         /// <summary>
@@ -411,7 +412,7 @@ namespace MyCaffe.gym.python
         /// <param name="nAction">Specifies the action to run.</param>
         /// <param name="nSteps">Specifies the number of steps to run the action.</param>
         /// <returns>A tuple containing a double[] with the data, a double with the reward and a bool with the terminal state is returned.</returns>
-        public Tuple<List<double>, double, bool> Step(int nAction, int nSteps = 1)
+        public CurrentState Step(int nAction, int nSteps = 1)
         {
             if (m_igym == null)
                 throw new Exception("You must call 'Initialize' first!");
@@ -445,7 +446,7 @@ namespace MyCaffe.gym.python
 
             m_state = new Tuple<SimpleDatum, double, bool>(sd, state.Item2, state.Item3);
 
-            return new Tuple<List<double>, double, bool>(m_state.Item1.GetData<double>().ToList(), m_state.Item2, m_state.Item3);
+            return new CurrentState(m_state.Item1.GetData<double>(), m_state.Item2, m_state.Item3);
         }
 
         private void overlay(Bitmap bmp, double[][] rgData)
@@ -555,6 +556,19 @@ namespace MyCaffe.gym.python
         }
 
         /// <summary>
+        /// Returns the dataset descriptor of the Gym.
+        /// </summary>
+        /// <param name="type">Specifies the dataset type.</param>
+        /// <returns>The DatasetDescriptor for the Gym is returned.</returns>
+        public DatasetDescriptor GetDataset(DATA_TYPE type)
+        {
+            if (m_igym == null)
+                throw new Exception("You must first Initialize the MyCaffePythonGym!");
+
+            return m_igym.GetDataset(type);
+        }
+
+        /// <summary>
         /// The OpenUi method opens the user interface to visualize the gym as it progresses.
         /// </summary>
         public void OpenUi()
@@ -593,6 +607,53 @@ namespace MyCaffe.gym.python
         /// </summary>
         public void Closing()
         {
+        }
+    }
+
+    /// <summary>
+    /// The State contains the current state of the gym.
+    /// </summary>
+    public class CurrentState
+    {
+        SimpleDatum m_rgData;
+        double m_dfReward;
+        bool m_bTerminal;
+
+        /// <summary>
+        /// The constructor.
+        /// </summary>
+        /// <param name="rgData">Specifies the data.</param>
+        /// <param name="dfReward">Specifies the reward.</param>
+        /// <param name="bTerminal">Specifies whether or not the state is terminal.</param>
+        public CurrentState(double[] rgData, double dfReward, bool bTerminal)
+        {
+            m_rgData = new SimpleDatum(rgData.Length, 1, 1, rgData.Select(p => (float)p).ToArray(), 0, rgData.Length);
+            m_dfReward = dfReward;
+            m_bTerminal = bTerminal;
+        }
+
+        /// <summary>
+        /// Returns the data.
+        /// </summary>
+        public SimpleDatum Data
+        {
+            get { return m_rgData; }
+        }
+
+        /// <summary>
+        /// Returns the reward.
+        /// </summary>
+        public double Reward
+        {
+            get { return m_dfReward; }
+        }
+
+        /// <summary>
+        /// Returns whether or not the state is terminal or not.
+        /// </summary>
+        public bool Terminal
+        {
+            get { return m_bTerminal; }
         }
     }
 }
