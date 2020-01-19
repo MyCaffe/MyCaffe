@@ -859,7 +859,7 @@ namespace MyCaffe
 
                     ParameterDescriptor param = p.Parameters.Find("ModelResized");
                     if (param != null && param.Value == "True")
-                        strSkipBlobType = Blob<T>.BLOB_TYPE.IP_WEIGHT.ToString();
+                        strSkipBlobType = BLOB_TYPE.IP_WEIGHT.ToString();
 
                     m_solver.Restore(p.WeightsState, p.SolverState, strSkipBlobType);
                 }
@@ -2099,6 +2099,18 @@ namespace MyCaffe
             }
 
             return strOut;
+        }
+
+        /// <summary>
+        /// Create an unsized blob and set its name.
+        /// </summary>
+        /// <param name="strName">Specifies the Blob name.</param>
+        /// <returns>The Blob is returned.</returns>
+        public Blob<T> CreateBlob(string strName)
+        {
+            Blob<T> b = new Blob<T>(m_cuda, m_log);
+            b.Name = strName;
+            return b;
         }
 
         /// <summary>
