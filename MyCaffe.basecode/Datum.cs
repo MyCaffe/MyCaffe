@@ -10,9 +10,6 @@ namespace MyCaffe.basecode
     /// </summary>
     public class Datum : SimpleDatum 
     {
-        object m_tag;
-        string m_strTagName = null;
-
         /// <summary>
         /// The Datum constructor.
         /// </summary>
@@ -156,27 +153,6 @@ namespace MyCaffe.basecode
         public int label
         {
             get { return Label; }
-        }
-
-        /// <summary>
-        /// Returns a user-defined name of the tag associated with the data.
-        /// </summary>
-        public string TagName
-        {
-            get { return m_strTagName; }
-            set { m_strTagName = value; }
-        }
-
-        /// <summary>
-        /// Copies another Datum into this one.
-        /// </summary>
-        /// <param name="d">Specifies the other Datum to copy.</param>
-        /// <param name="bCopyData">Specifies whether to copy the data, or just share it.</param>
-        public void Copy(Datum d, bool bCopyData)
-        {
-            base.Copy(d, bCopyData);
-            m_tag = d.Tag;
-            m_strTagName = d.m_strTagName;
         }
     }
 }

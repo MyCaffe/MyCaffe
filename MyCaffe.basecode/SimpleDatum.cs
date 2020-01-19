@@ -40,9 +40,16 @@ namespace MyCaffe.basecode
         string m_strDesc = null;
         int m_nSourceID = 0;
         int m_nOriginalSourceID = 0;
-        object m_tag = null;
         ANNOTATION_TYPE m_nAnnotationType = ANNOTATION_TYPE.NONE;
         List<AnnotationGroup> m_rgAnnotationGroup = null;
+        /// <summary>
+        /// Specifies a user value.
+        /// </summary>
+        protected object m_tag = null;
+        /// <summary>
+        /// Specifies the name of the user value.
+        /// </summary>
+        protected string m_strTagName = null;
 
         /// <summary>
         /// Specifies the annotation type when using annotations.
@@ -691,6 +698,15 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns a user-defined name of the tag associated with the data.
+        /// </summary>
+        public string TagName
+        {
+            get { return m_strTagName; }
+            set { m_strTagName = value; }
+        }
+
+        /// <summary>
         /// Returns the minimum value in the data or double.NaN if there is no data.
         /// </summary>
         public double Min
@@ -932,6 +948,7 @@ namespace MyCaffe.basecode
             m_nSourceID = d.m_nSourceID;
             m_nOriginalSourceID = d.m_nOriginalSourceID;
             m_tag = d.m_tag;
+            m_strTagName = d.m_strTagName;
 
             m_nAnnotationType = d.m_nAnnotationType;
             m_rgAnnotationGroup = null;
