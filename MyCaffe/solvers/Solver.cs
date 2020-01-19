@@ -1584,7 +1584,7 @@ namespace MyCaffe.solvers
                             test_score_output_id.Add(j);
                         }
 
-                        if (colResult[j].type == Blob<T>.BLOB_TYPE.ACCURACY)
+                        if (colResult[j].type == BLOB_TYPE.ACCURACY)
                         {
                             int nRank = (int)getNumber(colResult[j].Tag, 0);
                             if (nRank < nMinRank)
