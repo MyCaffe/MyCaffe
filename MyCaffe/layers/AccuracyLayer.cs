@@ -115,7 +115,7 @@ namespace MyCaffe.layers
 
             List<int> rgTopShape = new List<int>(); // Accuracy is a scalar; 0 axes.
             colTop[0].Reshape(rgTopShape);
-            colTop[0].type = Blob<T>.BLOB_TYPE.ACCURACY;
+            colTop[0].type = BLOB_TYPE.ACCURACY;
 
             if (colTop.Count > 1)
             {

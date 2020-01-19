@@ -162,7 +162,7 @@ namespace MyCaffe.layers
 
             List<int> rgLossShape = new List<int>(); // Loss layers output a scalar, 0 axes.
             colTop[0].Reshape(rgLossShape);
-            colTop[0].type = Blob<T>.BLOB_TYPE.LOSS;
+            colTop[0].type = BLOB_TYPE.LOSS;
         }
 
         /// <summary>

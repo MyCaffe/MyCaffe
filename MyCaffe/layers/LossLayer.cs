@@ -190,7 +190,7 @@ namespace MyCaffe.layers
             m_log.CHECK_EQ(colBottom[0].shape(0), colBottom[1].shape(0), "The data and label should have the same first dimension.  Data has shape '" + colBottom[0].shape_string + "' and label has shape '" + colBottom[1].shape_string + "'.");
             List<int> rgLossShape = new List<int>(); // Loss layers output a scalar, 0 axes.
             colTop[0].Reshape(rgLossShape);
-            colTop[0].type = Blob<T>.BLOB_TYPE.LOSS;
+            colTop[0].type = BLOB_TYPE.LOSS;
         }
     }
 }

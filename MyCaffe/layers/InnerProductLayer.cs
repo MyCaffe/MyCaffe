@@ -200,7 +200,7 @@ namespace MyCaffe.layers
                 double dfNoiseRange = 1.0 / Math.Sqrt(rgWeightShape[1]);
                 Blob<T> blobWeight = new Blob<T>(m_cuda, m_log);
                 blobWeight.Name = m_param.name + " weights";
-                blobWeight.type = Blob<T>.BLOB_TYPE.IP_WEIGHT;
+                blobWeight.type = BLOB_TYPE.IP_WEIGHT;
 
                 if (!shareParameter(blobWeight, rgWeightShape))
                 {
@@ -221,7 +221,7 @@ namespace MyCaffe.layers
 
                     Blob<T> blobBias = new Blob<T>(m_cuda, m_log);
                     blobBias.Name = m_param.name + " bias";
-                    blobBias.type = Blob<T>.BLOB_TYPE.IP_WEIGHT;
+                    blobBias.type = BLOB_TYPE.IP_WEIGHT;
 
                     if (!shareParameter(blobBias, rgBiasShape))
                     {
@@ -245,7 +245,7 @@ namespace MyCaffe.layers
 
                     Blob<T> blobSigmaWeight = new Blob<T>(m_cuda, m_log);
                     blobSigmaWeight.Name = m_param.name + " sigma_wt";
-                    blobSigmaWeight.type = Blob<T>.BLOB_TYPE.WEIGHT;
+                    blobSigmaWeight.type = BLOB_TYPE.WEIGHT;
                     blobSigmaWeight.ReshapeLike(m_colBlobs[0]);
                     blobSigmaWeight.SetData(m_dfSigmaInit / Math.Sqrt(blobSigmaWeight.shape(1)));
                     m_colBlobs.Add(blobSigmaWeight);
@@ -255,7 +255,7 @@ namespace MyCaffe.layers
                     {
                         Blob<T> blobSigmaBias = new Blob<T>(m_cuda, m_log);
                         blobSigmaBias.Name = m_param.name + " sigma_bias";
-                        blobSigmaBias.type = Blob<T>.BLOB_TYPE.WEIGHT;
+                        blobSigmaBias.type = BLOB_TYPE.WEIGHT;
                         blobSigmaBias.ReshapeLike(m_colBlobs[1]);
                         blobSigmaBias.SetData(m_dfSigmaInit / Math.Sqrt(blobSigmaBias.shape(0)));
                         m_colBlobs.Add(blobSigmaBias);
