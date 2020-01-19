@@ -1113,7 +1113,7 @@ namespace MyCaffe.trainers.pg.mt
 
             for (int i = 0; i < m_net.output_blobs.Count; i++)
             {
-                if (m_net.output_blobs[i].type != Blob<T>.BLOB_TYPE.LOSS)
+                if (m_net.output_blobs[i].type != BLOB_TYPE.LOSS)
                 {
                     int nCh = m_net.output_blobs[i].channels;
                     nActionProbs = Math.Max(nCh, nActionProbs);
@@ -1304,7 +1304,7 @@ namespace MyCaffe.trainers.pg.mt
 
             for (int i = 0; i < res.Count; i++)
             {
-                if (res[i].type != Blob<T>.BLOB_TYPE.LOSS)
+                if (res[i].type != BLOB_TYPE.LOSS)
                 {
                     int nStart = 0;
                     // When using recurrent learning, only act on the last outputs.

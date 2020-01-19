@@ -325,7 +325,7 @@ namespace MyCaffe.trainers.pg.simple
 
                         // Modulate the gradient with the advantage (PG magic happens right here.)
                         float[] rgDlogp = m_rgMemory.GetPolicyGradients();
-                        // discounted R applied to policy agradient within loss function, just before the backward pass.
+                        // discounted R applied to policy gradient within loss function, just before the backward pass.
                         m_brain.SetPolicyGradients(rgDlogp);
 
                         // Train for one iteration, which triggers the loss function.
@@ -518,7 +518,7 @@ namespace MyCaffe.trainers.pg.simple
 
             for (int i = 0; i < res.Count; i++)
             {
-                if (res[i].type != Blob<T>.BLOB_TYPE.LOSS)
+                if (res[i].type != BLOB_TYPE.LOSS)
                 {
                     rgfAprob = Utility.ConvertVecF<T>(res[i].update_cpu_data());
                     break;
