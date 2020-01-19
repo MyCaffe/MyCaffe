@@ -69,25 +69,6 @@ namespace MyCaffe.gym
     }
 
     /// <summary>
-    /// Defines the gym data type.
-    /// </summary>
-    public enum DATA_TYPE
-    {
-        /// <summary>
-        /// Specifies to use the default data type of the gym used.
-        /// </summary>
-        DEFAULT,
-        /// <summary>
-        /// Specifies to use the raw state values of the gym (if supported).
-        /// </summary>
-        VALUES,
-        /// <summary>
-        /// Specifies to use a SimpleDatum blob of data of the gym (if supported).
-        /// </summary>
-        BLOB
-    }
-
-    /// <summary>
     /// The IXMyCaffeGym interface is used to interact with each Gym.
     /// </summary>
     public interface IXMyCaffeGym
