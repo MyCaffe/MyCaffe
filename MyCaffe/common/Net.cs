@@ -1409,6 +1409,19 @@ namespace MyCaffe.common
         /// <remarks>
         /// You can get the input blobs using input_blobs().
         /// </remarks>
+        /// <returns>The collection of output Blobs is returned.</returns>
+        public BlobCollection<T> Forward()
+        {
+            double dfLoss;
+            return Forward(out dfLoss);
+        }
+
+        /// <summary>
+        /// Run forward with the input Blob's already fed separately.
+        /// </summary>
+        /// <remarks>
+        /// You can get the input blobs using input_blobs().
+        /// </remarks>
         /// <param name="dfLoss">Returns the loss of the operation.</param>
         /// <returns>The collection of output Blobs is returned.</returns>
         public BlobCollection<T> Forward(out double dfLoss)
@@ -2683,6 +2696,18 @@ namespace MyCaffe.common
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Find the layer with the matching type, name and or both.
+        /// </summary>
+        /// <param name="strType">Specifies the layer type.</param>
+        /// <param name="strName">Specifies the layer name.</param>
+        /// <returns>The layer found (if any) is returned, otherwise <i>null</i> is returned.</returns>
+        public Layer<T> FindLayer(string strType, string strName)
+        {
+            LayerParameter.LayerType? type = LayerParameter.GetType(strType);
+            return FindLayer(type, strName);
         }
 
         /// <summary>
