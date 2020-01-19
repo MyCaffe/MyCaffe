@@ -250,6 +250,35 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// This method is used to add a single Datum to the memory.
+        /// </summary>
+        /// <param name="sd">The Data Datum to add.</param>
+        /// <param name="nLblAxis">Optionally, specifies the axis on which the multi-label data is placed.  This field is not used on SINGLE label types.</param>
+        /// <param name="bReset">Optionally, specifies to force reset the internal data.</param>
+        /// <param name="bResizeBatch">Optionally, specifies whether or not to size the batch to the number of rgData.</param>
+        public virtual void AddDatum(SimpleDatum sd, int nLblAxis = 1, bool bReset = false, bool bResizeBatch = false)
+        {
+            List<Datum> rgData = new List<Datum>();
+            rgData.Add(new Datum(sd));
+            AddDatumVector(rgData, null, nLblAxis, bReset, bResizeBatch);
+        }
+
+        /// <summary>
+        /// This method is used to add a list of Datums to the memory.
+        /// </summary>
+        /// <param name="rgData">The list of Data Datums to add.</param>
+        /// <param name="rgClip">Optionally, specifies the clip data, if any exits.</param>
+        /// <param name="nLblAxis">Optionally, specifies the axis on which the multi-label data is placed.  This field is not used on SINGLE label types.</param>
+        /// <param name="bReset">Optionally, specifies to force reset the internal data.</param>
+        /// <param name="bResizeBatch">Optionally, specifies whether or not to size the batch to the number of rgData.</param>
+        /// <remarks>
+        /// The batch size is only resized when the clip data is null, otherwise, regardless of the 'bResizeBatch' setting, the batch size is not changed.</remarks>
+        public virtual void AddDatumVector(Datum[] rgData, Datum[] rgClip = null, int nLblAxis = 1, bool bReset = false, bool bResizeBatch = false)
+        {
+            AddDatumVector(rgData.ToList(), (rgClip == null) ? null : rgClip.ToList(), nLblAxis, bReset, bResizeBatch);
+        }
+
+        /// <summary>
         /// This method is used to add a list of Datums to the memory.
         /// </summary>
         /// <param name="rgData">The list of Data Datums to add.</param>
@@ -491,7 +520,7 @@ namespace MyCaffe.layers
 
             for (int i=1; i<colTop.Count; i++)
             {
-                if (blobClip == null && (colTop[i].type == Blob<T>.BLOB_TYPE.CLIP || colTop[i].Name.ToLower().Contains("clip")))
+                if (blobClip == null && (colTop[i].type == BLOB_TYPE.CLIP || colTop[i].Name.ToLower().Contains("clip")))
                     blobClip = colTop[i];
                 else
                     blobLabel = colTop[i];
