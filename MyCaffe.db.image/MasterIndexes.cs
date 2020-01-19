@@ -477,6 +477,7 @@ namespace MyCaffe.db.image
         int m_nIdx = 0;
         List<DbItem> m_rgItems;
         double m_dfProbability = 0;
+        object m_objSync = new object();
 
         public enum SELECTION_TYPE
         {
@@ -619,23 +620,26 @@ namespace MyCaffe.db.image
             }
             else
             {
-                int nIdx = m_random.Next(m_rgItems.Count);
-                if (m_rgItems[nIdx] == null)
+                lock (m_objSync)
                 {
-                    m_rgItems.RemoveAt(nIdx);
-                    nIdx = m_random.Next(m_rgItems.Count);
+                    int nIdx = m_random.Next(m_rgItems.Count);
+                    if (m_rgItems[nIdx] == null)
+                    {
+                        m_rgItems.RemoveAt(nIdx);
+                        nIdx = m_random.Next(m_rgItems.Count);
+                    }
+
+                    int nFinalIdx = m_rgItems[nIdx].Index;
+
+                    if (bRemove)
+                        m_rgItems.RemoveAt(nIdx);
+
+                    m_nIdx = nIdx + 1;
+                    if (m_nIdx == m_rgItems.Count)
+                        m_nIdx = 0;
+
+                    return nFinalIdx;
                 }
-
-                int nFinalIdx = m_rgItems[nIdx].Index;
-
-                if (bRemove)
-                    m_rgItems.RemoveAt(nIdx);
-
-                m_nIdx = nIdx + 1;
-                if (m_nIdx == m_rgItems.Count)
-                    m_nIdx = 0;
-
-                return nFinalIdx;
             }
         }
 
