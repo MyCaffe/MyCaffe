@@ -51,37 +51,6 @@ namespace MyCaffe.common
         public const int MAX_BLOB_AXES = 32;
 
         /// <summary>
-        /// Defines the tpe of data held by a given Blob.
-        /// </summary>
-        public enum BLOB_TYPE
-        {
-            /// <summary>
-            /// The Blob holds Data.
-            /// </summary>
-            DATA,
-            /// <summary>
-            /// The Blob holds an inner product weight.
-            /// </summary>
-            IP_WEIGHT,
-            /// <summary>
-            /// The Blob holds a general weight.
-            /// </summary>
-            WEIGHT,
-            /// <summary>
-            /// The Blob holds Loss Data.
-            /// </summary>
-            LOSS,
-            /// <summary>
-            /// The Blob holds Accuracy Data.
-            /// </summary>
-            ACCURACY,
-            /// <summary>
-            /// The blob holds Clip data.
-            /// </summary>
-            CLIP
-        }
-
-        /// <summary>
         /// The Blob constructor.
         /// </summary>
         /// <param name="cuda">Specifies the CudaDnn instance used to communidate with Cuda.</param>
