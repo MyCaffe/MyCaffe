@@ -2880,6 +2880,23 @@ namespace MyCaffe.param
             }
         }
 
+        /// <summary>
+        /// Converts the string type into a LayerType, or <i>null</i> if no match is found.
+        /// </summary>
+        /// <param name="strType">Specifies the layer type.</param>
+        /// <returns>The LayerType is returned, or <i>null</i> if not found.</returns>
+        public static LayerType? GetType(string strType)
+        {
+            try
+            {
+                return parseLayerType(strType);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         private static LayerType parseLayerType(string str)
         {
             str = str.ToLower();
@@ -3048,6 +3065,7 @@ namespace MyCaffe.param
                     return LayerType.MULTIBOX_LOSS;
 
                 case "memoryloss":
+                case "memory_loss":
                     return LayerType.MEMORY_LOSS;
 
                 case "multinomiallogisticloss":
