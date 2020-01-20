@@ -129,6 +129,41 @@ namespace MyCaffe.basecode
         /// <param name="nChannels">Specifies the number of channels in the data (e.g. 3 for color, 1 for black and white images)</param>
         /// <param name="nWidth">Specifies the width of the data (e.g. the number of pixels wide).</param>
         /// <param name="nHeight">Specifies the height of the data (e.g. the number of pixels high).</param>
+        /// <param name="nLabel">Optionally, specifies the known label of the data (default = -1).</param>
+        /// <param name="dtTime">Optionally, specifies a time-stamp associated with the data (default = null).</param>
+        /// <param name="nBoost">Optionally, specifies the boost to use with the data (default = 0, where a value of 0 indicates no boost).</param>
+        /// <param name="bAutoLabeled">Optionally, specifies whether or not the label was auto-generated (default = false).</param>
+        /// <param name="nIdx">Optionally, specifies the index of the data (default = -1).</param>
+        /// <param name="nVirtualID">Optionally, specifies a virtual index for the data (default = 0).  When specified, the SimpleDatum is used to reference another.</param>
+        /// <param name="nImageID">Optionally, specifies the image ID within the database (default = 0).</param>
+        /// <param name="nSourceID">Optionally, specifies the data source ID of the data source that owns this image (default = 0).</param>
+        /// <param name="nOriginalSourceID">Optionally, specifies the ogiginal source ID which is set when using a virtual ID - the original source ID is the ID of the source associated with the image with the ID of the virtual ID.</param>
+        public SimpleDatum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel = -1, DateTime? dtTime = null, int nBoost = 0, bool bAutoLabeled = false, int nIdx = -1, int nVirtualID = 0, int nImageID = 0, int nSourceID = 0, int nOriginalSourceID = 0)
+        {
+            m_nChannels = nChannels;
+            m_nWidth = nWidth;
+            m_nHeight = nHeight;
+            m_nOriginalLabel = nLabel;
+            m_nLabel = nLabel;
+            m_dt = dtTime.GetValueOrDefault(DateTime.MinValue);
+            m_nOriginalBoost = nBoost;
+            m_nBoost = nBoost;
+            m_bAutoLabeled = bAutoLabeled;
+            m_nVirtualID = nVirtualID;
+            m_bIsRealData = bIsReal;
+            m_nIndex = nIdx;
+            m_nImageID = nImageID;
+            m_nSourceID = nSourceID;
+            m_nOriginalSourceID = nOriginalSourceID;
+        }
+
+        /// <summary>
+        /// The SimpleDatum constructor.
+        /// </summary>
+        /// <param name="bIsReal">Specifies whether or not the data values are <i>double</i> or <i>byte</i>.</param>
+        /// <param name="nChannels">Specifies the number of channels in the data (e.g. 3 for color, 1 for black and white images)</param>
+        /// <param name="nWidth">Specifies the width of the data (e.g. the number of pixels wide).</param>
+        /// <param name="nHeight">Specifies the height of the data (e.g. the number of pixels high).</param>
         /// <param name="nLabel">Specifies the known label of the data.</param>
         /// <param name="dtTime">Specifies a time-stamp associated with the data.</param>
         /// <param name="rgData">Specifies the data as a list of <i>bytes</i> (expects <i>bIsReal</i> = <i>false</i>).</param>

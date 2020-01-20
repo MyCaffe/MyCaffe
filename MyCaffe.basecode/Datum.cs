@@ -24,6 +24,23 @@ namespace MyCaffe.basecode
         /// <param name="nChannels">Specifies the number of channels in the data (e.g. 3 for color, 1 for black and white images)</param>
         /// <param name="nWidth">Specifies the width of the data (e.g. the number of pixels wide).</param>
         /// <param name="nHeight">Specifies the height of the data (e.g. the number of pixels high).</param>
+        /// <param name="nLabel">Optionally, specifies the known label of the data (default = -1).</param>
+        /// <param name="dtTime">Optionally, specifies a time-stamp associated with the data (default = null).</param>
+        /// <param name="nBoost">Optionally, specifies the boost to use with the data (default = 0, where a value of 0 indicates no boost).</param>
+        /// <param name="bAutoLabeled">Optionally, specifies whether or not the label was auto-generated (default = false).</param>
+        /// <param name="nIdx">Optionally, specifies the index of the data (default = -1).</param>
+        public Datum(bool bIsReal, int nChannels, int nWidth, int nHeight, int nLabel = -1, DateTime? dtTime = null, int nBoost = 0, bool bAutoLabeled = false, int nIdx = -1)
+            : base(bIsReal, nChannels, nWidth, nHeight, nLabel, dtTime, nBoost, bAutoLabeled, nIdx)
+        {
+        }
+
+        /// <summary>
+        /// The Datum constructor.
+        /// </summary>
+        /// <param name="bIsReal">Specifies whether or not the data values are <i>double</i> or <i>byte</i>.</param>
+        /// <param name="nChannels">Specifies the number of channels in the data (e.g. 3 for color, 1 for black and white images)</param>
+        /// <param name="nWidth">Specifies the width of the data (e.g. the number of pixels wide).</param>
+        /// <param name="nHeight">Specifies the height of the data (e.g. the number of pixels high).</param>
         /// <param name="nLabel">Specifies the known label of the data.</param>
         /// <param name="dtTime">Specifies a time-stamp associated with the data.</param>
         /// <param name="rgData">Specifies the data as a list of <i>bytes</i> (expects <i>bIsReal</i> = <i>false</i>).</param>
