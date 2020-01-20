@@ -76,6 +76,10 @@ namespace MyCaffe.layers
             preStop();
         }
 
+        /// <summary>
+        /// The preStop method is called just before stopping the internal thread.  Overriding this
+        /// method gives derivative classes a chance to cancel any waiting objects. 
+        /// </summary>
         protected virtual void preStop()
         {
         }
