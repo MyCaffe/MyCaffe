@@ -77,7 +77,8 @@ namespace MyCaffe.common
         /// <param name="log">Specifies the Log for output, placed in the ActionStartArgs passed along to DoWork.</param>
         /// <param name="nDeviceID">Optionally, specifies the DeviceID placed in the ActionStartArgs passed along to DoWork.</param>
         /// <param name="arg">Optionally, specifies an argument defined by the caller.</param>
-        public void StartInternalThread(CudaDnn<T> cuda, Log log, int nDeviceID = 0, object arg = null)
+        /// <param name="nInitialDelay">Optionally, specifies an initial delay in ms (default = 0).</param>
+        public void StartInternalThread(CudaDnn<T> cuda, Log log, int nDeviceID = 0, object arg = null, int nInitialDelay = 0)
         {
             m_evtAbort.Reset();
             m_evtCancel.Reset();
@@ -90,7 +91,7 @@ namespace MyCaffe.common
                 if (m_thread == null)
                 {
                     m_thread = new Thread(new ParameterizedThreadStart(InternalThreadEntry));
-                    m_thread.Start(new ActionStateArgs<T>(cuda, log, m_evtCancel, nDeviceID, arg));
+                    m_thread.Start(new ActionStateArgs<T>(cuda, log, m_evtCancel, nDeviceID, arg, nInitialDelay));
                 }
             }
             else
@@ -144,6 +145,9 @@ namespace MyCaffe.common
 
             try
             {
+                if (state.InitialDelay > 0)
+                    Thread.Sleep(state.InitialDelay);
+
                 if (DoWork != null)
                     DoWork(this, state);
             }
@@ -204,6 +208,7 @@ namespace MyCaffe.common
         Log m_log = null;
         CancelEvent m_evtCancel;
         int m_nDeviceID = 0;
+        int m_nInitialDelay = 0;
         object m_arg = null;
 
         /// <summary>
@@ -214,7 +219,8 @@ namespace MyCaffe.common
         /// <param name="evtCancel">Specifies the CancelEvent that when Set signals to DoWork that it should terminate.</param>
         /// <param name="nDeviceID">Optionally, specifies the DeviceID.</param>
         /// <param name="arg">Optionally, specifies an argument defined by the caller.</param>
-        public ActionStateArgs(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, int nDeviceID = 0, object arg = null)
+        /// <param name="nInitialDelay">Optionally, specifies an initial delay for the thread in ms. (default = 0).</param>
+        public ActionStateArgs(CudaDnn<T> cuda, Log log, CancelEvent evtCancel, int nDeviceID = 0, object arg = null, int nInitialDelay = 0)
             : base()
         {
             m_log = log;
@@ -222,6 +228,7 @@ namespace MyCaffe.common
             m_evtCancel = evtCancel;
             m_nDeviceID = nDeviceID;
             m_arg = arg;
+            m_nInitialDelay = nInitialDelay;
         }
 
         /// <summary>
@@ -263,6 +270,14 @@ namespace MyCaffe.common
         public object Arg
         {
             get { return m_arg; }
+        }
+
+        /// <summary>
+        /// Returns the initial delay in ms (if any).
+        /// </summary>
+        public int InitialDelay
+        {
+            get { return m_nInitialDelay; }
         }
     }
 }
