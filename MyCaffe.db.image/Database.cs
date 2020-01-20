@@ -2059,9 +2059,8 @@ namespace MyCaffe.db.image
                     dst = rgDst[0];
                 }
 
-                dst.Channels = src.Channels;
-                dst.Data = src.Data;
                 dst.Encoded = src.Encoded;
+                dst.Channels = src.Channels;
                 dst.Height = src.Height;
                 dst.Width = src.Width;
                 dst.Data = src.Data;
