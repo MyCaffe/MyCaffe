@@ -757,6 +757,26 @@ namespace MyCaffe
         }
 
         /// <summary>
+        /// Prepare the testing image mean by copying the training image mean if the testing image mean is missing.
+        /// </summary>
+        /// <param name="prj">Specifies the project whos image mean is to be prepared.</param>
+        public void PrepareImageMeans(ProjectEx prj)
+        {
+            DatasetFactory factory = new DatasetFactory();
+
+            // Copy the training image mean to the testing source if it does not have a mean.
+            // NOTE: This this will not impact a service based image database that is already loaded,
+            // - it must be reloaded.
+            int nDstID = factory.GetRawImageMeanID(prj.Dataset.TestingSource.ID);
+            if (nDstID == 0)
+            {
+                int nSrcID = factory.GetRawImageMeanID(prj.Dataset.TrainingSource.ID);
+                if (nSrcID != 0)
+                    factory.CopyImageMean(prj.Dataset.TrainingSourceName, prj.Dataset.TestingSourceName);
+            }
+        }
+
+        /// <summary>
         /// Load a project and optionally the MyCaffeImageDatabase.
         /// </summary>
         /// <remarks>
@@ -829,17 +849,6 @@ namespace MyCaffe
                     m_imgDb.QueryImageMean(dsTarget.TrainingSource.ID);
                     m_log.WriteLine("Target dataset images loaded.");
                 }
-            }
-
-            // Copy the training image mean to the testing source if it does not have a mean.
-            // NOTE: This this will not impact a service based image database that is already loaded,
-            // - it must be reloaded.
-            int nDstID = factory.GetRawImageMeanID(p.Dataset.TestingSource.ID);
-            if (nDstID == 0)
-            {
-                int nSrcID = factory.GetRawImageMeanID(p.Dataset.TrainingSource.ID);
-                if (nSrcID != 0)
-                    factory.CopyImageMean(p.Dataset.TrainingSourceName, p.Dataset.TestingSourceName);
             }
 
             p.ModelDescription = addStage(p.ModelDescription, phase, strStage);
