@@ -2065,6 +2065,9 @@ namespace MyCaffe.db.image
                 dst.Width = src.Width;
                 dst.Data = src.Data;
 
+                if (rgDst.Count == 0)
+                    entities.RawImageMeans.Add(dst);
+
                 entities.SaveChanges();
             }
 
