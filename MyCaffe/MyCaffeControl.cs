@@ -775,6 +775,7 @@ namespace MyCaffe
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
         public bool Load(Phase phase, ProjectEx p, IMGDB_LABEL_SELECTION_METHOD? labelSelectionOverride = null, IMGDB_IMAGE_SELECTION_METHOD? imageSelectionOverride = null, bool bResetFirst = false, IXImageDatabaseBase imgdb = null, bool bUseImageDb = true, bool bCreateRunNet = true, string strStage = null, bool bEnableMemTrace = false)
         {
+            DatasetFactory factory = new DatasetFactory();
             m_strStage = strStage;
             m_imgDb = imgdb;
             m_bImgDbOwner = false;
@@ -816,7 +817,6 @@ namespace MyCaffe
 
                 if (p.TargetDatasetID > 0)
                 {
-                    DatasetFactory factory = new DatasetFactory();
                     DatasetDescriptor dsTarget = factory.LoadDataset(p.TargetDatasetID);
 
                     m_log.WriteLine("Loading target dataset '" + dsTarget.Name + "' images using " + m_settings.ImageDbLoadMethod.ToString() + " loading method.");
@@ -829,6 +829,17 @@ namespace MyCaffe
                     m_imgDb.QueryImageMean(dsTarget.TrainingSource.ID);
                     m_log.WriteLine("Target dataset images loaded.");
                 }
+            }
+
+            // Copy the training image mean to the testing source if it does not have a mean.
+            // NOTE: This this will not impact a service based image database that is already loaded,
+            // - it must be reloaded.
+            int nDstID = factory.GetRawImageMeanID(p.Dataset.TestingSource.ID);
+            if (nDstID == 0)
+            {
+                int nSrcID = factory.GetRawImageMeanID(p.Dataset.TrainingSource.ID);
+                if (nSrcID != 0)
+                    factory.CopyImageMean(p.Dataset.TrainingSourceName, p.Dataset.TestingSourceName);
             }
 
             p.ModelDescription = addStage(p.ModelDescription, phase, strStage);
