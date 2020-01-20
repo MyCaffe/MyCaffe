@@ -436,6 +436,19 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Copy the raw image mean from one source to another.
+        /// </summary>
+        /// <param name="strSrcSrc">Specifies the Data Source with the source image mean to copy.</param>
+        /// <param name="strDstSrc">Specifies the Data Source with the destination image mean where the source is copied to.</param>
+        /// <returns>On success, <i>true</i> is returned, otherwise <i>false</i>.</returns>
+        public bool CopyImageMean(string strSrcSrc, string strDstSrc)
+        {
+            int nSrcIdSrc = GetSourceID(strSrcSrc);
+            int nDstIdSrc = GetSourceID(strDstSrc);
+            return m_db.CopyImageMean(nSrcIdSrc, nDstIdSrc);
+        }
+
+        /// <summary>
         /// Returns the number of images in the database for the open data source.
         /// </summary>
         /// <returns></returns>

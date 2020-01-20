@@ -2033,6 +2033,46 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Copy the raw image mean from one source to another.
+        /// </summary>
+        /// <param name="nSrcIdSrc">Specifies the Data Source ID with the source image mean to copy.</param>
+        /// <param name="nSrcIdDst">Specifies the Data Source ID with the destination image mean where the source is copied to.</param>
+        /// <returns>On success, <i>true</i> is returned, otherwise <i>false</i>.</returns>
+        public bool CopyImageMean(int nSrcIdSrc, int nSrcIdDst)
+        {
+            RawImageMean src = GetRawImageMean(nSrcIdSrc);
+            if (src == null)
+                return false;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                List<RawImageMean> rgDst = entities.RawImageMeans.Where(p => p.SourceID == nSrcIdDst).ToList();
+                RawImageMean dst;
+
+                if (rgDst.Count == 0)
+                {
+                    dst = new RawImageMean();
+                    dst.SourceID = nSrcIdDst;
+                }
+                else
+                {
+                    dst = rgDst[0];
+                }
+
+                dst.Channels = src.Channels;
+                dst.Data = src.Data;
+                dst.Encoded = src.Encoded;
+                dst.Height = src.Height;
+                dst.Width = src.Width;
+                dst.Data = src.Data;
+
+                entities.SaveChanges();
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Delete all RawImageMeans for a data source.
         /// </summary>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
