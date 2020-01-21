@@ -168,19 +168,8 @@ namespace MyCaffe.common
                 if (m_evtAbort.WaitOne(0))
                     return true;
 
-                if (m_evtCancel == null)
-                    return true;
-
-                return m_evtCancel.WaitOne(0);
+                return false;
             }
-        }
-
-        /// <summary>
-        /// Returns the CancelEvent that terminates the thread when Set.
-        /// </summary>
-        public CancelEvent CancelEvent
-        {
-            get { return m_evtCancel; }
         }
 
         /// <summary>
