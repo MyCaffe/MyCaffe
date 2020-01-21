@@ -774,6 +774,20 @@ namespace MyCaffe
                 if (nSrcID != 0)
                     factory.CopyImageMean(prj.Dataset.TrainingSourceName, prj.Dataset.TestingSourceName);
             }
+
+            if (prj.DatasetTarget != null)
+            {
+                // Copy the training image mean to the testing source if it does not have a mean.
+                // NOTE: This this will not impact a service based image database that is already loaded,
+                // - it must be reloaded.
+                nDstID = factory.GetRawImageMeanID(prj.DatasetTarget.TestingSource.ID);
+                if (nDstID == 0)
+                {
+                    int nSrcID = factory.GetRawImageMeanID(prj.DatasetTarget.TrainingSource.ID);
+                    if (nSrcID != 0)
+                        factory.CopyImageMean(prj.DatasetTarget.TrainingSourceName, prj.DatasetTarget.TestingSourceName);
+                }
+            }
         }
 
         /// <summary>
