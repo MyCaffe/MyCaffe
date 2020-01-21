@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("SignalPop LLC")]
 [assembly: AssemblyProduct("MyCaffe.gym.python")]
-[assembly: AssemblyCopyright("Copyright ©  2019 SignalPop and Contributors (see LICENSE). All rights reserved.")]
+[assembly: AssemblyCopyright("Copyright © 2019-2020 SignalPop and Contributors (see LICENSE). All rights reserved.")]
 [assembly: AssemblyTrademark("SignalPop")]
 [assembly: AssemblyCulture("")]
 
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("0.10.2.38")]
-[assembly: AssemblyFileVersion("0.10.2.38")]
+[assembly: AssemblyVersion("0.10.2.124")]
+[assembly: AssemblyFileVersion("0.10.2.124")]
