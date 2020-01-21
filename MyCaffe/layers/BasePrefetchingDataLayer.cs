@@ -49,9 +49,6 @@ namespace MyCaffe.layers
             m_internalThread.OnPreStop += internalThread_OnPreStop;
             m_internalThread.OnPreStart += internalThread_OnPreStart;
 
-            if (m_evtCancel != null)
-                m_internalThread.CancelEvent.AddCancelOverride(m_evtCancel);
-
             m_rgPrefetch = new Batch<T>[p.data_param.prefetch];
             m_rgPrefetchFree = new BlockingQueue<Batch<T>>(m_evtCancel);
             m_rgPrefetchFull = new BlockingQueue<Batch<T>>(m_evtCancel);
@@ -100,9 +97,6 @@ namespace MyCaffe.layers
                 m_rgPrefetchFree.Dispose();
                 m_rgPrefetchFree = null;
             }
-
-            if (m_evtCancel != null)
-                m_internalThread.CancelEvent.RemoveCancelOverride(m_evtCancel);
 
             base.dispose();
         }
@@ -167,10 +161,10 @@ namespace MyCaffe.layers
 
             try
             {
+                Batch<T> batch = new Batch<T>(cuda, log);
+
                 while (!m_internalThread.CancellationPending)
                 {
-                    Batch<T> batch = new Batch<T>(cuda, log);
-
                     if (m_rgPrefetchFree.Pop(ref batch))
                     {
                         load_batch(batch);
@@ -187,10 +181,6 @@ namespace MyCaffe.layers
                         }
 
                         m_rgPrefetchFull.Push(batch);
-                    }
-                    else
-                    {
-                        break;
                     }
                 }
             }
