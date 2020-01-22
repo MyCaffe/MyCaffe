@@ -4287,7 +4287,7 @@ __global__ void channel_fill_kernel(const int nCount, const int num, const int c
 	{
 		int n = i / nDataDim;
 		int nLabelIdx = n * nLabelDim;
-		int nLabel = (int)labels[nLabelIdx];
+		int nLabel = (int)labels[nLabelIdx]; // only use first label (e.g. when using multiple images per channel, only the first is used for decoding)
 		int s = i % nDataDim;
 		int nIdx = nLabel * nDataDim + s;
 
