@@ -37,6 +37,7 @@ namespace MyCaffe.layers
         Blob<T> m_blobDiffSq; // cached for backward pass.
         Blob<T> m_blobSummerVec; // tmp storage for gpu forward pass.
         Blob<T> m_blobSimilar; // tmp storage for backward pass.
+        Blob<T> m_blobDistScale; // tmp storage for distance scale applied ot matching distances (optional).
         Blob<T> m_blobPrimary; // target of similar, or dissimilar image.
         T[] m_rgMatches = null;
         int m_nIteration = 0;
@@ -69,6 +70,8 @@ namespace MyCaffe.layers
             m_blobSummerVec.Name = m_param.name + " sum";
             m_blobSimilar = new Blob<T>(cuda, log, false);
             m_blobSimilar.Name = m_param.name + " similar";
+            m_blobDistScale = new Blob<T>(cuda, log, false);
+            m_blobDistScale.Name = m_param.name + " dist scale";
             m_blobPrimary = new Blob<T>(cuda, log, false);
             m_blobPrimary.Name = m_param.name + " primary";
         }
@@ -106,6 +109,12 @@ namespace MyCaffe.layers
             {
                 m_blobSimilar.Dispose();
                 m_blobSimilar = null;
+            }
+
+            if (m_blobDistScale != null)
+            {
+                m_blobDistScale.Dispose();
+                m_blobDistScale = null;
             }
 
             if (m_blobPrimary != null)
@@ -228,6 +237,7 @@ namespace MyCaffe.layers
             }
 
             m_blobSimilar.Reshape(colBottom[0].num, 1, 1, 1);
+            m_blobDistScale.Reshape(colBottom[0].num, 1, 1, 1);
         }
 
         /// <summary>
@@ -270,9 +280,11 @@ namespace MyCaffe.layers
 
             // When using centroid learning, the centroids from the DecodeLayer are only filled after they are fully
             // calculated - prior to full calculations, the centriods are set to 0.
+            bool bCentroidLearningEnabled = false;
             bool bUseCentroidLearning = false;
             if (m_param.contrastive_loss_param.centroid_learning != ContrastiveLossParameter.CENTROID_LEARNING.NONE && colBottom.Count > 3)
             {
+                bCentroidLearningEnabled = true;
                 T fAsum = colBottom[3].asum_data();
                 double dfAsum = convertD(fAsum);
                 if (dfAsum > 0)
@@ -291,16 +303,16 @@ namespace MyCaffe.layers
                 int nEncodingDim = m_blobPrimary.count(1);
                 int nLabelDim = colBottom[2].count(1);
 
-                // Use centroids for both matching and non-matching.
+                // Fill with centroids for each 'first' label.
                 m_cuda.channel_fill(m_blobPrimary.count(), m_blobPrimary.num, nEncodingDim, 1, colBottom[3].gpu_data, nLabelDim, colBottom[2].gpu_data, m_blobPrimary.mutable_gpu_data);
 
                 // If using centroid learning; for similar pairs, copy the centroids from colBottom[3], otherwise copy the colBottom[0] dissimilar encodings.
                 if (m_param.contrastive_loss_param.centroid_learning == ContrastiveLossParameter.CENTROID_LEARNING.MATCHING)
-                    m_cuda.copy(m_blobPrimary.count(), m_blobPrimary.num, m_blobPrimary.count(1), m_blobPrimary.gpu_data, colBottom[0].gpu_data, m_blobPrimary.mutable_gpu_data, m_blobSimilar.gpu_data);
+                    m_cuda.copy(m_blobPrimary.count(), m_blobPrimary.num, m_blobPrimary.count(1), m_blobPrimary.gpu_data, colBottom[0].gpu_data, m_blobPrimary.mutable_gpu_data, m_blobSimilar.gpu_data); // centroid used for matching, use bottom[0] for all NON matching
 
                 // If using centroid learning; for non-similar pairs, copy the centroids from colBottom[3], otherwise copy the colBottom[0] dissimilar encodings.
                 else if (m_param.contrastive_loss_param.centroid_learning == ContrastiveLossParameter.CENTROID_LEARNING.NONMATCHING)
-                    m_cuda.copy(m_blobPrimary.count(), m_blobPrimary.num, m_blobPrimary.count(1), m_blobPrimary.gpu_data, colBottom[0].gpu_data, m_blobPrimary.mutable_gpu_data, m_blobSimilar.gpu_data, true);
+                    m_cuda.copy(m_blobPrimary.count(), m_blobPrimary.num, m_blobPrimary.count(1), m_blobPrimary.gpu_data, colBottom[0].gpu_data, m_blobPrimary.mutable_gpu_data, m_blobSimilar.gpu_data, true); // centroid used for NON matching, use bottom[0] for all matching.
 
                 if (m_nCentroidNotification > 0)
                 {
@@ -346,6 +358,13 @@ namespace MyCaffe.layers
                            0.0,
                            blobDist.mutable_gpu_data);     // \Sum |a_i - b_i|
 
+                if ((bUseCentroidLearning || !bCentroidLearningEnabled) && m_param.contrastive_loss_param.matching_distance_scale != 1.0)
+                {
+                    m_cuda.scale(m_blobDistScale.count(), m_param.contrastive_loss_param.matching_distance_scale - 1.0, m_blobSimilar.gpu_data, m_blobDistScale.mutable_gpu_data);
+                    m_cuda.add_scalar(m_blobDistScale.count(), 1.0, m_blobDistScale.mutable_gpu_data);
+                    m_cuda.mul(blobDist.count(), blobDist.gpu_data, m_blobDistScale.gpu_data, blobDist.mutable_gpu_data);
+                }
+
                 rgDist = Utility.ConvertVecF<T>(blobDist.update_cpu_data());
             }
             else // default = EUCLIDEAN
@@ -368,6 +387,13 @@ namespace MyCaffe.layers
                            m_blobSummerVec.gpu_data,
                            0.0,
                            m_blobDistSq.mutable_gpu_data);  // \Sum (a_i - b_i)^2
+
+                if ((bUseCentroidLearning || !bCentroidLearningEnabled) && m_param.contrastive_loss_param.matching_distance_scale != 1.0)
+                {
+                    m_cuda.scale(m_blobDistScale.count(), m_param.contrastive_loss_param.matching_distance_scale - 1.0, m_blobSimilar.gpu_data, m_blobDistScale.mutable_gpu_data);
+                    m_cuda.add_scalar(m_blobDistScale.count(), 1.0, m_blobDistScale.mutable_gpu_data);
+                    m_cuda.mul(m_blobDistSq.count(), m_blobDistSq.gpu_data, m_blobDistScale.gpu_data, m_blobDistSq.mutable_gpu_data);
+                }
 
                 rgDist = Utility.ConvertVecF<T>(m_blobDistSq.update_cpu_data());
             }

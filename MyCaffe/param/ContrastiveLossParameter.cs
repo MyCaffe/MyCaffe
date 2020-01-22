@@ -26,6 +26,7 @@ namespace MyCaffe.param
         double m_dfMargin = 1.0;
         bool m_bLegacyVersion = false;
         bool m_bOutputMatches = false;
+        double m_dfMatchingDistScale = 1.0;
         CENTROID_LEARNING m_centroidLearning = CENTROID_LEARNING.NONE;
         DISTANCE_CALCULATION m_distanceCalc = DISTANCE_CALCULATION.EUCLIDEAN;
 
@@ -133,6 +134,16 @@ namespace MyCaffe.param
             set { m_distanceCalc = value; }
         }
 
+        /// <summary>
+        /// Optionally, specifies the scale applied to the matching distance when calculating the loss (default = 1.0, which ignores the scaling).
+        /// </summary>
+        [Description("Optionally, specifies the scaling applied to distances between matching pairs (default = 1.0, which ignores the scaling).")]
+        public double matching_distance_scale
+        {
+            get { return m_dfMatchingDistScale; }
+            set { m_dfMatchingDistScale = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
@@ -154,6 +165,7 @@ namespace MyCaffe.param
             m_bOutputMatches = p.m_bOutputMatches;
             m_centroidLearning = p.m_centroidLearning;
             m_distanceCalc = p.m_distanceCalc;
+            m_dfMatchingDistScale = p.m_dfMatchingDistScale;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -182,6 +194,7 @@ namespace MyCaffe.param
                 rgChildren.Add("centroid_learning", centroid_learning.ToString());
 
             rgChildren.Add("distance_calculation", distance_calculation.ToString());
+            rgChildren.Add("matching_distance_scale", matching_distance_scale.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -220,6 +233,9 @@ namespace MyCaffe.param
                 if (strVal == DISTANCE_CALCULATION.MANHATTAN.ToString())
                     p.distance_calculation = DISTANCE_CALCULATION.MANHATTAN;
             }
+
+            if ((strVal = rp.FindValue("matching_distance_scale")) != null)
+                p.matching_distance_scale = double.Parse(strVal);
 
             return p;
         }
