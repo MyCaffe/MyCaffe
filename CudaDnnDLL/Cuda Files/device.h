@@ -867,15 +867,17 @@ inline long Device<T>::CreateStream(long lInput, T* pfInput, long* plOutput, T**
 {
 	LONG lErr;
 	long hHandle = 0;
-	bool bNonBlocking = false;
 
-	if (lInput > 0 && pfInput != NULL)
-		bNonBlocking = (pfInput[0] == 1.0) ? true : false;
+	if (lErr = verifyInput(lInput, pfInput, 2, 2))
+		return lErr;
+
+	bool bNonBlocking = (pfInput[0] == 1.0) ? true : false;
+	int nIndex = (int)pfInput[1];
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	if (lErr = m_memory.CreateStream(&hHandle, bNonBlocking))
+	if (lErr = m_memory.CreateStream(&hHandle, bNonBlocking, nIndex))
 		return lErr;
 
 	return setOutput(hHandle, plOutput, ppfOutput);
