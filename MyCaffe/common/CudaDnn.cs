@@ -545,7 +545,7 @@ namespace MyCaffe.common
     /// </remarks>
     public interface ICudaCuDnn /** @private */
     {
-        long CreateStream(bool bNonBlocking = false);
+        long CreateStream(bool bNonBlocking = false, int nIndex = -1);
         void FreeStream(long h); 
         void SynchronizeStream(long h = 0);
         void SynchronizeThread();
@@ -2461,27 +2461,18 @@ namespace MyCaffe.common
         /// Create a new stream on the current GPU.
         /// </summary>
         /// <param name="bNonBlocking">When <code>false</code> (the default) the created stream is a 'blocking' stream, otherwise it is an asynchronous, non-blocking stream.</param>
+        /// <param name="nIndex">Specifies an index for the stream where indexed streams are shared when the index = 0 or greater.</param>
         /// <returns>The handle to the stream is returned.</returns>
-        public long CreateStream(bool bNonBlocking = false)
+        public long CreateStream(bool bNonBlocking = false, int nIndex = -1)
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rgInput = null;
-
-                if (bNonBlocking)
-                    rgInput = new double[] { (bNonBlocking) ? 1.0 : 0.0 };
-
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CREATE_STREAM, rgInput);
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CREATE_STREAM, new double[] { (bNonBlocking) ? 1.0 : 0.0, nIndex });
                 return (long)rg[0];
             }
             else
             {
-                float[] rgInput = null;
-
-                if (bNonBlocking)
-                    rgInput = new float[] { (bNonBlocking) ? 1.0f : 0.0f };
-
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CREATE_STREAM, rgInput);
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CREATE_STREAM, new float[] { (bNonBlocking) ? 1.0f : 0.0f, nIndex });
                 return (long)rg[0];
             }
         }

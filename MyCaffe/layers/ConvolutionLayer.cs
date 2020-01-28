@@ -205,7 +205,7 @@ namespace MyCaffe.layers
 
             for (int g = 0; g < m_nGroup * CUDNN_STREAMS_PER_GROUP; g++)
             {
-                m_rghStream[g] = m_cuda.CreateStream();
+                m_rghStream[g] = m_cuda.CreateStream(false, g);
                 m_rghCudnn[g] = m_cuda.CreateCuDNN(m_rghStream[g]);
                 m_rglWorkspaceFwdOffsets[g] = 0;
                 m_rglWorkspaceBwdFilterOffsets[g] = 0;
