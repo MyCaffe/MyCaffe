@@ -117,6 +117,48 @@ namespace MyCaffe.model
         }
 
         /// <summary>
+        /// Add the Data layer.
+        /// </summary>
+        /// <param name="strSource">Specifies the data source.</param>
+        /// <param name="phase">Specifies the phase under which to run the layer (e.g. TRAIN, TEST, RUN).</param>
+        /// <param name="nBatchSize">Optionally, specifies the batch size (default = 32).</param>
+        /// <param name="bOutputLabel">Optionally, specifies whether or not to output the label (default = true).</param>
+        /// <param name="transform">Optionally, specifies the transformation parameter (default = null, ignored).</param>
+        /// <param name="strName">Optionally, specifies a name for the layer and data top name (default = "data").</param>
+        /// <param name="bSiamese">Optionally, specifies to add data layers for a Siamese net (default = false).</param>
+        /// <returns>The Data layer is retunred after it is added to the network.</returns>
+        protected LayerParameter addDataLayer(string strSource, Phase phase, int nBatchSize = 32, bool bOutputLabel = true, TransformationParameter transform = null, string strName = "data", bool bSiamese = false)
+        {
+            LayerParameter data = new LayerParameter(LayerParameter.LayerType.DATA);
+
+            data.include.Add(new NetStateRule(phase));
+
+            if (transform != null)
+                data.transform_param = transform;
+
+            data.name = strName;
+            data.data_param.batch_size = (uint)nBatchSize;
+            data.data_param.source = strSource;
+
+            if (bSiamese)
+            {
+                data.data_param.images_per_blob = 2;
+                data.data_param.output_all_labels = true;
+                data.data_param.balance_matches = true;
+            }
+
+            data.top.Clear();
+            data.top.Add(strName);
+
+            if (bOutputLabel)
+                data.top.Add("label");
+
+            m_net.layer.Add(data);
+
+            return data;
+        }
+
+        /// <summary>
         /// Add the Annotated Data layer.
         /// </summary>
         /// <param name="strSource">Specifies the data source.</param>
@@ -423,22 +465,27 @@ namespace MyCaffe.model
         /// <param name="strScalePostFix">Optionally, specifies the scale layer name postfix (default = "_scale")</param>
         /// <param name="strBiasPrefix">Optionally, specifies the bias layer name prefix (default = "").</param>
         /// <param name="strBiasPostfix">Optionally, specifies the bias layer name postfix (default = "_bias").</param>
+        /// <param name="bNamedParams">Optionally, specifies to name the parameters (default = false).</param>
+        /// <param name="strLayerPostfix">Optionally, specifies a layer name postfix (default = "").</param>
+        /// <param name="phaseExclude">Optionally, specifies a phase to exclude (default = NONE).</param>
         /// <returns>The last layer added is returned.</returns>
-        protected LayerParameter addConvBNLayer(string strInputLayer, string strOutputLayer, bool bUseBatchNorm, bool bUseRelU, int nNumOutput, int nKernelSize, int nPad, int nStride, double dfLrMult = 1.0, int nDilation = 1, bool bUseScale = true, string strConvPrefix = "", string strConvPostfix = "", string strBnPrefix = "", string strBnPostfix = "_bn", string strScalePrefix = "", string strScalePostFix = "_scale", string strBiasPrefix = "", string strBiasPostfix = "_bias")
+        protected LayerParameter addConvBNLayer(string strInputLayer, string strOutputLayer, bool bUseBatchNorm, bool bUseRelU, int nNumOutput, int nKernelSize, int nPad, int nStride, double dfLrMult = 1.0, int nDilation = 1, bool bUseScale = true, string strConvPrefix = "", string strConvPostfix = "", string strBnPrefix = "", string strBnPostfix = "_bn", string strScalePrefix = "", string strScalePostFix = "_scale", string strBiasPrefix = "", string strBiasPostfix = "_bias", bool bNamedParams = false, string strLayerPostfix = "", Phase phaseExclude = Phase.NONE)
         {
             LayerParameter lastLayer = findLayer(strInputLayer);
+            string strName = strConvPrefix + strOutputLayer + strConvPostfix;
 
             LayerParameter convLayer = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
             convLayer.convolution_param.weight_filler = new FillerParameter("xavier");
             convLayer.convolution_param.bias_filler = new FillerParameter("constant", 0);
             convLayer.convolution_param.bias_term = true;
-            convLayer.name = strConvPrefix + strOutputLayer + strConvPostfix;
+            convLayer.name = strName + strLayerPostfix;
             convLayer.convolution_param.kernel_size.Add((uint)nKernelSize);
             convLayer.convolution_param.pad.Add((uint)nPad);
             convLayer.convolution_param.stride.Add((uint)nStride);
             convLayer.convolution_param.dilation.Add((uint)nDilation);
             convLayer.convolution_param.num_output = (uint)nNumOutput;
             convLayer.top.Add(convLayer.name);
+            addExclusion(convLayer, phaseExclude);
 
             LayerParameter bnLayer = null;
             LayerParameter scaleLayer = null;
@@ -448,19 +495,21 @@ namespace MyCaffe.model
             // Setup the BachNorm Layer
             if (bUseBatchNorm)
             {
-                convLayer.parameters.Add(new ParamSpec(dfLrMult, 1.0));
+                convLayer.parameters.Add(new ParamSpec(dfLrMult, 1.0, (bNamedParams) ? strName + "_w" : null));
                 convLayer.convolution_param.weight_filler = new FillerParameter("gaussian", 0, 0, 0.01);
                 convLayer.convolution_param.bias_term = false;
 
                 bnLayer = new LayerParameter(LayerParameter.LayerType.BATCHNORM);
-                bnLayer.name = strBnPrefix + strOutputLayer + strBnPostfix;
+                strName = strBnPrefix + strOutputLayer + strBnPostfix;
+                bnLayer.name = strName + strLayerPostfix;
                 bnLayer.batch_norm_param.eps = 0.001;
                 bnLayer.batch_norm_param.moving_average_fraction = 0.999;
                 bnLayer.batch_norm_param.use_global_stats = false;
-                bnLayer.parameters.Add(new ParamSpec(0.0, 0.0));
-                bnLayer.parameters.Add(new ParamSpec(0.0, 0.0));
-                bnLayer.parameters.Add(new ParamSpec(0.0, 0.0));
+                bnLayer.parameters.Add(new ParamSpec(0.0, 0.0, (bNamedParams) ? strName + "_w1" : null));
+                bnLayer.parameters.Add(new ParamSpec(0.0, 0.0, (bNamedParams) ? strName + "_w2" : null));
+                bnLayer.parameters.Add(new ParamSpec(0.0, 0.0, (bNamedParams) ? strName + "_w3" : null));
                 bnLayer.top.Add(bnLayer.name);
+                addExclusion(bnLayer, phaseExclude);
 
                 double dfBnLrMult = dfLrMult;
 
@@ -472,36 +521,40 @@ namespace MyCaffe.model
                 if (bUseScale)
                 {
                     scaleLayer = new LayerParameter(LayerParameter.LayerType.SCALE);
-                    scaleLayer.name = strScalePrefix + strOutputLayer + strScalePostFix;
+                    strName = strScalePrefix + strOutputLayer + strScalePostFix;
+                    scaleLayer.name = strName + strLayerPostfix;
                     scaleLayer.scale_param.bias_term = true;
                     scaleLayer.scale_param.filler = new FillerParameter("constant", 1.0);
                     scaleLayer.scale_param.bias_filler = new FillerParameter("constant", 0.0);
-                    scaleLayer.parameters.Add(new ParamSpec(dfBnLrMult, 0.0));
-                    scaleLayer.parameters.Add(new ParamSpec(dfBnLrMult, 0.0));
+                    scaleLayer.parameters.Add(new ParamSpec(dfBnLrMult, 0.0, (bNamedParams) ? strName + "_w" : null));
+                    scaleLayer.parameters.Add(new ParamSpec(dfBnLrMult, 0.0, (bNamedParams) ? strName + "_b" : null));
                     scaleLayer.top.Add(scaleLayer.name);
+                    addExclusion(scaleLayer, phaseExclude);
                 }
                 else
                 {
                     biasLayer = new LayerParameter(LayerParameter.LayerType.BIAS);
-                    biasLayer.name = strBiasPrefix + strOutputLayer + strBiasPostfix;
+                    strName = strBiasPrefix + strOutputLayer + strBiasPostfix;
+                    biasLayer.name = strName + strLayerPostfix;
                     biasLayer.bias_param.filler = new FillerParameter("constant", 0.0);
-                    biasLayer.parameters.Add(new ParamSpec(dfBnLrMult, 0.0));
+                    biasLayer.parameters.Add(new ParamSpec(dfBnLrMult, 0.0, (bNamedParams) ? strName + "_w" : null));
                     biasLayer.top.Add(biasLayer.name);
+                    addExclusion(biasLayer, phaseExclude);
                 }
             }
             else
             {
-                convLayer.parameters.Add(new ParamSpec(dfLrMult, 1.0));
-                convLayer.parameters.Add(new ParamSpec(dfLrMult * 2, 0.0));
+                convLayer.parameters.Add(new ParamSpec(dfLrMult, 1.0, (bNamedParams) ? strName + "_w" : null));
+                convLayer.parameters.Add(new ParamSpec(dfLrMult * 2, 0.0, (bNamedParams) ? strName + "_b" : null));
             }
 
-            lastLayer = connectAndAddLayer(lastLayer, convLayer);
+            lastLayer = connectAndAddLayer(strInputLayer, convLayer);
 
             if (bnLayer != null)
-                lastLayer = connectAndAddLayer(lastLayer, bnLayer);
+                lastLayer = connectAndAddLayer(lastLayer, bnLayer, true, true);
 
             if (scaleLayer != null)
-                lastLayer = connectAndAddLayer(lastLayer, scaleLayer);
+                lastLayer = connectAndAddLayer(lastLayer, scaleLayer, true, true);
 
             if (biasLayer != null)
                 lastLayer = connectAndAddLayer(lastLayer, biasLayer);
@@ -510,10 +563,27 @@ namespace MyCaffe.model
             {
                 reluLayer = new LayerParameter(LayerParameter.LayerType.RELU);
                 reluLayer.name = convLayer.name + "_relu";
-                lastLayer = connectAndAddLayer(lastLayer, reluLayer, true);
+                addExclusion(reluLayer, phaseExclude);
+                lastLayer = connectAndAddLayer(lastLayer, reluLayer, true, true);
             }
 
             return lastLayer;
+        }
+
+        /// <summary>
+        /// Connect the from layer to the 'to' layer.
+        /// </summary>
+        /// <param name="fromLayer">Specifies the layer bottom to connect to the toLayer's top.</param>
+        /// <param name="toLayer">Specifies the layer who's top is connected to the from layer's bottom.</param>
+        /// <returns>The toLayer is returned as the next layer.</returns>
+        protected LayerParameter connectAndAddLayer(string fromLayer, LayerParameter toLayer)
+        {
+            toLayer.bottom.Clear();
+            toLayer.bottom.Add(fromLayer);
+
+            m_net.layer.Add(toLayer);
+
+            return toLayer;
         }
 
         /// <summary>
@@ -804,7 +874,7 @@ namespace MyCaffe.model
         }
 
         /// <summary>
-        /// Adds the full VGG body to the network, connecting it to the 'strFromLayer'.
+        /// Adds the full VGG body to the network, connecting it to the 'lastLayer'.
         /// </summary>
         /// <param name="lastLayer">Specifies the layer to connect the VGG net to.</param>
         /// <param name="bNeedFc">Optionally, specifies whether or not to add the fully connected end layers (default = true).</param>
@@ -841,6 +911,165 @@ namespace MyCaffe.model
                 }
             }
 
+            return lastLayer;
+        }
+
+
+        /// <summary>
+        /// Adds a ResNet body to the network, connecting it to the 'lastLayer'.
+        /// </summary>
+        /// <param name="lastLayer">Specifies the layer to connect the ResNet net to.</param>
+        /// <param name="strBlockName">Specifies the block name.</param>
+        /// <param name="nOut2A">Specifies the output of the first branch.</param>
+        /// <param name="nOut2B">Specifies the output of the second branch.</param>
+        /// <param name="nOut2C">Specifies the output of the third branch.</param>
+        /// <param name="nStride">Specifies the stride used in the first branch.</param>
+        /// <param name="bUseBranch1">Specifies whether or not to use the first branch.</param>
+        /// <param name="nDilation">Specifies the dilation used in all branches.</param>
+        /// <param name="bNamedParams">Optionally, specifies to name the parameters (default = false).</param>
+        /// <param name="strLayerPostfix">Optionally, specifies a layer name postfix (default = "").</param>
+        /// <param name="phaseExclude">Optionally, specifies a phase to exclude (default = NONE).</param>
+        /// <returns>The last layer added is returned.</returns>
+        protected LayerParameter addResBody(LayerParameter lastLayer, string strBlockName, int nOut2A, int nOut2B, int nOut2C, int nStride, bool bUseBranch1, int nDilation = 1, bool bNamedParams = false, string strLayerPostfix = "", Phase phaseExclude = Phase.NONE)
+        {
+            string strConvPrefix = "res_" + strBlockName;
+            string strConvPostfix = "";
+            string strBnPrefix = "bn_" + strBlockName;
+            string strBnPostfix = "";
+            string strScalePrefix = "scale_" + strBlockName;
+            string strScalePostfix = "";
+            bool bUseScale = true;
+            string strBranch1 = lastLayer.name;
+            string strBranch2;
+            string strBranchName;
+            string strOutName = lastLayer.name;
+
+            if (bUseBranch1)
+            {
+                strBranchName = "_br1";
+                lastLayer = addConvBNLayer(lastLayer.name, strBranchName, true, false, nOut2C, 1, 0, nStride, 1, nDilation, bUseScale, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);
+                strBranch1 = lastLayer.top[0];
+                strOutName = strBranch1;
+                nStride = 1;
+            }
+
+            strBranchName = "_br2a";
+            lastLayer = addConvBNLayer(strOutName, strBranchName, true, true, nOut2A, 1, 0, nStride, 1, nDilation, bUseScale, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);        
+            strOutName = strConvPrefix + strBranchName + strLayerPostfix;
+            strBranchName = "_br2b";
+
+            if (nDilation == 1)
+            {
+                lastLayer = addConvBNLayer(strOutName, strBranchName, true, true, nOut2B, 3, 1, 1, 1, nDilation, bUseScale, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);
+            }
+            else
+            {
+                int nPad = (int)(((3 + (nDilation - 1) * 2) - 1) / 2);
+                lastLayer = addConvBNLayer(strOutName, strBranchName, true, true, nOut2B, 3, nPad, 1, 1, nDilation, bUseScale, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);
+            }
+
+            strOutName = strConvPrefix + strBranchName + strLayerPostfix;
+            strBranchName = "_br2c";
+
+            lastLayer = addConvBNLayer(strOutName, strBranchName, true, false, nOut2C, 1, 0, 1, 1, 1, bUseScale, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);
+            strBranch2 = lastLayer.top[0];
+
+            LayerParameter eltwise = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+            eltwise.name = "res" + strBlockName + strLayerPostfix;
+            eltwise.bottom.Add(strBranch1);
+            eltwise.bottom.Add(strBranch2);
+            eltwise.top.Add(eltwise.name);
+            addExclusion(eltwise, phaseExclude);
+            m_net.layer.Add(eltwise);
+            lastLayer = eltwise;
+
+            LayerParameter relu = new LayerParameter(LayerParameter.LayerType.RELU);
+            relu.name = eltwise.name + "_relu";
+            addExclusion(relu, phaseExclude);
+            connectAndAddLayer(lastLayer, relu, true, true);
+
+            return lastLayer;
+        }
+
+        /// <summary>
+        /// Add a phase exclusion.
+        /// </summary>
+        /// <param name="p">Specifies the layer parameter to alter.</param>
+        /// <param name="phase">Specifies the phase to exclude, or NONE to ignore.</param>
+        protected void addExclusion(LayerParameter p, Phase phase)
+        {
+            if (phase == Phase.NONE)
+                return;
+
+            if (p.include.Count > 0)
+                return;
+
+            p.exclude.Add(new NetStateRule(phase));
+        }
+
+        /// <summary>
+        /// Create a ResNet101 Body.
+        /// </summary>
+        /// <param name="strDataName">Specifies the last layer name where the ResNet body is to be created from.</param>
+        /// <param name="nBlock3Count">Specifies the number of blocks in the 3 blocks (default = 4 for ResNet101, use 8 for ResNet152).</param>
+        /// <param name="nBlock4Count">Speciifes the number of blocks in the 4 blocks (default = 23 for ResNet101, use 36 for ResNet152).</param>
+        /// <param name="bUsePool5">Specifies whether or not a Pooling layer is to be used as the last layer.</param>
+        /// <param name="bUseDilationConv5">Specifies whether or not to use dilation on the level 5 block.</param>
+        /// <param name="bNamedParams">Specifies whether or not to name the parameters (default = false).</param>
+        /// <param name="strLayerPostfix">Specifies a layer name post-fix (default = "").</param>
+        /// <param name="phaseExclude">Specifies a phase to exclude, or NONE to ignore (default = NONE).</param>
+        /// <returns>The last layer is returned.</returns>
+        protected LayerParameter addResNetBody(string strDataName, int nBlock3Count = 4, int nBlock4Count = 23, bool bUsePool5 = true, bool bUseDilationConv5 = false, bool bNamedParams = false, string strLayerPostfix = "", Phase phaseExclude = Phase.NONE)
+        {
+            string strConvPrefix = "";
+            string strConvPostfix = "";
+            string strBnPrefix = "bn_";
+            string strBnPostfix = "";
+            string strScalePrefix = "scale_";
+            string strScalePostfix = "";
+
+            LayerParameter lastLayer = addConvBNLayer(strDataName, "conv1", true, true, 64, 7, 3, 2, 1, 1, true, strConvPrefix, strConvPostfix, strBnPrefix, strBnPostfix, strScalePrefix, strScalePostfix, "", "_bias", bNamedParams, strLayerPostfix, phaseExclude);
+
+            LayerParameter pool = createPooling("pool1" + strLayerPostfix, PoolingParameter.PoolingMethod.MAX, 3, 0, 2);
+            addExclusion(pool, phaseExclude);
+            lastLayer = connectAndAddLayer(lastLayer, pool);
+
+            lastLayer = addResBody(lastLayer, "2a", 64, 64, 256, 1, true, 1, bNamedParams, strLayerPostfix, phaseExclude);
+            lastLayer = addResBody(lastLayer, "2b", 64, 64, 256, 1, false, 1, bNamedParams, strLayerPostfix, phaseExclude);
+            lastLayer = addResBody(lastLayer, "2c", 64, 64, 256, 1, false, 1, bNamedParams, strLayerPostfix, phaseExclude);
+
+            lastLayer = addResBody(lastLayer, "3a", 128, 128, 512, 2, true, 1, bNamedParams, strLayerPostfix, phaseExclude);
+            for (int i = 1; i <= nBlock3Count; i++)
+            {
+                lastLayer = addResBody(lastLayer, "3b" + i.ToString(), 128, 128, 512, 1, false, 1, bNamedParams, strLayerPostfix, phaseExclude);
+            }
+
+            lastLayer = addResBody(lastLayer, "4a", 256, 256, 1024, 2, true, 1, bNamedParams, strLayerPostfix, phaseExclude);
+            for (int i = 1; i <= nBlock4Count; i++)
+            {
+                lastLayer = addResBody(lastLayer, "4b" + i.ToString(), 256, 256, 1024, 1, false, 1, bNamedParams, strLayerPostfix, phaseExclude);
+            }
+
+            int nStride = 2;
+            int nDilation = 1;
+            if (bUseDilationConv5)
+            {
+                nStride = 1;
+                nDilation = 2;
+            }
+
+            lastLayer = addResBody(lastLayer, "5a", 512, 512, 2048, nStride, true, nDilation, bNamedParams, strLayerPostfix, phaseExclude);
+            lastLayer = addResBody(lastLayer, "5b", 512, 512, 2048, 1, false, nDilation, bNamedParams, strLayerPostfix, phaseExclude);
+            lastLayer = addResBody(lastLayer, "5c", 512, 512, 2048, 1, false, nDilation, bNamedParams, strLayerPostfix, phaseExclude);
+
+            if (bUsePool5)
+            {
+                LayerParameter pool5 = createPooling("pool5" + strLayerPostfix, PoolingParameter.PoolingMethod.AVE, 3, 0, 1);
+                addExclusion(pool5, phaseExclude);
+                pool5.pooling_param.global_pooling = true;
+                lastLayer = connectAndAddLayer(lastLayer, pool5);
+            }
+           
             return lastLayer;
         }
 
