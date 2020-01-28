@@ -20,6 +20,7 @@
 #include <vector>
 #include <algorithm>
 #include <map>
+#include <mutex>
 #include "..\inc\FunctionIDs.h"
 #include <cuda_fp16.h>
 
@@ -108,12 +109,12 @@ class Memory
 		HandleCollection<MAX_HANDLES> m_tensorDesc;
 		HandleCollection<MAX_HANDLES> m_filterDesc;
 		HandleCollection<MAX_HANDLES> m_convDesc;
-		HandleCollection<MAX_HANDLES> m_poolDesc;
+		HandleCollection<MID_HANDLES> m_poolDesc;
 		HandleCollection<MAX_HANDLES> m_lrnDesc;
 		HandleCollection<MID_HANDLES> m_rnnDesc;
 		HandleCollection<MID_HANDLES> m_rnnDataDesc1;
 		HandleCollection<MID_HANDLES> m_rnnDataDesc2;
-		HandleCollection<MID_HANDLES> m_cudnn;
+		HandleCollection<MAX_HANDLES> m_cudnn; 
 		HandleCollection<MIN_HANDLES> m_pca;
 		HandleCollection<MIN_HANDLES> m_tsnegp;
 		HandleCollection<MIN_HANDLES> m_tsneg;
@@ -124,7 +125,7 @@ class Memory
 		T m_tOne;
 		T m_tZero;
 #ifdef CUDNN_5
-		HandleCollection<MAX_HANDLES> m_dropoutDesc;
+		HandleCollection<MID_HANDLES> m_dropoutDesc;
 		HandleCollection<MAX_HANDLES> m_activationDesc;
 		long m_hGlobalActivationSigmoid;
 		long m_hGlobalActivationRelu;
@@ -136,15 +137,45 @@ class Memory
 		map<cudnnHandle_t, int> m_cudnnH2Dev;
 		map<int, cudnnHandle_t> m_cudnnDev2H;
 
+		map<cudaStream_t, int> m_streamRef;
+		map<cudaStream_t, int> m_streamH2Dev;
+		map<cudaStream_t, int> m_streamH2Idx;
+		map<cudaStream_t, cudnnHandle_t> m_streamH2CudnnH;
+		map<cudnnHandle_t, int> m_streamCudnnRef;
+		map<int, map<int, cudaStream_t>> m_streamDev2Idx2H;
+		std::mutex m_sync;
+		
+
 		void free_cudnn(cudnnHandle_t h)
 		{
+			std::unique_lock<std::mutex> lock(m_sync);
+
+			// If the cudnn is NOT a shared cudnn (e.g. created with stream > 0)
 			if (m_cudnnRef.find(h) == m_cudnnRef.end())
 			{
-				cudnnDestroy(h);
+				// And it is not associated with a shared stream, then destroy it.
+				if (m_streamCudnnRef.find(h) == m_streamCudnnRef.end())
+				{
+					cudnnDestroy(h);
+					return;
+				}
+
+				// Otherwise decrement the shared ref count.
+				m_streamCudnnRef[h]--;
+				// And if there are no more references, then destroy the cudnn shared
+				// with the stream.
+				if (m_streamCudnnRef[h] <= 0)
+				{
+					cudnnDestroy(h);
+					m_streamCudnnRef.erase(h);
+				}
+
 				return;
 			}
 
+			// Otherwise, if the cudnn is a shared cudnn (e.g. created with stream == 0), then decrement the ref count.
 			m_cudnnRef[h]--;
+			// And if no more references exist, destroy the cudnn and remove it from the maps.
 			if (m_cudnnRef[h] <= 0)
 			{
 				int nDeviceID = m_cudnnH2Dev[h];
@@ -152,6 +183,50 @@ class Memory
 				m_cudnnH2Dev.erase(h);
 				m_cudnnDev2H.erase(nDeviceID);
 				cudnnDestroy(h);
+
+				cudaStream_t stream = NULL;
+				for (map<cudaStream_t, cudnnHandle_t>::iterator it = m_streamH2CudnnH.begin(); it != m_streamH2CudnnH.end(); it++)
+				{
+					if (it->second == h)
+					{
+						stream = it->first;
+						break;
+					}
+				}
+
+				if (stream != NULL)
+					m_streamH2CudnnH.erase(stream);
+			}
+		}
+
+		void free_stream(cudaStream_t h)
+		{
+			std::unique_lock<std::mutex> lock(m_sync);
+
+			// If the stream is not an indexed, shared stream, destroy it.
+			if (m_streamRef.find(h) == m_streamRef.end())
+			{
+				cudaStreamDestroy(h);
+				return;
+			}
+
+			// Otherwise, decrement the reference count for the stream.
+			m_streamRef[h]--;
+			// And if no more references are used, destroy it and remove it from the maps.
+			if (m_streamRef[h] <= 0)
+			{
+				int nDeviceID = m_streamH2Dev[h];
+				int nIndex = m_streamH2Idx[h];
+				m_streamRef.erase(h);
+				m_streamH2Dev.erase(h);
+				m_streamH2Idx.erase(h);				
+				m_streamDev2Idx2H[nDeviceID].erase(nIndex);
+
+				if (m_streamDev2Idx2H[nDeviceID].size() == 0)
+					m_streamDev2Idx2H.erase(nDeviceID);
+
+				if (m_streamH2CudnnH.find(h) != m_streamH2CudnnH.end())
+					m_streamH2CudnnH.erase(h);
 			}
 		}
 
@@ -205,7 +280,7 @@ class Memory
 		long CreateMemoryPointer(long hData, long lOffset, size_t lCount, long* phHandle);
 		long FreeMemoryPointer(long hData);
 
-		long CreateStream(long* phHandle, bool bNonBlocking = false);
+		long CreateStream(long* phHandle, bool bNonBlocking = false, int nIndex = -1);
 		long FreeStream(long hHandle);
 		cudaStream_t GetStream(long hHandle);
 		long SynchronizeStream(long hHandle);
@@ -791,7 +866,7 @@ inline long Memory<T>::FreeStream(long hHandle)
 	cudaStream_t h = (cudaStream_t)m_streams.Free(hHandle);
 	
 	if (h != NULL)
-		cudaStreamDestroy(h);
+		free_stream(h);
 
 	return 0;
 }

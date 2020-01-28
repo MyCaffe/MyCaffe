@@ -382,23 +382,52 @@ template bool Memory<float>::IsHostBuffer(float* pf);
 
 
 template <class T>
-long Memory<T>::CreateStream(long* phHandle, bool bNonBlocking)
+long Memory<T>::CreateStream(long* phHandle, bool bNonBlocking, int nIndex)
 {
+	std::unique_lock<std::mutex> lock(m_sync);
+
 	LONG lErr;
 	cudaStream_t stream = NULL;
+	int nDeviceID = 0;
 
 	if (phHandle == NULL)
 		return ERROR_PARAM_NULL;
 
-	if (bNonBlocking)
+	if (nIndex >= 0)
 	{
-		if (lErr = cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking))
+		if (lErr = cudaGetDevice(&nDeviceID))
 			return lErr;
+
+		if (m_streamDev2Idx2H.find(nDeviceID) != m_streamDev2Idx2H.end())
+		{
+			if (m_streamDev2Idx2H[nDeviceID].find(nIndex) != m_streamDev2Idx2H[nDeviceID].end())
+			{
+				stream = m_streamDev2Idx2H[nDeviceID][nIndex];
+				m_streamRef[stream]++;
+			}
+		}
 	}
-	else
+
+	if (stream == NULL)
 	{
-		if (lErr = cudaStreamCreate(&stream))
-			return lErr;
+		if (bNonBlocking)
+		{
+			if (lErr = cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking))
+				return lErr;
+		}
+		else
+		{
+			if (lErr = cudaStreamCreate(&stream))
+				return lErr;
+		}
+
+		if (nIndex >= 0)
+		{
+			m_streamDev2Idx2H[nDeviceID][nIndex] = stream;
+			m_streamRef[stream] = 1;
+			m_streamH2Dev[stream] = nDeviceID;
+			m_streamH2Idx[stream] = nIndex;
+		}
 	}
 
 	long hHandle = m_streams.Allocate(stream);
@@ -412,8 +441,8 @@ long Memory<T>::CreateStream(long* phHandle, bool bNonBlocking)
 	return cudaStreamSynchronize(0);
 }
 
-template long Memory<double>::CreateStream(long* phHandle, bool bNonBlocking);
-template long Memory<float>::CreateStream(long* phHandle, bool bNonBlocking);
+template long Memory<double>::CreateStream(long* phHandle, bool bNonBlocking, int nIndex);
+template long Memory<float>::CreateStream(long* phHandle, bool bNonBlocking, int nIndex);
 
 
 template <typename T>
@@ -436,6 +465,8 @@ template long Memory<float>::SynchronizeThread();
 template <class T>
 long Memory<T>::CreateCuDNN(long hStream, long* phHandle)
 {
+	std::unique_lock<std::mutex> lock(m_sync);
+
 	LONG lErr;
 	cudnnHandle_t cudnn = NULL;
 
@@ -448,30 +479,62 @@ long Memory<T>::CreateCuDNN(long hStream, long* phHandle)
 
 	if (hStream == 0)
 	{
+		// If the cudnn is already created for the device, share it
+		// and increase the ref count.
 		if (m_cudnnDev2H.find(nDeviceID) != m_cudnnDev2H.end())
 		{
 			cudnn = m_cudnnDev2H[nDeviceID];
 			m_cudnnRef[cudnn]++;
 		}
+		// Otherwise create a new cudnn for the device and add it to 
+		// the maps to share with a ref count of 1.
 		else
 		{
 			if (lErr = cudnnCreate(&cudnn))
 				return lErr | ERROR_CUDNN_OFFSET;
 
-			m_cudnnRef[cudnn]++;
+			m_cudnnRef[cudnn] = 1;
 			m_cudnnDev2H[nDeviceID] = cudnn;
 			m_cudnnH2Dev[cudnn] = nDeviceID;
 		}
 	}
 	else
 	{
-		if (lErr = cudnnCreate(&cudnn))
-			return lErr | ERROR_CUDNN_OFFSET;
-
-		if (lErr = cudnnSetStream(cudnn, GetStream(hStream)))
+		cudaStream_t stream = GetStream(hStream);
+		// If the stream is a shared stream, share see if the cudnn
+		// is already shared with the shared stream and use the shared
+		// cudnn if it exists, making sure to increase its ref count.
+		if (m_streamRef.find(stream) != m_streamRef.end())
 		{
-			cudnnDestroy(cudnn);
-			return lErr | ERROR_CUDNN_OFFSET;
+			if (m_streamH2CudnnH.find(stream) != m_streamH2CudnnH.end())
+			{
+				cudnn = m_streamH2CudnnH[stream];
+				m_streamCudnnRef[cudnn]++;
+			}
+		}
+
+		if (cudnn == NULL)
+		{
+			if (lErr = cudnnCreate(&cudnn))
+				return lErr | ERROR_CUDNN_OFFSET;
+
+			if (lErr = cudnnSetStream(cudnn, stream))
+			{
+				cudnnDestroy(cudnn);
+
+				if (m_streamH2CudnnH.find(stream) != m_streamH2CudnnH.end())
+					m_streamH2CudnnH.erase(stream);
+
+				return lErr | ERROR_CUDNN_OFFSET;
+			}
+
+			// If the stream is a shared stream, add the cudnn to
+			// it and set the ref count to 1.
+			if (m_streamRef.find(stream) != m_streamRef.end())
+			{
+				m_streamH2CudnnH[stream] = cudnn;
+				m_streamCudnnRef[cudnn] = 1;
+			}
 		}
 	}
 
