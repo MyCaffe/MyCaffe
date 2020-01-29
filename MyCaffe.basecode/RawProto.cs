@@ -306,7 +306,6 @@ namespace MyCaffe.basecode
             List<RawProto> rgParent = new List<RawProto>() { new RawProto("root", "") };
             RawProto child = new RawProto("", "");
 
-//            str = Utility.Replace(str, '\t', ' ');
             str = strip_comments(str);
 
             List<KeyValuePair<string, int>> rgstrTokens = tokenize(str);
@@ -317,6 +316,30 @@ namespace MyCaffe.basecode
         }
 
         private static string strip_comments(string str)
+        {
+            if (!str.Contains('#'))
+                return str;
+
+            string[] rgstr = str.Split('\n', '\r');
+            string strOut = "";
+
+            for (int i = 0; i < rgstr.Length; i++)
+            {
+                if (rgstr[i].Length > 0)
+                {
+                    int nPos = rgstr[i].IndexOf('#');
+                    if (nPos >= 0)
+                        rgstr[i] = rgstr[i].Substring(0, nPos);
+                }
+
+                if (rgstr[i].Length > 0)
+                    strOut += rgstr[i] + "\r\n";
+            }
+
+            return strOut;
+        }
+
+        private static string strip_commentsOld(string str)
         {
             List<string> rgstr = new List<string>();
             int nPos = str.IndexOf('\n');
@@ -355,7 +378,6 @@ namespace MyCaffe.basecode
         private static List<KeyValuePair<string, int>> tokenize(string str)
         {
             List<KeyValuePair<string, int>> rgstrTokens = new List<KeyValuePair<string, int>>();
-            str = removeComments(str);
             string[] rgLines = str.Split('\n');
 
             for (int i=0; i<rgLines.Length; i++)
@@ -412,7 +434,7 @@ namespace MyCaffe.basecode
             return rgstrTokens;
         }
 
-        private static string removeComments(string str)
+        private static string removeCommentsOld(string str)
         {
             string[] rgstr = str.Split('\n');
             string strOut = "";
