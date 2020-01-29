@@ -635,9 +635,13 @@ namespace MyCaffe.common
                 {
                     while (strName != targetWtInfo[nTargetIdx] && nBlobIdx < colBlobs.Count)
                     {
+                        nBlobIdx++;
+
+                        if (nBlobIdx == colBlobs.Count)
+                            break;
+
                         blob = colBlobs[nBlobIdx];
                         strName = name.GetName(blob.Name);
-                        nBlobIdx++;
                     }
 
                     if (nBlobIdx == colBlobs.Count)
