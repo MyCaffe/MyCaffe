@@ -27,7 +27,7 @@ namespace MyCaffe.model
         TransformationParameter m_transformTrain = null;
         TransformationParameter m_transformTest = null;
         string m_strModel;
-        MODEL m_model = MODEL.RESNET101;
+        MODEL m_model = MODEL.RESNET56;
         bool m_bUsePool5 = false;
         bool m_bUseDilationConv5 = false;
         string m_strDataset;
@@ -40,6 +40,10 @@ namespace MyCaffe.model
         /// </summary>
         public enum MODEL
         {
+            /// <summary>
+            /// Specifies to create a ResNet56 model.
+            /// </summary>
+            RESNET56,
             /// <summary>
             /// Specifies to create a ResNet101 model.
             /// </summary>
@@ -137,6 +141,7 @@ namespace MyCaffe.model
             m_solver.device_id = m_nGpuID;
             m_solver.debug_info = false;
             m_solver.snapshot_after_train = true;
+            m_solver.clip_gradients = 1;
 
             // Test parameters.
             m_solver.test_iter.Add(m_nTestIter);
@@ -283,6 +288,10 @@ namespace MyCaffe.model
 
             switch (m_model)
             {
+                case MODEL.RESNET56:
+                    lastLayer = addResNetBody(strDataName, 4, 11, m_bUsePool5, m_bUseDilationConv5, bNamedParams, strLayerPostfix, phaseExclude);
+                    break;
+
                 case MODEL.RESNET101:
                     lastLayer = addResNetBody(strDataName, 4, 23, m_bUsePool5, m_bUseDilationConv5, bNamedParams, strLayerPostfix, phaseExclude);
                     break;
