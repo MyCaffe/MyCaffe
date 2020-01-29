@@ -264,8 +264,7 @@
     </PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>%25systemroot%25\System32\xcopy /s /y "$(SolutionDir)packages\HDF5DotNet.x64.1.8.9\NativeBinaries\*.*" "$(TargetDir)"
-%25systemroot%25\System32\xcopy /y C:\Data\Binaries\SS_Projects\_$(ConfigurationName)\nccl64_134.10.0.dll "$(TargetDir)"</PostBuildEvent>
+    <PostBuildEvent>%25systemroot%25\System32\xcopy /s /y "$(SolutionDir)packages\HDF5DotNet.x64.1.8.9\NativeBinaries\*.*" "$(TargetDir)"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
