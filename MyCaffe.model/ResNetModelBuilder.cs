@@ -57,7 +57,7 @@ namespace MyCaffe.model
         /// <param name="strDataset">Specifies the dataset that the model will run on.</param>
         /// <param name="nChannels">Specifies the number of channels in the data set (e.g. color = 3, b/w = 1).</param>
         /// <param name="bSiamese">Specifies whether or not to create a Siamese network."</param> 
-        /// <param name="rgIpLayers">Specifies a list of inner product layers added to the end of the network where each entry specifies the number of output and whether or not Noise is enabled for the layer..</param>
+        /// <param name="rgIpLayers">Specifies a list of inner product layers added to the end of the network where each entry specifies the number of output and whether or not Noise is enabled for the layer.</param>
         /// <param name="bUsePool5">Specifies whether or not to use the Pool layer as the last layer.</param>
         /// <param name="bUseDilationConv5">Specifies whether or not to use dilation on block 5 layers.</param>
         /// <param name="model">Specifies the type of ResNet model to create.</param>
