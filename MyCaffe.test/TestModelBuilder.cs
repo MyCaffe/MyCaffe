@@ -390,8 +390,10 @@ namespace MyCaffe.test
         {
             if (strName.Contains(ResNetModelBuilder.MODEL.RESNET101.ToString()))
                 m_model = ResNetModelBuilder.MODEL.RESNET101;
-            else
+            else if (strName.Contains(ResNetModelBuilder.MODEL.RESNET152.ToString()))
                 m_model = ResNetModelBuilder.MODEL.RESNET152;
+            else
+                m_model = ResNetModelBuilder.MODEL.RESNET56;
         }
 
         protected override ModelBuilder create()
