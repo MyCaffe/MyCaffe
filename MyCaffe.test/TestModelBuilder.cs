@@ -185,6 +185,59 @@ namespace MyCaffe.test
             }
         }
 
+        [TestMethod]
+        public void TestResNet56_Siamese_CreateSolver()
+        {
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET56, true);
+
+            try
+            {
+                foreach (IModelBuilderTest t in test.Tests)
+                {
+                    t.TestCreateSolver();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestResNet56_Siamese_CreateDeployModel()
+        {
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET56, true);
+
+            try
+            {
+                foreach (IModelBuilderTest t in test.Tests)
+                {
+                    t.TestCreateDeployModel();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestResNet56_Siamease_CreateTrainingModel()
+        {
+            ResNetModelBuilderTest test = new ResNetModelBuilderTest(ResNetModelBuilder.MODEL.RESNET56, true);
+
+            try
+            {
+                foreach (IModelBuilderTest t in test.Tests)
+                {
+                    t.TestCreateTrainingModel();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
 
         [TestMethod]
         public void TestResNet101_Siamese_CreateSolver()
@@ -347,7 +400,7 @@ namespace MyCaffe.test
             rgIP.Add(new Tuple<int, bool>(1024, false));
             rgIP.Add(new Tuple<int, bool>(512, true));
             rgIP.Add(new Tuple<int, bool>(10, false));
-            int nBatch = (m_model == ResNetModelBuilder.MODEL.RESNET101) ? 16 : 12;
+            int nBatch = (m_model == ResNetModelBuilder.MODEL.RESNET56) ? 32 : (m_model == ResNetModelBuilder.MODEL.RESNET101) ? 16 : 12;
             return new ResNetModelBuilder(m_strBaseDir, "CIFAR-10", 3, true, rgIP, true, false, m_model, nBatch, nBatch);
         }
     }
@@ -359,10 +412,12 @@ namespace MyCaffe.test
         public ResNetModelBuilderTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, nDeviceID, engine)
         {
-            if (strName.Contains(ResNetModelBuilder.MODEL.RESNET101.ToString()))
+            if (strName.Contains(ResNetModelBuilder.MODEL.RESNET152.ToString()))
+                m_model = ResNetModelBuilder.MODEL.RESNET152;
+            else if (strName.Contains(ResNetModelBuilder.MODEL.RESNET101.ToString()))
                 m_model = ResNetModelBuilder.MODEL.RESNET101;
             else
-                m_model = ResNetModelBuilder.MODEL.RESNET152;
+                m_model = ResNetModelBuilder.MODEL.RESNET56;
         }
 
         protected override ModelBuilder create()
@@ -447,6 +502,10 @@ namespace MyCaffe.test
                 ResNetModelBuilder.MODEL model = ResNetModelBuilder.MODEL.RESNET101;
                 if (m_strName.Contains("152"))
                     model = ResNetModelBuilder.MODEL.RESNET152;
+                else if (m_strName.Contains("101"))
+                    model = ResNetModelBuilder.MODEL.RESNET101;
+                else
+                    model = ResNetModelBuilder.MODEL.RESNET56;
 
                 // NOTE: These models are big and can require 40+ GB of Video Memory depending on the batch sizes used.
                 if (m_strName.Contains("SIAMESE"))
@@ -475,7 +534,7 @@ namespace MyCaffe.test
             {
                 using (StreamWriter sw = new StreamWriter(strSolverFile))
                 {
-                    sw.Write(strSolverFile);
+                    sw.Write(strSolver);
                 }
             }
         }
