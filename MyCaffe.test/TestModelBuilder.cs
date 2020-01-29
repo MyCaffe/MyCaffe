@@ -13,6 +13,7 @@ using MyCaffe.basecode.descriptors;
 using MyCaffe.data;
 using MyCaffe.layers.beta;
 using MyCaffe.model;
+using System.IO;
 
 /// <summary>
 /// Testing the Model Builders.
@@ -407,11 +408,13 @@ namespace MyCaffe.test
     abstract class ModelBuilderTest<T> : TestEx<T>, IModelBuilderTest
     {
         protected string m_strBaseDir;
+        protected string m_strName;
 
         public ModelBuilderTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
         {
             m_engine = engine;
+            m_strName = strName;
             m_strBaseDir = TestBase.GetTestPath("\\MyCaffe\\test_data", true, true);
         }
 
@@ -421,6 +424,61 @@ namespace MyCaffe.test
         }
 
         protected abstract ModelBuilder create();
+
+        protected void save(string strModel, string strSolver, bool bDeploy)
+        {
+            string strPath = m_strBaseDir + "\\models\\test\\";
+
+            if (!Directory.Exists(strPath))
+                Directory.CreateDirectory(strPath);
+
+            string strModelFile = null;
+            string strSolverFile = null;
+            string strType = (bDeploy) ? "deploy" : "train_val";
+
+            if (m_strName.Contains("SSD"))
+            {
+                strModelFile = strPath + "ssd_" + strType + ".prototxt";
+                if (strSolver != null)
+                    strSolverFile = strPath + "ssd_solver.prototxt";
+            }
+            else if (m_strName.Contains("ResNet"))
+            {
+                ResNetModelBuilder.MODEL model = ResNetModelBuilder.MODEL.RESNET101;
+                if (m_strName.Contains("152"))
+                    model = ResNetModelBuilder.MODEL.RESNET152;
+
+                // NOTE: These models are big and can require 40+ GB of Video Memory depending on the batch sizes used.
+                if (m_strName.Contains("SIAMESE"))
+                {
+                    strModelFile = strPath + model.ToString().ToLower() + "_siamese_" + strType + ".prototxt";
+                    if (strSolver != null)
+                        strSolverFile = strPath + model.ToString().ToLower() + "_siamese_solver.prototxt";
+                }
+                else
+                {
+                    strModelFile = strPath + model.ToString().ToLower() + "_" + strType + ".prototxt";
+                    if (strSolver != null)
+                        strSolverFile = strPath + model.ToString().ToLower() + "_solver.prototxt";
+                }
+            }
+
+            if (strModelFile != null)
+            {
+                using (StreamWriter sw = new StreamWriter(strModelFile))
+                {
+                    sw.Write(strModel);
+                }
+            }
+
+            if (strSolverFile != null)
+            {
+                using (StreamWriter sw = new StreamWriter(strSolverFile))
+                {
+                    sw.Write(strSolverFile);
+                }
+            }
+        }
 
         public void TestCreateSolver()
         {
@@ -458,6 +516,8 @@ namespace MyCaffe.test
             CancelEvent evtCancel = new CancelEvent();
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(settings, m_log, evtCancel);
 
+            save(strNet, strSolver, false);
+
             //            mycaffe.LoadLite(Phase.TRAIN, strSolver, strNet, null);
             mycaffe.Dispose();
         }
@@ -479,6 +539,8 @@ namespace MyCaffe.test
             SettingsCaffe settings = new SettingsCaffe();
             CancelEvent evtCancel = new CancelEvent();
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(settings, m_log, evtCancel);
+
+            save(strNet, null, true);
 
             //            mycaffe.LoadToRun(strNet, null, new BlobShape(1, 3, 300, 300));
             mycaffe.Dispose();
