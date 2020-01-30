@@ -167,6 +167,10 @@ namespace MyCaffe.test
             if (strClass == "TestMyCaffeControl" && strMethod.Contains("TestTrainMultiGpu"))
                 return 1;
 
+            // If this fails it can fail with the error 'Device encountered a load or storage instruction on an invalid memory address (700)
+            if (strClass == "TestLSTMSimpleLayer" && strMethod.Contains("TestGradientClipMask"))
+                return 1;
+
             // If this fails, a corruption of the GPU is possible.
             if (strClass == "TestNCCL")
                 return 2;
