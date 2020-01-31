@@ -1996,7 +1996,7 @@ namespace MyCaffe.common
             float fNmsThreshold = 0;
             int nTopK = -1;
 
-            if (p.nms_param != null)
+            if (p.nms_param != null && p.nms_param.Active)
             {
                 fNmsThreshold = p.nms_param.nms_threshold;
                 nTopK = p.nms_param.top_k.GetValueOrDefault(-1);
@@ -2091,7 +2091,7 @@ namespace MyCaffe.common
                     }
 
                     // Select samples.
-                    if (p.nms_param != null && fNmsThreshold > 0)
+                    if (p.nms_param != null && p.nms_param.Active && fNmsThreshold > 0)
                     {
                         // Do nms before selecting samples.
                         List<float> rgSelLoss = new List<float>();
@@ -2138,7 +2138,7 @@ namespace MyCaffe.common
                     }
                     else
                     {
-                        // Pick top exampel indices based on loss.
+                        // Pick top example indices based on loss.
                         rgLossIndices = rgLossIndices.OrderByDescending(p1 => p1.Key).ToList();
                         for (int n = 0; n < nNumSel; n++)
                         {
@@ -2159,7 +2159,7 @@ namespace MyCaffe.common
                         }
                         else if (rgMatchIndices[nLabel][m] == -1)
                         {
-                            if (!rgSelIndices.Contains(m))
+                            if (rgSelIndices.Contains(m))
                             {
                                 rgNegIndices.Add(m);
                                 nNumNegs += 1;
