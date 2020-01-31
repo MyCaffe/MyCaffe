@@ -23,6 +23,7 @@ namespace MyCaffe.common
         CudaDnn<T> m_cuda;
         BBoxUtility<T> m_util;
         Blob<T> m_blobWork;
+        CryptoRandom m_random = new CryptoRandom();
 
         /// <summary>
         /// The constructor.
@@ -148,17 +149,22 @@ namespace MyCaffe.common
 
         private float randomUniformValue(float fMin, float fMax)
         {
-            m_blobWork.Reshape(1, 1, 1, 1);
+            fMin = (float)Math.Round(fMin, 5);
+            fMax = (float)Math.Round(fMax, 5);
 
-            FillerParameter fp = new FillerParameter("uniform");
-            fp.min = fMin;
-            fp.max = fMax;
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
-            filler.Fill(m_blobWork);
+            m_log.CHECK_LE(fMin, fMax, "The min mumst be <= the max!");
 
-            float[] rg = Utility.ConvertVecF<T>(m_blobWork.mutable_cpu_data);
+            if (fMin == 0 && fMax == 0)
+                return 0.0f;
+            else if (fMin == 1 && fMax == 1)
+                return 1.0f;
+            else
+            {
+                double dfRandom = m_random.NextDouble();
+                float fRange = fMax - fMin;
 
-            return rg[0];
+                return (float)(dfRandom * fRange) + fMin;
+            }
         }
 
         private NormalizedBBox sampleBBox(Sampler sampler)
