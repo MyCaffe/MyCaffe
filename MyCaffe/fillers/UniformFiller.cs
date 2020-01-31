@@ -41,6 +41,7 @@ namespace MyCaffe.fillers
         public override void Fill(int nCount, long hMem, int nNumAxes = 1, int nNumOutputs = 1, int nNumChannels = 1, int nHeight = 1, int nWidth = 1)
         {
             m_log.CHECK(nCount > 0, "There is no data to fill!");
+            m_log.CHECK_LT(m_param.min, m_param.max, "The min must be less than the max for the uniform filler!");
             m_cuda.rng_uniform(nCount, m_param.min, m_param.max, hMem);
         }
     }
