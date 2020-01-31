@@ -421,7 +421,7 @@ class Memory
 		long NcclBroadcast(long hNccl, long hStream, long hX, int nCount);
 		long NcclAllReduce(long hNccl, long hStream, long hX, int nCount, NCCL_OP op, T fScale);
 
-		long CreateSSD(int nGpuID, int nNumClasses, bool bShareLocation, int nLocClasses, int nBackgroundLabelId, bool bUseDifficultGt, SsdMiningType miningType, SsdMatchingType matchingType, T fOverlapThreshold, bool bUsePriorForMatching, SsdCodeType codeType, bool bEncodeVariantInTgt, bool bBpInside, bool bIgnoreCrossBoundaryBbox, bool bUsePriorForNms, SsdConfLossType confLossType, SsdLocLossType locLossType, T fNegPosRatio, T fNegOverlap, int nSampleSize, bool bMapObjectToAgnostic, T fNmsThreshold, int nTopK, T fEta, Math<T>* pMath, long* phHandle);
+		long CreateSSD(int nGpuID, int nNumClasses, bool bShareLocation, int nLocClasses, int nBackgroundLabelId, bool bUseDifficultGt, SsdMiningType miningType, SsdMatchingType matchingType, T fOverlapThreshold, bool bUsePriorForMatching, SsdCodeType codeType, bool bEncodeVariantInTgt, bool bBpInside, bool bIgnoreCrossBoundaryBbox, bool bUsePriorForNms, SsdConfLossType confLossType, SsdLocLossType locLossType, T fNegPosRatio, T fNegOverlap, int nSampleSize, bool bMapObjectToAgnostic, bool bNmsActive, T fNmsThreshold, int nTopK, T fEta, Math<T>* pMath, long* phHandle);
 		long FreeSSD(long hHandle);
 		ssdHandle<T>* GetSSD(long hHandle);
 		long SetupSSD(long hSsd, int nNum, int nNumPriors, int nNumGt);
@@ -1517,7 +1517,7 @@ inline long Memory<T>::RunMemoryTest(long hHandle, MEMTEST_TYPE memtestType, siz
 
 
 template <class T>
-inline long Memory<T>::CreateSSD(int nGpuID, int nNumClasses, bool bShareLocation, int nLocClasses, int nBackgroundLabelId, bool bUseDifficultGt, SsdMiningType miningType, SsdMatchingType matchingType, T fOverlapThreshold, bool bUsePriorForMatching, SsdCodeType codeType, bool bEncodeVariantInTgt, bool bBpInside, bool bIgnoreCrossBoundaryBbox, bool bUsePriorForNms, SsdConfLossType confLossType, SsdLocLossType locLossType, T fNegPosRatio, T fNegOverlap, int nSampleSize, bool bMapObjectToAgnostic, T fNmsThreshold, int nTopK, T fEta, Math<T>* pMath, long* phHandle)
+inline long Memory<T>::CreateSSD(int nGpuID, int nNumClasses, bool bShareLocation, int nLocClasses, int nBackgroundLabelId, bool bUseDifficultGt, SsdMiningType miningType, SsdMatchingType matchingType, T fOverlapThreshold, bool bUsePriorForMatching, SsdCodeType codeType, bool bEncodeVariantInTgt, bool bBpInside, bool bIgnoreCrossBoundaryBbox, bool bUsePriorForNms, SsdConfLossType confLossType, SsdLocLossType locLossType, T fNegPosRatio, T fNegOverlap, int nSampleSize, bool bMapObjectToAgnostic, bool bNmsActive, T fNmsThreshold, int nTopK, T fEta, Math<T>* pMath, long* phHandle)
 {
 	LONG lErr;
 	ssdHandle<T>* ssd = NULL;
@@ -1534,7 +1534,7 @@ inline long Memory<T>::CreateSSD(int nGpuID, int nNumClasses, bool bShareLocatio
 		return lErr;
 	}
 
-	if (lErr = ssd->Initialize(nGpuID, nNumClasses, bShareLocation, nLocClasses, nBackgroundLabelId, bUseDifficultGt, miningType, matchingType, fOverlapThreshold, bUsePriorForMatching, codeType, bEncodeVariantInTgt, bBpInside, bIgnoreCrossBoundaryBbox, bUsePriorForNms, confLossType, locLossType, fNegPosRatio, fNegOverlap, nSampleSize, bMapObjectToAgnostic, fNmsThreshold, nTopK, fEta))
+	if (lErr = ssd->Initialize(nGpuID, nNumClasses, bShareLocation, nLocClasses, nBackgroundLabelId, bUseDifficultGt, miningType, matchingType, fOverlapThreshold, bUsePriorForMatching, codeType, bEncodeVariantInTgt, bBpInside, bIgnoreCrossBoundaryBbox, bUsePriorForNms, confLossType, locLossType, fNegPosRatio, fNegOverlap, nSampleSize, bMapObjectToAgnostic, bNmsActive, fNmsThreshold, nTopK, fEta))
 	{
 		delete ssd;
 		return lErr;

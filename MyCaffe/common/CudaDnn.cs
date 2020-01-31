@@ -4584,15 +4584,16 @@ namespace MyCaffe.common
                 /* 18 */ rgArg.Add(fNegOverlap);
                 /* 19 */ rgArg.Add(nSampleSize);
                 /* 20 */ rgArg.Add((bMapObjectToAgnostic) ? 1 : 0);
+                /* 21 */ rgArg.Add((bNmsParam) ? 1 : 0);
 
                 if (bNmsParam)
                 {
                     if (!fNmsThreshold.HasValue)
                         throw new Exception("An NMS threshold must be specified when the 'bNmsParam' is true.");
 
-                    /* 21 */ rgArg.Add(fNmsThreshold.GetValueOrDefault());
-                    /* 22 */ rgArg.Add(nNmsTopK.GetValueOrDefault(-1));
-                    /* 23 */ rgArg.Add(fNmsEta.GetValueOrDefault(1));
+                    /* 22 */ rgArg.Add(fNmsThreshold.GetValueOrDefault(0));
+                    /* 23 */ rgArg.Add(nNmsTopK.GetValueOrDefault(-1));
+                    /* 24 */ rgArg.Add(fNmsEta.GetValueOrDefault(1));
                 }
 
                 double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_SSD, rgArg.ToArray());
@@ -4623,15 +4624,16 @@ namespace MyCaffe.common
                 /* 18 */ rgArg.Add(fNegOverlap);
                 /* 19 */ rgArg.Add(nSampleSize);
                 /* 20 */ rgArg.Add((bMapObjectToAgnostic) ? 1 : 0);
+                /* 21 */ rgArg.Add((bNmsParam) ? 1 : 0);
 
                 if (bNmsParam)
                 {
                     if (!fNmsThreshold.HasValue)
                         throw new Exception("An NMS threshold must be specified when the 'bNmsParam' is true.");
 
-                    /* 21 */ rgArg.Add(fNmsThreshold.GetValueOrDefault());
-                    /* 22 */ rgArg.Add(nNmsTopK.GetValueOrDefault(-1));
-                    /* 23 */ rgArg.Add(fNmsEta.GetValueOrDefault(1));
+                    /* 22 */ rgArg.Add(fNmsThreshold.GetValueOrDefault(0));
+                    /* 23 */ rgArg.Add(nNmsTopK.GetValueOrDefault(-1));
+                    /* 24 */ rgArg.Add(fNmsEta.GetValueOrDefault(1));
                 }
 
                 float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_CREATE_SSD, rgArg.ToArray());

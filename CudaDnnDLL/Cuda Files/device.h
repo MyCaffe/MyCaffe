@@ -2903,7 +2903,7 @@ inline long Device<T>::CreateSsd(long lInput, T* pfInput, long* plOutput, T** pp
 	LONG lErr;
 	long hHandle = 0;
 
-	if (lErr = verifyInput(lInput, pfInput, 21, 24))
+	if (lErr = verifyInput(lInput, pfInput, 22, 25))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
@@ -2930,20 +2930,21 @@ inline long Device<T>::CreateSsd(long lInput, T* pfInput, long* plOutput, T** pp
 	T fNegOverlap = pfInput[18];
 	int nSampleSize = (int)pfInput[19];
 	bool bMapObjectToAgnostic = (pfInput[20] == 0) ? false : true;
+	bool bNmsActive = (pfInput[21] == 0) ? false : true;
 
-	T fNmsThreshold = T(0.3);
-	if (lInput > 21)
-		fNmsThreshold = pfInput[21];
+	T fNmsThreshold = T(0.0);
+	if (lInput > 22)
+		fNmsThreshold = pfInput[22];
 
 	int nTopK = -1;
-	if (lInput > 22)
-		nTopK = (int)pfInput[22];
+	if (lInput > 23)
+		nTopK = (int)pfInput[23];
 
 	T fEta = 1.0;
-	if (lInput > 23)
+	if (lInput > 24)
 		fEta = pfInput[23];
 
-	if (lErr = m_memory.CreateSSD(nGpuID, nNumClasses, bShareLocation, nLocClasses, nBackgroundLabelId, bUseDifficultGt, miningType, matchingType, fOverlapThreshold, bUsePriorForMatching, codeType, bEncodeVariantInTgt, bBpInside, bIgnoreCrossBoundaryBbox, bUsePriorForNms, confLossType, locLossType, fNegPosRatio, fNegOverlap, nSampleSize, bMapObjectToAgnostic, fNmsThreshold, nTopK, fEta, &m_math, &hHandle))
+	if (lErr = m_memory.CreateSSD(nGpuID, nNumClasses, bShareLocation, nLocClasses, nBackgroundLabelId, bUseDifficultGt, miningType, matchingType, fOverlapThreshold, bUsePriorForMatching, codeType, bEncodeVariantInTgt, bBpInside, bIgnoreCrossBoundaryBbox, bUsePriorForNms, confLossType, locLossType, fNegPosRatio, fNegOverlap, nSampleSize, bMapObjectToAgnostic, bNmsActive, fNmsThreshold, nTopK, fEta, &m_math, &hHandle))
 		return lErr;
 
 	return setOutput(hHandle, plOutput, ppfOutput);

@@ -325,7 +325,7 @@ namespace MyCaffe.layers.ssd
                 float? fNmsEta = null;
                 bool bNmsParam = false;
 
-                if (m_param.multiboxloss_param.nms_param != null)
+                if (m_param.multiboxloss_param.nms_param != null && m_param.multiboxloss_param.nms_param.Active)
                 {
                     bNmsParam = true;
                     fNmsThreshold = m_param.multiboxloss_param.nms_param.nms_threshold;

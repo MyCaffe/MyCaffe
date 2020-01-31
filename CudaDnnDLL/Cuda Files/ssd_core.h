@@ -540,6 +540,7 @@ public:
 	T m_fNegOverlap;
 	int m_nSampleSize;
 	bool m_bMapObjectToAgnostic;
+	bool m_bNmsActive;
 	T m_fNmsThreshold;
 	int m_nTopK;
 	T m_fEta;
@@ -566,7 +567,7 @@ public:
 		return m_all_neg_indices;
 	}
 
-	LONG Initialize(int nGpuID, int nNumClasses, bool bShareLocation, int nLocClasses, int nBackgroundLabelId, bool bUseDifficultGt, SsdMiningType miningType, SsdMatchingType matchingType, T fOverlapThreshold, bool bUsePriorForMatching, SsdCodeType codeType, bool bEncodeVariantInTgt, bool bBpInside, bool bIgnoreCrossBoundaryBbox, bool bUsePriorForNms, SsdConfLossType confLossType, SsdLocLossType locLossType, T fNegPosRatio, T fNegOverlap, int nSampleSize, bool bMapObjectToAgnostic, T fNmsThreshold, int nTopK, T fEta)
+	LONG Initialize(int nGpuID, int nNumClasses, bool bShareLocation, int nLocClasses, int nBackgroundLabelId, bool bUseDifficultGt, SsdMiningType miningType, SsdMatchingType matchingType, T fOverlapThreshold, bool bUsePriorForMatching, SsdCodeType codeType, bool bEncodeVariantInTgt, bool bBpInside, bool bIgnoreCrossBoundaryBbox, bool bUsePriorForNms, SsdConfLossType confLossType, SsdLocLossType locLossType, T fNegPosRatio, T fNegOverlap, int nSampleSize, bool bMapObjectToAgnostic, bool bNmsActive, T fNmsThreshold = 0, int nTopK = -1, T fEta = 1)
 	{
 		m_nNumClasses = nNumClasses;
 		m_bShareLocation = bShareLocation;
@@ -588,9 +589,13 @@ public:
 		m_fNegPosRatio = fNegPosRatio;
 		m_nSampleSize = nSampleSize;
 		m_bMapObjectToAgnostic = bMapObjectToAgnostic;
-		m_fNmsThreshold = fNmsThreshold;
-		m_nTopK = nTopK;
-		m_fEta = fEta;
+		m_bNmsActive = bNmsActive;
+		if (bNmsActive)
+		{
+			m_fNmsThreshold = fNmsThreshold;
+			m_nTopK = nTopK;
+			m_fEta = fEta;
+		}
 
 		if ((m_rgBbox[MEM_LOC] = new SsdBbox<T>(m_pMem, nGpuID)) == NULL)
 			return ERROR_MEMORY_OUT;

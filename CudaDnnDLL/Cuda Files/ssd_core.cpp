@@ -1086,7 +1086,7 @@ long SsdData<T>::mineHardExamples(vector<map<int, vector<BBOX>>>& rgAllLocPreds,
 			}
 
 			// Select samples.
-			if (m_fNmsThreshold > 0)
+			if (m_bNmsActive)
 			{
 				// Do nms before selecting samples.
 				vector<T> sel_loss;
