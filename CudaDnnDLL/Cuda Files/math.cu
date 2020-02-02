@@ -225,7 +225,7 @@ template void Math<float>::Connect(Memory<float>* pMem);
 template <typename T>
 __global__ void set_kernel(const int n, const T alpha, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = alpha;
 	}
@@ -354,7 +354,7 @@ template long Math<float>::get(int nCount, long hDst, int nIdx, float* pfOutput)
 template <typename T>
 __global__ void copy_kernel_half2float(const int n, __half* x, T* y)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = __half2float(x[i]);
 	}
@@ -363,7 +363,7 @@ __global__ void copy_kernel_half2float(const int n, __half* x, T* y)
 template <typename T>
 __global__ void copy_kernel_float2half(const int n, T* x, __half* y)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = __float2half(x[i]);
 	}
@@ -501,7 +501,7 @@ template long Math<float>::copy(int nCount, long hSrc, long hDst, int nSrcOffset
 template <typename T>
 __global__ void copy_sim_kernel(const int nCount, const int nNum, const int nDim, const T* x1, const T* x2, T* y, const T* s)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nCount; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / nDim;
 		y[i] = (s[n] == 1) ? x1[i] : x2[i];
@@ -511,7 +511,7 @@ __global__ void copy_sim_kernel(const int nCount, const int nNum, const int nDim
 template <typename T>
 __global__ void copy_sim_kernel_invert(const int nCount, const int nNum, const int nDim, const T* x1, const T* x2, T* y, const T* s)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nCount; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / nDim;
 		y[i] = (s[n] == 0) ? x1[i] : x2[i];
@@ -565,7 +565,7 @@ template long Math<float>::copy_sim(int nCount, int nNum, int nDim, long hSrc1, 
 template <typename T>
 __global__ void copy_fill_kernel(const int nCount, const int nNum, const int nDim, const T* x, T* y)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nCount; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / nDim;
 		int j = i % nDim;
@@ -1856,7 +1856,7 @@ long Math<float>::scale(int n, float fAlpha, long hX, long hY, int nXOff, int nY
 template <typename T>
 __global__ void add_scalar_kernel(const int n, const T alpha, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = y[i] + alpha;
 	}
@@ -1865,7 +1865,7 @@ __global__ void add_scalar_kernel(const int n, const T alpha, T* y)
 __global__ void add_scalar_kernel_half(const int n, __half alpha, __half* y)
 {
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = y[i] + alpha;
 	}
@@ -1946,7 +1946,7 @@ long Math<float>::add_scalar(int n, float fAlpha, long hY, int nYOff)
 template <typename T>
 __global__ void add_kernel(const int n, T* a, T* b, T* y, T fAlpha)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = a[i] + (b[i] * fAlpha);
 	}
@@ -1955,7 +1955,7 @@ __global__ void add_kernel(const int n, T* a, T* b, T* y, T fAlpha)
 __global__ void add_kernel_half(const int n, __half* a, __half* b, __half* y, __half fAlpha)
 {
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = a[i] + (b[i] * fAlpha);
 	}
@@ -2057,7 +2057,7 @@ long Math<double>::add(int n, double* a, double* b, double* c)
 template <typename T>
 __global__ void add2_kernel(const int n, T* a, T* b, T* y, T fAlphaA, T fAlphaB)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = (a[i] * fAlphaA) + (b[i] * fAlphaB);
 	}
@@ -2105,7 +2105,7 @@ template long Math<float>::add2(int n, long hA, long hB, long hY, float dfAlphaA
 template <typename T>
 __global__ void mulbsx_kernel(const int n, const T* a, const T* x, const int rows, const int cols, const bool bTrans, T* b)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int c = i % cols;
 		int r = (i / cols) % rows;
@@ -2158,7 +2158,7 @@ template long Math<float>::mulbsx(int n, long hA, int nAOff, long hX, int nXOff,
 template <typename T>
 __global__ void divbsx_kernel(const int n, const T* a, const T* x, const int rows, const int cols, const bool bTrans, T* b)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int c = i % cols;
 		int r = (i / cols) % rows;
@@ -2211,7 +2211,7 @@ template long Math<float>::divbsx(int n, long hA, int nAOff, long hX, int nXOff,
 template <typename T>
 __global__ void compare_signs_kernel(const int n, T* a, T* b, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		if (a[i] < T(0.0))
 		{
@@ -2642,7 +2642,7 @@ template long Math<float>::naninfval(int n, long hA, long hWork1, long hWork2, f
 template <typename T>
 __global__ void width_kernel(const int n, const T* mean, const T* minv, const T* maxv, T fAlpha, T* width)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		width[i] = max(maxv[i] - mean[i], mean[i] - minv[i]) + fAlpha;
 	}
@@ -2681,7 +2681,7 @@ template long Math<float>::width(int n, long hMean, long hMax, long hMin, float 
 template <typename T>
 __global__ void contains_point_kernel(const int n, const T* mean, const T* width, const T* x, T* out)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out[i] = (((mean[i] - width[i]) > x[i]) || ((mean[i] + width[i]) < x[i])) ? 1 : 0;
 	}
@@ -2740,7 +2740,7 @@ template long Math<float>::contains_point(int n, long hMean, long hWidth, long h
 template <typename T>
 __global__ void denan_kernel(const int n, T* x, const T fReplacement)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		x[i] = (isnan(x[i]) || isinf(x[i])) ? fReplacement : x[i];
 	}
@@ -2769,7 +2769,7 @@ template long Math<float>::denan(int n, long hX, float fReplacement);
 template <typename T>
 __global__ void sub_kernel(const int n, T* a, T* b, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = a[i] - b[i];
 	}
@@ -2779,7 +2779,7 @@ template <typename T>
 __global__ void sub_kernel_half(const int n, __half* a, __half* b, __half* y)
 {
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = a[i] - b[i];
 	}
@@ -2789,7 +2789,7 @@ __global__ void sub_kernel_half(const int n, __half* a, __half* b, __half* y)
 template <typename T>
 __global__ void sub_kernel(const int n, T* a, T* b, T* y, const int nB)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = a[i] - b[i % nB];
 	}
@@ -2799,7 +2799,7 @@ template <typename T>
 __global__ void sub_kernel_half(const int n, __half* a, __half* b, __half* y, const int nB)
 {
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = a[i] - b[i % nB];
 	}
@@ -2949,7 +2949,7 @@ __global__ void sub_and_dot_kernel(const int nN, int len, T* a, T* b, T* y)
 {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-	if (i < nN)
+	if (i < nN && i>=0)
 	{
 		T tmp = a[i] - b[i%len];
 		y[i] = tmp*tmp;
@@ -2998,7 +2998,7 @@ template long Math<double>::sub_and_dot(int n, int nN, int nLen, long hA, long h
 template <typename T>
 __global__ void mul_scalar_kernel(const int n, const T alpha, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] *= alpha;
 	}
@@ -3007,7 +3007,7 @@ __global__ void mul_scalar_kernel(const int n, const T alpha, T* y)
 __global__ void mul_scalar_kernel_half(const int n, __half alpha, __half* y)
 {
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = y[i] * alpha;
 	}
@@ -3087,7 +3087,7 @@ long Math<float>::mul_scalar(int n, float fAlpha, long hY, int nYOff)
 template <typename T>
 __global__ void mul_kernel(const int n, T* a, T* b, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = a[i] * b[i];
 	}
@@ -3096,7 +3096,7 @@ __global__ void mul_kernel(const int n, T* a, T* b, T* y)
 __global__ void mul_kernel_half(const int n, __half* a, __half* b, __half* y)
 {
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = a[i] * b[i];
 	}
@@ -3231,7 +3231,7 @@ long Math<float>::mul(int n, long hA, long hB, long hY, int nAOff, int nBOff, in
 template <typename T>
 __global__ void div_kernel(const int n, T* a, T* b, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = a[i] / b[i];
 	}
@@ -3240,7 +3240,7 @@ __global__ void div_kernel(const int n, T* a, T* b, T* y)
 __global__ void div_kernel_half(const int n, __half* a, __half* b, __half* y)
 {
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = a[i] / b[i];
 	}
@@ -3323,7 +3323,7 @@ long Math<float>::div(int n, long hA, long hB, long hY)
 template <typename T>
 __global__ void abs_kernel(const int n, T* a, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = abs(a[i]);
 	}
@@ -3332,7 +3332,7 @@ __global__ void abs_kernel(const int n, T* a, T* y)
 __global__ void abs_kernel_half(const int n, __half* a, __half* y)
 {
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		float fA = __half2float(a[i]);
 		fA = abs(fA);
@@ -3409,7 +3409,7 @@ long Math<float>::abs(int n, long hA, long hY)
 template <typename T>
 __global__ void exp_kernel(const int n, T* a, T* y, T fBeta)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = exp(fBeta * a[i]);
 	}
@@ -3473,7 +3473,7 @@ long Math<float>::exp(int n, long hA, long hY, int nAOff, int nYOff, float fBeta
 template <typename T>
 __global__ void log_kernel(const int n, T* a, T* y, T fBeta, T fAlpha)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = log(fBeta * (a[i] + fAlpha));
 	}
@@ -3505,7 +3505,7 @@ template long Math<float>::log(int n, long hA, long hY, float dfBeta, float fAlp
 template <typename T>
 __global__ void powx_kernel(const int n, T* a, T fAlpha, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = pow(a[i], fAlpha);
 	}
@@ -3569,7 +3569,7 @@ long Math<float>::powx(int n, long hA, float fAlpha, long hY, int nAOff, int nYO
 template <typename T>
 __global__ void sign_kernel(const int n, T* x, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = (T(0) < x[i]) - (x[i] < T(0));
 	}
@@ -3578,7 +3578,7 @@ __global__ void sign_kernel(const int n, T* x, T* y)
 __global__ void sign_kernel_half(const int n, __half* x, __half* y)
 {
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 530)
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = (__half(0) < x[i]) - (x[i] < __half(0));
 	}
@@ -3643,7 +3643,7 @@ template long Math<float>::sign(int n, long hA, long hY, int nXOff, int nYOff);
 template <typename T>
 __global__ void sqrt_kernel(const int n, T* x, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = sqrt(x[i]);
 	}
@@ -3674,7 +3674,7 @@ template long Math<float>::sqrt(int n, long hA, long hY);
 template <typename T>
 __global__ void sqrt_scale_kernel(const int n, T* x, T* y)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = math_sign(x[i]) * sqrt(abs(x[i]));
 	}
@@ -3766,7 +3766,7 @@ template long Math<float>::sumsqdiff(int n, float* w, float* x, float* y, float*
 template <typename T>
 __global__ void sum_kernel(const int num, const int spatial_dim, const T* x, T* y)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T val = 0;
 
@@ -3806,7 +3806,7 @@ template long Math<float>::sum(int n, int nOutNum, int nInNum, long hX, long hY)
 template <typename T>
 __global__ void reciprocol_kernel(const int n, T* x, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = (x[i] == 0) ? 0 : (1.0 / x[i]);
 	}
@@ -3838,7 +3838,7 @@ template long Math<float>::reciprocol(int n, long hA, long hY);
 template <typename T>
 __global__ void student_kernel(const int n, T* x, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T fVal = 1.0 + x[i];
 		y[i] = (fVal == 0) ? 0 : 1.0 / fVal;
@@ -3871,7 +3871,7 @@ template long Math<float>::student(int n, long hA, long hY);
 template <typename T>
 __global__ void logistic1_kernel(const int n, T* x, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = (1 + tanh(x[i] / 2)) / 2;
 	}
@@ -3903,7 +3903,7 @@ template long Math<float>::logistic1(int n, long hA, long hY);
 template <typename T>
 __global__ void logistic2_kernel(const int n, T* x, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = 1 / (1 + exp(-x[i]));
 	}
@@ -3934,7 +3934,7 @@ template long Math<float>::logistic2(int n, long hA, long hY);
 template <typename T>
 __global__ void channel_min_kernel(const int num, const int channels, const int spatial_dim, const T* x, T* y)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * spatial_dim; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num * spatial_dim && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / spatial_dim;
 		int s = i % spatial_dim;
@@ -3974,7 +3974,7 @@ template long Math<float>::channel_min(int n, int nOutNum, int nChannels, int nI
 template <typename T>
 __global__ void channel_max_kernel(const int num, const int channels, const int spatial_dim, const T* x, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<num * spatial_dim; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<num * spatial_dim && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / spatial_dim;
 		int s = i % spatial_dim;
@@ -4015,7 +4015,7 @@ template long Math<float>::channel_max(int n, int nOutNum, int nChannels, int nI
 template <typename T>
 __global__ void channel_sub_kernel(const int count, const int num, const int channels, const int spatial_dim, const T* a, T* x, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<count; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<count && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / channels / spatial_dim;
 		int s = i % spatial_dim;
@@ -4052,7 +4052,7 @@ template long Math<float>::channel_sub(int n, int nOutNum, int nChannels, int nI
 template <typename T>
 __global__ void channel_sum_kernel(const int num, const int channels, const int spatial_dim, const T* x, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<num * spatial_dim; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<num * spatial_dim && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / spatial_dim;
 		int s = i % spatial_dim;
@@ -4092,7 +4092,7 @@ template long Math<float>::channel_sum(int n, int nOutNum, int nChannels, int nI
 template <typename T>
 __global__ void channel_div_kernel(const int count, const int num, const int channels, const int spatial_dim, const T* x, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<count; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<count && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / channels / spatial_dim;
 		int s = i % spatial_dim;
@@ -4103,7 +4103,7 @@ __global__ void channel_div_kernel(const int count, const int num, const int cha
 template <typename T>
 __global__ void channel_div2_kernel(const int count, const int num, const int channels, const int spatial_dim, const T* x, T* y)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<count; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<count && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / spatial_dim;
 		int s = i % spatial_dim;
@@ -4143,7 +4143,7 @@ template long Math<float>::channel_div(int n, int nOutNum, int nChannels, int nI
 template <typename T>
 __global__ void channel_mul_kernel(const int count, const int num, const int channels, const int spatial_dim, const T* x, T* y)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<count; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<count && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / channels / spatial_dim;
 		int s = i % spatial_dim;
@@ -4154,7 +4154,7 @@ __global__ void channel_mul_kernel(const int count, const int num, const int cha
 template <typename T>
 __global__ void channel_mul2_kernel(const int count, const int num, const int channels, const int spatial_dim, const T* x, T* y)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<count; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<count && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / spatial_dim;
 		int s = i % spatial_dim;
@@ -4194,7 +4194,7 @@ template long Math<float>::channel_mul(int n, int nOutNum, int nChannels, int nI
 template <typename T>
 __global__ void channel_dot_kernel(const int num, const int channels, const int spatial_dim, const T* x, const T* a, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<num * spatial_dim; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<num * spatial_dim && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / spatial_dim;
 		int s = i % spatial_dim;
@@ -4241,7 +4241,7 @@ __global__ void channel_compare_kernel(const int num, const int channels, const 
 {
 	const int nDim = channels * spatial_dim;
 
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < num && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i * nDim;
 		int nSim = 1;
@@ -4283,7 +4283,7 @@ __global__ void channel_fill_kernel(const int nCount, const int num, const int c
 {
 	const int nDataDim = channels * spatial_dim;
 
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nCount; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / nDataDim;
 		int nLabelIdx = n * nLabelDim;
@@ -4324,7 +4324,7 @@ template long Math<float>::channel_fill(int n, int nOutNum, int nChannels, int n
 template<typename T>
 __global__ void im2col_kernel(int n, T* data_im, int height, int width, int kernel_h, int kernel_w, int pad_h, int pad_w, int stride_h, int stride_w, int dilation_h, int dilation_w, int height_col, int width_col, T* data_col)
 {
-	for (int index=blockIdx.x * blockDim.x + threadIdx.x; index<n; index += blockDim.x * gridDim.x)
+	for (int index=blockIdx.x * blockDim.x + threadIdx.x; index<n && index >= 0; index += blockDim.x * gridDim.x)
 	{
 		int h_index = index / width_col;
 		int h_col = h_index % height_col;
@@ -4396,7 +4396,7 @@ template long Math<float>::im2col(long hDataIm, int nDataImOffset, int nChannels
 template<typename T>
 __global__ void col2im_kernel(int n, T* data_col, int height, int width, int kernel_h, int kernel_w, int pad_h, int pad_w, int stride_h, int stride_w, int dilation_h, int dilation_w, int height_col, int width_col, T* data_im)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T fVal = 0;
 		int w_im = i % width + pad_w;
@@ -4502,7 +4502,7 @@ __global__ void im2col_nd_kernel(int n, T* data_im, T* im_shape, T* col_shape, T
 	__syncthreads();
 
 	int i;
-	for (int index=blockIdx.x * blockDim.x + threadIdx.x; index<n; index += blockDim.x * gridDim.x)
+	for (int index=blockIdx.x * blockDim.x + threadIdx.x; index<n && index>=0; index += blockDim.x * gridDim.x)
 	{
 		// Initialize channels_in, computed in the loop below, with itermediate
 		// computations used to compute the spatial indices.
@@ -4730,7 +4730,7 @@ __global__ void col2im_nd_kernel(int n, T* data_col, T* im_shape, T* col_shape, 
 	__syncthreads();
 
 	int i;
-	for (int index=blockIdx.x * blockDim.x + threadIdx.x; index<n; index += blockDim.x * gridDim.x)
+	for (int index=blockIdx.x * blockDim.x + threadIdx.x; index<n && index>=0; index += blockDim.x * gridDim.x)
 	{
 		// Initialize channel_in, computed in the loop below, with intermediate
 		// computations used to compute the spatial indices.
@@ -5096,7 +5096,7 @@ long Math<float>::rng_bernoulli(int n, float fNonZeroProb, long hY)
 template<typename T>
 __global__ void accuracy_fwd_kernel(const int nCount, const T* bottom_data, const T* label, T* acc, T* counts, const int num, const int dim, const int spatial_dim, const int num_labels, const int top_k)
 {
-	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount; index += blockDim.x * gridDim.x)
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount && index>=0; index += blockDim.x * gridDim.x)
 	{
 		const int n = index / spatial_dim;
 		const int s = index % spatial_dim;
@@ -5117,7 +5117,7 @@ __global__ void accuracy_fwd_kernel(const int nCount, const T* bottom_data, cons
 template<typename T>
 __global__ void accuracy_fwd_kernel_ignore(const int nCount, const T* bottom_data, const T* label, T* acc,  T* counts, const int num, const int dim, const int spatial_dim, const int num_labels, const int top_k, const int ignore_label)
 {
-	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount; index += blockDim.x * gridDim.x)
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount && index>=0; index += blockDim.x * gridDim.x)
 	{
 		const int n = index / spatial_dim;
 		const int s = index % spatial_dim;
@@ -5146,7 +5146,7 @@ __global__ void accuracy_fwd_kernel_ignore(const int nCount, const T* bottom_dat
 template<typename T>
 __global__ void accuracy_fwd_kernel_perclass(const int nCount, const T* bottom_data, const T* label, T* acc, T* counts, const int num, const int dim, const int spatial_dim, const int num_labels, const int top_k)
 {
-	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount; index += blockDim.x * gridDim.x)
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount && index>=0; index += blockDim.x * gridDim.x)
 	{
 		const int n = index / spatial_dim;
 		const int s = index % spatial_dim;
@@ -5167,7 +5167,7 @@ __global__ void accuracy_fwd_kernel_perclass(const int nCount, const T* bottom_d
 template<typename T>
 __global__ void accuracy_fwd_kernel_perclass_ignore(const int nCount, const T* bottom_data, const T* label, T* acc, T* counts, const int num, const int dim, const int spatial_dim, const int num_labels, const int top_k, const int ignore_label)
 {
-	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount; index += blockDim.x * gridDim.x)
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount && index>=0; index += blockDim.x * gridDim.x)
 	{
 		const int n = index / spatial_dim;
 		const int s = index % spatial_dim;
@@ -5245,7 +5245,7 @@ template long Math<float>::accuracy_fwd(int nCount, long hBtmData, long hBtmLabe
 template<typename T>
 __global__ void batchreidx_fwd_kernel(int nCount, const int inner_dim, const T* in, const T* permut, T* out)
 {
-	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount; index += blockDim.x * gridDim.x)
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount && index>=0; index += blockDim.x * gridDim.x)
 	{
 		int n = index / inner_dim;
 		int in_n = (int)permut[n];
@@ -5286,7 +5286,7 @@ template long Math<float>::batchreidx_fwd(int n, int nInnerDim, long hBottomData
 template<typename T>
 __global__ void batchreidx_bwd_kernel(int nCount, const int inner_dim, const T* in, const T* top_indexes, const T* begins, const T* counts, T* out)
 {
-	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount; index += blockDim.x * gridDim.x)
+	for (int index = blockIdx.x * blockDim.x + threadIdx.x; index<nCount && index>=0; index += blockDim.x * gridDim.x)
 	{
 		int n = index / inner_dim;
 		out[index] = 0;
@@ -5344,7 +5344,7 @@ template long Math<float>::batchreidx_bwd(int n, int nInnerDim, long hTopDiff, l
 template<typename T>
 __global__ void embed_fwd_kernel(int nCount, const T* bottom_data, const T* weight, int M, int N, int K, T* top_data)
 {
-	for (int top_index = blockIdx.x * blockDim.x + threadIdx.x; top_index<nCount; top_index += blockDim.x * gridDim.x)
+	for (int top_index = blockIdx.x * blockDim.x + threadIdx.x; top_index<nCount && top_index>=0; top_index += blockDim.x * gridDim.x)
 	{
 		const int n = top_index / N;
 		const int d = top_index % N;
@@ -5392,7 +5392,7 @@ template long Math<float>::embed_fwd(int nCount, long hBottomData, long hWeight,
 template<typename T>
 __global__ void embed_bwd_kernel(int nCount, const T* bottom_data, const T* top_diff, int M, int N, int K, T* weight_diff)
 {
-	for (int top_index = blockIdx.x * blockDim.x + threadIdx.x; top_index<nCount; top_index += blockDim.x * gridDim.x)
+	for (int top_index = blockIdx.x * blockDim.x + threadIdx.x; top_index<nCount && top_index>=0; top_index += blockDim.x * gridDim.x)
 	{
 		const int n = top_index / N;
 		const int d = top_index % N;
@@ -5435,7 +5435,7 @@ template long Math<float>::embed_bwd(int nCount, long hBottomData, long hWeight,
 template<typename T>
 __global__ void pooling_fwd_max_kernel(int nCount, T* bottom_data, int num, int channels, int height, int width, int pooled_height, int pooled_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, T* top_data, T* mask, T* top_mask)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nCount; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int pw = i % pooled_width;
 		int ph = (i / pooled_width) % pooled_height;
@@ -5476,7 +5476,7 @@ __global__ void pooling_fwd_max_kernel(int nCount, T* bottom_data, int num, int 
 template<typename T>
 __global__ void pooling_fwd_ave_kernel(int nCount, T* bottom_data, int num, int channels, int height, int width, int pooled_height, int pooled_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, T* top_data)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nCount; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int pw = i % pooled_width;
 		int ph = (i / pooled_width) % pooled_height;
@@ -5510,7 +5510,7 @@ __global__ void pooling_fwd_ave_kernel(int nCount, T* bottom_data, int num, int 
 template<typename T>
 __global__ void pooling_fwd_sto_train_kernel(int nCount, T* bottom_data, int num, int channels, int height, int width, int pooled_height, int pooled_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, T* top_data, T* rand_idx)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nCount; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int pw = i % pooled_width;
 		int ph = (i / pooled_width) % pooled_height;
@@ -5555,7 +5555,7 @@ __global__ void pooling_fwd_sto_train_kernel(int nCount, T* bottom_data, int num
 template<typename T>
 __global__ void pooling_fwd_sto_test_kernel(int nCount, T* bottom_data, int num, int channels, int height, int width, int pooled_height, int pooled_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, T* top_data)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nCount; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int pw = i % pooled_width;
 		int ph = (i / pooled_width) % pooled_height;
@@ -5653,7 +5653,7 @@ template long Math<float>::pooling_fwd(int nMethod, int nCount, long hBottomData
 template<typename T>
 __global__ void pooling_bwd_max_kernel(int nCount, T* top_diff, int num, int channels, int height, int width, int pooled_height, int pooled_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, T* bottom_diff, T* mask, T* top_mask)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nCount; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		// find out the local index
 		// find out the local offset
@@ -5709,7 +5709,7 @@ __global__ void pooling_bwd_max_kernel(int nCount, T* top_diff, int num, int cha
 template<typename T>
 __global__ void pooling_bwd_ave_kernel(int nCount, T* top_diff, int num, int channels, int height, int width, int pooled_height, int pooled_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, T* bottom_diff)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nCount; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		// find out the local index
 		// find out the local offset
@@ -5746,7 +5746,7 @@ __global__ void pooling_bwd_ave_kernel(int nCount, T* top_diff, int num, int cha
 template<typename T>
 __global__ void pooling_bwd_sto_kernel(int nCount, T* top_diff, int num, int channels, int height, int width, int pooled_height, int pooled_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, T* bottom_diff, T* rand_idx)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nCount; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		// find out the local index
 		// find out the local offset
@@ -5842,7 +5842,7 @@ template long Math<float>::pooling_bwd(int nMethod, int nCount, long hTopDiff, i
 template<typename T>
 __global__ void unpooling_fwd_max_kernel(int nCount, T* bottom_data, int num, int channels, int height, int width, int unpooled_height, int unpooled_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, T* top_data, T* bottom_mask)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nCount; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int pw = i % width;
 		int ph = (i / width) % height;
@@ -5870,7 +5870,7 @@ __global__ void unpooling_fwd_max_kernel(int nCount, T* bottom_data, int num, in
 template<typename T>
 __global__ void unpooling_fwd_ave_kernel(int nCount, T* bottom_data, int num, int channels, int height, int width, int unpooled_height, int unpooled_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, T* top_data)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nCount; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		// find the local index and local offset
 		int w = i % unpooled_width + pad_w;
@@ -5953,7 +5953,7 @@ template long Math<float>::unpooling_fwd(int nMethod, int nCount, long hBottomDa
 template<typename T>
 __global__ void unpooling_bwd_max_kernel(int nCount, T* top_diff, int num, int channels, int height, int width, int unpooled_height, int unpooled_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, T* bottom_diff, T* bottom_mask)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nCount; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		// Find the local index and local offset.
 		int pw = i % width;
@@ -5982,7 +5982,7 @@ __global__ void unpooling_bwd_max_kernel(int nCount, T* top_diff, int num, int c
 template<typename T>
 __global__ void unpooling_bwd_ave_kernel(int nCount, T* top_diff, int num, int channels, int height, int width, int unpooled_height, int unpooled_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, T* bottom_diff)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nCount; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int pw = i % width;
 		int ph = (i / width) % height;
@@ -6067,7 +6067,7 @@ template long Math<float>::unpooling_bwd(int nMethod, int nCount, long hTopDiff,
 template<typename T>
 __global__ void clip_fwd_kernel(int n, T* in, T* out, const T dfMin, const T dfMax)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out[i] = fmax(dfMin, fmin(in[i], dfMax));
 	}
@@ -6101,7 +6101,7 @@ template long Math<float>::clip_fwd(int nCount, long hBottomData, long hTopData,
 template<typename T>
 __global__ void clip_bwd_kernel(int n, T* in_diff, T* in_data, T* out_diff, const T dfMin, const T dfMax)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out_diff[i] = in_diff[i] * (in_data[i] >= dfMin && in_data[i] <= dfMax);
 	}
@@ -6140,7 +6140,7 @@ template long Math<float>::clip_bwd(int nCount, long hTopDiff, long hTopData, lo
 template<typename T>
 __global__ void tanh_fwd_kernel(int n, T* in, T* out)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out[i] = tanh(in[i]);
 	}
@@ -6174,7 +6174,7 @@ template long Math<float>::tanh_fwd(int nCount, long hBottomData, long hTopData)
 template<typename T>
 __global__ void tanh_bwd_kernel(int n, T* in_diff, T* out_data, T* out_diff)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T tanhx = out_data[i];
 		out_diff[i] = in_diff[i] * (1 - tanhx * tanhx);
@@ -6214,7 +6214,7 @@ template long Math<float>::tanh_bwd(int nCount, long hTopDiff, long hTopData, lo
 template<typename T>
 __global__ void sigmoid_fwd_kernel(int n, T* in, T* out)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out[i] = 0.5 * tanh(0.5 * in[i]) + 0.5;
 	}
@@ -6248,7 +6248,7 @@ template long Math<float>::sigmoid_fwd(int nCount, long hBottomData, long hTopDa
 template<typename T>
 __global__ void sigmoid_bwd_kernel(int n, T* in_diff, T* out_data, T* out_diff)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T sigmoidx = out_data[i];
 		out_diff[i] = in_diff[i] * sigmoidx * (1 - sigmoidx);
@@ -6288,7 +6288,7 @@ template long Math<float>::sigmoid_bwd(int nCount, long hTopDiff, long hTopData,
 template<typename T>
 __global__ void swish_bwd_kernel(int n, const T* in_diff, const T* out_data, const T* sigmoid_output_data, T* out_diff, const T beta)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		const T swish_x = out_data[i];
 		out_diff[i] = in_diff[i] * (beta * swish_x
@@ -6334,7 +6334,7 @@ template long Math<float>::swish_bwd(int nCount, long hTopDiff, long hTopData, l
 template<typename T>
 __global__ void relu_fwd_kernel(int n, const T* in, T* out, const T negative_slope)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out[i] = (in[i] > 0) ? in[i] : in[i] * negative_slope;
 	}
@@ -6368,7 +6368,7 @@ template long Math<float>::relu_fwd(int nCount, long hBottomData, long hTopData,
 template<typename T>
 __global__ void relu_bwd_kernel(int n, T* in_diff, T* in_data, T* out_diff, T negative_slope)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out_diff[i] = in_diff[i] * ((in_data[i] > 0) + (in_data[i] <= 0) * negative_slope);
 	}
@@ -6409,7 +6409,7 @@ template long Math<float>::relu_bwd(int nCount, long hTopDiff, long hTopData, lo
 template<typename T>
 __global__ void elu_fwd_kernel(int n, T* in, T* out, T alpha)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out[i] = (in[i] > 0) ? in[i] :  alpha * (exp(in[i]) - 1);
 	}
@@ -6443,7 +6443,7 @@ template long Math<float>::elu_fwd(int nCount, long hBottomData, long hTopData, 
 template<typename T>
 __global__ void elu_bwd_kernel(int n, T* in_diff, T* out_data, T* in_data, T* out_diff, T alpha)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out_diff[i] = in_data[i] > 0 ? in_diff[i] : in_diff[i] * (out_data[i] + alpha);
 	}
@@ -6487,7 +6487,7 @@ template long Math<float>::elu_bwd(int nCount, long hTopDiff, long hTopData, lon
 template<typename T>
 __global__ void dropout_fwd_kernel(int n, T* in, T* mask, unsigned int uiThreshold, T fScale, T* out)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out[i] = in[i] * (mask[i] > uiThreshold) * fScale;
 	}
@@ -6526,7 +6526,7 @@ template long Math<float>::dropout_fwd(int n, long hBottomData, long hMask, unsi
 template<typename T>
 __global__ void dropout_bwd_kernel(int n, T* in_diff, T* mask, unsigned int uiThreshold, T fScale, T* out_diff)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out_diff[i] = in_diff[i] * fScale * (mask[i] > uiThreshold);
 	}
@@ -6565,7 +6565,7 @@ template long Math<float>::dropout_bwd(int n, long hTopDiff, long hMask, unsigne
 template<typename T>
 __global__ void bnll_fwd_kernel(int n, T* in, T* out)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out[i] = (in[i] > 0) ?
 			         in[i] + log(1. + exp(-in[i])) :
@@ -6601,7 +6601,7 @@ template long Math<float>::bnll_fwd(int nCount, long hBottomData, long hTopData)
 template<typename T>
 __global__ void bnll_bwd_kernel(int n, T* in_diff, T* in_data, T* out_diff)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T expval = exp(min(in_data[i], 50.));	// 50 = kBNLL_THRESHOLD
 		out_diff[i] = in_diff[i] * expval / (expval + 1.);
@@ -6641,7 +6641,7 @@ template long Math<float>::bnll_bwd(int nCount, long hTopDiff, long hBottomData,
 template<typename T>
 __global__ void prelu_fwd_kernel(int n, int channels, int dim, T* in, T* out, T* slope_data, int div_factor)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int c = (i / dim) % channels / div_factor;
 		out[i] = (in[i] > 0) ? in[i] : in[i] * slope_data[c];
@@ -6681,7 +6681,7 @@ template long Math<float>::prelu_fwd(int nCount, int nChannels, int nDim, long h
 template<typename T>
 __global__ void prelu_bwd_kernel(int n, int channels, int dim, T* in_diff, T* in_data, T* out_diff, T* slope_data, int div_factor)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int c = (i / dim) % channels / div_factor;
 		out_diff[i] = in_diff[i] * ((in_data[i] > 0) + (in_data[i] <= 0) * slope_data[c]);
@@ -6726,7 +6726,7 @@ template long Math<float>::prelu_bwd(int nCount, int nChannels, int nDim, long h
 template<typename T>
 __global__ void prelu_bwd_param_kernel(int n, int rows, int rowPitch, T* in_diff, T* in_data, T* out_diff)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out_diff[i] = in_diff[i] * in_data[i] * (in_data[i] <= 0);
 		
@@ -6771,7 +6771,7 @@ template long Math<float>::prelu_bwd_param(int n, int nNum, int nTopOffset, long
 template<typename T>
 __global__ void softmaxloss_fwd_param_kernel(int nthreads, const T* prob_data, const T* label, T* loss, int num, int dim, int spatial_dim, T* counts)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / spatial_dim;
 		int s = i % spatial_dim;
@@ -6785,7 +6785,7 @@ __global__ void softmaxloss_fwd_param_kernel(int nthreads, const T* prob_data, c
 template<typename T>
 __global__ void softmaxloss_fwd_param_kernel1(int nthreads, const T* prob_data, const T* label, T* loss, int num, int dim, int spatial_dim, T* counts, int nIgnoreLabel)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / spatial_dim;
 		int s = i % spatial_dim;
@@ -6845,7 +6845,7 @@ template long Math<float>::softmaxloss_fwd(int n, long hProbData, long hLabels, 
 template<typename T>
 __global__ void softmaxloss_bwd_param_kernel(int nthreads, const T* top, const T* label, T* bottom_diff, int num, int dim, int spatial_dim, T* counts)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / spatial_dim;
 		int s = i % spatial_dim;
@@ -6861,7 +6861,7 @@ __global__ void softmaxloss_bwd_param_kernel1(int nthreads, const T* top, const 
 {
 	int channels = dim / spatial_dim;
 
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / spatial_dim;
 		int s = i % spatial_dim;
@@ -6925,7 +6925,7 @@ template long Math<float>::softmaxloss_bwd(int n, long hTopData, long hLabels, l
 template<typename T>
 __global__ void max_fwd_kernel(int nthreads, const T* bottom_data_a, const T* bottom_data_b, int blob_idx, T* top_data, T* mask)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T maxval = -FLT_MAX;
 		int maxidx = -1;
@@ -6990,7 +6990,7 @@ template long Math<float>::max_fwd(int n, long hA, long hB, int nIdx, long hY, l
 template<typename T>
 __global__ void max_bwd_kernel(int nthreads, const T* top_diff, int blob_idx, T* mask, T* bottom_diff)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T gradient = 0;
 
@@ -7050,7 +7050,7 @@ __device__ int compute_uncropped_index(int index, const int ndims, const T* src_
 template <typename T>
 __global__ void crop_fwd_kernel(const int n, const int ndims, const T* src_strides, const T* dst_strides, const T* offsets, const T* src, T* dst)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int src_index = compute_uncropped_index(i, ndims, src_strides, dst_strides, offsets);
 		dst[i] = src[src_index];
@@ -7100,7 +7100,7 @@ template long Math<float>::crop_fwd(int nCount, int nNumAxes, long hSrcStrides, 
 template <typename T>
 __global__ void crop_bwd_kernel(const int n, const int ndims, const T* src_strides, const T* dst_strides, const T* offsets, T* src, const T* dst)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int src_index = compute_uncropped_index(i, ndims, src_strides, dst_strides, offsets);
 		src[src_index] = dst[i];
@@ -7150,7 +7150,7 @@ template long Math<float>::crop_bwd(int nCount, int nNumAxes, long hSrcStrides, 
 template<typename T>
 __global__ void concat_fwd_kernel(int nthreads, const T* in_data, int num_concats, int concat_size, int top_concat_axis, int bottom_concat_axis, int offset_concat_axis, T* out_data)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int total_concat_size = concat_size * bottom_concat_axis;
 		int concat_num = i / total_concat_size;
@@ -7190,7 +7190,7 @@ template long Math<float>::concat_fwd(int n, long hBottomData, int nNumConcats, 
 template<typename T>
 __global__ void concat_bwd_kernel(int nthreads, const T* in_data, int num_concats, int concat_size, int top_concat_axis, int bottom_concat_axis, int offset_concat_axis, T* out_data)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int total_concat_size = concat_size * bottom_concat_axis;
 		int concat_num = i / total_concat_size;
@@ -7229,7 +7229,7 @@ template long Math<float>::concat_bwd(int n, long hTopDiff, int nNumConcats, int
 template<typename T>
 __global__ void slice_fwd_kernel(int nthreads, const T* in_data, int num_slices, int slice_size, int bottom_slice_axis, int top_slice_axis, int offset_slice_axis, T* out_data)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int total_slice_size = slice_size * top_slice_axis;
 		int slice_num = i / total_slice_size;
@@ -7268,7 +7268,7 @@ template long Math<float>::slice_fwd(int n, long hBottomData, int nNumSlices, in
 template <typename T>
 __global__ void slice_bwd_kernel(int nthreads, const T* in_data, int num_slices, int slice_size, int bottom_slice_axis, int top_slice_axis, int offset_slice_axis, T* out_data)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int total_slice_size = slice_size * top_slice_axis;
 		int slice_num = i / total_slice_size;
@@ -7307,7 +7307,7 @@ template long Math<float>::slice_bwd(int n, long hTopDiff, int nNumSlices, int n
 template<typename T>
 __global__ void tile_fwd_kernel(int nthreads, const T* bottom_data, int tile_size, int num_tiles, int bottom_tile_axis, T* top_data)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		const int d = i % tile_size;
 		const int b = (i / tile_size / num_tiles) % bottom_tile_axis;
@@ -7345,7 +7345,7 @@ template long Math<float>::tile_fwd(int n, long hBottomData, int nInnerDim, int 
 template <typename T>
 __global__ void tile_bwd_kernel(int nthreads, const T* top_diff, int tile_size, int num_tiles, int bottom_tile_axis, T* bottom_diff)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		const int d = i % tile_size;
 		const int b = (i / tile_size) % bottom_tile_axis;
@@ -7389,7 +7389,7 @@ template long Math<float>::tile_bwd(int n, long hTopDiff, int nTileSize, int nTi
 template <typename T>
 __global__ void bias_fwd_kernel(int n, const T* in, const T* bias, int bias_dim, int inner_dim, T* out)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int bias_index = (i / inner_dim) % bias_dim;
 		out[i] = in[i] + bias[bias_index];
@@ -7429,7 +7429,7 @@ template long Math<float>::bias_fwd(int n, long hBottomData, long hBiasData, int
 template <typename T>
 __global__ void scale_fwd_kernel(int n, const T* in, const T* scale, int scale_dim, int inner_dim, T* out)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int scale_index = (i / inner_dim) % scale_dim;
 		out[i] = in[i] * scale[scale_index];
@@ -7439,7 +7439,7 @@ __global__ void scale_fwd_kernel(int n, const T* in, const T* scale, int scale_d
 template <typename T>
 __global__ void scale_fwd_bias_kernel(int n, const T* in, const T* scale, const T* bias, int scale_dim, int inner_dim, T* out)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int scale_index = (i / inner_dim) % scale_dim;
 		out[i] = in[i] * scale[scale_index] + bias[scale_index];
@@ -7493,7 +7493,7 @@ template long Math<float>::scale_fwd(int n, long hX, long hScaleData, int nScale
 template <typename T>
 __global__ void threshold_fwd_kernel(int n, const T threshold, const T* in, T* out)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out[i] = in[i] > threshold ? 1 : 0;
 	}
@@ -7529,7 +7529,7 @@ __global__ void smoothl1_fwd_kernel(int n, const T* in, T* out)
 {
 	// f(x) = 0.5 * x^2		if |x| < 1
 	//        |x| - 0.5		otherwise
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T val = in[i];
 		T abs_val = abs(val);
@@ -7571,7 +7571,7 @@ __global__ void smoothl1_bwd_kernel(int n, const T* in, T* out)
 {
 	// f'(x) = x			if |x| < 1
 	//         sign(x)		otherwise
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T val = in[i];
 		T abs_val = abs(val);
@@ -7612,7 +7612,7 @@ template long Math<float>::smoothl1_bwd(int n, long hX, long hY);
 template <typename T>
 __global__ void permute_kernel(int n, T* x, const bool bFwd, const T* permute_order, const T* oldsteps, const T* newsteps, const int num_axes, T* y)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int temp_idx = i;
 		int old_idx = 0;
@@ -7677,7 +7677,7 @@ template long Math<float>::permute(int n, long hX, bool bFwd, long hPermuteOrder
 template <typename T>
 __global__ void cll_bwd_kernel_legacy(const int nCount, const int nChannels, const T fMargin, const T fAlpha, const T* y, const T* diff, const T* dist_sq, T* btm_diff)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nCount; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / nChannels;	// the num index, to access y and dist_sq
 
@@ -7701,7 +7701,7 @@ __global__ void cll_bwd_kernel_legacy(const int nCount, const int nChannels, con
 template <typename T>
 __global__ void cll_bwd_kernel(const int nCount, const int nChannels, const T fMargin, const T fAlpha, const T* y, const T* diff, const T* dist_sq, T* btm_diff)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nCount; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nCount && i>=0; i += blockDim.x * gridDim.x)
 	{
 		int n = i / nChannels;	// the num index, to access y and dist_sq
 
@@ -7764,7 +7764,7 @@ template long Math<float>::cll_bwd(int nCount, int nChannels, float fMargin, boo
 template <typename T>
 __global__ void lrn_fillscale_kernel(int nthreads, const T* in, int num, int channels, int height, int width, int size, T alpha_over_size, T k, T* scale)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		// find out the local offset
 		int w = i % width;
@@ -7847,7 +7847,7 @@ template long Math<float>::lrn_fillscale(int n, long hBottomData, int nNum, int 
 template <typename T>
 __global__ void lrn_computeoutput_kernel(int nthreads, const T* in, const T* scale, T negative_beta, T* out)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out[i] = in[i] * pow(scale[i], negative_beta);
 	}
@@ -7886,7 +7886,7 @@ template long Math<float>::lrn_computeoutput(int n, long hBottomData, long hScal
 template <typename T>
 __global__ void lrn_computediff_kernel(int nthreads, const T* bottom_data, const T* top_data, const T* scale, const T* top_diff, int num, int channels, int height, int width, int size, T negative_beta, T cache_ratio, T* bottom_diff)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		// find out the local offset
 		int w = i % width;
@@ -8001,7 +8001,7 @@ __device__ T tanh(const T x)
 template <typename T>
 __global__ void clip_add_kernel(const int nthreads, const int dim, int t, const T* clip, const T* add_vec, T* data)
 {
-	for (int idx=blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads; idx += blockDim.x * gridDim.x)
+	for (int idx=blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads && idx>=0; idx += blockDim.x * gridDim.x)
 	{
 		const int n = idx / dim;
 		const T clip_t = clip ? clip[n] : T(t > 0);
@@ -8012,7 +8012,7 @@ __global__ void clip_add_kernel(const int nthreads, const int dim, int t, const 
 template <typename T>
 __global__ void activation_fwd_kernel(const int nthreads, const int H, const T* pre_gate, T* gate)
 {
-	for (int idx=blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads; idx += blockDim.x * gridDim.x)
+	for (int idx=blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads && idx>=0; idx += blockDim.x * gridDim.x)
 	{
 		const int d = idx % (4 * H);
 		gate[idx] = d < 3 * H ? sigmoid(pre_gate[idx]) : tanh(pre_gate[idx]);
@@ -8022,7 +8022,7 @@ __global__ void activation_fwd_kernel(const int nthreads, const int H, const T* 
 template <typename T>
 __global__ void activation_bwd_kernel(const int nthreads, const int H, const T clip_threshold, const T* gate, const T* gate_diff, T* pre_gate_diff)
 {
-	for (int idx=blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads; idx += blockDim.x * gridDim.x)
+	for (int idx=blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads && idx>=0; idx += blockDim.x * gridDim.x)
 	{
 		const int d = idx % (4 * H);
 		const T gate_val = gate[idx];
@@ -8045,7 +8045,7 @@ __global__ void activation_bwd_kernel(const int nthreads, const int H, const T c
 template <typename T>
 __global__ void lstm_fwd_kernel(const int nthreads, const int H, const int t, const T* c_prev, const T* gate, const T* clip, T* c_t, T* h_t)
 {
-	for (int idx=blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads; idx += blockDim.x * gridDim.x)
+	for (int idx=blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads && idx>=0; idx += blockDim.x * gridDim.x)
 	{
 		const int n = idx / H;
 		const int d = idx % H;
@@ -8065,7 +8065,7 @@ __global__ void lstm_fwd_kernel(const int nthreads, const int H, const int t, co
 template <typename T>
 __global__ void lstm_bwd_kernel(const int nthreads, const int H, const int t, const T* c_prev, const T* gate, const T* c_t, const T* clip, T* dc_t, T* dh_t, T* dc_prev, T* gate_diff)
 {
-	for (int idx=blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads; idx += blockDim.x * gridDim.x)
+	for (int idx=blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads && idx>=0; idx += blockDim.x * gridDim.x)
 	{
 		const int n = idx / H;
 		const int d = idx % H;
@@ -8286,7 +8286,7 @@ template long Math<float>::lstm_bwd(int t, int nN, int nH, float fClip, long hWe
 template <typename T>
 __global__ void lstm_acts_fwd_kernel(const int nthreads, const int dim, const T* x, T* x_acts)
 {
-	for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads; idx += blockDim.x * gridDim.x)
+	for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads && idx>=0; idx += blockDim.x * gridDim.x)
 	{
 		const int x_dim = 4 * dim;
 		const int d = idx % x_dim;
@@ -8301,7 +8301,7 @@ __global__ void lstm_acts_fwd_kernel(const int nthreads, const int dim, const T*
 template <typename T>
 __global__ void lstm_unit_fwd_kernel(const int nthreads, const int dim, const T* c_prev, const T* x, const T* cont, T* c, T* h)
 {
-	for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads; idx += blockDim.x * gridDim.x)
+	for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads && idx>=0; idx += blockDim.x * gridDim.x)
 	{
 		const int n = idx/ dim;
 		const int d = idx % dim;
@@ -8373,7 +8373,7 @@ template long Math<float>::lstm_unit_fwd(int nCount, int nHiddenDim, int nXCount
 template <typename T>
 __global__ void lstm_unit_bwd_kernel(const int nthreads, const int dim, const T* c_prev, const T* x, const T* c, const T* h, const T* cont, const T* c_diff, const T* h_diff, T* c_prev_diff, T* x_diff)
 {
-	for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads; idx += blockDim.x * gridDim.x)
+	for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads && idx>=0; idx += blockDim.x * gridDim.x)
 	{
 		const int n = idx / dim;
 		const int d = idx % dim;
@@ -8405,7 +8405,7 @@ __global__ void lstm_unit_bwd_kernel(const int nthreads, const int dim, const T*
 template <typename T>
 __global__ void lstm_acts_bwd_kernel(const int nthreads, const int dim, const T* x_acts, const T* x_acts_diff, T* x_diff)
 {
-	for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads; idx += blockDim.x * gridDim.x)
+	for (int idx = blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads && idx>=0; idx += blockDim.x * gridDim.x)
 	{
 		const int x_dim = 4 * dim;
 		const int d = idx % x_dim;
@@ -8492,7 +8492,7 @@ template long Math<float>::lstm_unit_bwd(int nCount, int nHiddenDim, int nXCount
 template <typename T>
 __global__ void coeff_sum_fwd_kernel(const int nthreads, const int dim, const int num_offset, const T coeff, const T* coeff_data, const T* in, T* out)
 {
-	for (int idx=blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads; idx += blockDim.x * gridDim.x)
+	for (int idx=blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads && idx>=0; idx += blockDim.x * gridDim.x)
 	{
 		int n = num_offset + idx / dim;
 		T other_coeff = (coeff_data != NULL) ? coeff_data[n] : T(1);
@@ -8542,7 +8542,7 @@ template long Math<float>::coeff_sum_fwd(int nCount, int nDim, int nNumOffset, f
 template <typename T>
 __global__ void coeff_sum_bwd_kernel(const int nthreads, const int dim, const int num_offset, const T coeff, const T* coeff_data, const T* in, T* out)
 {
-	for (int idx=blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads; idx += blockDim.x * gridDim.x)
+	for (int idx=blockIdx.x * blockDim.x + threadIdx.x; idx<nthreads && idx>=0; idx += blockDim.x * gridDim.x)
 	{
 		int n = num_offset + idx / dim;
 		T other_coeff = (coeff_data != NULL) ? coeff_data[n] : T(1);
@@ -8588,7 +8588,7 @@ template long Math<float>::coeff_sum_bwd(int nCount, int nDim, int nNumOffset, f
 template <typename T>
 __global__ void sigmoid_cross_entropy_kernel(const int nthreads, const T* input_data, const T* target, T* loss, T* counts)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		const int target_val = (int)target[i];
 		const T input_val = input_data[i];
@@ -8601,7 +8601,7 @@ __global__ void sigmoid_cross_entropy_kernel(const int nthreads, const T* input_
 template <typename T>
 __global__ void sigmoid_cross_entropy_kernel_withignore(const int nthreads, const T* input_data, const T* target, T* loss, const int ignore_label, T* counts)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		const int target_val = (int)target[i];
 
@@ -8661,7 +8661,7 @@ template long Math<float>::sigmoid_cross_entropy_fwd(int nCount, long hInput, lo
 template <typename T>
 __global__ void sigmoid_cross_entropy_ignore_kernel(const int nthreads, const int ignore_label, const T* target, T* diff)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nthreads; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<nthreads && i>=0; i += blockDim.x * gridDim.x)
 	{
 		const int target_val = (int)target[i];
 
@@ -8698,7 +8698,7 @@ template long Math<float>::sigmoid_cross_entropy_ignore(int nCount, int nIgnoreL
 template <typename T>
 __global__ void sgd_update_kernel(int n, T* g, T* h, T momentum, T local_rate)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		g[i] = h[i] = momentum * h[i] + local_rate * g[i];
 	}
@@ -8732,7 +8732,7 @@ template long Math<float>::sgd_update(int nCount, long hNetParamDiff, long hHist
 template <typename T>
 __global__ void nesterov_update_kernel(int n, T* g, T* h, T momentum, T local_rate)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T fHi = h[i];	
 		T fHiNew = h[i] = momentum * h[i] + local_rate * g[i];
@@ -8768,7 +8768,7 @@ template long Math<float>::nesterov_update(int nCount, long hNetParamDiff, long 
 template <typename T>
 __global__ void adagrad_update_kernel(int n, T* g, T* h, T delta, T local_rate)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T fGi = g[i];
 		T fHi = h[i] = h[i] + fGi * fGi;
@@ -8804,7 +8804,7 @@ template long Math<float>::adagrad_update(int nCount, long hNetParamDiff, long h
 template <typename T>
 __global__ void adadelta_update_kernel(int n, T* g, T* h, T* h2, T momentum, T delta, T local_rate)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T fGi = g[i];
 		T fHi = h[i] = momentum * h[i] + (1 - momentum) * fGi * fGi;
@@ -8848,7 +8848,7 @@ template long Math<float>::adadelta_update(int nCount, long hNetParamDiff, long 
 template <typename T>
 __global__ void adam_update_kernel(int n, T* g, T* m, T* v, T beta1, T beta2, T eps_hat, T corrected_local_rate)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T fGi = g[i];
 		T fMi = m[i] = m[i] * beta1 + fGi * (1 - beta1);
@@ -8890,7 +8890,7 @@ template long Math<float>::adam_update(int nCount, long hNetParamDiff, long hVal
 template <typename T>
 __global__ void rmsprop_update_kernel(int n, T* g, T* h, T rms_decay, T delta, T local_rate)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T fGi = g[i];
 		T fHi = h[i] = rms_decay * h[i] + (1 - rms_decay) * fGi * fGi;
@@ -8926,7 +8926,7 @@ template long Math<float>::rmsprop_update(int nCount, long hNetParamDiff, long h
 template <typename T>
 __global__ void combine_data_kernel(int n, T* o, T* u, T updtPct, T* s, T srvrPct, T* out)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out[i] = o[i] + ((u[i] - o[i]) * updtPct) + ((s[i] - o[i]) * srvrPct);
 	}
@@ -8970,7 +8970,7 @@ template long Math<float>::combine_data(int nCount, long hOriginal, long hUpdate
 template <typename T>
 __global__ void mtx_set_diagonal_kernel(int n, int height, T fVal, T* data)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		data[i + height * i] = fVal;
 	}
@@ -8999,7 +8999,7 @@ template long Math<float>::mtx_set_diagonal(int nCount, int nRows, float fVal, l
 template <typename T>
 __global__ void mtx_set_diagonal_kernel(int n, int height, T* diag, T fScaleA, T fScaleB, T* data)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		data[i + height * i] = fScaleA * data[i + height * i] + fScaleB * diag[i];
 	}
@@ -9033,7 +9033,7 @@ template long Math<float>::mtx_set_diagonal(int nCount, int nRows, long hDiagona
 template <typename T>
 __global__ void mtx_add_col_vector_kernel(int n, int width, int height, T fScale, T* a, T* b, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = a[i] + fScale * b[i / width];
 	}
@@ -9042,7 +9042,7 @@ __global__ void mtx_add_col_vector_kernel(int n, int width, int height, T fScale
 template <typename T>
 __global__ void mtx_add_row_vector_kernel(int n, int width, int height, T fScale, T* a, T* b, T* y)
 {
-	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = a[i] + fScale * b[i % width];
 	}
@@ -9104,7 +9104,8 @@ __global__ void mtx_transpose_add(T* a, T* b, T* y, int width, int height, int i
 	if (!checkBounds || (idxXA < width && idxYA < height))
 	{
 		const int idx = idxYA * width + idxXA;
-		y[idx] = fScaleA * a[idx] + fScaleB * smem[threadIdx.y][threadIdx.x];
+		if (idx >= 0)
+			y[idx] = fScaleA * a[idx] + fScaleB * smem[threadIdx.y][threadIdx.x];
 	}
 }
 
@@ -9129,7 +9130,8 @@ __global__ void mtx_transpose_mul(T* a, T* b, T* y, int width, int height, int i
 	if (!checkBounds || (idxXA < width && idxYA < height))
 	{
 		const int idx = idxYA * width + idxXA;
-		y[idx] = a[idx] * smem[threadIdx.y][threadIdx.x];
+		if (idx >= 0)
+			y[idx] = a[idx] * smem[threadIdx.y][threadIdx.x];
 	}
 }
 
@@ -9154,7 +9156,8 @@ __global__ void mtx_transpose_div(T* a, T* b, T* y, int width, int height, int i
 	if (!checkBounds || (idxXA < width && idxYA < height))
 	{
 		const int idx = idxYA * width + idxXA;
-		y[idx] = a[idx] / smem[threadIdx.y][threadIdx.x];
+		if (idx >= 0)
+			y[idx] = a[idx] / smem[threadIdx.y][threadIdx.x];
 	}
 }
 
@@ -9242,7 +9245,7 @@ __global__ void mtx_aggregate_cols_sum_kernel(T* a, T* y, int width, int height)
 
 	a += idx;
 
-	if (idx < width)
+	if (idx < width && idx >= 0)
 	{
 		T fSum = 0;
 
@@ -9263,7 +9266,7 @@ __global__ void mtx_aggregate_cols_max_kernel(T* a, T* y, int width, int height)
 
 	a += idx;
 
-	if (idx < width)
+	if (idx < width && idx >= 0)
 	{
 		T fMax = *a;
 		a += width;
@@ -9285,7 +9288,7 @@ __global__ void mtx_aggregate_cols_min_kernel(T* a, T* y, int width, int height)
 
 	a += idx;
 
-	if (idx < width)
+	if (idx < width && idx >= 0)
 	{
 		T fMin = *a;
 		a += width;
@@ -9888,7 +9891,7 @@ __device__ int sgn(T val)
 template <typename T>
 __global__ void tsne_update_gains_kernel(unsigned int n, T* dY, T* uY, T* gains, T fGainFactor1, T fGainFactor2)
 {
-	for (unsigned int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (unsigned int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T fVal = (sgn(dY[i]) != sgn(uY[i])) ? (gains[i] + fGainFactor1) : (gains[i] * fGainFactor2);
 		gains[i] = (fVal < 0.01) ? 0.01 : fVal;
@@ -9898,7 +9901,7 @@ __global__ void tsne_update_gains_kernel(unsigned int n, T* dY, T* uY, T* gains,
 template <typename T>
 __global__ void tsne_update_gradient_kernel(unsigned int n, T fMomentum, T fLearningRate, T* dY, T* uY, T* gains, T* Y)
 {
-	for (unsigned int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (unsigned int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		T fVal = fMomentum * uY[i] - fLearningRate * gains[i] * dY[i];
 		uY[i] = fVal;
@@ -9949,7 +9952,7 @@ template long Math<float>::tsne_update(unsigned int n, float dfMomentum, float d
 template <typename T>
 __global__ void tsne_update_grad_kernel(unsigned int n, const T* posF, const T* negF, const T fSumQ, T* dc)
 {
-	for (unsigned int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (unsigned int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		dc[i] = posF[i] - (negF[i] / fSumQ);
 	}
@@ -10132,7 +10135,7 @@ template long Math<float>::tsne_compute_exact_gradient(unsigned int N, unsigned 
 template <typename T>
 __global__ void tsne_compute_exact_error_kernel(unsigned int n, const T* p, const T* q, T* y)
 {
-	for (unsigned int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (unsigned int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		y[i] = p[i] * log((p[i] + 0.000001) / (q[i] + 0.000001));
 	}
@@ -10417,7 +10420,7 @@ template long Math<float>::gaussian_blur(int n, int c, int h, int w, float fSigm
 template <typename T>
 __global__ void hamming_diff_kernel(int n, const T threshold, const T* x, T* y, T* out)
 {
-	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
 	{
 		out[i] =  ((x[i] > threshold) ? 1 : 0) - ((y[i] > threshold) ? 1 : 0);
 	}
