@@ -432,7 +432,8 @@ long SsdData<T>::findMatches(vector<map<int, vector<BBOX>>>& rgAllLocPreds, map<
 		map<int, vector<float>> match_overlaps;
 
 		// Check if there is a ground truth for the current image.
-		if (rgAllGt.find(i) == rgAllGt.end())
+		map<int, vector<BBOX>>::iterator pGt = rgAllGt.find(i);
+		if (pGt == rgAllGt.end())
 		{
 			// Three is no gt for the current image, so all predictiosn are negative.
 			all_match_indices.push_back(match_indices);
@@ -441,7 +442,7 @@ long SsdData<T>::findMatches(vector<map<int, vector<BBOX>>>& rgAllLocPreds, map<
 		}
 
 		// Find match between predictions and ground truth.
-		vector<BBOX> rgGtBbox = rgAllGt.find(i)->second;
+		vector<BBOX> rgGtBbox = pGt->second;
 		if (!m_bUsePriorForMatching)
 		{
 			for (int c = 0; c < m_nLocClasses; c++)
@@ -578,10 +579,11 @@ long SsdData<T>::encodeLocPrediction(vector<map<int, vector<BBOX>>>& rgAllLocPre
 			const int nLabel = it->first;
 			const vector<int>& match_index = it->second;
 
-			if (rgAllLocPreds[i].find(nLabel) == rgAllLocPreds[i].end())
+			map<int, vector<BBOX>>::iterator pLabelLocPred = rgAllLocPreds[i].find(nLabel);
+			if (pLabelLocPred == rgAllLocPreds[i].end())
 				return ERROR_SSD_LOC_PRED_LABEL_NOT_FOUND;
 
-			const vector<BBOX>& loc_pred = rgAllLocPreds[i].find(nLabel)->second;
+			const vector<BBOX>& loc_pred = pLabelLocPred->second;
 
 			for (int j = 0; j < match_index.size(); j++)
 			{
@@ -590,10 +592,11 @@ long SsdData<T>::encodeLocPrediction(vector<map<int, vector<BBOX>>>& rgAllLocPre
 
 				// Store encoded ground truth.
 				const int nGtIdx = match_index[j];
-				if (rgAllGt.find(i) == rgAllGt.end() || nGtIdx >= rgAllGt.find(i)->second.size())
+				map<int, vector<BBOX>>::iterator pGt = rgAllGt.find(i);
+				if (pGt == rgAllGt.end() || nGtIdx >= pGt->second.size())
 					return ERROR_SSD_GT_LABEL_OUT_OF_RANGE;
 
-				BBOX gtbbox = rgAllGt.find(i)->second[nGtIdx];
+				BBOX gtbbox = pGt->second[nGtIdx];
 
 				if (j >= rgPriorBboxes.size())
 					return ERROR_PARAM_OUT_OF_RANGE;
@@ -697,7 +700,8 @@ long SsdData<T>::encodeConfPrediction(SsdMemory<T>* pConf, vector<map<int, vecto
 
 	for (int i = 0; i < m_nNum; i++)
 	{
-		if (rgAllGt.find(i) != rgAllGt.end())
+		map<int, vector<BBOX>>::iterator pGt = rgAllGt.find(i);
+		if (pGt != rgAllGt.end())
 		{
 			// Save matched (positive) bboxes scores and labels
 			const map<int, vector<int>>& match_indices = all_match_indices[i];
@@ -712,7 +716,7 @@ long SsdData<T>::encodeConfPrediction(SsdMemory<T>* pConf, vector<map<int, vecto
 					if (match_index[j] <= -1)
 						continue;
 
-					const int gt_label = (m_bMapObjectToAgnostic) ? m_nBackgroundLabelId + 1 : getLabel(rgAllGt.find(i)->second[match_index[j]]);
+					const int gt_label = (m_bMapObjectToAgnostic) ? m_nBackgroundLabelId + 1 : getLabel(pGt->second[match_index[j]]);
 					int nIdx = (bDoNegMining) ? nCount : j;
 
 					switch (m_confLossType)
