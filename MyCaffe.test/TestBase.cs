@@ -179,6 +179,12 @@ namespace MyCaffe.test
             if (strClass == "TestCudaDnn" && strMethod.Contains("TestMemoryTest"))
                 return 3;
 
+            if (strClass == "TestMyCaffeImageDatabase" && strMethod.Contains("TestQueryRandomLoadOnDemandLabelBalance"))
+                return 1;
+
+            if (strClass == "TestMyCaffeImageDatabase" && strMethod.Contains("TestQueries"))
+                return 1;
+
             return 0;
         }
 
