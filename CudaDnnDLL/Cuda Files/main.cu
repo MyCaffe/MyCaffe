@@ -110,6 +110,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_SETMEMAT:
 			return m_device.SetMemoryAt(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_COPY_DEVICE_TO_HOST:
+			return m_device.CopyGpuToHostBuffer(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_COPY_HOST_TO_DEVICE:
+			return m_device.CopyHostBufferToGpu(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_ALLOCHOSTBUFFER:
 			return m_device.AllocHostBuffer(lCount, pfInput, plCount, ppfOutput);
 
@@ -998,6 +1004,12 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_SETMEMAT:
 		return "CUDA_FN_SETMEMAT";
+
+	case CUDA_FN_COPY_DEVICE_TO_HOST:
+		return "CUDA_FN_COPY_DEVICE_TO_HOST";
+
+	case CUDA_FN_COPY_HOST_TO_DEVICE:
+		return "CUDA_FN_COPY_HOST_TO_DEVICE";
 
 	case CUDA_FN_ALLOCHOSTBUFFER:
 		return "CUDA_FN_ALLOCHOSTBUFFER";

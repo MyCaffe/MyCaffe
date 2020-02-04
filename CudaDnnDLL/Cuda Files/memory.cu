@@ -307,6 +307,56 @@ template long Memory<float>::CopyToHost(size_t lCount, float* pDst, void* pSrc, 
 
 
 template <class T>
+long Memory<T>::CopyGpuToHost(long lCount, long hGpuSrc, long hHostDst)
+{
+	LONG lErr;
+	MemoryItem* pSrcD;
+
+	if (lErr = m_memory.GetData(hGpuSrc, &pSrcD))
+		return lErr;
+
+	HostBuffer<T>* pDstH = GetHostBuffer(hHostDst);
+	if (pDstH == NULL)
+		return ERROR_MEMORY_NOT_FOUND;
+
+	T* pSrc = (T*)pSrcD->Data();
+	T* pDst = (T*)pDstH->Data();
+
+	return CopyToHost(lCount, pDst, pSrc, true, false);
+}
+
+template long Memory<double>::CopyGpuToHost(long lCount, long hGpuSrc, long hHostDst);
+template long Memory<float>::CopyGpuToHost(long lCount, long hGpuSrc, long hHostDst);
+
+
+template <class T>
+long Memory<T>::CopyHostToGpu(long lCount, long hHostSrc, long hGpuDst)
+{
+	LONG lErr;
+	MemoryItem* pDstD;
+
+	if (lErr = m_memory.GetData(hGpuDst, &pDstD))
+		return lErr;
+
+	HostBuffer<T>* pSrcH = GetHostBuffer(hHostSrc);
+	if (pSrcH == NULL)
+		return ERROR_MEMORY_NOT_FOUND;
+
+	T* pDst = (T*)pDstD->Data();
+	T* pSrc = (T*)pSrcH->Data();
+
+	long long lSize = lCount * sizeof(T);
+	if (lSize > SIZE_MAX)
+		return ERROR_MEMORY_RANGE_EXCEEDED;
+
+	return cudaMemcpy(pDst, pSrc, lSize, cudaMemcpyHostToDevice);
+}
+
+template long Memory<double>::CopyHostToGpu(long lCount, long hHostSrc, long hGpuDst);
+template long Memory<float>::CopyHostToGpu(long lCount, long hHostSrc, long hGpuDst);
+
+
+template <class T>
 long Memory<T>::AllocHostBuffer(size_t lCount, long* phHandle)
 {
 	LONG lErr = 0;

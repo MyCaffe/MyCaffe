@@ -819,6 +819,51 @@ long Device<T>::SetMemoryAt(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 template long Device<double>::SetMemoryAt(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
 template long Device<float>::SetMemoryAt(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
 
+
+template <class T>
+long Device<T>::CopyGpuToHostBuffer(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+		return lErr;
+
+	long lCount = (long)pfInput[0];
+	long hGpuSrc = (long)pfInput[1];
+	long hHostDst = (long)pfInput[2];
+
+	if (lErr = m_memory.CopyGpuToHost(lCount, hGpuSrc, hHostDst))
+		return lErr;
+
+	return 0;
+}
+
+template long Device<double>::CopyGpuToHostBuffer(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::CopyGpuToHostBuffer(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
+long Device<T>::CopyHostBufferToGpu(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 3, 3))
+		return lErr;
+
+	long lCount = (long)pfInput[0];
+	long hHostSrc = (long)pfInput[1];
+	long hGpuDst = (long)pfInput[2];
+
+	if (lErr = m_memory.CopyHostToGpu(lCount, hHostSrc, hGpuDst))
+		return lErr;
+
+	return 0;
+}
+
+template long Device<double>::CopyHostBufferToGpu(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::CopyHostBufferToGpu(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
 template <class T>
 long Device<T>::AllocHostBuffer(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
@@ -1119,10 +1164,8 @@ long Device<T>::GetDropoutInfo(long lInput, T* pfInput, long* plOutput, T** ppfO
 	if (lErr = m_memory.GetDropoutInfo(hCuda, hBottomDesc, &lStates, &lReserved))
 		return lErr;
 
-	T* pfOutput = NULL;
-
-	if (lErr = m_memory.AllocHost(2, &pfOutput, NULL, false, false, false))
-		return lErr;
+	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
+	T* pfOutput = *ppfOutput;
 
 	pfOutput[0] = (T)lStates;
 	pfOutput[1] = (T)lReserved;
@@ -2024,10 +2067,8 @@ long Device<T>::cuda_maxval(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 	if (lErr = m_math.maxval(n, hA, &fOutput, nAOff, &lPos))
 		return lErr;
 
-	T* pfOutput = NULL;
-
-	if (lErr = m_memory.AllocHost(2, &pfOutput, NULL, false, false, false))
-		return lErr;
+	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
+	T* pfOutput = *ppfOutput;
 
 	pfOutput[0] = fOutput;
 	pfOutput[1] = lPos;
@@ -2062,10 +2103,8 @@ long Device<T>::cuda_minval(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 	if (lErr = m_math.minval(n, hA, &fOutput, nAOff, &lPos))
 		return lErr;
 
-	T* pfOutput = NULL;
-
-	if (lErr = m_memory.AllocHost(2, &pfOutput, NULL, false, false, false))
-		return lErr;
+	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
+	T* pfOutput = *ppfOutput;
 
 	pfOutput[0] = fOutput;
 	pfOutput[1] = lPos;
@@ -2114,10 +2153,8 @@ long Device<T>::cuda_minmaxval(long lInput, T* pfInput, long* plOutput, T** ppfO
 			return lErr;
 	}
 
-	T* pfOutput = NULL;
-
-	if (lErr = m_memory.AllocHost(4, &pfOutput, NULL, false, false, false))
-		return lErr;
+	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
+	T* pfOutput = *ppfOutput;
 
 	pfOutput[0] = fMin;
 	pfOutput[1] = fMax;
@@ -3411,10 +3448,8 @@ long Device<T>::cuda_tsne_compute_knn_bounds(long lInput, T* pfInput, long* plOu
 	if (lErr = m_math.tsne_compute_knn_bounds(n, hData, fPctInCircle, &fMinX, &fMinY, &fMaxX, &fMaxY))
 		return lErr;
 
-	T* pfOutput = NULL;
-
-	if (lErr = m_memory.AllocHost(4, &pfOutput, NULL, false, false, false))
-		return lErr;
+	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
+	T* pfOutput = *ppfOutput;
 
 	pfOutput[0] = fMinX;
 	pfOutput[1] = fMinY;

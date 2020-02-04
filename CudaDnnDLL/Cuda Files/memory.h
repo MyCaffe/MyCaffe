@@ -269,6 +269,9 @@ class Memory
 		long SetHostBuffer(long hHandle, size_t lCount, T* pData);
 		bool IsHostBuffer(T* pf);
 
+		long CopyGpuToHost(long lCount, long hGpuSrc, long hHostDst);
+		long CopyHostToGpu(long lCount, long hHostSrc, long hGpuDst);
+
 		long CopyToHost(size_t lCount, T* pDst, void* pSrc, bool bSrcOnDevice, bool bHalf);
 		long AllocHost(size_t lCount, T** ppDst, void* pSrc, bool bSrcOnDevice, bool bHalf, bool bPinned = true);
 		long FreeHost(T* pDst);

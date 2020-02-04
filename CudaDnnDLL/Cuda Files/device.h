@@ -114,7 +114,10 @@ class Device
 		long GetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SetMemory(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SetMemoryAt(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
-		
+
+		long CopyHostBufferToGpu(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long CopyGpuToHostBuffer(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
 		long AllocHostBuffer(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long FreeHostBuffer(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long GetHostBufferCapacity(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -715,10 +718,8 @@ inline long Device<T>::GetDeviceMemory(long lInput, T* pfInput, long* plOutput, 
 	if (lErr = m_memory.GetDeviceMemory(nDeviceID, &fTotal, &fFree, &fUsed, &bEstimate))
 		return lErr;
 
-	T* pfOutput = NULL;
-
-	if (lErr = m_memory.AllocHost(4, &pfOutput, NULL, false, false, false))
-		return lErr;
+	// ppfOutput has MAX_OUTPUT(16) pre-allocated items.
+	T* pfOutput = *ppfOutput;
 
 	pfOutput[0] = fTotal;
 	pfOutput[1] = fFree;
@@ -739,11 +740,6 @@ inline long Device<T>::GetRequiredCompute(long lInput, T* pfInput, long* plOutpu
 	if (lErr = verifyOutput(plOutput, ppfOutput))
 		return lErr;
 
-	T* pfOutput = NULL;
-
-	if (lErr = m_memory.AllocHost(2, &pfOutput, NULL, false, false, false))
-		return lErr;
-
 	int nMajor = 3;
 	int nMinor = 5;
 
@@ -753,6 +749,9 @@ inline long Device<T>::GetRequiredCompute(long lInput, T* pfInput, long* plOutpu
 	nMinor = 3;
 #endif
 #endif
+
+	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
+	T* pfOutput = *ppfOutput;
 
 	pfOutput[0] = (T)nMajor;
 	pfOutput[1] = (T)nMinor;
@@ -827,10 +826,8 @@ inline long Device<T>::CreateMemoryTest(long lInput, T* pfInput, long* plOutput,
 	if (lErr = m_memory.CreateMemoryTest(fPctToAllocate, &hHandle, &szTotalNumBlocks, &fMemAllocated, &fMemStartAddr, &fMemBlockSize))
 		return lErr;
 
-	T* pfOutput = NULL;
-
-	if (lErr = m_memory.AllocHost(5, &pfOutput, NULL, false, false, false))
-		return lErr;
+	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
+	T* pfOutput = *ppfOutput;
 
 	pfOutput[0] = (T)hHandle;
 	pfOutput[1] = (T)szTotalNumBlocks;
@@ -1143,9 +1140,8 @@ inline long Device<T>::GetConvolutionInfo(long lInput, T* pfInput, long* plOutpu
 	if (lErr = m_memory.GetConvolutionInfo(hHandle, hBottomDesc, hFilter, hConvDesc, hTopDesc, lWsLimitInBytes, &algoFwd, &lWsSizeFwd, &algoBwdFilter, &lWsSizeBwdFilter, &algoBwdData, &lWsSizeBwdData, nPreferredFwdAlgo))
 		return lErr;
 
-	T* pOutput = NULL;
-	if (lErr = m_memory.AllocHost(6, &pOutput, NULL, false, false, false))
-		return lErr;
+	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
+	T* pOutput = *ppfOutput;
 
 	pOutput[0] = (T)algoFwd;
 	pOutput[1] = (T)lWsSizeFwd;
@@ -1706,9 +1702,8 @@ inline long Device<T>::GetRnnWorkspaceCount(long lInput, T* pfInput, long* plOut
 			return lErr;
 	}
 
-	T* pOutput = NULL;
-	if (lErr = m_memory.AllocHost(2, &pOutput, NULL, false, false, false))
-		return lErr;
+	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
+	T* pOutput = *ppfOutput;
 
 	pOutput[0] = (T)nWsCount;
 	pOutput[1] = (T)nResCount;
@@ -1755,9 +1750,8 @@ inline long Device<T>::GetRnnLinLayerParams(long lInput, T* pfInput, long* plOut
 			return lErr;
 	}
 
-	T* pOutput = NULL;
-	if (lErr = m_memory.AllocHost(4, &pOutput, NULL, false, false, false))
-		return lErr;
+	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
+	T* pOutput = *ppfOutput;
 
 	pOutput[0] = (T)nWtCount;
 	pOutput[1] = (T)hWt;
@@ -2579,10 +2573,8 @@ inline long Device<T>::RunPCA(long lInput, T* pfInput, long* plOutput, T** ppfOu
 	if (lErr = m_memory.RunPCA(hHandle, nSteps, &bDone, &nCurrentIteration, &nCurrentK))
 		return lErr;
 
-	T* pfOutput = NULL;
-	
-	if (lErr = m_memory.AllocHost(3, &pfOutput, NULL, false, false, false))
-		return lErr;
+	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
+	T* pfOutput = *ppfOutput;
 
 	pfOutput[0] = (bDone) ? T(0) : T(1);
 	pfOutput[1] = T(nCurrentIteration);
@@ -2655,10 +2647,8 @@ inline long Device<T>::FindTsneGaussianPerplexity(long lInput, T* pfInput, long*
 	if (lErr = m_memory.FindTsneGaussianPerplexity(hHandle, &bDone, &nCurrentIteration, &nMaxIteration))
 		return lErr;
 
-	T* pfOutput = NULL;
-	
-	if (lErr = m_memory.AllocHost(3, &pfOutput, NULL, false, false, false))
-		return lErr;
+	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
+	T* pfOutput = *ppfOutput;
 
 	pfOutput[0] = (bDone) ? T(0) : T(1);
 	pfOutput[1] = T(nCurrentIteration);
