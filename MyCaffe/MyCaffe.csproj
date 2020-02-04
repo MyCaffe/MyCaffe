@@ -81,6 +81,7 @@
     <Compile Include="common\DebugInformation.cs" />
     <Compile Include="common\DictionaryEx.cs" />
     <Compile Include="common\EventArgs.cs" />
+    <Compile Include="common\HostBuffer.cs" />
     <Compile Include="common\Interfaces.cs" />
     <Compile Include="common\InternalThread.cs" />
     <Compile Include="common\Net.cs" />

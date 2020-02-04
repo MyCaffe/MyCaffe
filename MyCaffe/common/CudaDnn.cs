@@ -768,6 +768,9 @@ namespace MyCaffe.common
             DEVICE_ENABLEPEERACCESS = 11,
             DEVICE_DISABLEPEERACCESS = 12,
 
+            COPY_DEVICE_TO_HOST = 14,
+            COPY_HOST_TO_DEVICE = 15,
+
             CREATE_MEMORYPOINTER = 16,
             FREE_MEMORYPOINTER = 17,
 
@@ -2004,6 +2007,34 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Copy from GPU memory to Host memory.
+        /// </summary>
+        /// <param name="lCount">Specifies the number of items (of base type each) to copy.</param>
+        /// <param name="hGpuSrc">Specifies the GPU memory containing the source data.</param>
+        /// <param name="hHostDst">Specifies the Host memory containing the host destination.</param>
+        public void CopyDeviceToHost(long lCount, long hGpuSrc, long hHostDst)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.COPY_DEVICE_TO_HOST, new double[] { lCount, hGpuSrc, hHostDst });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.COPY_DEVICE_TO_HOST, new float[] { lCount, hGpuSrc, hHostDst });
+        }
+
+        /// <summary>
+        /// Copy from Host memory to GPU memory.
+        /// </summary>
+        /// <param name="lCount">Specifies the number of items (of base type each) to copy.</param>
+        /// <param name="hHostSrc">Specifies the Host memory containing the host source data.</param>
+        /// <param name="hGpuDst">Specifies the GPU memory containing the destination.</param>
+        public void CopyHostToDevice(long lCount, long hHostSrc, long hGpuDst)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.COPY_HOST_TO_DEVICE, new double[] { lCount, hHostSrc, hGpuDst });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.COPY_HOST_TO_DEVICE, new float[] { lCount, hHostSrc, hGpuDst });
+        }
+
+        /// <summary>
         /// Allocate a block of host memory with a specified capacity.
         /// </summary>
         /// <param name="lCapacity">Specifies the capacity to allocate (in items, not bytes).</param>
@@ -2086,15 +2117,9 @@ namespace MyCaffe.common
         public T[] GetHostMemory(long hMem)
         {
             if (m_dt == DataType.DOUBLE)
-            {
-                List<double> rg = new List<double>() { hMem };
-                return convert(m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETHOSTMEM, rg.ToArray()));
-            }
+                return convert(m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GETHOSTMEM, new double[] { hMem }));
             else
-            {
-                List<float> rg = new List<float>() { hMem };
-                return convert(m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETHOSTMEM, rg.ToArray()));
-            }
+                return convert(m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GETHOSTMEM, new float[] { hMem }));
         }
 
         /// <summary>
