@@ -52,6 +52,11 @@ namespace MyCaffe.layers.ssd
         // Confidence loss.
         Blob<T> m_blobConfLoss;
 
+        HostBuffer<T> m_hostGt;
+        HostBuffer<T> m_hostLoc;
+        HostBuffer<T> m_hostConf;
+        HostBuffer<T> m_hostPrio;
+
         int m_nNumClasses;
         bool m_bShareLocation;
         int m_nBackgroundLabelId;
@@ -100,6 +105,11 @@ namespace MyCaffe.layers.ssd
             m_blobConfLoss.Name = "conf_loss";
 
             m_bboxUtil = new BBoxUtility<T>(cuda, log);
+
+            m_hostConf = new HostBuffer<T>(cuda);
+            m_hostLoc = new HostBuffer<T>(cuda);
+            m_hostGt = new HostBuffer<T>(cuda);
+            m_hostPrio = new HostBuffer<T>(cuda);
         }
 
         private void dispose(ref Blob<T> b)
@@ -145,6 +155,30 @@ namespace MyCaffe.layers.ssd
             {
                 m_bboxUtil.Dispose();
                 m_bboxUtil = null;
+            }
+
+            if (m_hostConf != null)
+            {
+                m_hostConf.Dispose();
+                m_hostConf = null;
+            }
+
+            if (m_hostLoc != null)
+            {
+                m_hostLoc.Dispose();
+                m_hostLoc = null;
+            }
+
+            if (m_hostGt != null)
+            {
+                m_hostGt.Dispose();
+                m_hostGt = null;
+            }
+
+            if (m_hostPrio != null)
+            {
+                m_hostPrio.Dispose();
+                m_hostPrio = null;
             }
 
             base.dispose();
@@ -393,11 +427,6 @@ namespace MyCaffe.layers.ssd
         /// </remarks>
         protected void forwardGpu(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            float[] rgfLocData = Utility.ConvertVecF<T>(colBottom[0].mutable_cpu_data);
-            float[] rgfConfData = Utility.ConvertVecF<T>(colBottom[1].mutable_cpu_data);
-            float[] rgfPriorData = Utility.ConvertVecF<T>(colBottom[2].mutable_cpu_data);
-            float[] rgfGtData = Utility.ConvertVecF<T>(colBottom[3].mutable_cpu_data);
-
             // Calculate the Loc and Conf predictions
             int nLocDataCount = colBottom[0].count();
             long hLocGpuData = colBottom[0].gpu_data;
@@ -412,23 +441,29 @@ namespace MyCaffe.layers.ssd
             m_nNumMatches = m_cuda.SsdMultiBoxLossForward(m_hSsd, nLocDataCount, hLocGpuData, nConfDataCount, hConfGpuData, nPriorDataCount, hPriorGpuData, nGtDataCount, hGtGpuData, out m_rgAllMatchIndices, out m_rgrgAllNegIndices, out nNumNegs);
 
             // Retrieve all ground truth.
-//            DictionaryMap<List<NormalizedBBox>> rgAllGtBboxes = m_bboxUtil.GetGroundTruth(rgfGtData, m_nNumGt, m_nBackgroundLabelId, m_bUseDifficultGt);
+            // m_hostGt.CopyFrom(colBottom[3]);
+            // float[] rgfGtData = m_hostGt.GetHostDataAsFloat();
+            // DictionaryMap<List<NormalizedBBox>> rgAllGtBboxes = m_bboxUtil.GetGroundTruth(rgfGtData, m_nNumGt, m_nBackgroundLabelId, m_bUseDifficultGt);
 
             // Retrieve all prior bboxes. It is the same within a batch since we assume all
             // images in a batch are of the same dimension.
-//            List<List<float>> rgrgPriorVariances;
-//            List<NormalizedBBox> rgPriorBboxes = m_bboxUtil.GetPrior(rgfPriorData, m_nNumPriors, out rgrgPriorVariances);
+            // List<List<float>> rgrgPriorVariances;
+            // m_hostPrio.CopyFrom(colBottom[2]);
+            // float[] rgfPriorData = m_hostPrio.GetHostDataAsFloat();
+            // List<NormalizedBBox> rgPriorBboxes = m_bboxUtil.GetPrior(rgfPriorData, m_nNumPriors, out rgrgPriorVariances);
 
             // Retrieve all predictions.
-//            List<LabelBBox> rgAllLocPreds = m_bboxUtil.GetLocPredictions(rgfLocData, m_nNum, m_nNumPriors, m_nLocClasses, m_bShareLocation);
+            // m_hostLoc.CopyFrom(colBottom[0]);
+            // float[] rgfLocData = m_hostLoc.GetHostDataAsFloat();
+            // List<LabelBBox> rgAllLocPreds = m_bboxUtil.GetLocPredictions(rgfLocData, m_nNum, m_nNumPriors, m_nLocClasses, m_bShareLocation);
 
             // Find matches between source bboxes and ground truth bboxes.
-//            List<DictionaryMap<List<float>>> rgAllMatchOverlaps;
-//            m_bboxUtil.FindMatches(rgAllLocPreds, rgAllGtBboxes, rgPriorBboxes, rgrgPriorVariances, m_param.multiboxloss_param, out rgAllMatchOverlaps, out m_rgAllMatchIndices);
+            // List<DictionaryMap<List<float>>> rgAllMatchOverlaps;
+            // m_bboxUtil.FindMatches(rgAllLocPreds, rgAllGtBboxes, rgPriorBboxes, rgrgPriorVariances, m_param.multiboxloss_param, out rgAllMatchOverlaps, out m_rgAllMatchIndices);
 
             // Sample hard negative (and positive) examples based on mining type.
-//            int nNumNegs;
-//            m_nNumMatches = m_bboxUtil.MineHardExamples(colBottom[1], rgAllLocPreds, rgAllGtBboxes, rgPriorBboxes, rgrgPriorVariances, rgAllMatchOverlaps, m_param.multiboxloss_param, m_rgAllMatchIndices, m_rgrgAllNegIndices, out nNumNegs);
+            // int nNumNegs;
+            // m_nNumMatches = m_bboxUtil.MineHardExamples(colBottom[1], rgAllLocPreds, rgAllGtBboxes, rgPriorBboxes, rgrgPriorVariances, rgAllMatchOverlaps, m_param.multiboxloss_param, m_rgAllMatchIndices, m_rgrgAllNegIndices, out nNumNegs);
 
             if (m_nNumMatches >= 1)
             {
@@ -439,7 +474,7 @@ namespace MyCaffe.layers.ssd
 
                 m_cuda.SsdEncodeLocPrediction(m_hSsd, m_blobLocPred.count(), m_blobLocPred.mutable_gpu_data, m_blobLocGt.count(), m_blobLocGt.mutable_gpu_data);
 
-//                m_bboxUtil.EncodeLocPrediction(rgAllLocPreds, rgAllGtBboxes, m_rgAllMatchIndices, rgPriorBboxes, rgrgPriorVariances, m_param.multiboxloss_param, m_blobLocPred, m_blobLocGt);
+            //  m_bboxUtil.EncodeLocPrediction(rgAllLocPreds, rgAllGtBboxes, m_rgAllMatchIndices, rgPriorBboxes, rgrgPriorVariances, m_param.multiboxloss_param, m_blobLocPred, m_blobLocGt);
 
                 m_locLossLayer.Reshape(m_colLocBottom, m_colLocTop);
                 m_locLossLayer.Forward(m_colLocBottom, m_colLocTop);
@@ -492,7 +527,9 @@ namespace MyCaffe.layers.ssd
 
                 m_cuda.SsdEncodeConfPrediction(m_hSsd, m_blobConfPred.count(), m_blobConfPred.mutable_gpu_data, m_blobConfGt.count(), m_blobConfGt.mutable_gpu_data);
 
-//                m_bboxUtil.EncodeConfPrediction(rgfConfData, m_nNum, m_nNumPriors, m_param.multiboxloss_param, m_rgAllMatchIndices, m_rgrgAllNegIndices, rgAllGtBboxes, m_blobConfPred, m_blobConfGt);
+                // m_hostConf.CopyFrom(colBottom[1]);
+                // float[] rgfConfData = m_hostConf.GetHostDataAsFloat();
+                // m_bboxUtil.EncodeConfPrediction(rgfConfData, m_nNum, m_nNumPriors, m_param.multiboxloss_param, m_rgAllMatchIndices, m_rgrgAllNegIndices, rgAllGtBboxes, m_blobConfPred, m_blobConfGt);
                 m_confLossLayer.Reshape(m_colConfBottom, m_colConfTop);
                 m_confLossLayer.Forward(m_colConfBottom, m_colConfTop);
             }
@@ -524,6 +561,8 @@ namespace MyCaffe.layers.ssd
             }
         }
 
+
+
         /// <summary>
         /// Forward computation.
         /// </summary>
@@ -533,20 +572,21 @@ namespace MyCaffe.layers.ssd
         /// </param>
         protected void forwardCpu(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            float[] rgfLocData = Utility.ConvertVecF<T>(colBottom[0].mutable_cpu_data);
-            float[] rgfConfData = Utility.ConvertVecF<T>(colBottom[1].mutable_cpu_data);
-            float[] rgfPriorData = Utility.ConvertVecF<T>(colBottom[2].mutable_cpu_data);
-            float[] rgfGtData = Utility.ConvertVecF<T>(colBottom[3].mutable_cpu_data);
-
             // Retrieve all ground truth.
+            m_hostGt.CopyFrom(colBottom[3]);
+            float[] rgfGtData = m_hostGt.GetHostDataAsFloat();
             DictionaryMap<List<NormalizedBBox>> rgAllGtBboxes = m_bboxUtil.GetGroundTruth(rgfGtData, m_nNumGt, m_nBackgroundLabelId, m_bUseDifficultGt);
 
             // Retrieve all prior bboxes. It is the same within a batch since we assume all
             // images in a batch are of the same dimension.
             List<List<float>> rgrgPriorVariances;
+            m_hostPrio.CopyFrom(colBottom[2]);
+            float[] rgfPriorData = m_hostPrio.GetHostDataAsFloat();
             List<NormalizedBBox> rgPriorBboxes = m_bboxUtil.GetPrior(rgfPriorData, m_nNumPriors, out rgrgPriorVariances);
 
             // Retrieve all predictions.
+            m_hostLoc.CopyFrom(colBottom[0]);
+            float[] rgfLocData = m_hostLoc.GetHostDataAsFloat();
             List<LabelBBox> rgAllLocPreds = m_bboxUtil.GetLocPredictions(rgfLocData, m_nNum, m_nNumPriors, m_nLocClasses, m_bShareLocation);
 
             // Find matches between source bboxes and ground truth bboxes.
@@ -615,6 +655,8 @@ namespace MyCaffe.layers.ssd
 
                 m_blobConfGt.SetData(m_nBackgroundLabelId);
 
+                m_hostConf.CopyFrom(colBottom[1]);
+                float[] rgfConfData = m_hostConf.GetHostDataAsFloat();
                 m_bboxUtil.EncodeConfPrediction(rgfConfData, m_nNum, m_nNumPriors, m_param.multiboxloss_param, m_rgAllMatchIndices, m_rgrgAllNegIndices, rgAllGtBboxes, m_blobConfPred, m_blobConfGt);
                 m_confLossLayer.Reshape(m_colConfBottom, m_colConfTop);
                 m_confLossLayer.Forward(m_colConfBottom, m_colConfTop);
