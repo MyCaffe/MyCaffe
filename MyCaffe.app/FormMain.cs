@@ -115,6 +115,18 @@ namespace MyCaffe.app
         {
             try
             {
+                m_gymHost = new MyCaffeGymUiServiceHost();
+
+                try
+                {
+                    m_gymHost.Open();
+                }
+                catch (Exception excpt)
+                {
+                    setStatus(excpt.Message, STATUS.ERROR);
+                    m_gymHost = null;
+                }
+
                 int nSelectedImgDbVer = Properties.Settings.Default.ImgDbVer;
                 List<ToolStripMenuItem> rgItems = new List<ToolStripMenuItem>();
                 foreach (ToolStripMenuItem item in imageDBToolStripMenuItem.DropDownItems)
@@ -205,18 +217,6 @@ namespace MyCaffe.app
                 m_bwInit.RunWorkerAsync();
                 m_dlgWait.ShowDialog();
                 m_bwUrlCheck.RunWorkerAsync();
-
-                m_gymHost = new MyCaffeGymUiServiceHost();
-
-                try
-                {
-                    m_gymHost.Open();
-                }
-                catch (Exception excpt)
-                {
-                    setStatus(excpt.Message, STATUS.ERROR);
-                    m_gymHost = null;
-                }
             }
             catch (Exception excpt)
             {
