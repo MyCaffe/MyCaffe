@@ -57,6 +57,12 @@ namespace MyCaffe.app
             strFile = Properties.Settings.Default.MnistFile4;
             if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
                 edtTrainLabelsFile.Text = strFile;
+
+            string strFolder = Properties.Settings.Default.MnistExportFolder;
+            if (!string.IsNullOrEmpty(strFolder) && Directory.Exists(strFolder))
+                edtExportFolder.Text = strFolder;
+
+            chkExportToFile.Checked = Properties.Settings.Default.ExportMnistToFile;
         }
 
         private void lblDownloadSite_MouseHover(object sender, EventArgs e)
@@ -117,7 +123,15 @@ namespace MyCaffe.app
 
         private void btnOK_Click(object sender, EventArgs e)
         {
-            m_param = new MnistDataParameters(edtTrainImagesFile.Text, edtTrainLabelsFile.Text, edtTestImagesFile.Text, edtTestLabelsFile.Text);
+            if (chkExportToFile.Checked && string.IsNullOrEmpty(edtExportFolder.Text))
+            {
+                MessageBox.Show("You must specify a folder to export into!", "No Export Folder", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                DialogResult = DialogResult.None;
+                edtExportFolder.Focus();
+                return;
+            }
+
+            m_param = new MnistDataParameters(edtTrainImagesFile.Text, edtTrainLabelsFile.Text, edtTestImagesFile.Text, edtTestLabelsFile.Text, chkExportToFile.Checked, edtExportFolder.Text);
         }
 
         private void FormMnist_FormClosing(object sender, FormClosingEventArgs e)
@@ -140,7 +154,26 @@ namespace MyCaffe.app
             if (!string.IsNullOrEmpty(strFile) && File.Exists(strFile))
                 Properties.Settings.Default.MnistFile4 = strFile;
 
+            string strFolder = edtExportFolder.Text;
+            if (!string.IsNullOrEmpty(strFolder) && Directory.Exists(strFolder))
+                Properties.Settings.Default.MnistExportFolder = strFolder;
+
+            Properties.Settings.Default.ExportMnistToFile = chkExportToFile.Checked;
+
             Properties.Settings.Default.Save();
+        }
+
+        private void chkExportToFile_CheckedChanged(object sender, EventArgs e)
+        {
+            edtExportFolder.Enabled = chkExportToFile.Checked;
+        }
+
+        private void btnBrowseFolder_Click(object sender, EventArgs e)
+        {
+            folderBrowserDialog1.SelectedPath = edtExportFolder.Text;
+
+            if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
+                edtExportFolder.Text = folderBrowserDialog1.SelectedPath;
         }
     }
 }

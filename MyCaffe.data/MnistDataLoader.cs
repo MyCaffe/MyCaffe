@@ -10,6 +10,7 @@ using MyCaffe.basecode;
 using MyCaffe.db.image;
 using MyCaffe.basecode.descriptors;
 using System.Threading;
+using System.Drawing;
 
 namespace MyCaffe.data
 {
@@ -22,7 +23,6 @@ namespace MyCaffe.data
     public class MnistDataLoader
     {
         MnistDataParameters m_param;
-        DatasetFactory m_factory = new DatasetFactory();
         Log m_log;
         CancelEvent m_evtCancel;
 
@@ -78,29 +78,50 @@ namespace MyCaffe.data
 
                 reportProgress(nIdx, nTotal, "Loading " + dataset_name + " database...");
 
-                DatasetFactory factory = new DatasetFactory();
+                DatasetFactory factory = null;
+                string strExportFolder = null;
 
-                string strTrainSrc = dataset_name + ".training";
-                int nSrcId = factory.GetSourceID(strTrainSrc);
-                if (nSrcId != 0)
-                    factory.DeleteSourceData(nSrcId);
+                if (m_param.ExportToFile)
+                {
+                    strExportFolder = m_param.ExportPath.TrimEnd('\\') + "\\";
+                    if (!Directory.Exists(strExportFolder))
+                        Directory.CreateDirectory(strExportFolder);
+                }
 
-                if (!loadFile(strTrainImagesBin, strTrainLabelsBin, strTrainSrc))
+                string strTrainSrc = "training";
+                if (!m_param.ExportToFile)
+                {
+                    factory = new DatasetFactory();
+
+                    strTrainSrc = dataset_name + "." + strTrainSrc;
+                    int nSrcId = factory.GetSourceID(strTrainSrc);
+                    if (nSrcId != 0)
+                        factory.DeleteSourceData(nSrcId);
+                }
+
+                if (!loadFile(factory, strTrainImagesBin, strTrainLabelsBin, strTrainSrc, strExportFolder))
                     return false;
 
-                string strTestSrc = dataset_name + ".testing";
-                nSrcId = factory.GetSourceID(strTestSrc);
-                if (nSrcId != 0)
-                    factory.DeleteSourceData(nSrcId);
+                string strTestSrc = "testing";
+                if (!m_param.ExportToFile)
+                {
+                    strTestSrc = dataset_name + "." + strTestSrc;
+                    int nSrcId = factory.GetSourceID(strTestSrc);
+                    if (nSrcId != 0)
+                        factory.DeleteSourceData(nSrcId);
+                }
 
-                if (!loadFile(strTestImagesBin, strTestLabelsBin, strTestSrc))
+                if (!loadFile(factory, strTestImagesBin, strTestLabelsBin, strTestSrc, strExportFolder))
                     return false;
 
-                SourceDescriptor srcTrain = factory.LoadSource(strTrainSrc);
-                SourceDescriptor srcTest = factory.LoadSource(strTestSrc);
-                DatasetDescriptor ds = new DatasetDescriptor(nCreatorID, dataset_name, null, null, srcTrain, srcTest, dataset_name, dataset_name + " Character Dataset");
-                factory.AddDataset(ds);
-                factory.UpdateDatasetCounts(ds.ID);
+                if (!m_param.ExportToFile)
+                {
+                    SourceDescriptor srcTrain = factory.LoadSource(strTrainSrc);
+                    SourceDescriptor srcTest = factory.LoadSource(strTestSrc);
+                    DatasetDescriptor ds = new DatasetDescriptor(nCreatorID, dataset_name, null, null, srcTrain, srcTest, dataset_name, dataset_name + " Character Dataset");
+                    factory.AddDataset(ds);
+                    factory.UpdateDatasetCounts(ds.ID);
+                }
 
                 return true;
             }
@@ -115,8 +136,16 @@ namespace MyCaffe.data
             }
         }
 
-        private bool loadFile(string strImagesFile, string strLabelsFile, string strSourceName)
+        private bool loadFile(DatasetFactory factory, string strImagesFile, string strLabelsFile, string strSourceName, string strExportPath)
         {
+            if (strExportPath != null)
+            {
+                strExportPath += strSourceName;
+
+                if (!Directory.Exists(strExportPath))
+                    Directory.CreateDirectory(strExportPath);
+            }
+
             Stopwatch sw = new Stopwatch();
 
             reportProgress(0, 0, " Source: " + strSourceName);
@@ -149,18 +178,22 @@ namespace MyCaffe.data
                 uint cols = image_file.ReadUInt32();
                 int nChannels = 1;  // black and white
 
-                int nSrcId = m_factory.AddSource(strSourceName, nChannels, (int)cols, (int)rows, false, 0, true);
+                if (factory != null)
+                {
+                    int nSrcId = factory.AddSource(strSourceName, nChannels, (int)cols, (int)rows, false, 0, true);
 
-                m_factory.Open(nSrcId, 500, false, m_log);
-                m_factory.DeleteSourceData();
+                    factory.Open(nSrcId, 500, false, m_log);
+                    factory.DeleteSourceData();
+                }
 
                 // Storing to database;
                 byte[] rgLabel;
                 byte[] rgPixels;
 
                 Datum datum = new Datum(false, nChannels, (int)cols, (int)rows, -1, DateTime.MinValue, new List<byte>(), 0, false, -1);
+                string strAction = (m_param.ExportToFile) ? "exporing" : "loading";
 
-                reportProgress(0, (int)num_items, "  loading a total of " + num_items.ToString() + " items.");
+                reportProgress(0, (int)num_items, "  " + strAction + " a total of " + num_items.ToString() + " items.");
                 reportProgress(0, (int)num_items, "   (with rows: " + rows.ToString() + ", cols: " + cols.ToString() + ")");
 
                 sw.Start();
@@ -174,23 +207,31 @@ namespace MyCaffe.data
 
                     if (sw.Elapsed.TotalMilliseconds > 1000)
                     {
-                        reportProgress(i, (int)num_items, " loading data...");
+                        reportProgress(i, (int)num_items, " " + strAction + " data...");
                         sw.Restart();
                     }
 
                     datum.SetData(rgPixels.ToList(), (int)rgLabel[0]);
-                    m_factory.PutRawImageCache(i, datum);
+
+                    if (factory != null)
+                        factory.PutRawImageCache(i, datum);
+                    else if (strExportPath != null)
+                        saveToFile(strExportPath, i, datum);
+
                     rgImg.Add(new SimpleDatum(datum));
 
                     if (m_evtCancel.WaitOne(0))
                         return false;
                 }
 
-                m_factory.ClearImageCashe(true);
-                m_factory.UpdateSourceCounts();
-                m_factory.SaveImageMean(SimpleDatum.CalculateMean(m_log, rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true);
+                if (factory != null)
+                {
+                    factory.ClearImageCashe(true);
+                    factory.UpdateSourceCounts();
+                    factory.SaveImageMean(SimpleDatum.CalculateMean(m_log, rgImg.ToArray(), new WaitHandle[] { new ManualResetEvent(false) }), true);
+                }
 
-                reportProgress((int)num_items, (int)num_items, " loading completed.");
+                reportProgress((int)num_items, (int)num_items, " " + strAction + " completed.");
             }
             finally
             {
@@ -199,6 +240,20 @@ namespace MyCaffe.data
             }
 
             return true;
+        }
+
+        private void saveToFile(string strPath, int nIdx, Datum d)
+        {
+            string strFile = strPath.TrimEnd('\\') + "\\" + getImageFileName(nIdx, d);
+            Bitmap bmp = ImageData.GetImage(d);
+
+            bmp.Save(strFile);
+            bmp.Dispose();
+        }
+
+        private string getImageFileName(int nIdx, SimpleDatum sd)
+        {
+            return "img_" + nIdx.ToString() + "-" + sd.Label.ToString() + ".png";
         }
 
         private void Log_OnWriteLine(object sender, LogArg e)

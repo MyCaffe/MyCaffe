@@ -48,6 +48,11 @@
             this.btnOK = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
+            this.chkExportToFile = new System.Windows.Forms.CheckBox();
+            this.label5 = new System.Windows.Forms.Label();
+            this.edtExportFolder = new System.Windows.Forms.TextBox();
+            this.btnBrowseFolder = new System.Windows.Forms.Button();
+            this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
             this.SuspendLayout();
             // 
             // lblDownload
@@ -183,7 +188,7 @@
             // 
             this.btnOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.btnOK.Location = new System.Drawing.Point(498, 140);
+            this.btnOK.Location = new System.Drawing.Point(498, 190);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(75, 23);
             this.btnOK.TabIndex = 14;
@@ -195,7 +200,7 @@
             // 
             this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(579, 140);
+            this.btnCancel.Location = new System.Drawing.Point(579, 190);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(75, 23);
             this.btnCancel.TabIndex = 15;
@@ -208,21 +213,70 @@
             this.timerUI.Interval = 250;
             this.timerUI.Tick += new System.EventHandler(this.timerUI_Tick);
             // 
+            // chkExportToFile
+            // 
+            this.chkExportToFile.AutoSize = true;
+            this.chkExportToFile.Location = new System.Drawing.Point(158, 136);
+            this.chkExportToFile.Name = "chkExportToFile";
+            this.chkExportToFile.Size = new System.Drawing.Size(193, 17);
+            this.chkExportToFile.TabIndex = 16;
+            this.chkExportToFile.Text = "Export to file only (SQL not needed)";
+            this.chkExportToFile.UseVisualStyleBackColor = true;
+            this.chkExportToFile.CheckedChanged += new System.EventHandler(this.chkExportToFile_CheckedChanged);
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(80, 163);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(72, 13);
+            this.label5.TabIndex = 11;
+            this.label5.Text = "Export Folder:";
+            // 
+            // edtExportFolder
+            // 
+            this.edtExportFolder.Enabled = false;
+            this.edtExportFolder.Location = new System.Drawing.Point(158, 159);
+            this.edtExportFolder.Name = "edtExportFolder";
+            this.edtExportFolder.Size = new System.Drawing.Size(461, 20);
+            this.edtExportFolder.TabIndex = 12;
+            this.edtExportFolder.Text = "\\ProgramData\\MyCaffe\\test_data\\mnist";
+            // 
+            // btnBrowseFolder
+            // 
+            this.btnBrowseFolder.Location = new System.Drawing.Point(625, 159);
+            this.btnBrowseFolder.Name = "btnBrowseFolder";
+            this.btnBrowseFolder.Size = new System.Drawing.Size(29, 20);
+            this.btnBrowseFolder.TabIndex = 13;
+            this.btnBrowseFolder.Text = "...";
+            this.btnBrowseFolder.UseVisualStyleBackColor = true;
+            this.btnBrowseFolder.Click += new System.EventHandler(this.btnBrowseFolder_Click);
+            // 
+            // folderBrowserDialog1
+            // 
+            this.folderBrowserDialog1.Description = "Select the export folder.";
+            this.folderBrowserDialog1.RootFolder = System.Environment.SpecialFolder.MyComputer;
+            this.folderBrowserDialog1.SelectedPath = "\\ProgramData\\MyCaffe\\test_data";
+            // 
             // FormMnist
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(666, 175);
+            this.ClientSize = new System.Drawing.Size(666, 225);
+            this.Controls.Add(this.chkExportToFile);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOK);
             this.Controls.Add(this.btnBrowseGz4);
             this.Controls.Add(this.btnBrowseGz3);
+            this.Controls.Add(this.btnBrowseFolder);
             this.Controls.Add(this.btnBrowseGz2);
             this.Controls.Add(this.btnBrowseGz1);
             this.Controls.Add(this.edtTestLabelsFile);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.edtTestImagesFile);
             this.Controls.Add(this.label3);
+            this.Controls.Add(this.edtExportFolder);
+            this.Controls.Add(this.label5);
             this.Controls.Add(this.edtTrainLabelsFile);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.edtTrainImagesFile);
@@ -264,5 +318,10 @@
         private System.Windows.Forms.Button btnOK;
         private System.Windows.Forms.Button btnCancel;
         private System.Windows.Forms.Timer timerUI;
+        private System.Windows.Forms.CheckBox chkExportToFile;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.TextBox edtExportFolder;
+        private System.Windows.Forms.Button btnBrowseFolder;
+        private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog1;
     }
 }

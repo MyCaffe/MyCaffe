@@ -406,5 +406,29 @@ namespace MyCaffe.app.Properties {
                 this["ImgDbVer"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool ExportMnistToFile {
+            get {
+                return ((bool)(this["ExportMnistToFile"]));
+            }
+            set {
+                this["ExportMnistToFile"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string MnistExportFolder {
+            get {
+                return ((string)(this["MnistExportFolder"]));
+            }
+            set {
+                this["MnistExportFolder"] = value;
+            }
+        }
     }
 }

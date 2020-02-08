@@ -15,6 +15,8 @@ namespace MyCaffe.data
         string m_strTrainLabelsFile;
         string m_strTestImagesFile;
         string m_strTestLabelsFile;
+        bool m_bExportToFileOnly;
+        string m_strExportPath;
 
         /// <summary>
         /// The constructor.
@@ -23,12 +25,16 @@ namespace MyCaffe.data
         /// <param name="strTrainLabels">Specifies the training label file 'train-labels-idx1.ubyte.gz'.</param>
         /// <param name="strTestImages">Specifies the testing image file 't10k-images-idx3-ubyte.gz'.</param>
         /// <param name="strTestLabels">Specifies the testing label file 't10k-labels-idx1-ubyte.gz'.</param>
-        public MnistDataParameters(string strTrainImages, string strTrainLabels, string strTestImages, string strTestLabels)
+        /// <param name="bExportToFileOnly">Specifies to extract and export the *.gz files to all images files contained within each *.gz.</param>
+        /// <param name="strExportPath">Specifies the path where the images are to be exported.</param>
+        public MnistDataParameters(string strTrainImages, string strTrainLabels, string strTestImages, string strTestLabels, bool bExportToFileOnly, string strExportPath)
         {
             m_strTrainImagesFile = strTrainImages;
             m_strTrainLabelsFile = strTrainLabels;
             m_strTestImagesFile = strTestImages;
             m_strTestLabelsFile = strTestLabels;
+            m_bExportToFileOnly = bExportToFileOnly;
+            m_strExportPath = strExportPath;
         }
 
         /// <summary>
@@ -61,6 +67,22 @@ namespace MyCaffe.data
         public string TestLabelsFile
         {
             get { return m_strTestLabelsFile; }
+        }
+
+        /// <summary>
+        /// Specifies where to export the files when 'ExportToFile' = <i>true</i>.
+        /// </summary>
+        public string ExportPath
+        {
+            get { return m_strExportPath; }
+        }
+
+        /// <summary>
+        /// Specifies to export the images to a folder.
+        /// </summary>
+        public bool ExportToFile
+        {
+            get { return m_bExportToFileOnly; }
         }
     }
 }
