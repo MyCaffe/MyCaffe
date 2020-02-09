@@ -21,6 +21,7 @@ using System.Net;
 using System.Reflection;
 using MyCaffe.test;
 using MyCaffe.data;
+using System.ServiceProcess;
 
 namespace MyCaffe.app
 {
@@ -60,6 +61,7 @@ namespace MyCaffe.app
         int m_nMinComputeMinor = 0;
         string m_strDllPath = null;
         NET_TYPE m_netType = NET_TYPE.LENET;
+        bool m_bSqlLoaded = false;
 
         delegate void fnVerifyGpu(int nGpuId);
         delegate void fnSetStatus(string strMsg, STATUS status, bool bBreath);
@@ -115,6 +117,7 @@ namespace MyCaffe.app
         {
             try
             {
+                // Initialize the GYM HOst
                 m_gymHost = new MyCaffeGymUiServiceHost();
 
                 try
@@ -127,6 +130,13 @@ namespace MyCaffe.app
                     m_gymHost = null;
                 }
 
+                // Initialize the GPU Menu and Help menu.
+                m_dlgWait = new FormWait();
+                m_bwInit.RunWorkerAsync();
+                m_dlgWait.ShowDialog();
+                m_bwUrlCheck.RunWorkerAsync();
+
+                // Initialize the ImageDB Menu.
                 int nSelectedImgDbVer = Properties.Settings.Default.ImgDbVer;
                 List<ToolStripMenuItem> rgItems = new List<ToolStripMenuItem>();
                 foreach (ToolStripMenuItem item in imageDBToolStripMenuItem.DropDownItems)
@@ -137,6 +147,7 @@ namespace MyCaffe.app
 
                 rgItems[nSelectedImgDbVer].Checked = true;
 
+                // Initialize the connection to SQL (if it exists).
                 List<string> rgSqlInst = DatabaseInstanceQuery.GetInstances();
 
                 m_bwProcess.RunWorkerAsync();
@@ -144,45 +155,62 @@ namespace MyCaffe.app
                 if (!File.Exists("index.chm"))
                     localHelpToolStripMenuItem.Enabled = false;
 
+                string strSqlInstance = null;
+
                 if (rgSqlInst == null || rgSqlInst.Count == 0)
                 {
-                    setStatus("You must download and install 'Microsoft SQL' or 'Microsoft SQL Express' first!", STATUS.WARNING);
+                    setStatus("For most operations, you must download and install 'Microsoft SQL' or 'Microsoft SQL Express' first!", STATUS.WARNING);
                     setStatus("see 'https://www.microsoft.com/en-us/sql-server/sql-server-editions-express'");
                     setStatus("");
-                    return;
                 }
                 else if (rgSqlInst.Count == 1)
                 {
-                    if (rgSqlInst[0] != ".\\MSSQLSERVER")
-                        EntitiesConnection.GlobalDatabaseServerName = rgSqlInst[0];
+                    strSqlInstance = rgSqlInst[0];
                 }
                 else
                 {
                     FormSqlInstances dlg = new FormSqlInstances(rgSqlInst);
 
                     if (dlg.ShowDialog() == DialogResult.OK)
+                        strSqlInstance = dlg.Instance;
+                    else
+                        setStatus("You are NOT connected to SQL.", STATUS.WARNING);
+                }
+
+                if (strSqlInstance != null)
+                {
+                    string strService = strSqlInstance.TrimStart('.', '\\');
+                    ServiceController sc = new ServiceController(strService);
+                    if (sc.Status != ServiceControllerStatus.Running)
                     {
-                        if (dlg.Instance != ".\\MSSQLSERVER")
-                            EntitiesConnection.GlobalDatabaseServerName = dlg.Instance;
+                        setStatus("WARNING: Microsoft SQL instance '" + strSqlInstance + "' found, but it is not running.", STATUS.WARNING);
                     }
                     else
                     {
-                        setStatus("You are NOT connected to SQL.", STATUS.WARNING);
+                        m_bSqlLoaded = true;
+                        EntitiesConnection.GlobalDatabaseServerName = strSqlInstance;
                     }
                 }
 
-                setStatus("Using SQL Instance '" + EntitiesConnection.GlobalDatabaseServerName + "'", STATUS.INFO2);
+                if (m_bSqlLoaded)
+                {
+                    setStatus("Using SQL Instance '" + EntitiesConnection.GlobalDatabaseServerName + "'", STATUS.INFO2);
 
-                DatabaseManagement dbMgr = new DatabaseManagement("DNN", "", EntitiesConnection.GlobalDatabaseServerName);
-                bool bExists;
-                Exception err = dbMgr.DatabaseExists(out bExists);
+                    DatabaseManagement dbMgr = new DatabaseManagement("DNN", "", EntitiesConnection.GlobalDatabaseServerName);
+                    bool bExists;
+                    Exception err = dbMgr.DatabaseExists(out bExists);
 
-                if (err != null)
-                    setStatus("ERROR: " + err.Message, STATUS.ERROR);
-                else if (!bExists)
-                    createDatabaseToolStripMenuItem_Click(this, new EventArgs());
+                    if (err != null)
+                        setStatus("ERROR: " + err.Message, STATUS.ERROR);
+                    else if (!bExists)
+                        createDatabaseToolStripMenuItem_Click(this, new EventArgs());
+                    else
+                        setStatus("Using database '" + dbMgr.Name + "'", STATUS.INFO2);
+                }
                 else
-                    setStatus("Using database '" + dbMgr.Name + "'", STATUS.INFO2);
+                {
+                    setStatus("WARNING: Not using SQL - only limited operations available.", STATUS.WARNING);
+                }
 
                 setStatus("", STATUS.INFO2);
 
@@ -196,27 +224,33 @@ namespace MyCaffe.app
                 setStatus("NOTE: Known test failures are pre-set with a FAILURE status.", STATUS.INFO2);
                 setStatus("----------------------------------------------------------------------------------", STATUS.INFO2);
 
-                DatasetFactory factory = new DatasetFactory();
-                int nCifarID = factory.GetDatasetID("CIFAR-10");
-                int nMnistID = factory.GetDatasetID("MNIST");
-
-                if (nCifarID == 0 || nMnistID == 0)
+                if (m_bSqlLoaded)
                 {
-                    setStatus(" !Before running any automated tests, make sure to load the following datasets:", STATUS.WARNING);
+                    DatasetFactory factory = new DatasetFactory();
+                    int nCifarID = factory.GetDatasetID("CIFAR-10");
+                    int nMnistID = factory.GetDatasetID("MNIST");
 
-                    if (nCifarID == 0)
-                        setStatus("    CIFAR-10", STATUS.WARNING);
+                    if (nCifarID == 0 || nMnistID == 0)
+                    {
+                        setStatus(" !Before running any automated tests, make sure to load the following datasets:", STATUS.WARNING);
 
-                    if (nMnistID == 0)
-                        setStatus("    MNIST (1 channel)", STATUS.WARNING);
+                        if (nCifarID == 0)
+                            setStatus("    CIFAR-10", STATUS.WARNING);
 
-                    setStatus(" see the 'Database' menu.", STATUS.WARNING);
+                        if (nMnistID == 0)
+                            setStatus("    MNIST (1 channel)", STATUS.WARNING);
+
+                        setStatus(" see the 'Database' menu.", STATUS.WARNING);
+                    }
                 }
 
-                m_dlgWait = new FormWait();
-                m_bwInit.RunWorkerAsync();
-                m_dlgWait.ShowDialog();
-                m_bwUrlCheck.RunWorkerAsync();
+                createDatabaseToolStripMenuItem.Enabled = m_bSqlLoaded;
+                loadCIFAR10ToolStripMenuItem.Enabled = m_bSqlLoaded;
+                loadVOC2007ToolStripMenuItem.Enabled = m_bSqlLoaded;
+                createMyCaffeToolStripMenuItem.Enabled = m_bSqlLoaded;
+                alexNetToolStripMenuItem.Enabled = m_bSqlLoaded;
+                resNet56CifarAccuracyBugToolStripMenuItem.Enabled = m_bSqlLoaded;
+                imageDBToolStripMenuItem.Enabled = m_bSqlLoaded;
             }
             catch (Exception excpt)
             {
@@ -556,7 +590,7 @@ namespace MyCaffe.app
 
         private void loadMNISTToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            FormMnist dlg = new FormMnist();
+            FormMnist dlg = new FormMnist(m_bSqlLoaded);
 
             if (dlg.ShowDialog() == DialogResult.OK)
             {

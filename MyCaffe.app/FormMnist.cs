@@ -17,11 +17,13 @@ namespace MyCaffe.app
     {
         Dictionary<Button, TextBox> m_rgItems = new Dictionary<Button, TextBox>();
         MnistDataParameters m_param = null;
+        bool m_bSqlLoaded;
 
-        public FormMnist()
+        public FormMnist(bool bSqlLoaded)
         {
             InitializeComponent();
 
+            m_bSqlLoaded = bSqlLoaded;
             edtTrainImagesFile.Tag = "train-images-idx3-ubyte";
             edtTrainLabelsFile.Tag = "train-labels-idx1-ubyte";
             edtTestImagesFile.Tag = "t10k-images-idx3-ubyte";
@@ -63,6 +65,12 @@ namespace MyCaffe.app
                 edtExportFolder.Text = strFolder;
 
             chkExportToFile.Checked = Properties.Settings.Default.ExportMnistToFile;
+
+            if (!m_bSqlLoaded)
+            {
+                chkExportToFile.Checked = true;
+                chkExportToFile.Enabled = false;
+            }
         }
 
         private void lblDownloadSite_MouseHover(object sender, EventArgs e)
