@@ -180,6 +180,9 @@ namespace MyCaffe.app
                 if (strSqlInstance != null)
                 {
                     string strService = strSqlInstance.TrimStart('.', '\\');
+                    if (strService == "SQLEXPRESS")
+                        strService = "MSSQL$" + strService;
+
                     ServiceController sc = new ServiceController(strService);
                     if (sc.Status != ServiceControllerStatus.Running)
                     {
@@ -188,7 +191,8 @@ namespace MyCaffe.app
                     else
                     {
                         m_bSqlLoaded = true;
-                        EntitiesConnection.GlobalDatabaseServerName = strSqlInstance;
+                        if (strSqlInstance != ".\\MSSQLSERVER")
+                            EntitiesConnection.GlobalDatabaseServerName = strSqlInstance;
                     }
                 }
 
