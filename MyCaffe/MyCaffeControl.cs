@@ -91,6 +91,9 @@ namespace MyCaffe
         Phase m_lastPhaseRun = Phase.NONE;
         long m_hCopyBuffer = 0;
         string m_strStage = null;
+        bool m_bLoadLite = false;
+        string m_strSolver = null;  // Used with LoadLite.
+        string m_strModel = null;   // Used with LoadLite.
 
 
         /// <summary>
@@ -225,7 +228,11 @@ namespace MyCaffe
             s.GpuIds = nGpuID.ToString();
 
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, m_evtCancel, null, null, null, null, m_strCudaPath);
-            mycaffe.Load(Phase.TRAIN, m_project, null, null, false, m_imgDb, (m_imgDb == null) ? false : true, true, m_strStage);
+
+            if (m_bLoadLite)
+                mycaffe.LoadLite(Phase.TRAIN, m_strSolver, m_strModel, null);
+            else
+                mycaffe.Load(Phase.TRAIN, m_project, null, null, false, m_imgDb, (m_imgDb == null) ? false : true, true, m_strStage);
 
             Net<T> netSrc = GetInternalNet(Phase.TRAIN);
             Net<T> netDst = mycaffe.GetInternalNet(Phase.TRAIN);
@@ -675,10 +682,74 @@ namespace MyCaffe
         /// <param name="transform_param">Specifies the TransformationParameter to use.</param>
         /// <param name="stage">Optionally, specifies the stage to create the run network on.</param>
         /// <returns>The new NetParameter suitable for the RUN phase is returned.</returns>
-        public NetParameter createNetParameterForRunning(BlobShape shape, string strModel, out TransformationParameter transform_param, Stage stage = Stage.NONE)
+        protected NetParameter createNetParameterForRunning(BlobShape shape, string strModel, out TransformationParameter transform_param, Stage stage = Stage.NONE)
         {
             NetParameter param = CreateNetParameterForRunning(shape, strModel, out transform_param, stage);
             m_inputShape = shape;
+            return param;
+        }
+
+        /// <summary>
+        /// Creates a net parameter for the RUN phase.
+        /// </summary>
+        /// <remarks>
+        /// This function transforms the training net parameter into a new net parameter suitable to run in the RUN phase.
+        /// </remarks>
+        /// <param name="sdMean">Specifies the mean image data used to size the network and as the mean image when used in the transformation parameter.</param>
+        /// <param name="strModel">Specifies the model descriptor.</param>
+        /// <param name="transform_param">Returns the TransformationParameter to use.</param>
+        /// <param name="nC">Returns the discovered channel sizing to use.</param>
+        /// <param name="nH">Returns the discovered height sizing to use.</param>
+        /// <param name="nW">Returns the discovered width sizing to use.</param>
+        /// <param name="stage">Optionally, specifies the stage to create the run network on.</param>
+        /// <returns>The new NetParameter suitable for the RUN phase is returned.</returns>
+        protected NetParameter createNetParameterForRunning(SimpleDatum sdMean, string strModel, out TransformationParameter transform_param, out int nC, out int nH, out int nW, Stage stage = Stage.NONE)
+        {
+            nC = 0;
+            nH = 0;
+            nW = 0;
+
+            if (sdMean != null)
+            {
+                nC = sdMean.Channels;
+                nH = sdMean.Height;
+                nW = sdMean.Width;
+            }
+            else
+            {
+                RawProto protoModel = RawProto.Parse(strModel);
+                RawProtoCollection layers = protoModel.FindChildren("layer");
+
+                foreach (RawProto layer in layers)
+                {
+                    RawProto type = layer.FindChild("type");
+                    if (type != null && type.Value == "Input")
+                    {
+                        RawProto input_param = layer.FindChild("input_param");
+                        if (input_param != null)
+                        {
+                            RawProto shape1 = input_param.FindChild("shape");
+                            if (shape1 != null)
+                            {
+                                RawProtoCollection rgDim = shape1.FindChildren("dim");
+                                int nNum = (rgDim.Count > 0) ? int.Parse(rgDim[0].Value) : 1;
+                                nC = (rgDim.Count > 1) ? int.Parse(rgDim[1].Value) : 1;
+                                nH = (rgDim.Count > 2) ? int.Parse(rgDim[2].Value) : 1;
+                                nW = (rgDim.Count > 3) ? int.Parse(rgDim[3].Value) : 1;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (nC == 0 && nH == 0 && nW == 0)
+                throw new Exception("Could not dicern the shape to use for no 'sdMean' parameter was supplied and the model does not contain an 'Input' layer!");
+
+            BlobShape shape = new BlobShape(1, nC, nH, nW);
+            NetParameter param = CreateNetParameterForRunning(shape, strModel, out transform_param, stage);
+            m_inputShape = shape;
+
             return param;
         }
 
@@ -1123,13 +1194,19 @@ namespace MyCaffe
         /// <param name="phase">Specifies the Phase for which the load should focus.</param>
         /// <param name="strSolver">Specifies the solver descriptor.</param>
         /// <param name="strModel">Specifies the model desciptor.</param>
-        /// <param name="rgWeights">Optionally, specifies the weights to load, or <i>null</i> to ignore.</param>
+        /// <param name="rgWeights">Optionally, specifies the weights to load, or <i>null</i> to ignore (default = null).</param>
         /// <param name="bResetFirst">Optionally, resets the device before loading.  IMPORTANT: this functionality is only recommendned during testing, for resetting the device will throw off all other users of the device.</param>
+        /// <param name="bCreateRunNet">Optionally, specifies whether or not to create the Run net (default = true).</param>
+        /// <param name="sdMean">Optionally, specifies the image mean to use (default = null).</param>
         /// <param name="strStage">Optionally, specifies a stage under which to load the model.</param>
         /// <param name="bEnableMemTrace">Optionally, specifies to enable the memory tracing (only available in debug builds).</param>
         /// <returns>If the project is loaded the function returns <i>true</i>, otherwise <i>false</i> is returned.</returns>
-        public bool LoadLite(Phase phase, string strSolver, string strModel, byte[] rgWeights, bool bResetFirst = false, string strStage = null, bool bEnableMemTrace = false)
+        public bool LoadLite(Phase phase, string strSolver, string strModel, byte[] rgWeights = null, bool bResetFirst = false, bool bCreateRunNet = true, SimpleDatum sdMean = null, string strStage = null, bool bEnableMemTrace = false)
         {
+            m_bLoadLite = true;
+            m_strSolver = strSolver;
+            m_strModel = strModel;
+
             m_strStage = strStage;
             m_imgDb = null;
             m_bImgDbOwner = false;
@@ -1166,8 +1243,42 @@ namespace MyCaffe
                 m_log.WriteLine("Solver created.");
             }
 
+            if (!bCreateRunNet)
+            {
+                if (phase == Phase.RUN)
+                    throw new Exception("You cannot opt out of creating the Run net when using the RUN phase.");
+
+                return true;
+            }
+
+            TransformationParameter tp = null;
+            int nC = 0;
+            int nH = 0;
+            int nW = 0;
+            NetParameter netParam = createNetParameterForRunning(sdMean, strModel, out tp, out nC, out nH, out nW);
+
+            m_dataTransformer = null;
+
+            if (tp != null)
+            {
+                if (nC == 0 || nH == 0 || nW == 0)
+                    throw new Exception("Unable to size the Data Transformer for no Mean image was provided as the 'sdMean' parameter which is used to gather the sizing information.");
+
+                m_dataTransformer = new DataTransformer<T>(m_cuda, m_log, tp, Phase.RUN, nC, nH, nW, sdMean);
+            }
+
             if (phase == Phase.RUN)
-                throw new Exception("You cannot opt out of creating the Run net when using the RUN phase.");
+            {
+                m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null);
+
+                if (rgWeights != null)
+                    loadWeights(m_net, rgWeights);
+            }
+            else if (phase == Phase.TEST || phase == Phase.TRAIN)
+            {
+                netParam.force_backward = true;
+                m_net = new Net<T>(m_cuda, m_log, netParam, m_evtCancel, null, Phase.RUN, null, m_solver.TrainingNet);
+            }
 
             return true;
         }
@@ -1907,8 +2018,15 @@ namespace MyCaffe
         /// <returns>The weights are returned.</returns>
         public byte[] GetWeights()
         {
-            m_net.ShareTrainedLayersWith(m_solver.net);
-            return m_net.SaveWeights(m_persist);
+            if (m_net != null)
+            {
+                m_net.ShareTrainedLayersWith(m_solver.net);
+                return m_net.SaveWeights(m_persist);
+            }
+            else
+            {
+                return m_solver.net.SaveWeights(m_persist);
+            }
         }
 
         /// <summary>
@@ -1916,7 +2034,8 @@ namespace MyCaffe
         /// </summary>
         public void UpdateRunWeights()
         {
-            loadWeights(m_net, m_solver.net.SaveWeights(m_persist));
+            if (m_net != null)  
+                loadWeights(m_net, m_solver.net.SaveWeights(m_persist));
         }
 
         /// <summary>
@@ -1925,7 +2044,8 @@ namespace MyCaffe
         /// <param name="rgWeights">Specifies the weights to load.</param>
         public void UpdateWeights(byte[] rgWeights)
         {
-            loadWeights(m_net, rgWeights);
+            if (m_net != null)
+                loadWeights(m_net, rgWeights);
 
             m_log.WriteLine("Updating weights in solver.");
 
@@ -1954,7 +2074,7 @@ namespace MyCaffe
             if (cudaOverride == null)
                 cudaOverride = m_cuda;
 
-            NetParameter p = m_net.ToProto(false);
+            NetParameter p = (m_net != null) ? m_net.ToProto(false) : m_solver.net.ToProto(false);
             Net<T> net = new Net<T>(cudaOverride, m_log, p, m_evtCancel, m_imgDb);
             loadWeights(net, rgWeights);
             return net;
