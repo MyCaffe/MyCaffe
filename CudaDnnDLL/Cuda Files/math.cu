@@ -2301,7 +2301,7 @@ long Math<T>::maxval(int n, long hA, T* pOut, int nAOff, long* plPos)
 	*pOut = max_ptr[0];
 
 	if (plPos != NULL)
-		*plPos = (&max_ptr[0] - &d_ptr[0]);
+		*plPos = (long)(&max_ptr[0] - &d_ptr[0]);
 
 	return cudaStreamSynchronize(0);
 }
@@ -2329,7 +2329,7 @@ long Math<T>::minval(int n, long hA, T* pOut, int nAOff, long* plPos)
 	*pOut = min_ptr[0];
 
 	if (plPos != NULL)
-		*plPos = (&min_ptr[0] - &d_ptr[0]);
+		*plPos = (long)(&min_ptr[0] - &d_ptr[0]);
 
 	return cudaStreamSynchronize(0);
 }
@@ -9891,7 +9891,7 @@ __device__ int sgn(T val)
 template <typename T>
 __global__ void tsne_update_gains_kernel(unsigned int n, T* dY, T* uY, T* gains, T fGainFactor1, T fGainFactor2)
 {
-	for (unsigned int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
+	for (unsigned int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
 	{
 		T fVal = (sgn(dY[i]) != sgn(uY[i])) ? (gains[i] + fGainFactor1) : (gains[i] * fGainFactor2);
 		gains[i] = (fVal < 0.01) ? 0.01 : fVal;
@@ -9901,7 +9901,7 @@ __global__ void tsne_update_gains_kernel(unsigned int n, T* dY, T* uY, T* gains,
 template <typename T>
 __global__ void tsne_update_gradient_kernel(unsigned int n, T fMomentum, T fLearningRate, T* dY, T* uY, T* gains, T* Y)
 {
-	for (unsigned int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
+	for (unsigned int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
 	{
 		T fVal = fMomentum * uY[i] - fLearningRate * gains[i] * dY[i];
 		uY[i] = fVal;
@@ -9952,7 +9952,7 @@ template long Math<float>::tsne_update(unsigned int n, float dfMomentum, float d
 template <typename T>
 __global__ void tsne_update_grad_kernel(unsigned int n, const T* posF, const T* negF, const T fSumQ, T* dc)
 {
-	for (unsigned int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
+	for (unsigned int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
 	{
 		dc[i] = posF[i] - (negF[i] / fSumQ);
 	}
@@ -10135,7 +10135,7 @@ template long Math<float>::tsne_compute_exact_gradient(unsigned int N, unsigned 
 template <typename T>
 __global__ void tsne_compute_exact_error_kernel(unsigned int n, const T* p, const T* q, T* y)
 {
-	for (unsigned int i=blockIdx.x * blockDim.x + threadIdx.x; i<n && i>=0; i += blockDim.x * gridDim.x)
+	for (unsigned int i=blockIdx.x * blockDim.x + threadIdx.x; i<n; i += blockDim.x * gridDim.x)
 	{
 		y[i] = p[i] * log((p[i] + 0.000001) / (q[i] + 0.000001));
 	}

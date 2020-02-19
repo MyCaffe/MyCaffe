@@ -2107,7 +2107,7 @@ long Device<T>::cuda_minval(long lInput, T* pfInput, long* plOutput, T** ppfOutp
 	T* pfOutput = *ppfOutput;
 
 	pfOutput[0] = fOutput;
-	pfOutput[1] = lPos;
+	pfOutput[1] = (T)lPos;
 
 	*ppfOutput = pfOutput;
 	*plOutput = 2;
