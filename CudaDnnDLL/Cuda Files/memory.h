@@ -309,8 +309,8 @@ class Memory
 		long CreateConvolutionDesc(long* phHandle);
 		long FreeConvolutionDesc(long hHandle);
 		cudnnConvolutionDescriptor_t GetConvolutionDesc(long hHandle);
-		long SetConvolutionDesc(long hHandle, int pad_h, int pad_w, int stride_h, int stride_w, bool bHalf);
-	    long GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, size_t lWsLimitInBytes, long* palgoFwd, size_t* plWsSizeFwd, long* palgoBwdFilter, size_t* plWsSizeBwdFilter, long* palgoBwdData, size_t* plWsSizeBwdData, int nPreferredFwdAlgo = -1);
+		long SetConvolutionDesc(long hHandle, int pad_h, int pad_w, int stride_h, int stride_w, int dilation_h, int dilation_w, bool bHalf, bool bUseTensorCores);
+	    long GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, size_t lWsLimitInBytes, bool bUseTensorCores, long* palgoFwd, size_t* plWsSizeFwd, long* palgoBwdFilter, size_t* plWsSizeBwdFilter, long* palgoBwdData, size_t* plWsSizeBwdData, int nPreferredFwdAlgo = -1);
 		long ConvolutionForward(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hFilterDesc, long hWeight, int nWeightOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, size_t lWorkspaceSize, T fBeta, long hTopDesc, long hTopData, int nTopOffset, bool bSyncStream);
 		long ConvolutionBackwardBias(long hHandle, T fAlpha, long hTopDesc, long hTopDiff, int nTopOffset, T fBeta, long hBiasDesc, long hBiasDiff, int nBiasOffset, bool bSyncStream);
 		long ConvolutionBackwardFilter(long hHandle, T fAlpha, long hBottomDesc, long hBottomData, int nBottomOffset, long hTopDesc, long hTopDiff, int nTopOffset, long hConvDesc, long algo, long hWorkspace, int nWorkspaceOffset, size_t lWorkspaceSize, T fBeta, long hFilterDesc, long hWeightDiff, int nWeightOffsete, bool bSyncStream);
@@ -380,7 +380,7 @@ class Memory
 		long CreateRnnDesc(long* phHandle);
 		long FreeRnnDesc(long hHandle);
 		cudnnRNNDescriptor_t GetRnnDesc(long hHandle);
-		long SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenCount, int nNumLayers, long hDropoutDesc, RnnMode nMode);
+		long SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenCount, int nNumLayers, long hDropoutDesc, RnnMode nMode, bool bUseTensorCores);
 		long GetRnnParamCount(long hHandle, long hRnnDesc, long hXDesc, int* pnCount);
 		long GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, int* pnWsCount, int* pnResCount);
 		long GetRnnParamCountEx(long hHandle, long hRnnDesc, long hXDesc, int* pnCount);
@@ -1014,18 +1014,25 @@ inline cudnnConvolutionDescriptor_t Memory<T>::GetConvolutionDesc(long hHandle)
 }
 
 template <class T>
-inline long Memory<T>::SetConvolutionDesc(long hHandle, int pad_h, int pad_w, int stride_h, int stride_w, bool bHalf)
+inline long Memory<T>::SetConvolutionDesc(long hHandle, int pad_h, int pad_w, int stride_h, int stride_w, int dilation_h, int dilation_w, bool bHalf, bool bUseTensorCores)
 {
 	LONG lErr;
 	cudnnConvolutionDescriptor_t desc = (cudnnConvolutionDescriptor_t)m_convDesc.GetData(hHandle);
 #ifdef CUDNN_6
 	cudnnDataType_t type = (sizeof(T) == 4) ? (bHalf) ? CUDNN_DATA_HALF : CUDNN_DATA_FLOAT : CUDNN_DATA_DOUBLE;
-	if (lErr = cudnnSetConvolution2dDescriptor(desc, pad_h, pad_w, stride_h, stride_w, 1, 1, CUDNN_CROSS_CORRELATION, type))
+	if (lErr = cudnnSetConvolution2dDescriptor(desc, pad_h, pad_w, stride_h, stride_w, dilation_h, dilation_w, CUDNN_CROSS_CORRELATION, type))
 		return lErr | ERROR_CUDNN_OFFSET;
 #else
-	if (lErr = cudnnSetConvolution2dDescriptor(desc, pad_h, pad_w, stride_h, stride_w, 1, 1, CUDNN_CROSS_CORRELATION))
+	if (lErr = cudnnSetConvolution2dDescriptor(desc, pad_h, pad_w, stride_h, stride_w, dilation_h, dilation_w, CUDNN_CROSS_CORRELATION))
 		return lErr | ERROR_CUDNN_OFFSET;
 #endif
+
+	if (bUseTensorCores)
+	{
+		if (lErr = cudnnSetConvolutionMathType(desc, CUDNN_TENSOR_OP_MATH_ALLOW_CONVERSION))
+			return lErr | ERROR_CUDNN_OFFSET;
+	}
+
 	return CUDNN_STATUS_SUCCESS;
 }
 
@@ -1182,7 +1189,7 @@ inline cudnnRNNDescriptor_t Memory<T>::GetRnnDesc(long hHandle)
 }
 
 template <class T>
-inline long Memory<T>::SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenCount, int nNumLayers, long hDropoutDesc, RnnMode mode)
+inline long Memory<T>::SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenCount, int nNumLayers, long hDropoutDesc, RnnMode mode, bool bUseTensorCores)
 {
 	LONG lErr;
 	cudnnHandle_t cudnn = GetCuDNN(hHandle);
@@ -1195,6 +1202,12 @@ inline long Memory<T>::SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenCount,
 
 	if (lErr = cudnnSetRNNDescriptor(cudnn, desc, nHiddenCount, nNumLayers, descDropout, CUDNN_LINEAR_INPUT, CUDNN_UNIDIRECTIONAL, (cudnnRNNMode_t)mode, CUDNN_RNN_ALGO_STANDARD, computeType))
 		return lErr | ERROR_CUDNN_OFFSET;
+
+	if (bUseTensorCores)
+	{
+		if (lErr = cudnnSetRNNMatrixMathType(desc, CUDNN_TENSOR_OP_MATH_ALLOW_CONVERSION))
+			return lErr | ERROR_CUDNN_OFFSET;
+	}
 
 	return CUDNN_STATUS_SUCCESS;
 }
