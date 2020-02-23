@@ -113,7 +113,6 @@ namespace MyCaffe.test
             }
         }
 
-
         [TestMethod]
         public void TestSobelConvolutionCuDnn()
         {
@@ -208,6 +207,258 @@ namespace MyCaffe.test
                     {
                         Trace.WriteLine(t.DataType.ToString() + ":" + t.engine.ToString() + ": TestGradientGroup");
                         t.TestGradientGroup();
+                    }
+                    catch (Exception excpt)
+                    {
+                        throw new Exception(t.DataType.ToString() + ":" + t.engine.ToString() + excpt.Message);
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSetupCuDnnWithTensorCores()
+        {
+            ConvolutionLayerTest test = new ConvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IConvolutionLayerTest t in test.Tests)
+                {
+                    t.TestSetup(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSimpleConvolutionCuDnnWithTensorCores()
+        {
+            ConvolutionLayerTest test = new ConvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IConvolutionLayerTest t in test.Tests)
+                {
+                    try
+                    {
+                        Trace.WriteLine(t.DataType.ToString() + ":" + t.engine.ToString() + ": TestSimpleConvolution");
+                        t.TestSimpleConvolution(true);
+                    }
+                    catch (Exception excpt)
+                    {
+                        throw new Exception(t.DataType.ToString() + ":" + t.engine.ToString() + excpt.Message);
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSimpleConvolutionGroupCuDnnWithTensorCores()
+        {
+            ConvolutionLayerTest test = new ConvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IConvolutionLayerTest t in test.Tests)
+                {
+                    try
+                    {
+                        Trace.WriteLine(t.DataType.ToString() + ":" + t.engine.ToString() + ": TestSimpleConvolutionGroup");
+                        t.TestSimpleConvolutionGroup(true);
+                    }
+                    catch (Exception excpt)
+                    {
+                        throw new Exception(t.DataType.ToString() + ":" + t.engine.ToString() + excpt.Message);
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSobelConvolutionCuDnnWithTensorCores()
+        {
+            ConvolutionLayerTest test = new ConvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IConvolutionLayerTest t in test.Tests)
+                {
+                    try
+                    {
+                        Trace.WriteLine(t.DataType.ToString() + ":" + t.engine.ToString() + ": TestSobelConvolution");
+                        t.TestSobelConvolution(true);
+                    }
+                    catch (Exception excpt)
+                    {
+                        throw new Exception(t.DataType.ToString() + ":" + t.engine.ToString() + excpt.Message);
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientCuDnnWithTensorCores()
+        {
+            ConvolutionLayerTest test = new ConvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IConvolutionLayerTest t in test.Tests)
+                {
+                    try
+                    {
+                        Trace.WriteLine(t.DataType.ToString() + ":" + t.engine.ToString() + ": TestGradient");
+                        t.TestGradient(true);
+                    }
+                    catch (Exception excpt)
+                    {
+                        throw new Exception(t.DataType.ToString() + ":" + t.engine.ToString() + excpt.Message);
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientGroupCuDnnWithTensorCores()
+        {
+            ConvolutionLayerTest test = new ConvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IConvolutionLayerTest t in test.Tests)
+                {
+                    try
+                    {
+                        Trace.WriteLine(t.DataType.ToString() + ":" + t.engine.ToString() + ": TestGradientGroup");
+                        t.TestGradientGroup(true);
+                    }
+                    catch (Exception excpt)
+                    {
+                        throw new Exception(t.DataType.ToString() + ":" + t.engine.ToString() + excpt.Message);
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestDilatedGradientCuDnn()
+        {
+            ConvolutionLayerTest test = new ConvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IConvolutionLayerTest t in test.Tests)
+                {
+                    try
+                    {
+                        Trace.WriteLine(t.DataType.ToString() + ":" + t.engine.ToString() + ": TestDilatedGradientCuDnn");
+                        t.TestDilatedGradient();
+                    }
+                    catch (Exception excpt)
+                    {
+                        throw new Exception(t.DataType.ToString() + ":" + t.engine.ToString() + excpt.Message);
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestDilatedConvolutionCuDnn()
+        {
+            ConvolutionLayerTest test = new ConvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IConvolutionLayerTest t in test.Tests)
+                {
+                    try
+                    {
+                        Trace.WriteLine(t.DataType.ToString() + ":" + t.engine.ToString() + ": TestDilatedConvolutionCuDnn");
+                        t.TestDilatedConvolution();
+                    }
+                    catch (Exception excpt)
+                    {
+                        throw new Exception(t.DataType.ToString() + ":" + t.engine.ToString() + excpt.Message);
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestDilatedGradientCuDnnWithTensorCores()
+        {
+            ConvolutionLayerTest test = new ConvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IConvolutionLayerTest t in test.Tests)
+                {
+                    try
+                    {
+                        Trace.WriteLine(t.DataType.ToString() + ":" + t.engine.ToString() + ": TestDilatedGradientCuDnnWithTensorCores");
+                        t.TestDilatedGradient(true);
+                    }
+                    catch (Exception excpt)
+                    {
+                        throw new Exception(t.DataType.ToString() + ":" + t.engine.ToString() + excpt.Message);
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestDilatedConvolutionCuDnnWithTensorCores()
+        {
+            ConvolutionLayerTest test = new ConvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IConvolutionLayerTest t in test.Tests)
+                {
+                    try
+                    {
+                        Trace.WriteLine(t.DataType.ToString() + ":" + t.engine.ToString() + ": TestDilatedConvolutionCuDnnWithTensorCores");
+                        t.TestDilatedConvolution(true);
                     }
                     catch (Exception excpt)
                     {
@@ -629,21 +880,21 @@ namespace MyCaffe.test
 
     interface IConvolutionLayerTest : ITest
     {
-        void TestSetup();
-        void TestSimpleConvolution();
-        void TestDilatedConvolution();
+        void TestSetup(bool bUseTensorCores = false);
+        void TestSimpleConvolution(bool bUseTensorCores = false);
+        void TestDilatedConvolution(bool bUseTensorCores = false);
         void Test0DConvolution();
         void TestSimple3DConvolution();
         void TestDilated3DConvolution();
         void Test1x1Convolution();
-        void TestSimpleConvolutionGroup();
-        void TestSobelConvolution();
+        void TestSimpleConvolutionGroup(bool bUseTensorCores = false);
+        void TestSobelConvolution(bool bUseTensorCores = false);
         void TestNDAgainst2D();
-        void TestGradient();
-        void TestDilatedGradient();
+        void TestGradient(bool bUseTensorCores = false);
+        void TestDilatedGradient(bool bUseTensorCores = false);
         void TestGradient3D();
         void Test1x1Gradient();
-        void TestGradientGroup();
+        void TestGradientGroup(bool bUseTensorCores = false);
     }
 
     class ConvolutionLayerTest<T> : TestEx<T>, IConvolutionLayerTest
@@ -941,7 +1192,7 @@ namespace MyCaffe.test
 
         #region CuDNN and CAFFE Tests
 
-        public void TestSetup()
+        public void TestSetup(bool bUseTensorCores)
         {
             ConvolutionLayerTest test = new ConvolutionLayerTest();
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
@@ -949,6 +1200,7 @@ namespace MyCaffe.test
             p.convolution_param.kernel_size.Add(3);
             p.convolution_param.stride.Add(2);
             p.convolution_param.num_output = 4;
+            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
             ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
 
             layer.Setup(BottomVec, TopVec);
@@ -978,7 +1230,7 @@ namespace MyCaffe.test
             m_log.CHECK_EQ(1, Top2.width, "The top[1] Blob<T> should have width = 1.");
         }
 
-        public void TestSimpleConvolution()
+        public void TestSimpleConvolution(bool bUseTensorCores)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
             p.convolution_param.engine = m_engine;
@@ -989,12 +1241,16 @@ namespace MyCaffe.test
             p.convolution_param.weight_filler = new FillerParameter("gaussian");
             p.convolution_param.bias_filler = new FillerParameter("constant");
             p.convolution_param.bias_filler.value = 0.1;
+            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
             ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
             layer.OnGetWorkspace += layer_OnGetWorkspace;
             layer.OnSetWorkspace += layer_OnSetWorkspace;
 
             layer.Setup(BottomVec, TopVec);
             layer.Forward(BottomVec, TopVec);
+
+#warning REMOVE
+            return;
 
             BlobCollection<T> colWeights1 = layer.blobs;
             double dfErr = 1e-4;
@@ -1072,7 +1328,7 @@ namespace MyCaffe.test
             e.Size = m_lWorkspaceSize;
         }
 
-        public void TestSimpleConvolutionGroup()
+        public void TestSimpleConvolutionGroup(bool bUseTensorCores)
         {
             ConvolutionLayerTest test = new ConvolutionLayerTest();
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
@@ -1084,6 +1340,7 @@ namespace MyCaffe.test
             p.convolution_param.weight_filler = new FillerParameter("gaussian");
             p.convolution_param.bias_filler = new FillerParameter("constant");
             p.convolution_param.bias_filler.value = 0.1;
+            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
             ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
 
             BottomVec.RemoveAt(1);
@@ -1111,7 +1368,7 @@ namespace MyCaffe.test
         /// as a signle filter when comparing the result
         /// as the convolution of two rectangualr filters.
         /// </summary>
-        public void TestSobelConvolution()
+        public void TestSobelConvolution(bool bUseTensorCores)
         {
             ConvolutionLayerTest test = new ConvolutionLayerTest();
 
@@ -1129,6 +1386,7 @@ namespace MyCaffe.test
             p.convolution_param.stride.Add(2);
             p.convolution_param.num_output = 1;
             p.convolution_param.bias_term = false;
+            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
             ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
 
             BottomVec.RemoveAt(1);
@@ -1230,7 +1488,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestGradient()
+        public void TestGradient(bool bUseTensorCores)
         {
             ConvolutionLayerTest test = new ConvolutionLayerTest();
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
@@ -1241,6 +1499,7 @@ namespace MyCaffe.test
             p.use_halfsize = m_bHalf;
             p.convolution_param.weight_filler = new FillerParameter("gaussian");
             p.convolution_param.bias_filler = new FillerParameter("gaussian");
+            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
             ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
             layer.OnGetWorkspace += layer_OnGetWorkspace;
             layer.OnSetWorkspace += layer_OnSetWorkspace;
@@ -1249,7 +1508,7 @@ namespace MyCaffe.test
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
         }
 
-        public void TestDilatedGradient()
+        public void TestDilatedGradient(bool bUseTensorCores)
         {
             ConvolutionLayerTest test = new ConvolutionLayerTest();
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
@@ -1266,13 +1525,14 @@ namespace MyCaffe.test
             p.convolution_param.num_output = 2;
             p.convolution_param.weight_filler = new FillerParameter("gaussian");
             p.convolution_param.bias_filler = new FillerParameter("gaussian");
+            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
             ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
 
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
         }
 
-        public void TestGradientGroup()
+        public void TestGradientGroup(bool bUseTensorCores)
         {
             ConvolutionLayerTest test = new ConvolutionLayerTest();
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
@@ -1285,6 +1545,7 @@ namespace MyCaffe.test
             p.use_halfsize = m_bHalf;
             p.convolution_param.weight_filler = new FillerParameter("gaussian");
             p.convolution_param.bias_filler = new FillerParameter("gaussian");
+            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
             ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
             layer.OnGetWorkspace += layer_OnGetWorkspace;
             layer.OnSetWorkspace += layer_OnSetWorkspace;
@@ -1293,15 +1554,8 @@ namespace MyCaffe.test
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec);
         }
 
-        #endregion
-
-        #region CAFFE Only Tests
-
-        public void TestDilatedConvolution()
+        public void TestDilatedConvolution(bool bUseTensorCores)
         {
-            if (m_engine != EngineParameter.Engine.CAFFE)
-                return;
-
             ConvolutionLayerTest test = new ConvolutionLayerTest();
             List<int> rgBottomShape = new List<int>() { 2, 3, 8, 7 };
 
@@ -1318,6 +1572,7 @@ namespace MyCaffe.test
             p.convolution_param.weight_filler = new FillerParameter("gaussian");
             p.convolution_param.bias_filler = new FillerParameter("constant");
             p.convolution_param.bias_filler.value = 0.1;
+            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
             ConvolutionLayer<T> layer = new ConvolutionLayer<T>(m_cuda, m_log, p);
 
             layer.Setup(BottomVec, TopVec);
@@ -1347,6 +1602,10 @@ namespace MyCaffe.test
                 EXPECT_NEAR(dfTop, dfTopRef, 1e-4);
             }
         }
+
+        #endregion
+
+        #region CAFFE Only Tests
 
         public void Test0DConvolution()
         {
