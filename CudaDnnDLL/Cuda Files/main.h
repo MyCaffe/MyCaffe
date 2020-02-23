@@ -91,6 +91,26 @@ public:
 		return m_device.GetStream(hStream);
 	}
 
+	cudnnHandle_t GetCuDNN(long h)
+	{
+		return m_device.GetCuDNN(h);
+	}
+
+	cudnnTensorDescriptor_t GetTensorDesc(long hDesc)
+	{
+		return m_device.GetTensorDesc(hDesc);
+	}
+
+	cudnnFilterDescriptor_t GetFilterDesc(long hDesc)
+	{
+		return m_device.GetFilterDesc(hDesc);
+	}
+
+	cudnnConvolutionDescriptor_t GetConvolutionDesc(long hDesc)
+	{
+		return m_device.GetConvolutionDesc(hDesc);
+	}
+
 	long GetMemory(long hHandle, MemoryItem** ppItem)
 	{
 		return m_device.GetMemory(hHandle, ppItem);
