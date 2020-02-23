@@ -171,17 +171,29 @@ class Device
 
 		long CreateCuDNN(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long FreeCuDNN(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		cudnnHandle_t GetCuDNN(long h)
+		{
+			return m_memory.GetCuDNN(h);
+		}
 
 		long CreateTensorDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long FreeTensorDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SetTensorDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SetTensorNdDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long AddTensor(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		cudnnTensorDescriptor_t GetTensorDesc(long h)
+		{
+			return m_memory.GetTensorDesc(h);
+		}
 
 		long CreateFilterDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long FreeFilterDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SetFilterDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long SetFilterNdDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		cudnnFilterDescriptor_t GetFilterDesc(long h)
+		{
+			return m_memory.GetFilterDesc(h);
+		}
 
 		long CreateConvolutionDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long FreeConvolutionDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -191,6 +203,10 @@ class Device
 		long ConvolutionBackwardBias(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long ConvolutionBackwardFilter(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long ConvolutionBackwardData(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		cudnnConvolutionDescriptor_t GetConvolutionDesc(long h)
+		{
+			return m_memory.GetConvolutionDesc(h);
+		}
 
 		long CreatePoolingDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long FreePoolingDesc(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -1082,7 +1098,7 @@ inline long Device<T>::SetConvolutionDesc(long lInput, T* pfInput, long* plOutpu
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(lInput, pfInput, 9, 9))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
@@ -1091,6 +1107,9 @@ inline long Device<T>::SetConvolutionDesc(long lInput, T* pfInput, long* plOutpu
 	int wPad = (int)pfInput[3];
 	int hStride = (int)pfInput[4];
 	int wStride = (int)pfInput[5];
+	int hDilation = (int)pfInput[6];
+	int wDilation = (int)pfInput[7];
+	bool bUseTensorCores = (bool)(pfInput[8] == 1) ? true : false;
 
 	if (m_nMajor == 0 && m_nMinor == 0)
 	{
@@ -1106,7 +1125,7 @@ inline long Device<T>::SetConvolutionDesc(long lInput, T* pfInput, long* plOutpu
 	if (m_nMajor < 5 || (m_nMajor == 5 && m_nMinor < 3))
 		bHalf = false;
 
-	return m_memory.SetConvolutionDesc(hHandle, hPad, wPad, hStride, wStride, bHalf);
+	return m_memory.SetConvolutionDesc(hHandle, hPad, wPad, hStride, wStride, hDilation, wDilation, bHalf, bUseTensorCores);
 }
 
 template <class T>
@@ -1114,7 +1133,7 @@ inline long Device<T>::GetConvolutionInfo(long lInput, T* pfInput, long* plOutpu
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 7))
+	if (lErr = verifyInput(lInput, pfInput, 7, 8))
 		return lErr;
 
 	if (lErr = verifyOutput(plOutput, ppfOutput))
@@ -1126,6 +1145,7 @@ inline long Device<T>::GetConvolutionInfo(long lInput, T* pfInput, long* plOutpu
 	long hConvDesc = (long)pfInput[3];
 	long hTopDesc = (long)pfInput[4];
 	size_t lWsLimitInBytes = (size_t)pfInput[5];
+	bool bUseTensorCores = (bool)(pfInput[6] == 1) ? true : false;
 	int nPreferredFwdAlgo = -1;
 	long algoFwd = 0;
 	size_t lWsSizeFwd = 0;
@@ -1134,10 +1154,10 @@ inline long Device<T>::GetConvolutionInfo(long lInput, T* pfInput, long* plOutpu
 	long algoBwdData = 0;
 	size_t lWsSizeBwdData = 0;
 
-	if (lInput >= 7)
-		nPreferredFwdAlgo = (int)pfInput[6];
+	if (lInput >= 8)
+		nPreferredFwdAlgo = (int)pfInput[7];
 
-	if (lErr = m_memory.GetConvolutionInfo(hHandle, hBottomDesc, hFilter, hConvDesc, hTopDesc, lWsLimitInBytes, &algoFwd, &lWsSizeFwd, &algoBwdFilter, &lWsSizeBwdFilter, &algoBwdData, &lWsSizeBwdData, nPreferredFwdAlgo))
+	if (lErr = m_memory.GetConvolutionInfo(hHandle, hBottomDesc, hFilter, hConvDesc, hTopDesc, lWsLimitInBytes, bUseTensorCores, &algoFwd, &lWsSizeFwd, &algoBwdFilter, &lWsSizeBwdFilter, &algoBwdData, &lWsSizeBwdData, nPreferredFwdAlgo))
 		return lErr;
 
 	// ppfOutput has up to MAX_OUTPUT(16) pre-allocated items
@@ -1630,7 +1650,7 @@ inline long Device<T>::SetRnnDesc(long lInput, T* pfInput, long* plOutput, T** p
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 6, 6))
+	if (lErr = verifyInput(lInput, pfInput, 7, 7))
 		return lErr;
 
 	long hHandle = (long)pfInput[0];
@@ -1639,8 +1659,9 @@ inline long Device<T>::SetRnnDesc(long lInput, T* pfInput, long* plOutput, T** p
 	int nNumLayers = (int)pfInput[3];
 	long hDropoutDesc = (long)pfInput[4];
 	int mode = (int)pfInput[5];
+	bool bUseTensorCores = (bool)(pfInput[6] == 1) ? true : false;
 
-	return m_memory.SetRnnDesc(hHandle, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (RnnMode)mode);
+	return m_memory.SetRnnDesc(hHandle, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (RnnMode)mode, bUseTensorCores);
 }
 
 template <class T>
