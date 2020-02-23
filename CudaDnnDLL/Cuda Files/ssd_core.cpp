@@ -52,7 +52,7 @@ template SsdMemory<float>::SsdMemory(Memory<float>* pMem, int nGpuID);
 
 
 template <class T>
-LONG SsdMemory<T>::Initialize(int nCount, long hHandle = 0)
+LONG SsdMemory<T>::Initialize(int nCount, long hHandle)
 {
 	LONG lErr;
 	T* pSrc = NULL;
