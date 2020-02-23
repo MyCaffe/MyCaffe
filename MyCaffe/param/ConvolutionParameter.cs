@@ -29,6 +29,7 @@ namespace MyCaffe.param
         bool m_bForceNDIm2Col = false;
         int m_nCudnnWorkspaceLimit = 1024 * 1024;   // Used with cuDnn only.
         bool m_bCudnnWorkspaceAllowOnGroups = false;
+        bool m_bCudnnEnableTensorCores = false;
 
         /** @copydoc KernelParameter */
         public ConvolutionParameter()
@@ -44,9 +45,6 @@ namespace MyCaffe.param
             if (engine == Engine.CAFFE)
                 return "The engine setting is set on CAFFE.";
 
-            if (dilation.Count > 0 && dilation[0] != 1)
-                return "Currently dialation is not supported by cuDnn.";
-
             if (nNumSpatialAxes != 2)
                 return "Currently only 2 spatial axes (ht x wd) are supported by cuDnn.";
 
@@ -61,10 +59,6 @@ namespace MyCaffe.param
         public bool useCudnn(int nNumSpatialAxes = 2)
         {
             if (engine == EngineParameter.Engine.CAFFE)
-                return false;
-
-            if (dilation.Count > 0 &&
-                dilation[0] != 1)
                 return false;
 
             if (nNumSpatialAxes != 2)
@@ -103,6 +97,19 @@ namespace MyCaffe.param
 
                 m_nCudnnWorkspaceLimit = value;
             }
+        }
+
+        /// <summary>
+        /// Specifies to enable the CUDA tensor cores when performing the convolution which is faster but not supported by all GPU's.
+        /// </summary>
+        /// <remarks>
+        /// When run on GPU's that do not support Tensor cores, the default math (non-tensor core) is used.
+        /// </remarks>
+        [Description("Specifies to enable CUDA tensor cores when performing the convolution which is faster but not supported by all GPU's.  When not supported, the default math is used.")]
+        public bool cudnn_enable_tensor_cores
+        {
+            get { return m_bCudnnEnableTensorCores; }
+            set { m_bCudnnEnableTensorCores = value; }
         }
 
         /// <summary>
@@ -223,6 +230,7 @@ namespace MyCaffe.param
                 m_bForceNDIm2Col = p.m_bForceNDIm2Col;
                 m_nCudnnWorkspaceLimit = p.m_nCudnnWorkspaceLimit;
                 m_bCudnnWorkspaceAllowOnGroups = p.m_bCudnnWorkspaceAllowOnGroups;
+                m_bCudnnEnableTensorCores = p.m_bCudnnEnableTensorCores;
             }
         }
 
@@ -267,6 +275,9 @@ namespace MyCaffe.param
             if (cudnn_workspace_allow_on_groups)
                 rgChildren.Add("cudnn_worspace_allow_on_groups", cudnn_workspace_allow_on_groups.ToString());
 
+            if (cudnn_enable_tensor_cores)
+                rgChildren.Add("cudnn_enable_tensor_cores", cudnn_enable_tensor_cores.ToString());
+
             return new RawProto(strName, "", rgChildren);
         }
 
@@ -306,6 +317,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("cudnn_worspace_allow_on_groups")) != null)
                 p.cudnn_workspace_allow_on_groups = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("cudnn_enable_tensor_cores")) != null)
+                p.cudnn_enable_tensor_cores = bool.Parse(strVal);
 
             return p;
         }
