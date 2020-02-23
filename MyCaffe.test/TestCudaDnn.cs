@@ -2269,6 +2269,17 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestConvolutionDesc()
         {
+            TestConvolutionDesc(false);
+        }
+
+        [TestMethod]
+        public void TestConvolutionDescWithTensors()
+        {
+            TestConvolutionDesc(true);
+        }
+
+        private void TestConvolutionDesc(bool bUseTensorCores)
+        {
             CudaDnnTest test = new CudaDnnTest();
             long hConv = 0;
 
@@ -2281,7 +2292,7 @@ namespace MyCaffe.test
 
                     try
                     {
-                        t.Cuda.SetConvolutionDesc(hConv, 10, 10, 2, 3);
+                        t.Cuda.SetConvolutionDesc(hConv, 10, 10, 2, 3, 1, 1, bUseTensorCores);
                     }
                     finally
                     {
@@ -2390,6 +2401,17 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestRnnDesc()
         {
+            TestRnnDesc(false);
+        }
+
+        [TestMethod]
+        public void TestRnnDescWithTensorCores()
+        {
+            TestRnnDesc(true);
+        }
+
+        private void TestRnnDesc(bool bUseTensorCores)
+        {
             CudaDnnTest test = new CudaDnnTest();
             long hDesc = 0;
             long hCudnn = 0;
@@ -2406,7 +2428,7 @@ namespace MyCaffe.test
 
                     try
                     {
-                        t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM);
+                        t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM, bUseTensorCores);
                     }
                     finally
                     {
@@ -2423,6 +2445,17 @@ namespace MyCaffe.test
 
         [TestMethod]
         public void TestRnnGetParamCount()
+        {
+            TestRnnGetParamCount(false);
+        }
+
+        [TestMethod]
+        public void TestRnnGetParamCountWithTensorCores()
+        {
+            TestRnnGetParamCount(true);
+        }
+
+        private void TestRnnGetParamCount(bool bUseTensorCores)
         {
             CudaDnnTest test = new CudaDnnTest();
             long hDesc = 0;
@@ -2444,7 +2477,7 @@ namespace MyCaffe.test
 
                     try
                     {
-                        t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM);
+                        t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM, bUseTensorCores);
                         t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
 
                         int nCount = t.Cuda.GetRnnParamCount(hCudnn, hDesc, hDataDesc);
@@ -2466,6 +2499,17 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestRnnGetWorkspaceCount()
         {
+            TestRnnGetWorkspaceCount(false);
+        }
+
+        [TestMethod]
+        public void TestRnnGetWorkspaceCountWithTensorCores()
+        {
+            TestRnnGetWorkspaceCount(true);
+        }
+
+        private void TestRnnGetWorkspaceCount(bool bUseTensorCores)
+        {
             CudaDnnTest test = new CudaDnnTest();
             long hDesc = 0;
             long hDataDesc = 0;
@@ -2486,7 +2530,7 @@ namespace MyCaffe.test
 
                     try
                     {
-                        t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM);
+                        t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM, bUseTensorCores);
                         t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
 
                         int nReservedCount;
@@ -2508,6 +2552,17 @@ namespace MyCaffe.test
 
         [TestMethod]
         public void TestRnnGetLinLayerParams()
+        {
+            TestRnnGetLinLayerParams(false);
+        }
+
+        [TestMethod]
+        public void TestRnnGetLinLayerParamsWithTensorCores()
+        {
+            TestRnnGetLinLayerParams(true);
+        }
+
+        private void TestRnnGetLinLayerParams(bool bUseTensorCores)
         {
             CudaDnnTest test = new CudaDnnTest();
             long hDesc = 0;
@@ -2533,7 +2588,7 @@ namespace MyCaffe.test
 
                     try
                     {
-                        t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM);
+                        t.Cuda.SetRnnDesc(hCudnn, hDesc, nHiddenSize, nNumLayers, 0, RNN_MODE.LSTM, bUseTensorCores);
                         t.Cuda.SetRnnDataDesc(hDataDesc, RNN_DATALAYOUT.RNN_SEQ_MAJOR, nSeqLen, nBatchSize, nHiddenSize);
 
                         int nAllWtCount = t.Cuda.GetRnnParamCount(hCudnn, hDesc, hDataDesc);
