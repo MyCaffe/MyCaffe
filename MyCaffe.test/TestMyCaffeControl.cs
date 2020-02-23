@@ -72,6 +72,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestTrainWithTensorCores()
+        {
+            MyCaffeControlTest test = new MyCaffeControlTest();
+
+            try
+            {
+                foreach (IMyCaffeControlTest t in test.Tests)
+                {
+                    t.TestTrain(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestTrainMultiGpu2()
         {
             MyCaffeControlTest test = new MyCaffeControlTest();
@@ -153,6 +171,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestTestWithTensorCores()
+        {
+            MyCaffeControlTest test = new MyCaffeControlTest();
+
+            try
+            {
+                foreach (IMyCaffeControlTest t in test.Tests)
+                {
+                    t.TestTest(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestTestMany()
         {
             MyCaffeControlTest test = new MyCaffeControlTest();
@@ -162,6 +198,24 @@ namespace MyCaffe.test
                 foreach (IMyCaffeControlTest t in test.Tests)
                 {
                     t.TestTestMany();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestTestManyWithTensorCores()
+        {
+            MyCaffeControlTest test = new MyCaffeControlTest();
+
+            try
+            {
+                foreach (IMyCaffeControlTest t in test.Tests)
+                {
+                    t.TestTestMany(true);
                 }
             }
             finally
@@ -235,10 +289,10 @@ namespace MyCaffe.test
     {
         void TestLoad();
         void TestGetTestImage();
-        void TestTrain();
+        void TestTrain(bool bUseTensorCores = false);
         void TestTrainMultiGpu(params int[] rgGpu);
-        void TestTest();
-        void TestTestMany();
+        void TestTest(bool bUseTensorCores = false);
+        void TestTestMany(bool bUseTensorCores = false);
         void TestTestManySimple();
         void TestTestManyOnTrainingSet();
     }
@@ -287,7 +341,7 @@ namespace MyCaffe.test
             base.dispose();
         }
 
-        private ProjectEx getProject()
+        private ProjectEx getProject(bool bUseTensorCores = false)
         {
             ProjectEx p = new ProjectEx("MNIST Project");
 
@@ -302,12 +356,28 @@ namespace MyCaffe.test
             string strSolverFile = getTestPath("\\MyCaffe\\test_data\\models\\mnist\\lenet_solver.prototxt");
 
             p.LoadModelFile(strModelFile);
-            RawProto proto = RawProtoFile.LoadFromFile(strSolverFile);
 
+            RawProto proto = RawProtoFile.LoadFromFile(strSolverFile);
             RawProto iter = proto.FindChild("max_iter");
             iter.Value = "1000";
 
             p.SolverDescription = proto.ToString();
+
+            if (bUseTensorCores)
+            {
+                proto = RawProto.Parse(p.ModelDescription);
+                NetParameter net_param = NetParameter.FromProto(proto);
+
+                foreach (LayerParameter layer in net_param.layer)
+                {
+                    if (layer.type == LayerParameter.LayerType.CONVOLUTION ||
+                        layer.type == LayerParameter.LayerType.DECONVOLUTION)
+                        layer.convolution_param.cudnn_enable_tensor_cores = true;
+                }
+
+                proto = net_param.ToProto("root");
+                p.ModelDescription = proto.ToString();
+            }
 
             return p;
         }
@@ -434,12 +504,12 @@ namespace MyCaffe.test
             ctrl.Dispose();
         }
 
-        public void TestTrain()
+        public void TestTrain(bool bUseTensorCores)
         {
             m_log.WriteHeader(m_dt.ToString() + " - Test Train");
 
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
-            ProjectEx project = getProject();
+            ProjectEx project = getProject(bUseTensorCores);
 
             ctrl.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
             ctrl.Train();
@@ -460,12 +530,12 @@ namespace MyCaffe.test
             ctrl.Dispose();
         }
 
-        public void TestTest()
+        public void TestTest(bool bUseTensorCores)
         {
             m_log.WriteHeader(m_dt.ToString() + " - Test Test");
 
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
-            ProjectEx project = getProject();
+            ProjectEx project = getProject(bUseTensorCores);
 
             ctrl.Load(Phase.TEST, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
             ctrl.Train();
@@ -476,12 +546,12 @@ namespace MyCaffe.test
             ctrl.Dispose();
         }
 
-        public void TestTestMany()
+        public void TestTestMany(bool bUseTensorCores)
         {
             m_log.WriteHeader(m_dt.ToString() + " - Test Test Many (on testing set)");
 
             MyCaffeControl<T> ctrl = new MyCaffeControl<T>(m_settings, m_log, m_evtCancel, m_evtForceSnapshot, m_evtForceTest, null, m_rgGpu, m_cuda.Path);
-            ProjectEx project = getProject();
+            ProjectEx project = getProject(bUseTensorCores);
 
             ctrl.Load(Phase.TRAIN, project, IMGDB_LABEL_SELECTION_METHOD.NONE, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
             ctrl.Train();
