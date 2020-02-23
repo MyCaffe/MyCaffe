@@ -167,6 +167,7 @@ namespace MyCaffe.layers
         /// <summary>
         /// Returns the workspace limit in bytes based on the cudnn_workspace_limit setting.
         /// </summary>
+        /// <param name="bUseTensorCores">Specifies whether or not tensor cores are to be used and when they are we let cuDNN determine the workspace size.</param>
         /// <remarks>
         /// The following cudnn_workspace_limits are used as follows:
         /// 0     = no workspace used.
@@ -174,7 +175,7 @@ namespace MyCaffe.layers
         /// value = use the value specified * 16.
         /// </remarks>
         /// <returns>The workspace limit in bytes is returned.</returns>
-        protected ulong getWorkspaceLimitInBytes()
+        protected ulong getWorkspaceLimitInBytes(bool bUseTensorCores = false)
         {
             // Specify workspace limit for kernels directly until we have a 
             // planning strategy and a rewrite of Caffe's GPU memory management.
@@ -184,7 +185,7 @@ namespace MyCaffe.layers
                 lWorkspaceLimitBytes *= 16;
 
             // When using Half Size memory, let CUDA pick the fastest workspace size and algorithm.
-            if (m_bUseHalfSize)
+            if (m_bUseHalfSize || bUseTensorCores)
                 lWorkspaceLimitBytes = ulong.MaxValue;
 
             // BUG Work Around

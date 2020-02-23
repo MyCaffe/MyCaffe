@@ -62,6 +62,7 @@ namespace MyCaffe.layers
         ulong[] m_rglWorkspaceFwdOffsets = null; // offsets into workspace fwd data.
         ulong[] m_rglWorkspaceBwdFilterOffsets = null; // offsets into workspace bwd filter data.
         ulong[] m_rglWorkspaceBwdDataOffsets = null; // offsets into workspace bwd data.
+        bool m_bUseTensorCores = false;
 
 
         /// <summary>
@@ -212,6 +213,13 @@ namespace MyCaffe.layers
                 m_rglWorkspaceBwdDataOffsets[g] = 0;
             }
 
+            m_bUseTensorCores = m_param.convolution_param.cudnn_enable_tensor_cores;
+            if (typeof(T) == typeof(double))
+            {
+                m_log.WriteLine("WARNING: Tensor cores are only supported with the 'float' base type.  Tensor core use will be disabled for the 'double' base type.");
+                m_bUseTensorCores = false;
+            }
+
             // Set the indexing parameters.
             m_nBiasOffset = m_nNumOutput / m_nGroup;
 
@@ -262,16 +270,18 @@ namespace MyCaffe.layers
             int nWidth = colBottom[0].shape(m_nChannelAxis + 2);
             int nHeightOut = colTop[0].shape(m_nChannelAxis + 1);
             int nWidthOut = colTop[0].shape(m_nChannelAxis + 2);
+
             Size szPad = size_at(m_blobPad);
             Size szStride = size_at(m_blobStride);
+            Size szDilation = size_at(m_blobDilation);
 
-            ulong lWorkspaceLimitBytes = getWorkspaceLimitInBytes();
+            ulong lWorkspaceLimitBytes = getWorkspaceLimitInBytes(m_bUseTensorCores);
 
             for (int i = 0; i < colBottom.Count; i++)
             {
                 m_cuda.SetTensorDesc(m_rghBottomDesc[i], m_nNum, m_nChannels / m_nGroup, nHeight, nWidth, m_nChannels * nHeight * nWidth, nHeight * nWidth, nWidth, 1);
                 m_cuda.SetTensorDesc(m_rghTopDesc[i], m_nNum, m_nNumOutput / m_nGroup, nHeightOut, nWidthOut, m_nNumOutput * nHeightOut * nWidthOut, nHeightOut * nWidthOut, nWidthOut, 1);
-                m_cuda.SetConvolutionDesc(m_rghConvDesc[i], szPad.Height, szPad.Width, szStride.Height, szStride.Width);
+                m_cuda.SetConvolutionDesc(m_rghConvDesc[i], szPad.Height, szPad.Width, szStride.Height, szStride.Width, szDilation.Height, szDilation.Width, m_bUseTensorCores, m_bUseHalfSize);
 
                 // NOTE: The native Caffe team has found that CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM is
                 // buggy (in deconvolution).  Thus, if this algo was chosen (by CuDnn), we attempt to use winograd
@@ -286,7 +296,7 @@ namespace MyCaffe.layers
                 ulong lWsSizeBwdFilter = 0;
                 ulong lWsSizeBwdData = 0;
 
-                m_cuda.GetConvolutionInfo(m_rghCudnn[0], m_rghTopDesc[i], m_hFilterDesc, m_rghConvDesc[i], m_rghBottomDesc[i], lWorkspaceLimitBytes, out algoFwd, out lWsSizeFwd, out algoBwdFilter, out lWsSizeBwdFilter, out algoBwdData, out lWsSizeBwdData, algoFwdPreferred);
+                m_cuda.GetConvolutionInfo(m_rghCudnn[0], m_rghTopDesc[i], m_hFilterDesc, m_rghConvDesc[i], m_rghBottomDesc[i], lWorkspaceLimitBytes, m_bUseTensorCores, out algoFwd, out lWsSizeFwd, out algoBwdFilter, out lWsSizeBwdFilter, out algoBwdData, out lWsSizeBwdData, algoFwdPreferred);
                 m_rgfwdAlgo[i] = algoFwd;
                 m_rglWorkspaceFwdSizes[i] = lWsSizeFwd;
                 m_rgbwdFilterAlgo[i] = algoBwdFilter;

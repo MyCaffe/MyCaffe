@@ -569,7 +569,7 @@ namespace MyCaffe.common
 
         long CreateConvolutionDesc();
         void FreeConvolutionDesc(long h);
-        void SetConvolutionDesc(long hHandle, int hPad, int wPad, int hStride, int wStride, bool bHalf = false);
+        void SetConvolutionDesc(long hHandle, int hPad, int wPad, int hStride, int wStride, int hDilation, int wDilation, bool bUseTensorCores, bool bHalf = false);
 
         long CreatePoolingDesc();
         void FreePoolingDesc(long h);
@@ -585,7 +585,7 @@ namespace MyCaffe.common
 
         long CreateRnnDesc();
         void FreeRnnDesc(long h);
-        void SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenSize, int nNumLayers, long hDropoutDesc, RNN_MODE mode);
+        void SetRnnDesc(long hHandle, long hRnnDesc, int nHiddenSize, int nNumLayers, long hDropoutDesc, RNN_MODE mode, bool bUseTensorCores);
         int GetRnnParamCount(long hHandle, long hRnnDesc, long hXDesc);
         int GetRnnWorkspaceCount(long hHandle, long hRnnDesc, long hXDesc, out int nReservedCount);
         void GetRnnLinLayerParams(long hHandle, long hRnnDesc, int nLayer, long hXDesc, long hWtDesc, long hWtData, int nLinLayer, out int nWtCount, out long hWt, out int nBiasCount, out long hBias);
@@ -3060,13 +3060,16 @@ namespace MyCaffe.common
         /// <param name="wPad">Specifies the pad applied to the width.</param>
         /// <param name="hStride">Specifies the stride of the height.</param>
         /// <param name="wStride">Specifies the stride of the width.</param>
+        /// <param name="hDilation">Specifies the dilation of the height (default = 1).</param>
+        /// <param name="wDilation">Specifies the dilation of the width (default = 1).</param>
+        /// <param name="bUseTensorCores">Optionally, specifies whether or not to use the Tensor Cores (if available).</param>
         /// <param name="bHalf">Optionally, specifies whether or not to use the FP16 half data type.</param>
-        public void SetConvolutionDesc(long hHandle, int hPad, int wPad, int hStride, int wStride, bool bHalf = false)
+        public void SetConvolutionDesc(long hHandle, int hPad, int wPad, int hStride, int wStride, int hDilation, int wDilation, bool bUseTensorCores, bool bHalf = false)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_CONVDESC, new double[] { hHandle, (bHalf) ? 1 : 0, hPad, wPad, hStride, wStride });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_CONVDESC, new double[] { hHandle, (bHalf) ? 1 : 0, hPad, wPad, hStride, wStride, hDilation, wDilation, (bUseTensorCores) ? 1 : 0 });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_CONVDESC, new float[] { hHandle, (bHalf) ? 1 : 0, hPad, wPad, hStride, wStride });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_CONVDESC, new float[] { hHandle, (bHalf) ? 1 : 0, hPad, wPad, hStride, wStride, hDilation, wDilation, (bUseTensorCores) ? 1 : 0 });
         }
 
         /// <summary>
@@ -3078,6 +3081,7 @@ namespace MyCaffe.common
         /// <param name="hConvDesc">Specifies a handle to the convolution descriptor.</param>
         /// <param name="hTopDesc">Specifies a handle to the top tensor descriptor.</param>
         /// <param name="lWorkspaceSizeLimitInBytes">Specifies the workspace limits (in bytes).</param>
+        /// <param name="bUseTensorCores">Specifies whether or not to use tensor cores (this parameter must match the setting of the 'bUseTensorCores' specified in the 'SetConvolutionDesc' method.</param>
         /// <param name="algoFwd">Returns the algorithm used for the convolution foward.</param>
         /// <param name="lWsSizeFwd">Returns the workspace size (in bytes) for the convolution foward.</param>
         /// <param name="algoBwdFilter">Returns the algorithm used for the backward filter.</param>
@@ -3085,11 +3089,11 @@ namespace MyCaffe.common
         /// <param name="algoBwdData">Returns the algorithm for the backward data.</param>
         /// <param name="lWsSizeBwdData">Returns the workspace (in bytes) for the backward data.</param>
         /// <param name="preferredFwdAlgo">Optionally, specifies a preferred forward algo to attempt to use for forward convolution.  The new algo is only used if the current device supports it.</param>
-        public void GetConvolutionInfo(long hCuDnn, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, ulong lWorkspaceSizeLimitInBytes, out CONV_FWD_ALGO algoFwd, out ulong lWsSizeFwd, out CONV_BWD_FILTER_ALGO algoBwdFilter, out ulong lWsSizeBwdFilter, out CONV_BWD_DATA_ALGO algoBwdData, out ulong lWsSizeBwdData, CONV_FWD_ALGO preferredFwdAlgo = CONV_FWD_ALGO.NONE)
+        public void GetConvolutionInfo(long hCuDnn, long hBottomDesc, long hFilterDesc, long hConvDesc, long hTopDesc, ulong lWorkspaceSizeLimitInBytes, bool bUseTensorCores, out CONV_FWD_ALGO algoFwd, out ulong lWsSizeFwd, out CONV_BWD_FILTER_ALGO algoBwdFilter, out ulong lWsSizeBwdFilter, out CONV_BWD_DATA_ALGO algoBwdData, out ulong lWsSizeBwdData, CONV_FWD_ALGO preferredFwdAlgo = CONV_FWD_ALGO.NONE)
         {
             if (m_dt == DataType.DOUBLE)
             {
-                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, new double[] { hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, lWorkspaceSizeLimitInBytes, (int)preferredFwdAlgo });
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, new double[] { hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, lWorkspaceSizeLimitInBytes, (bUseTensorCores) ? 1 : 0, (int)preferredFwdAlgo });
                 algoFwd = (CONV_FWD_ALGO)rg[0];
                 lWsSizeFwd = (ulong)rg[1];
                 algoBwdFilter = (CONV_BWD_FILTER_ALGO)rg[2];
@@ -3099,7 +3103,7 @@ namespace MyCaffe.common
             }
             else
             {
-                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, new float[] { hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, lWorkspaceSizeLimitInBytes, (int)preferredFwdAlgo });
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.GET_CONVINFO, new float[] { hCuDnn, hBottomDesc, hFilterDesc, hConvDesc, hTopDesc, lWorkspaceSizeLimitInBytes, (bUseTensorCores) ? 1 : 0, (int)preferredFwdAlgo });
                 algoFwd = (CONV_FWD_ALGO)rg[0];
                 lWsSizeFwd = (ulong)rg[1];
                 algoBwdFilter = (CONV_BWD_FILTER_ALGO)rg[2];
@@ -4035,12 +4039,13 @@ namespace MyCaffe.common
         /// <param name="nNumLayers">Specifies the number of layers.</param>
         /// <param name="hDropoutDesc">Specifies the handle to the Droput descriptor (or 0 to ignore).  The droput descriptor is only used with two or more layers.</param>
         /// <param name="mode">Specifies the RNN_MODE (LSTM, RNN_RELU, RNN_TANH) to use.</param>
-        public void SetRnnDesc(long hCuDnn, long hRnnDesc, int nHiddenCount, int nNumLayers, long hDropoutDesc, RNN_MODE mode)
+        /// <param name="bUseTensorCores">Optionally, specifies whether or not to use the Tensor Cores (if available).</param>
+        public void SetRnnDesc(long hCuDnn, long hRnnDesc, int nHiddenCount, int nNumLayers, long hDropoutDesc, RNN_MODE mode, bool bUseTensorCores)
         {           
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_RNN_DESC, new double[] { hCuDnn, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (int)mode });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.SET_RNN_DESC, new double[] { hCuDnn, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (int)mode, (bUseTensorCores) ? 1 : 0 });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_RNN_DESC, new float[] { hCuDnn, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (int)mode });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.SET_RNN_DESC, new float[] { hCuDnn, hRnnDesc, nHiddenCount, nNumLayers, hDropoutDesc, (int)mode, (bUseTensorCores) ? 1 : 0 });
         }
 
         /// <summary>
