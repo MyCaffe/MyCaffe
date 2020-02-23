@@ -22,6 +22,7 @@ namespace MyCaffe.param
         uint m_nNumLayers = 1; // cuDnn only
         double m_dfDropoutRatio = 0.0; // cuDnn only
         long m_lDropoutSeed = 0; // cuDnn only
+        bool m_bCudnnEnableTensorCores = false;
 
 
         /** @copydoc LayerParameterBase */
@@ -147,6 +148,19 @@ namespace MyCaffe.param
             set { m_lDropoutSeed = value; }
         }
 
+        /// <summary>
+        /// Specifies to enable the CUDA tensor cores when performing the rnn operations which is faster but not supported by all GPU's.
+        /// </summary>
+        /// <remarks>
+        /// When run on GPU's that do not support Tensor cores, the default math (non-tensor core) is used.
+        /// </remarks>
+        [Description("Specifies to enable CUDA tensor cores when performing the rnn operations which is faster but not supported by all GPU's.  When not supported, the default math is used.")]
+        public bool cudnn_enable_tensor_cores
+        {
+            get { return m_bCudnnEnableTensorCores; }
+            set { m_bCudnnEnableTensorCores = value; }
+        }
+
         /** @copydoc LayerParameterBase::Load */
         public override object Load(BinaryReader br, bool bNewInstance = true)
         {
@@ -183,6 +197,7 @@ namespace MyCaffe.param
                 m_dfDropoutRatio = p.dropout_ratio;
                 m_lDropoutSeed = p.dropout_seed;
                 m_nNumLayers = p.num_layers;
+                m_bCudnnEnableTensorCores = p.m_bCudnnEnableTensorCores;
             }
         }
 
@@ -210,6 +225,8 @@ namespace MyCaffe.param
                 rgChildren.Add("dropout_seed", dropout_seed.ToString());
                 rgChildren.Add("num_layers", num_layers.ToString());
             }
+
+            rgChildren.Add("cudnn_enable_tensor_cores", cudnn_enable_tensor_cores.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -251,6 +268,9 @@ namespace MyCaffe.param
 
             if ((strVal = rp.FindValue("num_layers")) != null)
                 p.num_layers = uint.Parse(strVal);
+
+            if ((strVal = rp.FindValue("cudnn_enable_tensor_cores")) != null)
+                p.cudnn_enable_tensor_cores = bool.Parse(strVal);
 
             return p;
         }

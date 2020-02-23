@@ -261,7 +261,25 @@ namespace MyCaffe.test
             {
                 foreach (ILSTMLayerTest t in test.Tests)
                 {
-                    t.TestCuDnn();
+                    t.TestCuDnn(false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCuDnnWithTensorCores()
+        {
+            LSTMLayerTest test = new LSTMLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (ILSTMLayerTest t in test.Tests)
+                {
+                    t.TestCuDnn(true);
                 }
             }
             finally
@@ -561,7 +579,7 @@ namespace MyCaffe.test
 
     interface ILSTMLayerTest : ITest
     {
-        void TestCuDnn();
+        void TestCuDnn(bool bUseTensorCores);
         void TestSetup();
         void TestForward(Phase phase = Phase.NONE);
         void TestGradient();
@@ -959,7 +977,7 @@ namespace MyCaffe.test
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 2);
         }
 
-        public void TestCuDnn()
+        public void TestCuDnn(bool bUseTensorCores)
         {
             int nBatchSize = 64;
             int nSeqLen = 20;
@@ -1041,7 +1059,7 @@ namespace MyCaffe.test
 
                 // Setup the RNN descriptor.
                 hRnnDesc = m_cuda.CreateRnnDesc();
-                m_cuda.SetRnnDesc(hCuDnn, hRnnDesc, nHiddenSize, nNumLayers, hDropoutDesc, RNN_MODE.LSTM);
+                m_cuda.SetRnnDesc(hCuDnn, hRnnDesc, nHiddenSize, nNumLayers, hDropoutDesc, RNN_MODE.LSTM, bUseTensorCores);
 
                 // Setup the parameters.  This needs to be done after the RNN descriptor is set
                 // otherwise we don't know how many parameters we have to allocate.

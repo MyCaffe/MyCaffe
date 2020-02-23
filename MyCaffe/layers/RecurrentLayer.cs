@@ -89,6 +89,7 @@ namespace MyCaffe.layers
         long m_hReserved;
         int m_nReservedCount;
         RNN_MODE m_rnnMode;
+        bool m_bUseTensors = false;
 
         /// <summary>
         /// The RecurrentLayer constructor.
@@ -238,6 +239,7 @@ namespace MyCaffe.layers
         {
             try
             {
+                m_bUseTensors = m_param.recurrent_param.cudnn_enable_tensor_cores;
                 m_nHiddenSize = (int)m_param.recurrent_param.num_output;
                 m_nNumLayers = (int)m_param.recurrent_param.num_layers;
 
@@ -325,7 +327,7 @@ namespace MyCaffe.layers
                 m_cuda.SetDropoutDesc(m_hCuDnn, m_hDropoutDesc, m_param.recurrent_param.dropout_ratio, m_hDropoutStates, m_param.recurrent_param.dropout_seed);
 
                 // Setup the RNN descriptor.
-                m_cuda.SetRnnDesc(m_hCuDnn, m_hRnnDesc, m_nHiddenSize, m_nNumLayers, m_hDropoutDesc, m_rnnMode);
+                m_cuda.SetRnnDesc(m_hCuDnn, m_hRnnDesc, m_nHiddenSize, m_nNumLayers, m_hDropoutDesc, m_rnnMode, m_bUseTensors);
 
                 // Setup parameters - do this after the rnn descriptor is set
                 // otherwise we will not know how many parameters we have to allocate.

@@ -112,6 +112,102 @@ namespace MyCaffe.test
             }
         }
 
+        [TestMethod]
+        public void TestSetupCuDnnWithTensorCores()
+        {
+            DeconvolutionLayerTest test = new DeconvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IDeconvolutionLayerTest t in test.Tests)
+                {
+                    t.TestSetup(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestSimpleDeconvolutionCuDnnWithTensorCores()
+        {
+            DeconvolutionLayerTest test = new DeconvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IDeconvolutionLayerTest t in test.Tests)
+                {
+                    t.TestSimpleDeconvolution(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestGradientCuDnnWithTensorCores()
+        {
+            DeconvolutionLayerTest test = new DeconvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IDeconvolutionLayerTest t in test.Tests)
+                {
+                    t.TestGradient(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// This test fails.
+        /// </summary>
+        [TestMethod]
+        public void TestNDAgainst2DCuDnnWithTensorCores()
+        {
+            DeconvolutionLayerTest test = new DeconvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IDeconvolutionLayerTest t in test.Tests)
+                {
+                    t.TestNDAgainst2D(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// This test fails.
+        /// </summary>
+        [TestMethod]
+        public void TestGradient3DCuDnnWithTensorCores()
+        {
+            DeconvolutionLayerTest test = new DeconvolutionLayerTest(EngineParameter.Engine.CUDNN);
+
+            try
+            {
+                foreach (IDeconvolutionLayerTest t in test.Tests)
+                {
+                    t.TestGradient3D(true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
         #endregion
 
         #region CAFFE Only Tests
@@ -234,11 +330,11 @@ namespace MyCaffe.test
 
     interface IDeconvolutionLayerTest : ITest
     {
-        void TestSetup();
-        void TestSimpleDeconvolution();
-        void TestGradient();
-        void TestNDAgainst2D();
-        void TestGradient3D();
+        void TestSetup(bool bUseTensorCores = false);
+        void TestSimpleDeconvolution(bool bUseTensorCores = false);
+        void TestGradient(bool bUseTensorCores = false);
+        void TestNDAgainst2D(bool bUseTensorCores = false);
+        void TestGradient3D(bool bUseTensorCores = false);
     }
 
     class DeconvolutionLayerTest<T> : TestEx<T>, IDeconvolutionLayerTest
@@ -282,13 +378,14 @@ namespace MyCaffe.test
 
         #region CuDNN and CAFFE Tests
 
-        public void TestSetup()
+        public void TestSetup(bool bUseTensorCores)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.DECONVOLUTION);
             p.convolution_param.engine = m_engine;
             p.convolution_param.kernel_size.Add(3);
             p.convolution_param.stride.Add(2);
             p.convolution_param.num_output = 4;
+            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
             BottomVec.Add(Bottom2);
             TopVec.Add(Top2);
             DeconvolutionLayer<T> layer = new DeconvolutionLayer<T>(m_cuda, m_log, p);
@@ -320,7 +417,7 @@ namespace MyCaffe.test
             m_log.CHECK_EQ(9, Top2.width, "The top2 width should equal 9.");
         }
 
-        public void TestSimpleDeconvolution()
+        public void TestSimpleDeconvolution(bool bUseTensorCores)
         {
             BottomVec.Add(Bottom2);
             TopVec.Add(Top2);
@@ -333,6 +430,7 @@ namespace MyCaffe.test
             p.convolution_param.weight_filler.value = 1.0;
             p.convolution_param.bias_filler.type = "constant";
             p.convolution_param.bias_filler.value = 0.1;
+            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
             DeconvolutionLayer<T> layer = new DeconvolutionLayer<T>(m_cuda, m_log, p);
 
             layer.Setup(BottomVec, TopVec);
@@ -377,7 +475,7 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestGradient()
+        public void TestGradient(bool bUseTensorCores)
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.DECONVOLUTION);
             p.convolution_param.engine = m_engine;
@@ -388,6 +486,7 @@ namespace MyCaffe.test
             p.convolution_param.num_output = 1;
             p.convolution_param.weight_filler.type = "gaussian";
             p.convolution_param.bias_filler.type = "gaussian";
+            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
             DeconvolutionLayer<T> layer = new DeconvolutionLayer<T>(m_cuda, m_log, p);
 
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
@@ -397,7 +496,7 @@ namespace MyCaffe.test
         /// <summary>
         /// This test fails with Engine.CAFFE.
         /// </summary>
-        public void TestNDAgainst2D()
+        public void TestNDAgainst2D(bool bUseTensorCores)
         {
             int nKernelH = 11;
             int nKernelW = 13;
@@ -419,6 +518,7 @@ namespace MyCaffe.test
             p.convolution_param.kernel_h = (uint)nKernelH;
             p.convolution_param.kernel_w = (uint)nKernelW;
             p.convolution_param.weight_filler.type = "gaussian";
+            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
 
             Blob<T> weights = new Blob<T>(m_cuda, m_log);
             Blob<T> top_diff = new Blob<T>(m_cuda, m_log);
@@ -556,7 +656,7 @@ namespace MyCaffe.test
         /// <summary>
         /// This test fails with Engine.CAFFE.
         /// </summary>
-        public void TestGradient3D()
+        public void TestGradient3D(bool bUseTensorCores)
         {
             List<int> rgBottomShape = new List<int>();
             rgBottomShape.Add(BottomVec[0].shape(0));
@@ -581,6 +681,7 @@ namespace MyCaffe.test
             p.convolution_param.num_output = 2;
             p.convolution_param.weight_filler.type = "gaussian";
             p.convolution_param.bias_filler.type = "gaussian";
+            p.convolution_param.cudnn_enable_tensor_cores = bUseTensorCores;
             DeconvolutionLayer<T> layer = new DeconvolutionLayer<T>(m_cuda, m_log, p);
 
             GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log);
