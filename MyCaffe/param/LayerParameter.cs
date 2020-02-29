@@ -963,7 +963,10 @@ namespace MyCaffe.param
                     expected_top.Add("label");
                     m_rgLayerParameters[LayerType.TRANSFORM] = new TransformationParameter();
                     m_rgLayerParameters[LayerType.IMAGE_DATA] = new ImageDataParameter();
-                    m_rgLayerParameters[LayerType.DATA] = new DataParameter();
+                    DataParameter imgdp = new DataParameter();
+                    imgdp.backend = DataParameter.DB.NONE;
+                    imgdp.enable_random_selection = false;
+                    m_rgLayerParameters[LayerType.DATA] = imgdp;
                     break;
 
                 case LayerType.INFOGAIN_LOSS:
