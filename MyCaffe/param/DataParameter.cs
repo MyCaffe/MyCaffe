@@ -24,9 +24,13 @@ namespace MyCaffe.param
         public enum DB
         {
             /// <summary>
-            /// Specifies to use the CaffeImageDatabase.  Currently this is the only option.
+            /// Specifies that no backend database is used as is the case with the ImageDataLayer.
             /// </summary>
-            IMAGEDB = 0
+            NONE = 0,
+            /// <summary>
+            /// Specifies to use the MyCaffeImageDatabase.  Currently this is the only option.
+            /// </summary>
+            IMAGEDB = 1
         }
 
         string m_strSource = null;
@@ -61,9 +65,9 @@ namespace MyCaffe.param
         }
 
         /// <summary>
-        /// Specifies the data source.
+        /// When used with the DATA parameter, specifies the data 'source' within the database.  Some sources are used for training whereas others are used for testing.  When used with the IMAGE_DATA parameter, the 'source' specifies the data 'source' file containing the list of image file names.  Each dataset has both a training and testing data source.
         /// </summary>
-        [Description("Specifies the data 'source' within the database.  Some sources are used for training whereas others are used for testing.  Each dataset has both a training and testing data source.")]
+        [Description("When used with the DATA parameter, specifies the data 'source' within the database.  Some sources are used for training whereas others are used for testing.  When used with the IMAGE_DATA parameter, the 'source' specifies the data 'source' file containing the list of image file names.  Each dataset has both a training and testing data source.")]
         public string source
         {
             get { return m_strSource; }
@@ -420,6 +424,10 @@ namespace MyCaffe.param
 
                     case "LMDB":
                         p.backend = DB.IMAGEDB;
+                        break;
+
+                    case "NONE":
+                        p.backend = DB.NONE;
                         break;
 
                     default:
