@@ -220,6 +220,10 @@ namespace MyCaffe.param
             /// </summary>
             HINGE_LOSS,
             /// <summary>
+            /// Initializes a parameter for the ImageDataLayer.
+            /// </summary>
+            IMAGE_DATA,
+            /// <summary>
             /// Initializes a parameter for the Im2ColLayer.
             /// </summary>
             IM2COL,
@@ -571,6 +575,12 @@ namespace MyCaffe.param
                 case LayerType.DATA:
                 case LayerType.TRIPLET_DATA:       
                     data_param = (DataParameter)p.data_param.Clone();
+                    transform_param = (TransformationParameter)p.transform_param.Clone();
+                    break;
+
+                case LayerType.IMAGE_DATA:
+                    data_param = (DataParameter)p.data_param.Clone();
+                    image_data_param = (ImageDataParameter)p.image_data_param.Clone();
                     transform_param = (TransformationParameter)p.transform_param.Clone();
                     break;
 
@@ -946,6 +956,14 @@ namespace MyCaffe.param
                     expected_top.Add("loss");
                     m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
                     m_rgLayerParameters[lt] = new HingeLossParameter();
+                    break;
+
+                case LayerType.IMAGE_DATA:
+                    expected_top.Add("data");
+                    expected_top.Add("label");
+                    m_rgLayerParameters[LayerType.TRANSFORM] = new TransformationParameter();
+                    m_rgLayerParameters[LayerType.IMAGE_DATA] = new ImageDataParameter();
+                    m_rgLayerParameters[LayerType.DATA] = new DataParameter();
                     break;
 
                 case LayerType.INFOGAIN_LOSS:
@@ -1681,6 +1699,15 @@ namespace MyCaffe.param
         }
 
         /// <summary>
+        /// Returns the parameter set when initialized with LayerType.IMAGE_DATA
+        /// </summary>
+        public ImageDataParameter image_data_param
+        {
+            get { return (ImageDataParameter)m_rgLayerParameters[LayerType.IMAGE_DATA]; }
+            set { m_rgLayerParameters[LayerType.IMAGE_DATA] = value; }
+        }
+
+        /// <summary>
         /// Returns the parameter set when initialized with LayerType.INFOGAIN_LOSS
         /// </summary>
         public InfogainLossParameter infogain_loss_param
@@ -2260,6 +2287,9 @@ namespace MyCaffe.param
                 case LayerType.HINGE_LOSS:
                     return "HingeLoss";
 
+                case LayerType.IMAGE_DATA:
+                    return "ImageData";
+
                 case LayerType.IM2COL:
                     return "Im2Col";
 
@@ -2503,6 +2533,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(flatten_param, "flatten_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(gradient_scale_param, "gradient_scale_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(hinge_loss_param, "hinge_loss_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(image_data_param, "image_data_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(infogain_loss_param, "infogain_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(inner_product_param, "inner_product_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(input_param, "input_param"));
@@ -2716,6 +2747,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("hinge_loss_param")) != null)
                 p.hinge_loss_param = HingeLossParameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("image_data_param")) != null)
+                p.image_data_param = ImageDataParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("infogain_loss_param")) != null)
                 p.infogain_loss_param = InfogainLossParameter.FromProto(rpp);
@@ -3031,8 +3065,8 @@ namespace MyCaffe.param
                 case "im2col":
                     return LayerType.IM2COL;
 
-//                case "imagedata":
-//                    return LayerType.IMAGEDATA;
+                case "imagedata":
+                    return LayerType.IMAGE_DATA;
 
                 case "infogainloss":
                 case "infogain_loss":

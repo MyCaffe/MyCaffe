@@ -73,6 +73,15 @@ namespace MyCaffe.layers
         }
 
         /// <summary>
+        /// Allows any derivative classes to pre-initialize the m_src which is used in LayerSetup before the DataLayerSetup.
+        /// </summary>
+        /// <returns>When used this method should return <i>true</i>, otherwise <i>false</i> is returned by default.</returns>
+        protected virtual bool setupSourceDescriptor()
+        {
+            return false;
+        }
+
+        /// <summary>
         /// Get/set the image mean.
         /// </summary>
         public SimpleDatum ImageMean
@@ -92,6 +101,8 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            setupSourceDescriptor();
+
             if (colTop.Count == 1)
                 m_bOutputLabels = false;
             else

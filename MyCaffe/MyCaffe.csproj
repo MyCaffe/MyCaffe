@@ -104,6 +104,7 @@
     <Compile Include="fillers\UniformFiller.cs" />
     <Compile Include="fillers\XavierFiller.cs" />
     <Compile Include="Interfaces.cs" />
+    <Compile Include="layers\ImageDataLayer.cs" />
     <Compile Include="layers\DataNormalizerLayer.cs" />
     <Compile Include="layers\ParameterLayer.cs" />
     <Compile Include="layers\CropLayer.cs" />
@@ -181,6 +182,7 @@
       <DependentUpon>MyCaffeControl.cs</DependentUpon>
     </Compile>
     <Compile Include="param.beta\DecodeParameter.cs" />
+    <Compile Include="param\ImageDataParameter.cs" />
     <Compile Include="param\DataLabelMappingParameter.cs" />
     <Compile Include="param\DataDebugParameter.cs" />
     <Compile Include="param\OptionalParameter.cs" />

@@ -96,6 +96,7 @@
     <Compile Include="TestModelBuilder.cs" />
     <Compile Include="TestMyCaffeImageDatabase2.cs" />
     <Compile Include="TestSimpleDatum.cs" />
+    <Compile Include="TestImageDataLayer.cs" />
     <Compile Include="TestVideoDataLayer.cs" />
     <Compile Include="TestDetectionOutputLayer.cs" />
     <Compile Include="TestPriorBoxLayer.cs" />

@@ -1194,6 +1194,9 @@ namespace MyCaffe.layers
                 case LayerParameter.LayerType.HINGE_LOSS:
                     return new HingeLossLayer<T>(cuda, log, p);
 
+                case LayerParameter.LayerType.IMAGE_DATA:
+                    return new ImageDataLayer<T>(cuda, log, p, evtCancel);
+
                 case LayerParameter.LayerType.INFOGAIN_LOSS:
                     return new InfogainLossLayer<T>(cuda, log, p);
 
