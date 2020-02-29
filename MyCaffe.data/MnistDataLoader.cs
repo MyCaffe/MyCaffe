@@ -200,6 +200,15 @@ namespace MyCaffe.data
 
                 List<SimpleDatum> rgImg = new List<SimpleDatum>();
 
+                FileStream fsFileDesc = null;
+                StreamWriter swFileDesc = null;
+                if (m_param.ExportToFile)
+                {
+                    string strFile = strExportPath + "\\file_list.txt";
+                    fsFileDesc = File.OpenWrite(strFile);
+                    swFileDesc = new StreamWriter(fsFileDesc);
+                }
+
                 for (int i = 0; i < num_items; i++)
                 {
                     rgPixels = image_file.ReadBytes((int)(rows * cols));
@@ -216,12 +225,22 @@ namespace MyCaffe.data
                     if (factory != null)
                         factory.PutRawImageCache(i, datum);
                     else if (strExportPath != null)
-                        saveToFile(strExportPath, i, datum);
+                        saveToFile(strExportPath, i, datum, swFileDesc);
 
                     rgImg.Add(new SimpleDatum(datum));
 
                     if (m_evtCancel.WaitOne(0))
                         return false;
+                }
+
+                if (swFileDesc != null)
+                {
+                    swFileDesc.Flush();
+                    swFileDesc.Close();
+                    swFileDesc.Dispose();
+
+                    fsFileDesc.Close();
+                    fsFileDesc.Dispose();
                 }
 
                 if (factory != null)
@@ -242,13 +261,16 @@ namespace MyCaffe.data
             return true;
         }
 
-        private void saveToFile(string strPath, int nIdx, Datum d)
+        private void saveToFile(string strPath, int nIdx, Datum d, StreamWriter sw)
         {
             string strFile = strPath.TrimEnd('\\') + "\\" + getImageFileName(nIdx, d);
             Bitmap bmp = ImageData.GetImage(d);
 
             bmp.Save(strFile);
             bmp.Dispose();
+
+            if (sw != null)
+                sw.WriteLine(strFile + " " + d.Label.ToString());
         }
 
         private string getImageFileName(int nIdx, SimpleDatum sd)
