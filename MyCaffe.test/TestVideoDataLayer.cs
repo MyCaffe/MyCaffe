@@ -191,7 +191,7 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(Top.num, nBatchSize, "The top num should = the batch size of 8.");
                 m_log.CHECK_EQ(Top.channels, 3, "The top channels should = 3.");
                 m_log.CHECK_EQ(Top.width, p.video_data_param.video_width, "The top width should = the video width of " + p.video_data_param.video_width.ToString());
-                m_log.CHECK_EQ(Top.height, p.video_data_param.video_height, "The top width should = the video height of " + p.video_data_param.video_height.ToString());
+                m_log.CHECK_EQ(Top.height, p.video_data_param.video_height, "The top height should = the video height of " + p.video_data_param.video_height.ToString());
             }
             catch (Exception excpt)
             {
@@ -228,7 +228,7 @@ namespace MyCaffe.test
                 m_log.CHECK_EQ(Top.num, nBatchSize, "The top num should = the batch size of 8.");
                 m_log.CHECK_EQ(Top.channels, 3, "The top channels should = 3.");
                 m_log.CHECK_EQ(Top.width, p.video_data_param.video_width, "The top width should = the video width of " + p.video_data_param.video_width.ToString());
-                m_log.CHECK_EQ(Top.height, p.video_data_param.video_height, "The top width should = the video height of " + p.video_data_param.video_height.ToString());
+                m_log.CHECK_EQ(Top.height, p.video_data_param.video_height, "The top height should = the video height of " + p.video_data_param.video_height.ToString());
 
                 int nDim = Top.count(1);
                 T[] rgTopData1 = new T[nDim];
