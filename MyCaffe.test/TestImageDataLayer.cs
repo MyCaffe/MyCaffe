@@ -241,8 +241,8 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.IMAGE_DATA);
             int nBatchSize = 5;
-            p.image_data_param.batch_size = (uint)nBatchSize;
-            p.image_data_param.source = m_strFileName;
+            p.data_param.batch_size = (uint)nBatchSize;
+            p.data_param.source = m_strFileName;
             p.image_data_param.shuffle = false;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent);
@@ -287,8 +287,8 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.IMAGE_DATA);
             int nBatchSize = 5;
-            p.image_data_param.batch_size = (uint)nBatchSize;
-            p.image_data_param.source = m_strFileName;
+            p.data_param.batch_size = (uint)nBatchSize;
+            p.data_param.source = m_strFileName;
             p.image_data_param.shuffle = false;
             p.image_data_param.new_height = 256;
             p.image_data_param.new_width = 256;
@@ -334,8 +334,8 @@ namespace MyCaffe.test
         public void TestReshape()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.IMAGE_DATA);
-            p.image_data_param.batch_size = 1;
-            p.image_data_param.source = m_strFileNameReshape;
+            p.data_param.batch_size = 1;
+            p.data_param.source = m_strFileNameReshape;
             p.image_data_param.shuffle = false;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent);
@@ -376,8 +376,8 @@ namespace MyCaffe.test
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.IMAGE_DATA);
             int nBatchSize = 5;
-            p.image_data_param.batch_size = (uint)nBatchSize;
-            p.image_data_param.source = m_strFileName;
+            p.data_param.batch_size = (uint)nBatchSize;
+            p.data_param.source = m_strFileName;
             p.image_data_param.shuffle = true;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent);
@@ -429,8 +429,8 @@ namespace MyCaffe.test
         public void TestSpace()
         {
             LayerParameter p = new LayerParameter(LayerParameter.LayerType.IMAGE_DATA);
-            p.image_data_param.batch_size = 1;
-            p.image_data_param.source = m_strFileNameSpace;
+            p.data_param.batch_size = 1;
+            p.data_param.source = m_strFileNameSpace;
             p.image_data_param.shuffle = false;
 
             Layer<T> layer = Layer<T>.Create(m_cuda, m_log, p, m_parent.CancelEvent);

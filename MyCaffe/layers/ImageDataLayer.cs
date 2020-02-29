@@ -108,7 +108,7 @@ namespace MyCaffe.layers
                 return;
 
             // Read the file with filenames and labels.
-            string strSource = m_param.image_data_param.source;
+            string strSource = m_param.data_param.source;
             m_log.WriteLine("INFO: Opening file '" + strSource + "'.");
 
             using (StreamReader sr = new StreamReader(strSource))
@@ -181,7 +181,7 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         protected override void DataLayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            int nBatchSize = (int)m_param.image_data_param.batch_size;
+            int nBatchSize = (int)m_param.data_param.batch_size;
             int nNewHeight = (int)m_param.image_data_param.new_height;
             int nNewWidth = (int)m_param.image_data_param.new_width;
             bool bIsColor = m_param.image_data_param.is_color;
@@ -278,7 +278,7 @@ namespace MyCaffe.layers
         protected override void load_batch(Batch<T> batch)
         {
             m_log.CHECK(batch.Data.count() > 0, "There is no space allocated for data!");
-            int nBatchSize = (int)m_param.image_data_param.batch_size;
+            int nBatchSize = (int)m_param.data_param.batch_size;
             int nNewHeight = (int)m_param.image_data_param.new_height;
             int nNewWidth = (int)m_param.image_data_param.new_width;
             bool bIsColor = m_param.image_data_param.is_color;
@@ -289,7 +289,7 @@ namespace MyCaffe.layers
             m_log.CHECK_GT(nCount, 0, "The label count cannot be zero!");
             rgTopLabel = new T[nCount];
 
-            if (m_param.image_data_param.display_timing)
+            if (m_param.data_param.display_timing)
             {
                 m_swTimerBatch.Restart();
                 m_dfReadTime = 0;
@@ -305,7 +305,10 @@ namespace MyCaffe.layers
                     m_swTimerTransaction.Restart();
 
                 m_log.CHECK_GT(m_rgLines.Count, m_nLinesId, "The lines ID is too small!");
-                datum = loadImage(strRootFolder, m_rgLines[m_nLinesId], bIsColor, nNewHeight, nNewWidth);
+                int nIdx = m_nLinesId;
+                if (m_param.data_param.enable_random_selection.GetValueOrDefault(false))
+                    nIdx = m_random.Next(m_rgLines.Count);
+                datum = loadImage(strRootFolder, m_rgLines[nIdx], bIsColor, nNewHeight, nNewWidth);
 
                 if (m_param.data_param.display_timing)
                 {

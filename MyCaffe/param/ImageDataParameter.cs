@@ -12,65 +12,17 @@ namespace MyCaffe.param
     /// </summary>
     public class ImageDataParameter : LayerParameterBase 
     {
-        string m_strSource = null;
-        uint m_nBatchSize = 1;
         uint m_nRandomSkip = 0;
         bool m_bShuffle = false;
         uint m_nNewHeight = 0;
         uint m_nNewWidth = 0;
         bool m_bIsColor = true;
         string m_strRootFolder = "";
-        bool m_bDisplayTiming = false;
 
-        /// <summary>
-        /// This event is, optionally, called to verify the batch size of the DataParameter.
-        /// </summary>
-        public event EventHandler<VerifyBatchSizeArgs> OnVerifyBatchSize;
 
         /** @copydoc LayerParameterBase */
         public ImageDataParameter()
         {
-        }
-
-        /// <summary>
-        /// Specifies the data source.
-        /// </summary>
-        [Description("Specifies the data 'source' file containing the list of image file names.  Some sources are used for training whereas others are used for testing.")]
-        public string source
-        {
-            get { return m_strSource; }
-            set { m_strSource = value; }
-        }
-
-        /// <summary>
-        /// Specifies the batch size.
-        /// </summary>
-        [Description("Specifies the batch size of images to collect and train on each iteration of the network.  NOTE: Setting the training netorks batch size >= to the testing net batch size will conserve memory by allowing the training net to share its gpu memory with the testing net.")]
-        public virtual uint batch_size
-        {
-            get { return m_nBatchSize; }
-            set
-            {
-                if (OnVerifyBatchSize != null)
-                {
-                    VerifyBatchSizeArgs args = new VerifyBatchSizeArgs(value);
-                    OnVerifyBatchSize(this, args);
-                    if (args.Error != null)
-                        throw args.Error;
-                }
-
-                m_nBatchSize = value;
-            }
-        }
-
-        /// <summary>
-        /// (\b optional, default = false) Specifies whether or not to display the timing of each image read.
-        /// </summary>
-        [Category("Debugging"), Description("Specifies whether or not to display the timing of each image read.")]
-        public bool display_timing
-        {
-            get { return m_bDisplayTiming; }
-            set { m_bDisplayTiming = value; }
         }
 
         /// <summary>
@@ -149,15 +101,12 @@ namespace MyCaffe.param
         public override void Copy(LayerParameterBase src)
         {
             ImageDataParameter p = (ImageDataParameter)src;
-            m_strSource = p.m_strSource;
-            m_nBatchSize = p.m_nBatchSize;
             m_nRandomSkip = p.m_nRandomSkip;
             m_bShuffle = p.m_bShuffle;
             m_nNewHeight = p.m_nNewHeight;
             m_nNewWidth = p.m_nNewWidth;
             m_bIsColor = p.m_bIsColor;
             m_strRootFolder = p.m_strRootFolder;
-            m_bDisplayTiming = p.m_bDisplayTiming;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -172,12 +121,6 @@ namespace MyCaffe.param
         public override RawProto ToProto(string strName)
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
-
-            rgChildren.Add("source", "\"" + source + "\"");
-            rgChildren.Add("batch_size", batch_size.ToString());
-
-            if (display_timing == true)
-                rgChildren.Add("display_timing", display_timing.ToString());
 
             if (rand_skip > 0)
                 rgChildren.Add("rand_skip", rand_skip.ToString());
@@ -208,15 +151,6 @@ namespace MyCaffe.param
 
             if (p == null)
                 p = new ImageDataParameter();
-
-            if ((strVal = rp.FindValue("source")) != null)
-                p.source = strVal.Trim('\"');
-
-            if ((strVal = rp.FindValue("batch_size")) != null)
-                p.batch_size = uint.Parse(strVal);
-
-            if ((strVal = rp.FindValue("display_timing")) != null)
-                p.display_timing = bool.Parse(strVal);
 
             if ((strVal = rp.FindValue("rand_skip")) != null)
                 p.rand_skip = uint.Parse(strVal);
