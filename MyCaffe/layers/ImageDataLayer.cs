@@ -117,20 +117,24 @@ namespace MyCaffe.layers
 
                 while (strLine != null)
                 {
-                    int nPos = strLine.LastIndexOf(' ');
-                    if (nPos < 0)
+                    if (!string.IsNullOrEmpty(strLine))
                     {
-                        nPos = strLine.LastIndexOf(',');
+                        int nPos = strLine.LastIndexOf(' ');
                         if (nPos < 0)
-                            nPos = strLine.LastIndexOf(';');
+                        {
+                            nPos = strLine.LastIndexOf(',');
+                            if (nPos < 0)
+                                nPos = strLine.LastIndexOf(';');
+                        }
+
+                        m_log.CHECK_GT(nPos, 0, "The separator character of ' ' or ',' or ';' could not be found!");
+                        string strFile = strLine.Substring(0, nPos);
+                        string strLabel = strLine.Substring(nPos + 1);
+                        int nLabel = int.Parse(strLabel);
+
+                        m_rgLines.Add(new Tuple<string, int>(strFile, nLabel));
                     }
 
-                    m_log.CHECK_GT(nPos, 0, "The separator character of ' ' or ',' or ';' could not be found!");
-                    string strFile = strLine.Substring(0, nPos);
-                    string strLabel = strLine.Substring(nPos + 1);
-                    int nLabel = int.Parse(strLabel);
-
-                    m_rgLines.Add(new Tuple<string, int>(strFile, nLabel));
                     strLine = sr.ReadLine();
                 }
             }
