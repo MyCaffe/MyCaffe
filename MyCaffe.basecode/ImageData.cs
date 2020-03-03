@@ -51,16 +51,61 @@ namespace MyCaffe.basecode
                 rgrgRealData[i] = new List<double>();
             }
 
-            LockBitmap bmp1 = new LockBitmap(bmp);
-
-            try
+            if (bmp.Width >= bmp.Height)
             {
-                bmp1.LockBits();
-                for (int y = 0; y < bmp1.Height; y++)
+                LockBitmap bmp1 = new LockBitmap(bmp);
+
+                try
                 {
-                    for (int x = 0; x < bmp1.Width; x++)
+                    bmp1.LockBits();
+                    for (int y = 0; y < bmp1.Height; y++)
                     {
-                        Color clr = bmp1.GetPixel(x, y);
+                        for (int x = 0; x < bmp1.Width; x++)
+                        {
+                            Color clr = bmp1.GetPixel(x, y);
+
+                            if (nChannels == 1)
+                            {
+                                if (bDataIsReal)
+                                    rgrgRealData[0].Add(clr.ToArgb());
+                                else
+                                    rgrgByteData[0].Add((byte)((clr.R * 0.3) + (clr.G * 0.59) + (clr.B * 0.11)));
+                            }
+                            else
+                            {
+                                if (bDataIsReal)
+                                {
+                                    rgrgRealData[0].Add(clr.R);
+                                    rgrgRealData[1].Add(clr.G);
+                                    rgrgRealData[2].Add(clr.B);
+                                }
+                                else
+                                {
+                                    rgrgByteData[0].Add(clr.R);
+                                    rgrgByteData[1].Add(clr.G);
+                                    rgrgByteData[2].Add(clr.B);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception excpt)
+                {
+                    throw excpt;
+                }
+                finally
+                {
+                    bmp1.UnlockBits();
+                }
+            }
+            // LockBitmap currently has a bug with images were bmp.Width < bmp.Height so in this case we use the slower Bitmap.GetPixel.
+            else
+            {
+                for (int y = 0; y < bmp.Height; y++)
+                {
+                    for (int x = 0; x < bmp.Width; x++)
+                    {
+                        Color clr = bmp.GetPixel(x, y);
 
                         if (nChannels == 1)
                         {
@@ -86,14 +131,6 @@ namespace MyCaffe.basecode
                         }
                     }
                 }
-            }
-            catch (Exception excpt)
-            {
-                throw excpt;
-            }
-            finally
-            {
-                bmp1.UnlockBits();
             }
 
             List<byte> rgByteData = new List<byte>();
@@ -133,16 +170,61 @@ namespace MyCaffe.basecode
                 rgrgRealData[i] = new List<float>();
             }
 
-            LockBitmap bmp1 = new LockBitmap(bmp);
-
-            try
+            if (bmp.Width >= bmp.Height)
             {
-                bmp1.LockBits();
-                for (int y = 0; y < bmp1.Height; y++)
+                LockBitmap bmp1 = new LockBitmap(bmp);
+
+                try
                 {
-                    for (int x = 0; x < bmp1.Width; x++)
+                    bmp1.LockBits();
+                    for (int y = 0; y < bmp1.Height; y++)
                     {
-                        Color clr = bmp1.GetPixel(x, y);
+                        for (int x = 0; x < bmp1.Width; x++)
+                        {
+                            Color clr = bmp1.GetPixel(x, y);
+
+                            if (nChannels == 1)
+                            {
+                                if (bDataIsReal)
+                                    rgrgRealData[0].Add(clr.ToArgb());
+                                else
+                                    rgrgByteData[0].Add((byte)((clr.R * 0.3) + (clr.G * 0.59) + (clr.B * 0.11)));
+                            }
+                            else
+                            {
+                                if (bDataIsReal)
+                                {
+                                    rgrgRealData[0].Add(clr.R);
+                                    rgrgRealData[1].Add(clr.G);
+                                    rgrgRealData[2].Add(clr.B);
+                                }
+                                else
+                                {
+                                    rgrgByteData[0].Add(clr.R);
+                                    rgrgByteData[1].Add(clr.G);
+                                    rgrgByteData[2].Add(clr.B);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception excpt)
+                {
+                    throw excpt;
+                }
+                finally
+                {
+                    bmp1.UnlockBits();
+                }
+            }
+            // LockBitmap currently has a bug with images were bmp.Width < bmp.Height so in this case we use the slower Bitmap.GetPixel.
+            else
+            {
+                for (int y = 0; y < bmp.Height; y++)
+                {
+                    for (int x = 0; x < bmp.Width; x++)
+                    {
+                        Color clr = bmp.GetPixel(x, y);
 
                         if (nChannels == 1)
                         {
@@ -168,14 +250,6 @@ namespace MyCaffe.basecode
                         }
                     }
                 }
-            }
-            catch (Exception excpt)
-            {
-                throw excpt;
-            }
-            finally
-            {
-                bmp1.UnlockBits();
             }
 
             List<byte> rgByteData = new List<byte>();
