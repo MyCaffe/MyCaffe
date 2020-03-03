@@ -1249,9 +1249,6 @@ namespace MyCaffe.test
             layer.Setup(BottomVec, TopVec);
             layer.Forward(BottomVec, TopVec);
 
-#warning REMOVE
-            return;
-
             BlobCollection<T> colWeights1 = layer.blobs;
             double dfErr = 1e-4;
 
