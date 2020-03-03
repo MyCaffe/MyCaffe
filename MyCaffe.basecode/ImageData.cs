@@ -36,8 +36,9 @@ namespace MyCaffe.basecode
         /// <param name="nChannels">Specifies the number of channels contained in the Bitmap (e.g. 3 = color, 1 = black and white).</param>
         /// <param name="bDataIsReal">Specifies whether or not to add each color to the List of <i>double</i> or to the list of <i>byte</i>.  Using the <i>byte</i> array is more common for it already separates a 3 color Bitmap into 3 channels of data.</param>
         /// <param name="nLabel">Specifies the known label.</param>
+        /// <param name="bUseLockBitmap">Optionally, use the Lock Bitmap which is faster but may produce corrupted images in a few scenarios (default = true).</param>
         /// <returns>The Datum representing the image is returned.</returns>
-        public static Datum GetImageDataD(Bitmap bmp, int nChannels, bool bDataIsReal, int nLabel)
+        public static Datum GetImageDataD(Bitmap bmp, int nChannels, bool bDataIsReal, int nLabel, bool bUseLockBitmap = true)
         {
             if (nChannels != 1 && nChannels != 3)
                 throw new Exception("Images only support either 1 or 3 channels.");
@@ -51,7 +52,7 @@ namespace MyCaffe.basecode
                 rgrgRealData[i] = new List<double>();
             }
 
-            if (bmp.Width >= bmp.Height)
+            if (bmp.Width >= bmp.Height && bUseLockBitmap)
             {
                 LockBitmap bmp1 = new LockBitmap(bmp);
 
@@ -155,8 +156,9 @@ namespace MyCaffe.basecode
         /// <param name="nChannels">Specifies the number of channels contained in the Bitmap (e.g. 3 = color, 1 = black and white).</param>
         /// <param name="bDataIsReal">Specifies whether or not to add each color to the List of <i>double</i> or to the list of <i>byte</i>.  Using the <i>byte</i> array is more common for it already separates a 3 color Bitmap into 3 channels of data.</param>
         /// <param name="nLabel">Specifies the known label.</param>
+        /// <param name="bUseLockBitmap">Optionally, use the Lock Bitmap which is faster but may produce corrupted images in a few scenarios (default = true).</param>
         /// <returns>The Datum representing the image is returned.</returns>
-        public static Datum GetImageDataF(Bitmap bmp, int nChannels, bool bDataIsReal, int nLabel)
+        public static Datum GetImageDataF(Bitmap bmp, int nChannels, bool bDataIsReal, int nLabel, bool bUseLockBitmap = true)
         {
             if (nChannels != 1 && nChannels != 3)
                 throw new Exception("Images only support either 1 or 3 channels.");
@@ -170,7 +172,7 @@ namespace MyCaffe.basecode
                 rgrgRealData[i] = new List<float>();
             }
 
-            if (bmp.Width >= bmp.Height)
+            if (bmp.Width >= bmp.Height && bUseLockBitmap)
             {
                 LockBitmap bmp1 = new LockBitmap(bmp);
 
