@@ -55,7 +55,23 @@ namespace MyCaffe.common
         /// <summary>
         /// The blob holds Clip data.
         /// </summary>
-        CLIP
+        CLIP,
+        /// <summary>
+        /// The blob holds multi-boundingbox data.
+        /// </summary>
+        /// <remarks>
+        /// The multi-box data ordering is as follows:
+        /// [0] index of num.
+        /// [1] label
+        /// [2] score
+        /// [3] bbox xmin
+        /// [4] bbox ymin
+        /// [5] bbox xmax
+        /// [6] bbox ymax
+        /// 
+        /// continues for each of the top 'n' bboxes output.
+        /// </remarks>
+        MULTIBBOX
     }
 
     /// <summary>

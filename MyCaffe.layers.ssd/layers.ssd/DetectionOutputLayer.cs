@@ -710,6 +710,7 @@ namespace MyCaffe.layers.ssd
             }
 
             colTop[0].mutable_cpu_data = convert(rgfTopData);
+            colTop[0].type = BLOB_TYPE.MULTIBBOX;
         }
 
         /// <summary>
