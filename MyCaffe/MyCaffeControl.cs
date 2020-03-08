@@ -1764,13 +1764,32 @@ namespace MyCaffe
                 colResults = m_net.Forward(colBottom, out dfLoss);
             }
 
-            List<KeyValuePair<int, double>> rgResults = new List<KeyValuePair<int, double>>();
-            T[] rgData = colResults[0].update_cpu_data();
+            List<Result> rgResults = new List<Result>();
+            float[] rgData = Utility.ConvertVecF<T>(colResults[0].update_cpu_data());
 
-            for (int i = 0; i < rgData.Length; i++)
+            if (colResults[0].type == BLOB_TYPE.MULTIBBOX)
             {
-                double dfProb = (double)Convert.ChangeType(rgData[i], typeof(double));
-                rgResults.Add(new KeyValuePair<int, double>(i, dfProb));
+                for (int n = 0; n < colResults[0].num; n++)
+                {
+                    int i = (int)rgData[(n * 7)];
+                    int nLabel = (int)rgData[(n * 7) + 1];
+                    double dfScore = rgData[(n * 7) + 2];
+                    double[] rgExtra = new double[4];
+                    rgExtra[0] = rgData[(n * 7) + 3]; // xmin
+                    rgExtra[1] = rgData[(n * 7) + 4]; // ymin
+                    rgExtra[2] = rgData[(n * 7) + 5]; // xmax
+                    rgExtra[3] = rgData[(n * 7) + 6]; // ymax
+
+                    rgResults.Add(new Result(nLabel, dfScore, rgExtra));
+                }
+            }
+            else
+            {
+                for (int i = 0; i < rgData.Length; i++)
+                {
+                    double dfProb = rgData[i];
+                    rgResults.Add(new Result(i, dfProb));
+                }
             }
 
             blob.Dispose();
@@ -1839,13 +1858,13 @@ namespace MyCaffe
 
             for (int i = 0; i < rgSd.Count; i++)
             {
-                List<KeyValuePair<int, double>> rgResults = new List<KeyValuePair<int, double>>();
+                List<Result> rgResults = new List<Result>();
 
                 for (int j = 0; j < nOutputCount; j++)
                 {
                     int nIdx = i * nOutputCount + j;
                     double dfProb = (double)Convert.ChangeType(rgDataOutput[nIdx], typeof(double));
-                    rgResults.Add(new KeyValuePair<int, double>(j, dfProb));
+                    rgResults.Add(new Result(j, dfProb));
                 }
 
                 ResultCollection result = new ResultCollection(rgResults, lastLayerType);

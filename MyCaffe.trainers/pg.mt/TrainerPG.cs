@@ -129,13 +129,13 @@ namespace MyCaffe.trainers.pg.mt
             Agent<T> agent = new Agent<T>(0, m_icallback, m_mycaffe, m_properties, m_random, Phase.TRAIN, 0, 1);
             Tuple<int,int> res = agent.Run(nDelay);
 
-            List<KeyValuePair<int, double>> rgActions = new List<KeyValuePair<int, double>>();
+            List<Result> rgActions = new List<Result>();
             for (int i = 0; i < res.Item2; i++)
             {
                 if (res.Item1 == i)
-                    rgActions.Add(new KeyValuePair<int, double>(i, 1.0));
+                    rgActions.Add(new Result(i, 1.0));
                 else
-                    rgActions.Add(new KeyValuePair<int, double>(i, 0.0));
+                    rgActions.Add(new Result(i, 0.0));
             }
 
             agent.Dispose();

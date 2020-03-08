@@ -456,7 +456,7 @@ namespace MyCaffe.basecode
         /// <param name="sz">Specifies the size of the image.</param>
         /// <param name="clrMap">Specifies a color mapper to use when converting each value into a color.</param>
         /// <returns>The Image of the data is returned.</returns>
-        public static Bitmap GetImage(List<KeyValuePair<int, double>> rg, Size sz, ColorMapper clrMap)
+        public static Bitmap GetImage(List<Result> rg, Size sz, ColorMapper clrMap)
         {
             Bitmap bmp = new Bitmap(sz.Width, sz.Height);
             int nSize = (int)Math.Ceiling(Math.Sqrt(rg.Count));
@@ -471,7 +471,7 @@ namespace MyCaffe.basecode
 
                 for (int i=0; i<rg.Count; i++)
                 {
-                    Brush br = new SolidBrush(clrMap.GetColor(rg[i].Value));
+                    Brush br = new SolidBrush(clrMap.GetColor(rg[i].Score));
                     g.FillRectangle(br, fX, fY, fIncX, fIncY);
                     br.Dispose();
                      

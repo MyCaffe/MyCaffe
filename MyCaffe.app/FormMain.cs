@@ -928,9 +928,9 @@ namespace MyCaffe.app
                 if (m_netType == NET_TYPE.LENET)
                 {
                     setStatus("Softmax Probabilities: ");
-                    foreach (KeyValuePair<int, double> kv in res.ResultsSorted)
+                    foreach (Result kv in res.ResultsSorted)
                     {
-                        setStatus("Label " + kv.Key.ToString() + " -> " + kv.Value.ToString("N5"));
+                        setStatus(kv.ToString());
                     }
                 }
                 else
@@ -938,8 +938,8 @@ namespace MyCaffe.app
                     setStatus("Decoded Distances: ");
                     for (int i=res.ResultsSorted.Count-1; i>=0; i--)
                     {
-                        KeyValuePair<int, double> kv = res.ResultsSorted[i];
-                        setStatus("Label " + kv.Key.ToString() + " -> " + kv.Value.ToString("N5"));
+                        Result kv = res.ResultsSorted[i];
+                        setStatus(kv.ToString());
                     }
                 }
             }

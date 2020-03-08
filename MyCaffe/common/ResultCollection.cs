@@ -16,8 +16,8 @@ namespace MyCaffe.common
     public class ResultCollection
     {
         Dictionary<int, string> m_rgLabels = new Dictionary<int, string>();
-        List<KeyValuePair<int, double>> m_rgResultsOriginal = new List<KeyValuePair<int, double>>();
-        List<KeyValuePair<int, double>> m_rgResultsSorted = new List<KeyValuePair<int, double>>();
+        List<Result> m_rgResultsOriginal = new List<Result>();
+        List<Result> m_rgResultsSorted = new List<Result>();
         RESULT_TYPE m_resultType = RESULT_TYPE.NONE;
 
         /// <summary>
@@ -36,25 +36,29 @@ namespace MyCaffe.common
             /// <summary>
             /// Specifies that the results represent distances.
             /// </summary>
-            DISTANCES
+            DISTANCES,
+            /// <summary>
+            /// Specifies that the results represent multibox results.
+            /// </summary>
+            MULTIBOX
         }
 
         /// <summary>
         /// The ResultCollection constructor.
         /// </summary>
-        /// <param name="rgResults">Specifies the results listed in pairs of label/result.</param>
+        /// <param name="rgResults">Specifies the results.</param>
         /// <param name="outputLayerType">Specifies the output layer type.</param>
-        public ResultCollection(List<KeyValuePair<int, double>> rgResults, LayerParameter.LayerType outputLayerType)
+        public ResultCollection(List<Result> rgResults, LayerParameter.LayerType outputLayerType)
         {
             m_resultType = getResultType(outputLayerType);
             m_rgResultsOriginal = rgResults;
 
-            foreach (KeyValuePair<int, double> kv in rgResults)
+            foreach (Result item in rgResults)
             {
-                m_rgResultsSorted.Add(kv);
+                m_rgResultsSorted.Add(item);
             }
 
-            m_rgResultsSorted.Sort(new Comparison<KeyValuePair<int, double>>(sortResults));
+            m_rgResultsSorted = m_rgResultsSorted.OrderByDescending(p => p.Score).ToList();
         }
 
         private RESULT_TYPE getResultType(LayerParameter.LayerType type)
@@ -67,26 +71,12 @@ namespace MyCaffe.common
                 case LayerParameter.LayerType.DECODE:
                     return RESULT_TYPE.DISTANCES;
 
+                case LayerParameter.LayerType.DETECTION_OUTPUT:
+                    return RESULT_TYPE.MULTIBOX;
+
                 default:
                     return RESULT_TYPE.NONE;
             }
-        }
-
-        /// <summary>
-        /// Sort the results by label.
-        /// </summary>
-        /// <param name="a">Specifies item A.</param>
-        /// <param name="b">Specifies item B.</param>
-        /// <returns>Returns 1 when A &lt; B, -1 when B &lt; A, and 0 when they are equal.</returns>
-        protected int sortResults(KeyValuePair<int, double> a, KeyValuePair<int, double> b)
-        {
-            if (a.Value < b.Value)
-                return 1;
-
-            if (b.Value < a.Value)
-                return -1;
-
-            return 0;
         }
 
         /// <summary>
@@ -104,9 +94,9 @@ namespace MyCaffe.common
         {
             List<double> rg = new List<double>();
 
-            foreach (KeyValuePair<int, double> kv in m_rgResultsOriginal)
+            foreach (Result item in m_rgResultsOriginal)
             {
-                rg.Add(kv.Value);
+                rg.Add(item.Score);
             }
 
             return rg;
@@ -115,7 +105,7 @@ namespace MyCaffe.common
         /// <summary>
         /// Returns the original results.
         /// </summary>
-        public List<KeyValuePair<int, double>> ResultsOriginal
+        public List<Result> ResultsOriginal
         {
             get { return m_rgResultsOriginal; }
         }
@@ -123,7 +113,7 @@ namespace MyCaffe.common
         /// <summary>
         /// Returns the original results in sorted order.
         /// </summary>
-        public List<KeyValuePair<int, double>> ResultsSorted
+        public List<Result> ResultsSorted
         {
             get { return m_rgResultsSorted; }
         }
@@ -138,7 +128,7 @@ namespace MyCaffe.common
         /// </remarks>
         public int DetectedLabelMaxSignal
         {
-            get { return m_rgResultsSorted[0].Key; }
+            get { return m_rgResultsSorted[0].Label; }
         }
 
         /// <summary>
@@ -151,7 +141,7 @@ namespace MyCaffe.common
         /// </remarks>
         public double DetectedLabelOutputMaxSignal
         {
-            get { return m_rgResultsSorted[0].Value; }
+            get { return m_rgResultsSorted[0].Label; }
         }
 
         /// <summary>
@@ -164,7 +154,7 @@ namespace MyCaffe.common
         /// </remarks>
         public int DetectedLabelMinSignal
         {
-            get { return m_rgResultsSorted[m_rgResultsSorted.Count-1].Key; }
+            get { return m_rgResultsSorted[m_rgResultsSorted.Count-1].Label; }
         }
 
         /// <summary>
@@ -177,7 +167,7 @@ namespace MyCaffe.common
         /// </remarks>
         public double DetectedLabelOutputMinSignal
         {
-            get { return m_rgResultsSorted[m_rgResultsSorted.Count-1].Value; }
+            get { return m_rgResultsSorted[m_rgResultsSorted.Count-1].Label; }
         }
 
         /// <summary>
@@ -241,8 +231,8 @@ namespace MyCaffe.common
 
             for (int i = 0; i < m_rgResultsOriginal.Count; i++)
             {
-                int nLabel = m_rgResultsOriginal[i].Key;
-                double dfVal = m_rgResultsOriginal[i].Value;
+                int nLabel = m_rgResultsOriginal[i].Label;
+                double dfVal = m_rgResultsOriginal[i].Score;
                 string strName = null;
 
                 if (m_rgLabels.ContainsKey(nLabel))

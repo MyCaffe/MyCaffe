@@ -91,10 +91,10 @@ namespace MyCaffe.basecode.descriptors
         /// <summary>
         /// The CreateResults function converts the list of (int nLabel, double dfResult) pairs into a array of <i>bytes</i>.
         /// </summary>
-        /// <param name="rgResults">Specifies the list of (int nLabel, double dfResult) result pairs.</param>
+        /// <param name="rgResults">Specifies the list of (int nLabel, double dfResult) result data.</param>
         /// <param name="bInvert">Specifies whether or not to invert the value by subtracting it from the maximum value within the result pairs.</param>
         /// <returns>A <i>byte</i> array containing the result data is returned.</returns>
-        public static byte[] CreateResults(List<KeyValuePair<int, double>> rgResults, bool bInvert)
+        public static byte[] CreateResults(List<Result> rgResults, bool bInvert)
         {
             List<byte> rgData = new List<byte>();
             double dfMax = double.MinValue;
@@ -102,20 +102,20 @@ namespace MyCaffe.basecode.descriptors
 
             if (bInvert)
             {
-                foreach (KeyValuePair<int, double> kv in rgResults)
+                foreach (Result kv in rgResults)
                 {
-                    if (dfMax < kv.Value)
-                        dfMax = kv.Value;
+                    if (dfMax < kv.Score)
+                        dfMax = kv.Score;
 
-                    if (dfMin > kv.Value)
-                        dfMin = kv.Value;
+                    if (dfMin > kv.Score)
+                        dfMin = kv.Score;
                 }
             }
 
-            foreach (KeyValuePair<int, double> kv in rgResults)
+            foreach (Result kv in rgResults)
             {
-                rgData.AddRange(BitConverter.GetBytes(kv.Key));
-                double dfValue = kv.Value;
+                rgData.AddRange(BitConverter.GetBytes(kv.Label));
+                double dfValue = kv.Score;
 
                 if (bInvert)
                     dfValue = dfMax - dfValue;

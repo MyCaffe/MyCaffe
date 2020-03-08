@@ -522,7 +522,7 @@ namespace MyCaffe.db.image
         /// <param name="rgResults">Specifies the results of the run as a list of (int nLabel, double dfReult) values.</param>
         /// <param name="bInvert">Specifies whether or not the results are inverted.</param>
         /// <returns></returns>
-        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<KeyValuePair<int, double>> rgResults, bool bInvert)
+        public int PutRawImageResults(int nSrcId, int nIdx, int nLabel, DateTime dt, List<Result> rgResults, bool bInvert)
         {
             return m_db.PutRawImageResults(nSrcId, nIdx, nLabel, dt, rgResults, bInvert);
         }
