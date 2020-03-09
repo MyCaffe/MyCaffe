@@ -1607,29 +1607,75 @@ namespace MyCaffe
                 }
 
                 ResultCollection rgResults = Run(sd);
-                int nDetectedLabel = rgResults.DetectedLabel;
-                int nExpectedLabel = sd.Label;
 
-                if (labelMapping != null)
+                if (rgResults.ResultType == ResultCollection.RESULT_TYPE.MULTIBOX)
                 {
-                    if (m_dataTransformer.param.label_mapping.Active)
-                        m_log.FAIL("You can use either the LabelMappingLayer or the DataTransformer label_mapping, but not both!");
+                    m_log.CHECK(sd.annotation_type == SimpleDatum.ANNOTATION_TYPE.BBOX, "The SimpleDatum should have an annotation type = BBOX when using MULTIBOX.");
 
-                    nExpectedLabel = labelMapping.MapLabel(nExpectedLabel);
+                    Dictionary<int, List<Result>> rgLabeledResults = new Dictionary<int, List<Result>>();
+                    Dictionary<int, int> rgLabeledOrder = new Dictionary<int, int>();
+
+                    int nIdx = 0;
+                    foreach (Result result in rgResults.ResultsSorted)
+                    {
+                        if (!rgLabeledResults.ContainsKey(result.Label))
+                        {
+                            rgLabeledResults.Add(result.Label, new List<Result>());
+                            rgLabeledOrder.Add(result.Label, nIdx);
+                            nIdx++;
+                        }
+
+                        rgLabeledResults[result.Label].Add(result);
+                    }
+
+                    List<Tuple<int, List<Result>>> rgBestResults = new List<Tuple<int, List<Result>>>();
+                    List<int> rgDetectedLabels = rgLabeledOrder.OrderBy(p => p.Value).Select(p => p.Key).Take(sd.annotation_group.Count).ToList();
+
+                    for (int j = 0; j < sd.annotation_group.Count; j++)
+                    {
+                        int nExpectedLabel = sd.annotation_group[j].group_label;
+
+                        if (!rgCorrectCounts.ContainsKey(nExpectedLabel))
+                            rgCorrectCounts.Add(nExpectedLabel, 0);
+
+                        if (!rgLabelTotals.ContainsKey(nExpectedLabel))
+                            rgLabelTotals.Add(nExpectedLabel, 1);
+                        else
+                            rgLabelTotals[nExpectedLabel]++;
+
+                        if (rgDetectedLabels.Contains(nExpectedLabel))
+                        {
+                            rgCorrectCounts[nExpectedLabel]++;
+                            nCorrectCount++;
+                        }
+                    }
                 }
-
-                if (!rgCorrectCounts.ContainsKey(nExpectedLabel))
-                    rgCorrectCounts.Add(nExpectedLabel, 0);
-
-                if (!rgLabelTotals.ContainsKey(nExpectedLabel))
-                    rgLabelTotals.Add(nExpectedLabel, 1);
                 else
-                    rgLabelTotals[nExpectedLabel]++;
-
-                if (nExpectedLabel == nDetectedLabel)
                 {
-                    nCorrectCount++;
-                    rgCorrectCounts[nExpectedLabel]++;
+                    int nDetectedLabel = rgResults.DetectedLabel;
+                    int nExpectedLabel = sd.Label;
+
+                    if (labelMapping != null)
+                    {
+                        if (m_dataTransformer.param.label_mapping.Active)
+                            m_log.FAIL("You can use either the LabelMappingLayer or the DataTransformer label_mapping, but not both!");
+
+                        nExpectedLabel = labelMapping.MapLabel(nExpectedLabel);
+                    }
+
+                    if (!rgCorrectCounts.ContainsKey(nExpectedLabel))
+                        rgCorrectCounts.Add(nExpectedLabel, 0);
+
+                    if (!rgLabelTotals.ContainsKey(nExpectedLabel))
+                        rgLabelTotals.Add(nExpectedLabel, 1);
+                    else
+                        rgLabelTotals[nExpectedLabel]++;
+
+                    if (nExpectedLabel == nDetectedLabel)
+                    {
+                        nCorrectCount++;
+                        rgCorrectCounts[nExpectedLabel]++;
+                    }
                 }
 
                 double dfPct = ((double)i / (double)nCount);
@@ -1769,7 +1815,9 @@ namespace MyCaffe
 
             if (colResults[0].type == BLOB_TYPE.MULTIBBOX)
             {
-                for (int n = 0; n < colResults[0].num; n++)
+                int nNum = rgData.Length / 7;
+
+                for (int n = 0; n < nNum; n++)
                 {
                     int i = (int)rgData[(n * 7)];
                     int nLabel = (int)rgData[(n * 7) + 1];
