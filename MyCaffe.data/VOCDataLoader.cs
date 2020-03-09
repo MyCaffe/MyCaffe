@@ -130,6 +130,14 @@ namespace MyCaffe.data
             }
         }
 
+        private void addLabels(int nSrcId, Dictionary<string, int> rgNameToLabel)
+        {
+            foreach (KeyValuePair<string, int> kv in rgNameToLabel)
+            {
+                m_factory.AddLabel(kv.Value, kv.Key, nSrcId);
+            }
+        }
+
         private bool loadFile(string strImagesFile, string strSourceName, int nExtractTotal, ref int nExtractIdx, int nTotal, ref int nIdx, Log log, bool bExtractFiles, Dictionary<string, int> rgNameToLabel)
         {
             Stopwatch sw = new Stopwatch();
@@ -142,6 +150,7 @@ namespace MyCaffe.data
             try
             {
                 int nSrcId = m_factory.AddSource(strSourceName, 3, -1, -1, false);
+                addLabels(nSrcId, rgNameToLabel);
                 m_factory.Open(nSrcId);
 
                 int nPos = strImagesFile.ToLower().LastIndexOf(".tar");
