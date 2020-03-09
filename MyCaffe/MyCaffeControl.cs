@@ -1540,7 +1540,8 @@ namespace MyCaffe
         /// <param name="bOnTargetSet">Optionally, specifies to test on the target dataset (if exists) as opposed to the source dataset.  The default is <i>false</i>, which tests on the default (source) dataset.</param>
         /// <param name="imgSelMethod">Optionally, specifies the image selection method (default = RANDOM).</param>
         /// <param name="nImageStartIdx">Optionally, specifies the image start index (default = 0).</param>
-        public void TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false, IMGDB_IMAGE_SELECTION_METHOD imgSelMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM, int nImageStartIdx = 0)
+        /// <returns>The list of SimpleDatum and their ResultCollections (after running the model on each) is returned.</returns>
+        public List<Tuple<SimpleDatum, ResultCollection>> TestMany(int nCount, bool bOnTrainingSet, bool bOnTargetSet = false, IMGDB_IMAGE_SELECTION_METHOD imgSelMethod = IMGDB_IMAGE_SELECTION_METHOD.RANDOM, int nImageStartIdx = 0)
         {
             m_lastPhaseRun = Phase.RUN;
 
@@ -1589,12 +1590,14 @@ namespace MyCaffe
             if (nImageStartIdx < 0)
                 nImageStartIdx = 0;
 
+            List<Tuple<SimpleDatum, ResultCollection>> rgrgResults = new List<Tuple<SimpleDatum, ResultCollection>>();
+
             for (int i = 0; i < nCount; i++)
             {
                 if (m_evtCancel.WaitOne(0))
                 {
                     m_log.WriteLine("Test Many aborted!");
-                    return;
+                    return null;
                 }
 
                 SimpleDatum sd = m_imgDb.QueryImage(nSrcId, nImageStartIdx + i, lblSelMethod, imgSelMethod, null, m_settings.ImageDbLoadDataCriteria, m_settings.ImageDbLoadDebugData);
@@ -1607,6 +1610,7 @@ namespace MyCaffe
                 }
 
                 ResultCollection rgResults = Run(sd);
+                rgrgResults.Add(new Tuple<SimpleDatum, ResultCollection>(sd, rgResults));
 
                 if (rgResults.ResultType == ResultCollection.RESULT_TYPE.MULTIBOX)
                 {
@@ -1715,6 +1719,8 @@ namespace MyCaffe
                     m_log.WriteLine("Label #" + kv.Key.ToString() + " had " + dfCorrectPct.ToString("P") + " correct detections out of " + nCount.ToString("N0") + " items with this label.");
                 }
             }
+
+            return rgrgResults;
         }
 
         /// <summary>
