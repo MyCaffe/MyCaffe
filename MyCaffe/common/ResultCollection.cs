@@ -141,7 +141,7 @@ namespace MyCaffe.common
         /// </remarks>
         public double DetectedLabelOutputMaxSignal
         {
-            get { return m_rgResultsSorted[0].Label; }
+            get { return m_rgResultsSorted[0].Score; }
         }
 
         /// <summary>
@@ -167,7 +167,7 @@ namespace MyCaffe.common
         /// </remarks>
         public double DetectedLabelOutputMinSignal
         {
-            get { return m_rgResultsSorted[m_rgResultsSorted.Count-1].Label; }
+            get { return m_rgResultsSorted[m_rgResultsSorted.Count-1].Score; }
         }
 
         /// <summary>
