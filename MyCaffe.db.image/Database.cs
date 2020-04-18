@@ -3480,6 +3480,33 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Returns the last time-stamp in the data source.
+        /// </summary>
+        /// <param name="dtStart">Specifies the start of the time range.</param>
+        /// <param name="dtEnd">Specifies the end of the time range.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="strDesc">Optionally, specifies a description to filter the values with (default = null, no filter).</param>
+        /// <returns>If found, the time-stamp is returned, otherwise, DateTime.MinValue is returned.</returns>
+        public DateTime GetLastTimeStamp(DateTime dtStart, DateTime dtEnd, int nSrcId = 0, string strDesc = null)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                IQueryable<RawImage> iquery = entities.RawImages.Where(p => p.SourceID == nSrcId && p.TimeStamp >= dtStart && p.TimeStamp < dtEnd).OrderByDescending(p => p.TimeStamp);
+                if (strDesc != null)
+                    iquery = iquery.Where(p => p.Description == strDesc);
+
+                List<RawImage> rgImages = iquery.Take(1).ToList();
+                if (rgImages.Count == 0)
+                    return DateTime.MinValue;
+
+                return rgImages[0].TimeStamp.GetValueOrDefault();
+            }
+        }
+
+        /// <summary>
         /// Returns the last time-stamp and index in the data source.
         /// </summary>
         /// <param name="nIndex">Returns the index of the last item.</param>
