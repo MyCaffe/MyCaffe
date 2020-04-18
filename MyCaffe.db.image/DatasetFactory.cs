@@ -1084,12 +1084,13 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="dtStart">Specifies the start of the time range.</param>
         /// <param name="dtEnd">Specifies the end of the time range.</param>
+        /// <param name="bEndInclusive">Specifies whether or not to include the end time in the range.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <param name="strDesc">Optionally, specifies a description to filter the values with (default = null, no filter).</param>
         /// <returns>If found, the time-stamp is returned, otherwise, DateTime.MinValue is returned.</returns>
-        public DateTime GetLastTimeStamp(DateTime dtStart, DateTime dtEnd, int nSrcId = 0, string strDesc = null)
+        public DateTime GetLastTimeStamp(DateTime dtStart, DateTime dtEnd, bool bEndInclusive, int nSrcId = 0, string strDesc = null)
         {
-            return m_db.GetLastTimeStamp(dtStart, dtEnd, nSrcId, strDesc);
+            return m_db.GetLastTimeStamp(dtStart, dtEnd, bEndInclusive, nSrcId, strDesc);
         }
 
 
@@ -1110,13 +1111,14 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="dtStart">Specifies the start of the time range.</param>
         /// <param name="dtEnd">Specifies the end of the time range.</param>
+        /// <param name="bEndInclusive">Specifies whether or not to include the end time in the range.</param>
         /// <param name="nIndex">Returns the index of the last item.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <param name="strDesc">Optionally, specifies a description to filter the values with (default = null, no filter).</param>
         /// <returns>If found, the time-stamp is returned, otherwise, DateTime.MinValue is returned.</returns>
-        public DateTime GetLastTimeStamp(DateTime dtStart, DateTime dtEnd, out int nIndex, int nSrcId = 0, string strDesc = null)
+        public DateTime GetLastTimeStamp(DateTime dtStart, DateTime dtEnd, bool bEndInclusive, out int nIndex, int nSrcId = 0, string strDesc = null)
         {
-            return m_db.GetLastTimeStamp(dtStart, dtEnd, out nIndex);
+            return m_db.GetLastTimeStamp(dtStart, dtEnd, bEndInclusive, out nIndex);
         }
 
 #pragma warning disable 1591
