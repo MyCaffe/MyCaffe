@@ -3509,6 +3509,38 @@ namespace MyCaffe.db.image
             }
         }
 
+        /// <summary>
+        /// Returns the last time-stamp and index in the data source falling within a time range.
+        /// </summary>
+        /// <param name="dtStart">Specifies the start of the time range.</param>
+        /// <param name="dtEnd">Specifies the end of the time range.</param>
+        /// <param name="nIndex">Returns the index of the last item.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="strDesc">Optionally, specifies a description to filter the values with (default = null, no filter).</param>
+        /// <returns>If found, the time-stamp is returned, otherwise, DateTime.MinValue is returned.</returns>
+        public DateTime GetLastTimeStamp(DateTime dtStart, DateTime dtEnd, out int nIndex, int nSrcId = 0, string strDesc = null)
+        {
+            nIndex = -1;
+
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                IQueryable<RawImage> iquery = entities.RawImages.Where(p => p.SourceID == nSrcId && p.TimeStamp >= dtStart && p.TimeStamp < dtEnd).OrderByDescending(p => p.TimeStamp);
+                if (strDesc != null)
+                    iquery = iquery.Where(p => p.Description == strDesc);
+
+                List<RawImage> rgImages = iquery.Take(1).ToList();
+                if (rgImages.Count == 0)
+                    return DateTime.MinValue;
+
+                nIndex = rgImages[0].Idx.GetValueOrDefault(-1);
+
+                return rgImages[0].TimeStamp.GetValueOrDefault();
+            }
+        }
+
         #endregion
 
 
@@ -3874,7 +3906,8 @@ namespace MyCaffe.db.image
 
                 foreach (DatasetParameter p in rgP)
                 {
-                    rgDsP.Add(p.Name, p.Value);
+                    if (!rgDsP.ContainsKey(p.Name))
+                        rgDsP.Add(p.Name, p.Value);
                 }
 
                 return rgDsP;
