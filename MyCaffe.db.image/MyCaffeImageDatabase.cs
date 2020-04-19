@@ -613,14 +613,18 @@ namespace MyCaffe.db.image
         /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <param name="bBoostValIsExact">Not used in version 1, all boost values are treated as inexact (bBoostValIsExact = false).</param>
+        /// <param name="bAttemptDirectLoad">Optionaly, specifies to directly load all images not already loaded.</param>
         /// <returns>The list of images is returned.</returns>
         /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', and
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
-        public List<SimpleDatum> GetImagesFromIndex(int nSrcId, int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
+        public List<SimpleDatum> GetImagesFromIndex(int nSrcId, int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false, bool bAttemptDirectLoad = false)
         {
             int nWait = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
             if (nWait == 0)
                 return null;
+
+            if (bAttemptDirectLoad)
+                throw new Exception("Direct load attempts are not supported by the Image Database V1.");
 
             return m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImages(nBoostVal.HasValue, strFilterVal, nBoostVal, nStartIdx, nQueryCount);
         }

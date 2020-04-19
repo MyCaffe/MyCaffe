@@ -397,17 +397,37 @@ namespace MyCaffe.db.image
         /// <param name="strFilterVal">Optionally, specifies the filter value that the description must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <param name="nBoostVal">Optionally, specifies the boost value that the boost must match (default = <i>null</i>, which ignores this parameter).</param>
         /// <param name="bBoostValIsExact">Optionally, specifies whether or the boost value (if specified) is to be used literally (exact = true), or as a minimum boost value.</param>
+        /// <param name="bAttemptDirectLoad">Optionaly, specifies to directly load all images not already loaded.</param>
         /// <returns>The list of images is returned.</returns>
         /// <remarks>When using the 'nBoostValue' negative values are used to test the exact match of the boost value with the absolute value of the 'nBoostValue', ande
         /// positive values are used to test for boost values that are greater than or equal to the 'nBoostValue'.</remarks>
-        public List<SimpleDatum> GetImages(QueryState state, int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
+        public List<SimpleDatum> GetImages(QueryState state, int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false, bool bAttemptDirectLoad = false)
         {
             List<int> rgIdx = state.GetIndexes(nStartIdx, nQueryCount, strFilterVal, nBoostVal, bBoostValIsExact);
+            List<SimpleDatum> rgSd;
 
             lock (m_syncObj)
             {
-                return m_rgImages.Where(p => rgIdx.Contains(p.Index)).ToList();
+                rgSd = m_rgImages.Where(p => p != null && rgIdx.Contains(p.Index)).ToList();
             }
+
+            if (bAttemptDirectLoad)
+            {
+                foreach (SimpleDatum sd in rgSd)
+                {
+                    if (sd != null)
+                        rgIdx.Remove(sd.Index);
+                }
+
+                for (int i = 0; i < rgIdx.Count; i++)
+                {
+                    rgSd.Add(directLoadImage(rgIdx[i]));
+                }
+
+                rgSd = rgSd.OrderBy(p => p.Index).ToList();
+            }
+
+            return rgSd;
         }
 
         /// <summary>
