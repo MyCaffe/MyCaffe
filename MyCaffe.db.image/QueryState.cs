@@ -144,9 +144,17 @@ namespace MyCaffe.db.image
             else
             {
                 idx = GetIndex(nLabel, bBoosted);
-                nIdx = idx.GetNext(type, m_bUseUniqueImageIndexes);
-                if (idx.IsEmpty)
+                if (idx == null)
+                {
                     SetIndex(m_master.GetIndex(nLabel, bBoosted).Clone(), nLabel, bBoosted);
+                    nIdx = idx.GetNext(type, m_bUseUniqueImageIndexes);
+                }
+                else
+                {
+                    nIdx = idx.GetNext(type, m_bUseUniqueImageIndexes);
+                    if (idx.IsEmpty)
+                        SetIndex(m_master.GetIndex(nLabel, bBoosted).Clone(), nLabel, bBoosted);
+                }
             }
 
             return nIdx;
