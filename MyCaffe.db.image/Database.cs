@@ -770,9 +770,9 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Resets all labels back to their original labels for a project.
         /// </summary>
-        /// <param name="nProjectId">Specifies the ID of a project.</param>
+        /// <param name="nProjectId">Optionally, specifies the ID of a project (default = 0).</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-        public void ResetLabels(int nProjectId, int nSrcId = 0)
+        public void ResetLabels(int nProjectId = 0, int nSrcId = 0)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
@@ -911,6 +911,70 @@ namespace MyCaffe.db.image
 
                 if (i < rgLabels.Count - 1)
                     strSQL += " OR ";
+            }
+
+            strSQL += ")";
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                entities.Database.ExecuteSqlCommand(strSQL);
+            }
+        }
+
+        /// <summary>
+        /// Update the label and boost for a given search target criteria.
+        /// </summary>
+        /// <param name="nTgtLbl">Specifies the target label to replace, or null to ignore.</param>
+        /// <param name="bTgtLblExact">When a target label is specified, this parameter specifies whether to treat the target label as an exact value (true) for a minimum value (false).</param>
+        /// <param name="nTgtBst">Specifies the target boost to replace, or null to ignore.</param>
+        /// <param name="bTgtBstExact">When a target boost is specified, this parameter specifies whether to treat the target boost as an exact value (true) for a minimum value (false).</param>
+        /// <param name="nNewLbl">Specifies the new label, or null to ignore.</param>
+        /// <param name="nNewBst">Specifies the new boost, or null to ignore.</param>
+        /// <param name="rgSrcId">Specifies the SourceID's on which to alter the label and/or boost.</param>
+        public void UpdateLabelBoost(int? nTgtLbl, bool bTgtLblExact, int? nTgtBst, bool bTgtBstExact, int? nNewLbl, int? nNewBst, params int[] rgSrcId)
+        {
+            if (rgSrcId.Length == 0)
+                throw new Exception("You must specify at least one source ID!");
+
+            string strSQL = "UPDATE [dbo].[RawImages] SET [Active] = 1";
+
+            if (nNewLbl.HasValue)
+                strSQL += ", [ActiveLabel] = " + nNewLbl.Value.ToString();
+
+            if (nNewBst.HasValue)
+                strSQL += ", [ActiveBoost] = " + nNewBst.Value.ToString();
+
+            strSQL += " WHERE (";
+
+            for (int i = 0; i < rgSrcId.Length; i++)
+            {
+                strSQL += "([SourceID] = " + rgSrcId[i].ToString() + ")";
+
+                if (i < rgSrcId.Length - 1)
+                    strSQL += " OR ";
+            }
+
+            strSQL += ") AND (";
+
+            if (nTgtLbl.HasValue)
+            {
+                strSQL += "(";
+                strSQL += "[ActiveLabel] ";
+                strSQL += (bTgtLblExact) ? "=" : ">=";
+                strSQL += nTgtLbl.Value.ToString();
+                strSQL += ")";
+            }
+
+            if (nTgtBst.HasValue)
+            {
+                if (nTgtLbl.HasValue)
+                    strSQL += " OR ";
+
+                strSQL += "(";
+                strSQL += "[ActiveBoost] ";
+                strSQL += (bTgtBstExact) ? "=" : ">=";
+                strSQL += nTgtBst.Value.ToString();
+                strSQL += ")";
             }
 
             strSQL += ")";
@@ -2131,7 +2195,7 @@ namespace MyCaffe.db.image
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                IQueryable<RawImage> iQuery = entities.RawImages.Where(p => p.SourceID == nSrcId);
+                IQueryable<RawImage> iQuery = entities.RawImages.Where(p => p.SourceID == nSrcId && p.Active == true);
                 iQuery = getQuery(iQuery, strFilterVal, nBoostVal);
                 return iQuery.Count();
             }
@@ -2389,15 +2453,17 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Activate all raw images associated with a set of source ID's.
         /// </summary>
+        /// <param name="bActive">Specifies whether or not to activate the images.</param>
         /// <param name="rgSrcId">Specifies the source ID's.</param>
-        public void ActivateAllRawImages(params int[] rgSrcId)
+        public void ActivateAllRawImages(bool bActive, params int[] rgSrcId)
         {
             if (rgSrcId.Length == 0)
                 throw new Exception("You must specify at least one source iD.");
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                string strCmd = "UPDATE RawImages SET [Active] = 1 WHERE (";
+                string strActive = (bActive) ? "1" : "0";
+                string strCmd = "UPDATE RawImages SET [Active] = " + strActive + "  WHERE (";
 
                 for (int i=0; i<rgSrcId.Length; i++)
                 {

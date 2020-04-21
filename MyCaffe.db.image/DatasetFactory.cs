@@ -635,10 +635,11 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Activates all images with the given source ID's.
         /// </summary>
+        /// <param name="bActive">Specifies whether or not to activate the images.</param>
         /// <param name="rgSrcId">Specifies the source ID's who's images are to be activated.</param>
-        public void ActivateAllRawImages(params int[] rgSrcId)
+        public void ActivateAllRawImages(bool bActive, params int[] rgSrcId)
         {
-            m_db.ActivateAllRawImages(rgSrcId);
+            m_db.ActivateAllRawImages(bActive, rgSrcId);
         }
 
         /// <summary>
@@ -730,9 +731,9 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Resets all labels back to their original labels for a project.
         /// </summary>
-        /// <param name="nProjectId">Specifies the ID of a project.</param>
+        /// <param name="nProjectId">Optionally, specifies the ID of a project (default = 0).</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-        public void ResetLabels(int nProjectId, int nSrcId = 0)
+        public void ResetLabels(int nProjectId = 0, int nSrcId = 0)
         {
             m_db.ResetLabels(nProjectId, nSrcId);
         }
@@ -864,6 +865,21 @@ namespace MyCaffe.db.image
         public void ActivateLabels(List<int> rgLabels, bool bActive, params int[] rgSrcId)
         {
             m_db.ActivateLabels(rgLabels, bActive, rgSrcId);
+        }
+
+        /// <summary>
+        /// Update the label and boost for a given search target criteria.
+        /// </summary>
+        /// <param name="nTgtLbl">Specifies the target label to replace, or null to ignore.</param>
+        /// <param name="bTgtLblExact">When a target label is specified, this parameter specifies whether to treat the target label as an exact value (true) for a minimum value (false).</param>
+        /// <param name="nTgtBst">Specifies the target boost to replace, or null to ignore.</param>
+        /// <param name="bTgtBstExact">When a target boost is specified, this parameter specifies whether to treat the target boost as an exact value (true) for a minimum value (false).</param>
+        /// <param name="nNewLbl">Specifies the new label, or null to ignore.</param>
+        /// <param name="nNewBst">Specifies the new boost, or null to ignore.</param>
+        /// <param name="rgSrcId">Specifies the SourceID's on which to alter the label and/or boost.</param>
+        public void UpdateLabelBoost(int? nTgtLbl, bool bTgtLblExact, int? nTgtBst, bool bTgtBstExact, int? nNewLbl, int? nNewBst, params int[] rgSrcId)
+        {
+            m_db.UpdateLabelBoost(nTgtLbl, bTgtLblExact, nTgtBst, bTgtBstExact, nNewLbl, nNewBst, rgSrcId);
         }
 
         #endregion
