@@ -544,6 +544,9 @@ namespace MyCaffe.db.image
                 int nBatchSize = getBatchSize(m_src);
 
                 factory.Open(m_src);
+
+                m_log.WriteLine(m_src.Name + " loading " + m_loadSequence.Count.ToString("N0") + " items...");
+
                 while (nNextIdx.HasValue || rgIdxBatch.Count > 0)
                 {
                     if (nNextIdx.HasValue)
@@ -565,7 +568,7 @@ namespace MyCaffe.db.image
                                 {
                                     double dfPct = m_nLoadedCount / (double)m_rgImages.Length;
                                     m_log.Progress = dfPct;
-                                    m_log.WriteLine("Loading '" + m_src.Name + "' at " + dfPct.ToString("P") + "...");
+                                    m_log.WriteLine("Loading '" + m_src.Name + "' at " + dfPct.ToString("P") + " (" + m_nLoadedCount.ToString("N0") + " of " + m_rgImages.Length.ToString("N0") + ")...");
                                 }
 
                                 int nWait = WaitHandle.WaitAny(m_rgAbort.ToArray(), 0);
