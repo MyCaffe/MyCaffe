@@ -556,6 +556,30 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Copy a List up to a maximum count.
+        /// </summary>
+        /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
+        /// <param name="rg">Specifies the array to copy.</param>
+        /// <param name="nMaxCount">Optionally, specifies a maximum count to copy.</param>
+        /// <returns>The new copy of the List is returned.</returns>
+        public static List<T> Clone<T>(T[] rg, int nMaxCount = int.MaxValue)
+        {
+            List<T> rg1 = new List<T>();
+
+            for (int i = 0; i < rg.Length && i < nMaxCount; i++)
+            {
+                ICloneable cloneable = rg[i] as ICloneable;
+
+                if (cloneable != null)
+                    rg1.Add((T)Convert.ChangeType(cloneable.Clone(), typeof(T)));
+                else
+                    rg1.Add(rg[i]);
+            }
+
+            return rg1;
+        }
+
+        /// <summary>
         /// Compares one List to another.
         /// </summary>
         /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
