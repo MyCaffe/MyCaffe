@@ -202,7 +202,6 @@ namespace MyCaffe.data
             }
         }
 
-
         /// <summary>
         /// Infers the shape the transformed blob will have when 
         /// the transformation is applied to the data.
@@ -210,6 +209,20 @@ namespace MyCaffe.data
         /// <param name="d">Data containing the data to be transformed.</param>
         /// <returns>The inferred shape.</returns>
         public List<int> InferBlobShape(SimpleDatum d)
+        {
+            int[] rgShape = null;
+            rgShape = InferBlobShape(d, rgShape);
+            return new List<int>(rgShape);
+        }
+
+        /// <summary>
+        /// Infers the shape the transformed blob will have when 
+        /// the transformation is applied to the data.
+        /// </summary>
+        /// <param name="d">Data containing the data to be transformed.</param>
+        /// <param name="rgShape">Specifies the shape vector to fill.</param>
+        /// <returns>The inferred shape.</returns>
+        public int[] InferBlobShape(SimpleDatum d, int[] rgShape)
         {
             int nCropSize = (int)m_param.crop_size;
             int nDatumChannels = d.Channels;
@@ -227,11 +240,13 @@ namespace MyCaffe.data
             m_log.CHECK_GE(nDatumWidth, nCropSize, "The datum width must be >= the crop size of " + nCropSize.ToString() + ". To fix this change the 'crop_size' DataLayer property.");
 
             // Build BlobShape.
-            List<int> rgShape = new List<int>();
-            rgShape.Add(1);
-            rgShape.Add(nDatumChannels);
-            rgShape.Add((nCropSize > 0) ? nCropSize : nDatumHeight);
-            rgShape.Add((nCropSize > 0) ? nCropSize : nDatumWidth);
+            if (rgShape == null || rgShape.Length != 4)
+                rgShape = new int[4];
+
+            rgShape[0] = 1;
+            rgShape[1] = nDatumChannels;
+            rgShape[2] = (nCropSize > 0) ? nCropSize : nDatumHeight;
+            rgShape[3] = (nCropSize > 0) ? nCropSize : nDatumWidth;
 
             return rgShape;
         }
@@ -241,14 +256,15 @@ namespace MyCaffe.data
         /// the transformation is applied to the data.
         /// </summary>
         /// <param name="rgD">A list of data containing the data to be transformed.</param>
+        /// <param name="rgShape">Specifies the shape vector.</param>
         /// <returns>The inferred shape.</returns>
-        public List<int> InferBlobShape(List<Datum> rgD)
+        public int[] InferBlobShape(List<Datum> rgD, int[] rgShape)
         {
             int nNum = rgD.Count();
             m_log.CHECK_GT(nNum, 0, "There are no datum in the input vector.");
 
             /// Use the first datum in the vector to InferBlobShape.
-            List<int> rgShape = InferBlobShape(rgD[0]);
+            rgShape = InferBlobShape(rgD[0], rgShape);
             // Adjust num to the size of the vector.
             rgShape[0] = nNum;
 
@@ -1206,7 +1222,7 @@ namespace MyCaffe.data
         /// <param name="rgShape">Specifies the shape of the data.</param>
         /// <param name="rgData">Specifies the data.</param>
         /// <returns>The newly masked data is returned.</returns>
-        public float[] MaskData(List<int> rgShape, float[] rgData)
+        public float[] MaskData(int[] rgShape, float[] rgData)
         {
             if (m_param.mask_param == null || !m_param.mask_param.Active)
                 return rgData;
