@@ -133,7 +133,7 @@ namespace MyCaffe.data
         /// <param name="bLoadDataCriteria">Specifies whether or not to load the data criteria.</param>
         /// <param name="imgSel">Optionally, specifies the image selection method (default = null).</param>
         /// <returns>The Datum retrieved is returned.</returns>
-        public Datum GetValue(int? nLabel = null, bool bLoadDataCriteria = false, IMGDB_IMAGE_SELECTION_METHOD? imgSel = null)
+        public SimpleDatum GetValue(int? nLabel = null, bool bLoadDataCriteria = false, IMGDB_IMAGE_SELECTION_METHOD? imgSel = null)
         {
             SimpleDatum sd = m_db.QueryImage(m_nSrcID, m_nIdx, null, imgSel, nLabel, bLoadDataCriteria, false);
 
@@ -142,7 +142,7 @@ namespace MyCaffe.data
 
             m_transformer.TransformLabel(sd);
 
-            return new Datum(sd);
+            return sd;
         }
     }
 }
