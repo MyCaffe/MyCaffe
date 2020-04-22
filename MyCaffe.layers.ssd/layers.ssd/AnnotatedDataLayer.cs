@@ -62,6 +62,7 @@ namespace MyCaffe.layers.ssd
         /// </summary>
         protected double m_dfTransTime;
         private T[] m_rgTopData = null;
+        private T[] m_rgTopLabel = null;
         SsdSampler<T> m_sampler = null;
         CryptoRandom m_random = null;
         T m_tMinusOne;
@@ -174,7 +175,7 @@ namespace MyCaffe.layers.ssd
             }
 
             // Read a data point, and use it to initialize the top blob.
-            Datum anno_datum = m_cursor.GetValue(null, true);
+            SimpleDatum anno_datum = m_cursor.GetValue(null, true);
 
             // Use data_transformer to infer the expected blob shape from anno_datum.
             List<int> rgTopShape = m_transformer.InferBlobShape(anno_datum);
@@ -300,22 +301,22 @@ namespace MyCaffe.layers.ssd
                 m_dfTransTime = 0;
             }
 
-            T[] rgTopLabel = null;
-
             if (m_bOutputLabels)
             {
                 int nCount = batch.Label.count();
                 m_log.CHECK_GT(nCount, 0, "The label count cannot be zero!");
-                rgTopLabel = new T[nCount];
+
+                if (m_rgTopLabel == null || m_rgTopLabel.Length < nCount)
+                    m_rgTopLabel = new T[nCount];
             }
 
             // Reshape according to the first anno_datum of each batch
             // ont single input batches allows for inputs of varying dimension.
             int nBatchSize = (int)m_param.data_param.batch_size;
-            Datum datum;
+            SimpleDatum datum;
             int nDim = 0;
             int nNumBboxes = 0;
-            Dictionary<int, List<AnnotationGroup>> rgAllAnno = new Dictionary<int, List<AnnotationGroup>>();
+            Dictionary<int, List<AnnotationGroup>> rgAllAnno = null;
             List<int> rgTopShape = null;
             bool bLabelDirty = false;
 
@@ -437,6 +438,9 @@ namespace MyCaffe.layers.ssd
                             m_log.FAIL("Unknown annotation type.");
                         }
 
+                        if (rgAllAnno == null)
+                            rgAllAnno = new Dictionary<int, List<AnnotationGroup>>();
+
                         rgAllAnno.Add(i, rgTransformedAnnoVec);
                     }
                     else
@@ -456,11 +460,11 @@ namespace MyCaffe.layers.ssd
                             int nDstIdx = i * nLen;
 
                             m_log.CHECK_EQ(nItemSize, 1, "Currently only byte sized labels are supported in multi-label scenarios.");
-                            Array.Copy(datum.DataCriteria, 0, rgTopLabel, nDstIdx, nLen);
+                            Array.Copy(datum.DataCriteria, 0, m_rgTopLabel, nDstIdx, nLen);
                         }
                         else
                         {
-                            rgTopLabel[i] = (T)Convert.ChangeType(datum.Label, typeof(T));
+                            m_rgTopLabel[i] = (T)Convert.ChangeType(datum.Label, typeof(T));
                         }
 
                         bLabelDirty = true;
@@ -479,7 +483,7 @@ namespace MyCaffe.layers.ssd
             batch.Data.SetCPUData(m_rgTopData);
 
             if (m_bOutputLabels && bLabelDirty)
-                batch.Label.SetCPUData(rgTopLabel);
+                batch.Label.SetCPUData(m_rgTopLabel);
 
             // Store 'rich' annotation if needed.
             if (m_bOutputLabels && m_AnnoType != SimpleDatum.ANNOTATION_TYPE.NONE)
@@ -498,12 +502,12 @@ namespace MyCaffe.layers.ssd
                         rgLabelShape[2] = 1;
                         batch.Label.Reshape(rgLabelShape);
 
-                        for (int i = 0; i < rgTopLabel.Length; i++)
+                        for (int i = 0; i < m_rgTopLabel.Length; i++)
                         {
-                            rgTopLabel[i] = m_tMinusOne;
+                            m_rgTopLabel[i] = m_tMinusOne;
                         }
 
-                        batch.Label.SetCPUData(rgTopLabel);
+                        batch.Label.SetCPUData(m_rgTopLabel);
                     }
                     else
                     {
