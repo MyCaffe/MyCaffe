@@ -123,6 +123,18 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Change the data source ID on a raw image - currently only allowed on virtual raw images.
+        /// </summary>
+        /// <param name="nID">Specifies the raw image ID.</param>
+        /// <param name="nNewSrcID">Specifies the ID of the new source.</param>
+        /// <param name="bSave">Optionally, specifies whether or not to save the changes (default = true).</param>
+        /// <returns>If the source ID is replaced, true is returned, otherwise false.</returns>
+        public bool ChangeRawImageSourceID(int nID, int nNewSrcID, bool bSave = true)
+        {
+            return m_db.ChangeRawImageSourceID(nID, nNewSrcID, bSave);
+        }
+
+        /// <summary>
         /// Save the changes on the open data source.
         /// </summary>
         public void SaveChanges()
