@@ -24,7 +24,6 @@ namespace MyCaffe.db.image
         Source m_src = null;
         DNNEntities m_entities = null;
         List<Label> m_rgLabelCache;
-        int m_nSecondarySourceID = 0;
         /// <summary>
         /// Specifies the base path to the file based data.
         /// </summary>
@@ -42,6 +41,8 @@ namespace MyCaffe.db.image
         /// </summary>
         protected int m_nLastIndex = -1;
         object m_objSync = new object();
+        Dictionary<int, string> m_rgSecondarySourcePath = new Dictionary<int, string>();
+        object m_objRawImgSync = new object();
 
         /// <summary>
         /// The Database constructor.
@@ -1325,17 +1326,33 @@ namespace MyCaffe.db.image
             string strPath = m_strPrimaryImgPath;
 
             if (!File.Exists(strPath + strFile))
-            {
-                if (nSecondarySrcId.Value != m_nSecondarySourceID)
+            {                
+                lock (m_objRawImgSync)
                 {
-                    m_nSecondarySourceID = nSecondarySrcId.Value;
-                    m_strSecondaryImgPath = getImagePath(GetSourceName(m_nSecondarySourceID));
+                    int nSecondarySrcId1 = nSecondarySrcId.Value;
+
+                    if (m_rgSecondarySourcePath.ContainsKey(nSecondarySrcId1))
+                    {
+                        m_strSecondaryImgPath = m_rgSecondarySourcePath[nSecondarySrcId1];
+                    }
+                    else
+                    {
+                        m_strSecondaryImgPath = getImagePath(GetSourceName(nSecondarySrcId1));
+                        m_rgSecondarySourcePath.Add(nSecondarySrcId1, m_strSecondaryImgPath);
+                    }
                 }
 
                 strPath = m_strSecondaryImgPath;
             }
 
-            return File.ReadAllBytes(strPath + strFile);
+            try
+            {
+                return File.ReadAllBytes(strPath + strFile);
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
         }
 
         /// <summary>
@@ -1359,6 +1376,31 @@ namespace MyCaffe.db.image
                 return null;
 
             return Encoding.ASCII.GetString(rgData, 5, rgData.Length - 5);
+        }
+
+        /// <summary>
+        /// Change the data source ID on a raw image - currently only allowed on virtual raw images.
+        /// </summary>
+        /// <param name="nID">Specifies the raw image ID.</param>
+        /// <param name="nNewSrcID">Specifies the ID of the new source.</param>
+        /// <param name="bSave">Optionally, specifies whether or not to save the changes (default = true).</param>
+        /// <returns>If the source ID is replaced, true is returned, otherwise false.</returns>
+        public bool ChangeRawImageSourceID(int nID, int nNewSrcID, bool bSave = true)
+        {
+            List<RawImage> rg = m_entities.RawImages.Where(p => p.ID == nID).ToList();
+
+            if (rg.Count == 0)
+                return false;
+
+            if (rg[0].VirtualID == 0)
+                return false;
+
+            rg[0].SourceID = nNewSrcID;
+
+            if (bSave)
+                m_entities.SaveChanges();
+
+            return true;
         }
 
         /// <summary>
