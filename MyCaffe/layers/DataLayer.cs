@@ -48,6 +48,8 @@ namespace MyCaffe.layers
         /// </summary>
         protected double m_dfTransTime;
         private T[] m_rgTopData = null;
+        private T[] m_rgTopLabel = null;
+        private int[] m_rgTopShape = null;
         private bool m_bMatchingCycle = true;
         private Datum m_datumNoise = null;
         private LabelCollection m_rgBatchLabels = null;
@@ -56,6 +58,7 @@ namespace MyCaffe.layers
         private Blob<T> m_blobDebug1 = null;
         private int m_nIteration = 0;
         private int m_nBatchCount = 0;
+        private SimpleDatum[] m_rgDatum = null;
 
         /// <summary>
         /// This event fires (only when set) each time a batch is loaded form this dataset.
@@ -222,40 +225,40 @@ namespace MyCaffe.layers
                 bLoadDataCriteria = true;
 
             // Read a data point, and use it to initialize the top blob.
-            Datum datum = m_cursor.GetValue(null, bLoadDataCriteria, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+            SimpleDatum datum = m_cursor.GetValue(null, bLoadDataCriteria, IMGDB_IMAGE_SELECTION_METHOD.NONE);
 
             // Use data transformer to infer the expected blob shape from the datum.
-            List<int> rgTopShape = m_transformer.InferBlobShape(datum);
+            m_rgTopShape = m_transformer.InferBlobShape(datum, m_rgTopShape);
 
             // When using noise as the secondary image, fill it with noise.
             if (m_param.data_param.enable_noise_for_nonmatch)
-                m_datumNoise = createNoisyData(rgTopShape, datum);
+                m_datumNoise = createNoisyData(m_rgTopShape, datum);
                 
             // Double the channels when loading image pairs where the first image is loaded followed by the second on the channel.
             if (m_param.data_param.images_per_blob > 1)
             {
                 m_log.CHECK_EQ(m_param.data_param.images_per_blob, 2, "Currently images_per_blob only supports 2 image pairing and must be set to 2 for image pairing.");
-                rgTopShape[1] *= m_param.data_param.images_per_blob;
+                m_rgTopShape[1] *= m_param.data_param.images_per_blob;
             }
 
             // Reshape colTop[0] and prefetch data according to the batch size.
-            rgTopShape[0] = nBatchSize;
-            colTop[0].Reshape(rgTopShape);
+            m_rgTopShape[0] = nBatchSize;
+            colTop[0].Reshape(m_rgTopShape);
 
             for (int i = 0; i < m_rgPrefetch.Length; i++)
             {
-                m_rgPrefetch[i].Data.Reshape(rgTopShape);
+                m_rgPrefetch[i].Data.Reshape(m_rgTopShape);
             }
 
             m_log.WriteLine("output data size: " + colTop[0].ToSizeString());
 
             // Fill out the masks, if used.
             if (m_param.transform_param.mask_param != null && m_param.transform_param.mask_param.Active)
-                createMasks(Utility.Clone<int>(rgTopShape));
+                createMasks(Utility.Clone<int>(m_rgTopShape));
 
             // Reshape debug data, if used.
             if (m_param.data_param.enable_debug_output)
-                createDebug(Utility.Clone<int>(rgTopShape));
+                createDebug(Utility.Clone<int>(m_rgTopShape));
 
             // Label
             if (m_bOutputLabels)
@@ -324,7 +327,7 @@ namespace MyCaffe.layers
             m_nBatchCount = 0;
         }
 
-        private void createMasks(List<int> rgTopShape)
+        private void createMasks(int[] rgTopShape)
         {
             int nImgPerBlob = m_param.data_param.images_per_blob;
             m_blobMask.Reshape(rgTopShape);
@@ -348,7 +351,7 @@ namespace MyCaffe.layers
             }
         }
 
-        private void createDebug(List<int> rgTopShape)
+        private void createDebug(int[] rgTopShape)
         {
             int nImgPerBlob = m_param.data_param.images_per_blob;
             rgTopShape[0] = 1;
@@ -356,7 +359,7 @@ namespace MyCaffe.layers
             m_blobDebug1.Reshape(rgTopShape);
         }
 
-        private Datum createNoisyData(List<int> rgTopShape, Datum datum)
+        private Datum createNoisyData(int[] rgTopShape, SimpleDatum datum)
         {
             Blob<T> blobNoise = new Blob<T>(m_cuda, m_log, rgTopShape);
 
@@ -405,12 +408,12 @@ namespace MyCaffe.layers
                     if (datum.IsRealData)
                     {
                         List<double> rgdf1 = new List<double>(rgdf);
-                        datumNoise = new Datum(datum.IsRealData, datum.channels, datum.width, datum.height, m_param.data_param.data_noise_param.noise_data_label, DateTime.MinValue, rgdf1, 1, false, -1);
+                        datumNoise = new Datum(datum.IsRealData, datum.Channels, datum.Width, datum.Height, m_param.data_param.data_noise_param.noise_data_label, DateTime.MinValue, rgdf1, 1, false, -1);
                     }
                     else
                     {
                         List<byte> rgb = rgdf.Select(p => Math.Min((byte)p, (byte)255)).ToList();
-                        datumNoise = new Datum(datum.IsRealData, datum.channels, datum.width, datum.height, m_param.data_param.data_noise_param.noise_data_label, DateTime.MinValue, rgb, 1, false, -1);
+                        datumNoise = new Datum(datum.IsRealData, datum.Channels, datum.Width, datum.Height, m_param.data_param.data_noise_param.noise_data_label, DateTime.MinValue, rgb, 1, false, -1);
                     }
                 }
                 else
@@ -420,12 +423,12 @@ namespace MyCaffe.layers
                     if (datum.IsRealData)
                     {
                         List<float> rgf1 = new List<float>(rgf);
-                        datumNoise = new Datum(datum.IsRealData, datum.channels, datum.width, datum.height, m_param.data_param.data_noise_param.noise_data_label, DateTime.MinValue, rgf1, 1, false, -1);
+                        datumNoise = new Datum(datum.IsRealData, datum.Channels, datum.Width, datum.Height, m_param.data_param.data_noise_param.noise_data_label, DateTime.MinValue, rgf1, 1, false, -1);
                     }
                     else
                     {
                         List<byte> rgb = rgf.Select(p => Math.Min((byte)p, (byte)255)).ToList();
-                        datumNoise = new Datum(datum.IsRealData, datum.channels, datum.width, datum.height, m_param.data_param.data_noise_param.noise_data_label, DateTime.MinValue, rgb, 1, false, -1);
+                        datumNoise = new Datum(datum.IsRealData, datum.Channels, datum.Width, datum.Height, m_param.data_param.data_noise_param.noise_data_label, DateTime.MinValue, rgb, 1, false, -1);
                     }
                 }
 
@@ -585,13 +588,13 @@ namespace MyCaffe.layers
             if (m_bOutputLabels && m_param.data_param.label_type == DataParameter.LABEL_TYPE.MULTIPLE)
                 bLoadDataCriteria = true;
 
-            T[] rgTopLabel = null;
-
             if (m_bOutputLabels)
             {
                 int nCount = batch.Label.count();
                 m_log.CHECK_GT(nCount, 0, "The label count cannot be zero!");
-                rgTopLabel = new T[nCount];
+
+                if (m_rgTopLabel == null || m_rgTopLabel.Length < nCount)
+                    m_rgTopLabel = new T[nCount];
             }
 
             if (m_param.data_param.display_timing)
@@ -601,11 +604,13 @@ namespace MyCaffe.layers
                 m_dfTransTime = 0;
             }
 
-            Datum datum;
-            Datum[] rgDatum = null;
+            SimpleDatum datum;
             int nDim = 0;
-            List<int> rgLabels = new List<int>();
+            List<int> rgLabels = null;
             List<int> rgTargetLabels = null;
+
+            if (OnBatchLoad != null)
+                rgLabels = new List<int>();
 
             // If we are synced with another dataset, wait for it to load the initial data set.
             if (m_param.data_param.synchronize_target)
@@ -638,8 +643,8 @@ namespace MyCaffe.layers
 
                     if (m_param.data_param.images_per_blob > 1)
                     {
-                        if (rgDatum == null)
-                            rgDatum = new Datum[m_param.data_param.images_per_blob - 1];
+                        if (m_rgDatum == null || m_rgDatum.Length != m_param.data_param.images_per_blob - 1)
+                            m_rgDatum = new SimpleDatum[m_param.data_param.images_per_blob - 1];
 
                         for (int j = 0; j < m_param.data_param.images_per_blob - 1; j++)
                         {
@@ -656,27 +661,27 @@ namespace MyCaffe.layers
                             {
                                 if (m_bMatchingCycle)
                                 {
-                                    rgDatum[j] = getNextPair(true, datum, bLoadDataCriteria);
+                                    m_rgDatum[j] = getNextPair(true, datum, bLoadDataCriteria);
                                 }
                                 else
                                 {
                                     if (m_param.data_param.enable_noise_for_nonmatch)
-                                        rgDatum[j] = m_datumNoise;
+                                        m_rgDatum[j] = m_datumNoise;
                                     else
-                                        rgDatum[j] = getNextPair(false, datum, bLoadDataCriteria);
+                                        m_rgDatum[j] = getNextPair(false, datum, bLoadDataCriteria);
                                 }
                             }
                             else
                             {
                                 if (m_param.data_param.enable_noise_for_nonmatch)
-                                    rgDatum[j] = m_datumNoise;
+                                    m_rgDatum[j] = m_datumNoise;
                                 else
-                                    rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
+                                    m_rgDatum[j] = m_cursor.GetValue(null, bLoadDataCriteria);
                             }
                         }
-                    }
 
-                    m_bMatchingCycle = !m_bMatchingCycle;
+                        m_bMatchingCycle = !m_bMatchingCycle;
+                    }
                 }
                 else
                 {
@@ -688,11 +693,11 @@ namespace MyCaffe.layers
                 {
                     saveImageInfo(m_param.data_param.data_debug_param, datum, i, 0);
 
-                    if (rgDatum != null)
+                    if (m_rgDatum != null)
                     {
-                        for (int n = 0; n < rgDatum.Length; n++)
+                        for (int n = 0; n < m_rgDatum.Length; n++)
                         {
-                            saveImageInfo(m_param.data_param.data_debug_param, rgDatum[n], i, n + 1);
+                            saveImageInfo(m_param.data_param.data_debug_param, m_rgDatum[n], i, n + 1);
                         }
                     }
                 }
@@ -708,20 +713,20 @@ namespace MyCaffe.layers
                     // Reshape according to the first datum of each batch
                     // on single input batches allows for inputs of varying dimension.
                     // Use data transformer to infer the expected blob shape for datum.
-                    List<int> rgTopShape = m_transformer.InferBlobShape(datum);
+                    m_rgTopShape = m_transformer.InferBlobShape(datum, m_rgTopShape);
 
                     // Double the channels when loading image pairs where the first image is loaded followed by the second on the channel.
-                    if (rgDatum != null)
-                        rgTopShape[1] *= (rgDatum.Length + 1);
+                    if (m_rgDatum != null)
+                        m_rgTopShape[1] *= (m_rgDatum.Length + 1);
 
                     // Reshape batch according to the batch size.
-                    rgTopShape[0] = nBatchSize;
-                    batch.Data.Reshape(rgTopShape);
+                    m_rgTopShape[0] = nBatchSize;
+                    batch.Data.Reshape(m_rgTopShape);
 
                     nDim = 1;
-                    for (int k = 1; k < rgTopShape.Count; k++)
+                    for (int k = 1; k < m_rgTopShape.Length; k++)
                     {
-                        nDim *= rgTopShape[k];
+                        nDim *= m_rgTopShape[k];
                     }
 
                     int nTopLen = nDim * nBatchSize;
@@ -732,18 +737,18 @@ namespace MyCaffe.layers
                 // Apply data transformations (mirrow, scaling, crop, etc)
                 int nDimCount = nDim;
 
-                if (rgDatum != null)
-                    nDimCount /= (rgDatum.Length + 1);
+                if (m_rgDatum != null)
+                    nDimCount /= (m_rgDatum.Length + 1);
 
                 T[] rgTrans = m_transformer.Transform(datum);
                 Array.Copy(rgTrans, 0, m_rgTopData, nDim * i, nDimCount);
 
                 // When using load_image_pairs, stack the additional images right after the first.
-                if (rgDatum != null)
+                if (m_rgDatum != null)
                 {
-                    for (int j = 0; j < rgDatum.Length; j++)
+                    for (int j = 0; j < m_rgDatum.Length; j++)
                     {
-                        rgTrans = m_transformer.Transform(rgDatum[j]);
+                        rgTrans = m_transformer.Transform(m_rgDatum[j]);
                         int nOffset = (nDim * i) + (nDimCount * (j + 1));
                         Array.Copy(rgTrans, 0, m_rgTopData, nOffset, nDimCount);
                     }
@@ -769,14 +774,14 @@ namespace MyCaffe.layers
                         int nDstIdx = i * nLen;
 
                         m_log.CHECK_EQ(nItemSize, 1, "Currently only byte sized labels are supported in multi-label scenarios.");
-                        Array.Copy(datum.DataCriteria, 0, rgTopLabel, nDstIdx, nLen);
+                        Array.Copy(datum.DataCriteria, 0, m_rgTopLabel, nDstIdx, nLen);
                     }
                     else
                     {
                         // When using image pairs, the label is set to 1 when the labels are the same and 0 when they are different.
-                        if (rgDatum != null)
+                        if (m_rgDatum != null)
                         {
-                            if (rgDatum.Length == 1)
+                            if (m_rgDatum.Length == 1)
                             {
                                 int nLabelDim = 1;
 
@@ -789,19 +794,19 @@ namespace MyCaffe.layers
                                     if (m_param.data_param.forced_primary_label >= 0)
                                         nLabel = m_param.data_param.forced_primary_label;
 
-                                    rgTopLabel[i * nLabelDim] = (T)Convert.ChangeType(nLabel, typeof(T));
+                                    m_rgTopLabel[i * nLabelDim] = (T)Convert.ChangeType(nLabel, typeof(T));
 
-                                    for (int j = 0; j < rgDatum.Length; j++)
+                                    for (int j = 0; j < m_rgDatum.Length; j++)
                                     {
-                                        rgTopLabel[i * nLabelDim + 1 + j] = (T)Convert.ChangeType(rgDatum[j].Label, typeof(T));
+                                        m_rgTopLabel[i * nLabelDim + 1 + j] = (T)Convert.ChangeType(m_rgDatum[j].Label, typeof(T));
                                     }
                                 }
                                 else
                                 {
-                                    if (datum.Label == rgDatum[0].Label)
-                                        rgTopLabel[i * nLabelDim] = m_tOne;
+                                    if (datum.Label == m_rgDatum[0].Label)
+                                        m_rgTopLabel[i * nLabelDim] = m_tOne;
                                     else
-                                        rgTopLabel[i * nLabelDim] = m_tZero;
+                                        m_rgTopLabel[i * nLabelDim] = m_tZero;
                                 }
                             }
                             else
@@ -809,7 +814,7 @@ namespace MyCaffe.layers
                         }
                         else
                         {
-                            rgTopLabel[i] = (T)Convert.ChangeType(datum.Label, typeof(T));
+                            m_rgTopLabel[i] = (T)Convert.ChangeType(datum.Label, typeof(T));
                         }
                     }
                 }
@@ -817,7 +822,8 @@ namespace MyCaffe.layers
                 if (m_param.data_param.display_timing)
                     m_dfTransTime += m_swTimerTransaction.Elapsed.TotalMilliseconds;
 
-                rgLabels.Add(datum.Label);
+                if (rgLabels != null)
+                    rgLabels.Add(datum.Label);
 
                 Next();
 
@@ -829,7 +835,7 @@ namespace MyCaffe.layers
             batch.Data.SetCPUData(m_rgTopData);
 
             if (m_bOutputLabels)
-                batch.Label.SetCPUData(rgTopLabel);
+                batch.Label.SetCPUData(m_rgTopLabel);
 
             if (m_param.data_param.display_timing)
             {
@@ -850,11 +856,11 @@ namespace MyCaffe.layers
                 OnBatchLoad(this, new LastBatchLoadedArgs(rgLabels));
         }
 
-        private Datum getNextPair(bool bMatching, Datum d, bool bLoadDataCriteria)
+        private SimpleDatum getNextPair(bool bMatching, SimpleDatum d, bool bLoadDataCriteria)
         {
             int nRetries = 10;
             int nIdx = 0;
-            Datum dNew = null;
+            SimpleDatum dNew = null;
             string strType = null;
 
             if (bMatching)
@@ -897,7 +903,7 @@ namespace MyCaffe.layers
             return dNew;
         }
 
-        private void saveImageInfo(DataDebugParameter p, Datum d, int nNum, int nImg)
+        private void saveImageInfo(DataDebugParameter p, SimpleDatum d, int nNum, int nImg)
         {
             string strFile = p.debug_save_path.TrimEnd('\\') + "\\dbgimg_iter_" + m_nBatchCount.ToString() + "_num_" + nNum.ToString() + "_img_" + nImg.ToString();
             d.SaveInfo(strFile + ".txt");
