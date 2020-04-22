@@ -32,7 +32,7 @@ namespace MyCaffe.layers.alpha
     public class TripletDataLayer<T> : DataLayer<T>
     {
         Random m_random = new Random();
-        Dictionary<int, Datum> m_rgAnchors = new Dictionary<int, Datum>();
+        Dictionary<int, SimpleDatum> m_rgAnchors = new Dictionary<int, SimpleDatum>();
 
         /// <summary>
         /// The TripletDataLayer constructor.
@@ -94,7 +94,7 @@ namespace MyCaffe.layers.alpha
             List<T> rgPositives = new List<T>();
             List<T> rgNegatives = new List<T>();
             List<T> rgTopData = new List<T>();
-            Datum datum = null;
+            SimpleDatum datum = null;
 
             //-----------------------------------
             //  Get the anchors
@@ -109,15 +109,15 @@ namespace MyCaffe.layers.alpha
 
             datum = m_cursor.GetValue();
 
-            if (!m_rgAnchors.ContainsKey(datum.label))
-                m_rgAnchors.Add(datum.label, datum);
+            if (!m_rgAnchors.ContainsKey(datum.Label))
+                m_rgAnchors.Add(datum.Label, datum);
 
             int nIdx = m_random.Next(m_rgAnchors.Count);
             datum = m_rgAnchors.ElementAt(nIdx).Value;
 
             T[] rgAnchor = m_transformer.Transform(datum);
-            int nAnchorLabel = datum.label;
-            int nAnchorIndex = datum.index;
+            int nAnchorLabel = datum.Label;
+            int nAnchorIndex = datum.Index;
 
             for (int i = 0; i < nBatchSize/3; i++)
             {
@@ -158,8 +158,8 @@ namespace MyCaffe.layers.alpha
                     }
 
                     datum = m_cursor.GetValue();
-                    nImageIdx = datum.index;
-                    nImageLabel = datum.label;
+                    nImageIdx = datum.Index;
+                    nImageLabel = datum.Label;
                 }
 
                 if (m_param.data_param.display_timing)
@@ -202,7 +202,7 @@ namespace MyCaffe.layers.alpha
                     }
 
                     datum = m_cursor.GetValue();
-                    nImageLabel = datum.label;
+                    nImageLabel = datum.Label;
                 }
 
                 if (m_param.data_param.display_timing)
