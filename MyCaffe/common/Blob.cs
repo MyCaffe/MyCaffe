@@ -120,6 +120,22 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="cuda">Specifies the CudaDnn instance used to communidate with Cuda.</param>
         /// <param name="log">Specifies the Log for output.</param>
+        /// <param name="rgShape">Specifies the shape of each axis of the Blob.</param>
+        /// <param name="bIncludeDiff">Optionally, specifies whether or not to include (and allocate) the Diff data.</param>
+        /// <param name="bUseHalfSize">Optionally, specifies to use half size (FP16) for both data and diff.  This option is only available when using the <i>float</i> base type 'T'.</param>
+        public Blob(CudaDnn<T> cuda, Log log, int[] rgShape, bool bIncludeDiff = true, bool bUseHalfSize = false)
+            : this(cuda, log, bIncludeDiff, bUseHalfSize)
+        {
+            // Capacity must be initialized before calling Reshape.
+            m_nCapacity = 0;
+            Reshape(rgShape);
+        }
+
+        /// <summary>
+        /// The Blob constructor.
+        /// </summary>
+        /// <param name="cuda">Specifies the CudaDnn instance used to communidate with Cuda.</param>
+        /// <param name="log">Specifies the Log for output.</param>
         /// <param name="b">Create this blob to be like another Blob (e.g. same shape).</param>
         /// <param name="bUseHalfSize">Optionally, specifies to use half size (FP16) for both data and diff.  This option is only available when using the <i>float</i> base type 'T'.</param>
         public Blob(CudaDnn<T> cuda, Log log, Blob<T> b, bool bUseHalfSize = false)
@@ -318,9 +334,14 @@ namespace MyCaffe.common
 
         private string toString(List<int> rgShape)
         {
+            return toString(rgShape.ToArray());
+        }
+
+        private string toString(int[] rgShape)
+        {
             string str = "{";
 
-            for (int i = 0; i < rgShape.Count; i++)
+            for (int i = 0; i < rgShape.Length; i++)
             {
                 str += rgShape[i].ToString();
                 str += ", ";
@@ -334,33 +355,38 @@ namespace MyCaffe.common
 
         private void reshapeShape(List<int> rgShape)
         {
-            m_log.CHECK_LE(rgShape.Count, MAX_BLOB_AXES, "The number of axes cannot exceed " + MAX_BLOB_AXES.ToString());
+            reshapeShape(rgShape.ToArray());
+        }
+
+        private void reshapeShape(int[] rgShape)
+        {
+            m_log.CHECK_LE(rgShape.Length, MAX_BLOB_AXES, "The number of axes cannot exceed " + MAX_BLOB_AXES.ToString());
             m_nCount = 1;
 
             m_rgShape = new List<int>();
 
             if (m_shape == null)
-                m_shape = new SyncedMemory<T>(m_cuda, m_log, rgShape.Count);
-            else if (m_shape.Count < rgShape.Count)
-                m_shape.Allocate(rgShape.Count);
-            else if (m_shape.Count != rgShape.Count)
+                m_shape = new SyncedMemory<T>(m_cuda, m_log, rgShape.Length);
+            else if (m_shape.Count < rgShape.Length)
+                m_shape.Allocate(rgShape.Length);
+            else if (m_shape.Count != rgShape.Length)
                 m_shape.ZeroAll();
 
-            if (rgShape.Count > 0)
+            if (rgShape.Length > 0)
             {
                 T[] rgShapeData = m_shape.cpu_data;
 
-                if (rgShapeData == null || rgShapeData.Length != rgShape.Count)
+                if (rgShapeData == null || rgShapeData.Length != rgShape.Length)
                 {
                     rgShapeData = m_shape.update_cpu_data();
 
-                    if (rgShapeData == null || rgShapeData.Length != rgShape.Count)
-                        rgShapeData = new T[rgShape.Count];
+                    if (rgShapeData == null || rgShapeData.Length != rgShape.Length)
+                        rgShapeData = new T[rgShape.Length];
                 }
 
                 bool bDirty = false;
 
-                for (int i = 0; i < rgShape.Count; i++)
+                for (int i = 0; i < rgShape.Length; i++)
                 {
 //                    m_log.CHECK_GE(rgShape[i], 0, "The shape value at " + i.ToString() + " must be >= 0.");
 
@@ -418,6 +444,27 @@ namespace MyCaffe.common
         /// <param name="rgShape">Specifies the new shape.</param>
         /// <param name="bUseHalfSize">Optionally, specifies to use half sized memory.</param>
         public void Reshape(List<int> rgShape, bool? bUseHalfSize = null)
+        {
+            Reshape(rgShape.ToArray(), bUseHalfSize);
+        }
+
+        /// <summary>
+        /// Change the dimensions of the blob, allocating new memory if necessary.
+        /// </summary>
+        /// <remarks>
+        /// This function can be called both to create an initial allocation
+        /// of memory, and to adjust the dimensions of a top blob during Layer::Reshape
+        /// or Layer::Forward.  When changing the size of blob, memory will only be
+        /// reallocated if sufficient memory does not already exist, and excess memory
+        /// will not be freed until Dispose is called.
+        /// 
+        /// Note that reshaping an input blob and immediately calling Net::Backward is
+        /// an error;  either Net::Forward or Net::Reshape need to be called to 
+        /// propagate the new input shape to higher layers.
+        /// </remarks>
+        /// <param name="rgShape">Specifies the new shape.</param>
+        /// <param name="bUseHalfSize">Optionally, specifies to use half sized memory.</param>
+        public void Reshape(int[] rgShape, bool? bUseHalfSize = null)
         {
             reshapeShape(rgShape);
 
