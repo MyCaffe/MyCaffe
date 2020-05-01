@@ -1058,6 +1058,20 @@ namespace MyCaffe.db.image
             }
         }
 
+        /// <summary>
+        /// Query all image parameters for a given image.
+        /// </summary>
+        /// <param name="nImageID">Specifies the image ID who's image parameters are to be queried.</param>
+        /// <returns>The list of any image parameters forund for the image are returned</returns>
+        public List<RawImageParameter> QueryRawImageParameters(int nImageID)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                IQueryable<RawImageParameter> iQuery = entities.RawImageParameters.Where(p => p.RawImageID == nImageID);
+                return iQuery.ToList();
+            }
+        }
+
 
         /// <summary>
         /// Returns the list of raw images that have a source ID from a selected list.

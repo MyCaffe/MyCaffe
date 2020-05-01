@@ -323,6 +323,16 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Query all image parameters for a given image.
+        /// </summary>
+        /// <param name="nImageID">Specifies the image ID who's image parameters are to be queried.</param>
+        /// <returns>The list of any image parameters forund for the image are returned</returns>
+        public List<RawImageParameter> QueryRawImageParameters(int nImageID)
+        {
+            return m_db.QueryRawImageParameters(nImageID);
+        }
+
+        /// <summary>
         /// Return the RawImageMean for the open data source.
         /// </summary>
         /// <returns>The RawImageMean is returned if found, otherwise <i>null</i> is returned.</returns>
@@ -1664,6 +1674,9 @@ namespace MyCaffe.db.image
         /// <returns>The SimpleDatum containing the image is returned.</returns>
         public SimpleDatum LoadImage(int nImageId, int nSrcId = 0)
         {
+            if (m_db.CurrentSource == null)
+                throw new Exception("You must open a data source first!");
+
             if (nSrcId == 0)
                 nSrcId = m_db.CurrentSource.ID;
 
