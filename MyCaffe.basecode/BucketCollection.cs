@@ -167,6 +167,25 @@ namespace MyCaffe.basecode
         bool m_bIsDataReal = false;
 
         /// <summary>
+        /// Specifies the output format used when creating a distribution string.
+        /// </summary>
+        public enum OUTPUT_FMT
+        {
+            /// <summary>
+            /// No special output formatting used.
+            /// </summary>
+            NONE,
+            /// <summary>
+            /// Format for a text file.
+            /// </summary>
+            TXT,
+            /// <summary>
+            /// Format for a CSV file.
+            /// </summary>
+            CSV
+        }
+
+        /// <summary>
         /// The constructor.
         /// </summary>
         /// <param name="fMin">Specifies the overall minimum of all Buckets.</param>
@@ -530,26 +549,32 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Returns the distribution of buckets as a percentage for each time a bucket was hit.
         /// </summary>
-        /// <param name="bFull">Optionally, specifies to create a full distribution plot string (default = false).</param>
+        /// <param name="fmt">Optionally, specifies the output format of the string (default = NONE).</param>
         /// <param name="nMaxDots">Optionally, specifies the maximum number of dots used when 'bFull' = true, ignored when 'bFull' = false (default = 30).</param>
         /// <returns>The distribution string is returned.</returns>
-        public string ToDistributionString(bool bFull = false, int nMaxDots = 30)
+        public string ToDistributionString(OUTPUT_FMT fmt = OUTPUT_FMT.NONE, int nMaxDots = 30)
         {
             double dfTotalCount = TotalCount;
             string str = "";
 
-            if (!bFull)
+            if (fmt == OUTPUT_FMT.NONE)
                 str += "{";
+            else if (fmt == OUTPUT_FMT.CSV)
+                str += "MINIMUM, MAXIMUM, COUNT" + Environment.NewLine;
 
             foreach (Bucket b in m_rgBuckets)
             {
                 double dfPct = (dfTotalCount == 0) ? 0 : (double)b.Count / dfTotalCount;
 
-                if (bFull)
+                if (fmt == OUTPUT_FMT.TXT)
                 {
                     string strDots = "";
                     strDots = strDots.PadRight((int)(nMaxDots * dfPct), '*');
                     str += "[" + b.Minimum.ToString("0.00000") + ", " + b.Maximum.ToString("0.00000") + "] " + strDots + " (" + b.Count.ToString("N0") + ")" + Environment.NewLine;
+                }
+                else if (fmt == OUTPUT_FMT.CSV)
+                {
+                    str += b.Minimum.ToString() + "," + b.Maximum.ToString() + "," + b.Count.ToString() + Environment.NewLine;
                 }
                 else
                 {
@@ -558,7 +583,7 @@ namespace MyCaffe.basecode
                 }
             }
 
-            if (!bFull)
+            if (fmt == OUTPUT_FMT.NONE)
             {
                 str = str.TrimEnd(',');
                 str += "}";
