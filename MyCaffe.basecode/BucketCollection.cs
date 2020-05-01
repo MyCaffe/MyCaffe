@@ -530,21 +530,39 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Returns the distribution of buckets as a percentage for each time a bucket was hit.
         /// </summary>
+        /// <param name="bFull">Optionally, specifies to create a full distribution plot string (default = false).</param>
+        /// <param name="nMaxDots">Optionally, specifies the maximum number of dots used when 'bFull' = true, ignored when 'bFull' = false (default = 30).</param>
         /// <returns>The distribution string is returned.</returns>
-        public string ToDistributionString()
+        public string ToDistributionString(bool bFull = false, int nMaxDots = 30)
         {
             double dfTotalCount = TotalCount;
-            string str = "{";
+            string str = "";
+
+            if (!bFull)
+                str += "{";
 
             foreach (Bucket b in m_rgBuckets)
             {
-                double dfPct = (double)b.Count / dfTotalCount;
-                str += dfPct.ToString("P");
-                str += ",";
+                double dfPct = (dfTotalCount == 0) ? 0 : (double)b.Count / dfTotalCount;
+
+                if (bFull)
+                {
+                    string strDots = "";
+                    strDots = strDots.PadRight((int)(nMaxDots * dfPct), '*');
+                    str += "[" + b.Minimum.ToString("0.00000") + ", " + b.Maximum.ToString("0.00000") + "] " + strDots + " (" + b.Count.ToString("N0") + ")" + Environment.NewLine;
+                }
+                else
+                {
+                    str += dfPct.ToString("P");
+                    str += ",";
+                }
             }
 
-            str = str.TrimEnd(',');
-            str += "}";
+            if (!bFull)
+            {
+                str = str.TrimEnd(',');
+                str += "}";
+            }
 
             return str;
         }
