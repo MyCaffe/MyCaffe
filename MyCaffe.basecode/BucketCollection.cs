@@ -287,6 +287,18 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns the numeric range that all buckets fall into.
+        /// </summary>
+        /// <returns>A tuple containing the min,max is returned.</returns>
+        public Tuple<double,double> GetRange()
+        {
+            if (m_rgBuckets.Count == 0)
+                return new Tuple<double, double>(0, 0);
+
+            return new Tuple<double, double>(m_rgBuckets[0].Minimum, m_rgBuckets[m_rgBuckets.Count - 1].Maximum);
+        }
+
+        /// <summary>
         /// Finds the correct Bucket and adds the value to it.
         /// </summary>
         /// <param name="fVal">Specifies the value to add.</param>
