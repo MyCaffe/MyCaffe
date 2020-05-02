@@ -955,10 +955,13 @@ namespace MyCaffe.db.image
                     strSQL += " OR ";
             }
 
-            strSQL += ") AND (";
+            strSQL += ")";
+            string strAnd = " AND (";
+            bool bAddAnd = false;
 
             if (nTgtLbl.HasValue)
             {
+                bAddAnd = true;
                 strSQL += "(";
                 strSQL += "[ActiveLabel] ";
                 strSQL += (bTgtLblExact) ? "=" : ">=";
@@ -968,6 +971,8 @@ namespace MyCaffe.db.image
 
             if (nTgtBst.HasValue)
             {
+                bAddAnd = true;
+
                 if (nTgtLbl.HasValue)
                     strSQL += " OR ";
 
@@ -978,7 +983,11 @@ namespace MyCaffe.db.image
                 strSQL += ")";
             }
 
-            strSQL += ")";
+            if (bAddAnd)
+            {
+                strAnd += ")";
+                strSQL += strAnd;
+            }
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
