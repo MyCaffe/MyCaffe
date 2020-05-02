@@ -1446,6 +1446,17 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Directly update the active label and activate the image with the specified ID.
+        /// </summary>
+        /// <param name="nID">Specifies the image ID.</param>
+        /// <param name="nLabel">Specifies the new active label.</param>
+        public void UpdateActiveLabelDirect(int nID, int nLabel)
+        {
+            string strSql = "UPDATE [dbo].[RawImages] SET [ActiveLabel] = " + nLabel.ToString() + ",[Active] = 1 WHERE (ID = " + nID.ToString() + ")";
+            m_entities.Database.ExecuteSqlCommand(strSql);
+        }
+
+        /// <summary>
         /// Update the description of a RawImage.
         /// </summary>
         /// <param name="nID">Specifies the ID of the RawImage.</param>

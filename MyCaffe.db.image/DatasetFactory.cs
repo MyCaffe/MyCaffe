@@ -634,6 +634,17 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Directly update the active label and activate the image with the specified ID.
+        /// </summary>
+        /// <param name="nID">Specifies the image ID.</param>
+        /// <param name="nLabel">Specifies the new active label.</param>
+        public void UpdateActiveLabelDirect(int nID, int nLabel)
+        {
+            m_db.UpdateActiveLabelDirect(nID, nLabel);
+        }
+
+
+        /// <summary>
         /// Change the source ID on an image to another source ID.
         /// </summary>
         /// <param name="nImageID">Specifies the ID of the image to update.</param>
