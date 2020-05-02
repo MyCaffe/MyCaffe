@@ -316,6 +316,25 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Reduces the buckets to only include those that have a count that are within 1.0 - dfPct of the maximum bucket count.
+        /// </summary>
+        /// <param name="dfPct">Specifies the threshold percent where all buckets with a count >= Max Count * (1.0 - dfPct) are kept.</param>
+        public void Reduce(double dfPct)
+        {
+            Bucket b = GetBucketWithMaxCount();
+            int nThreshold = (int)(b.Count * (1.0 - dfPct));
+
+            List<Bucket> rgBuckets = new List<Bucket>();
+            foreach (Bucket b1 in m_rgBuckets)
+            {
+                if (b1.Count > nThreshold)
+                    rgBuckets.Add(b1);
+            }
+
+            m_rgBuckets = rgBuckets;
+        }
+
+        /// <summary>
         /// Finds the Bucket associated with the value and returns the Bucket's average value.
         /// </summary>
         /// <param name="fVal">Specifies the value to find.</param>
