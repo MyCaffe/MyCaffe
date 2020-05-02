@@ -1007,12 +1007,16 @@ namespace MyCaffe.db.image
         /// Returns the list of the image indexes of all images.
         /// </summary>
         /// <param name="bBoostedOnly">Specifies to only retrieve boosted images.</param>
+        /// <param name="bActiveOnly">Optionally, specifies to query active images only (default = true).</param>
         /// <returns>The image indexes are returned in a list.</returns>
-        public List<DbItem> GetAllRawImageIndexes(bool bBoostedOnly)
+        public List<DbItem> GetAllRawImageIndexes(bool bBoostedOnly, bool bActiveOnly = true)
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
-                IQueryable<RawImage> iQuery = entities.RawImages.Where(p => p.SourceID == m_src.ID && p.Active == true);
+                IQueryable<RawImage> iQuery = entities.RawImages.Where(p => p.SourceID == m_src.ID);
+
+                if (bActiveOnly)
+                    iQuery = iQuery.Where(p => p.Active == true);
 
                 if (bBoostedOnly)
                     iQuery = iQuery.Where(p => p.ActiveBoost > 0);
