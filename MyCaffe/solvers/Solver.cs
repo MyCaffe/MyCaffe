@@ -1068,6 +1068,12 @@ namespace MyCaffe.solvers
             if (OnSnapshot == null)
                 return;
 
+            if (m_snapshotWeightUpdatemMethod == SNAPSHOT_WEIGHT_UPDATE_METHOD.DISABLED && !bForced)
+            {
+                m_log.WriteLine("WARNING: Snapshot UPDATE_METHOD = DISABLED.");
+                return;
+            }
+
             SnapshotArgs args = GetSnapshotArgs(null, null, m_dfLastAccuracy, m_dfLastError, m_nIter, m_snapshotWeightUpdatemMethod);
             args.Forced = bForced;
             args.Scheduled = bScheduled;

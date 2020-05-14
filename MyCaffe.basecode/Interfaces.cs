@@ -153,6 +153,10 @@ namespace MyCaffe.basecode
     public enum SNAPSHOT_WEIGHT_UPDATE_METHOD
     {
         /// <summary>
+        /// Disables all snapshots.
+        /// </summary>
+        DISABLED = -1,
+        /// <summary>
         /// Update the snapshot weights when the accuracy increases.
         /// </summary>
         FAVOR_ACCURACY,
