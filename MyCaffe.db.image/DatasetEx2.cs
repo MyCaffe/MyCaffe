@@ -430,7 +430,7 @@ namespace MyCaffe.db.image
         /// </summary>
         public int DatasetID
         {
-            get { return m_ds.ID; }
+            get { return (m_ds == null) ? 0 : m_ds.ID; }
             set { m_ds.ID = value; }
         }
 
