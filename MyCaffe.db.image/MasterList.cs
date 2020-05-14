@@ -192,7 +192,18 @@ namespace MyCaffe.db.image
                 return m_imgMean;
             }
 
-            m_imgMean = SimpleDatum.CalculateMean(log, m_rgImages, rgAbort);
+            RawImageMean imgMean = m_factory.GetRawImageMean();
+            if (m_imgMean != null)
+            {
+                m_imgMean = m_factory.LoadDatum(imgMean);
+            }
+            else
+            {
+                log.WriteLine("Calculating mean...");
+                m_imgMean = SimpleDatum.CalculateMean(log, m_rgImages, rgAbort);
+                m_factory.PutRawImageMean(m_imgMean, true);
+            }
+
             m_imgMean.SetLabel(0);
 
             return m_imgMean;

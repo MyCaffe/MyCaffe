@@ -104,6 +104,7 @@ namespace MyCaffe.db.image
                 bool bSilentLoad = (loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false;
 
                 m_TrainingImages = new ImageSet2(ImageSet2.TYPE.TRAIN, log, m_factory, m_ds.TrainingSource, loadMethod, m_random, rgAbort);
+                m_TrainingImages.OnCalculateImageMean += OnCalculateImageMean;
                 QueryState qsTraining = m_TrainingImages.Initialize(bSilentLoad);
 
                 if (!bSkipMeanCheck)
@@ -113,6 +114,7 @@ namespace MyCaffe.db.image
                     return 0;
 
                 m_TestingImages = new ImageSet2(ImageSet2.TYPE.TEST, log, m_factory, m_ds.TestingSource, loadMethod, m_random, rgAbort);
+                m_TestingImages.OnCalculateImageMean += OnCalculateImageMean;
                 QueryState qsTesting = m_TestingImages.Initialize(bSilentLoad);
 
                 if (!bSkipMeanCheck)

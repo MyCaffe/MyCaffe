@@ -102,7 +102,9 @@ namespace MyCaffe.db.image
             if (m_masterList == null)
             {
                 m_masterList = new MasterList(m_log, m_src, m_factory, m_rgAbort);
-                m_masterList.OnCalculateImageMean += m_masterList_OnCalculateImageMean;
+
+                if (OnCalculateImageMean != null)
+                    m_masterList.OnCalculateImageMean += OnCalculateImageMean;
 
                 if (m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ALL || m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_EXTERNAL || m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND)
                     m_masterList.Load(bSilentLoad);
@@ -194,12 +196,6 @@ namespace MyCaffe.db.image
         public SimpleDatum GetImageMean(Log log, WaitHandle[] rgAbort)
         {
             return m_masterList.GetImageMean(log, rgAbort);
-        }
-
-        private void m_masterList_OnCalculateImageMean(object sender, CalculateImageMeanArgs e)
-        {
-            if (OnCalculateImageMean != null)
-                OnCalculateImageMean(sender, e);
         }
 
         /// <summary>
