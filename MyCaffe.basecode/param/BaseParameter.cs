@@ -7,7 +7,7 @@ using MyCaffe.basecode;
 /// <summary>
 /// The MyCaffe.param namespace contains all parameter objects that correspond to the native C++ %Caffe prototxt file.
 /// </summary>
-namespace MyCaffe.param
+namespace MyCaffe.basecode
 {
     /// <summary>
     /// The BaseParameter class is the base class for all other parameter classes.
