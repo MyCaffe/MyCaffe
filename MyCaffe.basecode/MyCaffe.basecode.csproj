@@ -70,6 +70,7 @@
     <Compile Include="LabelBBox.cs" />
     <Compile Include="LabelMapping.cs" />
     <Compile Include="NormalizedBBox.cs" />
+    <Compile Include="param\BaseParameter.cs" />
     <Compile Include="Result.cs" />
     <Compile Include="TarFile.cs" />
     <Compile Include="Valuemap.cs" />

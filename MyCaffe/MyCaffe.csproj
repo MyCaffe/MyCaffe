@@ -242,7 +242,6 @@
     <Compile Include="param.beta\Normalization1Parameter.cs" />
     <Compile Include="param\AccuracyParameter.cs" />
     <Compile Include="param\ArgMaxParameter.cs" />
-    <Compile Include="param\BaseParameter.cs" />
     <Compile Include="param\BatchNormParameter.cs" />
     <Compile Include="param\BiasParameter.cs" />
     <Compile Include="param\BlobProtoCollection.cs" />
