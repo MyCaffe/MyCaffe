@@ -1019,10 +1019,41 @@ namespace MyCaffe.db.image
         /// <param name="log">Specifies the Log to use for status output.</param>
         /// <param name="evtCancel">Specifies the cancel event used to cancel the operation.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="bCreateImageMean">Optionally, specifies whether or not to create (or recreate) the image mean (default = false).</param>
         /// <returns>Upon completion <i>true</i> is returned, otherwise <i>false</i> is returned when cancelled.</returns>
-        public bool ReindexRawImages(Log log, CancelEvent evtCancel, int nSrcId = 0)
+        public bool ReindexRawImages(Log log, CancelEvent evtCancel, int nSrcId = 0, bool bCreateImageMean = false)
         {
-            return m_db.ReindexRawImages(log, evtCancel, nSrcId);
+            List<RawImage> rgImg = m_db.ReindexRawImages(log, evtCancel, nSrcId);
+            if (rgImg == null)
+                return false;
+
+            if (bCreateImageMean)
+            {
+                bool bOpened = false;
+                if (m_openSource == null)
+                {
+                    Open(nSrcId);
+                    bOpened = true;
+                }
+
+                List<SimpleDatum> rgSd = new List<SimpleDatum>();
+                foreach (RawImage img in rgImg)
+                {
+                    rgSd.Add(LoadDatum(img));
+                }
+
+                SimpleDatum sdMean = SimpleDatum.CalculateMean(log, rgSd.ToArray(), evtCancel.Handles);
+                if (sdMean == null)
+                    return false;
+
+                bool bRes = SaveImageMean(sdMean, true, nSrcId);
+                if (bOpened)
+                    Close();
+
+                return bRes;
+            }
+
+            return true;
         }
 
         /// <summary>

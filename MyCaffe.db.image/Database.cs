@@ -2424,14 +2424,14 @@ namespace MyCaffe.db.image
         /// <param name="log">Specifies the Log to use for status output.</param>
         /// <param name="evtCancel">Specifies the cancel event used to cancel the operation.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-        /// <returns>Upon completion <i>true</i> is returned, otherwise <i>false</i> is returned when cancelled.</returns>
-        public bool ReindexRawImages(Log log, CancelEvent evtCancel, int nSrcId = 0)
+        /// <returns>Upon completion the list of raw images reindexed is returned, otherwise <i>null</i> is returned when cancelled.</returns>
+        public List<RawImage> ReindexRawImages(Log log, CancelEvent evtCancel, int nSrcId = 0)
         {
             if (nSrcId == 0 && m_src != null)
                 nSrcId = m_src.ID;
 
             if (nSrcId == 0)
-                return false;
+                return null;
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
@@ -2463,12 +2463,12 @@ namespace MyCaffe.db.image
                     }
 
                     if (evtCancel.WaitOne(0))
-                        return false;
+                        return null;
                 }
 
                 entities.SaveChanges();
 
-                return true;
+                return rgImg;
             }
         }
 
