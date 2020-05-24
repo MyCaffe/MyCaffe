@@ -94,7 +94,8 @@ namespace MyCaffe
         bool m_bLoadLite = false;
         string m_strSolver = null;  // Used with LoadLite.
         string m_strModel = null;   // Used with LoadLite.
-
+        Semaphore m_syncUnload = new Semaphore(0, 1);
+        Semaphore m_syncMain = new Semaphore(0, 1);
 
         /// <summary>
         /// The OnSnapshot event fires each time a snap-shot is taken.
@@ -177,32 +178,37 @@ namespace MyCaffe
         /// </summary>
         public void dispose()
         {
-            if (m_bDisposing)
+            if (m_syncMain.WaitOne(0))
                 return;
 
-            m_bDisposing = true;
-
-            if (m_evtCancel != null)
-                m_evtCancel.Set();
-
-            if (m_hCopyBuffer != 0)
+            try
             {
-                m_cuda.FreeHostBuffer(m_hCopyBuffer);
-                m_hCopyBuffer = 0;
+                if (m_evtCancel != null)
+                    m_evtCancel.Set();
+
+                if (m_hCopyBuffer != 0)
+                {
+                    m_cuda.FreeHostBuffer(m_hCopyBuffer);
+                    m_hCopyBuffer = 0;
+                }
+
+                Unload();
+
+                if (m_cuda != null)
+                {
+                    m_cuda.Dispose();
+                    m_cuda = null;
+                }
+
+                if (m_msWeights != null)
+                {
+                    m_msWeights.Dispose();
+                    m_msWeights = null;
+                }
             }
-
-            Unload();
-
-            if (m_cuda != null)
+            finally
             {
-                m_cuda.Dispose();
-                m_cuda = null;
-            }
-
-            if (m_msWeights != null)
-            {
-                m_msWeights.Dispose();
-                m_msWeights = null;
+                m_syncMain.Release();
             }
         }
 
@@ -315,33 +321,43 @@ namespace MyCaffe
         /// </summary>
         public void Unload(bool bUnloadImageDb = true)
         {
-            if (m_solver != null)
-            {
-                m_solver.Dispose();
-                m_solver = null;
-            }
+            if (m_syncUnload.WaitOne(0))
+                return;
 
-            if (m_net != null)
+            try
             {
-                m_net.Dispose();
-                m_net = null;
-            }
-
-            if (m_imgDb != null && bUnloadImageDb)
-            {
-                if (m_bImgDbOwner)
+                if (m_solver != null)
                 {
-                    m_imgDb.CleanUp(m_dataSet.ID);
-
-                    IDisposable idisp = m_imgDb as IDisposable;
-                    if (idisp != null)
-                        idisp.Dispose();
+                    m_solver.Dispose();
+                    m_solver = null;
                 }
 
-                m_imgDb = null;
-            }
+                if (m_net != null)
+                {
+                    m_net.Dispose();
+                    m_net = null;
+                }
 
-            m_project = null;
+                if (m_imgDb != null && bUnloadImageDb)
+                {
+                    if (m_bImgDbOwner)
+                    {
+                        m_imgDb.CleanUp(m_dataSet.ID);
+
+                        IDisposable idisp = m_imgDb as IDisposable;
+                        if (idisp != null)
+                            idisp.Dispose();
+                    }
+
+                    m_imgDb = null;
+                }
+
+                m_project = null;
+            }
+            finally
+            {
+                m_syncUnload.Release();
+            }
         }
 
         /// <summary>
