@@ -90,6 +90,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="mycaffe.layers.ssd.pfx" />
     <None Include="packages.config" />
   </ItemGroup>

@@ -90,6 +90,7 @@
     <Compile Include="pg.simple\TrainerPG.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="mycaffe.trainers.pfx" />
   </ItemGroup>
   <ItemGroup>

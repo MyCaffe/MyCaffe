@@ -58,6 +58,7 @@
     <Compile Include="SsdPascalModelBuilder.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="mycaffe.model.pfx" />
   </ItemGroup>
   <ItemGroup>
