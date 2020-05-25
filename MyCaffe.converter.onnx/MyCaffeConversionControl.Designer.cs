@@ -1,5 +1,9 @@
 ﻿namespace MyCaffe.converter.onnx
 {
+    /// <summary>
+    /// The MyCaffeConversionControl handles converting between MyCaffe and ONNX formats.  The OnnxControl is used to read and write ONNX files.
+    /// </summary>
+    /// <typeparam name="T">Specifies the base type used by MyCaffe which is either <i>float</i> or <i>double</i>.</typeparam>
     partial class MyCaffeConversionControl<T>
     {
         /// <summary>
