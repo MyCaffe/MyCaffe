@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -50,6 +51,52 @@ namespace MyCaffe.converter.onnx
         public byte[] ImageMean
         {
             get { return m_rgImageMean; }
+        }
+
+        /// <summary>
+        /// Save the model data to the specified folder under the specified name.
+        /// </summary>
+        /// <param name="strFolder">Specifies the folder where the data is to be saved.</param>
+        /// <param name="strName">Specifies the base name of the files.</param>
+        public void Save(string strFolder, string strName)
+        {
+            string strModel = strFolder.TrimEnd('\\') + "\\" + strName + "_model_desc.prototxt";
+
+            if (File.Exists(strModel))
+                File.Delete(strModel);
+
+            using (StreamWriter sr = new StreamWriter(strModel))
+            {
+                sr.WriteLine(m_strModelDescription);
+            }
+
+            if (m_rgWeights != null)
+            {
+                string strWts = strFolder.TrimEnd('\\') + "\\" + strName + "_weights.mycaffemodel";
+
+                if (File.Exists(strWts))
+                    File.Delete(strWts);
+
+                using (FileStream fs = new FileStream(strWts, FileMode.CreateNew, FileAccess.Write))
+                using (BinaryWriter bw = new BinaryWriter(fs))
+                {
+                    bw.Write(m_rgWeights);
+                }
+            }
+
+            if (m_rgImageMean != null)
+            {
+                string strWts = strFolder.TrimEnd('\\') + "\\" + strName + "_image_mean.bin";
+
+                if (File.Exists(strWts))
+                    File.Delete(strWts);
+
+                using (FileStream fs = new FileStream(strWts, FileMode.CreateNew, FileAccess.Write))
+                using (BinaryWriter bw = new BinaryWriter(fs))
+                {
+                    bw.Write(m_rgImageMean);
+                }
+            }
         }
     }
 }
