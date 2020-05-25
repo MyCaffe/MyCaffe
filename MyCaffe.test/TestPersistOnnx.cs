@@ -98,6 +98,42 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestImportOnnxAlexNetForRun()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    t.TestImportOnnxAlexNet(null);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestImportOnnxAlexNetForTrain()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    t.TestImportOnnxAlexNet("CIFAR-10");
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -107,6 +143,7 @@ namespace MyCaffe.test
         void TestSave();
         void TestConvertLeNetToOnnx();
         void TestConvertOnnxToLeNet();
+        void TestImportOnnxAlexNet(string strTrainingDs = null);
     }
 
     class PersistOnnxTest : TestBase
@@ -406,6 +443,52 @@ namespace MyCaffe.test
 
             saveTextToFile(model.ModelDescription, strModelPath + "\\onnx_to_lenet_runmodel.prototxt");
             saveBinaryToFile(model.Weights, strModelPath + "\\onnx_to_lenet_runmodel.mycaffemodel");
+        }
+
+        private string downloadOnnxAlexNetModel()
+        {
+            // Download a small onnx model from https://github.com/onnx (dowload is 233mb)
+            string strModel = "bvlcalexnet-9.onnx";
+            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/alexnet/model/" + strModel;
+            string strFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx\\";
+
+            if (!Directory.Exists(strFile))
+                Directory.CreateDirectory(strFile);
+
+            strFile += strModel;
+
+            if (!File.Exists(strFile))
+            {
+                using (WebClient client = new WebClient())
+                {
+                    client.DownloadFile(strUrl, strFile);
+                }
+            }
+
+            return strFile;
+        }
+
+        public void TestImportOnnxAlexNet(string strTrainingDs)
+        {
+            string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx\\imported\\alexnet";
+            if (!Directory.Exists(strTestPath))
+                Directory.CreateDirectory(strTestPath);
+
+            string strOnnxFile = downloadOnnxAlexNetModel();
+            MyCaffeConversionControl<T> convert = new MyCaffeConversionControl<T>();
+
+            DatasetDescriptor dsTraining = null;
+            if (strTrainingDs != null)
+            {
+                DatasetFactory factory = new DatasetFactory();
+                dsTraining = factory.LoadDataset(strTrainingDs);
+            }
+
+            CudaDnn<T> cuda = new CudaDnn<T>(0);
+            MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, dsTraining);
+            Trace.WriteLine(convert.ReportString);
+
+            data.Save(strTestPath, "AlexNet" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
         }
     }
 }
