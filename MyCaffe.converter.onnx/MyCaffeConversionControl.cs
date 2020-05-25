@@ -1,11 +1,14 @@
-﻿using Google.Protobuf.Collections;
+﻿using Google.Protobuf;
+using Google.Protobuf.Collections;
 using MyCaffe.basecode;
+using MyCaffe.basecode.descriptors;
 using MyCaffe.common;
 using MyCaffe.layers;
 using MyCaffe.param;
 using Onnx;
 using OnnxControl;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -28,6 +31,8 @@ namespace MyCaffe.converter.onnx
     /// <typeparam name="T">Specifies the base type used by MyCaffe which is either <i>float</i> or <i>double</i>.</typeparam>
     public partial class MyCaffeConversionControl<T> : Component
     {
+        string m_strReport = "";
+
         /// <summary>
         /// The constructor.
         /// </summary>
@@ -48,6 +53,14 @@ namespace MyCaffe.converter.onnx
         }
 
         /// <summary>
+        /// Returns the report from the conversion.
+        /// </summary>
+        public string ReportString
+        {
+            get { return m_strReport; }
+        }
+
+        /// <summary>
         /// Convert a MyCaffe model description, weights and optionally mean image from the MyCaffe model format to the ONNX format and save the result as 
         /// a .onnx model file.
         /// </summary>
@@ -55,9 +68,11 @@ namespace MyCaffe.converter.onnx
         /// <param name="log">Specifies the output log used to show progress.</param>
         /// <param name="data">Specifies the MyCaffe model data including the model description, the weights and optionally, the image mean.</param>
         /// <param name="strOutputFile">Specifies the .onnx output file.</param>
-        public void ConvertMyCaffeToOnnxFile(CudaDnn<T> cuda, Log log, MyCaffeModelData data, string strOutputFile)
+        /// <param name="bUseRawData">Optionally, specifies whether or not to store tensor data as RawData or as the native FloatData or DoubleData (default = true).</param>
+        /// <param name="dstDataType">Optionally, specifies the output data type, which currently can be either FLOAT or DOUBLE (default = FLOAT).</param>
+        public void ConvertMyCaffeToOnnxFile(CudaDnn<T> cuda, Log log, MyCaffeModelData data, string strOutputFile, bool bUseRawData = true, OnnxDefinitions.DataType dstDataType = OnnxDefinitions.DataType.FLOAT)
         {
-            ModelProto protoOnnx = ConvertMyCaffeToOnnx(cuda, log, data);
+            ModelProto protoOnnx = ConvertMyCaffeToOnnx(cuda, log, data, bUseRawData, dstDataType);
             PersistOnnx persist = new PersistOnnx();
 
             // Save the new 
@@ -72,8 +87,10 @@ namespace MyCaffe.converter.onnx
         /// <param name="cuda">Specifies the connection to cuda uses to interact with the GPU.</param>
         /// <param name="log">Specifies the output log used to show progress.</param>
         /// <param name="data">Specifies the MyCaffe model data including the model description, the weights and optionally, the image mean.</param>
+        /// <param name="bUseRawData">Optionally, specifies whether or not to store tensor data as RawData or as the native FloatData or DoubleData (default = true).</param>
+        /// <param name="dstDataType">Optionally, specifies the output data type, which currently can be either FLOAT or DOUBLE (default = FLOAT).</param>
         /// <returns>The model is returned in the ONNX format as a ModelProto (defined within the OnnxControl)</returns>
-        public ModelProto ConvertMyCaffeToOnnx(CudaDnn<T> cuda, Log log, MyCaffeModelData data)
+        public ModelProto ConvertMyCaffeToOnnx(CudaDnn<T> cuda, Log log, MyCaffeModelData data, bool bUseRawData = true, OnnxDefinitions.DataType dstDataType = OnnxDefinitions.DataType.FLOAT)
         {
             // Parse the Caffe Model Description;
             RawProto protoMyCaffe = RawProto.Parse(data.ModelDescription);
@@ -89,7 +106,7 @@ namespace MyCaffe.converter.onnx
             }
 
             // Convert the MyCaffe net to an Onnx model.
-            ModelProto protoOnnx = convertToOnnx(net);
+            ModelProto protoOnnx = convertToOnnx(net, bUseRawData, dstDataType);
 
             // Cleanup
             if (net != null)
@@ -102,12 +119,14 @@ namespace MyCaffe.converter.onnx
         /// Convert a model currently loaded into the MyCaffeControl to an ONNX ModelProto.
         /// </summary>
         /// <param name="ctrl">Specifies the MyCaffeControl object.</param>
+        /// <param name="bUseRawData">Optionally, specifies whether or not to store tensor data as RawData or as the native FloatData or DoubleData (default = true).</param>
+        /// <param name="dstDataType">Optionally, specifies the output data type, which currently can be either FLOAT or DOUBLE (default = FLOAT).</param>
         /// <param name="phase">Optionally, specifies the phase (which netork) to convert (default = RUN).</param>
         /// <returns>The ONNX model proto is returns that matches the network converted.</returns>
-        public ModelProto ConvertMyCaffeToOnnx(MyCaffeControl<T> ctrl, Phase phase = Phase.RUN)
+        public ModelProto ConvertMyCaffeToOnnx(MyCaffeControl<T> ctrl, bool bUseRawData = true, OnnxDefinitions.DataType dstDataType = OnnxDefinitions.DataType.FLOAT, Phase phase = Phase.RUN)
         {
             Net<T> net = ctrl.GetInternalNet(phase);
-            return convertToOnnx(net);
+            return convertToOnnx(net, bUseRawData, dstDataType);
         }
 
         /// <summary>
@@ -115,10 +134,12 @@ namespace MyCaffe.converter.onnx
         /// </summary>
         /// <param name="ctrl">Specifies the MyCaffeControl object.</param>
         /// <param name="strOnnxFile">Specifies the output .onnx file.</param>
+        /// <param name="bUseRawData">Optionally, specifies whether or not to store tensor data as RawData or as the native FloatData or DoubleData (default = true).</param>
+        /// <param name="dstDataType">Optionally, specifies the output data type, which currently can be either FLOAT or DOUBLE (default = FLOAT).</param>
         /// <param name="phase">Optionally, specifies the phase (which netork) to convert (default = RUN).</param>
-        public void ConvertMyCaffeToOnnxFile(MyCaffeControl<T> ctrl, string strOnnxFile, Phase phase = Phase.RUN)
+        public void ConvertMyCaffeToOnnxFile(MyCaffeControl<T> ctrl, string strOnnxFile, bool bUseRawData = true, OnnxDefinitions.DataType dstDataType = OnnxDefinitions.DataType.FLOAT, Phase phase = Phase.RUN)
         {
-            ModelProto proto = ConvertMyCaffeToOnnx(ctrl, phase);
+            ModelProto proto = ConvertMyCaffeToOnnx(ctrl, bUseRawData, dstDataType, phase);
             PersistOnnx persist = new PersistOnnx();
             persist.Save(proto, strOnnxFile);
         }
@@ -129,12 +150,14 @@ namespace MyCaffe.converter.onnx
         /// <param name="cuda">Specifies the connection to cuda uses to interact with the GPU.</param>
         /// <param name="log">Specifies the output log used to show progress.</param>
         /// <param name="strOnnxFile">Specifies the ONNX .onnx file.</param>
+        /// <param name="dsTraining">Optionally, specifies a training dataset which when supplied converts the model to a training model where inputs 
+        /// are replaced with data layers, and outputs (e.g. softmax) with loss and accuracy layers (default = false).</param>
         /// <returns>The MyCaffe model description, model weights and image mean are returned as a MyCaffeModelData object.</returns>
-        public MyCaffeModelData ConvertOnnxToMyCaffeFromFile(CudaDnn<T> cuda, Log log, string strOnnxFile)
+        public MyCaffeModelData ConvertOnnxToMyCaffeFromFile(CudaDnn<T> cuda, Log log, string strOnnxFile, DatasetDescriptor dsTraining = null)
         {
             PersistOnnx persist = new PersistOnnx();
             ModelProto proto = persist.Load(strOnnxFile);
-            return ConvertOnnxToMyCaffe(cuda, log, proto);
+            return ConvertOnnxToMyCaffe(cuda, log, proto, dsTraining);
         }
 
         /// <summary>
@@ -143,21 +166,23 @@ namespace MyCaffe.converter.onnx
         /// <param name="cuda">Specifies the connection to cuda uses to interact with the GPU.</param>
         /// <param name="log">Specifies the output log used to show progress.</param>
         /// <param name="onnxModel">Specifies the ONNX model.</param>
+        /// <param name="dsTraining">Optionally, specifies a training dataset which when supplied converts the model to a training model where inputs 
+        /// are replaced with data layers, and outputs (e.g. softmax) with loss and accuracy layers (default = false).</param>
         /// <returns>The MyCaffe model description, model weights and image mean are returned as a MyCaffeModelData object.</returns>
-        public MyCaffeModelData ConvertOnnxToMyCaffe(CudaDnn<T> cuda, Log log, ModelProto onnxModel)
+        public MyCaffeModelData ConvertOnnxToMyCaffe(CudaDnn<T> cuda, Log log, ModelProto onnxModel, DatasetDescriptor dsTraining = null)
         {
-            Net<T> net = convertToMyCaffe(cuda, log, onnxModel);
+            Tuple<NetParameter, BlobCollection<T>> data = convertToMyCaffe(cuda, log, onnxModel, dsTraining);
 
-            NetParameter netParam = net.net_param;
+            NetParameter netParam = data.Item1;
             RawProto protoMyCaffe = netParam.ToProto("root");
 
             PersistCaffe<T> persist = new PersistCaffe<T>(log, false);
-            byte[] rgWeights = net.SaveWeights(persist, false);
+            byte[] rgWeights = persist.SaveWeights(data.Item2, false);
 
             return new MyCaffeModelData(protoMyCaffe.ToString(), rgWeights);
         }
 
-        private ModelProto convertToOnnx(Net<T> net)
+        private ModelProto convertToOnnx(Net<T> net, bool bUseRawData = true, OnnxDefinitions.DataType dstDataType = OnnxDefinitions.DataType.FLOAT)
         {
             ModelProto proto = new ModelProto();
             NetParameter netParam = net.net_param;
@@ -186,7 +211,7 @@ namespace MyCaffe.converter.onnx
             addValueInfo(proto.Graph.Input, net.input_blobs);
             addValueInfo(proto.Graph.Output, net.output_blobs);
             addNodes(proto.Graph.Node, net.layers);
-            addTensors(proto.Graph.Initializer, net.learnable_parameters);
+            addTensors(proto.Graph.Initializer, net.learnable_parameters, bUseRawData, dstDataType);
 
             return proto;
         }
@@ -215,13 +240,13 @@ namespace MyCaffe.converter.onnx
             }
         }
 
-        private void addTensors(RepeatedField<TensorProto> rg, BlobCollection<T> blobs)
+        private void addTensors(RepeatedField<TensorProto> rg, BlobCollection<T> blobs, bool bUseRawData = true, OnnxDefinitions.DataType dstDataType = OnnxDefinitions.DataType.FLOAT)
         {
             foreach (Blob<T> blob in blobs)
             {
                 TensorProto tensor = new TensorProto();
                 tensor.Name = blob.Name;
-                tensor.DataType = (int)OnnxDefinitions.DataType.FLOAT;
+                tensor.DataType = (int)dstDataType;
 
                 foreach (int nShape in blob.shape())
                 {
@@ -229,9 +254,96 @@ namespace MyCaffe.converter.onnx
                 }
 
                 T[] rgData = blob.mutable_cpu_data;
-                foreach (T val in rgData)
+
+                if (bUseRawData)
                 {
-                    tensor.FloatData.Add(Convert.ToSingle(val));
+                    if (dstDataType == OnnxDefinitions.DataType.FLOAT)
+                    {
+                        if (typeof(T) == typeof(float))
+                        {
+                            float[] rgfData = Utility.ConvertVecF<T>(rgData);
+                            byte[] rgByte = new byte[rgfData.Length * sizeof(float)];
+                            Buffer.BlockCopy(rgfData, 0, rgByte, 0, rgByte.Length);
+                            tensor.RawData = ByteString.CopyFrom(rgByte);
+                        }
+                        else
+                        {
+                            double[] rgfData = Utility.ConvertVec<T>(rgData);
+                            float[] rgfData2 = new float[rgData.Length];
+                            Array.Copy(rgfData, rgfData2, rgData.Length);
+                            byte[] rgByte = new byte[rgfData2.Length * sizeof(float)];
+                            Buffer.BlockCopy(rgfData2, 0, rgByte, 0, rgByte.Length);
+                            tensor.RawData = ByteString.CopyFrom(rgByte);
+                        }
+                    }
+                    else if (dstDataType == OnnxDefinitions.DataType.DOUBLE)
+                    {
+                        if (typeof(T) == typeof(float))
+                        {
+                            float[] rgfData = Utility.ConvertVecF<T>(rgData);
+                            double[] rgfData2 = new double[rgData.Length];
+                            Array.Copy(rgfData, rgfData2, rgData.Length);
+                            byte[] rgByte = new byte[rgfData2.Length * sizeof(double)];
+                            Buffer.BlockCopy(rgfData2, 0, rgByte, 0, rgByte.Length);
+                            tensor.RawData = ByteString.CopyFrom(rgByte);
+                        }
+                        else
+                        {
+                            double[] rgfData = Utility.ConvertVec<T>(rgData);
+                            byte[] rgByte = new byte[rgfData.Length * sizeof(double)];
+                            Buffer.BlockCopy(rgfData, 0, rgByte, 0, rgByte.Length);
+                            tensor.RawData = ByteString.CopyFrom(rgByte);
+                        }
+                    }
+                    else
+                        throw new Exception("Currently only the FLOAT and DOUBLE data types are supported when exporting.");
+                }
+                else
+                {
+                    if (dstDataType == OnnxDefinitions.DataType.FLOAT)
+                    {
+                        if (typeof(T) == typeof(float))
+                        {
+                            float[] rgfData = Utility.ConvertVecF<T>(rgData);
+
+                            foreach (float val in rgfData)
+                            {
+                                tensor.FloatData.Add(val);
+                            }
+                        }
+                        else
+                        {
+                            double[] rgfData = Utility.ConvertVec<T>(rgData);
+
+                            foreach (double val in rgfData)
+                            {
+                                tensor.FloatData.Add(Convert.ToSingle(val));
+                            }
+                        }
+                    }
+                    else if (dstDataType == OnnxDefinitions.DataType.DOUBLE)
+                    {
+                        if (typeof(T) == typeof(float))
+                        {
+                            float[] rgfData = Utility.ConvertVecF<T>(rgData);
+
+                            foreach (float val in rgfData)
+                            {
+                                tensor.DoubleData.Add(Convert.ToDouble(val));
+                            }
+                        }
+                        else
+                        {
+                            double[] rgfData = Utility.ConvertVec<T>(rgData);
+
+                            foreach (double val in rgfData)
+                            {
+                                tensor.DoubleData.Add(val);
+                            }
+                        }
+                    }
+                    else
+                        throw new Exception("Currently only the FLOAT and DOUBLE data types are supported when exporting.");
                 }
 
                 rg.Add(tensor);
@@ -430,45 +542,266 @@ namespace MyCaffe.converter.onnx
             rgA.Add(attrib);
         }
 
-        private Net<T> convertToMyCaffe(CudaDnn<T> cuda, Log log, ModelProto proto)
+        private Tuple<NetParameter, BlobCollection<T>> convertToMyCaffe(CudaDnn<T> cuda, Log log, ModelProto proto, DatasetDescriptor dsTraining = null)
         {
-            NetParameter netParam = new NetParameter();
-            BlobCollection<T> colLearnableBlobs = new BlobCollection<T>();
-            OnnxDefinitions onnx = new OnnxDefinitions();
+            try
+            {
+                NetParameter netParam = new NetParameter();
+                BlobCollection<T> colLearnableBlobs = new BlobCollection<T>();
+                OnnxDefinitions onnx = new OnnxDefinitions();
 
-            netParam.name = proto.Graph.Name;
-            addInputs(proto.Graph.Input, netParam);
-            addTensors(proto.Graph.Initializer, colLearnableBlobs, cuda, log);
-            addLayers(proto.Graph.Node, netParam, colLearnableBlobs, onnx);
+                m_strReport = "";
 
-            RawProto rp = netParam.ToProto("root");
-            string str = rp.ToString();
+                netParam.name = proto.Graph.Name;
+                Tuple<List<string>, List<string>> rgInputs = addInputs(proto.Graph.Input, netParam, false);
+                addTensors(proto.Graph.Initializer, colLearnableBlobs, cuda, log);
+                colLearnableBlobs = addLayers(proto.Graph.Node, netParam, colLearnableBlobs, onnx, rgInputs.Item1);
+                addInputs(proto.Graph.Input, netParam, true, rgInputs.Item1, rgInputs.Item2);
 
-            Net<T> net = new Net<T>(cuda, log, netParam, new CancelEvent(), null);
-            net.SetLearnedParameters(colLearnableBlobs);
+                NetParameter netParamFixed = fixupModel(netParam, colLearnableBlobs, rgInputs.Item2);
 
-            return net;
+                if (dsTraining != null)
+                    netParamFixed = fixupModelForTraining(netParamFixed, dsTraining);
+
+                return new Tuple<NetParameter, BlobCollection<T>>(netParamFixed, colLearnableBlobs);
+            }
+            catch (Exception excpt)
+            {
+                m_strReport += "ERROR: " + excpt.Message + Environment.NewLine;
+                throw excpt;
+            }
         }
 
-        private void addInputs(RepeatedField<ValueInfoProto> rg, NetParameter p)
+        private NetParameter fixupModelForTraining(NetParameter netParam, DatasetDescriptor ds)
         {
-            foreach (ValueInfoProto val in rg)
+            // Replace the inputs with the data layers.
+            LayerParameter dataLayerTrain = new LayerParameter(LayerParameter.LayerType.DATA, netParam.input[0]);
+            dataLayerTrain.include.Add(new NetStateRule(Phase.TRAIN));
+            dataLayerTrain.transform_param.color_order = TransformationParameter.COLOR_ORDER.BGR;
+            dataLayerTrain.transform_param.scale = 1.0;
+            dataLayerTrain.data_param.batch_size = 16;
+            dataLayerTrain.data_param.source = ds.TrainingSource.Name;
+            dataLayerTrain.top.Add(netParam.input[0]);
+            dataLayerTrain.top.Add("label");
+
+            LayerParameter dataLayerTest = new LayerParameter(LayerParameter.LayerType.DATA, netParam.input[0]);
+            dataLayerTest.include.Add(new NetStateRule(Phase.TEST));
+            dataLayerTest.transform_param.color_order = TransformationParameter.COLOR_ORDER.BGR;
+            dataLayerTest.transform_param.scale = 1.0;
+            dataLayerTest.data_param.batch_size = 16;
+            dataLayerTest.data_param.source = ds.TestingSource.Name;
+            dataLayerTest.top.Add(netParam.input[0]);
+            dataLayerTest.top.Add("label");
+
+            m_strReport += "Removed inputs " + Utility.ToString<string>(netParam.input) + Environment.NewLine;
+            netParam.input.Clear();
+            netParam.input_shape.Clear();
+
+            m_strReport += "Added DATA layer '" + dataLayerTest.name + "' with phase TEST..." + Environment.NewLine;
+            netParam.layer.Insert(0, dataLayerTest);
+            m_strReport += "Added DATA layer '" + dataLayerTest.name + "' with phase TRAIN..." + Environment.NewLine;
+            netParam.layer.Insert(0, dataLayerTrain);
+
+            LayerParameter lastLayer = netParam.layer[netParam.layer.Count - 1];
+            if (lastLayer.type == LayerParameter.LayerType.SOFTMAX)
             {
-                p.input.Add(val.Name);
-                List<int> rgShape = new List<int>();
+                m_strReport += "Removing last layer SOFTMAX..." + Environment.NewLine;
+                netParam.layer.Remove(lastLayer);
 
-                TypeProto type = val.Type;
-                if (type.TensorType == null)
-                    throw new Exception("Currenly only Tensor input types are supported.");
+                LayerParameter loss = new LayerParameter(LayerParameter.LayerType.SOFTMAXWITH_LOSS, "loss");
+                loss.top = lastLayer.top;
+                loss.bottom = lastLayer.bottom;
+                loss.bottom.Add(dataLayerTrain.top[1]);
+                loss.softmax_param = lastLayer.softmax_param;
+                m_strReport += "Added new last layer SOFTMAXWITH_LOSS '" + loss.name + "'..." + Environment.NewLine;
+                netParam.layer.Add(loss);
 
-                TensorShapeProto shape = type.TensorType.Shape;
-                foreach (TensorShapeProto.Types.Dimension dim in shape.Dim)
+                LayerParameter accuracy = new LayerParameter(LayerParameter.LayerType.ACCURACY, "accuracy");
+                accuracy.top.Add("accuracy");
+                accuracy.bottom.Add(lastLayer.bottom[0]);
+                accuracy.bottom.Add(dataLayerTest.top[1]);
+                accuracy.accuracy_param.axis = lastLayer.softmax_param.axis;
+                accuracy.include.Add(new NetStateRule(Phase.TEST));
+                m_strReport += "Added new last layer ACCURACY '" + accuracy.name + "'..." + Environment.NewLine;
+                netParam.layer.Add(accuracy);
+            }
+
+            return netParam;
+        }
+
+        private NetParameter fixupModel(NetParameter netParam, BlobCollection<T> col, List<string> rgstrInvalidInput)
+        {
+            NetParameter p = netParam.Clone();
+
+            // Change input name to 'data'
+            LayerParameter layer1 = findLayerWithBtm(p, p.input[0]);
+            layer1.bottom[0] = "data";
+            m_strReport += "Changed data input[0] from '" + p.input[0] + "' to 'data'";
+            p.input[0] = "data";
+
+            // Find all orphan bottoms
+            LayerDataCollection rgBtmOrphans = new LayerDataCollection(LayerData.TYPE.BTM);
+            for (int i = p.layer.Count-1; i>=0; i--)
+            {
+                LayerParameter layer = p.layer[i];
+
+                rgBtmOrphans.Add(layer.bottom, i, layer);
+                rgBtmOrphans.Remove(layer.top);
+            }
+
+            rgBtmOrphans.Remove(p.input);
+
+            // Find all orphan tops
+            LayerDataCollection rgTopOrphans = new LayerDataCollection(LayerData.TYPE.TOP);
+            for (int i=0; i<p.layer.Count; i++)
+            {
+                LayerParameter layer = p.layer[i];
+
+                if (i < p.layer.Count-1)
+                    rgTopOrphans.Add(layer.top, i, layer);
+
+                rgTopOrphans.Remove(layer.bottom);
+            }
+
+            // Fixup - remove all top orphans.
+            if (rgTopOrphans.Count > 0)
+            {
+                m_strReport += "[Found '" + rgTopOrphans.Count.ToString() + " Top Orphans]" + Environment.NewLine;
+                foreach (LayerData top in rgTopOrphans)
                 {
-                    rgShape.Add((int)dim.DimValue);
+                    m_strReport += "  " + top.Name + " found in layer " + top.Layer.ToString() + Environment.NewLine;
                 }
 
-                p.input_shape.Add(new BlobShape(rgShape));
+                for (int i = 0; i < p.layer.Count; i++)
+                {
+                    LayerParameter layer = p.layer[i];
+                    m_strReport += rgTopOrphans.FixupTops(i, layer);
+                }
             }
+
+            // Fixup - fixup bottom orphans.
+            if (rgBtmOrphans.Count > 0)
+            {
+                m_strReport += "[Found '" + rgBtmOrphans.Count.ToString() + " Bottom Orphans]" + Environment.NewLine;
+                foreach (LayerData btm in rgBtmOrphans)
+                {
+                    m_strReport += "  " + btm.Name + " found in layer " + btm.Layer.ToString() + Environment.NewLine;
+                }
+
+                foreach (LayerData item in rgBtmOrphans)
+                {
+                    // Remove reshape layers with external input sizings.
+                    if (item.Layer.type == LayerParameter.LayerType.RESHAPE)
+                    {
+                        if (item.Layer.bottom.Count > 1 && rgstrInvalidInput.Contains(item.Layer.bottom[1]))
+                        {
+                            string strBtm = item.Layer.bottom[0];
+                            string strTop = item.Layer.top[0];
+
+                            LayerParameter layerPrev = findLayerWithTop(p, strBtm);
+                            LayerParameter layerNext = findLayerWithBtm(p, strTop);
+
+                            if (layerPrev != null && layerNext != null)
+                            {
+                                // Remove the reshape layer.
+                                p.layer.Remove(item.Layer);
+                                m_strReport += "Removed RESHAPE layer..." + Environment.NewLine;
+
+                                // Remove any blobs used by the layer.
+                                Blob<T> blob = col.FindBlob(item.Layer.bottom[1]);
+                                if (blob != null)
+                                {
+                                    col.Remove(blob);
+                                    m_strReport += "Removed blob '" + blob.Name + "' with shape '" + blob.shape_string + "'..." + Environment.NewLine;
+                                    blob.Dispose();
+                                }
+
+                                string strTop1 = layerPrev.top[0];
+
+                                // Replace the bottom of next layer (that the reshape outputs to)
+                                // with the top of the layer previous to the reshape layer.
+                                for (int i = 0; i < layerNext.bottom.Count; i++)
+                                {
+                                    if (layerNext.bottom[i] == strTop)
+                                    {
+                                        layerNext.bottom[i] = strTop1;
+                                        m_strReport += "connected joining layers with '" + strTop1 + "'...";
+
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return p;
+        }
+
+        private LayerParameter findLayerWithTop(NetParameter net, string strTop)
+        {
+            foreach (LayerParameter layer in net.layer)
+            {
+                if (layer.top.Contains(strTop))
+                    return layer;
+            }
+
+            return null;
+        }
+
+        private LayerParameter findLayerWithBtm(NetParameter net, string strBtm)
+        {
+            foreach (LayerParameter layer in net.layer)
+            {
+                if (layer.bottom.Contains(strBtm))
+                    return layer;
+            }
+
+            return null;
+        }
+
+        private Tuple<List<string>, List<string>> addInputs(RepeatedField<ValueInfoProto> rg, NetParameter p, bool bAdd, List<string> rgstrAvailable = null, List<string> rgstrInvalid = null)
+        {
+            List<string> rgstrInput = new List<string>();
+            List<string> rgstrInvalid1 = new List<string>();
+
+            foreach (ValueInfoProto val in rg)
+            {
+                if ((rgstrAvailable == null || rgstrAvailable.Contains(val.Name)) && (rgstrInvalid == null || !rgstrInvalid.Contains(val.Name)))
+                {
+                    if (val.Type.TensorType == null)
+                        throw new Exception("Currenly only Tensor input types are supported.");
+
+                    if (val.Type.TensorType.ElemType != (int)OnnxDefinitions.DataType.FLOAT &&
+                        val.Type.TensorType.ElemType != (int)OnnxDefinitions.DataType.DOUBLE)
+                        rgstrInvalid1.Add(val.Name);
+                    else
+                        rgstrInput.Add(val.Name);
+
+                    if (bAdd)
+                    {
+                        p.input.Add(val.Name);
+                        List<int> rgShape = new List<int>();
+
+                        TypeProto type = val.Type;
+                        if (type.TensorType == null)
+                            throw new Exception("Currenly only Tensor input types are supported.");
+
+                        TensorShapeProto shape = type.TensorType.Shape;
+                        foreach (TensorShapeProto.Types.Dimension dim in shape.Dim)
+                        {
+                            rgShape.Add((int)dim.DimValue);
+                        }
+
+                        p.input_shape.Add(new BlobShape(rgShape));
+
+                        m_strReport += "Adding input '" + val.Name + " with shape " + rgShape.ToString() + Environment.NewLine;
+                    }
+                }
+            }
+
+            return new Tuple<List<string>, List<string>>(rgstrInput, rgstrInvalid1);
         }
 
         private void addTensors(RepeatedField<TensorProto> rg, BlobCollection<T> col, CudaDnn<T> cuda, Log log)
@@ -485,74 +818,214 @@ namespace MyCaffe.converter.onnx
                 Blob<T> blob = new Blob<T>(cuda, log, rgShape);
                 blob.Name = tensor.Name;
 
-                if (tensor.DataType == (int)OnnxDefinitions.DataType.FLOAT)
+                if (typeof(T) == typeof(float))
                 {
-                    if (typeof(T) == typeof(float))
-                    {
-                        float[] rgData = new float[tensor.FloatData.Count];
-                        for (int i = 0; i < tensor.FloatData.Count; i++)
-                        {
-                            rgData[i] = tensor.FloatData[i];
-                        }
-                        blob.mutable_cpu_data = Utility.ConvertVec<T>(rgData);
-                    }
-                    else
-                    {
-                        double[] rgData = new double[tensor.FloatData.Count];
-                        for (int i = 0; i < tensor.FloatData.Count; i++)
-                        {
-                            rgData[i] = tensor.FloatData[i];
-                        }
-                        blob.mutable_cpu_data = Utility.ConvertVec<T>(rgData);
-                    }
-                }
-                else if (tensor.DataType == (int)OnnxDefinitions.DataType.DOUBLE)
-                {
-                    if (typeof(T) == typeof(float))
-                    {
-                        float[] rgData = new float[tensor.DoubleData.Count];
-                        for (int i = 0; i < tensor.DoubleData.Count; i++)
-                        {
-                            rgData[i] = (float)tensor.DoubleData[i];
-                        }
-                        blob.mutable_cpu_data = Utility.ConvertVec<T>(rgData);
-                    }
-                    else
-                    {
-                        double[] rgData = new double[tensor.FloatData.Count];
-                        for (int i = 0; i < tensor.DoubleData.Count; i++)
-                        {
-                            rgData[i] = tensor.DoubleData[i];
-                        }
-                        blob.mutable_cpu_data = Utility.ConvertVec<T>(rgData);
-                    }
+                    float[] rgData = getDataAsFloat(tensor);
+                    blob.mutable_cpu_data = Utility.ConvertVec<T>(rgData);
                 }
                 else
                 {
-                    throw new Exception("Currently only the 'DataType.FLOAT' and 'DataType.DOUBLE' are supported for conversions to MyCaffe.");
+                    double[] rgData = getDataAsDouble(tensor);
+                    blob.mutable_cpu_data = Utility.ConvertVec<T>(rgData);
                 }
+
+                m_strReport += "Adding tensor '" + blob.Name + "' " + blob.shape_string + Environment.NewLine;
 
                 col.Add(blob);
             }
         }
 
-        /// <summary>
-        /// Get the number of outputs and whether or not a bias term is set.
-        /// </summary>
-        /// <remarks>
-        /// NOTE: This is a very simplistic method of determining the output size and whether or not a bias exists, 
-        /// but this method is entirely dependend on how bias blobs are named by MyCaffe which will certainly not be
-        /// the method used by other model builders - for this reason, this method will need to be changed
-        /// to support other non-MyCaffe models.
-        /// </remarks>
-        /// <param name="strLayerName">Specifies the layer name.</param>
-        /// <param name="col">Specifies the set of learnable blobs.</param>
-        /// <param name="bBiasTerm">If the bias exists, true is returned, otherwise false.</param>
-        /// <returns>The number of outputs is returned based on the first rank of the weight blob.</returns>
-        private int getOutputs(string strLayerName, BlobCollection<T> col, out bool bBiasTerm)
+        private float[] getDataAsFloat(TensorProto tensor)
         {
-            string strWt = strLayerName + " weights";
-            string strBias = strLayerName + " bias";
+            float[] rgData = null;
+
+            if (tensor.DataType == (int)OnnxDefinitions.DataType.FLOAT)
+            {
+                if (tensor.FloatData.Count > 0)
+                {
+                    rgData = new float[tensor.FloatData.Count];
+                    for (int i = 0; i < tensor.FloatData.Count; i++)
+                    {
+                        rgData[i] = tensor.FloatData[i];
+                    }
+                }
+                else
+                {
+                    byte[] rgRaw = tensor.RawData.ToByteArray();
+                    int nLen = rgRaw.Length / sizeof(float);
+                    rgData = new float[nLen];
+
+                    Buffer.BlockCopy(rgRaw, 0, rgData, 0, rgRaw.Length);
+                }
+            }
+            else if (tensor.DataType == (int)OnnxDefinitions.DataType.DOUBLE)
+            {
+                if (tensor.DoubleData.Count > 0)
+                {
+                    rgData = new float[tensor.DoubleData.Count];
+                    for (int i = 0; i < tensor.DoubleData.Count; i++)
+                    {
+                        rgData[i] = (float)tensor.DoubleData[i];
+                    }
+                }
+                else
+                {
+                    byte[] rgRaw = tensor.RawData.ToByteArray();
+                    int nLen = rgRaw.Length / sizeof(double);
+                    double[] rgData2 = new double[nLen];
+                    rgData = new float[nLen];
+
+                    Buffer.BlockCopy(rgRaw, 0, rgData2, 0, rgRaw.Length);
+                    Array.Copy(rgData2, rgData, nLen);
+                }
+            }
+            else if (tensor.DataType == (int)OnnxDefinitions.DataType.INT32)
+            {
+                if (tensor.Int32Data.Count > 0)
+                {
+                    rgData = new float[tensor.Int32Data.Count];
+                    for (int i = 0; i < tensor.Int32Data.Count; i++)
+                    {
+                        rgData[i] = (float)tensor.Int32Data[i];
+                    }
+                }
+                else
+                {
+                    byte[] rgRaw = tensor.RawData.ToByteArray();
+                    int nLen = rgRaw.Length / sizeof(int);
+                    int[] rgData2 = new int[nLen];
+                    rgData = new float[nLen];
+
+                    Buffer.BlockCopy(rgRaw, 0, rgData2, 0, rgRaw.Length);
+                    Array.Copy(rgData2, rgData, nLen);
+                }
+            }
+            else if (tensor.DataType == (int)OnnxDefinitions.DataType.INT64)
+            {
+                if (tensor.Int64Data.Count > 0)
+                {
+                    rgData = new float[tensor.Int64Data.Count];
+                    for (int i = 0; i < tensor.Int64Data.Count; i++)
+                    {
+                        rgData[i] = (float)tensor.Int64Data[i];
+                    }
+                }
+                else
+                {
+                    byte[] rgRaw = tensor.RawData.ToByteArray();
+                    int nLen = rgRaw.Length / sizeof(long);
+                    long[] rgData2 = new long[nLen];
+                    rgData = new float[nLen];
+
+                    Buffer.BlockCopy(rgRaw, 0, rgData2, 0, rgRaw.Length);
+                    Array.Copy(rgData2, rgData, nLen);
+                }
+            }
+            else
+            {
+                throw new Exception("Currently only the 'DataType.FLOAT' and 'DataType.DOUBLE' are supported for conversions to MyCaffe.");
+            }
+
+            return rgData;
+        }
+
+        private double[] getDataAsDouble(TensorProto tensor)
+        {
+            double[] rgData = null;
+
+            if (tensor.DataType == (int)OnnxDefinitions.DataType.FLOAT)
+            {
+                if (tensor.FloatData.Count > 0)
+                {
+                    rgData = new double[tensor.FloatData.Count];
+                    for (int i = 0; i < tensor.FloatData.Count; i++)
+                    {
+                        rgData[i] = tensor.FloatData[i];
+                    }
+                }
+                else
+                {
+                    byte[] rgRaw = tensor.RawData.ToByteArray();
+                    int nLen = rgRaw.Length / sizeof(float);
+                    float[] rgData2 = new float[nLen];
+                    rgData = new double[nLen];
+
+                    Buffer.BlockCopy(rgRaw, 0, rgData2, 0, rgRaw.Length);
+                    Array.Copy(rgData2, rgData, nLen);
+                }
+            }
+            else if (tensor.DataType == (int)OnnxDefinitions.DataType.DOUBLE)
+            {
+                if (tensor.DoubleData.Count > 0)
+                {
+                    rgData = new double[tensor.DoubleData.Count];
+                    for (int i = 0; i < tensor.DoubleData.Count; i++)
+                    {
+                        rgData[i] = (float)tensor.DoubleData[i];
+                    }
+                }
+                else
+                {
+                    byte[] rgRaw = tensor.RawData.ToByteArray();
+                    int nLen = rgRaw.Length / sizeof(double);
+                    double[] rgData2 = new double[nLen];
+                    rgData = new double[nLen];
+
+                    Buffer.BlockCopy(rgRaw, 0, rgData, 0, rgRaw.Length);
+                }
+            }
+            else if (tensor.DataType == (int)OnnxDefinitions.DataType.INT32)
+            {
+                if (tensor.Int32Data.Count > 0)
+                {
+                    rgData = new double[tensor.Int32Data.Count];
+                    for (int i = 0; i < tensor.Int32Data.Count; i++)
+                    {
+                        rgData[i] = (float)tensor.Int32Data[i];
+                    }
+                }
+                else
+                {
+                    byte[] rgRaw = tensor.RawData.ToByteArray();
+                    int nLen = rgRaw.Length / sizeof(int);
+                    int[] rgData2 = new int[nLen];
+                    rgData = new double[nLen];
+
+                    Buffer.BlockCopy(rgRaw, 0, rgData2, 0, rgRaw.Length);
+                    Array.Copy(rgData2, rgData, nLen);
+                }
+            }
+            else if (tensor.DataType == (int)OnnxDefinitions.DataType.INT64)
+            {
+                if (tensor.Int64Data.Count > 0)
+                {
+                    rgData = new double[tensor.Int64Data.Count];
+                    for (int i = 0; i < tensor.Int64Data.Count; i++)
+                    {
+                        rgData[i] = (float)tensor.Int64Data[i];
+                    }
+                }
+                else
+                {
+                    byte[] rgRaw = tensor.RawData.ToByteArray();
+                    int nLen = rgRaw.Length / sizeof(long);
+                    long[] rgData2 = new long[nLen];
+                    rgData = new double[nLen];
+
+                    Buffer.BlockCopy(rgRaw, 0, rgData2, 0, rgRaw.Length);
+                    Array.Copy(rgData2, rgData, nLen);
+                }
+            }
+            else
+            {
+                throw new Exception("Currently only the 'DataType.FLOAT' and 'DataType.DOUBLE' are supported for conversions to MyCaffe.");
+            }
+
+            return rgData;
+        }
+
+        private int getOutputs(string strLayerName, BlobCollection<T> col, string strWt, string strBias, out bool bBiasTerm)
+        {
             int? nOutputs = null;
 
             bBiasTerm = false;
@@ -564,7 +1037,7 @@ namespace MyCaffe.converter.onnx
                     blob.Tag = strLayerName;
                     nOutputs = blob.shape()[0];
                 }
-                else if (blob.Name == strBias)
+                else if (blob.Name == strBias && strBias != null)
                 {
                     blob.Tag = strLayerName;
                     bBiasTerm = true;
@@ -580,87 +1053,144 @@ namespace MyCaffe.converter.onnx
             return nOutputs.Value;
         }
 
-        private void addLayers(RepeatedField<NodeProto> rg, NetParameter p, BlobCollection<T> col, OnnxDefinitions onnx)
+        private string getOperator(OnnxDefinitions onnx, OnnxDefinitions.OPERATORS op)
         {
-            List<string> rgstrLearnableBlobs = col.Select(p1 => p1.Name).ToList();
+            string str = onnx.GetString(op);
+            if (str == null)
+                str = op.ToString();
+
+            return str;
+        }
+
+        private BlobCollection<T> addLayers(RepeatedField<NodeProto> rg, NetParameter p, BlobCollection<T> col, OnnxDefinitions onnx, List<string> rgstrInputs)
+        {
+            BlobCollection<T> colLearnable = new BlobCollection<T>();
 
             foreach (NodeProto node in rg)
             {
+                List<string> rgstrLearnableBlobs = new List<string>();
                 LayerParameter layer = null;
+                string strNodeName = node.Name;
+
+                if (string.IsNullOrEmpty(strNodeName))
+                    strNodeName = node.Output[0];
 
                 if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.Conv))
                 {
+                    for (int i = 1; i < node.Input.Count; i++)
+                    {
+                        rgstrLearnableBlobs.Add(node.Input[i]);
+                        colLearnable.Add(col.FindBlob(node.Input[i]));
+                    }
+
                     layer = new LayerParameter(LayerParameter.LayerType.CONVOLUTION);
-                    layer.name = node.Name;
+                    layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.convolution_param);
                     bool bBiasTerm;
-                    layer.convolution_param.num_output = (uint)getOutputs(layer.name, col, out bBiasTerm);
+                    string strWt = rgstrLearnableBlobs[0];
+                    string strBias = (rgstrLearnableBlobs.Count > 1) ? rgstrLearnableBlobs[1] : null;
+                    layer.convolution_param.num_output = (uint)getOutputs(layer.name, col, strWt, strBias, out bBiasTerm);
                     layer.convolution_param.bias_term = bBiasTerm;
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Dropout))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.DROPOUT);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.dropout_param);
                 }
 
                 else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.Gemm))
                 {
+                    for (int i = 1; i < node.Input.Count; i++)
+                    {
+                        rgstrLearnableBlobs.Add(node.Input[i]);
+                        colLearnable.Add(col.FindBlob(node.Input[i]));
+                    }
+
                     layer = new LayerParameter(LayerParameter.LayerType.INNERPRODUCT);
-                    layer.name = node.Name;
+                    layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.inner_product_param);
                     bool bBiasTerm;
-                    layer.inner_product_param.num_output = (uint)getOutputs(layer.name, col, out bBiasTerm);
+                    string strWt = rgstrLearnableBlobs[0];
+                    string strBias = (rgstrLearnableBlobs.Count > 1) ? rgstrLearnableBlobs[1] : null;
+                    layer.inner_product_param.num_output = (uint)getOutputs(layer.name, col, strWt, strBias, out bBiasTerm);
                     layer.inner_product_param.bias_term = bBiasTerm;
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.LRN))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.LRN);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.lrn_param);
                 }
 
                 else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.AveragePool))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.POOLING);
-                    layer.name = node.Name;
+                    layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.pooling_param, PoolingParameter.PoolingMethod.AVE, false);
                 }
 
                 else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.MaxPool))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.POOLING);
-                    layer.name = node.Name;
+                    layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.pooling_param, PoolingParameter.PoolingMethod.MAX, false);
                 }
 
                 else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.GlobalAveragePool))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.POOLING);
-                    layer.name = node.Name;
+                    layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.pooling_param, PoolingParameter.PoolingMethod.AVE, true);
                 }
 
                 else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.GlobalMaxPool))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.POOLING);
-                    layer.name = node.Name;
+                    layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.pooling_param, PoolingParameter.PoolingMethod.MAX, true);
                 }
 
                 else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.PRelu))
                 {
+                    for (int i = 1; i < node.Input.Count; i++)
+                    {
+                        rgstrLearnableBlobs.Add(node.Input[i]);
+                        colLearnable.Add(col.FindBlob(node.Input[i]));
+                    }
+
                     layer = new LayerParameter(LayerParameter.LayerType.PRELU);
-                    layer.name = node.Name;
+                    layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.prelu_param);
                 }
 
                 else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.Relu))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.RELU);
-                    layer.name = node.Name;
+                    layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.relu_param, false);
                 }
 
                 else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.LeakyRelu))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.RELU);
-                    layer.name = node.Name;
+                    layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.relu_param, true);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Reshape))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.RESHAPE);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute,  layer.reshape_param);
                 }
 
                 else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.Softmax))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
-                    layer.name = node.Name;
+                    layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.softmax_param);
                 }
 
@@ -671,6 +1201,11 @@ namespace MyCaffe.converter.onnx
                 {
                     if (!rgstrLearnableBlobs.Contains(strInput))
                         layer.bottom.Add(strInput);
+
+                    foreach (string strLearnable in rgstrLearnableBlobs)
+                    {
+                        rgstrInputs.Remove(strLearnable);
+                    }
                 }
 
                 foreach (string strOutput in node.Output)
@@ -678,8 +1213,11 @@ namespace MyCaffe.converter.onnx
                     layer.top.Add(strOutput);
                 }
 
+                m_strReport += "Adding layer '" + layer.ToString() + "'" + Environment.NewLine;
                 p.layer.Add(layer);
             }
+
+            return colLearnable;
         }
 
         private void fillParameter(RepeatedField<AttributeProto> rg, ConvolutionParameter p)
@@ -764,6 +1302,25 @@ namespace MyCaffe.converter.onnx
                 else if (attrib.Name == "group")
                 {
                     p.group = (uint)attrib.I;
+                }
+            }
+        }
+
+        private void fillParameter(RepeatedField<AttributeProto> rg, DropoutParameter p)
+        {
+            foreach (AttributeProto attrib in rg)
+            {
+                if (attrib.Name == "ratio")
+                {
+                    p.dropout_ratio = attrib.F;
+                }
+                else if (attrib.Name == "training_mode")
+                {
+                    p.active = (attrib.I == 0) ? false : true;
+                }
+                else if (attrib.Name == "seed")
+                {
+                    p.seed = attrib.I;
                 }
             }
         }
@@ -858,6 +1415,33 @@ namespace MyCaffe.converter.onnx
             }
         }
 
+        private void fillParameter(RepeatedField<AttributeProto> rg, LRNParameter p)
+        {
+            foreach (AttributeProto attrib in rg)
+            {
+                if (attrib.Name == "alpha")
+                {
+                    p.alpha = attrib.F;
+                }
+                else if (attrib.Name == "beta")
+                {
+                    p.beta = attrib.F;
+                }
+                else if (attrib.Name == "bias")
+                {
+                    p.k = attrib.F;
+                }
+                else if (attrib.Name == "size")
+                {
+                    p.local_size = (uint)attrib.I;
+                }
+            }
+        }
+
+        private void fillParameter(RepeatedField<AttributeProto> rg, ReshapeParameter p)
+        {
+        }
+
         private void fillParameter(RepeatedField<AttributeProto> rg, PReLUParameter p)
         {
         }
@@ -886,4 +1470,148 @@ namespace MyCaffe.converter.onnx
             }
         }
     }
+
+#pragma warning disable 1591
+
+    class LayerDataCollection : IEnumerable<LayerData> /** @private */
+    {
+        LayerData.TYPE m_type;
+        List<LayerData> m_rgItems = new List<LayerData>();
+
+        public LayerDataCollection(LayerData.TYPE type)
+        {
+            m_type = type;
+        }
+
+        public LayerData.TYPE Type
+        {
+            get { return m_type; }
+        }
+
+        public bool Contains(string strName)
+        {
+            foreach (LayerData item in m_rgItems)
+            {
+                if (item.Name == strName)
+                    return true;
+            }
+
+            return false;
+        }
+
+        public string FixupTops(int nLayerIdx, LayerParameter p)
+        {
+            List<LayerData> rgItems = FindAll(nLayerIdx);
+            string strReport = "";
+
+            foreach (LayerData item in rgItems)
+            {
+                p.top.Remove(item.Name);
+                strReport += "Removed top '" + item.Name + "' from layer '" + item.Layer.name + "(" + item.Layer.type.ToString() + ") at layer index = " + item.LayerIndex.ToString() + Environment.NewLine;
+            }
+
+            return strReport;
+        }
+
+        public List<LayerData> FindAll(int nLayerIdx)
+        {
+            return m_rgItems.Where(p => p.LayerIndex == nLayerIdx).ToList();
+        }
+
+        public int Count
+        {
+            get { return m_rgItems.Count; }
+        }
+
+        public void Add(List<string> rg, int nIdx, LayerParameter layer)
+        {
+            foreach (string str in rg)
+            {
+                m_rgItems.Add(new LayerData(str, nIdx, layer, m_type));
+            }
+        }
+
+        public void Remove(List<string> rgstr)
+        {
+            List<int> rgDelete = new List<int>();
+
+            for (int i = 0; i < m_rgItems.Count; i++)
+            {
+                for (int j = 0; j < rgstr.Count; j++)
+                {
+                    if (m_rgItems[i].Name == rgstr[j])
+                        rgDelete.Add(i);
+                }
+            }
+
+            for (int i = rgDelete.Count - 1; i >= 0; i--)
+            {
+                m_rgItems.RemoveAt(rgDelete[i]);
+            }
+        }
+
+        public IEnumerator<LayerData> GetEnumerator()
+        {
+            return m_rgItems.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return m_rgItems.GetEnumerator();
+        }
+
+        public LayerData this[int nIdx]
+        {
+            get { return m_rgItems[nIdx]; }
+        }
+    }
+
+    class LayerData /** @private */
+    {
+        string m_strName;
+        int m_nLayerIdx;
+        LayerParameter m_layer;
+        TYPE m_type;
+
+        public enum TYPE
+        {
+            TOP,
+            BTM
+        }
+
+        public LayerData(string strName, int nLayerIdx, LayerParameter layer, TYPE type)
+        {
+            m_strName = strName;
+            m_nLayerIdx = nLayerIdx;
+            m_layer = layer;
+            m_type = type;
+        }
+
+        public string Name
+        {
+            get { return m_strName; }
+        }
+
+        public int LayerIndex
+        {
+            get { return m_nLayerIdx; }
+        }
+
+        public LayerParameter Layer
+        {
+            get { return m_layer; }
+        }
+
+        public TYPE Type
+        {
+            get { return m_type; }
+        }
+
+        public override string ToString()
+        {
+            return m_strName + "(" + m_type.ToString() + ") at layer '" + m_layer.ToString() + "'(idx = " + m_nLayerIdx.ToString() + ")";
+        }
+    }
+
+#pragma warning restore 1591
 }
