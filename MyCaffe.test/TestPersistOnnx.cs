@@ -16,6 +16,7 @@ using System.Drawing;
 using System.Net;
 using OnnxControl;
 using Onnx;
+using MyCaffe.converter.onnx;
 
 namespace MyCaffe.test
 {
@@ -59,6 +60,44 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestConvertLeNetToOnnx()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    if (t.DataType == DataType.FLOAT)
+                        t.TestConvertLeNetToOnnx();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestConvertOnnxToLeNet()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    if (t.DataType == DataType.FLOAT)
+                        t.TestConvertOnnxToLeNet();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -66,6 +105,8 @@ namespace MyCaffe.test
     {
         void TestLoad();
         void TestSave();
+        void TestConvertLeNetToOnnx();
+        void TestConvertOnnxToLeNet();
     }
 
     class PersistOnnxTest : TestBase
@@ -103,6 +144,7 @@ namespace MyCaffe.test
             {
                 using (WebClient client = new WebClient())
                 {
+                    Trace.WriteLine("Downloading '" + strUrl + "' - this may take awhile...");
                     client.DownloadFile(strUrl, strPath);
                 }
             }
@@ -136,32 +178,45 @@ namespace MyCaffe.test
             m_log.WriteLine("Description = " + model.DocString);
             m_log.WriteLine("Domain = " + model.Domain);
 
-            m_log.WriteLine("---Graph---");
-            m_log.WriteLine("Name = " + model.Graph.Name);
+            m_log.WriteHeader("Run Model");
+            outputGraph("RUN GRAPH", model.Graph);
+
+            m_log.WriteHeader("Training Model");
+            foreach (TrainingInfoProto train in model.TrainingInfo)
+            {
+                outputGraph("TRAINING INIT", train.Initialization);
+                outputGraph("TRAINING GRAPH ", train.Algorithm);
+            }
+        }
+
+        private void outputGraph(string strName, GraphProto graph)
+        {
+            m_log.WriteLine("--- " + strName + " ------------------------");
+            m_log.WriteLine("Name = " + graph.Name);
 
             m_log.WriteLine("Inputs:");
-            foreach (ValueInfoProto val in model.Graph.Input)
+            foreach (ValueInfoProto val in graph.Input)
             {
                 m_log.WriteLine(val.ToString());
             }
 
             m_log.WriteLine("Outputs:");
-            foreach (ValueInfoProto val in model.Graph.Output)
+            foreach (ValueInfoProto val in graph.Output)
             {
                 m_log.WriteLine(val.ToString());
             }
 
             m_log.WriteLine("Nodes:");
-            foreach (NodeProto val in model.Graph.Node)
+            foreach (NodeProto val in graph.Node)
             {
                 m_log.WriteLine(val.ToString());
             }
 
             m_log.WriteLine("Quantization Annotation:");
-            m_log.WriteLine(model.Graph.QuantizationAnnotation.ToString());
+            m_log.WriteLine(graph.QuantizationAnnotation.ToString());
 
             m_log.WriteLine("Initializer Tensors:");
-            foreach (TensorProto t in model.Graph.Initializer)
+            foreach (TensorProto t in graph.Initializer)
             {
                 m_log.WriteLine(t.Name + " (data type = " + t.DataType.ToString() + ") " + t.Dims.ToString());
             }
@@ -260,6 +315,97 @@ namespace MyCaffe.test
             }
 
             File.Delete(strModelFile2);
+        }
+
+        private string loadTextFile(string strFile)
+        {
+            using (StreamReader sr = new StreamReader(strFile))
+            {
+                return sr.ReadToEnd();
+            }
+        }
+
+        private byte[] loadBinaryFile(string strFile)
+        {
+            using (FileStream fs = new FileStream(strFile, FileMode.Open, FileAccess.Read))
+            using (BinaryReader br = new BinaryReader(fs))
+            {
+                return br.ReadBytes((int)fs.Length);
+            }
+        }
+
+        private void saveTextToFile(string str, string strFile)
+        {
+            if (File.Exists(strFile))
+                File.Delete(strFile);
+
+            using (StreamWriter sw = new StreamWriter(strFile))
+            {
+                sw.WriteLine(str);
+            }
+        }
+
+        private void saveBinaryToFile(byte[] rg, string strFile)
+        {
+            if (File.Exists(strFile))
+                File.Delete(strFile);
+
+            using (FileStream fs = new FileStream(strFile, FileMode.CreateNew, FileAccess.Write))
+            using (BinaryWriter bw = new BinaryWriter(fs))
+            {
+                bw.Write(rg);
+            }
+        }
+
+        public void TestConvertLeNetToOnnx()
+        {
+            string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx";
+            if (!Directory.Exists(strTestPath))
+                Directory.CreateDirectory(strTestPath);
+
+            string strModelPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\mnist";
+            MyCaffeConversionControl<T> convert = new MyCaffeConversionControl<T>();
+
+            string strOnnxModelFile = strTestPath + "\\lenet_from_mycaffe.onnx";
+            if (!File.Exists(strOnnxModelFile))
+                throw new Exception("You must first run 'TestConvertLeNetToOnnx' to create the .onnx file.");
+
+            SettingsCaffe s = new SettingsCaffe();
+            MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, new CancelEvent());
+
+            ProjectEx prj = new ProjectEx("AlexNet");
+            prj.SolverDescription = loadTextFile(strModelPath + "\\lenet_solver.prototxt");
+            prj.ModelDescription = loadTextFile(strModelPath + "\\lenet_train_test.prototxt");
+            prj.WeightsState = loadBinaryFile(strModelPath + "\\my_weights.mycaffemodel");
+
+            DatasetFactory factory = new DatasetFactory();
+            prj.SetDataset(factory.LoadDataset("MNIST"));
+
+            mycaffe.Load(Phase.TRAIN, prj);
+
+            if (File.Exists(strOnnxModelFile))
+                File.Delete(strOnnxModelFile);
+
+            convert.ConvertMyCaffeToOnnxFile(mycaffe, strOnnxModelFile);
+        }
+
+        public void TestConvertOnnxToLeNet()
+        {
+            string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx";
+            if (!Directory.Exists(strTestPath))
+                Directory.CreateDirectory(strTestPath);
+
+            string strModelPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\mnist";
+            MyCaffeConversionControl<T> convert = new MyCaffeConversionControl<T>();
+
+            string strOnnxModelFile = strTestPath + "\\lenet_from_mycaffe.onnx";
+
+            CudaDnn<T> cuda = new CudaDnn<T>(0);
+            MyCaffeModelData model = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxModelFile);
+            cuda.Dispose();
+
+            saveTextToFile(model.ModelDescription, strModelPath + "\\onnx_to_lenet_runmodel.prototxt");
+            saveBinaryToFile(model.Weights, strModelPath + "\\onnx_to_lenet_runmodel.mycaffemodel");
         }
     }
 }
