@@ -187,6 +187,7 @@ namespace MyCaffe.layers
 
                 Blob<T> blobScale = new Blob<T>(m_cuda, m_log);
                 blobScale.Name = m_param.name + " scale";
+                blobScale.type = BLOB_TYPE.INTERNAL;
 
                 if (!shareParameter(blobScale, rgShape))
                 {

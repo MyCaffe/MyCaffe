@@ -33,6 +33,10 @@ namespace MyCaffe.common
     public enum BLOB_TYPE
     {
         /// <summary>
+        /// The blob is an unknown type.
+        /// </summary>
+        UNKNOWN,
+        /// <summary>
         /// The Blob holds Data.
         /// </summary>
         DATA,
@@ -71,7 +75,11 @@ namespace MyCaffe.common
         /// 
         /// continues for each of the top 'n' bboxes output.
         /// </remarks>
-        MULTIBBOX
+        MULTIBBOX,
+        /// <summary>
+        /// The blob is an internal blob used within the layer.
+        /// </summary>
+        INTERNAL
     }
 
     /// <summary>

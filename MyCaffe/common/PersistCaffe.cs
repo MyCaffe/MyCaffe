@@ -1009,7 +1009,7 @@ namespace MyCaffe.common
                     }
                 }
 
-                info.AddBlob(strName, rgShape);
+                info.AddBlob(strName, rgShape, BLOB_TYPE.UNKNOWN);
 
                 nFieldIdx++;
             }

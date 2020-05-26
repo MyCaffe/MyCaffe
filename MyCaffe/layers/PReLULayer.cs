@@ -128,6 +128,7 @@ namespace MyCaffe.layers
 
                 Blob<T> blobSlope = new Blob<T>(m_cuda, m_log);
                 blobSlope.Name = m_param.name + " slope";
+                blobSlope.type = BLOB_TYPE.INTERNAL;
 
                 if (!shareParameter(blobSlope, rgSlopeShape))
                 {

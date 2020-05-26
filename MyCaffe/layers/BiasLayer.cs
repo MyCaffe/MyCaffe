@@ -142,6 +142,7 @@ namespace MyCaffe.layers
 
                 Blob<T> blobBias = new Blob<T>(m_cuda, m_log);
                 blobBias.Name = m_param.name + " bias";
+                blobBias.type = BLOB_TYPE.INTERNAL;
                 blobBias.type = BLOB_TYPE.WEIGHT;
 
                 if (!shareParameter(blobBias, rgBiasShape))
