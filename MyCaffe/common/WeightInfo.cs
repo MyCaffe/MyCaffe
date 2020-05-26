@@ -13,7 +13,7 @@ namespace MyCaffe.common
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
     public class WeightInfo<T>
     {
-        Dictionary<string, List<int>> m_rgBlobInfo = new Dictionary<string, List<int>>();
+        Dictionary<string, Tuple<List<int>, BLOB_TYPE>> m_rgBlobInfo = new Dictionary<string, Tuple<List<int>, BLOB_TYPE>>();
         BlobName m_names = new BlobName();
 
         /// <summary>
@@ -28,10 +28,11 @@ namespace MyCaffe.common
         /// </summary>
         /// <param name="strName">Specifies the Blob name.</param>
         /// <param name="rgShape">Specifies the Blob shape.</param>
-        public void AddBlob(string strName, List<int> rgShape)
+        /// <param name="type">Specifies the Blob type.</param>
+        public void AddBlob(string strName, List<int> rgShape, BLOB_TYPE type)
         {
             strName = m_names.GetName(strName);
-            m_rgBlobInfo.Add(strName, rgShape);
+            m_rgBlobInfo.Add(strName, new Tuple<List<int>, BLOB_TYPE>(rgShape, type));
         }
 
         /// <summary>
@@ -41,14 +42,14 @@ namespace MyCaffe.common
         public void AddBlob(Blob<T> b)
         {
             string strName = m_names.GetName(b.Name);
-            m_rgBlobInfo.Add(strName, b.shape());
+            m_rgBlobInfo.Add(strName, new Tuple<List<int>, BLOB_TYPE>(b.shape(), b.type));
         }
 
         /// <summary>
         /// Returns the list of blob information describing the weights.  Each entry within the Dictionary returned contains
         /// the Blob's name and the Blob's dimensions (e.g. {num, channels, height, width}) as a List of integers.
         /// </summary>
-        public Dictionary<string, List<int>> Blobs
+        public Dictionary<string, Tuple<List<int>, BLOB_TYPE>> Blobs
         {
             get { return m_rgBlobInfo; }
         }

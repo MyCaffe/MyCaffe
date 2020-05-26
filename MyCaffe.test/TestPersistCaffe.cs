@@ -523,18 +523,22 @@ namespace MyCaffe.test
 
             List<string> rgstrNames1 = new List<string>();
             List<List<int>> rgrgShape1 = new List<List<int>>();
-            foreach (KeyValuePair<string, List<int>> kv in wi1.Blobs)
+            List<BLOB_TYPE> rgType1 = new List<BLOB_TYPE>();
+            foreach (KeyValuePair<string, Tuple<List<int>, BLOB_TYPE>> kv in wi1.Blobs)
             {
                 rgstrNames1.Add(kv.Key);
-                rgrgShape1.Add(kv.Value);
+                rgrgShape1.Add(kv.Value.Item1);
+                rgType1.Add(kv.Value.Item2);
             }
 
             List<string> rgstrNames2 = new List<string>();
             List<List<int>> rgrgShape2 = new List<List<int>>();
-            foreach (KeyValuePair<string, List<int>> kv in wi2.Blobs)
+            List<BLOB_TYPE> rgType2 = new List<BLOB_TYPE>();
+            foreach (KeyValuePair<string, Tuple<List<int>, BLOB_TYPE>> kv in wi2.Blobs)
             {
                 rgstrNames2.Add(kv.Key);
-                rgrgShape2.Add(kv.Value);
+                rgrgShape2.Add(kv.Value.Item1);
+                rgType2.Add(kv.Value.Item2);
             }
 
             m_log.CHECK_EQ(rgstrNames1.Count, rgstrNames2.Count, "The names have a different count.");
