@@ -134,6 +134,114 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestImportOnnxGoogNetForRun()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    t.TestImportOnnxGoogNet(null);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestImportOnnxGoogNetForTrain()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    t.TestImportOnnxGoogNet("CIFAR-10");
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestImportOnnxVGG19ForRun()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    t.TestImportOnnxVGG19(null);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestImportOnnxVGG19ForTrain()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    t.TestImportOnnxVGG19("CIFAR-10");
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestImportOnnxResNet50ForRun()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    t.TestImportOnnxResNet50(null);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestImportOnnxResNet50ForTrain()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    t.TestImportOnnxResNet50("CIFAR-10");
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -144,6 +252,9 @@ namespace MyCaffe.test
         void TestConvertLeNetToOnnx();
         void TestConvertOnnxToLeNet();
         void TestImportOnnxAlexNet(string strTrainingDs = null);
+        void TestImportOnnxGoogNet(string strTrainingDs = null);
+        void TestImportOnnxVGG19(string strTrainingDs = null);
+        void TestImportOnnxResNet50(string strTrainingDs = null);
     }
 
     class PersistOnnxTest : TestBase
@@ -445,27 +556,34 @@ namespace MyCaffe.test
             saveBinaryToFile(model.Weights, strModelPath + "\\onnx_to_lenet_runmodel.mycaffemodel");
         }
 
-        private string downloadOnnxAlexNetModel()
+        private string download(string strModel, string strUrl, double dfSizeInMb)
         {
-            // Download a small onnx model from https://github.com/onnx (dowload is 233mb)
-            string strModel = "bvlcalexnet-9.onnx";
-            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/alexnet/model/" + strModel;
-            string strFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx\\";
+            string strFolder = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx\\";
 
-            if (!Directory.Exists(strFile))
-                Directory.CreateDirectory(strFile);
+            if (!Directory.Exists(strFolder))
+                Directory.CreateDirectory(strFolder);
 
-            strFile += strModel;
+            string strFile = strFolder + strModel;
 
             if (!File.Exists(strFile))
             {
                 using (WebClient client = new WebClient())
                 {
+                    Trace.WriteLine("downloading '" + strUrl + "' (" + dfSizeInMb.ToString("N2") + " mb)...");
                     client.DownloadFile(strUrl, strFile);
                 }
             }
 
             return strFile;
+        }
+
+        private string downloadOnnxAlexNetModel()
+        {
+            // Download a small onnx model from https://github.com/onnx (dowload is 233mb)
+            double dfSizeInMb = 233;
+            string strModel = "bvlcalexnet-9.onnx";
+            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/alexnet/model/" + strModel;
+            return download(strModel, strUrl, dfSizeInMb);
         }
 
         public void TestImportOnnxAlexNet(string strTrainingDs)
@@ -485,10 +603,106 @@ namespace MyCaffe.test
             }
 
             CudaDnn<T> cuda = new CudaDnn<T>(0);
-            MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, dsTraining);
+            MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
             Trace.WriteLine(convert.ReportString);
 
             data.Save(strTestPath, "AlexNet" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+        }
+
+        private string downloadOnnxGoogNetModel()
+        {
+            // Download a small onnx model from https://github.com/onnx (dowload is 26.7mb)
+            double dfSizeInMb = 26.7;
+            string strModel = "googlenet-9.onnx";
+            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/inception_and_googlenet/googlenet/model/" + strModel;
+            return download(strModel, strUrl, dfSizeInMb);
+        }
+
+        public void TestImportOnnxGoogNet(string strTrainingDs)
+        {
+            string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx\\imported\\goognet";
+            if (!Directory.Exists(strTestPath))
+                Directory.CreateDirectory(strTestPath);
+
+            string strOnnxFile = downloadOnnxGoogNetModel();
+            MyCaffeConversionControl<T> convert = new MyCaffeConversionControl<T>();
+
+            DatasetDescriptor dsTraining = null;
+            if (strTrainingDs != null)
+            {
+                DatasetFactory factory = new DatasetFactory();
+                dsTraining = factory.LoadDataset(strTrainingDs);
+            }
+
+            CudaDnn<T> cuda = new CudaDnn<T>(0);
+            MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+            Trace.WriteLine(convert.ReportString);
+
+            data.Save(strTestPath, "GoogNet" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+        }
+
+        private string downloadOnnxVGG19Model()
+        {
+            // Download a small onnx model from https://github.com/onnx (dowload is 548mb)
+            double dfSizeInMb = 548;
+            string strModel = "vgg19-7.onnx";
+            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/vgg/model/" + strModel;
+            return download(strModel, strUrl, dfSizeInMb);
+        }
+
+        public void TestImportOnnxVGG19(string strTrainingDs)
+        {
+            string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx\\imported\\vgg";
+            if (!Directory.Exists(strTestPath))
+                Directory.CreateDirectory(strTestPath);
+
+            string strOnnxFile = downloadOnnxVGG19Model();
+            MyCaffeConversionControl<T> convert = new MyCaffeConversionControl<T>();
+
+            DatasetDescriptor dsTraining = null;
+            if (strTrainingDs != null)
+            {
+                DatasetFactory factory = new DatasetFactory();
+                dsTraining = factory.LoadDataset(strTrainingDs);
+            }
+
+            CudaDnn<T> cuda = new CudaDnn<T>(0);
+            MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+            Trace.WriteLine(convert.ReportString);
+
+            data.Save(strTestPath, "VGG19" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+        }
+
+        private string downloadOnnxResNet50Model()
+        {
+            // Download a small onnx model from https://github.com/onnx (dowload is 548mb)
+            double dfSizeInMb = 97.8;
+            string strModel = "resnet50-v1-7.onnx";
+            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/resnet/model/" + strModel;
+            return download(strModel, strUrl, dfSizeInMb);
+        }
+
+        public void TestImportOnnxResNet50(string strTrainingDs)
+        {
+            string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx\\imported\\resnet";
+            if (!Directory.Exists(strTestPath))
+                Directory.CreateDirectory(strTestPath);
+
+            string strOnnxFile = downloadOnnxResNet50Model();
+            MyCaffeConversionControl<T> convert = new MyCaffeConversionControl<T>();
+
+            DatasetDescriptor dsTraining = null;
+            if (strTrainingDs != null)
+            {
+                DatasetFactory factory = new DatasetFactory();
+                dsTraining = factory.LoadDataset(strTrainingDs);
+            }
+
+            CudaDnn<T> cuda = new CudaDnn<T>(0);
+            MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+            Trace.WriteLine(convert.ReportString);
+
+            data.Save(strTestPath, "ResNet50" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
         }
     }
 }

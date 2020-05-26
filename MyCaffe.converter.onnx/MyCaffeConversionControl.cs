@@ -150,14 +150,15 @@ namespace MyCaffe.converter.onnx
         /// <param name="cuda">Specifies the connection to cuda uses to interact with the GPU.</param>
         /// <param name="log">Specifies the output log used to show progress.</param>
         /// <param name="strOnnxFile">Specifies the ONNX .onnx file.</param>
+        /// <param name="bFixupNeuronNodes">Optionally, specifies to fixup the neuron nodes (e.g. Relu, Prelu, Elu, Sigmoid, Tahn, etc.) by connecting them to inline nodes by connnecting them back to their parent which is common in Caffe type models (default = true).</param>
         /// <param name="dsTraining">Optionally, specifies a training dataset which when supplied converts the model to a training model where inputs 
         /// are replaced with data layers, and outputs (e.g. softmax) with loss and accuracy layers (default = false).</param>
         /// <returns>The MyCaffe model description, model weights and image mean are returned as a MyCaffeModelData object.</returns>
-        public MyCaffeModelData ConvertOnnxToMyCaffeFromFile(CudaDnn<T> cuda, Log log, string strOnnxFile, DatasetDescriptor dsTraining = null)
+        public MyCaffeModelData ConvertOnnxToMyCaffeFromFile(CudaDnn<T> cuda, Log log, string strOnnxFile, bool bFixlupNeuronNodes = true, DatasetDescriptor dsTraining = null)
         {
             PersistOnnx persist = new PersistOnnx();
             ModelProto proto = persist.Load(strOnnxFile);
-            return ConvertOnnxToMyCaffe(cuda, log, proto, dsTraining);
+            return ConvertOnnxToMyCaffe(cuda, log, proto, bFixlupNeuronNodes, dsTraining);
         }
 
         /// <summary>
@@ -166,12 +167,13 @@ namespace MyCaffe.converter.onnx
         /// <param name="cuda">Specifies the connection to cuda uses to interact with the GPU.</param>
         /// <param name="log">Specifies the output log used to show progress.</param>
         /// <param name="onnxModel">Specifies the ONNX model.</param>
+        /// <param name="bFixupNeuronNodes">Optionally, specifies to fixup the neuron nodes (e.g. Relu, Prelu, Elu, Sigmoid, Tahn, etc.) by connecting them to inline nodes by connnecting them back to their parent which is common in Caffe type models (default = true).</param>
         /// <param name="dsTraining">Optionally, specifies a training dataset which when supplied converts the model to a training model where inputs 
         /// are replaced with data layers, and outputs (e.g. softmax) with loss and accuracy layers (default = false).</param>
         /// <returns>The MyCaffe model description, model weights and image mean are returned as a MyCaffeModelData object.</returns>
-        public MyCaffeModelData ConvertOnnxToMyCaffe(CudaDnn<T> cuda, Log log, ModelProto onnxModel, DatasetDescriptor dsTraining = null)
+        public MyCaffeModelData ConvertOnnxToMyCaffe(CudaDnn<T> cuda, Log log, ModelProto onnxModel, bool bFixupNeuronNodes = true, DatasetDescriptor dsTraining = null)
         {
-            Tuple<NetParameter, BlobCollection<T>> data = convertToMyCaffe(cuda, log, onnxModel, dsTraining);
+            Tuple<NetParameter, BlobCollection<T>> data = convertToMyCaffe(cuda, log, onnxModel, bFixupNeuronNodes, dsTraining);
 
             NetParameter netParam = data.Item1;
             RawProto protoMyCaffe = netParam.ToProto("root");
@@ -363,26 +365,63 @@ namespace MyCaffe.converter.onnx
                     node.Input.Add(strBottom);
                 }
 
-                foreach (Blob<T> blob in layer.blobs)
-                {
-                    node.Input.Add(blob.Name);
-                }
-
                 foreach (string strTop in layer.layer_param.top)
                 {
                     node.Output.Add(strTop);
                 }
 
+                BlobCollection<T> colParams = new BlobCollection<T>();
+
                 switch (layer.type)
                 {
+                    case LayerParameter.LayerType.ELTWISE:
+                        if (layer.layer_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.SUM)
+                            node.OpType = OnnxDefinitions.OPERATORS.Add.ToString();
+                        else if (layer.layer_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.PROD)
+                            node.OpType = OnnxDefinitions.OPERATORS.Mul.ToString();
+                        else if (layer.layer_param.eltwise_param.operation == EltwiseParameter.EltwiseOp.MAX)
+                            node.OpType = OnnxDefinitions.OPERATORS.Max.ToString();
+                        break;
+
+                    case LayerParameter.LayerType.BATCHNORM:
+                        node.OpType = OnnxDefinitions.OPERATORS.BatchNormalization.ToString();
+                        addAttributes(node.Attribute, layer.layer_param.batch_norm_param);
+                        break;
+
+                    case LayerParameter.LayerType.CONCAT:
+                        node.OpType = OnnxDefinitions.OPERATORS.Concat.ToString();
+                        addAttributes(node.Attribute, layer.layer_param.concat_param);
+                        break;
+
                     case LayerParameter.LayerType.CONVOLUTION:
                         node.OpType = OnnxDefinitions.OPERATORS.Conv.ToString();
                         addAttributes(node.Attribute, layer.layer_param.convolution_param);
+                        colParams.Add(layer.blobs[0]);
+                        if (layer.layer_param.convolution_param.bias_term)
+                            colParams.Add(layer.blobs[1]);
+                        break;
+
+                    case LayerParameter.LayerType.DROPOUT:
+                        node.OpType = OnnxDefinitions.OPERATORS.Dropout.ToString();
+                        addAttributes(node.Attribute, layer.layer_param.dropout_param);
+                        break;
+
+                    case LayerParameter.LayerType.FLATTEN:
+                        node.OpType = OnnxDefinitions.OPERATORS.Flatten.ToString();
+                        addAttributes(node.Attribute, layer.layer_param.flatten_param);
                         break;
 
                     case LayerParameter.LayerType.INNERPRODUCT:
                         node.OpType = OnnxDefinitions.OPERATORS.Gemm.ToString();
                         addAttributes(node.Attribute, layer.layer_param.inner_product_param);
+                        colParams.Add(layer.blobs[0]);
+                        if (layer.layer_param.inner_product_param.bias_term)
+                            colParams.Add(layer.blobs[1]);
+                        break;
+
+                    case LayerParameter.LayerType.LRN:
+                        node.OpType = OnnxDefinitions.OPERATORS.LRN.ToString();
+                        addAttributes(node.Attribute, layer.layer_param.lrn_param);
                         break;
 
                     case LayerParameter.LayerType.POOLING:
@@ -409,6 +448,7 @@ namespace MyCaffe.converter.onnx
 
                     case LayerParameter.LayerType.PRELU:
                         node.OpType = OnnxDefinitions.OPERATORS.PRelu.ToString();
+                        colParams = layer.blobs;
                         break;
 
                     case LayerParameter.LayerType.RELU:
@@ -425,8 +465,34 @@ namespace MyCaffe.converter.onnx
                         break;
                 }
 
+                foreach (Blob<T> blob in colParams)
+                {
+                    node.Input.Add(blob.Name);
+                }
+
                 rg.Add(node);
             }
+        }
+
+        private void addAttributes(RepeatedField<AttributeProto> rgA, BatchNormParameter p)
+        {
+            AttributeProto attrib = new AttributeProto();
+            attrib.Name = "epsilon";
+            attrib.F = (float)p.eps;
+            rgA.Add(attrib);
+
+            attrib = new AttributeProto();
+            attrib.Name = "momentum";
+            attrib.F = (float)p.moving_average_fraction;
+            rgA.Add(attrib);
+        }
+
+        private void addAttributes(RepeatedField<AttributeProto> rgA, ConcatParameter p)
+        {
+            AttributeProto attrib = new AttributeProto();
+            attrib.Name = "axis";
+            attrib.I = p.axis;
+            rgA.Add(attrib);
         }
 
         private void addAttributes(RepeatedField<AttributeProto> rgA, ConvolutionParameter p)
@@ -448,7 +514,7 @@ namespace MyCaffe.converter.onnx
             rgA.Add(attrib);
 
             attrib = new AttributeProto();
-            attrib.Name = "pad";
+            attrib.Name = "pads";
             h = (p.pad_h.HasValue) ? p.pad_h.Value : (p.pad.Count > 0) ? p.pad[0] : 0;
             attrib.Ints.Add(h);
             w = (p.pad_w.HasValue) ? p.pad_w.Value : (p.pad.Count > 0) ? p.pad[0] : 0;
@@ -469,6 +535,32 @@ namespace MyCaffe.converter.onnx
             attrib = new AttributeProto();
             attrib.Name = "group";
             attrib.I = p.group;
+            rgA.Add(attrib);
+        }
+
+        private void addAttributes(RepeatedField<AttributeProto> rgA, DropoutParameter p)
+        {
+            AttributeProto attrib = new AttributeProto();
+            attrib.Name = "ratio";
+            attrib.F = (float)p.dropout_ratio;
+            rgA.Add(attrib);
+
+            attrib = new AttributeProto();
+            attrib.Name = "seed";
+            attrib.I = p.seed;
+            rgA.Add(attrib);
+
+            attrib = new AttributeProto();
+            attrib.Name = "training_mode";
+            attrib.I = (p.active) ? 1 : 0;
+            rgA.Add(attrib);
+        }
+
+        private void addAttributes(RepeatedField<AttributeProto> rgA, FlattenParameter p)
+        {
+            AttributeProto attrib = new AttributeProto();
+            attrib.Name = "axis";
+            attrib.I = p.axis;
             rgA.Add(attrib);
         }
 
@@ -495,6 +587,29 @@ namespace MyCaffe.converter.onnx
             rgA.Add(attrib);
         }
 
+        private void addAttributes(RepeatedField<AttributeProto> rgA, LRNParameter p)
+        {
+            AttributeProto attrib = new AttributeProto();
+            attrib.Name = "alpha";
+            attrib.F = (float)p.alpha;
+            rgA.Add(attrib);
+
+            attrib = new AttributeProto();
+            attrib.Name = "beta";
+            attrib.F = (float)p.beta;
+            rgA.Add(attrib);
+
+            attrib = new AttributeProto();
+            attrib.Name = "bias";
+            attrib.F = (float)p.k;
+            rgA.Add(attrib);
+
+            attrib = new AttributeProto();
+            attrib.Name = "size";
+            attrib.F = (float)p.local_size;
+            rgA.Add(attrib);
+        }
+
         private void addAttributes(RepeatedField<AttributeProto> rgA, PoolingParameter p)
         {
             AttributeProto attrib = new AttributeProto();
@@ -514,7 +629,7 @@ namespace MyCaffe.converter.onnx
             rgA.Add(attrib);
 
             attrib = new AttributeProto();
-            attrib.Name = "pad";
+            attrib.Name = "pads";
             h = (p.pad_h.HasValue) ? p.pad_h.Value : (p.pad.Count > 0) ? p.pad[0] : 0;
             attrib.Ints.Add(h);
             w = (p.pad_w.HasValue) ? p.pad_w.Value : (p.pad.Count > 0) ? p.pad[0] : 0;
@@ -542,7 +657,7 @@ namespace MyCaffe.converter.onnx
             rgA.Add(attrib);
         }
 
-        private Tuple<NetParameter, BlobCollection<T>> convertToMyCaffe(CudaDnn<T> cuda, Log log, ModelProto proto, DatasetDescriptor dsTraining = null)
+        private Tuple<NetParameter, BlobCollection<T>> convertToMyCaffe(CudaDnn<T> cuda, Log log, ModelProto proto, bool bFixupNeuronNodes, DatasetDescriptor dsTraining = null)
         {
             try
             {
@@ -559,6 +674,9 @@ namespace MyCaffe.converter.onnx
                 addInputs(proto.Graph.Input, netParam, true, rgInputs.Item1, rgInputs.Item2);
 
                 NetParameter netParamFixed = fixupModel(netParam, colLearnableBlobs, rgInputs.Item2);
+
+                if (bFixupNeuronNodes)
+                    netParamFixed = fixupModelNeuronNodes(netParamFixed);
 
                 if (dsTraining != null)
                     netParamFixed = fixupModelForTraining(netParamFixed, dsTraining);
@@ -629,13 +747,85 @@ namespace MyCaffe.converter.onnx
             return netParam;
         }
 
+        private bool isNeuron(LayerParameter.LayerType type)
+        {
+            if (type == LayerParameter.LayerType.RELU ||
+                type == LayerParameter.LayerType.TANH ||
+                type == LayerParameter.LayerType.SIGMOID ||
+                type == LayerParameter.LayerType.ELU ||
+                type == LayerParameter.LayerType.PRELU ||
+                type == LayerParameter.LayerType.DROPOUT)
+                return true;
+
+            return false;
+        }
+
+        private bool replaceTop(LayerParameter p, string strTopToReplace, string strNewTop)
+        {
+            for (int i=0; i<p.top.Count; i++)
+            {
+                if (p.top[i] == strTopToReplace)
+                {
+                    p.top[i] = strNewTop;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool replaceBtm(LayerParameter p, string strBtmToReplace, string strNewBtm)
+        {
+            for (int i = 0; i < p.bottom.Count; i++)
+            {
+                if (p.bottom[i] == strBtmToReplace)
+                {
+                    p.bottom[i] = strNewBtm;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private NetParameter fixupModelNeuronNodes(NetParameter netParam)
+        {
+            foreach (LayerParameter layer in netParam.layer)
+            {
+                if (isNeuron(layer.type))
+                {
+                    string strBtm = layer.bottom[0];
+                    string strTop = layer.top[0];
+
+                    LayerParameter layerPrev = findLayerWithTop(netParam, strBtm);
+                    List<LayerParameter> rgLayerNext = findLayersWithBtm(netParam, strTop);
+
+                    // MyCaffe neural nodes pass data right back to the prev node.
+                    layer.top[0] = layer.bottom[0];
+
+                    // Connect the prev node top with the next node btm.
+                    foreach (LayerParameter layerNext in rgLayerNext)
+                    {
+                        replaceBtm(layerNext, strTop, strBtm);
+                    }
+                }
+            }
+
+            return netParam;
+        }
+
         private NetParameter fixupModel(NetParameter netParam, BlobCollection<T> col, List<string> rgstrInvalidInput)
         {
             NetParameter p = netParam.Clone();
 
             // Change input name to 'data'
-            LayerParameter layer1 = findLayerWithBtm(p, p.input[0]);
-            layer1.bottom[0] = "data";
+            List<LayerParameter> rgLayer1 = findLayersWithBtm(p, p.input[0]);
+            foreach (LayerParameter layer1 in rgLayer1)
+            {
+                replaceBtm(layer1, p.input[0], "data");
+                m_strReport += "Changed layer '" + layer1.name + " (" + layer1.type.ToString() + ")' input from '" + p.input[0] + "' to 'data'";
+            }
+
             m_strReport += "Changed data input[0] from '" + p.input[0] + "' to 'data'";
             p.input[0] = "data";
 
@@ -699,9 +889,9 @@ namespace MyCaffe.converter.onnx
                             string strTop = item.Layer.top[0];
 
                             LayerParameter layerPrev = findLayerWithTop(p, strBtm);
-                            LayerParameter layerNext = findLayerWithBtm(p, strTop);
+                            List<LayerParameter> rgLayerNext = findLayersWithBtm(p, strTop);
 
-                            if (layerPrev != null && layerNext != null)
+                            if (layerPrev != null && rgLayerNext.Count > 0)
                             {
                                 // Remove the reshape layer.
                                 p.layer.Remove(item.Layer);
@@ -720,14 +910,17 @@ namespace MyCaffe.converter.onnx
 
                                 // Replace the bottom of next layer (that the reshape outputs to)
                                 // with the top of the layer previous to the reshape layer.
-                                for (int i = 0; i < layerNext.bottom.Count; i++)
+                                foreach (LayerParameter layerNext in rgLayerNext)
                                 {
-                                    if (layerNext.bottom[i] == strTop)
+                                    for (int i = 0; i < layerNext.bottom.Count; i++)
                                     {
-                                        layerNext.bottom[i] = strTop1;
-                                        m_strReport += "connected joining layers with '" + strTop1 + "'...";
+                                        if (layerNext.bottom[i] == strTop)
+                                        {
+                                            layerNext.bottom[i] = strTop1;
+                                            m_strReport += "connected joining layers with '" + strTop1 + "'...";
 
-                                        break;
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -750,15 +943,17 @@ namespace MyCaffe.converter.onnx
             return null;
         }
 
-        private LayerParameter findLayerWithBtm(NetParameter net, string strBtm)
+        private List<LayerParameter> findLayersWithBtm(NetParameter net, string strBtm)
         {
+            List<LayerParameter> rgLayers = new List<LayerParameter>();
+
             foreach (LayerParameter layer in net.layer)
             {
                 if (layer.bottom.Contains(strBtm))
-                    return layer;
+                    rgLayers.Add(layer);
             }
 
-            return null;
+            return rgLayers;
         }
 
         private Tuple<List<string>, List<string>> addInputs(RepeatedField<ValueInfoProto> rg, NetParameter p, bool bAdd, List<string> rgstrAvailable = null, List<string> rgstrInvalid = null)
@@ -1075,7 +1270,35 @@ namespace MyCaffe.converter.onnx
                 if (string.IsNullOrEmpty(strNodeName))
                     strNodeName = node.Output[0];
 
-                if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.Conv))
+                List<string> rgstrExcludedInputs = new List<string>();
+
+                if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Add))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.eltwise_param, EltwiseParameter.EltwiseOp.SUM);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.BatchNormalization))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.BATCHNORM);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.batch_norm_param);
+
+                    for (int i = 1; i < node.Input.Count; i++)
+                    {
+                        rgstrExcludedInputs.Add(node.Input[i]);
+                    }
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Concat))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.CONCAT);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.concat_param);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Conv))
                 {
                     for (int i = 1; i < node.Input.Count; i++)
                     {
@@ -1100,7 +1323,14 @@ namespace MyCaffe.converter.onnx
                     fillParameter(node.Attribute, layer.dropout_param);
                 }
 
-                else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.Gemm))
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Flatten))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.FLATTEN);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.flatten_param);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Gemm))
                 {
                     for (int i = 1; i < node.Input.Count; i++)
                     {
@@ -1125,35 +1355,49 @@ namespace MyCaffe.converter.onnx
                     fillParameter(node.Attribute, layer.lrn_param);
                 }
 
-                else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.AveragePool))
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.AveragePool))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.POOLING);
                     layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.pooling_param, PoolingParameter.PoolingMethod.AVE, false);
                 }
 
-                else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.MaxPool))
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.MaxPool))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.POOLING);
                     layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.pooling_param, PoolingParameter.PoolingMethod.MAX, false);
                 }
 
-                else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.GlobalAveragePool))
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Max))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.eltwise_param, EltwiseParameter.EltwiseOp.MAX);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Mul))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.ELTWISE);
+                    layer.name = strNodeName;
+                    fillParameter(node.Attribute, layer.eltwise_param, EltwiseParameter.EltwiseOp.PROD);
+                }
+
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.GlobalAveragePool))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.POOLING);
                     layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.pooling_param, PoolingParameter.PoolingMethod.AVE, true);
                 }
 
-                else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.GlobalMaxPool))
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.GlobalMaxPool))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.POOLING);
                     layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.pooling_param, PoolingParameter.PoolingMethod.MAX, true);
                 }
 
-                else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.PRelu))
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.PRelu))
                 {
                     for (int i = 1; i < node.Input.Count; i++)
                     {
@@ -1166,14 +1410,14 @@ namespace MyCaffe.converter.onnx
                     fillParameter(node.Attribute, layer.prelu_param);
                 }
 
-                else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.Relu))
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Relu))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.RELU);
                     layer.name = strNodeName;
                     fillParameter(node.Attribute, layer.relu_param, false);
                 }
 
-                else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.LeakyRelu))
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.LeakyRelu))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.RELU);
                     layer.name = strNodeName;
@@ -1184,10 +1428,10 @@ namespace MyCaffe.converter.onnx
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.RESHAPE);
                     layer.name = strNodeName;
-                    fillParameter(node.Attribute,  layer.reshape_param);
+                    fillParameter(node.Attribute, layer.reshape_param);
                 }
 
-                else if (node.OpType == onnx.GetString(OnnxDefinitions.OPERATORS.Softmax))
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Softmax))
                 {
                     layer = new LayerParameter(LayerParameter.LayerType.SOFTMAX);
                     layer.name = strNodeName;
@@ -1199,7 +1443,7 @@ namespace MyCaffe.converter.onnx
 
                 foreach (string strInput in node.Input)
                 {
-                    if (!rgstrLearnableBlobs.Contains(strInput))
+                    if (!rgstrLearnableBlobs.Contains(strInput) && !rgstrExcludedInputs.Contains(strInput))
                         layer.bottom.Add(strInput);
 
                     foreach (string strLearnable in rgstrLearnableBlobs)
@@ -1218,6 +1462,40 @@ namespace MyCaffe.converter.onnx
             }
 
             return colLearnable;
+        }
+
+        private void fillParameter(RepeatedField<AttributeProto> rg, EltwiseParameter p, EltwiseParameter.EltwiseOp op)
+        {
+            p.operation = op;
+        }
+
+        private void fillParameter(RepeatedField<AttributeProto> rg, BatchNormParameter p)
+        {
+            foreach (AttributeProto attrib in rg)
+            {
+                if (attrib.Name == "epsilon")
+                {
+                    p.eps = attrib.F;
+                    break;
+                }
+                else if (attrib.Name == "momentum")
+                {
+                    p.moving_average_fraction = attrib.F;
+                    break;
+                }
+            }
+        }
+
+        private void fillParameter(RepeatedField<AttributeProto> rg, ConcatParameter p)
+        {
+            foreach (AttributeProto attrib in rg)
+            {
+                if (attrib.Name == "axis")
+                {
+                    p.axis = (int)attrib.I;
+                    break;
+                }
+            }
         }
 
         private void fillParameter(RepeatedField<AttributeProto> rg, ConvolutionParameter p)
@@ -1268,7 +1546,7 @@ namespace MyCaffe.converter.onnx
                     }
                 }
 
-                else if (attrib.Name == "pad")
+                else if (attrib.Name == "pads")
                 {
                     long h = attrib.Ints[0];
                     if (h < 0)
@@ -1325,6 +1603,18 @@ namespace MyCaffe.converter.onnx
             }
         }
 
+        private void fillParameter(RepeatedField<AttributeProto> rg, FlattenParameter p)
+        {
+            foreach (AttributeProto attrib in rg)
+            {
+                if (attrib.Name == "axis")
+                {
+                    p.axis = (int)attrib.I;
+                    break;
+                }
+            }
+        }
+
         private void fillParameter(RepeatedField<AttributeProto> rg, PoolingParameter p, PoolingParameter.PoolingMethod pool, bool bGlobal)
         {
             foreach (AttributeProto attrib in rg)
@@ -1373,7 +1663,7 @@ namespace MyCaffe.converter.onnx
                     }
                 }
 
-                else if (attrib.Name == "pad")
+                else if (attrib.Name == "pads")
                 {
                     long h = attrib.Ints[0];
                     if (h < 0)
