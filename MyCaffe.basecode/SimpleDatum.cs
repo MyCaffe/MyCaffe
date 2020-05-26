@@ -2211,42 +2211,45 @@ namespace MyCaffe.basecode
 
                 for (int i = 0; i < rgImg.Length; i++)
                 {
-                    if (rgImg[i].ByteData != null)
+                    if (rgImg[i] != null)
                     {
-                        for (int n = 0; n < rgSums.Length; n++)
+                        if (rgImg[i].ByteData != null)
                         {
-                            rgSums[n] += rgImg[i].ByteData[n];
+                            for (int n = 0; n < rgSums.Length; n++)
+                            {
+                                rgSums[n] += rgImg[i].ByteData[n];
+                            }
                         }
-                    }
-                    else if (rgImg[i].RealDataD != null)
-                    {
-                        for (int n = 0; n < rgSums.Length; n++)
+                        else if (rgImg[i].RealDataD != null)
                         {
-                            rgSums[n] += (float)rgImg[i].RealDataD[n];
+                            for (int n = 0; n < rgSums.Length; n++)
+                            {
+                                rgSums[n] += (float)rgImg[i].RealDataD[n];
+                            }
                         }
-                    }
-                    else if (rgImg[i].RealDataF != null)
-                    {
-                        for (int n = 0; n < rgSums.Length; n++)
+                        else if (rgImg[i].RealDataF != null)
                         {
-                            rgSums[n] += (float)rgImg[i].RealDataF[n];
+                            for (int n = 0; n < rgSums.Length; n++)
+                            {
+                                rgSums[n] += (float)rgImg[i].RealDataF[n];
+                            }
                         }
-                    }
-                    else
-                    {
-                        throw new Exception("No data in rgImg[" + i.ToString() + "]!");
-                    }
+                        else
+                        {
+                            throw new Exception("No data in rgImg[" + i.ToString() + "]!");
+                        }
 
-                    if (sw.Elapsed.TotalMilliseconds > 2000)
-                    {
-                        double dfPct = (double)i / (double)rgImg.Length;
-                        log.WriteLine("processing mean (" + dfPct.ToString("P") + ")");
-                        sw.Restart();
-
-                        if (rgAbort != null)
+                        if (sw.Elapsed.TotalMilliseconds > 2000)
                         {
-                            if (EventWaitHandle.WaitAny(rgAbort, 0) != EventWaitHandle.WaitTimeout)
-                                return null;
+                            double dfPct = (double)i / (double)rgImg.Length;
+                            log.WriteLine("processing mean (" + dfPct.ToString("P") + ")");
+                            sw.Restart();
+
+                            if (rgAbort != null)
+                            {
+                                if (EventWaitHandle.WaitAny(rgAbort, 0) != EventWaitHandle.WaitTimeout)
+                                    return null;
+                            }
                         }
                     }
                 }
