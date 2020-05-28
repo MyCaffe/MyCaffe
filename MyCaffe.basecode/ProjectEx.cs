@@ -1431,7 +1431,7 @@ namespace MyCaffe.basecode
 
             RawProto net_name = proto.FindChild("name");
             if (net_name != null)
-                net_name.Value += " - Live";
+                net_name.Value += "-Live";
 
             RawProtoCollection rgRemove = new RawProtoCollection();
 
