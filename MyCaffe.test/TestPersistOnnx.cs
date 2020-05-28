@@ -514,12 +514,10 @@ namespace MyCaffe.test
             string strModelPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\mnist";
             MyCaffeConversionControl<T> convert = new MyCaffeConversionControl<T>();
 
-            string strOnnxModelFile = strTestPath + "\\lenet_from_mycaffe.onnx";
-            if (!File.Exists(strOnnxModelFile))
-                throw new Exception("You must first run 'TestConvertLeNetToOnnx' to create the .onnx file.");
-
             SettingsCaffe s = new SettingsCaffe();
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, new CancelEvent());
+
+            string strOnnxModelFile = strTestPath + "\\lenet_from_mycaffe.onnx";
 
             ProjectEx prj = new ProjectEx("AlexNet");
             prj.SolverDescription = loadTextFile(strModelPath + "\\lenet_solver.prototxt");
@@ -547,6 +545,8 @@ namespace MyCaffe.test
             MyCaffeConversionControl<T> convert = new MyCaffeConversionControl<T>();
 
             string strOnnxModelFile = strTestPath + "\\lenet_from_mycaffe.onnx";
+            if (!File.Exists(strOnnxModelFile))
+                throw new Exception("You must first run 'TestConvertLeNetToOnnx' to create the .onnx file.");
 
             CudaDnn<T> cuda = new CudaDnn<T>(0);
             MyCaffeModelData model = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxModelFile);
