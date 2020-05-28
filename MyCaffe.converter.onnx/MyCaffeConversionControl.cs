@@ -1739,7 +1739,8 @@ namespace MyCaffe.converter.onnx
                 }
                 else if (attrib.Name == "size")
                 {
-                    p.local_size = (uint)attrib.I;
+                    if (attrib.I != 0)
+                        p.local_size = (uint)attrib.I;
                 }
             }
         }
