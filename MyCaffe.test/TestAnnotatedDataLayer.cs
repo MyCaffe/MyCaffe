@@ -224,6 +224,7 @@ namespace MyCaffe.test
             m_settings.EnablePairInputSelection = false;
             m_settings.EnableRandomInputSelection = false;
             m_settings.ImageDbLoadDataCriteria = true;  // Required, for Annotation Data is stored in the Data Criteria.
+            m_settings.SkipMeanCheck = true;
 
             m_db = createImageDb(null);
 
