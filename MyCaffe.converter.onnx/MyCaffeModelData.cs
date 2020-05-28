@@ -15,6 +15,9 @@ namespace MyCaffe.converter.onnx
         string m_strModelDescription;
         byte[] m_rgWeights;
         byte[] m_rgImageMean;
+        string m_strLastModelFileName = "";
+        string m_strLastImageMeanFileName = "";
+        string m_strLastWeightsFileName = "";
 
         /// <summary>
         /// The constructor.
@@ -65,6 +68,7 @@ namespace MyCaffe.converter.onnx
             if (File.Exists(strModel))
                 File.Delete(strModel);
 
+            m_strLastModelFileName = strModel;
             using (StreamWriter sr = new StreamWriter(strModel))
             {
                 sr.WriteLine(m_strModelDescription);
@@ -77,11 +81,16 @@ namespace MyCaffe.converter.onnx
                 if (File.Exists(strWts))
                     File.Delete(strWts);
 
+                m_strLastWeightsFileName = strWts;
                 using (FileStream fs = new FileStream(strWts, FileMode.CreateNew, FileAccess.Write))
                 using (BinaryWriter bw = new BinaryWriter(fs))
                 {
                     bw.Write(m_rgWeights);
                 }
+            }
+            else
+            {
+                m_strLastWeightsFileName = "";
             }
 
             if (m_rgImageMean != null)
@@ -91,12 +100,41 @@ namespace MyCaffe.converter.onnx
                 if (File.Exists(strWts))
                     File.Delete(strWts);
 
+                m_strLastImageMeanFileName = strWts;
                 using (FileStream fs = new FileStream(strWts, FileMode.CreateNew, FileAccess.Write))
                 using (BinaryWriter bw = new BinaryWriter(fs))
                 {
                     bw.Write(m_rgImageMean);
                 }
             }
+            else
+            {
+                m_strLastImageMeanFileName = "";
+            }
+        }
+
+        /// <summary>
+        /// Returns the file name of the last saved model description file.
+        /// </summary>
+        public string LastSavedModeDescriptionFileName
+        {
+            get { return m_strLastModelFileName; }
+        }
+
+        /// <summary>
+        /// Returns the file name of the last saved weights file.
+        /// </summary>
+        public string LastSavedWeightsFileName
+        {
+            get { return m_strLastWeightsFileName; }
+        }
+
+        /// <summary>
+        /// Returns the file name of the last saved image mean file.
+        /// </summary>
+        public string LastSavedImageMeanFileName
+        {
+            get { return m_strLastImageMeanFileName; }
         }
     }
 }
