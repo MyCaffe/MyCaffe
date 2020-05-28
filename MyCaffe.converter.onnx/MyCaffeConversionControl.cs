@@ -12,6 +12,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -657,6 +658,21 @@ namespace MyCaffe.converter.onnx
             rgA.Add(attrib);
         }
 
+        private string clean(string str)
+        {
+            string strOut = "";
+
+            foreach (char ch in str)
+            {
+                if (!char.IsWhiteSpace(ch))
+                {
+                    strOut += ch;
+                }
+            }
+
+            return strOut;
+        }
+
         private Tuple<NetParameter, BlobCollection<T>> convertToMyCaffe(CudaDnn<T> cuda, Log log, ModelProto proto, bool bFixupNeuronNodes, DatasetDescriptor dsTraining = null)
         {
             try
@@ -667,7 +683,7 @@ namespace MyCaffe.converter.onnx
 
                 m_strReport = "";
 
-                netParam.name = proto.Graph.Name;
+                netParam.name = clean(proto.Graph.Name);
                 Tuple<List<string>, List<string>> rgInputs = addInputs(proto.Graph.Input, netParam, false);
                 addTensors(proto.Graph.Initializer, colLearnableBlobs, cuda, log);
                 colLearnableBlobs = addLayers(proto.Graph.Node, netParam, colLearnableBlobs, onnx, rgInputs.Item1);
