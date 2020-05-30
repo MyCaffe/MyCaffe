@@ -151,7 +151,7 @@ namespace MyCaffe.converter.onnx
         /// <param name="cuda">Specifies the connection to cuda uses to interact with the GPU.</param>
         /// <param name="log">Specifies the output log used to show progress.</param>
         /// <param name="strOnnxFile">Specifies the ONNX .onnx file.</param>
-        /// <param name="bFixupNeuronNodes">Optionally, specifies to fixup the neuron nodes (e.g. Relu, Prelu, Elu, Sigmoid, Tahn, etc.) by connecting them to inline nodes by connnecting them back to their parent which is common in Caffe type models (default = true).</param>
+        /// <param name="bFixlupNeuronNodes">Optionally, specifies to fixup the neuron nodes (e.g. Relu, Prelu, Elu, Sigmoid, Tahn, etc.) by connecting them to inline nodes by connnecting them back to their parent which is common in Caffe type models (default = true).</param>
         /// <param name="dsTraining">Optionally, specifies a training dataset which when supplied converts the model to a training model where inputs 
         /// are replaced with data layers, and outputs (e.g. softmax) with loss and accuracy layers (default = false).</param>
         /// <returns>The MyCaffe model description, model weights and image mean are returned as a MyCaffeModelData object.</returns>
