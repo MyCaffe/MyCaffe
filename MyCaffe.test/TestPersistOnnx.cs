@@ -517,22 +517,34 @@ namespace MyCaffe.test
             SettingsCaffe s = new SettingsCaffe();
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(s, m_log, new CancelEvent());
 
-            string strOnnxModelFile = strTestPath + "\\lenet_from_mycaffe.onnx";
+            try
+            {
+                string strOnnxModelFile = strTestPath + "\\lenet_from_mycaffe.onnx";
 
-            ProjectEx prj = new ProjectEx("AlexNet");
-            prj.SolverDescription = loadTextFile(strModelPath + "\\lenet_solver.prototxt");
-            prj.ModelDescription = loadTextFile(strModelPath + "\\lenet_train_test.prototxt");
-            prj.WeightsState = loadBinaryFile(strModelPath + "\\my_weights.mycaffemodel");
+                ProjectEx prj = new ProjectEx("AlexNet");
+                prj.SolverDescription = loadTextFile(strModelPath + "\\lenet_solver.prototxt");
+                prj.ModelDescription = loadTextFile(strModelPath + "\\lenet_train_test.prototxt");
+                prj.WeightsState = loadBinaryFile(strModelPath + "\\my_weights.mycaffemodel");
 
-            DatasetFactory factory = new DatasetFactory();
-            prj.SetDataset(factory.LoadDataset("MNIST"));
+                DatasetFactory factory = new DatasetFactory();
+                prj.SetDataset(factory.LoadDataset("MNIST"));
 
-            mycaffe.Load(Phase.TRAIN, prj);
+                mycaffe.Load(Phase.TRAIN, prj);
 
-            if (File.Exists(strOnnxModelFile))
-                File.Delete(strOnnxModelFile);
+                if (File.Exists(strOnnxModelFile))
+                    File.Delete(strOnnxModelFile);
 
-            convert.ConvertMyCaffeToOnnxFile(mycaffe, strOnnxModelFile);
+                convert.ConvertMyCaffeToOnnxFile(mycaffe, strOnnxModelFile);
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                mycaffe.Dispose();
+                convert.Dispose();
+            }
         }
 
         public void TestConvertOnnxToLeNet()
@@ -548,12 +560,25 @@ namespace MyCaffe.test
             if (!File.Exists(strOnnxModelFile))
                 throw new Exception("You must first run 'TestConvertLeNetToOnnx' to create the .onnx file.");
 
-            CudaDnn<T> cuda = new CudaDnn<T>(0);
-            MyCaffeModelData model = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxModelFile);
-            cuda.Dispose();
+            CudaDnn<T> cuda = null;
 
-            saveTextToFile(model.ModelDescription, strModelPath + "\\onnx_to_lenet_runmodel.prototxt");
-            saveBinaryToFile(model.Weights, strModelPath + "\\onnx_to_lenet_runmodel.mycaffemodel");
+            try
+            {
+                cuda = new CudaDnn<T>(0);
+                MyCaffeModelData model = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxModelFile);
+
+                saveTextToFile(model.ModelDescription, strModelPath + "\\onnx_to_lenet_runmodel.prototxt");
+                saveBinaryToFile(model.Weights, strModelPath + "\\onnx_to_lenet_runmodel.mycaffemodel");
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                cuda.Dispose();
+                convert.Dispose();
+            }
         }
 
         private string download(string strModel, string strUrl, double dfSizeInMb)
@@ -602,11 +627,25 @@ namespace MyCaffe.test
                 dsTraining = factory.LoadDataset(strTrainingDs);
             }
 
-            CudaDnn<T> cuda = new CudaDnn<T>(0);
-            MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
-            Trace.WriteLine(convert.ReportString);
+            CudaDnn<T> cuda = null;
 
-            data.Save(strTestPath, "AlexNet" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+            try
+            {
+                cuda = new CudaDnn<T>(0);
+                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+                Trace.WriteLine(convert.ReportString);
+
+                data.Save(strTestPath, "AlexNet" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                cuda.Dispose();
+                convert.Dispose();
+            }
         }
 
         private string downloadOnnxGoogNetModel()
@@ -634,11 +673,25 @@ namespace MyCaffe.test
                 dsTraining = factory.LoadDataset(strTrainingDs);
             }
 
-            CudaDnn<T> cuda = new CudaDnn<T>(0);
-            MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
-            Trace.WriteLine(convert.ReportString);
+            CudaDnn<T> cuda = null;
 
-            data.Save(strTestPath, "GoogNet" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+            try
+            {
+                cuda = new CudaDnn<T>(0);
+                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+                Trace.WriteLine(convert.ReportString);
+
+                data.Save(strTestPath, "GoogNet" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                cuda.Dispose();
+                convert.Dispose();
+            }
         }
 
         private string downloadOnnxVGG19Model()
@@ -666,11 +719,25 @@ namespace MyCaffe.test
                 dsTraining = factory.LoadDataset(strTrainingDs);
             }
 
-            CudaDnn<T> cuda = new CudaDnn<T>(0);
-            MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
-            Trace.WriteLine(convert.ReportString);
+            CudaDnn<T> cuda = null;
 
-            data.Save(strTestPath, "VGG19" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+            try
+            {
+                cuda = new CudaDnn<T>(0);
+                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+                Trace.WriteLine(convert.ReportString);
+
+                data.Save(strTestPath, "VGG19" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                cuda.Dispose();
+                convert.Dispose();
+            }
         }
 
         private string downloadOnnxResNet50Model()
@@ -698,11 +765,25 @@ namespace MyCaffe.test
                 dsTraining = factory.LoadDataset(strTrainingDs);
             }
 
-            CudaDnn<T> cuda = new CudaDnn<T>(0);
-            MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
-            Trace.WriteLine(convert.ReportString);
+            CudaDnn<T> cuda = null;
 
-            data.Save(strTestPath, "ResNet50" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+            try
+            {
+                cuda = new CudaDnn<T>(0);
+                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+                Trace.WriteLine(convert.ReportString);
+
+                data.Save(strTestPath, "ResNet50" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                cuda.Dispose();
+                convert.Dispose();
+            }
         }
     }
 }
