@@ -106,9 +106,10 @@ namespace MyCaffe.db.image
                 m_TrainingImages = new ImageSet2(ImageSet2.TYPE.TRAIN, log, m_factory, m_ds.TrainingSource, loadMethod, m_random, rgAbort);
                 m_TrainingImages.OnCalculateImageMean += OnCalculateImageMean;
                 QueryState qsTraining = m_TrainingImages.Initialize(bSilentLoad);
+                SimpleDatum sdMean = null;
 
                 if (!bSkipMeanCheck)
-                    m_TrainingImages.GetImageMean(log, rgAbort);
+                    sdMean = m_TrainingImages.GetImageMean(log, rgAbort);
 
                 if (EventWaitHandle.WaitAny(rgAbort, 0) != EventWaitHandle.WaitTimeout)
                     return 0;
@@ -118,7 +119,7 @@ namespace MyCaffe.db.image
                 QueryState qsTesting = m_TestingImages.Initialize(bSilentLoad);
 
                 if (!bSkipMeanCheck)
-                    m_TestingImages.GetImageMean(log, rgAbort);
+                    m_TestingImages.SetImageMean(sdMean);
 
                 if (EventWaitHandle.WaitAny(rgAbort, 0) != EventWaitHandle.WaitTimeout)
                     return 0;
