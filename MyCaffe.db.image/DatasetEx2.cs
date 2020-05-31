@@ -119,7 +119,7 @@ namespace MyCaffe.db.image
                 QueryState qsTesting = m_TestingImages.Initialize(bSilentLoad);
 
                 if (!bSkipMeanCheck)
-                    m_TestingImages.SetImageMean(sdMean);
+                    m_TestingImages.SetImageMean(sdMean, true);
 
                 if (EventWaitHandle.WaitAny(rgAbort, 0) != EventWaitHandle.WaitTimeout)
                     return 0;

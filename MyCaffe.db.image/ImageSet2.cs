@@ -272,9 +272,10 @@ namespace MyCaffe.db.image
         /// Sets the data source image mean.
         /// </summary>
         /// <param name="sd">Specifies the iamge mean to set.</param>
-        public void SetImageMean(SimpleDatum sd)
+        /// <param name="bSave">Optionally, specifies whether or not to save the image mean in the database (default = false).</param>
+        public void SetImageMean(SimpleDatum sd, bool bSave = false)
         {
-            m_masterList.SetImageMean(sd);
+            m_masterList.SetImageMean(sd, bSave);
         }
 
         /// <summary>
