@@ -38,7 +38,7 @@ PROJECT_NAME           = MyCaffe
 # could be handy for archiving the generated documentation or if some version
 # control system is used.
 
-PROJECT_NUMBER         = 0.10.2.124-beta1
+PROJECT_NUMBER         = 0.10.2.309-beta1
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer a
@@ -804,7 +804,8 @@ INPUT                  = ../MyCaffe \
                          ../MyCaffe.layers.nt \
                          ../MyCaffe.layers.ssd \
                          ../MyCaffe.model \
-                         ../MyCaffe.data
+                         ../MyCaffe.data \
+                         ../MyCaffe.converter.onnx
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -912,7 +913,9 @@ EXCLUDE                = ..\MyCaffe\MyCaffeControl.Designer.cs \
                          ..\MyCaffe.db.image\RawImageResult.cs \
                          ..\MyCaffe.db.image\Source.cs \
                          ..\MyCaffe.db.image\SourceParameter.cs \
-                         ..\MyCaffe.extras\_in_progress\StyleTransfer.cs
+                         ..\MyCaffe.extras\_in_progress\StyleTransfer.cs \
+                         ..\MyCaffe.converter.onnx\MyCaffeConversionControl.Designer.cs \
+                         ..\MyCaffe.preprocessor\MyCaffeDataPreprocessor.Designer.cs
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded
@@ -928,7 +931,8 @@ EXCLUDE_SYMLINKS       = NO
 # Note that the wildcards are matched against the file with absolute path, so to
 # exclude all test directories for example use the pattern */test/*
 
-EXCLUDE_PATTERNS       = SqlServerTypes
+EXCLUDE_PATTERNS       = SqlServerTypes \
+                         ..\MyCaffe.converter.onnx\obj\*
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the
