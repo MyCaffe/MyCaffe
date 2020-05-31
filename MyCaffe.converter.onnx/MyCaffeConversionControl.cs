@@ -464,6 +464,10 @@ namespace MyCaffe.converter.onnx
                         node.OpType = OnnxDefinitions.OPERATORS.Softmax.ToString();
                         addAttributes(node.Attribute, layer.layer_param.softmax_param);
                         break;
+
+                    case LayerParameter.LayerType.SPLIT:
+                        node.OpType = OnnxDefinitions.OPERATORS.Split.ToString();
+                        break;
                 }
 
                 foreach (Blob<T> blob in colParams)
@@ -500,17 +504,17 @@ namespace MyCaffe.converter.onnx
         {
             AttributeProto attrib = new AttributeProto();
             attrib.Name = "kernel_shape";
-            uint h = (p.kernel_h.HasValue) ? p.kernel_h.Value : p.kernel_size[0];
+            uint h = (p.kernel_h.HasValue) ? p.kernel_h.Value : (p.kernel_size.Count > 0) ? p.kernel_size[0] : 3;
             attrib.Ints.Add(h);
-            uint w = (p.kernel_w.HasValue) ? p.kernel_w.Value : p.kernel_size[0];
+            uint w = (p.kernel_w.HasValue) ? p.kernel_w.Value : (p.kernel_size.Count > 0) ? p.kernel_size[0] : 3;
             attrib.Ints.Add(w);
             rgA.Add(attrib);
 
             attrib = new AttributeProto();
             attrib.Name = "strides";
-            h = (p.stride_h.HasValue) ? p.stride_h.Value : p.stride[0];
+            h = (p.stride_h.HasValue) ? p.stride_h.Value : (p.stride.Count > 0) ? p.stride[0] : 1;
             attrib.Ints.Add(h);
-            w = (p.stride_w.HasValue) ? p.stride_w.Value : p.stride[0];
+            w = (p.stride_w.HasValue) ? p.stride_w.Value : (p.stride.Count > 0) ? p.stride[0] : 1;
             attrib.Ints.Add(w);
             rgA.Add(attrib);
 
@@ -526,9 +530,9 @@ namespace MyCaffe.converter.onnx
             {
                 attrib = new AttributeProto();
                 attrib.Name = "dilations";
-                h = p.dilation[0];
+                h = (p.dilation.Count > 0) ? p.dilation[0] : 1;
                 attrib.Ints.Add(h);
-                w = p.dilation[1];
+                w = (p.dilation.Count > 0) ? (p.dilation.Count > 1) ? p.dilation[1] : p.dilation[0] : 1;
                 attrib.Ints.Add(w);
                 rgA.Add(attrib);
             }
@@ -615,17 +619,17 @@ namespace MyCaffe.converter.onnx
         {
             AttributeProto attrib = new AttributeProto();
             attrib.Name = "kernel_shape";
-            uint h = (p.kernel_h.HasValue) ? p.kernel_h.Value : p.kernel_size[0];
+            uint h = (p.kernel_h.HasValue) ? p.kernel_h.Value : (p.kernel_size.Count > 0) ? p.kernel_size[0] : 3;
             attrib.Ints.Add(h);
-            uint w = (p.kernel_w.HasValue) ? p.kernel_w.Value : p.kernel_size[0];
+            uint w = (p.kernel_w.HasValue) ? p.kernel_w.Value : (p.kernel_size.Count > 0) ? p.kernel_size[0] : 3;
             attrib.Ints.Add(w);
             rgA.Add(attrib);
 
             attrib = new AttributeProto();
             attrib.Name = "strides";
-            h = (p.stride_h.HasValue) ? p.stride_h.Value : p.stride[0];
+            h = (p.stride_h.HasValue) ? p.stride_h.Value : (p.stride.Count > 0) ? p.stride[0] : 1;
             attrib.Ints.Add(h);
-            w = (p.stride_w.HasValue) ? p.stride_w.Value : p.stride[0];
+            w = (p.stride_w.HasValue) ? p.stride_w.Value : (p.stride.Count > 0) ? p.stride[0] : 1;
             attrib.Ints.Add(w);
             rgA.Add(attrib);
 
@@ -737,24 +741,34 @@ namespace MyCaffe.converter.onnx
             netParam.layer.Insert(0, dataLayerTrain);
 
             LayerParameter lastLayer = netParam.layer[netParam.layer.Count - 1];
-            if (lastLayer.type == LayerParameter.LayerType.SOFTMAX)
+            if (lastLayer.type == LayerParameter.LayerType.SOFTMAX || lastLayer.type == LayerParameter.LayerType.INNERPRODUCT)
             {
-                m_strReport += "Removing last layer SOFTMAX..." + Environment.NewLine;
-                netParam.layer.Remove(lastLayer);
+                int nAxis = 1;
+                if (lastLayer.type == LayerParameter.LayerType.SOFTMAX)
+                {
+                    m_strReport += "Removing last layer SOFTMAX..." + Environment.NewLine;
+                    netParam.layer.Remove(lastLayer);
+                }
 
                 LayerParameter loss = new LayerParameter(LayerParameter.LayerType.SOFTMAXWITH_LOSS, "loss");
-                loss.top = lastLayer.top;
-                loss.bottom = lastLayer.bottom;
+                loss.top.Add("loss");
+                loss.bottom = Utility.Clone<string>(lastLayer.top);
                 loss.bottom.Add(dataLayerTrain.top[1]);
-                loss.softmax_param = lastLayer.softmax_param;
+
+                if (lastLayer.softmax_param != null)
+                {
+                    nAxis = lastLayer.softmax_param.axis;
+                    loss.softmax_param = lastLayer.softmax_param;
+                }
+
                 m_strReport += "Added new last layer SOFTMAXWITH_LOSS '" + loss.name + "'..." + Environment.NewLine;
                 netParam.layer.Add(loss);
 
                 LayerParameter accuracy = new LayerParameter(LayerParameter.LayerType.ACCURACY, "accuracy");
                 accuracy.top.Add("accuracy");
-                accuracy.bottom.Add(lastLayer.bottom[0]);
+                accuracy.bottom = Utility.Clone<string>(lastLayer.top);
                 accuracy.bottom.Add(dataLayerTest.top[1]);
-                accuracy.accuracy_param.axis = lastLayer.softmax_param.axis;
+                accuracy.accuracy_param.axis = nAxis;
                 accuracy.include.Add(new NetStateRule(Phase.TEST));
                 m_strReport += "Added new last layer ACCURACY '" + accuracy.name + "'..." + Environment.NewLine;
                 netParam.layer.Add(accuracy);
@@ -1454,6 +1468,12 @@ namespace MyCaffe.converter.onnx
                     fillParameter(node.Attribute, layer.softmax_param);
                 }
 
+                else if (node.OpType == getOperator(onnx, OnnxDefinitions.OPERATORS.Split))
+                {
+                    layer = new LayerParameter(LayerParameter.LayerType.SPLIT);
+                    layer.name = strNodeName;
+                }
+
                 if (layer == null)
                     throw new Exception("Currently the node OpType '" + node.OpType + "' is not supported!");
 
@@ -1598,6 +1618,19 @@ namespace MyCaffe.converter.onnx
                     p.group = (uint)attrib.I;
                 }
             }
+
+            // Add defaults.
+            if (p.kernel_size.Count == 0 && !p.kernel_h.HasValue && !p.kernel_w.HasValue)
+                p.kernel_size.Add(3);
+
+            if (p.pad.Count == 0 && !p.pad_h.HasValue && !p.pad_w.HasValue)
+                p.pad.Add(0);
+
+            if (p.dilation.Count == 0)
+                p.dilation.Add(1);
+
+            if (p.stride.Count == 0 && !p.stride_h.HasValue && !p.stride_w.HasValue)
+                p.stride.Add(1);
         }
 
         private void fillParameter(RepeatedField<AttributeProto> rg, DropoutParameter p)
@@ -1701,6 +1734,15 @@ namespace MyCaffe.converter.onnx
                     }
                 }
             }
+
+            if (p.kernel_size.Count == 0 && !p.kernel_h.HasValue && !p.kernel_w.HasValue)
+                p.kernel_size.Add(3);
+
+            if (p.pad.Count == 0 && !p.pad_h.HasValue && !p.pad_w.HasValue)
+                p.pad.Add(0);
+
+            if (p.stride.Count == 0 && !p.stride_h.HasValue && !p.stride_w.HasValue)
+                p.stride.Add(1);
 
             p.global_pooling = bGlobal;
             p.pool = pool;
