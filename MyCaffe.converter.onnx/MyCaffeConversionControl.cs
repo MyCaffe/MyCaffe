@@ -743,16 +743,25 @@ namespace MyCaffe.converter.onnx
             LayerParameter lastLayer = netParam.layer[netParam.layer.Count - 1];
             if (lastLayer.type == LayerParameter.LayerType.SOFTMAX || lastLayer.type == LayerParameter.LayerType.INNERPRODUCT)
             {
+                List<string> rgstrLossBottom;
+                List<string> rgstrAccuracyBottom;
                 int nAxis = 1;
                 if (lastLayer.type == LayerParameter.LayerType.SOFTMAX)
                 {
                     m_strReport += "Removing last layer SOFTMAX..." + Environment.NewLine;
                     netParam.layer.Remove(lastLayer);
+                    rgstrLossBottom = Utility.Clone<string>(lastLayer.bottom);
+                    rgstrAccuracyBottom = Utility.Clone<string>(lastLayer.bottom);
+                }
+                else
+                {
+                    rgstrLossBottom = Utility.Clone<string>(lastLayer.top);
+                    rgstrAccuracyBottom = Utility.Clone<string>(lastLayer.top);
                 }
 
                 LayerParameter loss = new LayerParameter(LayerParameter.LayerType.SOFTMAXWITH_LOSS, "loss");
                 loss.top.Add("loss");
-                loss.bottom = Utility.Clone<string>(lastLayer.top);
+                loss.bottom = rgstrLossBottom;
                 loss.bottom.Add(dataLayerTrain.top[1]);
 
                 if (lastLayer.softmax_param != null)
@@ -766,7 +775,7 @@ namespace MyCaffe.converter.onnx
 
                 LayerParameter accuracy = new LayerParameter(LayerParameter.LayerType.ACCURACY, "accuracy");
                 accuracy.top.Add("accuracy");
-                accuracy.bottom = Utility.Clone<string>(lastLayer.top);
+                accuracy.bottom = rgstrAccuracyBottom;
                 accuracy.bottom.Add(dataLayerTest.top[1]);
                 accuracy.accuracy_param.axis = nAxis;
                 accuracy.include.Add(new NetStateRule(Phase.TEST));
