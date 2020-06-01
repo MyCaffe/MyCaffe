@@ -40,6 +40,7 @@ namespace MyCaffe.basecode
         string m_strDesc = null;
         int m_nSourceID = 0;
         int m_nOriginalSourceID = 0;
+        int m_nHitCount = 0;
         ANNOTATION_TYPE m_nAnnotationType = ANNOTATION_TYPE.NONE;
         List<AnnotationGroup> m_rgAnnotationGroup = null;
         /// <summary>
@@ -721,6 +722,15 @@ namespace MyCaffe.basecode
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Get/set the hit count for the SimpleDatum.
+        /// </summary>
+        public int HitCount
+        {
+            get { return m_nHitCount; }
+            set { m_nHitCount = value; }
         }
 
         /// <summary>
