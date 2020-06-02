@@ -242,6 +242,42 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestImportOnnxInceptionV1ForRun()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    t.TestImportOnnxInceptionV1(null);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestImportOnnxInceptionV1ForTrain()
+        {
+            PersistOnnxTest test = new PersistOnnxTest();
+
+            try
+            {
+                foreach (IPersistOnnxTest t in test.Tests)
+                {
+                    t.TestImportOnnxInceptionV1("CIFAR-10");
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
 
@@ -255,6 +291,7 @@ namespace MyCaffe.test
         void TestImportOnnxGoogNet(string strTrainingDs = null);
         void TestImportOnnxVGG19(string strTrainingDs = null);
         void TestImportOnnxResNet50(string strTrainingDs = null);
+        void TestImportOnnxInceptionV1(string strTrainingDs = null);
     }
 
     class PersistOnnxTest : TestBase
@@ -774,6 +811,52 @@ namespace MyCaffe.test
                 Trace.WriteLine(convert.ReportString);
 
                 data.Save(strTestPath, "ResNet50" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
+            }
+            catch (Exception excpt)
+            {
+                throw excpt;
+            }
+            finally
+            {
+                cuda.Dispose();
+                convert.Dispose();
+            }
+        }
+
+        private string downloadOnnxInceptionV1Model()
+        {
+            // Download a small onnx model from https://github.com/onnx (dowload is 26.7mb)
+            double dfSizeInMb = 26.7;
+            string strModel = "inception-v1-9.onnx";
+            string strUrl = "https://github.com/onnx/models/raw/master/vision/classification/inception_and_googlenet/inception_v1/model/" + strModel;
+            return download(strModel, strUrl, dfSizeInMb);
+        }
+
+        public void TestImportOnnxInceptionV1(string strTrainingDs)
+        {
+            string strTestPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\test_data\\models\\onnx\\imported\\inception";
+            if (!Directory.Exists(strTestPath))
+                Directory.CreateDirectory(strTestPath);
+
+            string strOnnxFile = downloadOnnxInceptionV1Model();
+            MyCaffeConversionControl<T> convert = new MyCaffeConversionControl<T>();
+
+            DatasetDescriptor dsTraining = null;
+            if (strTrainingDs != null)
+            {
+                DatasetFactory factory = new DatasetFactory();
+                dsTraining = factory.LoadDataset(strTrainingDs);
+            }
+
+            CudaDnn<T> cuda = null;
+
+            try
+            {
+                cuda = new CudaDnn<T>(0);
+                MyCaffeModelData data = convert.ConvertOnnxToMyCaffeFromFile(cuda, m_log, strOnnxFile, true, dsTraining);
+                Trace.WriteLine(convert.ReportString);
+
+                data.Save(strTestPath, "Inception" + ((dsTraining != null) ? ".train" : "") + "." + typeof(T).ToString());
             }
             catch (Exception excpt)
             {
