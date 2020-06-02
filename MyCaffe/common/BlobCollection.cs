@@ -67,7 +67,7 @@ namespace MyCaffe.common
         {
             for (int i = 0; i < m_rgBlobs.Count; i++)
             {
-                if (m_rgBlobs[i].Name == strName)
+                if (m_rgBlobs[i] != null && m_rgBlobs[i].Name == strName)
                     return m_rgBlobs[i];
             }
 
@@ -150,7 +150,7 @@ namespace MyCaffe.common
 
             foreach (Blob<T> b1 in m_rgBlobs)
             {
-                if (b1.Name.Contains(b.Name))
+                if (b1 != null && b1.Name.Contains(b.Name))
                     rg.Add(b1);
             }
 

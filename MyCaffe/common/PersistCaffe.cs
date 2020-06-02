@@ -296,14 +296,17 @@ namespace MyCaffe.common
 
             foreach (Blob<T> blob in colBlobs)
             {
-                string strLayer = (string)blob.Tag;
-                if (strLayer == null || strLayer.Length == 0)
-                    throw new Exception("Invalid blob specification - missing layer name.");
+                if (blob != null)
+                {
+                    string strLayer = (string)blob.Tag;
+                    if (strLayer == null || strLayer.Length == 0)
+                        throw new Exception("Invalid blob specification - missing layer name.");
 
-                if (!rgLayers.ContainsKey(strLayer))
-                    rgLayers.Add(strLayer, new BlobCollection<T>());
+                    if (!rgLayers.ContainsKey(strLayer))
+                        rgLayers.Add(strLayer, new BlobCollection<T>());
 
-                rgLayers[strLayer].Add(blob);
+                    rgLayers[strLayer].Add(blob);
+                }
             }
 
             writer.WriteField(fd, "name", "");
