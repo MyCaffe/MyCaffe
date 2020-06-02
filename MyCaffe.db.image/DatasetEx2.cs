@@ -82,16 +82,14 @@ namespace MyCaffe.db.image
         /// <param name="nPadH">Optionally, specifies a pad to apply to the height of each item (default = 0).</param>
         /// <param name="log">Optionally, specifies an external Log to output status (default = null).</param>
         /// <param name="loadMethod">Optionally, specifies the load method to use (default = LOAD_ALL).</param>
-        /// <param name="nImageDbLoadLimit">Optionally, specifies the load limit (default = 0).</param>
         /// <param name="bSkipMeanCheck">Optionally, specifies to skip the mean check (default = false).</param>
+        /// <param name="nImageDbLoadLimit">Optionally, specifies the load limit (default = 0).</param>
+        /// <param name="bAutoStartRefresh">Optionally, specifies to automatically start the refresh thread when nImageDbLoadLimit is in effect.</param>
         /// <returns>Upon loading the dataset a handle to the default QueryState is returned, or 0 on cancel.</returns>
-        public long Initialize(DatasetDescriptor ds, WaitHandle[] rgAbort, int nPadW = 0, int nPadH = 0, Log log = null, IMAGEDB_LOAD_METHOD loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL, int nImageDbLoadLimit = 0, bool bSkipMeanCheck = false)
+        public long Initialize(DatasetDescriptor ds, WaitHandle[] rgAbort, int nPadW = 0, int nPadH = 0, Log log = null, IMAGEDB_LOAD_METHOD loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL, bool bSkipMeanCheck = false, int nImageDbLoadLimit = 0, bool bAutoStartRefresh = true)
         {
             lock (m_syncObj)
             {
-                if (nImageDbLoadLimit > 0)
-                    log.WriteLine("WARNING: ImageDbLoadLimit is not used currently and is ignored.");
-
                 if (ds != null)
                     m_ds = ds;
 
@@ -105,7 +103,7 @@ namespace MyCaffe.db.image
 
                 m_TrainingImages = new ImageSet2(ImageSet2.TYPE.TRAIN, log, m_factory, m_ds.TrainingSource, loadMethod, m_random, rgAbort);
                 m_TrainingImages.OnCalculateImageMean += OnCalculateImageMean;
-                QueryState qsTraining = m_TrainingImages.Initialize(bSilentLoad);
+                QueryState qsTraining = m_TrainingImages.Initialize(bSilentLoad, true, true, nImageDbLoadLimit, bAutoStartRefresh);
                 SimpleDatum sdMean = null;
 
                 if (!bSkipMeanCheck)
@@ -116,7 +114,7 @@ namespace MyCaffe.db.image
 
                 m_TestingImages = new ImageSet2(ImageSet2.TYPE.TEST, log, m_factory, m_ds.TestingSource, loadMethod, m_random, rgAbort);
                 m_TestingImages.OnCalculateImageMean += OnCalculateImageMean;
-                QueryState qsTesting = m_TestingImages.Initialize(bSilentLoad);
+                QueryState qsTesting = m_TestingImages.Initialize(bSilentLoad, true, true, nImageDbLoadLimit, bAutoStartRefresh);
 
                 if (!bSkipMeanCheck)
                     m_TestingImages.SetImageMean(sdMean, true);

@@ -15,19 +15,28 @@ namespace MyCaffe.db.image
     /// </summary>
     public class MasterList : IDisposable
     {
+        CryptoRandom m_random;
         DatasetFactory m_factory;
         SourceDescriptor m_src;
         SimpleDatum[] m_rgImages = null;
+        RefreshManager m_refreshManager = null;
         LoadSequence m_loadSequence = null;
         List<WaitHandle> m_rgAbort = new List<WaitHandle>();
         ManualResetEvent m_evtCancel = new ManualResetEvent(false);
         ManualResetEvent m_evtDone = new ManualResetEvent(false);
         ManualResetEvent m_evtRunning = new ManualResetEvent(false);
+        ManualResetEvent m_evtRefreshCancel = new ManualResetEvent(false);
+        ManualResetEvent m_evtRefreshRunning = new ManualResetEvent(false);
+        ManualResetEvent m_evtRefreshDone = new ManualResetEvent(false);
         Thread m_dataLoadThread;
+        Thread m_dataRefreshThread;
         SimpleDatum m_imgMean = null;
         Log m_log = null;
         int m_nLoadedCount = 0;
         bool m_bSilent = false;
+        int m_nLoadCount = 0;
+        bool m_bAutoStartRefresh = false;
+        int m_nReplacementBatch = 100;
         object m_syncObj = new object();
 
 
@@ -39,12 +48,16 @@ namespace MyCaffe.db.image
         /// <summary>
         /// The constructor.
         /// </summary>
+        /// <param name="random">Specifies the CryptoRandom to use for random selection.</param>
         /// <param name="log">Specifies the output log.</param>
         /// <param name="src">Specifies the data source that holds the data on the database.</param>
         /// <param name="factory">Specifies the data factory used to access the database data.</param>
         /// <param name="rgAbort">Specifies the cancel handles.</param>
-        public MasterList(Log log, SourceDescriptor src, DatasetFactory factory, List<WaitHandle> rgAbort)
+        /// <param name="nMaxLoadCount">Optionally, specifies to automaticall start the image refresh which only applies when the number of images loaded into memory is less than the actual number of images (default = false).</param>
+        /// <param name="bAutoStartRefresh">Optionally, specifies the maximum number of images to load into memory (default = 0, which loads all images into memory).</param>
+        public MasterList(CryptoRandom random, Log log, SourceDescriptor src, DatasetFactory factory, List<WaitHandle> rgAbort, int nMaxLoadCount = 0, bool bAutoStartRefresh = false)
         {
+            m_random = random;
             m_log = log;
             m_src = src;
             m_factory = factory;
@@ -54,8 +67,19 @@ namespace MyCaffe.db.image
                 m_rgAbort.AddRange(rgAbort);
 
             m_imgMean = m_factory.LoadImageMean(m_src.ID);
-            m_rgImages = new SimpleDatum[m_src.ImageCount];
+
+            m_nLoadCount = nMaxLoadCount;
+            if (m_nLoadCount == 0)
+                m_nLoadCount = m_src.ImageCount;
+
+            m_rgImages = new SimpleDatum[m_nLoadCount];
             m_nLoadedCount = 0;
+
+            if (m_nLoadCount < m_src.ImageCount)
+            {
+                m_bAutoStartRefresh = bAutoStartRefresh;
+                m_refreshManager = new RefreshManager(random, m_src, m_factory);
+            }
         }
 
         /// <summary>
@@ -66,6 +90,10 @@ namespace MyCaffe.db.image
             m_evtCancel.Set();
             if (m_evtRunning.WaitOne(0))
                 m_evtDone.WaitOne();
+
+            m_evtRefreshCancel.Set();
+            if (m_evtRefreshRunning.WaitOne(0))
+                m_evtRefreshDone.WaitOne();
         }
 
         /// <summary>
@@ -94,7 +122,9 @@ namespace MyCaffe.db.image
                 m_bSilent = bSilent;
                 m_evtCancel.Reset();
                 m_evtDone.Reset();
-                m_loadSequence = new LoadSequence(m_src.ImageCount);
+                m_evtRefreshCancel.Reset();
+                m_evtRefreshDone.Reset();
+                m_loadSequence = new LoadSequence(m_rgImages.Length);
 
                 m_dataLoadThread = new Thread(new ThreadStart(dataLoadThread));
                 m_dataLoadThread.Priority = ThreadPriority.AboveNormal;
@@ -115,15 +145,56 @@ namespace MyCaffe.db.image
             {
                 m_evtCancel.Set();
                 m_evtDone.WaitOne();
-                m_rgImages = new SimpleDatum[m_src.ImageCount];
+                m_rgImages = new SimpleDatum[m_nLoadCount];
                 m_nLoadedCount = 0;
                 GC.Collect();
+
+                StopRefresh();
 
                 m_loadSequence = new LoadSequence(m_src.ImageCount);
             }
 
             if (bReLoad)
                 Load();
+        }
+
+        /// <summary>
+        /// Start the refresh thread which will run if the number of images stored in memory is less than the total number of images in the data source, otherwise this function returns false.
+        /// </summary>
+        /// <returns>false is returned if the refresh thread is already running, or if the number of images in memory equal the number of images in the data source.</returns>
+        public bool StartRefresh()
+        {
+            lock (m_syncObj)
+            {
+                if (m_evtRefreshRunning.WaitOne(0))
+                    return false;
+
+                if (m_rgImages.Length >= m_src.ImageCount)
+                    return false;
+
+                m_evtRefreshCancel.Reset();
+                m_evtRefreshDone.Reset();
+                m_dataRefreshThread = new Thread(new ThreadStart(dataRefreshThread));
+                m_dataRefreshThread.Start();
+                m_evtRefreshRunning.WaitOne(1000);
+
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Stop the refresh thread if running.
+        /// </summary>
+        public void StopRefresh()
+        {
+            lock (m_syncObj)
+            {
+                if (!m_evtRefreshRunning.WaitOne(0))
+                    return;
+
+                m_evtRefreshCancel.Set();
+                m_evtRefreshDone.WaitOne();
+            }
         }
 
         /// <summary>
@@ -551,6 +622,9 @@ namespace MyCaffe.db.image
             int? nNextIdx = m_loadSequence.GetNext();
             Stopwatch sw = new Stopwatch();
 
+            if (m_refreshManager != null)
+                m_refreshManager.Reset();
+
             try
             {
                 sw.Start();
@@ -573,6 +647,9 @@ namespace MyCaffe.db.image
                         for (int j = 0; j < rgImg.Count; j++)
                         {
                             SimpleDatum sd = factory.LoadDatum(rgImg[j]);
+
+                            if (m_refreshManager != null)
+                                m_refreshManager.AddLoaded(sd);
 
                             m_rgImages[sd.Index] = sd;
                             m_nLoadedCount++;
@@ -602,6 +679,9 @@ namespace MyCaffe.db.image
 
                 if (rgIdxBatch.Count > 0)
                     m_log.FAIL("Not all images were loaded!");
+
+                if (m_bAutoStartRefresh)
+                    StartRefresh();
             }
             finally
             {
@@ -609,6 +689,44 @@ namespace MyCaffe.db.image
                 factory.Dispose();
                 m_evtRunning.Reset();
                 m_evtDone.Set();
+            }
+        }
+
+        private void dataRefreshThread()
+        {
+            m_evtRefreshRunning.Set();
+            DatasetFactory factory = new DatasetFactory(m_factory);
+            Stopwatch sw = new Stopwatch();
+
+            try
+            {
+                while (!m_evtRefreshCancel.WaitOne(100))
+                {
+                    // Randomly select a batch of images to replace
+
+                    List<Tuple<int, SimpleDatum>> rgReplace = new List<Tuple<int, SimpleDatum>>();
+
+                    for (int i = 0; i < m_nReplacementBatch; i++)
+                    {
+                        int nIdx = m_random.Next(m_rgImages.Length);
+                        DbItem img = m_refreshManager.GetNextImageId(m_rgImages[nIdx].Label);
+                        SimpleDatum sd = m_factory.LoadImage(img.ID);
+                        rgReplace.Add(new Tuple<int, SimpleDatum>(nIdx, sd));
+                    }
+
+                    lock (m_syncObj)
+                    {
+                        for (int i = 0; i < rgReplace.Count; i++)
+                        {
+                            int nIdx = rgReplace[i].Item1;
+                            m_rgImages[nIdx] = rgReplace[i].Item2;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                m_evtRefreshDone.Set();
             }
         }
     }
@@ -697,6 +815,68 @@ namespace MyCaffe.db.image
 
                 return nIdx;
             }
+        }
+    }
+
+    public class RefreshManager
+    {
+        CryptoRandom m_random;
+        List<DbItem> m_rgItems;
+        Dictionary<int, List<long>> m_rgLoadedIds = new Dictionary<int, List<long>>();
+
+        public RefreshManager(CryptoRandom random, SourceDescriptor src, DatasetFactory factory)
+        {
+            m_random = random;
+            m_rgItems = factory.LoadImageIndexes(false, true);
+        }
+
+        public void Reset()
+        {
+            m_rgLoadedIds = new Dictionary<int, List<long>>();
+        }
+
+        public void AddLoaded(SimpleDatum sd)
+        {
+            if (!m_rgLoadedIds.ContainsKey(sd.Label))
+                m_rgLoadedIds.Add(sd.Label, new List<long>());
+
+            List<long> rgId = m_rgLoadedIds[sd.Label];
+
+            if (!rgId.Contains(sd.ImageID))
+                rgId.Add(sd.ImageID);
+        }
+
+        public DbItem GetNextImageId(int nLabel)
+        {
+            if (!m_rgLoadedIds.ContainsKey(nLabel))
+                m_rgLoadedIds.Add(nLabel, new List<long>());
+
+            List<long> rgId = m_rgLoadedIds[nLabel];
+            List<DbItem> rgImg = m_rgItems.Where(p => p.Label == nLabel).ToList();
+
+            List<DbItem> rgNotLoaded = rgImg.Where(p => !rgId.Contains(p.ID)).ToList();
+            int nIdx;
+            DbItem item;
+
+            // If in the not loaded set, return the next item with the same 
+            // label, yet selected randomly from those with the same label.
+            if (rgNotLoaded.Count > 0)
+            {
+                nIdx = m_random.Next(rgNotLoaded.Count);
+                item = rgNotLoaded[nIdx];
+                rgId.Add(item.ID);
+
+                return item;
+            }
+
+            // Otherwise if all labeled items have been loaded already,
+            // randomly select from the full set of labeled items.
+            rgId.Clear();
+            nIdx = m_random.Next(rgImg.Count);
+            item = rgImg[nIdx];
+            rgId.Add(item.ID);
+
+            return item;
         }
     }
 

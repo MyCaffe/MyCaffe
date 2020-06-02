@@ -96,12 +96,14 @@ namespace MyCaffe.db.image
         /// <param name="bSilentLoad">Specifies to load the data silently without status output.</param>
         /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch equally (default = true).</param>
         /// <param name="bUseUniqueImageIndexes">Optionally, specifies to use unique image indexes which is slightly slower, but ensures each image is hit per epoch (default = true).</param>
+        /// <param name="nMaxLoadCount">Optionally, specifies to automaticall start the image refresh which only applies when the number of images loaded into memory is less than the actual number of images (default = false).</param>
+        /// <param name="bAutoStartRefresh">Optionally, specifies the maximum number of images to load into memory (default = 0, which loads all images into memory).</param>
         /// <returns>Once initialized, the default query state for the image set is returned.  This method may be called multiple times and each time returns a new QueryState.</returns>
-        public QueryState Initialize(bool bSilentLoad, bool bUseUniqueLabelIndexes = true, bool bUseUniqueImageIndexes = true)
+        public QueryState Initialize(bool bSilentLoad, bool bUseUniqueLabelIndexes = true, bool bUseUniqueImageIndexes = true, int nMaxLoadCount = 0, bool bAutoStartRefresh = false)
         {
             if (m_masterList == null)
             {
-                m_masterList = new MasterList(m_log, m_src, m_factory, m_rgAbort);
+                m_masterList = new MasterList(m_random, m_log, m_src, m_factory, m_rgAbort);
 
                 if (OnCalculateImageMean != null)
                     m_masterList.OnCalculateImageMean += OnCalculateImageMean;

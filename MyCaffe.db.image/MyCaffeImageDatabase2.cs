@@ -234,7 +234,7 @@ namespace MyCaffe.db.image
                     if (m_log != null)
                         m_log.WriteLine("Loading dataset '" + ds.Name + "'...");
 
-                    long lQueryHandle = ds0.Initialize(ds, rgAbort.ToArray(), nPadW, nPadH, m_log, m_loadMethod, m_nLoadLimit, m_bSkipMeanCheck);
+                    long lQueryHandle = ds0.Initialize(ds, rgAbort.ToArray(), nPadW, nPadH, m_log, m_loadMethod, m_bSkipMeanCheck, m_nLoadLimit);
                     if (lQueryHandle == 0)
                     {
                         col.Dispose();
@@ -1251,7 +1251,7 @@ namespace MyCaffe.db.image
             CancelEvent evtCancel = new CancelEvent(strEvtCancel);
             List<WaitHandle> rgAbort = new List<WaitHandle>(evtCancel.Handles);
 
-            long lQueryState = ds0.Initialize(desc, rgAbort.ToArray(), 0, 0, m_log, m_loadMethod, m_nLoadLimit);
+            long lQueryState = ds0.Initialize(desc, rgAbort.ToArray(), 0, 0, m_log, m_loadMethod, false, m_nLoadLimit);
             if (lQueryState == 0)
             {
                 col.Dispose();
