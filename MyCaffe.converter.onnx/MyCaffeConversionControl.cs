@@ -857,16 +857,46 @@ namespace MyCaffe.converter.onnx
         {
             NetParameter p = netParam.Clone();
 
-            // Change input name to 'data'
-            List<LayerParameter> rgLayer1 = findLayersWithBtm(p, p.input[0]);
-            foreach (LayerParameter layer1 in rgLayer1)
+            // Find the data input.
+            int nDataInputIdx = 0;
+            for (int i = 0; i < p.input.Count; i++)
             {
-                replaceBtm(layer1, p.input[0], "data");
-                m_strReport += "Changed layer '" + layer1.name + " (" + layer1.type.ToString() + ")' input from '" + p.input[0] + "' to 'data'";
+                if (p.input[i].Contains("data"))
+                {
+                    nDataInputIdx = i;
+                    break;
+                }
             }
 
-            m_strReport += "Changed data input[0] from '" + p.input[0] + "' to 'data'";
-            p.input[0] = "data";
+            // Change input name to 'data'
+            List<LayerParameter> rgLayer1 = findLayersWithBtm(p, p.input[nDataInputIdx]);
+            foreach (LayerParameter layer1 in rgLayer1)
+            {
+                replaceBtm(layer1, p.input[nDataInputIdx], "data");
+                m_strReport += "Changed layer '" + layer1.name + " (" + layer1.type.ToString() + ")' input from '" + p.input[nDataInputIdx] + "' to 'data'";
+            }
+
+            m_strReport += "Changed data input[" + nDataInputIdx.ToString() + "] from '" + p.input[nDataInputIdx] + "' to 'data'";
+            p.input[nDataInputIdx] = "data";
+
+
+            // Remove all input orphans.
+            List<string> rgInputs = Utility.Clone<string>(p.input);
+            foreach (LayerParameter layer1 in p.layer)
+            {
+                foreach (string strBtm in layer1.bottom)
+                {
+                    rgInputs.Remove(strBtm);
+                }
+
+                if (rgInputs.Count == 0)
+                    break;
+            }
+
+            foreach (string strOrphanInput in rgInputs)
+            {
+                p.input.Remove(strOrphanInput);
+            }
 
             // Find all orphan bottoms
             LayerDataCollection rgBtmOrphans = new LayerDataCollection(LayerData.TYPE.BTM);
@@ -924,18 +954,23 @@ namespace MyCaffe.converter.onnx
                     {
                         if (item.Layer.bottom.Count > 1 && rgstrInvalidInput.Contains(item.Layer.bottom[1]))
                         {
+                            foreach (string strBtm1 in item.Layer.bottom)
+                            {
+                                p.input.Remove(strBtm1);
+                            }
+
                             string strBtm = item.Layer.bottom[0];
-                            string strTop = item.Layer.top[0];
+                            string strTop = (item.Layer.top.Count > 0) ? item.Layer.top[0] : null;
 
                             LayerParameter layerPrev = findLayerWithTop(p, strBtm);
                             List<LayerParameter> rgLayerNext = findLayersWithBtm(p, strTop);
 
+                            // Remove the reshape layer.
+                            m_strReport += "Removed RESHAPE layer..." + Environment.NewLine;
+                            p.layer.Remove(item.Layer);
+
                             if (layerPrev != null && rgLayerNext.Count > 0)
                             {
-                                // Remove the reshape layer.
-                                p.layer.Remove(item.Layer);
-                                m_strReport += "Removed RESHAPE layer..." + Environment.NewLine;
-
                                 // Remove any blobs used by the layer.
                                 Blob<T> blob = col.FindBlob(item.Layer.bottom[1]);
                                 if (blob != null)
@@ -1260,7 +1295,8 @@ namespace MyCaffe.converter.onnx
 
         private int getOutputs(string strLayerName, BlobCollection<T> col, string strWt, string strBias, out bool bBiasTerm)
         {
-            int? nOutputs = null;
+            int? nWtOutputs = null;
+            int? nBiasOutputs = null;
 
             bBiasTerm = false;
 
@@ -1269,22 +1305,26 @@ namespace MyCaffe.converter.onnx
                 if (blob.Name == strWt)
                 {
                     blob.Tag = strLayerName;
-                    nOutputs = blob.shape()[0];
+                    nWtOutputs = blob.shape()[0];
                 }
                 else if (blob.Name == strBias && strBias != null)
                 {
                     blob.Tag = strLayerName;
                     bBiasTerm = true;
+                    nBiasOutputs = blob.shape()[0];
                 }
 
-                if (nOutputs.HasValue && bBiasTerm)
+                if (nWtOutputs.HasValue && bBiasTerm)
                     break;
             }
 
-            if (!nOutputs.HasValue)
-                throw new Exception("Could not find the blob '" + strWt + "'!");
+            if (!nWtOutputs.HasValue && !nBiasOutputs.HasValue)
+                throw new Exception("Could not find the blob '" + strWt + "' or the blob '" + strBias + "'!");
 
-            return nOutputs.Value;
+            if (nWtOutputs.HasValue)
+                return nWtOutputs.Value;
+
+            return nBiasOutputs.Value;
         }
 
         private string getOperator(OnnxDefinitions onnx, OnnxDefinitions.OPERATORS op)
