@@ -313,8 +313,9 @@ namespace MyCaffe.test
 
                         for (int iter = 0; iter < 3; iter++)
                         {
-                            Dictionary<int, List<SimpleDatum>> rg = new Dictionary<int, List<SimpleDatum>>();
+                            Dictionary<int, List<SimpleDatum>> rgIndexes = new Dictionary<int, List<SimpleDatum>>();
                             int nCount = ds.TrainingSource.ImageCount * 2;
+                            int nRefreshCount = nLoadLimit;
                             double dfTotalMs = 0;
 
                             for (int i = 0; i < nCount; i++)
@@ -324,16 +325,27 @@ namespace MyCaffe.test
                                 dfTotalMs += sw.ElapsedMilliseconds;
                                 sw.Stop();
 
-                                if (!rg.Keys.Contains(d.Index))
-                                    rg.Add(d.Index, new List<SimpleDatum>() { d });
+                                if (!rgIndexes.Keys.Contains(d.Index))
+                                    rgIndexes.Add(d.Index, new List<SimpleDatum>() { d });
                                 else
-                                    rg[d.Index].Add(d);
+                                    rgIndexes[d.Index].Add(d);
 
                                 if (swNotify.Elapsed.TotalMilliseconds > 1000)
                                 {
                                     double dfPct = (double)i / nCount;
                                     log.WriteLine("Loading files at " + dfPct.ToString("P") + ", loading " + i.ToString("N0") + " of " + nCount.ToString("N0") + "...");
                                     swNotify.Restart();
+                                }
+
+                                if (nLoadLimit > 0)
+                                {
+                                    nRefreshCount--;
+                                    if (nRefreshCount == 0 && i < nCount-1)
+                                    {
+                                        ((IXImageDatabase2)db).StartRefresh(ds.ID, true, false, 1);
+                                        ((IXImageDatabase2)db).WaitForDatasetToRefresh(ds.ID, true, false);
+                                        nRefreshCount = nLoadLimit;
+                                    }
                                 }
                             }
 
@@ -349,7 +361,7 @@ namespace MyCaffe.test
                             // Verify random selection, so no indexes should be the same.
                             Dictionary<int, int> rgCounts = new Dictionary<int, int>();
                             double dfTotal = 0;
-                            foreach (KeyValuePair<int, List<SimpleDatum>> kv in rg)
+                            foreach (KeyValuePair<int, List<SimpleDatum>> kv in rgIndexes)
                             {
                                 if (!rgCounts.ContainsKey(kv.Value.Count))
                                     rgCounts.Add(kv.Value.Count, 1);
@@ -362,11 +374,11 @@ namespace MyCaffe.test
                             List<int> rgMissedIdx = new List<int>();
                             for (int i = 0; i < ds.TrainingSource.ImageCount; i++)
                             {
-                                if (!rg.ContainsKey(i))
+                                if (!rgIndexes.ContainsKey(i))
                                     rgMissedIdx.Add(i);
                             }
 
-                            dfTotal /= rg.Count;
+                            dfTotal /= rgIndexes.Count;
 
                             if (nLoadLimit == 0)
                             {
@@ -421,7 +433,7 @@ namespace MyCaffe.test
         [TestMethod]
         public void TestQueryRandomLoadLimit()
         {
-            TestQueryRandom(IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
+            TestQueryRandom(IMAGEDB_LOAD_METHOD.LOAD_ALL, 1000);
         }
 
         public void TestQueryRandom2(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
@@ -583,12 +595,6 @@ namespace MyCaffe.test
             TestQueryRandom2(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
         }
 
-        [TestMethod]
-        public void TestQueryRandom2LoadLimit()
-        {
-            TestQueryRandom2(IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
-        }
-
         public void TestQuerySequential(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
             PreTest.Init();
@@ -672,12 +678,6 @@ namespace MyCaffe.test
         public void TestQuerySequentialLoadOnDemand()
         {
             TestQuerySequential(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
-        }
-
-        [TestMethod]
-        public void TestQuerySequentialLoadLimit()
-        {
-            TestQuerySequential(IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
         }
 
         public void TestQuerySequential2(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
