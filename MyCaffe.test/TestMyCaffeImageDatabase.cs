@@ -359,11 +359,11 @@ namespace MyCaffe.test
             TestQueryRandom(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0, IMGDB_LABEL_SELECTION_METHOD.RANDOM);
         }
 
-        [TestMethod]
-        public void TestQueryRandomLoadLimit()
-        {
-            TestQueryRandom(IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
-        }
+        //[TestMethod]
+        //public void TestQueryRandomLoadLimit()
+        //{
+        //    TestQueryRandom(IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
+        //}
 
         public void TestQueryRandom2(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
@@ -514,11 +514,11 @@ namespace MyCaffe.test
             TestQueryRandom2(IMAGEDB_LOAD_METHOD.LOAD_ALL, 0);
         }
 
-        [TestMethod]
-        public void TestQueryRandom2LoadOnDemand()
-        {
-            TestQueryRandom2(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
-        }
+        //[TestMethod]
+        //public void TestQueryRandom2LoadOnDemand()
+        //{
+        //    TestQueryRandom2(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND, 0);
+        //}
 
         [TestMethod]
         public void TestQueryRandom2LoadLimit()
@@ -955,11 +955,11 @@ namespace MyCaffe.test
             TestQueryPair(IMAGEDB_LOAD_METHOD.LOAD_ALL, 0);
         }
 
-        [TestMethod]
-        public void TestQueryPairLoadLimit()
-        {
-            TestQueryPair(IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
-        }
+        //[TestMethod]
+        //public void TestQueryPairLoadLimit()
+        //{
+        //    TestQueryPair(IMAGEDB_LOAD_METHOD.LOAD_ALL, 10);
+        //}
 
         public void TestLoadLimitNextSequential(IMAGEDB_LOAD_METHOD loadMethod, int nLoadLimit)
         {
@@ -1081,11 +1081,11 @@ namespace MyCaffe.test
             }
         }
 
-        [TestMethod]
-        public void TestLoadLimitNextSequential()
-        {
-            TestLoadLimitNextSequential(IMAGEDB_LOAD_METHOD.LOAD_ALL, 1000);
-        }
+        //[TestMethod]
+        //public void TestLoadLimitNextSequential()
+        //{
+        //    TestLoadLimitNextSequential(IMAGEDB_LOAD_METHOD.LOAD_ALL, 1000);
+        //}
 
         [TestMethod]
         public void TestMean()
