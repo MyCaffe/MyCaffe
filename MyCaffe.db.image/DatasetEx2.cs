@@ -84,9 +84,8 @@ namespace MyCaffe.db.image
         /// <param name="loadMethod">Optionally, specifies the load method to use (default = LOAD_ALL).</param>
         /// <param name="bSkipMeanCheck">Optionally, specifies to skip the mean check (default = false).</param>
         /// <param name="nImageDbLoadLimit">Optionally, specifies the load limit (default = 0).</param>
-        /// <param name="bAutoStartRefresh">Optionally, specifies to automatically start the refresh thread when nImageDbLoadLimit is in effect.</param>
         /// <returns>Upon loading the dataset a handle to the default QueryState is returned, or 0 on cancel.</returns>
-        public long Initialize(DatasetDescriptor ds, WaitHandle[] rgAbort, int nPadW = 0, int nPadH = 0, Log log = null, IMAGEDB_LOAD_METHOD loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL, bool bSkipMeanCheck = false, int nImageDbLoadLimit = 0, bool bAutoStartRefresh = true)
+        public long Initialize(DatasetDescriptor ds, WaitHandle[] rgAbort, int nPadW = 0, int nPadH = 0, Log log = null, IMAGEDB_LOAD_METHOD loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL, bool bSkipMeanCheck = false, int nImageDbLoadLimit = 0)
         {
             lock (m_syncObj)
             {
@@ -103,7 +102,7 @@ namespace MyCaffe.db.image
 
                 m_TrainingImages = new ImageSet2(ImageSet2.TYPE.TRAIN, log, m_factory, m_ds.TrainingSource, loadMethod, m_random, rgAbort);
                 m_TrainingImages.OnCalculateImageMean += OnCalculateImageMean;
-                QueryState qsTraining = m_TrainingImages.Initialize(bSilentLoad, true, true, nImageDbLoadLimit, bAutoStartRefresh);
+                QueryState qsTraining = m_TrainingImages.Initialize(bSilentLoad, true, true, nImageDbLoadLimit);
                 SimpleDatum sdMean = null;
 
                 if (!bSkipMeanCheck)
@@ -114,7 +113,7 @@ namespace MyCaffe.db.image
 
                 m_TestingImages = new ImageSet2(ImageSet2.TYPE.TEST, log, m_factory, m_ds.TestingSource, loadMethod, m_random, rgAbort);
                 m_TestingImages.OnCalculateImageMean += OnCalculateImageMean;
-                QueryState qsTesting = m_TestingImages.Initialize(bSilentLoad, true, true, nImageDbLoadLimit, bAutoStartRefresh);
+                QueryState qsTesting = m_TestingImages.Initialize(bSilentLoad, true, true, nImageDbLoadLimit);
 
                 if (!bSkipMeanCheck)
                     m_TestingImages.SetImageMean(sdMean, true);
@@ -133,7 +132,7 @@ namespace MyCaffe.db.image
         /// <param name="bTraining">Specifies to wait for the training data source.</param>
         /// <param name="bTesting">Specifies to wait for the testing data source.</param>
         /// <param name="nWait"></param>
-        /// <returns></returns>
+        /// <returns>If aborted, false is returned, otherwise true is returned.</returns>
         public bool WaitForLoadingToComplete(bool bTraining, bool bTesting, int nWait = int.MaxValue)
         {
             if (bTraining)
@@ -149,6 +148,87 @@ namespace MyCaffe.db.image
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Wait for either the training, testing or both data sources to complete refreshing.
+        /// </summary>
+        /// <param name="bTraining">Specifies to wait for the training data source.</param>
+        /// <param name="bTesting">Specifies to wait for the testing data source.</param>
+        /// <param name="nWait"></param>
+        /// <returns>If aborted, false is returned, otherwise true is returned.</returns>
+        public bool WaitForRefreshToComplete(bool bTraining, bool bTesting, int nWait = int.MaxValue)
+        {
+            if (bTraining)
+            {
+                if (!m_TrainingImages.WaitForRefreshToComplete(nWait))
+                    return false;
+            }
+
+            if (bTesting)
+            {
+                if (!m_TestingImages.WaitForRefreshToComplete(nWait))
+                    return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Returns whether or not the refresh is running on the training and/or testing data source.
+        /// </summary>
+        /// <param name="bTraining">Specifies to check the training data source.</param>
+        /// <param name="bTesting">Specifies to check the testing data source.</param>
+        /// <returns>If the refresh is running, true is returned.</returns>
+        public bool IsRefreshRunning(bool bTraining, bool bTesting)
+        {
+            bool bRunning = false;
+
+            if (bTraining)
+            {
+                if (m_TrainingImages.IsRefreshRunning)
+                    bRunning = true;
+            }
+
+            if (bTesting)
+            {
+                if (m_TestingImages.IsRefreshRunning)
+                    bRunning = true;
+            }
+
+            return bRunning;
+        }
+
+        /// <summary>
+        /// Start an image refresh on the training and/or testing data sources. 
+        /// </summary>
+        /// <remarks>
+        /// Note this method is only valid when initializing with LoadLimit > 0.
+        /// </remarks>
+        /// <param name="bTraining">Optionally, specifies to refresh the training data source (default = true).</param>
+        /// <param name="bTesting">Optionally, specifies to refresh the testing data source (default = true).</param>
+        /// <param name="dfReplacementPct">Optionally, specifies the percentage of the loaded image set to refresh (default = 0.25 for 25%)</param>
+        public void StartRefresh(bool bTraining = true, bool bTesting = true, double dfReplacementPct = 0.25)
+        {
+            if (bTraining)
+                m_TrainingImages.StartRefresh(dfReplacementPct);
+
+            if (bTesting)
+                m_TestingImages.StartRefresh(dfReplacementPct);
+        }
+
+        /// <summary>
+        /// Stop any refresh operation currently running.
+        /// </summary>
+        /// <param name="bTraining">Optionally, specifies to stop refreshing the training data source (default = true).</param>
+        /// <param name="bTesting">Optionally, specifies to stop refreshing the testing data source (default = true).</param>
+        public void StopRefresh(bool bTraining = true, bool bTesting = true)
+        {
+            if (bTraining)
+                m_TrainingImages.StopRefresh();
+
+            if (bTesting)
+                m_TestingImages.StopRefresh();
         }
 
         /// <summary>

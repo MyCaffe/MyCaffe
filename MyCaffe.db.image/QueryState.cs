@@ -131,29 +131,36 @@ namespace MyCaffe.db.image
         public override int? GetNextImage(Index.SELECTION_TYPE type, int? nLabel = null, bool bBoosted = false, int nDirectIdx = -1)
         {
             int? nIdx = null;
-            Index idx;
 
-            if (type == Index.SELECTION_TYPE.DIRECT)
+            if (m_master.LoadLimit > 0)
             {
-                if (nDirectIdx < 0)
-                    throw new Exception("Invalid direct index, must be >= 0.");
-                
-                idx = GetIndex(null, false);
-                nIdx = idx.GetIndex(nDirectIdx);
+                nIdx = base.GetNextImage(type, nLabel, bBoosted, nDirectIdx);
             }
             else
             {
-                idx = GetIndex(nLabel, bBoosted);
-                if (idx == null)
+                Index idx;
+                if (type == Index.SELECTION_TYPE.DIRECT)
                 {
-                    SetIndex(m_master.GetIndex(nLabel, bBoosted).Clone(), nLabel, bBoosted);
-                    nIdx = idx.GetNext(type, m_bUseUniqueImageIndexes);
+                    if (nDirectIdx < 0)
+                        throw new Exception("Invalid direct index, must be >= 0.");
+
+                    idx = GetIndex(null, false);
+                    nIdx = idx.GetIndex(nDirectIdx);
                 }
                 else
                 {
-                    nIdx = idx.GetNext(type, m_bUseUniqueImageIndexes);
-                    if (idx.IsEmpty)
+                    idx = GetIndex(nLabel, bBoosted);
+                    if (idx == null)
+                    {
                         SetIndex(m_master.GetIndex(nLabel, bBoosted).Clone(), nLabel, bBoosted);
+                        nIdx = idx.GetNext(type, m_bUseUniqueImageIndexes);
+                    }
+                    else
+                    {
+                        nIdx = idx.GetNext(type, m_bUseUniqueImageIndexes);
+                        if (idx.IsEmpty)
+                            SetIndex(m_master.GetIndex(nLabel, bBoosted).Clone(), nLabel, bBoosted);
+                    }
                 }
             }
 

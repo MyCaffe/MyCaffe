@@ -348,10 +348,130 @@ namespace MyCaffe.db.image
         /// <param name="nImageCount">Specifies the number of images to retrieve from the starting index <i>nIdx</i>.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <param name="strDescription">Optionally, specifies a description to filter the images retrieved (when specified, only images matching the filter are returned) (default = null).</param>
-        /// <returns></returns>
+        /// <returns>The list of RawImage items is returned.</returns>
         public List<RawImage> GetRawImagesAt(int nImageIdx, int nImageCount, int nSrcId = 0, string strDescription = null)
         {
             return m_db.GetRawImagesAt(nImageIdx, nImageCount, nSrcId, strDescription);
+        }
+
+        /// <summary>
+        /// Returns a list of RawImages from the database for a data source.
+        /// </summary>
+        /// <param name="rgImageIdx">Specifies the list of image indexes (no maximum).</param>
+        /// <param name="evtCancel">Specifies the cancel event.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="strDescription">Optionally, specifies a description to filter the images retrieved (when specified, only images matching the filter are returned) (default = null).</param>
+        /// <returns>The list of RawImage items is returned.</returns>
+        public List<RawImage> GetRawImagesAt(List<int> rgImageIdx, ManualResetEvent evtCancel, int nSrcId = 0, string strDescription = null)
+        {
+            List<RawImage> rgImg = new List<RawImage>();
+
+            while (rgImageIdx.Count > 0)
+            {
+                List<int> rgIdx = new List<int>();
+
+                for (int i=0; i<rgImageIdx.Count && i < 100; i++)
+                {
+                    rgIdx.Add(rgImageIdx[i]);
+                }
+
+                List<RawImage> rgImg1 = m_db.GetRawImagesAt(rgIdx, nSrcId, strDescription);
+                rgImg.AddRange(rgImg1);
+
+                for (int i = 0; i < rgIdx.Count; i++)
+                {
+                    rgImageIdx.RemoveAt(0);
+                }
+
+                if (evtCancel.WaitOne(0))
+                    return null;
+            }
+
+            return rgImg;
+        }
+
+        /// <summary>
+        /// Returns a list of RawImages from the database for a data source.
+        /// </summary>
+        /// <param name="rgImgItems">Specifies the list of image DbItems.</param>
+        /// <param name="evtCancel">Specifies the cancel event.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="strDescription">Optionally, specifies a description to filter the images retrieved (when specified, only images matching the filter are returned) (default = null).</param>
+        /// <returns>The list of RawImage items is returned.</returns>
+        public List<RawImage> GetRawImagesAt(List<DbItem> rgImgItems, ManualResetEvent evtCancel, int nSrcId = 0, string strDescription = null)
+        {
+            List<RawImage> rgImg = new List<RawImage>();
+
+            while (rgImgItems.Count > 0)
+            {
+                List<int> rgID = new List<int>();
+
+                for (int i = 0; i < rgImgItems.Count && i < 100; i++)
+                {
+                    rgID.Add(rgImgItems[i].ID);
+                }
+
+                List<RawImage> rgImg1 = m_db.GetRawImagesAtID(rgID, nSrcId, strDescription);
+                rgImg.AddRange(rgImg1);
+
+                for (int i = 0; i < rgID.Count; i++)
+                {
+                    rgImgItems.RemoveAt(0);
+                }
+
+                if (evtCancel.WaitOne(0))
+                    return null;
+            }
+
+            return rgImg;
+        }
+
+        /// <summary>
+        /// Returns a list of SimpleDatum from the database for a data source.
+        /// </summary>
+        /// <param name="rgImageIdx">Specifies the list of image indexes (no maximum).</param>
+        /// <param name="evtCancel">Specifies the cancel event.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="strDescription">Optionally, specifies a description to filter the images retrieved (when specified, only images matching the filter are returned) (default = null).</param>
+        /// <returns>The list of SimpleDatum items is returned.</returns>
+        public List<SimpleDatum> GetImagesAt(List<int> rgImageIdx, ManualResetEvent evtCancel, int nSrcId = 0, string strDescription = null)
+        {
+            List<RawImage> rgImg = GetRawImagesAt(rgImageIdx, evtCancel, nSrcId, strDescription);
+            if (rgImg == null)
+                return null;
+
+            List<SimpleDatum> rgSd = new List<SimpleDatum>();
+
+            foreach (RawImage img in rgImg)
+            {
+                rgSd.Add(LoadDatum(img));
+            }
+
+            return rgSd;
+        }
+
+        /// <summary>
+        /// Returns a list of SimpleDatum from the database for a data source.
+        /// </summary>
+        /// <param name="rgImageItems">Specifies the list of image DbItems.</param>
+        /// <param name="evtCancel">Specifies the cancel event.</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="strDescription">Optionally, specifies a description to filter the images retrieved (when specified, only images matching the filter are returned) (default = null).</param>
+        /// <returns>The list of SimpleDatum items is returned.</returns>
+        public List<SimpleDatum> GetImagesAt(List<DbItem> rgImageItems, ManualResetEvent evtCancel, int nSrcId = 0, string strDescription = null)
+        {
+            List<RawImage> rgImg = GetRawImagesAt(rgImageItems, evtCancel, nSrcId, strDescription);
+            if (rgImg == null)
+                return null;
+
+            List<SimpleDatum> rgSd = new List<SimpleDatum>();
+
+            foreach (RawImage img in rgImg)
+            {
+                rgSd.Add(LoadDatum(img));
+            }
+
+            return rgSd;
         }
 
         /// <summary>

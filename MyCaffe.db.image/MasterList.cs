@@ -35,7 +35,6 @@ namespace MyCaffe.db.image
         int m_nLoadedCount = 0;
         bool m_bSilent = false;
         int m_nLoadCount = 0;
-        bool m_bAutoStartRefresh = false;
         int m_nReplacementBatch = 100;
         object m_syncObj = new object();
 
@@ -54,8 +53,7 @@ namespace MyCaffe.db.image
         /// <param name="factory">Specifies the data factory used to access the database data.</param>
         /// <param name="rgAbort">Specifies the cancel handles.</param>
         /// <param name="nMaxLoadCount">Optionally, specifies to automaticall start the image refresh which only applies when the number of images loaded into memory is less than the actual number of images (default = false).</param>
-        /// <param name="bAutoStartRefresh">Optionally, specifies the maximum number of images to load into memory (default = 0, which loads all images into memory).</param>
-        public MasterList(CryptoRandom random, Log log, SourceDescriptor src, DatasetFactory factory, List<WaitHandle> rgAbort, int nMaxLoadCount = 0, bool bAutoStartRefresh = false)
+        public MasterList(CryptoRandom random, Log log, SourceDescriptor src, DatasetFactory factory, List<WaitHandle> rgAbort, int nMaxLoadCount = 0)
         {
             m_random = random;
             m_log = log;
@@ -76,10 +74,7 @@ namespace MyCaffe.db.image
             m_nLoadedCount = 0;
 
             if (m_nLoadCount < m_src.ImageCount)
-            {
-                m_bAutoStartRefresh = bAutoStartRefresh;
                 m_refreshManager = new RefreshManager(random, m_src, m_factory);
-            }
         }
 
         /// <summary>
@@ -94,6 +89,20 @@ namespace MyCaffe.db.image
             m_evtRefreshCancel.Set();
             if (m_evtRefreshRunning.WaitOne(0))
                 m_evtRefreshDone.WaitOne();
+        }
+
+        /// <summary>
+        /// Returns true when the database is loaded with LoadLimit > 0, false otherwise.
+        /// </summary>
+        public bool IsLoadLimitEnabled
+        {
+            get
+            {
+                if (m_refreshManager != null)
+                    return true;
+
+                return false;
+            }
         }
 
         /// <summary>
@@ -120,11 +129,7 @@ namespace MyCaffe.db.image
                     return false;
 
                 m_bSilent = bSilent;
-                m_evtCancel.Reset();
-                m_evtDone.Reset();
-                m_evtRefreshCancel.Reset();
-                m_evtRefreshDone.Reset();
-                m_loadSequence = new LoadSequence(m_rgImages.Length);
+                Unload(false);
 
                 m_dataLoadThread = new Thread(new ThreadStart(dataLoadThread));
                 m_dataLoadThread.Priority = ThreadPriority.AboveNormal;
@@ -143,15 +148,22 @@ namespace MyCaffe.db.image
         {
             lock (m_syncObj)
             {
-                m_evtCancel.Set();
-                m_evtDone.WaitOne();
+                if (m_evtRunning.WaitOne(0))
+                {
+                    m_evtCancel.Set();
+                    m_evtDone.WaitOne();
+                }
+
+                m_evtCancel.Reset();
+                m_evtDone.Reset();
+                m_evtRunning.Reset();
                 m_rgImages = new SimpleDatum[m_nLoadCount];
                 m_nLoadedCount = 0;
                 GC.Collect();
 
                 StopRefresh();
 
-                m_loadSequence = new LoadSequence(m_src.ImageCount);
+                m_loadSequence = new LoadSequence(m_random, m_rgImages.Length, m_src.ImageCount, m_refreshManager);
             }
 
             if (bReLoad)
@@ -161,8 +173,9 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Start the refresh thread which will run if the number of images stored in memory is less than the total number of images in the data source, otherwise this function returns false.
         /// </summary>
+        /// <param name="dfReplacementPct">Optionally, specifies the replacement percentage (default = 0.25 or 25%).</param>
         /// <returns>false is returned if the refresh thread is already running, or if the number of images in memory equal the number of images in the data source.</returns>
-        public bool StartRefresh()
+        public bool StartRefresh(double dfReplacementPct = 0.25)
         {
             lock (m_syncObj)
             {
@@ -172,13 +185,65 @@ namespace MyCaffe.db.image
                 if (m_rgImages.Length >= m_src.ImageCount)
                     return false;
 
+                int nMaxRefresh = (int)(m_nLoadCount * dfReplacementPct);
+                if (nMaxRefresh == 0)
+                    nMaxRefresh = 1;
+
+                m_nReplacementBatch = nMaxRefresh;
                 m_evtRefreshCancel.Reset();
                 m_evtRefreshDone.Reset();
                 m_dataRefreshThread = new Thread(new ThreadStart(dataRefreshThread));
                 m_dataRefreshThread.Start();
-                m_evtRefreshRunning.WaitOne(1000);
+                m_evtRefreshRunning.WaitOne();
 
                 return true;
+            }
+        }
+
+        /// <summary>
+        /// Wait for the refres to complete.
+        /// </summary>
+        /// <param name="rgAbort">Specifies one or more cancellation handles.</param>
+        /// <param name="nWait">Specifies an amount of time to wait in milliseconds.</param>
+        /// <returns>If the refresh is done running, true is returned, otherwise false.</returns>
+        public bool WaitForRefreshToComplete(List<WaitHandle> rgAbort, int nWait)
+        {
+            if (!m_evtRefreshRunning.WaitOne(0))
+                return true;
+
+            List<WaitHandle> rgWait = new List<WaitHandle>();
+            rgWait.Add(m_evtRefreshDone);
+            rgWait.AddRange(rgAbort);
+
+            int nRes = WaitHandle.WaitAny(rgWait.ToArray(), nWait);
+            if (nRes == 0)
+                return true;
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns true after the refresh completes.
+        /// </summary>
+        public bool IsRefreshDone
+        {
+            get
+            {
+                if (m_evtRefreshDone.WaitOne(0) || !m_evtRefreshRunning.WaitOne(0))
+                    return true;
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the refresh is running, false otherwise.
+        /// </summary>
+        public bool IsRefreshRunning
+        {
+            get
+            {
+                return m_evtRefreshRunning.WaitOne(0);
             }
         }
 
@@ -304,7 +369,8 @@ namespace MyCaffe.db.image
 
             foreach (SimpleDatum sd in m_rgImages)
             {
-                sd.ResetLabel();
+                if (sd != null) 
+                    sd.ResetLabel();
             }
 
             return ReloadIndexing();
@@ -322,7 +388,8 @@ namespace MyCaffe.db.image
 
             foreach (SimpleDatum sd in m_rgImages)
             {
-                sd.SetLabel(col.MapLabelWithoutBoost(sd.OriginalLabel));
+                if (sd != null)
+                    sd.SetLabel(col.MapLabelWithoutBoost(sd.OriginalLabel));
             }
 
             return ReloadIndexing();
@@ -339,7 +406,8 @@ namespace MyCaffe.db.image
 
             foreach (SimpleDatum sd in m_rgImages)
             {
-                sd.ResetBoost();
+                if (sd != null)
+                    sd.ResetBoost();
             }
 
             return ReloadIndexing();
@@ -361,7 +429,7 @@ namespace MyCaffe.db.image
                 if (m_rgImages == null)
                     return -1;
 
-                rgSd = m_rgImages.Where(p => rgIdx.Contains(p.Index)).ToList();
+                rgSd = m_rgImages.Where(p => p != null && rgIdx.Contains(p.Index)).ToList();
             }
 
             if (rgSd.Count == 0)
@@ -385,7 +453,7 @@ namespace MyCaffe.db.image
 
             lock (m_syncObj)
             {
-                rgSd = m_rgImages.Where(p => p.ImageID == nImageId).ToList();
+                rgSd = m_rgImages.Where(p => p != null && p.ImageID == nImageId).ToList();
             }
 
             if (rgSd.Count == 0)
@@ -440,15 +508,30 @@ namespace MyCaffe.db.image
 
             if (sd == null)
             {
-                if (!m_evtRunning.WaitOne(0) && (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND))
-                    Load((loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false);
+                if (m_refreshManager != null)
+                {
+                    while (nIdx > 0 && m_rgImages[nIdx] == null)
+                    {
+                        nIdx--;
+                    }
 
-                sd = directLoadImage(nIdx);
-                if (sd == null)
-                    throw new Exception("The image is still null yet should have loaded!");
+                    sd = m_rgImages[nIdx];
 
-                if (loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND)
-                    m_rgImages[nIdx] = sd;
+                    if (sd == null)
+                        throw new Exception("No images should be null when using LoadLimit loading!");
+                }
+                else
+                {
+                    if (!m_evtRunning.WaitOne(0) && (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND))
+                        Load((loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false);
+
+                    sd = directLoadImage(nIdx);
+                    if (sd == null)
+                        throw new Exception("The image is still null yet should have loaded!");
+
+                    if (loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND)
+                        m_rgImages[nIdx] = sd;
+                }
             }
 
             // Double check that the conditional data has loaded (if needed).
@@ -534,7 +617,7 @@ namespace MyCaffe.db.image
 
             lock (m_syncObj)
             {
-                return m_rgImages.Where(p => rgIdx.Contains(p.Index)).ToList();
+                return m_rgImages.Where(p => p != null && rgIdx.Contains(p.Index)).ToList();
             }
         }
 
@@ -554,7 +637,7 @@ namespace MyCaffe.db.image
             {
                 IEnumerable<SimpleDatum> iQuery = getQuery(bSuperboostOnly, strFilterVal, nBoostVal);
 
-                iQuery = iQuery.Where(p => rgIdx.Contains(p.Index));
+                iQuery = iQuery.Where(p => p != null && rgIdx.Contains(p.Index));
 
                 return iQuery.ToList();
             }
@@ -599,6 +682,9 @@ namespace MyCaffe.db.image
             else if (nImageSize > 3000)
                 nBatchSize = 10000;
 
+            if (nBatchSize > m_nLoadCount)
+                nBatchSize = m_nLoadCount;
+
             return nBatchSize;
         }
 
@@ -632,6 +718,9 @@ namespace MyCaffe.db.image
                 List<int> rgIdxBatch = new List<int>();
                 int nBatchSize = getBatchSize(m_src);
 
+                if (m_nLoadedCount > 0)
+                    throw new Exception("The loaded count is > 0!");
+
                 factory.Open(m_src);
 
                 m_log.WriteLine(m_src.Name + " loading " + m_loadSequence.Count.ToString("N0") + " items...");
@@ -643,7 +732,16 @@ namespace MyCaffe.db.image
 
                     if (rgIdxBatch.Count >= nBatchSize || !nNextIdx.HasValue)
                     {
-                        List<RawImage> rgImg = factory.GetRawImagesAt(rgIdxBatch[0], rgIdxBatch.Count);
+                        List<RawImage> rgImg;
+
+                        if (m_refreshManager == null)
+                            rgImg = factory.GetRawImagesAt(rgIdxBatch[0], rgIdxBatch.Count);
+                        else                        
+                            rgImg = factory.GetRawImagesAt(rgIdxBatch, m_evtCancel);
+
+                        if (rgImg == null)
+                            break;
+
                         for (int j = 0; j < rgImg.Count; j++)
                         {
                             SimpleDatum sd = factory.LoadDatum(rgImg[j]);
@@ -651,7 +749,7 @@ namespace MyCaffe.db.image
                             if (m_refreshManager != null)
                                 m_refreshManager.AddLoaded(sd);
 
-                            m_rgImages[sd.Index] = sd;
+                            m_rgImages[m_nLoadedCount] = sd;
                             m_nLoadedCount++;
 
                             if (sw.Elapsed.TotalMilliseconds > 1000)
@@ -679,9 +777,6 @@ namespace MyCaffe.db.image
 
                 if (rgIdxBatch.Count > 0)
                     m_log.FAIL("Not all images were loaded!");
-
-                if (m_bAutoStartRefresh)
-                    StartRefresh();
             }
             finally
             {
@@ -700,32 +795,90 @@ namespace MyCaffe.db.image
 
             try
             {
-                while (!m_evtRefreshCancel.WaitOne(100))
+                sw.Start();
+
+                m_log.WriteLine("Starting refresh of " + m_nReplacementBatch.ToString("N0") + " items...");
+
+                List<Tuple<int, SimpleDatum>> rgReplace = new List<Tuple<int, SimpleDatum>>();
+                List<Tuple<int, DbItem>> rgItems = new List<Tuple<int, DbItem>>();
+                List<DbItem> rgDbItems = new List<DbItem>();
+
+                // Load the replacement set.
+                for (int i = 0; i < m_nReplacementBatch; i++)
                 {
-                    // Randomly select a batch of images to replace
+                    int nIdx = m_random.Next(m_rgImages.Length);
+                    int? nLabel = null;
 
-                    List<Tuple<int, SimpleDatum>> rgReplace = new List<Tuple<int, SimpleDatum>>();
+                    if (m_rgImages[nIdx] != null)
+                        nLabel = m_rgImages[nIdx].Label;
 
-                    for (int i = 0; i < m_nReplacementBatch; i++)
+                    DbItem img = m_refreshManager.GetNextImageId(nLabel);
+                    rgItems.Add(new Tuple<int, DbItem>(nIdx, img));
+                    rgDbItems.Add(img);
+
+                    if (sw.Elapsed.TotalMilliseconds > 1000)
                     {
-                        int nIdx = m_random.Next(m_rgImages.Length);
-                        DbItem img = m_refreshManager.GetNextImageId(m_rgImages[nIdx].Label);
-                        SimpleDatum sd = m_factory.LoadImage(img.ID);
-                        rgReplace.Add(new Tuple<int, SimpleDatum>(nIdx, sd));
+                        if (m_evtRefreshCancel.WaitOne(0))
+                            return;
+
+                        sw.Restart();
                     }
+                }
 
-                    lock (m_syncObj)
+                // Get the Datums, ordered by ID.
+                List<SimpleDatum> rgImg = m_factory.GetImagesAt(rgDbItems, m_evtCancel);
+                if (rgImg == null)
+                    return;
+
+                rgImg = rgImg.OrderBy(p => p.ImageID).ToList();
+                rgItems = rgItems.OrderBy(p => p.Item2.ID).ToList();
+
+                if (rgImg.Count != rgItems.Count)
+                {
+                    List<Tuple<int, DbItem>> rgItems1 = new List<Tuple<int, DbItem>>();
+                    int nIdx = 0;
+                    for (int i = 0; i < rgImg.Count; i++)
                     {
-                        for (int i = 0; i < rgReplace.Count; i++)
+                        while (nIdx < rgItems.Count && rgItems[nIdx].Item2.ID < rgImg[i].ImageID)
                         {
-                            int nIdx = rgReplace[i].Item1;
-                            m_rgImages[nIdx] = rgReplace[i].Item2;
+                            nIdx++;
+                        }
+
+                        if (rgItems[nIdx].Item2.ID == rgImg[i].ImageID)
+                        {
+                            rgItems1.Add(rgItems[nIdx]);
+                            nIdx++;
                         }
                     }
+
+                    rgItems = rgItems1;
+                }
+
+                for (int i = 0; i < rgItems.Count; i++)
+                {
+                    rgReplace.Add(new Tuple<int, SimpleDatum>(rgItems[i].Item1, rgImg[i]));
+                }
+
+                lock (m_syncObj)
+                {
+                    int nMismatchCount = 0;
+
+                    for (int i = 0; i < rgReplace.Count; i++)
+                    {
+                        int nIdx = rgReplace[i].Item1;
+                        if (m_rgImages[nIdx] != null && m_rgImages[nIdx].Label != rgReplace[i].Item2.Label)
+                            nMismatchCount++;
+                        else
+                            m_rgImages[nIdx] = rgReplace[i].Item2;
+                    }
+
+                    if (nMismatchCount > 0)
+                        m_log.WriteLine("WARNING: " + nMismatchCount.ToString("N0") + " label mismatches found!");
                 }
             }
             finally
             {
+                m_evtRefreshRunning.Reset();
                 m_evtRefreshDone.Set();
             }
         }
@@ -740,11 +893,39 @@ namespace MyCaffe.db.image
         Dictionary<int, AutoResetEvent> m_rgPending = new Dictionary<int, AutoResetEvent>();
         object m_syncObj = new object();
 
-        public LoadSequence(int nCount)
+        public LoadSequence(CryptoRandom random, int nCount, int nImageCount, RefreshManager refresh)
         {
-            for (int i = 0; i < nCount; i++)
+            // When using load limit (count < image count), load item indexes in such
+            // a way that balances the number of items per label.
+            if (nCount < nImageCount)
             {
-                m_rgLoadSequence.Add(i);
+                Dictionary<int, List<DbItem>> rgItemsByLabel = refresh.GetItemsByLabel();
+                List<int> rgLabel = rgItemsByLabel.Where(p => p.Value.Count > 0).Select(p => p.Key).ToList();
+
+                for (int i = 0; i < nCount; i++)
+                {
+                    int nLabelIdx = random.Next(rgLabel.Count);
+                    int nLabel = rgLabel[nLabelIdx];
+                    List<DbItem> rgItems = rgItemsByLabel[nLabel];
+                    int nItemIdx = random.Next(rgItems.Count);
+                    DbItem item = rgItems[nItemIdx];
+
+                    m_rgLoadSequence.Add(item.Index);
+
+                    rgLabel.Remove(nLabel);
+                    if (rgLabel.Count == 0)
+                        rgLabel = rgItemsByLabel.Where(p => p.Value.Count > 0).Select(p => p.Key).ToList();
+                }
+
+                refresh.Reset();
+            }
+            // Otherwise just load all item indexes.
+            else
+            {
+                for (int i = 0; i < nCount; i++)
+                {
+                    m_rgLoadSequence.Add(i);
+                }
             }
         }
 
@@ -822,7 +1003,9 @@ namespace MyCaffe.db.image
     {
         CryptoRandom m_random;
         List<DbItem> m_rgItems;
-        Dictionary<int, List<long>> m_rgLoadedIds = new Dictionary<int, List<long>>();
+        Dictionary<int, List<DbItem>> m_rgItemsByLabel = null;
+        Dictionary<int, List<int>> m_rgLoadedIdx = new Dictionary<int, List<int>>();
+        Dictionary<int, List<int>> m_rgNotLoadedIdx = new Dictionary<int, List<int>>();
 
         public RefreshManager(CryptoRandom random, SourceDescriptor src, DatasetFactory factory)
         {
@@ -830,51 +1013,77 @@ namespace MyCaffe.db.image
             m_rgItems = factory.LoadImageIndexes(false, true);
         }
 
+        public Dictionary<int, List<DbItem>> GetItemsByLabel()
+        {
+            if (m_rgItemsByLabel == null)
+            {
+                m_rgItemsByLabel = new Dictionary<int, List<DbItem>>();
+
+                for (int i=0; i<m_rgItems.Count; i++)
+                {
+                    DbItem item = m_rgItems[i];
+                    item.Tag = i;
+
+                    if (!m_rgItemsByLabel.ContainsKey(item.Label))
+                        m_rgItemsByLabel.Add(item.Label, new List<DbItem>());
+
+                    m_rgItemsByLabel[item.Label].Add(item);
+                }
+
+                Reset();
+            }
+
+            return m_rgItemsByLabel;
+        }
+
         public void Reset()
         {
-            m_rgLoadedIds = new Dictionary<int, List<long>>();
+            m_rgLoadedIdx = new Dictionary<int, List<int>>();
+            m_rgNotLoadedIdx = new Dictionary<int, List<int>>();
+
+            foreach (KeyValuePair<int, List<DbItem>> kv in m_rgItemsByLabel)
+            {
+                m_rgNotLoadedIdx.Add(kv.Key, kv.Value.Select(p => (int)p.Tag).ToList());
+            }
         }
 
         public void AddLoaded(SimpleDatum sd)
         {
-            if (!m_rgLoadedIds.ContainsKey(sd.Label))
-                m_rgLoadedIds.Add(sd.Label, new List<long>());
+            if (!m_rgLoadedIdx.ContainsKey(sd.Label))
+                m_rgLoadedIdx.Add(sd.Label, new List<int>());
 
-            List<long> rgId = m_rgLoadedIds[sd.Label];
+            DbItem item = m_rgItemsByLabel[sd.Label].Where(p => p.ID == sd.ImageID).First();
+            m_rgLoadedIdx[sd.Label].Add((int)item.Tag);
 
-            if (!rgId.Contains(sd.ImageID))
-                rgId.Add(sd.ImageID);
+            m_rgNotLoadedIdx[sd.Label].Remove((int)item.Tag);
         }
 
-        public DbItem GetNextImageId(int nLabel)
+        public DbItem GetNextImageId(int? nLabel)
         {
-            if (!m_rgLoadedIds.ContainsKey(nLabel))
-                m_rgLoadedIds.Add(nLabel, new List<long>());
-
-            List<long> rgId = m_rgLoadedIds[nLabel];
-            List<DbItem> rgImg = m_rgItems.Where(p => p.Label == nLabel).ToList();
-
-            List<DbItem> rgNotLoaded = rgImg.Where(p => !rgId.Contains(p.ID)).ToList();
-            int nIdx;
-            DbItem item;
-
-            // If in the not loaded set, return the next item with the same 
-            // label, yet selected randomly from those with the same label.
-            if (rgNotLoaded.Count > 0)
+            if (!nLabel.HasValue)
             {
-                nIdx = m_random.Next(rgNotLoaded.Count);
-                item = rgNotLoaded[nIdx];
-                rgId.Add(item.ID);
-
-                return item;
+                int nLabelIdx = m_random.Next(m_rgItemsByLabel.Count);
+                nLabel = m_rgItemsByLabel.ElementAt(nLabelIdx).Key;
             }
 
-            // Otherwise if all labeled items have been loaded already,
-            // randomly select from the full set of labeled items.
-            rgId.Clear();
-            nIdx = m_random.Next(rgImg.Count);
-            item = rgImg[nIdx];
-            rgId.Add(item.ID);
+            if (!m_rgLoadedIdx.ContainsKey(nLabel.Value))
+                m_rgLoadedIdx.Add(nLabel.Value, new List<int>());
+
+            List<int> rgLoadedIdx = m_rgLoadedIdx[nLabel.Value];
+            List<int> rgNotLoadedIdx = m_rgNotLoadedIdx[nLabel.Value];
+
+            if (rgNotLoadedIdx.Count == 0)
+            {
+                rgLoadedIdx.Clear();
+                rgNotLoadedIdx = m_rgItemsByLabel[nLabel.Value].Select(p => (int)p.Tag).ToList();
+            }
+
+            int nIdx = m_random.Next(rgNotLoadedIdx.Count);
+            int nMainIdx = rgNotLoadedIdx[nIdx];
+            DbItem item = m_rgItems[nMainIdx];
+
+            rgNotLoadedIdx.RemoveAt(nIdx);
+            rgLoadedIdx.Add(nMainIdx);
 
             return item;
         }

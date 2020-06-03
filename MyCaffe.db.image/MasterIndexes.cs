@@ -20,36 +20,39 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Specifies the index into all of the data source images.
         /// </summary>
-        protected Index m_index;
+        protected Index m_index = null;
         /// <summary>
         /// Specifies the list of images listed by label where each label contains an index into all images with that label.
         /// </summary>
-        protected LabelIndex m_rgLabels;
+        protected LabelIndex m_rgLabels = null;
         /// <summary>
         /// Specifies the list of all boosted images.
         /// </summary>
-        protected Index m_boosted;
+        protected Index m_boosted = null;
         /// <summary>
         /// Specifies the list of all boosted images listed by label where each label contains an index into all boosted images with that label.
         /// </summary>
-        protected LabelIndex m_rgLabelsBoosted;
+        protected LabelIndex m_rgLabelsBoosted = null;
         CryptoRandom m_random;
         DatasetFactory m_factory = new DatasetFactory();
         List<DbItem> m_rgImageIdx = null;
         IMGDB_SORT m_sort = IMGDB_SORT.BYIDX;
+        int m_nLoadLimit = 0;
 
         /// <summary>
         /// The constructor.
         /// </summary>
         /// <param name="random">Specifies the random number generator.</param>
         /// <param name="src">Specifies the data source.</param>
-        public MasterIndexes(CryptoRandom random, SourceDescriptor src)
+        /// <param name="nLoadLimit">Optionally, specifies the load limit used which when set to a value > 0, limits queries to RANDOM image selection within the load limit count (default = 0).</param>
+        public MasterIndexes(CryptoRandom random, SourceDescriptor src, int nLoadLimit = 0)
         {
             m_random = random;
             m_src = src;
             m_factory.Open(src);
-            m_rgImageIdx = m_factory.LoadImageIndexes(false);
+            m_nLoadLimit = nLoadLimit;
 
+            m_rgImageIdx = m_factory.LoadImageIndexes(false);
             load(m_rgImageIdx.Where(p => p != null).ToList());
         }
 
@@ -75,6 +78,7 @@ namespace MyCaffe.db.image
             m_sort = sort;
             m_src = idx.m_src;
             m_random = idx.m_random;
+            m_nLoadLimit = idx.m_nLoadLimit;
             m_factory = new DatasetFactory(idx.m_factory);
 
             m_index = idx.m_index.Clone(sort);
@@ -95,6 +99,14 @@ namespace MyCaffe.db.image
                 m_factory.Dispose();
                 m_factory = null;
             }
+        }
+
+        /// <summary>
+        /// Returns the load limit set during initialization.
+        /// </summary>
+        public int LoadLimit
+        {
+            get { return m_nLoadLimit; }
         }
 
         /// <summary>
@@ -183,6 +195,9 @@ namespace MyCaffe.db.image
         /// <returns>A list with the image indexes is returned.</returns>
         public List<int> GetIndexes(int nStartIdx, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
         {
+            if (m_nLoadLimit > 0)
+                throw new Exception("The GetIndexes method is not valid when using LoadLimit > 0.");
+
             Index idx = GetIndex(null, nBoostVal.HasValue);
             List<DbItem> rgIdx = idx.FindImageIndexes(nStartIdx, nQueryCount, strFilterVal, nBoostVal, bBoostValIsExact);
             return rgIdx.Select(p => p.Index).ToList();
@@ -199,6 +214,9 @@ namespace MyCaffe.db.image
         /// <returns>A list with the image indexes is returned.</returns>
         public List<int> GetIndexes(DateTime dtStart, int nQueryCount = int.MaxValue, string strFilterVal = null, int? nBoostVal = null, bool bBoostValIsExact = false)
         {
+            if (m_nLoadLimit > 0)
+                throw new Exception("The GetIndexes method is not valid when using LoadLimit > 0.");
+
             Index idx = GetIndex(null, nBoostVal.HasValue);
             List<DbItem> rgIdx = idx.FindImageIndexes(dtStart, nQueryCount, strFilterVal, nBoostVal, bBoostValIsExact);
             return rgIdx.Select(p => p.Index).ToList();
@@ -229,8 +247,27 @@ namespace MyCaffe.db.image
         /// <returns>The next image index is returned.</returns>
         public virtual int? GetNextImage(Index.SELECTION_TYPE type, int? nLabel = null, bool bBoosted = false, int nDirectIdx = -1)
         {
-            Index idx = GetIndex(nLabel, bBoosted);
-            return idx.GetNext(type);
+            if (m_nLoadLimit == 0)
+            {
+                Index idx = GetIndex(nLabel, bBoosted);
+                return idx.GetNext(type);
+            }
+            else
+            {
+                if (type != Index.SELECTION_TYPE.RANDOM)
+                    throw new Exception("Only RANDOM selections are valid when using LoadLimit > 0.");
+
+                if (nLabel.HasValue)
+                    throw new Exception("Label selections are not valid when using LoadLimit > 0");
+
+                if (bBoosted != false)
+                    throw new Exception("Boosted qeruies are not valid when using LoadLimit > 0.");
+
+                if (nDirectIdx != -1)
+                    throw new Exception("DirectIndex queries are not valid when using LoadLimit > 0.");
+
+                return m_random.Next(m_nLoadLimit);
+            }
         }
 
         /// <summary>

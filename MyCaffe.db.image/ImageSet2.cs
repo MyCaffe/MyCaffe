@@ -97,13 +97,12 @@ namespace MyCaffe.db.image
         /// <param name="bUseUniqueLabelIndexes">Optionally, specifies to use unique label indexes which is slightly slower, but ensures each label is hit per epoch equally (default = true).</param>
         /// <param name="bUseUniqueImageIndexes">Optionally, specifies to use unique image indexes which is slightly slower, but ensures each image is hit per epoch (default = true).</param>
         /// <param name="nMaxLoadCount">Optionally, specifies to automaticall start the image refresh which only applies when the number of images loaded into memory is less than the actual number of images (default = false).</param>
-        /// <param name="bAutoStartRefresh">Optionally, specifies the maximum number of images to load into memory (default = 0, which loads all images into memory).</param>
         /// <returns>Once initialized, the default query state for the image set is returned.  This method may be called multiple times and each time returns a new QueryState.</returns>
-        public QueryState Initialize(bool bSilentLoad, bool bUseUniqueLabelIndexes = true, bool bUseUniqueImageIndexes = true, int nMaxLoadCount = 0, bool bAutoStartRefresh = false)
+        public QueryState Initialize(bool bSilentLoad, bool bUseUniqueLabelIndexes = true, bool bUseUniqueImageIndexes = true, int nMaxLoadCount = 0)
         {
             if (m_masterList == null)
             {
-                m_masterList = new MasterList(m_random, m_log, m_src, m_factory, m_rgAbort);
+                m_masterList = new MasterList(m_random, m_log, m_src, m_factory, m_rgAbort, nMaxLoadCount);
 
                 if (OnCalculateImageMean != null)
                     m_masterList.OnCalculateImageMean += OnCalculateImageMean;
@@ -112,8 +111,8 @@ namespace MyCaffe.db.image
                     m_masterList.Load(bSilentLoad);
             }
 
-            if (m_masterIdx == null)
-                m_masterIdx = new MasterIndexes(m_random, m_src);
+            if (m_masterIdx == null || m_masterIdx.LoadLimit != nMaxLoadCount)
+                m_masterIdx = new MasterIndexes(m_random, m_src, nMaxLoadCount);
 
             QueryState state = new QueryState(m_masterIdx, bUseUniqueLabelIndexes, bUseUniqueImageIndexes);
 
@@ -131,6 +130,42 @@ namespace MyCaffe.db.image
         public bool WaitForLoadingToComplete(int nWait = int.MaxValue)
         {
             return m_masterList.WaitForLoadingToComplete(m_rgAbort, nWait);
+        }
+
+        /// <summary>
+        /// Returns whether or not the refresh is running.
+        /// </summary>
+        public bool IsRefreshRunning
+        {
+            get { return m_masterList.IsRefreshRunning; }
+        }
+
+        /// <summary>
+        /// Start the refresh process which only valid when initialized with LoadLimit > 0.
+        /// </summary>
+        /// <param name="dfReplacementPct">Optionally, specifies the replacement percentage (default = 0.25 or 25%).</param>
+        /// <returns>false is returned if the refresh thread is already running, or if the number of images in memory equal the number of images in the data source.</returns>
+        public bool StartRefresh(double dfReplacementPct = 0.25)
+        {
+            return m_masterList.StartRefresh(dfReplacementPct);
+        }
+
+        /// <summary>
+        /// Wait for the image refresh to complete loading.
+        /// </summary>
+        /// <param name="nWait">Specifies the maximum number of ms to wait (default = int.MaxValue).</param>
+        /// <returns>If the refresh has completed <i>true</i> is returned, otherwise <i>false</i>.</returns>
+        public bool WaitForRefreshToComplete(int nWait = int.MaxValue)
+        {
+            return m_masterList.WaitForRefreshToComplete(m_rgAbort, nWait);
+        }
+
+        /// <summary>
+        /// Abort any refresh currently running.
+        /// </summary>
+        public void StopRefresh()
+        {
+            m_masterList.StopRefresh();
         }
 
         /// <summary>

@@ -336,6 +336,204 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Wait for the dataset refreshing to complete.
+        /// </summary>
+        /// <param name="nDsId">Specifies the dataset ID.</param>
+        /// <param name="bTraining">Specifies to wait for the training data source to refresh.</param>
+        /// <param name="bTesting">Specifies to wait for the testing data source to refresh.</param>
+        /// <param name="nWait">Specifies the amount of time to wait in ms. (default = int.MaxValue).</param>
+        /// <returns>If the data source(s) complete refreshing, <i>true</i> is returned, otherwise <i>false</i>.</returns>
+        public bool WaitForDatasetToRefresh(int nDsId, bool bTraining, bool bTesting, int nWait = int.MaxValue)
+        {
+            lock (m_syncObj)
+            {
+                foreach (DatasetEx2 ds in m_rgDatasets)
+                {
+                    if (ds.DatasetID == nDsId)
+                        return ds.WaitForRefreshToComplete(bTraining, bTesting, nWait);
+                }
+
+                throw new Exception("Failed to create a new query state for dataset ID = " + nDsId.ToString() + ".");
+            }
+        }
+
+        /// <summary>
+        /// Wait for the dataset refreshing to complete.
+        /// </summary>
+        /// <param name="strDs">Specifies the dataset name.</param>
+        /// <param name="bTraining">Specifies to wait for the training data source to refresh.</param>
+        /// <param name="bTesting">Specifies to wait for the testing data source to refresh.</param>
+        /// <param name="nWait">Specifies the amount of time to wait in ms. (default = int.MaxValue).</param>
+        /// <returns>If the data source(s) complete refreshing, <i>true</i> is returned, otherwise <i>false</i>.</returns>
+        public bool WaitForDatasetToRefresh(string strDs, bool bTraining, bool bTesting, int nWait = int.MaxValue)
+        {
+            lock (m_syncObj)
+            {
+                foreach (DatasetEx2 ds in m_rgDatasets)
+                {
+                    if (ds.DatasetName == strDs)
+                        return ds.WaitForRefreshToComplete(bTraining, bTesting, nWait);
+                }
+
+                throw new Exception("Failed to create a new query state for dataset = '" + strDs + "'.");
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the refresh operation running.
+        /// </summary>
+        /// <param name="nDsId">Specifies the dataset ID.</param>
+        /// <param name="bTraining">Specifies to check the training data source for refresh.</param>
+        /// <param name="bTesting">Specifies to check the testing data source for refresh.</param>
+        /// <returns>If the refresh is running, true is returned, otherwise false.</returns>
+        public bool IsRefreshRunning(int nDsId, bool bTraining, bool bTesting)
+        {
+            lock (m_syncObj)
+            {
+                foreach (DatasetEx2 ds in m_rgDatasets)
+                {
+                    if (ds.DatasetID == nDsId)
+                        return ds.IsRefreshRunning(bTraining, bTesting);
+                }
+
+                throw new Exception("Failed to create a new query state for dataset ID = '" + nDsId.ToString() + "'.");
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the refresh operation running.
+        /// </summary>
+        /// <param name="strDs">Specifies the dataset name.</param>
+        /// <param name="bTraining">Specifies to check the training data source for refresh.</param>
+        /// <param name="bTesting">Specifies to check the testing data source for refresh.</param>
+        /// <returns>If the refresh is running, true is returned, otherwise false.</returns>
+        public bool IsRefreshRunning(string strDs, bool bTraining, bool bTesting)
+        {
+            lock (m_syncObj)
+            {
+                foreach (DatasetEx2 ds in m_rgDatasets)
+                {
+                    if (ds.DatasetName == strDs)
+                        return ds.IsRefreshRunning(bTraining, bTesting);
+                }
+
+                throw new Exception("Failed to create a new query state for dataset = '" + strDs + "'.");
+            }
+        }
+
+
+        /// <summary>
+        /// Start a refresh on the dataset by replacing a specified percentage of the images with images from the physical database.
+        /// </summary>
+        /// <remarks>
+        /// Note, this method is only valid when initialized with LoadLimit > 0.
+        /// </remarks>
+        /// <param name="strDs">Specifies the dataset name.</param>
+        /// <param name="bTraining">Specifies the training data source to refresh.</param>
+        /// <param name="bTesting">Specifies the testing data source to refresh.</param>
+        /// <param name="dfReplacementPct">Optionally, specifies the replacement percentage to use (default = 0.25 for 25%).</param>
+        /// <returns>On succes, true is returned, otherwise false is returned.</returns>
+        public bool StartRefresh(string strDs, bool bTraining, bool bTesting, double dfReplacementPct)
+        {
+            lock (m_syncObj)
+            {
+                foreach (DatasetEx2 ds in m_rgDatasets)
+                {
+                    if (ds.DatasetName == strDs)
+                    {
+                        ds.StartRefresh(bTraining, bTesting, dfReplacementPct);
+                        return true;
+                    }
+                }
+
+                throw new Exception("Failed to create a new query state for dataset = '" + strDs + "'.");
+            }
+        }
+
+        /// <summary>
+        /// Stop a refresh operation running on the dataset.
+        /// </summary>
+        /// <remarks>
+        /// Note, this method is only valid when initialized with LoadLimit > 0.
+        /// </remarks>
+        /// <param name="strDs">Specifies the dataset name.</param>
+        /// <param name="bTraining">Specifies the training data source to strop refreshing.</param>
+        /// <param name="bTesting">Specifies the testing data source to stop refreshing.</param>
+        /// <returns>On succes, true is returned, otherwise false is returned.</returns>
+        public bool StopRefresh(string strDs, bool bTraining, bool bTesting)
+        {
+            lock (m_syncObj)
+            {
+                foreach (DatasetEx2 ds in m_rgDatasets)
+                {
+                    if (ds.DatasetName == strDs)
+                    {
+                        ds.StopRefresh(bTraining, bTesting);
+                        return true;
+                    }
+                }
+
+                throw new Exception("Failed to create a new query state for dataset = '" + strDs + "'.");
+            }
+        }
+
+        /// <summary>
+        /// Start a refresh on the dataset by replacing a specified percentage of the images with images from the physical database.
+        /// </summary>
+        /// <remarks>
+        /// Note, this method is only valid when initialized with LoadLimit > 0.
+        /// </remarks>
+        /// <param name="nDsID">Specifies the dataset ID.</param>
+        /// <param name="bTraining">Specifies the training data source to refresh.</param>
+        /// <param name="bTesting">Specifies the testing data source to refresh.</param>
+        /// <param name="dfReplacementPct">Optionally, specifies the replacement percentage to use (default = 0.25 for 25%).</param>
+        /// <returns>On succes, true is returned, otherwise false is returned.</returns>
+        public bool StartRefresh(int nDsID, bool bTraining, bool bTesting, double dfReplacementPct)
+        {
+            lock (m_syncObj)
+            {
+                foreach (DatasetEx2 ds in m_rgDatasets)
+                {
+                    if (ds.DatasetID == nDsID)
+                    {
+                        ds.StartRefresh(bTraining, bTesting, dfReplacementPct);
+                        return true;
+                    }
+                }
+
+                throw new Exception("Failed to create a new query state for dataset ID = '" + nDsID.ToString() + "'.");
+            }
+        }
+
+        /// <summary>
+        /// Stop a refresh operation running on the dataset.
+        /// </summary>
+        /// <remarks>
+        /// Note, this method is only valid when initialized with LoadLimit > 0.
+        /// </remarks>
+        /// <param name="nDsID">Specifies the dataset ID.</param>
+        /// <param name="bTraining">Specifies the training data source to strop refreshing.</param>
+        /// <param name="bTesting">Specifies the testing data source to stop refreshing.</param>
+        /// <returns>On succes, true is returned, otherwise false is returned.</returns>
+        public bool StopRefresh(int nDsID, bool bTraining, bool bTesting)
+        {
+            lock (m_syncObj)
+            {
+                foreach (DatasetEx2 ds in m_rgDatasets)
+                {
+                    if (ds.DatasetID == nDsID)
+                    {
+                        ds.StopRefresh(bTraining, bTesting);
+                        return true;
+                    }
+                }
+
+                throw new Exception("Failed to create a new query state for dataset ID = '" + nDsID.ToString() + "'.");
+            }
+        }
+
+
+        /// <summary>
         /// Create a new query state, optionally with a certain sorting.
         /// </summary>
         /// <param name="nDsId">Specifies the dataset on which to create the query state.</param>
