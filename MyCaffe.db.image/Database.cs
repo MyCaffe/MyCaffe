@@ -1133,6 +1133,73 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Returns a list of RawImages from the database for a data source.
+        /// </summary>
+        /// <param name="rgImageIdx">Specifies the list of image indexes to query (maximum of 100).</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="strDescription">Optionally, specifies a description to filter the images retrieved (when specified, only images matching the filter are returned) (default = null).</param>
+        /// <returns></returns>
+        public List<RawImage> GetRawImagesAt(List<int> rgImageIdx, int nSrcId = 0, string strDescription = null)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            if (rgImageIdx.Count > 100)
+                throw new Exception("You can only query up to 100 images at a time when using the list of image indexes.");
+
+            string strCmd = "SELECT * FROM [DNN].[dbo].[RawImages] WHERE (SourceID = " + nSrcId.ToString() + ") AND (";
+
+            for (int i = 0; i < rgImageIdx.Count; i++)
+            {
+                strCmd += "Idx = " + rgImageIdx[i].ToString();
+
+                if (i < rgImageIdx.Count-1)
+                    strCmd += " OR ";
+            }
+
+            strCmd += ") AND (Active = 1)";
+
+            if (!String.IsNullOrEmpty(strDescription))
+                strCmd += " AND (Description = " + strDescription + ")";
+
+            return m_entities.Database.SqlQuery<RawImage>(strCmd).ToList();
+        }
+
+
+        /// <summary>
+        /// Returns a list of RawImages from the database for a data source.
+        /// </summary>
+        /// <param name="rgImageID">Specifies the list of image IDs to query (maximum of 100).</param>
+        /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="strDescription">Optionally, specifies a description to filter the images retrieved (when specified, only images matching the filter are returned) (default = null).</param>
+        /// <returns></returns>
+        public List<RawImage> GetRawImagesAtID(List<int> rgImageID, int nSrcId = 0, string strDescription = null)
+        {
+            if (nSrcId == 0)
+                nSrcId = m_src.ID;
+
+            if (rgImageID.Count > 100)
+                throw new Exception("You can only query up to 100 images at a time when using the list of image indexes.");
+
+            string strCmd = "SELECT * FROM [DNN].[dbo].[RawImages] WHERE (SourceID = " + nSrcId.ToString() + ") AND (";
+
+            for (int i = 0; i < rgImageID.Count; i++)
+            {
+                strCmd += "ID = " + rgImageID[i].ToString();
+
+                if (i < rgImageID.Count - 1)
+                    strCmd += " OR ";
+            }
+
+            strCmd += ") AND (Active = 1)";
+
+            if (!String.IsNullOrEmpty(strDescription))
+                strCmd += " AND (Description = " + strDescription + ")";
+
+            return m_entities.Database.SqlQuery<RawImage>(strCmd).ToList();
+        }
+
+        /// <summary>
         /// Returns the RawImage at a given image index.
         /// </summary>
         /// <param name="nIdx">Specifies the image index to retrieve.</param>
@@ -4791,6 +4858,8 @@ namespace MyCaffe.db.image
     /// </summary>
     public class DbItem
     {
+        object m_tag;
+
         /// <summary>
         /// The constructor.
         /// </summary>
@@ -4812,6 +4881,15 @@ namespace MyCaffe.db.image
             item.time = time;
             item.desc = desc;
             return item;
+        }
+
+        /// <summary>
+        /// Get/set a user defined item.
+        /// </summary>
+        public object Tag
+        {
+            get { return m_tag; }
+            set { m_tag = value; }
         }
 
         /// <summary>
