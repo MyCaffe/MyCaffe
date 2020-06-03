@@ -999,7 +999,7 @@ namespace MyCaffe.db.image
         }
     }
 
-    public class RefreshManager
+    public class RefreshManager /** @private */
     {
         CryptoRandom m_random;
         List<DbItem> m_rgItems;
