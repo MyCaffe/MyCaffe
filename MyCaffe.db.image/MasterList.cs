@@ -252,14 +252,11 @@ namespace MyCaffe.db.image
         /// </summary>
         public void StopRefresh()
         {
-            lock (m_syncObj)
-            {
-                if (!m_evtRefreshRunning.WaitOne(0))
-                    return;
+            if (!m_evtRefreshRunning.WaitOne(0))
+                return;
 
-                m_evtRefreshCancel.Set();
-                m_evtRefreshDone.WaitOne();
-            }
+            m_evtRefreshCancel.Set();
+            m_evtRefreshDone.WaitOne();
         }
 
         /// <summary>
