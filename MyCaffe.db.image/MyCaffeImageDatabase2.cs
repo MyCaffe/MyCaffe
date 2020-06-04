@@ -234,7 +234,7 @@ namespace MyCaffe.db.image
                     if (m_log != null)
                         m_log.WriteLine("Loading dataset '" + ds.Name + "'...");
 
-                    long lQueryHandle = ds0.Initialize(ds, rgAbort.ToArray(), nPadW, nPadH, m_log, m_loadMethod, m_bSkipMeanCheck, m_nLoadLimit);
+                    long lQueryHandle = ds0.Initialize(ds, rgAbort.ToArray(), nPadW, nPadH, m_log, m_loadMethod, m_bSkipMeanCheck, m_nLoadLimit, s.ImageDbAutoRefreshScheduledUpdateInMs, s.ImageDbAutoRefreshScheduledReplacementPercent);
                     if (lQueryHandle == 0)
                     {
                         col.Dispose();
@@ -428,6 +428,58 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Reload the indexing for a data set.
+        /// </summary>
+        /// <param name="nDsId">Specifies the dataset ID.</param>
+        /// <returns>If the data source(s) have their indexing reloaded, <i>true</i> is returned, otherwise <i>false</i>.</returns>
+        public bool ReloadIndexing(int nDsId)
+        {
+            int nWait1 = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
+            if (nWait1 == 0)
+                return false;
+
+            m_colDatasets[m_nStrIDHashCode].ReloadIndexing(nDsId);
+            return true;
+        }
+
+        /// <summary>
+        /// Reload the indexing for a data set.
+        /// </summary>
+        /// <param name="strDs">Specifies the dataset name.</param>
+        /// <returns>If the data source(s) have their indexing reloaded, <i>true</i> is returned, otherwise <i>false</i>.</returns>
+        public bool ReloadIndexing(string strDs)
+        {
+            int nWait1 = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
+            if (nWait1 == 0)
+                return false;
+
+            m_colDatasets[m_nStrIDHashCode].ReloadIndexing(strDs);
+            return true;
+        }
+
+        /// <summary>
+        /// Create the database used by the CaffeImageDatabase.
+        /// </summary>
+        /// <param name="strName">Specifies the name of the database (recommended value = "DNN").</param>
+        /// <param name="strPath">Specifies the file path where the database is to be created.</param>
+        /// <param name="strInstance">Optionally, specifies the SQL Instance.  By default this is <i>null</i>, which sets the instance to the default global instance.</param>
+        public static void CreateDatabase(string strName, string strPath, string strInstance = null)
+        {
+            if (strInstance == null)
+                strInstance = EntitiesConnection.GlobalDatabaseServerName;
+
+            DatabaseManagement dbMgr = new DatabaseManagement(strName, strPath, strInstance);
+            Exception excpt = dbMgr.CreateDatabase();
+
+            if (excpt != null)
+                throw excpt;
+        }
+
+        #endregion // Initialization and Cleanup
+
+        #region Refreshing
+
+        /// <summary>
         /// Wait for the dataset refreshing to complete.
         /// </summary>
         /// <param name="nDsId">Specifies the dataset ID.</param>
@@ -572,54 +624,120 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
-        /// Reload the indexing for a data set.
+        /// Start the automatic refresh cycle to occur on specified period increments.
         /// </summary>
-        /// <param name="nDsId">Specifies the dataset ID.</param>
-        /// <returns>If the data source(s) have their indexing reloaded, <i>true</i> is returned, otherwise <i>false</i>.</returns>
-        public bool ReloadIndexing(int nDsId)
+        /// <param name="strDs">Specifies the dataset name for which the automatic refresh cycle is to run.</param>
+        /// <param name="bTraining">Specifies the training data source to start refreshing.</param>
+        /// <param name="bTesting">Specifies the testing data source to start refreshing.</param>
+        /// <param name="nPeriodInMs">Specifies the period in milliseconds over which the auto refresh cycle is to run.</param>
+        /// <param name="dfReplacementPct">Specifies the percentage of replacement to use on each cycle.</param>
+        /// <returns>If successfully started, true is returned, otherwise false.</returns>
+        public bool StartAutomaticRefreshSchedule(string strDs, bool bTraining, bool bTesting, int nPeriodInMs, double dfReplacementPct)
         {
             int nWait1 = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
             if (nWait1 == 0)
                 return false;
 
-            m_colDatasets[m_nStrIDHashCode].ReloadIndexing(nDsId);
-            return true;
+            return m_colDatasets[m_nStrIDHashCode].StartAutomaticRefreshSchedule(strDs, bTraining, bTesting, nPeriodInMs, dfReplacementPct);
         }
 
         /// <summary>
-        /// Reload the indexing for a data set.
+        /// Stop the automatic refresh schedule running on a dataset.
         /// </summary>
-        /// <param name="strDs">Specifies the dataset name.</param>
-        /// <returns>If the data source(s) have their indexing reloaded, <i>true</i> is returned, otherwise <i>false</i>.</returns>
-        public bool ReloadIndexing(string strDs)
+        /// <param name="strDs">Specifies the dataset name for which the automatic refresh cycle is to run.</param>
+        /// <param name="bTraining">Specifies the training data source to stop refreshing.</param>
+        /// <param name="bTesting">Specifies the testing data source to stop refreshing.</param>
+        /// <returns>If successfully stopped, true is returned, otherwise false.</returns>
+        public bool StopAutomaticRefreshSchedule(string strDs, bool bTraining, bool bTesting)
         {
             int nWait1 = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
             if (nWait1 == 0)
                 return false;
 
-            m_colDatasets[m_nStrIDHashCode].ReloadIndexing(strDs);
-            return true;
+            return m_colDatasets[m_nStrIDHashCode].StopAutomaticRefreshSchedule(strDs, bTraining, bTesting);
         }
 
         /// <summary>
-        /// Create the database used by the CaffeImageDatabase.
+        /// Returns whether or not a scheduled refresh is running and if so at what period and replacement percent.
         /// </summary>
-        /// <param name="strName">Specifies the name of the database (recommended value = "DNN").</param>
-        /// <param name="strPath">Specifies the file path where the database is to be created.</param>
-        /// <param name="strInstance">Optionally, specifies the SQL Instance.  By default this is <i>null</i>, which sets the instance to the default global instance.</param>
-        public static void CreateDatabase(string strName, string strPath, string strInstance = null)
+        /// <param name="strDs">Specifies the dataset name for which the automatic refresh cycle is to run.</param>
+        /// <param name="nPeriodInMs">Returns the period in milliseconds over which the auto refresh cycle is run.</param>
+        /// <param name="dfReplacementPct">Returns the percentage of replacement to use on each cycle.</param>
+        /// <param name="nTrainingRefreshCount">Returns the training refrsh count.</param>
+        /// <param name="nTestingRefreshCount">Returns the testing refresh count.</param>
+        /// <returns>If the refresh schedule is running, true is returned, otherwise false.</returns>
+        public bool GetScheduledAutoRefreshInformation(string strDs, out int nPeriodInMs, out double dfReplacementPct, out int nTrainingRefreshCount, out int nTestingRefreshCount)
         {
-            if (strInstance == null)
-                strInstance = EntitiesConnection.GlobalDatabaseServerName;
+            nPeriodInMs = 0;
+            dfReplacementPct = 0;
+            nTrainingRefreshCount = 0;
+            nTestingRefreshCount = 0;
 
-            DatabaseManagement dbMgr = new DatabaseManagement(strName, strPath, strInstance);
-            Exception excpt = dbMgr.CreateDatabase();
+            int nWait1 = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
+            if (nWait1 == 0)
+                return false;
 
-            if (excpt != null)
-                throw excpt;
+            return m_colDatasets[m_nStrIDHashCode].GetScheduledAutoRefreshInformation(strDs, out nPeriodInMs, out dfReplacementPct, out nTrainingRefreshCount, out nTestingRefreshCount);
         }
 
-        #endregion // Initialization and Cleanup
+        /// <summary>
+        /// Start the automatic refresh cycle to occur on specified period increments.
+        /// </summary>
+        /// <param name="nDsID">Specifies the dataset ID for which the automatic refresh cycle is to run.</param>
+        /// <param name="bTraining">Specifies the training data source to start refreshing.</param>
+        /// <param name="bTesting">Specifies the testing data source to start refreshing.</param>
+        /// <param name="nPeriodInMs">Specifies the period in milliseconds over which the auto refresh cycle is to run.</param>
+        /// <param name="dfReplacementPct">Specifies the percentage of replacement to use on each cycle.</param>
+        /// <returns>If successfully started, true is returned, otherwise false.</returns>
+        public bool StartAutomaticRefreshSchedule(int nDsID, bool bTraining, bool bTesting, int nPeriodInMs, double dfReplacementPct)
+        {
+            int nWait1 = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
+            if (nWait1 == 0)
+                return false;
+
+            return m_colDatasets[m_nStrIDHashCode].StartAutomaticRefreshSchedule(nDsID, bTraining, bTesting, nPeriodInMs, dfReplacementPct);
+        }
+
+        /// <summary>
+        /// Stop the automatic refresh schedule running on a dataset.
+        /// </summary>
+        /// <param name="nDsID">Specifies the dataset ID for which the automatic refresh cycle is to run.</param>
+        /// <param name="bTraining">Specifies the training data source to stop refreshing.</param>
+        /// <param name="bTesting">Specifies the testing data source to stop refreshing.</param>
+        /// <returns>If successfully stopped, true is returned, otherwise false.</returns>
+        public bool StopAutomaticRefreshSchedule(int nDsID, bool bTraining, bool bTesting)
+        {
+            int nWait1 = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
+            if (nWait1 == 0)
+                return false;
+
+            return m_colDatasets[m_nStrIDHashCode].StopAutomaticRefreshSchedule(nDsID, bTraining, bTesting);
+        }
+
+        /// <summary>
+        /// Returns whether or not a scheduled refresh is running and if so at what period and replacement percent.
+        /// </summary>
+        /// <param name="nDsID">Specifies the dataset name for which the automatic refresh cycle is to run.</param>
+        /// <param name="nPeriodInMs">Returns the period in milliseconds over which the auto refresh cycle is run.</param>
+        /// <param name="dfReplacementPct">Returns the percentage of replacement to use on each cycle.</param>
+        /// <param name="nTrainingRefreshCount">Returns the training refrsh count.</param>
+        /// <param name="nTestingRefreshCount">Returns the testing refresh count.</param>
+        /// <returns>If the refresh schedule is running, true is returned, otherwise false.</returns>
+        public bool GetScheduledAutoRefreshInformation(int nDsID, out int nPeriodInMs, out double dfReplacementPct, out int nTrainingRefreshCount, out int nTestingRefreshCount)
+        {
+            nPeriodInMs = 0;
+            dfReplacementPct = 0;
+            nTrainingRefreshCount = 0;
+            nTestingRefreshCount = 0;
+
+            int nWait1 = WaitHandle.WaitAny(new WaitHandle[] { m_evtAbortInitialization, m_evtInitialized });
+            if (nWait1 == 0)
+                return false;
+
+            return m_colDatasets[m_nStrIDHashCode].GetScheduledAutoRefreshInformation(nDsID, out nPeriodInMs, out dfReplacementPct, out nTrainingRefreshCount, out nTestingRefreshCount);
+        }
+
+        #endregion
 
         #region Query States
 

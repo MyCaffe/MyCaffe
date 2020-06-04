@@ -25,6 +25,8 @@ namespace MyCaffe.basecode
         string m_strGpuIds = "0";
         IMAGEDB_LOAD_METHOD m_imageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND;
         int m_nImageDbLoadLimit = 0;
+        int m_nAutoRefreshScheduledUpdateInMs = 0;
+        double m_dfAutoRefreshScheduledReplacementPct = 0;
         bool m_bImageDbLoadDataCriteria = false;
         bool m_bImageDbLoadDebugData = false;
         SNAPSHOT_WEIGHT_UPDATE_METHOD m_snapshotWeightUpdateMethod = SNAPSHOT_WEIGHT_UPDATE_METHOD.FAVOR_ACCURACY;
@@ -56,6 +58,8 @@ namespace MyCaffe.basecode
             m_strGpuIds = s.m_strGpuIds;
             m_imageDbLoadMethod = s.m_imageDbLoadMethod;
             m_nImageDbLoadLimit = s.m_nImageDbLoadLimit;
+            m_nAutoRefreshScheduledUpdateInMs = s.m_nAutoRefreshScheduledUpdateInMs;
+            m_dfAutoRefreshScheduledReplacementPct = s.m_dfAutoRefreshScheduledReplacementPct;
             m_bImageDbLoadDataCriteria = s.m_bImageDbLoadDataCriteria;
             m_bImageDbLoadDebugData = s.m_bImageDbLoadDebugData;
             m_snapshotWeightUpdateMethod = s.m_snapshotWeightUpdateMethod;
@@ -83,6 +87,8 @@ namespace MyCaffe.basecode
             m_strGpuIds = getString(info, "strGpuIds", m_strGpuIds);
             m_imageDbLoadMethod = (IMAGEDB_LOAD_METHOD)getInt(info, "ImageDbLoadMethod", (int)m_imageDbLoadMethod);
             m_nImageDbLoadLimit = getInt(info, "ImageDbLoadLimit", m_nImageDbLoadLimit);
+            m_nAutoRefreshScheduledUpdateInMs = getInt(info, "ImageDbAutoRefreshScheduledUpdateInMs", m_nAutoRefreshScheduledUpdateInMs);
+            m_dfAutoRefreshScheduledReplacementPct = getDouble(info, "ImageDbAutoRefreshReplacementPct", m_dfAutoRefreshScheduledReplacementPct);
             m_bImageDbLoadDataCriteria = getBool(info, "ImageDbLoadDataCriteria", m_bImageDbLoadDataCriteria);
             m_bImageDbLoadDebugData = getBool(info, "ImageDbLoadDebugData", m_bImageDbLoadDebugData);
             m_snapshotWeightUpdateMethod = (SNAPSHOT_WEIGHT_UPDATE_METHOD)getInt(info, "SnapshotWeightUpdateMethod", (int)m_snapshotWeightUpdateMethod);
@@ -158,6 +164,8 @@ namespace MyCaffe.basecode
             info.AddValue("strGpuIds", m_strGpuIds);
             info.AddValue("ImageDbLoadMethod", (int)m_imageDbLoadMethod);
             info.AddValue("ImageDbLoadLimit", m_nImageDbLoadLimit);
+            info.AddValue("ImageDbAutoRefreshScheduledUpdateInMs", m_nAutoRefreshScheduledUpdateInMs);
+            info.AddValue("ImageDbAutoRefreshReplacementPct", m_dfAutoRefreshScheduledReplacementPct);
             info.AddValue("ImageDbLoadDataCriteria", m_bImageDbLoadDataCriteria);
             info.AddValue("ImageDbLoadDebugData", m_bImageDbLoadDebugData);
             info.AddValue("SnapshotWeightUpdateMethod", (int)m_snapshotWeightUpdateMethod);
@@ -186,6 +194,8 @@ namespace MyCaffe.basecode
             s.m_strGpuIds = m_strGpuIds;
             s.m_imageDbLoadMethod = m_imageDbLoadMethod;
             s.m_nImageDbLoadLimit = m_nImageDbLoadLimit;
+            s.m_nAutoRefreshScheduledUpdateInMs = m_nAutoRefreshScheduledUpdateInMs;
+            s.m_dfAutoRefreshScheduledReplacementPct = m_dfAutoRefreshScheduledReplacementPct;
             s.m_bImageDbLoadDataCriteria = m_bImageDbLoadDataCriteria;
             s.m_bImageDbLoadDebugData = m_bImageDbLoadDebugData;
             s.m_snapshotWeightUpdateMethod = m_snapshotWeightUpdateMethod;
@@ -319,6 +329,24 @@ namespace MyCaffe.basecode
         {
             get { return m_nImageDbLoadLimit; }
             set { m_nImageDbLoadLimit = value; }
+        }
+
+        /// <summary>
+        /// Get/set the automatic refresh scheduled udpate period (only applies when ImageDbLoadLimit > 0).
+        /// </summary>
+        public int ImageDbAutoRefreshScheduledUpdateInMs
+        {
+            get { return m_nAutoRefreshScheduledUpdateInMs; }
+            set { m_nAutoRefreshScheduledUpdateInMs = value; }
+        }
+
+        /// <summary>
+        /// Get/set the automatic refresh scheduled update replacement percentage used on refresh (only applies when ImageDbLoadLimit > 0).
+        /// </summary>
+        public double ImageDbAutoRefreshScheduledReplacementPercent
+        {
+            get { return m_dfAutoRefreshScheduledReplacementPct; }
+            set { m_dfAutoRefreshScheduledReplacementPct = value; }
         }
 
         /// <summary>

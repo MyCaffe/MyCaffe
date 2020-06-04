@@ -532,6 +532,144 @@ namespace MyCaffe.db.image
             }
         }
 
+        /// <summary>
+        /// Start the automatic refresh cycle to occur on specified period increments.
+        /// </summary>
+        /// <param name="strDs">Specifies the dataset name for which the automatic refresh cycle is to run.</param>
+        /// <param name="bTraining">Specifies to operate on the training data source.</param>
+        /// <param name="bTesting">Specifies to operate on the testing data source.</param>
+        /// <param name="nPeriodInMs">Specifies the period in milliseconds over which the auto refresh cycle is to run.</param>
+        /// <param name="dfReplacementPct">Specifies the percentage of replacement to use on each cycle.</param>
+        /// <returns>If successfully started, true is returned, otherwise false.</returns>
+        public bool StartAutomaticRefreshSchedule(string strDs, bool bTraining, bool bTesting, int nPeriodInMs, double dfReplacementPct)
+        {
+            foreach (DatasetEx2 ds in m_rgDatasets)
+            {
+                if (ds.DatasetName == strDs)
+                {
+                    return ds.StartAutomaticRefreshSchedule(bTraining, bTesting, nPeriodInMs, dfReplacementPct);
+                }
+            }
+
+            throw new Exception("Failed to create a new query state for dataset name = '" + strDs + "'.");
+        }
+
+        /// <summary>
+        /// Stop the automatic refresh schedule running on a dataset.
+        /// </summary>
+        /// <param name="strDs">Specifies the dataset name for which the automatic refresh cycle is to run.</param>
+        /// <param name="bTraining">Specifies to operate on the training data source.</param>
+        /// <param name="bTesting">Specifies to operate on the testing data source.</param>
+        /// <returns>If successfully stopped, true is returned, otherwise false.</returns>
+        public bool StopAutomaticRefreshSchedule(string strDs, bool bTraining, bool bTesting)
+        {
+            foreach (DatasetEx2 ds in m_rgDatasets)
+            {
+                if (ds.DatasetName == strDs)
+                {
+                    return ds.StopAutomaticRefreshSchedule(bTraining, bTesting);
+                }
+            }
+
+            throw new Exception("Failed to create a new query state for dataset name = '" + strDs + "'.");
+        }
+
+        /// <summary>
+        /// Returns whether or not a scheduled refresh is running and if so at what period and replacement percent.
+        /// </summary>
+        /// <param name="strDs">Specifies the dataset name for which the automatic refresh cycle is to run.</param>
+        /// <param name="nPeriodInMs">Returns the period in milliseconds over which the auto refresh cycle is run.</param>
+        /// <param name="dfReplacementPct">Returns the percentage of replacement to use on each cycle.</param>
+        /// <param name="nTrainingRefreshCount">Returns the training refrsh count.</param>
+        /// <param name="nTestingRefreshCount">Returns the testing refresh count.</param>
+        /// <returns>If the refresh schedule is running, true is returned, otherwise false.</returns>
+        public bool GetScheduledAutoRefreshInformation(string strDs, out int nPeriodInMs, out double dfReplacementPct, out int nTrainingRefreshCount, out int nTestingRefreshCount)
+        {
+            nPeriodInMs = 0;
+            dfReplacementPct = 0;
+            nTrainingRefreshCount = 0;
+            nTestingRefreshCount = 0;
+
+            foreach (DatasetEx2 ds in m_rgDatasets)
+            {
+                if (ds.DatasetName == strDs)
+                {
+                    return ds.GetAutomaticRefreshSchedule(out nPeriodInMs, out dfReplacementPct, out nTrainingRefreshCount, out nTestingRefreshCount);
+                }
+            }
+
+            throw new Exception("Failed to create a new query state for dataset name = '" + strDs + "'.");
+        }
+
+        /// <summary>
+        /// Start the automatic refresh cycle to occur on specified period increments.
+        /// </summary>
+        /// <param name="nDsID">Specifies the dataset ID for which the automatic refresh cycle is to run.</param>
+        /// <param name="bTraining">Specifies to operate on the training data source.</param>
+        /// <param name="bTesting">Specifies to operate on the testing data source.</param>
+        /// <param name="nPeriodInMs">Specifies the period in milliseconds over which the auto refresh cycle is to run.</param>
+        /// <param name="dfReplacementPct">Specifies the percentage of replacement to use on each cycle.</param>
+        /// <returns>If successfully started, true is returned, otherwise false.</returns>
+        public bool StartAutomaticRefreshSchedule(int nDsID, bool bTraining, bool bTesting, int nPeriodInMs, double dfReplacementPct)
+        {
+            foreach (DatasetEx2 ds in m_rgDatasets)
+            {
+                if (ds.DatasetID == nDsID)
+                {
+                    return ds.StartAutomaticRefreshSchedule(bTraining, bTesting, nPeriodInMs, dfReplacementPct);
+                }
+            }
+
+            throw new Exception("Failed to create a new query state for dataset ID = '" + nDsID.ToString() + "'.");
+        }
+
+        /// <summary>
+        /// Stop the automatic refresh schedule running on a dataset.
+        /// </summary>
+        /// <param name="nDsID">Specifies the dataset ID for which the automatic refresh cycle is to run.</param>
+        /// <param name="bTraining">Specifies to operate on the training data source.</param>
+        /// <param name="bTesting">Specifies to operate on the testing data source.</param>
+        /// <returns>If successfully stopped, true is returned, otherwise false.</returns>
+        public bool StopAutomaticRefreshSchedule(int nDsID, bool bTraining, bool bTesting)
+        {
+            foreach (DatasetEx2 ds in m_rgDatasets)
+            {
+                if (ds.DatasetID == nDsID)
+                {
+                    return ds.StopAutomaticRefreshSchedule(bTraining, bTesting);
+                }
+            }
+
+            throw new Exception("Failed to create a new query state for dataset ID = '" + nDsID.ToString() + "'.");
+        }
+
+        /// <summary>
+        /// Returns whether or not a scheduled refresh is running and if so at what period and replacement percent.
+        /// </summary>
+        /// <param name="nDsID">Specifies the dataset name for which the automatic refresh cycle is to run.</param>
+        /// <param name="nPeriodInMs">Returns the period in milliseconds over which the auto refresh cycle is run.</param>
+        /// <param name="dfReplacementPct">Returns the percentage of replacement to use on each cycle.</param>
+        /// <param name="nTrainingRefreshCount">Returns the training refrsh count.</param>
+        /// <param name="nTestingRefreshCount">Returns the testing refresh count.</param>
+        /// <returns>If the refresh schedule is running, true is returned, otherwise false.</returns>
+        public bool GetScheduledAutoRefreshInformation(int nDsID, out int nPeriodInMs, out double dfReplacementPct, out int nTrainingRefreshCount, out int nTestingRefreshCount)
+        {
+            nPeriodInMs = 0;
+            dfReplacementPct = 0;
+            nTrainingRefreshCount = 0;
+            nTestingRefreshCount = 0;
+
+            foreach (DatasetEx2 ds in m_rgDatasets)
+            {
+                if (ds.DatasetID == nDsID)
+                {
+                    return ds.GetAutomaticRefreshSchedule(out nPeriodInMs, out dfReplacementPct, out nTrainingRefreshCount, out nTestingRefreshCount);
+                }
+            }
+
+            throw new Exception("Failed to create a new query state for dataset ID = '" + nDsID.ToString() + "'.");
+        }
+
 
         /// <summary>
         /// Create a new query state, optionally with a certain sorting.

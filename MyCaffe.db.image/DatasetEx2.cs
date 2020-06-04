@@ -27,6 +27,17 @@ namespace MyCaffe.db.image
         int m_nOriginalDsId = 0;
         QueryStateCollection m_queryStates = new QueryStateCollection();
         long m_lDefaultQueryState = 0;
+        ManualResetEvent m_evtRefreshScheduleCancel = new ManualResetEvent(false);
+        ManualResetEvent m_evtRefreshScheduleRunning = new ManualResetEvent(false);
+        ManualResetEvent m_evtRefreshScheduleDone = new ManualResetEvent(false);
+        Thread m_refreshScheduleThread = null;
+        int m_nRefreshUpdatePeriod = 0;
+        double m_dfRegreshReplacementPct = 0;
+        int m_nTrainingRefreshCount = 0;
+        int m_nTestingRefreshCount = 0;
+        bool m_bRefreshTraining = false;
+        bool m_bRefreshTesting = false;
+        Log m_log = null;
 
 
         /// <summary>
@@ -84,11 +95,15 @@ namespace MyCaffe.db.image
         /// <param name="loadMethod">Optionally, specifies the load method to use (default = LOAD_ALL).</param>
         /// <param name="bSkipMeanCheck">Optionally, specifies to skip the mean check (default = false).</param>
         /// <param name="nImageDbLoadLimit">Optionally, specifies the load limit (default = 0).</param>
+        /// <param name="nImageDbAutoRefreshScheduledUpdateInMs">Optionally, specifies the scheduled refresh update period in ms (default = 0).</param>
+        /// <param name="dfImageDbAutoRefreshScheduledReplacementPct">Optionally, specifies the scheduled refresh replacement percent (default = 0).</param>
         /// <returns>Upon loading the dataset a handle to the default QueryState is returned, or 0 on cancel.</returns>
-        public long Initialize(DatasetDescriptor ds, WaitHandle[] rgAbort, int nPadW = 0, int nPadH = 0, Log log = null, IMAGEDB_LOAD_METHOD loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL, bool bSkipMeanCheck = false, int nImageDbLoadLimit = 0)
+        public long Initialize(DatasetDescriptor ds, WaitHandle[] rgAbort, int nPadW = 0, int nPadH = 0, Log log = null, IMAGEDB_LOAD_METHOD loadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL, bool bSkipMeanCheck = false, int nImageDbLoadLimit = 0, int nImageDbAutoRefreshScheduledUpdateInMs = 0, double dfImageDbAutoRefreshScheduledReplacementPct = 0)
         {
             lock (m_syncObj)
             {
+                m_log = log;
+
                 if (ds != null)
                     m_ds = ds;
 
@@ -120,6 +135,9 @@ namespace MyCaffe.db.image
 
                 if (EventWaitHandle.WaitAny(rgAbort, 0) != EventWaitHandle.WaitTimeout)
                     return 0;
+
+                if (loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ALL && nImageDbAutoRefreshScheduledUpdateInMs > 0 && dfImageDbAutoRefreshScheduledReplacementPct > 0)
+                    StartAutomaticRefreshSchedule(true, true, nImageDbAutoRefreshScheduledUpdateInMs, dfImageDbAutoRefreshScheduledReplacementPct);
 
                 m_lDefaultQueryState = m_queryStates.CreateNewState(qsTraining, qsTesting);
                 return m_lDefaultQueryState;
@@ -232,6 +250,161 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Start the automatic refresh schedule on the training and/or testing data sources.
+        /// </summary>
+        /// <param name="bTraining">Optionally, specifies to stop refreshing the training data source (default = true).</param>
+        /// <param name="bTesting">Optionally, specifies to stop refreshing the testing data source (default = true).</param>
+        /// <param name="nPeriodInMs">Specifies the period in milliseconds over which the auto refresh cycle is to run.</param>
+        /// <param name="dfReplacementPct">Specifies the percentage of replacement to use on each cycle.</param>
+        /// <returns>If successfully started, true is returned, otherwise false.</returns>
+        public bool StartAutomaticRefreshSchedule(bool bTraining, bool bTesting, int nPeriodInMs, double dfReplacementPct)
+        {
+            if (m_refreshScheduleThread != null)
+                return false;
+
+            if (bTraining && m_TrainingImages.LoadMethod != IMAGEDB_LOAD_METHOD.LOAD_ALL)
+                throw new Exception("The automatic refresh schedule is only valid when using the LOAD_ALL load method - please change the Training set load method.");
+
+            if (bTesting && m_TestingImages.LoadMethod != IMAGEDB_LOAD_METHOD.LOAD_ALL)
+                throw new Exception("The automatic refresh schedule is only valid when using the LOAD_ALL load method - please change the Testing set load method.");
+
+            m_nRefreshUpdatePeriod = nPeriodInMs;
+            m_dfRegreshReplacementPct = dfReplacementPct;
+            m_bRefreshTraining = bTraining;
+            m_bRefreshTesting = bTesting;
+            m_refreshScheduleThread = new Thread(new ParameterizedThreadStart(refreshSchedule));
+            m_evtRefreshScheduleCancel.Reset();
+            m_evtRefreshScheduleDone.Reset();
+            m_evtRefreshScheduleRunning.Reset();
+            m_refreshScheduleThread.Start(new Tuple<int, double, bool, bool>(nPeriodInMs, dfReplacementPct, bTraining, bTesting));
+            return m_evtRefreshScheduleRunning.WaitOne(1000);
+        }
+
+        /// <summary>
+        /// Stop the automatic refresh schedule on the training and/or testing data sources.
+        /// </summary>
+        /// <param name="bTraining">Optionally, specifies to stop refreshing the training data source (default = true).</param>
+        /// <param name="bTesting">Optionally, specifies to stop refreshing the testing data source (default = true).</param>
+        /// <returns>If successfully stopped, true is returned, otherwise false.</returns>
+        public bool StopAutomaticRefreshSchedule(bool bTraining, bool bTesting)
+        {
+            if (m_refreshScheduleThread == null)
+                return false;
+
+            if (m_evtRefreshScheduleRunning.WaitOne(0))
+            {
+                m_evtRefreshScheduleCancel.Set();
+                m_evtRefreshScheduleDone.WaitOne();
+            }
+
+            m_refreshScheduleThread = null;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Get the automatic refresh schedule status and its period and replacement percentage.
+        /// </summary>
+        /// <param name="nPeriodInMs">Specifies the period in milliseconds over which the auto refresh cycle is to run.</param>
+        /// <param name="dfReplacementPct">Specifies the percentage of replacement to use on each cycle.</param>
+        /// <param name="nTrainingRefreshCount">Returns the training refrsh count.</param>
+        /// <param name="nTestingRefreshCount">Returns the testing refresh count.</param>
+        /// <returns>If successfully stopped, true is returned, otherwise false.</returns>
+        public bool GetAutomaticRefreshSchedule(out int nPeriodInMs, out double dfReplacementPct, out int nTrainingRefreshCount, out int nTestingRefreshCount)
+        {
+            nPeriodInMs = 0;
+            dfReplacementPct = 0;
+            nTrainingRefreshCount = m_nTrainingRefreshCount;
+            nTestingRefreshCount = m_nTestingRefreshCount;
+
+            if (m_refreshScheduleThread == null)
+                return false;
+
+            if (!m_evtRefreshScheduleRunning.WaitOne(0))
+                return false;
+
+            nPeriodInMs = m_nRefreshUpdatePeriod;
+            dfReplacementPct = m_dfRegreshReplacementPct;
+
+            return true;
+        }
+
+        private void refreshSchedule(object obj)
+        {
+            m_evtRefreshScheduleRunning.Set();
+            m_nTrainingRefreshCount = 0;
+            m_nTestingRefreshCount = 0;
+
+            try
+            {
+                Tuple<int, double, bool, bool> arg = obj as Tuple<int, double, bool, bool>;
+                int nPeriodMs = arg.Item1;
+                double dfReplacementPct = arg.Item2;
+                bool bTraining = arg.Item3;
+                bool bTesting = arg.Item4;
+                Stopwatch sw = new Stopwatch();
+
+                sw.Start();
+
+                m_log.WriteLine("INFO: Starting refresh cycle on '" + m_ds.Name + "' and running every " + m_nRefreshUpdatePeriod.ToString("N0") + " ms. with replacement percent = " + m_dfRegreshReplacementPct.ToString("P"));
+
+                while (!m_evtRefreshScheduleCancel.WaitOne(1000))
+                {
+                    if (sw.ElapsedMilliseconds > m_nRefreshUpdatePeriod)
+                    {
+                        if (m_bRefreshTraining)
+                        {
+                            if (!m_TrainingImages.IsRefreshRunning)
+                            {
+                                m_log.WriteLine("INFO: Refreshing '" + m_TrainingImages.Source.Name + "'...");
+                                m_TrainingImages.StartRefresh(m_dfRegreshReplacementPct);
+                                m_nTrainingRefreshCount++;
+                            }
+                            else
+                            {
+                                m_log.WriteLine("'" + m_TrainingImages.Source.Name + "' refresh already running.");
+                            }
+                        }
+
+                        if (m_bRefreshTesting)
+                        {
+                            if (!m_TestingImages.IsRefreshRunning)
+                            {
+                                m_log.WriteLine("INFO: Refreshing '" + m_TestingImages.Source.Name + "'...");
+                                m_TestingImages.StartRefresh(m_dfRegreshReplacementPct);
+                                m_nTestingRefreshCount++;
+                            }
+                            else
+                            {
+                                m_log.WriteLine("'" + m_TestingImages.Source.Name + "' refresh already running.");
+                            }
+                        }
+
+                        sw.Restart();
+                    }
+                }
+
+                if (m_TrainingImages.IsRefreshRunning)
+                {
+                    m_TrainingImages.StopRefresh();
+                    m_log.WriteLine("Stopped '" + m_TrainingImages.Source.Name + "' refresh.");
+                }
+
+                if (m_TestingImages.IsRefreshRunning)
+                {
+                    m_TestingImages.StopRefresh();
+                    m_log.WriteLine("Stopped '" + m_TestingImages.Source.Name + "' refresh.");
+                }
+            }
+            finally
+            {
+                m_evtRefreshScheduleDone.Set();
+                m_evtRefreshScheduleRunning.Reset();
+            }
+        }
+
+
+        /// <summary>
         /// Returns the default query state created when first initializing the dataset.
         /// </summary>
         public long DefaultQueryState
@@ -246,6 +419,8 @@ namespace MyCaffe.db.image
         protected virtual void Dispose(bool bDisposing)
         {
             m_ds = null;
+
+            StopAutomaticRefreshSchedule(true, true);
 
             if (m_TestingImages != null)
             {

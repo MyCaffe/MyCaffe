@@ -133,6 +133,14 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Get the image load method used on initialization.
+        /// </summary>
+        public IMAGEDB_LOAD_METHOD LoadMethod
+        {
+            get { return m_loadMethod; }
+        }
+
+        /// <summary>
         /// Returns whether or not the refresh is running.
         /// </summary>
         public bool IsRefreshRunning

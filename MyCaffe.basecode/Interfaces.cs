@@ -1346,6 +1346,68 @@ namespace MyCaffe.basecode
         /// <returns>On succes, true is returned, otherwise false is returned.</returns>
         bool StopRefresh(int nDsID, bool bTraining, bool bTesting);
 
+        /// <summary>
+        /// Start the automatic refresh cycle to occur on specified period increments.
+        /// </summary>
+        /// <param name="strDs">Specifies the dataset name for which the automatic refresh cycle is to run.</param>
+        /// <param name="bTraining">Specifies the training data source to start refreshing.</param>
+        /// <param name="bTesting">Specifies the testing data source to start refreshing.</param>
+        /// <param name="nPeriodInMs">Specifies the period in milliseconds over which the auto refresh cycle is to run.</param>
+        /// <param name="dfReplacementPct">Specifies the percentage of replacement to use on each cycle.</param>
+        /// <returns>If successfully started, true is returned, otherwise false.</returns>
+        bool StartAutomaticRefreshSchedule(string strDs, bool bTraining, bool bTesting, int nPeriodInMs, double dfReplacementPct);
+
+        /// <summary>
+        /// Stop the automatic refresh schedule running on a dataset.
+        /// </summary>
+        /// <param name="strDs">Specifies the dataset name for which the automatic refresh cycle is to run.</param>
+        /// <param name="bTraining">Specifies the training data source to stop refreshing.</param>
+        /// <param name="bTesting">Specifies the testing data source to stop refreshing.</param>
+        /// <returns>If successfully stopped, true is returned, otherwise false.</returns>
+        bool StopAutomaticRefreshSchedule(string strDs, bool bTraining, bool bTesting);
+
+        /// <summary>
+        /// Returns whether or not a scheduled refresh is running and if so at what period and replacement percent.
+        /// </summary>
+        /// <param name="strDs">Specifies the dataset name for which the automatic refresh cycle is to run.</param>
+        /// <param name="nPeriodInMs">Returns the period in milliseconds over which the auto refresh cycle is run.</param>
+        /// <param name="dfReplacementPct">Returns the percentage of replacement to use on each cycle.</param>
+        /// <param name="nTrainingRefreshCount">Returns the training refrsh count.</param>
+        /// <param name="nTestingRefreshCount">Returns the testing refresh count.</param>
+        /// <returns>If the refresh schedule is running, true is returned, otherwise false.</returns>
+        bool GetScheduledAutoRefreshInformation(string strDs, out int nPeriodInMs, out double dfReplacementPct, out int nTrainingRefreshCount, out int nTestingRefreshCount);
+
+        /// <summary>
+        /// Start the automatic refresh cycle to occur on specified period increments.
+        /// </summary>
+        /// <param name="nDsID">Specifies the dataset ID for which the automatic refresh cycle is to run.</param>
+        /// <param name="bTraining">Specifies the training data source to start refreshing.</param>
+        /// <param name="bTesting">Specifies the testing data source to start refreshing.</param>
+        /// <param name="nPeriodInMs">Specifies the period in milliseconds over which the auto refresh cycle is to run.</param>
+        /// <param name="dfReplacementPct">Specifies the percentage of replacement to use on each cycle.</param>
+        /// <returns>If successfully started, true is returned, otherwise false.</returns>
+        bool StartAutomaticRefreshSchedule(int nDsID, bool bTraining, bool bTesting, int nPeriodInMs, double dfReplacementPct);
+
+        /// <summary>
+        /// Stop the automatic refresh schedule running on a dataset.
+        /// </summary>
+        /// <param name="nDsID">Specifies the dataset ID for which the automatic refresh cycle is to run.</param>
+        /// <param name="bTraining">Specifies the training data source to stop refreshing.</param>
+        /// <param name="bTesting">Specifies the testing data source to stop refreshing.</param>
+        /// <returns>If successfully stopped, true is returned, otherwise false.</returns>
+        bool StopAutomaticRefreshSchedule(int nDsID, bool bTraining, bool bTesting);
+
+        /// <summary>
+        /// Returns whether or not a scheduled refresh is running and if so at what period and replacement percent.
+        /// </summary>
+        /// <param name="nDsID">Specifies the dataset name for which the automatic refresh cycle is to run.</param>
+        /// <param name="nPeriodInMs">Returns the period in milliseconds over which the auto refresh cycle is run.</param>
+        /// <param name="dfReplacementPct">Returns the percentage of replacement to use on each cycle.</param>
+        /// <param name="nTrainingRefreshCount">Returns the training refrsh count.</param>
+        /// <param name="nTestingRefreshCount">Returns the testing refresh count.</param>
+        /// <returns>If the refresh schedule is running, true is returned, otherwise false.</returns>
+        bool GetScheduledAutoRefreshInformation(int nDsID, out int nPeriodInMs, out double dfReplacementPct, out int nTrainingRefreshCount, out int nTestingRefreshCount);
+
         #endregion
     }
 
