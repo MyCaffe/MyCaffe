@@ -144,6 +144,172 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestRefreshSchedule()
+        {
+            TestRefreshSchedule(false, 3000);
+        }
+
+        [TestMethod]
+        public void TestRefreshSchedule2()
+        {
+            TestRefreshSchedule(true, 3000);
+        }
+
+        public void TestRefreshSchedule(bool bSetParamsDuringInit, int nLoadLimit)
+        {
+            TestingProgressSet progress = null;
+            PreTest.Init();
+
+            Log log = new Log("Test refresh dataset");
+            log.EnableTrace = true;
+            log.OnProgress += Log_OnProgress;
+
+            string str;
+            Stopwatch sw = new Stopwatch();
+
+            IXImageDatabase2 db = new MyCaffeImageDatabase2(log);
+            try
+            {
+                progress = new TestingProgressSet();
+
+                SettingsCaffe settings = new SettingsCaffe();
+                settings.ImageDbLoadMethod = IMAGEDB_LOAD_METHOD.LOAD_ALL;
+                settings.ImageDbLoadLimit = nLoadLimit;
+
+                int nRefreshUpdate = 12 * 1000;
+                double dfReplacePct = 1;
+
+                if (bSetParamsDuringInit)
+                {
+                    settings.ImageDbAutoRefreshScheduledUpdateInMs = nRefreshUpdate;
+                    settings.ImageDbAutoRefreshScheduledReplacementPercent = dfReplacePct;
+
+                    log.CHECK_EQ(settings.ImageDbAutoRefreshScheduledReplacementPercent, dfReplacePct, "The default auto refresh scheduled replacement percent should be " + dfReplacePct.ToString());
+                    log.CHECK_EQ(settings.ImageDbAutoRefreshScheduledUpdateInMs, nRefreshUpdate, "The default auto refresh scheduled update period should be " + nRefreshUpdate.ToString());
+                }
+                else
+                {
+                    log.CHECK_EQ(settings.ImageDbAutoRefreshScheduledReplacementPercent, 0, "The default auto refresh scheduled replacement percentage should be 0.");
+                    log.CHECK_EQ(settings.ImageDbAutoRefreshScheduledUpdateInMs, 0, "The default auto refresh scheduled update period should be 0.");
+                }
+
+
+                Stopwatch swInit = new Stopwatch();
+                swInit.Start();
+                string strDs = "MNIST";
+                long lQueryState = db.InitializeWithDsName(settings, strDs);
+
+                double dfInitTime = swInit.Elapsed.TotalMilliseconds;
+                Trace.WriteLine("InitTime = " + dfInitTime.ToString("N2") + " ms.");
+
+                DatasetDescriptor ds = db.GetDatasetByName(strDs);
+                str = sw.ElapsedMilliseconds.ToString();
+                Trace.WriteLine(strDs + " Initialization Time: " + str + " ms.");
+
+                if (!bSetParamsDuringInit)
+                    db.StartAutomaticRefreshSchedule(strDs, true, false, nRefreshUpdate, dfReplacePct);
+
+                int nPeriodInMs;
+                double dfReplacementPct;
+                int nTrainingRefreshCount;
+                int nTestingRefreshCount;
+                bool bRunning = db.GetScheduledAutoRefreshInformation(strDs, out nPeriodInMs, out dfReplacementPct, out nTrainingRefreshCount, out nTestingRefreshCount);
+
+                if (!bRunning)
+                    throw new Exception("The scheduled auto refresh should be running!");
+
+                if (nPeriodInMs != nRefreshUpdate)
+                    throw new Exception("The periods in ms is not the expected value!");
+
+                if (dfReplacementPct != 1)
+                    throw new Exception("The replacement percent is not the expected value!");
+
+                Stopwatch swTimer = new Stopwatch();
+                swTimer.Start();
+                Dictionary<int, int> rgLabelCounts = new Dictionary<int, int>();
+                Dictionary<long, int> rgImageIdCounts = new Dictionary<long, int>();
+                int nIdx = 0;
+                int nRunTime = (int)(dfInitTime * 2 * 5); // 5 cycles
+
+                sw.Start();
+                while (sw.ElapsedMilliseconds < nRunTime)
+                {
+                    if (swTimer.Elapsed.TotalMilliseconds > 1000)
+                    {
+                        int nRemaining = (int)((nRunTime) - sw.ElapsedMilliseconds);
+                        Trace.WriteLine("Waiting for refresh... " + nRemaining.ToString() + " ms remaining.");
+                        swTimer.Restart();
+
+                        double dfPctProgress = sw.ElapsedMilliseconds / (double)nRunTime;
+                        progress.SetProgress(dfPctProgress);
+                    }
+
+                    SimpleDatum sd = db.QueryImage(lQueryState, ds.TrainingSource.ID, nIdx);
+                    nIdx++;
+
+                    if (!rgLabelCounts.ContainsKey(sd.Label))
+                        rgLabelCounts.Add(sd.Label, 1);
+                    else
+                        rgLabelCounts[sd.Label]++;
+
+                    if (!rgImageIdCounts.ContainsKey(sd.ImageID))
+                        rgImageIdCounts.Add(sd.ImageID, 1);
+                    else
+                        rgImageIdCounts[sd.ImageID]++;
+                }
+
+                db.StopAutomaticRefreshSchedule(ds.ID, true, true);
+                double dfTmp;
+                bRunning = db.GetScheduledAutoRefreshInformation(strDs, out nPeriodInMs, out dfTmp, out nTrainingRefreshCount, out nTestingRefreshCount);
+                if (bRunning)
+                    throw new Exception("The refresh should not be running!");
+
+                sw.Reset();
+                db.FreeQueryState(strDs, lQueryState);
+                db.CleanUp();
+                sw.Stop();
+
+                str = sw.ElapsedMilliseconds.ToString();
+                Trace.WriteLine("Cleanup Time: " + str + " ms.");
+                sw.Restart();
+
+                double dfTotal = 0;
+                foreach (KeyValuePair<int, int> kv in rgLabelCounts)
+                {
+                    dfTotal += kv.Value;
+                }
+
+                Dictionary<int, double> rgLabelPct = new Dictionary<int, double>();
+                foreach (KeyValuePair<int, int> kv in rgLabelCounts)
+                {
+                    double dfPct = kv.Value / dfTotal;
+                    rgLabelPct.Add(kv.Key, dfPct);
+
+                    Trace.WriteLine("Label " + kv.Key.ToString() + " => " + dfPct.ToString("P"));
+                }
+
+                int nTotalTrainingImagesLoaded = nLoadLimit + (int)(nLoadLimit * dfReplacementPct * nTrainingRefreshCount);
+                Trace.WriteLine("Total training images loaded = " + nTotalTrainingImagesLoaded.ToString("N0"));
+                Trace.WriteLine("Total unique images queried = " + rgImageIdCounts.Count.ToString("N0"));
+                double dfHitPct = rgImageIdCounts.Count / (double)nTotalTrainingImagesLoaded;
+                Trace.WriteLine("Hit rate = " + dfHitPct.ToString("P"));
+            }
+            finally
+            {
+                db.CleanUp(0, true);
+                IDisposable idisp = db as IDisposable;
+                if (idisp != null)
+                    idisp.Dispose();
+
+                if (progress != null)
+                    progress.Dispose();
+            }
+
+            str = sw.ElapsedMilliseconds.ToString();
+            Trace.WriteLine("Dispose Time: " + str + " ms.");
+        }
+
+        [TestMethod]
         public void TestLoadSecondaryLoadAll()
         {
             TestLoadSecondaryDataset(IMAGEDB_LOAD_METHOD.LOAD_ALL, 0);
