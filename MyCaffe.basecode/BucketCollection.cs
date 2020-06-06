@@ -582,8 +582,9 @@ namespace MyCaffe.basecode
         /// </summary>
         /// <param name="fmt">Optionally, specifies the output format of the string (default = NONE).</param>
         /// <param name="nMaxDots">Optionally, specifies the maximum number of dots used when 'bFull' = true, ignored when 'bFull' = false (default = 30).</param>
+        /// <param name="strFmt">Optionally, specifies the format string for each range (default = '0.00000').</param>
         /// <returns>The distribution string is returned.</returns>
-        public string ToDistributionString(OUTPUT_FMT fmt = OUTPUT_FMT.NONE, int nMaxDots = 30)
+        public string ToDistributionString(OUTPUT_FMT fmt = OUTPUT_FMT.NONE, int nMaxDots = 30, string strFmt = "0.00000")
         {
             double dfTotalCount = TotalCount;
             string str = "";
@@ -601,7 +602,7 @@ namespace MyCaffe.basecode
                 {
                     string strDots = "";
                     strDots = strDots.PadRight((int)(nMaxDots * dfPct), '*');
-                    str += "[" + b.Minimum.ToString("0.00000") + ", " + b.Maximum.ToString("0.00000") + "] " + strDots + " (" + b.Count.ToString("N0") + ")" + Environment.NewLine;
+                    str += "[" + b.Minimum.ToString(strFmt) + ", " + b.Maximum.ToString(strFmt) + "] " + strDots + " (" + b.Count.ToString("N0") + ")" + Environment.NewLine;
                 }
                 else if (fmt == OUTPUT_FMT.CSV)
                 {
