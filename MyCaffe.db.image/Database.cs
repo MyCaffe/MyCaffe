@@ -955,7 +955,8 @@ namespace MyCaffe.db.image
                     strSQL += " OR ";
             }
 
-            strSQL += ") AND (";
+            if (nTgtBst.HasValue || nTgtLbl.HasValue)
+                strSQL += ") AND (";
 
             if (nTgtLbl.HasValue)
             {
