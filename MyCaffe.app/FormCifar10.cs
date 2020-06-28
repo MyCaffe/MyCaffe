@@ -1,4 +1,5 @@
-﻿using MyCaffe.data;
+﻿using MyCaffe.basecode;
+using MyCaffe.data;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,6 +8,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -17,6 +19,7 @@ namespace MyCaffe.app
     {
         Dictionary<Button, TextBox> m_rgItems = new Dictionary<Button, TextBox>();
         CiFar10DataParameters m_param = null;
+        WebClient m_webClient = null;
 
         public FormCifar10()
         {
@@ -161,6 +164,59 @@ namespace MyCaffe.app
                 Properties.Settings.Default.CiFarFileTest = strFile;
 
             Properties.Settings.Default.Save();
+
+            if (m_webClient != null)
+            {
+                m_webClient.CancelAsync();
+                m_webClient = null;
+            }
+        }
+
+        private void btnDownload_Click(object sender, EventArgs e)
+        {
+            string strUrl = lblDownloadSite.Text;
+
+            string strFileName = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            strFileName += "\\MyCaffe\\downloads\\";
+
+            if (!Directory.Exists(strFileName))
+                Directory.CreateDirectory(strFileName);
+
+            strFileName += "cifar-10.gz";
+
+            if (m_webClient != null)
+                m_webClient.CancelAsync();
+
+            m_webClient = new WebClient();
+            m_webClient.DownloadFileCompleted += WebClient_DownloadFileCompleted;
+            m_webClient.DownloadProgressChanged += WebClient_DownloadProgressChanged;
+            btnDownload.Enabled = false;
+            lblDownloadPct.Enabled = false;
+            m_webClient.DownloadFileAsync(new Uri("http://" + strUrl), strFileName, new Tuple<Label, Button, string>(lblDownloadPct, btnDownload, strFileName));
+        }
+
+        private void WebClient_DownloadProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+        {
+            double dfPct = (e.BytesReceived / (double)e.TotalBytesToReceive);
+            Tuple<Label, Button, string> edt = e.UserState as Tuple<Label, Button, string>;
+            edt.Item1.Text = dfPct.ToString("P");
+        }
+
+        private void WebClient_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
+        {
+            Tuple<Label, Button, string> edt = e.UserState as Tuple<Label, Button, string>;
+            edt.Item1.Enabled = true;
+            edt.Item2.Enabled = true;
+
+            string strDir = Path.GetDirectoryName(edt.Item3);
+            TarFile.ExtractTarGz(edt.Item3, strDir);
+
+            edtCifarDataFile1.Text = strDir + "\\cifar-10-batches-bin\\data_batch_1.bin";
+            edtCifarDataFile2.Text = strDir + "\\cifar-10-batches-bin\\data_batch_2.bin";
+            edtCifarDataFile3.Text = strDir + "\\cifar-10-batches-bin\\data_batch_3.bin";
+            edtCifarDataFile4.Text = strDir + "\\cifar-10-batches-bin\\data_batch_4.bin";
+            edtCifarDataFile5.Text = strDir + "\\cifar-10-batches-bin\\data_batch_5.bin";
+            edtCifarDataFile6.Text = strDir + "\\cifar-10-batches-bin\\test_batch.bin";
         }
     }
 }
