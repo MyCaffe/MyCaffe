@@ -204,6 +204,109 @@ namespace MyCaffe.data
             return bmp;
         }
 
+        private Bitmap randomBrightnessContrastSaturation(Bitmap bmp, float fProbBrightness, float fBrightnessDelta, float fProbContrast, float fLowerContrast, float fUpperContrast, float fProbSaturation, float fLowerSaturation, float fUpperSaturation)
+        {
+            float fBrightness = 1;
+            float fContrast = 1;
+            float fSaturation = 1;
+
+            if (m_random.NextDouble() < fProbBrightness)
+                fBrightness = getRandom(-fBrightnessDelta, fBrightnessDelta);
+
+            if (m_random.NextDouble() < fProbContrast)
+                fContrast = getRandom(fLowerContrast, fUpperContrast);
+
+            if (m_random.NextDouble() < fProbSaturation)
+                fSaturation = getRandom(fLowerSaturation, fUpperSaturation);
+
+            if (fBrightness == 0 && fContrast == 1 && fSaturation == 1)
+                return bmp;
+
+            Bitmap bmpNew = ImageTools.AdjustContrast(bmp, fBrightness, fContrast, fSaturation);
+            bmp.Dispose();
+
+            return bmpNew;
+        }
+
+        private Bitmap randomBrightnessSaturationContrast(Bitmap bmp, float fProbBrightness, float fBrightnessDelta, float fProbContrast, float fLowerContrast, float fUpperContrast, float fProbSaturation, float fLowerSaturation, float fUpperSaturation)
+        {
+            float fBrightness = 1;
+            float fContrast = 1;
+            float fSaturation = 1;
+
+            if (m_random.NextDouble() < fProbBrightness)
+                fBrightness = getRandom(-fBrightnessDelta, fBrightnessDelta);
+
+            if (m_random.NextDouble() < fProbContrast)
+                fContrast = getRandom(fLowerContrast, fUpperContrast);
+
+            if (m_random.NextDouble() < fProbSaturation)
+                fSaturation = getRandom(fLowerSaturation, fUpperSaturation);
+
+            if (fBrightness == 0 && fContrast == 1 && fSaturation == 1)
+                return bmp;
+
+            Bitmap bmpNew = ImageTools.AdjustContrast(bmp, fBrightness, 1, fSaturation);
+            bmp.Dispose();
+            bmp = bmpNew;
+
+            if (fContrast != 1)
+            {
+                bmpNew = ImageTools.AdjustContrast(bmp, 1, fContrast, 1);
+                bmp.Dispose();
+                bmp = bmpNew;
+            }
+
+            return bmp;
+        }
+
+        private void randomBrightnessContrastSaturation(SimpleDatum sd, float fProbBrightness, float fBrightnessDelta, float fProbContrast, float fLowerContrast, float fUpperContrast, float fProbSaturation, float fLowerSaturation, float fUpperSaturation)
+        {
+            float fBrightness = 1;
+            float fContrast = 1;
+            float fSaturation = 1;
+
+            if (m_random.NextDouble() < fProbBrightness)
+                fBrightness = getRandom(-fBrightnessDelta, fBrightnessDelta);
+
+            if (m_random.NextDouble() < fProbContrast)
+                fContrast = getRandom(fLowerContrast, fUpperContrast);
+
+            if (m_random.NextDouble() < fProbSaturation)
+                fSaturation = getRandom(fLowerSaturation, fUpperSaturation);
+
+            if (fBrightness == 0 && fContrast == 1 && fSaturation == 1)
+                return;
+
+            ImageTools.AdjustContrast(sd, fBrightness, fContrast, fSaturation);
+        }
+
+        private void randomBrightnessSaturationContrast(SimpleDatum sd, float fProbBrightness, float fBrightnessDelta, float fProbContrast, float fLowerContrast, float fUpperContrast, float fProbSaturation, float fLowerSaturation, float fUpperSaturation)
+        {
+            float fBrightness = 1;
+            float fContrast = 1;
+            float fSaturation = 1;
+
+            if (m_random.NextDouble() < fProbBrightness)
+                fBrightness = getRandom(-fBrightnessDelta, fBrightnessDelta);
+
+            if (m_random.NextDouble() < fProbContrast)
+                fContrast = getRandom(fLowerContrast, fUpperContrast);
+
+            if (m_random.NextDouble() < fProbSaturation)
+                fSaturation = getRandom(fLowerSaturation, fUpperSaturation);
+
+            if (fBrightness == 0 && fContrast == 1 && fSaturation == 1)
+                return;
+
+            ImageTools.AdjustContrast(sd, fBrightness, 1, fSaturation);
+
+            if (fContrast != 1)
+                ImageTools.AdjustContrast(sd, 1, fContrast, 1);
+
+            return;
+        }
+
         private SimpleDatum randomChannelOrder(SimpleDatum sd, float fProb)
         {
             if (m_random.NextDouble() < fProb)
@@ -328,22 +431,32 @@ namespace MyCaffe.data
             Bitmap bmp = ImageData.GetImage(sd);
 
             if (dfProb > 0.5)
-            {
-                bmp = randomBrightness(bmp, p.brightness_prob, p.brightness_delta);
-                bmp = randomContrast(bmp, p.contrast_prob, p.contrast_lower, p.contrast_upper);
-                bmp = randomSaturation(bmp, p.saturation_prob, p.saturation_lower, p.saturation_upper);
-            }
+                bmp = randomBrightnessContrastSaturation(bmp, p.brightness_prob, p.brightness_delta, p.contrast_prob, p.contrast_lower, p.contrast_upper, p.saturation_prob, p.saturation_lower, p.saturation_upper);
             else
-            {
-                bmp = randomBrightness(bmp, p.brightness_prob, p.brightness_delta);
-                bmp = randomSaturation(bmp, p.saturation_prob, p.saturation_lower, p.saturation_upper);
-                bmp = randomContrast(bmp, p.contrast_prob, p.contrast_lower, p.contrast_upper);
-            }
+                bmp = randomBrightnessSaturationContrast(bmp, p.brightness_prob, p.brightness_delta, p.contrast_prob, p.contrast_lower, p.contrast_upper, p.saturation_prob, p.saturation_lower, p.saturation_upper);
 
             SimpleDatum sd1 = ImageData.GetImageData(bmp, sd);
             sd.SetData(sd1);
 
             bmp.Dispose();
+
+            return randomChannelOrder(sd, p.random_order_prob);
+        }
+
+        /// <summary>
+        /// The ApplyDistortEx method applies the distortion policy to the simple datum.
+        /// </summary>
+        /// <param name="sd">Specifies the SimpleDatum to distort.</param>
+        /// <param name="p">Specifies the distortion parameters that define the distortion policy.</param>
+        /// <returns>The distorted SimpleDatum is returned.</returns>
+        public SimpleDatum ApplyDistortEx(SimpleDatum sd, DistortionParameter p)
+        {
+            double dfProb = m_random.NextDouble();
+
+            if (dfProb > 0.5)
+                randomBrightnessContrastSaturation(sd, p.brightness_prob, p.brightness_delta, p.contrast_prob, p.contrast_lower, p.contrast_upper, p.saturation_prob, p.saturation_lower, p.saturation_upper);
+            else
+                randomBrightnessSaturationContrast(sd, p.brightness_prob, p.brightness_delta, p.contrast_prob, p.contrast_lower, p.contrast_upper, p.saturation_prob, p.saturation_lower, p.saturation_upper);
 
             return randomChannelOrder(sd, p.random_order_prob);
         }

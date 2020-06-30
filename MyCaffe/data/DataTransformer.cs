@@ -1168,7 +1168,7 @@ namespace MyCaffe.data
                 m_param.distortion_param.saturation_prob == 0)
                 return d;
 
-            return m_imgTransforms.ApplyDistort(d, m_param.distortion_param);
+            return m_imgTransforms.ApplyDistortEx(d, m_param.distortion_param);
         }
 
         /// <summary>
