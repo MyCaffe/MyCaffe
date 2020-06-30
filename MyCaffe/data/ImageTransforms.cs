@@ -260,7 +260,7 @@ namespace MyCaffe.data
             return bmp;
         }
 
-        private void randomBrightnessContrastSaturation(SimpleDatum sd, float fProbBrightness, float fBrightnessDelta, float fProbContrast, float fLowerContrast, float fUpperContrast, float fProbSaturation, float fLowerSaturation, float fUpperSaturation)
+        private void randomBrightnessContrastSaturation(SimpleDatum sd, float fProbBrightness, float fBrightnessDelta, float fProbContrast, float fLowerContrast, float fUpperContrast, float fProbSaturation, float fLowerSaturation, float fUpperSaturation, ImageTools.ADJUSTCONTRAST_ORDERING ordering)
         {
             float fBrightness = 1;
             float fContrast = 1;
@@ -278,33 +278,7 @@ namespace MyCaffe.data
             if (fBrightness == 0 && fContrast == 1 && fSaturation == 1)
                 return;
 
-            ImageTools.AdjustContrast(sd, fBrightness, fContrast, fSaturation);
-        }
-
-        private void randomBrightnessSaturationContrast(SimpleDatum sd, float fProbBrightness, float fBrightnessDelta, float fProbContrast, float fLowerContrast, float fUpperContrast, float fProbSaturation, float fLowerSaturation, float fUpperSaturation)
-        {
-            float fBrightness = 1;
-            float fContrast = 1;
-            float fSaturation = 1;
-
-            if (m_random.NextDouble() < fProbBrightness)
-                fBrightness = getRandom(-fBrightnessDelta, fBrightnessDelta);
-
-            if (m_random.NextDouble() < fProbContrast)
-                fContrast = getRandom(fLowerContrast, fUpperContrast);
-
-            if (m_random.NextDouble() < fProbSaturation)
-                fSaturation = getRandom(fLowerSaturation, fUpperSaturation);
-
-            if (fBrightness == 0 && fContrast == 1 && fSaturation == 1)
-                return;
-
-            ImageTools.AdjustContrast(sd, fBrightness, 1, fSaturation);
-
-            if (fContrast != 1)
-                ImageTools.AdjustContrast(sd, 1, fContrast, 1);
-
-            return;
+            ImageTools.AdjustContrast(sd, fBrightness, fContrast, fSaturation, ordering);
         }
 
         private SimpleDatum randomChannelOrder(SimpleDatum sd, float fProb)
@@ -454,9 +428,9 @@ namespace MyCaffe.data
             double dfProb = m_random.NextDouble();
 
             if (dfProb > 0.5)
-                randomBrightnessContrastSaturation(sd, p.brightness_prob, p.brightness_delta, p.contrast_prob, p.contrast_lower, p.contrast_upper, p.saturation_prob, p.saturation_lower, p.saturation_upper);
+                randomBrightnessContrastSaturation(sd, p.brightness_prob, p.brightness_delta, p.contrast_prob, p.contrast_lower, p.contrast_upper, p.saturation_prob, p.saturation_lower, p.saturation_upper, ImageTools.ADJUSTCONTRAST_ORDERING.BRIGHTNESS_CONTRAST_GAMMA);
             else
-                randomBrightnessSaturationContrast(sd, p.brightness_prob, p.brightness_delta, p.contrast_prob, p.contrast_lower, p.contrast_upper, p.saturation_prob, p.saturation_lower, p.saturation_upper);
+                randomBrightnessContrastSaturation(sd, p.brightness_prob, p.brightness_delta, p.contrast_prob, p.contrast_lower, p.contrast_upper, p.saturation_prob, p.saturation_lower, p.saturation_upper, ImageTools.ADJUSTCONTRAST_ORDERING.BRIGHTNESS_GAMMA_CONTRAST);
 
             return randomChannelOrder(sd, p.random_order_prob);
         }
