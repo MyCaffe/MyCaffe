@@ -59,6 +59,37 @@ class Math
 		cublasHandle_t m_cublas;
 		curandGenerator_t m_curand;
 
+		T get_random(T min, T max)
+		{
+			T fRange = max - min;
+			T fRand = T(rand() / T(RAND_MAX));
+			T fVal = (min + (fRange * fRand));
+
+			return T(1.0) + T(fVal);
+		}
+
+		T get_brightness(T fBrightnessDelta)
+		{
+			return get_random(-fBrightnessDelta, fBrightnessDelta);
+		}
+
+		T get_contrast(T fContrastLower, T fContrastUpper)
+		{
+			T fContrast = get_random(fContrastLower, fContrastUpper);
+			fContrast -= T(1.0);
+			fContrast *= T(255.0);
+
+			T fFactor = (T(259.0) * (fContrast + T(255.0))) / (T(255.0) * (T(259.0) - fContrast));
+
+			return fFactor;
+		}
+
+		T get_saturation(T fSaturationLower, T fSaturationUpper)
+		{
+			T fGamma = get_random(fSaturationLower, fSaturationUpper);
+			return T(1.0) / fGamma;
+		}
+
 	public:
 		Math()
 		{
@@ -294,6 +325,7 @@ class Math
 		long tsne_compute_knn_bounds(unsigned int n, long hData, T fPctInCircle, T* pfMinX, T* pfMinY, T* pfMaxX, T* pfMaxY);
 
 		long gaussian_blur(int n, int c, int h, int w, T fSigma, long hX, long hY);
+		long distort_image(int n, int c, int h, int w, T fBrightnessProb, T fBrightnessDelta, T fContrastProb, T fContrastLower, T fContrastUpper, T fSaturationProb, T fSaturationLower, T fSaturationUpper, long lRandomSeed, long hX, long hY);
 		long hamming_diff(int n, T fThreshold, long hA, long hB, long hY, int nOffA = 0, int nOffB = 0, int nOffY = 0);
 		long calc_batch_dist(int nDistMethod, T fThreshold, int nItemDim, long hS, long hT, long hW, const int nDim0, const int nDim1, T* rgOffsets, T* rgDist);
 };

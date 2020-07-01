@@ -101,6 +101,31 @@ bool sortPointDist(PointDist<T> a, PointDist<T> b)
 //  Helper Functions
 //=============================================================================
 
+template <typename T>
+inline __device__ T truncate(const T val);
+
+template<>
+inline __device__ float truncate(const float val)
+{
+	if (val < 0.0)
+		return 0.0;
+	else if (val > 255.0)
+		return 255.0;
+	else
+		return val;
+}
+
+template<>
+inline __device__ double truncate(const double val)
+{
+	if (val < 0.0)
+		return 0.0;
+	else if (val > 255.0)
+		return 255.0;
+	else
+		return val;
+}
+
 template<typename T>
 inline __device__ T math_atomic_add(const T val, T* address);
 
@@ -10416,6 +10441,162 @@ long Math<T>::gaussian_blur(int n, int nChannels, int h, int w, T fSigma, long h
 
 template long Math<double>::gaussian_blur(int n, int c, int h, int w, double dfSigma, long hX, long hY);
 template long Math<float>::gaussian_blur(int n, int c, int h, int w, float fSigma, long hX, long hY);
+
+
+template <typename T>
+__global__ void distort_image_kernel(const int nNum, const int chw, const T* order, const T* brightness, const T* contrast, const T* saturation, T* x, T* y)
+{
+	for (int n=0; n<nNum; n++)
+	{
+		const int i = (n * chw) + blockIdx.x * blockDim.x + threadIdx.x;
+
+		// Brightness.
+		y[i] = truncate(x[i] + brightness[n]);
+
+
+		if (order[n] == 1)
+		{
+			// Contrast.
+			y[i] = truncate(contrast[n] * (y[i] - T(128.0)) + T(128.0));
+
+			// Gamma (Saturation)
+			y[i] = (int)(T(255.0) * pow(y[i] / T(255.0), saturation[n]));
+		}
+		else
+		{
+			// Gamma (Saturation)
+			y[i] = (int)(T(255.0) * pow(y[i] / T(255.0), saturation[n]));
+
+			// Contrast.
+			y[i] = truncate(contrast[n] * (y[i] - T(128.0)) + T(128.0));
+		}
+	}
+}
+
+
+template <class T>
+long Math<T>::distort_image(int n, int c, int h, int w, T fBrightnessProb, T fBrightnessDelta, T fContrastProb, T fContrastLower, T fContrastUpper, T fSaturationProb, T fSaturationLower, T fSaturationUpper, long lRandomSeed, long hX, long hY)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pY;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hY, &pY))
+		return lErr;
+
+	T* pOrdering;
+	if (lErr = cudaMalloc(&pOrdering, sizeof(T) * n))
+		return lErr;
+
+	T* pBrightness;
+	if (lErr = cudaMalloc(&pBrightness, sizeof(T) * n))
+	{
+		cudaFree(pOrdering);
+		return lErr;
+	}
+
+	T* pContrast;
+	if (lErr = cudaMalloc(&pContrast, sizeof(T) * n))
+	{
+		cudaFree(pOrdering);
+		cudaFree(pBrightness);
+		return lErr;
+	}
+
+	T* pSaturation;
+	if (lErr = cudaMalloc(&pSaturation, sizeof(T) * n))
+	{
+		cudaFree(pOrdering);
+		cudaFree(pBrightness);
+		cudaFree(pContrast);
+		return lErr;
+	}
+
+	T fRand;
+
+	if (lRandomSeed > 0)
+		srand((unsigned int)lRandomSeed);
+
+	for (int i = 0; i < n; i++)
+	{
+		T fOrder = T(0.0);
+		fRand = (T)(rand() / (T)RAND_MAX);
+		if (fRand <= T(0.5))
+			fOrder = T(1.0);
+
+		if (lErr = cudaMemcpy(&(pOrdering[i]), &fOrder, sizeof(T), cudaMemcpyHostToDevice))
+		{
+			cudaFree(pOrdering);
+			cudaFree(pBrightness);
+			cudaFree(pContrast);
+			cudaFree(pSaturation);
+			return lErr;
+		}
+
+		T fBrightness = T(0.0);
+		fRand = (T)(rand() / (T)RAND_MAX);
+		if (fRand < fBrightnessProb)
+			fBrightness = get_brightness(fBrightnessDelta);
+
+		if (lErr = cudaMemcpy(&(pBrightness[i]), &fBrightness, sizeof(T), cudaMemcpyHostToDevice))
+		{
+			cudaFree(pOrdering);
+			cudaFree(pBrightness);
+			cudaFree(pContrast);
+			cudaFree(pSaturation);
+			return lErr;
+		}
+
+		T fContrast = T(1.0);
+		fRand = (T)(rand() / (T)RAND_MAX);
+		if (fRand < fContrastProb)
+			fContrast = get_contrast(fContrastLower, fContrastUpper);
+
+		if (lErr = cudaMemcpy(&(pContrast[i]), &fContrast, sizeof(T), cudaMemcpyHostToDevice))
+		{
+			cudaFree(pOrdering);
+			cudaFree(pBrightness);
+			cudaFree(pContrast);
+			cudaFree(pSaturation);
+			return lErr;
+		}
+
+		T fSaturation = T(1.0);
+		fRand = (T)(rand() / (T)RAND_MAX);
+		if (fRand < fSaturationProb)
+			fSaturation = get_saturation(fSaturationLower, fSaturationUpper);
+
+		if (lErr = cudaMemcpy(&(pSaturation[i]), &fSaturation, sizeof(T), cudaMemcpyHostToDevice))
+		{
+			cudaFree(pOrdering);
+			cudaFree(pBrightness);
+			cudaFree(pContrast);
+			cudaFree(pSaturation);
+			return lErr;
+		}
+	}
+
+	int nSpatialDim = c * h * w;
+	int nCount = n * nSpatialDim;
+
+	distort_image_kernel<T><<<CAFFE_GET_BLOCKS(nSpatialDim), CAFFE_CUDA_NUM_THREADS>>>(n, nSpatialDim, pOrdering, pBrightness, pContrast, pSaturation, (T*)pX->Data(), (T*)pY->Data());
+
+	lErr = cudaStreamSynchronize(0);
+
+	cudaFree(pOrdering);
+	cudaFree(pBrightness);
+	cudaFree(pContrast);
+	cudaFree(pSaturation);
+
+	return lErr;
+}
+
+template long Math<double>::distort_image(int n, int c, int h, int w, double fBrightnessProb, double fBrightnessDelta, double fContrastProb, double fContrastLower, double fContrastUpper, double fSaturationProb, double fSaturationLower, double fSaturationUpper, long lRandomSeed, long hX, long hY);
+template long Math<float>::distort_image(int n, int c, int h, int w, float fBrightnessProb, float fBrightnessDelta, float fContrastProb, float fContrastLower, float fContrastUpper, float fSaturationProb, float fSaturationLower, float fSaturationUpper, long lRandomSeed, long hX, long hY);
+
 
 template <typename T>
 __global__ void hamming_diff_kernel(int n, const T threshold, const T* x, T* y, T* out)

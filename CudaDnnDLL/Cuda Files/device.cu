@@ -3493,6 +3493,40 @@ template long Device<float>::cuda_guassian_blur(long lInput, float* pfInput, lon
 
 
 template <class T>
+long Device<T>::cuda_distort_image(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 15, 15))
+		return lErr;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	int c = (int)pfInput[1];
+	int h = (int)pfInput[2];
+	int w = (int)pfInput[3];
+	T fBrightnessProb = pfInput[4];
+	T fBrightnessDelta = pfInput[5];
+	T fContrastProb = pfInput[6];
+	T fContrastLower = pfInput[7];
+	T fContrastUpper = pfInput[8];
+	T fSaturationProb = pfInput[9];
+	T fSaturationLower = pfInput[10];
+	T fSaturationUpper = pfInput[11];
+	long lRandomSeed = (long)pfInput[12];
+	long hX = (long)pfInput[13];
+	long hY = (long)pfInput[14];
+
+	return m_math.distort_image(n, c, h, w, fBrightnessProb, fBrightnessDelta, fContrastProb, fContrastLower, fContrastUpper, fSaturationProb, fSaturationLower, fSaturationUpper, lRandomSeed, hX, hY);
+}
+
+template long Device<double>::cuda_distort_image(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_distort_image(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_hamming_diff(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;

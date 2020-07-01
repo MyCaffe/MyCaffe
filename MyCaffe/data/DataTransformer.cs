@@ -22,6 +22,7 @@ namespace MyCaffe.data
     public class DataTransformer<T>
     {
         Log m_log;
+        CudaDnn<T> m_cuda = null;
         List<double> m_rgMeanValues = new List<double>();
         TransformationParameter m_param;
         SimpleDatum m_imgMean = null;
@@ -51,6 +52,7 @@ namespace MyCaffe.data
         public DataTransformer(CudaDnn<T> cuda, Log log, TransformationParameter p, Phase phase, int nC, int nH, int nW, SimpleDatum imgMean = null)
         {
             m_log = log;
+            m_cuda = cuda;
 
             if (p.resize_param != null && p.resize_param.Active)
             {
@@ -1157,10 +1159,15 @@ namespace MyCaffe.data
         /// Distort the SimpleDatum.
         /// </summary>
         /// <param name="d">Specifies the SimpleDatum to distort.</param>
+        /// <remarks>Note this function only applies when the distortion parameter 'use_gpu' = false, otherwise the
+        /// distoration is applied after the data is transferred to the GPU.</remarks>
         /// <returns>The distorted SimpleDatum is returned.</returns>
         public SimpleDatum DistortImage(SimpleDatum d)
         {
             if (m_param.distortion_param == null || !m_param.distortion_param.Active)
+                return d;
+
+            if (m_param.distortion_param.use_gpu)
                 return d;
 
             if (m_param.distortion_param.brightness_prob == 0 &&
@@ -1169,6 +1176,41 @@ namespace MyCaffe.data
                 return d;
 
             return m_imgTransforms.ApplyDistortEx(d, m_param.distortion_param);
+        }
+
+        /// <summary>
+        /// Distort the images within a Blob.
+        /// </summary>
+        /// <param name="cuda">Specifies the instance of the CudaDnn to use.</param>
+        /// <param name="b">Specifies the Blob to distort.</param>
+        public void DistortImage(Blob<T> b)
+        {
+            if (m_param.distortion_param == null || !m_param.distortion_param.Active)
+                return;
+
+            if (!m_param.distortion_param.use_gpu)
+                return;
+
+            if (m_param.distortion_param.brightness_prob == 0 &&
+                m_param.distortion_param.contrast_prob == 0 &&
+                m_param.distortion_param.saturation_prob == 0)
+                return;
+
+            m_cuda.distort_image(b.num, 
+                           b.channels,
+                           b.height,
+                           b.width,
+                           m_param.distortion_param.brightness_prob,
+                           m_param.distortion_param.brightness_delta,
+                           m_param.distortion_param.contrast_prob,
+                           m_param.distortion_param.contrast_lower,
+                           m_param.distortion_param.contrast_upper,
+                           m_param.distortion_param.saturation_prob,
+                           m_param.distortion_param.saturation_lower,
+                           m_param.distortion_param.saturation_upper, 
+                           m_param.distortion_param.random_seed,
+                           b.gpu_data,
+                           b.mutable_gpu_data);
         }
 
         /// <summary>

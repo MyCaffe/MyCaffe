@@ -1096,6 +1096,7 @@ namespace MyCaffe.common
             CUDA_GUASSIAN_BLUR = 900,
             CUDA_HAMMING_DIFF = 901,
             CUDA_CALC_BATCH_DIST = 902,
+            CUDA_DISTORT_IMAGE = 903,
 
             CUDA_CREATE_SSD = 950,
             CUDA_FREE_SSD = 951,
@@ -8455,6 +8456,32 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GUASSIAN_BLUR, new double[] { n, nChannels, nHeight, nWidth, dfSigma, hX, hY });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GUASSIAN_BLUR, new float[] { n, nChannels, nHeight, nWidth, (float)dfSigma, hX, hY });
+        }
+
+        /// <summary>
+        /// The distort_image alters the brightness, contrast and saturation of a set of images within gpu memory.
+        /// </summary>
+        /// <param name="n">Specifies the number of items in the memory of 'X'.</param>
+        /// <param name="nChannels">Specifies the number of channels (i.e. 3 for RGB, 1 for B/W).</param>
+        /// <param name="nHeight">Specifies the height of each item.</param>
+        /// <param name="nWidth">Specifies the width of each item.</param>
+        /// <param name="dfBrightnessProb">Specifies the brightness probability.</param>
+        /// <param name="dfBrightnessDelta">Speciies the brightness delta that falls within a range [1,255], where 255 creates 100% saturation.</param>
+        /// <param name="dfContrastProb">Specifies the contrast probability.</param>
+        /// <param name="dfContrastLower">Specifies the contrast lower bound where contrast falls within the range [0.0,2.0] with 1.0 = no change.</param>
+        /// <param name="dfContrastUpper">Specifies the contrast upper bound where contrast falls within the range [0.0,2.0] with 1.0 = no change.</param>
+        /// <param name="dfSaturationProb">Specifies the saturation probability.</param>
+        /// <param name="dfSaturationLower">Specifies the saturation lower bound where saturation falls within the range [0.0,2.0] with 1.0 = no change.</param>
+        /// <param name="dfSaturationUpper">Specifies the saturation upper bound where saturation falls within the range [0.0,2.0] with 1.0 = no change.</param>
+        /// <param name="lRandomSeed">Specifies the random seed or 0 to ignore.</param>
+        /// <param name="hX">Specifies a handle to GPU memory containing the source data to distort.</param>
+        /// <param name="hY">Specifies a handle to GPU memory where the distorted information is placed.</param>
+        public void distort_image(int n, int nChannels, int nHeight, int nWidth, double dfBrightnessProb, double dfBrightnessDelta, double dfContrastProb, double dfContrastLower, double dfContrastUpper, double dfSaturationProb, double dfSaturationLower, double dfSaturationUpper, long lRandomSeed, long hX, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DISTORT_IMAGE, new double[] { n, nChannels, nHeight, nWidth, dfBrightnessProb, dfBrightnessDelta, dfContrastProb, dfContrastLower, dfContrastUpper, dfSaturationProb, dfSaturationLower, dfSaturationUpper, lRandomSeed, hX, hY });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DISTORT_IMAGE, new float[] { n, nChannels, nHeight, nWidth, (float)dfBrightnessProb, (float)dfBrightnessDelta, (float)dfContrastProb, (float)dfContrastLower, (float)dfContrastUpper, (float)dfSaturationProb, (float)dfSaturationLower, (float)dfSaturationUpper, lRandomSeed, hX, hY });
         }
 
         /// <summary>

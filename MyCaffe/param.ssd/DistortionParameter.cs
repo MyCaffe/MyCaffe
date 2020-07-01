@@ -33,6 +33,9 @@ namespace MyCaffe.param.ssd
 
         float m_fRandomOrderProb = 0;
 
+        long m_lRandomSeed = 0;
+        bool m_bUseGpu = true;
+
         /// <summary>
         /// The constructor.
         /// </summary>
@@ -42,7 +45,26 @@ namespace MyCaffe.param.ssd
         }
 
         /// <summary>
-        /// Get/set probability of adjusting the brightness.
+        /// Get/set the random seed (default = 0, only used when testing).
+        /// </summary>
+        /// <remarks>The random seed is only used when using the GPU version of distort image.</remarks>
+        public long random_seed
+        {
+            get { return m_lRandomSeed; }
+            set { m_lRandomSeed = value; }
+        }
+
+        /// <summary>
+        /// Get/set whether or not to use the GPU for the distortion operations (default = true).
+        /// </summary>
+        public bool use_gpu
+        {
+            get { return m_bUseGpu; }
+            set { m_bUseGpu = value; }
+        }
+
+        /// <summary>
+        /// Get/set probability of adjusting the brightness (default = 0).
         /// </summary>
         [Description("Get/set probability of adjusting the brightness.")]
         public float brightness_prob
@@ -52,7 +74,7 @@ namespace MyCaffe.param.ssd
         }
 
         /// <summary>
-        /// Get/set amount to add to the pixel values within [-delta,delta]
+        /// Get/set amount to add to the pixel values within [-delta,delta] (default = 0)
         /// </summary>
         [Description("Get/set amount to add to the pixel values within [-delta,delta]")]
         public float brightness_delta
@@ -62,7 +84,7 @@ namespace MyCaffe.param.ssd
         }
 
         /// <summary>
-        /// Get/set probability of adjusting the contrast.
+        /// Get/set probability of adjusting the contrast (default = 0).
         /// </summary>
         [Description("Get/set probability of adjusting the contrast.")]
         public float contrast_prob
@@ -72,7 +94,7 @@ namespace MyCaffe.param.ssd
         }
 
         /// <summary>
-        /// Get/set lower bound for random contrast factor.
+        /// Get/set lower bound for random contrast factor (default = 0.5).
         /// </summary>
         [Description("Get/set lower bound for random contrast factor.")]
         public float contrast_lower
@@ -82,7 +104,7 @@ namespace MyCaffe.param.ssd
         }
 
         /// <summary>
-        /// Get/set upper bound for random contrast factor.
+        /// Get/set upper bound for random contrast factor (default = 1.5).
         /// </summary>
         [Description("Get/set upper bound for random contrast factor.")]
         public float contrast_upper
@@ -92,7 +114,7 @@ namespace MyCaffe.param.ssd
         }
 
         /// <summary>
-        /// Get/set probability of adjusting the saturation.
+        /// Get/set probability of adjusting the saturation (default = 0).
         /// </summary>
         [Description("Get/set probability of adjusting the saturation.")]
         public float saturation_prob
@@ -102,7 +124,7 @@ namespace MyCaffe.param.ssd
         }
 
         /// <summary>
-        /// Get/set lower bound for random saturation factor.
+        /// Get/set lower bound for random saturation factor (default = 0.5).
         /// </summary>
         [Description("Get/set lower bound for random saturation factor.")]
         public float saturation_lower
@@ -112,7 +134,7 @@ namespace MyCaffe.param.ssd
         }
 
         /// <summary>
-        /// Get/set upper bound for random saturation factor.
+        /// Get/set upper bound for random saturation factor (default = 1.5).
         /// </summary>
         [Description("Get/set upper bound for random saturation factor.")]
         public float saturation_upper
@@ -122,7 +144,7 @@ namespace MyCaffe.param.ssd
         }
 
         /// <summary>
-        /// Get/set the probability of randomly ordering the image channels.
+        /// Get/set the probability of randomly ordering the image channels (default = 0).
         /// </summary>
         [Description("Get/set the probability of randomly ordering the image channels.")]
         public float random_order_prob
@@ -154,6 +176,9 @@ namespace MyCaffe.param.ssd
                 m_fSaturationUpper = p.saturation_upper;
 
                 m_fRandomOrderProb = p.random_order_prob;
+
+                m_lRandomSeed = p.m_lRandomSeed;
+                m_bUseGpu = p.use_gpu;
             }
         }
 
@@ -189,6 +214,8 @@ namespace MyCaffe.param.ssd
             rgChildren.Add(new RawProto("saturation_lower", saturation_lower.ToString()));
             rgChildren.Add(new RawProto("saturation_upper", saturation_upper.ToString()));
             rgChildren.Add(new RawProto("random_order_prob", random_order_prob.ToString()));
+            rgChildren.Add(new RawProto("use_gpu", use_gpu.ToString()));
+            rgChildren.Add(new RawProto("random_seed", random_seed.ToString()));
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -236,6 +263,12 @@ namespace MyCaffe.param.ssd
 
             if ((strVal = rp.FindValue("random_order_prob")) != null)
                 p.random_order_prob = float.Parse(strVal);
+
+            if ((strVal = rp.FindValue("use_gpu")) != null)
+                p.use_gpu = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("random_seed")) != null)
+                p.random_seed = long.Parse(strVal);
 
             return p;
         }
