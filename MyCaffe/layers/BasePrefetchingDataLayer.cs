@@ -180,6 +180,8 @@ namespace MyCaffe.layers
                                 m_cuda.SynchronizeStream(hStream);
                         }
 
+                        m_transformer.DistortImage(batch.Data);
+
                         m_rgPrefetchFull.Push(batch);
                     }
                 }
