@@ -1,4 +1,4 @@
-LIBRARY	"CudaPreProcDLL.10.1"
+LIBRARY	"CudaPreProcDLL.10.1.dll"
 
 STACKSIZE 8000000
 
