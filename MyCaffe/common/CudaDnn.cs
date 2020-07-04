@@ -1260,23 +1260,27 @@ namespace MyCaffe.common
         {
             FileInfo fi = new FileInfo(Process.GetCurrentProcess().MainModule.FileName);
 
-            string strPath = fi.DirectoryName + "\\CudaDnnDll.10.2.dll";
+            string strPath = fi.DirectoryName + "\\CudaDnnDll.11.0.dll";
             if (!File.Exists(strPath))
             {
-                strPath = fi.DirectoryName + "\\CudaDnnDll.10.1.dll";
+                strPath = fi.DirectoryName + "\\CudaDnnDll.10.2.dll";
                 if (!File.Exists(strPath))
                 {
-                    strPath = fi.DirectoryName + "\\CudaDnnDll.10.0.dll";
+                    strPath = fi.DirectoryName + "\\CudaDnnDll.10.1.dll";
                     if (!File.Exists(strPath))
                     {
-                        strPath = fi.DirectoryName + "\\CudaDnnDll.9.2.dll";
+                        strPath = fi.DirectoryName + "\\CudaDnnDll.10.0.dll";
                         if (!File.Exists(strPath))
                         {
-                            strPath = fi.DirectoryName + "\\CudaDnnDll.9.1.dll";
+                            strPath = fi.DirectoryName + "\\CudaDnnDll.9.2.dll";
                             if (!File.Exists(strPath))
                             {
+                                strPath = fi.DirectoryName + "\\CudaDnnDll.9.1.dll";
                                 if (!File.Exists(strPath))
-                                    strPath = fi.DirectoryName + "\\CudaDnnDll.8.dll";
+                                {
+                                    if (!File.Exists(strPath))
+                                        strPath = fi.DirectoryName + "\\CudaDnnDll.8.dll";
+                                }
                             }
                         }
                     }
