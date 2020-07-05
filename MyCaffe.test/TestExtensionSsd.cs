@@ -694,12 +694,38 @@ namespace MyCaffe.test
         {
             get
             {
-                string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.2.dll";
-                if (!File.Exists(strPath))
+                string strVersion = m_cuda.Path;
+                int nPos = strVersion.LastIndexOf('.');
+                if (nPos > 0)
+                    strVersion = strVersion.Substring(0, nPos);
+
+                string strTarget = "CudaDnnDll.";
+                nPos = strVersion.IndexOf(strTarget);
+                if (nPos >= 0)
+                    strVersion = strVersion.Substring(nPos + strTarget.Length);
+
+                string strPath;
+                if (strVersion.Length > 0)
                 {
-                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+                    if (strVersion != "10.2" && strVersion.Contains("10.2"))
+                        strVersion = "10.2";
+
+                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension." + strVersion + ".dll";
+                }
+                else
+                {
+                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.0.dll";
+
                     if (!File.Exists(strPath))
-                        strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+                    {
+                        strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.2.dll";
+                        if (!File.Exists(strPath))
+                        {
+                            strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+                            if (!File.Exists(strPath))
+                                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+                        }
+                    }
                 }
 
                 return strPath;
