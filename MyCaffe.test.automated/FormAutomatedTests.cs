@@ -15,12 +15,14 @@ namespace MyCaffe.test.automated
         string m_strPath;
         int m_nGpuID = 0;
         IMGDB_VERSION m_imgDbVer = IMGDB_VERSION.DEFAULT;
+        string m_strCudaPath = "";
 
-        public FormAutomatedTests(string strPath, int nGpuID, IMGDB_VERSION imgDbVer)
+        public FormAutomatedTests(string strPath, int nGpuID, IMGDB_VERSION imgDbVer, string strCudaPath)
         {
             m_strPath = strPath;
             m_nGpuID = nGpuID;
             m_imgDbVer = imgDbVer;
+            m_strCudaPath = strCudaPath;
             InitializeComponent();
         }
 
@@ -29,6 +31,7 @@ namespace MyCaffe.test.automated
             automatedTester1.TestAssemblyPath = m_strPath;
             automatedTester1.GpuId = m_nGpuID;
             automatedTester1.ImageDbVersion = m_imgDbVer;
+            automatedTester1.CudaPath = m_strCudaPath;
             automatedTester1.LoadFromDatabase();
             Text = "Automated Tests [" + automatedTester1.TestName + "]";
         }

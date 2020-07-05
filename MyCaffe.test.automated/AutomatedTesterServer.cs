@@ -84,12 +84,12 @@ namespace MyCaffe.test.automated
             get { return m_bw.IsBusy; }
         }
 
-        public void Run(string strTestDllFile, bool bResetAllTests, int nGpuId = 0, IMGDB_VERSION imgDbVer = IMGDB_VERSION.DEFAULT)
+        public void Run(string strTestDllFile, bool bResetAllTests, int nGpuId = 0, IMGDB_VERSION imgDbVer = IMGDB_VERSION.DEFAULT, string strCudaPath = "")
         {
             m_evtCancel.Reset();
             m_evtGlobalCancel.Reset();
             m_fiPath = new FileInfo(strTestDllFile);
-            m_bw.RunWorkerAsync(new AutoTestParams(strTestDllFile, bResetAllTests, nGpuId, imgDbVer));
+            m_bw.RunWorkerAsync(new AutoTestParams(strTestDllFile, bResetAllTests, nGpuId, imgDbVer, strCudaPath));
         }
 
         public void Abort()
@@ -128,7 +128,7 @@ namespace MyCaffe.test.automated
 
             try
             {
-                colTests.Run(m_evtCancel, false, true, param.GpuId, param.ImageDbVersion);
+                colTests.Run(m_evtCancel, false, true, param.GpuId, param.ImageDbVersion, param.CudaPath);
 
                 TestingProgressGet progress = new TestingProgressGet();
 
@@ -172,13 +172,15 @@ namespace MyCaffe.test.automated
         bool m_bResetAllTests = false;
         int m_nGpuId = 0;
         IMGDB_VERSION m_imgDbVer = IMGDB_VERSION.DEFAULT;
+        string m_strCudaPath;
 
-        public AutoTestParams(string strTestDllFile, bool bResetAllTests, int nGpuId = 0, IMGDB_VERSION imgDbVer = IMGDB_VERSION.DEFAULT)
+        public AutoTestParams(string strTestDllFile, bool bResetAllTests, int nGpuId = 0, IMGDB_VERSION imgDbVer = IMGDB_VERSION.DEFAULT, string strCudaPath = "")
         {
             m_strTestDllFile = strTestDllFile;
             m_bResetAllTests = bResetAllTests;
             m_nGpuId = nGpuId;
             m_imgDbVer = imgDbVer;
+            m_strCudaPath = strCudaPath;
         }
 
         public int GpuId
@@ -189,6 +191,11 @@ namespace MyCaffe.test.automated
         public IMGDB_VERSION ImageDbVersion
         {
             get { return m_imgDbVer; }
+        }
+
+        public string CudaPath
+        {
+            get { return m_strCudaPath; }
         }
 
         public string TestDllFile
