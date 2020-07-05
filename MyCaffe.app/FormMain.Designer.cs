@@ -87,6 +87,7 @@
             this.lblImgDb = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.m_bwLoadVOCDatabase = new System.ComponentModel.BackgroundWorker();
+            this.lblCudaPath = new System.Windows.Forms.ToolStripStatusLabel();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -434,14 +435,14 @@
             // v1ToolStripMenuItem
             // 
             this.v1ToolStripMenuItem.Name = "v1ToolStripMenuItem";
-            this.v1ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.v1ToolStripMenuItem.Size = new System.Drawing.Size(87, 22);
             this.v1ToolStripMenuItem.Text = "V1";
             this.v1ToolStripMenuItem.Click += new System.EventHandler(this.menuImgDb_Click);
             // 
             // v2ToolStripMenuItem
             // 
             this.v2ToolStripMenuItem.Name = "v2ToolStripMenuItem";
-            this.v2ToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.v2ToolStripMenuItem.Size = new System.Drawing.Size(87, 22);
             this.v2ToolStripMenuItem.Text = "V2";
             this.v2ToolStripMenuItem.Click += new System.EventHandler(this.menuImgDb_Click);
             // 
@@ -511,7 +512,8 @@
             // 
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.lblGpu,
-            this.lblImgDb});
+            this.lblImgDb,
+            this.lblCudaPath});
             this.statusStrip1.Location = new System.Drawing.Point(0, 430);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(957, 22);
@@ -541,6 +543,11 @@
             this.m_bwLoadVOCDatabase.DoWork += new System.ComponentModel.DoWorkEventHandler(this.m_bwLoadVOCDatabase_DoWork);
             this.m_bwLoadVOCDatabase.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
             this.m_bwLoadVOCDatabase.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
+            // 
+            // lblCudaPath
+            // 
+            this.lblCudaPath.Name = "lblCudaPath";
+            this.lblCudaPath.Size = new System.Drawing.Size(0, 17);
             // 
             // FormMain
             // 
@@ -625,6 +632,7 @@
         private System.Windows.Forms.ToolStripMenuItem imageDBToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem v1ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem v2ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripStatusLabel lblCudaPath;
     }
 }
 

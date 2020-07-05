@@ -59,7 +59,7 @@ namespace MyCaffe.app
         string m_strAtariRom = "pong";
         int m_nMinComputeMajor = 0;
         int m_nMinComputeMinor = 0;
-        string m_strDllPath = null;
+        string m_strDllPath = "";
         NET_TYPE m_netType = NET_TYPE.LENET;
         bool m_bSqlLoaded = false;
 
@@ -113,6 +113,17 @@ namespace MyCaffe.app
                 ((ListViewEx)lvStatus).RowHeight = 12;
         }
 
+        public static string AssemblyDirectory
+        {
+            get
+            {
+                string codeBase = Assembly.GetExecutingAssembly().CodeBase;
+                UriBuilder uri = new UriBuilder(codeBase);
+                string path = Uri.UnescapeDataString(uri.Path);
+                return Path.GetDirectoryName(path);
+            }
+        }
+
         private void FormMain_Load(object sender, EventArgs e)
         {
             try
@@ -132,8 +143,6 @@ namespace MyCaffe.app
 
                 // Initialize the GPU Menu and Help menu.
                 m_dlgWait = new FormWait();
-                m_bwInit.RunWorkerAsync();
-                m_dlgWait.ShowDialog();
                 m_bwUrlCheck.RunWorkerAsync();
 
                 // Initialize the ImageDB Menu.
@@ -163,22 +172,23 @@ namespace MyCaffe.app
                     setStatus("see 'https://www.microsoft.com/en-us/sql-server/sql-server-editions-express'");
                     setStatus("");
                 }
-                else if (rgSqlInst.Count == 1)
+
+                Dictionary<string, string> rgCuda = getCudaPaths();
+                FormSqlInstances dlg = new FormSqlInstances(rgSqlInst, rgCuda);
+
+                if (dlg.ShowDialog() == DialogResult.OK)
                 {
-                    strSqlInstance = rgSqlInst[0];
+                    strSqlInstance = dlg.Instance;
+                    m_strDllPath = dlg.CudaPath;
                 }
                 else
-                {
-                    FormSqlInstances dlg = new FormSqlInstances(rgSqlInst);
-
-                    if (dlg.ShowDialog() == DialogResult.OK)
-                        strSqlInstance = dlg.Instance;
-                    else
-                        setStatus("You are NOT connected to SQL.", STATUS.WARNING);
-                }
+                    setStatus("You are NOT connected to SQL.", STATUS.WARNING);
 
                 if (strSqlInstance != null)
                 {
+                    m_bwInit.RunWorkerAsync();
+                    m_dlgWait.ShowDialog();
+
                     string strService = strSqlInstance.TrimStart('.', '\\');
                     if (strService == "SQLEXPRESS")
                         strService = "MSSQL$" + strService;
@@ -270,13 +280,36 @@ namespace MyCaffe.app
             }
         }
 
+        private Dictionary<string, string> getCudaPaths()
+        {
+            Dictionary<string, string> rgPaths = new Dictionary<string, string>();
+
+            rgPaths.Add("Default (CUDA 10.2)", AssemblyDirectory + "\\CudaDnnDll.10.2.dll");
+
+            string strFile = AssemblyDirectory + "\\cuda_10.2.3_5\\CudaDnnDll.10.2.3_5.dll";
+            if (!File.Exists(strFile))
+                strFile = AssemblyDirectory + "\\CudaDnnDll.10.2.3_5.dll";
+
+            if (File.Exists(strFile))
+                rgPaths.Add("CUDA 10.2 sm 3.5", strFile);
+
+            strFile = AssemblyDirectory + "\\cuda_11.0\\CudaDnnDll.11.0.dll";
+            if (!File.Exists(strFile))
+                strFile = AssemblyDirectory + "\\CudaDnnDll.11.0.dll";
+
+            if (File.Exists(strFile))
+                rgPaths.Add("CUDA 11.0 RC", strFile);
+
+            return rgPaths;
+        }
+
         private void m_bwInit_DoWork(object sender, DoWorkEventArgs e)
         {
             List<string> rgstrGpu = new List<string>();
 
             // Setup the GPU menu with all GPU's in the system and 
             //  select the first GPU as the default for testing.
-            CudaDnn<float> cuda = new CudaDnn<float>(0);
+            CudaDnn<float> cuda = new CudaDnn<float>(0, (DEVINIT)3, null, m_strDllPath);
             int nDeviceCount = cuda.GetDeviceCount();
             for (int i = 0; i < nDeviceCount; i++)
             {
@@ -417,6 +450,11 @@ namespace MyCaffe.app
                 setStatus("The current GPU (ID=" + nGpuId.ToString() + ") has a lower compute of " + nActualMajor.ToString() + "." + nActualMinor, STATUS.ERROR);
                 setStatus("Please use a different GPU or use a different CudaDNN dll version that supports a lower compute value.", STATUS.WARNING);
             }
+            else
+            {
+                setStatus("Using CudaDNN dll '" + m_strDllPath + "'.", STATUS.INFO2);
+                lblCudaPath.Text = m_strDllPath;
+            }
         }
 
         private string getGpuName()
@@ -530,7 +568,7 @@ namespace MyCaffe.app
             openFileDialogAutoTests.InitialDirectory = initialDirectory;
             if (openFileDialogAutoTests.ShowDialog() == DialogResult.OK)
             {
-                FormAutomatedTests dlg = new FormAutomatedTests(openFileDialogAutoTests.FileName, getGpu(), getImageDbVersion());
+                FormAutomatedTests dlg = new FormAutomatedTests(openFileDialogAutoTests.FileName, getGpu(), getImageDbVersion(), m_strDllPath);
 
                 setStatus("Running automatic tests.");
                 dlg.ShowDialog();
@@ -1108,7 +1146,7 @@ namespace MyCaffe.app
                 startAutotestsToolStripMenuItem.Enabled = false;
                 abortAutotestsToolStripMenuItem.Enabled = true;
                 m_autoTest.Initialize("c:\\temp", EntitiesConnection.GlobalDatabaseServerName);
-                m_autoTest.Run(openFileDialogAutoTests.FileName, false, getGpu(), getImageDbVersion());
+                m_autoTest.Run(openFileDialogAutoTests.FileName, false, getGpu(), getImageDbVersion(), m_strDllPath);
             }
         }
 
@@ -1124,7 +1162,7 @@ namespace MyCaffe.app
                 startAutotestsToolStripMenuItem.Enabled = false;
                 abortAutotestsToolStripMenuItem.Enabled = true;
                 m_autoTest.Initialize("c:\\temp", EntitiesConnection.GlobalDatabaseServerName);
-                m_autoTest.Run(openFileDialogAutoTests.FileName, true, getGpu(), getImageDbVersion());
+                m_autoTest.Run(openFileDialogAutoTests.FileName, true, getGpu(), getImageDbVersion(), m_strDllPath);
             }
         }
 

@@ -234,18 +234,10 @@ namespace MyCaffe.test
 
         protected override ITest create(common.DataType dt, string strName, int nDeviceID, EngineParameter.Engine engine)
         {
-            string strPath = TestBase.CudaPath;
-
             if (dt == common.DataType.DOUBLE)
-            {
-                CudaDnn<double>.SetDefaultCudaPath(strPath);
                 return new AnnotatedDataLayerTest<double>(strName, nDeviceID, engine, this);
-            }
             else
-            {
-                CudaDnn<float>.SetDefaultCudaPath(strPath);
                 return new AnnotatedDataLayerTest<float>(strName, nDeviceID, engine, this);
-            }
         }
 
         protected override void dispose()

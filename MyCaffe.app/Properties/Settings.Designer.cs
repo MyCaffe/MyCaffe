@@ -430,5 +430,29 @@ namespace MyCaffe.app.Properties {
                 this["MnistExportFolder"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string StartupDbInstance {
+            get {
+                return ((string)(this["StartupDbInstance"]));
+            }
+            set {
+                this["StartupDbInstance"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string StartupCudaPath {
+            get {
+                return ((string)(this["StartupCudaPath"]));
+            }
+            set {
+                this["StartupCudaPath"] = value;
+            }
+        }
     }
 }

@@ -32,6 +32,8 @@
             this.label1 = new System.Windows.Forms.Label();
             this.cmbSql = new System.Windows.Forms.ComboBox();
             this.btnOK = new System.Windows.Forms.Button();
+            this.label2 = new System.Windows.Forms.Label();
+            this.cmbCuda = new System.Windows.Forms.ComboBox();
             this.SuspendLayout();
             // 
             // label1
@@ -56,21 +58,41 @@
             // 
             this.btnOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.btnOK.Location = new System.Drawing.Point(219, 44);
+            this.btnOK.Location = new System.Drawing.Point(219, 69);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(75, 23);
-            this.btnOK.TabIndex = 2;
+            this.btnOK.TabIndex = 4;
             this.btnOK.Text = "OK";
             this.btnOK.UseVisualStyleBackColor = true;
             this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(18, 42);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(74, 13);
+            this.label2.TabIndex = 2;
+            this.label2.Text = "CudaDNN Dll:";
+            // 
+            // cmbCuda
+            // 
+            this.cmbCuda.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbCuda.FormattingEnabled = true;
+            this.cmbCuda.Location = new System.Drawing.Point(98, 39);
+            this.cmbCuda.Name = "cmbCuda";
+            this.cmbCuda.Size = new System.Drawing.Size(196, 21);
+            this.cmbCuda.TabIndex = 3;
             // 
             // FormSqlInstances
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(306, 79);
+            this.ClientSize = new System.Drawing.Size(306, 104);
             this.Controls.Add(this.btnOK);
+            this.Controls.Add(this.cmbCuda);
             this.Controls.Add(this.cmbSql);
+            this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -91,5 +113,7 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.ComboBox cmbSql;
         private System.Windows.Forms.Button btnOK;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.ComboBox cmbCuda;
     }
 }

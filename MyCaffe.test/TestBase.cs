@@ -23,6 +23,7 @@ namespace MyCaffe.test
         static bool m_bResetOnCleanUp = false;
         protected bool m_bHalf = false;
         IMGDB_VERSION m_imgDbVer = IMGDB_VERSION.DEFAULT;
+        static string m_strCudaPath = "";
 
 
         public TestBase(string strName, int nDeviceID = DEFAULT_DEVICE_ID, EngineParameter.Engine engine = EngineParameter.Engine.DEFAULT, object tag = null, bool bHalf = false)
@@ -64,6 +65,17 @@ namespace MyCaffe.test
                     }
                 }
             }
+
+            LocalDataStoreSlot ldsp = Thread.GetNamedDataSlot("CUDAPATH");
+            if (ldsp != null)
+            {
+                object obj = Thread.GetData(ldsp);
+                if (obj != null)
+                    m_strCudaPath = obj.ToString();
+            }
+
+            string strPath = CudaPath;
+            CudaDnn<float>.SetDefaultCudaPath(strPath);
 
             m_strName = strName;
 
@@ -244,7 +256,13 @@ namespace MyCaffe.test
 
         public static string CudaPath
         {
-            get { return CudaDnn<float>.GetCudaDnnDllPath(); }
+            get
+            {
+                if (File.Exists(m_strCudaPath))
+                    return m_strCudaPath;
+
+                return CudaDnn<float>.GetCudaDnnDllPath();
+            }
         }
 
         public static string ExecutingAppPath
