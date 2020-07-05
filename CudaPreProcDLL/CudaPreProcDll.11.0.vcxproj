@@ -136,8 +136,9 @@
       <CudaRuntime>Shared</CudaRuntime>
     </CudaCompile>
     <PostBuildEvent>
-      <Command>xcopy /s /y $(TargetPath) $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)
-xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)</Command>
+      <Command>if not exist $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)\cuda_11.0 md $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)\cuda_11.0
+xcopy /s /y $(TargetPath) $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)\cuda_11.0
+xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)\cuda_11.0</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -199,9 +200,9 @@ xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(Config
       <CudaRuntime>Shared</CudaRuntime>
     </CudaCompile>
     <PostBuildEvent>
-      <Command>%systemroot%\System32\xcopy /s /y $(TargetPath) $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)
-
-%systemroot%\System32\xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)
+      <Command>if not exist $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)\cuda_11.0 md $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)\cuda_11.0
+xcopy /s /y $(TargetPath) $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)\cuda_11.0
+xcopy /s /y $(TargetDir)$(TargetName).pdb $(SolutionDir)MyCaffe.app\bin\$(ConfigurationName)\cuda_11.0
 </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
