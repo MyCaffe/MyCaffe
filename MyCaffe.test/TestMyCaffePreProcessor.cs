@@ -89,18 +89,26 @@ namespace MyCaffe.test
 
         public void TestCudaPreProcDLL()
         {
-            string strPath = AssemblyDirectory + "\\CudaPreProcDll.10.2.dll";
-            if (!File.Exists(strPath))
-            {
-                strPath = AssemblyDirectory + "\\CudaPreProcDll.10.1.dll";
-                if (!File.Exists(strPath))
-                    strPath = AssemblyDirectory + "\\CudaPreProcDll.10.0.dll";
-            }
-
             SettingsCaffe settings = new SettingsCaffe();
             CancelEvent evtCancel = new CancelEvent();
             MyCaffeControl<T> mycaffe = new MyCaffeControl<T>(settings, m_log, evtCancel, null, null, null, null, "", true);
             Extension<T> extension = new Extension<T>(mycaffe as IXMyCaffeExtension<T>);
+
+            string strCudaPath = mycaffe.Cuda.Path;
+            string strPath = Path.GetDirectoryName(strCudaPath);
+            string strFile = Path.GetFileName(strCudaPath);
+
+
+            string strTarget = "CudaDnnDll.";
+            int nPos = strFile.IndexOf(strTarget);
+            if (nPos < 0)
+                throw new Exception("Invalid Cuda Path!");
+
+            strFile = "CudaPreProcDll." + strFile.Substring(nPos + strTarget.Length);
+            strPath += "\\" + strFile;
+
+            if (!File.Exists(strPath))
+                throw new Exception("Could not find extension DLL '" + strPath + "'!");
 
             extension.Initialize(strPath);
 
