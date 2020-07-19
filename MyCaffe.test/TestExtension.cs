@@ -85,17 +85,51 @@ namespace MyCaffe.test
             }
         }
 
+        private string DllPath
+        {
+            get
+            {
+                string strVersion = m_cuda.Path;
+                int nPos = strVersion.LastIndexOf('.');
+                if (nPos > 0)
+                    strVersion = strVersion.Substring(0, nPos);
+
+                string strTarget = "CudaDnnDll.";
+                nPos = strVersion.IndexOf(strTarget);
+                if (nPos >= 0)
+                    strVersion = strVersion.Substring(nPos + strTarget.Length);
+
+                string strPath;
+                if (strVersion.Length > 0)
+                {
+                    if (strVersion != "10.2" && strVersion.Contains("10.2"))
+                        strVersion = "10.2";
+
+                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension." + strVersion + ".dll";
+                }
+                else
+                {
+                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.11.0.dll";
+
+                    if (!File.Exists(strPath))
+                    {
+                        strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.2.dll";
+                        if (!File.Exists(strPath))
+                        {
+                            strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
+                            if (!File.Exists(strPath))
+                                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
+                        }
+                    }
+                }
+
+                return strPath;
+            }
+        }
+
         public void TestRun()
         {
-            string strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.2.dll";
-            if (!File.Exists(strPath))
-            {
-                strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.1.dll";
-                if (!File.Exists(strPath))
-                    strPath = AssemblyDirectory + "\\MyCaffe.test.extension.10.0.dll";
-            }
-
-            long hExtension = m_cuda.CreateExtension(strPath);
+            long hExtension = m_cuda.CreateExtension(DllPath);
 
             m_log.CHECK(hExtension != 0, "The extension handle should be non zero.");
 

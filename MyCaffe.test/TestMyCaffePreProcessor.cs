@@ -98,7 +98,6 @@ namespace MyCaffe.test
             string strPath = Path.GetDirectoryName(strCudaPath);
             string strFile = Path.GetFileName(strCudaPath);
 
-
             string strTarget = "CudaDnnDll.";
             int nPos = strFile.IndexOf(strTarget);
             if (nPos < 0)
