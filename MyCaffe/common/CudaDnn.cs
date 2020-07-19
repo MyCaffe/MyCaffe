@@ -1146,7 +1146,14 @@ namespace MyCaffe.common
                     strPath = GetCudaDnnDllPath();
 
                 m_strPath = strPath;
+
+                string strDir = System.IO.Path.GetDirectoryName(strPath);
+                string strCurDir = Directory.GetCurrentDirectory();
+                Directory.SetCurrentDirectory(strDir);
+
                 m_cuda.Load(strPath);
+
+                Directory.SetCurrentDirectory(strCurDir);
             }
             catch (Exception excpt)
             {
@@ -1266,20 +1273,24 @@ namespace MyCaffe.common
                 strPath = fi.DirectoryName + "\\CudaDnnDll.10.2.dll";
                 if (!File.Exists(strPath))
                 {
-                    strPath = fi.DirectoryName + "\\CudaDnnDll.10.1.dll";
+                    strPath = fi.DirectoryName + "\\CudaDnnDll.10.2.3_5.dll";
                     if (!File.Exists(strPath))
                     {
-                        strPath = fi.DirectoryName + "\\CudaDnnDll.10.0.dll";
+                        strPath = fi.DirectoryName + "\\CudaDnnDll.10.1.dll";
                         if (!File.Exists(strPath))
                         {
-                            strPath = fi.DirectoryName + "\\CudaDnnDll.9.2.dll";
+                            strPath = fi.DirectoryName + "\\CudaDnnDll.10.0.dll";
                             if (!File.Exists(strPath))
                             {
-                                strPath = fi.DirectoryName + "\\CudaDnnDll.9.1.dll";
+                                strPath = fi.DirectoryName + "\\CudaDnnDll.9.2.dll";
                                 if (!File.Exists(strPath))
                                 {
+                                    strPath = fi.DirectoryName + "\\CudaDnnDll.9.1.dll";
                                     if (!File.Exists(strPath))
-                                        strPath = fi.DirectoryName + "\\CudaDnnDll.8.dll";
+                                    {
+                                        if (!File.Exists(strPath))
+                                            strPath = fi.DirectoryName + "\\CudaDnnDll.8.dll";
+                                    }
                                 }
                             }
                         }
