@@ -286,13 +286,13 @@ namespace MyCaffe.app
 
             rgPaths.Add("Default (CUDA 11.0)", AssemblyDirectory + "\\cuda_11.0\\CudaDnnDll.11.0.dll");
 
-            string strFile = AssemblyDirectory + "\\cuda_10.2\\CudaDnnDll.10.2.3_5.dll";
-            if (File.Exists(strFile))
-                rgPaths.Add("CUDA 10.2 sm 3.5", strFile);
-
-            strFile = AssemblyDirectory + "\\cuda_10.2\\CudaDnnDll.10.2.dll";
+            string strFile = AssemblyDirectory + "\\cuda_10.2\\CudaDnnDll.10.2.dll";
             if (File.Exists(strFile))
                 rgPaths.Add("CUDA 10.2", strFile);
+
+            strFile = AssemblyDirectory + "\\cuda_10.2\\CudaDnnDll.10.2.3_5.dll";
+            if (File.Exists(strFile))
+                rgPaths.Add("CUDA 10.2 sm 3.5", strFile);
 
             return rgPaths;
         }
