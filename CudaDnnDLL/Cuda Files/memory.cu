@@ -2891,7 +2891,7 @@ long Memory<T>::RnnBackwardData(long hHandle, long hRnnDesc, long hYDesc, long h
 	rnnDataHandle<T>* descY = (rnnDataHandle<T>*)m_rnnDataDesc1.GetData(hYDesc);
 	cudnnTensorDescriptor_t descHy = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hHyDesc);
 	cudnnTensorDescriptor_t descCy = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hCyDesc);
-	cudnnFilterDescriptor_t descWt = (cudnnFilterDescriptor_t)m_tensorDesc.GetData(hWtDesc);
+	cudnnFilterDescriptor_t descWt = (cudnnFilterDescriptor_t)m_filterDesc.GetData(hWtDesc);
 	cudnnTensorDescriptor_t descHx = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hHxDesc);
 	cudnnTensorDescriptor_t descCx = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hCxDesc);
 	cudnnTensorDescriptor_t descHxd = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hdHxDesc);
@@ -2992,7 +2992,7 @@ long Memory<T>::RnnBackwardDataEx(long hHandle, long hRnnDesc, long hYDesc, long
 	cudnnRNNDataDescriptor_t descY = (cudnnRNNDataDescriptor_t)m_rnnDataDesc2.GetData(hYDesc);
 	cudnnTensorDescriptor_t descHy = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hHyDesc);
 	cudnnTensorDescriptor_t descCy = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hCyDesc);
-	cudnnFilterDescriptor_t descWt = (cudnnFilterDescriptor_t)m_tensorDesc.GetData(hWtDesc);
+	cudnnFilterDescriptor_t descWt = (cudnnFilterDescriptor_t)m_filterDesc.GetData(hWtDesc);
 	cudnnTensorDescriptor_t descHx = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hHxDesc);
 	cudnnTensorDescriptor_t descCx = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hCxDesc);
 	cudnnTensorDescriptor_t descHxd = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hdHxDesc);
@@ -3093,7 +3093,7 @@ long Memory<T>::RnnBackwardWeights(long hHandle, long hRnnDesc, long hXDesc, lon
 	rnnDataHandle<T>* descX = (rnnDataHandle<T>*)m_rnnDataDesc1.GetData(hXDesc);
 	rnnDataHandle<T>* descY = (rnnDataHandle<T>*)m_rnnDataDesc1.GetData(hYDesc);
 	cudnnTensorDescriptor_t descHx = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hHxDesc);
-	cudnnFilterDescriptor_t descWt = (cudnnFilterDescriptor_t)m_tensorDesc.GetData(hWtDesc);
+	cudnnFilterDescriptor_t descWt = (cudnnFilterDescriptor_t)m_filterDesc.GetData(hWtDesc);
 	MemoryItem* pXData;
 	MemoryItem* pHxData;
 	MemoryItem* pYData;
@@ -3153,7 +3153,7 @@ long Memory<T>::RnnBackwardWeightsEx(long hHandle, long hRnnDesc, long hXDesc, l
 	cudnnRNNDataDescriptor_t descX = (cudnnRNNDataDescriptor_t)m_rnnDataDesc2.GetData(hXDesc);
 	cudnnRNNDataDescriptor_t descY = (cudnnRNNDataDescriptor_t)m_rnnDataDesc2.GetData(hYDesc);
 	cudnnTensorDescriptor_t descHx = (cudnnTensorDescriptor_t)m_tensorDesc.GetData(hHxDesc);
-	cudnnFilterDescriptor_t descWt = (cudnnFilterDescriptor_t)m_tensorDesc.GetData(hWtDesc);
+	cudnnFilterDescriptor_t descWt = (cudnnFilterDescriptor_t)m_filterDesc.GetData(hWtDesc);
 	MemoryItem* pXData;
 	MemoryItem* pHxData;
 	MemoryItem* pYData;
