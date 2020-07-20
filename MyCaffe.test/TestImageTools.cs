@@ -184,7 +184,11 @@ namespace MyCaffe.test
 
         private string downloadLenna()
         {
-            string strFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\downloads\\lenna.png";
+            string strDir = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\downloads\\";
+            if (!Directory.Exists(strDir))
+                Directory.CreateDirectory(strDir);
+
+            string strFile = strDir + "lenna.png";
 
             if (File.Exists(strFile))
                 return strFile;
@@ -198,7 +202,11 @@ namespace MyCaffe.test
 
         private string downloadMandrill()
         {
-            string strFile = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\downloads\\mandrill.png";
+            string strDir = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) + "\\MyCaffe\\downloads\\";
+            if (!Directory.Exists(strDir))
+                Directory.CreateDirectory(strDir);
+
+            string strFile = strDir + "mandrill.png";
 
             if (File.Exists(strFile))
                 return strFile;
