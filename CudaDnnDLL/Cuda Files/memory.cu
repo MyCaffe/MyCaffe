@@ -740,11 +740,24 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 	cudnnConvolutionFwdAlgo_t algoFwd;
 #ifdef CUDA11_0
 	int nAlgCount;
-	cudnnConvolutionFwdAlgoPerf_t fwdPref;
-	if (lErr = cudnnGetConvolutionForwardAlgorithm_v7(cudnn, bottom, filter, conv, top, 1, &nAlgCount, &fwdPref))
+	cudnnConvolutionFwdAlgoPerf_t fwdPref[5];
+	if (lErr = cudnnGetConvolutionForwardAlgorithm_v7(cudnn, bottom, filter, conv, top, 5, &nAlgCount, fwdPref))
 		return lErr;
 
-	algoFwd = fwdPref.algo;
+	if (lWsLimitInBytes == (((size_t)-1) / 2 + 1) || lWsLimitInBytes >= (SIZE_MAX - 10))
+	{
+		algoFwd = fwdPref[0].algo;
+	}
+	else
+	{
+		int nIdx = 0;
+		while (fwdPref[nIdx].memory > lWsLimitInBytes && nIdx < 5 && nIdx < nAlgCount)
+		{
+			nIdx++;
+		}
+
+		algoFwd = fwdPref[nIdx].algo;
+	}
 #else
 	// Setup the algorithm preference.
 	cudnnConvolutionFwdPreference_t fwdPref = CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT;
@@ -800,11 +813,24 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 	// Choose backward filter algorithm.
 	cudnnConvolutionBwdFilterAlgo_t algoBwdFilter;
 #ifdef CUDA11_0
-	cudnnConvolutionBwdFilterAlgoPerf_t bwdFltPref;
-	if (lErr = cudnnGetConvolutionBackwardFilterAlgorithm_v7(cudnn, bottom, top, conv, filter, 1, &nAlgCount, &bwdFltPref))
+	cudnnConvolutionBwdFilterAlgoPerf_t bwdFltPref[5];
+	if (lErr = cudnnGetConvolutionBackwardFilterAlgorithm_v7(cudnn, bottom, top, conv, filter, 5, &nAlgCount, bwdFltPref))
 		return lErr;
 
-	algoBwdFilter = bwdFltPref.algo;
+	if (lWsLimitInBytes == (((size_t)-1) / 2 + 1) || lWsLimitInBytes >= (SIZE_MAX - 10))
+	{
+		algoBwdFilter = bwdFltPref[0].algo;
+	}
+	else
+	{
+		int nIdx = 0;
+		while (bwdFltPref[nIdx].memory > lWsLimitInBytes && nIdx < 5 && nIdx < nAlgCount)
+		{
+			nIdx++;
+		}
+
+		algoBwdFilter = bwdFltPref[nIdx].algo;
+	}
 #else
 	if (lErr = cudnnGetConvolutionBackwardFilterAlgorithm(cudnn, bottom, top, conv, filter, bwdFltPref, lWsLimitInBytes, &algoBwdFilter))
 		return lErr | ERROR_CUDNN_OFFSET;
@@ -818,11 +844,24 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 	// Choose backward data algorithm.
 	cudnnConvolutionBwdDataAlgo_t algoBwdData;
 #ifdef CUDA11_0
-	cudnnConvolutionBwdDataAlgoPerf_t bwdDataPref;
-	if (lErr = cudnnGetConvolutionBackwardDataAlgorithm_v7(cudnn, filter, top, conv, bottom, 1, &nAlgCount, &bwdDataPref))
+	cudnnConvolutionBwdDataAlgoPerf_t bwdDataPref[5];
+	if (lErr = cudnnGetConvolutionBackwardDataAlgorithm_v7(cudnn, filter, top, conv, bottom, 5, &nAlgCount, bwdDataPref))
 		return lErr;
 
-	algoBwdData = bwdDataPref.algo;
+	if (lWsLimitInBytes == (((size_t)-1) / 2 + 1) || lWsLimitInBytes >= (SIZE_MAX - 10))
+	{
+		algoBwdData = bwdDataPref[0].algo;
+	}
+	else
+	{
+		int nIdx = 0;
+		while (bwdDataPref[nIdx].memory > lWsLimitInBytes && nIdx < 5 && nIdx < nAlgCount)
+		{
+			nIdx++;
+		}
+
+		algoBwdData = bwdDataPref[nIdx].algo;
+	}
 #else
 	if (lErr = cudnnGetConvolutionBackwardDataAlgorithm(cudnn, filter, top, conv, bottom, bwdDataPref, lWsLimitInBytes, &algoBwdData))
 		return lErr | ERROR_CUDNN_OFFSET;
