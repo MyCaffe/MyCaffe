@@ -186,6 +186,26 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestReadLoadOnDemandNoCache()
+        {
+            DataLayerTest test = new DataLayerTest();
+
+            try
+            {
+                foreach (IDataLayerTest t in test.Tests)
+                {
+                    bool unique_pixels = false;
+                    t.Fill(unique_pixels);
+                    t.TestRead(IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestSkipLoadAll()
         {
             DataLayerTest test = new DataLayerTest();

@@ -144,7 +144,11 @@ namespace MyCaffe.basecode
         /// <summary>
         /// Load the image as they are queried AND start the background loading at the same time.
         /// </summary>
-        LOAD_ON_DEMAND_BACKGROUND
+        LOAD_ON_DEMAND_BACKGROUND,
+        /// <summary>
+        /// Load the images on demand, but do not cache the images - this option loads images from disk as needed and does not cache them thus saving memory use.
+        /// </summary>
+        LOAD_ON_DEMAND_NOCACHE
     }
 
     /// <summary>

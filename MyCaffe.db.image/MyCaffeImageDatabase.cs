@@ -779,7 +779,7 @@ namespace MyCaffe.db.image
                     sd = lblSet.GetImage(0, imageSelectionMethod);
             }
            
-            if (m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND && (imageSelectionMethod & IMGDB_IMAGE_SELECTION_METHOD.PAIR) == IMGDB_IMAGE_SELECTION_METHOD.PAIR)
+            if ((m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND || m_loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE) && (imageSelectionMethod & IMGDB_IMAGE_SELECTION_METHOD.PAIR) == IMGDB_IMAGE_SELECTION_METHOD.PAIR)
                 throw new Exception("PAIR selection is not supported whith the LOAD_ON_DEMAND loading method.");
 
             if (sd == null)

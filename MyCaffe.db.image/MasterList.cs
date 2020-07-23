@@ -519,7 +519,7 @@ namespace MyCaffe.db.image
                 }
                 else
                 {
-                    if (!m_evtRunning.WaitOne(0) && (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND))
+                    if (!m_evtRunning.WaitOne(0) && (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND && loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE))
                         Load((loadMethod == IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_BACKGROUND) ? true : false);
 
                     sd = directLoadImage(nIdx);

@@ -247,7 +247,7 @@ namespace MyCaffe.db.image
                     if (log != null)
                         log.WriteLine("WARNING: Could not find any images with " + strType + " Source = '" + src.Name + "'.  If this is a training dataset, you will need to enable the 'UseTrainingSrcForTesting' setting.");
 
-                    if (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND)
+                    if (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND && loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE)
                     {
                         if (log != null)
                             log.WriteLine("Because there are no images in this set, the image loading method has been changed to LOAD_ON_DEMAND for this dataset.");
@@ -264,7 +264,7 @@ namespace MyCaffe.db.image
                 if (OnCalculateImageMean != null)
                     imgset.OnCalculateImageMean += OnCalculateImageMean;
 
-                if (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND)
+                if (loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND && loadMethod != IMAGEDB_LOAD_METHOD.LOAD_ON_DEMAND_NOCACHE)
                 {
                     bool bDataIsReal = src.IsRealData;
                     int nBatchSize = 20000;
