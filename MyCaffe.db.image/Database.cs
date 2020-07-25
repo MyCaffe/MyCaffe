@@ -1514,6 +1514,35 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Update the label value of a label.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the source ID.</param>
+        /// <param name="nIdx">Specifies the ID of the label.</param>
+        /// <param name="nLabel">Specifies the new label value.</param>
+        public void UpdateActiveLabelByIndex(int nSrcId, int nIdx, int nLabel)
+        {
+            string strCmd = "UPDATE [dbo].[RawImages] SET [ActiveLabel] = " + nLabel.ToString() + ",[Active] = 1";
+            strCmd += " WHERE ([SourceID] = " + nSrcId.ToString() + ") AND ([Idx] = " + nIdx.ToString() + ")";
+
+            m_entities.Database.ExecuteSqlCommand(strCmd);
+        }
+
+        /// <summary>
+        /// Activate/deactivate a raw image based on its index.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the source ID.</param>
+        /// <param name="nIdx">Specifies the ID of the label.</param>
+        /// <param name="bActive">Specifies the new active state to set.</param>
+        public void ActivateRawImageByIndex(int nSrcId, int nIdx, bool bActive)
+        {
+            string strCmd = "UPDATE [dbo].[RawImages] SET [Active] = " + ((bActive) ? "1" : "0");
+            strCmd += " WHERE ([SourceID] = " + nSrcId.ToString() + ") AND ([Idx] = " + nIdx.ToString() + ")";
+
+            m_entities.Database.ExecuteSqlCommand(strCmd);
+        }
+
+
+        /// <summary>
         /// Directly update the active label and activate the image with the specified ID.
         /// </summary>
         /// <param name="nID">Specifies the image ID.</param>
@@ -2371,7 +2400,7 @@ namespace MyCaffe.db.image
                         if (nVal < 0)
                         {
                             nVal = Math.Abs(nVal);
-                            strCmd2 += " AND ActiveBoost == " + nVal.ToString();
+                            strCmd2 += " AND ActiveBoost = " + nVal.ToString();
                         }
                         else
                         {
@@ -2570,8 +2599,9 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nImageID">Specifies the ID of the image to activate/deactivate.</param>
         /// <param name="bActivate">Specifies whether to activate (<i>true</i>) or deactivate (<i>false</i>) the image.</param>
+        /// <param name="bSave">Specifies whether or not to save the changes (when false, calling SaveChanges() is needed).</param>
         /// <returns>If the active state is changed, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
-        public bool ActivateRawImage(int nImageID, bool bActivate)
+        public bool ActivateRawImage(int nImageID, bool bActivate, bool bSave = true)
         {
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
@@ -2583,7 +2613,9 @@ namespace MyCaffe.db.image
                     return false;
 
                 rgImg[0].Active = bActivate;
-                entities.SaveChanges();
+
+                if (bSave)
+                    entities.SaveChanges();
             }
 
             return true;

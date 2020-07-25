@@ -763,6 +763,25 @@ namespace MyCaffe.db.image
             m_db.UpdateActiveLabelDirect(nID, nLabel);
         }
 
+        /// <summary>
+        /// Update the active label on a given raw image by its index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the raw image index.</param>
+        /// <param name="nNewActiveLabel">Specifies the new active label.</param>
+        public void UpdateActiveLabelByIndex(int nIdx, int nNewActiveLabel)
+        {
+            m_db.UpdateActiveLabelByIndex(m_openSource.ID, nIdx, nNewActiveLabel);
+        }
+
+        /// <summary>
+        /// Activate/deactivate a raw image based on its index.
+        /// </summary>
+        /// <param name="nIdx">Specifies the raw image index.</param>
+        /// <param name="bActive">Specifies the new active state of the image to set.</param>
+        public void ActivateRawImageByIndex(int nIdx, bool bActive)
+        {
+            m_db.ActivateRawImageByIndex(m_openSource.ID, nIdx, bActive);
+        }
 
         /// <summary>
         /// Change the source ID on an image to another source ID.
@@ -779,10 +798,11 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nImageID">Specifies the ID of the image to activate/deactivate.</param>
         /// <param name="bActive">Specifies whether to activate (<i>true</i>) or deactivate (<i>false</i>) the image.</param>
+        /// <param name="bSave">Specifies whether or not to save the changes (when false, calling SaveChanges() is needed).</param>
         /// <returns>If the active state is changed, <i>true</i> is returned, otherwise <i>false</i> is returned.</returns>
-        public bool ActivateRawImage(int nImageID, bool bActive)
+        public bool ActivateRawImage(int nImageID, bool bActive, bool bSave = true)
         {
-            return m_db.ActivateRawImage(nImageID, bActive);
+            return m_db.ActivateRawImage(nImageID, bActive, bSave);
         }
 
         /// <summary>
