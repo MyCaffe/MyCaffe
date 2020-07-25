@@ -659,11 +659,19 @@ namespace MyCaffe.db.image
             {
                 lock (m_objSync)
                 {
-                    int nIdx = m_random.Next(m_rgItems.Count);
+                    int nCount = m_rgItems.Count;
+                    if (nCount == 0)
+                        return null;
+
+                    int nIdx = m_random.Next(nCount);
                     if (m_rgItems[nIdx] == null)
                     {
                         m_rgItems.RemoveAt(nIdx);
-                        nIdx = m_random.Next(m_rgItems.Count);
+                        nCount = m_rgItems.Count;
+                        if (nCount == 0)
+                            return null;
+
+                        nIdx = m_random.Next(nCount);
                     }
 
                     int nFinalIdx = m_rgItems[nIdx].Index;
