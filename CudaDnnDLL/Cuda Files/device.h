@@ -298,6 +298,8 @@ class Device
 		long cuda_copy_sim(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_copy_fill(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_sort(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_copy_batch(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_copy_sequence(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long cuda_gemm(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_gemm2(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -4381,5 +4383,90 @@ inline long Device<T>::cuda_sort(long lInput, T* pfInput, long* plOutput, T** pp
 
 	return m_math.sort(nCount, hY);
 }
+
+template <class T>
+inline long Device<T>::cuda_copy_batch(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 13, 13))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	int nNum = (int)pfInput[1];
+	int nDim = (int)pfInput[2];
+	long hSrcData = (long)pfInput[3];
+	long hSrcLbl = (long)pfInput[4];
+	int nDstCount = (int)pfInput[5];
+	long hDstCache = (long)pfInput[6];
+	long hWorkDevData = (long)pfInput[7];
+	int nLabelStart = (int)pfInput[8];
+	int nLabelCount = (int)pfInput[9];
+	int nCacheSize = (int)pfInput[10];
+	long hCacheHostCursors = (long)pfInput[11];
+	long hWorkHostData = (long)pfInput[12];
+
+	return m_math.copy_batch(n, nNum, nDim, hSrcData, hSrcLbl, nDstCount, hDstCache, hWorkDevData, nLabelStart, nLabelCount, nCacheSize, hCacheHostCursors, hWorkHostData);
+}
+
+template <class T>
+inline long Device<T>::cuda_copy_sequence(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 14 + (2 * 2), 14 + (12 * 2)))
+		return lErr;
+
+	int nK = (int)pfInput[0];
+	int nNum = (int)pfInput[1];
+	int nDim = (int)pfInput[2];
+	long hSrcData = (long)pfInput[3];
+	long hSrcLabel = (long)pfInput[4];
+	int nSrcCacheCount = (int)pfInput[5];
+	long hSrcCache = (long)pfInput[6];
+	int nLabelStart = (int)pfInput[7];
+	int nLabelCount = (int)pfInput[8];
+	int nCacheSize = (int)pfInput[9];
+	long hCacheHostCursors = (long)pfInput[10];
+	bool bOutputLabels = (pfInput[11] == 1) ? true : false;
+	long hWorkHostData = (long)pfInput[12];
+	int nRandomSeed = (int)pfInput[13];
+
+	int nTopCount = 2 + nK;
+	if (bOutputLabels)
+		nTopCount++;
+
+	long* rghTop = (long*)malloc(sizeof(long) * nTopCount);
+	if (rghTop == NULL)
+		return ERROR_MEMORY_OUT;
+
+	int* rgnTopCounts = (int*)malloc(sizeof(int) * nTopCount);
+	if (rghTop == NULL)
+	{
+		free(rghTop);
+		return ERROR_MEMORY_OUT;
+	}
+
+	int nIdx = 14;
+	for (int i = 0; i < nTopCount; i++)
+	{
+		rghTop[i] = (long)pfInput[nIdx];
+		nIdx++;
+	}
+
+	for (int i = 0; i < nTopCount; i++)
+	{
+		rgnTopCounts[i] = (int)pfInput[nIdx];
+		nIdx++;
+	}
+
+	lErr = m_math.copy_sequence(nK, nNum, nDim, hSrcData, hSrcLabel, nSrcCacheCount, hSrcCache, nLabelStart, nLabelCount, nCacheSize, hCacheHostCursors, bOutputLabels, nTopCount, rghTop, rgnTopCounts, hWorkHostData, nRandomSeed);
+
+	free(rghTop);
+	free(rgnTopCounts);
+
+	return lErr;
+}
+
 
 #endif // __DEVICE_CU__

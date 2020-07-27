@@ -422,6 +422,12 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_SORT:
 			return m_device.cuda_sort(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_COPY_BATCH:
+			return m_device.cuda_copy_batch(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_COPY_SEQUENCE:
+			return m_device.cuda_copy_sequence(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_GEMM:
 			return m_device.cuda_gemm(lCount, pfInput, plCount, ppfOutput);
 
@@ -1307,6 +1313,12 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_SORT:
 		return "CUDA_FN_SORT";
+
+	case CUDA_FN_COPY_BATCH:
+		return "CUDA_FN_COPY_BATCH";
+
+	case CUDA_FN_COPY_SEQUENCE:
+		return "CUDA_FN_COPY_SEQUENCE";
 
 	case CUDA_FN_GEMM:
 		return "CUDA_FN_GEMM";

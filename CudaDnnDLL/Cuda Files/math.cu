@@ -632,6 +632,351 @@ template long Math<float>::copy_fill(int n, int nDim, long hSrc, int nSrcOff, in
 
 
 template <class T>
+long Math<T>::copy_batch(int n, int nNum, int nDim, long hSrcData, long hSrcLabel, int nDstCount, long hDstCache, long hWorkDevData, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, long hWorkHostData)
+{
+	LONG lErr;
+	MemoryItem* pSrcData;
+	MemoryItem* pSrcLabel;
+	MemoryItem* pDstCache;
+	MemoryItem* pDstWork;
+
+	if (lErr = m_pMemCol->GetData(hSrcData, &pSrcData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hSrcLabel, &pSrcLabel))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hDstCache, &pDstCache))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hWorkDevData, &pDstWork))
+		return lErr;
+
+	HostBuffer<T>* pCacheCursors = m_pMem->GetHostBuffer(hCacheHostCursors);
+	if (pCacheCursors == NULL)
+		return ERROR_MEMORY_OUT;
+
+	HostBuffer<T>* pWorkData = m_pMem->GetHostBuffer(hWorkHostData);
+	if (pWorkData == NULL)
+		return ERROR_MEMORY_OUT;
+
+	T* cursors = (T*)pCacheCursors->Data();
+	T* srcdata = (T*)pSrcData->Data();
+	T* srclbl = (T*)pSrcLabel->Data();
+	T* dstCache = (T*)pDstCache->Data();
+	T* dstWork = (T*)pDstWork->Data();
+
+	// First count the number of items for each label.
+	// - use the first portion of the host cursors for this
+	// as they are only used during copy_sequence.
+	// (the second half contains the total active count of each
+	//  label cache as cursors_host length = nLabelCount * 2.
+	if (pWorkData->Count() < nNum)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	T* labels = (T*)pWorkData->Data();
+	if (lErr = cudaMemcpy(labels, srclbl, nNum * sizeof(T), cudaMemcpyDeviceToHost))
+		return lErr;
+
+	memset(cursors, 0, sizeof(T) * nLabelCount);
+
+	for (int i = 0; i < nNum; i++)
+	{
+		int nLabel = (int)labels[i];
+		cursors[nLabel - nLabelStart] += 1;
+	}
+
+	// Next shift each portion of each label cache
+	// making room for the new items.
+	for (int i = 0; i < nLabelCount; i++)
+	{
+		int nCount = cursors[nLabelCount + i];
+
+		if (nCount > 0)
+		{
+			int nLabelOffset = i * nCacheSize * nDim;
+			int nDataCount = (int)cursors[i];
+			int nMoveCount = nCacheSize - nDataCount;
+
+			T* dst = dstCache + nLabelOffset;
+			if (lErr = cudaMemcpy(dstWork, dst, sizeof(T) * nMoveCount * nDim, cudaMemcpyDeviceToDevice))
+				return lErr;
+
+			dst = dstCache + nLabelOffset + (nDataCount * nDim);
+			if (lErr = cudaMemcpy(dst, dstWork, sizeof(T) * nMoveCount * nDim, cudaMemcpyDeviceToDevice))
+				return lErr;
+		}
+	}
+
+	// And lastly copy the current batch into the new cache area
+	// at the top of each label cache.
+	memset(cursors, 0, sizeof(T) * nLabelCount);
+
+	for (int i = 0; i < nNum; i++)
+	{
+		int nLabel = (int)labels[i];
+		int nLabelOffset = (nLabel - nLabelStart);
+
+		T* dst = dstCache + (nLabelOffset * nCacheSize * nDim) + ((int)cursors[nLabelOffset] * nDim);
+		T* src = srcdata + (i * nDim);
+		if (lErr = cudaMemcpy(dst, src, sizeof(T) * nDim, cudaMemcpyDeviceToDevice))
+			return lErr;
+
+		cursors[nLabelOffset] += 1;
+
+		if (cursors[nLabelCount + nLabelOffset] < nCacheSize)
+			cursors[nLabelCount + nLabelOffset] += 1;
+	}
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::copy_batch(int n, int nNum, int nDim, long hSrcData, long hSrcLabel, int nDstCount, long hDstCache, long hWorkDevData, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, long hWorkHostData);
+template long Math<float>::copy_batch(int n, int nNum, int nDim, long hSrcData, long hSrcLabel, int nDstCount, long hDstCache, long hWorkDevData, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, long hWorkHostData);
+
+
+template <class T>
+long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLabel, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, int nTopCount, long* rghTop, int* rgnTopCount, long hWorkHostData, int nRandomSeed)
+{
+	LONG lErr;
+	MemoryItem* pSrcData;
+	MemoryItem* pSrcCache;
+
+	if (nRandomSeed > 0)
+		srand((unsigned int)nRandomSeed);
+
+	if (lErr = m_pMemCol->GetData(hSrcData, &pSrcData))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hSrcCache, &pSrcCache))
+		return lErr;
+
+	HostBuffer<T>* pCacheCursors = m_pMem->GetHostBuffer(hCacheHostCursors);
+	if (pCacheCursors == NULL)
+		return ERROR_MEMORY_OUT;
+
+	HostBuffer<T>* pWorkData = m_pMem->GetHostBuffer(hWorkHostData);
+	if (pWorkData == NULL)
+		return ERROR_MEMORY_OUT;
+
+	T* cursors = (T*)pCacheCursors->Data();
+	T* srcdata = (T*)pSrcData->Data();
+	T* srccache = (T*)pSrcCache->Data();
+
+
+	// Get the anchor items.
+	MemoryItem* pAnchor;
+	if (lErr = m_pMemCol->GetData(rghTop[0], &pAnchor))
+		return lErr;
+
+	T* anchors = (T*)pAnchor->Data();
+	T* labels_out = NULL;
+
+	if (bOutputLabels)
+	{
+		MemoryItem* pLabels;
+		if (lErr = m_pMemCol->GetData(rghTop[nTopCount - 1], &pLabels))
+			return lErr;
+
+		labels_out = (T*)pLabels->Data();
+		nTopCount--;
+	}
+
+	// Get the positive and first negative items.
+	T* positives = NULL;
+	T* negatives = NULL;
+	if (nK > 0)
+	{
+		MemoryItem* pPositive;
+		if (lErr = m_pMemCol->GetData(rghTop[1], &pPositive))
+			return lErr;
+
+		positives = (T*)pPositive->Data();
+
+		MemoryItem* pNegative;
+		if (lErr = m_pMemCol->GetData(rghTop[2], &pNegative))
+			return lErr;
+
+		negatives = (T*)pNegative->Data();
+	}
+	else
+	{
+		MemoryItem* pNegative;
+		if (lErr = m_pMemCol->GetData(rghTop[1], &pNegative))
+			return lErr;
+
+		negatives = (T*)pNegative->Data();
+	}
+
+	if (pWorkData->Count() < nNum)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	// Copy the src data to the top[0] for the anchors
+	if (lErr = cudaMemcpy(anchors, srcdata, sizeof(T) * (nNum * nDim), cudaMemcpyDeviceToDevice))
+		return lErr;
+
+	// Get the labels loaded in 'copy_batch'.
+	T* labels = (T*)pWorkData->Data();
+
+	// Get the positives
+	if (positives != NULL)
+	{
+		memset(cursors, 0, sizeof(T) * nLabelCount);
+
+		for (int i = 0; i < nNum; i++)
+		{
+			int nLabel = (int)labels[i];
+			int nLabelOffset = nLabel - nLabelStart;
+
+			// Find a labeled item with the same label but different data.
+			int nCacheCount = cursors[nLabelCount + nLabelOffset];
+			if (nCacheCount == 0)
+				return ERROR_PARAM_OUT_OF_RANGE;
+
+			int nLabelIdx = cursors[nLabelOffset];
+
+			// The current cursor points to the data of the anchor, so
+			// we want to find a data other than the anchor with the same
+			// label.
+			int nRetries = 0;
+			while (nLabelIdx == cursors[nLabelOffset] && nRetries < 10)
+			{
+				double dfRand = (double)rand() / (double)RAND_MAX;
+				nLabelIdx = (int)round((nCacheCount - 1) * dfRand);
+				nRetries++;
+			}
+
+			if (nLabelIdx == cursors[nLabelOffset])
+				return ERROR_PARAM_OUT_OF_RANGE;
+
+			T* src = srccache + (nLabelOffset * nCacheSize * nDim) + (nLabelIdx * nDim);
+			if (lErr = cudaMemcpy(positives + (i * nDim), src, sizeof(T) * nDim, cudaMemcpyDeviceToDevice))
+				return lErr;
+
+			if (labels_out != NULL)
+			{
+				T* dst = labels_out + (i * nTopCount);
+				T fSrc = T(nLabel);
+				if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
+					return lErr;
+
+				dst = labels_out + (i * nTopCount) + 1;
+				fSrc = T(nLabelOffset + nLabelStart);
+				if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
+					return lErr;
+			}
+
+			cursors[nLabelOffset]++;
+		}
+	}
+
+	// Get the first negative
+	memset(cursors, 0, sizeof(T) * nLabelCount);
+
+	for (int i = 0; i < nNum; i++)
+	{
+		int nLabel = (int)labels[i];
+
+		// Find a label other than the anchor label.
+		int nLabelOffset = nLabel - nLabelStart;
+		int nRetries = 0;
+		while (nLabelOffset == (nLabel - nLabelStart) && nRetries < 10)
+		{
+			double dfRand = (double)rand() / (double)RAND_MAX;
+			nLabelOffset = (int)round((nLabelCount - 1) * dfRand);
+			nRetries++;
+		}
+
+		if (nLabelOffset == (nLabel - nLabelStart))
+			return ERROR_PARAM_OUT_OF_RANGE;
+
+		// Find a labeled item with the different label.
+		int nCacheCount = cursors[nLabelCount + nLabelOffset];
+		if (nCacheCount == 0)
+			return ERROR_PARAM_OUT_OF_RANGE;
+
+		double dfRand = (double)rand() / (double)RAND_MAX;
+		int nLabelIdx = (int)round((nCacheCount - 1) * dfRand);
+
+		T* src = srccache + (nLabelOffset * nCacheSize * nDim) + (nLabelIdx * nDim);
+		if (lErr = cudaMemcpy(negatives + (i * nDim), src, sizeof(T) * nDim, cudaMemcpyDeviceToDevice))
+			return lErr;
+
+		if (labels_out != NULL)
+		{
+			T* dst = labels_out + (i * nTopCount);
+			T fSrc = T(nLabel);
+			if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
+				return lErr;
+
+			dst = labels_out + (i * nTopCount) + 1 + ((positives != NULL) ? 1 : 0);
+			fSrc = T(nLabelOffset + nLabelStart);
+			if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
+				return lErr;
+		}
+
+		cursors[nLabelOffset]++;
+	}
+
+	// Get the remaining negatives (if any)
+	for (int k = 1; k < nK; k++)
+	{
+		for (int i = 0; i < nNum; i++)
+		{
+			int nLabel = (int)labels[i];
+
+			// Find a label other than the anchor label.
+			int nLabelOffset = nLabel - nLabelStart;
+			int nRetries = 0;
+			while (nLabelOffset == (nLabel - nLabelStart) && nRetries < 10)
+			{
+				double dfRand = (double)rand() / (double)RAND_MAX;
+				nLabelOffset = (int)round((nLabelCount - 1) * dfRand);
+				nRetries++;
+			}
+
+			if (nLabelOffset == (nLabel - nLabelStart))
+				return ERROR_PARAM_OUT_OF_RANGE;
+
+			// Find a labeled item with the different label.
+			int nCacheCount = cursors[nLabelCount + nLabelOffset];
+			if (nCacheCount == 0)
+				return ERROR_PARAM_OUT_OF_RANGE;
+
+			double dfRand = (double)rand() / (double)RAND_MAX;
+			int nLabelIdx = (int)round((nCacheCount - 1) * dfRand);
+
+			T* src = srccache + (nLabelOffset * nCacheSize * nDim) + (nLabelIdx * nDim);
+
+			MemoryItem* pNegative1;
+			if (lErr = m_pMemCol->GetData(rghTop[2 + k], &pNegative1))
+				return lErr;
+
+			T* negatives1 = (T*)pNegative1->Data();
+
+			if (lErr = cudaMemcpy(negatives1 + (i * nDim), src, sizeof(T) * nDim, cudaMemcpyDeviceToDevice))
+				return lErr;
+
+			if (labels_out != NULL)
+			{
+				T* dst = labels_out + (i * nTopCount) + 2 + k;
+				T fSrc = T(nLabelOffset + nLabelStart);
+				if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
+					return lErr;
+			}
+
+			cursors[nLabelOffset]++;
+		}
+	}
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLabel, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, int nTopCount, long* rghTop, int* rgnTopCount, long hWorkHostData, int nRandomSeed);
+template long Math<float>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLabel, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, int nTopCount, long* rghTop, int* rgnTopCount, long hWorkHostData, int nRandomSeed);
+
+
+template <class T>
 long Math<T>::sort(int nCount, long hY)
 {
 	LONG lErr;
