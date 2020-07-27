@@ -867,6 +867,8 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 			}
 
 			cursors[nLabelOffset]++;
+			if (cursors[nLabelOffset] == cursors[nLabelCount + nLabelOffset])
+				cursors[nLabelOffset] = 0;
 		}
 	}
 
@@ -891,12 +893,7 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 			return ERROR_PARAM_OUT_OF_RANGE;
 
 		// Find a labeled item with the different label.
-		int nCacheCount = cursors[nLabelCount + nLabelOffset];
-		if (nCacheCount == 0)
-			return ERROR_PARAM_OUT_OF_RANGE;
-
-		double dfRand = (double)rand() / (double)RAND_MAX;
-		int nLabelIdx = (int)round((nCacheCount - 1) * dfRand);
+		int nLabelIdx = cursors[nLabelOffset];
 
 		T* src = srccache + (nLabelOffset * nCacheSize * nDim) + (nLabelIdx * nDim);
 		if (lErr = cudaMemcpy(negatives + (i * nDim), src, sizeof(T) * nDim, cudaMemcpyDeviceToDevice))
@@ -916,6 +913,8 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 		}
 
 		cursors[nLabelOffset]++;
+		if (cursors[nLabelOffset] == cursors[nLabelCount + nLabelOffset])
+			cursors[nLabelOffset] = 0;
 	}
 
 	// Get the remaining negatives (if any)
@@ -939,12 +938,7 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 				return ERROR_PARAM_OUT_OF_RANGE;
 
 			// Find a labeled item with the different label.
-			int nCacheCount = cursors[nLabelCount + nLabelOffset];
-			if (nCacheCount == 0)
-				return ERROR_PARAM_OUT_OF_RANGE;
-
-			double dfRand = (double)rand() / (double)RAND_MAX;
-			int nLabelIdx = (int)round((nCacheCount - 1) * dfRand);
+			int nLabelIdx = cursors[nLabelOffset];
 
 			T* src = srccache + (nLabelOffset * nCacheSize * nDim) + (nLabelIdx * nDim);
 
@@ -966,6 +960,8 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 			}
 
 			cursors[nLabelOffset]++;
+			if (cursors[nLabelOffset] == cursors[nLabelCount + nLabelOffset])
+				cursors[nLabelOffset] = 0;
 		}
 	}
 
