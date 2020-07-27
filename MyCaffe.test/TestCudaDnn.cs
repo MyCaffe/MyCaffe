@@ -2862,6 +2862,79 @@ namespace MyCaffe.test
                 test.Dispose();
             }
         }
+
+        [TestMethod]
+        public void TestCopyBatch()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITestCudaDnn t in test.Tests)
+                {
+                    t.TestCopyBatch();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCopySequenceK0()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITestCudaDnn t in test.Tests)
+                {
+                    t.TestCopySequenceK0();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+
+        [TestMethod]
+        public void TestCopySequenceK1()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITestCudaDnn t in test.Tests)
+                {
+                    t.TestCopySequenceK1();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestCopySequenceK2()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITestCudaDnn t in test.Tests)
+                {
+                    t.TestCopySequenceK2();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
     }
 
     public interface ITestCudaDnn : ITest
@@ -2878,6 +2951,10 @@ namespace MyCaffe.test
         void TestMatrixMeanStdev();
         void TestMatrixCorrelation1();
         void TestMatrixCorrelation2();
+        void TestCopyBatch();
+        void TestCopySequenceK0();
+        void TestCopySequenceK1();
+        void TestCopySequenceK2();
     }
 
     class CudaDnnTest : TestBase
@@ -2905,6 +2982,8 @@ namespace MyCaffe.test
         Blob<T> m_x = null;
         Blob<T> m_y = null;
         int m_nOriginalDeviceID = 0;
+        long m_hCursors = 0;
+        long m_hWork = 0;
 
         public CudaDnnTest(string strName, int nDeviceID, EngineParameter.Engine engine)
             : base(strName, null, nDeviceID)
@@ -2956,6 +3035,18 @@ namespace MyCaffe.test
             {
                 m_y.Dispose();
                 m_y = null;
+            }
+
+            if (m_hCursors != 0)
+            {
+                m_cuda.FreeHostBuffer(m_hCursors);
+                m_hCursors = 0;
+            }
+
+            if (m_hWork != 0)
+            {
+                m_cuda.FreeHostBuffer(m_hWork);
+                m_hWork = 0;
             }
             
             base.dispose();
@@ -3749,6 +3840,393 @@ namespace MyCaffe.test
             }
 
             return rgRowCor;
+        }
+
+        public void TestCopyBatch()
+        {
+            int nCacheSize = 4;
+
+            double[] rgSrcData = new double[] { 1, 2, 11, 12, 21, 22, 31, 32, 41, 42 }; // 5 x 2 x 1
+            double[] rgSrcLabel = new double[] { 1, 2, 3, 2, 1 };
+
+            m_A = new Blob<T>(m_cuda, m_log, new List<int>() { 5, 2 });
+            m_B = new Blob<T>(m_cuda, m_log, new List<int>() { 5 });
+            m_C = new Blob<T>(m_cuda, m_log, new List<int>() { 3, nCacheSize, 2 });
+
+            m_A.mutable_cpu_data = convert(rgSrcData);
+            m_B.mutable_cpu_data = convert(rgSrcLabel);
+
+            m_hCursors = m_cuda.AllocHostBuffer(3 * 2);
+            m_hWork = m_cuda.AllocHostBuffer(5);
+
+            m_cuda.copy_batch(10, 5, 2, m_A.gpu_data, m_B.gpu_data, m_C.count(), m_C.mutable_gpu_data, m_C.mutable_gpu_diff, 1, 3, nCacheSize, m_hCursors, m_hWork);
+
+            double[] rgDst = convert(m_C.mutable_cpu_data);
+
+            m_log.CHECK_EQ(rgDst.Length, nCacheSize * 3 * 2, "The dst cache size is incorrect!");
+
+            // Label 1
+            m_log.CHECK_EQ(rgDst[0], 1, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[1], 2, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[2], 41, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[3], 42, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[4], 0, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[5], 0, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[6], 0, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[7], 0, "data incorrect!");
+
+            // Label 2
+            m_log.CHECK_EQ(rgDst[8 + 0], 11, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 1], 12, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 2], 31, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 3], 32, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 4], 0, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 5], 0, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 6], 0, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 7], 0, "data incorrect!");
+
+            // Label 3
+            m_log.CHECK_EQ(rgDst[16 + 0], 21, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 1], 22, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 2], 0, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 3], 0, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 4], 0, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 5], 0, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 6], 0, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 7], 0, "data incorrect!");
+
+            double[] rgSrcData1 = new double[] { 51, 52, 61, 62, 71, 72, 81, 82, 91, 92 }; // 5 x 2 x 1
+            double[] rgSrcLabel1 = new double[] { 1, 1, 3, 2, 1 };
+
+            m_A.SetData(convert(rgSrcData1));
+            m_B.SetData(convert(rgSrcLabel1));
+
+            m_cuda.copy_batch(10, 5, 2, m_A.gpu_data, m_B.gpu_data, m_C.count(), m_C.mutable_gpu_data, m_C.mutable_gpu_diff, 1, 3, nCacheSize, m_hCursors, m_hWork);
+
+            rgDst = convert(m_C.mutable_cpu_data);
+
+            // Label 1
+            m_log.CHECK_EQ(rgDst[0], 51, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[1], 52, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[2], 61, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[3], 62, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[4], 91, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[5], 92, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[6], 1, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[7], 2, "data incorrect!");
+
+            // Label 2
+            m_log.CHECK_EQ(rgDst[8 + 0], 81, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 1], 82, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 2], 11, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 3], 12, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 4], 31, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 5], 32, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 6], 0, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 7], 0, "data incorrect!");
+
+            // Label 3
+            m_log.CHECK_EQ(rgDst[16 + 0], 71, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 1], 72, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 2], 21, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 3], 22, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 4], 0, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 5], 0, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 6], 0, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 7], 0, "data incorrect!");
+
+            double[] rgSrcData2 = new double[] { 1, 2, 11, 12, 21, 22, 31, 32, 41, 42 }; // 5 x 2 x 1
+            double[] rgSrcLabel2 = new double[] { 1, 2, 3, 2, 1 };
+
+            m_A.SetData(convert(rgSrcData2));
+            m_B.SetData(convert(rgSrcLabel2));
+
+            m_cuda.copy_batch(10, 5, 2, m_A.gpu_data, m_B.gpu_data, m_C.count(), m_C.mutable_gpu_data, m_C.mutable_gpu_diff, 1, 3, nCacheSize, m_hCursors, m_hWork);
+
+            rgDst = convert(m_C.mutable_cpu_data);
+
+            // Label 1
+            m_log.CHECK_EQ(rgDst[0], 1, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[1], 2, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[2], 41, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[3], 42, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[4], 51, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[5], 52, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[6], 61, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[7], 62, "data incorrect!");
+
+            // Label 2
+            m_log.CHECK_EQ(rgDst[8 + 0], 11, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 1], 12, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 2], 31, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 3], 32, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 4], 81, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 5], 82, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 6], 11, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[8 + 7], 12, "data incorrect!");
+
+            // Label 3
+            m_log.CHECK_EQ(rgDst[16 + 0], 21, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 1], 22, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 2], 71, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 3], 72, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 4], 21, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 5], 22, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 6], 0, "data incorrect!");
+            m_log.CHECK_EQ(rgDst[16 + 7], 0, "data incorrect!");
+        }
+
+        public void TestCopySequenceK0()
+        {
+            int nK = 0;
+            int nCacheSize = 4;
+
+            TestCopyBatch();
+
+            double[] rgSrcData = new double[] { 1, 2, 11, 12, 21, 22, 31, 32, 41, 42 }; // 5 x 2 x 1
+            double[] rgSrcLabel = new double[] { 1, 2, 3, 2, 1 };
+
+            m_A = new Blob<T>(m_cuda, m_log, new List<int>() { 5, 2 });
+            m_B = new Blob<T>(m_cuda, m_log, new List<int>() { 5 });
+            m_A.mutable_cpu_data = convert(rgSrcData);
+            m_B.mutable_cpu_data = convert(rgSrcLabel);
+
+            BlobCollection<T> colTop = new BlobCollection<T>();
+            List<int> rgnCount = new List<int>();
+            List<long> rghTop = new List<long>();
+            int nTopCount = 2 + nK;
+
+            for (int i = 0; i < nTopCount; i++)
+            {
+                Blob<T> b = new Blob<T>(m_cuda, m_log, 5, 2, 1, 1);
+                colTop.Add(b);
+                rgnCount.Add(b.count());
+                rghTop.Add(b.mutable_gpu_data);
+            }
+
+            Blob<T> b1 = new Blob<T>(m_cuda, m_log, 5, nTopCount, 1, 1);
+            colTop.Add(b1);
+            rgnCount.Add(b1.count());
+            rghTop.Add(b1.mutable_gpu_data);
+
+            int nNum = 5;
+            int nDim = 2;
+            m_cuda.copy_sequence(nK, nNum, nDim, m_A.gpu_data, m_B.gpu_data, m_C.count(), m_C.gpu_data, 1, 3, nCacheSize, m_hCursors, true, rghTop, rgnCount, m_hWork, 1704);
+
+            double[] rgTop0 = convert(colTop[0].mutable_cpu_data);
+            double[] rgTop1 = convert(colTop[1].mutable_cpu_data);
+            double[] rgTop2 = convert(colTop[2].mutable_cpu_data);
+            double[] rgAnchor = new double[nDim];
+            double[] rgNegative = new double[nDim];
+
+            for (int i = 0; i < nNum; i++)
+            {
+                int nLabel = (int)rgTop2[i * nDim + 0];
+                int nNegative = (int)rgTop2[i * nDim + 1];
+
+                m_log.CHECK_NE(nLabel, nNegative, "The anchor and negative should not be equal!");
+
+                Array.Copy(rgTop0, i * nDim, rgAnchor, 0, nDim);
+                Array.Copy(rgTop1, i * nDim, rgNegative, 0, nDim);
+
+                bool bDifferent = false;
+                for (int j = 0; j < nDim; j++)
+                {
+                    if (rgAnchor[j] != rgNegative[j])
+                        bDifferent = true;
+                }
+
+                m_log.CHECK(bDifferent, "The anchor and negative should have different data!");
+            }
+
+            colTop.Dispose();
+        }
+
+        public void TestCopySequenceK1()
+        {
+            int nK = 1;
+            int nCacheSize = 4;
+
+            TestCopyBatch();
+
+            double[] rgSrcData = new double[] { 1, 2, 11, 12, 21, 22, 31, 32, 41, 42 }; // 5 x 2 x 1
+            double[] rgSrcLabel = new double[] { 1, 2, 3, 2, 1 };
+
+            m_A = new Blob<T>(m_cuda, m_log, new List<int>() { 5, 2 });
+            m_B = new Blob<T>(m_cuda, m_log, new List<int>() { 5 });
+            m_A.mutable_cpu_data = convert(rgSrcData);
+            m_B.mutable_cpu_data = convert(rgSrcLabel);
+
+            BlobCollection<T> colTop = new BlobCollection<T>();
+            List<int> rgnCount = new List<int>();
+            List<long> rghTop = new List<long>();
+            int nTopCount = 2 + nK;
+
+            for (int i = 0; i < nTopCount; i++)
+            {
+                Blob<T> b = new Blob<T>(m_cuda, m_log, 5, 2, 1, 1);
+                colTop.Add(b);
+                rgnCount.Add(b.count());
+                rghTop.Add(b.mutable_gpu_data);
+            }
+
+            Blob<T> b1 = new Blob<T>(m_cuda, m_log, 5, nTopCount, 1, 1);
+            colTop.Add(b1);
+            rgnCount.Add(b1.count());
+            rghTop.Add(b1.mutable_gpu_data);
+
+            int nNum = 5;
+            int nDim = 2;
+            m_cuda.copy_sequence(nK, nNum, nDim, m_A.gpu_data, m_B.gpu_data, m_C.count(), m_C.gpu_data, 1, 3, nCacheSize, m_hCursors, true, rghTop, rgnCount, m_hWork, 1704);
+
+            double[] rgTop0 = convert(colTop[0].mutable_cpu_data);
+            double[] rgTop1 = convert(colTop[1].mutable_cpu_data);
+            double[] rgTop2 = convert(colTop[2].mutable_cpu_data);
+            double[] rgTop3 = convert(colTop[3].mutable_cpu_data);
+            double[] rgAnchor = new double[nDim];
+            double[] rgPositive = new double[nDim];
+            double[] rgNegative = new double[nDim];
+
+            for (int i = 0; i < nNum; i++)
+            {
+                int nLabel = (int)rgTop3[i * 3 + 0];
+                int nPositive = (int)rgTop3[i * 3 + 1];
+                int nNegative = (int)rgTop3[i * 3 + 2];
+
+                m_log.CHECK_EQ(nLabel, nPositive, "The anchor and positive should be equal!");
+                m_log.CHECK_NE(nLabel, nNegative, "The anchor and negative should not be equal!");
+
+                Array.Copy(rgTop0, i * nDim, rgAnchor, 0, nDim);
+                Array.Copy(rgTop1, i * nDim, rgPositive, 0, nDim);
+                Array.Copy(rgTop2, i * nDim, rgNegative, 0, nDim);
+
+                bool bDifferent = false;
+                for (int j = 0; j < nDim; j++)
+                {
+                    if (rgAnchor[j] != rgPositive[j])
+                        bDifferent = true;
+                }
+
+                m_log.CHECK(bDifferent, "The anchor and positive should have different data!");
+
+                bDifferent = false;
+                for (int j = 0; j < nDim; j++)
+                {
+                    if (rgAnchor[j] != rgNegative[j])
+                        bDifferent = true;
+                }
+
+                m_log.CHECK(bDifferent, "The anchor and negative should have different data!");
+            }
+
+            colTop.Dispose();
+        }
+
+        public void TestCopySequenceK2()
+        {
+            int nK = 2;
+            int nCacheSize = 4;
+
+            TestCopyBatch();
+
+            double[] rgSrcData = new double[] { 1, 2, 11, 12, 21, 22, 31, 32, 41, 42 }; // 5 x 2 x 1
+            double[] rgSrcLabel = new double[] { 1, 2, 3, 2, 1 };
+
+            m_A = new Blob<T>(m_cuda, m_log, new List<int>() { 5, 2 });
+            m_B = new Blob<T>(m_cuda, m_log, new List<int>() { 5 });
+            m_A.mutable_cpu_data = convert(rgSrcData);
+            m_B.mutable_cpu_data = convert(rgSrcLabel);
+
+            BlobCollection<T> colTop = new BlobCollection<T>();
+            List<int> rgnCount = new List<int>();
+            List<long> rghTop = new List<long>();
+            int nTopCount = 2 + nK;
+
+            for (int i = 0; i < nTopCount; i++)
+            {
+                Blob<T> b = new Blob<T>(m_cuda, m_log, 5, 2, 1, 1);
+                colTop.Add(b);
+                rgnCount.Add(b.count());
+                rghTop.Add(b.mutable_gpu_data);
+            }
+
+            Blob<T> b1 = new Blob<T>(m_cuda, m_log, 5, nTopCount, 1, 1);
+            colTop.Add(b1);
+            rgnCount.Add(b1.count());
+            rghTop.Add(b1.mutable_gpu_data);
+
+            int nNum = 5;
+            int nDim = 2;
+            m_cuda.copy_sequence(nK, nNum, nDim, m_A.gpu_data, m_B.gpu_data, m_C.count(), m_C.gpu_data, 1, 3, nCacheSize, m_hCursors, true, rghTop, rgnCount, m_hWork, 1704);
+
+            double[] rgTop0 = convert(colTop[0].mutable_cpu_data);
+            double[] rgTop1 = convert(colTop[1].mutable_cpu_data);
+            double[] rgTop2 = convert(colTop[2].mutable_cpu_data);
+            double[] rgTop3 = convert(colTop[3].mutable_cpu_data);
+            double[] rgTop4 = convert(colTop[4].mutable_cpu_data);
+            double[] rgAnchor = new double[nDim];
+            double[] rgPositive = new double[nDim];
+            double[] rgNegative1 = new double[nDim];
+            double[] rgNegative2 = new double[nDim];
+
+            for (int i = 0; i < nNum; i++)
+            {
+                int nLabel = (int)rgTop4[i * 4 + 0];
+                int nPositive = (int)rgTop4[i * 4 + 1];
+                int nNegative1 = (int)rgTop4[i * 4 + 2];
+                int nNegative2 = (int)rgTop4[i * 4 + 3];
+
+                m_log.CHECK_EQ(nLabel, nPositive, "The anchor and positive should be equal!");
+                m_log.CHECK_NE(nLabel, nNegative1, "The anchor and negative1 should not be equal!");
+                m_log.CHECK_NE(nLabel, nNegative2, "The anchor and negative2 should not be equal!");
+
+                Array.Copy(rgTop0, i * nDim, rgAnchor, 0, nDim);
+                Array.Copy(rgTop1, i * nDim, rgPositive, 0, nDim);
+                Array.Copy(rgTop2, i * nDim, rgNegative1, 0, nDim);
+                Array.Copy(rgTop3, i * nDim, rgNegative2, 0, nDim);
+
+                bool bDifferent = false;
+                for (int j = 0; j < nDim; j++)
+                {
+                    if (rgAnchor[j] != rgPositive[j])
+                        bDifferent = true;
+                }
+
+                m_log.CHECK(bDifferent, "The anchor and positive should have different data!");
+
+                bDifferent = false;
+                for (int j = 0; j < nDim; j++)
+                {
+                    if (rgAnchor[j] != rgNegative1[j])
+                        bDifferent = true;
+                }
+
+                m_log.CHECK(bDifferent, "The anchor and negative1 should have different data!");
+
+                bDifferent = false;
+                for (int j = 0; j < nDim; j++)
+                {
+                    if (rgAnchor[j] != rgNegative2[j])
+                        bDifferent = true;
+                }
+
+                m_log.CHECK(bDifferent, "The anchor and negative2 should have different data!");
+
+                bDifferent = false;
+                for (int j = 0; j < nDim; j++)
+                {
+                    if (rgNegative1[j] != rgNegative2[j])
+                        bDifferent = true;
+                }
+
+                if (!bDifferent)
+                {
+                    Trace.WriteLine("The negative1 and negative2 should be different!");
+                    m_log.WriteLine("WARNING! The negative1 and negative2 should have different data!");
+                }
+            }
+
+            colTop.Dispose();
         }
     }
 }
