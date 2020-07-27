@@ -5081,6 +5081,9 @@ namespace MyCaffe.common
         /// <param name="nCacheSize">Specifies the size of each labeled data cache.</param>
         /// <param name="hCacheHostCursors">Specifies a handle to host memmory (allocated using AllocateHostBuffer) containing the label cursors - there should be 'nLabelCount' cursors.</param>
         /// <param name="hWorkDataHost">Specifies a handle to host memory (allocated using AllocateHostBuffer) used for work - must be nNum in item length.</param>
+        /// <remarks>
+        /// NOTE: The cache size must be set at a sufficient size that covers the maximum number items for any given label within a batch, otherwise cached items will be overwritten for items in the current batch.
+        /// </remarks>
         public void copy_batch(int nCount, int nNum, int nDim, long hSrcData, long hSrcLbl, int nDstCount, long hDstCache, long hWorkDevData, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, long hWorkDataHost)
         {
             if (m_dt == DataType.DOUBLE)
@@ -5108,6 +5111,9 @@ namespace MyCaffe.common
         /// <param name="rgnTopCount">Specifies a list of the item count for each top item.  The number of top items expected depends on the 'nK' value.</param>
         /// <param name="hWorkDataHost">Specifies a handle to host memory (allocated using AllocateHostBuffer) used for work - must be nNum in item length and must be the same hWorkDataHost passed to 'copy_batch'.</param>
         /// <param name="nSeed">Optionally, specifies a seed for the random number generator (default = 0, which igores this parameter).</param>
+        /// <remarks>
+        /// Receiving an error ERROR_BATCH_TOO_SMALL indicates that the batch size is too small and does not have enough labels to choose from.  Each batch should have at least two instances of each labeled item.
+        /// </remarks>
         public void copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLbl, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, List<long> rghTop, List<int> rgnTopCount, long hWorkDataHost, int nSeed = 0)
         {
             int nTopCount = 2 + nK;
