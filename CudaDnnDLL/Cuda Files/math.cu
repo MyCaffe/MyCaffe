@@ -684,6 +684,8 @@ long Math<T>::copy_batch(int n, int nNum, int nDim, long hSrcData, long hSrcLabe
 	{
 		int nLabel = (int)labels[i];
 		cursors[nLabel - nLabelStart] += 1;
+		if (cursors[nLabel - nLabelStart] > nCacheSize)
+			cursors[nLabel - nLabelStart] = 0;
 	}
 
 	// Next shift each portion of each label cache
@@ -723,6 +725,8 @@ long Math<T>::copy_batch(int n, int nNum, int nDim, long hSrcData, long hSrcLabe
 			return lErr;
 
 		cursors[nLabelOffset] += 1;
+		if (cursors[nLabelOffset] >= nCacheSize)
+			cursors[nLabelOffset] = 0;
 
 		if (cursors[nLabelCount + nLabelOffset] < nCacheSize)
 			cursors[nLabelCount + nLabelOffset] += 1;
@@ -847,7 +851,7 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 			}
 
 			if (nLabelIdx == cursors[nLabelOffset])
-				return ERROR_PARAM_OUT_OF_RANGE;
+				return ERROR_BATCH_TOO_SMALL;
 
 			T* src = srccache + (nLabelOffset * nCacheSize * nDim) + (nLabelIdx * nDim);
 			if (lErr = cudaMemcpy(positives + (i * nDim), src, sizeof(T) * nDim, cudaMemcpyDeviceToDevice))
@@ -890,7 +894,7 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 		}
 
 		if (nLabelOffset == (nLabel - nLabelStart))
-			return ERROR_PARAM_OUT_OF_RANGE;
+			return ERROR_BATCH_TOO_SMALL;
 
 		// Find a labeled item with the different label.
 		int nLabelIdx = cursors[nLabelOffset];
@@ -935,7 +939,7 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 			}
 
 			if (nLabelOffset == (nLabel - nLabelStart))
-				return ERROR_PARAM_OUT_OF_RANGE;
+				return ERROR_BATCH_TOO_SMALL;
 
 			// Find a labeled item with the different label.
 			int nLabelIdx = cursors[nLabelOffset];
