@@ -895,6 +895,8 @@ namespace MyCaffe.common
             CUDA_COPY_SIM = 203,
             CUDA_COPY_FILL = 204,
             CUDA_SORT = 205,
+            CUDA_COPY_BATCH = 206,
+            CUDA_COPY_SEQUENCE = 207,
 
             CUDA_GEMM2 = 219,
             CUDA_GEMM = 220,
@@ -5061,6 +5063,99 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SIM, new double[] { nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSimilar, (bInvert) ? 1 : 0 });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SIM, new float[] { nCount, nNum, nDim, hSrc1, hSrc2, hDst, hSimilar, (bInvert) ? 1 : 0 });
+        }
+
+        /// <summary>
+        /// Copy a batch of labeled items into organized by label into fixed sized caches where older data is removed and replaced by newer data.
+        /// </summary>
+        /// <param name="nCount">Specifies the total data length of hSrc.</param>
+        /// <param name="nNum">Specifis the number of outer items in hSrc1, hSrc2, hDst, and the number of elements in hSimilar.</param>
+        /// <param name="nDim">Specifies the inner dimension of hSrc1, hSrc2 and hDst.</param>
+        /// <param name="hSrcData">Specifies a handle to the GPU memory of source data.</param>
+        /// <param name="hSrcLbl">Specifies a handle to the GPU memory of source labels.</param>
+        /// <param name="nDstCount">Specifies the total data length of the hDstCache</param>
+        /// <param name="hDstCache">Specifies a handle to the GPU memory of the destination cache.</param>
+        /// <param name="hWorkDevData">Specifies a handle to the GPU memory of the device work data that is the same size as the hDstCache.</param>
+        /// <param name="nLabelStart">Specifies the first label of all possible labels.</param>"
+        /// <param name="nLabelCount">Specifies the total number of labels (expects labels to be sequential from 'nLabelStart').</param>
+        /// <param name="nCacheSize">Specifies the size of each labeled data cache.</param>
+        /// <param name="hCacheHostCursors">Specifies a handle to host memmory (allocated using AllocateHostBuffer) containing the label cursors - there should be 'nLabelCount' cursors.</param>
+        /// <param name="hWorkDataHost">Specifies a handle to host memory (allocated using AllocateHostBuffer) used for work - must be nNum in item length.</param>
+        public void copy_batch(int nCount, int nNum, int nDim, long hSrcData, long hSrcLbl, int nDstCount, long hDstCache, long hWorkDevData, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, long hWorkDataHost)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_BATCH, new double[] { nCount, nNum, nDim, hSrcData, hSrcLbl, nDstCount, hDstCache, hWorkDevData, nLabelStart, nLabelCount, nCacheSize, hCacheHostCursors, hWorkDataHost });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_BATCH, new float[] { nCount, nNum, nDim, hSrcData, hSrcLbl, nDstCount, hDstCache, hWorkDevData, nLabelStart, nLabelCount, nCacheSize, hCacheHostCursors, hWorkDataHost });
+        }
+
+        /// <summary>
+        /// Copy a sequence of cached labeled items into an anchor, positive (if nK > 0), and negative blobs.
+        /// </summary>
+        /// <param name="nK">Specifies the output type expected where: nK = 0, outputs to 2 tops (anchor and one negative), or nK > 0, outputs to 2 + nK tops (anchor, positive, nK negatives).  The rghTop and rgnTopCount must be sized accordingly.</param>
+        /// <param name="nNum">Specifis the number of outer items in hSrc1, hSrc2, hDst, and the number of elements in hSimilar.</param>
+        /// <param name="nDim">Specifies the inner dimension of hSrc1, hSrc2 and hDst.</param>
+        /// <param name="hSrcData">Specifies a handle to the GPU memory of source data.</param>
+        /// <param name="hSrcLbl">Specifies a handle to the GPU memory of source labels.</param>
+        /// <param name="nSrcCacheCount">Specifis the number of items in hSrcCache (nCacheSize * nLabelCount).</param>
+        /// <param name="hSrcCache">Specifies a handle to the cached labeled data.</param>
+        /// <param name="nLabelStart">Specifies the first label of all possible labels.</param>"
+        /// <param name="nLabelCount">Specifies the total number of labels (expects labels to be sequential from 'nLabelStart').</param>
+        /// <param name="nCacheSize">Specifies the size of each labeled data cache.</param>
+        /// <param name="hCacheHostCursors">Specifies a handle to host memmory containing the label cursors - there should be 'nLabelCount' cursors.</param>
+        /// <param name="bOutputLabels">Specifies whether or not to output labels or not.  When true, one additional top is expected for the labels.</param>
+        /// <param name="rghTop">Specifies a list of the GPU memory for each top item.  The number of top items expected depends on the 'nK' value.</param>
+        /// <param name="rgnTopCount">Specifies a list of the item count for each top item.  The number of top items expected depends on the 'nK' value.</param>
+        /// <param name="hWorkDataHost">Specifies a handle to host memory (allocated using AllocateHostBuffer) used for work - must be nNum in item length and must be the same hWorkDataHost passed to 'copy_batch'.</param>
+        /// <param name="nSeed">Optionally, specifies a seed for the random number generator (default = 0, which igores this parameter).</param>
+        public void copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLbl, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, List<long> rghTop, List<int> rgnTopCount, long hWorkDataHost, int nSeed = 0)
+        {
+            int nTopCount = 2 + nK;
+
+            if (bOutputLabels)
+                nTopCount++;
+
+            if (nK < 0 || nK > 10)
+                throw new ArgumentOutOfRangeException("nK", "The 'nK' parameter must be within the range [0,10]!");
+
+            if (rghTop.Count != nTopCount)
+                throw new ArgumentOutOfRangeException("rghTop", "The 'rghTop' count must equal '" + nTopCount.ToString() + "' given nK = " + nK.ToString() + " and bOutputLabels = " + bOutputLabels.ToString() + "!");
+
+            if (rgnTopCount.Count != rghTop.Count)
+                throw new ArgumentOutOfRangeException("rgnTopCount", "The 'rgnTopCount' count must equal the 'rghTop' count!");
+
+            if (m_dt == DataType.DOUBLE)
+            {
+                List<double> rgarg = new List<double>() { nK, nNum, nDim, hSrcData, hSrcLbl, nSrcCacheCount, hSrcCache, nLabelStart, nLabelCount, nCacheSize, hCacheHostCursors, (bOutputLabels) ? 1 : 0, hWorkDataHost, nSeed };
+
+                for (int i = 0; i < rghTop.Count; i++)
+                {
+                    rgarg.Add(rghTop[i]);
+                }
+
+                for (int i = 0; i < rgnTopCount.Count; i++)
+                {
+                    rgarg.Add(rgnTopCount[i]);
+                }
+
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SEQUENCE, rgarg.ToArray());
+            }
+            else
+            {
+                List<float> rgarg = new List<float>() { nK, nNum, nDim, hSrcData, hSrcLbl, nSrcCacheCount, hSrcCache, nLabelStart, nLabelCount, nCacheSize, hCacheHostCursors, (bOutputLabels) ? 1 : 0, hWorkDataHost, nSeed };
+
+                for (int i = 0; i < rghTop.Count; i++)
+                {
+                    rgarg.Add(rghTop[i]);
+                }
+
+                for (int i = 0; i < rgnTopCount.Count; i++)
+                {
+                    rgarg.Add(rgnTopCount[i]);
+                }
+
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_SEQUENCE, rgarg.ToArray());
+            }
         }
 
         /// <summary>
