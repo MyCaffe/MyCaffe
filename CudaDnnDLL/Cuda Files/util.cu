@@ -97,6 +97,10 @@ bool GetErrorString(long lKernel, long lErr, char* szErr, long lMaxErr)
 			_snprintf(szErr, lMaxErr, "MEMORY: Memory was not found and therefore could not be freed. (%ld), Kernel = %ld", lErr, lKernel);
 			return true;
 
+		case ERROR_BATCH_TOO_SMALL:
+			_snprintf(szErr, lMaxErr, "DATA: The batch size used is too small - not enough label variety for sequencing. (%ld), Kernel = %ld", lErr, lKernel);
+			return true;
+			
 		case ERROR_MATRIX_DIMENSIONS_DONT_MATCH:
 			_snprintf(szErr, lMaxErr, "MATRIX: matrix dimensions do not match (%ld), Kernel = %ld", lErr, lKernel);
 			return true;
