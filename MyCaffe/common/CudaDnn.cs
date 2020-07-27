@@ -5066,7 +5066,7 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Copy a batch of labeled items into organized by label into fixed sized caches where older data is removed and replaced by newer data.
+        /// Copy a batch of labeled items into a cache organized by label where older data is removed and replaced by newer data.
         /// </summary>
         /// <param name="nCount">Specifies the total data length of hSrc.</param>
         /// <param name="nNum">Specifis the number of outer items in hSrc1, hSrc2, hDst, and the number of elements in hSimilar.</param>
@@ -5090,7 +5090,7 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Copy a sequence of cached labeled items into an anchor, positive (if nK > 0), and negative blobs.
+        /// Copy a sequence of cached items, organized by label, into an anchor, positive (if nK > 0), and negative blobs.
         /// </summary>
         /// <param name="nK">Specifies the output type expected where: nK = 0, outputs to 2 tops (anchor and one negative), or nK > 0, outputs to 2 + nK tops (anchor, positive, nK negatives).  The rghTop and rgnTopCount must be sized accordingly.</param>
         /// <param name="nNum">Specifis the number of outer items in hSrc1, hSrc2, hDst, and the number of elements in hSimilar.</param>
