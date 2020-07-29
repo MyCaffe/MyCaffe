@@ -19,6 +19,7 @@ namespace MyCaffe.param.beta
     public class DataSequenceParameter : LayerParameterBase 
     {
         int m_nK = 0;
+        bool m_bBalanceMatches = false;
         int m_nCacheSize = 256;
         bool m_bOutputLabels = false;
         int m_nLabelCount = 0;
@@ -46,7 +47,7 @@ namespace MyCaffe.param.beta
         }
 
         /// <summary>
-        /// Specifies the 'k' number of negatively matched labled images (default = 0, maximum = 10).  When specifying 0, the output is just the anchor and one negatively matched image (e.g. no positive match).
+        /// Specifies the 'k' number of negatively matched labled images (default = 0, maximum = 10).  When specifying 0, the output is just the anchor and one alternating negatively/positive matched image.
         /// </summary>
         /// <remarks>
         /// When specifying k>0, the anchor is output with a positive match and 'k' number of negative matches.
@@ -56,6 +57,16 @@ namespace MyCaffe.param.beta
         {
             get { return m_nK; }
             set { m_nK = value; }
+        }
+
+        /// <summary>
+        /// Specifies to balance the matching image between negative and positive matches.  This setting only applies when k=0 (default = false).
+        /// </summary>
+        [Description("Specifies to balance the matching image between negative and positive matches. This setting only applies when k=0 (default = false).")]
+        public bool balance_matches
+        {
+            get { return m_bBalanceMatches; }
+            set { m_bBalanceMatches = value; }
         }
 
         /// <summary>
@@ -117,6 +128,7 @@ namespace MyCaffe.param.beta
             m_bOutputLabels = p.m_bOutputLabels;
             m_nLabelStart = p.m_nLabelStart;
             m_nLabelCount = p.m_nLabelCount;
+            m_bBalanceMatches = p.m_bBalanceMatches;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -137,6 +149,7 @@ namespace MyCaffe.param.beta
             rgChildren.Add("output_labels", output_labels.ToString());
             rgChildren.Add("label_count", label_count.ToString());
             rgChildren.Add("label_start", label_start.ToString());
+            rgChildren.Add("balance_matches", balance_matches.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -165,6 +178,9 @@ namespace MyCaffe.param.beta
 
             if ((strVal = rp.FindValue("label_start")) != null)
                 p.label_start = int.Parse(strVal);
+
+            if ((strVal = rp.FindValue("balance_matches")) != null)
+                p.balance_matches = bool.Parse(strVal);
 
             return p;
         }
