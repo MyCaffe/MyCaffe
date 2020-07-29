@@ -1181,7 +1181,6 @@ namespace MyCaffe.data
         /// <summary>
         /// Distort the images within a Blob.
         /// </summary>
-        /// <param name="cuda">Specifies the instance of the CudaDnn to use.</param>
         /// <param name="b">Specifies the Blob to distort.</param>
         public void DistortImage(Blob<T> b)
         {
