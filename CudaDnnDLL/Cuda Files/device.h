@@ -4414,7 +4414,7 @@ inline long Device<T>::cuda_copy_sequence(long lInput, T* pfInput, long* plOutpu
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 14 + (2 * 2), 14 + (12 * 2)))
+	if (lErr = verifyInput(lInput, pfInput, 15 + (2 * 2), 15 + (12 * 2)))
 		return lErr;
 
 	int nK = (int)pfInput[0];
@@ -4430,7 +4430,8 @@ inline long Device<T>::cuda_copy_sequence(long lInput, T* pfInput, long* plOutpu
 	long hCacheHostCursors = (long)pfInput[10];
 	bool bOutputLabels = (pfInput[11] == 1) ? true : false;
 	long hWorkHostData = (long)pfInput[12];
-	int nRandomSeed = (int)pfInput[13];
+	bool bCombinePositiveAndNegative = (pfInput[13] == 1) ? true : false;
+	int nRandomSeed = (int)pfInput[14];
 
 	int nTopCount = 2 + nK;
 	if (bOutputLabels)
@@ -4447,7 +4448,7 @@ inline long Device<T>::cuda_copy_sequence(long lInput, T* pfInput, long* plOutpu
 		return ERROR_MEMORY_OUT;
 	}
 
-	int nIdx = 14;
+	int nIdx = 15;
 	for (int i = 0; i < nTopCount; i++)
 	{
 		rghTop[i] = (long)pfInput[nIdx];
@@ -4460,7 +4461,7 @@ inline long Device<T>::cuda_copy_sequence(long lInput, T* pfInput, long* plOutpu
 		nIdx++;
 	}
 
-	lErr = m_math.copy_sequence(nK, nNum, nDim, hSrcData, hSrcLabel, nSrcCacheCount, hSrcCache, nLabelStart, nLabelCount, nCacheSize, hCacheHostCursors, bOutputLabels, nTopCount, rghTop, rgnTopCounts, hWorkHostData, nRandomSeed);
+	lErr = m_math.copy_sequence(nK, nNum, nDim, hSrcData, hSrcLabel, nSrcCacheCount, hSrcCache, nLabelStart, nLabelCount, nCacheSize, hCacheHostCursors, bOutputLabels, nTopCount, rghTop, rgnTopCounts, hWorkHostData, bCombinePositiveAndNegative, nRandomSeed);
 
 	free(rghTop);
 	free(rgnTopCounts);

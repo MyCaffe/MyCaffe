@@ -740,7 +740,7 @@ template long Math<float>::copy_batch(int n, int nNum, int nDim, long hSrcData, 
 
 
 template <class T>
-long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLabel, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, int nTopCount, long* rghTop, int* rgnTopCount, long hWorkHostData, int nRandomSeed)
+long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLabel, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, int nTopCount, long* rghTop, int* rgnTopCount, long hWorkHostData, bool bCombinePositiveAndNegative, int nRandomSeed)
 {
 	LONG lErr;
 	MemoryItem* pSrcData;
@@ -810,6 +810,9 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 			return lErr;
 
 		negatives = (T*)pNegative->Data();
+
+		if (bCombinePositiveAndNegative)
+			positives = negatives;
 	}
 
 	if (pWorkData->Count() < nNum)
@@ -829,32 +832,83 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 
 		for (int i = 0; i < nNum; i++)
 		{
+			if (!bCombinePositiveAndNegative || i % 2 == 0)
+			{
+				int nLabel = (int)labels[i];
+				int nLabelOffset = nLabel - nLabelStart;
+
+				// Find a labeled item with the same label but different data.
+				int nCacheCount = cursors[nLabelCount + nLabelOffset];
+				if (nCacheCount == 0)
+					return ERROR_PARAM_OUT_OF_RANGE;
+
+				int nLabelIdx = cursors[nLabelOffset];
+
+				// The current cursor points to the data of the anchor, so
+				// we want to find a data other than the anchor with the same
+				// label.
+				int nRetries = 0;
+				while (nLabelIdx == cursors[nLabelOffset] && nRetries < 10)
+				{
+					double dfRand = (double)rand() / (double)RAND_MAX;
+					nLabelIdx = (int)round((nCacheCount - 1) * dfRand);
+					nRetries++;
+				}
+
+				if (nLabelIdx == cursors[nLabelOffset])
+					return ERROR_BATCH_TOO_SMALL;
+
+				T* src = srccache + (nLabelOffset * nCacheSize * nDim) + (nLabelIdx * nDim);
+				if (lErr = cudaMemcpy(positives + (i * nDim), src, sizeof(T) * nDim, cudaMemcpyDeviceToDevice))
+					return lErr;
+
+				if (labels_out != NULL)
+				{
+					T* dst = labels_out + (i * nTopCount);
+					T fSrc = T(nLabel);
+					if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
+						return lErr;
+
+					dst = labels_out + (i * nTopCount) + 1;
+					fSrc = T(nLabelOffset + nLabelStart);
+					if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
+						return lErr;
+				}
+
+				cursors[nLabelOffset]++;
+				if (cursors[nLabelOffset] == cursors[nLabelCount + nLabelOffset])
+					cursors[nLabelOffset] = 0;
+			}
+		}
+	}
+
+	// Get the first negative
+	memset(cursors, 0, sizeof(T) * nLabelCount);
+
+	for (int i = 0; i < nNum; i++)
+	{
+		if (!bCombinePositiveAndNegative || i % 2 == 1)
+		{
 			int nLabel = (int)labels[i];
+
+			// Find a label other than the anchor label.
 			int nLabelOffset = nLabel - nLabelStart;
-
-			// Find a labeled item with the same label but different data.
-			int nCacheCount = cursors[nLabelCount + nLabelOffset];
-			if (nCacheCount == 0)
-				return ERROR_PARAM_OUT_OF_RANGE;
-
-			int nLabelIdx = cursors[nLabelOffset];
-
-			// The current cursor points to the data of the anchor, so
-			// we want to find a data other than the anchor with the same
-			// label.
 			int nRetries = 0;
-			while (nLabelIdx == cursors[nLabelOffset] && nRetries < 10)
+			while (nLabelOffset == (nLabel - nLabelStart) && nRetries < 10)
 			{
 				double dfRand = (double)rand() / (double)RAND_MAX;
-				nLabelIdx = (int)round((nCacheCount - 1) * dfRand);
+				nLabelOffset = (int)round((nLabelCount - 1) * dfRand);
 				nRetries++;
 			}
 
-			if (nLabelIdx == cursors[nLabelOffset])
+			if (nLabelOffset == (nLabel - nLabelStart))
 				return ERROR_BATCH_TOO_SMALL;
 
+			// Find a labeled item with the different label.
+			int nLabelIdx = cursors[nLabelCount];
 			T* src = srccache + (nLabelOffset * nCacheSize * nDim) + (nLabelIdx * nDim);
-			if (lErr = cudaMemcpy(positives + (i * nDim), src, sizeof(T) * nDim, cudaMemcpyDeviceToDevice))
+
+			if (lErr = cudaMemcpy(negatives + (i * nDim), src, sizeof(T) * nDim, cudaMemcpyDeviceToDevice))
 				return lErr;
 
 			if (labels_out != NULL)
@@ -864,61 +918,27 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 				if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
 					return lErr;
 
-				dst = labels_out + (i * nTopCount) + 1;
 				fSrc = T(nLabelOffset + nLabelStart);
-				if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
-					return lErr;
+				if (bCombinePositiveAndNegative)
+				{
+					// When combining positive and negative, overlay every other negative
+					// label onto the positive label.
+					dst = labels_out + (i * nTopCount) + 1;
+					if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
+						return lErr;
+				}
+				else
+				{
+					dst = labels_out + (i * nTopCount) + 1 + ((positives != NULL) ? 1 : 0);
+					if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
+						return lErr;
+				}
 			}
 
 			cursors[nLabelOffset]++;
 			if (cursors[nLabelOffset] == cursors[nLabelCount + nLabelOffset])
 				cursors[nLabelOffset] = 0;
 		}
-	}
-
-	// Get the first negative
-	memset(cursors, 0, sizeof(T) * nLabelCount);
-
-	for (int i = 0; i < nNum; i++)
-	{
-		int nLabel = (int)labels[i];
-
-		// Find a label other than the anchor label.
-		int nLabelOffset = nLabel - nLabelStart;
-		int nRetries = 0;
-		while (nLabelOffset == (nLabel - nLabelStart) && nRetries < 10)
-		{
-			double dfRand = (double)rand() / (double)RAND_MAX;
-			nLabelOffset = (int)round((nLabelCount - 1) * dfRand);
-			nRetries++;
-		}
-
-		if (nLabelOffset == (nLabel - nLabelStart))
-			return ERROR_BATCH_TOO_SMALL;
-
-		// Find a labeled item with the different label.
-		int nLabelIdx = cursors[nLabelOffset];
-
-		T* src = srccache + (nLabelOffset * nCacheSize * nDim) + (nLabelIdx * nDim);
-		if (lErr = cudaMemcpy(negatives + (i * nDim), src, sizeof(T) * nDim, cudaMemcpyDeviceToDevice))
-			return lErr;
-
-		if (labels_out != NULL)
-		{
-			T* dst = labels_out + (i * nTopCount);
-			T fSrc = T(nLabel);
-			if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
-				return lErr;
-
-			dst = labels_out + (i * nTopCount) + 1 + ((positives != NULL) ? 1 : 0);
-			fSrc = T(nLabelOffset + nLabelStart);
-			if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
-				return lErr;
-		}
-
-		cursors[nLabelOffset]++;
-		if (cursors[nLabelOffset] == cursors[nLabelCount + nLabelOffset])
-			cursors[nLabelOffset] = 0;
 	}
 
 	// Get the remaining negatives (if any)
@@ -943,7 +963,6 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 
 			// Find a labeled item with the different label.
 			int nLabelIdx = cursors[nLabelOffset];
-
 			T* src = srccache + (nLabelOffset * nCacheSize * nDim) + (nLabelIdx * nDim);
 
 			MemoryItem* pNegative1;
@@ -972,8 +991,8 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 	return cudaStreamSynchronize(0);
 }
 
-template long Math<double>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLabel, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, int nTopCount, long* rghTop, int* rgnTopCount, long hWorkHostData, int nRandomSeed);
-template long Math<float>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLabel, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, int nTopCount, long* rghTop, int* rgnTopCount, long hWorkHostData, int nRandomSeed);
+template long Math<double>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLabel, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, int nTopCount, long* rghTop, int* rgnTopCount, long hWorkHostData, bool bCombinePositiveAndNegative, int nRandomSeed);
+template long Math<float>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLabel, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, int nTopCount, long* rghTop, int* rgnTopCount, long hWorkHostData, bool bCombinePositiveAndNegative, int nRandomSeed);
 
 
 template <class T>

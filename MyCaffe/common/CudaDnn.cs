@@ -5110,16 +5110,22 @@ namespace MyCaffe.common
         /// <param name="rghTop">Specifies a list of the GPU memory for each top item.  The number of top items expected depends on the 'nK' value.</param>
         /// <param name="rgnTopCount">Specifies a list of the item count for each top item.  The number of top items expected depends on the 'nK' value.</param>
         /// <param name="hWorkDataHost">Specifies a handle to host memory (allocated using AllocateHostBuffer) used for work - must be nNum in item length and must be the same hWorkDataHost passed to 'copy_batch'.</param>
+        /// <param name="bCombinePositiveAndNegative">Optionally, specifies to combine the positive and negative items by alternating between each and placing both in Top[1], while also making sure the output labels reflect the alternation.</param>"
         /// <param name="nSeed">Optionally, specifies a seed for the random number generator (default = 0, which igores this parameter).</param>
         /// <remarks>
         /// Receiving an error ERROR_BATCH_TOO_SMALL indicates that the batch size is too small and does not have enough labels to choose from.  Each batch should have at least two instances of each labeled item.
+        /// 
+        /// NOTE: When 'nK' = 1 && 'bCombinePositiveAndNegative' = true, the label output has a dimension of 2, and and the tops used are as follows: top(0) = anchor; top(1) = alternating negative/positive, top(2) = labels if 'bOutputLabels' = true.
         /// </remarks>
-        public void copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLbl, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, List<long> rghTop, List<int> rgnTopCount, long hWorkDataHost, int nSeed = 0)
+        public void copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLbl, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, List<long> rghTop, List<int> rgnTopCount, long hWorkDataHost, bool bCombinePositiveAndNegative = false, int nSeed = 0)
         {
             int nTopCount = 2 + nK;
 
             if (bOutputLabels)
                 nTopCount++;
+
+            if (bCombinePositiveAndNegative && nK != 0)
+                throw new ArgumentOutOfRangeException("nK", "When using 'bCombinePositiveAndNegative', nK should be 0.");
 
             if (nK < 0 || nK > 10)
                 throw new ArgumentOutOfRangeException("nK", "The 'nK' parameter must be within the range [0,10]!");
@@ -5132,7 +5138,7 @@ namespace MyCaffe.common
 
             if (m_dt == DataType.DOUBLE)
             {
-                List<double> rgarg = new List<double>() { nK, nNum, nDim, hSrcData, hSrcLbl, nSrcCacheCount, hSrcCache, nLabelStart, nLabelCount, nCacheSize, hCacheHostCursors, (bOutputLabels) ? 1 : 0, hWorkDataHost, nSeed };
+                List<double> rgarg = new List<double>() { nK, nNum, nDim, hSrcData, hSrcLbl, nSrcCacheCount, hSrcCache, nLabelStart, nLabelCount, nCacheSize, hCacheHostCursors, (bOutputLabels) ? 1 : 0, hWorkDataHost, (bCombinePositiveAndNegative) ? 1 : 0, nSeed };
 
                 for (int i = 0; i < rghTop.Count; i++)
                 {
@@ -5148,7 +5154,7 @@ namespace MyCaffe.common
             }
             else
             {
-                List<float> rgarg = new List<float>() { nK, nNum, nDim, hSrcData, hSrcLbl, nSrcCacheCount, hSrcCache, nLabelStart, nLabelCount, nCacheSize, hCacheHostCursors, (bOutputLabels) ? 1 : 0, hWorkDataHost, nSeed };
+                List<float> rgarg = new List<float>() { nK, nNum, nDim, hSrcData, hSrcLbl, nSrcCacheCount, hSrcCache, nLabelStart, nLabelCount, nCacheSize, hCacheHostCursors, (bOutputLabels) ? 1 : 0, hWorkDataHost, (bCombinePositiveAndNegative) ? 1 : 0, nSeed };
 
                 for (int i = 0; i < rghTop.Count; i++)
                 {

@@ -126,7 +126,7 @@ class Math
 		long copy_fill(int n, int nDim, long hSrc, int nSrcOff, int nCount, long hDst);
 		long sort(int nCount, long hY);
 		long copy_batch(int n, int nNum, int nDim, long hSrcData, long hSrcLabel, int nDstCount, long hDstCache, long hWorkDevData, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, long hWorkHostData);
-		long copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLabel, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, int nTopCount, long* rghTop, int* rgnTopCount, long hWorkHostData, int nRandomSeed);
+		long copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLabel, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, int nTopCount, long* rghTop, int* rgnTopCount, long hWorkHostData, bool bCombinePositiveAndNegative, int nRandomSeed);
 
 		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, __half* a, __half* b, T fBeta, __half* c);
 		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, T* a, T* b, T fBeta, T* c);
