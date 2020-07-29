@@ -19,9 +19,9 @@ namespace MyCaffe.param.beta
     public class DataSequenceParameter : LayerParameterBase 
     {
         int m_nK = 0;
-        bool m_bBalanceMatches = false;
+        bool m_bBalanceMatches = true;
         int m_nCacheSize = 256;
-        bool m_bOutputLabels = false;
+        bool m_bOutputLabels = true;
         int m_nLabelCount = 0;
         int m_nLabelStart = 0;
 
@@ -60,9 +60,9 @@ namespace MyCaffe.param.beta
         }
 
         /// <summary>
-        /// Specifies to balance the matching image between negative and positive matches.  This setting only applies when k=0 (default = false).
+        /// Specifies to balance the matching image between negative and positive matches.  This setting only applies when k=0 (default = true).
         /// </summary>
-        [Description("Specifies to balance the matching image between negative and positive matches. This setting only applies when k=0 (default = false).")]
+        [Description("Specifies to balance the matching image between negative and positive matches. This setting only applies when k=0 (default = true).")]
         public bool balance_matches
         {
             get { return m_bBalanceMatches; }
@@ -70,7 +70,7 @@ namespace MyCaffe.param.beta
         }
 
         /// <summary>
-        /// Specifies whether or not to output the labels in an additional top output.  (default = false).
+        /// Specifies whether or not to output the labels in an additional top output.  (default = true).
         /// </summary>
         /// <remarks>
         /// Labels areoutput in order per tuplet, so if k = 0 (e.g. output anchor and one negative) the output lables are as follows:
@@ -80,7 +80,7 @@ namespace MyCaffe.param.beta
         /// 1 negative label
         /// :
         /// </remarks>
-        [Description("Specifies whether or not to output the labels in an additional top output where labels are organized in the same batch order and listed by tuplet order (e.g. when k = 0; anchor, negative, anchor, negative, etc")]
+        [Description("Specifies whether or not to output the labels in an additional top output where labels are organized in the same batch order and listed by tuplet order (e.g. when k = 0, balance_matches = true; anchor, positive, anchor, negative; when k = 1, anchor, positive, negative, etc")]
         public bool output_labels
         {
             get { return m_bOutputLabels; }
