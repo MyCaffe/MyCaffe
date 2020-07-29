@@ -36,6 +36,7 @@ namespace MyCaffe.layers.beta
         Blob<T> m_blobLabeledDataCache = null;
         int m_nLabelStart = 0;
         int m_nLabelCount = 0;
+        bool m_bBalanceMatches = false;
         long m_hCacheCursors = 0;
         long m_hWorkDataHost = 0;
 
@@ -60,6 +61,7 @@ namespace MyCaffe.layers.beta
             m_bOutputLabels = m_param.data_sequence_param.output_labels;
             m_nLabelCount = m_param.data_sequence_param.label_count;
             m_nLabelStart = m_param.data_sequence_param.label_start;
+            m_bBalanceMatches = m_param.data_sequence_param.balance_matches;
         }
 
         /** @copydoc Layer::dispose */
@@ -208,6 +210,7 @@ namespace MyCaffe.layers.beta
 
             m_cuda.copy_batch(data.count(), data.num, data.count(1), data.gpu_data, labels.gpu_data, m_blobLabeledDataCache.count(), m_blobLabeledDataCache.mutable_gpu_data, m_blobLabeledDataCache.mutable_gpu_diff, m_nLabelStart, m_nLabelCount, m_nCacheSize, m_hCacheCursors, m_hWorkDataHost);
 
+            int nK = m_nK;
             List<long> rgTop = new List<long>();
             List<int> rgTopCount = new List<int>();
 
@@ -217,7 +220,7 @@ namespace MyCaffe.layers.beta
                 rgTopCount.Add(colTop[i].count());
             }
 
-            m_cuda.copy_sequence(m_nK, data.num, data.count(1), data.gpu_data, labels.gpu_data, m_blobLabeledDataCache.count(), m_blobLabeledDataCache.gpu_data, m_nLabelStart, m_nLabelCount, m_nCacheSize, m_hCacheCursors, m_bOutputLabels, rgTop, rgTopCount, m_hWorkDataHost);
+            m_cuda.copy_sequence(nK, data.num, data.count(1), data.gpu_data, labels.gpu_data, m_blobLabeledDataCache.count(), m_blobLabeledDataCache.gpu_data, m_nLabelStart, m_nLabelCount, m_nCacheSize, m_hCacheCursors, m_bOutputLabels, rgTop, rgTopCount, m_hWorkDataHost, m_bBalanceMatches);
         }
 
         /// @brief Not implemented - the DataSequence Layer does not perform backward.
