@@ -5115,7 +5115,7 @@ namespace MyCaffe.common
         /// <remarks>
         /// Receiving an error ERROR_BATCH_TOO_SMALL indicates that the batch size is too small and does not have enough labels to choose from.  Each batch should have at least two instances of each labeled item.
         /// 
-        /// NOTE: When 'nK' = 1 && 'bCombinePositiveAndNegative' = true, the label output has a dimension of 2, and and the tops used are as follows: top(0) = anchor; top(1) = alternating negative/positive, top(2) = labels if 'bOutputLabels' = true.
+        /// NOTE: When 'nK' = 1 and 'bCombinePositiveAndNegative' = true, the label output has a dimension of 2, and and the tops used are as follows: top(0) = anchor; top(1) = alternating negative/positive, top(2) = labels if 'bOutputLabels' = true.
         /// </remarks>
         public void copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLbl, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, List<long> rghTop, List<int> rgnTopCount, long hWorkDataHost, bool bCombinePositiveAndNegative = false, int nSeed = 0)
         {
