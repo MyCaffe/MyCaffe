@@ -864,7 +864,7 @@ namespace MyCaffe.param
                     expected_bottom.Add("data");
                     expected_bottom.Add("label");
                     expected_top.Add("anchor");
-                    expected_bottom.Add("datax");
+                    expected_top.Add("datax");
                     m_rgLayerParameters[lt] = new DataSequenceParameter();
                     break;
 
@@ -2594,6 +2594,7 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_simple_param, "triplet_loss_simple_param"));
 
             // Beta layers.
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(data_sequence_param, "data_sequence_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(decode_param, "decode_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(knn_param, "knn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization1_param, "normalization_param"));
@@ -2867,6 +2868,10 @@ namespace MyCaffe.param
                 p.triplet_loss_simple_param = TripletLossSimpleParameter.FromProto(rpp);
 
             // Beta layers.
+
+            if ((rpp = rp.FindChild("data_sequence_param")) != null)
+                p.data_sequence_param = DataSequenceParameter.FromProto(rpp);
+
             if ((rpp = rp.FindChild("decode_param")) != null)
                 p.decode_param = DecodeParameter.FromProto(rpp);
 
