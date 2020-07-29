@@ -77,6 +77,8 @@ inline int DIVUP(int x, int y)
 	return (x + y - 1) / y;
 }
 
+#define DBGPRINT(...) {char cad[512]; sprintf(cad, __VA_ARGS__);  OutputDebugStringA(cad);}
+
 
 //=============================================================================
 //	Private Structs & Methods
@@ -820,7 +822,10 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 
 	// Copy the src data to the top[0] for the anchors
 	if (lErr = cudaMemcpy(anchors, srcdata, sizeof(T) * (nNum * nDim), cudaMemcpyDeviceToDevice))
+	{
+		DBGPRINT("line %d - Copy the src data to the top[0] for anchors.", __LINE__);
 		return lErr;
+	}
 
 	// Get the labels loaded in 'copy_batch'.
 	T* labels = (T*)pWorkData->Data();
@@ -860,19 +865,28 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 
 				T* src = srccache + (nLabelOffset * nCacheSize * nDim) + (nLabelIdx * nDim);
 				if (lErr = cudaMemcpy(positives + (i * nDim), src, sizeof(T) * nDim, cudaMemcpyDeviceToDevice))
+				{
+					DBGPRINT("line %d - Copy the cache to the positives.", __LINE__);
 					return lErr;
+				}
 
 				if (labels_out != NULL)
 				{
 					T* dst = labels_out + (i * nTopCount);
 					T fSrc = T(nLabel);
 					if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
+					{
+						DBGPRINT("line %d - Copy anchor label to the label slot.", __LINE__);
 						return lErr;
+					}
 
 					dst = labels_out + (i * nTopCount) + 1;
 					fSrc = T(nLabelOffset + nLabelStart);
 					if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
+					{
+						DBGPRINT("line %d - Copy positive label to the label slot.", __LINE__);
 						return lErr;
+					}
 				}
 
 				cursors[nLabelOffset]++;
@@ -905,18 +919,24 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 				return ERROR_BATCH_TOO_SMALL;
 
 			// Find a labeled item with the different label.
-			int nLabelIdx = cursors[nLabelCount];
+			int nLabelIdx = cursors[nLabelOffset];
 			T* src = srccache + (nLabelOffset * nCacheSize * nDim) + (nLabelIdx * nDim);
 
 			if (lErr = cudaMemcpy(negatives + (i * nDim), src, sizeof(T) * nDim, cudaMemcpyDeviceToDevice))
+			{
+				DBGPRINT("line %d - Copy negative data to the label slot.", __LINE__);
 				return lErr;
+			}
 
 			if (labels_out != NULL)
 			{
 				T* dst = labels_out + (i * nTopCount);
 				T fSrc = T(nLabel);
 				if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
+				{
+					DBGPRINT("line %d - Copy anchor label to the labels.", __LINE__);
 					return lErr;
+				}
 
 				fSrc = T(nLabelOffset + nLabelStart);
 				if (bCombinePositiveAndNegative)
@@ -925,13 +945,19 @@ long Math<T>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrc
 					// label onto the positive label.
 					dst = labels_out + (i * nTopCount) + 1;
 					if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
+					{
+						DBGPRINT("line %d - Copy negative label to the labels.", __LINE__);
 						return lErr;
+					}
 				}
 				else
 				{
 					dst = labels_out + (i * nTopCount) + 1 + ((positives != NULL) ? 1 : 0);
 					if (lErr = cudaMemcpy(dst, &fSrc, sizeof(T), cudaMemcpyHostToDevice))
+					{
+						DBGPRINT("line %d - Copy negative label to the labels2.", __LINE__);
 						return lErr;
+					}
 				}
 			}
 
