@@ -2919,6 +2919,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestCopySequenceK1Combine()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+
+            try
+            {
+                foreach (ITestCudaDnn t in test.Tests)
+                {
+                    t.TestCopySequenceK1Combine();
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestCopySequenceK2()
         {
             CudaDnnTest test = new CudaDnnTest();
@@ -2954,6 +2972,7 @@ namespace MyCaffe.test
         void TestCopyBatch();
         void TestCopySequenceK0();
         void TestCopySequenceK1();
+        void TestCopySequenceK1Combine();
         void TestCopySequenceK2();
     }
 
@@ -4011,7 +4030,7 @@ namespace MyCaffe.test
 
             int nNum = 5;
             int nDim = 2;
-            m_cuda.copy_sequence(nK, nNum, nDim, m_A.gpu_data, m_B.gpu_data, m_C.count(), m_C.gpu_data, 1, 3, nCacheSize, m_hCursors, true, rghTop, rgnCount, m_hWork, 1704);
+            m_cuda.copy_sequence(nK, nNum, nDim, m_A.gpu_data, m_B.gpu_data, m_C.count(), m_C.gpu_data, 1, 3, nCacheSize, m_hCursors, true, rghTop, rgnCount, m_hWork, false, 1704);
 
             double[] rgTop0 = convert(colTop[0].mutable_cpu_data);
             double[] rgTop1 = convert(colTop[1].mutable_cpu_data);
@@ -4077,7 +4096,7 @@ namespace MyCaffe.test
 
             int nNum = 5;
             int nDim = 2;
-            m_cuda.copy_sequence(nK, nNum, nDim, m_A.gpu_data, m_B.gpu_data, m_C.count(), m_C.gpu_data, 1, 3, nCacheSize, m_hCursors, true, rghTop, rgnCount, m_hWork, 1704);
+            m_cuda.copy_sequence(nK, nNum, nDim, m_A.gpu_data, m_B.gpu_data, m_C.count(), m_C.gpu_data, 1, 3, nCacheSize, m_hCursors, true, rghTop, rgnCount, m_hWork, false, 1704);
 
             double[] rgTop0 = convert(colTop[0].mutable_cpu_data);
             double[] rgTop1 = convert(colTop[1].mutable_cpu_data);
@@ -4122,6 +4141,76 @@ namespace MyCaffe.test
             colTop.Dispose();
         }
 
+        public void TestCopySequenceK1Combine()
+        {
+            int nK = 0;
+            int nCacheSize = 4;
+
+            TestCopyBatch();
+
+            double[] rgSrcData = new double[] { 1, 2, 11, 12, 21, 22, 31, 32, 41, 42 }; // 5 x 2 x 1
+            double[] rgSrcLabel = new double[] { 1, 2, 3, 2, 1 };
+
+            m_A = new Blob<T>(m_cuda, m_log, new List<int>() { 5, 2 });
+            m_B = new Blob<T>(m_cuda, m_log, new List<int>() { 5 });
+            m_A.mutable_cpu_data = convert(rgSrcData);
+            m_B.mutable_cpu_data = convert(rgSrcLabel);
+
+            BlobCollection<T> colTop = new BlobCollection<T>();
+            List<int> rgnCount = new List<int>();
+            List<long> rghTop = new List<long>();
+            int nTopCount = 2 + nK;
+
+            for (int i = 0; i < nTopCount; i++)
+            {
+                Blob<T> b = new Blob<T>(m_cuda, m_log, 5, 2, 1, 1);
+                colTop.Add(b);
+                rgnCount.Add(b.count());
+                rghTop.Add(b.mutable_gpu_data);
+            }
+
+            Blob<T> b1 = new Blob<T>(m_cuda, m_log, 5, nTopCount, 1, 1);
+            colTop.Add(b1);
+            rgnCount.Add(b1.count());
+            rghTop.Add(b1.mutable_gpu_data);
+
+            int nNum = 5;
+            int nDim = 2;
+            bool bCombinePositiveAndNegative = true;
+            m_cuda.copy_sequence(nK, nNum, nDim, m_A.gpu_data, m_B.gpu_data, m_C.count(), m_C.gpu_data, 1, 3, nCacheSize, m_hCursors, true, rghTop, rgnCount, m_hWork, bCombinePositiveAndNegative, 1704);
+
+            double[] rgTop0 = convert(colTop[0].mutable_cpu_data);
+            double[] rgTop1 = convert(colTop[1].mutable_cpu_data);
+            double[] rgTop2 = convert(colTop[2].mutable_cpu_data);
+            double[] rgAnchor = new double[nDim];
+            double[] rgPosNeg = new double[nDim];
+
+            for (int i = 0; i < nNum; i++)
+            {
+                int nLabel = (int)rgTop2[i * 2 + 0];
+                int nPosNeg = (int)rgTop2[i * 2 + 1];
+
+                if (i % 2 == 0)
+                    m_log.CHECK_EQ(nLabel, nPosNeg, "The anchor and positive should be equal!");
+                else
+                    m_log.CHECK_NE(nLabel, nPosNeg, "The anchor and positive should not be equal!");  // actually holds the alternating negative
+
+                Array.Copy(rgTop0, i * nDim, rgAnchor, 0, nDim);
+                Array.Copy(rgTop1, i * nDim, rgPosNeg, 0, nDim);
+
+                bool bDifferent = false;
+                for (int j = 0; j < nDim; j++)
+                {
+                    if (rgAnchor[j] != rgPosNeg[j])
+                        bDifferent = true;
+                }
+
+                m_log.CHECK(bDifferent, "The anchor and positive should have different data!");
+            }
+
+            colTop.Dispose();
+        }
+
         public void TestCopySequenceK2()
         {
             int nK = 2;
@@ -4157,7 +4246,7 @@ namespace MyCaffe.test
 
             int nNum = 5;
             int nDim = 2;
-            m_cuda.copy_sequence(nK, nNum, nDim, m_A.gpu_data, m_B.gpu_data, m_C.count(), m_C.gpu_data, 1, 3, nCacheSize, m_hCursors, true, rghTop, rgnCount, m_hWork, 1704);
+            m_cuda.copy_sequence(nK, nNum, nDim, m_A.gpu_data, m_B.gpu_data, m_C.count(), m_C.gpu_data, 1, 3, nCacheSize, m_hCursors, true, rghTop, rgnCount, m_hWork, false, 1704);
 
             double[] rgTop0 = convert(colTop[0].mutable_cpu_data);
             double[] rgTop1 = convert(colTop[1].mutable_cpu_data);
