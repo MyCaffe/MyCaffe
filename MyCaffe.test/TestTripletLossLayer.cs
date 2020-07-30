@@ -9,6 +9,7 @@ using MyCaffe.common;
 using MyCaffe.fillers;
 using MyCaffe.layers;
 using MyCaffe.layers.alpha;
+using MyCaffe.layers.beta;
 
 /// <summary>
 /// Testing for simple triplet loss layer.
@@ -100,8 +101,8 @@ namespace MyCaffe.test
     {
         Random m_random;
         Blob<T> m_blobBottomAnchor;
-        Blob<T> m_blobBottomSame;   // positive.
-        Blob<T> m_blobBottomDiff;   // negative.
+        Blob<T> m_blobBottomPositive;   // positive.
+        Blob<T> m_blobBottomNegative;   // negative.
         Blob<T> m_blobLabel;
         Blob<T> m_blobTopLoss;
 
@@ -111,48 +112,27 @@ namespace MyCaffe.test
             m_random = new Random(1701);
             m_engine = engine;
 
-            m_blobBottomAnchor = new Blob<T>(m_cuda, m_log, 10, 4, 5, 2);
-            m_blobBottomSame = new Blob<T>(m_cuda, m_log, 10, 4, 5, 2);
-            m_blobBottomDiff = new Blob<T>(m_cuda, m_log, 10, 4, 5, 2);
-            m_blobLabel = new Blob<T>(m_cuda, m_log, 30, 4, 5, 2);
+            m_blobBottomAnchor = new Blob<T>(m_cuda, m_log, 5, 1, 1, 2);
+            m_blobBottomPositive = new Blob<T>(m_cuda, m_log, 5, 1, 1, 2);
+            m_blobBottomNegative = new Blob<T>(m_cuda, m_log, 5, 1, 1, 2);
+            m_blobLabel = new Blob<T>(m_cuda, m_log, 5, 1, 1, 3);
             m_blobTopLoss = new Blob<T>(m_cuda, m_log);
 
             BottomVec.Clear();
             TopVec.Clear();
 
             // fill the values
-            FillerParameter fp = getFillerParam();
-            Filler<T> filler = Filler<T>.Create(m_cuda, m_log, fp);
+            double[] rgLabels = new double[] { 1, 1, 2, 3, 3, 4, 5, 5, 6, 7, 7, 8, 9, 9, 0  };
+            m_cuda.rng_setseed(m_lSeed);
+            m_filler.Fill(m_blobBottomAnchor);
+            m_filler.Fill(m_blobBottomNegative);
+            m_filler.Fill(m_blobBottomPositive);
 
-            filler.Fill(m_blobBottomAnchor);
             BottomVec.Add(m_blobBottomAnchor);
+            BottomVec.Add(m_blobBottomPositive);
+            BottomVec.Add(m_blobBottomNegative);
 
-            filler.Fill(m_blobBottomSame);
-            BottomVec.Add(m_blobBottomSame);
-
-            filler.Fill(m_blobBottomDiff);
-            BottomVec.Add(m_blobBottomDiff);
-
-            double[] rgLabel = convert(m_blobLabel.update_cpu_data());
-            for (int i = 0; i < 30; i++)
-            {
-                if (i < 20)
-                {
-                    rgLabel[i] = 2;
-                }
-                else
-                {
-                    int nLabel = m_random.Next(10);
-                    while (nLabel == 2)
-                    {
-                        nLabel = m_random.Next(10);
-                    }
-
-                    rgLabel[i] = nLabel;
-                }
-            }
-
-            m_blobLabel.mutable_cpu_data = convert(rgLabel);
+            m_blobLabel.mutable_cpu_data = convert(rgLabels);
             BottomVec.Add(m_blobLabel);
 
             TopVec.Add(m_blobTopLoss);
@@ -161,8 +141,8 @@ namespace MyCaffe.test
         protected override void dispose()
         {
             m_blobBottomAnchor.Dispose();
-            m_blobBottomSame.Dispose();
-            m_blobBottomDiff.Dispose();
+            m_blobBottomPositive.Dispose();
+            m_blobBottomNegative.Dispose();
             m_blobLabel.Dispose();
             m_blobTopLoss.Dispose();
             base.dispose();
@@ -215,7 +195,7 @@ namespace MyCaffe.test
             p.loss_weight.Add(dfLossWeight);
             TripletLossLayer<T> layer = new TripletLossLayer<T>(m_cuda, m_log, p);
             layer.Setup(BottomVec, TopVec);
-            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-2, 1701);
+            GradientChecker<T> checker = new GradientChecker<T>(m_cuda, m_log, 1e-2, 1e-1, 1701);
             checker.CheckGradientExhaustive(layer, BottomVec, TopVec, 0);
         }
     }

@@ -7,7 +7,6 @@ using MyCaffe.basecode;
 using MyCaffe.common;
 using MyCaffe.param.nt;
 using MyCaffe.param.ssd;
-using MyCaffe.param.alpha;
 using MyCaffe.param.beta;
 
 namespace MyCaffe.param
@@ -757,15 +756,6 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new BiasParameter();
                     break;
 
-                case LayerType.BINARYHASH:
-                    expected_bottom.Add("input1");
-                    expected_bottom.Add("input2");
-                    expected_bottom.Add("input3");
-                    expected_bottom.Add("label");
-                    expected_top.Add("binhash");
-                    m_rgLayerParameters[lt] = new BinaryHashParameter();
-                    break;
-
                 case LayerType.BNLL:
                     expected_bottom.Add("input");
                     expected_top.Add("bnll");
@@ -1243,14 +1233,6 @@ namespace MyCaffe.param
                     m_rgLayerParameters[lt] = new TileParameter();
                     break;
 
-                case LayerType.TRIPLET_LOSS_SIMPLE:
-                    expected_bottom.Add("input");
-                    expected_bottom.Add("label");
-                    expected_top.Add("loss");
-                    m_rgLayerParameters[lt] = new TripletLossSimpleParameter();
-                    m_rgLayerParameters[LayerType.LOSS] = new LossParameter();
-                    break;
-
                 case LayerType.TRIPLET_LOSS:
                     expected_bottom.Add("anchor");
                     expected_bottom.Add("pos");
@@ -1495,15 +1477,6 @@ namespace MyCaffe.param
         {
             get { return (BiasParameter)m_rgLayerParameters[LayerType.BIAS]; }
             set { m_rgLayerParameters[LayerType.BIAS] = value; }
-        }
-
-        /// <summary>
-        /// Returns the parameter set when initialized with LayerType.BINARYHASH
-        /// </summary>
-        public BinaryHashParameter binary_hash_param
-        {
-            get { return (BinaryHashParameter)m_rgLayerParameters[LayerType.BINARYHASH]; }
-            set { m_rgLayerParameters[LayerType.BINARYHASH] = value; }
         }
 
         /// <summary>
@@ -2027,15 +2000,6 @@ namespace MyCaffe.param
         {
             get { return (TripletLossParameter)m_rgLayerParameters[LayerType.TRIPLET_LOSS]; }
             set { m_rgLayerParameters[LayerType.TRIPLET_LOSS] = value; }
-        }
-
-        /// <summary>
-        /// Returns the parameter set when initialized with LayerType.TRIPLET_LOSS_SIMPLE
-        /// </summary>
-        public TripletLossSimpleParameter triplet_loss_simple_param
-        {
-            get { return (TripletLossSimpleParameter)m_rgLayerParameters[LayerType.TRIPLET_LOSS_SIMPLE]; }
-            set { m_rgLayerParameters[LayerType.TRIPLET_LOSS_SIMPLE] = value; }
         }
 
         /// <summary>
@@ -2589,15 +2553,13 @@ namespace MyCaffe.param
             rgParam.Add(new KeyValuePair<BaseParameter, string>(recurrent_param, "recurrent_param"));
 
             // Alpha layers.
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(binary_hash_param, "binaryhash_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_param, "triplet_loss_param"));
-            rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_simple_param, "triplet_loss_simple_param"));
 
             // Beta layers.
             rgParam.Add(new KeyValuePair<BaseParameter, string>(data_sequence_param, "data_sequence_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(decode_param, "decode_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(knn_param, "knn_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(normalization1_param, "normalization_param"));
+            rgParam.Add(new KeyValuePair<BaseParameter, string>(triplet_loss_param, "triplet_loss_param"));
             rgParam.Add(new KeyValuePair<BaseParameter, string>(unpooling_param, "unpooling_param"));
 
             // Nt layers.
@@ -2858,14 +2820,6 @@ namespace MyCaffe.param
                 p.recurrent_param = RecurrentParameter.FromProto(rpp);
 
             // Alpha layers
-            if ((rpp = rp.FindChild("binaryhash_param")) != null)
-                p.binary_hash_param = BinaryHashParameter.FromProto(rpp);
-
-            if ((rpp = rp.FindChild("triplet_loss_param")) != null)
-                p.triplet_loss_param = TripletLossParameter.FromProto(rpp);
-
-            if ((rpp = rp.FindChild("triplet_loss_simple_param")) != null)
-                p.triplet_loss_simple_param = TripletLossSimpleParameter.FromProto(rpp);
 
             // Beta layers.
 
@@ -2880,6 +2834,9 @@ namespace MyCaffe.param
 
             if ((rpp = rp.FindChild("normalization_param")) != null)
                 p.normalization1_param = Normalization1Parameter.FromProto(rpp);
+
+            if ((rpp = rp.FindChild("triplet_loss_param")) != null)
+                p.triplet_loss_param = TripletLossParameter.FromProto(rpp);
 
             if ((rpp = rp.FindChild("unpooling_param")) != null)
                 p.unpooling_param = UnPoolingParameter.FromProto(rpp);
