@@ -124,6 +124,24 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestMinMaxVec()
+        {
+            MathFunctionsTest test = new MathFunctionsTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IMathFunctionsTest t in test.Tests)
+                {
+                    t.TestMinMaxVec(5);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestNanInf()
         {
             MathFunctionsTest test = new MathFunctionsTest(EngineParameter.Engine.CAFFE);
@@ -223,6 +241,7 @@ namespace MyCaffe.test
         void TestScale();
         void TestCopy();
         void TestMinMax();
+        void TestMinMaxVec(int nK);
         void TestNanInf();
         void TestMinMaxOneElm();
         void TestNanInfOneElm();
@@ -396,6 +415,94 @@ namespace MyCaffe.test
 
             data.Dispose();
             work.Dispose();
+        }
+
+        public void TestMinMaxVec(int nK)
+        {
+            double dfFree;
+            double dfUsed;
+            bool bCudaCall;
+            m_cuda.GetDeviceMemory(out dfFree, out dfUsed, out bCudaCall);
+            int nSize = (dfFree < 3.0) ? 124 : 512;
+
+            Blob<T> data = new Blob<T>(m_cuda, m_log);
+            Blob<T> work = new Blob<T>(m_cuda, m_log);
+
+            long hMin = m_cuda.AllocHostBuffer(nK);
+            long hMax = m_cuda.AllocHostBuffer(nK);
+
+            data.Reshape(nSize, 3, 224, 224);
+            m_cuda.minmax(data.count(), 0, 0, 0, nK, hMin, hMax);
+            double[] rgMin = m_cuda.GetHostMemoryDouble(hMin);
+            double[] rgMax = m_cuda.GetHostMemoryDouble(hMax);
+            work.Reshape((int)rgMin[0], 1, 1, 1);
+            m_filler.Fill(data);
+
+            m_cuda.minmax(data.count(), data.gpu_data, work.mutable_gpu_data, work.mutable_gpu_diff, nK, hMin, hMax);
+
+            rgMin = m_cuda.GetHostMemoryDouble(hMin);
+            rgMax = m_cuda.GetHostMemoryDouble(hMax);
+
+            List<double> rgMin1 = new List<double>(rgMin);
+            List<double> rgMax1 = new List<double>(rgMax);
+            rgMin1 = rgMin1.OrderBy(p => p).ToList();
+            rgMax1 = rgMax1.OrderByDescending(p => p).ToList();
+
+            double[] rgData = convert(data.update_cpu_data());
+            List<double> rgData1 = new List<double>(rgData);
+            List<double> rgMin2 = new List<double>();
+            List<double> rgMax2 = new List<double>();
+
+            for (int i = 0; i < nK; i++)
+            {
+                double dfMin = double.MaxValue;
+                double dfMax = -double.MaxValue;
+
+                for (int j = 0; j < rgData1.Count; j++)
+                { 
+                    dfMin = Math.Min(dfMin, rgData1[j]);
+                    dfMax = Math.Max(dfMax, rgData1[j]);
+                }
+
+                rgMin2.Add(dfMin);
+                rgMax2.Add(dfMax);
+
+                rgData1.Remove(dfMin);
+                rgData1.Remove(dfMax);
+            }
+
+            rgMin2 = rgMin2.OrderBy(p => p).ToList();
+            rgMax2 = rgMax2.OrderByDescending(p => p).ToList();
+
+            double dfMaxTotal1 = 0;
+            double dfMinTotal1 = 0;
+            double dfMaxTotal2 = 0;
+            double dfMinTotal2 = 0;
+
+            for (int i = 0; i < nK; i++)
+            {
+                dfMaxTotal1 += rgMax1[i];
+                dfMinTotal1 += rgMin1[i];
+                dfMaxTotal2 += rgMax2[i];
+                dfMinTotal2 += rgMin2[i];
+            }
+
+            double dfMinAve1 = dfMinTotal1 / nK;
+            double dfMaxAve1 = dfMaxTotal1 / nK;
+            double dfMinAve2 = dfMinTotal2 / nK;
+            double dfMaxAve2 = dfMaxTotal2 / nK;
+
+            double dfMinDiff = Math.Abs(dfMinAve1 - dfMinAve2);
+            double dfMaxDiff = Math.Abs(dfMaxAve1 - dfMaxAve2);
+
+            m_log.CHECK_LE(dfMinDiff, 1.0, "Min difference too high.");
+            m_log.CHECK_LE(dfMaxDiff, 1.0, "Max difference too high.");
+
+            data.Dispose();
+            work.Dispose();
+
+            m_cuda.FreeHostBuffer(hMin);
+            m_cuda.FreeHostBuffer(hMax);
         }
 
         public void TestNanInf()
