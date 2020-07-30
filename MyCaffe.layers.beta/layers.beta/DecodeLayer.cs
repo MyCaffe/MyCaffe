@@ -31,8 +31,11 @@ namespace MyCaffe.layers.beta
         Blob<T> m_blobData;
         Blob<T> m_blobDistSq; 
         Blob<T> m_blobSummerVec;
+        Blob<T> m_blobWork;
         int m_nLabelCount = 0;
         int m_nIteration = 0;
+        long m_hMin = 0;
+        long m_hMax = 0;
 
         /// <summary>
         /// Constructor.
@@ -50,6 +53,11 @@ namespace MyCaffe.layers.beta
             m_blobSummerVec.Name = m_param.name + " sum";
             m_blobData = new Blob<T>(cuda, log);
             m_blobData.Name = m_param.name + " data";
+
+            m_hMin = cuda.AllocHostBuffer(m_param.decode_param.k);
+            m_hMax = cuda.AllocHostBuffer(m_param.decode_param.k);
+            m_blobWork = new Blob<T>(cuda, log);
+            m_blobWork.Name = "work";
         }
 
         /** @copydoc Layer::dispose */
@@ -239,12 +247,14 @@ namespace MyCaffe.layers.beta
         {
             int nItemNum = colBottom[0].num;
             int nItemCount = nItemNum * m_nCacheSize;
+            int nLabelDim = 0;
             double dfAlpha = 1.0 / (double)nItemCount;
             double[] rgBottomLabel = null;
 
             if (m_param.phase == Phase.TRAIN)
             {
-                m_log.CHECK_EQ(colBottom[1].count() % 2, 0, "The bottom[1] count must be a factor of 2 for {lbl1, lbl2}.");
+                nLabelDim = colBottom[1].count(1);
+                m_log.CHECK(colBottom[1].count() % nLabelDim == 0, "The bottom[1] count must be a factor of 2 for {lbl1, lbl2}, or 3 for {anc, pos, neg}.");
                 rgBottomLabel = convertD(colBottom[1].update_cpu_data());
 
                 int nMaxLabel = rgBottomLabel.Max(p => (int)p);
@@ -310,7 +320,7 @@ namespace MyCaffe.layers.beta
                 // When training, we calculate the targets during observations between nTargetStart and nTargetEnd.
                 if (rgBottomLabel != null)
                 {
-                    int nLabel = (int)rgBottomLabel[i * 2]; // Only the first embedding and first label are used (second is ignored).
+                    int nLabel = (int)rgBottomLabel[i * nLabelDim]; // Only the first embedding and first label are used (second is ignored).
                     int nReady = (int)convertD(m_colBlobs[1].GetData(nLabel));
                     int nLabelItemCount = (int)convertD(m_colBlobs[2].GetData(nLabel));
 
@@ -403,11 +413,15 @@ namespace MyCaffe.layers.beta
                                        0,
                                        0);
 
-                            m_cuda.sort(m_blobDistSq.count(), m_blobDistSq.mutable_gpu_data);
-                            int nMaxCount = Math.Min(m_param.decode_param.k, m_blobDistSq.count());
-                            float[] rgMin = m_cuda.GetMemoryFloat(m_blobDistSq.gpu_data, nMaxCount);
+                            m_cuda.minmax(m_blobDistSq.count(), 0, 0, 0, m_param.decode_param.k, m_hMin, m_hMax);
+                            double[] rgMinD = m_cuda.GetHostMemoryDouble(m_hMin);
+                            m_blobWork.Reshape((int)rgMinD[0], 1, 1, 1);
+                            m_cuda.minmax(m_blobDistSq.count(), m_blobDistSq.gpu_data, m_blobWork.gpu_data, m_blobWork.gpu_diff, m_param.decode_param.k, m_hMin, m_hMax);
 
-                            rgMinDist[j] = rgMin.Average();
+                            float[] rgMin = m_cuda.GetHostMemoryFloat(m_hMin);
+                            List<float> rgMin1 = rgMin.Take(m_param.decode_param.k).ToList();
+
+                            rgMinDist[j] = rgMin1.Average();
                         }
 
                         m_blobDistSq.Reshape(rgMinDist.Length, 1, 1, 1);
