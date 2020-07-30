@@ -608,6 +608,7 @@ namespace MyCaffe.common
         float[] get_float(int nCount, long hHandle, int nIdx = -1);
         void copy(int nCount, long hSrc, long hDst, int nSrcOffset = 0, int nDstOffset = 0, long hAsyncStream = -1, bool? bSrcHalfOverride = null, bool? bDstHalfOverride = null);
         void copy(int nCount, int nNum, int nDim, long hSrc1, long hSrc2, long hDst, long hSimilar, bool bInvert = false);
+        void copy_expand(int n, int nNum, int nDim, long hSrc, long hDs);
         void fill(int n, int nDim, long hSrc, int nSrcOff, int nCount, long hDst);
         void sort(int nCount, long hY);
 
@@ -897,6 +898,7 @@ namespace MyCaffe.common
             CUDA_SORT = 205,
             CUDA_COPY_BATCH = 206,
             CUDA_COPY_SEQUENCE = 207,
+            CUDA_COPY_EXPAND = 208,
 
             CUDA_GEMM2 = 219,
             CUDA_GEMM = 220,
@@ -937,6 +939,8 @@ namespace MyCaffe.common
             CUDA_SUM = 255,
             CUDA_SQRT_SCALE = 256,
             CUDA_GER = 257,
+            CUDA_SET_BOUNDS = 259,
+            CUDA_MINMAXVEC = 260,
 
             CUDA_MULBSX = 270,
             CUDA_DIVBSX = 271,
@@ -5171,6 +5175,23 @@ namespace MyCaffe.common
         }
 
         /// <summary>
+        /// Expand a vector of length 'nNum' into a matrix of size 'nNum' x 'nDim' by copying each value of the vector
+        /// into all elements of the corresponding matrix row.
+        /// </summary>
+        /// <param name="n">Specifies the total number of items in the matrix 'A'</param>
+        /// <param name="nNum">Specifies the total number of rows in the matrix 'A' and the total number of items in the vector 'X'.</param>
+        /// <param name="nDim">Specifies the total number of columns in the matrix 'A'.</param>
+        /// <param name="hX">Specifies the 'nNum' length vector to expand.</param>
+        /// <param name="hA">Specifies the 'nNum' x 'nDim' matrix.</param>
+        public void copy_expand(int n, int nNum, int nDim, long hX, long hA)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_COPY_EXPAND, new double[] { n, nNum, nDim, hX, hA });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_COPY_EXPAND, new float[] { n, nNum, nDim, hX, hA });
+        }
+
+        /// <summary>
         /// Fill data from the source data 'n' times in the destination.
         /// </summary>
         /// <param name="n">Specifies the number of times to copy the source data.</param>
@@ -5538,7 +5559,7 @@ namespace MyCaffe.common
         }
 
         /// <summary>
-        /// Multiply a matrix with a vector.
+        /// Divide a matrix by a vector.
         /// </summary>
         /// <param name="n">Specifies the number of items.</param>
         /// <param name="hA">Specifies the matrix to divide.</param>
@@ -5556,6 +5577,38 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DIVBSX, new double[] { n, hA, nAOff, hX, nXOff, nC, nSpatialDim, (bTranspose) ? 1 : 0, hB, nBOff });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DIVBSX, new float[] { n, hA, nAOff, hX, nXOff, nC, nSpatialDim, (bTranspose) ? 1 : 0, hB, nBOff });
+        }
+
+        /// <summary>
+        /// Set the bounds of all items within the data to a set range of values.
+        /// </summary>
+        /// <param name="n">Specifies the number of items.</param>
+        /// <param name="dfMin">Specifies the minimum value.</param>
+        /// <param name="dfMax">Specifies the maximum value.</param>
+        /// <param name="hX">Specifies a handle to the GPU data to be bound.</param>
+        public void set_bounds(int n, double dfMin, double dfMax, long hX)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_SET_BOUNDS, new double[] { n, dfMin, dfMax, hX });
+            }
+            else
+            {
+                float fMin = -float.MaxValue;
+                float fMax = float.MaxValue;
+
+                if (dfMin > -float.MaxValue && dfMin < float.MaxValue)
+                    fMin = (float)dfMin;
+                else if (dfMin > float.MaxValue)
+                    fMin = float.MaxValue;
+
+                if (dfMax > -float.MaxValue && dfMax < float.MaxValue)
+                    fMax = (float)dfMax;
+                else if (dfMin < -float.MaxValue)
+                    fMax = -float.MaxValue;
+
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_SET_BOUNDS, new float[] { n, fMin, fMax, hX });
+            }
         }
 
         /// <summary>
@@ -6334,6 +6387,24 @@ namespace MyCaffe.common
                 float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVAL, new float[] { n, hA, hWork1, hWork2, (bDetectNans) ? 1 : 0, nAOff });
                 return new Tuple<double, double, double, double>(rg[0], rg[1], rg[2], rg[3]);
             }
+        }
+
+        /// <summary>
+        /// Finds up to 'nK' minimum and maximum values within A.
+        /// </summary>
+        /// <param name="n">Specifies the number of items (not bytes) in the vector A.</param>
+        /// <param name="hA">Specifies a handle to the vector A in GPU memory.</param>
+        /// <param name="hWork1">Specifies a handle to workspace data in GPU memory.  To get the size of the workspace memory, call this function with hA = 0.</param>
+        /// <param name="hWork2">Specifies a handle to workspace data in GPU memory.  To get the size of the workspace memory, call this function with hA = 0.</param>
+        /// <param name="nK">Specifies the number of min and max values to find.</param>
+        /// <param name="hMin">Specifies a handle to host memory allocated with AllocHostBuffer in the length 'nK' where the min values are placed.</param>
+        /// <param name="hMax">Specifies a handle to host memory allocated with AllocHostBuffer in the length 'nK' where the min values are placed.</param>
+        public void minmax(int n, long hA, long hWork1, long hWork2, int nK, long hMin, long hMax)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVEC, new double[] { n, hA, hWork1, hWork2, nK, hMin, hMax });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVEC, new float[] { n, hA, hWork1, hWork2, nK, hMin, hMax });
         }
 
         /// <summary>
