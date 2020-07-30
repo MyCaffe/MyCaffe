@@ -225,7 +225,7 @@ namespace MyCaffe.layers
                 bLoadDataCriteria = true;
 
             // Read a data point, and use it to initialize the top blob.
-            SimpleDatum datum = m_cursor.GetValue(null, bLoadDataCriteria, IMGDB_IMAGE_SELECTION_METHOD.NONE);
+            SimpleDatum datum = m_cursor.GetValue(null, bLoadDataCriteria, IMGDB_IMAGE_SELECTION_METHOD.RANDOM);
 
             // Use data transformer to infer the expected blob shape from the datum.
             m_rgTopShape = m_transformer.InferBlobShape(datum, m_rgTopShape);
