@@ -67,7 +67,7 @@ namespace MyCaffe.db.image
             m_imgMean = m_factory.LoadImageMean(m_src.ID);
 
             m_nLoadCount = nMaxLoadCount;
-            if (m_nLoadCount == 0)
+            if (m_nLoadCount == 0 || m_nLoadCount > m_src.ImageCount)
                 m_nLoadCount = m_src.ImageCount;
 
             m_rgImages = new SimpleDatum[m_nLoadCount];

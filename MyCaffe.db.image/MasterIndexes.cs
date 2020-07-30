@@ -52,6 +52,9 @@ namespace MyCaffe.db.image
             m_factory.Open(src);
             m_nLoadLimit = nLoadLimit;
 
+            if (m_nLoadLimit > src.ImageCount)
+                m_nLoadLimit = src.ImageCount;
+
             m_rgImageIdx = m_factory.LoadImageIndexes(false);
             load(m_rgImageIdx.Where(p => p != null).ToList());
         }
