@@ -227,7 +227,6 @@
     <Compile Include="param\ParameterParameter.cs" />
     <Compile Include="param.nt\TVLossParameter.cs" />
     <Compile Include="param.nt\GramParameter.cs" />
-    <Compile Include="param.alpha\BinaryHashParameter.cs" />
     <Compile Include="param\CropParameter.cs" />
     <Compile Include="param.ui\FormProperty.cs">
       <SubType>Form</SubType>
@@ -250,8 +249,7 @@
     <Compile Include="param.beta\UnPoolingParameter.cs" />
     <Compile Include="param\MaskParameter.cs" />
     <Compile Include="param\SwishParameter.cs" />
-    <Compile Include="param.alpha\TripletLossParameter.cs" />
-    <Compile Include="param.alpha\TripletLossSimpleParameter.cs" />
+    <Compile Include="param.beta\TripletLossParameter.cs" />
     <Compile Include="param.beta\Normalization1Parameter.cs" />
     <Compile Include="param\AccuracyParameter.cs" />
     <Compile Include="param\ArgMaxParameter.cs" />
@@ -359,7 +357,9 @@
       <SubType>Designer</SubType>
     </None>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="param.alpha\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>
