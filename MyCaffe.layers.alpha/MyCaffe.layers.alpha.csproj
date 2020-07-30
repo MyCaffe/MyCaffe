@@ -53,11 +53,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="LayerFactory.cs" />
-    <Compile Include="layers.alpha\BinaryHashLayer.cs" />
-    <Compile Include="layers.alpha\TripletDataLayer.cs" />
-    <Compile Include="layers.alpha\TripletLossLayer.cs" />
-    <Compile Include="layers.alpha\TripletLossSimpleLayer.cs" />
-    <Compile Include="layers.alpha\TripletSelectLayer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -77,6 +72,9 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="mycaffe.layers.alpha.pfx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="layers.alpha\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -31,21 +31,6 @@ namespace MyCaffe.layers.alpha
         {
             switch (p.type)
             {
-                case LayerParameter.LayerType.BINARYHASH:
-                    return new BinaryHashLayer<double>(cuda, log, p);
-
-                case LayerParameter.LayerType.TRIPLET_LOSS_SIMPLE:
-                    return new TripletLossSimpleLayer<double>(cuda, log, p);
-
-                case LayerParameter.LayerType.TRIPLET_LOSS:
-                    return new TripletLossLayer<double>(cuda, log, p);
-
-                case LayerParameter.LayerType.TRIPLET_SELECT:
-                    return new TripletSelectLayer<double>(cuda, log, p);
-
-                case LayerParameter.LayerType.TRIPLET_DATA:
-                    return new TripletDataLayer<double>(cuda, log, p, imgDb, evtCancel);
-
                 default:
                     return null;
             }
@@ -64,21 +49,6 @@ namespace MyCaffe.layers.alpha
         {
             switch (p.type)
             {
-                case LayerParameter.LayerType.BINARYHASH:
-                    return new BinaryHashLayer<float>(cuda, log, p);
-
-                case LayerParameter.LayerType.TRIPLET_LOSS_SIMPLE:
-                    return new TripletLossSimpleLayer<float>(cuda, log, p);
-
-                case LayerParameter.LayerType.TRIPLET_LOSS:
-                    return new TripletLossLayer<float>(cuda, log, p);
-
-                case LayerParameter.LayerType.TRIPLET_SELECT:
-                    return new TripletSelectLayer<float>(cuda, log, p);
-
-                case LayerParameter.LayerType.TRIPLET_DATA:
-                    return new TripletDataLayer<float>(cuda, log, p, imgDb, evtCancel);
-
                 default:
                     return null;
             }
