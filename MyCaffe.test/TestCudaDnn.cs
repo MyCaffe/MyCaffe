@@ -2019,6 +2019,64 @@ namespace MyCaffe.test
         }
 
         [TestMethod]
+        public void TestMath_copy_expand()
+        {
+            CudaDnnTest test = new CudaDnnTest();
+            Log log = new Log("Test Copy Expand");
+            long hSrc = 0;
+            long hDst = 0;
+
+            try
+            {
+                foreach (ITest t in test.Tests)
+                {
+                    try
+                    {
+                        int nNum = 4;
+                        int nDim = 3;
+                        int nCount = nNum * nDim;
+
+                        List<double> rgdfSrc = new List<double>() { 0.1, 0.2, 0.3, 0.4 };
+
+                        hSrc = t.Cuda.AllocMemory(rgdfSrc);
+
+                        double[] rgSrc = t.Cuda.GetMemoryDouble(hSrc);
+
+                        hDst = t.Cuda.AllocMemory(nCount);
+
+                        t.Cuda.copy_expand(nCount, nNum, nDim, hSrc, hDst);
+
+                        double[] rgDst = t.Cuda.GetMemoryDouble(hDst);
+
+                        for (int i = 0; i < nCount; i++)
+                        {
+                            int nIdx = i / nDim;
+                            log.EXPECT_EQUAL<float>(rgDst[i], rgdfSrc[nIdx], "The values of src and dst are not the same at index = " + i.ToString());
+                        }
+                    }
+                    finally
+                    {
+                        if (hSrc != 0)
+                        {
+                            t.Cuda.FreeMemory(hSrc);
+                            hSrc = 0;
+                        }
+
+                        if (hDst != 0)
+                        {
+                            t.Cuda.FreeMemory(hDst);
+                            hDst = 0;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
         public void TestMath_channel_compare()
         {
             CudaDnnTest test = new CudaDnnTest();
