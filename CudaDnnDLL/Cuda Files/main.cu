@@ -428,6 +428,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_COPY_SEQUENCE:
 			return m_device.cuda_copy_sequence(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_COPY_EXPAND:
+			return m_device.cuda_copy_expand(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_GEMM:
 			return m_device.cuda_gemm(lCount, pfInput, plCount, ppfOutput);
 
@@ -439,6 +442,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 
 		case CUDA_FN_GER:
 			return m_device.cuda_ger(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_SET_BOUNDS:
+			return m_device.cuda_set_bounds(lCount, pfInput, plCount, ppfOutput);
 
 		case CUDA_FN_AXPY:
 			return m_device.cuda_axpy(lCount, pfInput, plCount, ppfOutput);
@@ -532,6 +538,9 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 
 		case CUDA_FN_MINMAXVAL:
 			return m_device.cuda_minmaxval(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_MINMAXVEC:
+			return m_device.cuda_minmaxvec(lCount, pfInput, plCount, ppfOutput);
 
 		case CUDA_FN_SUMSQ:
 			return m_device.cuda_sumsq(lCount, pfInput, plCount, ppfOutput);
@@ -1320,6 +1329,9 @@ char* GetApiName(long lfnIdx)
 	case CUDA_FN_COPY_SEQUENCE:
 		return "CUDA_FN_COPY_SEQUENCE";
 
+	case CUDA_FN_COPY_EXPAND:
+		return "CUDA_FN_COPY_EXPAND";
+
 	case CUDA_FN_GEMM:
 		return "CUDA_FN_GEMM";
 
@@ -1331,6 +1343,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_GER:
 		return "CUDA_FN_GER";
+
+	case CUDA_FN_SET_BOUNDS:
+		return "CUDA_FN_SET_BOUNDS";
 
 	case CUDA_FN_AXPY:
 		return "CUDA_FN_AXPY";
@@ -1427,6 +1442,9 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_MINMAXVAL:
 		return "CUDA_FN_MINMAXVAL";
+
+	case CUDA_FN_MINMAXVEC:
+		return "CUDA_FN_MINMAXVEC";
 
 	case CUDA_FN_SUMSQ:
 		return "CUDA_FN_SUMSQ";

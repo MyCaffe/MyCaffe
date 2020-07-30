@@ -300,6 +300,7 @@ class Device
 		long cuda_sort(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_copy_batch(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_copy_sequence(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_copy_expand(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long cuda_gemm(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_gemm2(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -336,12 +337,14 @@ class Device
 		long cuda_maxval(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_minval(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_minmaxval(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_minmaxvec(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_sumsq(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_sumsqdiff(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_sum(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_width(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_contains_point(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_denan(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long cuda_set_bounds(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long cuda_channel_min(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_channel_max(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
@@ -4469,5 +4472,22 @@ inline long Device<T>::cuda_copy_sequence(long lInput, T* pfInput, long* plOutpu
 	return lErr;
 }
 
+
+template <class T>
+inline long Device<T>::cuda_copy_expand(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 5, 5))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	int nNum = (int)pfInput[1];
+	int nDim = (int)pfInput[2];
+	long hX = (long)pfInput[3];
+	long hA = (long)pfInput[4];
+
+	return m_math.copy_expand(n, nNum, nDim, hX, hA);
+}
 
 #endif // __DEVICE_CU__

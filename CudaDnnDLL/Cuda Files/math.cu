@@ -1021,6 +1021,42 @@ template long Math<double>::copy_sequence(int nK, int nNum, int nDim, long hSrcD
 template long Math<float>::copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLabel, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, int nTopCount, long* rghTop, int* rgnTopCount, long hWorkHostData, bool bCombinePositiveAndNegative, int nRandomSeed);
 
 
+template <typename T>
+__global__ void copy_expand_kernel(const int nCount, const int dim, const T* x, T* y)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < nCount && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		int n = i / dim;
+		y[i] = x[n];
+	}
+}
+
+
+template <class T>
+long Math<T>::copy_expand(int n, int nNum, int nDim, long hX, long hA)
+{
+	LONG lErr;
+	MemoryItem* pX;
+	MemoryItem* pA;
+
+	if (n / nDim != nNum)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	copy_expand_kernel<T><<<CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS>>>(n, nDim, (T*)pX->Data(), (T*)pA->Data());
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::copy_expand(int n, int nNum, int nDim, long hX, long hA);
+template long Math<float>::copy_expand(int n, int nNum, int nDim, long hX, long hA);
+
+
 template <class T>
 long Math<T>::sort(int nCount, long hY)
 {
@@ -2900,6 +2936,164 @@ long Math<T>::minmaxval(int n, long hA, long hWork1, long hWork2, T* pMin, T* pM
 template long Math<double>::minmaxval(int n, long hA, long hWork1, long hWork2, double* pMin, double* pMax, int nAOff);
 template long Math<float>::minmaxval(int n, long hA, long hWork1, long hWork2, float* pMin, float* pMax, int nAOff);
 
+template <class T>
+long Math<T>::minmaxvec(int n, long hA, long hWork1, long hWork2, int nK, long hMin, long hMax)
+{
+	int nBlocks = DIVUP(n, MAX_SH_MEM);
+
+	nBlocks /= nK;
+	if (nBlocks < 0)
+		nBlocks = 1;
+
+	if (nBlocks > NUM_BLOCKS_MAX)
+		nBlocks = NUM_BLOCKS_MAX;
+
+	int nSize = nBlocks * MAX_SH_MEM;
+
+	if (hA == 0 || hWork1 == 0 || hWork2 == 0)
+	{
+		T fData = (T)nSize;
+		m_pMem->SetHostBuffer(hMin, 1, &fData);
+		m_pMem->SetHostBuffer(hMax, 1, &fData);
+		return 0;
+	}
+
+	LONG lErr;
+	MemoryItem* pA;
+	MemoryItem* pW1;
+	MemoryItem* pW2;
+
+	if (n <= nK)
+		return ERROR_PARAM_OUT_OF_RANGE;
+
+	if (lErr = m_pMemCol->GetData(hA, &pA))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hWork1, &pW1))
+		return lErr;
+
+	if (lErr = m_pMemCol->GetData(hWork2, &pW2))
+		return lErr;
+
+	HostBuffer<T>* pMinB = m_pMem->GetHostBuffer(hMin);
+	if (pMinB == NULL)
+		return ERROR_PARAM_NULL;
+
+	HostBuffer<T>* pMaxB = m_pMem->GetHostBuffer(hMax);
+	if (pMaxB == NULL)
+		return ERROR_PARAM_NULL;
+
+	T* a = (T*)pA->Data();
+	T* w1 = (T*)pW1->Data();
+	T* w2 = (T*)pW2->Data();
+	T* pMin = (T*)pMinB->Data();
+	T* pMax = (T*)pMaxB->Data();
+
+	int nRemaining = n;
+	int nCount1 = 0;
+	T fMin1;
+	T fMax1;
+
+	if (nSize > n)
+		nSize = n;
+
+	for (int i = 0; i < nK; i++)
+	{
+		pMin[i] = FLT_MAX;
+		pMax[i] = -FLT_MAX;
+	}
+
+	while (nCount1 < n)
+	{
+		T fMin = (sizeof(T) == sizeof(float)) ? FLT_MAX : DBL_MAX;
+		T fMax = (sizeof(T) == sizeof(float)) ? -FLT_MAX : -DBL_MAX;
+
+		long long lSize = nSize * sizeof(T);
+		if (lSize > SIZE_MAX)
+			return ERROR_MEMORY_RANGE_EXCEEDED;
+
+		if (lErr = cudaMemset(w1, 0, (size_t)lSize))
+			return lErr;
+
+		if (lErr = cudaMemset(w2, 0, (size_t)lSize))
+			return lErr;
+
+		minmax_kernel<T> << <nBlocks, MAX_SH_MEM >> > (a, w1, w2, nSize, fMin, fMax);
+
+		if (lErr = cudaStreamSynchronize(0))
+			return lErr;
+
+		if (lErr = cudaMemcpy(&fMin1, w1, sizeof(T), cudaMemcpyDeviceToHost))
+			return lErr;
+
+		if (lErr = cudaMemcpy(&fMax1, w2, sizeof(T), cudaMemcpyDeviceToHost))
+			return lErr;
+
+		int nMaxIdx = -1;
+		int nMinIdx = -1;
+		T fMin2 = FLT_MAX;
+		T fMax2 = -FLT_MAX;
+		bool bFoundMin = false;
+		bool bFoundMax = false;
+
+		for (int i = 0; i < nK; i++)
+		{
+			if (!bFoundMin && pMin[i] == FLT_MAX)
+			{
+				fMin2 = pMin[i];
+				nMinIdx = i;
+				bFoundMin = true;
+			}
+
+			if (!bFoundMax && pMax[i] == -FLT_MAX)
+			{
+				fMax2 = pMax[i];
+				nMaxIdx = i;
+				bFoundMax = true;
+			}
+
+			if (bFoundMin && bFoundMax)
+				break;
+		}
+
+		if (!bFoundMin || !bFoundMax)
+		{
+			for (int i = 0; i < nK; i++)
+			{
+				if (!bFoundMin && pMin[i] < fMin2)
+				{
+					fMin2 = pMin[i];
+					nMinIdx = i;
+				}
+
+				if (!bFoundMax && pMax[i] > fMax2)
+				{
+					fMax2 = pMax[i];
+					nMaxIdx = i;
+				}
+			}
+		}
+
+		if (nMinIdx >= 0 && fMin1 < pMin[nMinIdx])
+			pMin[nMinIdx] = fMin1;
+
+		if (nMaxIdx >= 0 && fMax1 > pMin[nMaxIdx])
+			pMax[nMaxIdx] = fMax1;
+
+		a += nSize;
+		nCount1 += nSize;
+		nRemaining -= nSize;
+
+		if (nRemaining < nSize)
+			nSize = nRemaining;
+	}
+
+	return CUDA_SUCCESS;
+}
+
+template long Math<double>::minmaxvec(int n, long hA, long hWork1, long hWork2, int nCount, long hMin, long hMax);
+template long Math<float>::minmaxvec(int n, long hA, long hWork1, long hWork2, int nCount, long hMin, long hMax);
+
 
 template <class T>
 __global__ void naninf_kernel(const T* d_data, T* d_nan, T* d_inf, const size_t n)
@@ -3179,6 +3373,35 @@ long Math<T>::denan(int n, long hX, T fReplacement)
 
 template long Math<double>::denan(int n, long hX, double dfReplacement);
 template long Math<float>::denan(int n, long hX, float fReplacement);
+
+
+template <typename T>
+__global__ void setbounds_kernel(const int n, const T fMin, const T fMax, T* x)
+{
+	for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n && i >= 0; i += blockDim.x * gridDim.x)
+	{
+		x[i] = (x[i] < fMin || x[i] > fMax) ? 0 : x[i];
+	}
+}
+
+template <class T>
+long Math<T>::set_bounds(int n, T fMin, T fMax, long hX)
+{
+	LONG lErr;
+	MemoryItem* pX;
+
+	if (lErr = m_pMemCol->GetData(hX, &pX))
+		return lErr;
+
+	T* x = (T*)pX->Data();
+
+	setbounds_kernel<T> << <CAFFE_GET_BLOCKS(n), CAFFE_CUDA_NUM_THREADS >> > (n, fMin, fMax, x);
+
+	return cudaStreamSynchronize(0);
+}
+
+template long Math<double>::set_bounds(int n, double dfMin, double dfMax, long hX);
+template long Math<float>::set_bounds(int n, float fMin, float fMax, long hX);
 
 
 template <typename T>

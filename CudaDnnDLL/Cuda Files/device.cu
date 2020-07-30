@@ -2172,6 +2172,29 @@ template long Device<float>::cuda_minmaxval(long lInput, float* pfInput, long* p
 
 
 template <class T>
+long Device<T>::cuda_minmaxvec(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	long hA = (long)pfInput[1];
+	long hWork1 = (long)pfInput[2];
+	long hWork2 = (long)pfInput[3];
+	int nK = (int)pfInput[4];
+	long hMin = (long)pfInput[5];
+	long hMax = (long)pfInput[6];
+
+	return m_math.minmaxvec(n, hA, hWork1, hWork2, nK, hMin, hMax);
+}
+
+template long Device<double>::cuda_minmaxvec(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_minmaxvec(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
 long Device<T>::cuda_sumsq(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
 {
 	LONG lErr;
@@ -2341,6 +2364,26 @@ long Device<T>::cuda_denan(long lInput, T* pfInput, long* plOutput, T** ppfOutpu
 
 template long Device<double>::cuda_denan(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
 template long Device<float>::cuda_denan(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
+
+
+template <class T>
+long Device<T>::cuda_set_bounds(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 4, 4))
+		return lErr;
+
+	int n = (int)pfInput[0];
+	T fMin = pfInput[1];
+	T fMax = pfInput[2];
+	long hX = (long)pfInput[3];
+
+	return m_math.set_bounds(n, fMin, fMax, hX);
+}
+
+template long Device<double>::cuda_set_bounds(long lInput, double* pfInput, long* plOutput, double** ppfOutput);
+template long Device<float>::cuda_set_bounds(long lInput, float* pfInput, long* plOutput, float** ppfOutput);
 
 
 template <class T>

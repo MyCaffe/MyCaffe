@@ -127,6 +127,7 @@ class Math
 		long sort(int nCount, long hY);
 		long copy_batch(int n, int nNum, int nDim, long hSrcData, long hSrcLabel, int nDstCount, long hDstCache, long hWorkDevData, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, long hWorkHostData);
 		long copy_sequence(int nK, int nNum, int nDim, long hSrcData, long hSrcLabel, int nSrcCacheCount, long hSrcCache, int nLabelStart, int nLabelCount, int nCacheSize, long hCacheHostCursors, bool bOutputLabels, int nTopCount, long* rghTop, int* rgnTopCount, long hWorkHostData, bool bCombinePositiveAndNegative, int nRandomSeed);
+		long copy_expand(int n, int nNum, int nDim, long hX, long hA);
 
 		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, __half* a, __half* b, T fBeta, __half* c);
 		long gemm(bool bTransA, bool bTransB, int m, int n, int k, T fAlpha, T* a, T* b, T fBeta, T* c);
@@ -173,6 +174,7 @@ class Math
 		long maxval(int n, long hA, T* pOut, int nAOff = 0, long* plPos = NULL);
 		long minval(int n, long hA, T* pOut, int nAOff = 0, long* plPos = NULL);
 		long minmaxval(int n, long hA, long hWork1, long hWork2, T* pMin, T* pMax, int nAOff = 0);
+		long minmaxvec(int n, long hA, long hWork1, long hWork2, int nK, long hMin, long hMax);
 		long naninfval(int n, long hA, long hWork1, long hWork2, T* pNan, T* pInf, int nAOff = 0);
 		long sumsq(int n, long hW, long hA, int nAOff, T* pOut);
 		long sumsqdiff(int n, long hW, long hA, long hB, int nAOff, int nBOff, T* pOut);
@@ -181,6 +183,7 @@ class Math
 		long width(int n, long hMean, long hMin, long hMax, T fAlpha, long hWidth);
 		long contains_point(int n, long hMean, long hWidth, long hX, long hWork, T* pOut, int nXOff = 0);
 		long denan(int n, long hX, T fReplacement);
+		long set_bounds(int n, T fMin, T fMax, long hX);
 
 		long channel_min(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
 		long channel_max(int n, int nOutNum, int nChannels, int nInNum, long hX, long hY);
