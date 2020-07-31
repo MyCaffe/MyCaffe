@@ -18,10 +18,10 @@ maintaining compatibility with CAFFE's solver descriptions, model descriptions a
 The C# based MyCaffe open-source project is independently maintained by <a href="http://www.signalpop.com">SignalPop LLC</a> and made 
 available under the Apache 2.0 License.
 <h3>Supported Development Environments:</h3>
-* Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 11.0.2</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 8.0.1</a> </br>
+* Visual Studio 2017 & <a href="https://developer.nvidia.com/cuda-toolkit/whatsnew">CUDA 11.0.2</a> & <a href="https://developer.nvidia.com/cudnn">cuDnn 8.0.2</a> </br>
 </br>
 
-NOTE: Compute 5.3 required for CUDA 11.0.2/cuDNN 8.0.1 to support __half sized memory.
+NOTE: Compute 5.3 required for CUDA 11.0.2/cuDNN 8.0.2 to support __half sized memory.
 
 IMPORTANT: The open-source MyCaffe project on GitHub is considered 'pre-release' and may have bugs.  When you find bugs or other issues, please report them here - or better yet, get involved
 and propose a fix!
@@ -35,6 +35,7 @@ We have several new models supported by MyCaffe with the train_val and solution 
  - Neural Style Transfer as described in [10] and [11] using the VGG model described in [12]
  - Deep Q-Learning [14][15] with Noisy-Net [16] and Prioritized Replay Buffer [17]
  - Siamese Network [18][19]
+ - Deep Metric Learning with Triplet Network [20][21]
 
 For more information on the MyCaffe implementation of Policy Gradient Reinforcement Learning, see [MyCaffe: A Complete C# Re-Write of Caffe with Reinforcement Learning](https://arxiv.org/abs/1810.02272) by D. Brown, 2018. 
 
@@ -98,6 +99,10 @@ Source code available on GitHub at <a href="https://github.com/stella-emu/stella
 [18] [Siamese Network Training with Caffe](https://caffe.berkeleyvision.org/gathered/examples/siamese.html) by Yangqing Jia and Evan Shelhamer, BAIR.
 
 [19] [Siamese Neural Network for One-shot Image Recognition](https://www.cs.cmu.edu/~rsalakhu/papers/oneshot1.pdf) by G. Koch, R. Zemel and R. Salakhutdinov, ICML 2015 Deep Learning Workshop, 2015.
+
+[20] [Deep metric learning using Triplet network](https://arxiv.org/abs/1412.6622) by E. Hoffer and N. Ailon, 2014, 2018, arXiv:1412.6622.
+
+[21] [In Defense of the Triplet Loss for Person Re-Identification](https://arxiv.org/abs/1703.07737v2) by A. Hermans, L. Beyer, and B. Leibe, 2017, arXiv:1703.07737v2.
 
 For more information on the C++ CAFFE open-source project, please see the following <a href="http://caffe.berkeleyvision.org/">link</a>.
 
