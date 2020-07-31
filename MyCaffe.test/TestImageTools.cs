@@ -340,6 +340,7 @@ namespace MyCaffe.test
             bmpLenna.Save(strDir + "lenna.gpu_distort." + strType + ".png");
             bmpMandrill.Save(strDir + "mandrill.gpu_distort." + strType + ".png");
 
+            transform.Dispose();
             blob.Dispose();
         }
     }
