@@ -43,6 +43,9 @@
     <CudaCompile Include="Cuda Files\util.cu">
       <Filter>Cuda Files</Filter>
     </CudaCompile>
+    <CudaCompile Include="Cuda Files\imgop.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CudaDnnDLL.cpp" />
@@ -106,6 +109,9 @@
       <Filter>Cuda Files</Filter>
     </ClInclude>
     <ClInclude Include="Cuda Files\util.h">
+      <Filter>Cuda Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Cuda Files\imgop.h">
       <Filter>Cuda Files</Filter>
     </ClInclude>
   </ItemGroup>

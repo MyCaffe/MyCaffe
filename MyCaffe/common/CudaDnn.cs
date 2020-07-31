@@ -797,6 +797,10 @@ namespace MyCaffe.common
             FREE_MEMTEST = 35,
             RUN_MEMTEST = 36,
 
+            CREATE_IMAGEOP = 37,
+            FREE_IMAGEOP = 38,
+            DISTORTIMAGE_IMAGEOP = 39,
+
             CREATE_NCCL = 40,
             FREE_NCCL = 41,
             NCCL_INIT_SINGLEPROCESS = 42,
@@ -1102,7 +1106,6 @@ namespace MyCaffe.common
             CUDA_GUASSIAN_BLUR = 900,
             CUDA_HAMMING_DIFF = 901,
             CUDA_CALC_BATCH_DIST = 902,
-            CUDA_DISTORT_IMAGE = 903,
 
             CUDA_CREATE_SSD = 950,
             CUDA_FREE_SSD = 951,
@@ -2438,7 +2441,7 @@ namespace MyCaffe.common
         /// <param name="ulMemStartAddr">Returns the start address of the memory test.</param>
         /// <param name="ulBlockSize">Returns the block size of the memory to be tested.</param>
         /// <param name="dfPctToAllocate">Specifies the percentage of avaiable memory to test, where 1.0 = 100%.</param>
-        /// <returns></returns>
+        /// <returns>A handle to the memory test is returned.</returns>
         public long CreateMemoryTest(out ulong ulTotalNumBlocks, out double dfMemAllocatedInGB, out ulong ulMemStartAddr, out ulong ulBlockSize, double dfPctToAllocate = 1.0)
         {
             if (m_dt == DataType.DOUBLE)
@@ -2507,6 +2510,63 @@ namespace MyCaffe.common
                 float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.RUN_MEMTEST, new float[] { h, (float)type, ulBlockStartOffset, ulBlockCount, (bVerbose) ? 1 : 0, (bWrite) ? 1 : 0, (bReadWrite) ? 1 : 0, (bRead) ? 1 : 0 });
                 return (T[])Convert.ChangeType(rg, typeof(T[]));
             }
+        }
+
+        /// <summary>
+        /// Create a new ImageOp used to perform image operations on the GPU.
+        /// </summary>
+        /// <param name="nNum">Specifies the number of items (usually the blob.num).</param>
+        /// <param name="dfBrightnessProb">Specifies the brightness probability [0,1].</param>
+        /// <param name="dfBrightnessDelta">Specifies the brightness delta.</param>
+        /// <param name="dfContrastProb">Specifies the contrast probability [0,1]</param>
+        /// <param name="dfContrastLower">Specifies the contrast lower bound value.</param>
+        /// <param name="dfContrastUpper">Specifies the contrast upper bound value.</param>
+        /// <param name="dfSaturationProb">Specifies the saturation probability [0,1]</param>
+        /// <param name="dfSaturationLower">Specifies the saturation lower bound value.</param>
+        /// <param name="dfSaturationUpper">Specifies the saturation upper bound value.</param>
+        /// <param name="lRandomSeed">Optionally, specifies the random seed or 0 to ignore (default = 0).</param>
+        /// <returns>A handle to the ImageOp is returned.</returns>
+        public long CreateImageOp(int nNum, double dfBrightnessProb, double dfBrightnessDelta, double dfContrastProb, double dfContrastLower, double dfContrastUpper, double dfSaturationProb, double dfSaturationLower, double dfSaturationUpper, long lRandomSeed = 0)
+        {
+            if (m_dt == DataType.DOUBLE)
+            {
+                double[] rg = m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CREATE_IMAGEOP, new double[] { nNum, dfBrightnessProb, dfBrightnessDelta, dfContrastProb, dfContrastLower, dfContrastUpper, dfSaturationProb, dfSaturationLower, dfSaturationUpper, lRandomSeed });
+                return (long)rg[0];
+            }
+            else
+            {
+                float[] rg = m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CREATE_IMAGEOP, new float[] { nNum, (float)dfBrightnessProb, (float)dfBrightnessDelta, (float)dfContrastProb, (float)dfContrastLower, (float)dfContrastUpper, (float)dfSaturationProb, (float)dfSaturationLower, (float)dfSaturationUpper, lRandomSeed });
+                return (long)rg[0];
+            }
+        }
+
+        /// <summary>
+        /// Free an image op, freeing up all GPU memory used.
+        /// </summary>
+        /// <param name="h">Specifies the handle to the image op.</param>
+        public void FreeImageOp(long h)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.FREE_IMAGEOP, new double[] { h });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.FREE_IMAGEOP, new float[] { h });
+        }
+
+        /// <summary>
+        /// Distort an image using the ImageOp handle provided.
+        /// </summary>
+        /// <param name="h">Specifies a handle to the ImageOp that defines how the image will be distorted.</param>
+        /// <param name="nCount">Specifies the total number of data elements within 'hX' and 'hY'.</param>
+        /// <param name="nNum">Specifies the number of items to be distorted (typically blob.num) in 'hX' and 'hY'.</param>
+        /// <param name="nDim">Specifies the dimension of each item.</param>
+        /// <param name="hX">Specifies a handle to the GPU memory containing the source data to be distorted.</param>
+        /// <param name="hY">Specifies a handle to the GPU memory containing the destination of the distortion.</param>
+        public void DistortImage(long h, int nCount, int nNum, int nDim, long hX, long hY)
+        {
+            if (m_dt == DataType.DOUBLE)
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.DISTORTIMAGE_IMAGEOP, new double[] { h, nCount, nNum, nDim, hX, hY });
+            else
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.DISTORTIMAGE_IMAGEOP, new float[] { h, nCount, nNum, nDim, hX, hY });
         }
 
         #endregion
@@ -8662,32 +8722,6 @@ namespace MyCaffe.common
                 m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_GUASSIAN_BLUR, new double[] { n, nChannels, nHeight, nWidth, dfSigma, hX, hY });
             else
                 m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_GUASSIAN_BLUR, new float[] { n, nChannels, nHeight, nWidth, (float)dfSigma, hX, hY });
-        }
-
-        /// <summary>
-        /// The distort_image alters the brightness, contrast and saturation of a set of images within gpu memory.
-        /// </summary>
-        /// <param name="n">Specifies the number of items in the memory of 'X'.</param>
-        /// <param name="nChannels">Specifies the number of channels (i.e. 3 for RGB, 1 for B/W).</param>
-        /// <param name="nHeight">Specifies the height of each item.</param>
-        /// <param name="nWidth">Specifies the width of each item.</param>
-        /// <param name="dfBrightnessProb">Specifies the brightness probability.</param>
-        /// <param name="dfBrightnessDelta">Speciies the brightness delta that falls within a range [1,255], where 255 creates 100% saturation.</param>
-        /// <param name="dfContrastProb">Specifies the contrast probability.</param>
-        /// <param name="dfContrastLower">Specifies the contrast lower bound where contrast falls within the range [0.0,2.0] with 1.0 = no change.</param>
-        /// <param name="dfContrastUpper">Specifies the contrast upper bound where contrast falls within the range [0.0,2.0] with 1.0 = no change.</param>
-        /// <param name="dfSaturationProb">Specifies the saturation probability.</param>
-        /// <param name="dfSaturationLower">Specifies the saturation lower bound where saturation falls within the range [0.0,2.0] with 1.0 = no change.</param>
-        /// <param name="dfSaturationUpper">Specifies the saturation upper bound where saturation falls within the range [0.0,2.0] with 1.0 = no change.</param>
-        /// <param name="lRandomSeed">Specifies the random seed or 0 to ignore.</param>
-        /// <param name="hX">Specifies a handle to GPU memory containing the source data to distort.</param>
-        /// <param name="hY">Specifies a handle to GPU memory where the distorted information is placed.</param>
-        public void distort_image(int n, int nChannels, int nHeight, int nWidth, double dfBrightnessProb, double dfBrightnessDelta, double dfContrastProb, double dfContrastLower, double dfContrastUpper, double dfSaturationProb, double dfSaturationLower, double dfSaturationUpper, long lRandomSeed, long hX, long hY)
-        {
-            if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_DISTORT_IMAGE, new double[] { n, nChannels, nHeight, nWidth, dfBrightnessProb, dfBrightnessDelta, dfContrastProb, dfContrastLower, dfContrastUpper, dfSaturationProb, dfSaturationLower, dfSaturationUpper, lRandomSeed, hX, hY });
-            else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_DISTORT_IMAGE, new float[] { n, nChannels, nHeight, nWidth, (float)dfBrightnessProb, (float)dfBrightnessDelta, (float)dfContrastProb, (float)dfContrastLower, (float)dfContrastUpper, (float)dfSaturationProb, (float)dfSaturationLower, (float)dfSaturationUpper, lRandomSeed, hX, hY });
         }
 
         /// <summary>

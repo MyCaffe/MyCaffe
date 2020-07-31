@@ -158,6 +158,15 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_RUN_MEMTEST:
 			return m_device.RunMemoryTest(lCount, pfInput, plCount, ppfOutput);
 
+		case CUDA_FN_CREATE_IMAGEOP:
+			return m_device.CreateImageOp(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_FREE_IMAGEOP:
+			return m_device.FreeImageOp(lCount, pfInput, plCount, ppfOutput);
+
+		case CUDA_FN_DISTORTIMAGE_IMAGEOP:
+			return m_device.DistortImage(lCount, pfInput, plCount, ppfOutput);
+
 		case CUDA_FN_CREATE_NCCL:
 			return m_device.CreateNCCL(lCount, pfInput, plCount, ppfOutput);
 
@@ -869,9 +878,6 @@ long Kernel<T>::Run(long lfnIdx, T* pfInput, long lCount, T** ppfOutput, long* p
 		case CUDA_FN_GUASSIAN_BLUR:
 			return m_device.cuda_guassian_blur(lCount, pfInput, plCount, ppfOutput);
 
-		case CUDA_FN_DISTORT_IMAGE:
-			return m_device.cuda_distort_image(lCount, pfInput, plCount, ppfOutput);
-
 		case CUDA_FN_HAMMING_DIFF:
 			return m_device.cuda_hamming_diff(lCount, pfInput, plCount, ppfOutput);
 
@@ -1067,6 +1073,15 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_RUN_MEMTEST:
 		return "CUDA_FN_RUN_MEMTEST";
+
+	case CUDA_FN_CREATE_IMAGEOP:
+		return "CUDA_FN_CREATE_IMAGEOP";
+
+	case CUDA_FN_FREE_IMAGEOP:
+		return "CUDA_FN_FREE_IMAGEOP";
+
+	case CUDA_FN_DISTORTIMAGE_IMAGEOP:
+		return "CUDA_FN_DISTORTIMAGE_IMAGEOP";
 
 	case CUDA_FN_CREATE_NCCL:
 		return "CUDA_FN_CREATE_NCCL";
@@ -1757,9 +1772,6 @@ char* GetApiName(long lfnIdx)
 
 	case CUDA_FN_GUASSIAN_BLUR:
 		return "CUDA_FN_GUASSIAN_BLUR";
-
-	case CUDA_FN_DISTORT_IMAGE:
-		return "CUDA_FN_DISTORT_IMAGE";
 
 	case CUDA_FN_HAMMING_DIFF:
 		return "CUDA_FN_HAMMING_DIFF";

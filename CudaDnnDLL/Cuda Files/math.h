@@ -330,7 +330,6 @@ class Math
 		long tsne_compute_knn_bounds(unsigned int n, long hData, T fPctInCircle, T* pfMinX, T* pfMinY, T* pfMaxX, T* pfMaxY);
 
 		long gaussian_blur(int n, int c, int h, int w, T fSigma, long hX, long hY);
-		long distort_image(int n, int c, int h, int w, T fBrightnessProb, T fBrightnessDelta, T fContrastProb, T fContrastLower, T fContrastUpper, T fSaturationProb, T fSaturationLower, T fSaturationUpper, long lRandomSeed, long hX, long hY);
 		long hamming_diff(int n, T fThreshold, long hA, long hB, long hY, int nOffA = 0, int nOffB = 0, int nOffY = 0);
 		long calc_batch_dist(int nDistMethod, T fThreshold, int nItemDim, long hS, long hT, long hW, const int nDim0, const int nDim1, T* rgOffsets, T* rgDist);
 };

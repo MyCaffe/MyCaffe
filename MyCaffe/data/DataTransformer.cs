@@ -19,7 +19,7 @@ namespace MyCaffe.data
     /// scaling, mirroring, subtracting the image mean...
     /// </summary>
     /// <typeparam name="T">Specifies the base type <i>float</i> or <i>double</i>.  Using <i>float</i> is recommended to conserve GPU memory.</typeparam>
-    public class DataTransformer<T>
+    public class DataTransformer<T> : IDisposable
     {
         Log m_log;
         CudaDnn<T> m_cuda = null;
@@ -37,6 +37,7 @@ namespace MyCaffe.data
         BlobProto m_protoMean = null;
         BBoxUtility<T> m_bbox = null;
         ImageTransforms<T> m_imgTransforms = null;
+        long m_hImageOp = 0;
 
         /// <summary>
         /// The DataTransformer constructor.
@@ -72,6 +73,15 @@ namespace MyCaffe.data
             m_imgTransforms = new ImageTransforms<T>(cuda, log, m_random);
 
             Update(nDataSize, imgMean);
+        }
+
+        public void Dispose()
+        {
+            if (m_hImageOp != 0)
+            {
+                m_cuda.FreeImageOp(m_hImageOp);
+                m_hImageOp = 0;
+            }
         }
 
         /// <summary>
@@ -1195,21 +1205,21 @@ namespace MyCaffe.data
                 m_param.distortion_param.saturation_prob == 0)
                 return;
 
-            m_cuda.distort_image(b.num, 
-                           b.channels,
-                           b.height,
-                           b.width,
-                           m_param.distortion_param.brightness_prob,
-                           m_param.distortion_param.brightness_delta,
-                           m_param.distortion_param.contrast_prob,
-                           m_param.distortion_param.contrast_lower,
-                           m_param.distortion_param.contrast_upper,
-                           m_param.distortion_param.saturation_prob,
-                           m_param.distortion_param.saturation_lower,
-                           m_param.distortion_param.saturation_upper, 
-                           m_param.distortion_param.random_seed,
-                           b.gpu_data,
-                           b.mutable_gpu_data);
+            if (m_hImageOp == 0)
+            {
+                m_hImageOp = m_cuda.CreateImageOp(b.num,
+                               m_param.distortion_param.brightness_prob,
+                               m_param.distortion_param.brightness_delta,
+                               m_param.distortion_param.contrast_prob,
+                               m_param.distortion_param.contrast_lower,
+                               m_param.distortion_param.contrast_upper,
+                               m_param.distortion_param.saturation_prob,
+                               m_param.distortion_param.saturation_lower,
+                               m_param.distortion_param.saturation_upper,
+                               m_param.distortion_param.random_seed);
+            }
+
+            m_cuda.DistortImage(m_hImageOp, b.count(), b.num, b.count(1), b.gpu_data, b.mutable_gpu_data);
         }
 
         /// <summary>

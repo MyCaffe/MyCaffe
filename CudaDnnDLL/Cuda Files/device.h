@@ -154,6 +154,10 @@ class Device
 		long FreeMemoryTest(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long RunMemoryTest(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
+		long CreateImageOp(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long FreeImageOp(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+		long DistortImage(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
+
 		ncclHandle<T>* GetNccl(long hNccl);
 		long SetNccl(ncclHandle<T>* pNccl, long* plOutput, T** ppfOutput);
 
@@ -486,7 +490,6 @@ class Device
 		long cuda_tsne_compute_knn_bounds(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 
 		long cuda_guassian_blur(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
-		long cuda_distort_image(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_hamming_diff(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 		long cuda_calc_batch_dist(long lInput, T* pfInput, long* plOutput, T** ppfOutput);
 };
@@ -874,6 +877,53 @@ inline long Device<T>::FreeMemoryTest(long lInput, T* pfInput, long* plOutput, T
 	long hHandle = (long)pfInput[0];
 
 	return m_memory.FreeMemoryTest(hHandle);
+}
+
+
+//=============================================================================
+//	ImageOp Methods
+//=============================================================================
+
+template <class T>
+inline long Device<T>::CreateImageOp(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+	long hHandle = 0;
+
+	if (lErr = verifyInput(lInput, pfInput, 10, 10))
+		return lErr;
+
+	if (lErr = verifyOutput(plOutput, ppfOutput))
+		return lErr;
+
+	int nNum = (int)pfInput[0];
+	T fBrightnessProb = pfInput[1];
+	T fBrightnessDelta = pfInput[2];
+	T fContrastProb = pfInput[3];
+	T fContrastLower = pfInput[4];
+	T fContrastUpper = pfInput[5];
+	T fSaturationProb = pfInput[6];
+	T fSaturationLower = pfInput[7];
+	T fSaturationUpper = pfInput[8];
+	long lRandomSeed = (long)pfInput[9];
+
+	if (lErr = m_memory.CreateImageOp(nNum, fBrightnessProb, fBrightnessDelta, fContrastProb, fContrastLower, fContrastUpper, fSaturationProb, fSaturationLower, fSaturationUpper, lRandomSeed, &hHandle))
+		return lErr;
+
+	return setOutput(hHandle, plOutput, ppfOutput);
+}
+
+template <class T>
+inline long Device<T>::FreeImageOp(long lInput, T* pfInput, long* plOutput, T** ppfOutput)
+{
+	LONG lErr;
+
+	if (lErr = verifyInput(lInput, pfInput, 1, 1))
+		return lErr;
+
+	long hHandle = (long)pfInput[0];
+
+	return m_memory.FreeImageOp(hHandle);
 }
 
 

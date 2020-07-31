@@ -10,6 +10,7 @@
 #include "handlecol.h"
 #include "memorycol.h"
 #include "memtest.h"
+#include "imgop.h"
 #include "pca.h"
 #include "rnnData.h"
 #include "tsne_gp.h"
@@ -119,6 +120,7 @@ class Memory
 		HandleCollection<MIN_HANDLES> m_tsnegp;
 		HandleCollection<MIN_HANDLES> m_tsneg;
 		HandleCollection<MIN_HANDLES> m_memtest;
+		HandleCollection<MIN_HANDLES> m_imgop;
 		HandleCollection<MIN_HANDLES> m_nccl;
 		HandleCollection<MIN_HANDLES> m_ssd;
 		HandleCollection<MIN_HANDLES> m_extensions;
@@ -414,6 +416,11 @@ class Memory
 		long FreeMemoryTest(long hHandle);
 		memtestHandle<T>* GetMemoryTest(long hHandle);
 		long RunMemoryTest(long hHandle, MEMTEST_TYPE memTestType, size_t szStartOffset, size_t szCount, long* plCount, T** ppfData, bool bVerbose, bool bWrite, bool bReadWrite, bool bRead);
+
+		long CreateImageOp(int nNum, T fBrightnessProb, T fBrightnessDelta, T fContrastProb, T fContrastLower, T fContrastUpper, T fSaturationProb, T fSaturationLower, T fSaturationUpper, long lRandomSeed, long* phHandle);
+		long FreeImageOp(long hHandle);
+		imgopHandle<T>* GetImageOp(long hHandle);
+		long DistortImage(long hHandle, int nCount, int nNum, int nDim, long hX, long hY);
 
 		long CreateNCCL(int nGpuID, int nCount, int nRank, char* szId, Math<T>* pMath, long* phHandle);
 		long FreeNCCL(long hHandle);
@@ -1534,6 +1541,66 @@ inline long Memory<T>::RunMemoryTest(long hHandle, MEMTEST_TYPE memtestType, siz
 		return ERROR_PARAM_NULL;
 
 	return memtest->Run(memtestType, szStartOffset, szCount, plCount, ppfData, bVerbose, bWrite, bReadWrite, bRead);
+}
+
+template <class T>
+inline long Memory<T>::CreateImageOp(int nNum, T fBrightnessProb, T fBrightnessDelta, T fContrastProb, T fContrastLower, T fContrastUpper, T fSaturationProb, T fSaturationLower, T fSaturationUpper, long lRandomSeed, long* phHandle)
+{
+	LONG lErr;
+	imgopHandle<T>* imgop = NULL;
+
+	if (phHandle == NULL)
+		return ERROR_PARAM_NULL;
+
+	if ((imgop = new imgopHandle<T>()) == NULL)
+		return ERROR_MEMORY_OUT;
+
+	if (lErr = imgop->Initialize(this, nNum, fBrightnessProb, fBrightnessDelta, fContrastProb, fContrastLower, fContrastUpper, fSaturationProb, fSaturationLower, fSaturationUpper, lRandomSeed))
+	{
+		delete imgop;
+		return lErr;
+	}
+
+	long hHandle = m_imgop.Allocate(imgop);
+	if (hHandle < 0)
+	{
+		delete imgop;
+		return ERROR_MEMORY_OUT;
+	}
+
+	*phHandle = hHandle;
+	return 0;
+}
+
+template <class T>
+inline long Memory<T>::FreeImageOp(long hHandle)
+{
+	imgopHandle<T>* imgop = (imgopHandle<T>*)m_imgop.Free(hHandle);
+
+	if (imgop != NULL)
+	{
+		imgop->CleanUp();
+		delete imgop;
+	}
+
+	return 0;
+}
+
+template <class T>
+inline imgopHandle<T>* Memory<T>::GetImageOp(long hHandle)
+{
+	return (imgopHandle<T>*)m_imgop.GetData(hHandle);
+}
+
+template <class T>
+inline long Memory<T>::DistortImage(long hHandle, int nCount, int nNum, int nDim, long hX, long hY)
+{
+	imgopHandle<T>* imgop = GetImageOp(hHandle);
+
+	if (imgop == NULL)
+		return ERROR_PARAM_NULL;
+
+	return imgop->DistortImage(nCount, nNum, nDim, hX, hY);
 }
 
 
