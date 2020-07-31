@@ -24,18 +24,25 @@ namespace MyCaffe.param.beta
     /// </summary>
     public class DecodeParameter : LayerParameterBase 
     {
+        bool m_bEnableCentroidUpdate = true;
         int m_nCentroidOutputIteration = 300;
         bool m_bOutputCentroids = false;
         List<int> m_rgIgnoreLabels = new List<int>();
         TARGET m_target = TARGET.CENTROID;
         int m_nCacheSize = 100;
         int m_nK = 5;
+        double m_dfPreGenAlpha = 1.1;
+        int m_nPreGenerateTargetCount = 0;
 
         /// <summary>
         /// Defines the target type.
         /// </summary>
         public enum TARGET
         {
+            /// <summary>
+            /// Specifies to use pre-generated targets that are evenly spaced.
+            /// </summary>
+            PREGEN,
             /// <summary>
             /// Specifies to use the centroid as the target.
             /// </summary>
@@ -49,6 +56,42 @@ namespace MyCaffe.param.beta
         /** @copydoc LayerParameterBase */
         public DecodeParameter()
         {
+        }
+
+        /// <summary>
+        /// Specifies the pregen margin.
+        /// </summary>
+        [Description("Specifies the pregen margin.")]
+        public double pregen_alpha
+        {
+            get { return m_dfPreGenAlpha; }
+            set { m_dfPreGenAlpha = value; }
+        }
+
+        /// <summary>
+        /// Specifies the pre-generate target count, only used when 'target' = PREGEN.
+        /// </summary>
+        /// <remarks>
+        /// When using a value > 0, the pre-gen target count must equal the label count for this setting
+        /// directs the loss to first pre-generate equally distanced target encodings for each label and calculate the loss
+        /// (and gradients) that move each labeled item toward those targets.  This is usefule when initially training
+        /// on a very small number of samples.
+        /// </remarks>
+        [Description("Specifies the pre-generate target count, only used when 'target' = PREGEN.")]
+        public int pregen_label_count
+        {
+            get { return m_nPreGenerateTargetCount; }
+            set { m_nPreGenerateTargetCount = value; }
+        }
+
+        /// <summary>
+        /// Specifies whether or not to update the centroids.  For example in some cases a fixed centroid may be desired, such as is the case when initializing centroids with a PREGEN value.
+        /// </summary>
+        [Description("Specifies whether or not to update the centroids.  For example in some cases a fixed centroid may be desired, such as in the case when initializing centroids with a PREGEN value.")]
+        public bool enable_centroid_update
+        {
+            get { return m_bEnableCentroidUpdate; }
+            set { m_bEnableCentroidUpdate = value; }
         }
 
         /// <summary>
@@ -130,6 +173,9 @@ namespace MyCaffe.param.beta
             m_nCentroidOutputIteration = p.m_nCentroidOutputIteration;
             m_nCacheSize = p.m_nCacheSize;
             m_bOutputCentroids = p.m_bOutputCentroids;
+            m_dfPreGenAlpha = p.m_dfPreGenAlpha;
+            m_nPreGenerateTargetCount = p.m_nPreGenerateTargetCount;
+            m_bEnableCentroidUpdate = p.m_bEnableCentroidUpdate;
 
             if (p.m_rgIgnoreLabels != null)
                 m_rgIgnoreLabels = Utility.Clone<int>(p.m_rgIgnoreLabels);
@@ -152,17 +198,18 @@ namespace MyCaffe.param.beta
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             rgChildren.Add("centroid_output_iteration", centroid_output_iteration.ToString());
+            rgChildren.Add("enable_centroid_update", enable_centroid_update.ToString());
             rgChildren.Add("cache_size", cache_size.ToString());
             rgChildren.Add("output_centroids", output_centroids.ToString());
             rgChildren.Add("target", target.ToString());
+            rgChildren.Add("pregen_alpha", pregen_alpha.ToString());
+            rgChildren.Add("pregen_label_count", pregen_label_count.ToString());
+            rgChildren.Add("k", k.ToString());
 
             foreach (int nLabel in ignore_labels)
             {
                 rgChildren.Add("ignore_label", nLabel.ToString());
             }
-
-            if (target == TARGET.KNN)
-                rgChildren.Add("k", k.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -180,11 +227,20 @@ namespace MyCaffe.param.beta
             if ((strVal = rp.FindValue("centroid_output_iteration")) != null)
                 p.centroid_output_iteration = int.Parse(strVal);
 
+            if ((strVal = rp.FindValue("enable_centroid_update")) != null)
+                p.enable_centroid_update = bool.Parse(strVal);
+
             if ((strVal = rp.FindValue("cache_size")) != null)
                 p.cache_size = int.Parse(strVal);
 
             if ((strVal = rp.FindValue("output_centroids")) != null)
                 p.output_centroids = bool.Parse(strVal);
+
+            if ((strVal = rp.FindValue("pregen_alpha")) != null)
+                p.pregen_alpha = double.Parse(strVal);
+
+            if ((strVal = rp.FindValue("pregen_label_count")) != null)
+                p.pregen_label_count = int.Parse(strVal);
 
             p.ignore_labels = new List<int>();
             RawProtoCollection rpIgnore = rp.FindChildren("ignore_label");
@@ -199,6 +255,10 @@ namespace MyCaffe.param.beta
             {
                 if (strVal == TARGET.KNN.ToString())
                     p.target = TARGET.KNN;
+                else if (strVal == TARGET.PREGEN.ToString())
+                    p.target = TARGET.PREGEN;
+                else
+                    p.target = TARGET.CENTROID;
             }
 
             if ((strVal = rp.FindValue("k")) != null)

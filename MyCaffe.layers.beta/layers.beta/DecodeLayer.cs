@@ -36,6 +36,8 @@ namespace MyCaffe.layers.beta
         int m_nIteration = 0;
         long m_hMin = 0;
         long m_hMax = 0;
+        double m_dfPreGenAlpha = 0;
+        bool m_bInitializePreGenTargets = true;
 
         /// <summary>
         /// Constructor.
@@ -81,6 +83,12 @@ namespace MyCaffe.layers.beta
                 m_blobData = null;
             }
 
+            if (m_blobWork != null)
+            {
+                m_blobWork.Dispose();
+                m_blobWork = null;
+            }
+
             base.dispose();
         }
 
@@ -93,6 +101,7 @@ namespace MyCaffe.layers.beta
                 col.Add(m_blobDistSq);
                 col.Add(m_blobSummerVec);
                 col.Add(m_blobData);
+
                 return col;
             }
         }
@@ -137,11 +146,26 @@ namespace MyCaffe.layers.beta
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
             m_rgIgnoreLabels = m_param.decode_param.ignore_labels;
-            m_nEncodingDim = colBottom[0].channels;
-            m_nCentroidOutputIteration = m_param.decode_param.centroid_output_iteration;
+            m_nEncodingDim = colBottom[0].count(1);
+
+            if (m_param.decode_param.target != param.beta.DecodeParameter.TARGET.PREGEN)
+            {
+                if (m_param.decode_param.enable_centroid_update)
+                {
+                    m_nCentroidOutputIteration = m_param.decode_param.centroid_output_iteration;
+                    if (m_nCentroidOutputIteration < 10)
+                        m_log.WriteLine("WARNING: Centroid output iteration is set at " + m_nCentroidOutputIteration.ToString() + ", a value above 10 is recommended.");
+                }
+            }
+            else
+            {
+                m_nCentroidOutputIteration = 0;
+            }
+
             m_nCacheSize = m_param.decode_param.cache_size;
-            m_log.CHECK_GE(m_nCentroidOutputIteration, 10, "The centroid output iteration must be >= 10, and the recommended setting is 300.");
             m_log.CHECK_GT(m_nCacheSize, 0, "The cache size must be > 0.");
+
+            m_dfPreGenAlpha = m_param.decode_param.pregen_alpha;
 
             if (m_colBlobs.Count == 0)
             {
@@ -214,14 +238,69 @@ namespace MyCaffe.layers.beta
             int nNum = colBottom[0].num;
             bool bFirstReshape = (nNum != m_nNum) ? true : false;
             m_nNum = nNum;
-            m_nEncodingDim = colBottom[0].channels;
+
+            m_log.CHECK_EQ(m_nEncodingDim, colBottom[0].count(1), "The encoding dim changed!");
 
             if (colBottom.Count > 1)
                 m_log.CHECK_EQ(colBottom[1].num, m_nNum, "The number of labels does not match the number of items at bottom[0].");
+        }
 
-            // vector of ones used to sum along channels.
-            m_blobSummerVec.Reshape(colBottom[0].channels, 1, 1, 1);
-            m_blobSummerVec.SetData(1.0);
+
+        /// <summary>
+        /// Creates the pre-distanced pre-generated targets, only made public for testing.
+        /// </summary>
+        /// <param name="b">Specifies the blob to fill with pre-generated, pre-spaced targets.</param>
+        /// <param name="dfMinDist">Specifies the minimum acceptable distance between all targets.</param>
+        public void createPreGenTargets(Blob<T> b, double dfMinDist)
+        {
+            Random rand = new Random();
+            bool bDone = false;
+            int nNum = b.num;
+            int nDim = b.count(1);
+            float[] rgData = convertF(b.mutable_cpu_data);
+
+            while (!bDone)
+            {
+                List<List<double>> rgDist = new List<List<double>>();
+
+                double dfAbsMinDist = double.MaxValue;
+
+                for (int i = 0; i < nNum; i++)
+                {
+                    rgDist.Add(new List<double>());
+
+                    for (int j = 0; j < nNum; j++)
+                    {
+                        if (i != j)
+                        {
+                            double dfDiff = 0;
+                            double dfDist = 0;
+
+                            for (int k = 0; k < nDim; k++)
+                            {
+                                dfDiff = rgData[i * nDim + k] - rgData[j * nDim + k];
+                                dfDist += (dfDiff * dfDiff);
+                            }
+
+                            rgDist[i].Add(dfDist);
+                            dfAbsMinDist = Math.Min(dfAbsMinDist, dfDist);
+
+                            if (dfDist < dfMinDist)
+                            {
+                                for (int k = 0; k < nDim; k++)
+                                {
+                                    rgData[j * nDim + k] += (float)(rand.NextDouble() * (dfMinDist / 4));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (dfAbsMinDist > dfMinDist)
+                    bDone = true;
+            }
+
+            b.mutable_cpu_data = convert(rgData);
         }
 
         /// <summary>
@@ -255,12 +334,16 @@ namespace MyCaffe.layers.beta
             {
                 nLabelDim = colBottom[1].count(1);
                 m_log.CHECK(colBottom[1].count() % nLabelDim == 0, "The bottom[1] count must be a factor of 2 for {lbl1, lbl2}, or 3 for {anc, pos, neg}.");
+
                 rgBottomLabel = convertD(colBottom[1].update_cpu_data());
 
                 int nMaxLabel = rgBottomLabel.Max(p => (int)p);
                 if (nMaxLabel > m_nLabelCount)
                 {
                     int nNumLabels = nMaxLabel + 1;
+
+                    if (m_param.decode_param.target == param.beta.DecodeParameter.TARGET.PREGEN)
+                        nNumLabels = m_param.decode_param.pregen_label_count;
 
                     if (m_colBlobs[0].count() != nNumLabels * m_nEncodingDim)
                     {
@@ -289,7 +372,17 @@ namespace MyCaffe.layers.beta
                         }
                     }
 
-                    m_nLabelCount = nMaxLabel;
+                    m_nLabelCount = nNumLabels;
+                }
+
+                if (m_param.decode_param.target == param.beta.DecodeParameter.TARGET.PREGEN)
+                {
+                    if (m_bInitializePreGenTargets)
+                    {
+                        createPreGenTargets(m_colBlobs[0], m_dfPreGenAlpha * 2);
+                        m_colBlobs[0].snapshot_requested = true;
+                        m_bInitializePreGenTargets = false;
+                    }
                 }
             }
 
@@ -320,35 +413,48 @@ namespace MyCaffe.layers.beta
                 // When training, we calculate the targets during observations between nTargetStart and nTargetEnd.
                 if (rgBottomLabel != null)
                 {
+                    // Pre-gen targets are ready to go.
+                    if (m_param.decode_param.target == param.beta.DecodeParameter.TARGET.PREGEN)
+                        m_colBlobs[1].SetData(1.0);
+
                     int nLabel = (int)rgBottomLabel[i * nLabelDim]; // Only the first embedding and first label are used (second is ignored).
                     int nReady = (int)convertD(m_colBlobs[1].GetData(nLabel));
                     int nLabelItemCount = (int)convertD(m_colBlobs[2].GetData(nLabel));
 
                     // Create the centroid when counts fall between Centroid Start and Centroid End by
                     // averaging all items within these counts together to create the centroid.
-                    if (nLabelItemCount == 0)
+                    if (m_param.decode_param.target == param.beta.DecodeParameter.TARGET.CENTROID)
                     {
-                        // Add initial centroid portion for the label.
-                        m_cuda.copy(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].mutable_gpu_data, i * m_nEncodingDim, nLabel * m_nEncodingDim);
-                        m_cuda.scale(m_nEncodingDim, convert(dfAlpha), m_colBlobs[0].gpu_data, m_colBlobs[0].mutable_gpu_data, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
-                    }
-                    else if (nLabelItemCount < nItemCount)
-                    {
-                        dfAlpha = 1.0 / (nLabelItemCount + 1);
-                        // Add portion of current item to centroids for the label.
-                        m_cuda.add(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].gpu_data, m_colBlobs[0].mutable_gpu_data, dfAlpha, 1.0 - dfAlpha, i * m_nEncodingDim, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
-                    }
-                    else 
-                    {
-                        // Add portion of current item to centroids for the label.
-                        m_cuda.add(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].gpu_data, m_colBlobs[0].mutable_gpu_data, dfAlpha, 1.0 - dfAlpha, i * m_nEncodingDim, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
+                        if (m_param.decode_param.enable_centroid_update)
+                        {
+                            if (nLabelItemCount == 0)
+                            {
+                                // Add initial centroid portion for the label.
+                                m_cuda.copy(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].mutable_gpu_data, i * m_nEncodingDim, nLabel * m_nEncodingDim);
+                                m_cuda.scale(m_nEncodingDim, convert(dfAlpha), m_colBlobs[0].gpu_data, m_colBlobs[0].mutable_gpu_data, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
+                            }
+                            else if (nLabelItemCount < nItemCount)
+                            {
+                                dfAlpha = 1.0 / (nLabelItemCount + 1);
+                                // Add portion of current item to centroids for the label.
+                                m_cuda.add(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].gpu_data, m_colBlobs[0].mutable_gpu_data, dfAlpha, 1.0 - dfAlpha, i * m_nEncodingDim, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
+                            }
+                            else
+                            {
+                                // Add portion of current item to centroids for the label.
+                                m_cuda.add(m_nEncodingDim, colBottom[0].gpu_data, m_colBlobs[0].gpu_data, m_colBlobs[0].mutable_gpu_data, dfAlpha, 1.0 - dfAlpha, i * m_nEncodingDim, nLabel * m_nEncodingDim, nLabel * m_nEncodingDim);
 
-                        if (nReady == 0 && !m_rgIgnoreLabels.Contains(nLabel))
-                            m_colBlobs[1].SetData(1.0, nLabel);
+                                if (nReady == 0 && !m_rgIgnoreLabels.Contains(nLabel))
+                                    m_colBlobs[1].SetData(1.0, nLabel);
+                            }
+                        }
+                        else
+                        {
+                            m_colBlobs[1].SetData(1.0);
+                        }
                     }
-
                     // Save all items observed to the KNN cache.
-                    if (m_param.decode_param.target == param.beta.DecodeParameter.TARGET.KNN)
+                    else if (m_param.decode_param.target == param.beta.DecodeParameter.TARGET.KNN)
                     {
                         // Items added as a rolling list and are ordered by label, then by encoding as each encoding is received.  
                         int nSrcOff = i * m_nEncodingDim;
@@ -413,13 +519,13 @@ namespace MyCaffe.layers.beta
                                        0,
                                        0);
 
-                            m_cuda.minmax(m_blobDistSq.count(), 0, 0, 0, m_param.decode_param.k, m_hMin, m_hMax);
+                            m_cuda.minmax(m_blobDistSq.count(), 0, 0, 0, m_param.decode_param.k, m_hMin, m_hMax, true);
                             double[] rgMinD = m_cuda.GetHostMemoryDouble(m_hMin);
                             m_blobWork.Reshape((int)rgMinD[0], 1, 1, 1);
-                            m_cuda.minmax(m_blobDistSq.count(), m_blobDistSq.gpu_data, m_blobWork.gpu_data, m_blobWork.gpu_diff, m_param.decode_param.k, m_hMin, m_hMax);
+                            m_cuda.minmax(m_blobDistSq.count(), m_blobDistSq.gpu_data, m_blobWork.gpu_data, m_blobWork.gpu_diff, m_param.decode_param.k, m_hMin, m_hMax, true);
 
                             float[] rgMin = m_cuda.GetHostMemoryFloat(m_hMin);
-                            List<float> rgMin1 = rgMin.Take(m_param.decode_param.k).ToList();
+                            List<float> rgMin1 = rgMin.Where(p => p < float.MaxValue).Take(m_param.decode_param.k).ToList();
 
                             rgMinDist[j] = rgMin1.Average();
                         }
@@ -436,7 +542,7 @@ namespace MyCaffe.layers.beta
                             m_log.WriteLine("WARNING: KNN cache still filling...");
                     }
                 }
-                // Otherwise, when using CENTROID, calculate the distance using the latest centroids.
+                // Otherwise, when using CENTROID or PREGEN, calculate the distance using the latest centroids.
                 else
                 {
                     m_cuda.sub(nCount,
@@ -475,7 +581,7 @@ namespace MyCaffe.layers.beta
                 colTop[1].ReshapeLike(m_colBlobs[0]);
                 
                 int nCompletedCentroids = (int)convertD(m_colBlobs[1].asum_data());
-                if (m_nIteration > m_nCentroidOutputIteration && nCompletedCentroids == nActiveLabels)
+                if (m_nIteration >= m_nCentroidOutputIteration && nCompletedCentroids == nActiveLabels)
                 {
                     m_cuda.copy(m_colBlobs[0].count(), m_colBlobs[0].gpu_data, colTop[1].mutable_gpu_data);
                 }
