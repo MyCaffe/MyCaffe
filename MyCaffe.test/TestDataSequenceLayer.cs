@@ -28,7 +28,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataSequenceLayerTest t in test.Tests)
                 {
-                    t.TestInitialization(test.SourceName, 0);
+                    t.TestInitialization(test.SourceName, 0, true);
                 }
             }
             finally
@@ -46,7 +46,25 @@ namespace MyCaffe.test
             {
                 foreach (IDataSequenceLayerTest t in test.Tests)
                 {
-                    t.TestSetup(test.SourceName, 0);
+                    t.TestSetup(test.SourceName, 0, true);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestForwardK0Balance()
+        {
+            DataSequenceLayerTest test = new DataSequenceLayerTest("MNIST");
+
+            try
+            {
+                foreach (IDataSequenceLayerTest t in test.Tests)
+                {
+                    t.TestForward(test.SourceName, 0, true);
                 }
             }
             finally
@@ -64,7 +82,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataSequenceLayerTest t in test.Tests)
                 {
-                    t.TestForward(test.SourceName, 0);
+                    t.TestForward(test.SourceName, 0, false);
                 }
             }
             finally
@@ -82,7 +100,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataSequenceLayerTest t in test.Tests)
                 {
-                    t.TestForward(test.SourceName, 1);
+                    t.TestForward(test.SourceName, 1, false);
                 }
             }
             finally
@@ -100,7 +118,7 @@ namespace MyCaffe.test
             {
                 foreach (IDataSequenceLayerTest t in test.Tests)
                 {
-                    t.TestForward(test.SourceName, 5);
+                    t.TestForward(test.SourceName, 5, false);
                 }
             }
             finally
@@ -187,9 +205,9 @@ namespace MyCaffe.test
     interface IDataSequenceLayerTest 
     {
         DataType Type { get; }
-        void TestInitialization(string strSrc, int nK);
-        void TestSetup(string strSrc, int nK);
-        void TestForward(string strSrc, int nK);
+        void TestInitialization(string strSrc, int nK, bool bBalance);
+        void TestSetup(string strSrc, int nK, bool bBalance);
+        void TestForward(string strSrc, int nK, bool bBalance);
     }
 
     class DataSequenceLayerTest<T> : TestEx<T>, IDataSequenceLayerTest
@@ -230,7 +248,12 @@ namespace MyCaffe.test
             Thread.Sleep(2000);
             m_parent.CancelEvent.Reset();
 
-            m_blobCompare.Dispose();
+            if (m_blobCompare != null)
+            {
+                m_blobCompare.Dispose();
+                m_blobCompare = null;
+            }
+
             m_blob_top_label.Dispose();
             m_colDataSeqTop.Dispose();
 
@@ -252,7 +275,7 @@ namespace MyCaffe.test
             get { return m_colDataSeqTop; }
         }
 
-        public void TestInitialization(string strSrc, int nK)
+        public void TestInitialization(string strSrc, int nK, bool bBalance)
         {
             DatasetFactory factory = new DatasetFactory();
             SourceDescriptor src = factory.LoadSource(strSrc);
@@ -269,6 +292,7 @@ namespace MyCaffe.test
 
             p = new LayerParameter(LayerParameter.LayerType.DATA_SEQUENCE);
             p.data_sequence_param.k = nK;
+            p.data_sequence_param.balance_matches = (nK == 0) ? bBalance : false;
             p.data_sequence_param.cache_size = m_kCacheSize;
             p.data_sequence_param.output_labels = true;
             p.data_sequence_param.label_count = 10;
@@ -285,9 +309,9 @@ namespace MyCaffe.test
             }
         }
 
-        public void TestSetup(string strSrc, int nK)
+        public void TestSetup(string strSrc, int nK, bool bBalance)
         {
-            TestInitialization(strSrc, nK);
+            TestInitialization(strSrc, nK, bBalance);
 
             m_log.CHECK_EQ(m_dataSeqLayer.layer_param.data_sequence_param.k, nK, "The 'k' value is incorred!");
             m_log.CHECK_EQ(m_dataSeqLayer.layer_param.data_sequence_param.cache_size, m_kCacheSize, "The 'cache_size' value is incorred!");
@@ -298,9 +322,9 @@ namespace MyCaffe.test
             m_dataSeqLayer.Reshape(TopVec, TopVecSeq);
         }
 
-        public void TestForward(string strSrc, int nK)
+        public void TestForward(string strSrc, int nK, bool bBalance)
         {
-            TestSetup(strSrc, nK);
+            TestSetup(strSrc, nK, bBalance);
 
             for (int i = 0; i < 100; i++)
             {
@@ -349,14 +373,18 @@ namespace MyCaffe.test
                         m_log.CHECK_EQ(nLabelAnchor, nLabelPositive, "The anchor does not equal the positive label!");
                     }
                 }
-                // When k = 0, only one negative label is produced and no positives.
+                // When k = 0, only one negative label is produced and no positives, and when 'balance_matches' = true, the negative alternates between negative and positive.
                 else
                 {
                     for (int j = 0; j < rgLabels.Length; j++)
                     {
                         int nLabelAnchor = (int)rgSeqLabels[j * nTupletDim];
                         int nLabelNegative = (int)rgSeqLabels[j * nTupletDim + 1];
-                        m_log.CHECK_NE(nLabelAnchor, nLabelNegative, "The batch label and anchor label do not match!");
+
+                        if (m_dataSeqLayer.layer_param.data_sequence_param.balance_matches && ((j % 2) == 0))
+                            m_log.CHECK_EQ(nLabelAnchor, nLabelNegative, "The anchor label and negative (balance matching) label should match!");
+                        else
+                            m_log.CHECK_NE(nLabelAnchor, nLabelNegative, "The anchor label and negative label should not match!");
                     }
                 }
 
@@ -368,6 +396,7 @@ namespace MyCaffe.test
                 {
                     Blob<T> anchor = TopVecSeq[0];
                     Blob<T> positive = TopVecSeq[1];
+                    int nDuplicateCount = 0;
 
                     BlobCollection<T> negatives = new BlobCollection<T>();
                     for (int k = 0; k < nK; k++)
@@ -381,7 +410,7 @@ namespace MyCaffe.test
                         m_blobCompare.SetData(0);
                         m_cuda.sub(nDim, anchor.gpu_data, positive.gpu_data, m_blobCompare.mutable_gpu_data, j * nDim, j * nDim);
                         dfAsum = Utility.ConvertVal<T>(m_blobCompare.asum_data());
-                        m_log.CHECK_NE(dfAsum, 0, "The difference between anchor and positive data should not be zero!");
+                        nDuplicateCount += ((dfAsum == 0) ? 1 : 0);
 
                         for (int k = 1; k <= nK; k++)
                         {
@@ -391,20 +420,31 @@ namespace MyCaffe.test
                             m_log.CHECK_NE(dfAsum, 0, "The difference between anchor and negative '" + (k-1).ToString() + " data should not be zero!");
                         }
                     }
+
+                    if (nDuplicateCount >= anchor.num / 2)
+                        m_log.FAIL("Too many duplicates found!");
                 }
                 // When k = 0, only one negative data is produced and no positives.
                 else
                 {
                     Blob<T> anchor = TopVecSeq[0];
                     Blob<T> negative = TopVecSeq[1];
+                    int nDuplicateCount = 0;
 
                     for (int j = 0; j < anchor.num; j++)
                     {
                         m_blobCompare.SetData(0);
                         m_cuda.sub(nDim, anchor.gpu_data, negative.gpu_data, m_blobCompare.mutable_gpu_data, j * nDim, j * nDim);
                         dfAsum = Utility.ConvertVal<T>(m_blobCompare.asum_data());
-                        m_log.CHECK_NE(dfAsum, 0, "The difference between anchor and negative data should not be zero!");
+
+                        if (!m_dataSeqLayer.layer_param.data_sequence_param.balance_matches || ((j % 2) != 0))
+                            m_log.CHECK_NE(dfAsum, 0, "The difference between anchor and negative data should not be zero!");
+                        else
+                            nDuplicateCount += ((dfAsum == 0) ? 1 : 0);
                     }
+
+                    if (nDuplicateCount >= anchor.num / 2)
+                        m_log.FAIL("Too many duplicates found!");
                 }
             }
         }
