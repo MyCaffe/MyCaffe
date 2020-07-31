@@ -52,6 +52,8 @@ namespace MyCaffe.layers.beta
         Blob<T> m_blobSumVec;
         Blob<T> m_blobLossVec;
         Blob<T> m_blobWork;
+        Blob<T> m_blobPreGenTargetsPos;
+        Blob<T> m_blobPreGenTargetsNeg;
         double m_dfAlpha;
 
         /// <summary>
@@ -130,6 +132,18 @@ namespace MyCaffe.layers.beta
                 m_blobWork = null;
             }
 
+            if (m_blobPreGenTargetsPos != null)
+            {
+                m_blobPreGenTargetsPos.Dispose();
+                m_blobPreGenTargetsPos = null;
+            }
+
+            if (m_blobPreGenTargetsNeg != null)
+            {
+                m_blobPreGenTargetsNeg.Dispose();
+                m_blobPreGenTargetsNeg = null;
+            }
+
             base.dispose();
         }
 
@@ -151,19 +165,38 @@ namespace MyCaffe.layers.beta
                 col.Add(m_blobLossVec);
                 col.Add(m_blobWork);
 
+                if (m_blobPreGenTargetsPos != null)
+                    col.Add(m_blobPreGenTargetsPos);
+
+                if (m_blobPreGenTargetsNeg != null)
+                    col.Add(m_blobPreGenTargetsNeg);
+
                 return col;
             }
         }
 
         /// <summary>
-        /// Returns the exact number of required bottom (input) Blobs: anchor, pos, neg, label
+        /// Returns the exact number of bottom blobs which are variable so -1 is returned.
         /// </summary>
-        /// <remarks>
-        /// Use DataSequenceLayer with k=1, balanced_matching = false and output_labels = true to receive correct bottoms.
-        /// </remarks>
         public override int ExactNumBottomBlobs
         {
-            get { return 4; }   // Label is only added to consume it so that it is not treated as an output.
+            get { return -1; }
+        }
+
+        /// <summary>
+        /// Returns the minimum number of bottom blobs: anchor, positive, negative, label
+        /// </summary>
+        public override int MinBottomBlobs
+        {
+            get { return 4; } // anchor, positive, negative, label
+        }
+
+        /// <summary>
+        /// Returns the maximum number of bottom blobs: anchor, positive, negative, label, centroids (from decode layer)
+        /// </summary>
+        public override int MaxBottomBlobs
+        {
+            get { return 5; } // anchor, positive, negative, label, cetroids (from decode layer)
         }
 
         /// <summary>
@@ -224,8 +257,17 @@ namespace MyCaffe.layers.beta
             m_blobLossVec = new Blob<T>(m_cuda, m_log, false);
             m_blobLossVec.Name = "loss vec";
 
-            m_blobWork = new Blob<T>(m_cuda, m_log, false);
+            m_blobWork = new Blob<T>(m_cuda, m_log);
             m_blobWork.Name = "work";
+
+            // If the fifth bottom exists (the centroids) initialize the pregen targets.
+            if (colBottom.Count == 5)
+            {
+                m_blobPreGenTargetsNeg = new Blob<T>(m_cuda, m_log, false);
+                m_blobPreGenTargetsNeg.Name = "pregen neg";
+                m_blobPreGenTargetsPos = new Blob<T>(m_cuda, m_log);
+                m_blobPreGenTargetsPos.Name = "pregen pos";
+            }
         }
 
         /// <summary>
@@ -260,6 +302,67 @@ namespace MyCaffe.layers.beta
 
             List<int> rgLossShape = new List<int>();    // Loss layers output a scalar, 0 axes.
             colTop[0].Reshape(rgLossShape);
+
+            if (m_blobPreGenTargetsNeg != null)
+                m_blobPreGenTargetsNeg.ReshapeLike(colBottom[0]);
+
+            if (m_blobPreGenTargetsPos != null)
+                m_blobPreGenTargetsPos.ReshapeLike(colBottom[0]);
+        }
+
+        /// <summary>
+        /// Loads the pre-gen targets, only made public for testing.
+        /// </summary>
+        /// <param name="lbl">Specifies the blob containing the labels.</param>
+        /// <param name="tgt">Specifies the blob containing the pre-generated targets.</param>
+        /// <param name="tgtNeg">Specifies the blob where the negatively matching targets are copied.</param>
+        /// <param name="tgtPos">Specifies the blob where the positively matching targets are copied.</param>
+        public void loadPreGenTargets(Blob<T> lbl, Blob<T> tgt, Blob<T> tgtNeg, Blob<T> tgtPos)
+        {
+            float[] rgLabels = convertF(lbl.update_cpu_data());
+            int nLblDim = lbl.count(1);
+            int nLblNum = tgt.num;
+            int nNum = lbl.num;
+            int nDim = tgt.count(1);
+            Random rand = new Random();
+            List<int> rgLabelVals = new List<int>();
+            Dictionary<int, List<int>> rgrgLabelSel = new Dictionary<int, List<int>>();
+
+            for (int i = 0; i < tgt.num; i++)
+            {
+                rgLabelVals.Add(i + m_param.triplet_loss_param.pregen_label_start);
+                rgrgLabelSel.Add(i + m_param.triplet_loss_param.pregen_label_start, new List<int>());
+            }
+
+            m_log.CHECK_EQ(nNum, tgtNeg.num, "The neg targets have an incorrect num!");
+            m_log.CHECK_EQ(nNum, tgtPos.num, "The pos targets have an incorrect num!");
+            m_log.CHECK_EQ(nDim, tgtNeg.count(1), "The neg targets have an incorrect dim!");
+            m_log.CHECK_EQ(nDim, tgtPos.count(1), "The pos targets have an incorrect dim!");
+
+            for (int i = 0; i < nNum; i++)
+            {
+                int nLabel = (int)rgLabels[i * nLblDim];
+
+
+                // Copy the positive to match the anchor label.
+                m_cuda.copy(nDim, tgt.gpu_data, tgtPos.mutable_gpu_data, nLabel * nDim, i * nDim);
+
+                // Copy the negative to NOT match the anchor label.
+                if (rgrgLabelSel[nLabel].Count == 0)
+                {
+                    for (int l = 0; l < rgLabelVals.Count; l++)
+                    {
+                        if (rgLabelVals[l] != nLabel)
+                            rgrgLabelSel[nLabel].Add(rgLabelVals[l]);
+                    }
+                }
+
+                int nLabelIdx = rand.Next(rgrgLabelSel[nLabel].Count);
+                int nLabelX = rgrgLabelSel[nLabel][nLabelIdx];
+                rgrgLabelSel[nLabel].Remove(nLabelX);
+
+                m_cuda.copy(nDim, tgt.gpu_data, tgtNeg.mutable_gpu_data, nLabelX * nDim, i * nDim);
+            }
         }
 
         /// <summary>
@@ -281,7 +384,7 @@ namespace MyCaffe.layers.beta
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
-            m_log.CHECK_EQ(4, colBottom.Count, "The bottom must have 4 items: anchor, positives, negatives and label.");
+            m_log.CHECK_GE(colBottom.Count, 4, "The bottom must have at least 4 items: anchor, positives, negatives and label.");
             int nCount = colBottom[0].count();
             int nNum = colBottom[0].num;
             int nDim = colBottom[0].count(1);
@@ -289,9 +392,15 @@ namespace MyCaffe.layers.beta
             long hPositive = colBottom[1].gpu_data;
             long hNegative = colBottom[2].gpu_data;
 
+
+            m_blobWork.Reshape(nNum, 1, 1, 1);
+
+            m_log.CHECK_EQ(colBottom.Count, 4, "Currently, external targts such as centroids are not supported.");
+            //if (colBottom.Count == 5)
+            //    loadPreGenTargets(colBottom[3], colBottom[4], m_blobPreGenTargetsNeg, m_blobPreGenTargetsPos);
+
             m_cuda.sub(nCount, hAnchor, hPositive, m_blobDiffAP.mutable_gpu_data);   // a_i - p_i
             m_cuda.sub(nCount, hAnchor, hNegative, m_blobDiffAN.mutable_gpu_data);   // a_i - n_i
-            m_cuda.sub(nCount, hPositive, hNegative, m_blobDiffPN.mutable_gpu_data); // p_i - n_i
 
             m_cuda.powx(nCount, m_blobDiffAP.gpu_data, 2.0, m_blobDiffSqAP.mutable_gpu_data); // (a_i - p_i)^2
             m_cuda.gemv(false, nNum, nDim, 1.0, m_blobDiffSqAP.gpu_data, m_blobSumVec.gpu_data, 0.0, m_blobDistSqAP.mutable_gpu_data); // \Sum (a_i - p_i)^2
@@ -309,7 +418,6 @@ namespace MyCaffe.layers.beta
 
             double dfLoss = m_cuda.asum_double(nNum, m_blobWork.gpu_data);
             dfLoss /= (nNum * 2.0);
-
             colTop[0].SetData(dfLoss, 0);
         }
 
@@ -331,33 +439,32 @@ namespace MyCaffe.layers.beta
         /// </param>
         protected override void backward(BlobCollection<T> colTop, List<bool> rgbPropagateDown, BlobCollection<T> colBottom)
         {
+            int nCount = colBottom[0].count();
+            int nNum = colBottom[0].num;
+            double dfDiff = convertD(colTop[0].GetDiff(0));
+            double dfAlpha = dfDiff / (double)nNum;
             long hAnchor = colBottom[0].gpu_data;
             long hPositive = colBottom[1].gpu_data;
             long hNegative = colBottom[2].gpu_data;
-            int nCount = colBottom[0].count();
-            int nNum = colBottom[0].num;
-            double dfMargin = m_dfAlpha;
-            double dfDiff = convertD(colTop[0].GetDiff(0));
-            double dfScale = dfDiff / (double)nNum;
 
-            m_cuda.sub(nCount, hNegative, hPositive, m_blobDiffPN.mutable_gpu_diff);
-            m_cuda.sub(nCount, hPositive, hAnchor, m_blobDiffAP.mutable_gpu_diff);
-            m_cuda.sub(nCount, hAnchor, hNegative, m_blobDiffAN.mutable_gpu_diff);
+            m_blobLossVec.scale_data(dfAlpha);
 
-            BlobCollection<T> colDiff = new BlobCollection<T>();
-            colDiff.Add(m_blobDiffPN);
-            colDiff.Add(m_blobDiffAP);
-            colDiff.Add(m_blobDiffAN);
-
-            m_blobLossVec.scale_data(dfMargin);
-
-            for (int i = 0; i < 3; i++)
+            if (rgbPropagateDown[0])
             {
-                // calculate the gradients.
-                m_cuda.scale(nCount, dfScale, colDiff[i].gpu_diff, colBottom[i].mutable_gpu_diff);
+                m_cuda.sub(nCount, hNegative, hPositive, m_blobDiffPN.mutable_gpu_diff);
+                m_cuda.mul(nCount, m_blobLossVec.gpu_data, m_blobDiffPN.gpu_diff, colBottom[0].mutable_gpu_diff);
+            }
 
-                // zero out all diff that have zero loss.
-                m_cuda.mul(nCount, colBottom[i].gpu_diff, m_blobLossVec.gpu_data, colBottom[i].mutable_gpu_diff);
+            if (rgbPropagateDown[1])
+            {
+                m_cuda.sub(nCount, hPositive, hAnchor, m_blobDiffAP.mutable_gpu_diff);
+                m_cuda.mul(nCount, m_blobLossVec.gpu_data, m_blobDiffAP.gpu_diff, colBottom[1].mutable_gpu_diff);
+            }
+
+            if (rgbPropagateDown[2])
+            {
+                m_cuda.sub(nCount, hAnchor, hNegative, m_blobDiffAN.mutable_gpu_diff);
+                m_cuda.mul(nCount, m_blobLossVec.gpu_data, m_blobDiffAN.gpu_diff, colBottom[2].mutable_gpu_diff);
             }
         }
     }

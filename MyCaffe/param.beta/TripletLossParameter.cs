@@ -31,6 +31,7 @@ namespace MyCaffe.param.beta
     public class TripletLossParameter : LayerParameterBase 
     {
         double m_dfAlpha = 1.1;
+        int m_nPreGenerateTargtStart = 0;
 
         /** @copydoc LayerParameterBase */
         public TripletLossParameter()
@@ -44,6 +45,16 @@ namespace MyCaffe.param.beta
         {
             get { return m_dfAlpha; }
             set { m_dfAlpha = value; }
+        }
+
+        /// <summary>
+        /// Specifies the starting label for pre-generated targets, only used when 'colBottom.Count' = 5, which contains centroids.
+        /// </summary>
+        [Description("Specifies the starting label for pre-generated targets, only used when 'colBottom.Count' = 5, which contains centroids.")]
+        public int pregen_label_start
+        {
+            get { return m_nPreGenerateTargtStart; }
+            set { m_nPreGenerateTargtStart = value; }
         }
 
         /** @copydoc LayerParameterBase::Load */
@@ -63,6 +74,7 @@ namespace MyCaffe.param.beta
         {
             TripletLossParameter p = (TripletLossParameter)src;
             m_dfAlpha = p.m_dfAlpha;
+            m_nPreGenerateTargtStart = p.m_nPreGenerateTargtStart;
         }
 
         /** @copydoc LayerParameterBase::Clone */
@@ -79,6 +91,7 @@ namespace MyCaffe.param.beta
             RawProtoCollection rgChildren = new RawProtoCollection();
 
             rgChildren.Add("alpha", alpha.ToString());
+            rgChildren.Add("pregen_label_start", pregen_label_start.ToString());
 
             return new RawProto(strName, "", rgChildren);
         }
@@ -95,6 +108,9 @@ namespace MyCaffe.param.beta
 
             if ((strVal = rp.FindValue("alpha")) != null)
                 p.alpha = double.Parse(strVal);
+
+            if ((strVal = rp.FindValue("pregen_label_start")) != null)
+                p.pregen_label_start = int.Parse(strVal);
 
             return p;
         }
