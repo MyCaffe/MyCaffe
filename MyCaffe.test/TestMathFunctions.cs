@@ -132,7 +132,25 @@ namespace MyCaffe.test
             {
                 foreach (IMathFunctionsTest t in test.Tests)
                 {
-                    t.TestMinMaxVec(5);
+                    t.TestMinMaxVec(5, false);
+                }
+            }
+            finally
+            {
+                test.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public void TestMinMaxVecNonZero()
+        {
+            MathFunctionsTest test = new MathFunctionsTest(EngineParameter.Engine.CAFFE);
+
+            try
+            {
+                foreach (IMathFunctionsTest t in test.Tests)
+                {
+                    t.TestMinMaxVec(5, true);
                 }
             }
             finally
@@ -241,7 +259,7 @@ namespace MyCaffe.test
         void TestScale();
         void TestCopy();
         void TestMinMax();
-        void TestMinMaxVec(int nK);
+        void TestMinMaxVec(int nK, bool bNonZero);
         void TestNanInf();
         void TestMinMaxOneElm();
         void TestNanInfOneElm();
@@ -417,7 +435,7 @@ namespace MyCaffe.test
             work.Dispose();
         }
 
-        public void TestMinMaxVec(int nK)
+        public void TestMinMaxVec(int nK, bool bNonZero)
         {
             double dfFree;
             double dfUsed;
@@ -432,13 +450,13 @@ namespace MyCaffe.test
             long hMax = m_cuda.AllocHostBuffer(nK);
 
             data.Reshape(nSize, 3, 224, 224);
-            m_cuda.minmax(data.count(), 0, 0, 0, nK, hMin, hMax);
+            m_cuda.minmax(data.count(), 0, 0, 0, nK, hMin, hMax, bNonZero);
             double[] rgMin = m_cuda.GetHostMemoryDouble(hMin);
             double[] rgMax = m_cuda.GetHostMemoryDouble(hMax);
             work.Reshape((int)rgMin[0], 1, 1, 1);
             m_filler.Fill(data);
 
-            m_cuda.minmax(data.count(), data.gpu_data, work.mutable_gpu_data, work.mutable_gpu_diff, nK, hMin, hMax);
+            m_cuda.minmax(data.count(), data.gpu_data, work.mutable_gpu_data, work.mutable_gpu_diff, nK, hMin, hMax, bNonZero);
 
             rgMin = m_cuda.GetHostMemoryDouble(hMin);
             rgMax = m_cuda.GetHostMemoryDouble(hMax);
