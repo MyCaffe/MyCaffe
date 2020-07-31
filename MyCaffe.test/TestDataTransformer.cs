@@ -382,6 +382,8 @@ namespace MyCaffe.test
                 if (dfVal == 0)
                     dfVal += 1;
             }
+
+            transformer.Dispose();
         }
 
         public void TestSetRange()
@@ -419,6 +421,8 @@ namespace MyCaffe.test
                 if (dfVal == 0)
                     dfVal += 1;
             }
+
+            transformer.Dispose();
         }
 
         public void TestSetRangeBig()
@@ -463,6 +467,9 @@ namespace MyCaffe.test
                 if (dfVal > 5)
                     dfVal = -5;
             }
+
+            b.Dispose();
+            transformer.Dispose();
         }
 
         public Datum CreateDatum(int nLabel, int nChannels, int nHeight, int nWidth, bool bUniquePixels, bool bUseRichAnnotation = false, SimpleDatum.ANNOTATION_TYPE type = SimpleDatum.ANNOTATION_TYPE.NONE)
@@ -536,6 +543,7 @@ namespace MyCaffe.test
             }
 
             blob.Dispose();
+            transformer.Dispose();
 
             return nNumSequenceMatches;
         }
@@ -569,6 +577,7 @@ namespace MyCaffe.test
             }
 
             blob.Dispose();
+            transformer.Dispose();
         }
 
         public void TestEmptyTransformUniquePixels()
@@ -600,6 +609,7 @@ namespace MyCaffe.test
             }
 
             blob.Dispose();
+            transformer.Dispose();
         }
 
         public void TestCropSize()
@@ -637,6 +647,7 @@ namespace MyCaffe.test
             }
 
             blob.Dispose();
+            transformer.Dispose();
         }
 
         public void TestCropTrain()
@@ -778,6 +789,9 @@ namespace MyCaffe.test
 
                 m_log.CHECK_EQ(dfVal, nLabel - nMeanValue, "The data at " + j.ToString() + " is not as expected.");
             }
+
+            blob.Dispose();
+            transformer.Dispose();
         }
 
         public void TestMeanValues()
@@ -810,6 +824,9 @@ namespace MyCaffe.test
                     m_log.CHECK_EQ(dfVal, nLabel - c, "The data at " + j.ToString() + " is not as expected.");
                 }
             }
+
+            blob.Dispose();
+            transformer.Dispose();
         }
 
         public void TestRichLabel()
@@ -845,6 +862,9 @@ namespace MyCaffe.test
                 m_log.EXPECT_NEAR_FLOAT(anno.bbox.xmax, a * 0.1f + 0.2f, fEps);
                 m_log.EXPECT_NEAR_FLOAT(anno.bbox.ymax, a * 0.1f + 0.2f, fEps);
             }
+
+            blob.Dispose();
+            transformer.Dispose();
         }
 
         public void TestRichLabelCrop()
@@ -881,6 +901,9 @@ namespace MyCaffe.test
                 m_log.EXPECT_NEAR_FLOAT(anno.bbox.xmax, 1.0f, fEps);
                 m_log.EXPECT_NEAR_FLOAT(anno.bbox.ymax, 1.0f, fEps);
             }
+
+            blob.Dispose();
+            transformer.Dispose();
         }
 
         public void TestRichLabelCropMirror()
@@ -934,6 +957,9 @@ namespace MyCaffe.test
                     }
                 }
             }
+
+            blob.Dispose();
+            transformer.Dispose();
         }
     }
 }

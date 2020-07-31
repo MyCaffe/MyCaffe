@@ -106,6 +106,12 @@ namespace MyCaffe.layers.ssd
                 m_bboxUtil = null;
             }
 
+            if (m_transformer != null)
+            {
+                m_transformer.Dispose();
+                m_transformer = null;
+            }
+
             base.dispose();
         }
 

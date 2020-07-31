@@ -70,6 +70,11 @@ namespace MyCaffe.layers
         /** @copydoc Layer::dispose */
         protected override void dispose()
         {
+            if (m_transformer != null)
+            {
+                m_transformer.Dispose();
+                m_transformer = null;
+            }
         }
 
         /// <summary>

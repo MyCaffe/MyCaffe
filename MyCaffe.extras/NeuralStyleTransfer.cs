@@ -196,6 +196,12 @@ namespace MyCaffe.extras
                 m_hWorkspaceData = 0;
                 m_lWorkspaceSize = 0;
             }
+
+            if (m_transformer != null)
+            {
+                m_transformer.Dispose();
+                m_transformer = null;
+            }
         }
 
         /// <summary>

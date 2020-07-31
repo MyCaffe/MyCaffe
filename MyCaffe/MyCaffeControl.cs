@@ -205,6 +205,12 @@ namespace MyCaffe
                     m_msWeights.Dispose();
                     m_msWeights = null;
                 }
+
+                if (m_dataTransformer != null)
+                {
+                    m_dataTransformer.Dispose();
+                    m_dataTransformer = null;
+                }
             }
             finally
             {
