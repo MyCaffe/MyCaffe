@@ -446,8 +446,6 @@ namespace MyCaffe.param
             RawProto rpDistort = rp.FindChild("distortion_param");
             if (rpDistort != null)
                 p.distortion_param = DistortionParameter.FromProto(rpDistort);
-            else
-                p.distortion_param = null;
 
             RawProto rpExpand = rp.FindChild("expansion_param");
             if (rpExpand != null)
