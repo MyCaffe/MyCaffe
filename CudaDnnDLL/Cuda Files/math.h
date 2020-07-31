@@ -174,7 +174,7 @@ class Math
 		long maxval(int n, long hA, T* pOut, int nAOff = 0, long* plPos = NULL);
 		long minval(int n, long hA, T* pOut, int nAOff = 0, long* plPos = NULL);
 		long minmaxval(int n, long hA, long hWork1, long hWork2, T* pMin, T* pMax, int nAOff = 0);
-		long minmaxvec(int n, long hA, long hWork1, long hWork2, int nK, long hMin, long hMax);
+		long minmaxvec(int n, long hA, long hWork1, long hWork2, int nK, long hMin, long hMax, bool bNonZero);
 		long naninfval(int n, long hA, long hWork1, long hWork2, T* pNan, T* pInf, int nAOff = 0);
 		long sumsq(int n, long hW, long hA, int nAOff, T* pOut);
 		long sumsqdiff(int n, long hW, long hA, long hB, int nAOff, int nBOff, T* pOut);

@@ -2833,6 +2833,55 @@ __global__ void minmax_kernel(const T* d_data, T* d_min, T* d_max, const size_t 
 }
 
 template <class T>
+__global__ void minmax_nonzero_kernel(const T* d_data, T* d_min, T* d_max, const size_t n, const T MIN, const T MAX)
+{
+	// Load a segment of the input vector into shared memory
+	__shared__ T sharedMin[MAX_SH_MEM];
+	__shared__ T sharedMax[MAX_SH_MEM];
+	int tid = threadIdx.x;
+	int gid = (blockDim.x * blockIdx.x) + tid;
+
+	sharedMin[tid] = MIN;
+	sharedMax[tid] = MAX;
+	__syncthreads();
+
+	while (gid < n)
+	{
+		if (d_data[gid] != 0)
+		{
+			sharedMin[tid] = min(sharedMin[tid], d_data[gid]);
+			sharedMax[tid] = max(sharedMax[tid], d_data[gid]);
+		}
+		gid += gridDim.x * blockDim.x;
+	}
+	__syncthreads();
+
+	for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1)
+	{
+		if (tid < s)
+		{
+			int nIdx = tid + s;
+			if (nIdx < MAX_SH_MEM)
+			{
+				if (sharedMin[nIdx] != 0)
+					sharedMin[tid] = min(sharedMin[tid], sharedMin[nIdx]);
+
+				if (sharedMax[nIdx] != 0)
+					sharedMax[tid] = max(sharedMax[tid], sharedMax[nIdx]);
+			}
+		}
+
+		__syncthreads();
+	}
+
+	if (tid == 0)
+	{
+		math_atomic_min(d_min, sharedMin[0]);
+		math_atomic_max(d_max, sharedMax[0]);
+	}
+}
+
+template <class T>
 long Math<T>::minmaxval(int n, long hA, long hWork1, long hWork2, T* pMin, T* pMax, int nAOff)
 {
 	int nBlocks = DIVUP(n, MAX_SH_MEM);
@@ -2937,7 +2986,7 @@ template long Math<double>::minmaxval(int n, long hA, long hWork1, long hWork2, 
 template long Math<float>::minmaxval(int n, long hA, long hWork1, long hWork2, float* pMin, float* pMax, int nAOff);
 
 template <class T>
-long Math<T>::minmaxvec(int n, long hA, long hWork1, long hWork2, int nK, long hMin, long hMax)
+long Math<T>::minmaxvec(int n, long hA, long hWork1, long hWork2, int nK, long hMin, long hMax, bool bNonZero)
 {
 	int nBlocks = DIVUP(n, MAX_SH_MEM);
 
@@ -3018,7 +3067,10 @@ long Math<T>::minmaxvec(int n, long hA, long hWork1, long hWork2, int nK, long h
 		if (lErr = cudaMemset(w2, 0, (size_t)lSize))
 			return lErr;
 
-		minmax_kernel<T> << <nBlocks, MAX_SH_MEM >> > (a, w1, w2, nSize, fMin, fMax);
+		if (bNonZero)
+			minmax_nonzero_kernel<T> << <nBlocks, MAX_SH_MEM >> > (a, w1, w2, nSize, fMin, fMax);
+		else
+			minmax_kernel<T> << <nBlocks, MAX_SH_MEM >> > (a, w1, w2, nSize, fMin, fMax);
 
 		if (lErr = cudaStreamSynchronize(0))
 			return lErr;
@@ -3074,10 +3126,10 @@ long Math<T>::minmaxvec(int n, long hA, long hWork1, long hWork2, int nK, long h
 			}
 		}
 
-		if (nMinIdx >= 0 && fMin1 < pMin[nMinIdx])
+		if (nMinIdx >= 0 && fMin1 < pMin[nMinIdx] && (!bNonZero || fMin1 != 0))
 			pMin[nMinIdx] = fMin1;
 
-		if (nMaxIdx >= 0 && fMax1 > pMin[nMaxIdx])
+		if (nMaxIdx >= 0 && fMax1 > pMin[nMaxIdx] && (!bNonZero || fMax1 != 0))
 			pMax[nMaxIdx] = fMax1;
 
 		a += nSize;
@@ -3091,8 +3143,8 @@ long Math<T>::minmaxvec(int n, long hA, long hWork1, long hWork2, int nK, long h
 	return CUDA_SUCCESS;
 }
 
-template long Math<double>::minmaxvec(int n, long hA, long hWork1, long hWork2, int nCount, long hMin, long hMax);
-template long Math<float>::minmaxvec(int n, long hA, long hWork1, long hWork2, int nCount, long hMin, long hMax);
+template long Math<double>::minmaxvec(int n, long hA, long hWork1, long hWork2, int nCount, long hMin, long hMax, bool bNonZero);
+template long Math<float>::minmaxvec(int n, long hA, long hWork1, long hWork2, int nCount, long hMin, long hMax, bool bNonZero);
 
 
 template <class T>
@@ -11057,15 +11109,14 @@ template long Math<float>::gaussian_blur(int n, int c, int h, int w, float fSigm
 
 
 template <typename T>
-__global__ void distort_image_kernel(const int nNum, const int chw, const T* order, const T* brightness, const T* contrast, const T* saturation, T* x, T* y)
+__global__ void distort_image_kernel(const int nCount, const int nNum, const T* order, const T* brightness, const T* contrast, const T* saturation, T* x, T* y)
 {
-	for (int n=0; n<nNum; n++)
+	for (unsigned int i = blockIdx.x * blockDim.x + threadIdx.x; i < nCount; i += blockDim.x * gridDim.x)
 	{
-		const int i = (n * chw) + blockIdx.x * blockDim.x + threadIdx.x;
+		const int n = i % nNum;
 
 		// Brightness.
 		y[i] = truncate(x[i] + brightness[n]);
-
 
 		if (order[n] == 1)
 		{
@@ -11195,7 +11246,7 @@ long Math<T>::distort_image(int n, int c, int h, int w, T fBrightnessProb, T fBr
 	int nSpatialDim = c * h * w;
 	int nCount = n * nSpatialDim;
 
-	distort_image_kernel<T><<<CAFFE_GET_BLOCKS(nSpatialDim), CAFFE_CUDA_NUM_THREADS>>>(n, nSpatialDim, pOrdering, pBrightness, pContrast, pSaturation, (T*)pX->Data(), (T*)pY->Data());
+	distort_image_kernel<T><<<CAFFE_GET_BLOCKS(nCount), CAFFE_CUDA_NUM_THREADS>>>(nCount, n, pOrdering, pBrightness, pContrast, pSaturation, (T*)pX->Data(), (T*)pY->Data());
 
 	lErr = cudaStreamSynchronize(0);
 

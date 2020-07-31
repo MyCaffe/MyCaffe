@@ -2176,7 +2176,7 @@ long Device<T>::cuda_minmaxvec(long lInput, T* pfInput, long* plOutput, T** ppfO
 {
 	LONG lErr;
 
-	if (lErr = verifyInput(lInput, pfInput, 7, 7))
+	if (lErr = verifyInput(lInput, pfInput, 8, 8))
 		return lErr;
 
 	int n = (int)pfInput[0];
@@ -2186,8 +2186,9 @@ long Device<T>::cuda_minmaxvec(long lInput, T* pfInput, long* plOutput, T** ppfO
 	int nK = (int)pfInput[4];
 	long hMin = (long)pfInput[5];
 	long hMax = (long)pfInput[6];
+	bool bNonZero = (bool)(pfInput[7] == 0) ? true : false;
 
-	return m_math.minmaxvec(n, hA, hWork1, hWork2, nK, hMin, hMax);
+	return m_math.minmaxvec(n, hA, hWork1, hWork2, nK, hMin, hMax, bNonZero);
 }
 
 template long Device<double>::cuda_minmaxvec(long lInput, double* pfInput, long* plOutput, double** ppfOutput);

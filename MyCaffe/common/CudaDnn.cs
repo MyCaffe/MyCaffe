@@ -5080,7 +5080,7 @@ namespace MyCaffe.common
         /// <param name="nDstCount">Specifies the total data length of the hDstCache</param>
         /// <param name="hDstCache">Specifies a handle to the GPU memory of the destination cache.</param>
         /// <param name="hWorkDevData">Specifies a handle to the GPU memory of the device work data that is the same size as the hDstCache.</param>
-        /// <param name="nLabelStart">Specifies the first label of all possible labels.</param>"
+        /// <param name="nLabelStart">Specifies the first label of all possible labels.</param>
         /// <param name="nLabelCount">Specifies the total number of labels (expects labels to be sequential from 'nLabelStart').</param>
         /// <param name="nCacheSize">Specifies the size of each labeled data cache.</param>
         /// <param name="hCacheHostCursors">Specifies a handle to host memmory (allocated using AllocateHostBuffer) containing the label cursors - there should be 'nLabelCount' cursors.</param>
@@ -5106,7 +5106,7 @@ namespace MyCaffe.common
         /// <param name="hSrcLbl">Specifies a handle to the GPU memory of source labels.</param>
         /// <param name="nSrcCacheCount">Specifis the number of items in hSrcCache (nCacheSize * nLabelCount).</param>
         /// <param name="hSrcCache">Specifies a handle to the cached labeled data.</param>
-        /// <param name="nLabelStart">Specifies the first label of all possible labels.</param>"
+        /// <param name="nLabelStart">Specifies the first label of all possible labels.</param>
         /// <param name="nLabelCount">Specifies the total number of labels (expects labels to be sequential from 'nLabelStart').</param>
         /// <param name="nCacheSize">Specifies the size of each labeled data cache.</param>
         /// <param name="hCacheHostCursors">Specifies a handle to host memmory containing the label cursors - there should be 'nLabelCount' cursors.</param>
@@ -5114,7 +5114,7 @@ namespace MyCaffe.common
         /// <param name="rghTop">Specifies a list of the GPU memory for each top item.  The number of top items expected depends on the 'nK' value.</param>
         /// <param name="rgnTopCount">Specifies a list of the item count for each top item.  The number of top items expected depends on the 'nK' value.</param>
         /// <param name="hWorkDataHost">Specifies a handle to host memory (allocated using AllocateHostBuffer) used for work - must be nNum in item length and must be the same hWorkDataHost passed to 'copy_batch'.</param>
-        /// <param name="bCombinePositiveAndNegative">Optionally, specifies to combine the positive and negative items by alternating between each and placing both in Top[1], while also making sure the output labels reflect the alternation.</param>"
+        /// <param name="bCombinePositiveAndNegative">Optionally, specifies to combine the positive and negative items by alternating between each and placing both in Top[1], while also making sure the output labels reflect the alternation.</param>
         /// <param name="nSeed">Optionally, specifies a seed for the random number generator (default = 0, which igores this parameter).</param>
         /// <remarks>
         /// Receiving an error ERROR_BATCH_TOO_SMALL indicates that the batch size is too small and does not have enough labels to choose from.  Each batch should have at least two instances of each labeled item.
@@ -6399,12 +6399,13 @@ namespace MyCaffe.common
         /// <param name="nK">Specifies the number of min and max values to find.</param>
         /// <param name="hMin">Specifies a handle to host memory allocated with AllocHostBuffer in the length 'nK' where the min values are placed.</param>
         /// <param name="hMax">Specifies a handle to host memory allocated with AllocHostBuffer in the length 'nK' where the min values are placed.</param>
-        public void minmax(int n, long hA, long hWork1, long hWork2, int nK, long hMin, long hMax)
+        /// <param name="bNonZeroOnly">Specifies whether or not to exclude zero from the min and max calculations.</param>
+        public void minmax(int n, long hA, long hWork1, long hWork2, int nK, long hMin, long hMax, bool bNonZeroOnly)
         {
             if (m_dt == DataType.DOUBLE)
-                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVEC, new double[] { n, hA, hWork1, hWork2, nK, hMin, hMax });
+                m_cuda.RunDouble((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVEC, new double[] { n, hA, hWork1, hWork2, nK, hMin, hMax, (bNonZeroOnly) ? 1 : 0 });
             else
-                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVEC, new float[] { n, hA, hWork1, hWork2, nK, hMin, hMax });
+                m_cuda.RunFloat((int)m_hKernel, (int)CUDAFN.CUDA_MINMAXVEC, new float[] { n, hA, hWork1, hWork2, nK, hMin, hMax, (bNonZeroOnly) ? 1 : 0 });
         }
 
         /// <summary>
