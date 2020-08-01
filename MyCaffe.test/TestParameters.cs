@@ -1031,6 +1031,8 @@ namespace MyCaffe.test
             RawProto proto = RawProto.Parse(str).FindChild("transform_param");
             TransformationParameter p = TransformationParameter.FromProto(proto);
 
+            p.distortion_param = null;
+
             Assert.AreEqual(p.scale, 0.5);
             Assert.AreEqual(p.mirror, true);
             Assert.AreEqual(p.crop_size, (uint)3);
@@ -1052,6 +1054,8 @@ namespace MyCaffe.test
             string str = "transform_param { scale: 3.5 mirror: True crop_size: 3 mean_value: 2 mean_value: 3 mean_value: 4 force_gray: True color_order: RGB mask_param { option { active: False } boundary_left: 0 boundary_right: 0 boundary_top: 0 boundary_bottom: 0 } label_mapping { option { active: False } } }";
             RawProto proto = RawProto.Parse(str).FindChild("transform_param");
             TransformationParameter p = TransformationParameter.FromProto(proto);
+
+            p.distortion_param = null;
 
             Assert.AreEqual(p.scale, 3.5);
             Assert.AreEqual(p.mirror, true);
