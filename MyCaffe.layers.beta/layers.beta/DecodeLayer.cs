@@ -318,9 +318,10 @@ namespace MyCaffe.layers.beta
         ///     indicating the correct class label among the @f$ K @f$ classes.
         /// </param>
         /// <param name="colTop">top output blob vector (length 1)
-        ///  -# @f$ (1 \times 1 \times 1 \times 1) @f$
-        ///     the computed accuracy each calculated by finding the label with the minimum
-        ///     distance to each encoding.
+        ///  -# @f$ (N \times L \times 1 \times 1) @f$
+        ///     the computed distance of each item where the label with the smallest
+        ///     distance represents the selected label.  The L dimension size equals
+        ///     the number of labels in the data set (e.g. with MNIST L = 10).
         /// </param>
         protected override void forward(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
