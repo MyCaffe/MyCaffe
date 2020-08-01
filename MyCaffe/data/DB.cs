@@ -104,6 +104,14 @@ namespace MyCaffe.data
         }
 
         /// <summary>
+        /// Returns the number of items traversed.
+        /// </summary>
+        public int Count
+        {
+            get { return m_nCount; }
+        }
+
+        /// <summary>
         /// Queryies to see if we are still within the bounds of the data source, if so <i>true</i> is returned, 
         /// otherwise if the Cursor it as the end of the data source, <i>false</i> is returned.
         /// </summary>
