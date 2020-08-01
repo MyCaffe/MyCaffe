@@ -70,7 +70,8 @@ namespace MyCaffe.app
         enum NET_TYPE
         {
             LENET,
-            SIAMESENET
+            SIAMESENET,
+            TRIPLETNET
         }
 
         enum STATUS
@@ -761,6 +762,8 @@ namespace MyCaffe.app
 
                         if (m_netType == NET_TYPE.SIAMESENET)
                             strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.siamese_train_val);
+                        else if (m_netType == NET_TYPE.TRIPLETNET)
+                            strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.triplet_train_val);
 
                         m_caffeRun.LoadToRun(strModel, m_rgTrainedWeights, new BlobShape(1, 1, 28, 28), m_sdImageMean);
                         runTestImageToolStripMenuItem.Enabled = true;
@@ -879,6 +882,29 @@ namespace MyCaffe.app
                 m_bwProcess.RunWorkerAsync();
 
             m_netType = NET_TYPE.SIAMESENET;
+            m_Cmd = COMMAND.CREATE;
+            m_evtCommandRead.Set();
+        }
+
+        private void createUsingTripletNETToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            m_bCaffeCreated = true;
+            createMyCaffeToolStripMenuItem.Enabled = false;
+            destroyMyCaffeToolStripMenuItem.Enabled = false;
+            trainMNISTToolStripMenuItem.Enabled = false;
+            testMNISTToolStripMenuItem.Enabled = false;
+            loadCIFAR10ToolStripMenuItem.Enabled = false;
+            loadVOC2007ToolStripMenuItem.Enabled = false;
+            deviceInformationToolStripMenuItem.Enabled = false;
+            specialTestsToolStripMenuItem.Enabled = false;
+            abortToolStripMenuItem.Enabled = true;
+            m_evtCancel.Reset();
+            m_evtCaffeCancel.Reset();
+
+            if (!m_bwProcess.IsBusy)
+                m_bwProcess.RunWorkerAsync();
+
+            m_netType = NET_TYPE.TRIPLETNET;
             m_Cmd = COMMAND.CREATE;
             m_evtCommandRead.Set();
         }
@@ -1043,6 +1069,12 @@ namespace MyCaffe.app
                                 {
                                     strSolver = System.Text.Encoding.UTF8.GetString(Properties.Resources.siamese_solver);
                                     strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.siamese_train_val);
+                                }
+
+                                else if (m_netType == NET_TYPE.TRIPLETNET)
+                                {
+                                    strSolver = System.Text.Encoding.UTF8.GetString(Properties.Resources.triplet_solver);
+                                    strModel = System.Text.Encoding.UTF8.GetString(Properties.Resources.triplet_train_val);
                                 }
 
                                 caffe.Load(Phase.TRAIN, strSolver, strModel, null);

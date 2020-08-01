@@ -203,6 +203,8 @@
     <None Include="Resources\resnet56_cifar_train_val.prototxt" />
     <None Include="Resources\siamese_solver.prototxt" />
     <None Include="Resources\siamese_train_val.prototxt" />
+    <None Include="Resources\triplet_solver.prototxt" />
+    <None Include="Resources\triplet_train_val.prototxt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">

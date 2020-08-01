@@ -167,5 +167,25 @@ namespace MyCaffe.app.Properties {
                 return ((byte[])(obj));
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] triplet_solver {
+            get {
+                object obj = ResourceManager.GetObject("triplet_solver", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Byte[].
+        /// </summary>
+        internal static byte[] triplet_train_val {
+            get {
+                object obj = ResourceManager.GetObject("triplet_train_val", resourceCulture);
+                return ((byte[])(obj));
+            }
+        }
     }
 }
