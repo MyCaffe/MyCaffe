@@ -485,7 +485,7 @@ namespace MyCaffe.layers
 
             if (!m_cursor.IsValid)
             {
-                m_log.WriteLine("Restarting data prefetching from start.");
+                m_log.WriteLine("Restarting data prefetching to start of " + m_cursor.Count.ToString() + " items.");
                 m_cursor.SeekToFirst();
             }
 
