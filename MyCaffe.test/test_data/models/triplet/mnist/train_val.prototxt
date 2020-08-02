@@ -11,7 +11,7 @@ layer
    }
    transform_param 
    {
-      scale: 0.0390625
+      scale: 0.00390625
       mirror: True
       use_imagedb_mean: True
       color_order: RGB
@@ -55,7 +55,7 @@ layer
    }
    data_param 
    {
-      source: "MNIST.small.5.training"
+      source: "MNIST.training"
       batch_size: 64
       backend: IMAGEDB
       enable_random_selection: True
@@ -73,7 +73,7 @@ layer
    }
    transform_param 
    {
-      scale: 0.0390625
+      scale: 0.00390625
       use_imagedb_mean: True
       color_order: RGB
       distortion_param 
@@ -116,7 +116,7 @@ layer
    }
    data_param 
    {
-      source: "MNIST.small.5.testing"
+      source: "MNIST.testing"
       batch_size: 64
       backend: IMAGEDB
       enable_random_selection: True
@@ -274,7 +274,7 @@ layer
 layer 
 {
    name: "relu1"
-   type: "ELU"
+   type: "ReLU"
    bottom: "ip1"
    top: "ip1"
 }
@@ -369,7 +369,7 @@ layer
       cache_size: 100
       output_centroids: False
       target: CENTROID
-      pregen_alpha: 1.1
+      pregen_alpha: 5
       pregen_label_count: 10
       k: 5
    }
@@ -532,7 +532,7 @@ layer
 layer 
 {
    name: "relu1_p"
-   type: "ELU"
+   type: "ReLU"
    bottom: "ip1_p"
    top: "ip1_p"
    exclude 
@@ -777,20 +777,12 @@ layer
 layer 
 {
    name: "relu1_n"
-   type: "PReLU"
+   type: "ReLU"
    bottom: "ip1_n"
    top: "ip1_n"
    exclude 
    {
       phase: RUN
-   }
-   prelu_param 
-   {
-      filler 
-      {
-         type: "constant"
-         value: 0.25
-      }
    }
 }
 layer 
