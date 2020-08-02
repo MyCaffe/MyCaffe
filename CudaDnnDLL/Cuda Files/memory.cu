@@ -124,6 +124,11 @@ Memory<T>::~Memory()
 		FreeMemoryTest(i);
 	}
 
+	for (int i = 0; i < m_imgop.GetCount(); i++)
+	{
+		FreeImageOp(i);
+	}
+
 	for (int i = 0; i < m_nccl.GetCount(); i++)
 	{
 		FreeNCCL(i);
@@ -133,6 +138,18 @@ Memory<T>::~Memory()
 	{
 		FreeSSD(i);
 	}
+
+	m_memoryMap.clear();
+	m_cudnnRef.clear();
+	m_cudnnH2Dev.clear();
+	m_cudnnDev2H.clear();
+
+	m_streamRef.clear();
+	m_streamH2Dev.clear();
+	m_streamH2Idx.clear();
+	m_streamH2CudnnH.clear();
+	m_streamCudnnRef.clear();
+	m_streamDev2Idx2H.clear();
 }
 
 template Memory<double>::~Memory();
