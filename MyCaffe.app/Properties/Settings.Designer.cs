@@ -454,5 +454,41 @@ namespace MyCaffe.app.Properties {
                 this["StartupCudaPath"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string TestImageFolder {
+            get {
+                return ((string)(this["TestImageFolder"]));
+            }
+            set {
+                this["TestImageFolder"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("28")]
+        public int ResizeW {
+            get {
+                return ((int)(this["ResizeW"]));
+            }
+            set {
+                this["ResizeW"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("28")]
+        public int ResizeH {
+            get {
+                return ((int)(this["ResizeH"]));
+            }
+            set {
+                this["ResizeH"] = value;
+            }
+        }
     }
 }

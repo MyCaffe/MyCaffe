@@ -62,6 +62,10 @@ namespace MyCaffe.app
         string m_strDllPath = "";
         NET_TYPE m_netType = NET_TYPE.LENET;
         bool m_bSqlLoaded = false;
+        bool m_bSaveTestImages = false;
+        Size m_szTestImageSize = new Size(28, 28);
+        int m_nTestImageIdx = 0;
+        string m_strTestImageFolder = "";
 
         delegate void fnVerifyGpu(int nGpuId);
         delegate void fnSetStatus(string strMsg, STATUS status, bool bBreath);
@@ -1000,6 +1004,19 @@ namespace MyCaffe.app
                         setStatus(kv.ToString());
                     }
                 }
+
+                if (m_bSaveTestImages)
+                {
+                    if (dlg.Image.Width != m_szTestImageSize.Width || dlg.Image.Height != m_szTestImageSize.Height)
+                        bmp = ImageTools.ResizeImage(dlg.Image, m_szTestImageSize.Width, m_szTestImageSize.Height);
+                    else
+                        bmp = dlg.Image;
+
+                    string strName = "img_" + m_nTestImageIdx.ToString("00000") + "-" + nDetectedLabel.ToString() + ".png";
+
+                    bmp.Save(m_strTestImageFolder + "\\" + strName);
+                    m_nTestImageIdx++;
+                }
             }
         }
 
@@ -1789,6 +1806,44 @@ namespace MyCaffe.app
             }
             catch (Exception excpt)
             {
+            }
+        }
+
+        private void saveTestImagesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            FormSaveImage dlg = new FormSaveImage();
+
+            if (dlg.ShowDialog() == DialogResult.OK)
+            {
+                saveTestImagesToolStripMenuItem.Checked = dlg.EnableSaving;
+                m_bSaveTestImages = dlg.EnableSaving;
+                m_strTestImageFolder = dlg.Folder;
+
+                if (!Directory.Exists(m_strTestImageFolder))
+                    Directory.CreateDirectory(m_strTestImageFolder);
+
+                m_szTestImageSize = dlg.ImageSize;
+
+                string[] rgstrFiles = Directory.GetFiles(m_strTestImageFolder);
+                if (rgstrFiles.Length > 0)
+                {
+                    rgstrFiles = rgstrFiles.Where(p => p.Contains(".png")).OrderByDescending(p => p).Take(1).ToArray();
+                    if (rgstrFiles.Length > 0)
+                    {
+                        string strName1 = Path.GetFileNameWithoutExtension(rgstrFiles[0]);
+                        int nPos = strName1.LastIndexOf('-');
+                        if (nPos > 0)
+                            strName1 = strName1.Substring(0, nPos);
+
+                        nPos = strName1.LastIndexOf('_');
+                        if (nPos > 0)
+                        {
+                            string strIdx = strName1.Substring(nPos + 1);
+                            if (int.TryParse(strIdx, out m_nTestImageIdx))
+                                m_nTestImageIdx++;
+                        }
+                    }
+                }
             }
         }
     }

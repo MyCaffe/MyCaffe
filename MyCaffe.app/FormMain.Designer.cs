@@ -89,6 +89,7 @@
             this.lblCudaPath = new System.Windows.Forms.ToolStripStatusLabel();
             this.timerUI = new System.Windows.Forms.Timer(this.components);
             this.m_bwLoadVOCDatabase = new System.ComponentModel.BackgroundWorker();
+            this.saveTestImagesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
@@ -176,6 +177,7 @@
             this.trainMNISTToolStripMenuItem,
             this.testMNISTToolStripMenuItem,
             this.runTestImageToolStripMenuItem,
+            this.saveTestImagesToolStripMenuItem,
             this.abortToolStripMenuItem,
             this.cancelToolStripMenuItem,
             this.toolStripSeparator3,
@@ -245,21 +247,21 @@
             // usingLeNETToolStripMenuItem
             // 
             this.usingLeNETToolStripMenuItem.Name = "usingLeNETToolStripMenuItem";
-            this.usingLeNETToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.usingLeNETToolStripMenuItem.Size = new System.Drawing.Size(171, 22);
             this.usingLeNETToolStripMenuItem.Text = "Using LeNET";
             this.usingLeNETToolStripMenuItem.Click += new System.EventHandler(this.createUsingLeNETToolStripMenuItem_Click);
             // 
             // usingSiameseNETToolStripMenuItem
             // 
             this.usingSiameseNETToolStripMenuItem.Name = "usingSiameseNETToolStripMenuItem";
-            this.usingSiameseNETToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.usingSiameseNETToolStripMenuItem.Size = new System.Drawing.Size(171, 22);
             this.usingSiameseNETToolStripMenuItem.Text = "Using SiameseNET";
             this.usingSiameseNETToolStripMenuItem.Click += new System.EventHandler(this.createUsingSiameseNETToolStripMenuItem_Click);
             // 
             // usingTripletNETToolStripMenuItem
             // 
             this.usingTripletNETToolStripMenuItem.Name = "usingTripletNETToolStripMenuItem";
-            this.usingTripletNETToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.usingTripletNETToolStripMenuItem.Size = new System.Drawing.Size(171, 22);
             this.usingTripletNETToolStripMenuItem.Text = "Using TripletNET";
             this.usingTripletNETToolStripMenuItem.Click += new System.EventHandler(this.createUsingTripletNETToolStripMenuItem_Click);
             // 
@@ -558,6 +560,14 @@
             this.m_bwLoadVOCDatabase.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.m_bw_ProgressChanged);
             this.m_bwLoadVOCDatabase.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.m_bw_RunWorkerCompleted);
             // 
+            // saveTestImagesToolStripMenuItem
+            // 
+            this.saveTestImagesToolStripMenuItem.CheckOnClick = true;
+            this.saveTestImagesToolStripMenuItem.Name = "saveTestImagesToolStripMenuItem";
+            this.saveTestImagesToolStripMenuItem.Size = new System.Drawing.Size(192, 22);
+            this.saveTestImagesToolStripMenuItem.Text = "Save Test Images...";
+            this.saveTestImagesToolStripMenuItem.Click += new System.EventHandler(this.saveTestImagesToolStripMenuItem_Click);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -643,6 +653,7 @@
         private System.Windows.Forms.ToolStripMenuItem v2ToolStripMenuItem;
         private System.Windows.Forms.ToolStripStatusLabel lblCudaPath;
         private System.Windows.Forms.ToolStripMenuItem usingTripletNETToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem saveTestImagesToolStripMenuItem;
     }
 }
 

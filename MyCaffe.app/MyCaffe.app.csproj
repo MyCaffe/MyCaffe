@@ -78,6 +78,12 @@
     <Compile Include="FormAbout.Designer.cs">
       <DependentUpon>FormAbout.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormSaveImage.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormSaveImage.Designer.cs">
+      <DependentUpon>FormSaveImage.cs</DependentUpon>
+    </Compile>
     <Compile Include="FormVOC.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -146,6 +152,9 @@
     <Compile Include="SqlServerTypes\Loader.cs" />
     <EmbeddedResource Include="FormAbout.resx">
       <DependentUpon>FormAbout.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormSaveImage.resx">
+      <DependentUpon>FormSaveImage.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormVOC.resx">
       <DependentUpon>FormVOC.cs</DependentUpon>
