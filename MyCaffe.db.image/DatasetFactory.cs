@@ -764,6 +764,15 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Directly update all active labels and activate all of the images for the open Source ID.
+        /// </summary>
+        /// <param name="nLabel">Specifies the new active label.</param>
+        public void UpdateAllActiveLabelsDirect(int nLabel)
+        {
+            m_db.UpdateAllActiveLabels(m_openSource.ID, nLabel);
+        }
+
+        /// <summary>
         /// Update the active label on a given raw image by its index.
         /// </summary>
         /// <param name="nIdx">Specifies the raw image index.</param>

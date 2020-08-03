@@ -1528,6 +1528,19 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
+        /// Update the all items to a label value for the given nSrcId.
+        /// </summary>
+        /// <param name="nSrcId">Specifies the source ID.</param>
+        /// <param name="nLabel">Specifies the new label value.</param>
+        public void UpdateAllActiveLabels(int nSrcId, int nLabel)
+        {
+            string strCmd = "UPDATE [dbo].[RawImages] SET [ActiveLabel] = " + nLabel.ToString() + ",[Active] = 1";
+            strCmd += " WHERE ([SourceID] = " + nSrcId.ToString() + ")";
+
+            m_entities.Database.ExecuteSqlCommand(strCmd);
+        }
+
+        /// <summary>
         /// Activate/deactivate a raw image based on its index.
         /// </summary>
         /// <param name="nSrcId">Specifies the source ID.</param>
