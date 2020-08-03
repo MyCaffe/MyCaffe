@@ -1563,7 +1563,17 @@ namespace MyCaffe.db.image
         public void UpdateActiveLabelDirect(int nID, int nLabel)
         {
             string strSql = "UPDATE [dbo].[RawImages] SET [ActiveLabel] = " + nLabel.ToString() + ",[Active] = 1 WHERE (ID = " + nID.ToString() + ")";
-            m_entities.Database.ExecuteSqlCommand(strSql);
+
+            if (m_entities != null)
+            {
+                m_entities.Database.ExecuteSqlCommand(strSql);
+                return;
+            }
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            {
+                entities.Database.ExecuteSqlCommand(strSql);
+            }
         }
 
         /// <summary>
