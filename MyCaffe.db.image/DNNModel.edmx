@@ -30,7 +30,6 @@
           <Property Name="Name" Type="nvarchar" MaxLength="256" />
           <Property Name="Value" Type="nvarchar" MaxLength="1024" />
           <Property Name="DatasetID" Type="int" />
-          <Property Name="ValueNumeric" Type="float" />
         </EntityType>
         <EntityType Name="Datasets">
           <Key>
@@ -218,15 +217,6 @@
           <Property Name="DatasetCreatorID" Type="Int32" />
           <Property Name="OwnerID" Type="String" MaxLength="60" FixedLength="false" Unicode="true" />
         </EntityType>
-        <EntityType Name="DatasetParameter">
-          <Key>
-            <PropertyRef Name="ID" />
-          </Key>
-          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="Name" Type="String" MaxLength="256" FixedLength="false" Unicode="true" />
-          <Property Name="Value" Type="String" MaxLength="1024" FixedLength="false" Unicode="true" />
-          <Property Name="DatasetID" Type="Int32" />
-        </EntityType>
         <EntityType Name="LabelBoost">
           <Key>
             <PropertyRef Name="ID" />
@@ -327,7 +317,6 @@
         </EntityType>
         <EntityContainer Name="DNNEntities" annotation:LazyLoadingEnabled="true">
           <EntitySet Name="DatasetGroups" EntityType="Self.DatasetGroup" />
-          <EntitySet Name="DatasetParameters" EntityType="Self.DatasetParameter" />
           <EntitySet Name="LabelBoosts" EntityType="Self.LabelBoost" />
           <EntitySet Name="Labels" EntityType="Self.Label" />
           <EntitySet Name="RawImageGroups" EntityType="Self.RawImageGroup" />
@@ -340,6 +329,7 @@
           <EntitySet Name="ModelGroups" EntityType="DNNModel.ModelGroup" />
           <EntitySet Name="Datasets" EntityType="DNNModel.Dataset" />
           <EntitySet Name="RawImages" EntityType="DNNModel.RawImage" />
+          <EntitySet Name="DatasetParameters" EntityType="DNNModel.DatasetParameter" />
         </EntityContainer>
         <EntityType Name="DatasetCreator">
           <Key>
@@ -408,6 +398,15 @@
           <Property Name="DataCriteriaFormatID" Type="Byte" />
           <Property Name="OriginalSourceID" Type="Int32" />
         </EntityType>
+        <EntityType Name="DatasetParameter">
+          <Key>
+            <PropertyRef Name="ID" />
+          </Key>
+          <Property Name="ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Name" Type="String" MaxLength="256" FixedLength="false" Unicode="true" />
+          <Property Name="Value" Type="String" MaxLength="1024" FixedLength="false" Unicode="true" />
+          <Property Name="DatasetID" Type="Int32" />
+        </EntityType>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -421,16 +420,6 @@
                 <ScalarProperty Name="Name" ColumnName="Name" />
                 <ScalarProperty Name="DatasetCreatorID" ColumnName="DatasetCreatorID" />
                 <ScalarProperty Name="OwnerID" ColumnName="OwnerID" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
-          <EntitySetMapping Name="DatasetParameters">
-            <EntityTypeMapping TypeName="DNNModel.DatasetParameter">
-              <MappingFragment StoreEntitySet="DatasetParameters">
-                <ScalarProperty Name="ID" ColumnName="ID" />
-                <ScalarProperty Name="Name" ColumnName="Name" />
-                <ScalarProperty Name="Value" ColumnName="Value" />
-                <ScalarProperty Name="DatasetID" ColumnName="DatasetID" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -607,6 +596,16 @@
                 <ScalarProperty Name="Channels" ColumnName="Channels" />
                 <ScalarProperty Name="Width" ColumnName="Width" />
                 <ScalarProperty Name="Height" ColumnName="Height" />
+                <ScalarProperty Name="ID" ColumnName="ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="DatasetParameters">
+            <EntityTypeMapping TypeName="DNNModel.DatasetParameter">
+              <MappingFragment StoreEntitySet="DatasetParameters">
+                <ScalarProperty Name="DatasetID" ColumnName="DatasetID" />
+                <ScalarProperty Name="Value" ColumnName="Value" />
+                <ScalarProperty Name="Name" ColumnName="Name" />
                 <ScalarProperty Name="ID" ColumnName="ID" />
               </MappingFragment>
             </EntityTypeMapping>

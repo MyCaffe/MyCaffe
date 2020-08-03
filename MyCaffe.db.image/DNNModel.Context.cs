@@ -26,7 +26,6 @@ namespace MyCaffe.db.image
         }
     
         public virtual DbSet<DatasetGroup> DatasetGroups { get; set; }
-        public virtual DbSet<DatasetParameter> DatasetParameters { get; set; }
         public virtual DbSet<LabelBoost> LabelBoosts { get; set; }
         public virtual DbSet<Label> Labels { get; set; }
         public virtual DbSet<RawImageGroup> RawImageGroups { get; set; }
@@ -39,5 +38,6 @@ namespace MyCaffe.db.image
         public virtual DbSet<ModelGroup> ModelGroups { get; set; }
         public virtual DbSet<Dataset> Datasets { get; set; }
         public virtual DbSet<RawImage> RawImages { get; set; }
+        public virtual DbSet<DatasetParameter> DatasetParameters { get; set; }
     }
 }
