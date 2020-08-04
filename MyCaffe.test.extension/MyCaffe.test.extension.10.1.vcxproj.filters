@@ -51,6 +51,7 @@
     <ClInclude Include="..\CudaDnnDLL\Cuda Files\ssd_core.h">
       <Filter>CudaFiles</Filter>
     </ClInclude>
+    <ClInclude Include="..\CudaDnnDLL\Cuda Files\imgop.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MyCaffe.test.extension.10.1.rc" />
@@ -100,5 +101,6 @@
     <CudaCompile Include="..\CudaDnnDLL\Cuda Files\ssd_core.cu">
       <Filter>CudaFiles</Filter>
     </CudaCompile>
+    <CudaCompile Include="..\CudaDnnDLL\Cuda Files\imgop.cu" />
   </ItemGroup>
 </Project>
