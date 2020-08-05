@@ -68,8 +68,12 @@ namespace MyCaffe.layers
 
         private void internalThread_OnPreStop(object sender, EventArgs e)
         {
-            m_rgPrefetchFree.Abort();
-            m_rgPrefetchFull.Abort();
+            if (m_rgPrefetchFree != null)
+                m_rgPrefetchFree.Abort();
+
+            if (m_rgPrefetchFull != null)
+                m_rgPrefetchFull.Abort();
+
             preStop();
         }
 
