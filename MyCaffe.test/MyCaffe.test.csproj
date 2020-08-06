@@ -70,8 +70,8 @@
       <HintPath>..\packages\Microsoft.VisualStudio.QualityTools.UnitTestFramework.Updated.15.0.26228\lib\Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll\Microsoft.VisualStudio.QualityTools.UnitTestFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OnnxControl, Version=0.11.0.35, Culture=neutral, PublicKeyToken=8c813ab21bbfb2ac, processorArchitecture=MSIL">
-      <HintPath>..\packages\OnnxControl.0.11.0.35-beta1\lib\net40\OnnxControl.dll</HintPath>
+    <Reference Include="OnnxControl, Version=0.11.0.65, Culture=neutral, PublicKeyToken=8c813ab21bbfb2ac, processorArchitecture=MSIL">
+      <HintPath>..\packages\OnnxControl.0.11.0.65-beta1\lib\net40\OnnxControl.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -129,7 +129,6 @@
     <Compile Include="TestBBoxUtil.cs" />
     <Compile Include="TestImageTransforms.cs" />
     <Compile Include="TestGymPython.cs" />
-    <Compile Include="TestBinaryHashLayer.cs" />
     <Compile Include="TestColorMapper.cs" />
     <Compile Include="TestPermuteLayer.cs" />
     <Compile Include="TestSmoothL1LossLayer.cs" />
@@ -153,11 +152,8 @@
     <Compile Include="TestProjectEx.cs" />
     <Compile Include="TestMemoryDataLayer.cs" />
     <Compile Include="TestSpecialTests.cs" />
-    <Compile Include="TestTripletDataLayer.cs" />
     <Compile Include="TestKnnLayer.cs" />
-    <Compile Include="TestTripletSelectLayer.cs" />
     <Compile Include="TestTripletLossLayer.cs" />
-    <Compile Include="TestSimpleTripletLossLayer.cs" />
     <Compile Include="TestNormalization1Layer.cs" />
     <Compile Include="TestGradientBasedSolver.cs" />
     <Compile Include="TestNCCL.cs" />
