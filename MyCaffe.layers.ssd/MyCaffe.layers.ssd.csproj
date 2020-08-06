@@ -42,11 +42,11 @@
     <AssemblyOriginatorKeyFile>mycaffe.layers.ssd.pfx</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DirectShow, Version=0.10.2.309, Culture=neutral, PublicKeyToken=772ff9910eb842c4, processorArchitecture=MSIL">
-      <HintPath>..\packages\WebCam.0.10.2.309-beta1\lib\net40\DirectShow.dll</HintPath>
+    <Reference Include="DirectShow, Version=0.11.0.65, Culture=neutral, PublicKeyToken=772ff9910eb842c4, processorArchitecture=MSIL">
+      <HintPath>..\packages\WebCam.0.11.0.65-beta1\lib\net40\DirectShow.dll</HintPath>
     </Reference>
-    <Reference Include="DirectX.Capture, Version=0.10.2.309, Culture=neutral, PublicKeyToken=2b8e5716967d2021, processorArchitecture=MSIL">
-      <HintPath>..\packages\WebCam.0.10.2.309-beta1\lib\net40\DirectX.Capture.dll</HintPath>
+    <Reference Include="DirectX.Capture, Version=0.11.0.65, Culture=neutral, PublicKeyToken=2b8e5716967d2021, processorArchitecture=MSIL">
+      <HintPath>..\packages\WebCam.0.11.0.65-beta1\lib\net40\DirectX.Capture.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -58,8 +58,8 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="WebCam, Version=0.10.2.309, Culture=neutral, PublicKeyToken=aaa91e2b1083af82, processorArchitecture=MSIL">
-      <HintPath>..\packages\WebCam.0.10.2.309-beta1\lib\net40\WebCam.dll</HintPath>
+    <Reference Include="WebCam, Version=0.11.0.65, Culture=neutral, PublicKeyToken=aaa91e2b1083af82, processorArchitecture=MSIL">
+      <HintPath>..\packages\WebCam.0.11.0.65-beta1\lib\net40\WebCam.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
