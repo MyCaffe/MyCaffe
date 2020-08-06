@@ -56,7 +56,7 @@ layer
    data_param 
    {
       source: "MNIST.training"
-      batch_size: 64
+      batch_size: 128
       backend: IMAGEDB
       enable_random_selection: True
    }
@@ -117,7 +117,7 @@ layer
    data_param 
    {
       source: "MNIST.testing"
-      batch_size: 64
+      batch_size: 128
       backend: IMAGEDB
       enable_random_selection: True
    }
