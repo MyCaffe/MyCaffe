@@ -54,7 +54,7 @@ If you get a compiler error stating <i>Couldn't process file *.resx due to its b
 steps to resolve the error:
 </br>1.) Go to the file in the File Explorer, right click and select the 'Properties' menu item.
 </br>2.) In the Properties dialog, check the 'Unblock' option and press OK.
-</br>3.) If, after making these changes you sill see errors, restart Visual Studio and re-build.
+</br>3.) If, after making these changes, you still see errors just restart Visual Studio and re-build.
 
 <H2>Test Installation Instructions</H2>
 To install data used by the Automated Tests, you will need to install the following files:
