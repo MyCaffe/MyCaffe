@@ -47,6 +47,13 @@ a directory that is visible by your executable files.  NOTE: The automated multi
 </br>3.) Next, load the <b>MNIST</b> data by selecting the '<i>Database | Load MNIST...'</i> menu item and follow the steps to get the data files.
 </br>4.) Next, load the <b>CIFAR-10</b> data by selecting the '<i>Database | Load CIFAR-10...'</i> menu item and follow the steps to get the data files.
 </br>NOTE: The automated tests expect that both the MNIST and CIFAR-10 datasets have already been loaded into the database.
+
+<H2>Final Build Steps</H2>
+If you get a compiler error stating <i>Couldn't process file *.resx due to its being in the Internet or Restricted Zone or having the mark of the web on the file</i>, follow these
+steps to resolve the error:
+1.) Go to the file in the File Explorer, right click and select the 'Properties' menu item.
+</br>2.) In the Properties dialog, check the 'Unblock' option and press OK.
+
 <H2>Test Installation Instructions</H2>
 To install data used by the Automated Tests, you will need to install the following files:
 </br>
@@ -54,12 +61,6 @@ To install data used by the Automated Tests, you will need to install the follow
 </br>See <a href=".\MyCaffe.test\test_data\models\voc_fcns32\INSTALL.md">Installing BLVC_FCN Model</a>
 </br>
 </br>Both of these models are used by the <b><i>TestPersistCaffe.cs</i></b> auto tests.
-
-<H3>IV. Final Steps</H3>
-If you get a compiler error stating <i>Couldn't process file *.resx due to its being in the Internet or Restricted Zone or having the mark of the web on the file</i>, follow these
-steps to resolve the error:
-1.) Go to the file in the File Explorer, right click and select the 'Properties' menu item.
-</br>2.) In the Properties dialog, check the 'Unblock' option and press OK.
 
 <H2>Debugging Instructions</H2>
 Before debugging, you will need to copy the CUDA files into your output target directory.  To do this, copy the '\Program Files\SignalPop\MyCaffe\cuda_11' folder to the 
