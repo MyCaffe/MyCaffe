@@ -23,9 +23,9 @@ available under the Apache 2.0 License.
 
 NOTE: Compute 5.3 required for CUDA 11.0.2/cuDNN 8.0.2 to support __half sized memory.
 
-For detailed notes on building MyCaffe, please see the <a href="https://github.com/MyCaffe/MyCaffe/blob/master/INSTALL.md">INSTALL.md</a> file.
+<b>For detailed notes on building MyCaffe, please see the <a href="https://github.com/MyCaffe/MyCaffe/blob/master/INSTALL.md">INSTALL.md</a> file.</b>
 
-IMPORTANT: The open-source MyCaffe project on GitHub is considered 'pre-release' and may have bugs.  When you find bugs or other issues, please report them here - or better yet, get involved
+<b>IMPORTANT</b>: The open-source MyCaffe project on GitHub is considered 'pre-release' and may have bugs.  When you find bugs or other issues, please report them here - or better yet, get involved
 and propose a fix!
 
 We have several new models supported by MyCaffe with the train_val and solution prototxt ready to go:
