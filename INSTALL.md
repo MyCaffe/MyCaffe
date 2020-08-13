@@ -20,13 +20,13 @@ If you download, build the <b>CudaControl</b> repository and create a new <b><i>
 <b><i>packages\CudaControl.0.11.0.x\lib\Net40\</i></b> directory, replacing the pfx file there.  Alternatively, you can just install 
 the <b>CudaControl</b> package from NuGet.
 </p>
-The <b><i>MyCaffe</i></b> uses the <b><i>mycaffe.sn.pfx</i></b> key file for string name signing.
-</br>The <b><i>MyCaffe.basecode</i></b> uses the <b><i>mycaffe.basecode.sn.pfx</i></b> key file for string name signing.
-</br>The <b><i>MyCaffe.imagedb</i></b> uses the <b><i>mycaffe.imagedb.sn.pfx</i></b> key file for string name signing.
-</p>
+The <b><i>MyCaffe</i></b> projects use key files for assembly signing. <b>Before building either disable signing, or replace the *.pfx files with your own.</b>
+If you do not, you will get the compiler error <i>Unable to get MD5 checksum for the key file '...'</i>.
+
 You may want to provide your own strong names for each of the other <b>MyCaffe</b> projects.  To do this just select the project <i>Properties | Signing</i> tab and
-then <i>Sign the assembly</i> with a strong name keyfile.  You can also use this method to create the <b><i>CudaControl.pfx</i></b> file mentioned above.
-</br>If you change these, please do not check them in.  NOTE: The current .gitignore file ignores pfx files.
+then <i>Sign the assembly</i> with your strong name keyfile.  You can also use this method to create a new <b><i>*.pfx</i></b> file mentioned above, or disable 
+assembly signing altogether.
+</br><b>If you change these, please do not check them in.  NOTE: The current .gitignore file ignores pfx files.</b>
 
 <H3>III. Required Software</H3>
 <b>MyCaffe</b> requires the following software.
@@ -54,4 +54,18 @@ To install data used by the Automated Tests, you will need to install the follow
 </br>See <a href=".\MyCaffe.test\test_data\models\voc_fcns32\INSTALL.md">Installing BLVC_FCN Model</a>
 </br>
 </br>Both of these models are used by the <b><i>TestPersistCaffe.cs</i></b> auto tests.
+
+<H3>IV. Final Steps</H3>
+If you get a compiler error stating <i>Couldn't process file *.resx due to its being in the Internet or Restricted Zone or having the mark of the web on the file</i>, follow these
+steps to resolve the error:
+1.) Go to the file in the File Explorer, right click and select the 'Properties' menu item.
+</br>2.) In the Properties dialog, check the 'Unblock' option and press OK.
+
+<H2>Debugging Instructions</H2>
+Before debugging, you will need to copy the CUDA files into your output target directory.  To do this, copy the '\Program Files\SignalPop\MyCaffe\cuda_11' folder to the 
+target output directory of your application (e.g. ..\Temp\MyApp\bin\Debug).  
+
+Next, from within your Debug settings for your application, set the debug Working Directory to this same target output directory (e.g. ..\Temp\MyApp\bin\Debug),
+
+Then you should be ready to go!
 
