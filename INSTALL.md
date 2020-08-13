@@ -41,7 +41,7 @@ in a directory that is visible by your executable files.  This library can be bu
 by the <b>CudaControl</b> NuGet package and placed in the <i>packages\CudaControl.0.11.0.x\lib\Net40</i> directory.  You should copy the library into
 a directory that is visible by your executable files.  NOTE: The automated multi-GPU tests use GPU's 1-4 where the monitor is plugged into GPU 0.
 </br>
-<H3>V. Create The Database</H3>
+<H3>IV. Create The Database</H3>
 <b>MyCaffe</b> uses Microsoft SQL (or Microsoft SQL Express) as its underlying database.  You will need to create the database with the following steps:
 </br>1.) Run the <b>MyCaffe.app.exe</b> test application and select the '<i>Database | Create Database</i>' menu item.
 </br>2.) From the <i>Create Database</i> dialog, selecd the location where you want to create the database and select the <i>OK</i> button.
