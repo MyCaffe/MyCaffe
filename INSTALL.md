@@ -32,6 +32,7 @@ assembly signing altogether.
 <b>MyCaffe</b> requires the following software.
 </br>
 </br>a.) Microsoft Visual Studio 2017 (recommended) or Visual Studio 2015
+</br>
 </br>b.) Microsoft SQL or Microsoft SQL Express
 </br>Both 'a' and 'b' are available from Microsoft at www.microsoft.com.
 </br>
@@ -51,7 +52,7 @@ a directory that is visible by your executable files.  NOTE: The automated multi
 <H2>Final Build Steps</H2>
 If you get a compiler error stating <i>Couldn't process file *.resx due to its being in the Internet or Restricted Zone or having the mark of the web on the file</i>, follow these
 steps to resolve the error:
-1.) Go to the file in the File Explorer, right click and select the 'Properties' menu item.
+</br>1.) Go to the file in the File Explorer, right click and select the 'Properties' menu item.
 </br>2.) In the Properties dialog, check the 'Unblock' option and press OK.
 
 <H2>Test Installation Instructions</H2>
