@@ -69,5 +69,5 @@ target output directory of your application (e.g. ..\Temp\MyApp\bin\Debug).
 
 Next, from within your Debug settings for your application, set the debug Working Directory to this same target output directory (e.g. ..\Temp\MyApp\bin\Debug),
 
-Then you should be ready to go!
+Happy deep learning!
 
