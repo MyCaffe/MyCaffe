@@ -54,6 +54,7 @@ If you get a compiler error stating <i>Couldn't process file *.resx due to its b
 steps to resolve the error:
 </br>1.) Go to the file in the File Explorer, right click and select the 'Properties' menu item.
 </br>2.) In the Properties dialog, check the 'Unblock' option and press OK.
+</br>3.) If, after making these changes you sill see errors, restart Visual Studio and re-build.
 
 <H2>Test Installation Instructions</H2>
 To install data used by the Automated Tests, you will need to install the following files:
@@ -67,7 +68,7 @@ To install data used by the Automated Tests, you will need to install the follow
 Before debugging, you will need to copy the CUDA files into your output target directory.  To do this, copy the '\Program Files\SignalPop\MyCaffe\cuda_11' folder to the 
 target output directory of your application (e.g. ..\Temp\MyApp\bin\Debug).  
 
-Next, from within your Debug settings for your application, set the debug Working Directory to this same target output directory (e.g. ..\Temp\MyApp\bin\Debug),
+Next, from within your Debug settings for your application, set the debug Working Directory to this same target output directory (e.g. ..\Temp\MyApp\bin\Debug).
 
 Happy deep learning!
 
