@@ -75,6 +75,9 @@ namespace MyCaffe.data
             Update(nDataSize, imgMean);
         }
 
+        /// <summary>
+        /// Cleanup all resources used.
+        /// </summary>
         public void Dispose()
         {
             if (m_hImageOp != 0)

@@ -201,7 +201,11 @@ namespace MyCaffe.param
             }
         }
 
-        /** @copydoc LayerParameterBase::ToProto */
+        /// <summary>
+        /// Convert the parameter into a RawProto.
+        /// </summary>
+        /// <param name="strName">Specifies the name to associate with the RawProto.</param>
+        /// <returns>The new RawProto is returned.</returns>
         public override RawProto ToProto(string strName)
         {
             RawProto rpBase = base.ToProto("engine");

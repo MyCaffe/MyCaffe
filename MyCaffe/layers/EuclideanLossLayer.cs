@@ -137,18 +137,18 @@ namespace MyCaffe.layers
         ///  -# @f$ (1 \times 1 \times 1 \times 1) @f$
         ///     This blob's diff will simply contain the loss_weight * @f$ \lambda @f$,
         ///     as @f$ \lambda @f$ is the coefficient of this layer's output
-        ///     @f$\ell_i@f$ in the overall Net loss.
-        ///     @f$ E = \lambda_i \ell_i + \mbox{other loss terms}@f$; hence
+        ///     @f$ \ell_i @f$ in the overall Net loss.
+        ///     @f$ E = \lambda_i \ell_i + \mbox{other loss terms} @f$; hence
         ///     @f$ \frac{\partial E}{\partial \ell_i} = \lambda_i @f$.
         ///     (*Assuming that this top Blob is not used by a bottom (input) by any
         ///     other layer of the Net.)</param>
         /// <param name="rgbPropagateDown">see Layer::Backward.</param>
         /// <param name="colBottom">bottom input blob vector (length 2)
         ///  -# @f$ (N \times C \times H \times W) @f$
-        ///     the predictions @f$\hat{y}@f$; Backward fills their diff with
-        ///     gradients @f$
-        ///      \frac{\partial E}{\partial \hat{y}} = 
-        ///        \frac{1}[n} \sum\limits_{n-1}^N (\hat{y}_n - y_n)
+        ///     the predictions @f$ \hat{y} @f$; Backward fills their diff with
+        ///     gradients
+        ///     @f$ \frac{\partial E}{\partial \hat{y}} = 
+        ///         \frac{1}[n} \sum\limits_{n-1}^N (\hat{y}_n - y_n)
         ///     @f$ if propagate_down[0] == true.
         ///  -# @f$ (N \times C \times H \times W) @f$
         ///     the targets @f$ y @f$; Backward fills their diff with gradients
