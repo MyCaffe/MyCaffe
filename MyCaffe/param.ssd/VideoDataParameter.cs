@@ -38,7 +38,9 @@ namespace MyCaffe.param.ssd
             VIDEO = 1
         }
 
-        /** @copydoc LayerParameterBase */
+        /// <summary>
+        /// The constructor.
+        /// </summary>
         public VideoDataParameter()
         {
         }
@@ -103,7 +105,12 @@ namespace MyCaffe.param.ssd
             set { m_nVideoHeight = value; }
         }
 
-        /** @copydoc LayerParameterBase::Load */
+        /// <summary>
+        /// Load the parameter from a binary reader.
+        /// </summary>
+        /// <param name="br">Specifies the binary reader.</param>
+        /// <param name="bNewInstance">When <i>true</i> a new instance is created (the default), otherwise the existing instance is loaded from the binary reader.</param>
+        /// <returns>Returns an instance of the parameter.</returns>
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
             RawProto proto = RawProto.Parse(br.ReadString());
@@ -115,7 +122,10 @@ namespace MyCaffe.param.ssd
             return p;
         }
 
-        /** @copydoc LayerParameterBase::Copy */
+        /// <summary>
+        /// Copy on parameter to another.
+        /// </summary>
+        /// <param name="src">Specifies the parameter to copy.</param>
         public override void Copy(LayerParameterBase src)
         {
             VideoDataParameter p = (VideoDataParameter)src;
@@ -128,7 +138,10 @@ namespace MyCaffe.param.ssd
             m_nVideoHeight = p.m_nVideoHeight;
         }
 
-        /** @copydoc LayerParameterBase::Clone */
+        /// <summary>
+        /// Creates a new copy of this instance of the parameter.
+        /// </summary>
+        /// <returns>A new instance of this parameter is returned.</returns>
         public override LayerParameterBase Clone()
         {
             VideoDataParameter p = new VideoDataParameter();
@@ -136,7 +149,11 @@ namespace MyCaffe.param.ssd
             return p;
         }
 
-        /** @copydoc LayerParameterBase::ToProto */
+        /// <summary>
+        /// Convert the parameter into a RawProto.
+        /// </summary>
+        /// <param name="strName">Specifies the name to associate with the RawProto.</param>
+        /// <returns>The new RawProto is returned.</returns>
         public override RawProto ToProto(string strName)
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
