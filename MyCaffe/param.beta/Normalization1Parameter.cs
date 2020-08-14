@@ -47,7 +47,12 @@ namespace MyCaffe.param.beta
             set { m_norm = value; }
         }
 
-        /** @copydoc LayerParameterBase::Load */
+        /// <summary>
+        /// Load the parameter from a binary reader.
+        /// </summary>
+        /// <param name="br">Specifies the binary reader.</param>
+        /// <param name="bNewInstance">When <i>true</i> a new instance is created (the default), otherwise the existing instance is loaded from the binary reader.</param>
+        /// <returns>Returns an instance of the parameter.</returns>
         public override object Load(System.IO.BinaryReader br, bool bNewInstance = true)
         {
             RawProto proto = RawProto.Parse(br.ReadString());
@@ -59,14 +64,20 @@ namespace MyCaffe.param.beta
             return p;
         }
 
-        /** @copydoc LayerParameterBase::Copy */
+        /// <summary>
+        /// Copy on parameter to another.
+        /// </summary>
+        /// <param name="src">Specifies the parameter to copy.</param>
         public override void Copy(LayerParameterBase src)
         {
             Normalization1Parameter p = (Normalization1Parameter)src;
             m_norm = p.m_norm;
         }
 
-        /** @copydoc LayerParameterBase::Clone */
+        /// <summary>
+        /// Creates a new copy of this instance of the parameter.
+        /// </summary>
+        /// <returns>A new instance of this parameter is returned.</returns>
         public override LayerParameterBase Clone()
         {
             Normalization1Parameter p = new Normalization1Parameter();
@@ -74,7 +85,11 @@ namespace MyCaffe.param.beta
             return p;
         }
 
-        /** @copydoc LayerParameterBase::ToProto */
+        /// <summary>
+        /// Convert the parameter into a RawProto.
+        /// </summary>
+        /// <param name="strName">Specifies the name to associate with the RawProto.</param>
+        /// <returns>The new RawProto is returned.</returns>
         public override RawProto ToProto(string strName)
         {
             RawProtoCollection rgChildren = new RawProtoCollection();
