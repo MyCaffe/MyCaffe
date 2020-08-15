@@ -321,6 +321,7 @@ namespace MyCaffe.data
 
                 int nLabel = rgNameToLabel[strName];
                 NormalizedBBox bbox = new NormalizedBBox(fxmin / nWidth, fymin / nHeight, fxmax / nWidth, fymax / nHeight, nLabel, bDifficult);
+                datum.SetLabel(nLabel);
 
                 foreach (AnnotationGroup g in datum.annotation_group)
                 {
