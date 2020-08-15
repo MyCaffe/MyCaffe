@@ -166,7 +166,7 @@ namespace MyCaffe.app
 
                 m_bwProcess.RunWorkerAsync();
 
-                if (!File.Exists("index.chm"))
+                if (!File.Exists(AssemblyDirectory + "\\index.chm"))
                     localHelpToolStripMenuItem.Enabled = false;
 
                 string strSqlInstance = null;
@@ -1243,7 +1243,7 @@ namespace MyCaffe.app
         private void localHelpToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Process p = new Process();
-            p.StartInfo = new ProcessStartInfo("index.chm");
+            p.StartInfo = new ProcessStartInfo(AssemblyDirectory + "\\index.chm");
             p.Start();
         }
 
