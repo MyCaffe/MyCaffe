@@ -90,13 +90,7 @@ namespace MyCaffe.param
         public int cudnn_workspace_limit
         {
             get { return m_nCudnnWorkspaceLimit; }
-            set
-            {
-                if (value < 0)
-                    throw new Exception("Please specify a number that is 0 or greater.");
-
-                m_nCudnnWorkspaceLimit = value;
-            }
+            set { m_nCudnnWorkspaceLimit = value; }
         }
 
         /// <summary>
