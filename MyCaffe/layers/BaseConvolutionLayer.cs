@@ -180,7 +180,10 @@ namespace MyCaffe.layers
             // Specify workspace limit for kernels directly until we have a 
             // planning strategy and a rewrite of Caffe's GPU memory management.
             // default = 1024 * 1024 * 16;
-            ulong lWorkspaceLimitBytes = (ulong)m_param.convolution_param.cudnn_workspace_limit;
+            ulong lWorkspaceLimitBytes = ulong.MaxValue;
+            if (m_param.convolution_param.cudnn_workspace_limit >= 0)
+                lWorkspaceLimitBytes = (ulong)m_param.convolution_param.cudnn_workspace_limit;
+
             if (lWorkspaceLimitBytes != ulong.MaxValue)
                 lWorkspaceLimitBytes *= 16;
 
