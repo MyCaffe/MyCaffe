@@ -6,6 +6,7 @@
 
 #include "memory.h"
 
+
 //=============================================================================
 //	Class Methods
 //=============================================================================
@@ -758,7 +759,7 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 #ifdef CUDA11_0
 	int nAlgCount;
 	cudnnConvolutionFwdAlgoPerf_t fwdPref[10];
-	if (lErr = cudnnFindConvolutionForwardAlgorithm(cudnn, bottom, filter, conv, top, 10, &nAlgCount, fwdPref))
+	if (lErr = cudnnGetConvolutionForwardAlgorithm_v7(cudnn, bottom, filter, conv, top, 10, &nAlgCount, fwdPref))
 		return lErr;
 
 	if (lWsLimitInBytes == (((size_t)-1) / 2 + 1) || lWsLimitInBytes >= (SIZE_MAX - 10))
@@ -768,10 +769,13 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 	else
 	{
 		int nIdx = 0;
-		while (fwdPref[nIdx].memory > lWsLimitInBytes && nIdx < 5 && nIdx < nAlgCount)
+		while (fwdPref[nIdx].status == CUDNN_STATUS_SUCCESS && fwdPref[nIdx].memory > lWsLimitInBytes && nIdx < nAlgCount && nIdx < 10)
 		{
 			nIdx++;
 		}
+
+		if (nIdx == nAlgCount)
+			return ERROR_PARAM_OUT_OF_RANGE;
 
 		algoFwd = fwdPref[nIdx].algo;
 	}
@@ -831,7 +835,7 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 	cudnnConvolutionBwdFilterAlgo_t algoBwdFilter;
 #ifdef CUDA11_0
 	cudnnConvolutionBwdFilterAlgoPerf_t bwdFltPref[10];
-	if (lErr = cudnnFindConvolutionBackwardFilterAlgorithm(cudnn, bottom, top, conv, filter, 5, &nAlgCount, bwdFltPref))
+	if (lErr = cudnnGetConvolutionBackwardFilterAlgorithm_v7(cudnn, bottom, top, conv, filter, 10, &nAlgCount, bwdFltPref))
 		return lErr;
 
 	if (lWsLimitInBytes == (((size_t)-1) / 2 + 1) || lWsLimitInBytes >= (SIZE_MAX - 10))
@@ -841,10 +845,13 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 	else
 	{
 		int nIdx = 0;
-		while (bwdFltPref[nIdx].memory > lWsLimitInBytes && nIdx < 5 && nIdx < nAlgCount)
+		while (bwdFltPref[nIdx].status == CUDNN_STATUS_SUCCESS && bwdFltPref[nIdx].memory > lWsLimitInBytes && nIdx < nAlgCount && nIdx < 10)
 		{
 			nIdx++;
 		}
+
+		if (nIdx == nAlgCount)
+			return ERROR_PARAM_OUT_OF_RANGE;
 
 		algoBwdFilter = bwdFltPref[nIdx].algo;
 	}
@@ -862,7 +869,7 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 	cudnnConvolutionBwdDataAlgo_t algoBwdData;
 #ifdef CUDA11_0
 	cudnnConvolutionBwdDataAlgoPerf_t bwdDataPref[10];
-	if (lErr = cudnnFindConvolutionBackwardDataAlgorithm(cudnn, filter, top, conv, bottom, 5, &nAlgCount, bwdDataPref))
+	if (lErr = cudnnGetConvolutionBackwardDataAlgorithm_v7(cudnn, filter, top, conv, bottom, 5, &nAlgCount, bwdDataPref))
 		return lErr;
 
 	if (lWsLimitInBytes == (((size_t)-1) / 2 + 1) || lWsLimitInBytes >= (SIZE_MAX - 10))
@@ -872,10 +879,13 @@ long Memory<T>::GetConvolutionInfo(long hHandle, long hBottomDesc, long hFilterD
 	else
 	{
 		int nIdx = 0;
-		while (bwdDataPref[nIdx].memory > lWsLimitInBytes && nIdx < 5 && nIdx < nAlgCount)
+		while (bwdDataPref[nIdx].status == CUDNN_STATUS_SUCCESS && bwdDataPref[nIdx].memory > lWsLimitInBytes && nIdx < nAlgCount && nIdx < 10)
 		{
 			nIdx++;
 		}
+
+		if (nIdx == nAlgCount)
+			return ERROR_PARAM_OUT_OF_RANGE;
 
 		algoBwdData = bwdDataPref[nIdx].algo;
 	}
