@@ -733,7 +733,7 @@ namespace MyCaffe.common
                 return;
             }
 
-            if (e.Size < m_lWorkspaceSize)
+            if (e.Size <= m_lWorkspaceSize)
                 return;
 
             m_lWorkspaceSize = e.Size;
