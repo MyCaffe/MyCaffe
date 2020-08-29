@@ -412,11 +412,11 @@ namespace MyCaffe.basecode
         #region Initialization and Cleanup
 
         /// <summary>
-        /// Set the database instance to use.
+        /// Set the database connection to use.
         /// </summary>
-        /// <param name="strInstance">Specifies the instance name to use in '.\\name' format.</param>
+        /// <param name="ci">Specifies the connection information.</param>
         [OperationContract(IsOneWay = false)]
-        void SetInstance(string strInstance);
+        void SetConnection(ConnectInfo ci);
 
         /// <summary>
         /// Initializes the image database.

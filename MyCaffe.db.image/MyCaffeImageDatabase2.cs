@@ -97,12 +97,12 @@ namespace MyCaffe.db.image
         #region Initialization and Cleanup
 
         /// <summary>
-        /// Set the database instance to use.
+        /// Set the database connection to use.
         /// </summary>
-        /// <param name="strInstance">Specifies the instance name to use in '.\\name' format.</param>
-        public void SetInstance(string strInstance)
+        /// <param name="ci">Specifies the dataase connection information to use.</param>
+        public void SetConnection(ConnectInfo ci)
         {
-            MyCaffe.db.image.EntitiesConnection.GlobalDatabaseServerName = strInstance;
+            MyCaffe.db.image.EntitiesConnection.GlobalDatabaseConnectInfo = ci;
         }
 
         /// <summary>
@@ -458,17 +458,16 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
-        /// Create the database used by the CaffeImageDatabase.
+        /// Create the database used by the MyCaffeImageDatabase.
         /// </summary>
-        /// <param name="strName">Specifies the name of the database (recommended value = "DNN").</param>
+        /// <param name="ci">Specifies the connection information for the database (recommended value: db = 'DNN', server = '.')</param>
         /// <param name="strPath">Specifies the file path where the database is to be created.</param>
-        /// <param name="strInstance">Optionally, specifies the SQL Instance.  By default this is <i>null</i>, which sets the instance to the default global instance.</param>
-        public static void CreateDatabase(string strName, string strPath, string strInstance = null)
+        public static void CreateDatabase(ConnectInfo ci, string strPath)
         {
-            if (strInstance == null)
-                strInstance = EntitiesConnection.GlobalDatabaseServerName;
+            if (ci == null)
+                ci = EntitiesConnection.GlobalDatabaseConnectInfo;
 
-            DatabaseManagement dbMgr = new DatabaseManagement(strName, strPath, strInstance);
+            DatabaseManagement dbMgr = new DatabaseManagement(ci, strPath);
             Exception excpt = dbMgr.CreateDatabase();
 
             if (excpt != null)

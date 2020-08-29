@@ -40,7 +40,7 @@ namespace MyCaffe.test.automated
         public static TestingEntities CreateEntities(string strInstance = null)
         {
             if (strInstance == null)
-                strInstance = EntitiesConnection.GlobalDatabaseServerName;
+                strInstance = EntitiesConnection.GlobalDatabaseConnectInfo.Server;
 
             return new TestingEntities(CreateConnectionString(strInstance));
         }

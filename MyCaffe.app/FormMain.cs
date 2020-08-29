@@ -207,15 +207,15 @@ namespace MyCaffe.app
                     {
                         m_bSqlLoaded = true;
                         if (strSqlInstance != ".\\MSSQLSERVER")
-                            EntitiesConnection.GlobalDatabaseServerName = strSqlInstance;
+                            EntitiesConnection.GlobalDatabaseConnectInfo.Server = strSqlInstance;
                     }
                 }
 
                 if (m_bSqlLoaded)
                 {
-                    setStatus("Using SQL Instance '" + EntitiesConnection.GlobalDatabaseServerName + "'", STATUS.INFO2);
+                    setStatus("Using SQL Instance '" + EntitiesConnection.GlobalDatabaseConnectInfo.Server + "'", STATUS.INFO2);
 
-                    DatabaseManagement dbMgr = new DatabaseManagement("DNN", "", EntitiesConnection.GlobalDatabaseServerName);
+                    DatabaseManagement dbMgr = new DatabaseManagement(EntitiesConnection.GlobalDatabaseConnectInfo, "");
                     bool bExists;
                     Exception err = dbMgr.DatabaseExists(out bExists);
 
@@ -224,7 +224,7 @@ namespace MyCaffe.app
                     else if (!bExists)
                         createDatabaseToolStripMenuItem_Click(this, new EventArgs());
                     else
-                        setStatus("Using database '" + dbMgr.Name + "'", STATUS.INFO2);
+                        setStatus("Using database '" + dbMgr.ConnectInfo.Database + "'", STATUS.INFO2);
                 }
                 else
                 {
@@ -528,7 +528,7 @@ namespace MyCaffe.app
 
         private void runAutotestsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            TestDatabaseManager dbMgrTest = new TestDatabaseManager(EntitiesConnection.GlobalDatabaseServerName);
+            TestDatabaseManager dbMgrTest = new TestDatabaseManager(EntitiesConnection.GlobalDatabaseConnectInfo.Server);
             bool bExists;
             Exception err = dbMgrTest.DatabaseExists(out bExists);
 
@@ -1188,7 +1188,7 @@ namespace MyCaffe.app
                 runAutotestsToolStripMenuItem.Enabled = false;
                 startAutotestsToolStripMenuItem.Enabled = false;
                 abortAutotestsToolStripMenuItem.Enabled = true;
-                m_autoTest.Initialize("c:\\temp", EntitiesConnection.GlobalDatabaseServerName);
+                m_autoTest.Initialize("c:\\temp", EntitiesConnection.GlobalDatabaseConnectInfo.Server);
                 m_autoTest.Run(openFileDialogAutoTests.FileName, false, getGpu(), getImageDbVersion(), m_strDllPath);
             }
         }
@@ -1204,7 +1204,7 @@ namespace MyCaffe.app
                 runAutotestsToolStripMenuItem.Enabled = false;
                 startAutotestsToolStripMenuItem.Enabled = false;
                 abortAutotestsToolStripMenuItem.Enabled = true;
-                m_autoTest.Initialize("c:\\temp", EntitiesConnection.GlobalDatabaseServerName);
+                m_autoTest.Initialize("c:\\temp", EntitiesConnection.GlobalDatabaseConnectInfo.Server);
                 m_autoTest.Run(openFileDialogAutoTests.FileName, true, getGpu(), getImageDbVersion(), m_strDllPath);
             }
         }

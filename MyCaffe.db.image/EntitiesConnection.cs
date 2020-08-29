@@ -5,6 +5,7 @@ using System.Text;
 using System.Data.SqlClient;
 using System.Data.Entity.Core.EntityClient;
 using System.Data.Entity;
+using MyCaffe.basecode;
 
 namespace MyCaffe.db.image
 {
@@ -28,7 +29,7 @@ namespace MyCaffe.db.image
     /// </summary>
     public class EntitiesConnection
     {
-        static string g_strServerName = ".";
+        static ConnectInfo g_connectInfo = new ConnectInfo(".", "DNN");
         static Dictionary<int, string> m_rgstrConnections = new Dictionary<int, string>();
 
         /// <summary>
@@ -39,22 +40,41 @@ namespace MyCaffe.db.image
         }
 
         /// <summary>
-        /// Get/set the global database server name.
+        /// Get/set the global database connection info.
         /// </summary>
-        public static string GlobalDatabaseServerName
+        public static ConnectInfo GlobalDatabaseConnectInfo
         {
-            get { return g_strServerName; }
-            set { g_strServerName = value; }
+            get { return g_connectInfo; }
+            set { g_connectInfo = value; }
         }
 
         /// <summary>
         /// Creates the connection string used.
         /// </summary>
-        /// <param name="strDb">Specifies the database name (default = "DNN")</param>
-        /// <param name="strServerName">Specifies the server instance (default = ".")</param>
-        /// <returns></returns>
-        public static string CreateConnectionString(string strDb = "DNN", string strServerName = ".")
+        /// <param name="strDb">Specifies the database to use (default = 'DNN').</param>
+        /// <returns>The connection string is returned.</returns>
+        /// <remarks>Note, this uses the server specified in the GlobalDatabaseConnectionInfo.</remarks>
+        public static string CreateConnectionString(string strDb)
         {
+            return CreateConnectionString(new ConnectInfo(null, strDb));
+        }
+
+        /// <summary>
+        /// Creates the connection string used.
+        /// </summary>
+        /// <param name="ci">Specifies the database connection info (default = 'DNN' db and '.' server).</param>
+        /// <returns>The connection string is returned.</returns>
+        public static string CreateConnectionString(ConnectInfo ci)
+        {
+            if (ci == null)
+                ci = g_connectInfo;
+
+            string strDb = ci.Database;
+            string strServerName = g_connectInfo.Server;
+
+            if (ci.Server != null)
+                strServerName = ci.Server;
+
             string strKey = strDb + strServerName;
             int nKey = strKey.GetHashCode();
 
@@ -68,7 +88,21 @@ namespace MyCaffe.db.image
 
             sqlBuilder.DataSource = strServerName;
             sqlBuilder.InitialCatalog = strDatabaseName;
-            sqlBuilder.IntegratedSecurity = true;
+
+            if (string.IsNullOrEmpty(ci.Password))
+            {
+                sqlBuilder.IntegratedSecurity = true;
+            }
+            else
+            {
+                sqlBuilder.PersistSecurityInfo = false;
+                sqlBuilder.UserID = ci.Username;
+                sqlBuilder.Password = ci.Password;
+                sqlBuilder.MultipleActiveResultSets = false;
+                sqlBuilder.Encrypt = true;
+                sqlBuilder.TrustServerCertificate = false;
+                sqlBuilder.ConnectTimeout = 30;
+            }
 
             string strProviderString = sqlBuilder.ToString();
 
@@ -88,11 +122,11 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Returns the DNNEntities to use.
         /// </summary>
-        /// <param name="strDb">Specifies the database name (default = "DNN")</param>
+        /// <param name="ci">Optionally, specifies the database connection info (default = null, which defaults to 'DNN' db and '.' server).</param>
         /// <returns></returns>
-        public static DNNEntities CreateEntities(string strDb = "DNN")
+        public static DNNEntities CreateEntities(ConnectInfo ci = null)
         {
-            return new DNNEntities(CreateConnectionString(strDb, g_strServerName));
+            return new DNNEntities(CreateConnectionString(ci));
         }
     }
 }

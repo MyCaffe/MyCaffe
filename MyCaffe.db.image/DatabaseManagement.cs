@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Data.SqlClient;
+using MyCaffe.basecode;
 
 namespace MyCaffe.db.image
 {
@@ -11,9 +12,8 @@ namespace MyCaffe.db.image
     /// </summary>
     public class DatabaseManagement
     {
-        string m_strName;
+        ConnectInfo m_ci;
         string m_strPath;
-        string m_strInstance;
 
         /// <summary>
         /// Specifies whether or not the database is just being updated or not.
@@ -23,22 +23,20 @@ namespace MyCaffe.db.image
         /// <summary>
         /// The DatabaseManagement constructor.
         /// </summary>
-        /// <param name="strName">Specifies the name of the database (recommended value = "DNN").</param>
+        /// <param name="ci">Specifies the connection info (recommended values: db = 'DNN', server = '.')</param>
         /// <param name="strPath">Specifies the file path where the database should be created.</param>
-        /// <param name="strInstance">Specifies the instance name to use (recommended value = ".")</param>
-        public DatabaseManagement(string strName, string strPath, string strInstance)
+        public DatabaseManagement(ConnectInfo ci, string strPath = "")
         {
-            m_strInstance = strInstance;
-            m_strName = strName;
+            m_ci = ci;
             m_strPath = strPath;
         }
 
         /// <summary>
-        /// Returns the name of the database.
+        /// Returns the connection information of the database.
         /// </summary>
-        public string Name
+        public ConnectInfo ConnectInfo
         {
-            get { return m_strName; }
+            get { return m_ci; }
         }
 
         /// <summary>
@@ -48,7 +46,7 @@ namespace MyCaffe.db.image
         /// <returns>The connection string is returned.</returns>
         protected string GetConnectionString(string strName)
         {
-            return "Data Source=" + m_strInstance + ";Initial Catalog=" + strName + ";Integrated Security=True; MultipleActiveResultSets=True;";
+            return "Data Source=" + m_ci.Server + ";Initial Catalog=" + strName + ";Integrated Security=True; MultipleActiveResultSets=True;";
         }
 
         /// <summary>
@@ -65,7 +63,7 @@ namespace MyCaffe.db.image
             try
             {
                 SqlConnection connection = new SqlConnection(GetConnectionString("master"));
-                SqlCommand cmdQuery = new SqlCommand(getQueryDatabaseCmd(m_strName), connection);
+                SqlCommand cmdQuery = new SqlCommand(getQueryDatabaseCmd(m_ci.Database), connection);
 
                 connection.Open();
                 SqlDataReader reader = cmdQuery.ExecuteReader();
@@ -96,7 +94,7 @@ namespace MyCaffe.db.image
         {
             try
             {
-                SqlConnection connection = new SqlConnection(GetConnectionString(m_strName));
+                SqlConnection connection = new SqlConnection(GetConnectionString(m_ci.Database));
 
                 connection.Open();
                 deleteTables(connection);
@@ -137,7 +135,7 @@ namespace MyCaffe.db.image
 
                     connection = new SqlConnection(GetConnectionString("master"));
                     SqlCommand cmdCreate;
-                    string strCmd = getCreateDatabaseCmd(m_strName, m_strPath);
+                    string strCmd = getCreateDatabaseCmd(m_ci.Database, m_strPath);
 
                     connection.Open();
                     cmdCreate = new SqlCommand(strCmd, connection);
@@ -147,7 +145,7 @@ namespace MyCaffe.db.image
                     connection.Close();
                 }
 
-                connection = new SqlConnection(GetConnectionString(m_strName));
+                connection = new SqlConnection(GetConnectionString(m_ci.Database));
                 connection.Open();
                 createTables(connection, true, m_bUpdateDatabase);
                 connection.Close();
