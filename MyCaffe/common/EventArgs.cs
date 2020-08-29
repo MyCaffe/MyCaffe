@@ -374,6 +374,7 @@ namespace MyCaffe.common
         bool m_bSingleStep = false;
         bool m_bForced = false;
         bool m_bScheduled = true;
+        bool m_bUpdateDatabase = true;
 
 
         /// <summary>
@@ -537,6 +538,15 @@ namespace MyCaffe.common
         {
             get { return m_bScheduled; }
             set { m_bScheduled = value; }
+        }
+
+        /// <summary>
+        /// Get/set whether or not to update the database (default = true).
+        /// </summary>
+        public bool UpdateDatabase
+        {
+            get { return m_bUpdateDatabase; }
+            set { m_bUpdateDatabase = value; }
         }
     }
 
