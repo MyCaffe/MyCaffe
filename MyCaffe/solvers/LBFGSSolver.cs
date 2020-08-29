@@ -48,7 +48,7 @@ namespace MyCaffe.solvers
         /// <param name="evtCancel">Specifies a CancelEvent used to cancel the current operation (e.g. training, testing) for which the Solver is performing.</param>
         /// <param name="evtForceSnapshot">Specifies an automatic reset event that causes the Solver to perform a Snapshot when set.</param>
         /// <param name="evtForceTest">Specifies an automatic reset event that causes teh Solver to run a testing cycle when set.</param>
-        /// <param name="imgDb">Specifies the CaffeImageDatabase.</param>
+        /// <param name="imgDb">Specifies the MyCaffeImageDatabase.</param>
         /// <param name="persist">Specifies the peristence used for loading and saving weights.</param>
         /// <param name="nSolverCount">Specifies the number of Solvers participating in a multi-GPU session.</param>
         /// <param name="nSolverRank">Specifies the rank of this Solver in a multi-GPU session.</param>

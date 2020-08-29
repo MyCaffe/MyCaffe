@@ -284,7 +284,7 @@ namespace MyCaffe.common
         /// </summary>
         IXPersist<T> Persist { get; }
         /// <summary>
-        /// Returns the CaffeImageDatabase used.
+        /// Returns the MyCaffeImageDatabase used.
         /// </summary>
         IXImageDatabaseBase ImageDatabase { get; }
 

@@ -544,7 +544,7 @@ namespace MyCaffe
         }
 
         /// <summary>
-        /// Returns the CaffeImageDatabase used.
+        /// Returns the MyCaffeImageDatabase used.
         /// </summary>
         public IXImageDatabaseBase ImageDatabase
         {

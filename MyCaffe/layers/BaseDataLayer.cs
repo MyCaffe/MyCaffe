@@ -26,7 +26,7 @@ namespace MyCaffe.layers
         /// </summary>
         protected bool m_bOutputLabels;
         /// <summary>
-        /// Specifies the CaffeImageDatabase.
+        /// Specifies the MyCaffeImageDatabase.
         /// </summary>
         protected IXImageDatabaseBase m_imgdb;
         /// <summary>

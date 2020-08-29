@@ -41,7 +41,7 @@ namespace MyCaffe.layers
         ///   
         ///   - label_boosts (/b optional, default = ""). A string that defines which labels to boost, giving them a higher probability of being selected.
         /// </param>
-        /// <param name="db">Specifies the CaffeImageDatabase.</param>
+        /// <param name="db">Specifies the MyCaffeImageDatabase.</param>
         public LabelMappingLayer(CudaDnn<T> cuda, Log log, LayerParameter p, IXImageDatabaseBase db)
             : base(cuda, log, p)
         {

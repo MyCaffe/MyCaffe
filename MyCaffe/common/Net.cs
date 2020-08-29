@@ -148,7 +148,7 @@ namespace MyCaffe.common
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="p">Specifies the NetParameter used to initialize the Net.</param>
         /// <param name="evtCancel">Specifies the CancelEvent used to cancel operations run by the Net.</param>
-        /// <param name="imgDb">Specifies the CaffeImageDatabase.</param>
+        /// <param name="imgDb">Specifies the MyCaffeImageDatabase.</param>
         /// <param name="phaseOverride">Optionally, specifies an override of the Phase for which the Net is used.</param>
         /// <param name="evtTrainingCompleted">Optionally, specifies an auto reset event that is set after training has completed.</param>
         /// <param name="sharedNet">Specifies another Net that shares the GPU memory created by this Net.</param>

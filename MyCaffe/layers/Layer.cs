@@ -1103,7 +1103,7 @@ namespace MyCaffe.layers
         /// <param name="log">Specifies the Log for output.</param>
         /// <param name="p">Specifies the LayerParameter that contains the LayerType to create.</param>
         /// <param name="evtCancel">Specifies the CancelEvent used by some Layers when created.</param>
-        /// <param name="imgDb">Optionally, specifies the CaffeImageDatabase used by data Layers.</param>
+        /// <param name="imgDb">Optionally, specifies the MyCaffeImageDatabase used by data Layers.</param>
         /// <param name="trxinput">Optionally, specifies the transfer input object used by some of the data Layers.</param>
         /// <returns></returns>
         public static Layer<T> Create(CudaDnn<T> cuda, Log log, LayerParameter p, CancelEvent evtCancel, IXImageDatabaseBase imgDb = null, TransferInput trxinput = null)

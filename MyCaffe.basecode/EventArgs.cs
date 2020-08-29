@@ -129,7 +129,7 @@ namespace MyCaffe.basecode
     }
 
     /// <summary>
-    /// The CalculateImageMeanArgs is passed as an argument to the CaffeImageDatabase::OnCalculateImageMean event.
+    /// The CalculateImageMeanArgs is passed as an argument to the MyCaffeImageDatabase::OnCalculateImageMean event.
     /// </summary>
     public class CalculateImageMeanArgs : EventArgs
     {

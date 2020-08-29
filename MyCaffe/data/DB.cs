@@ -20,7 +20,7 @@ namespace MyCaffe.data
         /// <summary>
         /// The DB Constructor.
         /// </summary>
-        /// <param name="imgDb">The underlying database - the CaffeImageDatabase.</param>
+        /// <param name="imgDb">The underlying database - the MyCaffeImageDatabase.</param>
         public DB(IXImageDatabaseBase imgDb)
         {
             m_db = imgDb;
