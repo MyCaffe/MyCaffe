@@ -1060,7 +1060,8 @@ namespace MyCaffe.solvers
         /// </summary>
         /// <param name="bForced">Specifies whehter or not to force the snapshot.</param>
         /// <param name="bScheduled">Specifies whether or not the snapshot is a scheduled snapshot that occurs at regular intervals, or a snapshot based on an improving accuracy.</param>
-        public void Snapshot(bool bForced, bool bScheduled)
+        /// <param name="bUpdateDatabase">Optionally, specifies to update the database (default = true).</param>
+        public void Snapshot(bool bForced, bool bScheduled, bool bUpdateDatabase = true)
         {
             m_log.WriteLine("Starting snap shot...");
             m_log.CHECK(is_root_solver, "Snapshot only supported on the root solver.");
@@ -1077,6 +1078,7 @@ namespace MyCaffe.solvers
             SnapshotArgs args = GetSnapshotArgs(null, null, m_dfLastAccuracy, m_dfLastError, m_nIter, m_snapshotWeightUpdatemMethod);
             args.Forced = bForced;
             args.Scheduled = bScheduled;
+            args.UpdateDatabase = bUpdateDatabase;
 
             OnSnapshot(this, args);
             m_log.WriteLine("Snapshot completed.");
