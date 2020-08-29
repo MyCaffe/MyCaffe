@@ -2218,9 +2218,10 @@ namespace MyCaffe
         /// <summary>
         /// The Snapshot function forces a snapshot to occur.
         /// </summary>
-        public void Snapshot()
+        /// <param name="bUpdateDatabase">Optionally, specifies to update the database (default = true).</param>
+        public void Snapshot(bool bUpdateDatabase = true)
         {
-            m_solver.Snapshot(true, false);
+            m_solver.Snapshot(true, false, bUpdateDatabase);
         }
 
         /// <summary>
