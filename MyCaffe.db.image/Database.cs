@@ -1407,7 +1407,12 @@ namespace MyCaffe.db.image
 
             // Get the file.
             if (nSecondarySrcId == null)
-                return File.ReadAllBytes(m_strPrimaryImgPath + strFile);
+            {
+                if (isRemote)
+                    return getRemoteData(m_strPrimaryImgPath + strFile);
+                else
+                    return File.ReadAllBytes(m_strPrimaryImgPath + strFile);
+            }
 
             string strPath = m_strPrimaryImgPath;
 
@@ -1433,12 +1438,33 @@ namespace MyCaffe.db.image
 
             try
             {
-                return File.ReadAllBytes(strPath + strFile);
+                if (isRemote)
+                    return getRemoteData(strPath + strFile);
+                else
+                    return File.ReadAllBytes(strPath + strFile);
             }
             catch (Exception excpt)
             {
                 throw excpt;
             }
+        }
+
+        private bool isRemote
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(EntitiesConnection.GlobalDatabaseConnectInfo.Password))
+                    return false;
+                else
+                    return true;
+            }
+        }
+
+        private byte[] getRemoteData(string strInfo)
+        {
+            string strCmd = "EXEC [dbo].[GetRawData] @strInfo = N'" + strInfo + "'";
+            DbRawSqlQuery<byte[]> qry = m_entities.Database.SqlQuery<byte[]>(strCmd);
+            return qry.Single();
         }
 
         /// <summary>
@@ -2250,6 +2276,9 @@ namespace MyCaffe.db.image
 
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
+
+            if (isRemote)
+                return 0;
 
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
