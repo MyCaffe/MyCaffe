@@ -2218,13 +2218,14 @@ namespace MyCaffe.db.image
         /// Return the RawImageMean for the image mean from the open data source.
         /// </summary>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The RawImageMean is returned if found, otherwise <i>null</i> is returned.</returns>
-        public RawImageMean GetRawImageMean(int nSrcId = 0)
+        public RawImageMean GetRawImageMean(int nSrcId = 0, ConnectInfo ci = null)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
 
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<RawImageMean> rgImg = entities.RawImageMeans.Where(p => p.SourceID == nSrcId).ToList();
 
@@ -3389,10 +3390,11 @@ namespace MyCaffe.db.image
         /// Returns the Source entity given a data source ID.
         /// </summary>
         /// <param name="nID">Specifies the ID of the data source.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The data source name is returned.</returns>
-        public Source GetSource(int nID)
+        public Source GetSource(int nID, ConnectInfo ci = null)
         {
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<Source> rgSrc = entities.Sources.Where(p => p.ID == nID).ToList();
 
@@ -3889,11 +3891,12 @@ namespace MyCaffe.db.image
         /// Returns a datasets ID given its name.
         /// </summary>
         /// <param name="strName">Specifies the dataset name.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The ID of the dataset is returned.</returns>
-        public int GetDatasetID(string strName)
+        public int GetDatasetID(string strName, ConnectInfo ci = null)
         {
             strName = convertWs(strName, '_');
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<Dataset> rgDs = entities.Datasets.Where(p => p.Name == strName).ToList();
 
@@ -3923,10 +3926,11 @@ namespace MyCaffe.db.image
         /// Returns the Dataset entity for a dataset ID.
         /// </summary>
         /// <param name="nID">Specifies the dataset ID.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The Dataset entity is returned.</returns>
-        public Dataset GetDataset(int nID)
+        public Dataset GetDataset(int nID, ConnectInfo ci = null)
         {
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 IQueryable<Dataset> iQuery = entities.Datasets.Where(p => p.ID == nID);
 
@@ -4161,10 +4165,11 @@ namespace MyCaffe.db.image
         /// Returns the DatasetGroup entity given a group ID.
         /// </summary>
         /// <param name="nGroupID">Specifies the ID of the group.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>If found, the DatasetGroup is returned, otherwise <i>null</i> is returned.</returns>
-        public DatasetGroup GetDatasetGroup(int nGroupID)
+        public DatasetGroup GetDatasetGroup(int nGroupID, ConnectInfo ci = null)
         {
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<DatasetGroup> rgGroups = entities.DatasetGroups.Where(p => p.ID == nGroupID).ToList();
 
@@ -4197,10 +4202,11 @@ namespace MyCaffe.db.image
         /// Returns all dataset parameters for a given dataset.
         /// </summary>
         /// <param name="nDsId">Specifies the ID of the dataset.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>A dictionary of the dataset parameters is returned.</returns>
-        public Dictionary<string, string> GetDatasetParameters(int nDsId)
+        public Dictionary<string, string> GetDatasetParameters(int nDsId, ConnectInfo ci = null)
         {
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<DatasetParameter> rgP = entities.DatasetParameters.Where(p => p.DatasetID == nDsId).ToList();
                 Dictionary<string, string> rgDsP = new Dictionary<string, string>();
@@ -4716,10 +4722,11 @@ namespace MyCaffe.db.image
         /// Returns the ModelGroup entity given the ID of a model group.
         /// </summary>
         /// <param name="nGroupID">Specifies the ID of the model group.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>If found, the ModelGroup entity is returned, otherwise <i>null</i> is returned.</returns>
-        public ModelGroup GetModelGroup(int nGroupID)
+        public ModelGroup GetModelGroup(int nGroupID, ConnectInfo ci = null)
         {
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<ModelGroup> rgGroups = entities.ModelGroups.Where(p => p.ID == nGroupID).ToList();
 

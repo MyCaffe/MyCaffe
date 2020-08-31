@@ -1883,10 +1883,11 @@ namespace MyCaffe.db.image
         /// Returns the image mean for a give data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the source data ID.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The image mean is returned in a SimpleDatum.</returns>
-        public SimpleDatum LoadImageMean(int nSrcId)
+        public SimpleDatum LoadImageMean(int nSrcId, ConnectInfo ci = null)
         {
-            RawImageMean imgMean = m_db.GetRawImageMean(nSrcId);
+            RawImageMean imgMean = m_db.GetRawImageMean(nSrcId, ci);
             if (imgMean == null)
                 return null;
 
@@ -1977,10 +1978,11 @@ namespace MyCaffe.db.image
         /// Load the source descriptor from a data source ID.
         /// </summary>
         /// <param name="nSrcId">Specifies the name of the data source.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The SourceDescriptor is returned.</returns>
-        public SourceDescriptor LoadSource(int nSrcId)
+        public SourceDescriptor LoadSource(int nSrcId, ConnectInfo ci = null)
         {
-            Source src = m_db.GetSource(nSrcId);
+            Source src = m_db.GetSource(nSrcId, ci);
 
             if (src == null)
                 return null;
@@ -2025,10 +2027,11 @@ namespace MyCaffe.db.image
         /// Load a dataset group descriptor from a group ID.
         /// </summary>
         /// <param name="nGroupId">Specifies the ID of the group.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The GroupDescriptor is returned.</returns>
-        public GroupDescriptor LoadDatasetGroup(int nGroupId)
+        public GroupDescriptor LoadDatasetGroup(int nGroupId, ConnectInfo ci = null)
         {
-            DatasetGroup grp = m_db.GetDatasetGroup(nGroupId);
+            DatasetGroup grp = m_db.GetDatasetGroup(nGroupId, ci);
 
             if (grp == null)
                 return null;
@@ -2040,10 +2043,11 @@ namespace MyCaffe.db.image
         /// Load a model group descriptor from a group ID.
         /// </summary>
         /// <param name="nGroupId">Specifies the ID of the group.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The GroupDescriptor is returned.</returns>
-        public GroupDescriptor LoadModelGroup(int nGroupId)
+        public GroupDescriptor LoadModelGroup(int nGroupId, ConnectInfo ci = null)
         {
-            ModelGroup grp = m_db.GetModelGroup(nGroupId);
+            ModelGroup grp = m_db.GetModelGroup(nGroupId, ci);
 
             if (grp == null)
                 return null;
@@ -2055,24 +2059,26 @@ namespace MyCaffe.db.image
         /// Load a dataset descriptor from a dataset name.
         /// </summary>
         /// <param name="strDataset">Specifies the dataset name.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The DatasetDescriptor is returned.</returns>
-        public DatasetDescriptor LoadDataset(string strDataset)
+        public DatasetDescriptor LoadDataset(string strDataset, ConnectInfo ci = null)
         {
-            return LoadDataset(m_db.GetDatasetID(strDataset));
+            return LoadDataset(m_db.GetDatasetID(strDataset, ci), ci);
         }
 
         /// <summary>
         /// Load a dataset descriptor from a dataset ID.
         /// </summary>
         /// <param name="nDatasetID">Specifies the dataset ID.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The DatasetDescriptor is returned.</returns>
-        public DatasetDescriptor LoadDataset(int nDatasetID)
+        public DatasetDescriptor LoadDataset(int nDatasetID, ConnectInfo ci = null)
         {
-            Dataset ds = m_db.GetDataset(nDatasetID);
+            Dataset ds = m_db.GetDataset(nDatasetID, ci);
             if (ds == null)
                 return null;
 
-            return loadDataset(ds);
+            return loadDataset(ds, ci);
         }
 
         /// <summary>
@@ -2150,16 +2156,17 @@ namespace MyCaffe.db.image
         /// Loads a dataset creator from a Dataset entity.
         /// </summary>
         /// <param name="ds">Specifies the Dataset entity.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The DatasetDescriptor is returned.</returns>
-        protected virtual DatasetDescriptor loadDataset(Dataset ds)
+        protected virtual DatasetDescriptor loadDataset(Dataset ds, ConnectInfo ci = null)
         {
-            SourceDescriptor srcTrain = LoadSource(ds.TrainingSourceID.GetValueOrDefault());
-            SourceDescriptor srcTest = LoadSource(ds.TestingSourceID.GetValueOrDefault());
-            GroupDescriptor dsGroup = LoadDatasetGroup(ds.DatasetGroupID.GetValueOrDefault());
-            GroupDescriptor mdlGroup = LoadModelGroup(ds.ModelGroupID.GetValueOrDefault());
+            SourceDescriptor srcTrain = LoadSource(ds.TrainingSourceID.GetValueOrDefault(), ci);
+            SourceDescriptor srcTest = LoadSource(ds.TestingSourceID.GetValueOrDefault(), ci);
+            GroupDescriptor dsGroup = LoadDatasetGroup(ds.DatasetGroupID.GetValueOrDefault(), ci);
+            GroupDescriptor mdlGroup = LoadModelGroup(ds.ModelGroupID.GetValueOrDefault(), ci);
             DatasetDescriptor dsDesc = new DatasetDescriptor(ds.ID, ds.Name, mdlGroup, dsGroup, srcTrain, srcTest, m_db.GetDatasetCreatorName(ds.DatasetCreatorID.GetValueOrDefault()), ds.OwnerID, ds.Description);
 
-            dsDesc.Parameters = LoadDatasetParameters(ds.ID);
+            dsDesc.Parameters = LoadDatasetParameters(ds.ID, ci);
 
             return dsDesc;
         }
@@ -2168,12 +2175,13 @@ namespace MyCaffe.db.image
         /// Loads the dataset parameters for a given dataset.
         /// </summary>
         /// <param name="nDsId">Specifies the ID of the dataset.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The collection of dataset parameters is returned.</returns>
-        public ParameterDescriptorCollection LoadDatasetParameters(int nDsId)
+        public ParameterDescriptorCollection LoadDatasetParameters(int nDsId, ConnectInfo ci = null)
         {
             ParameterDescriptorCollection col = new ParameterDescriptorCollection();
 
-            Dictionary<string, string> rgParam = m_db.GetDatasetParameters(nDsId);
+            Dictionary<string, string> rgParam = m_db.GetDatasetParameters(nDsId, ci);
             foreach (KeyValuePair<string, string> kv in rgParam)
             {
                 col.Add(new ParameterDescriptor(0, kv.Key, kv.Value));

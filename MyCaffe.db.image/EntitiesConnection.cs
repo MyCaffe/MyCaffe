@@ -100,7 +100,7 @@ namespace MyCaffe.db.image
                 sqlBuilder.Password = ci.Password;
                 sqlBuilder.MultipleActiveResultSets = false;
                 sqlBuilder.Encrypt = true;
-                sqlBuilder.TrustServerCertificate = false;
+                sqlBuilder.TrustServerCertificate = true;
                 sqlBuilder.ConnectTimeout = 30;
             }
 
