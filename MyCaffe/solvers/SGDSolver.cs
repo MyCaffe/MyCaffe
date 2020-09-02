@@ -324,7 +324,8 @@ namespace MyCaffe.solvers
             T fLocalRate = Utility.ConvertVal<T>(dfRate * net_params_lr[param_id].GetValueOrDefault(0));
 
             // Compute the update to history, then copy it to the parameter diff.
-            m_cuda.sgd_update(colNetParams[param_id].count(), colNetParams[param_id].mutable_gpu_diff, m_colHistory[param_id].mutable_gpu_data, fMomentum, fLocalRate);
+            if (m_colHistory != null)
+                m_cuda.sgd_update(colNetParams[param_id].count(), colNetParams[param_id].mutable_gpu_diff, m_colHistory[param_id].mutable_gpu_data, fMomentum, fLocalRate);
         }
 
         /// <summary>
