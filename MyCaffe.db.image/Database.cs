@@ -43,12 +43,51 @@ namespace MyCaffe.db.image
         object m_objSync = new object();
         Dictionary<int, string> m_rgSecondarySourcePath = new Dictionary<int, string>();
         object m_objRawImgSync = new object();
+        Dictionary<string, string> m_rgstrDatabaseFilePath = new Dictionary<string, string>();
 
         /// <summary>
         /// The Database constructor.
         /// </summary>
         public Database()
         {
+        }
+
+        /// <summary>
+        /// Verify the data connection information.
+        /// </summary>
+        /// <param name="strSrc">Specifies the data source name to verify.</param>
+        /// <param name="ci">Specifies the data connection information to verify.</param>
+        /// <returns>On success, this method returns <i>true</i> and on error an exception is thrown.</returns>
+        public bool VerifyDataConnection(string strSrc, ConnectInfo ci)
+        {
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
+            {
+                string strPrimaryPath = m_strPrimaryImgPath;
+
+                try
+                {
+                    int nSrcId = GetSourceID(strSrc, ci);
+
+                    List<RawImage> rgImg = entities.RawImages.Where(p => p.SourceID == nSrcId).Take(1).ToList();
+                    if (rgImg.Count == 0)
+                        throw new Exception("No images found for data source = '" + strSrc + "' on connection: " + ci.ToString());
+
+                    m_strPrimaryImgPath = getImagePathBase(strSrc, entities);
+                    byte[] rgData = getRawImage(rgImg[0].Data, null, ci, entities, true);
+                    if (rgData == null || rgData.Length == 0)
+                        throw new Exception("The image at image ID = " + rgImg[0].ID.ToString() + " for data source = '" + strSrc + "' on connection: " + ci.ToString() + " is empty!");
+                }
+                catch (Exception excpt)
+                {
+                    throw new Exception("Failed to get raw image data for data source = '" + strSrc + "' on connection: " + ci.ToString() + " with error = '" + excpt.Message + "'", excpt);
+                }
+                finally
+                {
+                    m_strPrimaryImgPath = strPrimaryPath;
+                }
+
+                return true;
+            }
         }
 
         /// <summary>
@@ -99,13 +138,14 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source to open.</param>
         /// <param name="bForceLoadImageFilePath">Optionally, specifies to force load the image file path (default = <i>false</i>).</param>
-        public void Open(int nSrcId, bool bForceLoadImageFilePath = false)
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        public void Open(int nSrcId, bool bForceLoadImageFilePath = false, ConnectInfo ci = null)
         {
-            m_src = GetSource(nSrcId);
+            m_src = GetSource(nSrcId, ci);
             if (m_src == null)
                 throw new Exception("Could not find the source with ID = " + nSrcId.ToString());
 
-            m_entities = EntitiesConnection.CreateEntities();
+            m_entities = EntitiesConnection.CreateEntities(ci);
             m_rgLabelCache = loadLabelCache(m_src.ID);
 
             setImagePath(bForceLoadImageFilePath);
@@ -137,8 +177,11 @@ namespace MyCaffe.db.image
             {
                 m_bEnableFileBasedData = true;
 
-                if (!Directory.Exists(m_strPrimaryImgPath))
-                    Directory.CreateDirectory(m_strPrimaryImgPath);
+                if (string.IsNullOrEmpty(EntitiesConnection.GlobalDatabaseConnectInfo.Password))
+                {
+                    if (!Directory.Exists(m_strPrimaryImgPath))
+                        Directory.CreateDirectory(m_strPrimaryImgPath);
+                }
             }
         }
 
@@ -204,6 +247,12 @@ namespace MyCaffe.db.image
         /// <returns>The physical file path is returned.</returns>
         public string GetDatabaseFilePath(string strName)
         {
+            if (EntitiesConnection.GlobalDatabaseConnectInfo.Server == "NONE")
+                return "";
+
+            if (m_rgstrDatabaseFilePath.ContainsKey(strName))
+                return m_rgstrDatabaseFilePath[strName];
+
             using (DNNEntities entities = EntitiesConnection.CreateEntities())
             {
                 string strCmd = "SELECT physical_name FROM sys.master_files WHERE name = '" + strName + "'";
@@ -216,7 +265,11 @@ namespace MyCaffe.db.image
                 FileInfo fi = new FileInfo(rgStr[0]);
                 string strDir = fi.DirectoryName;
 
-                return strDir + "\\";
+                string strPath = strDir + "\\";
+
+                m_rgstrDatabaseFilePath.Add(strName, strPath);
+
+                return strPath;
             }
         }
 
@@ -228,8 +281,8 @@ namespace MyCaffe.db.image
         public string GetDatabaseImagePath(string strName)
         {
             string strDir = GetDatabaseFilePath(strName);
-
-            return strDir + "Images\\" + strName + "\\";
+            string strPath = strDir + "Images\\" + strName + "\\";
+            return strPath;
         }
 
 
@@ -428,8 +481,12 @@ namespace MyCaffe.db.image
         /// Updates the label counts in the database for the open data source.
         /// </summary>
         /// <param name="rgCounts">Specifies a dictionary containing (int nLabel, int nCount) pairs.</param>
-        public void UpdateLabelCounts(Dictionary<int, int> rgCounts)
+        /// <param name="entities">Optionally, specifies the entities to use.</param>
+        public void UpdateLabelCounts(Dictionary<int, int> rgCounts, DNNEntities entities)
         {
+            if (entities == null)
+                entities = m_entities;
+
             foreach (Label l in m_rgLabelCache)
             {
                 l.ImageCount = 0;
@@ -443,7 +500,7 @@ namespace MyCaffe.db.image
                     rgLabel[0].ImageCount = kv.Value;
             }
 
-            m_entities.SaveChanges();
+            entities.SaveChanges();
         }
 
         /// <summary>
@@ -472,13 +529,14 @@ namespace MyCaffe.db.image
         /// Returns the label counts for a given data source.
         /// </summary>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>A string containing the label counts is returned.</returns>
-        public string GetLabelCountsAsText(int nSrcId = 0)
+        public string GetLabelCountsAsText(int nSrcId = 0, ConnectInfo ci = null)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
 
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).OrderBy(p => p.Label1).ToList();
 
@@ -533,7 +591,8 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <param name="nProjectId">Optionally, specifies the ID of a project to use (default = 0).</param>
-        public void UpdateLabelCounts(int nSrcId = 0, int nProjectId = 0)
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        public void UpdateLabelCounts(int nSrcId = 0, int nProjectId = 0, ConnectInfo ci = null)
         {
             Dictionary<int, double> rgLabelBoosts = null;
             double dfTotal = 0;
@@ -544,7 +603,7 @@ namespace MyCaffe.db.image
             if (nProjectId > 0)
                 rgLabelBoosts = new Dictionary<int, double>();
 
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).ToList();
 
@@ -575,13 +634,6 @@ namespace MyCaffe.db.image
             }
         }
 
-        /// <summary>
-        /// Update the label counts for the currently open data source by querying the database for the actual counts.
-        /// </summary>
-        public void UpdateLabelCounts()
-        {
-            UpdateLabelCounts(m_src.ID, 0);
-        }
 
         /// <summary>
         /// Returns a list of all labels used by a data source.
@@ -589,13 +641,14 @@ namespace MyCaffe.db.image
         /// <param name="bSort">Specifies to sort the labels by label.</param>
         /// <param name="bWithImagesOnly">Specifies to only return labels that actually have images associated with them.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
-        /// <returns></returns>
-        public List<Label> GetLabels(bool bSort = true, bool bWithImagesOnly = false, int nSrcId = 0)
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        /// <returns>The list of labels is returned.</returns>
+        public List<Label> GetLabels(bool bSort = true, bool bWithImagesOnly = false, int nSrcId = 0, ConnectInfo ci = null)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
 
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).ToList();
 
@@ -1285,12 +1338,12 @@ namespace MyCaffe.db.image
                     return null;
                 }
 
-                rgDataCriteria = (bLoadDataCriteria) ? getRawImage(rgImg[0].DataCriteria, img.OriginalSourceID) : rgImg[0].DataCriteria;
+                rgDataCriteria = (bLoadDataCriteria) ? getRawImage(rgImg[0].DataCriteria, img.OriginalSourceID, null, entities) : rgImg[0].DataCriteria;
                 nDataCriteriaFmtId = rgImg[0].DataCriteriaFormatID;
-                rgDebugData = (bLoadDebugData) ? getRawImage(rgImg[0].DebugData, img.OriginalSourceID) : rgImg[0].DebugData;
+                rgDebugData = (bLoadDebugData) ? getRawImage(rgImg[0].DebugData, img.OriginalSourceID, null, entities) : rgImg[0].DebugData;
                 nDebugDataFmtId = rgImg[0].DebugDataFormatID;
 
-                return getRawImage(rgImg[0].Data, img.OriginalSourceID);
+                return getRawImage(rgImg[0].Data, img.OriginalSourceID, null, entities);
             }
         }
 
@@ -1322,7 +1375,7 @@ namespace MyCaffe.db.image
                 }
 
                 nDataCriteriaFmtId = rgImg[0].DataCriteriaFormatID;
-                return getRawImage(rgImg[0].DataCriteria, img.OriginalSourceID);
+                return getRawImage(rgImg[0].DataCriteria, img.OriginalSourceID, null, entities);
             }
         }
 
@@ -1354,7 +1407,7 @@ namespace MyCaffe.db.image
                 }
 
                 nDebugDataFormatId = rgImg[0].DebugDataFormatID;
-                return getRawImage(rgImg[0].DebugData, img.OriginalSourceID);
+                return getRawImage(rgImg[0].DebugData, img.OriginalSourceID, null, entities);
             }
         }
 
@@ -1392,8 +1445,11 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="rgData">Specifies the original bytes.</param>
         /// <param name="nSecondarySrcId">Optionally, specifies a secondary data Source ID (default = null).</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        /// <param name="entities">Optionally, specifies the entities to use.</param>
+        /// <param name="bTestConnection">Optionally, specifies that the connection is being tested.</param>
         /// <returns>The actual data bytes (whether direct or loaded from file) are returned.</returns>
-        protected byte[] getRawImage(byte[] rgData, int? nSecondarySrcId = null)
+        protected byte[] getRawImage(byte[] rgData, int? nSecondarySrcId = null, ConnectInfo ci = null, DNNEntities entities = null, bool bTestConnection = false)
         {
             if (rgData == null || rgData.Length < 5)
                 return rgData;
@@ -1408,10 +1464,24 @@ namespace MyCaffe.db.image
             // Get the file.
             if (nSecondarySrcId == null)
             {
-                if (isRemote)
-                    return getRemoteData(m_strPrimaryImgPath + strFile);
+                if (isRemote(ci))
+                {
+                    string strFile1 = m_strPrimaryImgPath + strFile;
+
+                    if (bTestConnection)
+                    {
+                        string strDbPath = GetDatabaseFilePath("DNN");
+                        int nIdx = strFile1.IndexOf(strDbPath);
+                        if (nIdx == 0)
+                            strFile1 = strFile1.Substring(strDbPath.Length);
+                    }
+
+                    return getRemoteData(strFile1, entities);
+                }
                 else
+                {
                     return File.ReadAllBytes(m_strPrimaryImgPath + strFile);
+                }
             }
 
             string strPath = m_strPrimaryImgPath;
@@ -1438,8 +1508,8 @@ namespace MyCaffe.db.image
 
             try
             {
-                if (isRemote)
-                    return getRemoteData(strPath + strFile);
+                if (isRemote(ci))
+                    return getRemoteData(strPath + strFile, entities);
                 else
                     return File.ReadAllBytes(strPath + strFile);
             }
@@ -1449,21 +1519,24 @@ namespace MyCaffe.db.image
             }
         }
 
-        private bool isRemote
+        private bool isRemote(ConnectInfo ci)
         {
-            get
-            {
-                if (string.IsNullOrEmpty(EntitiesConnection.GlobalDatabaseConnectInfo.Password))
-                    return false;
-                else
-                    return true;
-            }
+            if (ci == null)
+                ci = EntitiesConnection.GlobalDatabaseConnectInfo;
+
+            if (string.IsNullOrEmpty(ci.Password))
+                return false;
+            else
+                return true;
         }
 
-        private byte[] getRemoteData(string strInfo)
+        private byte[] getRemoteData(string strInfo, DNNEntities entities = null)
         {
+            if (entities == null)
+                entities = m_entities;
+
             string strCmd = "EXEC [dbo].[GetRawData] @strInfo = N'" + strInfo + "'";
-            DbRawSqlQuery<byte[]> qry = m_entities.Database.SqlQuery<byte[]>(strCmd);
+            DbRawSqlQuery<byte[]> qry = entities.Database.SqlQuery<byte[]>(strCmd);
             return qry.Single();
         }
 
@@ -2032,9 +2105,10 @@ namespace MyCaffe.db.image
         /// Save a list of raw image parameters.
         /// </summary>
         /// <param name="rgParam">Specifies the list of parameters to save.</param>
-        public void PutRawImageParameters(List<ParameterData> rgParam)
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        public void PutRawImageParameters(List<ParameterData> rgParam, ConnectInfo ci = null)
         {
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 entities.Configuration.AutoDetectChangesEnabled = false;
                 entities.Configuration.ValidateOnSaveEnabled = false;
@@ -2076,9 +2150,10 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="rgImg">Specifies the list of RawImages.</param>
         /// <param name="rgrgParam">Optionally, specifies the List of parameters to also save for each RawImage (default = null).</param>
-        public void PutRawImages(List<RawImage> rgImg, List<List<ParameterData>> rgrgParam = null)
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        public void PutRawImages(List<RawImage> rgImg, List<List<ParameterData>> rgrgParam = null, ConnectInfo ci = null)
         {
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 entities.Configuration.AutoDetectChangesEnabled = false;
                 entities.Configuration.ValidateOnSaveEnabled = false;
@@ -2261,15 +2336,16 @@ namespace MyCaffe.db.image
                 return rgImg[0];
             }
         }
-        
+
         /// <summary>
         /// Save the SimpleDatum as a RawImageMean in the database.
         /// </summary>
         /// <param name="sd">Specifies the data.</param>
         /// <param name="bUpdate">Specifies whether or not to update the mean image.</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The ID of the RawImageMean is returned.</returns>
-        public int PutRawImageMean(SimpleDatum sd, bool bUpdate, int nSrcId = 0)
+        public int PutRawImageMean(SimpleDatum sd, bool bUpdate, int nSrcId = 0, ConnectInfo ci = null)
         {
             if (sd == null)
                 return 0;
@@ -2277,10 +2353,10 @@ namespace MyCaffe.db.image
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
 
-            if (isRemote)
+            if (isRemote(null))
                 return 0;
 
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 IQueryable<RawImageMean> iQuery = entities.RawImageMeans.Where(p => p.SourceID == nSrcId);
                 if (iQuery != null)
@@ -2322,14 +2398,15 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nSrcIdSrc">Specifies the Data Source ID with the source image mean to copy.</param>
         /// <param name="nSrcIdDst">Specifies the Data Source ID with the destination image mean where the source is copied to.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>On success, <i>true</i> is returned, otherwise <i>false</i>.</returns>
-        public bool CopyImageMean(int nSrcIdSrc, int nSrcIdDst)
+        public bool CopyImageMean(int nSrcIdSrc, int nSrcIdDst, ConnectInfo ci = null)
         {
             RawImageMean src = GetRawImageMean(nSrcIdSrc);
             if (src == null)
                 return false;
 
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<RawImageMean> rgDst = entities.RawImageMeans.Where(p => p.SourceID == nSrcIdDst).ToList();
                 RawImageMean dst;
@@ -2479,13 +2556,14 @@ namespace MyCaffe.db.image
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <param name="bActive">Optionally, specifies to get the active image count.</param>
         /// <param name="bInactive">Optionally, specifies to get the inactive image count.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The number of images is returned.  When both 'bActive' and 'bInactive' are <i>true</i> the total image count is returned.</returns>
-        public int GetImageCount(int nSrcId = 0, bool bActive = true, bool bInactive = true)
+        public int GetImageCount(int nSrcId = 0, bool bActive = true, bool bInactive = true, ConnectInfo ci = null)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
 
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 IQueryable<RawImage> iQuery = entities.RawImages.Where(p => p.SourceID == nSrcId);
 
@@ -2866,7 +2944,7 @@ namespace MyCaffe.db.image
                 if (rgP.Count == 0)
                     return null;
 
-                return getRawImage(rgP[0].Value);
+                return getRawImage(rgP[0].Value, null, null, entities);
             }
         }
 
@@ -3332,9 +3410,10 @@ namespace MyCaffe.db.image
         /// Updates the source counts for the open data source.
         /// </summary>
         /// <param name="nImageCount">Specifies the new image count.</param>
-        public void UpdateSourceCounts(int nImageCount)
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        public void UpdateSourceCounts(int nImageCount, ConnectInfo ci = null)
         {
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 int nSrcId = m_src.ID;
                 List<Source> rg = entities.Sources.Where(p => p.ID == nSrcId).ToList();
@@ -3369,11 +3448,12 @@ namespace MyCaffe.db.image
         /// Returns the ID of a data source given its name.
         /// </summary>
         /// <param name="strName">Specifies the data source name.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The ID of the data source is returned.</returns>
-        public int GetSourceID(string strName)
+        public int GetSourceID(string strName, ConnectInfo ci = null)
         {
             strName = convertWs(strName, '_');
-            Source src = GetSource(strName);
+            Source src = GetSource(strName, ci);
 
             if (src == null)
                 return 0;
@@ -3385,8 +3465,9 @@ namespace MyCaffe.db.image
         /// Returns the name of a data source given its ID.
         /// </summary>
         /// <param name="nID">Specifies the ID of the data source.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The data source name is returned.</returns>
-        public string GetSourceName(int nID)
+        public string GetSourceName(int nID, ConnectInfo ci = null)
         {
             Source src = GetSource(nID);
 
@@ -3400,11 +3481,12 @@ namespace MyCaffe.db.image
         /// Returns the Source entity given a data source name.
         /// </summary>
         /// <param name="strName">Specifies the data source name.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The Source entity is returned.</returns>
-        public Source GetSource(string strName)
+        public Source GetSource(string strName, ConnectInfo ci = null)
         {
             strName = convertWs(strName, '_');
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<Source> rgSrc = entities.Sources.Where(p => p.Name == strName).ToList();
 
@@ -3438,10 +3520,11 @@ namespace MyCaffe.db.image
         /// Adds or updates (if exists) a data source to the database.
         /// </summary>
         /// <param name="src">Specifies the Source entity to add.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The ID of the data source added is returned.</returns>
-        public int PutSource(Source src)
+        public int PutSource(Source src, ConnectInfo ci = null)
         {
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<Source> rgSrc = null;
 
@@ -3481,8 +3564,9 @@ namespace MyCaffe.db.image
         /// <param name="bDataIsReal">Specifies whether or not the item uses real or <i>byte</i> data.</param>
         /// <param name="nCopyOfSourceID">Optionally, specifies the ID of the source from which this source was copied.  If this is an original source, this parameter should be 0.</param>
         /// <param name="bSaveImagesToFile">Optionally, specifies whether or not to save the images to the file system (<i>true</i>) or directly into the database (<i>false</i>)  The default = <i>true</i>.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The ID of the data source added is returned.</returns>
-        public int AddSource(string strName, int nChannels, int nWidth, int nHeight, bool bDataIsReal, int nCopyOfSourceID = 0, bool bSaveImagesToFile = true)
+        public int AddSource(string strName, int nChannels, int nWidth, int nHeight, bool bDataIsReal, int nCopyOfSourceID = 0, bool bSaveImagesToFile = true, ConnectInfo ci = null)
         {
             Source src = new Source();
 
@@ -3495,7 +3579,7 @@ namespace MyCaffe.db.image
             src.SaveImagesToFile = bSaveImagesToFile;
             src.CopyOfSourceID = nCopyOfSourceID;
 
-            return PutSource(src);
+            return PutSource(src, ci);
         }
 
         /// <summary>
@@ -3584,13 +3668,14 @@ namespace MyCaffe.db.image
         /// Returns a dictionary of the data source parameters.
         /// </summary>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The dictionary of source parameter values is returned.</returns>
-        public Dictionary<string, string> GetSourceParameters(int nSrcId = 0)
+        public Dictionary<string, string> GetSourceParameters(int nSrcId = 0, ConnectInfo ci = null)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
 
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<SourceParameter> rgP = entities.SourceParameters.Where(p => p.SourceID == nSrcId).ToList();
                 Dictionary<string, string> rgPval = new Dictionary<string, string>();
@@ -4025,16 +4110,17 @@ namespace MyCaffe.db.image
         /// <param name="nTrainSrcId">Specifies the ID of the training data source.</param>
         /// <param name="nDsGroupID">Optionally, specifies the ID of the dataset group (default = 0).</param>
         /// <param name="nModelGroupID">Optionally, specifies the ID of the model group (default = 0).</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns></returns>
-        public int AddDataset(int nDsCreatorID, string strName, int nTestSrcId, int nTrainSrcId, int nDsGroupID = 0, int nModelGroupID = 0)
+        public int AddDataset(int nDsCreatorID, string strName, int nTestSrcId, int nTrainSrcId, int nDsGroupID = 0, int nModelGroupID = 0, ConnectInfo ci = null)
         {
             strName = convertWs(strName, '_');
 
-            Source srcTest = GetSource(nTestSrcId);
+            Source srcTest = GetSource(nTestSrcId, ci);
             if (srcTest == null)
                 throw new Exception("Could not find either the test source with ID = " + nTestSrcId.ToString() + "!");
 
-            Source srcTrain = GetSource(nTrainSrcId);
+            Source srcTrain = GetSource(nTrainSrcId, ci);
             if (srcTrain == null)
                 throw new Exception("Could not find either the train source with ID = " + nTrainSrcId.ToString() + "!");
 
@@ -4050,10 +4136,11 @@ namespace MyCaffe.db.image
             if (srcTest.ImageEncoded.GetValueOrDefault() != srcTrain.ImageEncoded.GetValueOrDefault())
                 throw new Exception("The test and train sources have different image encodings!");
 
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            Dataset ds = null;
+
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<Dataset> rgDs = entities.Datasets.Where(p => p.Name == strName && p.DatasetCreatorID == nDsCreatorID).ToList();
-                Dataset ds;
 
                 if (rgDs.Count > 0)
                 {
@@ -4089,12 +4176,15 @@ namespace MyCaffe.db.image
                     entities.Datasets.Add(ds);
 
                 entities.SaveChanges();
-
-                UpdateLabelCounts(srcTest.ID);
-                UpdateLabelCounts(srcTrain.ID);
-
-                return ds.ID;
             }
+
+            UpdateLabelCounts(srcTest.ID, 0, ci);
+            UpdateLabelCounts(srcTrain.ID, 0, ci);
+
+            if (ds == null)
+                return 0;
+
+            return ds.ID;
         }
 
         /// <summary>
@@ -4120,9 +4210,10 @@ namespace MyCaffe.db.image
         /// Update the dataset counts.
         /// </summary>
         /// <param name="nDsId">Specifies the ID of the dataset to update.</param>
-        public void UpdateDatasetCounts(int nDsId)
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        public void UpdateDatasetCounts(int nDsId, ConnectInfo ci = null)
         {
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<Dataset> rgDs = entities.Datasets.Where(p => p.ID == nDsId).ToList();
 
@@ -4496,10 +4587,11 @@ namespace MyCaffe.db.image
         /// Returns the name of a dataset creator given its ID.
         /// </summary>
         /// <param name="nDatasetCreatorID">Specifies the ID of the dataset creator.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>Returns name of the dataset creator, or <i>null</i> if not found.</returns>
-        public string GetDatasetCreatorName(int nDatasetCreatorID)
+        public string GetDatasetCreatorName(int nDatasetCreatorID, ConnectInfo ci = null)
         {
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<DatasetCreator> rgDsc = entities.DatasetCreators.Where(p => p.ID == nDatasetCreatorID).ToList();
 

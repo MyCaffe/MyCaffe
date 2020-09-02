@@ -36,6 +36,10 @@ namespace MyCaffe.db.image
         /// Specifies whether or not to load the debug data if any exists.  When false, the debug data is not loaded from file (default = false).
         /// </summary>
         protected bool m_bLoadDebugData = false;
+        /// <summary>
+        /// Specifies the connection information used on open.
+        /// </summary>
+        protected ConnectInfo m_ciOpen = null;
 
         ImageCache m_imageCache = null;
         ParamCache m_paramCache = null;
@@ -147,10 +151,11 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="src">Specifies the data source.</param>
         /// <param name="nCacheMax">Specifies the maximum cache count to use when adding RawImages (default = 500).</param>
-        public void Open(SourceDescriptor src, int nCacheMax = 500)
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        public void Open(SourceDescriptor src, int nCacheMax = 500, ConnectInfo ci = null)
         {
             m_openSource = src;
-            Open(src.ID, nCacheMax);
+            Open(src.ID, nCacheMax, false, null, ci);
         }
 
         /// <summary>
@@ -160,7 +165,8 @@ namespace MyCaffe.db.image
         /// <param name="nCacheMax">Optionally, specifies the maximum cache count to use when adding RawImages (default = 500).</param>
         /// <param name="bForceLoadImageFilePath">Optionally, specfies to force load the image file path (default = <i>false</i>) and use file based data.</param>
         /// <param name="log">Optionally, specifies the output log (default = null).</param>
-        public void Open(int nSrcId, int nCacheMax = 500, bool bForceLoadImageFilePath = false, Log log = null)
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        public void Open(int nSrcId, int nCacheMax = 500, bool bForceLoadImageFilePath = false, Log log = null, ConnectInfo ci = null)
         {
             if (m_openSource != null)
             {
@@ -172,8 +178,9 @@ namespace MyCaffe.db.image
                 }
             }
 
-            m_openSource = LoadSource(nSrcId);
-            m_db.Open(nSrcId, bForceLoadImageFilePath);
+            m_ciOpen = ci;
+            m_openSource = LoadSource(nSrcId, ci);
+            m_db.Open(nSrcId, bForceLoadImageFilePath, ci);
 
             m_imageCache = new ImageCache(nCacheMax);
             m_paramCache = new ParamCache(nCacheMax);
@@ -185,6 +192,7 @@ namespace MyCaffe.db.image
         public void Close()
         {
             m_openSource = null;
+            m_ciOpen = null;
             m_db.Close();
         }
 
@@ -265,7 +273,7 @@ namespace MyCaffe.db.image
                 return;
 
             if (bSave)
-                m_db.PutRawImages(m_imageCache.Images, m_imageCache.Parameters);
+                m_db.PutRawImages(m_imageCache.Images, m_imageCache.Parameters, m_ciOpen);
 
             m_imageCache.Clear();
         }
@@ -1096,10 +1104,13 @@ namespace MyCaffe.db.image
         /// Adds a new data source to the database.
         /// </summary>
         /// <param name="src">Specifies source desciptor to add.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        /// <param name="bSaveImagesToFileOverride">Optionally, specifies the save images to file override, or <i>null</i> to ignore (default = null).</param>
         /// <returns>The ID of the data source added is returned.</returns>
-        public int AddSource(SourceDescriptor src)
+        public int AddSource(SourceDescriptor src, ConnectInfo ci = null, bool? bSaveImagesToFileOverride = null)
         {
-            src.ID = m_db.AddSource(src.Name, src.ImageChannels, src.ImageWidth, src.ImageHeight, src.IsRealData, src.CopyOfSourceID, src.SaveImagesToFile);
+            bool bSaveImagesToFile = bSaveImagesToFileOverride.GetValueOrDefault(src.SaveImagesToFile);
+            src.ID = m_db.AddSource(src.Name, src.ImageChannels, src.ImageWidth, src.ImageHeight, src.IsRealData, src.CopyOfSourceID, bSaveImagesToFile, ci);
             return src.ID;
         }
 
@@ -1114,10 +1125,11 @@ namespace MyCaffe.db.image
         /// <param name="nCopyOfSourceID">Optionally, specifies the ID of the source from which this source was copied (and has virtual raw image references).  The default 
         /// of 0 specifies that this is an original source.</param>
         /// <param name="bSaveImagesToFile">Optionally, specifies whether or not to save the images to the file system (<i>true</i>) or directly into the database (<i>false</i>).  The default is <i>true</i>.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The ID of the data source added is returned.</returns>
-        public int AddSource(string strName, int nChannels, int nWidth, int nHeight, bool bDataIsReal, int nCopyOfSourceID = 0, bool bSaveImagesToFile = true)
+        public int AddSource(string strName, int nChannels, int nWidth, int nHeight, bool bDataIsReal, int nCopyOfSourceID = 0, bool bSaveImagesToFile = true, ConnectInfo ci = null)
         {
-            return m_db.AddSource(strName, nChannels, nWidth, nHeight, bDataIsReal, nCopyOfSourceID, bSaveImagesToFile);
+            return m_db.AddSource(strName, nChannels, nWidth, nHeight, bDataIsReal, nCopyOfSourceID, bSaveImagesToFile, ci);
         }
 
         /// <summary>
@@ -1416,17 +1428,19 @@ namespace MyCaffe.db.image
         /// Adds or updates the training source, testing source, dataset creator and dataset to the database.
         /// </summary>
         /// <param name="ds"></param>
-        /// <returns></returns>
-        public int AddDataset(DatasetDescriptor ds)
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        /// <param name="bSaveImagesToFileOverride">Optionally, specifies the save images to file override, or <i>null</i> to ignore (default = null).</param>
+        /// <returns>The dataset ID is returned.</returns>
+        public int AddDataset(DatasetDescriptor ds, ConnectInfo ci = null, bool? bSaveImagesToFileOverride = null)
         {
-            ds.TestingSource.ID = AddSource(ds.TestingSource);
-            ds.TrainingSource.ID = AddSource(ds.TrainingSource);
+            ds.TestingSource.ID = AddSource(ds.TestingSource, ci);
+            ds.TrainingSource.ID = AddSource(ds.TrainingSource, ci);
 
             int nDsCreatorID = 0;
             if (ds.CreatorName != null)
                 nDsCreatorID = m_db.GetDatasetCreatorID(ds.CreatorName);
 
-            ds.ID = m_db.AddDataset(nDsCreatorID, ds.Name, ds.TestingSource.ID, ds.TrainingSource.ID, ds.DatasetGroup.ID, ds.ModelGroup.ID);
+            ds.ID = m_db.AddDataset(nDsCreatorID, ds.Name, ds.TestingSource.ID, ds.TrainingSource.ID, ds.DatasetGroup.ID, ds.ModelGroup.ID, ci);
             return ds.ID;
         }
 
@@ -1439,10 +1453,11 @@ namespace MyCaffe.db.image
         /// <param name="nTrainSrcId">Specifies the ID of the training data source.</param>
         /// <param name="nDsGroupID">Optionally, specifies the ID of the dataset group (default = 0).</param>
         /// <param name="nModelGroupID">Optionally, specifies the ID of the model group (default = 0).</param>
-        /// <returns></returns>
-        public int AddDataset(int nDsCreatorID, string strName, int nTestSrcId, int nTrainSrcId, int nDsGroupID = 0, int nModelGroupID = 0)
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        /// <returns>The dataset ID is returned.</returns>
+        public int AddDataset(int nDsCreatorID, string strName, int nTestSrcId, int nTrainSrcId, int nDsGroupID = 0, int nModelGroupID = 0, ConnectInfo ci = null)
         {
-            return m_db.AddDataset(nDsCreatorID, strName, nTestSrcId, nTrainSrcId, nDsGroupID, nModelGroupID);
+            return m_db.AddDataset(nDsCreatorID, strName, nTestSrcId, nTrainSrcId, nDsGroupID, nModelGroupID, ci);
         }
 
         /// <summary>
@@ -1459,22 +1474,23 @@ namespace MyCaffe.db.image
         /// Updates the dataset counts, and training/testing source counts.
         /// </summary>
         /// <param name="nDsId"></param>
-        public void UpdateDatasetCounts(int nDsId)
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        public void UpdateDatasetCounts(int nDsId, ConnectInfo ci = null)
         {
-            Dataset ds = m_db.GetDataset(nDsId);
+            Dataset ds = m_db.GetDataset(nDsId, ci);
             Database db = new Database();
 
-            db.Open(ds.TestingSourceID.GetValueOrDefault());
+            db.Open(ds.TestingSourceID.GetValueOrDefault(), false, ci);
             db.UpdateSourceCounts();
-            db.UpdateLabelCounts();
+            db.UpdateLabelCounts(0, 0, ci);
             db.Close();
 
-            db.Open(ds.TrainingSourceID.GetValueOrDefault());
+            db.Open(ds.TrainingSourceID.GetValueOrDefault(), false, ci);
             db.UpdateSourceCounts();
-            db.UpdateLabelCounts();
+            db.UpdateLabelCounts(0, 0, ci);
             db.Close();
 
-            m_db.UpdateDatasetCounts(nDsId);
+            m_db.UpdateDatasetCounts(nDsId, ci);
         }
 
         /// <summary>
@@ -1946,10 +1962,11 @@ namespace MyCaffe.db.image
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
         /// <param name="bSort">Specifies whether or not to sort the labels (default = false).</param>
         /// <param name="bWithImagesOnly">Specifies whether or not to only load labels with images associated with them (default = false).</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns></returns>
-        public List<LabelDescriptor> LoadLabels(int nSrcId = 0, bool bSort = true, bool bWithImagesOnly = false)
+        public List<LabelDescriptor> LoadLabels(int nSrcId = 0, bool bSort = true, bool bWithImagesOnly = false, ConnectInfo ci = null)
         {
-            List<Label> rgLabels = m_db.GetLabels(bSort, bWithImagesOnly, nSrcId);
+            List<Label> rgLabels = m_db.GetLabels(bSort, bWithImagesOnly, nSrcId, ci);
             List<LabelDescriptor> rgDesc = new List<LabelDescriptor>();
 
             foreach (Label l in rgLabels)
@@ -1997,10 +2014,10 @@ namespace MyCaffe.db.image
                                                             src.CopyOfSourceID.GetValueOrDefault(0),
                                                             src.OwnerID,
                                                             src.ImageCount.GetValueOrDefault());
-            srcDesc.Labels = LoadLabels(nSrcId);
-            srcDesc.LabelCountsAsText = m_db.GetLabelCountsAsText(nSrcId);
-            srcDesc.SetInactiveImageCount(m_db.GetImageCount(nSrcId, false, true));
-            srcDesc.Parameters = LoadSourceParameters(srcDesc.ID);
+            srcDesc.Labels = LoadLabels(nSrcId, true, false, ci);
+            srcDesc.LabelCountsAsText = m_db.GetLabelCountsAsText(nSrcId, ci);
+            srcDesc.SetInactiveImageCount(m_db.GetImageCount(nSrcId, false, true, ci));
+            srcDesc.Parameters = LoadSourceParameters(srcDesc.ID, ci);
 
             return srcDesc;
         }
@@ -2009,12 +2026,13 @@ namespace MyCaffe.db.image
         /// Loads the data source parameters for a given source.
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The collection of data source parameters is returned.</returns>
-        public ParameterDescriptorCollection LoadSourceParameters(int nSrcId)
+        public ParameterDescriptorCollection LoadSourceParameters(int nSrcId, ConnectInfo ci = null)
         {
             ParameterDescriptorCollection col = new ParameterDescriptorCollection();
 
-            Dictionary<string, string> rgParam = m_db.GetSourceParameters(nSrcId);
+            Dictionary<string, string> rgParam = m_db.GetSourceParameters(nSrcId, ci);
             foreach (KeyValuePair<string, string> kv in rgParam)
             {
                 col.Add(new ParameterDescriptor(0, kv.Key, kv.Value));
@@ -2164,7 +2182,7 @@ namespace MyCaffe.db.image
             SourceDescriptor srcTest = LoadSource(ds.TestingSourceID.GetValueOrDefault(), ci);
             GroupDescriptor dsGroup = LoadDatasetGroup(ds.DatasetGroupID.GetValueOrDefault(), ci);
             GroupDescriptor mdlGroup = LoadModelGroup(ds.ModelGroupID.GetValueOrDefault(), ci);
-            DatasetDescriptor dsDesc = new DatasetDescriptor(ds.ID, ds.Name, mdlGroup, dsGroup, srcTrain, srcTest, m_db.GetDatasetCreatorName(ds.DatasetCreatorID.GetValueOrDefault()), ds.OwnerID, ds.Description);
+            DatasetDescriptor dsDesc = new DatasetDescriptor(ds.ID, ds.Name, mdlGroup, dsGroup, srcTrain, srcTest, m_db.GetDatasetCreatorName(ds.DatasetCreatorID.GetValueOrDefault(), ci), ds.OwnerID, ds.Description);
 
             dsDesc.Parameters = LoadDatasetParameters(ds.ID, ci);
 
