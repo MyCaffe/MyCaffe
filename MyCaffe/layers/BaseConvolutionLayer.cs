@@ -101,6 +101,9 @@ namespace MyCaffe.layers
         /// </summary>
         protected bool m_bForceNDim2col;
 
+        List<List<int>> m_rgrgLastBottomShape = new List<List<int>>();
+        List<List<int>> m_rgrgLastTopShape = new List<List<int>>();
+
         int m_nNumKernelsIm2col;
         int m_nNumKernelsCol2im;
         int m_nConvOutChannels;
@@ -280,6 +283,68 @@ namespace MyCaffe.layers
             return true;
         }
 
+        private bool compareShapes(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            if (!compareShapes(colBottom, m_rgrgLastBottomShape))
+                return false;
+
+            if (!compareShapes(colTop, m_rgrgLastTopShape))
+                return false;
+
+            return true;
+        }
+
+        private bool compareShapes(BlobCollection<T> col, List<List<int>> rgrg)
+        {
+            if (rgrg.Count != col.Count)
+                return false;
+
+            for (int i = 0; i < col.Count; i++)
+            {
+                int nCount = col[i].shape().Count;
+                if (rgrg[i].Count != nCount)
+                    return false;
+
+                for (int j = 0; j < nCount; j++)
+                {
+                    if (col[i].shape()[j] != rgrg[i][j])
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void setShapes(BlobCollection<T> colBottom, BlobCollection<T> colTop)
+        {
+            setShapes(colBottom, ref m_rgrgLastBottomShape);
+            setShapes(colTop, ref m_rgrgLastTopShape);
+        }
+
+        private void setShapes(BlobCollection<T> col, ref List<List<int>> rgrg)
+        {
+            if (rgrg.Count != col.Count)
+                rgrg = new List<List<int>>(col.Count);
+
+            for (int i = 0; i < col.Count; i++)
+            {
+                int nCount = col[i].shape().Count;
+                if (rgrg.Count < col.Count)
+                    rgrg.Add(new List<int>());
+                else if (rgrg[i].Count != nCount)
+                    rgrg[i] = new List<int>(nCount);
+
+                for (int j = 0; j < nCount; j++)
+                {
+                    nCount = col[i].shape().Count;
+                    if (rgrg[i].Count < nCount)
+                        rgrg[i].Add(col[i].shape()[j]);
+                    else
+                        rgrg[i][j] = col[i].shape()[j];
+                }
+            }
+        }
+
         /// <summary>
         /// Setup the layer.
         /// </summary>
@@ -287,6 +352,9 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void LayerSetUp(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            m_rgrgLastBottomShape = new List<List<int>>();
+            m_rgrgLastTopShape = new List<List<int>>();
+
             // Configure the kernel size, padding, stride and inputs.
             ConvolutionParameter p = m_param.convolution_param;
 
@@ -582,6 +650,9 @@ namespace MyCaffe.layers
         /// <param name="colTop">Specifies the collection of top (output) Blobs.</param>
         public override void Reshape(BlobCollection<T> colBottom, BlobCollection<T> colTop)
         {
+            if (compareShapes(colBottom, colTop))
+                return;
+
             int nFirstSpatialAxis = m_nChannelAxis + 1;
             m_log.CHECK_EQ(colBottom[0].num_axes, nFirstSpatialAxis + m_nNumSpatialAxes, "bottom num_axes may not change.");
 
@@ -677,6 +748,8 @@ namespace MyCaffe.layers
                     m_blobBiasMultiplier.SetData(1.0);
                 }
             }
+
+            setShapes(colBottom, colTop);
         }
 
         /// <summary>
