@@ -182,7 +182,7 @@ namespace MyCaffe.data
                 {
                     int nSrcId = factory.AddSource(strSourceName, nChannels, (int)cols, (int)rows, false, 0, true);
 
-                    factory.Open(nSrcId, 500, false, m_log);
+                    factory.Open(nSrcId, 500, Database.FORCE_LOAD.NONE, m_log);
                     factory.DeleteSourceData();
                 }
 
