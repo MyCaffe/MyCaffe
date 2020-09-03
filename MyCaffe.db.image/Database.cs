@@ -167,6 +167,12 @@ namespace MyCaffe.db.image
             m_entities = EntitiesConnection.CreateEntities(ci);
             m_rgLabelCache = loadLabelCache(m_src.ID);
 
+            if (ci == null)
+                ci = EntitiesConnection.GlobalDatabaseConnectInfo;
+
+            if (ci.Location == ConnectInfo.TYPE.AZURE)
+                nForceLoad = FORCE_LOAD.FROM_DB;
+
             setImagePath(nForceLoad);
         }
 
@@ -190,13 +196,13 @@ namespace MyCaffe.db.image
         /// <param name="nForceLoad">Optionally, specifies how to force load the data (default = NONE).</param>
         protected virtual void setImagePath(FORCE_LOAD nForceLoad)
         {
-            m_strPrimaryImgPath = getImagePath();
-
             if (nForceLoad == FORCE_LOAD.FROM_DB)
             {
                 m_bEnableFileBasedData = false;
                 return;
             }
+
+            m_strPrimaryImgPath = getImagePath();
 
             if (m_src.SaveImagesToFile.GetValueOrDefault(false) || nForceLoad == FORCE_LOAD.FROM_FILE)
             {
@@ -561,6 +567,12 @@ namespace MyCaffe.db.image
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
 
+            if (ci == null)
+                ci = EntitiesConnection.GlobalDatabaseConnectInfo;
+
+            if (ci.Location == ConnectInfo.TYPE.AZURE || !string.IsNullOrEmpty(ci.Password))
+                return "n\a";
+
             using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<Label> rgLabels = entities.Labels.Where(p => p.SourceID == nSrcId).OrderBy(p => p.Label1).ToList();
@@ -709,13 +721,14 @@ namespace MyCaffe.db.image
         /// <param name="nLabel">Specifies the label.</param>
         /// <param name="strName">Optionally, specifies a label name (default = "").</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The ID of the added label is returned.</returns>
-        public int AddLabel(int nLabel, string strName = "", int nSrcId = 0)
+        public int AddLabel(int nLabel, string strName = "", int nSrcId = 0, ConnectInfo ci = null)
         {
             if (nSrcId == 0)
                 nSrcId = m_src.ID;
 
-            using (DNNEntities entities = EntitiesConnection.CreateEntities())
+            using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<Label> rgLabel = entities.Labels.Where(p => p.SourceID == nSrcId && p.Label1 == nLabel).ToList();
                 Label l; 
@@ -3456,7 +3469,8 @@ namespace MyCaffe.db.image
         /// <summary>
         /// Updates the source counts for the open data source by querying the database for the counts.
         /// </summary>
-        public void UpdateSourceCounts()
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        public void UpdateSourceCounts(ConnectInfo ci = null)
         {
             string strCmd = "SELECT COUNT(ID) FROM RawImages WHERE (SourceID = " + m_src.ID.ToString() + " AND Active=1)";
             DbRawSqlQuery<int> result = m_entities.Database.SqlQuery<int>(strCmd);
@@ -3465,8 +3479,8 @@ namespace MyCaffe.db.image
 
             if (rgResult.Count > 0)
                 nCount = rgResult[0];
-
-            UpdateSourceCounts(nCount);
+            
+            UpdateSourceCounts(nCount, ci);
         }
 
         /// <summary>
@@ -4617,6 +4631,12 @@ namespace MyCaffe.db.image
         /// <returns>Returns name of the dataset creator, or <i>null</i> if not found.</returns>
         public string GetDatasetCreatorName(int nDatasetCreatorID, ConnectInfo ci = null)
         {
+            if (ci == null)
+                ci = EntitiesConnection.GlobalDatabaseConnectInfo;
+
+            if (ci != null && !string.IsNullOrEmpty(ci.Password))
+                return "";
+
             using (DNNEntities entities = EntitiesConnection.CreateEntities(ci))
             {
                 List<DatasetCreator> rgDsc = entities.DatasetCreators.Where(p => p.ID == nDatasetCreatorID).ToList();

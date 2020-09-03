@@ -237,10 +237,11 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="log">Specifies the output log used when creating the image mean.</param>
         /// <param name="rgAbort">Specifies the cancellation handles used to cancel the creation of the image mean.</param>
+        /// <param name="bQueryOnly">Specifies whether or not to only query for the mean and not calculate if missing.</param>
         /// <returns>The image mean is returned.</returns>
-        public SimpleDatum GetImageMean(Log log, WaitHandle[] rgAbort)
+        public SimpleDatum GetImageMean(Log log, WaitHandle[] rgAbort, bool bQueryOnly)
         {
-            return m_masterList.GetImageMean(log, rgAbort);
+            return m_masterList.GetImageMean(log, rgAbort, bQueryOnly);
         }
 
         /// <summary>

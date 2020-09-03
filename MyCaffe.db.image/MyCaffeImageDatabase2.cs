@@ -1340,7 +1340,7 @@ namespace MyCaffe.db.image
                     return m_rgMeanCache[nSrcId];
             }
 
-            SimpleDatum sd = m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImageMean(null, null);
+            SimpleDatum sd = m_colDatasets[m_nStrIDHashCode].FindImageset(nSrcId).GetImageMean(null, null, true);
 
             if (!m_rgMeanCache.ContainsKey(nSrcId))
                 m_rgMeanCache.Add(nSrcId, sd);

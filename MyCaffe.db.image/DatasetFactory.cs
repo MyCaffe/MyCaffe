@@ -553,10 +553,11 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="sd">Specifies the data.</param>
         /// <param name="bUpdate">Specifies whether or not to update the mean image.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The ID of the RawImageMean is returned.</returns>
-        public int PutRawImageMean(SimpleDatum sd, bool bUpdate)
+        public int PutRawImageMean(SimpleDatum sd, bool bUpdate, ConnectInfo ci = null)
         {
-            return m_db.PutRawImageMean(sd, bUpdate);
+            return m_db.PutRawImageMean(sd, bUpdate, 0, ci);
         }
 
         /// <summary>
@@ -1031,10 +1032,11 @@ namespace MyCaffe.db.image
         /// <param name="nLabel">Specifies the label.</param>
         /// <param name="strName">Optionally, specifies a label name (default = "").</param>
         /// <param name="nSrcId">Optionally, specifies the ID of the data source (default = 0, which then uses the open data source ID).</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The ID of the added label is returned.</returns>
-        public int AddLabel(int nLabel, string strName, int nSrcId = 0)
+        public int AddLabel(int nLabel, string strName, int nSrcId = 0, ConnectInfo ci = null)
         {
-            return m_db.AddLabel(nLabel, strName, nSrcId);
+            return m_db.AddLabel(nLabel, strName, nSrcId, ci);
         }
 
         /// <summary>
@@ -1070,6 +1072,17 @@ namespace MyCaffe.db.image
         public void UpdateLabelBoost(int? nTgtLbl, bool bTgtLblExact, int? nTgtBst, bool bTgtBstExact, int? nNewLbl, int? nNewBst, params int[] rgSrcId)
         {
             m_db.UpdateLabelBoost(nTgtLbl, bTgtLblExact, nTgtBst, bTgtBstExact, nNewLbl, nNewBst, rgSrcId);
+        }
+
+        /// <summary>
+        /// Query the list of labels for a given source.
+        /// </summary>
+        /// <param name="nSrcId">Optionally, specifies the source ID, or when 0, uses the open source ID.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
+        /// <returns></returns>
+        public List<Label> QueryLabels(int nSrcId = 0, ConnectInfo ci = null)
+        {
+            return m_db.GetLabels(false, false, nSrcId, ci);
         }
 
         #endregion
@@ -1483,12 +1496,12 @@ namespace MyCaffe.db.image
             Database db = new Database();
 
             db.Open(ds.TestingSourceID.GetValueOrDefault(), Database.FORCE_LOAD.NONE, ci);
-            db.UpdateSourceCounts();
+            db.UpdateSourceCounts(ci);
             db.UpdateLabelCounts(0, 0, ci);
             db.Close();
 
             db.Open(ds.TrainingSourceID.GetValueOrDefault(), Database.FORCE_LOAD.NONE, ci);
-            db.UpdateSourceCounts();
+            db.UpdateSourceCounts(ci);
             db.UpdateLabelCounts(0, 0, ci);
             db.Close();
 
@@ -2184,7 +2197,8 @@ namespace MyCaffe.db.image
             SourceDescriptor srcTest = LoadSource(ds.TestingSourceID.GetValueOrDefault(), ci);
             GroupDescriptor dsGroup = LoadDatasetGroup(ds.DatasetGroupID.GetValueOrDefault(), ci);
             GroupDescriptor mdlGroup = LoadModelGroup(ds.ModelGroupID.GetValueOrDefault(), ci);
-            DatasetDescriptor dsDesc = new DatasetDescriptor(ds.ID, ds.Name, mdlGroup, dsGroup, srcTrain, srcTest, m_db.GetDatasetCreatorName(ds.DatasetCreatorID.GetValueOrDefault(), ci), ds.OwnerID, ds.Description);
+            string strCreatorName = m_db.GetDatasetCreatorName(ds.DatasetCreatorID.GetValueOrDefault(), ci);
+            DatasetDescriptor dsDesc = new DatasetDescriptor(ds.ID, ds.Name, mdlGroup, dsGroup, srcTrain, srcTest, strCreatorName, ds.OwnerID, ds.Description);
 
             dsDesc.Parameters = LoadDatasetParameters(ds.ID, ci);
 

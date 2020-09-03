@@ -121,7 +121,13 @@ namespace MyCaffe.db.image
                 SimpleDatum sdMean = null;
 
                 if (!bSkipMeanCheck)
-                    sdMean = m_TrainingImages.GetImageMean(log, rgAbort);
+                {
+                    bool bQueryOnly = false;
+                    if (EntitiesConnection.GlobalDatabaseConnectInfo.Location == ConnectInfo.TYPE.AZURE)
+                        bQueryOnly = true;
+
+                    sdMean = m_TrainingImages.GetImageMean(log, rgAbort, bQueryOnly);
+                }
 
                 if (EventWaitHandle.WaitAny(rgAbort, 0) != EventWaitHandle.WaitTimeout)
                     return 0;
@@ -131,7 +137,13 @@ namespace MyCaffe.db.image
                 QueryState qsTesting = m_TestingImages.Initialize(bSilentLoad, true, true, nImageDbLoadLimit);
 
                 if (!bSkipMeanCheck)
-                    m_TestingImages.SetImageMean(sdMean, true);
+                {
+                    bool bSave = true;
+                    if (EntitiesConnection.GlobalDatabaseConnectInfo.Location == ConnectInfo.TYPE.AZURE)
+                        bSave = false;
+
+                    m_TestingImages.SetImageMean(sdMean, bSave);
+                }
 
                 if (EventWaitHandle.WaitAny(rgAbort, 0) != EventWaitHandle.WaitTimeout)
                     return 0;

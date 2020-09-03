@@ -298,10 +298,11 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="log">Specifies the Log used to output status.</param>
         /// <param name="rgAbort">Specifies a set of wait handles for aborting the operation.</param>
+        /// <param name="bQueryOnly">Specifies whether or not to only query for the mean and not calculate if missing.</param>
         /// <returns>The SimpleDatum with the image mean is returned.</returns>
-        public SimpleDatum GetImageMean(Log log, WaitHandle[] rgAbort)
+        public SimpleDatum GetImageMean(Log log, WaitHandle[] rgAbort, bool bQueryOnly)
         {
-            if (m_imgMean != null)
+            if (m_imgMean != null || bQueryOnly)
                 return m_imgMean;
 
             int nLoadedCount = GetLoadedCount();
