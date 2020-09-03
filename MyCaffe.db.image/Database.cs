@@ -46,6 +46,25 @@ namespace MyCaffe.db.image
         Dictionary<string, string> m_rgstrDatabaseFilePath = new Dictionary<string, string>();
 
         /// <summary>
+        /// Defines the force load type.
+        /// </summary>
+        public enum FORCE_LOAD
+        {
+            /// <summary>
+            /// Specifies that no force load is specified.
+            /// </summary>
+            NONE,
+            /// <summary>
+            /// Specifies to force load from file.
+            /// </summary>
+            FROM_FILE,
+            /// <summary>
+            /// Specifies to force load from db.
+            /// </summary>
+            FROM_DB
+        }
+
+        /// <summary>
         /// The Database constructor.
         /// </summary>
         public Database()
@@ -137,9 +156,9 @@ namespace MyCaffe.db.image
         /// Opens a data source.
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source to open.</param>
-        /// <param name="bForceLoadImageFilePath">Optionally, specifies to force load the image file path (default = <i>false</i>).</param>
+        /// <param name="nForceLoad">Optionally, specifies how to force load the data (default = NONE).</param>
         /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
-        public void Open(int nSrcId, bool bForceLoadImageFilePath = false, ConnectInfo ci = null)
+        public void Open(int nSrcId, FORCE_LOAD nForceLoad = FORCE_LOAD.NONE, ConnectInfo ci = null)
         {
             m_src = GetSource(nSrcId, ci);
             if (m_src == null)
@@ -148,7 +167,7 @@ namespace MyCaffe.db.image
             m_entities = EntitiesConnection.CreateEntities(ci);
             m_rgLabelCache = loadLabelCache(m_src.ID);
 
-            setImagePath(bForceLoadImageFilePath);
+            setImagePath(nForceLoad);
         }
 
         /// <summary>
@@ -162,18 +181,24 @@ namespace MyCaffe.db.image
             m_entities = EntitiesConnection.CreateEntities();
             m_rgLabelCache = loadLabelCache(m_src.ID);
 
-            setImagePath(bForceLoadImageFilePath);
+            setImagePath((bForceLoadImageFilePath) ? FORCE_LOAD.FROM_FILE : FORCE_LOAD.NONE);
         }
 
         /// <summary>
         /// Sets the image path member to the path used when saving binary data to the file system.
         /// </summary>
-        /// <param name="bForceLoadImageFilePath">Specifies whether or not to enable saving binary data to the file system.</param>
-        protected virtual void setImagePath(bool bForceLoadImageFilePath)
+        /// <param name="nForceLoad">Optionally, specifies how to force load the data (default = NONE).</param>
+        protected virtual void setImagePath(FORCE_LOAD nForceLoad)
         {
             m_strPrimaryImgPath = getImagePath();
 
-            if (m_src.SaveImagesToFile.GetValueOrDefault(false) || bForceLoadImageFilePath)
+            if (nForceLoad == FORCE_LOAD.FROM_DB)
+            {
+                m_bEnableFileBasedData = false;
+                return;
+            }
+
+            if (m_src.SaveImagesToFile.GetValueOrDefault(false) || nForceLoad == FORCE_LOAD.FROM_FILE)
             {
                 m_bEnableFileBasedData = true;
 
@@ -4025,10 +4050,11 @@ namespace MyCaffe.db.image
         /// Returns the name of a dataset given its ID.
         /// </summary>
         /// <param name="nID">Specifies the dataset ID.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The dataset name is returned.</returns>
-        public string GetDatasetName(int nID)
+        public string GetDatasetName(int nID, ConnectInfo ci = null)
         {
-            Dataset ds = GetDataset(nID);
+            Dataset ds = GetDataset(nID, ci);
 
             if (ds == null)
                 return null;

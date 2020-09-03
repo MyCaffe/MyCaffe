@@ -155,7 +155,7 @@ namespace MyCaffe.db.image
         public void Open(SourceDescriptor src, int nCacheMax = 500, ConnectInfo ci = null)
         {
             m_openSource = src;
-            Open(src.ID, nCacheMax, false, null, ci);
+            Open(src.ID, nCacheMax, Database.FORCE_LOAD.NONE, null, ci);
         }
 
         /// <summary>
@@ -163,10 +163,10 @@ namespace MyCaffe.db.image
         /// </summary>
         /// <param name="nSrcId">Specifies the ID of the data source to use.</param>
         /// <param name="nCacheMax">Optionally, specifies the maximum cache count to use when adding RawImages (default = 500).</param>
-        /// <param name="bForceLoadImageFilePath">Optionally, specfies to force load the image file path (default = <i>false</i>) and use file based data.</param>
+        /// <param name="nForceLoad">Optionally, specifies how to force load the data (default = NONE).</param>
         /// <param name="log">Optionally, specifies the output log (default = null).</param>
         /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
-        public void Open(int nSrcId, int nCacheMax = 500, bool bForceLoadImageFilePath = false, Log log = null, ConnectInfo ci = null)
+        public void Open(int nSrcId, int nCacheMax = 500, Database.FORCE_LOAD nForceLoad = Database.FORCE_LOAD.NONE, Log log = null, ConnectInfo ci = null)
         {
             if (m_openSource != null)
             {
@@ -180,7 +180,7 @@ namespace MyCaffe.db.image
 
             m_ciOpen = ci;
             m_openSource = LoadSource(nSrcId, ci);
-            m_db.Open(nSrcId, bForceLoadImageFilePath, ci);
+            m_db.Open(nSrcId, nForceLoad, ci);
 
             m_imageCache = new ImageCache(nCacheMax);
             m_paramCache = new ParamCache(nCacheMax);
@@ -1408,20 +1408,22 @@ namespace MyCaffe.db.image
         /// Returns a datasets ID given its name.
         /// </summary>
         /// <param name="strDsName">Specifies the dataset name.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The ID of the dataset is returned.</returns>
-        public int GetDatasetID(string strDsName)
+        public int GetDatasetID(string strDsName, ConnectInfo ci = null)
         {
-            return m_db.GetDatasetID(strDsName);
+            return m_db.GetDatasetID(strDsName, ci);
         }
 
         /// <summary>
         /// Returns the name of a dataset given its ID.
         /// </summary>
         /// <param name="nId">Specifies the dataset ID.</param>
+        /// <param name="ci">Optionally, specifies a specific connection to use (default = null).</param>
         /// <returns>The dataset name is returned.</returns>
-        public string GetDatasetName(int nId)
+        public string GetDatasetName(int nId, ConnectInfo ci = null)
         {
-            return m_db.GetDatasetName(nId);
+            return m_db.GetDatasetName(nId, ci);
         }
 
         /// <summary>
@@ -1480,12 +1482,12 @@ namespace MyCaffe.db.image
             Dataset ds = m_db.GetDataset(nDsId, ci);
             Database db = new Database();
 
-            db.Open(ds.TestingSourceID.GetValueOrDefault(), false, ci);
+            db.Open(ds.TestingSourceID.GetValueOrDefault(), Database.FORCE_LOAD.NONE, ci);
             db.UpdateSourceCounts();
             db.UpdateLabelCounts(0, 0, ci);
             db.Close();
 
-            db.Open(ds.TrainingSourceID.GetValueOrDefault(), false, ci);
+            db.Open(ds.TrainingSourceID.GetValueOrDefault(), Database.FORCE_LOAD.NONE, ci);
             db.UpdateSourceCounts();
             db.UpdateLabelCounts(0, 0, ci);
             db.Close();
