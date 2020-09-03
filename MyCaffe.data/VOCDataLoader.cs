@@ -151,7 +151,7 @@ namespace MyCaffe.data
             {
                 int nSrcId = m_factory.AddSource(strSourceName, 3, -1, -1, false);
                 addLabels(nSrcId, rgNameToLabel);
-                m_factory.Open(nSrcId);
+                m_factory.Open(nSrcId, 500, Database.FORCE_LOAD.NONE, log);
 
                 int nPos = strImagesFile.ToLower().LastIndexOf(".tar");
                 string strPath = strImagesFile.Substring(0, nPos);
