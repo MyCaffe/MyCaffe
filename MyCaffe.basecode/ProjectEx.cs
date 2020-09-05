@@ -22,6 +22,7 @@ namespace MyCaffe.basecode
         bool m_bDatasetAdjusted = false;
         bool m_bDefaultSaveImagesToFile = true;
         Stage m_stage = Stage.NONE;
+        int m_nOriginalProjectID = 0;
 
         /// <summary>
         /// The OverrrideModel event fires each time the SetDataset function is called.
@@ -515,6 +516,24 @@ namespace MyCaffe.basecode
         public int ID
         {
             get { return m_project.ID; }
+        }
+
+        /// <summary>
+        /// Get/set the original project ID.
+        /// </summary>
+        public int OriginalID
+        {
+            get
+            {
+                if (m_nOriginalProjectID > 0)
+                    return m_nOriginalProjectID;
+
+                return ID;
+            }
+            set
+            {
+                m_nOriginalProjectID = value;
+            }
         }
 
         /// <summary>
