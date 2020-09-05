@@ -67,7 +67,8 @@ namespace MyCaffe.trainers
         /// <i>null</i> is returned and the project's dataset is used.
         /// </summary>
         /// <param name="nProjectID">Specifies the project ID associated with the trainer (if any)</param>
-        DatasetDescriptor GetDatasetOverride(int nProjectID);
+        /// <param name="ci">Optionally, specifies the database connection information (default = null).</param>
+        DatasetDescriptor GetDatasetOverride(int nProjectID, ConnectInfo ci = null);
         /// <summary>
         /// Returns <i>true</i> when the 'Train' method is supported - this should almost always be <i>true</i>. 
         /// </summary>

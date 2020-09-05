@@ -1606,7 +1606,7 @@ namespace MyCaffe.test
             get { return "RL.Trainer"; }
         }
 
-        protected override DatasetDescriptor get_dataset_override(int nProjectID)
+        protected override DatasetDescriptor get_dataset_override(int nProjectID, ConnectInfo ci = null)
         {
             if (m_igym == null)
                 m_igym = m_colGyms.Find(m_strName);
@@ -1726,7 +1726,7 @@ namespace MyCaffe.test
             get { return "RL.Trainer"; }
         }
 
-        protected override DatasetDescriptor get_dataset_override(int nProjectID)
+        protected override DatasetDescriptor get_dataset_override(int nProjectID, ConnectInfo ci = null)
         {
             if (m_igym == null)
                 m_igym = m_colGyms.Find(m_strName);
@@ -1853,7 +1853,7 @@ namespace MyCaffe.test
             get { return "RNN.Trainer"; }
         }
 
-        protected override DatasetDescriptor get_dataset_override(int nProjectID)
+        protected override DatasetDescriptor get_dataset_override(int nProjectID, ConnectInfo ci = null)
         {
             IXMyCaffeGym igym = m_igym;
 
@@ -2014,7 +2014,7 @@ namespace MyCaffe.test
             get { return "RL.Trainer.Dual"; }
         }
 
-        protected override DatasetDescriptor get_dataset_override(int nProjectID)
+        protected override DatasetDescriptor get_dataset_override(int nProjectID, ConnectInfo ci = null)
         {
             if (m_igym == null)
                 m_igym = m_colGyms.Find(m_strName);
@@ -2139,7 +2139,7 @@ namespace MyCaffe.test
             get { return "RL.Trainer"; }
         }
 
-        protected override DatasetDescriptor get_dataset_override(int nProjectID)
+        protected override DatasetDescriptor get_dataset_override(int nProjectID, ConnectInfo ci = null)
         {
             if (m_igym == null)
                 m_igym = m_colGyms.Find(m_strName);
@@ -2302,7 +2302,7 @@ namespace MyCaffe.test
             get { return "RNN.Trainer.Dual"; }
         }
 
-        protected override DatasetDescriptor get_dataset_override(int nProjectID)
+        protected override DatasetDescriptor get_dataset_override(int nProjectID, ConnectInfo ci = null)
         {
             IXMyCaffeGym igym = m_igym;
 

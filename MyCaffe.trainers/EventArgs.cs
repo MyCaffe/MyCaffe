@@ -88,6 +88,7 @@ namespace MyCaffe.trainers
     /// </summary>
     public class InitializeArgs : EventArgs
     {
+        ConnectInfo m_ci = null;
         int m_nOriginalDsId = 0;
         int m_nDsID = 0;
         Component m_caffe;
@@ -129,6 +130,15 @@ namespace MyCaffe.trainers
         public Component MyCaffe
         {
             get { return m_caffe; }
+        }
+
+        /// <summary>
+        /// Specifies the dataset connection information (if provided).
+        /// </summary>
+        public ConnectInfo DatasetConnectInfo
+        {
+            get { return m_ci; }
+            set { m_ci = value; }
         }
 
         /// <summary>

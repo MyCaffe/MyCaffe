@@ -58,6 +58,10 @@ namespace MyCaffe.trainers
         /// Specifies the project ID of the project held by the instance of MyCaffe.
         /// </summary>
         protected int m_nProjectID = 0;
+        /// <summary>
+        /// Optionally, specifies the dataset connection info, or null.
+        /// </summary>
+        protected ConnectInfo m_dsCi = null;
         IxTrainerRL m_itrainer = null;
         double m_dfExplorationRate = 0;
         double m_dfOptimalSelectionRate = 0;
@@ -131,7 +135,8 @@ namespace MyCaffe.trainers
         /// <i>null</i> is returned and the project's dataset is used.
         /// </summary>
         /// <param name="nProjectID">Specifies the project ID associated with the trainer (if any)</param>
-        protected virtual DatasetDescriptor get_dataset_override(int nProjectID)
+        /// <param name="ci">Optionally, specifies the database connection information (default = null).</param>
+        protected virtual DatasetDescriptor get_dataset_override(int nProjectID, ConnectInfo ci = null)
         {
             return null;
         }
@@ -156,7 +161,9 @@ namespace MyCaffe.trainers
         protected virtual IxTrainerRL create_trainerD(Component caffe)
         {
             MyCaffeControl<double> mycaffe = caffe as MyCaffeControl<double>;
-            m_nProjectID = mycaffe.CurrentProject.ID;
+            m_nProjectID = mycaffe.CurrentProject.OriginalID;
+            m_dsCi = mycaffe.DatasetConnectInfo;
+
             int.TryParse(mycaffe.CurrentProject.GetSolverSetting("max_iter"), out m_nItertions);
             int.TryParse(mycaffe.CurrentProject.GetSolverSetting("snapshot"), out m_nSnapshot);
 
@@ -187,7 +194,9 @@ namespace MyCaffe.trainers
         protected virtual IxTrainerRL create_trainerF(Component caffe)
         {
             MyCaffeControl<float> mycaffe = caffe as MyCaffeControl<float>;
-            m_nProjectID = mycaffe.CurrentProject.ID;
+            m_nProjectID = mycaffe.CurrentProject.OriginalID;
+            m_dsCi = mycaffe.DatasetConnectInfo;
+
             int.TryParse(mycaffe.CurrentProject.GetSolverSetting("max_iter"), out m_nItertions);
             int.TryParse(mycaffe.CurrentProject.GetSolverSetting("snapshot"), out m_nSnapshot);
 
@@ -311,9 +320,10 @@ namespace MyCaffe.trainers
         /// <i>null</i> is returned and the project's dataset is used.
         /// </summary>
         /// <param name="nProjectID">Specifies the project ID associated with the trainer (if any)</param>
-        public DatasetDescriptor GetDatasetOverride(int nProjectID)
+        /// <param name="ci">Optionally, specifies the database connection information (default = null).</param>
+        public DatasetDescriptor GetDatasetOverride(int nProjectID, ConnectInfo ci = null)
         {
-            return get_dataset_override(nProjectID);
+            return get_dataset_override(nProjectID, ci);
         }
 
         /// <summary>

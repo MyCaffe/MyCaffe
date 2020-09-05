@@ -96,6 +96,7 @@ namespace MyCaffe
         string m_strModel = null;   // Used with LoadLite.
         Semaphore m_syncUnload = new Semaphore(0, 1);
         Semaphore m_syncMain = new Semaphore(0, 1);
+        ConnectInfo m_dsCi = null;
 
         /// <summary>
         /// The OnSnapshot event fires each time a snap-shot is taken.
@@ -122,8 +123,10 @@ namespace MyCaffe
         /// <param name="rgGpuId">Optionally, specfies a set of GPU ID's that override those specified in the SettingsCaffe object.</param>
         /// <param name="strCudaPath">Optionally, specifies the path to the low-lever CudaDnnDll.DLL file.  Note, when not set, the system looks in the same directory of the executing assembly for the low-level DLL.</param>
         /// <param name="bCreateCudaDnn">Optionally, specififies create the connection to CUDA (default = false, causing the creation to occur during Load).</param>
-        public MyCaffeControl(SettingsCaffe settings, Log log, CancelEvent evtCancel, AutoResetEvent evtSnapshot = null, AutoResetEvent evtForceTest = null, ManualResetEvent evtPause = null, List<int> rgGpuId = null, string strCudaPath = "", bool bCreateCudaDnn = false)
+        /// <param name="ci">Optionally, specifies the connection information used to connect to the dataset.</param>
+        public MyCaffeControl(SettingsCaffe settings, Log log, CancelEvent evtCancel, AutoResetEvent evtSnapshot = null, AutoResetEvent evtForceTest = null, ManualResetEvent evtPause = null, List<int> rgGpuId = null, string strCudaPath = "", bool bCreateCudaDnn = false, ConnectInfo ci = null)
         {
+            m_dsCi = ci;
             m_guidUser = Guid.NewGuid();
 
             InitializeComponent();
@@ -216,6 +219,14 @@ namespace MyCaffe
             {
                 m_syncMain.Release();
             }
+        }
+
+        /// <summary>
+        /// Returns the dataset connection information, if used (default = <i>null</i>).
+        /// </summary>
+        public ConnectInfo DatasetConnectInfo
+        {
+            get { return m_dsCi; }
         }
 
         /// <summary>
