@@ -91,6 +91,9 @@ namespace MyCaffe.basecode
             if (m_strServer == null)
                 return m_strDb;
 
+            if (m_strServer == "AZURE")
+                return m_strServer;
+
             return m_strServer + "\\" + m_strDb;
         }
 
