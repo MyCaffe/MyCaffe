@@ -98,6 +98,19 @@ namespace MyCaffe.basecode
         }
 
         /// <summary>
+        /// Returns a string representation of the connection.
+        /// </summary>
+        /// <param name="strAzure">Specifies the Azure server.</param>
+        /// <returns>The string representation is returned.</returns>
+        public string ToString(string strAzure)
+        {
+            if (m_strServer.Contains(strAzure))
+                return "AZURE";
+
+            return ToString();
+        }
+
+        /// <summary>
         /// Get/set the generic location type.
         /// </summary>
         public TYPE Location
@@ -138,6 +151,18 @@ namespace MyCaffe.basecode
         public string Password
         {
             get { return m_strPw; }
+        }
+
+        /// <summary>
+        /// Returns a string representation of the connection information.
+        /// </summary>
+        /// <returns>The string representation is returned.</returns>
+        public string ToInfoString()
+        {
+            if (Server == "DEFAULT" || Server == "AZURE")
+                return Server;
+
+            return Server + ";" + Database + ";" + Username + ";" + Password;
         }
 
         /// <summary>
